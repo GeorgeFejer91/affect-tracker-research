@@ -7304,7 +7304,10 @@ mod tests {
         let worker_mailbox = Arc::clone(&mailbox);
         let acceptance_fenced = Arc::new(Mutex::new(false));
         let worker_fenced = Arc::clone(&acceptance_fenced);
+        let worker_entered = Arc::new(std::sync::Barrier::new(2));
+        let spawned_worker_entered = Arc::clone(&worker_entered);
         let worker = thread::spawn(move || {
+            spawned_worker_entered.wait();
             run_worker(
                 prepared,
                 receiver,
@@ -7313,6 +7316,9 @@ mod tests {
                 move || *lock(&worker_fenced) = true,
             )
         });
+        // Start the bounded reply wait only after the spawned thread is
+        // scheduled. Thread-start latency is not part of this test's contract.
+        worker_entered.wait();
 
         let (reply, result) = mpsc::channel();
         sender
