@@ -20,7 +20,7 @@ test("Research production builds have closed, Research-only input boundaries", a
 test("Windows GStreamer CI validates the pinned integration boundary without distributing its runtime", async () => {
   const [checksWorkflow, packageWorkflow, preparer, pinText, buildHook] = await Promise.all([
     read(".github/workflows/desktop.yml"),
-    read(".github/workflows/desktop-multiplatform.yml"),
+    read(".github/workflows/desktop-release.yml"),
     read("src-tauri/native-media/prepare-gstreamer-windows-ci.ps1"),
     read("src-tauri/native-media/gstreamer-runtime-v1.json"),
     read("src-tauri/build.rs"),

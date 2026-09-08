@@ -37,7 +37,7 @@ NSIS candidate deliberately contains no such runtime and disables native
 acquisition. Inspect any resulting installer and installed application rather
 than treating the bundler exit code as runtime evidence.
 
-The manual `desktop-multiplatform.yml` workflow may build unsigned Windows x64
+The manual `desktop-release.yml` workflow may build unsigned Windows x64
 NSIS, macOS ARM64/x64 DMG, and Linux x64 DEB/AppImage interface-evaluation
 artifacts on their native GitHub runners. Verify their closed provenance and
 Start rejection. Their build success is not experiment-use or cross-platform

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const WORKFLOW_PATH = ".github/workflows/desktop-multiplatform.yml";
+const WORKFLOW_PATH = ".github/workflows/desktop-release.yml";
 const BUILD_HELPER_PATH = "scripts/build-unqualified-desktop-package.js";
 const PROVENANCE_HELPER_PATH = "scripts/write-unqualified-package-provenance.js";
 
