@@ -6219,7 +6219,7 @@ mod tests {
             b"external"
         );
 
-        fs::remove_dir(&linked_experiment).unwrap();
+        remove_directory_link(&linked_experiment);
         fs::remove_dir_all(base).unwrap();
     }
 

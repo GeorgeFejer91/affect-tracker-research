@@ -1751,7 +1751,7 @@ mod tests {
         let error = service.storage_readiness(&workspace_id, 1).unwrap_err();
         assert_eq!(error.code, "forbidden_operation");
 
-        fs::remove_dir(&outputs).unwrap();
+        remove_directory_link(&outputs);
         assert_eq!(
             fs::read(external.join("must-remain.txt")).unwrap(),
             b"external"
@@ -1827,6 +1827,16 @@ mod tests {
     #[cfg(unix)]
     fn create_directory_link(target: &Path, link: &Path) {
         std::os::unix::fs::symlink(target, link).unwrap();
+    }
+
+    #[cfg(target_os = "windows")]
+    fn remove_directory_link(path: &Path) {
+        fs::remove_dir(path).unwrap();
+    }
+
+    #[cfg(unix)]
+    fn remove_directory_link(path: &Path) {
+        fs::remove_file(path).unwrap();
     }
 
     #[test]
