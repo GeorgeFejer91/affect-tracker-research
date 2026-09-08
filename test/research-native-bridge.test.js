@@ -14,6 +14,7 @@ import {
   nativeInputRegionRequest,
   nativeMediaGenerationMatches,
   nativePendingFinalizationContract,
+  nativeProtocolExecutionReady,
   participantStateDetail,
   probeAndAttestNativeVideo,
   nativeRendererRunFenceMatches,
@@ -21,7 +22,11 @@ import {
   nativeRunStatusMatchesFence,
   nativeStartReceiptMatches,
   nativeStatusPollMayProject,
+  nativeWorkspaceBindingsForProtocol,
   selectPendingNativeFinalizationRecovery,
+  validateNativeMediaCapabilityV2,
+  validateNativeProtocolCapabilityV1,
+  validateNativeProtocolPreflightV1,
 } from "../site/src/research/native-bridge.js";
 
 function nativeStatus(overrides = {}) {
@@ -61,6 +66,203 @@ function finalizedFiles() {
     byteLength: 1,
   }));
 }
+
+function nativeMediaCapability(overrides = {}) {
+  return {
+    schema: "affect-research-native-media-capability",
+    version: 2,
+    backend: "gstreamer-gstplay",
+    api: "gstplay",
+    pinnedRuntimeVersion: "1.28.6",
+    bindingsVersion: "0.25",
+    target: "msvc-x86_64",
+    runtimeInstallerSha256: "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5",
+    runtimeTreeManifestSha256: "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566",
+    defaultPlaybackMode: "nativeGstPlay",
+    unqualifiedFallbackMode: "unqualifiedWebview",
+    runtimeBundleState: "notStaged",
+    runtimeIntegrityVerified: false,
+    runtimeFileCount: null,
+    runtimeByteLength: null,
+    playerActorReady: false,
+    qualifiedStartAvailable: false,
+    qualifiedFormatMatrixReady: false,
+    redistributionReviewReady: false,
+    ambientRuntimeAllowed: false,
+    requiredForQualifiedRun: true,
+    rendererReceivesFilesystemPaths: false,
+    reasonCode: "runtime-not-staged",
+    ...overrides,
+  };
+}
+
+function nativeProtocolCapability(overrides = {}) {
+  return {
+    schema: "affect-research-native-questionnaire-protocol-capability",
+    version: 1,
+    settingsV2ValidationReady: true,
+    questionnaireCsvImportReady: true,
+    protocolPlanValidationReady: true,
+    nativeStartResumeReady: false,
+    durableDraftCheckpointReady: false,
+    atomicSubmissionReady: false,
+    manifestV3FinalizationReady: false,
+    reasonCode: "native-questionnaire-runtime-v3-not-integrated",
+    ...overrides,
+  };
+}
+
+function nativeProtocolFixture({ withQuestionnaire = false } = {}) {
+  const settingsSha256 = "a".repeat(64);
+  const assignmentSettingsSha256 = "b".repeat(64);
+  const assignmentPlanSha256 = "c".repeat(64);
+  const protocolPlanSha256 = "d".repeat(64);
+  const definitionSha256 = "e".repeat(64);
+  const definitions = withQuestionnaire ? [{
+    questionnaireId: "maia-2-de",
+    definitionSha256,
+  }] : [];
+  const steps = [
+    ...(withQuestionnaire ? [{ kind: "questionnaire", moduleId: "maia-before" }] : []),
+    { kind: "stimulus", stimulusId: "stimulus-a" },
+  ];
+  const researchSettings = {
+    version: 2,
+    stimuli: { items: [] },
+    questionnaires: {
+      definitions,
+      modules: withQuestionnaire ? [{ moduleId: "maia-before" }] : [],
+    },
+  };
+  const assignmentPlan = {
+    settingsSha256: assignmentSettingsSha256,
+    planHashSha256: assignmentPlanSha256,
+  };
+  const resolvedProtocolPlan = {
+    participantId: "P001",
+    settingsSha256,
+    assignmentPlanSha256,
+    protocolPlanHashSha256: protocolPlanSha256,
+    steps,
+  };
+  const receipt = {
+    schema: "affect-research-native-protocol-preflight",
+    version: 1,
+    participantId: "P001",
+    settingsSha256,
+    assignmentSettingsSha256,
+    assignmentPlanSha256,
+    protocolPlanSha256,
+    definitionHashes: definitions,
+    protocolStepCount: steps.length,
+    questionnaireStepCount: withQuestionnaire ? 1 : 0,
+    stimulusStepCount: 1,
+    nativeStartReady: false,
+    blockingReasonCode: "native-questionnaire-runtime-v3-not-integrated",
+  };
+  return { researchSettings, assignmentPlan, resolvedProtocolPlan, receipt };
+}
+
+test("native questionnaire capability is exact and cannot overclaim readiness", () => {
+  assert.deepEqual(validateNativeProtocolCapabilityV1(nativeProtocolCapability()), nativeProtocolCapability());
+  assert.throws(
+    () => validateNativeProtocolCapabilityV1(nativeProtocolCapability({ futureField: true })),
+    /malformed/u,
+  );
+  assert.throws(
+    () => validateNativeProtocolCapabilityV1(nativeProtocolCapability({ nativeStartResumeReady: true })),
+    /inconsistent/u,
+  );
+});
+
+test("native protocol preflight is exact and unavailable capability blocks V2 protocol execution", () => {
+  const inputs = nativeProtocolFixture({ withQuestionnaire: true });
+  const receipt = validateNativeProtocolPreflightV1(inputs.receipt, inputs);
+  assert.deepEqual(receipt, inputs.receipt);
+  assert.equal(nativeProtocolExecutionReady(nativeProtocolCapability(), receipt), false);
+  assert.equal(nativeProtocolExecutionReady({
+    ...nativeProtocolCapability(),
+    nativeStartResumeReady: true,
+    durableDraftCheckpointReady: true,
+    atomicSubmissionReady: true,
+    manifestV3FinalizationReady: true,
+  }, { ...receipt, nativeStartReady: true }), true);
+  assert.throws(
+    () => validateNativeProtocolPreflightV1({
+      ...inputs.receipt,
+      protocolPlanSha256: "f".repeat(64),
+    }, inputs),
+    /does not match/u,
+  );
+  assert.throws(
+    () => validateNativeProtocolPreflightV1({ ...inputs.receipt, futureField: true }, inputs),
+    /malformed/u,
+  );
+});
+
+test("native workspace bindings contain exactly the selected participant protocol stimuli", () => {
+  const workspaceSource = (relativePath, digit, byteLength) => ({
+    kind: "workspaceFile",
+    relativePath,
+    sha256: digit.repeat(64),
+    byteLength,
+    durationMs: 1_000,
+    decodeStatus: "attestedUnqualified",
+    decodeBackend: "webviewVideoFrameCallback",
+    decodeAttestation: "representativeFramesV1",
+    decodedPositionsMs: [20, 500, 980],
+  });
+  const sourceA = workspaceSource("a.mp4", "a", 101);
+  const sourceC = workspaceSource("nested/c.mp4", "c", 303);
+  const researchSettings = {
+    version: 2,
+    stimuli: {
+      items: [
+        { stimulusId: "stimulus-a", title: "A", source: sourceA },
+        {
+          stimulusId: "stimulus-b",
+          title: "B",
+          source: { kind: "repositoryAsset", assetPath: "demo/b.mp4", sha256: "b".repeat(64), byteLength: 202, durationMs: 1_000 },
+        },
+        { stimulusId: "stimulus-c", title: "C", source: sourceC },
+      ],
+    },
+  };
+  const resolvedProtocolPlan = {
+    steps: [
+      { kind: "questionnaire", moduleId: "before-session" },
+      { kind: "stimulus", stimulusId: "stimulus-c" },
+      { kind: "stimulus", stimulusId: "stimulus-a" },
+    ],
+  };
+  const catalogEntries = [
+    { summary: { source: sourceA, sha256: sourceA.sha256, byteLength: sourceA.byteLength, workspaceFileId: `wf-${"1".repeat(24)}` } },
+    { summary: { source: sourceC, sha256: sourceC.sha256, byteLength: sourceC.byteLength, workspaceFileId: `wf-${"3".repeat(24)}` } },
+  ];
+  assert.deepEqual(nativeWorkspaceBindingsForProtocol({
+    researchSettings,
+    resolvedProtocolPlan,
+    catalogEntries,
+  }), [
+    { stimulusId: "stimulus-c", workspaceFileId: `wf-${"3".repeat(24)}` },
+    { stimulusId: "stimulus-a", workspaceFileId: `wf-${"1".repeat(24)}` },
+  ]);
+  assert.throws(() => nativeWorkspaceBindingsForProtocol({
+    researchSettings,
+    resolvedProtocolPlan: { steps: [{ kind: "stimulus", stimulusId: "stimulus-b" }] },
+    catalogEntries,
+  }), /not qualified/u);
+  assert.throws(() => nativeWorkspaceBindingsForProtocol({
+    researchSettings,
+    resolvedProtocolPlan: {
+      steps: [
+        { kind: "stimulus", stimulusId: "stimulus-a" },
+        { kind: "stimulus", stimulusId: "stimulus-a" },
+      ],
+    },
+    catalogEntries,
+  }), /unique stimulus steps/u);
+});
 
 test("native timing readiness requires a complete bounded RunStatus handshake", () => {
   assert.equal(nativeRunStatusHandshake(nativeStatus()), true);
@@ -495,68 +697,145 @@ test("ordinary activation rejection with authoritative idle status needs no roll
   assert.deepEqual(calls, ["research_run_status", "research_start_run", "research_run_status"]);
 });
 
-test("pending recovery finalization is reload-only and binds the durable terminal intent", () => {
-  const settings = { schema: "affect-research-settings" };
-  const assignmentPlan = { schema: "affect-research-assignment-plan" };
-  const context = {
-    workspaceId: "workspace-opaque",
+test("versioned protocol activation uses its distinct Start command and reconciliation fence", async () => {
+  const calls = [];
+  await assert.rejects(invokeNativeRunActivation({
+    command: "research_start_protocol_run",
+    payload: { request: { researchSettings: {}, assignmentPlan: {}, resolvedProtocolPlan: {} } },
+    participantId: "P001",
+    playbackMode: "unqualifiedWebview",
+    async invoke(command) {
+      calls.push(command);
+      if (command === "research_run_status") return nativeStatus();
+      if (command === "research_start_protocol_run") {
+        throw new Error("native questionnaire runtime unavailable");
+      }
+      throw new Error(`Unexpected ${command}`);
+    },
+  }), (error) => {
+    assert.equal(error.nativeActivationReconciliation, "inactiveAfterRejection");
+    assert.match(error.message, /Start was rejected before activation/u);
+    return true;
+  });
+  assert.deepEqual(calls, [
+    "research_run_status",
+    "research_start_protocol_run",
+    "research_run_status",
+  ]);
+});
+
+test("pending recovery finalization preserves separate ManifestV2 and ManifestV3 contracts", () => {
+  const settings = { schema: "affect-research-settings", version: 1 };
+  const researchSettings = { schema: "affect-research-settings", version: 2 };
+  const assignmentPlan = {
+    schema: "affect-research-assignment-plan",
+    settingsSha256: "d".repeat(64),
+    planHashSha256: "b".repeat(64),
+  };
+  const resolvedProtocolPlan = {
     participantId: "P001",
     settingsSha256: "a".repeat(64),
     assignmentPlanSha256: "b".repeat(64),
+    protocolPlanHashSha256: "c".repeat(64),
+  };
+  const sharedContext = {
+    workspaceId: "44444444-4444-4444-8444-444444444444",
+    participantId: "P001",
+    settingsSha256: "d".repeat(64),
+    researchSettingsSha256: "a".repeat(64),
+    assignmentPlanSha256: "b".repeat(64),
     playbackMode: "unqualifiedWebview",
     settings,
+    researchSettings,
     assignmentPlan,
+    resolvedProtocolPlan,
   };
-  const recovery = {
-    recoveryId: "recovery-opaque",
+  const sharedRecovery = {
+    recoveryId: "55555555-5555-4555-8555-555555555555",
     runId: "11111111-1111-4111-8111-111111111111",
     participantId: "P001",
     attemptNumber: 2,
-    settingsSha256: "a".repeat(64),
     assignmentPlanSha256: "b".repeat(64),
     playbackMode: "unqualifiedWebview",
     playbackQualification: "unqualified",
     finalizationPending: true,
     pendingCompletionStatus: "partial",
   };
-  const contract = nativePendingFinalizationContract(recovery, context);
-  assert.deepEqual(contract.request, {
-    workspaceId: "workspace-opaque",
-    recoveryId: "recovery-opaque",
+  const v2Recovery = {
+    ...sharedRecovery,
+    protocolContract: "manifestV2",
+    settingsSha256: "d".repeat(64),
+  };
+  const v2Contract = nativePendingFinalizationContract(v2Recovery, {
+    ...sharedContext,
+    protocolContract: "manifestV2",
+  });
+  assert.equal(v2Contract.command, "research_finalize_recovery");
+  assert.deepEqual(v2Contract.request, {
+    workspaceId: sharedContext.workspaceId,
+    recoveryId: v2Recovery.recoveryId,
     settings,
     assignmentPlan,
   });
-  assert.deepEqual(contract.expectedReceipt, {
-    runId: recovery.runId,
+  assert.equal("researchSettings" in v2Contract.request, false);
+  assert.equal("resolvedProtocolPlan" in v2Contract.request, false);
+
+  const v3Recovery = {
+    ...sharedRecovery,
+    protocolContract: "manifestV3",
+    settingsSha256: "a".repeat(64),
+  };
+  const v3Context = { ...sharedContext, protocolContract: "manifestV3" };
+  const v3Contract = nativePendingFinalizationContract(v3Recovery, v3Context);
+  assert.equal(v3Contract.command, "research_finalize_protocol_recovery");
+  assert.deepEqual(v3Contract.request, {
+    workspaceId: sharedContext.workspaceId,
+    recoveryId: v3Recovery.recoveryId,
+    researchSettings,
+    assignmentPlan,
+    resolvedProtocolPlan,
+  });
+  assert.deepEqual(v3Contract.expectedReceipt, {
+    runId: v3Recovery.runId,
     participantId: "P001",
     attemptNumber: 2,
     completionStatus: "partial",
   });
-  assert.equal("inputTestReceiptId" in contract.request, false);
-  assert.equal("workspaceFiles" in contract.request, false);
-  assert.equal("playbackMode" in contract.request, false);
+  assert.equal("inputTestReceiptId" in v3Contract.request, false);
+  assert.equal("workspaceFiles" in v3Contract.request, false);
+  assert.equal("playbackMode" in v3Contract.request, false);
+  assert.equal("settings" in v3Contract.request, false);
   assert.equal(nativePendingFinalizationContract({
-    ...recovery,
+    ...v3Recovery,
     finalizationPending: false,
     pendingCompletionStatus: null,
-  }, context), null);
+  }, v3Context), null);
   assert.throws(() => nativePendingFinalizationContract({
-    ...recovery,
+    ...v3Recovery,
     pendingCompletionStatus: null,
-  }, context), /not bound to the selected run/u);
+  }, v3Context), /not bound to the selected run/u);
   assert.throws(() => nativePendingFinalizationContract({
-    ...recovery,
+    ...v3Recovery,
     runId: "renderer-run",
-  }, context), /not bound to the selected run/u);
+  }, v3Context), /not bound to the selected run/u);
+  assert.throws(() => nativePendingFinalizationContract(v3Recovery, {
+    ...v3Context,
+    resolvedProtocolPlan: { ...resolvedProtocolPlan, protocolPlanHashSha256: "invalid" },
+  }), /ManifestV3 protocol contract/u);
+  assert.throws(() => nativePendingFinalizationContract(v3Recovery, {
+    ...sharedContext,
+    protocolContract: "manifestV2",
+  }), /not bound to the selected run/u);
   assert.throws(() => nativePendingFinalizationContract({
-    ...recovery,
+    ...v3Recovery,
     finalizationPending: false,
-  }, context), /inconsistent or unsupported/u);
+  }, v3Context), /inconsistent or unsupported/u);
 });
 
 test("explicit pending finalization cannot be retargeted by a newer resumable recovery", () => {
   const pending = {
     participantId: "P001",
+    protocolContract: "manifestV2",
     attemptNumber: 2,
     settingsSha256: "a".repeat(64),
     assignmentPlanSha256: "b".repeat(64),
@@ -572,6 +851,7 @@ test("explicit pending finalization cannot be retargeted by a newer resumable re
   };
   const expected = {
     participantId: "P001",
+    protocolContract: "manifestV2",
     settingsSha256: "a".repeat(64),
     assignmentPlanSha256: "b".repeat(64),
     playbackMode: "unqualifiedWebview",
@@ -679,18 +959,48 @@ test("native input regions remain bounded to visible client coordinates", () => 
 });
 
 test("desktop playback defaults qualified and requires an explicit unqualified fallback", () => {
-  const unavailable = {
-    qualifiedStartAvailable: false,
-    playerActorReady: false,
-    reasonCode: "runtime-not-staged",
-  };
+  const unavailable = nativeMediaCapability();
   assert.throws(() => authorizeDesktopPlaybackMode(undefined, unavailable), /Qualified native playback is unavailable/u);
   assert.equal(authorizeDesktopPlaybackMode("unqualifiedWebview", unavailable), "unqualifiedWebview");
-  assert.equal(authorizeDesktopPlaybackMode("nativeLibvlc", {
+  const ready = nativeMediaCapability({
+    runtimeBundleState: "verified",
+    runtimeIntegrityVerified: true,
+    runtimeFileCount: 827,
+    runtimeByteLength: 340362958,
     qualifiedStartAvailable: true,
     playerActorReady: true,
-  }), "nativeLibvlc");
-  assert.throws(() => authorizeDesktopPlaybackMode("ambientVlc", unavailable), /Unknown Windows playback mode/u);
+    qualifiedFormatMatrixReady: true,
+    redistributionReviewReady: true,
+    reasonCode: "qualified-native-gstplay-ready",
+  });
+  assert.equal(authorizeDesktopPlaybackMode("nativeGstPlay", ready), "nativeGstPlay");
+  assert.throws(() => authorizeDesktopPlaybackMode("nativeLibvlc", unavailable), /retired/u);
+  assert.throws(() => authorizeDesktopPlaybackMode("ambientVlc", unavailable), /Unknown native playback mode/u);
+
+  const interfaceOnly = nativeMediaCapability({
+    reasonCode: "native-acquisition-platform-unsupported",
+  });
+  assert.throws(
+    () => authorizeDesktopPlaybackMode("unqualifiedWebview", interfaceOnly),
+    /Setup and interface evaluation only/u,
+  );
+  assert.throws(
+    () => authorizeDesktopPlaybackMode("nativeGstPlay", interfaceOnly),
+    /native experiment acquisition requires the Windows build/u,
+  );
+});
+
+test("native media capability v2 is exact, pinned, isolated, and internally consistent", () => {
+  assert.deepEqual(validateNativeMediaCapabilityV2(nativeMediaCapability()), nativeMediaCapability());
+  assert.throws(() => validateNativeMediaCapabilityV2({
+    ...nativeMediaCapability(), extra: true,
+  }), /malformed/u);
+  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
+    ambientRuntimeAllowed: true,
+  })), /malformed/u);
+  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
+    qualifiedStartAvailable: true,
+  })), /inconsistent/u);
 });
 
 test("native participant projection distinguishes terminal and recoverable partials", () => {
@@ -699,6 +1009,7 @@ test("native participant projection distinguishes terminal and recoverable parti
     { participantId: "P002", state: "Partial", recoverable: false },
   ], [{
     participantId: "P001",
+    protocolContract: "manifestV2",
     attemptNumber: 2,
     settingsSha256: "a".repeat(64),
     assignmentPlanSha256: "b".repeat(64),
@@ -714,6 +1025,7 @@ test("native participant projection distinguishes terminal and recoverable parti
       P001: {
         settingsSha256: "a".repeat(64),
         assignmentPlanSha256: "b".repeat(64),
+        protocolContract: "manifestV2",
         playbackMode: "unqualifiedWebview",
         completionStatus: "partial",
         attemptNumber: 2,
@@ -924,9 +1236,10 @@ test("native metadata and seeking cannot pass without frame callbacks, and the g
 });
 
 test("desktop entrypoint activates only the path-free Research native bridge", async () => {
-  const [html, source] = await Promise.all([
+  const [html, source, appSource] = await Promise.all([
     readFile(new URL("../desktop/index.html", import.meta.url), "utf8"),
     readFile(new URL("../site/src/research/native-bridge.js", import.meta.url), "utf8"),
+    readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8"),
   ]);
   assert.match(html, /src="\.\.\/site\/src\/research\/native-bridge\.js"/u);
   assert.doesNotMatch(html, /runtime-bridge\.js|app\.js/u);
@@ -935,6 +1248,8 @@ test("desktop entrypoint activates only the path-free Research native bridge", a
     "research_rescan_stimuli",
     "research_import_stimuli",
     "research_native_media_capability",
+    "research_native_protocol_capability",
+    "research_protocol_preflight",
     "research_input_capability",
     "research_input_set_region",
     "research_input_begin_test",
@@ -944,6 +1259,9 @@ test("desktop entrypoint activates only the path-free Research native bridge", a
     "research_start_run",
     "research_resume_run",
     "research_finalize_recovery",
+    "research_start_protocol_run",
+    "research_resume_protocol_run",
+    "research_finalize_protocol_recovery",
     "research_run_status",
     "research_finish_run",
     "research_report_media_failure",
@@ -960,9 +1278,12 @@ test("desktop entrypoint activates only the path-free Research native bridge", a
   assert.match(source, /Native run outcome unknown — restart required/u);
   assert.match(source, /Native recovery-finalization receipt did not match the pending durable run contract/u);
   assert.match(source, /selectPendingNativeFinalizationRecovery\(compatibleRecoveries/u);
-  assert.match(source, /receipt = await this\.#activateNativeRun\(\{\s*command: "research_resume_run"/u);
-  assert.match(source, /receipt = await this\.#activateNativeRun\(\{\s*command: "research_start_run"/u);
-  assert.match(source, /if \(pendingFinalization\)[\s\S]+research_finalize_recovery[\s\S]+return;/u);
+  assert.match(source, /command: hasQuestionnaires \? "research_resume_protocol_run" : "research_resume_run"/u);
+  assert.match(source, /command: hasQuestionnaires \? "research_start_protocol_run" : "research_start_run"/u);
+  assert.match(source, /this\.invoke\(pendingFinalization\.command, \{\s*request: pendingFinalization\.request,/u);
+  assert.match(source, /request: hasQuestionnaires \? \{[\s\S]+researchSettings,[\s\S]+assignmentPlan: plan,[\s\S]+resolvedProtocolPlan,[\s\S]+\} : \{[\s\S]+settings,[\s\S]+assignmentPlan: plan,/u);
+  assert.match(source, /hasQuestionnaires[\s\S]+\? this\.#protocolWorkspaceBindings\(researchSettings, resolvedProtocolPlan\)[\s\S]+: this\.#workspaceBindings\(plan\)/u);
+  assert.match(appSource, /recoveryFinalizationOnly: true,[\s\S]+pendingFinalizationProtocolContract: pendingFinalization\.protocolContract,[\s\S]+researchSettings: protocolSettingsSnapshot,[\s\S]+resolvedProtocolPlan: protocolPlan,/u);
   assert.match(source, /Native status did not match the active renderer run/u);
   assert.doesNotMatch(source, /Stopped by native error/u);
   assert.doesNotMatch(source, /research_update_affect_state|research_gamepad_button/u);

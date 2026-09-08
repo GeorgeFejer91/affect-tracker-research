@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg"
+    ],
+    "resources": [],
+    "longDescription": "Unsigned internal macOS alpha for interface evaluation only. Native GstPlay, LSL, native input, installed workflow, timing, and research readiness are not qualified."
+  }
+}

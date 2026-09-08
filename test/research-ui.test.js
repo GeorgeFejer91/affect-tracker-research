@@ -34,6 +34,7 @@ const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["experiment", "Experiment"],
   ["stimuli", "Stimuli & Counterbalancer"],
+  ["questionnaires", "Questionnaires & Sequence"],
   ["input", "Controller / Input Device"],
   ["visual", "Visual Feedback"],
   ["advanced", "Advanced"],
@@ -50,10 +51,10 @@ test("the active instrument exposes exactly Setup and Run modes", () => {
   assert.equal(normalizeResearchMode("unknown"), "setup");
 });
 
-test("Setup has the exact seven ordered single-open accordion contracts", () => {
+test("Setup has the exact eight ordered single-open accordion contracts", () => {
   assert.deepEqual(SETUP_SECTIONS.map(({ id, label }) => [id, label]), expectedSections);
   const markup = renderResearchUiMarkup();
-  assert.equal((markup.match(/class="setup-accordion"/gu) ?? []).length, 7);
+  assert.equal((markup.match(/class="setup-accordion"/gu) ?? []).length, 8);
   let cursor = -1;
   for (const [id, label] of expectedSections) {
     const next = markup.indexOf(`data-setup-section="${id}"`);
@@ -67,6 +68,21 @@ test("Setup has the exact seven ordered single-open accordion contracts", () => 
   assert.equal(normalizeSetupSection("nope"), "workspace");
   assert.equal(nextOpenSetupSection("workspace", "experiment"), "experiment");
   assert.equal(nextOpenSetupSection("experiment", "nope"), "workspace");
+});
+
+test("Questionnaires are strict ordered protocol modules rather than a third app mode", async () => {
+  const source = await read("site/src/research/app.js");
+  const markup = renderResearchUiMarkup();
+  for (const id of [
+    "questionnaire-import", "questionnaire-add-maia", "questionnaire-template-download",
+    "questionnaire-definition-list", "questionnaire-module-list", "protocol-plan-hash",
+    "protocol-sequence-preview", "questionnaire-file-input", "questionnaire-preview-dialog",
+  ]) assert.match(markup, new RegExp(`id="${id}"`, "u"));
+  assert.match(markup, /one row per answer option/u);
+  assert.match(markup, /does not bundle proprietary wording/u);
+  assert.match(markup, /before or after the session, or around a condition block/u);
+  assert.match(source, /target\.dataset\.questionnairePlacement \|\| target\.dataset\.questionnairePool\)\) return/u);
+  assert.equal((markup.match(/data-mode-panel=/gu) ?? []).length, 2);
 });
 
 test("Workspace, experiment, and counterbalancing decisions are present without legacy rating choices", () => {
@@ -184,15 +200,15 @@ test("Review and Start carries privacy, participant-state, format, and fail-clos
   for (const id of ["settings-hash", "review-plan-hash", "storage-estimate", "timing-capability", "native-playback-mode", "native-media-capability", "lsl-capability"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
-  assert.match(markup, /Native libVLC player · qualification required/u);
+  assert.match(markup, /GStreamer \/ GstPlay · qualification required/u);
   assert.match(markup, /WebView video · unqualified testing only/u);
 });
 
-test("Run is a sparse stimulus, adjacent feedback, status, pause, and controlled-stop surface", () => {
+test("Run has mutually exclusive questionnaire and stimulus stages with bounded controls", () => {
   const markup = renderResearchUiMarkup();
   const run = markup.slice(markup.indexOf('<section class="run-mode"'), markup.indexOf("</main>"));
   assert.ok(run.indexOf('class="stimulus-stage"') < run.indexOf('class="run-feedback-stage"'));
-  for (const id of ["run-video", "run-pause", "run-stop-early", "run-stimulus-status", "run-timing-status", "run-write-status", "run-lsl-status", "run-transition", "run-continue"]) {
+  for (const id of ["run-native-video-host", "run-video", "run-pause", "run-stop-early", "run-stimulus-status", "run-timing-status", "run-write-status", "run-lsl-status", "run-transition", "run-continue", "run-questionnaire-stage", "run-questionnaire-form", "run-questionnaire-previous", "run-questionnaire-next", "run-questionnaire-submit"]) {
     assert.match(run, new RegExp(`id="${id}"`, "u"));
   }
   for (const setupOnly of ["experiment-id", "participant-count", "input-preset", "visual-size", "lsl-enabled", "start-experiment"]) {
@@ -219,6 +235,9 @@ test("the UI bridge names are explicit and stable", () => {
     loadSettingsRequest: "affect-research:load-settings-request",
     saveSettingsRequest: "affect-research:save-settings-request",
     exportPlanRequest: "affect-research:export-plan-request",
+    importQuestionnaireRequest: "affect-research:import-questionnaire-request",
+    questionnaireDraftRequest: "affect-research:questionnaire-draft-request",
+    questionnaireSubmitRequest: "affect-research:questionnaire-submit-request",
     planReady: "affect-research:plan-ready",
     inputTestState: "affect-research:input-test-state",
     inputEdge: "affect-research:input-edge",
@@ -237,6 +256,7 @@ test("the UI bridge names are explicit and stable", () => {
     participantStates: "affect-research:participant-states",
     runStarted: "affect-research:run-started",
     runStatus: "affect-research:run-status",
+    questionnaireStatus: "affect-research:questionnaire-status",
     runComplete: "affect-research:run-complete",
   });
 });
@@ -255,7 +275,7 @@ test("pending native finalization has an explicit acquisition-free Setup dispatc
   const source = await read("site/src/research/app.js");
   assert.match(source, /__finalizationPending/u);
   assert.match(source, /__finalizationBinding/u);
-  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*binding\.settingsSha256 !== settingsHash[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
+  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*protocolContract = hasQuestionnaires \? "manifestV3" : "manifestV2"[\s\S]*expectedSettingsSha256 = hasQuestionnaires \? protocolSettingsHash : settingsHash[\s\S]*binding\.protocolContract !== protocolContract[\s\S]*binding\.settingsSha256 !== expectedSettingsSha256[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
   assert.match(source, /Finalize pending \$\{pendingFinalization\.completionStatus\} attempt/u);
   const requestStart = source.slice(
     source.indexOf("function requestStart()"),
@@ -387,6 +407,7 @@ test("Setup remains scrollable on desktop and the mobile header owns intrinsic h
   assert.match(css, /\.setup-pane\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*100%;[\s\S]*?overflow-y:\s*auto;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
+  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title chevron"[\s\S]*?"\. summary \."[\s\S]*?white-space:\s*normal;/u);
 });
 
 test("custom research controls expose one coherent accessible interaction model", async () => {

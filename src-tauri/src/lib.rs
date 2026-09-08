@@ -5,12 +5,15 @@ mod research_gamepad;
 mod research_input;
 mod research_lsl;
 mod research_native_media;
+mod research_platform;
+pub mod research_protocol;
 mod research_runtime;
 mod research_timing;
 mod research_workspace;
 
 use research_input::ResearchInputService;
 use research_native_media::NativeMediaService;
+use research_platform::NATIVE_ACQUISITION_SUPPORTED;
 use research_runtime::ResearchRuntime;
 use research_workspace::WorkspaceService;
 use std::sync::Arc;
@@ -39,10 +42,7 @@ pub fn run() {
             let native_media = Arc::new(NativeMediaService::inspect(&resource_dir));
             // Setup remains operable when the safe hook cannot start. Capability
             // reporting and every test/Start command then fail closed.
-            let input = Arc::new(
-                ResearchInputService::start()
-                    .unwrap_or_else(|_| ResearchInputService::unavailable()),
-            );
+            let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));
             let focused = app
                 .get_webview_window("research")
                 .and_then(|window| window.is_focused().ok())
@@ -93,6 +93,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
+            research_commands::research_native_protocol_capability,
+            research_commands::research_protocol_preflight,
             research_commands::research_input_capability,
             research_commands::research_input_set_region,
             research_commands::research_input_begin_test,
@@ -110,6 +112,9 @@ pub fn run() {
             research_commands::research_storage_readiness,
             research_commands::research_export_assignment_plan,
             research_commands::research_lsl_readiness,
+            research_commands::research_start_protocol_run,
+            research_commands::research_resume_protocol_run,
+            research_commands::research_finalize_protocol_recovery,
             research_commands::research_start_run,
             research_commands::research_resume_run,
             research_commands::research_finalize_recovery,
@@ -133,4 +138,32 @@ pub fn run() {
             }
         }
     });
+}
+
+fn input_service_for_platform(native_acquisition_supported: bool) -> ResearchInputService {
+    if native_acquisition_supported {
+        ResearchInputService::start().unwrap_or_else(|_| ResearchInputService::unavailable())
+    } else {
+        ResearchInputService::unavailable()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interface_only_platform_does_not_start_native_input_authority() {
+        let capability = input_service_for_platform(false).capability();
+        assert!(!capability.native_authority_ready);
+        assert!(capability.supported_presets.is_empty());
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn current_non_windows_build_exposes_no_native_input_authority() {
+        let capability = input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED).capability();
+        assert!(!capability.native_authority_ready);
+        assert!(capability.supported_presets.is_empty());
+    }
 }

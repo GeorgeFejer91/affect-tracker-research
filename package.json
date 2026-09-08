@@ -20,7 +20,7 @@
     "desktop:build": "vite build --config desktop/vite.config.js && node scripts/verify-research-build.js desktop",
     "desktop:preview": "vite preview --config desktop/vite.config.js",
     "desktop:icons": "tauri icon desktop/icons/app-icon.svg -o src-tauri/icons",
-    "desktop:bundle": "node scripts/build-research-desktop.js"
+    "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -65,6 +65,13 @@ impl CommandError {
         )
     }
 
+    pub fn native_acquisition_platform_unsupported() -> Self {
+        Self::new(
+            "native_acquisition_platform_unsupported",
+            "This Tauri package is for Setup and interface evaluation only. Native experiment acquisition is available only in the Windows build.",
+        )
+    }
+
     pub fn io(_: impl Display) -> Self {
         // OS errors can contain private absolute paths. The structured boundary deliberately
         // trades that detail for a stable, path-free participant-facing failure.
@@ -108,5 +115,15 @@ mod tests {
         );
         assert!(!value.to_string().contains("private"));
         assert!(value.as_object().is_some_and(|object| object.len() == 2));
+    }
+
+    #[test]
+    fn interface_only_platform_error_is_stable_and_actionable() {
+        let error = CommandError::native_acquisition_platform_unsupported();
+        assert_eq!(error.code, "native_acquisition_platform_unsupported");
+        assert!(error
+            .message
+            .contains("Setup and interface evaluation only"));
+        assert!(error.message.contains("Windows build"));
     }
 }

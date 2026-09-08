@@ -40,7 +40,11 @@ with exactly two user-visible modes:
 Active v1 qualifies only Windows Tauri and the static application in current
 desktop Chrome and Edge. It has no WebXR, Quest, remote-control, collaboration,
 direct physiology, face, touch-inference, account, upload, analytics, telemetry,
-or backend surface.
+or backend surface. Host-native unsigned Windows, macOS, and Linux packages may
+be produced with no optional Cargo features for internal Setup/interface
+evaluation, but native experiment Start must fail closed there and those
+artifacts carry no research, timing, media, input, recovery, or LSL
+qualification claim.
 
 ## Non-negotiable boundaries
 
@@ -50,9 +54,11 @@ or backend surface.
   manifests local to the selected workspace/application namespace.
 - Treat WebView/browser input, imported JSON, directory contents, and every IPC
   argument as untrusted. Validate at the owning boundary.
-- Freeze one normalized `ResearchSettingsV1`, one
-  `ResolvedAssignmentPlanV1`, bindings, participant derivation, and geometry
-  for each attempt.
+- Freeze one normalized `ResearchSettingsV2`, its explicit
+  `ResearchSettingsV1` assignment projection, one `ResolvedAssignmentPlanV1`,
+  one participant-specific `ResolvedProtocolPlanV1`, bindings, participant
+  derivation, and geometry for each questionnaire-aware attempt. Historical v1
+  attempts retain their original contract meanings.
 - Keep the research scheduler independent of video rendering and animation.
   Emit a timing-gap event for missed deadlines; never invent catch-up rows.
 - Never silently discard accepted rows or overwrite a prior attempt. Recovery
@@ -62,15 +68,21 @@ or backend surface.
 - Tauri Rust owns native workspace, input, playback, scheduler, timestamps,
   persistence, and outbound LSL authority. The WebView receives only narrow
   typed projections and opaque identifiers.
-- Qualified Windows local/repository playback targets bundled libVLC 3.0.23.
-  The application never downloads it at runtime or searches for a system VLC.
+- Qualified Windows local/repository playback targets the repository-pinned
+  GStreamer 1.28.6 MSVC x86_64 runtime through one Rust-owned GstPlay actor.
+  The application never downloads it at runtime or searches ambient GStreamer
+  plugin or installation paths.
   Missing, modified, wrong-architecture, or unavailable native playback fails
   closed. The WebView player is an explicitly selected, receipt-labelled
   unqualified development fallback only.
 - The checked-in runtime pin, deterministic stager, tree verifier, and
   capability report do not constitute the player actor or playback
-  qualification. The contained `unsafe` dynamic-library/libVLC/Win32 adapter
-  remains subject to explicit user approval and audit.
+  qualification. The contained `unsafe` raw-window GstPlay renderer
+  constructor remains subject to explicit user approval and audit.
+- Questionnaire-aware work uses a new contract family: `ResearchSettingsV2`,
+  `ResolvedProtocolPlanV1`, `QuestionnaireResponseV1`, `ResearchEventV2`, and
+  `ResearchRunManifestV3`. Existing V1/V2 settings, assignments, samples,
+  events, manifests, and recovery evidence retain their historical meaning.
 - Update this directory whenever product scope, schema, authority, timing,
   privacy, supported platforms, persistence, media, LSL, or release gates
   change.

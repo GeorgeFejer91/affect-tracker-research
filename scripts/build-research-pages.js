@@ -13,6 +13,7 @@ await Promise.all([
   cp(resolve(sourceRoot, "research.css"), resolve(outputRoot, "research.css")),
   cp(resolve(sourceRoot, "src", "math.js"), resolve(outputRoot, "src", "math.js")),
   cp(resolve(sourceRoot, "src", "research"), resolve(outputRoot, "src", "research"), { recursive: true }),
+  cp(resolve(sourceRoot, "questionnaires"), resolve(outputRoot, "questionnaires"), { recursive: true }),
 ]);
 
 // Browser delivery shares Research contracts and UI modules, but must not ship

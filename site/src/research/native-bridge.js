@@ -12,8 +12,200 @@ const DECODE_PROBE_MS = 80;
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const RUN_PHASES = new Set(["prepared", "betweenStimuli", "playing", "paused", "finalizing", "finished", "failed"]);
-const PLAYBACK_MODES = new Set(["nativeLibvlc", "unqualifiedWebview"]);
+const PLAYBACK_MODES = new Set(["nativeGstPlay", "nativeLibvlc", "unqualifiedWebview"]);
 const PLAYBACK_QUALIFICATIONS = new Set(["qualifiedNative", "unqualified"]);
+const NATIVE_MEDIA_CAPABILITY_KEYS = Object.freeze([
+  "ambientRuntimeAllowed", "api", "backend", "bindingsVersion", "defaultPlaybackMode",
+  "pinnedRuntimeVersion", "playerActorReady", "qualifiedFormatMatrixReady",
+  "qualifiedStartAvailable", "reasonCode", "redistributionReviewReady",
+  "rendererReceivesFilesystemPaths", "requiredForQualifiedRun", "runtimeBundleState",
+  "runtimeByteLength", "runtimeFileCount", "runtimeInstallerSha256",
+  "runtimeIntegrityVerified", "runtimeTreeManifestSha256", "schema", "target",
+  "unqualifiedFallbackMode", "version",
+]);
+const NATIVE_PROTOCOL_CAPABILITY_KEYS = Object.freeze([
+  "atomicSubmissionReady", "durableDraftCheckpointReady", "manifestV3FinalizationReady",
+  "nativeStartResumeReady", "protocolPlanValidationReady", "questionnaireCsvImportReady",
+  "reasonCode", "schema", "settingsV2ValidationReady", "version",
+]);
+const NATIVE_PROTOCOL_PREFLIGHT_KEYS = Object.freeze([
+  "assignmentPlanSha256", "assignmentSettingsSha256", "blockingReasonCode",
+  "definitionHashes", "nativeStartReady", "participantId", "protocolPlanSha256",
+  "protocolStepCount", "questionnaireStepCount", "schema", "settingsSha256",
+  "stimulusStepCount", "version",
+]);
+const GSTREAMER_INSTALLER_SHA256 = "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5";
+const GSTREAMER_RUNTIME_TREE_SHA256 = "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566";
+const INTERFACE_ONLY_PLATFORM_REASON = "native-acquisition-platform-unsupported";
+
+function expectedPlaybackQualification(playbackMode) {
+  return ["nativeGstPlay", "nativeLibvlc"].includes(playbackMode)
+    ? "qualifiedNative"
+    : "unqualified";
+}
+
+export function validateNativeMediaCapabilityV2(value) {
+  const keys = value && typeof value === "object" && !Array.isArray(value)
+    ? Object.keys(value).sort()
+    : [];
+  if (keys.length !== NATIVE_MEDIA_CAPABILITY_KEYS.length
+    || keys.some((key, index) => key !== NATIVE_MEDIA_CAPABILITY_KEYS[index])
+    || value.schema !== "affect-research-native-media-capability"
+    || value.version !== 2
+    || value.backend !== "gstreamer-gstplay"
+    || value.api !== "gstplay"
+    || value.pinnedRuntimeVersion !== "1.28.6"
+    || value.bindingsVersion !== "0.25"
+    || value.target !== "msvc-x86_64"
+    || value.runtimeInstallerSha256 !== GSTREAMER_INSTALLER_SHA256
+    || value.runtimeTreeManifestSha256 !== GSTREAMER_RUNTIME_TREE_SHA256
+    || value.defaultPlaybackMode !== "nativeGstPlay"
+    || value.unqualifiedFallbackMode !== "unqualifiedWebview"
+    || !["notStaged", "invalid", "verified"].includes(value.runtimeBundleState)
+    || typeof value.runtimeIntegrityVerified !== "boolean"
+    || !(value.runtimeFileCount === null || (Number.isSafeInteger(value.runtimeFileCount) && value.runtimeFileCount > 0))
+    || !(value.runtimeByteLength === null || (Number.isSafeInteger(value.runtimeByteLength) && value.runtimeByteLength > 0))
+    || typeof value.playerActorReady !== "boolean"
+    || typeof value.qualifiedStartAvailable !== "boolean"
+    || typeof value.qualifiedFormatMatrixReady !== "boolean"
+    || typeof value.redistributionReviewReady !== "boolean"
+    || value.ambientRuntimeAllowed !== false
+    || value.requiredForQualifiedRun !== true
+    || value.rendererReceivesFilesystemPaths !== false
+    || typeof value.reasonCode !== "string" || value.reasonCode.length === 0) {
+    throw new TypeError("Native media capability v2 is malformed or does not match the pinned GstPlay contract.");
+  }
+  const verifiedTree = value.runtimeBundleState === "verified"
+    && value.runtimeIntegrityVerified
+    && value.runtimeFileCount === 827
+    && value.runtimeByteLength === 340362958;
+  if (value.runtimeIntegrityVerified !== (value.runtimeBundleState === "verified")
+    || (verifiedTree !== value.runtimeIntegrityVerified)
+    || ((value.runtimeFileCount === null) !== (value.runtimeByteLength === null))
+    || (value.runtimeBundleState === "verified" && value.runtimeFileCount === null)
+    || (value.runtimeBundleState !== "verified" && value.runtimeFileCount !== null)
+    || (value.qualifiedStartAvailable && !(verifiedTree
+      && value.playerActorReady
+      && value.qualifiedFormatMatrixReady
+      && value.redistributionReviewReady))) {
+    throw new TypeError("Native media capability v2 readiness fields are inconsistent.");
+  }
+  return Object.freeze({ ...value });
+}
+
+export function validateNativeProtocolCapabilityV1(value) {
+  const keys = value && typeof value === "object" && !Array.isArray(value)
+    ? Object.keys(value).sort()
+    : [];
+  if (keys.length !== NATIVE_PROTOCOL_CAPABILITY_KEYS.length
+    || keys.some((key, index) => key !== NATIVE_PROTOCOL_CAPABILITY_KEYS[index])
+    || value.schema !== "affect-research-native-questionnaire-protocol-capability"
+    || value.version !== 1
+    || typeof value.settingsV2ValidationReady !== "boolean"
+    || typeof value.questionnaireCsvImportReady !== "boolean"
+    || typeof value.protocolPlanValidationReady !== "boolean"
+    || typeof value.nativeStartResumeReady !== "boolean"
+    || typeof value.durableDraftCheckpointReady !== "boolean"
+    || typeof value.atomicSubmissionReady !== "boolean"
+    || typeof value.manifestV3FinalizationReady !== "boolean"
+    || typeof value.reasonCode !== "string" || value.reasonCode.length === 0) {
+    throw new TypeError("Native questionnaire protocol capability v1 is malformed.");
+  }
+  if (value.nativeStartResumeReady
+    && !(value.settingsV2ValidationReady
+      && value.protocolPlanValidationReady
+      && value.durableDraftCheckpointReady
+      && value.atomicSubmissionReady
+      && value.manifestV3FinalizationReady)) {
+    throw new TypeError("Native questionnaire protocol capability v1 readiness fields are inconsistent.");
+  }
+  return Object.freeze({ ...value });
+}
+
+export function validateNativeProtocolPreflightV1(value, {
+  researchSettings,
+  assignmentPlan,
+  resolvedProtocolPlan,
+} = {}) {
+  const keys = value && typeof value === "object" && !Array.isArray(value)
+    ? Object.keys(value).sort()
+    : [];
+  const definitions = researchSettings?.questionnaires?.definitions;
+  const steps = resolvedProtocolPlan?.steps;
+  if (keys.length !== NATIVE_PROTOCOL_PREFLIGHT_KEYS.length
+    || keys.some((key, index) => key !== NATIVE_PROTOCOL_PREFLIGHT_KEYS[index])
+    || value.schema !== "affect-research-native-protocol-preflight"
+    || value.version !== 1
+    || researchSettings?.version !== 2
+    || !Array.isArray(definitions)
+    || !assignmentPlan || typeof assignmentPlan !== "object" || Array.isArray(assignmentPlan)
+    || !resolvedProtocolPlan || typeof resolvedProtocolPlan !== "object" || Array.isArray(resolvedProtocolPlan)
+    || !Array.isArray(steps)
+    || !SHA256_PATTERN.test(value.settingsSha256 ?? "")
+    || !SHA256_PATTERN.test(value.assignmentSettingsSha256 ?? "")
+    || !SHA256_PATTERN.test(value.assignmentPlanSha256 ?? "")
+    || !SHA256_PATTERN.test(value.protocolPlanSha256 ?? "")
+    || typeof value.participantId !== "string" || value.participantId.length === 0
+    || !Array.isArray(value.definitionHashes)
+    || !Number.isSafeInteger(value.protocolStepCount) || value.protocolStepCount < 1
+    || !Number.isSafeInteger(value.questionnaireStepCount) || value.questionnaireStepCount < 0
+    || !Number.isSafeInteger(value.stimulusStepCount) || value.stimulusStepCount < 1
+    || value.protocolStepCount !== value.questionnaireStepCount + value.stimulusStepCount
+    || typeof value.nativeStartReady !== "boolean"
+    || typeof value.blockingReasonCode !== "string" || value.blockingReasonCode.length === 0) {
+    throw new TypeError("Native questionnaire protocol preflight v1 is malformed.");
+  }
+  const expectedDefinitions = definitions.map(({ questionnaireId, definitionSha256 }) => ({
+    questionnaireId,
+    definitionSha256,
+  }));
+  const exactDefinitions = value.definitionHashes.every((definition, index) => {
+    const definitionKeys = definition && typeof definition === "object" && !Array.isArray(definition)
+      ? Object.keys(definition).sort()
+      : [];
+    const expected = expectedDefinitions[index];
+    return definitionKeys.length === 2
+      && definitionKeys[0] === "definitionSha256"
+      && definitionKeys[1] === "questionnaireId"
+      && typeof definition.questionnaireId === "string"
+      && SHA256_PATTERN.test(definition.definitionSha256 ?? "")
+      && definition.questionnaireId === expected?.questionnaireId
+      && definition.definitionSha256 === expected?.definitionSha256;
+  });
+  const questionnaireStepCount = steps.filter(({ kind }) => kind === "questionnaire").length;
+  if (value.definitionHashes.length !== expectedDefinitions.length
+    || !exactDefinitions
+    || value.settingsSha256 !== resolvedProtocolPlan.settingsSha256
+    || value.assignmentSettingsSha256 !== assignmentPlan.settingsSha256
+    || value.assignmentPlanSha256 !== assignmentPlan.planHashSha256
+    || value.assignmentPlanSha256 !== resolvedProtocolPlan.assignmentPlanSha256
+    || value.protocolPlanSha256 !== resolvedProtocolPlan.protocolPlanHashSha256
+    || value.participantId !== resolvedProtocolPlan.participantId
+    || value.protocolStepCount !== steps.length
+    || value.questionnaireStepCount !== questionnaireStepCount
+    || value.stimulusStepCount !== steps.length - questionnaireStepCount) {
+    throw new TypeError("Native questionnaire protocol preflight v1 does not match the frozen protocol inputs.");
+  }
+  return Object.freeze({
+    ...value,
+    definitionHashes: Object.freeze(value.definitionHashes.map((definition) => Object.freeze({ ...definition }))),
+  });
+}
+
+export function nativeProtocolExecutionReady(capability, preflight) {
+  return capability?.settingsV2ValidationReady === true
+    && capability.protocolPlanValidationReady === true
+    && capability.nativeStartResumeReady === true
+    && capability.durableDraftCheckpointReady === true
+    && capability.atomicSubmissionReady === true
+    && capability.manifestV3FinalizationReady === true
+    && preflight?.nativeStartReady === true;
+}
+
+function nativeProtocolUnavailableMessage(capability, preflight = null) {
+  const reasonCode = preflight?.blockingReasonCode || capability?.reasonCode || "native-protocol-unavailable";
+  return `Native protocol runtime unavailable (${reasonCode}); no native run can start, resume, or finalize.`;
+}
 
 export function nativeInputPresetAvailability(capability) {
   const supported = new Set(capability?.supportedPresets ?? []);
@@ -115,6 +307,57 @@ function safeStimulusId(summary) {
   return `workspace-${suffix}`;
 }
 
+export function nativeWorkspaceBindingsForProtocol({
+  researchSettings,
+  resolvedProtocolPlan,
+  catalogEntries,
+} = {}) {
+  const settingsItems = researchSettings?.stimuli?.items;
+  const steps = resolvedProtocolPlan?.steps;
+  if (researchSettings?.version !== 2
+    || !Array.isArray(settingsItems)
+    || !Array.isArray(steps)
+    || !Array.isArray(catalogEntries)) {
+    throw new TypeError("Native workspace binding requires frozen Settings V2, a protocol plan, and the current opaque catalogue.");
+  }
+  const stimulusIds = steps
+    .filter(({ kind }) => kind === "stimulus")
+    .map(({ stimulusId }) => stimulusId);
+  if (stimulusIds.length === 0 || new Set(stimulusIds).size !== stimulusIds.length) {
+    throw new TypeError("The selected participant protocol must contain unique stimulus steps.");
+  }
+  const settingsById = new Map();
+  for (const stimulus of settingsItems) {
+    if (settingsById.has(stimulus?.stimulusId)) {
+      throw new TypeError("Settings V2 contains a repeated stimulus identity.");
+    }
+    settingsById.set(stimulus?.stimulusId, stimulus);
+  }
+  const usedWorkspaceFileIds = new Set();
+  const bindings = stimulusIds.map((stimulusId) => {
+    const stimulus = settingsById.get(stimulusId);
+    if (!stimulus || stimulus.source?.kind !== "workspaceFile") {
+      throw new Error(`Stimulus ${stimulusId} is not qualified by the Windows workspace-file adapter.`);
+    }
+    const entry = catalogEntries.find(({ summary }) => (
+      summary?.source?.relativePath === stimulus.source.relativePath
+      && summary.sha256 === stimulus.source.sha256
+      && summary.byteLength === stimulus.source.byteLength
+    ));
+    if (!entry) {
+      throw new Error(`Native workspace verification is stale for ${stimulus.title}. Rescan before Start.`);
+    }
+    const workspaceFileId = entry.summary.workspaceFileId;
+    if (typeof workspaceFileId !== "string" || workspaceFileId.length === 0
+      || usedWorkspaceFileIds.has(workspaceFileId)) {
+      throw new TypeError("The selected participant protocol does not have unique opaque workspace-file bindings.");
+    }
+    usedWorkspaceFileIds.add(workspaceFileId);
+    return Object.freeze({ stimulusId, workspaceFileId });
+  });
+  return Object.freeze(bindings);
+}
+
 export function participantStateDetail(rows, pendingFinalizations = []) {
   const detail = Object.fromEntries((rows ?? []).map(({ participantId, state }) => [
     participantId,
@@ -138,6 +381,7 @@ export function participantStateDetail(rows, pendingFinalizations = []) {
     Object.freeze({
       settingsSha256: pending.settingsSha256,
       assignmentPlanSha256: pending.assignmentPlanSha256,
+      protocolContract: pending.protocolContract,
       playbackMode: pending.playbackMode,
       completionStatus: pending.pendingCompletionStatus,
       attemptNumber: pending.attemptNumber,
@@ -213,7 +457,7 @@ export function nativeStartReceiptMatches(receipt, {
     || !Number.isSafeInteger(slotCount) || slotCount < 1
     || !PLAYBACK_MODES.has(playbackMode)
     || receipt.playbackMode !== playbackMode
-    || receipt.playbackQualification !== (playbackMode === "nativeLibvlc" ? "qualifiedNative" : "unqualified")) {
+    || receipt.playbackQualification !== expectedPlaybackQualification(playbackMode)) {
     return false;
   }
   if (!resumed) return receipt.resumeAtStimulusPosition === 1;
@@ -233,11 +477,15 @@ export function nativeStartReceiptMatches(receipt, {
 export function nativePendingFinalizationContract(recovery, {
   workspaceId,
   participantId,
+  protocolContract,
   settingsSha256,
+  researchSettingsSha256,
   assignmentPlanSha256,
   playbackMode,
   settings,
+  researchSettings,
   assignmentPlan,
+  resolvedProtocolPlan,
 } = {}) {
   if (!recovery || typeof recovery !== "object" || Array.isArray(recovery)) return null;
   if (typeof recovery.finalizationPending !== "boolean"
@@ -245,31 +493,58 @@ export function nativePendingFinalizationContract(recovery, {
     throw new Error("Native recovery finalization state is inconsistent or unsupported.");
   }
   if (!recovery.finalizationPending) return null;
-  const expectedQualification = playbackMode === "nativeLibvlc" ? "qualifiedNative" : "unqualified";
+  const expectedQualification = expectedPlaybackQualification(playbackMode);
   if (!PLAYBACK_MODES.has(playbackMode)
+    || !["manifestV2", "manifestV3"].includes(protocolContract)
+    || recovery.protocolContract !== protocolContract
     || !RUN_ID_PATTERN.test(recovery.runId ?? "")
-    || typeof recovery.recoveryId !== "string" || recovery.recoveryId.length === 0
+    || !RUN_ID_PATTERN.test(recovery.recoveryId ?? "")
     || recovery.participantId !== participantId
     || !Number.isSafeInteger(recovery.attemptNumber) || recovery.attemptNumber < 1
-    || !SHA256_PATTERN.test(settingsSha256 ?? "")
     || !SHA256_PATTERN.test(assignmentPlanSha256 ?? "")
-    || recovery.settingsSha256 !== settingsSha256
     || recovery.assignmentPlanSha256 !== assignmentPlanSha256
     || recovery.playbackMode !== playbackMode
     || recovery.playbackQualification !== expectedQualification
     || !["completed", "partial"].includes(recovery.pendingCompletionStatus)
-    || typeof workspaceId !== "string" || workspaceId.length === 0
-    || !settings || typeof settings !== "object" || Array.isArray(settings)
-    || !assignmentPlan || typeof assignmentPlan !== "object" || Array.isArray(assignmentPlan)) {
+    || !RUN_ID_PATTERN.test(workspaceId ?? "")
+    || !assignmentPlan || typeof assignmentPlan !== "object" || Array.isArray(assignmentPlan)
+    || assignmentPlan.planHashSha256 !== assignmentPlanSha256) {
     throw new Error("Pending native finalization is not bound to the selected run, participant, attempt, hashes, and playback contract.");
   }
-  return Object.freeze({
-    request: Object.freeze({
+  let command;
+  let request;
+  if (protocolContract === "manifestV2") {
+    if (settings?.version !== 1
+      || !SHA256_PATTERN.test(settingsSha256 ?? "")
+      || recovery.settingsSha256 !== settingsSha256
+      || assignmentPlan.settingsSha256 !== settingsSha256) {
+      throw new Error("Pending native finalization cannot be downgraded across the ManifestV2 settings contract.");
+    }
+    command = "research_finalize_recovery";
+    request = { workspaceId, recoveryId: recovery.recoveryId, settings, assignmentPlan };
+  } else {
+    if (researchSettings?.version !== 2
+      || !SHA256_PATTERN.test(researchSettingsSha256 ?? "")
+      || recovery.settingsSha256 !== researchSettingsSha256
+      || !resolvedProtocolPlan || typeof resolvedProtocolPlan !== "object" || Array.isArray(resolvedProtocolPlan)
+      || resolvedProtocolPlan.participantId !== participantId
+      || resolvedProtocolPlan.settingsSha256 !== researchSettingsSha256
+      || resolvedProtocolPlan.assignmentPlanSha256 !== assignmentPlanSha256
+      || !SHA256_PATTERN.test(resolvedProtocolPlan.protocolPlanHashSha256 ?? "")) {
+      throw new Error("Pending native finalization cannot be downgraded across the ManifestV3 protocol contract.");
+    }
+    command = "research_finalize_protocol_recovery";
+    request = {
       workspaceId,
       recoveryId: recovery.recoveryId,
-      settings,
+      researchSettings,
       assignmentPlan,
-    }),
+      resolvedProtocolPlan,
+    };
+  }
+  return Object.freeze({
+    command,
+    request: Object.freeze(request),
     expectedReceipt: Object.freeze({
       runId: recovery.runId,
       participantId: recovery.participantId,
@@ -281,6 +556,7 @@ export function nativePendingFinalizationContract(recovery, {
 
 export function selectPendingNativeFinalizationRecovery(recoveries, {
   participantId,
+  protocolContract,
   settingsSha256,
   assignmentPlanSha256,
   playbackMode,
@@ -292,10 +568,12 @@ export function selectPendingNativeFinalizationRecovery(recoveries, {
     || !SHA256_PATTERN.test(settingsSha256 ?? "")
     || !SHA256_PATTERN.test(assignmentPlanSha256 ?? "")
     || !PLAYBACK_MODES.has(playbackMode)
+    || !["manifestV2", "manifestV3"].includes(protocolContract)
     || !Number.isSafeInteger(attemptNumber) || attemptNumber < 1
     || !["completed", "partial"].includes(completionStatus)) return null;
   const exact = recoveries.filter((candidate) => (
     candidate?.participantId === participantId
+    && candidate.protocolContract === protocolContract
     && candidate.settingsSha256 === settingsSha256
     && candidate.assignmentPlanSha256 === assignmentPlanSha256
     && candidate.playbackMode === playbackMode
@@ -341,7 +619,7 @@ export function nativeRunStatusHandshake(status) {
     return RUN_ID_PATTERN.test(status.runId ?? "")
       && typeof status.participantId === "string" && status.participantId.length > 0
       && Number.isSafeInteger(status.attemptNumber) && status.attemptNumber > 0
-      && ((status.playbackMode === "nativeLibvlc" && status.playbackQualification === "qualifiedNative")
+      && ((["nativeGstPlay", "nativeLibvlc"].includes(status.playbackMode) && status.playbackQualification === "qualifiedNative")
         || (status.playbackMode === "unqualifiedWebview" && status.playbackQualification === "unqualified"));
   }
   return status.runId === null
@@ -405,11 +683,18 @@ export function nativeRunStatusMatchesFence(status, run, fence) {
 }
 
 export function authorizeDesktopPlaybackMode(requestedMode, capability) {
-  const playbackMode = requestedMode ?? "nativeLibvlc";
+  const playbackMode = requestedMode ?? "nativeGstPlay";
+  if (!PLAYBACK_MODES.has(playbackMode)) throw new TypeError("Unknown native playback mode.");
+  const validated = validateNativeMediaCapabilityV2(capability);
+  if (validated.reasonCode === INTERFACE_ONLY_PLATFORM_REASON) {
+    throw new Error("This Tauri package is for Setup and interface evaluation only; native experiment acquisition requires the Windows build.");
+  }
   if (playbackMode === "unqualifiedWebview") return playbackMode;
-  if (playbackMode !== "nativeLibvlc") throw new TypeError("Unknown Windows playback mode.");
-  if (capability?.qualifiedStartAvailable !== true || capability?.playerActorReady !== true) {
-    throw new Error(`Qualified native playback is unavailable (${capability?.reasonCode ?? "capability not reported"}). Select WebView video explicitly only for unqualified testing.`);
+  if (playbackMode === "nativeLibvlc") {
+    throw new Error("The native libVLC backend is retired and is retained only for historical evidence finalization.");
+  }
+  if (validated.qualifiedStartAvailable !== true || validated.playerActorReady !== true) {
+    throw new Error(`Qualified native playback is unavailable (${validated.reasonCode}). Select WebView video explicitly only for unqualified testing.`);
   }
   return playbackMode;
 }
@@ -547,6 +832,17 @@ function activationReconciliationError(message, reconciliation, cause = undefine
   return error;
 }
 
+const NATIVE_ACTIVATION_COMMANDS = new Set([
+  "research_start_run",
+  "research_resume_run",
+  "research_start_protocol_run",
+  "research_resume_protocol_run",
+]);
+
+function nativeActivationLabel(command) {
+  return command.includes("start") ? "Start" : "Resume";
+}
+
 export async function invokeNativeRunActivation({
   invoke,
   command,
@@ -557,7 +853,7 @@ export async function invokeNativeRunActivation({
   expectedAttemptNumber = null,
 } = {}) {
   if (typeof invoke !== "function"
-    || !["research_start_run", "research_resume_run"].includes(command)
+    || !NATIVE_ACTIVATION_COMMANDS.has(command)
     || !payload || typeof payload !== "object" || Array.isArray(payload)
     || typeof participantId !== "string" || participantId.length === 0
     || !PLAYBACK_MODES.has(playbackMode)
@@ -586,26 +882,27 @@ export async function invokeNativeRunActivation({
   try {
     return await invoke(command, payload);
   } catch (activationError) {
+    const activationLabel = nativeActivationLabel(command);
     let after;
     try {
       after = await invoke("research_run_status");
     } catch (statusError) {
       throw activationReconciliationError(
-        `Native ${command === "research_start_run" ? "Start" : "Resume"} IPC was rejected and authoritative state is unavailable. Native outcome is unknown; restart Affect Research (${messageOf(activationError)}; ${messageOf(statusError)}).`,
+        `Native ${activationLabel} IPC was rejected and authoritative state is unavailable. Native outcome is unknown; restart Affect Research (${messageOf(activationError)}; ${messageOf(statusError)}).`,
         "unreconciled",
         activationError,
       );
     }
     if (!nativeRunStatusHandshake(after)) {
       throw activationReconciliationError(
-        `Native ${command === "research_start_run" ? "Start" : "Resume"} IPC was rejected and returned an invalid reconciliation status. Native outcome is unknown; restart Affect Research (${messageOf(activationError)}).`,
+        `Native ${activationLabel} IPC was rejected and returned an invalid reconciliation status. Native outcome is unknown; restart Affect Research (${messageOf(activationError)}).`,
         "unreconciled",
         activationError,
       );
     }
     if (!after.active) {
       throw activationReconciliationError(
-        `Native ${command === "research_start_run" ? "Start" : "Resume"} was rejected before activation (${messageOf(activationError)}).`,
+        `Native ${activationLabel} was rejected before activation (${messageOf(activationError)}).`,
         "inactiveAfterRejection",
         activationError,
       );
@@ -616,7 +913,7 @@ export async function invokeNativeRunActivation({
       && (expectedAttemptNumber === null || after.attemptNumber === expectedAttemptNumber);
     if (!matchesExpectedActivation) {
       throw activationReconciliationError(
-        `Native ${command === "research_start_run" ? "Start" : "Resume"} IPC was rejected, but the active native identity does not match this request. Native outcome is unknown; restart Affect Research.`,
+        `Native ${activationLabel} IPC was rejected, but the active native identity does not match this request. Native outcome is unknown; restart Affect Research.`,
         "unreconciled",
         activationError,
       );
@@ -630,13 +927,13 @@ export async function invokeNativeRunActivation({
     });
     if (rollback.confirmed) {
       throw activationReconciliationError(
-        `Native ${command === "research_start_run" ? "Start" : "Resume"} IPC was rejected after activation; the matching run was finalized as Partial. Restart Affect Research before another attempt.`,
+        `Native ${activationLabel} IPC was rejected after activation; the matching run was finalized as Partial. Restart Affect Research before another attempt.`,
         "rolledBack",
         activationError,
       );
     }
     throw activationReconciliationError(
-      `Native ${command === "research_start_run" ? "Start" : "Resume"} IPC was rejected after activation, and rollback could not be confirmed (${rollback.reconciliation}). Native outcome is unknown; restart Affect Research.`,
+      `Native ${activationLabel} IPC was rejected after activation, and rollback could not be confirmed (${rollback.reconciliation}). Native outcome is unknown; restart Affect Research.`,
       "unreconciled",
       activationError,
     );
@@ -749,6 +1046,7 @@ export class NativeResearchRuntimeBridge {
     this.workspace = null;
     this.sourceCapabilities = null;
     this.nativeMediaCapability = null;
+    this.nativeProtocolCapability = null;
     this.nativeInputCapability = null;
     this.catalog = new Map();
     this.recoveries = [];
@@ -770,18 +1068,21 @@ export class NativeResearchRuntimeBridge {
   async initialize() {
     this.#bind();
     try {
-      const [workspace, sourceCapabilities, nativeMediaCapability, inputCapability, inputStatus, status] = await Promise.all([
+      const [workspace, sourceCapabilities, nativeMediaCapability, nativeProtocolCapability, inputCapability, inputStatus, status] = await Promise.all([
         this.invoke("research_workspace_status"),
         this.invoke("research_source_capabilities"),
         this.invoke("research_native_media_capability"),
+        this.invoke("research_native_protocol_capability"),
         this.invoke("research_input_capability"),
         this.invoke("research_input_status"),
         this.invoke("research_run_status"),
       ]);
       this.sourceCapabilities = sourceCapabilities;
-      this.nativeMediaCapability = nativeMediaCapability;
+      this.nativeMediaCapability = validateNativeMediaCapabilityV2(nativeMediaCapability);
+      this.nativeProtocolCapability = validateNativeProtocolCapabilityV1(nativeProtocolCapability);
       this.nativeInputCapability = inputCapability;
-      this.nativeTimingReady = nativeRunStatusHandshake(status);
+      this.nativeTimingReady = nativeRunStatusHandshake(status)
+        && this.nativeMediaCapability.reasonCode !== INTERFACE_ONLY_PLATFORM_REASON;
       this.#applySourceCapabilities();
       this.#applyInputCapability();
       this.root.researchUi?.applyNativeInputStatus?.(inputStatus);
@@ -790,11 +1091,12 @@ export class NativeResearchRuntimeBridge {
         timingWorkerReady: this.nativeTimingReady,
         lslReady: false,
         manifestReady: false,
+        manifestReason: nativeProtocolUnavailableMessage(this.nativeProtocolCapability),
         storageReady: false,
         repositoryAssetsReady: sourceCapabilities?.repositoryAsset?.supported === true,
-        nativePlaybackReady: nativeMediaCapability?.qualifiedStartAvailable === true
-          && nativeMediaCapability?.playerActorReady === true,
-        nativeMediaCapability,
+        nativePlaybackReady: this.nativeMediaCapability.qualifiedStartAvailable === true
+          && this.nativeMediaCapability.playerActorReady === true,
+        nativeMediaCapability: this.nativeMediaCapability,
         nativeInputReady: inputCapability?.nativeAuthorityReady === true,
         nativeInputPresetReady: nativeInputBindingSupported(this.root.researchUi?.inputBinding, inputCapability),
       });
@@ -854,8 +1156,17 @@ export class NativeResearchRuntimeBridge {
     this.#listen(this.root, RESEARCH_UI_EVENTS.planReady, (event) => {
       this.#queue(async () => {
         await Promise.all([
-          this.#refreshParticipantStates(event.detail?.settings),
-          this.#refreshReadiness(event.detail?.settings, event.detail?.plan),
+          this.#refreshParticipantStates(
+            event.detail?.settings,
+            event.detail?.protocolSettings,
+            event.detail?.protocolPlan,
+          ),
+          this.#refreshReadiness(
+            event.detail?.settings,
+            event.detail?.plan,
+            event.detail?.protocolSettings,
+            event.detail?.protocolPlan,
+          ),
         ]);
       });
     });
@@ -1006,7 +1317,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   #selectedPlaybackMode() {
-    return this.root.querySelector?.("#native-playback-mode")?.value ?? "nativeLibvlc";
+    return this.root.querySelector?.("#native-playback-mode")?.value ?? "nativeGstPlay";
   }
 
   #listen(target, type, listener, options) {
@@ -1260,26 +1571,60 @@ export class NativeResearchRuntimeBridge {
     this.#announce(`${receipt.fileName} exported with ${receipt.rowCount} rows.`);
   }
 
-  async #refreshReadiness(settings = this.root.researchUi?.settings, plan = this.root.researchUi?.plan) {
+  async #refreshReadiness(
+    settings = this.root.researchUi?.settings,
+    plan = this.root.researchUi?.plan,
+    protocolSettings = null,
+    protocolPlan = null,
+  ) {
     if (!settings || !plan || !this.workspace) return;
+    if (protocolSettings?.version !== 2
+      || !protocolPlan || typeof protocolPlan !== "object" || Array.isArray(protocolPlan)) {
+      throw new Error("Native readiness requires frozen ResearchSettingsV2 and the selected participant protocol plan.");
+    }
     const estimate = estimateResearchStorageUse(settings, plan);
-    const [storage, lsl] = await Promise.all([
+    const [storage, lsl, protocolPreflightValue] = await Promise.all([
       this.invoke("research_storage_readiness", {
         workspaceId: this.workspace.workspaceId,
         requiredBytes: estimate.requiredBytes,
       }),
       this.invoke("research_lsl_readiness", { settings }),
+      this.invoke("research_protocol_preflight", {
+        request: {
+          researchSettings: protocolSettings,
+          assignmentPlan: plan,
+          resolvedProtocolPlan: protocolPlan,
+        },
+      }),
     ]);
+    const protocolPreflight = validateNativeProtocolPreflightV1(protocolPreflightValue, {
+      researchSettings: protocolSettings,
+      assignmentPlan: plan,
+      resolvedProtocolPlan: protocolPlan,
+    });
+    const hasQuestionnaires = protocolSettings.questionnaires.modules.length > 0;
+    const nativeProtocolReady = !hasQuestionnaires || nativeProtocolExecutionReady(
+      this.nativeProtocolCapability,
+      protocolPreflight,
+    );
     this.storageReadiness = Object.freeze({ ...storage, persisted: true });
     this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
       timingWorkerReady: this.nativeTimingReady,
       storageReady: storage.sufficient === true && storage.writeReady === true,
       storageReadiness: this.storageReadiness,
       lslReady: lsl.ready === true,
+      manifestReady: nativeProtocolReady,
+      manifestReason: nativeProtocolReady
+        ? ""
+        : nativeProtocolUnavailableMessage(this.nativeProtocolCapability, protocolPreflight),
     });
   }
 
-  async #refreshParticipantStates(settings = this.root.researchUi?.settings) {
+  async #refreshParticipantStates(
+    settings = this.root.researchUi?.settings,
+    protocolSettings = null,
+    protocolPlan = null,
+  ) {
     if (!settings || !this.workspace) return;
     const [states, recoveryListing] = await Promise.all([
       this.invoke("research_participant_states", {
@@ -1296,21 +1641,36 @@ export class NativeResearchRuntimeBridge {
     const corrupt = recoveryListing?.corruptRecoveryIds ?? [];
     const plan = this.root.researchUi?.plan;
     const playbackMode = this.#selectedPlaybackMode();
-    const compatibleRecoveries = this.recoveries.filter((candidate) => (
-      candidate.settingsSha256 === plan?.settingsSha256
+    const hasQuestionnaires = (protocolSettings?.questionnaires?.modules?.length ?? 0) > 0;
+    const protocolContract = hasQuestionnaires ? "manifestV3" : "manifestV2";
+    const expectedSettingsSha256 = hasQuestionnaires
+      ? protocolPlan?.settingsSha256
+      : plan?.settingsSha256;
+    const protocolContextReady = protocolSettings?.version === 2
+      && protocolPlan?.participantId
+      && SHA256_PATTERN.test(protocolPlan.settingsSha256 ?? "")
+      && SHA256_PATTERN.test(protocolPlan.protocolPlanHashSha256 ?? "")
+      && SHA256_PATTERN.test(expectedSettingsSha256 ?? "");
+    const compatibleRecoveries = protocolContextReady ? this.recoveries.filter((candidate) => (
+      candidate.participantId === protocolPlan.participantId
+      && candidate.settingsSha256 === expectedSettingsSha256
       && candidate.assignmentPlanSha256 === plan?.planHashSha256
       && candidate.playbackMode === playbackMode
-    ));
+    )).map((candidate) => Object.freeze({ ...candidate, protocolContract })) : [];
     const pendingFinalizations = [];
     for (const candidate of compatibleRecoveries) {
       const pending = nativePendingFinalizationContract(candidate, {
         workspaceId: this.workspace.workspaceId,
         participantId: candidate.participantId,
+        protocolContract,
         settingsSha256: plan.settingsSha256,
+        researchSettingsSha256: protocolPlan.settingsSha256,
         assignmentPlanSha256: plan.planHashSha256,
         playbackMode,
         settings,
+        researchSettings: protocolSettings,
         assignmentPlan: plan,
+        resolvedProtocolPlan: protocolPlan,
       });
       if (pending) pendingFinalizations.push(candidate);
     }
@@ -1319,10 +1679,13 @@ export class NativeResearchRuntimeBridge {
       recoverable: state.recoverable === true
         && compatibleRecoveries.some((candidate) => candidate.participantId === state.participantId),
     }));
-    this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
-      manifestReady: true,
-      manifestError: "",
-    });
+    if (!hasQuestionnaires && protocolContextReady) {
+      this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
+        manifestReady: true,
+        manifestReason: "",
+        manifestError: "",
+      });
+    }
     this.#dispatch(RESEARCH_UI_EVENTS.participantStates, participantStateDetail(projectedStates, pendingFinalizations));
     if (corrupt.length > 0) {
       this.#announce(`${corrupt.length} corrupt recovery record${corrupt.length === 1 ? " was" : "s were"} quarantined from usable attempts.`);
@@ -1330,7 +1693,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   #workspaceBindings(plan) {
-    return plan.stimuli
+    return Object.freeze(plan.stimuli
       .filter(({ source }) => source.kind === "workspaceFile")
       .map((stimulus) => {
         const entry = [...this.catalog.values()].find(({ summary }) => (
@@ -1340,7 +1703,15 @@ export class NativeResearchRuntimeBridge {
         ));
         if (!entry) throw new Error(`Native workspace verification is stale for ${stimulus.title}. Rescan before Start.`);
         return Object.freeze({ stimulusId: stimulus.stimulusId, workspaceFileId: entry.summary.workspaceFileId });
-      });
+      }));
+  }
+
+  #protocolWorkspaceBindings(researchSettings, resolvedProtocolPlan) {
+    return nativeWorkspaceBindingsForProtocol({
+      researchSettings,
+      resolvedProtocolPlan,
+      catalogEntries: [...this.catalog.values()],
+    });
   }
 
   async #activateNativeRun(request) {
@@ -1362,19 +1733,46 @@ export class NativeResearchRuntimeBridge {
     if (this.run) throw new Error("A native Research attempt is already active.");
     const settings = detail?.settings;
     const plan = detail?.resolvedPlan;
-    const requestedPlaybackMode = detail?.playbackMode ?? "nativeLibvlc";
-    if (!PLAYBACK_MODES.has(requestedPlaybackMode)) throw new TypeError("Unknown Windows playback mode.");
-    await this.#refreshParticipantStates(settings);
+    const researchSettings = detail?.researchSettings;
+    const resolvedProtocolPlan = detail?.resolvedProtocolPlan;
+    const hasQuestionnaires = (researchSettings?.questionnaires?.modules?.length ?? 0) > 0;
+    const protocolContract = hasQuestionnaires ? "manifestV3" : "manifestV2";
+    if (settings?.version !== 1
+      || !SHA256_PATTERN.test(detail?.settingsSha256 ?? "")
+      || !plan || typeof plan !== "object" || Array.isArray(plan)
+      || plan.settingsSha256 !== detail.settingsSha256
+      || researchSettings?.version !== 2
+      || !resolvedProtocolPlan || typeof resolvedProtocolPlan !== "object" || Array.isArray(resolvedProtocolPlan)
+      || resolvedProtocolPlan.participantId !== detail.participantId
+      || !SHA256_PATTERN.test(detail?.researchSettingsSha256 ?? "")
+      || resolvedProtocolPlan.settingsSha256 !== detail.researchSettingsSha256
+      || resolvedProtocolPlan.assignmentPlanSha256 !== plan.planHashSha256) {
+      throw new Error("Native routing requires matching frozen V1 settings, V2 protocol settings, assignment, and participant protocol plan inputs.");
+    }
+    const requestedPlaybackMode = detail?.playbackMode ?? "nativeGstPlay";
+    if (!PLAYBACK_MODES.has(requestedPlaybackMode)) throw new TypeError("Unknown native playback mode.");
+    if (this.nativeMediaCapability?.reasonCode === INTERFACE_ONLY_PLATFORM_REASON) {
+      throw new Error("This Tauri package is for Setup and interface evaluation only; native experiment acquisition requires the Windows build.");
+    }
+    await this.#refreshParticipantStates(settings, researchSettings, resolvedProtocolPlan);
     let recovery = null;
+    const expectedSettingsSha256 = hasQuestionnaires
+      ? detail.researchSettingsSha256
+      : detail.settingsSha256;
     const compatibleRecoveries = this.recoveries
       .filter((candidate) => candidate.participantId === detail.participantId
-        && candidate.settingsSha256 === detail.settingsSha256
+        && candidate.settingsSha256 === expectedSettingsSha256
         && candidate.assignmentPlanSha256 === plan?.planHashSha256
-        && candidate.playbackMode === requestedPlaybackMode);
+        && candidate.playbackMode === requestedPlaybackMode)
+      .map((candidate) => Object.freeze({ ...candidate, protocolContract }));
     if (detail.recoveryFinalizationOnly === true) {
+      if (detail.pendingFinalizationProtocolContract !== protocolContract) {
+        throw new Error("Pending native finalization cannot cross the ManifestV2/ManifestV3 protocol boundary.");
+      }
       recovery = selectPendingNativeFinalizationRecovery(compatibleRecoveries, {
         participantId: detail.participantId,
-        settingsSha256: detail.settingsSha256,
+        protocolContract,
+        settingsSha256: expectedSettingsSha256,
         assignmentPlanSha256: plan?.planHashSha256,
         playbackMode: requestedPlaybackMode,
         attemptNumber: detail.pendingFinalizationAttemptNumber,
@@ -1384,17 +1782,21 @@ export class NativeResearchRuntimeBridge {
         const pendingFinalization = nativePendingFinalizationContract(recovery, {
           workspaceId: this.workspace.workspaceId,
           participantId: detail.participantId,
+          protocolContract,
           settingsSha256: detail.settingsSha256,
+          researchSettingsSha256: detail.researchSettingsSha256,
           assignmentPlanSha256: plan?.planHashSha256,
           playbackMode: requestedPlaybackMode,
           settings,
+          researchSettings,
           assignmentPlan: plan,
+          resolvedProtocolPlan,
         });
         if (pendingFinalization) {
           let finalizationReceipt;
           this.#stopInputPolling();
           try {
-            finalizationReceipt = await this.invoke("research_finalize_recovery", {
+            finalizationReceipt = await this.invoke(pendingFinalization.command, {
               request: pendingFinalization.request,
             });
             if (!nativeFinalizeReceiptMatches(finalizationReceipt, pendingFinalization.expectedReceipt)) {
@@ -1410,7 +1812,7 @@ export class NativeResearchRuntimeBridge {
             receipt: finalizationReceipt.outputReceiptId,
             files: finalizationReceipt.files.map(({ fileName }) => fileName).join(", "),
           });
-          await this.#refreshParticipantStates(settings);
+          await this.#refreshParticipantStates(settings, researchSettings, resolvedProtocolPlan);
           return;
         }
       }
@@ -1431,21 +1833,19 @@ export class NativeResearchRuntimeBridge {
       throw new Error("The selected input binding has no safe native Tauri authority.");
     }
     const playbackMode = authorizeDesktopPlaybackMode(requestedPlaybackMode, this.nativeMediaCapability);
-    await this.#refreshReadiness(settings, plan);
+    await this.#refreshReadiness(settings, plan, researchSettings, resolvedProtocolPlan);
     const estimate = estimateResearchStorageUse(settings, plan);
     if (!this.storageReadiness?.sufficient || !this.storageReadiness.writeReady
       || this.storageReadiness.requiredBytes !== estimate.requiredBytes) {
       throw new Error("Native output/recovery storage does not pass the current write and capacity probe.");
     }
-    const unsupported = plan.stimuli.find(({ source }) => source.kind !== "workspaceFile");
-    if (unsupported) {
-      throw new Error(`${unsupported.source.kind} is not qualified by the Windows native source adapter in this internal alpha.`);
-    }
     const assignment = plan.assignments.find(({ participantId }) => participantId === detail.participantId);
     if (!assignment || !Array.isArray(assignment.slots) || assignment.slots.length === 0) {
       throw new Error("The selected participant is absent from the frozen assignment plan.");
     }
-    const workspaceFiles = this.#workspaceBindings(plan);
+    const workspaceFiles = hasQuestionnaires
+      ? this.#protocolWorkspaceBindings(researchSettings, resolvedProtocolPlan)
+      : this.#workspaceBindings(plan);
     let receipt;
     if (detail.attemptDisposition === "resume-compatible") {
       if (recovery) {
@@ -1454,17 +1854,26 @@ export class NativeResearchRuntimeBridge {
           || !Number.isSafeInteger(recovery.attemptNumber) || recovery.attemptNumber < 1
           || !nonNegativeInteger(recovery.lastSafeStimulusPosition)
           || recovery.lastSafeStimulusPosition >= assignment.slots.length
-          || recovery.playbackQualification !== (playbackMode === "nativeLibvlc" ? "qualifiedNative" : "unqualified")) {
+          || recovery.playbackQualification !== expectedPlaybackQualification(playbackMode)) {
           throw new Error("The compatible native recovery summary has no valid safe stimulus boundary to resume.");
         }
         receipt = await this.#activateNativeRun({
-          command: "research_resume_run",
+          command: hasQuestionnaires ? "research_resume_protocol_run" : "research_resume_run",
           participantId: detail.participantId,
           playbackMode,
           expectedRunId: recovery.runId,
           expectedAttemptNumber: recovery.attemptNumber,
           payload: {
-            request: {
+            request: hasQuestionnaires ? {
+              workspaceId: this.workspace.workspaceId,
+              recoveryId: recovery.recoveryId,
+              researchSettings,
+              assignmentPlan: plan,
+              resolvedProtocolPlan,
+              workspaceFiles,
+              inputTestReceiptId,
+              playbackMode,
+            } : {
               workspaceId: this.workspace.workspaceId,
               recoveryId: recovery.recoveryId,
               settings,
@@ -1482,11 +1891,21 @@ export class NativeResearchRuntimeBridge {
     }
     if (!receipt) {
       receipt = await this.#activateNativeRun({
-        command: "research_start_run",
+        command: hasQuestionnaires ? "research_start_protocol_run" : "research_start_run",
         participantId: detail.participantId,
         playbackMode,
         payload: {
-          request: {
+          request: hasQuestionnaires ? {
+            workspaceId: this.workspace.workspaceId,
+            researchSettings,
+            assignmentPlan: plan,
+            resolvedProtocolPlan,
+            participant: { participantId: detail.participantId, ...detail.participant },
+            workspaceFiles,
+            rerunConfirmed: detail.rerunConfirmed === true,
+            inputTestReceiptId,
+            playbackMode,
+          } : {
             workspaceId: this.workspace.workspaceId,
             settings,
             assignmentPlan: plan,
@@ -1502,7 +1921,7 @@ export class NativeResearchRuntimeBridge {
     const expectedResumed = Boolean(recovery && detail.attemptDisposition === "resume-compatible");
     if (!nativeStartReceiptMatches(receipt, {
       participantId: detail.participantId,
-      settingsSha256: detail.settingsSha256,
+      settingsSha256: expectedSettingsSha256,
       assignmentPlanSha256: plan.planHashSha256,
       playbackMode,
       resumed: expectedResumed,
@@ -1517,7 +1936,7 @@ export class NativeResearchRuntimeBridge {
         playbackMode,
       });
       if (rollback.confirmed) {
-        await this.#refreshParticipantStates(settings);
+        await this.#refreshParticipantStates(settings, researchSettings, resolvedProtocolPlan);
         throw new Error("The native Start/Resume receipt failed its frozen contract and the authoritative run was finalized as Partial. Restart Affect Research before another attempt.");
       }
       throw new Error(`The native Start/Resume receipt failed its frozen contract and native rollback is ${rollback.reconciliation ?? "unreconciled"}. Restart Affect Research to reconcile durable state.`);
@@ -1526,7 +1945,9 @@ export class NativeResearchRuntimeBridge {
       receipt,
       rendererEpoch: ++this.rendererEpoch,
       settings,
+      researchSettings,
       plan,
+      resolvedProtocolPlan,
       assignment,
       index: Math.max(0, (receipt.resumeAtStimulusPosition ?? 1) - 1),
       awaitingStart: true,

@@ -5,6 +5,7 @@ node_modules/
 .pnpm-store/
 dist-pages/
 desktop/dist/
+src-tauri/native-media/runtime/
 src-tauri/target/
 src-tauri/gen/schemas/
 coverage/

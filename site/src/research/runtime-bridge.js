@@ -422,6 +422,14 @@ export class BrowserResearchRuntimeBridge {
     this.#listen(this.root, RESEARCH_UI_EVENTS.pauseRequest, () => this.#queue(() => this.#togglePause()));
     this.#listen(this.root, RESEARCH_UI_EVENTS.stopEarlyRequest, () => this.#queue(() => this.#stopEarly()));
     this.#listen(this.root, RESEARCH_UI_EVENTS.continueRequest, () => this.#queue(() => this.#continueTransition({ directGesture: true })));
+    this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireDraftRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#checkpointQuestionnaire(event.detail));
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireSubmitRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#submitQuestionnaire(event.detail));
+    });
     this.#listen(this.root, RESEARCH_UI_EVENTS.inputTestState, (event) => this.#acceptAffect(event.detail));
     if (RESEARCH_UI_EVENTS.inputEdge) {
       this.#listen(this.root, RESEARCH_UI_EVENTS.inputEdge, (event) => this.#acceptInputEdge(event.detail));
@@ -470,14 +478,20 @@ export class BrowserResearchRuntimeBridge {
     if (this.run) throw new Error("A Research attempt is already active.");
     const workspace = this.root.researchUi?.workspace;
     if (!workspace) throw new Error("Select and authorize a workspace before Start.");
-    const settings = detail?.settings;
+    const assignmentSettings = detail?.settings;
+    const settings = detail?.researchSettings ?? assignmentSettings;
     const plan = detail?.resolvedPlan;
+    const protocolPlan = detail?.resolvedProtocolPlan ?? null;
+    const protocolAware = settings?.version === 2;
+    if (protocolAware !== Boolean(protocolPlan)) {
+      throw new TypeError("Start requires matching ResearchSettingsV2 and ResolvedProtocolPlanV1 inputs.");
+    }
     const participantId = detail?.participantId;
-    const manifestReady = await this.refreshParticipantStates(settings);
+    const manifestReady = await this.refreshParticipantStates(assignmentSettings ?? settings);
     if (!manifestReady || !this.manifestReady) {
       throw new Error("Output manifests must pass a fresh audit immediately before Start.");
     }
-    const storageReadiness = await this.refreshStorageReadiness(settings, plan, { verifyWorkspaceWrite: true });
+    const storageReadiness = await this.refreshStorageReadiness(assignmentSettings ?? settings, plan, { verifyWorkspaceWrite: true });
     if (!storageReadiness?.sufficient || storageReadiness.writeReady !== true) {
       throw new Error("The browser storage write/quota probe does not cover this resolved plan.");
     }
@@ -495,7 +509,7 @@ export class BrowserResearchRuntimeBridge {
     }
     const recovery = disposition === "resume-compatible" ? selectCompatibleRecovery(attempts, {
       participantId,
-      settingsSha256: detail.settingsSha256,
+      settingsSha256: protocolAware ? detail.researchSettingsSha256 : detail.settingsSha256,
       assignmentPlanSha256: plan.planHashSha256,
       workspaceId: workspace.workspaceId,
     }) : null;
@@ -516,14 +530,17 @@ export class BrowserResearchRuntimeBridge {
     let snapshot;
     let frozenSettings = settings;
     let frozenPlan = plan;
+    let frozenProtocolPlan = protocolPlan;
     if (recovery) {
       snapshot = await controller.resume({ runId: recovery.runId });
       frozenSettings = recovery.context.settings;
       frozenPlan = recovery.context.plan;
+      frozenProtocolPlan = recovery.context.protocolPlan ?? null;
     } else {
       snapshot = await controller.start({
         settings,
         plan,
+        protocolPlan,
         participantId,
         participant: detail.participant,
         attemptNumber: nextAttemptNumber(attempts, participantId, this.workspaceManifests),
@@ -534,6 +551,7 @@ export class BrowserResearchRuntimeBridge {
     this.run = {
       settings: frozenSettings,
       plan: frozenPlan,
+      protocolPlan: frozenProtocolPlan,
       assignment,
       participantId,
       x: 0,
@@ -547,6 +565,10 @@ export class BrowserResearchRuntimeBridge {
       mediaKind: null,
       bufferPaused: false,
       operatorPaused: false,
+      completedStimulusNeedsTransition: snapshot.protocolAware
+        && snapshot.safeStimulusIndex > 0
+        && snapshot.safeStimulusIndex < snapshot.totalStimuli
+        && snapshot.interruptedProtocolStepKind !== "stimulus",
     };
     if (snapshot.finalizationPending) {
       try {
@@ -558,6 +580,20 @@ export class BrowserResearchRuntimeBridge {
       return;
     }
     this.root.researchUi?.resetAffect?.("attempt-start");
+    if (snapshot.protocolAware) {
+      this.#dispatch(RESEARCH_UI_EVENTS.runStarted, snapshot);
+      try {
+        await this.#advanceProtocol({ recovery: Boolean(recovery) });
+      } catch (error) {
+        this.#clearMedia();
+        await this.controller.interrupt("protocol-step-preparation-failed");
+        this.run = null;
+        this.controller = null;
+        await this.refreshParticipantStates(assignmentSettings ?? settings);
+        throw new Error("The next protocol step could not be prepared; the attempt remains recoverable.", { cause: error });
+      }
+      return;
+    }
     try {
       await this.#prepareStimulus(snapshot.safeStimulusIndex);
     } catch (error) {
@@ -590,6 +626,132 @@ export class BrowserResearchRuntimeBridge {
     if (!this.run) return;
     await this.#prepareStimulus(index);
     await this.#beginPreparedStimulus();
+  }
+
+  async #advanceProtocol({ recovery = false } = {}) {
+    if (!this.run?.protocolPlan) return;
+    const step = this.controller.nextProtocolStep();
+    if (step === null) {
+      this.#dispatch(RESEARCH_UI_EVENTS.questionnaireStatus, { active: false });
+      try {
+        const receipt = await this.controller.complete();
+        await this.#finishUi(receipt);
+      } catch (error) {
+        await this.#recoverFromFinalizationFailure(error);
+      }
+      return;
+    }
+    if (step.kind === "questionnaire") {
+      this.#clearMedia();
+      const questionnaire = await this.controller.beginQuestionnaireStep();
+      this.run.questionnaireActive = true;
+      this.run.initialReady = false;
+      this.run.transitionPending = false;
+      this.#dispatch(RESEARCH_UI_EVENTS.questionnaireStatus, {
+        active: true,
+        moduleId: questionnaire.module.moduleId,
+        questionnaireId: questionnaire.definition.questionnaireId,
+        definitionSha256: questionnaire.definition.definitionSha256,
+        protocolStepPosition: questionnaire.step.protocolPosition,
+        answers: questionnaire.answers,
+      });
+      this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
+        stimulus: `Questionnaire · ${questionnaire.definition.title}`,
+        timing: "Stopped · questionnaire",
+        write: recovery && Object.keys(questionnaire.answers).length > 0
+          ? "Durable questionnaire draft restored"
+          : "Questionnaire journal active",
+        lsl: "Off · browser",
+        transitionActive: false,
+      });
+      return;
+    }
+
+    this.run.questionnaireActive = false;
+    this.#dispatch(RESEARCH_UI_EVENTS.questionnaireStatus, { active: false });
+    const index = step.stimulusPosition - 1;
+    if (this.run.completedStimulusNeedsTransition) {
+      const transitionStartedAt = this.epochNow();
+      const transition = await this.controller.beginTransition();
+      this.run.transitionPending = true;
+      this.run.transitionCompleted = false;
+      this.root.researchUi?.resetAffect?.("safe-boundary");
+      await this.#prepareStimulus(index);
+      const message = transition.mode === "continueWhenReady"
+        ? "Sampling is stopped and the rating is neutral. Continue when ready."
+        : `Sampling is stopped and the rating is neutral. Next video in ${(transition.durationMs / 1_000).toFixed(1)} seconds.`;
+      this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
+        stimulus: "Between videos",
+        timing: "Stopped",
+        transitionActive: true,
+        transitionMode: transition.mode,
+        transitionMessage: message,
+        x: 0,
+        y: 0,
+      });
+      if (transition.durationMs !== null) {
+        const elapsedMs = Math.max(0, this.epochNow() - transitionStartedAt);
+        const remainingMs = Math.max(0, transition.durationMs - elapsedMs);
+        this.transitionTimer = setTimeout(
+          () => this.#queue(() => this.#continueTransition()),
+          remainingMs,
+        );
+      }
+      return;
+    }
+
+    await this.#prepareStimulus(index);
+    this.run.initialReady = true;
+    this.run.transitionPending = true;
+    this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
+      stimulus: "Ready to begin",
+      timing: "Stopped",
+      write: "Attempt frozen · journal active",
+      lsl: "Off · browser",
+      transitionActive: true,
+      transitionMode: "continueWhenReady",
+      transitionMessage: recovery
+        ? "Recovery is ready at the last safe boundary. Begin the restarted protocol video from its beginning."
+        : "The next complete video is ready. Begin when ready.",
+      x: 0,
+      y: 0,
+    });
+  }
+
+  #assertQuestionnaireRequest(detail) {
+    if (!this.run?.questionnaireActive || !this.run.protocolPlan) {
+      throw new Error("No questionnaire step is active.");
+    }
+    const current = this.controller.activeQuestionnaire();
+    if (!current
+      || detail?.moduleId !== current.module.moduleId
+      || detail?.questionnaireId !== current.definition.questionnaireId
+      || detail?.definitionSha256 !== current.definition.definitionSha256
+      || detail?.protocolStepPosition !== current.step.protocolPosition
+      || !detail.answers || typeof detail.answers !== "object" || Array.isArray(detail.answers)) {
+      throw new TypeError("Questionnaire request does not bind the frozen active protocol step.");
+    }
+    return current;
+  }
+
+  async #checkpointQuestionnaire(detail) {
+    this.#assertQuestionnaireRequest(detail);
+    await this.controller.checkpointQuestionnaireDraft(detail.answers);
+    this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
+      timing: "Stopped · questionnaire",
+      write: "Questionnaire draft saved locally",
+    });
+  }
+
+  async #submitQuestionnaire(detail) {
+    this.#assertQuestionnaireRequest(detail);
+    if (detail.complete !== true) {
+      throw new Error("Every questionnaire item must be answered before submission.");
+    }
+    await this.controller.submitQuestionnaire(detail.answers);
+    this.run.questionnaireActive = false;
+    this.#dispatch(RESEARCH_UI_EVENTS.questionnaireStatus, { active: false });
+    await this.#advanceProtocol();
   }
 
   async #prepareStimulus(index) {
@@ -700,6 +862,7 @@ export class BrowserResearchRuntimeBridge {
     this.run.transitionPending = false;
     this.run.transitionCompleted = false;
     this.run.initialReady = false;
+    this.run.completedStimulusNeedsTransition = false;
     this.run.activeStimulus = prepared;
     this.#updateAuthoritativeState();
     this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
@@ -738,7 +901,7 @@ export class BrowserResearchRuntimeBridge {
   }
 
   #acceptAffect(detail = {}) {
-    if (!this.run || !this.controller) return;
+    if (!this.run || !this.controller || this.run.questionnaireActive) return;
     this.run.x = Number(detail.x) || 0;
     this.run.y = Number(detail.y) || 0;
     this.run.inputActive = detail.inputActive === true;
@@ -751,7 +914,7 @@ export class BrowserResearchRuntimeBridge {
   }
 
   #acceptInputEdge(detail = {}) {
-    if (!this.run || !this.controller || detail.mode !== "run") return;
+    if (!this.run || !this.controller || this.run.questionnaireActive || detail.mode !== "run") return;
     try {
       this.controller.queueInputEdge(detail);
     } catch {
@@ -898,6 +1061,11 @@ export class BrowserResearchRuntimeBridge {
       video.hidden = true;
     }
     this.run.mediaKind = null;
+    if (this.run.protocolPlan) {
+      this.run.completedStimulusNeedsTransition = true;
+      await this.#advanceProtocol();
+      return;
+    }
     if (completed.index + 1 >= this.run.assignment.slots.length) {
       try {
         const receipt = await this.controller.complete();
@@ -1018,8 +1186,10 @@ export class BrowserResearchRuntimeBridge {
       files: receipt.files.join(", "),
       samples: receipt.sampleCount,
       events: receipt.eventCount,
+      questionnaireResponses: receipt.questionnaireResponseCount,
       settingsHash: receipt.settingsSha256,
       planHash: receipt.assignmentPlanSha256,
+      protocolPlanHash: receipt.protocolPlanSha256,
     });
     await this.refreshParticipantStates(settings);
   }

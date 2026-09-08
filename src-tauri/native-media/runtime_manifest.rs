@@ -4,18 +4,30 @@ use std::fs::{self, File};
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-pub const PINNED_LIBVLC_VERSION: &str = "3.0.23";
-pub const PINNED_TARGET: &str = "win-x64";
-pub const RUNTIME_RELATIVE_ROOT: &str = "native-media/runtime/libvlc-3.0.23/win-x64";
+pub const PINNED_GSTREAMER_VERSION: &str = "1.28.6";
+pub const PINNED_BINDINGS_SERIES: &str = "0.25";
+pub const PINNED_TARGET: &str = "msvc-x86_64";
+pub const RUNTIME_RELATIVE_ROOT: &str = "native-media/runtime/gstreamer-1.28.6/msvc-x86_64";
 pub const RUNTIME_HASH_MANIFEST: &str = "runtime-files.sha256";
-pub const PINNED_ARCHIVE_SHA256: &str =
-    "992d19dbd0b8a7cde9167d2f7780b1ef6f92acc8a71acfa736101a21f35181e1";
-pub const PINNED_SOURCE_SHA256: &str =
-    "e891cae6aa3ccda69bf94173d5105cbc55c7a7d9b1d21b9b21666e69eff3e7e0";
+pub const PINNED_INSTALLER_SHA256: &str =
+    "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5";
 pub const PINNED_RUNTIME_MANIFEST_SHA256: &str =
-    "cab51c65c02bf656d0d77e86b3ec421b130e67b4f7ac52efac20f99cd4be3f26";
-pub const PINNED_RUNTIME_FILE_COUNT: usize = 368;
-pub const PINNED_RUNTIME_BYTE_LENGTH: u64 = 142_167_916;
+    "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566";
+pub const PINNED_RUNTIME_FILE_COUNT: usize = 827;
+pub const PINNED_RUNTIME_BYTE_LENGTH: u64 = 340_362_958;
+
+const REQUIRED_PE_FILES: &[&str] = &[
+    "bin/gstreamer-1.0-0.dll",
+    "bin/gstplay-1.0-0.dll",
+    "bin/gstvideo-1.0-0.dll",
+    "bin/gstpbutils-1.0-0.dll",
+    "libexec/gstreamer-1.0/gst-plugin-scanner.exe",
+    "lib/gstreamer-1.0/gstcoreelements.dll",
+    "lib/gstreamer-1.0/gstplayback.dll",
+    "lib/gstreamer-1.0/gstd3d11.dll",
+    "lib/gstreamer-1.0/gstwasapi2.dll",
+    "lib/gstreamer-1.0/gstlibav.dll",
+];
 
 const MAX_MANIFEST_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_RUNTIME_FILES: usize = 10_000;
@@ -200,7 +212,7 @@ fn verify_runtime_tree_against(
             RuntimeManifestErrorCode::RuntimeTreeIdentityMismatch,
         ));
     }
-    for required in ["libvlc.dll", "libvlccore.dll"] {
+    for required in REQUIRED_PE_FILES {
         validate_pe_x64(&root.join(required))?;
     }
     Ok(VerifiedRuntimeBundle {
@@ -285,16 +297,13 @@ fn validate_required_entries(
 ) -> Result<(), RuntimeManifestError> {
     let has_plugin = entries
         .keys()
-        .any(|path| path.starts_with("plugins/") && path.ends_with(".dll"));
-    let has_license = entries.keys().any(|path| {
-        path.rsplit('/')
-            .next()
-            .is_some_and(|name| name.to_ascii_lowercase().starts_with("copying"))
-    });
-    if !entries.contains_key("libvlc.dll")
-        || !entries.contains_key("libvlccore.dll")
+        .any(|path| path.starts_with("lib/gstreamer-1.0/") && path.ends_with(".dll"));
+    let has_notice = entries.contains_key("GSTREAMER-RUNTIME-NOTICE.txt");
+    if REQUIRED_PE_FILES
+        .iter()
+        .any(|required| !entries.contains_key(*required))
         || !has_plugin
-        || !has_license
+        || !has_notice
     {
         return Err(RuntimeManifestError::new(
             RuntimeManifestErrorCode::RequiredFileMissing,
@@ -520,21 +529,18 @@ mod tests {
     }
 
     fn write_fixture(root: &Path, machine: u16) -> FixtureIdentity {
-        fs::create_dir_all(root.join("plugins/video_output")).unwrap();
+        for (index, required) in REQUIRED_PE_FILES.iter().enumerate() {
+            let path = root.join(relative_path(required));
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(
+                path,
+                pe_fixture(machine, PE32_PLUS_MAGIC, (index + 1) as u8),
+            )
+            .unwrap();
+        }
         fs::write(
-            root.join("libvlc.dll"),
-            pe_fixture(machine, PE32_PLUS_MAGIC, 0x11),
-        )
-        .unwrap();
-        fs::write(
-            root.join("libvlccore.dll"),
-            pe_fixture(machine, PE32_PLUS_MAGIC, 0x22),
-        )
-        .unwrap();
-        fs::write(root.join("COPYING.LIB"), b"LGPL notice").unwrap();
-        fs::write(
-            root.join("plugins/video_output/libdirect3d11_plugin.dll"),
-            b"plugin",
+            root.join("GSTREAMER-RUNTIME-NOTICE.txt"),
+            b"GStreamer provenance and redistribution notice",
         )
         .unwrap();
         write_manifest_for_tree(root)
@@ -591,7 +597,7 @@ mod tests {
         let root = temporary_directory("verified");
         let identity = write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
         let verified = verify_fixture(&root, &identity).unwrap();
-        assert_eq!(verified.file_count, 4);
+        assert_eq!(verified.file_count, REQUIRED_PE_FILES.len() + 1);
         assert!(verified.byte_length > 0);
         fs::remove_dir_all(root).unwrap();
     }
@@ -614,7 +620,7 @@ mod tests {
 
         let root = temporary_directory("incomplete");
         let identity = write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
-        fs::remove_file(root.join("libvlccore.dll")).unwrap();
+        fs::remove_file(root.join(relative_path(REQUIRED_PE_FILES[1]))).unwrap();
         assert_eq!(
             verify_fixture(&root, &identity).unwrap_err().code,
             RuntimeManifestErrorCode::RuntimeFileMissing
@@ -641,7 +647,7 @@ mod tests {
         fs::remove_file(root.join("unexpected.dll")).unwrap();
         let mut changed = pe_fixture(IMAGE_FILE_MACHINE_AMD64, PE32_PLUS_MAGIC, 0x11);
         changed.push(0xff);
-        fs::write(root.join("libvlc.dll"), changed).unwrap();
+        fs::write(root.join(relative_path(REQUIRED_PE_FILES[0])), changed).unwrap();
         assert_eq!(
             verify_fixture(&root, &identity).unwrap_err().code,
             RuntimeManifestErrorCode::RuntimeFileHashMismatch
@@ -654,7 +660,7 @@ mod tests {
         let root = temporary_directory("coordinated-tamper");
         let pinned_identity = write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
         fs::write(
-            root.join("libvlc.dll"),
+            root.join(relative_path(REQUIRED_PE_FILES[0])),
             pe_fixture(IMAGE_FILE_MACHINE_AMD64, PE32_PLUS_MAGIC, 0x33),
         )
         .unwrap();
@@ -672,11 +678,11 @@ mod tests {
 
     #[test]
     fn rejects_wrong_architecture_required_engine_files() {
-        for (index, required) in ["libvlc.dll", "libvlccore.dll"].into_iter().enumerate() {
+        for (index, required) in REQUIRED_PE_FILES.iter().enumerate() {
             let root = temporary_directory(&format!("wrong-architecture-{index}"));
             write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
             fs::write(
-                root.join(required),
+                root.join(relative_path(required)),
                 pe_fixture(IMAGE_FILE_MACHINE_I386, 0x010b, 0x44),
             )
             .unwrap();
@@ -695,16 +701,15 @@ mod tests {
         let root = temporary_directory("directory-junction");
         let identity = write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
         let external = temporary_directory("directory-junction-target");
-        let external_plugins = external.join("plugins");
-        fs::rename(root.join("plugins"), &external_plugins).unwrap();
-        create_directory_junction(&external_plugins, &root.join("plugins"));
+        let plugin_tree = relative_path("lib/gstreamer-1.0");
+        let external_plugins = external.join("gstreamer-1.0");
+        fs::rename(root.join(&plugin_tree), &external_plugins).unwrap();
+        create_directory_junction(&external_plugins, &root.join(&plugin_tree));
 
         let result = verify_fixture(&root, &identity);
 
-        fs::remove_dir(root.join("plugins")).unwrap();
-        assert!(external_plugins
-            .join("video_output/libdirect3d11_plugin.dll")
-            .is_file());
+        fs::remove_dir(root.join(&plugin_tree)).unwrap();
+        assert!(external_plugins.join("gstd3d11.dll").is_file());
         fs::remove_dir_all(root).unwrap();
         fs::remove_dir_all(external).unwrap();
         assert_eq!(
@@ -735,19 +740,16 @@ mod tests {
 
     #[test]
     fn pin_constants_are_exact_and_lowercase() {
-        for digest in [PINNED_ARCHIVE_SHA256, PINNED_SOURCE_SHA256] {
+        for digest in [PINNED_INSTALLER_SHA256, PINNED_RUNTIME_MANIFEST_SHA256] {
             assert_eq!(digest.len(), 64);
             assert!(digest
                 .bytes()
                 .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)));
         }
-        assert_eq!(PINNED_LIBVLC_VERSION, "3.0.23");
-        assert_eq!(PINNED_TARGET, "win-x64");
-        assert_eq!(PINNED_RUNTIME_FILE_COUNT, 368);
-        assert_eq!(PINNED_RUNTIME_BYTE_LENGTH, 142_167_916);
-        assert_eq!(PINNED_RUNTIME_MANIFEST_SHA256.len(), 64);
-        assert!(PINNED_RUNTIME_MANIFEST_SHA256
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)));
+        assert_eq!(PINNED_GSTREAMER_VERSION, "1.28.6");
+        assert_eq!(PINNED_BINDINGS_SERIES, "0.25");
+        assert_eq!(PINNED_TARGET, "msvc-x86_64");
+        assert_eq!(PINNED_RUNTIME_FILE_COUNT, 827);
+        assert_eq!(PINNED_RUNTIME_BYTE_LENGTH, 340_362_958);
     }
 }

@@ -37,11 +37,15 @@ const rules = {
     allowed: (path) => path === "index.html"
       || path === "research.css"
       || path === "src/math.js"
+      || path === "questionnaires/questionnaire-template.csv"
+      || path === "questionnaires/maia-2-de.csv"
       || (path.startsWith("src/research/") && path !== "src/research/native-bridge.js"),
   },
   desktop: {
     root: resolve(repositoryRoot, "desktop", "dist"),
-    allowed: (path) => path === "index.html" || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path),
+    allowed: (path) => path === "index.html"
+      || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
+      || /^assets\/(?:maia-2-de|questionnaire-template)-[A-Za-z0-9_-]+\.csv$/u.test(path),
   },
 };
 

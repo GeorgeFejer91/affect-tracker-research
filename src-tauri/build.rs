@@ -6,11 +6,15 @@ use std::process::Command;
 mod runtime_manifest;
 
 const BUILD_COMMIT_OVERRIDE: &str = "AFFECT_TRACKER_BUILD_COMMIT";
-const REQUIRE_NATIVE_MEDIA_RUNTIME: &str = "AFFECT_RESEARCH_REQUIRE_LIBVLC_RUNTIME";
+const REQUIRE_NATIVE_MEDIA_RUNTIME: &str = "AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME";
+const NATIVE_GSTREAMER_FEATURE: &str = "CARGO_FEATURE_NATIVE_GSTREAMER";
+const NATIVE_ACQUISITION_WINDOWS_FEATURE: &str = "CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS";
 
 fn main() {
     println!("cargo:rerun-if-env-changed={BUILD_COMMIT_OVERRIDE}");
     println!("cargo:rerun-if-env-changed={REQUIRE_NATIVE_MEDIA_RUNTIME}");
+    println!("cargo:rerun-if-env-changed={NATIVE_GSTREAMER_FEATURE}");
+    println!("cargo:rerun-if-env-changed={NATIVE_ACQUISITION_WINDOWS_FEATURE}");
     println!("cargo:rerun-if-changed=native-media");
     println!("cargo:rerun-if-changed=../.git/HEAD");
     println!("cargo:rerun-if-changed=../.git/index");
@@ -25,8 +29,13 @@ fn main() {
 }
 
 fn verify_required_native_media_runtime(manifest_dir: &Path) {
-    if env::var(REQUIRE_NATIVE_MEDIA_RUNTIME).ok().as_deref() != Some("1") {
-        return;
+    match env::var(REQUIRE_NATIVE_MEDIA_RUNTIME) {
+        Err(env::VarError::NotPresent) => return,
+        Ok(value) if value == "0" => return,
+        Ok(value) if value == "1" => {}
+        Ok(_) | Err(env::VarError::NotUnicode(_)) => {
+            panic!("{REQUIRE_NATIVE_MEDIA_RUNTIME} must be unset, 0, or 1")
+        }
     }
     assert_eq!(
         env::var("CARGO_CFG_TARGET_OS").ok().as_deref(),
@@ -38,6 +47,16 @@ fn verify_required_native_media_runtime(manifest_dir: &Path) {
         Some("x86_64"),
         "required native media runtime supports only the pinned x64 target"
     );
+    assert_eq!(
+        env::var(NATIVE_GSTREAMER_FEATURE).ok().as_deref(),
+        Some("1"),
+        "required native media runtime requires the native-gstreamer Cargo feature"
+    );
+    assert_eq!(
+        env::var(NATIVE_ACQUISITION_WINDOWS_FEATURE).ok().as_deref(),
+        Some("1"),
+        "required native media runtime requires the native-acquisition-windows Cargo feature"
+    );
     let root = manifest_dir.join(runtime_manifest::RUNTIME_RELATIVE_ROOT);
     runtime_manifest::verify_runtime_tree(&root).unwrap_or_else(|error| {
         panic!(
@@ -46,10 +65,10 @@ fn verify_required_native_media_runtime(manifest_dir: &Path) {
         )
     });
     let _pins = (
-        runtime_manifest::PINNED_LIBVLC_VERSION,
+        runtime_manifest::PINNED_GSTREAMER_VERSION,
+        runtime_manifest::PINNED_BINDINGS_SERIES,
         runtime_manifest::PINNED_TARGET,
-        runtime_manifest::PINNED_ARCHIVE_SHA256,
-        runtime_manifest::PINNED_SOURCE_SHA256,
+        runtime_manifest::PINNED_INSTALLER_SHA256,
     );
 }
 

@@ -53,9 +53,12 @@ The active-v1 qualification matrix is:
   workspace authorization, worker sampling, and IndexedDB recovery, but no
   native/global input or LSL claim.
 
-Capability differences are explicit. macOS, Linux, Firefox, Safari, mobile,
-WebXR, Quest, remote/collaborative surfaces, direct sensor acquisition, and
-face/touch experiments are outside active v1.
+Capability differences are explicit. Unsigned host-native Windows x64, macOS
+ARM64/x64, and Linux x64 no-optional-feature packages are permitted only as
+internal Setup/interface-evaluation artifacts; native acquisition is blocked
+and their provenance marks every qualification claim false. macOS and Linux experiment runs,
+Firefox, Safari, mobile, WebXR, Quest, remote/collaborative surfaces, direct
+sensor acquisition, and face/touch experiments remain outside active v1.
 
 ## Product invariants
 
@@ -70,9 +73,10 @@ face/touch experiments are outside active v1.
   Research workspace and `affect-research/v1` browser namespace.
 - New Research data is never populated by automatic import from legacy
   application data.
-- Windows qualified local/repository media targets a pinned bundled libVLC
-  3.0.23 x64 runtime. Runtime verification is present; the actor remains
-  unavailable until explicit `unsafe` approval, implementation, and audit land.
+- Windows qualified local/repository media targets a pinned bundled GStreamer
+  1.28.6 MSVC x86_64 runtime through GstPlay. Runtime verification is present;
+  the renderer remains unavailable until explicit `unsafe` raw-window approval,
+  implementation, and audit land.
 - Tauri keyboard, mouse-button/wheel, absolute pointer/trackpad, and XInput
   gamepad input is owned by one safe Rust service with focus/region fencing,
   one-use binding/device receipts, and a bounded fail-closed Run mailbox.
@@ -91,7 +95,7 @@ face/touch experiments are outside active v1.
 - `desktop/index.html` and `desktop/vite.config.js`: isolated Tauri WebView
   entrypoint and production frontend build.
 - `src-tauri/src/research_*.rs`: Rust-owned Research contracts and services.
-- `src-tauri/native-media/`: libVLC pin, deterministic staging/tree
+- `src-tauri/native-media/`: GStreamer pin, deterministic staging/tree
   verification, and current safe integration boundary.
 - `src-tauri/capabilities/research.json` and `src-tauri/tauri.conf.json`:
   narrow desktop exposure and package identity.

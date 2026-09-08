@@ -33,7 +33,7 @@ The current `research/video-protocol-v1` working candidate contains:
 - strict JavaScript and Rust Research contracts, canonical JSON/SHA-256,
   explicit legacy-import reporting, and deterministic Williams/cyclic
   `balanced-v1` assignment;
-- exactly two UI modes, seven ordered Setup accordions, persistent preview,
+- exactly two UI modes, eight ordered Setup accordions, persistent preview,
   participant planning, input configuration, visual/color/mapping controls,
   aggregate preflight, and restricted Run presentation;
 - browser File System Access workspace handling, bounded recursive catalogue,
@@ -67,6 +67,15 @@ The current `research/video-protocol-v1` working candidate contains:
 - unqualified WebView generation/run fences, ordered native status projection,
   strict Start/Resume/terminal receipt binding, explicit unknown-outcome
   reconciliation, and a reachable acquisition-free finalization action.
+- a manual, read-only-permission, host-native packaging workflow for unsigned
+  Windows x64 NSIS, macOS ARM64/x64 DMG, and Linux x64 DEB/AppImage artifacts,
+  each labelled
+  `unqualified-internal-alpha` with exact artifact provenance and every run,
+  media, input, LSL, installed-workflow, timing, and research-readiness claim
+  false. These packages are interface-evaluation shells, not experiment-use
+  builds; Start remains fail-closed through a positive native-acquisition
+  feature gate until a qualified platform/runtime package is deliberately
+  produced.
 
 The safe-hardening sequence is published through commits
 `eefa257d1696c8c22b9d6c9c619a2531457ee2c9` (persistence, IndexedDB, and LSL
@@ -113,26 +122,46 @@ adapter portion of the former native-input roadmap item. Hardware, DPI,
 multi-monitor, focus, disconnect, latency, and Pause/Stop-region qualification
 remains pending and no physical-device claim is made from automated tests.
 
-## Native libVLC status — safe groundwork only
+## Questionnaire protocol status — browser implemented; native fail-closed
+
+The questionnaire-aware contract is a deliberate new version boundary. The
+browser implementation adds strict `questionnaire-csv-v1`, a bundled verified German MAIA-2,
+license-gated researcher import for TAS-20, `ResearchSettingsV2`, unchanged
+assignment V1 projection, participant-specific `ResolvedProtocolPlanV1`,
+response/event/recovery/manifest V2/V3 records, an eighth Setup accordion, and
+mutually exclusive Run questionnaire/video stages, atomic IndexedDB drafts and
+submissions, safe-boundary recovery, and closed Manifest V3 artifact
+attestation. Historical V1/V2 readers are not reinterpreted. Tauri validates
+and saves/loads V2 settings and protocol plans but rejects questionnaire-aware
+Start before mutation until its atomic native V3 execution/writer is complete.
+Do not treat deterministic browser tests or native validation as run-ready
+evidence until Rust execution parity, physical recovery/output, accessibility,
+timing, media, and packaged-workflow gates pass.
+
+## Native GStreamer/GstPlay status — safe groundwork only
 
 Implemented safe groundwork:
 
-- exact libVLC 3.0.23 Windows x64 archive/source pins, official hashes, and a
-  canonical 368-file / 142,167,916-byte staged-tree manifest identity;
+- exact GStreamer 1.28.6 Windows MSVC x86_64 combined-installer identity and a
+  canonical 827-file / 340,362,958-byte integration-tree manifest. Component
+  checksum notes exist, but source archive names, URLs, byte lengths, retained
+  artifacts, and automated source verification are explicitly incomplete;
 - a deterministic staging/verifying script that rejects traversal, links,
   missing/extra/modified files, coordinated DLL-plus-manifest tampering, and
   wrong-architecture engine DLLs while preserving upstream notices;
 - a build-time package gate controlled by
-  `AFFECT_RESEARCH_REQUIRE_LIBVLC_RUNTIME=1`;
-- a Windows x64 local bundle wrapper that always activates that gate, plus
-  commit-pinned desktop workflow actions and repository/workflow/run/runtime-
-  pin/installer/source provenance;
+  `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1`;
+- ephemeral Windows CI compilation/testing of the optional bindings and runtime
+  verifier. The current manual Windows/macOS/Linux package wrappers use no
+  optional features, exclude the GStreamer tree, positively disable native
+  acquisition, and write all-false, exact-commit artifact provenance;
 - a path-free native-media capability contract;
-- run/receipt/recovery labelling for `nativeLibvlc` versus explicit
+- run/receipt/recovery labelling for `nativeGstPlay`, retired parse-only
+  `nativeLibvlc`, versus explicit
   `unqualifiedWebview`, including fail-closed media-error handling;
 - an IPC authority fence that accepts renderer playback lifecycle/failure
   events only for the exact active run in the explicit unqualified WebView
-  fallback. A future qualified libVLC run cannot treat WebView media events as
+  fallback. A future qualified GstPlay run cannot treat WebView media events as
   native playback authority;
 - per-source detached video generations, ordered status/lifecycle fencing,
   strict receipt binding, duration-end validation, and explicit restart-required
@@ -140,60 +169,78 @@ Implemented safe groundwork:
 - explicit lower-trust WebView decode evidence requiring representative frame
   callbacks near the start, midpoint, and end. One-use media grants are
   consumed and this evidence remains labelled `attestedUnqualified`; it cannot
-  satisfy the future native libVLC qualification gate.
+  satisfy the future native GstPlay qualification gate.
 
 Not implemented or qualified:
 
-- dynamic DLL loading and libVLC symbol binding;
-- the serialized libVLC player actor and callback fencing;
+- the serialized GLib/GstPlay player actor and callback fencing;
+- isolated runtime/plugin registry initialization and native decode discovery;
+- a reviewed minimal distributable plugin/codec closure, complete
+  corresponding-source artifacts/provenance, and redistribution approval;
+- a safe installed Windows pre-`main` DLL-resolution/bootstrap design that
+  cannot be masked by CI `PATH` or load an ambient GStreamer runtime;
 - the application-owned child HWND/render-rectangle adapter;
 - native playback commands/events connected to exact media grants; or
 - packaged playback, codec, DPI/resize, audio, recovery, shutdown, and soak
   receipts.
 
 The capability therefore reports `playerActorReady: false` and
-`qualifiedStartAvailable: false`; `nativeLibvlc` is the default but qualified
-Start fails closed. Implementing the remaining direct FFI/Win32 adapter requires
-explicit approval for the contained `unsafe` boundary, followed by focused
-audit. Staging the DLLs does not remove that gate and is not playback
+`qualifiedStartAvailable: false`; `nativeGstPlay` is the default but qualified
+Start fails closed. Implementing the raw-window GstPlay renderer requires
+explicit approval for the contained `unsafe` constructor, followed by focused
+audit. Staging the runtime does not remove that gate and is not playback
 qualification.
 
 ## Open software work before candidate acceptance
 
-1. After explicit approval, implement the contained native libVLC actor and its
+1. Finish the native atomic questionnaire V3 writer and physical end-to-end
+   protocol trial evidence without weakening historical readers.
+2. Approve a minimal GStreamer redistribution/source closure and safe Windows
+   DLL-loader bootstrap; keep every downloadable package runtime-free until it
+   passes review.
+3. After explicit approval, implement the contained native GstPlay renderer and
    child-window adapter, connect player lifecycle atomically to the scheduler,
    and pass the security/lifecycle gates in
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
-2. Implement native libVLC-owned duration/decode preflight and exact lifecycle
+4. Implement native GstPlay-owned duration/decode preflight and exact lifecycle
    authority for workspace/repository sources after the actor exists.
-3. Exercise real full-disk/power-loss and directory-entry durability, real
+5. Exercise real full-disk/power-loss and directory-entry durability, real
    browser quota/permission loss, and packaged Setup-to-Run/recovery workflows;
    deterministic initial/streaming/journal and IndexedDB transaction fault
    coverage is now implemented.
-4. Publish the validated implementation branch through normal repository
+6. Publish the validated implementation branch through normal repository
    safeguards, verify CI, merge deliberately, deploy Research Pages, and bind
    all later qualification receipts to the exact resulting candidate.
 
 ## Qualification receipts — limited engineering evidence only
 
-Exact committed implementation candidate
-`03c505984e1a3eaeb3849793ba1ad1862bbb6beb` passed
-[Pages CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33926910211)
-and [Desktop CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33926910208).
-Desktop artifact `9957326856` binds that SHA, workflow run/attempt, installer,
-runtime pin, and libVLC source archive. Its 66,128,101-byte archive SHA-256 is
-`f0bda32b67fa9cf836db12a23c637f121d7cdf7088ca49556842cc9c6ee22052`,
-matching GitHub's artifact digest. Its 39,639,492-byte unsigned NSIS installer
-SHA-256 is
-`b7cfd9b66bbf23ef8ccc16f8bc2ae46b979cc7221d6a47639b77263451fb92b2`.
-The isolated install verified the exact 368-file / 142,167,916-byte runtime
-tree, launched responsively as **Affect Research**, accepted a normal visible-
-state close while positioned off-screen, exited with code zero, and uninstalled
-without a lingering target process. The Pages artifact is `9957120830`, with
-digest
-`d29add748e8df77c6f227155e9e43efd63dc3b6f08290dcf7281fcceddd17c8d`;
-deployment was correctly skipped by the implementation-branch gate. This is
-installer-integrity/startup/close evidence, not Setup-to-Run, native playback,
+The latest committed pre-GStreamer baseline
+`85e64f53bf61204a4a6b6c68ecb57f196df3b684` passed
+[Pages CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412486)
+and [Desktop CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412484).
+Desktop artifact `9958170005` is 66,127,690 bytes with GitHub-matching SHA-256
+`e9eea21e14073e317c4227280e5cfc82c863ffa04ed24d6d64ef92a753df04a1`.
+Its provenance binds that exact SHA and run attempt to the 39,639,096-byte
+unsigned NSIS installer
+`71500c0a0e5c2f4d00ec7ccfd044288a1600bd78b63983028764428855315dff`,
+1,326-byte historical runtime pin
+`cd4d2c6b717c1038e675285558d8891ae41f5d6ef2c7dce5457f85251deb72ee`,
+staged manifest
+`cab51c65c02bf656d0d77e86b3ec421b130e67b4f7ac52efac20f99cd4be3f26`,
+and 26,486,988-byte historical libVLC source archive
+`e891cae6aa3ccda69bf94173d5105cbc55c7a7d9b1d21b9b21666e69eff3e7e0`.
+Pages artifact `9957992806` is 130,861 bytes with GitHub-matching SHA-256
+`41b9d48a09feab4aa0bbd511cef34a650bd31862e132f63ccfec175a376eb831`;
+deployment was correctly skipped by the implementation-branch gate. That exact
+85e64f5 installer was not launched.
+
+Earlier committed candidate `03c505984e1a3eaeb3849793ba1ad1862bbb6beb`
+provided the isolated install/start/close/uninstall receipt: it verified its
+historical exact 368-file / 142,167,916-byte runtime tree, launched responsively
+as **Affect Research**, accepted a normal close, exited with code zero, and
+uninstalled without a lingering process. These records are CI and installer-
+integrity evidence for their historical libVLC-based commits, not evidence for
+the subsequent GStreamer/questionnaire work, Setup-to-Run, native playback,
 hardware, or installed-workflow qualification.
 
 A ten-second current-Chrome Worker diagnostic at 130 Hz recorded 1300/1300
@@ -227,7 +274,8 @@ Before a stable or research-ready claim, record:
 4. Real keyboard, mouse, wheel, pointer/trackpad, and supported gamepad checks;
    keyboard-only Setup/Run; visible focus; labels/status; non-color meaning;
    reflow/contrast; announcements; and reduced motion.
-5. Installed native libVLC evidence for exact runtime integrity, supported media,
+5. Installed native GstPlay evidence for exact runtime integrity and a declared
+   supported container/codec matrix,
    player/scheduler lifecycle, errors, DPI/resize, audio, recovery, shutdown,
    forced termination, and a 30-minute run.
 6. Cache-bypassed verification of the exact deployed Pages commit and real

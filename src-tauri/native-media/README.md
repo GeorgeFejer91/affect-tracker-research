@@ -1,87 +1,114 @@
 # Affect Research native media runtime
 
-The Windows research application is designed to use a bundled **libVLC 3.0.23**
-engine for qualified local-stimulus playback. `libVLC` is the descriptive name
-of an upstream dependency; the application and installer remain branded
-**Affect Research** and do not use the VLC cone, application name, or other
-VideoLAN product marks.
+The future Windows research-media target is a private **GStreamer 1.28.6**
+runtime with the Rust `gstreamer`/`gstreamer-play` 0.25 bindings and GstPlay API.
+The current package candidates do not bundle it. The intended qualified design
+must not discover GStreamer from `%PATH%`, the registry, or a system
+installation, and the application must never download native media code at
+runtime.
 
-No native runtime is downloaded by the application. A missing, modified, or
-wrong-architecture runtime must leave the native-media capability unavailable,
-and a qualified native run must fail closed. The HTML/WebView player may remain
-available only when the operator explicitly chooses the
-`unqualifiedWebview` playback mode.
+The former libVLC pin and stager remain available at their historical commits
+and in the frozen Playground repository. They are absent from the active
+Research build, and `nativeLibvlc` is not a valid choice for a new attempt.
 
-## Pinned upstream inputs
+## Pinned upstream input
 
-The machine-readable pin is
-[`libvlc-runtime-v1.json`](./libvlc-runtime-v1.json). It records the official
-VideoLAN 3.0.23 Windows x64 archive and source archive with their official
-SHA-256 digests. It also pins the SHA-256, file count, and byte length of the
-canonical staged-tree manifest derived from that exact archive. The manifest
-uses UTF-8 without a BOM, LF endings, lowercase file digests, forward-slash
-paths, and ordinal relative-path ordering. This checked-in identity prevents a
-modified DLL from being accepted merely because its adjacent manifest was also
-rewritten. Keep the source archive available beside any redistribution workflow,
-and retain every upstream `COPYING*` notice copied by the staging script. A
-release owner must review the exact upstream license obligations; this file is
-an engineering control, not legal advice.
+[`gstreamer-runtime-v1.json`](./gstreamer-runtime-v1.json) is the
+machine-readable authority for the official GStreamer 1.28.6 MSVC x86-64
+installer, its SHA-256 and byte length, the 0.25 Rust binding series, and the
+canonical staged runtime tree. GStreamer 1.28 uses one combined Inno Setup
+installer: `/TYPE=runtime` stages the redistributable application tree and
+`/TYPE=devel` installs the headers, pkg-config metadata, and import libraries
+needed to compile the Rust bindings. There is no second Windows development
+installer to invent or trust independently.
 
-## Deterministic staging
+The component checksums in `sources` are preliminary notes, not complete
+corresponding-source evidence. `sourceEvidence` deliberately records the
+missing archive names, canonical URLs, byte lengths, retained source artifacts,
+and automated verification. No distribution can use this pin until those gaps
+and the redistribution review are closed.
 
-Download the pinned ZIP yourself from the URL in the pin, then run:
+The canonical runtime tree contains 827 files and 340,362,958 bytes. Its
+ordered `runtime-files.sha256` identity is
+`51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566`.
+The tree includes the checked-in
+[`GSTREAMER-RUNTIME-NOTICE.txt`](./GSTREAMER-RUNTIME-NOTICE.txt). Runtime
+integrity is an engineering supply-chain control; it is not player behavior,
+format coverage, redistribution approval, or research qualification.
+
+## Deterministic runtime staging
+
+Download the exact combined installer named in the pin, then run:
 
 ```powershell
-pwsh -File src-tauri/native-media/stage-libvlc-runtime.ps1 `
-  -ArchivePath C:\path\to\vlc-3.0.23-win64.zip
+pwsh -File src-tauri/native-media/stage-gstreamer-runtime.ps1 `
+  -InstallerPath C:\path\to\gstreamer-1.0-msvc-x86_64-1.28.6.exe
 ```
 
-The script never uses an installed VLC application, `%PATH%`, the registry, or
-a runtime network request. It rejects archive traversal, verifies the archive
-digest, copies only `libvlc.dll`, `libvlccore.dll`, the plugin tree, and
-upstream `COPYING*` notices, and writes `runtime-files.sha256` over every staged
-file in canonical ordinal order. Staging succeeds only when that manifest
-matches the checked-in tree identity. Verification also parses the DOS, PE/COFF,
-and optional-header fields of both required engine DLLs and requires AMD64
-PE32+ (`0x8664` / `0x020b`). It rejects every Windows reparse point, including
-directory junctions, before traversal and refuses to replace an existing staged
-tree. These safe metadata checks do not claim hostile TOCTOU-race elimination.
+The stager checks the pinned filename, byte identity, and SHA-256, installs the
+upstream `runtime` type into an isolated temporary directory, copies the bounded
+integration-test directories plus the project notice, and verifies every
+staged file. This 827-file tree is deliberately not asserted to be the minimal
+or approved distributable plugin/codec closure.
+It rejects traversal, links/reparse points, missing or extra files, modified
+content, case-colliding paths, excessive depth/count/bytes, and wrong-
+architecture required PE files. It refuses to replace an existing destination.
 
 Verify an existing stage without changing it:
 
 ```powershell
-pwsh -File src-tauri/native-media/stage-libvlc-runtime.ps1 `
+pwsh -File src-tauri/native-media/stage-gstreamer-runtime.ps1 `
   -VerifyOnly `
-  -DestinationPath src-tauri/native-media/runtime/libvlc-3.0.23/win-x64
+  -DestinationPath src-tauri/native-media/runtime/gstreamer-1.28.6/msvc-x86_64
 ```
 
-Release/package builds must set `AFFECT_RESEARCH_REQUIRE_LIBVLC_RUNTIME=1`.
-The Rust build hook then rejects an absent, incomplete, extra-file, symlinked,
-hash-mismatched, coordinated DLL-plus-manifest modified, or wrong-architecture
-runtime before Tauri packaging. Directory junctions and other reparse points
-also fail closed. Ordinary contract/unit builds leave this
-variable unset so the unavailable/fail-closed path remains testable.
-The repository-level `pnpm desktop:bundle` command is the supported local
-Windows x64 installer entrypoint and always sets this gate before invoking
-Tauri; it cannot produce the internal alpha through the optional-runtime path.
+These safe metadata checks do not claim hostile TOCTOU-race elimination.
 
-Staging and compilation are not playback qualification. A candidate still
-requires installed Windows tests for visible output, supported formats,
-pause/resume/end/error transitions, shutdown/recovery, audio routing, display
-scaling, accessibility, and the full 30-minute timing gate.
+## Windows CI and local interface packaging
+
+[`prepare-gstreamer-windows-ci.ps1`](./prepare-gstreamer-windows-ci.ps1)
+downloads the URL from the checked-in pin, verifies its pinned byte length and
+SHA-256, stages or re-verifies the private runtime, and installs the same
+combined installer with `/TYPE=devel` into an isolated build directory. It
+exports only that explicit development root and pkg-config path to later CI
+steps. The ephemeral runtime is used to compile/test the optional bindings and
+tree verifier; no workflow uploads it.
+
+The build hook can test a future native package with
+`AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1`; it rejects an absent, incomplete,
+extra, linked/reparse, hash-mismatched, or wrong-architecture tree. That gate is
+not authority to distribute the current tree. The supported local Windows x64
+interface-package entrypoint is:
+
+```powershell
+$env:AFFECT_RESEARCH_PACKAGE_COMMIT = (git rev-parse --verify HEAD).Trim()
+pnpm desktop:bundle
+Remove-Item Env:AFFECT_RESEARCH_PACKAGE_COMMIT
+```
+
+That wrapper requires a clean exact commit, uses `--no-default-features`,
+applies `src-tauri/tauri.bundle-windows-unqualified.conf.json`, includes no
+GStreamer resource, and disables the positive `native-acquisition-windows`
+feature. Start, Resume, and Finalize therefore fail before mutation. Its
+local output is an unprovenanced, non-distributable test artifact. The manual
+CI packaging workflow separately writes all-false provenance that binds the
+exact commit, workflow, and installer without claiming native media, input,
+LSL, timing, installed workflow, or research qualification.
 
 ## Current safe integration boundary
 
-The checked-in `0.4.0-alpha.1` contract can verify and package the pinned
-runtime, report its status without exposing paths, and reject qualified Start
-when the native player actor is unavailable. It deliberately does not yet load
-the DLLs or create a Windows render target: that narrow dynamic-library,
-libVLC, and child-window boundary requires an explicitly approved, audited
-`unsafe` implementation. Until it lands, `nativeLibvlc` remains the default
-and fails closed. The operator can deliberately select `unqualifiedWebview`
-for development-only playback; those attempts are labeled unqualified in the
-native receipt, status, recovery journal, and first semantic event.
+The checked-in code can stage and verify the integration tree and report its
+status without exposing paths. It cannot package that tree for distribution.
+It does not yet contain the GstPlay player actor or the renderer-to-application-
+window handle adapter. The latter contains a small unavoidable native-handle
+`unsafe` boundary and requires explicit user approval and audit before
+implementation. A future native build must also solve and test safe pre-`main`
+Windows DLL resolution; a nested Tauri resource directory or CI development
+`PATH` is not a production loader design.
 
-WebView media errors in that fallback are reported through a bounded command
-that stops the native sampler and durably checkpoints the recovery journal.
-They cannot be handled only as a visual error message.
+Until that actor, redistribution review, installed media matrix, lifecycle
+fencing, audio, resize/DPI, shutdown/recovery, and timing qualification all
+land, `nativeGstPlay` fails closed for qualified Start. The separately selected
+`unqualifiedWebview` mode remains development-only and permanently labels its
+attempt evidence unqualified. No build or UI may claim support for “all video
+formats.”

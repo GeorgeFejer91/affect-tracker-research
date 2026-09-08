@@ -21,10 +21,14 @@ target; the roadmap and exact test/qualification receipts describe reality.
 ## Active change discipline
 
 - Preserve exactly two modes: **Setting Up the Experiment** and **Running the
-  Experiment**. Setup follows the seven ordered charter sections; Run stays
+  Experiment**. Setup follows the eight ordered charter sections; Run stays
   deliberately narrow.
 - Qualify only Windows Tauri and desktop Chrome/Edge unless the user explicitly
   amends the charter.
+- Treat Windows/macOS/Linux no-optional-feature packages as unsigned internal
+  Setup/interface-evaluation shells. Preserve their positive native-acquisition
+  feature gate and all-false qualification provenance; never describe them as
+  supported experiment downloads.
 - Treat strict schemas, settings/plan hashes, transient-name erasure,
   no-overwrite output, timing gaps, and safe-boundary recovery as cross-layer
   contracts rather than UI details.
@@ -46,7 +50,7 @@ Use the smallest applicable set and read each selected skill completely before
 acting.
 
 - Use **`tauri-rust-developer`** for Tauri/Rust, Cargo, IPC, capabilities, CSP,
-  native windows, input, filesystem/persistence, libVLC/native libraries,
+  native windows, input, filesystem/persistence, GStreamer/native libraries,
   packaging, or release work. Read its security, networking/FFI, persistence,
   latency, and verification references as the task requires.
 - Use **`system-engineering`** for authority, contracts, lifecycle, media/data/
@@ -75,12 +79,13 @@ Stop and request explicit user direction before:
 - signing, publishing installers/releases, store submission, or using
   production credentials.
 
-The current libVLC design needs one small dynamic-library/libVLC/Win32 `unsafe`
-adapter. Runtime pins, staging, validation, types, tests, and documentation may
-progress safely; loading DLLs, binding symbols, registering callbacks, or
-creating the child HWND must wait for explicit approval. After approval,
-confine the adapter, document every invariant, test malformed/missing native
-state, and never unwind a panic across FFI.
+The current GstPlay design needs one contained `unsafe` construction from an
+application-owned validated raw child-window handle. Runtime pins, staging,
+validation, types, tests, safe actor contracts, and child-window hosting may
+progress safely; constructing the raw-window video renderer must wait for
+explicit approval. After approval, confine the adapter, document every
+invariant, test malformed/missing native state, and never unwind a panic across
+FFI.
 
 ## Change workflow
 

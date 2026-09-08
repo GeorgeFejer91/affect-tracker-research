@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   IndexedDbResearchJournal,
   MemoryResearchJournal,
@@ -21,6 +22,8 @@ import {
 } from "../site/src/research/contracts.js";
 import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
 import { BrowserResearchRunController } from "../site/src/research/run-controller.js";
+import { validateResearchSettingsV2 } from "../site/src/research/protocol-plan.js";
+import { importQuestionnaireCsv, questionnaireToCsv } from "../site/src/research/questionnaires.js";
 import {
   acquireExclusiveRuntimeLease,
   nextAttemptNumber,
@@ -1408,6 +1411,53 @@ test("workspace settings save uses the canonical experiment path", async () => {
   const saved = JSON.parse(await (await handle.getFile()).text());
   assert.equal(saved.schema, "affect-research-settings");
   assert.equal(saved.experiment.samplingFrequencyHz, 130);
+});
+
+test("questionnaire-aware settings save immutable content-addressed CSV definitions", async () => {
+  const root = new MemoryDirectoryHandle();
+  const workspace = new BrowserResearchWorkspace(root);
+  await workspace.initialize();
+  const sourceBytes = await readFile(new URL("../site/questionnaires/maia-2-de.csv", import.meta.url));
+  const { definition } = await importQuestionnaireCsv(sourceBytes, {
+    sourceKind: "bundled",
+    logicalName: "maia-2-de.csv",
+    sourceDocumentSha256: "7402c80c6da71d4a11543676acdf0a7640cdb842d55afc10dde6ad3d4978fdbe",
+  });
+  const settings = structuredClone(createDefaultResearchSettings());
+  settings.version = 2;
+  settings.questionnaires = {
+    algorithmVersion: "questionnaire-hooks-v1",
+    definitions: [definition],
+    modules: [{
+      schema: "affect-research-questionnaire-module",
+      version: 1,
+      moduleId: "maia-2-before-session",
+      questionnaireId: definition.questionnaireId,
+      definitionSha256: definition.definitionSha256,
+      placement: { kind: "beforeSession", poolId: null },
+    }],
+  };
+  const normalized = await validateResearchSettingsV2(settings);
+
+  await workspace.saveSettings(normalized);
+  const settingsDirectory = root.children.get("settings");
+  const questionnaireDirectory = settingsDirectory.children.get("questionnaires");
+  const definitionName = `${definition.questionnaireId}.${definition.definitionSha256}.csv`;
+  const definitionHandle = questionnaireDirectory.children.get(definitionName);
+  assert.ok(definitionHandle);
+  assert.equal(await (await definitionHandle.getFile()).text(), await questionnaireToCsv(definition));
+  const settingsHandle = settingsDirectory.children.get("video-affect-study.settings.json");
+  assert.ok(settingsHandle);
+  const reloaded = await workspace.loadSettingsFile(await settingsHandle.getFile());
+  assert.equal(reloaded.version, 2);
+  assert.equal(reloaded.questionnaires.definitions[0].definitionSha256, definition.definitionSha256);
+
+  await workspace.saveSettings(normalized);
+  definitionHandle.file = new File(["tampered\r\n"], definitionName, { type: "text/csv" });
+  await assert.rejects(
+    workspace.saveSettings(normalized),
+    (error) => error.code === "questionnaire-definition-collision",
+  );
 });
 
 test("attempt artifact materialization is idempotent and quarantines conflicting partial files before retry", async () => {

@@ -31,15 +31,25 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-f
 cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
 ```
 
-Build the unsigned NSIS candidate only after staging and verifying the required native-media runtime.
-Inspect the resulting installer and installed application rather than treating
-the bundler exit code as runtime evidence.
+Build an unsigned native-playback NSIS candidate only after staging and
+verifying an approved required native-media closure. The current interface-only
+NSIS candidate deliberately contains no such runtime and disables native
+acquisition. Inspect any resulting installer and installed application rather
+than treating the bundler exit code as runtime evidence.
+
+The manual `desktop-multiplatform.yml` workflow may build unsigned Windows x64
+NSIS, macOS ARM64/x64 DMG, and Linux x64 DEB/AppImage interface-evaluation
+artifacts on their native GitHub runners. Verify their closed provenance and
+Start rejection. Their build success is not experiment-use or cross-platform
+qualification evidence.
 
 ### Contracts and settings
 
-- Round-trip `ResearchSettingsV1`, `ResolvedAssignmentPlanV1`,
-  `InputBindingV1`, `ResearchSampleV1`, `ResearchEventV1`, and
-  `ResearchRunManifestV2` through Rust and browser readers.
+- Round-trip the historical V1/V2 family unchanged and the questionnaire-aware
+  `ResearchSettingsV2`, `ResolvedProtocolPlanV1`,
+  `QuestionnaireDefinitionV1`, `QuestionnaireModuleV1`,
+  `QuestionnaireResponseV1`, `ResearchEventV2`, `RecoveryJournalV2`, and
+  `ResearchRunManifestV3` through Rust and browser readers.
 - Reject unknown fields, duplicate keys/IDs, wrong schemas/versions/algorithms,
   invalid enums/colors/paths, non-finite/out-of-range numbers, excessive
   counts/depth/bytes, and settings/plan/stimulus hash drift.
@@ -49,9 +59,34 @@ the bundler exit code as runtime evidence.
 - Prove canonical JSON and SHA-256 equality across Rust and browser fixtures.
 - Exercise explicit legacy import, reporting every default and discard. Prove
   that existing app data and browser storage never migrate automatically.
-- Verify all seven Setup accordions, their exact order and single-open state,
+- Verify all eight Setup accordions, their exact order and single-open state,
   persistent preview, settings load/save, 1–240 Hz bounds with 130 Hz default,
   always-on continuous rating, and absence of summary-only acquisition.
+
+### Questionnaires and protocol sequence
+
+- Strictly parse UTF-8 RFC 4180 `questionnaire-csv-v1`: exact 14-column header,
+  optional BOM, bounded byte/row/item/option/text counts, consistent repeated
+  metadata, contiguous item rows, unique IDs, explicit required flags, and
+  finite-or-blank scores. Reject every unknown, missing, malformed, duplicate,
+  noncontiguous, inconsistent, or control-character case.
+- Prove source-byte and canonical definition hashes independently, plus JS/Rust
+  canonical-hash parity. Golden-test bundled German MAIA-2 item/option order,
+  reverse-scored items 5–12 and 15, eight subscales, attribution, and source
+  identity. Verify TAS-20 ships no prompt text and remains an explicit
+  license-gated import.
+- Property-test session/block hooks, multiple same-hook modules, Williams and
+  cyclic participant block orders, unchanged stimulus assignment, and stable
+  protocol hashes. One pool is one block and every protocol position is unique.
+- Crash at every draft, submit, event, safe-step, and finalization boundary.
+  Submission must atomically commit immutable derived response rows, completion
+  event, and safe protocol advance; controlled partials preserve drafts.
+- Prove invalid option and WebView score spoof rejection, no sampling/rating
+  input/regular LSL state during questionnaires, CSV/TSV response parity,
+  keyboard-only completion, managed focus, labels, and 200% reflow.
+- Run end to end: pre-session form, pre-block form, complete block, post-block
+  form, next block, post-session form, receipt; repeat with interruption and
+  safe recovery at every step kind.
 
 ### Counterbalancing and participant identity
 
@@ -142,42 +177,45 @@ the bundler exit code as runtime evidence.
 
 ## Native Windows media gate
 
-Qualified workspace/repository playback uses the bundled libVLC 3.0.23 x64
-runtime and no other VLC installation.
+Qualified workspace/repository playback uses only the pinned bundled GStreamer
+1.28.6 MSVC x86_64 runtime and private plugin closure.
 
 ### Supply-chain and package evidence
 
-- Verify the official archive SHA-256
-  `992d19dbd0b8a7cde9167d2f7780b1ef6f92acc8a71acfa736101a21f35181e1`
-  and source SHA-256
-  `e891cae6aa3ccda69bf94173d5105cbc55c7a7d9b1d21b9b21666e69eff3e7e0`
-  against `src-tauri/native-media/libvlc-runtime-v1.json`.
+- Verify the official combined installer is 528,572,178 bytes with SHA-256
+  `059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5`
+  and verify all component source hashes against
+  `src-tauri/native-media/gstreamer-runtime-v1.json`.
 - Stage only the required DLLs, plugin tree, and upstream notices. Verify the
   complete generated file-hash manifest and reject links, Windows directory
   junctions/reparse points, traversal, extra, missing, modified, or
   wrong-architecture files. A real-junction regression must prove the verifier
   rejects before traversal and never changes the external target.
-- Package with `AFFECT_RESEARCH_REQUIRE_LIBVLC_RUNTIME=1`; prove the build fails
-  closed when the tree is absent or altered. The running app must not inspect a
-  system VLC, `%PATH%`, registry location, or runtime download URL.
-- Retain applicable source-offer/license obligations and use libVLC only as a
-  descriptive dependency name; Affect Research must not adopt VLC branding.
+- Package with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the
+  `native-gstreamer` feature; prove the build fails closed when the tree is
+  absent or altered. The running app must clear ambient plugin paths and use
+  only its private registry and scanner without runtime downloads.
+- Retain applicable source/license obligations and approve the exact shipped
+  plugin/codec redistribution closure.
 - Every distributed Windows alpha artifact must include the exact pinned
-  libVLC source archive, the machine-readable runtime pin, and a provenance
+  GStreamer source materials, the machine-readable runtime pin, and provenance
   record binding repository, workflow/run, Git commit, runtime-pin identity,
   and installer/source SHA-256 plus byte lengths. Every external build action
   is pinned to an exact commit and the materialized checkout must remain clean.
-  The local `pnpm desktop:bundle` wrapper must activate the same required-runtime
-  gate. The artifact name also includes the full commit SHA; a mutable filename
-  or unbound aggregate pass count is not release evidence.
+  Any future wrapper that distributes native GStreamer must activate the same
+  required-runtime gate. Until this complete evidence and redistribution review
+  exist, `pnpm desktop:bundle` must instead build with no optional features,
+  exclude the runtime, positively disable native acquisition, and label the
+  artifact interface-only. The artifact name also includes the full commit SHA;
+  a mutable filename or unbound aggregate pass count is not release evidence.
 
 ### Player-actor security and lifecycle evidence
 
-The in-process actor cannot be accepted until the explicit user approval for
-its contained `unsafe` dynamic-library/libVLC/Win32 boundary is recorded. Audit
-the implementation for exact ABI/symbol versions, pointer ownership, one-thread
-affinity, bounded callbacks, stale-generation fencing, panic containment,
-child-window ownership, and callbacks-after-teardown prevention.
+The in-process renderer cannot be accepted until explicit user approval for its
+contained `unsafe` raw-window GstPlay constructor is recorded. Audit validated
+handle and strong-window lifetimes, GLib/GstPlay one-thread affinity, bounded
+callbacks, stale-generation fencing, panic containment, child-window ownership,
+and callbacks-after-teardown prevention.
 
 - Revalidate opaque media identity, root generation, hash, byte length,
   duration, and decode evidence immediately before Prepare. No WebView path or
@@ -215,8 +253,10 @@ do not satisfy this gate.
 
 - Verify create-new output directories and attempt counters never overwrite.
   Every terminal attempt contains the frozen settings snapshot, semantic
-  `events.jsonl`, `ResearchRunManifestV2`, and selected rating files, all bound
-  to exact settings/plan/stimulus identity.
+  `events.jsonl`, and selected rating files. Historical attempts retain
+  `ResearchRunManifestV2`; questionnaire-aware attempts add the frozen protocol
+  plan and questionnaire-response tables and use `ResearchRunManifestV3`, all
+  bound to exact settings/assignment/protocol/definition/stimulus identity.
 - Test controlled Stop Early as terminal Partial separately from crash/write
   recovery. Resume is offered only for a valid recoverable journal and only at
   a safe boundary; a partially viewed stimulus restarts from the beginning.
@@ -304,7 +344,7 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 - Complete Setup and Run using only the keyboard. Verify visible focus,
   semantic labels/status, polite announcements, non-color meaning, contrast,
   200% zoom/reflow, and reduced-motion behavior.
-- Test exact two-mode navigation and seven Setup accordions in the real Pages
+- Test exact two-mode navigation and eight Setup accordions in the real Pages
   build and packaged Tauri application. Hiding feedback must not hide timing,
   write/recovery, or LSL status.
 - Verify the allowlisted Pages and desktop build closures contain no WebXR,
@@ -320,7 +360,10 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and unsigned Windows candidate. The internal
+CI may validate the static artifact and optional Windows GStreamer integration
+tree without uploading that tree. Manual workflows may produce explicitly
+unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
+packages. The internal
 `0.4.0-alpha.1` label remains non-stable and non-research-ready until every
 applicable automated, installed-artifact, timing, media, recovery, input, LSL,
 accessibility, and physical workflow gate above passes for one exact candidate.

@@ -18,11 +18,13 @@ and in this repository's immutable checkpoint/history refs. Do not restore or
 reactivate them without an explicit charter change.
 
 Windows qualified local/repository playback targets the repository-pinned,
-bundled libVLC runtime. Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md)
-before making any implementation claim: runtime verification and a fail-closed
-capability are not evidence that the native player actor or playback
-qualification exists. Introducing the contained dynamic-library/libVLC/Win32
-`unsafe` boundary requires explicit user approval and an audited invariant.
+bundled GStreamer 1.28.6 MSVC x86_64 runtime through a Rust-owned GstPlay actor.
+Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any
+implementation claim: runtime verification and a fail-closed capability are not
+evidence that the native player actor or playback qualification exists.
+Introducing the contained raw-window GstPlay renderer `unsafe` constructor
+requires explicit user approval and an audited window/thread/lifecycle
+invariant.
 
 If implementation and the active charter disagree, stop and identify the
 mismatch. Do not silently broaden the platform matrix, research data surface,

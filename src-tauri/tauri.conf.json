@@ -42,8 +42,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "native-media/libvlc-runtime-v1.json",
-      "native-media/runtime/**/*"
+      "native-media/gstreamer-runtime-v1.json",
+      "native-media/GSTREAMER-RUNTIME-NOTICE.txt"
     ]
   }
 }

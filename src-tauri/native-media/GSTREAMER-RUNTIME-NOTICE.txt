@@ -1,0 +1,26 @@
+Affect Research private GStreamer runtime
+
+This internal, pre-release runtime is derived from the official GStreamer
+1.28.6 MSVC x86_64 installer. It is dynamically linked and is not a claim that
+every container, codec, profile, pixel format, or damaged file is supported.
+Only the separately published and physically tested qualification matrix may
+be treated as supported for an experiment.
+
+Installer:
+https://gstreamer.freedesktop.org/data/pkg/windows/1.28.6/msvc/gstreamer-1.0-msvc-x86_64-1.28.6.exe
+SHA-256: 059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5
+
+Upstream licensing guidance:
+https://gstreamer.freedesktop.org/documentation/frequently-asked-questions/licensing.html
+https://gstreamer.freedesktop.org/documentation/additional/splitup.html
+
+GStreamer core and the GStreamer plugin modules are generally distributed
+under LGPL-2.1-or-later terms. Individual plugins and their external codec
+libraries can have additional copyright, license, and patent implications.
+This notice records provenance; it is not legal clearance for a release.
+Before public distribution, the exact staged plugin and dependency closure,
+corresponding-source obligations, relinkability, notices, and applicable codec
+patents must be reviewed and recorded in the release evidence.
+
+The dependency names GStreamer and GstPlay are descriptive. Affect Research
+does not use GStreamer project branding as its product identity.

@@ -12,6 +12,20 @@ import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { createSessionStem, validateDerivedParticipantRecord } from "./identity.js";
 import { affectCoordinates, evaluateFlubberMappings } from "./mappings.js";
 import { samplesToCsv, samplesToTsv } from "./tabular.js";
+import {
+  projectResearchSettingsV2ToAssignmentSettingsV1,
+  validateResearchSettingsV2,
+  validateResolvedProtocolPlanV1,
+} from "./protocol-plan.js";
+import {
+  questionnaireResponsesToCsv,
+  questionnaireResponsesToTsv,
+} from "./questionnaires.js";
+import {
+  RESEARCH_RUN_MANIFEST_V3_SCHEMA,
+  validateResearchEventV2,
+  validateResearchRunManifestV3,
+} from "./protocol-records.js";
 
 const encoder = new TextEncoder();
 const DEFAULT_BATCH_SIZE = 32;
@@ -132,6 +146,22 @@ async function readAll(journal, runId, kind) {
   return rows;
 }
 
+async function readAllQuestionnaireResponses(journal, runId) {
+  const rows = [];
+  let fromSequence = 1;
+  while (true) {
+    const page = await journal.readQuestionnaireResponses(runId, {
+      fromSequence,
+      limit: 10_000,
+    });
+    if (page.length === 0) break;
+    rows.push(...page);
+    fromSequence = page.at(-1).sequence + 1;
+    if (page.length < 10_000) break;
+  }
+  return rows;
+}
+
 function byteLength(text) {
   return encoder.encode(text).byteLength;
 }
@@ -180,6 +210,7 @@ export class BrowserResearchRunController extends EventTarget {
     this.pendingEvents = [];
     this.persistedSampleSequence = 1;
     this.persistedEventSequence = 1;
+    this.persistedQuestionnaireResponseSequence = 1;
     this.issuedSampleSequence = 1;
     this.issuedEventSequence = 1;
     this.writeChain = Promise.resolve();
@@ -208,16 +239,38 @@ export class BrowserResearchRunController extends EventTarget {
   async start({
     settings: settingsInput,
     plan: planInput,
+    protocolPlan: protocolPlanInput = null,
     participantId,
     participant: participantInput,
     attemptNumber,
     preflight,
   }) {
     if (this.mode !== "setup" || this.context) throw new Error("A Research attempt is already active.");
-    const settings = validateResearchSettingsV1(settingsInput);
+    const protocolAware = settingsInput?.version === 2;
+    const settings = protocolAware
+      ? await validateResearchSettingsV2(settingsInput)
+      : validateResearchSettingsV1(settingsInput);
+    if (!protocolAware && protocolPlanInput !== null) {
+      throw new TypeError("Historical ResearchSettingsV1 attempts cannot attach a protocol plan.");
+    }
+    const assignmentSettings = protocolAware
+      ? await projectResearchSettingsV2ToAssignmentSettingsV1(settings)
+      : settings;
     const plan = await validateResolvedAssignmentPlanV1(planInput);
     const settingsHash = await canonicalSha256(settings);
-    if (plan.settingsSha256 !== settingsHash) throw new TypeError("Assignment plan does not bind the selected settings.");
+    const assignmentSettingsHash = await canonicalSha256(assignmentSettings);
+    if (plan.settingsSha256 !== assignmentSettingsHash) {
+      throw new TypeError("Assignment plan does not bind the selected settings projection.");
+    }
+    const protocolPlan = protocolAware
+      ? await validateResolvedProtocolPlanV1(protocolPlanInput, {
+        settingsV2: settings,
+        assignmentPlanV1: plan,
+      })
+      : null;
+    if (protocolAware && protocolPlan.participantId !== participantId) {
+      throw new TypeError("Protocol plan does not bind the selected participant.");
+    }
     const assignment = plan.assignments.find((candidate) => candidate.participantId === participantId);
     if (!assignment) throw new TypeError("Selected participant is not present in the assignment plan.");
     const checks = browserPreflight(settings, plan, preflight);
@@ -242,13 +295,14 @@ export class BrowserResearchRunController extends EventTarget {
       startedAt,
       attemptNumber,
     });
-    const runId = `run-${uuid(this.cryptoObject)}`;
+    const runId = protocolAware ? uuid(this.cryptoObject) : `run-${uuid(this.cryptoObject)}`;
     const ownerId = `tab-${uuid(this.cryptoObject)}`;
     const build = { platform: this.platform, appVersion: this.appVersion, buildCommit: this.buildCommit };
     const recoveryContext = {
       workspaceId,
       settings,
       plan,
+      ...(protocolAware ? { protocolPlan } : {}),
       participant,
       build,
       startedAt,
@@ -258,7 +312,16 @@ export class BrowserResearchRunController extends EventTarget {
       sourceRunId: null,
       restartedStimulusIds: [],
     };
-    const attempt = await this.journal.reserveAttempt({
+    if (protocolAware) {
+      assertDependency(this.journal, [
+        "reserveProtocolAttempt", "setProtocolState", "checkpointQuestionnaireDraft",
+        "submitQuestionnaireStep", "readQuestionnaireResponses", "finalizeProtocol",
+      ], "Questionnaire-aware Research journal");
+    }
+    const reserve = protocolAware
+      ? this.journal.reserveProtocolAttempt.bind(this.journal)
+      : this.journal.reserveAttempt.bind(this.journal);
+    const attempt = await reserve({
       runId,
       experimentId: settings.experiment.id,
       participantId,
@@ -266,6 +329,7 @@ export class BrowserResearchRunController extends EventTarget {
       sessionStem,
       settingsHash,
       planHash: plan.planHashSha256,
+      ...(protocolAware ? { protocolPlanHash: protocolPlan.protocolPlanHashSha256 } : {}),
       createdAt: startedAt,
       ownerId,
       context: recoveryContext,
@@ -308,11 +372,33 @@ export class BrowserResearchRunController extends EventTarget {
     const resumedAt = isoNow(this.now);
     const attempt = await this.journal.resumeAttempt({ runId, ownerId, resumedAt });
     try {
-      const settings = validateResearchSettingsV1(attempt.context.settings);
+      const protocolAware = attempt.version === 2;
+      const settings = protocolAware
+        ? await validateResearchSettingsV2(attempt.context.settings)
+        : validateResearchSettingsV1(attempt.context.settings);
+      const assignmentSettings = protocolAware
+        ? await projectResearchSettingsV2ToAssignmentSettingsV1(settings)
+        : settings;
       const plan = await validateResolvedAssignmentPlanV1(attempt.context.plan);
       const settingsHash = await canonicalSha256(settings);
-      if (settingsHash !== attempt.settingsHash || plan.planHashSha256 !== attempt.planHash) {
+      const assignmentSettingsHash = await canonicalSha256(assignmentSettings);
+      const protocolPlan = protocolAware
+        ? await validateResolvedProtocolPlanV1(attempt.context.protocolPlan, {
+          settingsV2: settings,
+          assignmentPlanV1: plan,
+        })
+        : null;
+      if (settingsHash !== attempt.settingsHash
+        || plan.settingsSha256 !== assignmentSettingsHash
+        || plan.planHashSha256 !== attempt.planHash
+        || protocolAware && protocolPlan.protocolPlanHashSha256 !== attempt.protocolPlanHash) {
         throw new TypeError("Recovery context no longer matches its frozen hashes.");
+      }
+      if (protocolAware) {
+        assertDependency(this.journal, [
+          "setProtocolState", "checkpointQuestionnaireDraft", "submitQuestionnaireStep",
+          "readQuestionnaireResponses", "finalizeProtocol",
+        ], "Questionnaire-aware Research journal");
       }
       validateParticipantRecord(attempt.context.participant);
       const directory = await this.workspace.openAttemptDirectory({
@@ -325,11 +411,22 @@ export class BrowserResearchRunController extends EventTarget {
       const resumedContext = structuredClone(attempt.context);
       resumedContext.settings = settings;
       resumedContext.plan = plan;
+      if (protocolAware) resumedContext.protocolPlan = protocolPlan;
       const lastSampleElapsedMs = priorSamples.at(-1)?.observedElapsedMs ?? 0;
       const lastEventElapsedMs = priorEvents.length
         ? Number(BigInt(priorEvents.at(-1).monotonicTimeNs)) / 1_000_000
         : 0;
-      resumedContext.elapsedOffsetMs = Math.max(lastSampleElapsedMs, lastEventElapsedMs);
+      const priorQuestionnaireResponses = protocolAware
+        ? await readAllQuestionnaireResponses(this.journal, runId)
+        : [];
+      const lastQuestionnaireElapsedMs = priorQuestionnaireResponses.length
+        ? Number(BigInt(priorQuestionnaireResponses.at(-1).monotonicTimeNs)) / 1_000_000
+        : 0;
+      resumedContext.elapsedOffsetMs = Math.max(
+        lastSampleElapsedMs,
+        lastEventElapsedMs,
+        lastQuestionnaireElapsedMs,
+      );
       resumedContext.startedMonotonicMs = this.monotonicNow();
       const resumedAttempt = { ...attempt, context: resumedContext };
       this.#adoptContext(resumedAttempt, directory);
@@ -342,7 +439,11 @@ export class BrowserResearchRunController extends EventTarget {
       }
       await this.#startWorker();
       this.#queueEvent("recoveryStarted", { detailCode: "safe-boundary" });
-      this.#queueEvent("recoveryCompleted", { detailCode: "restart-current-video" });
+      this.#queueEvent("recoveryCompleted", {
+        detailCode: protocolAware && this.context.activeProtocolStep?.kind === "questionnaire"
+          ? "restore-questionnaire-draft"
+          : "restart-current-video",
+      });
       await this.flush();
       this.mode = "run";
       this.#emitStatus();
@@ -355,6 +456,9 @@ export class BrowserResearchRunController extends EventTarget {
 
   updateAffect({ currentValence, currentArousal, targetValence = currentValence, targetArousal = currentArousal, inputActive = false, mediaTimeMs = 0 }) {
     this.#assertRunning();
+    if (this.context.protocolAware && this.context.activeProtocolStep?.kind !== "stimulus") {
+      throw new Error("Rating input is disabled outside an active stimulus protocol step.");
+    }
     const current = affectCoordinates(currentValence, currentArousal);
     const target = affectCoordinates(targetValence, targetArousal);
     const mappingValues = evaluateFlubberMappings(this.context.settings.advanced.mappings, {
@@ -385,6 +489,132 @@ export class BrowserResearchRunController extends EventTarget {
     });
   }
 
+  nextProtocolStep() {
+    this.#assertProtocolRun();
+    const active = this.context.activeProtocolStep;
+    if (active) return Object.freeze(structuredClone(active));
+    return Object.freeze(structuredClone(
+      this.context.protocolPlan.steps[this.context.safeProtocolStepPosition] ?? null,
+    ));
+  }
+
+  activeQuestionnaire() {
+    this.#assertProtocolRun();
+    const step = this.context.activeProtocolStep;
+    if (step?.kind !== "questionnaire") return null;
+    const definition = this.#questionnaireDefinition(step);
+    const module = this.context.settings.questionnaires.modules.find(({ moduleId }) => (
+      moduleId === step.moduleId
+    ));
+    if (!module) throw new TypeError("The frozen questionnaire module is unavailable.");
+    const draft = this.context.activeQuestionnaireDraft;
+    return Object.freeze({
+      step: structuredClone(step),
+      definition: structuredClone(definition),
+      module: structuredClone(module),
+      answers: Object.freeze(Object.fromEntries(
+        (draft?.responses ?? []).map(({ itemId, optionId }) => [itemId, optionId]),
+      )),
+      answerEvidence: Object.freeze((draft?.responses ?? []).map((response) => Object.freeze({
+        itemId: response.itemId,
+        optionId: response.optionId,
+        wallTimeUtc: response.wallTimeUtc,
+        monotonicTimeNs: response.monotonicTimeNs,
+        responseLatencyMs: response.responseLatencyMs,
+      }))),
+    });
+  }
+
+  async beginQuestionnaireStep() {
+    this.#assertProtocolRun();
+    let step = this.context.activeProtocolStep;
+    if (step !== null) {
+      if (step.kind !== "questionnaire") throw new Error("The active protocol step is not a questionnaire.");
+      return this.activeQuestionnaire();
+    }
+    step = this.context.protocolPlan.steps[this.context.safeProtocolStepPosition];
+    if (!step || step.kind !== "questionnaire") {
+      throw new Error("The next safe protocol step is not a questionnaire.");
+    }
+    await this.flush();
+    const attempt = await this.journal.setProtocolState({
+      runId: this.context.runId,
+      activeProtocolStepPosition: step.protocolPosition,
+      safeProtocolStepPosition: this.context.safeProtocolStepPosition,
+      updatedAt: isoNow(this.now),
+    });
+    this.#adoptProtocolState(attempt);
+    this.context.questionnaireOpenedElapsedMs = this.#elapsedMs();
+    this.#queueEvent("questionnaireStarted", {
+      protocolStep: step,
+      detailCode: "questionnaire-form-opened",
+    });
+    await this.flush();
+    this.#emitStatus();
+    return this.activeQuestionnaire();
+  }
+
+  async checkpointQuestionnaireDraft(answers) {
+    this.#assertActiveQuestionnaire();
+    await this.flush();
+    const step = this.context.activeProtocolStep;
+    const answerRecords = this.#questionnaireAnswerRecords(answers);
+    const attempt = await this.journal.checkpointQuestionnaireDraft({
+      runId: this.context.runId,
+      expectedSafeProtocolStepPosition: this.context.safeProtocolStepPosition,
+      protocolStepPosition: step.protocolPosition,
+      answers: answerRecords,
+      updatedAt: isoNow(this.now),
+    });
+    this.#adoptProtocolState(attempt);
+    this.#queueEvent("questionnaireDraftCheckpointed", {
+      protocolStep: step,
+      detailCode: "questionnaire-draft-durable",
+    });
+    await this.flush();
+    this.#emitStatus();
+    return this.activeQuestionnaire();
+  }
+
+  async submitQuestionnaire(answers) {
+    this.#assertActiveQuestionnaire();
+    await this.flush();
+    const step = this.context.activeProtocolStep;
+    const answerRecords = this.#questionnaireAnswerRecords(answers);
+    const elapsedMs = this.context.elapsedOffsetMs
+      + Math.max(0, this.monotonicNow() - this.context.startedMonotonicMs);
+    const answerTimes = answerRecords.map(({ monotonicTimeNs }) => BigInt(monotonicTimeNs));
+    const completedAtNs = answerTimes.reduce(
+      (latest, value) => value > latest ? value : latest,
+      BigInt(monotonicNs(elapsedMs)),
+    ).toString();
+    const attempt = await this.journal.submitQuestionnaireStep({
+      runId: this.context.runId,
+      expectedEventSequence: this.persistedEventSequence,
+      expectedQuestionnaireResponseSequence: this.persistedQuestionnaireResponseSequence,
+      expectedSafeProtocolStepPosition: this.context.safeProtocolStepPosition,
+      protocolStepPosition: step.protocolPosition,
+      answers: answerRecords,
+      completionEvent: {
+        wallTimeUtc: isoNow(this.now),
+        monotonicTimeNs: completedAtNs,
+        detailCode: "questionnaire-submitted",
+      },
+      updatedAt: isoNow(this.now),
+    });
+    this.persistedEventSequence = attempt.nextEventSequence;
+    this.issuedEventSequence = attempt.nextEventSequence;
+    this.persistedQuestionnaireResponseSequence = attempt.nextQuestionnaireResponseSequence;
+    this.#adoptProtocolState(attempt);
+    this.#emitStatus();
+    return Object.freeze({
+      completedStep: structuredClone(step),
+      nextStep: structuredClone(
+        this.context.protocolPlan.steps[this.context.safeProtocolStepPosition] ?? null,
+      ),
+    });
+  }
+
   async startStimulus(index) {
     this.#assertRunning();
     if (this.context.activeStimulusIndex !== null) throw new Error("A stimulus is already active.");
@@ -392,6 +622,25 @@ export class BrowserResearchRunController extends EventTarget {
     const slot = this.context.assignment.slots[index];
     if (!slot) throw new RangeError("Stimulus index is outside this participant assignment.");
     const stimulus = this.context.stimuliById.get(slot.stimulusId);
+    let protocolStep = null;
+    if (this.context.protocolAware) {
+      if (this.context.activeProtocolStep !== null) {
+        throw new Error("A protocol step is already active.");
+      }
+      protocolStep = this.context.protocolPlan.steps[this.context.safeProtocolStepPosition];
+      if (!protocolStep || protocolStep.kind !== "stimulus"
+        || protocolStep.stimulusPosition !== index + 1
+        || protocolStep.stimulusId !== stimulus.stimulusId) {
+        throw new Error("Stimulus start does not match the next frozen protocol step.");
+      }
+      const attempt = await this.journal.setProtocolState({
+        runId: this.context.runId,
+        activeProtocolStepPosition: protocolStep.protocolPosition,
+        safeProtocolStepPosition: this.context.safeProtocolStepPosition,
+        updatedAt: isoNow(this.now),
+      });
+      this.#adoptProtocolState(attempt);
+    }
     this.context.activeStimulusIndex = index;
     this.activeStimulusEpoch = this.nextStimulusEpoch;
     this.nextStimulusEpoch += 1;
@@ -399,11 +648,19 @@ export class BrowserResearchRunController extends EventTarget {
     this.previousLatenessMs = null;
     this.pendingMissedSlots = 0;
     this.updateAffect({ currentValence: 0, currentArousal: 0, inputActive: false, mediaTimeMs: 0 });
-    this.#stageStimulusState({
-      activeStimulusIndex: index,
-      safeStimulusIndex: index,
+    if (!this.context.protocolAware) {
+      this.#stageStimulusState({
+        activeStimulusIndex: index,
+        safeStimulusIndex: index,
+      });
+    }
+    this.#queueEvent("stimulusStarted", {
+      stimulus,
+      position: index + 1,
+      mediaTimeMs: 0,
+      protocolStep,
+      deferWrite: true,
     });
-    this.#queueEvent("stimulusStarted", { stimulus, position: index + 1, mediaTimeMs: 0, deferWrite: true });
     await this.flush();
     await this.#sendWorkerCommand("stimulus-start", {
       stimulusIndex: index,
@@ -453,21 +710,37 @@ export class BrowserResearchRunController extends EventTarget {
     this.#assertActiveStimulus();
     const index = this.context.activeStimulusIndex;
     const stimulus = this.#currentStimulus();
+    const protocolStep = this.context.protocolAware
+      ? this.context.activeProtocolStep
+      : null;
     await this.#sendWorkerCommand("stimulus-stop", { stimulusEpoch: this.activeStimulusEpoch });
     this.workerStimulusActive = false;
     this.#queueEvent("stimulusCompleted", {
       stimulus,
       position: index + 1,
       mediaTimeMs,
+      protocolStep,
       deferWrite: true,
     });
-    this.#stageStimulusState({
-      activeStimulusIndex: null,
-      safeStimulusIndex: index + 1,
-    });
+    if (!this.context.protocolAware) {
+      this.#stageStimulusState({
+        activeStimulusIndex: null,
+        safeStimulusIndex: index + 1,
+      });
+    }
     await this.flush();
-    this.context.safeStimulusIndex = index + 1;
-    this.context.activeStimulusIndex = null;
+    if (this.context.protocolAware) {
+      const attempt = await this.journal.setProtocolState({
+        runId: this.context.runId,
+        activeProtocolStepPosition: null,
+        safeProtocolStepPosition: protocolStep.protocolPosition,
+        updatedAt: isoNow(this.now),
+      });
+      this.#adoptProtocolState(attempt);
+    } else {
+      this.context.safeStimulusIndex = index + 1;
+      this.context.activeStimulusIndex = null;
+    }
     this.activeStimulusEpoch = null;
     this.paused = false;
     this.#emitStatus();
@@ -490,6 +763,9 @@ export class BrowserResearchRunController extends EventTarget {
 
   queueInputEdge({ direction, action, active }) {
     this.#assertRunning();
+    if (this.context.protocolAware && this.context.activeProtocolStep?.kind !== "stimulus") {
+      throw new Error("Rating input is disabled outside an active stimulus protocol step.");
+    }
     const actionCode = action?.kind === "keyboard"
       ? action.code
       : action?.kind === "mouseButton"
@@ -499,7 +775,10 @@ export class BrowserResearchRunController extends EventTarget {
           : action?.kind === "gamepadButton"
             ? `button-${action.button}`
             : "unknown";
-    this.#queueEvent("inputEdge", { detailCode: `${direction}-${action?.kind ?? "unknown"}-${actionCode}-${active ? "down" : "up"}` });
+    this.#queueEvent("inputEdge", {
+      protocolStep: this.context.activeProtocolStep,
+      detailCode: `${direction}-${action?.kind ?? "unknown"}-${actionCode}-${active ? "down" : "up"}`,
+    });
   }
 
   async stopEarly(detailCode = "operator-stop") {
@@ -515,7 +794,11 @@ export class BrowserResearchRunController extends EventTarget {
   async complete() {
     this.#assertRunning();
     if (this.context.activeStimulusIndex !== null) throw new Error("Complete the active stimulus first.");
-    if (this.context.safeStimulusIndex !== this.context.assignment.slots.length) {
+    const sequenceComplete = this.context.protocolAware
+      ? this.context.safeProtocolStepPosition === this.context.protocolPlan.steps.length
+        && this.context.activeProtocolStep === null
+      : this.context.safeStimulusIndex === this.context.assignment.slots.length;
+    if (!sequenceComplete) {
       throw new Error("All assigned stimuli must complete before the session can complete.");
     }
     this.#queueEvent("sessionCompleted", { detailCode: "assignment-complete" });
@@ -578,6 +861,20 @@ export class BrowserResearchRunController extends EventTarget {
       activeStimulusIndex: this.context.activeStimulusIndex,
       safeStimulusIndex: this.context.safeStimulusIndex,
       totalStimuli: this.context.assignment.slots.length,
+      protocolAware: this.context.protocolAware,
+      activeProtocolStep: this.context.activeProtocolStep
+        ? structuredClone(this.context.activeProtocolStep)
+        : null,
+      safeProtocolStepPosition: this.context.protocolAware
+        ? this.context.safeProtocolStepPosition
+        : null,
+      totalProtocolSteps: this.context.protocolAware
+        ? this.context.protocolPlan.steps.length
+        : null,
+      questionnaireDraftActive: Boolean(this.context.activeQuestionnaireDraft),
+      interruptedProtocolStepKind: this.context.protocolAware
+        ? this.context.interruptedProtocolStepKind
+        : null,
       paused: this.paused,
       persistedSamples: this.persistedSampleSequence - 1,
       persistedEvents: this.persistedEventSequence - 1,
@@ -603,6 +900,31 @@ export class BrowserResearchRunController extends EventTarget {
       sessionStem: attempt.sessionStem,
       settingsHash: attempt.settingsHash,
       planHash: attempt.planHash,
+      protocolAware: attempt.version === 2,
+      protocolPlanHash: attempt.version === 2 ? attempt.protocolPlanHash : null,
+      interruptedProtocolStepKind: attempt.version === 2
+        ? attempt.interruption?.interruptedProtocolStepKind ?? null
+        : null,
+      safeProtocolStepPosition: attempt.version === 2 ? attempt.safeProtocolStepPosition : null,
+      activeProtocolStep: attempt.version === 2 && attempt.activeProtocolStep
+        ? structuredClone(attempt.activeProtocolStep)
+        : null,
+      activeQuestionnaireDraft: attempt.version === 2 && attempt.activeQuestionnaireDraft
+        ? structuredClone(attempt.activeQuestionnaireDraft)
+        : null,
+      questionnaireAnswerEvidence: attempt.version === 2
+        ? structuredClone(attempt.activeQuestionnaireDraft?.responses ?? []).map((response) => ({
+          itemId: response.itemId,
+          optionId: response.optionId,
+          wallTimeUtc: response.wallTimeUtc,
+          monotonicTimeNs: response.monotonicTimeNs,
+          responseLatencyMs: response.responseLatencyMs,
+        }))
+        : [],
+      questionnaireOpenedElapsedMs: attempt.version === 2
+        && attempt.activeProtocolStep?.kind === "questionnaire"
+        ? saved.elapsedOffsetMs ?? 0
+        : null,
       safeStimulusIndex: attempt.safeStimulusIndex,
       activeStimulusIndex: null,
       attemptDirectory,
@@ -619,6 +941,9 @@ export class BrowserResearchRunController extends EventTarget {
     };
     this.persistedSampleSequence = attempt.nextSampleSequence;
     this.persistedEventSequence = attempt.nextEventSequence;
+    this.persistedQuestionnaireResponseSequence = attempt.version === 2
+      ? attempt.nextQuestionnaireResponseSequence
+      : 1;
     this.issuedSampleSequence = attempt.nextSampleSequence;
     this.issuedEventSequence = attempt.nextEventSequence;
     this.pendingSamples = [];
@@ -632,6 +957,36 @@ export class BrowserResearchRunController extends EventTarget {
     this.nextStimulusEpoch = 1;
     this.expectedWorkerSampleSequence = 1;
     this.workerStimulusActive = false;
+  }
+
+  #adoptProtocolState(attempt) {
+    if (!this.context?.protocolAware || attempt.version !== 2
+      || attempt.runId !== this.context.runId
+      || attempt.protocolPlanHash !== this.context.protocolPlanHash) {
+      throw new TypeError("Protocol journal state no longer binds the active attempt.");
+    }
+    this.context.safeProtocolStepPosition = attempt.safeProtocolStepPosition;
+    this.context.safeStimulusIndex = attempt.safeStimulusIndex;
+    this.context.activeProtocolStep = attempt.activeProtocolStep
+      ? structuredClone(attempt.activeProtocolStep)
+      : null;
+    this.context.activeStimulusIndex = attempt.activeStimulusIndex;
+    this.context.activeQuestionnaireDraft = attempt.activeQuestionnaireDraft
+      ? structuredClone(attempt.activeQuestionnaireDraft)
+      : null;
+    this.context.questionnaireAnswerEvidence = structuredClone(
+      attempt.activeQuestionnaireDraft?.responses ?? [],
+    ).map((response) => ({
+      itemId: response.itemId,
+      optionId: response.optionId,
+      wallTimeUtc: response.wallTimeUtc,
+      monotonicTimeNs: response.monotonicTimeNs,
+      responseLatencyMs: response.responseLatencyMs,
+    }));
+    if (attempt.activeProtocolStep?.kind !== "questionnaire") {
+      this.context.questionnaireOpenedElapsedMs = null;
+    }
+    this.persistedQuestionnaireResponseSequence = attempt.nextQuestionnaireResponseSequence;
   }
 
   async #startWorker() {
@@ -847,6 +1202,7 @@ export class BrowserResearchRunController extends EventTarget {
   #queueEvent(type, {
     stimulus = null,
     position = null,
+    protocolStep = undefined,
     mediaTimeMs = null,
     missedSlotCount = null,
     detailCode = null,
@@ -854,9 +1210,8 @@ export class BrowserResearchRunController extends EventTarget {
   } = {}) {
     const elapsedMs = this.context.elapsedOffsetMs
       + Math.max(0, this.monotonicNow() - this.context.startedMonotonicMs);
-    const event = validateResearchEventV1({
+    const shared = {
       schema: RESEARCH_EVENT_SCHEMA,
-      version: 1,
       sequence: this.issuedEventSequence,
       runId: this.context.runId,
       participantId: this.context.participantId,
@@ -873,7 +1228,26 @@ export class BrowserResearchRunController extends EventTarget {
         : Math.min(stimulus ? stimulusIdentity(stimulus).durationMs : Number.MAX_SAFE_INTEGER, Math.max(0, Number(mediaTimeMs) || 0)),
       missedSlotCount,
       detailCode,
-    });
+    };
+    const event = this.context.protocolAware
+      ? (() => {
+        const boundStep = protocolStep === undefined
+          ? this.context.activeProtocolStep
+          : protocolStep;
+        const questionnaireEvent = type === "questionnaireStarted"
+          || type === "questionnaireDraftCheckpointed"
+          || type === "questionnaireCompleted";
+        return validateResearchEventV2({
+          ...shared,
+          version: 2,
+          protocolPlanSha256: this.context.protocolPlanHash,
+          protocolStepPosition: boundStep?.protocolPosition ?? null,
+          moduleId: questionnaireEvent ? boundStep?.moduleId ?? null : null,
+          questionnaireId: questionnaireEvent ? boundStep?.questionnaireId ?? null : null,
+          definitionSha256: questionnaireEvent ? boundStep?.definitionSha256 ?? null : null,
+        });
+      })()
+      : validateResearchEventV1({ ...shared, version: 1 });
     this.issuedEventSequence += 1;
     this.pendingEvents.push(event);
     if (!deferWrite) {
@@ -1064,6 +1438,9 @@ export class BrowserResearchRunController extends EventTarget {
     try {
     const samples = await readAll(this.journal, this.context.runId, "samples");
     const events = await readAll(this.journal, this.context.runId, "events");
+    if (this.context.protocolAware) {
+      return await this.#materializeProtocolFinalization(descriptor, samples, events);
+    }
     const { completionStatus, finalizedAt, recovery } = descriptor;
     const settingsText = `${canonicalJson(this.context.settings)}\n`;
     const eventsText = `${events.map((event) => canonicalJson(event)).join("\n")}\n`;
@@ -1173,9 +1550,254 @@ export class BrowserResearchRunController extends EventTarget {
     }
   }
 
+  async #materializeProtocolFinalization(descriptor, samples, events) {
+    const { completionStatus, finalizedAt, recovery } = descriptor;
+    const attempt = await this.journal.getAttempt(this.context.runId);
+    if (!attempt || attempt.version !== 2
+      || attempt.protocolPlanHash !== this.context.protocolPlanHash) {
+      throw new TypeError("Questionnaire recovery evidence no longer binds the frozen protocol.");
+    }
+    const submittedResponses = await readAllQuestionnaireResponses(
+      this.journal,
+      this.context.runId,
+    );
+    const draftResponses = attempt.activeQuestionnaireDraft?.responses ?? [];
+    const questionnaireResponses = [...submittedResponses, ...draftResponses];
+    const settingsText = `${canonicalJson(this.context.settings)}\n`;
+    const protocolPlanText = `${canonicalJson(this.context.protocolPlan)}\n`;
+    const eventsText = `${events.map((event) => canonicalJson(event)).join("\n")}\n`;
+    const artifacts = {
+      "settings.snapshot.json": settingsText,
+      "protocol-plan.snapshot.json": protocolPlanText,
+      "events.jsonl": eventsText,
+    };
+    const outputs = [
+      {
+        kind: "settings",
+        fileName: "settings.snapshot.json",
+        sha256: await sha256Hex(settingsText),
+        byteLength: byteLength(settingsText),
+        rowCount: null,
+      },
+      {
+        kind: "protocolPlan",
+        fileName: "protocol-plan.snapshot.json",
+        sha256: await sha256Hex(protocolPlanText),
+        byteLength: byteLength(protocolPlanText),
+        rowCount: null,
+      },
+      {
+        kind: "events",
+        fileName: "events.jsonl",
+        sha256: await sha256Hex(eventsText),
+        byteLength: byteLength(eventsText),
+        rowCount: null,
+      },
+    ];
+    if (this.context.settings.output.csv) {
+      const ratingsCsv = samplesToCsv(samples);
+      const questionnaireCsv = questionnaireResponsesToCsv(questionnaireResponses);
+      artifacts["ratings.csv"] = ratingsCsv;
+      artifacts["questionnaire-responses.csv"] = questionnaireCsv;
+      outputs.push(
+        {
+          kind: "ratingsCsv",
+          fileName: "ratings.csv",
+          sha256: await sha256Hex(ratingsCsv),
+          byteLength: byteLength(ratingsCsv),
+          rowCount: samples.length,
+        },
+        {
+          kind: "questionnaireCsv",
+          fileName: "questionnaire-responses.csv",
+          sha256: await sha256Hex(questionnaireCsv),
+          byteLength: byteLength(questionnaireCsv),
+          rowCount: questionnaireResponses.length,
+        },
+      );
+    }
+    if (this.context.settings.output.tsv) {
+      const ratingsTsv = samplesToTsv(samples);
+      const questionnaireTsv = questionnaireResponsesToTsv(questionnaireResponses);
+      artifacts["ratings.tsv"] = ratingsTsv;
+      artifacts["questionnaire-responses.tsv"] = questionnaireTsv;
+      outputs.push(
+        {
+          kind: "ratingsTsv",
+          fileName: "ratings.tsv",
+          sha256: await sha256Hex(ratingsTsv),
+          byteLength: byteLength(ratingsTsv),
+          rowCount: samples.length,
+        },
+        {
+          kind: "questionnaireTsv",
+          fileName: "questionnaire-responses.tsv",
+          sha256: await sha256Hex(questionnaireTsv),
+          byteLength: byteLength(questionnaireTsv),
+          rowCount: questionnaireResponses.length,
+        },
+      );
+    }
+
+    const submittedByStep = new Map();
+    for (const response of submittedResponses) {
+      submittedByStep.set(
+        response.protocolStepPosition,
+        (submittedByStep.get(response.protocolStepPosition) ?? 0) + 1,
+      );
+    }
+    const questionnaireModules = this.context.protocolPlan.steps
+      .filter(({ kind }) => kind === "questionnaire")
+      .map((step) => {
+        const submittedCount = submittedByStep.get(step.protocolPosition) ?? 0;
+        const wasSubmitted = step.protocolPosition <= attempt.safeProtocolStepPosition;
+        const isDraft = attempt.activeProtocolStep?.kind === "questionnaire"
+          && attempt.activeProtocolStep.protocolPosition === step.protocolPosition;
+        return {
+          protocolStepPosition: step.protocolPosition,
+          moduleId: step.moduleId,
+          questionnaireId: step.questionnaireId,
+          definitionSha256: step.definitionSha256,
+          status: wasSubmitted ? "submitted" : isDraft ? "draft" : "notReached",
+          responseCount: wasSubmitted
+            ? submittedCount
+            : isDraft ? draftResponses.length : 0,
+        };
+      });
+    const protocol = {
+      safeProtocolStepPosition: attempt.safeProtocolStepPosition,
+      protocolStepCount: this.context.protocolPlan.steps.length,
+      questionnaireDefinitions: this.context.settings.questionnaires.definitions.map((definition) => ({
+        questionnaireId: definition.questionnaireId,
+        definitionSha256: definition.definitionSha256,
+      })),
+      questionnaireModules,
+      submittedResponseCount: submittedResponses.length,
+      draftResponseCount: draftResponses.length,
+      submittedResponsesSha256: await canonicalSha256(submittedResponses),
+      draftResponsesSha256: await canonicalSha256(draftResponses),
+    };
+    const manifest = validateResearchRunManifestV3({
+      schema: RESEARCH_RUN_MANIFEST_V3_SCHEMA,
+      version: 3,
+      runId: this.context.runId,
+      experimentId: this.context.experimentId,
+      participantId: this.context.participantId,
+      participantCode: this.context.participant.participantCode,
+      age: this.context.participant.age,
+      gender: this.context.participant.gender,
+      handedness: this.context.participant.handedness,
+      attemptNumber: this.context.attemptNumber,
+      sessionStem: this.context.sessionStem,
+      completionStatus,
+      playbackMode: "browserMediaAdapters",
+      playbackQualification: "browser",
+      settingsSha256: this.context.settingsHash,
+      assignmentPlanSha256: this.context.planHash,
+      protocolPlanSha256: this.context.protocolPlanHash,
+      stimuli: this.context.assignment.slots.map((slot) => (
+        stimulusIdentity(this.context.stimuliById.get(slot.stimulusId))
+      )),
+      protocol,
+      timing: {
+        sampleRateHz: this.context.settings.experiment.samplingFrequencyHz,
+        sampleCount: samples.length,
+        eventCount: events.length,
+        gapEventCount: events.filter(({ type }) => type === "timingGap").length,
+        missedSlotCount: events.reduce((sum, event) => sum + (event.missedSlotCount ?? 0), 0),
+        questionnaireSubmittedResponseCount: submittedResponses.length,
+        questionnaireDraftResponseCount: draftResponses.length,
+        startedAt: this.context.startedAt,
+        finalizedAt,
+      },
+      outputs,
+      recovery,
+      build: this.context.build,
+    });
+    artifacts["manifest.json"] = `${canonicalJson(manifest)}\n`;
+
+    let files;
+    try {
+      files = await this.workspace.writeAttemptArtifacts(this.context.attemptDirectory, artifacts);
+    } catch (error) {
+      if (!this.context.finalizationRetry || error?.code !== "artifact-conflict") throw error;
+      await this.workspace.quarantineIncompleteAttemptArtifacts(this.context.attemptDirectory);
+      files = await this.workspace.writeAttemptArtifacts(this.context.attemptDirectory, artifacts);
+    }
+    const terminal = await this.journal.finalizeProtocol({
+      runId: this.context.runId,
+      status: completionStatus === "completed" ? "complete" : "partial",
+      manifest,
+      finalizedAt,
+    });
+    const receipt = Object.freeze({
+      runId: this.context.runId,
+      logicalPath: `outputs/${this.context.experimentId}/${this.context.participantId}/${this.context.sessionStem}/`,
+      files,
+      settingsSha256: this.context.settingsHash,
+      assignmentPlanSha256: this.context.planHash,
+      protocolPlanSha256: this.context.protocolPlanHash,
+      sampleCount: samples.length,
+      eventCount: events.length,
+      questionnaireResponseCount: questionnaireResponses.length,
+      completionStatus,
+      manifest,
+      terminal,
+    });
+    this.mode = "setup";
+    this.context = null;
+    this.#emitStatus();
+    return receipt;
+  }
+
   #currentStimulus() {
     const slot = this.context.assignment.slots[this.context.activeStimulusIndex];
     return slot ? this.context.stimuliById.get(slot.stimulusId) : null;
+  }
+
+  #questionnaireDefinition(step) {
+    const definition = this.context.settings.questionnaires.definitions.find(({ questionnaireId }) => (
+      questionnaireId === step.questionnaireId
+    ));
+    if (!definition || definition.definitionSha256 !== step.definitionSha256) {
+      throw new TypeError("The frozen questionnaire definition differs from its protocol step.");
+    }
+    return definition;
+  }
+
+  #elapsedMs() {
+    return this.context.elapsedOffsetMs
+      + Math.max(0, this.monotonicNow() - this.context.startedMonotonicMs);
+  }
+
+  #questionnaireAnswerRecords(value) {
+    if (!value || typeof value !== "object" || Object.getPrototypeOf(value) !== Object.prototype) {
+      throw new TypeError("Questionnaire answers must be an item-to-option object.");
+    }
+    const step = this.context.activeProtocolStep;
+    const definition = this.#questionnaireDefinition(step);
+    const knownItems = new Set(definition.items.map(({ itemId }) => itemId));
+    const unknown = Object.keys(value).find((itemId) => !knownItems.has(itemId));
+    if (unknown) throw new TypeError(`Questionnaire answers contain unknown item ${unknown}.`);
+    const previous = new Map(this.context.questionnaireAnswerEvidence.map((answer) => [
+      answer.itemId,
+      answer,
+    ]));
+    const elapsedMs = this.#elapsedMs();
+    const openedAt = this.context.questionnaireOpenedElapsedMs ?? elapsedMs;
+    return definition.items.flatMap(({ itemId }) => {
+      if (!Object.hasOwn(value, itemId)) return [];
+      const optionId = value[itemId];
+      const prior = previous.get(itemId);
+      if (prior?.optionId === optionId) return [structuredClone(prior)];
+      return [{
+        itemId,
+        optionId,
+        wallTimeUtc: isoNow(this.now),
+        monotonicTimeNs: monotonicNs(elapsedMs),
+        responseLatencyMs: Math.max(0, elapsedMs - openedAt),
+      }];
+    });
   }
 
   #assertRunning() {
@@ -1185,6 +1807,23 @@ export class BrowserResearchRunController extends EventTarget {
   #assertActiveStimulus() {
     this.#assertRunning();
     if (this.context.activeStimulusIndex === null) throw new Error("No stimulus is active.");
+    if (this.context.protocolAware && this.context.activeProtocolStep?.kind !== "stimulus") {
+      throw new Error("The active protocol step is not a stimulus.");
+    }
+  }
+
+  #assertProtocolRun() {
+    this.#assertRunning();
+    if (!this.context.protocolAware) {
+      throw new Error("This historical attempt has no questionnaire protocol sequence.");
+    }
+  }
+
+  #assertActiveQuestionnaire() {
+    this.#assertProtocolRun();
+    if (this.context.activeProtocolStep?.kind !== "questionnaire") {
+      throw new Error("No questionnaire protocol step is active.");
+    }
   }
 
   #emitStatus() {

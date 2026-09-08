@@ -3,6 +3,7 @@ use crate::research_contracts::{
     RESEARCH_NAMESPACE,
 };
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_protocol::ResearchSettingsDocument;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, VecDeque};
@@ -68,6 +69,7 @@ pub enum DecodeStatus {
 #[serde(rename_all = "camelCase")]
 pub enum DecodeBackend {
     WebviewVideoFrameCallback,
+    NativeGstPlay,
     NativeLibvlc,
 }
 
@@ -329,17 +331,41 @@ impl WorkspaceService {
         })
     }
 
-    pub fn save_settings(
+    pub fn save_settings_document(
         &self,
         workspace_id: &str,
-        settings: ResearchSettingsV1,
+        settings: ResearchSettingsDocument,
     ) -> ResearchResult<SavedSettingsReceipt> {
         let settings = settings.normalize_and_validate()?;
+        let questionnaire_tables = match &settings {
+            ResearchSettingsDocument::V2(settings) => settings
+                .questionnaires
+                .definitions
+                .iter()
+                .map(|definition| {
+                    Ok((
+                        format!(
+                            "{}.{}.csv",
+                            definition.questionnaire_id, definition.definition_sha256
+                        ),
+                        definition.canonical_csv_bytes()?,
+                    ))
+                })
+                .collect::<ResearchResult<Vec<_>>>()?,
+            ResearchSettingsDocument::V1(_) => Vec::new(),
+        };
         let bytes = canonical_json(&settings, &[])?;
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
         validate_selected_workspace(workspace)?;
-        let file_name = format!("{}.settings.json", settings.experiment.id);
+        if !questionnaire_tables.is_empty() {
+            let questionnaire_directory = workspace.root.join("settings").join("questionnaires");
+            ensure_owned_directory(&questionnaire_directory)?;
+            for (file_name, table) in questionnaire_tables {
+                write_create_new_or_verify(&questionnaire_directory.join(file_name), &table)?;
+            }
+        }
+        let file_name = format!("{}.settings.json", settings.experiment_id());
         let target = workspace.root.join("settings").join(&file_name);
         write_replacing(&target, &bytes)?;
         Ok(SavedSettingsReceipt {
@@ -449,7 +475,7 @@ impl WorkspaceService {
     }
 
     /// Consumes one exact locked-file grant. WebView frame evidence remains
-    /// explicitly unqualified and cannot satisfy a future libVLC verifier.
+    /// explicitly unqualified and cannot satisfy a future GstPlay verifier.
     pub fn attest_workspace_decode(
         &self,
         request: DecodeAttestationRequest,
@@ -1486,6 +1512,49 @@ fn write_replacing(path: &Path, bytes: &[u8]) -> ResearchResult<()> {
     Ok(())
 }
 
+fn ensure_owned_directory(path: &Path) -> ResearchResult<()> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => Ok(()),
+        Ok(_) => Err(CommandError::forbidden(
+            "The questionnaire settings library is not a regular directory.",
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            fs::create_dir(path).map_err(CommandError::io)?;
+            let metadata = fs::symlink_metadata(path).map_err(CommandError::io)?;
+            if metadata.is_dir() && !metadata.file_type().is_symlink() {
+                Ok(())
+            } else {
+                Err(CommandError::forbidden(
+                    "The questionnaire settings library could not be created safely.",
+                ))
+            }
+        }
+        Err(error) => Err(CommandError::io(error)),
+    }
+}
+
+fn write_create_new_or_verify(path: &Path, bytes: &[u8]) -> ResearchResult<()> {
+    let write_new = || -> std::io::Result<()> {
+        let mut file = OpenOptions::new().write(true).create_new(true).open(path)?;
+        file.write_all(bytes)?;
+        file.sync_all()
+    };
+    match write_new() {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let existing = fs::read(path).map_err(CommandError::io)?;
+            if existing == bytes {
+                Ok(())
+            } else {
+                Err(CommandError::forbidden(
+                    "A frozen questionnaire table conflicts with existing content.",
+                ))
+            }
+        }
+        Err(error) => Err(CommandError::io(error)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1519,6 +1588,83 @@ mod tests {
         for library in ["stimuli", "settings", "outputs", "recovery"] {
             assert!(workspace.join(library).is_dir());
         }
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn v2_settings_save_freezes_content_addressed_questionnaire_tables() {
+        use crate::research_protocol::{
+            import_questionnaire_csv, QuestionnaireSettingsV2, QuestionnaireSourceKindV1,
+            ResearchSettingsV2, QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
+        };
+
+        let base = temporary_directory("v2-settings");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let v1 = crate::research_contracts::tests::default_settings()
+            .normalize_and_validate()
+            .unwrap();
+        let definition = import_questionnaire_csv(
+            include_bytes!("../../site/questionnaires/questionnaire-template.csv"),
+            QuestionnaireSourceKindV1::ResearcherCsv,
+            "questionnaire-template.csv",
+            None,
+        )
+        .unwrap()
+        .definition;
+        let settings = ResearchSettingsV2 {
+            schema: crate::research_contracts::RESEARCH_SETTINGS_SCHEMA.to_owned(),
+            version: 2,
+            experiment: v1.experiment,
+            stimuli: v1.stimuli,
+            input: v1.input,
+            visual: v1.visual,
+            advanced: v1.advanced,
+            output: v1.output,
+            questionnaires: QuestionnaireSettingsV2 {
+                algorithm_version: QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION.to_owned(),
+                definitions: vec![definition.clone()],
+                modules: Vec::new(),
+            },
+        }
+        .normalize_and_validate()
+        .unwrap();
+        let receipt = service
+            .save_settings_document(
+                &workspace_id,
+                ResearchSettingsDocument::V2(settings.clone()),
+            )
+            .unwrap();
+        assert_eq!(receipt.file_name, "video-affect-study.settings.json");
+        let table = workspace
+            .join("settings")
+            .join("questionnaires")
+            .join(format!(
+                "{}.{}.csv",
+                definition.questionnaire_id, definition.definition_sha256
+            ));
+        assert_eq!(
+            fs::read(&table).unwrap(),
+            definition.canonical_csv_bytes().unwrap()
+        );
+        service
+            .save_settings_document(
+                &workspace_id,
+                ResearchSettingsDocument::V2(settings.clone()),
+            )
+            .unwrap();
+
+        fs::write(&table, b"conflicting content").unwrap();
+        let error = service
+            .save_settings_document(&workspace_id, ResearchSettingsDocument::V2(settings))
+            .unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
         fs::remove_dir_all(base).unwrap();
     }
 

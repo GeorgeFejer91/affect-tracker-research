@@ -12,16 +12,18 @@ candidate conforms or is qualified. Delivery status belongs in
 
 | Concern | One active authority | Adapters/consumers |
 | --- | --- | --- |
-| Settings | Strict normalized `ResearchSettingsV1` | Setup form, JSON load/save, explicit legacy importer |
+| Settings | Strict normalized `ResearchSettingsV2`, with explicit assignment-only V1 projection | Setup form, JSON load/save, explicit legacy importer |
 | Input bindings | `InputBindingV1` inside normalized settings | Windows input adapter; Chrome/Edge event and Gamepad adapters |
 | Stimulus library | Workspace catalogue with exact source identity and verification state | Tauri file commands; browser File System Access; checked-in demo assets; experimental YouTube metadata adapter |
 | Assignment | Pure deterministic `balanced-v1` resolver producing `ResolvedAssignmentPlanV1` | Virtualized preview, `assignment-plan.csv`, run preparation |
-| Participant/attempt state | Locks, journals, and `ResearchRunManifestV2` | Four-state chooser projection; never editable flags |
+| Protocol sequence | Pure `questionnaire-hooks-v1` resolver producing participant-specific `ResolvedProtocolPlanV1` | Sequence preview, questionnaire/video run routing, recovery |
+| Questionnaire definitions | Strict source-byte-bound `QuestionnaireDefinitionV1` | CSV importer, Setup preview, runtime score derivation |
+| Participant/attempt state | Locks, journals, and immutable V2/V3 manifests | Four-state chooser projection; never editable flags |
 | Run lifecycle | One run authority per attempt | Setup Start, Run Pause/Stop Early, recovery |
-| Native media | One Windows Rust actor over a pinned bundled libVLC runtime | Opaque media grants/session IDs and child-window viewport projection |
+| Native media | One Windows Rust actor over a pinned bundled GStreamer/GstPlay runtime | Opaque media grants/session IDs and child-window viewport projection |
 | Affect state | One bounded current/target x/y engine | Inputs, Grid/Flubber renderer, recorder, Windows LSL |
 | Sampling | Run-owned monotonic scheduler | Canonical rows and Windows regular LSL outlet |
-| Recording | Canonical typed sample/event model | CSV, TSV, `events.jsonl`, manifest, recovery journal |
+| Recording | Canonical typed sample/event/questionnaire-response model | CSV, TSV, `events.jsonl`, manifest, recovery journal |
 | Presentation | In-app normalized Grid/Flubber renderer | Persistent Setup preview and adjacent Run feedback; never a clock |
 | LSL | Windows Rust outbound adapter | Regular eight-channel state plus irregular semantic markers |
 
@@ -31,11 +33,15 @@ record authority.
 
 ## Contract family
 
-The active closed-world family is `ResearchSettingsV1`,
-`ResolvedAssignmentPlanV1`, `InputBindingV1`, `ResearchSampleV1`,
-`ResearchEventV1`, and `ResearchRunManifestV2`. Canonical JSON plus SHA-256 bind
-normalized settings and resolved plan. Outputs bind both hashes and exact
-stimulus identities.
+Historical `ResearchSettingsV1`, `ResolvedAssignmentPlanV1`, `InputBindingV1`,
+`ResearchSampleV1`, `ResearchEventV1`, and `ResearchRunManifestV2` readers keep
+their exact meanings. Questionnaire-aware runs add `ResearchSettingsV2`,
+`QuestionnaireDefinitionV1`, `QuestionnaireModuleV1`,
+`ResolvedProtocolPlanV1`, `QuestionnaireResponseV1`, `ResearchEventV2`,
+`RecoveryJournalV2`, and `ResearchRunManifestV3`. Canonical JSON plus SHA-256
+bind normalized V2 settings, the unchanged assignment plan, participant-
+specific protocol plan, and questionnaire definitions. Outputs bind every
+applicable hash and exact stimulus or response identity.
 
 Readers reject unknown fields and keys, duplicate IDs, unsupported versions or
 algorithm tokens, invalid enum/color/path values, non-finite or out-of-range
@@ -51,7 +57,7 @@ automatically migrated.
 
 ## Setup composition
 
-One Setup shell owns only the exact seven-accordion order, single-open state,
+One Setup shell owns only the exact eight-accordion order, single-open state,
 status summary, and Start orchestration. Each accordion keeps a narrow owner:
 
 1. Workspace & Libraries — root authorization, directory creation, import,
@@ -59,10 +65,12 @@ status summary, and Start orchestration. Each accordion keeps a narrow owner:
 2. Experiment — identity, participant ID range, sample rate, transition policy;
 3. Stimuli & Counterbalancer — pools, counts, source identity, verification,
    deterministic plan and capacity preflight;
-4. Input — presets, custom capture, conflict validation, live test;
-5. Visual — normalized overlay, Grid/Flubber visibility and geometry, colors;
-6. Advanced — outbound LSL fields and six independent affect mappings; and
-7. Review & Start — aggregate preflight, derived participant/demographic data,
+4. Questionnaires & Sequence — strict CSV import, definitions, ordered hook
+   modules, preview, participant-specific protocol plan and hashes;
+5. Input — presets, custom capture, conflict validation, live test;
+6. Visual — normalized overlay, Grid/Flubber visibility and geometry, colors;
+7. Advanced — outbound LSL fields and six independent affect mappings; and
+8. Review & Start — aggregate preflight, derived participant/demographic data,
    output selections, lock/reservation, and atomic mode transition.
 
 The persistent preview receives immutable projected settings and affect state.
@@ -111,9 +119,10 @@ replacement between validation and a later path operation.
 
 ### Windows native-media boundary
 
-Qualified local/repository playback uses only the packaged libVLC 3.0.23 x64
-tree described by `src-tauri/native-media/libvlc-runtime-v1.json`. The app does
-not search `%PATH%`, the registry, a system VLC installation, or the network.
+Qualified local/repository playback uses only the packaged GStreamer 1.28.6
+MSVC x86_64 tree described by
+`src-tauri/native-media/gstreamer-runtime-v1.json`. The app does not search
+ambient plugin/install paths or the network.
 The build/runtime verifier rejects an absent, unexpected, modified, symlinked,
 Windows reparse-point/junction, or wrong-architecture tree before descending
 through it. Staging preserves the applicable upstream notices and generates a
@@ -124,8 +133,9 @@ Windows APIs.
 The native media service is one serialized Rust actor. Before Prepare, the
 workspace service revalidates the opaque stimulus identity, hash, byte length,
 duration/decode evidence, and root generation; only then may it resolve a path
-inside Rust. The actor owns the dynamic libraries, one libVLC instance, media,
-player, event callbacks, application child window, and deterministic teardown.
+inside Rust. The actor owns one GLib context/loop, GstPlay instance, explicit
+video sink, signal adapter, application child window, and deterministic
+teardown.
 The WebView receives no path or native handle. It exchanges a bounded media
 session ID, playback commands, status, and a validated stage rectangle used to
 position the child window.
@@ -137,13 +147,13 @@ non-playing state fences the sampler first; actor loss is a run failure with a
 durable recovery boundary. Callback messages are bounded and generation-
 fenced so stale media/player callbacks cannot affect a later attempt.
 
-Direct dynamic-library/libVLC/Win32 interop is the only intended `unsafe`
-surface. It must live in a small adapter with documented ABI, pointer lifetime,
-thread affinity, callback-after-teardown prevention, child-window ownership,
-and no-panic-across-FFI invariants. Explicit user approval is required before
-adding it. Until that actor lands, the safe runtime verifier and capability
-service truthfully report native playback unavailable and qualified Start fails
-closed.
+The GstPlay raw-window renderer constructor is the only intended project-
+authored `unsafe` surface. It must live in a small adapter with documented
+validated-handle lifetime, strong child-window keepalive, thread affinity,
+callback-after-teardown prevention, and no-panic-across-FFI invariants. Explicit
+user approval is required before adding it. Until that renderer lands, the safe
+runtime verifier and capability service truthfully report native playback
+unavailable and qualified Start fails closed.
 
 `unqualifiedWebview` is a separately chosen development path, never an
 automatic fallback. Its receipt, journal, events, and manifest remain labelled
@@ -155,7 +165,7 @@ requires `requestVideoFrameCallback` evidence at the deterministic near-start,
 midpoint, and near-end positions. Rust records the evidence separately as
 `representativeFramesV1`, backend `webviewVideoFrameCallback`, and status
 `attestedUnqualified`; no generic “verified” decode state can be mistaken for
-future qualified libVLC evidence. Rust consumes the opaque probe grant before
+future qualified GstPlay evidence. Rust consumes the opaque probe grant before
 accepting or rejecting each terminal attestation request, while the renderer
 requests explicit revocation when probing fails before attestation. Final
 identity is rehashed from the same Rust-held locked file handle. This remains
@@ -212,6 +222,33 @@ Run preparation atomically reserves one participant/attempt against the current
 plan and workspace. Locks, journals, and manifests reconstruct Available,
 Active, Partial, and Complete. Reruns allocate a new attempt counter and retain
 all earlier evidence.
+
+## Questionnaire and protocol architecture
+
+The CSV importer accepts one bounded UTF-8 RFC 4180 byte stream and requires
+the exact `questionnaire-csv-v1` 14-column header. One row is one allowed
+single-choice option. It canonicalizes a `QuestionnaireDefinitionV1` only after
+checking consistent repeated metadata, contiguous item rows, unique item and
+option IDs, explicit required flags, finite-or-blank scores, safe text, and all
+size limits. The source-byte hash and definition self-hash are separate. The
+runtime derives score and label from the frozen definition; the WebView cannot
+supply authoritative scores.
+
+`ResearchSettingsV2.questionnaires` owns canonical definitions plus ordered
+modules. An explicit projector removes that field and restores the exact
+`ResearchSettingsV1` assignment input. Thus `ResolvedAssignmentPlanV1` and its
+hash are unchanged. For each participant, `ResolvedProtocolPlanV1` binds the
+full V2 settings hash, assignment-plan hash, participant ID, condition order,
+and a flat sequence of stimulus/questionnaire steps. Session hooks wrap the
+whole assignment; block hooks wrap the participant-specific pool blocks;
+same-hook module order is significant.
+
+Questionnaire drafts are bounded recovery state, not submitted evidence. A
+submit transaction validates every required item, appends immutable
+`QuestionnaireResponseV1` rows and one `ResearchEventV2` completion event, and
+advances `safeProtocolStepPosition` atomically. Stop Early retains submitted
+rows and labels the current draft as draft evidence. Sampling/rating input and
+regular LSL state are closed for every questionnaire step.
 
 ## Participant derivation boundary
 
@@ -296,7 +333,7 @@ record. There is no catch-up row, retrospective timestamp, or later-state
 backfill.
 
 Sampling runs only during active decoded video playback. For qualified Windows
-runs, Rust-owned libVLC lifecycle is the only playback authority. Pause,
+runs, Rust-owned GstPlay lifecycle is the only playback authority. Pause,
 buffering, between-video transition, recovery, error, and terminal states close
 the active segment. Between videos the state returns to neutral and the
 configured transition owner runs.
@@ -323,20 +360,25 @@ UTC timestamp, and attempt counter, for example
 `P001_EF_A27_GW_HR_20260903T143012482Z_R01`. No operation overwrites an existing
 attempt directory.
 
-Every attempt contains the frozen settings snapshot, semantic `events.jsonl`,
-`ResearchRunManifestV2`, and selected rating files. The manifest binds settings
-and plan hashes, participant/attempt identity, exact stimuli, timing summary,
-output digests, recovery lineage, completion/partial state, and build/platform
-identity.
+Historical attempts retain the frozen settings snapshot, semantic
+`events.jsonl`, `ResearchRunManifestV2`, and selected rating files.
+Questionnaire-aware attempts additionally contain the frozen protocol plan and
+selected `questionnaire-responses.csv`/`.tsv` files and finalize with
+`ResearchRunManifestV3`. V3 binds settings, assignment, protocol, and definition
+hashes; participant/attempt identity; exact stimuli; module status; submitted
+and draft response counts/digests; timing summary; output digests; recovery
+lineage; completion/partial state; and build/platform identity.
 
 Tauri appends accepted evidence and flushes at bounded time/lifecycle boundaries
-before atomic finalization. The browser commits accepted event/sample batches to
+before atomic finalization. The browser commits accepted event/sample/response
+batches to
 its IndexedDB journal before materializing workspace files. Permission loss,
 quota/full disk, write failure, forced termination, or finalization failure
 retains the journal/partial record for explicit retry.
 
-Recovery validates the journal and resumes only at a safe stimulus boundary. A
-partially played video restarts at its beginning. Corrupt journals are isolated
+Recovery validates the journal and resumes only at a safe protocol boundary. A
+partially played video restarts at its beginning; an active questionnaire
+restores only its last durable draft. Corrupt journals are isolated
 with actionable status; they are never silently repaired, skipped, or called
 complete. Stop Early uses the same durable terminal path with partial status.
 Completion receipt/manifest durability precedes lock release and return to
@@ -367,15 +409,16 @@ The regular Float32 stream runs at the configured research rate with the fixed
 ordered channels `current_valence`, `current_arousal`, `target_valence`,
 `target_arousal`, `radius`, `angle_degrees`, `animation_active`, and
 `input_active`. The irregular marker stream projects only bounded semantic
-lifecycle, stimulus, input-edge, pause/resume, timing-gap, write/recovery, and
-terminal events. It excludes raw names, composed characters, arbitrary error
-text, settings bodies, native paths, and video data.
+lifecycle, stimulus, questionnaire, input-edge, pause/resume, timing-gap,
+write/recovery, and terminal events. It excludes questionnaire prompts and
+answers, raw names, composed characters, arbitrary error text, settings bodies,
+native paths, and video data.
 
 ## Historical source boundary
 
 Superseded WebXR/Quest, remote/VDO/BRSP, Face/Photoatlas, direct Polar, Touch,
-Ground Control/Party, calibration, retro/phone presentation, and cross-platform
-packaging source is not part of the active tree or artifact closure. It remains
+Ground Control/Party, calibration, retro/phone presentation, and non-Windows
+experiment-runtime source is not part of the active tree or artifact closure. It remains
 recoverable from Playground and Git history only. Build verification must fail
 if those surfaces, assets, routes, permissions, or dependencies re-enter an
 active Research artifact without an explicit charter change.
@@ -384,12 +427,17 @@ active Research artifact without an explicit charter change.
 
 - Package and qualify Tauri on Windows first. Retain the bundle ID while using
   the new product/data namespace. A qualified package contains the exact pinned
-  libVLC runtime and approved native actor; package integrity alone does not
+  GStreamer runtime and approved native actor; package integrity alone does not
   prove playback behavior.
 - Qualify desktop Chrome and Edge independently, including File System Access,
   permission renewal, worker timing, IndexedDB recovery, video playback, and
   offline behavior.
 - Do not claim macOS, Linux, Firefox, Safari, mobile, WebXR, Quest, or direct
   physiology support.
+- Host-native Windows/macOS/Linux packages are manual, unsigned, internal
+  Setup/interface-evaluation artifacts only. They build with no optional
+  features, exclude the GStreamer runtime, expose unavailable run capabilities,
+  block experiment Start, and bind their exact artifact hash to provenance with
+  every qualification field false.
 - Signing, public installer/release publication, and production credentials
   remain separately authorized actions.

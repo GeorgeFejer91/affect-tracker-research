@@ -6,11 +6,18 @@ use crate::research_input::{
     NativeInputCapability, NativeInputRegionRequest, NativeInputStatus, ResearchInputService,
 };
 use crate::research_lsl::{probe_readiness, LslReadiness};
-use crate::research_native_media::{NativeMediaCapability, NativeMediaService};
+use crate::research_native_media::{NativeMediaCapability, NativeMediaService, PlaybackMode};
+use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
+use crate::research_protocol::{
+    native_protocol_capability, native_protocol_runtime_unavailable, protocol_preflight,
+    NativeProtocolCapability, ProtocolPreflightReceipt, ResearchSettingsDocument,
+    ResearchSettingsV2, ResolvedProtocolPlanV1,
+};
 use crate::research_runtime::{
     FinalizeReceipt, FinalizeRecoveryRequest, FinishOutcome, MediaPlaybackFailureReceipt,
     MediaPlaybackFailureReport, ParticipantTileStatus, RecoveryListing, ResearchRuntime,
     ResumeRunRequest, RunStatus, StartRunReceipt, StartRunRequest, StimulusStateUpdate,
+    TransientParticipant, WorkspaceFileBinding,
 };
 use crate::research_workspace::{
     source_capabilities, AssignmentPlanExportReceipt, DecodeAttestationRequest,
@@ -18,7 +25,7 @@ use crate::research_workspace::{
     ScannedStimulusSummary, SourceCapabilities, StorageReadiness, WorkspaceService,
     WorkspaceStatus,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::sync::Arc;
 use tauri::{AppHandle, State, WebviewWindow};
@@ -46,6 +53,35 @@ pub fn research_native_media_capability(
 ) -> ResearchResult<NativeMediaCapability> {
     authorize(&window)?;
     Ok(native_media.capability())
+}
+
+#[tauri::command]
+pub fn research_native_protocol_capability(
+    window: WebviewWindow,
+) -> ResearchResult<NativeProtocolCapability> {
+    authorize(&window)?;
+    Ok(native_protocol_capability())
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProtocolPreflightRequest {
+    pub research_settings: ResearchSettingsV2,
+    pub assignment_plan: ResolvedAssignmentPlanV1,
+    pub resolved_protocol_plan: ResolvedProtocolPlanV1,
+}
+
+#[tauri::command]
+pub fn research_protocol_preflight(
+    window: WebviewWindow,
+    request: ProtocolPreflightRequest,
+) -> ResearchResult<ProtocolPreflightReceipt> {
+    authorize(&window)?;
+    protocol_preflight(
+        request.research_settings,
+        request.assignment_plan,
+        request.resolved_protocol_plan,
+    )
 }
 
 #[tauri::command]
@@ -167,11 +203,22 @@ pub async fn research_load_settings(
 }
 
 fn decode_settings_bytes(bytes: &[u8]) -> ResearchResult<LoadedSettingsReceipt> {
+    if let Ok(settings) = serde_json::from_slice::<ResearchSettingsV2>(bytes) {
+        return Ok(LoadedSettingsReceipt {
+            settings: Some(ResearchSettingsDocument::V2(
+                settings.normalize_and_validate()?,
+            )),
+            legacy_settings: None,
+            report: SettingsLoadReport::research_v2(),
+        });
+    }
     if let Ok(settings) = serde_json::from_slice::<ResearchSettingsV1>(bytes) {
         return Ok(LoadedSettingsReceipt {
-            settings: Some(settings.normalize_and_validate()?),
+            settings: Some(ResearchSettingsDocument::V1(
+                settings.normalize_and_validate()?,
+            )),
             legacy_settings: None,
-            report: SettingsLoadReport::research(),
+            report: SettingsLoadReport::research_v1(),
         });
     }
     if bytes.len() > 1_000_000 {
@@ -181,7 +228,7 @@ fn decode_settings_bytes(bytes: &[u8]) -> ResearchResult<LoadedSettingsReceipt> 
     }
     let legacy: serde_json::Value = serde_json::from_slice(bytes).map_err(|_| {
         CommandError::invalid_contract(
-            "The selected file is neither ResearchSettingsV1 nor bounded portable version 1 JSON.",
+            "The selected file is neither ResearchSettingsV2/ResearchSettingsV1 nor bounded portable version 1 JSON.",
         )
     })?;
     if legacy.get("schema").is_some() {
@@ -206,7 +253,7 @@ fn decode_settings_bytes(bytes: &[u8]) -> ResearchResult<LoadedSettingsReceipt> 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoadedSettingsReceipt {
-    pub settings: Option<ResearchSettingsV1>,
+    pub settings: Option<ResearchSettingsDocument>,
     pub legacy_settings: Option<serde_json::Value>,
     pub report: SettingsLoadReport,
 }
@@ -223,11 +270,22 @@ pub struct SettingsLoadReport {
 }
 
 impl SettingsLoadReport {
-    fn research() -> Self {
+    fn research_v1() -> Self {
         Self {
             schema: "affect-research-settings-load-report",
             version: 1,
             source_kind: "researchV1",
+            requires_explicit_import: false,
+            defaults: Vec::new(),
+            discarded: Vec::new(),
+        }
+    }
+
+    fn research_v2() -> Self {
+        Self {
+            schema: "affect-research-settings-load-report",
+            version: 1,
+            source_kind: "researchV2",
             requires_explicit_import: false,
             defaults: Vec::new(),
             discarded: Vec::new(),
@@ -330,10 +388,10 @@ pub fn research_save_settings(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
     workspace_id: String,
-    settings: ResearchSettingsV1,
+    settings: ResearchSettingsDocument,
 ) -> ResearchResult<SavedSettingsReceipt> {
     authorize(&window)?;
-    workspace.save_settings(&workspace_id, settings)
+    workspace.save_settings_document(&workspace_id, settings)
 }
 
 #[tauri::command]
@@ -370,6 +428,220 @@ pub fn research_lsl_readiness(
         &settings.advanced.lsl,
         settings.experiment.sampling_frequency_hz,
     ))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct StartProtocolRunRequest {
+    pub workspace_id: String,
+    pub research_settings: ResearchSettingsV2,
+    pub assignment_plan: ResolvedAssignmentPlanV1,
+    pub resolved_protocol_plan: ResolvedProtocolPlanV1,
+    pub participant: TransientParticipant,
+    pub workspace_files: Vec<WorkspaceFileBinding>,
+    pub rerun_confirmed: bool,
+    pub input_test_receipt_id: String,
+    pub playback_mode: PlaybackMode,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ResumeProtocolRunRequest {
+    pub workspace_id: String,
+    pub recovery_id: String,
+    pub research_settings: ResearchSettingsV2,
+    pub assignment_plan: ResolvedAssignmentPlanV1,
+    pub resolved_protocol_plan: ResolvedProtocolPlanV1,
+    pub workspace_files: Vec<WorkspaceFileBinding>,
+    pub input_test_receipt_id: String,
+    pub playback_mode: PlaybackMode,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FinalizeProtocolRecoveryRequest {
+    pub workspace_id: String,
+    pub recovery_id: String,
+    pub research_settings: ResearchSettingsV2,
+    pub assignment_plan: ResolvedAssignmentPlanV1,
+    pub resolved_protocol_plan: ResolvedProtocolPlanV1,
+}
+
+#[tauri::command]
+pub fn research_start_protocol_run(
+    window: WebviewWindow,
+    request: StartProtocolRunRequest,
+) -> ResearchResult<StartRunReceipt> {
+    authorize(&window)?;
+    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
+    let StartProtocolRunRequest {
+        workspace_id,
+        research_settings,
+        assignment_plan,
+        resolved_protocol_plan,
+        participant,
+        workspace_files,
+        rerun_confirmed,
+        input_test_receipt_id,
+        playback_mode,
+    } = request;
+    validate_protocol_run_envelope(
+        &workspace_id,
+        &input_test_receipt_id,
+        playback_mode,
+        &workspace_files,
+        &research_settings,
+        &resolved_protocol_plan,
+    )?;
+    let _rerun_was_explicitly_confirmed = rerun_confirmed;
+    if participant.participant_id != resolved_protocol_plan.participant_id {
+        return Err(CommandError::invalid_contract(
+            "The transient participant does not match the resolved questionnaire protocol.",
+        ));
+    }
+    if participant.age == 0 || participant.age > 120 || participant.participant_code.is_empty() {
+        return Err(CommandError::invalid_contract(
+            "The transient participant metadata is invalid.",
+        ));
+    }
+    let _demographic_codes = (participant.gender, participant.handedness);
+    protocol_preflight(research_settings, assignment_plan, resolved_protocol_plan)?;
+    Err(native_protocol_runtime_unavailable())
+}
+
+#[tauri::command]
+pub fn research_resume_protocol_run(
+    window: WebviewWindow,
+    request: ResumeProtocolRunRequest,
+) -> ResearchResult<StartRunReceipt> {
+    authorize(&window)?;
+    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
+    let ResumeProtocolRunRequest {
+        workspace_id,
+        recovery_id,
+        research_settings,
+        assignment_plan,
+        resolved_protocol_plan,
+        workspace_files,
+        input_test_receipt_id,
+        playback_mode,
+    } = request;
+    validate_protocol_run_envelope(
+        &workspace_id,
+        &input_test_receipt_id,
+        playback_mode,
+        &workspace_files,
+        &research_settings,
+        &resolved_protocol_plan,
+    )?;
+    validate_canonical_uuid(&recovery_id, "recoveryId")?;
+    protocol_preflight(research_settings, assignment_plan, resolved_protocol_plan)?;
+    Err(native_protocol_runtime_unavailable())
+}
+
+#[tauri::command]
+pub fn research_finalize_protocol_recovery(
+    window: WebviewWindow,
+    request: FinalizeProtocolRecoveryRequest,
+) -> ResearchResult<FinalizeReceipt> {
+    authorize(&window)?;
+    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
+    let FinalizeProtocolRecoveryRequest {
+        workspace_id,
+        recovery_id,
+        research_settings,
+        assignment_plan,
+        resolved_protocol_plan,
+    } = request;
+    validate_canonical_uuid(&workspace_id, "workspaceId")?;
+    validate_canonical_uuid(&recovery_id, "recoveryId")?;
+    protocol_preflight(research_settings, assignment_plan, resolved_protocol_plan)?;
+    Err(native_protocol_runtime_unavailable())
+}
+
+fn validate_protocol_run_envelope(
+    workspace_id: &str,
+    input_test_receipt_id: &str,
+    playback_mode: PlaybackMode,
+    workspace_files: &[WorkspaceFileBinding],
+    research_settings: &ResearchSettingsV2,
+    protocol_plan: &ResolvedProtocolPlanV1,
+) -> ResearchResult<()> {
+    validate_canonical_uuid(workspace_id, "workspaceId")?;
+    validate_canonical_uuid(input_test_receipt_id, "inputTestReceiptId")?;
+    if playback_mode == PlaybackMode::NativeLibvlc {
+        return Err(CommandError::invalid_contract(
+            "The retired nativeLibvlc mode cannot start a questionnaire protocol.",
+        ));
+    }
+    if workspace_files.is_empty() || workspace_files.len() > crate::research_contracts::MAX_STIMULI
+    {
+        return Err(CommandError::invalid_contract(
+            "workspaceFiles must bind every assigned stimulus within supported bounds.",
+        ));
+    }
+    let mut stimulus_ids = std::collections::BTreeSet::new();
+    let mut file_ids = std::collections::BTreeSet::new();
+    for binding in workspace_files {
+        if binding.stimulus_id.is_empty()
+            || !binding.workspace_file_id.starts_with("wf-")
+            || binding.workspace_file_id.len() != 27
+            || !binding.workspace_file_id[3..]
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+            || !stimulus_ids.insert(binding.stimulus_id.as_str())
+            || !file_ids.insert(binding.workspace_file_id.as_str())
+        {
+            return Err(CommandError::invalid_contract(
+                "workspaceFiles contains an invalid or repeated opaque binding.",
+            ));
+        }
+    }
+    let expected_stimulus_ids = protocol_plan
+        .steps
+        .iter()
+        .filter_map(|step| match step {
+            crate::research_protocol::ProtocolStepV1::Stimulus { stimulus_id, .. } => {
+                Some(stimulus_id.as_str())
+            }
+            crate::research_protocol::ProtocolStepV1::Questionnaire { .. } => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    for stimulus_id in &expected_stimulus_ids {
+        let stimulus = research_settings
+            .stimuli
+            .items
+            .iter()
+            .find(|stimulus| stimulus.stimulus_id == *stimulus_id)
+            .ok_or_else(|| {
+                CommandError::invalid_contract(
+                    "The resolved protocol references an unknown stimulus.",
+                )
+            })?;
+        if !matches!(
+            &stimulus.source,
+            crate::research_contracts::StimulusSourceV1::WorkspaceFile { .. }
+        ) {
+            return Err(CommandError::unsupported_source(
+                "Questionnaire-aware native Start currently accepts only workspace-file stimuli.",
+            ));
+        }
+    }
+    if stimulus_ids != expected_stimulus_ids {
+        return Err(CommandError::invalid_contract(
+            "workspaceFiles must exactly equal the selected participant protocol stimuli.",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_canonical_uuid(value: &str, label: &str) -> ResearchResult<()> {
+    match uuid::Uuid::parse_str(value) {
+        Ok(uuid) if uuid.to_string() == value => Ok(()),
+        _ => Err(CommandError::invalid_contract(format!(
+            "{label} must be a canonical UUID."
+        ))),
+    }
 }
 
 #[tauri::command]
@@ -474,6 +746,8 @@ mod tests {
             "research_choose_workspace",
             "research_source_capabilities",
             "research_native_media_capability",
+            "research_native_protocol_capability",
+            "research_protocol_preflight",
             "research_input_capability",
             "research_input_set_region",
             "research_input_begin_test",
@@ -490,6 +764,9 @@ mod tests {
             "research_storage_readiness",
             "research_export_assignment_plan",
             "research_lsl_readiness",
+            "research_start_protocol_run",
+            "research_resume_protocol_run",
+            "research_finalize_protocol_recovery",
             "research_start_run",
             "research_resume_run",
             "research_finalize_recovery",
@@ -515,6 +792,34 @@ mod tests {
         assert!(receipt.settings.is_some());
         assert!(receipt.legacy_settings.is_none());
         assert!(!receipt.report.requires_explicit_import);
+        assert_eq!(receipt.report.source_kind, "researchV1");
+
+        let v2 = ResearchSettingsV2 {
+            schema: crate::research_contracts::RESEARCH_SETTINGS_SCHEMA.to_owned(),
+            version: 2,
+            experiment: research.experiment.clone(),
+            stimuli: research.stimuli.clone(),
+            input: research.input.clone(),
+            visual: research.visual.clone(),
+            advanced: research.advanced.clone(),
+            output: research.output.clone(),
+            questionnaires: crate::research_protocol::QuestionnaireSettingsV2 {
+                algorithm_version: crate::research_protocol::QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION
+                    .to_owned(),
+                definitions: Vec::new(),
+                modules: Vec::new(),
+            },
+        }
+        .normalize_and_validate()
+        .unwrap();
+        let v2_receipt =
+            decode_settings_bytes(&crate::research_contracts::canonical_json(&v2, &[]).unwrap())
+                .unwrap();
+        assert!(matches!(
+            v2_receipt.settings,
+            Some(ResearchSettingsDocument::V2(_))
+        ));
+        assert_eq!(v2_receipt.report.source_kind, "researchV2");
 
         let legacy = decode_settings_bytes(br#"{"version":1,"stepSize":0.2}"#).unwrap();
         assert!(legacy.settings.is_none());

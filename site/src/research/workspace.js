@@ -1,10 +1,28 @@
-import { canonicalJson } from "./canonical.js";
+import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import {
   validateResearchEventV1,
   validateResearchRunManifestV2,
+  validateResearchSampleV1,
   validateResearchSettingsV1,
 } from "./contracts.js";
-import { RESEARCH_SAMPLE_COLUMNS } from "./tabular.js";
+import {
+  validateResearchSettingsV2,
+  validateResolvedProtocolPlanV1,
+} from "./protocol-plan.js";
+import {
+  QUESTIONNAIRE_RESPONSE_COLUMNS,
+  questionnaireToCsv,
+  serializeQuestionnaireResponses,
+  validateQuestionnaireResponseV1,
+} from "./questionnaires.js";
+import {
+  RESEARCH_SAMPLE_COLUMNS,
+  serializeRatings,
+} from "./tabular.js";
+import {
+  validateResearchEventV2,
+  validateResearchRunManifestV3,
+} from "./protocol-records.js";
 
 export const RESEARCH_STORAGE_NAMESPACE = "affect-research/v1";
 export const RESEARCH_WORKSPACE_IDENTITY_FILE = "workspace.identity.json";
@@ -28,6 +46,12 @@ const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 const WORKSPACE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u;
 const MAX_SCAN_DEPTH = 32;
 const MAX_SCAN_ENTRIES = 10_000;
+const MAX_SETTINGS_SNAPSHOT_BYTES = 5 * 1024 * 1024;
+const MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES = 16 * 1024 * 1024;
+const MAX_EVENT_LOG_BYTES = 256 * 1024 * 1024;
+const MAX_TABULAR_ARTIFACT_BYTES = 512 * 1024 * 1024;
+const MAX_ATTESTED_EVENT_RECORDS = 5_000_000;
+const MAX_ATTESTED_TABLE_ROWS = 5_000_000;
 const ATTEMPT_ARTIFACT_NAMES = Object.freeze([
   "settings.snapshot.json",
   "events.jsonl",
@@ -483,7 +507,10 @@ async function readBoundedJsonFile(handle, label, { maximumBytes = 4 * 1024 * 10
   }
 }
 
-function parseDelimitedTable(text, delimiter, label) {
+function parseDelimitedTable(text, delimiter, label, {
+  columns = RESEARCH_SAMPLE_COLUMNS,
+  maximumRows = Number.MAX_SAFE_INTEGER,
+} = {}) {
   const rows = [];
   let row = [];
   let cell = "";
@@ -505,12 +532,18 @@ function parseDelimitedTable(text, delimiter, label) {
     } else if (character === "\r" && text[index + 1] === "\n") {
       row.push(cell);
       rows.push(row);
+      if (rows.length > maximumRows + 1) {
+        fail("artifact-table", `${label} exceeds the supported ${maximumRows} data rows.`);
+      }
       row = [];
       cell = "";
       index += 1;
     } else if (character === "\n") {
       row.push(cell);
       rows.push(row);
+      if (rows.length > maximumRows + 1) {
+        fail("artifact-table", `${label} exceeds the supported ${maximumRows} data rows.`);
+      }
       row = [];
       cell = "";
     } else cell += character;
@@ -520,13 +553,153 @@ function parseDelimitedTable(text, delimiter, label) {
     row.push(cell);
     rows.push(row);
   }
-  if (rows.length < 1 || rows[0].join("\u0000") !== RESEARCH_SAMPLE_COLUMNS.join("\u0000")) {
-    fail("artifact-table", `${label} does not use the canonical ResearchSampleV1 columns.`);
+  if (rows.length > maximumRows + 1) {
+    fail("artifact-table", `${label} exceeds the supported ${maximumRows} data rows.`);
   }
-  if (rows.some((candidate) => candidate.length !== RESEARCH_SAMPLE_COLUMNS.length)) {
+  if (rows.length < 1 || rows[0].join("\u0000") !== columns.join("\u0000")) {
+    fail("artifact-table", `${label} does not use its exact canonical columns.`);
+  }
+  if (rows.some((candidate) => candidate.length !== columns.length)) {
     fail("artifact-table", `${label} contains a row with a noncanonical column count.`);
   }
   return rows;
+}
+
+function unsignedIntegerCell(value, label, { nullable = false } = {}) {
+  if (nullable && value === "") return null;
+  if (typeof value !== "string" || !/^(?:0|[1-9]\d*)$/u.test(value)) {
+    fail("artifact-table-record", `${label} must be a canonical unsigned integer.`);
+  }
+  const number = Number(value);
+  if (!Number.isSafeInteger(number)) {
+    fail("artifact-table-record", `${label} exceeds the supported safe-integer range.`);
+  }
+  return number;
+}
+
+function finiteNumberCell(value, label, { nullable = false } = {}) {
+  if (nullable && value === "") return null;
+  if (typeof value !== "string" || value.length < 1) {
+    fail("artifact-table-record", `${label} must be a canonical finite number.`);
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    fail("artifact-table-record", `${label} must be a canonical finite number.`);
+  }
+  return number;
+}
+
+function booleanCell(value, label) {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  fail("artifact-table-record", `${label} must be true or false.`);
+}
+
+function rowCells(columns, row) {
+  return Object.fromEntries(columns.map((name, index) => [name, row[index]]));
+}
+
+function ratingRecordFromRow(row, label) {
+  const cell = rowCells(RESEARCH_SAMPLE_COLUMNS, row);
+  try {
+    return validateResearchSampleV1({
+      schema: cell.schema,
+      version: unsignedIntegerCell(cell.version, `${label}.version`),
+      sequence: unsignedIntegerCell(cell.sequence, `${label}.sequence`),
+      runId: cell.runId,
+      participantId: cell.participantId,
+      attemptNumber: unsignedIntegerCell(cell.attemptNumber, `${label}.attemptNumber`),
+      settingsSha256: cell.settingsSha256,
+      assignmentPlanSha256: cell.assignmentPlanSha256,
+      stimulusPosition: unsignedIntegerCell(cell.stimulusPosition, `${label}.stimulusPosition`),
+      stimulusIdentity: {
+        kind: cell.stimulusKind,
+        stimulusId: cell.stimulusId,
+        sha256: cell.stimulusSha256 === "" ? null : cell.stimulusSha256,
+        byteLength: unsignedIntegerCell(
+          cell.stimulusByteLength,
+          `${label}.stimulusByteLength`,
+          { nullable: true },
+        ),
+        durationMs: finiteNumberCell(cell.stimulusDurationMs, `${label}.stimulusDurationMs`),
+        url: cell.stimulusUrl === "" ? null : cell.stimulusUrl,
+        videoId: cell.stimulusVideoId === "" ? null : cell.stimulusVideoId,
+      },
+      wallTimeUtc: cell.wallTimeUtc,
+      monotonicTimeNs: cell.monotonicTimeNs,
+      lslTimeSeconds: finiteNumberCell(cell.lslTimeSeconds, `${label}.lslTimeSeconds`, { nullable: true }),
+      sampleRateHz: unsignedIntegerCell(cell.sampleRateHz, `${label}.sampleRateHz`),
+      scheduledElapsedMs: finiteNumberCell(cell.scheduledElapsedMs, `${label}.scheduledElapsedMs`),
+      observedElapsedMs: finiteNumberCell(cell.observedElapsedMs, `${label}.observedElapsedMs`),
+      schedulerLatenessMs: finiteNumberCell(cell.schedulerLatenessMs, `${label}.schedulerLatenessMs`),
+      schedulerJitterMs: finiteNumberCell(cell.schedulerJitterMs, `${label}.schedulerJitterMs`),
+      stateAnchorAgeMs: finiteNumberCell(cell.stateAnchorAgeMs, `${label}.stateAnchorAgeMs`),
+      missedSlotsBefore: unsignedIntegerCell(cell.missedSlotsBefore, `${label}.missedSlotsBefore`),
+      mediaTimeMs: finiteNumberCell(cell.mediaTimeMs, `${label}.mediaTimeMs`),
+      currentValence: finiteNumberCell(cell.currentValence, `${label}.currentValence`),
+      currentArousal: finiteNumberCell(cell.currentArousal, `${label}.currentArousal`),
+      targetValence: finiteNumberCell(cell.targetValence, `${label}.targetValence`),
+      targetArousal: finiteNumberCell(cell.targetArousal, `${label}.targetArousal`),
+      radius: finiteNumberCell(cell.radius, `${label}.radius`),
+      angleDegrees: finiteNumberCell(cell.angleDegrees, `${label}.angleDegrees`),
+      oscillationFrequency: finiteNumberCell(cell.oscillationFrequency, `${label}.oscillationFrequency`),
+      edgeSmoothness: finiteNumberCell(cell.edgeSmoothness, `${label}.edgeSmoothness`),
+      projectionAmplitude: finiteNumberCell(cell.projectionAmplitude, `${label}.projectionAmplitude`),
+      pulseSynchrony: finiteNumberCell(cell.pulseSynchrony, `${label}.pulseSynchrony`),
+      waveSizeVariation: finiteNumberCell(cell.waveSizeVariation, `${label}.waveSizeVariation`),
+      saturation: finiteNumberCell(cell.saturation, `${label}.saturation`),
+      animationActive: booleanCell(cell.animationActive, `${label}.animationActive`),
+      inputActive: booleanCell(cell.inputActive, `${label}.inputActive`),
+      inputKind: cell.inputKind,
+      feedbackVisible: booleanCell(cell.feedbackVisible, `${label}.feedbackVisible`),
+    });
+  } catch (error) {
+    if (error instanceof ResearchWorkspaceError) throw error;
+    fail("artifact-sample-record", `${label} is not a strict ResearchSampleV1 record.`, { cause: error });
+  }
+}
+
+function questionnaireRecordFromRow(row, label) {
+  const cell = rowCells(QUESTIONNAIRE_RESPONSE_COLUMNS, row);
+  try {
+    return validateQuestionnaireResponseV1({
+      schema: cell.schema,
+      version: unsignedIntegerCell(cell.version, `${label}.version`),
+      sequence: unsignedIntegerCell(cell.sequence, `${label}.sequence`),
+      runId: cell.runId,
+      participantId: cell.participantId,
+      attemptNumber: unsignedIntegerCell(cell.attemptNumber, `${label}.attemptNumber`),
+      settingsSha256: cell.settingsSha256,
+      assignmentPlanSha256: cell.assignmentPlanSha256,
+      protocolPlanSha256: cell.protocolPlanSha256,
+      protocolStepPosition: unsignedIntegerCell(
+        cell.protocolStepPosition,
+        `${label}.protocolStepPosition`,
+      ),
+      moduleId: cell.moduleId,
+      questionnaireId: cell.questionnaireId,
+      questionnaireVersion: cell.questionnaireVersion,
+      definitionSha256: cell.definitionSha256,
+      itemId: cell.itemId,
+      itemOrder: unsignedIntegerCell(cell.itemOrder, `${label}.itemOrder`),
+      optionId: cell.optionId,
+      optionOrder: unsignedIntegerCell(cell.optionOrder, `${label}.optionOrder`),
+      responseLabel: cell.responseLabel,
+      scoreValue: finiteNumberCell(cell.scoreValue, `${label}.scoreValue`, { nullable: true }),
+      subscale: cell.subscale === "" ? null : cell.subscale,
+      status: cell.status,
+      wallTimeUtc: cell.wallTimeUtc,
+      monotonicTimeNs: cell.monotonicTimeNs,
+      responseLatencyMs: finiteNumberCell(cell.responseLatencyMs, `${label}.responseLatencyMs`),
+    });
+  } catch (error) {
+    if (error instanceof ResearchWorkspaceError) throw error;
+    fail(
+      "artifact-questionnaire-record",
+      `${label} is not a strict QuestionnaireResponseV1 record.`,
+      { cause: error },
+    );
+  }
 }
 
 function attestRatingRows(rows, manifest, label) {
@@ -622,6 +795,596 @@ async function attestManifestArtifacts(sessionDirectory, manifest) {
   }
 }
 
+const MANIFEST_V3_ARTIFACT_NAMES = Object.freeze({
+  settings: "settings.snapshot.json",
+  protocolPlan: "protocol-plan.snapshot.json",
+  events: "events.jsonl",
+  ratingsCsv: "ratings.csv",
+  ratingsTsv: "ratings.tsv",
+  questionnaireCsv: "questionnaire-responses.csv",
+  questionnaireTsv: "questionnaire-responses.tsv",
+});
+
+function maximumArtifactBytes(kind) {
+  if (kind === "settings") return MAX_SETTINGS_SNAPSHOT_BYTES;
+  if (kind === "protocolPlan") return MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES;
+  if (kind === "events") return MAX_EVENT_LOG_BYTES;
+  return MAX_TABULAR_ARTIFACT_BYTES;
+}
+
+async function readAttestedTextArtifact(sessionDirectory, output) {
+  let handle;
+  try {
+    handle = await sessionDirectory.getFileHandle(output.fileName, { create: false });
+  } catch (error) {
+    if (error?.name === "NotFoundError") {
+      fail("artifact-missing", `${output.fileName} is declared by the manifest but is missing.`);
+    }
+    throw error;
+  }
+  const file = await handle.getFile();
+  const maximumBytes = maximumArtifactBytes(output.kind);
+  if (file.size !== output.byteLength) {
+    fail("artifact-size", `${output.fileName} byte length does not match its manifest receipt.`);
+  }
+  if (file.size < 1 || file.size > maximumBytes) {
+    fail(
+      "artifact-size-bound",
+      `${output.fileName} must contain between 1 byte and ${maximumBytes} bytes.`,
+    );
+  }
+  if (await sha256Blob(file) !== output.sha256) {
+    fail("artifact-hash", `${output.fileName} SHA-256 does not match its manifest receipt.`);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer());
+  } catch (error) {
+    fail("artifact-encoding", `${output.fileName} must be valid UTF-8 text.`, { cause: error });
+  }
+}
+
+async function attestManifestV3ArtifactClosure(sessionDirectory, manifest) {
+  const expected = new Set(["manifest.json"]);
+  for (const output of manifest.outputs) {
+    const canonicalName = MANIFEST_V3_ARTIFACT_NAMES[output.kind];
+    if (output.fileName !== canonicalName) {
+      fail("artifact-name", `Manifest ${output.kind} output must be ${canonicalName}.`);
+    }
+    if (expected.has(output.fileName)) {
+      fail("artifact-name", `Manifest output file ${output.fileName} is declared more than once.`);
+    }
+    expected.add(output.fileName);
+  }
+  for await (const [name, handle] of sessionDirectory.entries()) {
+    let safeName;
+    try {
+      safeName = assertSafeWorkspaceSegment(name, "attempt artifact name");
+    } catch (error) {
+      fail("artifact-extra", "The attempt directory contains an unsafe artifact name.", { cause: error });
+    }
+    if (handle.kind !== "file" || !expected.has(safeName)) {
+      fail("artifact-extra", `The finalized attempt contains undeclared artifact ${safeName}.`);
+    }
+    expected.delete(safeName);
+  }
+  if (expected.size > 0) {
+    fail("artifact-missing", `The finalized attempt is missing ${[...expected].join(", ")}.`);
+  }
+}
+
+function settingsStimulusIdentity(stimulus) {
+  const source = stimulus.source;
+  return source.kind === "youtube"
+    ? {
+      kind: source.kind,
+      stimulusId: stimulus.stimulusId,
+      sha256: null,
+      byteLength: null,
+      durationMs: source.observedDurationMs,
+      url: source.url,
+      videoId: source.videoId,
+    }
+    : {
+      kind: source.kind,
+      stimulusId: stimulus.stimulusId,
+      sha256: source.sha256,
+      byteLength: source.byteLength,
+      durationMs: source.durationMs,
+      url: null,
+      videoId: null,
+    };
+}
+
+function attestManifestV3ProtocolBindings(settings, protocolPlan, manifest) {
+  if (settings.experiment.id !== manifest.experimentId
+    || settings.experiment.samplingFrequencyHz !== manifest.timing.sampleRateHz
+    || protocolPlan.settingsSha256 !== manifest.settingsSha256
+    || protocolPlan.assignmentPlanSha256 !== manifest.assignmentPlanSha256
+    || protocolPlan.protocolPlanHashSha256 !== manifest.protocolPlanSha256
+    || protocolPlan.participantId !== manifest.participantId
+    || protocolPlan.steps.length !== manifest.protocol.protocolStepCount) {
+    fail(
+      "artifact-protocol-binding",
+      "Frozen settings, protocol plan, participant, or manifest hashes do not describe one attempt.",
+    );
+  }
+
+  const expectedKinds = new Set(["settings", "protocolPlan", "events"]);
+  if (settings.output.csv) {
+    expectedKinds.add("ratingsCsv");
+    expectedKinds.add("questionnaireCsv");
+  }
+  if (settings.output.tsv) {
+    expectedKinds.add("ratingsTsv");
+    expectedKinds.add("questionnaireTsv");
+  }
+  const observedKinds = new Set(manifest.outputs.map(({ kind }) => kind));
+  if (expectedKinds.size !== observedKinds.size
+    || [...expectedKinds].some((kind) => !observedKinds.has(kind))) {
+    fail(
+      "artifact-output-selection",
+      "Manifest outputs do not exactly match the frozen CSV and TSV selections.",
+    );
+  }
+
+  const expectedDefinitions = settings.questionnaires.definitions.map((definition) => ({
+    questionnaireId: definition.questionnaireId,
+    definitionSha256: definition.definitionSha256,
+  }));
+  if (canonicalJson(expectedDefinitions)
+    !== canonicalJson(manifest.protocol.questionnaireDefinitions)) {
+    fail(
+      "artifact-questionnaire-binding",
+      "Manifest questionnaire definitions do not match the frozen settings.",
+    );
+  }
+
+  const questionnaireSteps = protocolPlan.steps.filter(({ kind }) => kind === "questionnaire");
+  if (questionnaireSteps.length !== manifest.protocol.questionnaireModules.length) {
+    fail(
+      "artifact-questionnaire-binding",
+      "Manifest questionnaire modules do not match the resolved protocol.",
+    );
+  }
+  questionnaireSteps.forEach((step, index) => {
+    const receipt = manifest.protocol.questionnaireModules[index];
+    if (receipt.protocolStepPosition !== step.protocolPosition
+      || receipt.moduleId !== step.moduleId
+      || receipt.questionnaireId !== step.questionnaireId
+      || receipt.definitionSha256 !== step.definitionSha256) {
+      fail(
+        "artifact-questionnaire-binding",
+        `Manifest questionnaire module ${index + 1} does not match its protocol step.`,
+      );
+    }
+    if (step.protocolPosition <= manifest.protocol.safeProtocolStepPosition) {
+      if (receipt.status !== "submitted") {
+        fail(
+          "artifact-questionnaire-status",
+          `Questionnaire ${step.moduleId} precedes the safe boundary but is not submitted.`,
+        );
+      }
+    } else if (receipt.status === "submitted") {
+      fail(
+        "artifact-questionnaire-status",
+        `Questionnaire ${step.moduleId} is submitted beyond the safe boundary.`,
+      );
+    }
+    if (receipt.status === "draft"
+      && step.protocolPosition !== manifest.protocol.safeProtocolStepPosition + 1) {
+      fail(
+        "artifact-questionnaire-status",
+        `Questionnaire ${step.moduleId} draft is not the active safe-boundary step.`,
+      );
+    }
+  });
+
+  const stimulusSteps = protocolPlan.steps.filter(({ kind }) => kind === "stimulus");
+  if (stimulusSteps.length !== manifest.stimuli.length) {
+    fail("artifact-stimulus-binding", "Manifest stimuli do not match the resolved protocol.");
+  }
+  const settingsByStimulus = new Map(settings.stimuli.items.map((stimulus) => [
+    stimulus.stimulusId,
+    settingsStimulusIdentity(stimulus),
+  ]));
+  stimulusSteps.forEach((step, index) => {
+    const identity = manifest.stimuli[index];
+    const settingsIdentity = settingsByStimulus.get(step.stimulusId);
+    if (step.stimulusPosition !== index + 1
+      || identity.stimulusId !== step.stimulusId
+      || !settingsIdentity
+      || canonicalJson(identity) !== canonicalJson(settingsIdentity)) {
+      fail(
+        "artifact-stimulus-binding",
+        `Manifest stimulus ${index + 1} does not match its frozen protocol and settings identity.`,
+      );
+    }
+  });
+}
+
+function attestManifestV3RatingTable(text, output, manifest) {
+  const format = output.kind === "ratingsCsv" ? "csv" : "tsv";
+  const rows = parseDelimitedTable(text, format === "csv" ? "," : "\t", output.fileName, {
+    maximumRows: MAX_ATTESTED_TABLE_ROWS,
+  });
+  if (rows.length - 1 !== output.rowCount) {
+    fail("artifact-row-count", `${output.fileName} row count does not match its manifest receipt.`);
+  }
+  const records = rows.slice(1).map((row, index) => (
+    ratingRecordFromRow(row, `${output.fileName} row ${index + 1}`)
+  ));
+  let canonical;
+  try {
+    canonical = serializeRatings(records, { format });
+  } catch (error) {
+    fail(
+      "artifact-sample-record",
+      `${output.fileName} is not a canonical ordered ResearchSampleV1 table.`,
+      { cause: error },
+    );
+  }
+  if (canonical !== text) {
+    fail(
+      "artifact-table-canonical",
+      `${output.fileName} is not the exact canonical ${format.toUpperCase()} projection.`,
+    );
+  }
+  records.forEach((record, index) => {
+    const stimulus = manifest.stimuli[record.stimulusPosition - 1];
+    if (record.sequence !== index + 1
+      || record.runId !== manifest.runId
+      || record.participantId !== manifest.participantId
+      || record.attemptNumber !== manifest.attemptNumber
+      || record.settingsSha256 !== manifest.settingsSha256
+      || record.assignmentPlanSha256 !== manifest.assignmentPlanSha256
+      || record.sampleRateHz !== manifest.timing.sampleRateHz
+      || !stimulus
+      || canonicalJson(record.stimulusIdentity) !== canonicalJson(stimulus)) {
+      fail(
+        "artifact-sample-binding",
+        `${output.fileName} row ${index + 1} is not bound to this run and exact stimulus identity.`,
+      );
+    }
+  });
+  return { records, rows };
+}
+
+function attestManifestV3EventLog(text, manifest, protocolPlan) {
+  const expectedTextForEmptyLog = "\n";
+  const lines = text.split("\n");
+  if (lines.at(-1) !== "") {
+    fail("artifact-event-canonical", "events.jsonl must end with one canonical LF record boundary.");
+  }
+  lines.pop();
+  if (lines.length === 1 && lines[0] === "" && text === expectedTextForEmptyLog) lines.pop();
+  if (lines.length > MAX_ATTESTED_EVENT_RECORDS) {
+    fail(
+      "artifact-event-count",
+      `events.jsonl exceeds the supported ${MAX_ATTESTED_EVENT_RECORDS} records.`,
+    );
+  }
+  if (lines.some((line) => line.length < 1 || line.includes("\r"))) {
+    fail("artifact-event-canonical", "events.jsonl contains a blank or non-LF record boundary.");
+  }
+  if (lines.length !== manifest.timing.eventCount) {
+    fail("artifact-event-count", "events.jsonl record count does not match the manifest.");
+  }
+
+  const events = lines.map((line, index) => {
+    let event;
+    try {
+      event = validateResearchEventV2(parseStrictJson(line, { maximumBytes: 256 * 1024 }));
+    } catch (error) {
+      fail(
+        "artifact-event-record",
+        `events.jsonl record ${index + 1} is not a strict ResearchEventV2 record.`,
+        { cause: error },
+      );
+    }
+    if (line !== canonicalJson(event)) {
+      fail(
+        "artifact-event-canonical",
+        `events.jsonl record ${index + 1} is not canonical JSON.`,
+      );
+    }
+    if (event.sequence !== index + 1
+      || event.runId !== manifest.runId
+      || event.participantId !== manifest.participantId
+      || event.attemptNumber !== manifest.attemptNumber
+      || event.settingsSha256 !== manifest.settingsSha256
+      || event.assignmentPlanSha256 !== manifest.assignmentPlanSha256
+      || event.protocolPlanSha256 !== manifest.protocolPlanSha256) {
+      fail(
+        "artifact-event-binding",
+        `events.jsonl record ${index + 1} is not bound to this protocol attempt.`,
+      );
+    }
+    if (event.protocolStepPosition !== null) {
+      const step = protocolPlan.steps[event.protocolStepPosition - 1];
+      if (!step) {
+        fail(
+          "artifact-event-binding",
+          `events.jsonl record ${index + 1} references an unknown protocol step.`,
+        );
+      }
+      if (event.type.startsWith("questionnaire")
+        && (step.kind !== "questionnaire"
+          || event.moduleId !== step.moduleId
+          || event.questionnaireId !== step.questionnaireId
+          || event.definitionSha256 !== step.definitionSha256)) {
+        fail(
+          "artifact-event-binding",
+          `events.jsonl questionnaire record ${index + 1} does not match its frozen step.`,
+        );
+      }
+    }
+    if (event.stimulusIdentity !== null) {
+      const stimulus = manifest.stimuli[event.stimulusPosition - 1];
+      const step = protocolPlan.steps.find(({ kind, stimulusPosition }) => (
+        kind === "stimulus" && stimulusPosition === event.stimulusPosition
+      ));
+      if (!stimulus || !step || step.stimulusId !== stimulus.stimulusId
+        || canonicalJson(event.stimulusIdentity) !== canonicalJson(stimulus)
+        || event.protocolStepPosition !== step.protocolPosition) {
+        fail(
+          "artifact-event-binding",
+          `events.jsonl stimulus record ${index + 1} does not match its frozen protocol step.`,
+        );
+      }
+    }
+    return event;
+  });
+
+  const gapEvents = events.filter(({ type }) => type === "timingGap");
+  const missedSlotCount = gapEvents.reduce((sum, event) => sum + event.missedSlotCount, 0);
+  if (gapEvents.length !== manifest.timing.gapEventCount
+    || missedSlotCount !== manifest.timing.missedSlotCount) {
+    fail("artifact-gap-count", "events.jsonl timing-gap totals do not match the manifest.");
+  }
+  const completedQuestionnaireSteps = events
+    .filter(({ type }) => type === "questionnaireCompleted")
+    .map(({ protocolStepPosition }) => protocolStepPosition);
+  if (new Set(completedQuestionnaireSteps).size !== completedQuestionnaireSteps.length) {
+    fail("artifact-questionnaire-status", "A questionnaire step has multiple completion events.");
+  }
+  const submittedSteps = manifest.protocol.questionnaireModules
+    .filter(({ status }) => status === "submitted")
+    .map(({ protocolStepPosition }) => protocolStepPosition);
+  if (canonicalJson(completedQuestionnaireSteps) !== canonicalJson(submittedSteps)) {
+    fail(
+      "artifact-questionnaire-status",
+      "Questionnaire completion events do not match submitted module receipts.",
+    );
+  }
+  return events;
+}
+
+function attestQuestionnaireRecord(record, manifest, protocolPlan, settings, label) {
+  if (record.runId !== manifest.runId
+    || record.participantId !== manifest.participantId
+    || record.attemptNumber !== manifest.attemptNumber
+    || record.settingsSha256 !== manifest.settingsSha256
+    || record.assignmentPlanSha256 !== manifest.assignmentPlanSha256
+    || record.protocolPlanSha256 !== manifest.protocolPlanSha256) {
+    fail("artifact-questionnaire-binding", `${label} is not bound to this protocol attempt.`);
+  }
+  const step = protocolPlan.steps[record.protocolStepPosition - 1];
+  const receipt = manifest.protocol.questionnaireModules.find(({ protocolStepPosition }) => (
+    protocolStepPosition === record.protocolStepPosition
+  ));
+  const definition = settings.questionnaires.definitions.find(({ questionnaireId }) => (
+    questionnaireId === record.questionnaireId
+  ));
+  const item = definition?.items.find(({ itemId }) => itemId === record.itemId);
+  const option = item?.options.find(({ optionId }) => optionId === record.optionId);
+  if (!step || step.kind !== "questionnaire" || !receipt || !definition || !item || !option
+    || record.moduleId !== step.moduleId
+    || record.questionnaireId !== step.questionnaireId
+    || record.definitionSha256 !== step.definitionSha256
+    || record.questionnaireVersion !== definition.questionnaireVersion
+    || record.definitionSha256 !== definition.definitionSha256
+    || record.itemOrder !== item.order
+    || record.optionOrder !== option.order
+    || record.responseLabel !== option.label
+    || record.scoreValue !== option.scoreValue
+    || record.subscale !== item.subscale
+    || record.status !== receipt.status) {
+    fail(
+      "artifact-questionnaire-binding",
+      `${label} does not match its frozen module, item, option, score, or status.`,
+    );
+  }
+}
+
+function attestManifestV3QuestionnaireTable(text, output, manifest, protocolPlan, settings) {
+  const format = output.kind === "questionnaireCsv" ? "csv" : "tsv";
+  const rows = parseDelimitedTable(text, format === "csv" ? "," : "\t", output.fileName, {
+    columns: QUESTIONNAIRE_RESPONSE_COLUMNS,
+    maximumRows: MAX_ATTESTED_TABLE_ROWS,
+  });
+  if (rows.length - 1 !== output.rowCount) {
+    fail("artifact-row-count", `${output.fileName} row count does not match its manifest receipt.`);
+  }
+  const records = rows.slice(1).map((row, index) => (
+    questionnaireRecordFromRow(row, `${output.fileName} row ${index + 1}`)
+  ));
+  let canonical;
+  try {
+    canonical = serializeQuestionnaireResponses(records, { format });
+  } catch (error) {
+    fail(
+      "artifact-questionnaire-record",
+      `${output.fileName} is not a canonical ordered QuestionnaireResponseV1 table.`,
+      { cause: error },
+    );
+  }
+  if (canonical !== text) {
+    fail(
+      "artifact-table-canonical",
+      `${output.fileName} is not the exact canonical ${format.toUpperCase()} projection.`,
+    );
+  }
+  const seenItems = new Set();
+  records.forEach((record, index) => {
+    attestQuestionnaireRecord(
+      record,
+      manifest,
+      protocolPlan,
+      settings,
+      `${output.fileName} row ${index + 1}`,
+    );
+    const key = `${record.protocolStepPosition}\u0000${record.itemId}`;
+    if (seenItems.has(key)) {
+      fail(
+        "artifact-questionnaire-binding",
+        `${output.fileName} repeats item ${record.itemId} for one questionnaire step.`,
+      );
+    }
+    seenItems.add(key);
+  });
+
+  for (const receipt of manifest.protocol.questionnaireModules) {
+    const moduleRows = records.filter(({ protocolStepPosition }) => (
+      protocolStepPosition === receipt.protocolStepPosition
+    ));
+    if (moduleRows.length !== receipt.responseCount) {
+      fail(
+        "artifact-questionnaire-count",
+        `Questionnaire ${receipt.moduleId} row count does not match its manifest receipt.`,
+      );
+    }
+    if (receipt.status === "submitted") {
+      const definition = settings.questionnaires.definitions.find(({ questionnaireId }) => (
+        questionnaireId === receipt.questionnaireId
+      ));
+      const answered = new Set(moduleRows.map(({ itemId }) => itemId));
+      if (definition.items.some((item) => item.required && !answered.has(item.itemId))) {
+        fail(
+          "artifact-questionnaire-count",
+          `Submitted questionnaire ${receipt.moduleId} omits a required item.`,
+        );
+      }
+    }
+  }
+  return { records, rows };
+}
+
+function sameTableRows(left, right) {
+  return left.length === right.length
+    && left.every((row, index) => (
+      row.length === right[index].length
+      && row.every((cell, cellIndex) => cell === right[index][cellIndex])
+    ));
+}
+
+async function attestManifestV3Artifacts(sessionDirectory, manifest) {
+  await attestManifestV3ArtifactClosure(sessionDirectory, manifest);
+  const outputs = new Map(manifest.outputs.map((output) => [output.kind, output]));
+  const texts = new Map();
+  for (const output of manifest.outputs) {
+    texts.set(output.kind, await readAttestedTextArtifact(sessionDirectory, output));
+  }
+
+  let settings;
+  try {
+    settings = await validateResearchSettingsV2(parseStrictJson(texts.get("settings"), {
+      maximumBytes: MAX_SETTINGS_SNAPSHOT_BYTES,
+    }));
+  } catch (error) {
+    fail(
+      "artifact-settings-record",
+      "Frozen settings are not a strict ResearchSettingsV2 snapshot.",
+      { cause: error },
+    );
+  }
+  if (texts.get("settings") !== `${canonicalJson(settings)}\n`) {
+    fail("artifact-settings-canonical", "Frozen settings are not canonical JSON followed by one LF.");
+  }
+  if (await canonicalSha256(settings) !== manifest.settingsSha256) {
+    fail("artifact-settings-hash", "Frozen settings do not match the settings hash bound by the manifest.");
+  }
+
+  let protocolPlan;
+  try {
+    protocolPlan = await validateResolvedProtocolPlanV1(parseStrictJson(texts.get("protocolPlan"), {
+      maximumBytes: MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES,
+    }));
+  } catch (error) {
+    fail(
+      "artifact-protocol-record",
+      "Frozen protocol plan is not a strict ResolvedProtocolPlanV1 snapshot.",
+      { cause: error },
+    );
+  }
+  if (texts.get("protocolPlan") !== `${canonicalJson(protocolPlan)}\n`) {
+    fail(
+      "artifact-protocol-canonical",
+      "Frozen protocol plan is not canonical JSON followed by one LF.",
+    );
+  }
+  attestManifestV3ProtocolBindings(settings, protocolPlan, manifest);
+
+  const ratingTables = new Map();
+  for (const kind of ["ratingsCsv", "ratingsTsv"]) {
+    if (!outputs.has(kind)) continue;
+    ratingTables.set(
+      kind,
+      attestManifestV3RatingTable(texts.get(kind), outputs.get(kind), manifest),
+    );
+  }
+  if (ratingTables.has("ratingsCsv") && ratingTables.has("ratingsTsv")
+    && !sameTableRows(ratingTables.get("ratingsCsv").rows, ratingTables.get("ratingsTsv").rows)) {
+    fail(
+      "artifact-table-parity",
+      "Ratings CSV and TSV are not semantic projections of the same canonical samples.",
+    );
+  }
+  const canonicalRatings = ratingTables.values().next().value?.records ?? [];
+  if (canonicalRatings.length !== manifest.timing.sampleCount) {
+    fail("artifact-row-count", "Canonical rating row count does not match the manifest timing summary.");
+  }
+
+  const questionnaireTables = new Map();
+  for (const kind of ["questionnaireCsv", "questionnaireTsv"]) {
+    if (!outputs.has(kind)) continue;
+    questionnaireTables.set(
+      kind,
+      attestManifestV3QuestionnaireTable(
+        texts.get(kind),
+        outputs.get(kind),
+        manifest,
+        protocolPlan,
+        settings,
+      ),
+    );
+  }
+  if (questionnaireTables.has("questionnaireCsv")
+    && questionnaireTables.has("questionnaireTsv")
+    && !sameTableRows(
+      questionnaireTables.get("questionnaireCsv").rows,
+      questionnaireTables.get("questionnaireTsv").rows,
+    )) {
+    fail(
+      "artifact-table-parity",
+      "Questionnaire CSV and TSV are not semantic projections of the same canonical responses.",
+    );
+  }
+  const questionnaireResponses = questionnaireTables.values().next().value?.records ?? [];
+  const submitted = questionnaireResponses.filter(({ status }) => status === "submitted");
+  const drafts = questionnaireResponses.filter(({ status }) => status === "draft");
+  if (submitted.length !== manifest.protocol.submittedResponseCount
+    || drafts.length !== manifest.protocol.draftResponseCount
+    || await canonicalSha256(submitted) !== manifest.protocol.submittedResponsesSha256
+    || await canonicalSha256(drafts) !== manifest.protocol.draftResponsesSha256) {
+    fail(
+      "artifact-questionnaire-hash",
+      "Canonical questionnaire response counts or status-specific hashes do not match the manifest.",
+    );
+  }
+
+  attestManifestV3EventLog(texts.get("events"), manifest, protocolPlan);
+}
+
 export class BrowserResearchWorkspace {
   constructor(rootHandle, { cryptoObject = globalThis.crypto } = {}) {
     if (!rootHandle || rootHandle.kind !== "directory") {
@@ -712,24 +1475,35 @@ export class BrowserResearchWorkspace {
       for await (const [sessionDirectoryName, sessionDirectory] of participantDirectory.entries()) {
         if (sessionDirectory.kind !== "directory") continue;
         let manifestHandle;
+        let manifestFound = false;
         try {
           assertSafeWorkspaceSegment(sessionDirectoryName, "session output directory");
           manifestHandle = await sessionDirectory.getFileHandle("manifest.json", { create: false });
-          const manifest = validateResearchRunManifestV2(await readBoundedJsonFile(
+          manifestFound = true;
+          const manifestValue = await readBoundedJsonFile(
             manifestHandle,
             `${safeParticipantDirectory}/${sessionDirectoryName}/manifest.json`,
-          ));
+          );
+          const manifest = manifestValue?.version === 3
+            ? validateResearchRunManifestV3(manifestValue)
+            : validateResearchRunManifestV2(manifestValue);
           if (manifest.experimentId !== safeExperimentId
             || manifest.participantId !== safeParticipantDirectory
             || manifest.sessionStem !== sessionDirectoryName) {
             throw new TypeError("Manifest identity does not match its curated output directory.");
           }
-          await attestManifestArtifacts(sessionDirectory, manifest);
+          if (manifest.version === 3) {
+            await attestManifestV3Artifacts(sessionDirectory, manifest);
+          } else {
+            await attestManifestArtifacts(sessionDirectory, manifest);
+          }
           manifests.push(manifest);
         } catch (error) {
-          if (error?.name === "NotFoundError") continue;
+          if (error?.name === "NotFoundError" && !manifestFound) continue;
           issues.push(Object.freeze({
-            code: error?.code ?? "invalid-manifest",
+            code: error?.name === "NotFoundError"
+              ? "artifact-missing"
+              : error?.code ?? "invalid-manifest",
             participantId: safeParticipantDirectory,
             sessionStem: sessionDirectoryName,
             message: error instanceof Error ? error.message : String(error),
@@ -776,15 +1550,35 @@ export class BrowserResearchWorkspace {
       if (error instanceof ResearchWorkspaceError) throw error;
       fail("settings-json", "Settings file is not valid JSON.", { cause: error });
     }
-    return validateResearchSettingsV1(parsed);
+    return parsed?.version === 2
+      ? validateResearchSettingsV2(parsed)
+      : validateResearchSettingsV1(parsed);
   }
 
   async saveSettings(settings) {
     await ensurePermission(this.rootHandle, "readwrite", { request: false });
-    const normalized = validateResearchSettingsV1(settings);
+    const normalized = settings?.version === 2
+      ? await validateResearchSettingsV2(settings)
+      : validateResearchSettingsV1(settings);
     const experimentId = assertSafeWorkspaceSegment(normalized.experiment.id, "experiment ID");
     const name = `${experimentId}.settings.json`;
     const directory = this.#directory("settings");
+    if (normalized.version === 2 && normalized.questionnaires.definitions.length > 0) {
+      const questionnaireDirectory = await directory.getDirectoryHandle("questionnaires", { create: true });
+      for (const definition of normalized.questionnaires.definitions) {
+        const definitionName = `${definition.questionnaireId}.${definition.definitionSha256}.csv`;
+        const definitionText = await questionnaireToCsv(definition);
+        if (await fileExists(questionnaireDirectory, definitionName)) {
+          const existing = await questionnaireDirectory.getFileHandle(definitionName, { create: false });
+          const existingText = await (await existing.getFile()).text();
+          if (existingText !== definitionText) {
+            fail("questionnaire-definition-collision", `Stored questionnaire ${definitionName} does not match its frozen definition.`);
+          }
+        } else {
+          await writeNewFile(questionnaireDirectory, definitionName, definitionText);
+        }
+      }
+    }
     const text = `${canonicalJson(normalized)}\n`;
     if (await fileExists(directory, name)) {
       const handle = await directory.getFileHandle(name, { create: false });

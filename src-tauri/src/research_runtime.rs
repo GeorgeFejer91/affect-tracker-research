@@ -6,6 +6,7 @@ use crate::research_input::{
 };
 use crate::research_lsl::{LslService, LslState};
 use crate::research_native_media::{NativeMediaService, PlaybackMode, PlaybackQualification};
+use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 use crate::research_timing::DeadlineClock;
 use crate::research_workspace::WorkspaceService;
 use fs2::FileExt;
@@ -47,7 +48,6 @@ pub struct StartRunRequest {
     pub workspace_files: Vec<WorkspaceFileBinding>,
     pub rerun_confirmed: bool,
     pub input_test_receipt_id: String,
-    #[serde(default)]
     pub playback_mode: PlaybackMode,
 }
 
@@ -60,7 +60,6 @@ pub struct ResumeRunRequest {
     pub assignment_plan: ResolvedAssignmentPlanV1,
     pub workspace_files: Vec<WorkspaceFileBinding>,
     pub input_test_receipt_id: String,
-    #[serde(default)]
     pub playback_mode: PlaybackMode,
 }
 
@@ -317,6 +316,7 @@ pub struct ResearchRuntime {
     workspace: Arc<WorkspaceService>,
     native_media: Arc<NativeMediaService>,
     input: Arc<ResearchInputService>,
+    native_acquisition_supported: bool,
     active: Mutex<Option<ActiveRun>>,
 }
 
@@ -494,10 +494,11 @@ fn latch_mailbox_failure(
 impl ResearchRuntime {
     #[cfg(test)]
     pub fn new(workspace: Arc<WorkspaceService>) -> Self {
-        Self::with_services(
+        Self::with_platform_support(
             workspace,
             Arc::new(NativeMediaService::unavailable_for_tests()),
             Arc::new(ResearchInputService::for_tests()),
+            true,
         )
     }
 
@@ -506,15 +507,26 @@ impl ResearchRuntime {
         native_media: Arc<NativeMediaService>,
         input: Arc<ResearchInputService>,
     ) -> Self {
+        Self::with_platform_support(workspace, native_media, input, NATIVE_ACQUISITION_SUPPORTED)
+    }
+
+    fn with_platform_support(
+        workspace: Arc<WorkspaceService>,
+        native_media: Arc<NativeMediaService>,
+        input: Arc<ResearchInputService>,
+        native_acquisition_supported: bool,
+    ) -> Self {
         Self {
             workspace,
             native_media,
             input,
+            native_acquisition_supported,
             active: Mutex::new(None),
         }
     }
 
     pub fn start_run(&self, request: StartRunRequest) -> ResearchResult<StartRunReceipt> {
+        self.require_native_acquisition_platform()?;
         let mut active = self.lock_active();
         if active.is_some() {
             return Err(CommandError::run_active());
@@ -611,6 +623,7 @@ impl ResearchRuntime {
     }
 
     pub fn resume_run(&self, request: ResumeRunRequest) -> ResearchResult<StartRunReceipt> {
+        self.require_native_acquisition_platform()?;
         let mut active = self.lock_active();
         if active.is_some() {
             return Err(CommandError::run_active());
@@ -700,6 +713,7 @@ impl ResearchRuntime {
         &self,
         request: FinalizeRecoveryRequest,
     ) -> ResearchResult<FinalizeReceipt> {
+        self.require_native_acquisition_platform()?;
         let active = self.lock_active();
         if active.is_some() {
             return Err(CommandError::run_active());
@@ -852,7 +866,7 @@ impl ResearchRuntime {
 
     /// Accept renderer media failure evidence only for the explicit WebView
     /// fallback.  Native actor failures will enter through a non-IPC adapter
-    /// once the separately approved libVLC boundary exists.
+    /// once the separately approved GstPlay renderer boundary exists.
     pub fn report_webview_media_failure(
         &self,
         report: MediaPlaybackFailureReport,
@@ -979,6 +993,10 @@ impl ResearchRuntime {
         self.active
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    fn require_native_acquisition_platform(&self) -> ResearchResult<()> {
+        require_native_acquisition(self.native_acquisition_supported)
     }
 
     fn clear_input_mailbox(&self, input_authority_id: &str) {
@@ -2370,9 +2388,11 @@ impl RunWorker {
 fn authorize_webview_media_mode(playback_mode: Option<PlaybackMode>) -> ResearchResult<()> {
     match playback_mode {
         Some(PlaybackMode::UnqualifiedWebview) => Ok(()),
-        Some(PlaybackMode::NativeLibvlc) => Err(CommandError::forbidden(
-            "WebView media events cannot control a qualified native playback run.",
-        )),
+        Some(PlaybackMode::NativeGstPlay | PlaybackMode::NativeLibvlc) => {
+            Err(CommandError::forbidden(
+                "WebView media events cannot control a qualified native playback run.",
+            ))
+        }
         None => Err(CommandError::no_active_run()),
     }
 }
@@ -2881,6 +2901,11 @@ fn playback_provenance_detail(
     qualification: PlaybackQualification,
 ) -> ResearchResult<&'static str> {
     match (mode, qualification) {
+        (PlaybackMode::NativeGstPlay, PlaybackQualification::QualifiedNative) => {
+            Err(CommandError::invalid_contract(
+                "GstPlay runs require ResearchRunManifestV3 playback provenance.",
+            ))
+        }
         (PlaybackMode::NativeLibvlc, PlaybackQualification::QualifiedNative) => {
             Ok("playback-native-libvlc-qualified")
         }
@@ -3604,7 +3629,7 @@ impl RunFiles {
             attempt_number: participant.attempt_number,
             session_stem: receipt.session_stem.clone(),
             completion_status,
-            playback_mode: manifest_playback_mode(receipt.playback_mode),
+            playback_mode: manifest_playback_mode(receipt.playback_mode)?,
             playback_qualification: manifest_playback_qualification(receipt.playback_qualification),
             settings_sha256: receipt.settings_sha256.clone(),
             assignment_plan_sha256: receipt.assignment_plan_sha256.clone(),
@@ -3621,7 +3646,7 @@ impl RunFiles {
             outputs,
             recovery: recovery.clone(),
             build: ResearchBuildV1 {
-                platform: ResearchPlatformV1::TauriWindows,
+                platform: native_manifest_platform()?,
                 app_version: APP_VERSION.to_owned(),
                 build_commit: BUILD_COMMIT.to_owned(),
             },
@@ -5173,11 +5198,27 @@ fn sync_verified_output(path: &Path, expected: &RunOutputV1) -> ResearchResult<(
     verify_output_record(path, expected)
 }
 
-fn manifest_playback_mode(mode: PlaybackMode) -> RunPlaybackModeV1 {
+fn manifest_playback_mode(mode: PlaybackMode) -> ResearchResult<RunPlaybackModeV1> {
     match mode {
-        PlaybackMode::NativeLibvlc => RunPlaybackModeV1::NativeLibvlc,
-        PlaybackMode::UnqualifiedWebview => RunPlaybackModeV1::UnqualifiedWebview,
+        PlaybackMode::NativeGstPlay => Err(CommandError::invalid_contract(
+            "GstPlay runs require ResearchRunManifestV3 playback provenance.",
+        )),
+        PlaybackMode::NativeLibvlc => Ok(RunPlaybackModeV1::NativeLibvlc),
+        PlaybackMode::UnqualifiedWebview => Ok(RunPlaybackModeV1::UnqualifiedWebview),
     }
+}
+
+fn native_manifest_platform() -> ResearchResult<ResearchPlatformV1> {
+    // Cross-platform unit tests exercise historical Windows manifest fixtures.
+    // Release builds must bind the platform identity to the real host gate.
+    native_manifest_platform_for(NATIVE_ACQUISITION_SUPPORTED || cfg!(test))
+}
+
+fn native_manifest_platform_for(
+    native_acquisition_supported: bool,
+) -> ResearchResult<ResearchPlatformV1> {
+    require_native_acquisition(native_acquisition_supported)?;
+    Ok(ResearchPlatformV1::TauriWindows)
 }
 
 fn manifest_playback_qualification(
@@ -5290,7 +5331,7 @@ fn validate_manifest_against_journal(
         || manifest.handedness != journal.handedness
         || manifest.attempt_number != journal.attempt_number
         || manifest.session_stem != journal.session_stem
-        || manifest.playback_mode != manifest_playback_mode(journal.playback_mode)
+        || manifest.playback_mode != manifest_playback_mode(journal.playback_mode)?
         || manifest.playback_qualification
             != manifest_playback_qualification(journal.playback_qualification)
         || manifest.settings_sha256 != journal.settings_sha256
@@ -6034,6 +6075,102 @@ mod tests {
             .issue_test_receipt_for_tests(settings.input.clone())
             .unwrap()
             .receipt_id
+    }
+
+    #[test]
+    fn interface_only_runtime_rejects_start_resume_and_finalize_before_side_effects() {
+        let base = temporary_directory("interface-only-platform-gate");
+        let workspace = Arc::new(WorkspaceService::new(base.join("app-data")).unwrap());
+        let runtime = ResearchRuntime::with_platform_support(
+            Arc::clone(&workspace),
+            Arc::new(NativeMediaService::unavailable_for_tests()),
+            Arc::new(ResearchInputService::for_tests()),
+            false,
+        );
+        let workspace_file_id = Uuid::new_v4().to_string();
+        let settings = test_settings(&"a".repeat(64), &workspace_file_id);
+        let plan = test_plan(&settings);
+        let workspace_files = vec![WorkspaceFileBinding {
+            stimulus_id: "video-a".to_owned(),
+            workspace_file_id,
+        }];
+
+        let start_error = runtime
+            .start_run(StartRunRequest {
+                workspace_id: "unselected-workspace".to_owned(),
+                settings: settings.clone(),
+                assignment_plan: plan.clone(),
+                participant: TransientParticipant {
+                    participant_id: "P001".to_owned(),
+                    participant_code: "EM".to_owned(),
+                    age: 27,
+                    gender: GenderCodeV1::W,
+                    handedness: HandednessCodeV1::R,
+                },
+                workspace_files: workspace_files.clone(),
+                rerun_confirmed: false,
+                input_test_receipt_id: "not-consumed".to_owned(),
+                playback_mode: PlaybackMode::UnqualifiedWebview,
+            })
+            .unwrap_err();
+        assert_eq!(start_error.code, "native_acquisition_platform_unsupported");
+
+        let resume_error = runtime
+            .resume_run(ResumeRunRequest {
+                workspace_id: "unselected-workspace".to_owned(),
+                recovery_id: "not-read".to_owned(),
+                settings: settings.clone(),
+                assignment_plan: plan.clone(),
+                workspace_files,
+                input_test_receipt_id: "not-consumed".to_owned(),
+                playback_mode: PlaybackMode::UnqualifiedWebview,
+            })
+            .unwrap_err();
+        assert_eq!(resume_error.code, "native_acquisition_platform_unsupported");
+
+        let finalize_error = runtime
+            .finalize_recovery(FinalizeRecoveryRequest {
+                workspace_id: "unselected-workspace".to_owned(),
+                recovery_id: "not-read".to_owned(),
+                settings,
+                assignment_plan: plan,
+            })
+            .unwrap_err();
+        assert_eq!(
+            finalize_error.code,
+            "native_acquisition_platform_unsupported"
+        );
+        assert!(!runtime.status().active);
+        assert!(!base.join("workspace").exists());
+        assert_eq!(
+            native_manifest_platform_for(false).unwrap_err().code,
+            "native_acquisition_platform_unsupported"
+        );
+        assert_eq!(
+            native_manifest_platform_for(true).unwrap(),
+            ResearchPlatformV1::TauriWindows
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn current_non_windows_runtime_constructor_rejects_native_acquisition() {
+        let base = temporary_directory("current-non-windows-platform-gate");
+        let workspace = Arc::new(WorkspaceService::new(base.join("app-data")).unwrap());
+        let runtime = ResearchRuntime::with_services(
+            workspace,
+            Arc::new(NativeMediaService::unavailable_for_tests()),
+            Arc::new(ResearchInputService::for_tests()),
+        );
+        assert_eq!(
+            runtime
+                .require_native_acquisition_platform()
+                .unwrap_err()
+                .code,
+            "native_acquisition_platform_unsupported"
+        );
+        fs::remove_dir_all(base).unwrap();
     }
 
     #[test]

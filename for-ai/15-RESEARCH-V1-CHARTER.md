@@ -18,7 +18,7 @@ The product has exactly two user-visible application modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
-Dialogs, disclosures, recovery prompts, and the seven Setup accordions are
+Dialogs, disclosures, recovery prompts, and the eight Setup accordions are
 parts of those modes, not additional modes. Active Research removes the former
 WebXR, native Quest, Party, Ground Control, remote-control, direct Polar, Face,
 and other Playground surfaces from the active application. Their history is
@@ -35,29 +35,38 @@ Qualify these surfaces first and only:
 
 | Surface | Active role | Capability boundary |
 | --- | --- | --- |
-| Tauri on Windows | Setup and Run, workspace ownership, native input, bundled native media, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2/libVLC evidence required |
+| Tauri on Windows | Setup and Run, workspace ownership, native input, bundled native media, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2/GStreamer evidence required |
 | Static web in desktop Google Chrome | Setup and Run using a user-authorized workspace root and browser-local journal | Current stable desktop Chrome against the exact static/deployed build |
 | Static web in desktop Microsoft Edge | Same browser contract, qualified separately | Current stable desktop Edge against the exact static/deployed build |
+| Unsigned Tauri on macOS ARM64/x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; no native media, input, timing, persistence, recovery, LSL, or research qualification |
+| Unsigned Tauri on Linux x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; DEB/AppImage packaging is not a supported run surface or qualification |
 
-The browser has no LSL or native/global-input authority. macOS, Linux, Firefox,
-Safari, mobile, WebXR, and native Quest are not active-v1 support targets. The
+The downloadable unsigned Windows x64 alpha currently follows the same
+interface-only boundary as macOS/Linux: it builds with no optional features,
+contains no GStreamer runtime, and blocks Start before mutation. The first row
+describes the Windows qualification target, not current package evidence.
+
+The browser has no LSL or native/global-input authority. macOS and Linux
+experiment runs, Firefox, Safari, mobile, WebXR, and native Quest are not
+active-v1 support targets. The
 static application may be served by GitHub Pages under the renamed project path
 but must not require a backend, account, CDN, remote runtime asset, or silent
 third-party API.
 
 Qualified Windows playback for workspace and repository video uses the pinned,
-bundled libVLC 3.0.23 x64 runtime. The application never downloads native media
-at runtime, searches `%PATH%` or the registry, or treats a system VLC install as
-an acceptable dependency. Missing, modified, extra, symlinked,
+bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. The application
+never downloads native media at runtime, searches ambient plugin/installation
+paths, or treats a system GStreamer install as an acceptable dependency.
+Missing, modified, extra, symlinked,
 wrong-architecture, or unavailable native media fails closed. The WebView video
 element is available only as an explicitly selected `unqualifiedWebview`
 development mode whose attempt evidence remains permanently unqualified.
 
 ## Setting Up the Experiment
 
-Setup is a compact research instrument. Its layout has seven ordered,
+Setup is a compact research instrument. Its layout has eight ordered,
 single-open top-level accordions on the left and one persistent live feedback
-preview on the right. Opening one accordion closes the other six without
+preview on the right. Opening one accordion closes the other seven without
 discarding valid edits.
 
 ### 1. Workspace & Libraries
@@ -80,8 +89,9 @@ discarding valid edits.
 
 For Windows qualified playback, Rust revalidates a selected local/repository
 source against its opaque identity before issuing a bounded native media grant.
-One Rust-owned actor owns the libVLC instance, media, player, callbacks, and
-teardown on its required thread. It renders into an application-owned child
+One Rust-owned actor owns the GLib context/loop, GstPlay instance, renderer,
+sink, callbacks, and teardown on its required thread. It renders into an
+application-owned child
 window attached to the Run stage. The WebView may send only a validated viewport
 rectangle and receives an opaque media-session ID plus bounded state; it never
 receives or supplies a native filesystem path.
@@ -92,11 +102,12 @@ loss of the actor fences sampling before status is projected to the WebView.
 Rendering cadence and WebView media events never authorize native samples.
 
 The native runtime is built from the exact repository pin and deterministic
-file-hash manifest, with upstream license notices retained. The unavoidable
-dynamic-library/libVLC/Win32 FFI is confined to a small adapter with documented
-ownership, callback, panic, and teardown invariants. Adding that `unsafe`
-adapter requires explicit user approval; the existing safe pin/stager/
-capability groundwork is not equivalent to the actor or qualification.
+file-hash manifest, with upstream license notices retained and ambient plugin
+paths disabled. The unavoidable raw-window GstPlay renderer construction is
+confined to a small adapter with documented window lifetime, thread affinity,
+callback, panic, and teardown invariants. Adding that `unsafe` constructor
+requires explicit user approval; the existing safe pin/stager/capability
+groundwork is not equivalent to the renderer or qualification.
 
 ### 2. Experiment
 
@@ -151,7 +162,42 @@ an `assignment-plan.csv` export. Participant state is one of **Available**,
 recovery journals, and manifests. These are observed states, never editable
 flags.
 
-### 4. Input
+### 4. Questionnaires & Sequence
+
+Questionnaires are first-class protocol steps, not overlays or metadata. The
+smallest qualified authoring format is a strict UTF-8 RFC 4180 CSV with this
+exact header:
+
+```csv
+format_version,questionnaire_id,questionnaire_version,title,language,instructions,attribution,item_id,prompt,required,subscale,option_id,option_label,score_value
+```
+
+`format_version` is exactly `questionnaire-csv-v1`. Each row defines one option
+for one closed single-choice item. Contiguous row order defines item and option
+order. Repeated metadata must be identical; IDs are unique; required values are
+explicit; scores are finite numbers or blank. UTF-8, bytes, rows, items,
+options, and text are bounded. Unknown/missing columns, control characters,
+noncontiguous items, inconsistent metadata, and duplicate IDs reject. Exact
+source bytes and the normalized definition receive separate SHA-256 hashes.
+
+The bundled German MAIA-2 definition preserves the official 37 prompt strings,
+0–5 labels, reverse scoring for items 5–12 and 15, eight subscales, citation,
+translation credit, and source-document identity. The specification document
+only names TAS-20 and supplies no authorized wording or scoring. TAS-20 prompt
+text must not be bundled, reconstructed, or guessed; a researcher may import it
+only after supplying an authorized CSV and recording reuse permission.
+
+A module places one validated definition at `beforeSession`, `afterSession`,
+`beforeBlock`, or `afterBlock`. Block hooks bind one condition pool; one pool is
+one block in this contract version. Any number of modules may share a hook and
+retain declared order. Every configured module is a mandatory protocol step;
+items marked `required=true` must be answered, while optional items may remain
+unanswered.
+Setup supports import, template download, add/remove, reordering, placement,
+definition/hash status, instrument preview, and participant-specific protocol
+preview. Researcher CSVs are stored under `settings/questionnaires/`.
+
+### 5. Input
 
 The closed preset list contains:
 
@@ -174,7 +220,7 @@ desired keyboard, mouse, wheel, or gamepad action. It rejects conflicts across
 the complete binding set and provides an inert live test before Start.
 `InputBindingV1` is the one serialized binding authority.
 
-### 5. Visual
+### 6. Visual
 
 The persistent right-hand preview projects current settings and input without
 owning research state or sampling time. Its overlay is an in-application,
@@ -203,7 +249,7 @@ colors, idle color, outline color, halo color, and cursor color. Every color has
 a color wheel, hexadecimal entry, and reset. This group is the sole halo-color
 owner; the Flubber group does not duplicate that field.
 
-### 6. Advanced
+### 7. Advanced
 
 #### Outbound LSL
 
@@ -232,10 +278,11 @@ When Reverse is enabled, replace `t` with `1-t`; then compute
 All six outputs derive from one authoritative coordinate snapshot and never
 become a second affect or timing authority.
 
-### 7. Review & Start
+### 8. Review & Start
 
 Review shows the complete blocking/non-blocking preflight, resolved participant
-schedule, output formats/path, settings and assignment hashes, input test,
+schedule, ordered protocol, output formats/path, settings, assignment, and
+protocol hashes, input test,
 stimulus verification, storage estimate, sampling/timing status, and Windows
 LSL status.
 
@@ -259,24 +306,35 @@ plus age and the enumerated gender/handedness codes.
 
 CSV and TSV are independent output toggles and at least one must be selected.
 Start is enabled only after every blocking check passes. Start atomically locks
-the participant/attempt, freezes settings, bindings, demographics, assignment,
-and normalized geometry, creates output/recovery ownership, and enters Run.
+the participant/attempt, freezes settings, definitions, modules, bindings,
+demographics, assignment, protocol plan, and normalized geometry, creates
+output/recovery ownership, and enters Run.
 
 ## Running the Experiment
 
 Run displays only:
 
-- the current complete stimulus;
-- the configured normalized Grid/Flubber feedback overlay;
+- the current complete stimulus with configured adjacent Grid/Flubber feedback,
+  or one questionnaire form as mutually exclusive protocol stages;
 - compact session, stimulus timing, write/recovery, and Windows LSL status;
-- **Pause**; and
+- **Pause** while a video is active; and
 - **Stop Early**.
 
 Setup controls are unavailable. Settings, bindings, derived demographics,
-assignment, and geometry remain frozen for the attempt. The overlay is locked.
+assignment, protocol sequence, and geometry remain frozen for the attempt. The
+overlay is locked.
+
+Questionnaire stages use semantic fieldsets/radios, item and module progress,
+**Previous**, **Next**, and **Submit**, managed focus, and keyboard-only
+operation. Submission validates every required response, derives scores from
+the frozen definition, appends immutable response rows plus a completion event,
+and advances the safe protocol boundary atomically. Drafts are checkpointed.
+No rating samples or regular LSL state samples are emitted during a
+questionnaire; only bounded lifecycle markers without prompt or answer content
+are permitted.
 
 Sampling runs only while a video is actively playing. On Windows qualified
-runs, only Rust-owned libVLC lifecycle state may establish that fact. Between
+runs, only Rust-owned GstPlay lifecycle state may establish that fact. Between
 videos sampling stops, the affect state resets to neutral, and the configured
 fixed, deterministic-jitter, or participant-controlled transition runs. Visual
 feedback never covers the video; it remains adjacent within the run stage.
@@ -284,15 +342,17 @@ feedback never covers the video; it remains adjacent within the run stage.
 **Stop Early** is controlled termination and finalizes an explicitly partial
 attempt. A crash, power loss, forced termination, or storage interruption leaves
 the journal as authoritative recovery evidence. Recovery resumes only at a safe
-stimulus boundary. A video that was only partially played restarts from its
-beginning; active v1 never resumes mid-video or fabricates the missing interval.
+protocol-step boundary. A video that was only partially played restarts from
+its beginning; an active questionnaire restores its last durable draft. Active
+v1 never resumes mid-video or fabricates the missing interval.
 
 Successful completion durably writes the completion receipt and manifest
 before releasing the participant lock and returning to Setup.
 
 ## Contract family and versioning
 
-The active closed-world contract family is:
+The historical closed-world contract family remains readable without
+reinterpretation:
 
 - `ResearchSettingsV1`;
 - `ResolvedAssignmentPlanV1`;
@@ -301,12 +361,26 @@ The active closed-world contract family is:
 - `ResearchEventV1`; and
 - `ResearchRunManifestV2`.
 
+Questionnaire-aware attempts use:
+
+- `ResearchSettingsV2`, projected explicitly to `ResearchSettingsV1` only for
+  assignment resolution;
+- unchanged `ResolvedAssignmentPlanV1` and `ResearchSampleV1`;
+- `QuestionnaireDefinitionV1`, `QuestionnaireModuleV1`, and
+  `QuestionnaireResponseV1`;
+- `ResolvedProtocolPlanV1`;
+- `ResearchEventV2`;
+- `RecoveryJournalV2`; and
+- `ResearchRunManifestV3`.
+
 Every contract rejects unknown fields, duplicate identifiers or keys,
 unsupported versions/algorithms, invalid enums, non-finite or out-of-range
 numbers, unsafe paths, excessive sizes/counts/depth, and hash mismatches.
 
-Canonical JSON and SHA-256 bind the exact normalized settings and resolved
-assignment plan. Every output binds both hashes and the exact stimulus identity.
+Canonical JSON and SHA-256 bind the exact normalized settings, unchanged
+resolved assignment plan, participant-specific resolved protocol plan, and
+questionnaire definitions. Every output binds the applicable hashes and exact
+stimulus or module/item/option identity.
 The existing portable-settings schema remains unchanged and is not the Research
 schema. An explicit importer may convert a legacy file only when it reports
 every defaulted and discarded field and emits the new schema. There is no
@@ -375,11 +449,13 @@ for example:
 P001_EF_A27_GW_HR_20260903T143012482Z_R01
 ```
 
-Attempt counters and create-new semantics prevent overwrite. Every attempt
-always writes the frozen settings snapshot, semantic `events.jsonl`, and
-`ResearchRunManifestV2`, plus the selected rating outputs. CSV and TSV serialize
-the same canonical rows with identical columns, order, values, and row count;
-only delimiter escaping differs.
+Attempt counters and create-new semantics prevent overwrite. Historical
+attempts retain the frozen settings snapshot, semantic `events.jsonl`, and
+`ResearchRunManifestV2`. Questionnaire-aware attempts additionally write the
+frozen protocol plan and selected questionnaire-response tables, and finalize
+with `ResearchRunManifestV3`. Both generations include the selected rating
+outputs. CSV and TSV serialize the same canonical rows with identical columns,
+order, values, and row count; only delimiter escaping differs.
 
 Tauri appends and flushes to app-owned recovery/output files through atomic
 file operations. Chrome/Edge first commits the authoritative journal, then
@@ -402,8 +478,10 @@ qualified; otherwise the Tauri preflight rejects it.
 
 WebXR and native Quest, the mirrored-study program, remote/VDO/BRSP and
 Party/Ground Control, direct Polar, Face/Photoatlas, Touch inference, Screen
-Calibration, retro/phone/Picture-in-Picture presentation, and cross-platform
-desktop packaging are absent from the active Research source and product.
+Calibration, retro/phone/Picture-in-Picture presentation, and non-Windows
+experiment runtimes are absent from the active Research product. Minimal
+Windows/macOS/Linux no-optional-feature packaging exists only for unsigned
+internal Setup/interface evaluation and blocks experiment Start.
 Their source, documentation, notices, evidence, and full Git graph are
 preserved in
 [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground)
@@ -454,7 +532,8 @@ including:
   LSL, video, and offline-YouTube tests plus accessibility review.
 
 Windows acceptance additionally requires an integrity-verified packaged
-libVLC runtime, the separately approved and audited native player actor, exact
+GStreamer runtime, the separately approved and audited native GstPlay actor,
+exact
 player-to-scheduler lifecycle fencing, and installed-artifact playback, error,
 resize/DPI, audio, shutdown, and recovery tests. A staged runtime or successful
 build alone is not playback evidence.
