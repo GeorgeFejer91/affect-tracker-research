@@ -14,6 +14,9 @@
     "desktop:build": "vite build --config desktop/vite.config.js",
     "desktop:preview": "vite preview --config desktop/vite.config.js",
     "desktop:icons": "tauri icon desktop/icons/app-icon.svg -o src-tauri/icons",
+    "desktop:logos:build": "node scripts/build-app-logo-concepts.mjs",
+    "desktop:logos:check": "node scripts/build-app-logo-concepts.mjs --check",
+    "desktop:logo:select": "node scripts/select-app-logo.mjs",
     "desktop:bundle": "tauri build --bundles nsis"
   },
   "engines": {
