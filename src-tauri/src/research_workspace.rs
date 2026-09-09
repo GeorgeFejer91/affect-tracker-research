@@ -337,23 +337,24 @@ impl WorkspaceService {
         settings: ResearchSettingsDocument,
     ) -> ResearchResult<SavedSettingsReceipt> {
         let settings = settings.normalize_and_validate()?;
-        let questionnaire_tables = match &settings {
-            ResearchSettingsDocument::V2(settings) => settings
-                .questionnaires
-                .definitions
-                .iter()
-                .map(|definition| {
-                    Ok((
-                        format!(
-                            "{}.{}.csv",
-                            definition.questionnaire_id, definition.definition_sha256
-                        ),
-                        definition.canonical_csv_bytes()?,
-                    ))
-                })
-                .collect::<ResearchResult<Vec<_>>>()?,
-            ResearchSettingsDocument::V1(_) => Vec::new(),
+        let questionnaire_definitions = match &settings {
+            ResearchSettingsDocument::V3(settings) => Some(&settings.questionnaires.definitions),
+            ResearchSettingsDocument::V2(settings) => Some(&settings.questionnaires.definitions),
+            ResearchSettingsDocument::V1(_) => None,
         };
+        let questionnaire_tables = questionnaire_definitions
+            .into_iter()
+            .flatten()
+            .map(|definition| {
+                Ok((
+                    format!(
+                        "{}.{}.csv",
+                        definition.questionnaire_id, definition.definition_sha256
+                    ),
+                    definition.canonical_csv_bytes()?,
+                ))
+            })
+            .collect::<ResearchResult<Vec<_>>>()?;
         let bytes = canonical_json(&settings, &[])?;
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
@@ -1665,6 +1666,49 @@ mod tests {
             .save_settings_document(&workspace_id, ResearchSettingsDocument::V2(settings))
             .unwrap_err();
         assert_eq!(error.code, "forbidden_operation");
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn v3_settings_save_persists_the_strict_document_and_questionnaire_table() {
+        let base = temporary_directory("v3-settings");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let settings = crate::research_protocol::tests::external_settings();
+        let definition = settings.questionnaires.definitions[0].clone();
+        let document = ResearchSettingsDocument::V3(settings.clone());
+        let expected_bytes = canonical_json(&document, &[]).unwrap();
+        let receipt = service
+            .save_settings_document(&workspace_id, document)
+            .unwrap();
+        assert_eq!(receipt.file_name, "video-affect-study.settings.json");
+        assert_eq!(
+            receipt.settings_sha256,
+            format!("{:x}", Sha256::digest(&expected_bytes))
+        );
+        let saved = fs::read(workspace.join("settings").join(&receipt.file_name)).unwrap();
+        assert_eq!(saved, expected_bytes);
+        assert!(matches!(
+            serde_json::from_slice::<ResearchSettingsDocument>(&saved).unwrap(),
+            ResearchSettingsDocument::V3(candidate) if candidate == settings
+        ));
+        let table = workspace
+            .join("settings")
+            .join("questionnaires")
+            .join(format!(
+                "{}.{}.csv",
+                definition.questionnaire_id, definition.definition_sha256
+            ));
+        assert_eq!(
+            fs::read(&table).unwrap(),
+            definition.canonical_csv_bytes().unwrap()
+        );
         fs::remove_dir_all(base).unwrap();
     }
 

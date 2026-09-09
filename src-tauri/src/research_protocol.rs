@@ -1,11 +1,13 @@
 use crate::research_contracts::{
     canonical_json, canonical_sha256, validate_participant_id, validate_sha256, AdvancedSettingsV1,
-    ExperimentSettingsV1, InputBindingV1, OutputSettingsV1, RecoverySummaryV1, ResearchBuildV1,
-    ResearchPlatformV1, ResearchSettingsV1, ResolvedAssignmentPlanV1, SampleStimulusIdentityV1,
-    StimuliSettingsV1, VisualSettingsV1, MAX_SAFE_INTEGER, RESEARCH_EVENT_SCHEMA,
+    AllocationAlgorithmV1, BetweenVideosV1, ConditionOrderV1, ExperimentSettingsV1, InputBindingV1,
+    OutputSettingsV1, RecoverySummaryV1, ResearchBuildV1, ResearchPlatformV1, ResearchSettingsV1,
+    ResolvedAssignmentPlanV1, SampleStimulusIdentityV1, StimuliSettingsV1, StimulusSourceV1,
+    StimulusV1, VisualSettingsV1, MAX_SAFE_INTEGER, RESEARCH_EVENT_SCHEMA,
     RESEARCH_RUN_MANIFEST_SCHEMA, RESEARCH_SETTINGS_SCHEMA,
 };
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_external_protocol::{ExperimentDefinitionV1, EXTERNAL_ORDER_ALGORITHM_VERSION};
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -20,6 +22,7 @@ pub const QUESTIONNAIRE_MODULE_SCHEMA: &str = "affect-research-questionnaire-mod
 pub const QUESTIONNAIRE_RESPONSE_SCHEMA: &str = "affect-research-questionnaire-response";
 pub const QUESTIONNAIRE_CSV_FORMAT_VERSION: &str = "questionnaire-csv-v1";
 pub const QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION: &str = "questionnaire-hooks-v1";
+pub const QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION: &str = "questionnaire-hooks-v2";
 pub const RESEARCH_PROTOCOL_PLAN_SCHEMA: &str = "affect-research-protocol-plan";
 pub const RESEARCH_RECOVERY_JOURNAL_SCHEMA: &str = "affect-research-recovery-journal";
 pub const NATIVE_PROTOCOL_CAPABILITY_SCHEMA: &str =
@@ -58,6 +61,53 @@ pub struct ResearchSettingsV2 {
     pub advanced: AdvancedSettingsV1,
     pub output: OutputSettingsV1,
     pub questionnaires: QuestionnaireSettingsV2,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ResearchSettingsV3 {
+    pub schema: String,
+    pub version: u32,
+    pub experiment: ExperimentSettingsV3,
+    pub stimuli: StimuliSettingsV3,
+    pub input: InputBindingV1,
+    pub visual: VisualSettingsV1,
+    pub advanced: AdvancedSettingsV1,
+    pub output: OutputSettingsV1,
+    pub questionnaires: QuestionnaireSettingsV3,
+    pub external_protocol: ExternalProtocolSettingsV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExperimentSettingsV3 {
+    pub id: String,
+    pub title: String,
+    pub participant_count: u32,
+    pub sampling_frequency_hz: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct StimuliSettingsV3 {
+    pub items: Vec<StimulusV1>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct QuestionnaireSettingsV3 {
+    pub algorithm_version: String,
+    pub definitions: Vec<QuestionnaireDefinitionV1>,
+    pub modules: Vec<QuestionnaireModuleV2>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExternalProtocolSettingsV1 {
+    pub algorithm_version: String,
+    pub source_byte_sha256: String,
+    pub definition_sha256: String,
+    pub definition: ExperimentDefinitionV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -138,10 +188,58 @@ pub struct QuestionnaireModuleV1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct QuestionnaireModuleV2 {
+    pub schema: String,
+    pub version: u32,
+    pub module_id: String,
+    pub questionnaire_id: String,
+    pub definition_sha256: String,
+    pub placement: QuestionnairePlacementV2,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct QuestionnairePlacementV1 {
     pub kind: QuestionnairePlacementKindV1,
     #[serde(deserialize_with = "deserialize_required_option")]
     pub pool_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum QuestionnairePlacementV2 {
+    BeforeSession {
+        #[serde(deserialize_with = "deserialize_required_option")]
+        block_id: Option<String>,
+    },
+    AfterSession {
+        #[serde(deserialize_with = "deserialize_required_option")]
+        block_id: Option<String>,
+    },
+    BeforeBlock {
+        block_id: String,
+    },
+    AfterBlock {
+        block_id: String,
+    },
+    AfterStimulus {
+        #[serde(deserialize_with = "deserialize_required_option")]
+        block_id: Option<String>,
+        stimulus_id: String,
+        relative_to_isi: QuestionnaireRelativeToIsiV1,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum QuestionnaireRelativeToIsiV1 {
+    Before,
+    After,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -156,6 +254,7 @@ pub enum QuestionnairePlacementKindV1 {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ResearchSettingsDocument {
+    V3(ResearchSettingsV3),
     V2(ResearchSettingsV2),
     V1(ResearchSettingsV1),
 }
@@ -466,6 +565,8 @@ pub struct RunOutputV3 {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub enum RunOutputKindV3 {
+    ExperimentSource,
+    ExperimentPlan,
     Settings,
     ProtocolPlan,
     Events,
@@ -519,6 +620,7 @@ pub struct QuestionnaireImportReceipt {
 impl ResearchSettingsDocument {
     pub fn normalize_and_validate(self) -> ResearchResult<Self> {
         match self {
+            Self::V3(settings) => settings.normalize_and_validate().map(Self::V3),
             Self::V2(settings) => settings.normalize_and_validate().map(Self::V2),
             Self::V1(settings) => settings.normalize_and_validate().map(Self::V1),
         }
@@ -526,9 +628,204 @@ impl ResearchSettingsDocument {
 
     pub fn experiment_id(&self) -> &str {
         match self {
+            Self::V3(settings) => &settings.experiment.id,
             Self::V2(settings) => &settings.experiment.id,
             Self::V1(settings) => &settings.experiment.id,
         }
+    }
+
+    pub fn canonical_sha256(&self) -> ResearchResult<String> {
+        canonical_sha256(self, &[])
+    }
+}
+
+impl ResearchSettingsV3 {
+    pub fn normalize_and_validate(mut self) -> ResearchResult<Self> {
+        if self.schema != RESEARCH_SETTINGS_SCHEMA || self.version != 3 {
+            return Err(contract_error(
+                "ResearchSettingsV3 schema or version is unsupported.",
+            ));
+        }
+        if self.external_protocol.algorithm_version != EXTERNAL_ORDER_ALGORITHM_VERSION {
+            return Err(contract_error(
+                "ResearchSettingsV3 external protocol algorithm is unsupported.",
+            ));
+        }
+        validate_sha256(
+            &self.external_protocol.source_byte_sha256,
+            "ResearchSettingsV3.externalProtocol.sourceByteSha256",
+        )?;
+        validate_sha256(
+            &self.external_protocol.definition_sha256,
+            "ResearchSettingsV3.externalProtocol.definitionSha256",
+        )?;
+        self.external_protocol.definition = self
+            .external_protocol
+            .definition
+            .clone()
+            .normalize_and_validate()?;
+        if self.external_protocol.definition.canonical_sha256()?
+            != self.external_protocol.definition_sha256
+        {
+            return Err(contract_error(
+                "ResearchSettingsV3 external protocol definition hash does not match its canonical content.",
+            ));
+        }
+
+        let common = ResearchSettingsV1 {
+            schema: RESEARCH_SETTINGS_SCHEMA.to_owned(),
+            version: 1,
+            experiment: ExperimentSettingsV1 {
+                id: self.experiment.id.clone(),
+                title: self.experiment.title.clone(),
+                participant_count: self.experiment.participant_count,
+                sampling_frequency_hz: self.experiment.sampling_frequency_hz,
+                between_videos: BetweenVideosV1::Fixed { duration_ms: 0 },
+            },
+            stimuli: StimuliSettingsV1 {
+                allocation_algorithm: AllocationAlgorithmV1::BalancedV1,
+                condition_order: ConditionOrderV1::Williams,
+                seed: "00000000000000000000000000000000".to_owned(),
+                items: Vec::new(),
+                pools: Vec::new(),
+            },
+            input: self.input,
+            visual: self.visual,
+            advanced: self.advanced,
+            output: self.output,
+        }
+        .normalize_and_validate()?;
+        self.experiment = ExperimentSettingsV3 {
+            id: common.experiment.id,
+            title: common.experiment.title,
+            participant_count: common.experiment.participant_count,
+            sampling_frequency_hz: common.experiment.sampling_frequency_hz,
+        };
+        self.input = common.input;
+        self.visual = common.visual;
+        self.advanced = common.advanced;
+        self.output = common.output;
+        for stimulus in &mut self.stimuli.items {
+            stimulus.normalize_and_validate()?;
+        }
+        self.stimuli
+            .items
+            .sort_by(|left, right| left.stimulus_id.cmp(&right.stimulus_id));
+
+        let definition = &self.external_protocol.definition;
+        if self.experiment.id != definition.experiment_id
+            || self.experiment.title != definition.title
+            || self.experiment.participant_count as usize != definition.schedules.len()
+            || self.stimuli.items.len() != definition.stimuli.len()
+        {
+            return Err(contract_error(
+                "ResearchSettingsV3 does not bind the external experiment identity and registries.",
+            ));
+        }
+        let items: BTreeMap<&str, &StimulusV1> = self
+            .stimuli
+            .items
+            .iter()
+            .map(|stimulus| (stimulus.stimulus_id.as_str(), stimulus))
+            .collect();
+        if items.len() != self.stimuli.items.len() {
+            return Err(contract_error("ResearchSettingsV3 repeats a stimulus ID."));
+        }
+        for reference in &definition.stimuli {
+            let stimulus = items.get(reference.stimulus_id.as_str()).ok_or_else(|| {
+                contract_error("ResearchSettingsV3 is missing an external stimulus.")
+            })?;
+            let StimulusSourceV1::WorkspaceFile { relative_path, .. } = &stimulus.source else {
+                return Err(contract_error(
+                    "ResearchSettingsV3 external stimuli must use workspace files.",
+                ));
+            };
+            if stimulus.title != reference.title || relative_path != &reference.relative_path {
+                return Err(contract_error(
+                    "ResearchSettingsV3 stimulus identity differs from experiment.json.",
+                ));
+            }
+        }
+
+        if self.questionnaires.algorithm_version != QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION {
+            return Err(contract_error(
+                "ResearchSettingsV3 questionnaire algorithm is unsupported.",
+            ));
+        }
+        if self.questionnaires.definitions.len() > MAX_DEFINITIONS
+            || self.questionnaires.modules.len() > MAX_MODULES
+        {
+            return Err(contract_error(
+                "ResearchSettingsV3 exceeds questionnaire definition or module bounds.",
+            ));
+        }
+        let mut definition_ids = BTreeSet::new();
+        let mut definition_hashes = BTreeSet::new();
+        for questionnaire in &mut self.questionnaires.definitions {
+            *questionnaire = questionnaire.clone().normalize_and_validate()?;
+            if !definition_ids.insert(questionnaire.questionnaire_id.clone())
+                || !definition_hashes.insert(questionnaire.definition_sha256.clone())
+            {
+                return Err(contract_error(
+                    "ResearchSettingsV3 repeats a questionnaire definition ID or hash.",
+                ));
+            }
+        }
+        let questionnaires: BTreeMap<_, _> = self
+            .questionnaires
+            .definitions
+            .iter()
+            .map(|questionnaire| (questionnaire.questionnaire_id.as_str(), questionnaire))
+            .collect();
+        let block_ids: BTreeSet<_> = definition
+            .blocks
+            .iter()
+            .map(|block| block.block_id.as_str())
+            .collect();
+        let stimulus_ids: BTreeSet<_> = definition
+            .stimuli
+            .iter()
+            .map(|stimulus| stimulus.stimulus_id.as_str())
+            .collect();
+        let mut module_ids = BTreeSet::new();
+        for module in &mut self.questionnaires.modules {
+            *module = module.clone().normalize_and_validate()?;
+            if !module_ids.insert(module.module_id.clone()) {
+                return Err(contract_error(
+                    "ResearchSettingsV3 repeats a questionnaire module ID.",
+                ));
+            }
+            let questionnaire = questionnaires
+                .get(module.questionnaire_id.as_str())
+                .ok_or_else(|| {
+                    contract_error("A V3 questionnaire module references an unknown definition.")
+                })?;
+            if module.definition_sha256 != questionnaire.definition_sha256 {
+                return Err(contract_error(
+                    "A V3 questionnaire module definition hash does not match its definition.",
+                ));
+            }
+            match &module.placement {
+                QuestionnairePlacementV2::BeforeBlock { block_id }
+                | QuestionnairePlacementV2::AfterBlock { block_id } => {
+                    if !block_ids.contains(block_id.as_str()) {
+                        return Err(contract_error(
+                            "A V3 questionnaire module references an unknown experiment block.",
+                        ));
+                    }
+                }
+                QuestionnairePlacementV2::AfterStimulus { stimulus_id, .. } => {
+                    if !stimulus_ids.contains(stimulus_id.as_str()) {
+                        return Err(contract_error(
+                            "A V3 questionnaire module references an unknown experiment stimulus.",
+                        ));
+                    }
+                }
+                QuestionnairePlacementV2::BeforeSession { .. }
+                | QuestionnairePlacementV2::AfterSession { .. } => {}
+            }
+        }
+        Ok(self)
     }
 
     pub fn canonical_sha256(&self) -> ResearchResult<String> {
@@ -913,6 +1210,52 @@ impl QuestionnaireModuleV1 {
                 ));
             }
             _ => {}
+        }
+        Ok(self)
+    }
+}
+
+impl QuestionnaireModuleV2 {
+    pub fn normalize_and_validate(self) -> ResearchResult<Self> {
+        if self.schema != QUESTIONNAIRE_MODULE_SCHEMA || self.version != 2 {
+            return Err(contract_error(
+                "QuestionnaireModuleV2 schema or version is unsupported.",
+            ));
+        }
+        require_identifier(&self.module_id, "QuestionnaireModuleV2.moduleId")?;
+        require_identifier(
+            &self.questionnaire_id,
+            "QuestionnaireModuleV2.questionnaireId",
+        )?;
+        validate_sha256(
+            &self.definition_sha256,
+            "QuestionnaireModuleV2.definitionSha256",
+        )?;
+        match &self.placement {
+            QuestionnairePlacementV2::BeforeSession { block_id }
+            | QuestionnairePlacementV2::AfterSession { block_id } => {
+                if block_id.is_some() {
+                    return Err(contract_error(
+                        "Session questionnaire modules require a null blockId.",
+                    ));
+                }
+            }
+            QuestionnairePlacementV2::BeforeBlock { block_id }
+            | QuestionnairePlacementV2::AfterBlock { block_id } => {
+                require_identifier(block_id, "QuestionnaireModuleV2.placement.blockId")?;
+            }
+            QuestionnairePlacementV2::AfterStimulus {
+                block_id,
+                stimulus_id,
+                ..
+            } => {
+                if block_id.is_some() {
+                    return Err(contract_error(
+                        "Post-video questionnaire modules require a null blockId.",
+                    ));
+                }
+                require_identifier(stimulus_id, "QuestionnaireModuleV2.placement.stimulusId")?;
+            }
         }
         Ok(self)
     }
@@ -2373,7 +2716,7 @@ impl ResearchRunManifestV3 {
                 "ResearchRunManifestV3 session stem is inconsistent.",
             ));
         }
-        if self.outputs.len() < 5 || self.outputs.len() > 7 {
+        if self.outputs.len() < 5 || self.outputs.len() > 9 {
             return Err(contract_error(
                 "ResearchRunManifestV3 output receipt count is invalid.",
             ));
@@ -2408,6 +2751,18 @@ impl ResearchRunManifestV3 {
                 ));
             }
             match output.kind {
+                RunOutputKindV3::ExperimentSource if output.file_name != "experiment.json" => {
+                    return Err(contract_error(
+                        "ResearchRunManifestV3 experimentSource must be experiment.json.",
+                    ));
+                }
+                RunOutputKindV3::ExperimentPlan
+                    if output.file_name != "experiment-plan.snapshot.json" =>
+                {
+                    return Err(contract_error(
+                        "ResearchRunManifestV3 experimentPlan must be experiment-plan.snapshot.json.",
+                    ));
+                }
                 RunOutputKindV3::RatingsCsv | RunOutputKindV3::RatingsTsv
                     if output.row_count != Some(self.timing.sample_count) =>
                 {
@@ -3155,9 +3510,13 @@ fn contract_error(message: impl Into<String>) -> CommandError {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::research_contracts::resolve_assignment_plan_v1;
+    use crate::research_external_protocol::{
+        ExperimentBlockV1, ExperimentScheduleBlockV1, ExperimentScheduleV1, ExperimentStimulusV1,
+        ExperimentVideoV1, EXPERIMENT_DEFINITION_SCHEMA,
+    };
     use serde_json::Value;
 
     fn base_settings() -> ResearchSettingsV1 {
@@ -3177,6 +3536,82 @@ mod tests {
         )
         .unwrap()
         .definition
+    }
+
+    pub(crate) fn external_settings() -> ResearchSettingsV3 {
+        let v1 = base_settings().normalize_and_validate().unwrap();
+        let stimulus = v1.stimuli.items[0].clone();
+        let StimulusSourceV1::WorkspaceFile { relative_path, .. } = &stimulus.source else {
+            panic!("the shared settings fixture must use a workspace stimulus")
+        };
+        let definition = ExperimentDefinitionV1 {
+            schema: EXPERIMENT_DEFINITION_SCHEMA.to_owned(),
+            version: 1,
+            experiment_id: v1.experiment.id.clone(),
+            title: v1.experiment.title.clone(),
+            stimuli: vec![ExperimentStimulusV1 {
+                stimulus_id: stimulus.stimulus_id.clone(),
+                title: stimulus.title.clone(),
+                relative_path: relative_path.clone(),
+            }],
+            blocks: vec![ExperimentBlockV1 {
+                block_id: "main".to_owned(),
+                label: "Main block".to_owned(),
+            }],
+            schedules: vec![ExperimentScheduleV1 {
+                participant_id: "P001".to_owned(),
+                blocks: vec![ExperimentScheduleBlockV1 {
+                    block_id: "main".to_owned(),
+                    videos: vec![ExperimentVideoV1 {
+                        stimulus_id: stimulus.stimulus_id.clone(),
+                        isi_after_ms: 3_000,
+                    }],
+                }],
+            }],
+        }
+        .normalize_and_validate()
+        .unwrap();
+        let definition_sha256 = definition.canonical_sha256().unwrap();
+        let questionnaire = questionnaire_definition();
+        ResearchSettingsV3 {
+            schema: RESEARCH_SETTINGS_SCHEMA.to_owned(),
+            version: 3,
+            experiment: ExperimentSettingsV3 {
+                id: v1.experiment.id,
+                title: v1.experiment.title,
+                participant_count: v1.experiment.participant_count,
+                sampling_frequency_hz: v1.experiment.sampling_frequency_hz,
+            },
+            stimuli: StimuliSettingsV3 {
+                items: vec![stimulus],
+            },
+            input: v1.input,
+            visual: v1.visual,
+            advanced: v1.advanced,
+            output: v1.output,
+            questionnaires: QuestionnaireSettingsV3 {
+                algorithm_version: QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION.to_owned(),
+                definitions: vec![questionnaire.clone()],
+                modules: vec![QuestionnaireModuleV2 {
+                    schema: QUESTIONNAIRE_MODULE_SCHEMA.to_owned(),
+                    version: 2,
+                    module_id: "pre-main".to_owned(),
+                    questionnaire_id: questionnaire.questionnaire_id,
+                    definition_sha256: questionnaire.definition_sha256,
+                    placement: QuestionnairePlacementV2::BeforeBlock {
+                        block_id: "main".to_owned(),
+                    },
+                }],
+            },
+            external_protocol: ExternalProtocolSettingsV1 {
+                algorithm_version: EXTERNAL_ORDER_ALGORITHM_VERSION.to_owned(),
+                source_byte_sha256: "a".repeat(64),
+                definition_sha256,
+                definition,
+            },
+        }
+        .normalize_and_validate()
+        .unwrap()
     }
 
     fn protocol_fixture() -> (
@@ -3274,6 +3709,100 @@ mod tests {
             .unwrap()
             .remove("sourceDocumentSha256");
         assert!(serde_json::from_value::<QuestionnaireDefinitionV1>(missing_null).is_err());
+    }
+
+    #[test]
+    fn v3_settings_are_closed_and_bind_external_order() {
+        let settings = external_settings();
+        assert_eq!(settings.version, 3);
+        assert_eq!(settings.external_protocol.definition.schedules.len(), 1);
+        assert_eq!(
+            settings.external_protocol.definition_sha256,
+            settings
+                .external_protocol
+                .definition
+                .canonical_sha256()
+                .unwrap()
+        );
+        assert_eq!(
+            settings.canonical_sha256().unwrap(),
+            ResearchSettingsDocument::V3(settings.clone())
+                .canonical_sha256()
+                .unwrap()
+        );
+        assert!(serde_json::from_value::<ResearchSettingsV2>(
+            serde_json::to_value(&settings).unwrap()
+        )
+        .is_err());
+
+        let mut unknown = serde_json::to_value(&settings).unwrap();
+        unknown["externalProtocol"]["unexpected"] = Value::Bool(true);
+        assert!(serde_json::from_value::<ResearchSettingsDocument>(unknown).is_err());
+
+        let mut missing_null = serde_json::to_value(&settings).unwrap();
+        missing_null["questionnaires"]["modules"][0]["placement"]
+            .as_object_mut()
+            .unwrap()
+            .remove("blockId");
+        assert!(serde_json::from_value::<ResearchSettingsDocument>(missing_null).is_err());
+
+        let mut hash_drift = settings.clone();
+        hash_drift.external_protocol.definition.title = "Changed title".to_owned();
+        assert!(hash_drift.normalize_and_validate().is_err());
+
+        let mut source_drift = settings;
+        let StimulusSourceV1::WorkspaceFile { relative_path, .. } =
+            &mut source_drift.stimuli.items[0].source
+        else {
+            unreachable!()
+        };
+        *relative_path = "stimuli/other.mp4".to_owned();
+        assert!(source_drift.normalize_and_validate().is_err());
+    }
+
+    #[test]
+    fn v3_after_stimulus_placement_matches_the_strict_browser_union() {
+        let mut settings = external_settings();
+        settings.questionnaires.modules[0].placement = QuestionnairePlacementV2::AfterStimulus {
+            block_id: None,
+            stimulus_id: settings.stimuli.items[0].stimulus_id.clone(),
+            relative_to_isi: QuestionnaireRelativeToIsiV1::Before,
+        };
+        let settings = settings.normalize_and_validate().unwrap();
+        let value = serde_json::to_value(&settings).unwrap();
+        assert_eq!(
+            value["questionnaires"]["modules"][0]["placement"],
+            serde_json::json!({
+                "kind": "afterStimulus",
+                "blockId": null,
+                "stimulusId": settings.stimuli.items[0].stimulus_id,
+                "relativeToIsi": "before"
+            })
+        );
+
+        let mut missing_null = value.clone();
+        missing_null["questionnaires"]["modules"][0]["placement"]
+            .as_object_mut()
+            .unwrap()
+            .remove("blockId");
+        assert!(serde_json::from_value::<ResearchSettingsV3>(missing_null).is_err());
+
+        let mut unexpected_stimulus_field = value.clone();
+        unexpected_stimulus_field["questionnaires"]["modules"][0]["placement"] = serde_json::json!({
+            "kind": "beforeBlock",
+            "blockId": "main",
+            "stimulusId": settings.stimuli.items[0].stimulus_id
+        });
+        assert!(serde_json::from_value::<ResearchSettingsV3>(unexpected_stimulus_field).is_err());
+
+        let mut unknown_stimulus = settings;
+        unknown_stimulus.questionnaires.modules[0].placement =
+            QuestionnairePlacementV2::AfterStimulus {
+                block_id: None,
+                stimulus_id: "unknown-stimulus".to_owned(),
+                relative_to_isi: QuestionnaireRelativeToIsiV1::After,
+            };
+        assert!(unknown_stimulus.normalize_and_validate().is_err());
     }
 
     #[test]
@@ -3621,6 +4150,12 @@ mod tests {
                     "questionnaire.csv",
                     Some(1),
                 ),
+                output(RunOutputKindV3::ExperimentSource, "experiment.json", None),
+                output(
+                    RunOutputKindV3::ExperimentPlan,
+                    "experiment-plan.snapshot.json",
+                    None,
+                ),
             ],
             recovery: RecoverySummaryV1 {
                 resumed: false,
@@ -3635,6 +4170,24 @@ mod tests {
         };
         manifest.validate().unwrap();
         manifest.validate_protocol_binding(&protocol).unwrap();
+
+        let mut historical_manifest = manifest.clone();
+        historical_manifest.outputs.retain(|output| {
+            !matches!(
+                output.kind,
+                RunOutputKindV3::ExperimentSource | RunOutputKindV3::ExperimentPlan
+            )
+        });
+        historical_manifest.validate().unwrap();
+
+        let mut wrong_external_name = manifest.clone();
+        wrong_external_name
+            .outputs
+            .iter_mut()
+            .find(|output| output.kind == RunOutputKindV3::ExperimentSource)
+            .unwrap()
+            .file_name = "experiment-copy.json".to_owned();
+        assert!(wrong_external_name.validate().is_err());
 
         let mut zero_row_submission = manifest.clone();
         zero_row_submission.protocol.safe_protocol_step_position = 1;

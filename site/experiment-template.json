@@ -1,0 +1,62 @@
+{
+  "schema": "affect-research-experiment",
+  "version": 1,
+  "experimentId": "video-affect-v1",
+  "title": "Video Affect Study",
+  "stimuli": [
+    {
+      "stimulusId": "calm-01",
+      "title": "Calm video 01",
+      "relativePath": "stimuli/calm-01.mp4"
+    },
+    {
+      "stimulusId": "active-01",
+      "title": "Active video 01",
+      "relativePath": "stimuli/active-01.mp4"
+    }
+  ],
+  "blocks": [
+    {
+      "blockId": "main",
+      "label": "Main block"
+    }
+  ],
+  "schedules": [
+    {
+      "participantId": "P001",
+      "blocks": [
+        {
+          "blockId": "main",
+          "videos": [
+            {
+              "stimulusId": "calm-01",
+              "isiAfterMs": 3000
+            },
+            {
+              "stimulusId": "active-01",
+              "isiAfterMs": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "participantId": "P002",
+      "blocks": [
+        {
+          "blockId": "main",
+          "videos": [
+            {
+              "stimulusId": "active-01",
+              "isiAfterMs": 3000
+            },
+            {
+              "stimulusId": "calm-01",
+              "isiAfterMs": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -21,32 +21,71 @@ The approved target is an ordered, keyboard-accessible Setup instrument with a p
 
 1. Workspace & Libraries
 2. Experiment
-3. Stimuli & Counterbalancer
+3. Experiment Plan & Stimuli
 4. Questionnaires & Sequence
 5. Controller / Input Device
 6. Visual Feedback
 7. Advanced
 8. Review & Start
 
-One condition column containing every video is the supported **one-hat** workflow. Multiple columns form stratified pools. The target assignment uses deterministic `balanced-v1` allocation with Williams counterbalancing by default and cyclic rotation as the alternative.
+Randomization is prepared outside the app. The target Setup workflow loads one
+strict canonical, self-hashed `experiment.package.json`
+(`ExperimentPackageV1`) file as the sole run-defining authority. It explicitly
+contains all settings, the serialized `complete-video-v1` playback policy, the
+closed asset manifest under fixed `assets/stimuli/`,
+complete manual participant/block/video order and each video's `isiAfterMs`, a
+finite language-selection tree, embedded questionnaire definitions and
+before/after-session, before/after-block, and after-video hooks, input/visual/
+LSL configuration, and output policy. Affect Research never shuffles or
+rebalances that order and never fills a missing package field from browser/app
+storage, OS locale, directory order, time, RNG, or an ambient default.
+Loading the package leaves participant language unset. In Review & Start, the
+participant follows its prompts from the root to a terminal choice; even a
+single-language package requires that explicit step. A compatible interrupted
+attempt restores its exact hash-bound route without asking again, while a new
+participant, new attempt, cancel, rejected Start, or completion clears it.
 
-The target Run mode freezes settings, participant code, assignment, resolved
-protocol, bindings, and overlay geometry. Sampling is independent of rendering,
+The current [`experiment.json` template](./site/experiment-template.json),
+portable settings files, and questionnaire CSVs are transitional authoring/
+import inputs. They must be converted with an explicit report into one complete
+package and never remain parallel runtime authorities. Historical Williams/
+cyclic `balanced-v1` plans and current V3 external-experiment records remain
+readable in their original schema versions but are not new package contracts.
+
+The target Run mode freezes exact package bytes/full-byte/self hashes, derived
+settings/asset-manifest/participant-assignment/protocol hashes, selected terminal language,
+participant code, exact sequence, playback/output policies, bindings, and
+overlay geometry. Sampling is independent of rendering,
 never invents catch-up rows, and records explicit timing gaps. Outputs are
-create-new attempts containing frozen settings and protocol snapshots, semantic
-events, a manifest, selected CSV and/or TSV rating tables, and questionnaire
-response tables when configured. The manifest binds settings, assignment,
-protocol, questionnaire-definition, and exact stimulus identities. Interrupted
-runs retain authoritative recovery evidence, restore questionnaire drafts, and
-restart a partially viewed video from the beginning.
+create-new attempts containing byte-identical package bytes, derived receipts,
+semantic events, a compatible manifest, and package-selected CSV and/or TSV
+rating/questionnaire tables. The manifest binds every package-derived hash,
+terminal language, playback/output policy, exact stimulus identity, hook, and
+authored interval. After every video, targeted after-video questionnaires run
+on their explicitly authored side of its interval; the final and zero-duration
+intervals still have recorded boundaries. Interrupted runs retain authoritative recovery evidence,
+restore questionnaire drafts, restart a partially viewed video from the
+beginning, and restart an interrupted interval at its full duration.
+
+Package reproducibility has a permanent acceptance benchmark: two clean,
+independent application instances load the exact same canonical package bytes
+against the same read-only asset tree. For every participant and every
+reachable terminal language, they must independently produce identical
+package/settings/assets/assignment/protocol hashes and the exact same step
+sequence, then re-export bytes identical to the input and each other. The test
+forbids ambient defaults, locale, RNG, time, directory order, prior settings,
+and shared IndexedDB/local-storage/app-data state. This proves deterministic
+resolution only, not playback, timing, recovery, hardware, LSL, accessibility,
+or research qualification.
 
 The supported qualification targets for v1 are Windows Tauri and visible
-desktop Chrome/Edge. Qualified Windows local/repository playback targets the
+desktop Chrome/Edge. Qualified Windows package-asset playback targets the
 bundled, repository-pinned GStreamer 1.28.6 MSVC x64 runtime through a
 Rust-owned GstPlay actor; the app never downloads native media code or discovers
 ambient system plugins. LSL is a Tauri-only capability.
-Experimental YouTube sources remain explicitly unverified and outside research
-qualification.
+The package contract accepts only its declared complete videos beneath
+`assets/stimuli/`. Repository/network and Experimental YouTube sources are not
+accepted by new package runs.
 
 Unsigned host-native Windows x64 NSIS, macOS ARM64/x64 DMG, and Linux x64
 DEB/AppImage candidates are available only for internal Setup/interface
@@ -63,12 +102,34 @@ in the active Research tree.
 
 Branch `research/video-protocol-v1` contains the implementation candidate:
 isolated Research-only Pages and desktop build boundaries, strict browser/Rust
-contracts and canonical hashes, deterministic assignment logic, the two-mode
-UI, browser worker sampling and recovery persistence, a strict questionnaire
-CSV/protocol subsystem, narrow Tauri workspace/run modules, and a Rust-owned
-native input service. On Windows the service exposes keyboard, mouse-button,
+historical contracts and canonical hashes, transitional strict external-
+experiment resolution, the
+two-mode UI, browser worker sampling and recovery persistence, a strict
+questionnaire CSV/protocol subsystem, narrow Tauri workspace/run modules, and a
+Rust-owned native input service. On Windows the service exposes keyboard, mouse-button,
 wheel, and bounded Pointer Grid input; gamepad D-pad/stick/custom-button presets
 become available only when the isolated XInput backend starts successfully.
+The uncommitted package slice adds browser/Rust `ExperimentPackageV1`
+readers/writers, canonical fixture/hash validation, a fixed-root asset manifest,
+language tree, exact complete-video policy, browser participant/language
+compilation, and wire `afterStimulus` hooks shown as after-video hooks. Its
+reproduction test now launches two separate Node resolver processes in fresh
+empty profiles with different locale, timezone, directory-order, clock/RNG,
+and storage sentinels; guarded ambient clock, RNG, and browser-storage reads
+fail the test. It compares every five-hash participant/language receipt and
+exact re-export.
+Browser package-backed runs persist canonical package bytes/hash, language route,
+and asset bindings in recovery and emit an audited `experimentPackage` output
+in `ResearchRunManifestV4`; historical package-less V3 manifests remain V3.
+The two child processes verify the same closed read-only fixture asset tree as
+regular non-link files with exact byte lengths and SHA-256 values, rejecting
+undeclared files. This contract-resolver benchmark does not decode those
+fixture bytes or launch two installed graphical application profiles. Rust
+now reconstructs and verifies the external plan and complete
+participant/language protocol matrix; native package Start remains blocked.
+These are implementation slices, not package,
+playback, or research qualification. Existing standalone experiment/settings/
+questionnaire files are transitional authoring/import scaffolding.
 Automated tests and builds are
 implementation evidence only. They do not establish scheduler performance,
 crash durability, LSL interoperability, accessibility, media compatibility, or
@@ -82,9 +143,10 @@ The safe native-media groundwork is present: an exact GStreamer installer and
 runtime-tree pin, deterministic local/ephemeral-CI staging and verification,
 optional Rust bindings, a build-time runtime-integrity gate, path-free
 capability response, and explicit qualified/unqualified receipt fields. It
-deliberately does not package that runtime or construct the GstPlay raw-window
-renderer. The renderer needs one contained, audited Rust `unsafe` raw-window
-constructor and therefore awaits explicit approval before implementation.
+deliberately does not yet package that runtime or construct the GstPlay
+raw-window renderer. The researcher explicitly approved the one contained,
+audited Rust `unsafe` raw-window constructor on 2026-09-10; implementation and
+focused audit are now active work rather than an authorization blocker.
 
 Until that actor lands and passes installed Windows qualification,
 `nativeGstPlay` fails closed. Researchers may deliberately choose the WebView
@@ -97,20 +159,37 @@ the native runtime or completing a desktop build is not playback qualification.
 The reusable [`questionnaire-csv-v1` template](./site/questionnaires/questionnaire-template.csv)
 uses one row per answer option for closed single-choice/Likert instruments.
 Researchers can import validated CSVs,
-place any number of modules before or after the session or a selected condition
-block, reorder them without drag-only controls, preview participant wording,
-and freeze the resulting participant protocol and hashes. The bundled
+author modules before/after the session or a selected block and after a selected
+video before or after its ISI, embed language-tagged or `und` definitions,
+reorder them without drag-only controls, and preview the resolved
+participant/language sequence. Each terminal language explicitly lists its
+ordered questionnaire module IDs; package compilation uses that exact list and
+never falls back by locale or definition language. A runnable package embeds
+those definitions and hooks; CSV remains an authoring input. The bundled
 [German MAIA-2 definition](./site/questionnaires/maia-2-de.csv) contains 37
-items with source, attribution, and scoring metadata. The supplied specification
-names TAS-20 but does not contain
-authorized item wording or scoring, so Affect Research exposes a rights-cleared
-CSV import path and does not invent or redistribute that content.
+items with source, attribution, and scoring metadata. The repository also
+bundles four English researcher-supplied authoring candidates:
+[VR Experience](./site/questionnaires/vr-exp-en.csv),
+[MAIA-2](./site/questionnaires/maia-2-en.csv), the supplied
+[six-item SSQ](./site/questionnaires/ssq-six-item-en.csv), and
+[TAS-20](./site/questionnaires/tas-20-en.csv). Each preserves the supplied
+wording, response labels, numeric response values, and attribution to the Max
+Planck Institute for Human Brain and Cognitive Sciences, Department of
+Neurology, Stephanstrasse 1a, 04103 Leipzig, Germany. No scoring or subscale interpretation was supplied for these four
+candidates. In particular, the TAS-20 fixture does not infer reverse scoring,
+subscales, totals, thresholds, or diagnostic meaning. No TAS-20 rights/reuse
+proof was supplied, so approval and recording of that evidence is an explicit
+pre-deployment gate. Bundling a candidate records its provenance; it is not
+instrument validation or licensing authorization.
 
-The Chromium adapter executes this questionnaire protocol with durable drafts,
-safe-boundary recovery, and `ResearchRunManifestV3` outputs. Tauri validates and
-saves/loads the same closed contracts, but questionnaire-aware native Start is
-deliberately blocked before mutation until the atomic native V3 writer and the
-approved GstPlay actor are integrated.
+The current Chromium external-protocol execution path predates the package
+authority and is transitional, not experiment-use evidence. Tauri can load and
+strictly validate the same historical `ExperimentDefinitionV1` through a native
+picker without receiving a WebView path; separate path-free package load/save
+commands validate and re-export `ExperimentPackageV1`. Tauri does not implement
+package Start. Native Start remains deliberately blocked before mutation until the
+package boundary, atomic package-bound run writer, and approved GstPlay actor are
+integrated.
 
 ## Local development
 
@@ -169,7 +248,17 @@ Signing, auto-updates, store submission, stable installers, and any research-rea
 
 ## Privacy and storage
 
-Names are transient and are reduced before persistence to a two-grapheme participant code: the last grapheme of the first name followed by the first grapheme of the last name. The selected workspace contains curated `stimuli/`, `settings/`, `outputs/`, and `recovery/` directories. Browser state uses the isolated `affect-research/v1` namespace. The desktop retains bundle ID `io.github.georgefejer91.affecttracker` for upgrade continuity while keeping new Research data under its dedicated namespace; legacy application data is never imported automatically.
+Names are transient and are reduced before persistence to a two-grapheme
+participant code: the last grapheme of the first name followed by the first
+grapheme of the last name. The selected package root contains canonical package
+bytes as `experiment.package.json`, fixed `assets/stimuli/`, `outputs/`, and
+`recovery/`; legacy authoring
+files are not runtime authority. Browser state uses the isolated
+`affect-research/v1` namespace only for locks/journals/recovery and cannot fill
+package fields. The desktop retains bundle ID
+`io.github.georgefejer91.affecttracker` for upgrade continuity while keeping
+new Research data under its dedicated namespace; legacy application data is
+never imported automatically.
 
 ## License
 

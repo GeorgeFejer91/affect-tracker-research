@@ -611,6 +611,105 @@ export function validateQuestionnaireModuleV1(value, { poolIds = null, definitio
   return deepFreeze(normalized);
 }
 
+/** Block- and stimulus-aware module contract for externally authored protocols. */
+export function validateQuestionnaireModuleV2(value, {
+  blockIds = null,
+  stimulusIds = null,
+  definition = null,
+} = {}) {
+  exactObject(value, "QuestionnaireModuleV2", [
+    "schema",
+    "version",
+    "moduleId",
+    "questionnaireId",
+    "definitionSha256",
+    "placement",
+  ]);
+  if (value.schema !== QUESTIONNAIRE_MODULE_SCHEMA || value.version !== 2) {
+    throw new TypeError("QuestionnaireModuleV2 has an unsupported schema or version.");
+  }
+  const placementKinds = [
+    "beforeSession", "afterSession", "beforeBlock", "afterBlock", "afterStimulus",
+  ];
+  if (!placementKinds.includes(value.placement.kind)) {
+    throw new TypeError(`QuestionnaireModuleV2.placement.kind must be one of: ${placementKinds.join(", ")}.`);
+  }
+  const sessionPlacement = value.placement.kind === "beforeSession"
+    || value.placement.kind === "afterSession";
+  const stimulusPlacement = value.placement.kind === "afterStimulus";
+  let blockId = null;
+  let stimulusId = null;
+  let relativeToIsi = null;
+  if (sessionPlacement) {
+    exactObject(value.placement, "QuestionnaireModuleV2.placement", ["kind", "blockId"]);
+    if (value.placement.blockId !== null) {
+      throw new TypeError("Session questionnaire placements require blockId null.");
+    }
+  } else if (stimulusPlacement) {
+    exactObject(value.placement, "QuestionnaireModuleV2.placement", [
+      "kind", "blockId", "stimulusId", "relativeToIsi",
+    ]);
+    if (value.placement.blockId !== null) {
+      throw new TypeError("Post-video questionnaire placements require blockId null.");
+    }
+    stimulusId = identifier(
+      value.placement.stimulusId,
+      "QuestionnaireModuleV2.placement.stimulusId",
+    );
+    if (!["before", "after"].includes(value.placement.relativeToIsi)) {
+      throw new TypeError(
+        "QuestionnaireModuleV2.placement.relativeToIsi must be before or after.",
+      );
+    }
+    relativeToIsi = value.placement.relativeToIsi;
+    if (stimulusIds !== null) {
+      if (!Array.isArray(stimulusIds)) throw new TypeError("stimulusIds must be an array when supplied.");
+      const normalizedStimulusIds = stimulusIds.map((candidate, index) => (
+        identifier(candidate, `stimulusIds[${index}]`)
+      ));
+      if (new Set(normalizedStimulusIds).size !== normalizedStimulusIds.length) {
+        throw new TypeError("stimulusIds contains duplicate IDs.");
+      }
+      if (!normalizedStimulusIds.includes(stimulusId)) {
+        throw new TypeError(`Questionnaire placement references unknown stimulus ${stimulusId}.`);
+      }
+    }
+  } else {
+    exactObject(value.placement, "QuestionnaireModuleV2.placement", ["kind", "blockId"]);
+    blockId = identifier(value.placement.blockId, "QuestionnaireModuleV2.placement.blockId");
+    if (blockIds !== null) {
+      if (!Array.isArray(blockIds)) throw new TypeError("blockIds must be an array when supplied.");
+      const normalizedBlockIds = blockIds.map((candidate, index) => (
+        identifier(candidate, `blockIds[${index}]`)
+      ));
+      if (new Set(normalizedBlockIds).size !== normalizedBlockIds.length) {
+        throw new TypeError("blockIds contains duplicate IDs.");
+      }
+      if (!normalizedBlockIds.includes(blockId)) {
+        throw new TypeError(`Questionnaire placement references unknown block ${blockId}.`);
+      }
+    }
+  }
+  const normalized = {
+    schema: QUESTIONNAIRE_MODULE_SCHEMA,
+    version: 2,
+    moduleId: identifier(value.moduleId, "QuestionnaireModuleV2.moduleId"),
+    questionnaireId: identifier(value.questionnaireId, "QuestionnaireModuleV2.questionnaireId"),
+    definitionSha256: sha256(value.definitionSha256, "QuestionnaireModuleV2.definitionSha256"),
+    placement: stimulusPlacement
+      ? { kind: "afterStimulus", blockId: null, stimulusId, relativeToIsi }
+      : { kind: value.placement.kind, blockId },
+  };
+  if (definition !== null) {
+    const normalizedDefinition = validateQuestionnaireDefinitionV1(definition);
+    if (normalized.questionnaireId !== normalizedDefinition.questionnaireId
+      || normalized.definitionSha256 !== normalizedDefinition.definitionSha256) {
+      throw new TypeError("QuestionnaireModuleV2 does not bind the supplied questionnaire definition.");
+    }
+  }
+  return deepFreeze(normalized);
+}
+
 export function validateQuestionnaireAnswers(definitionValue, answersValue, { allowPartial = false } = {}) {
   const definition = validateQuestionnaireDefinitionV1(definitionValue);
   if (!isPlainObject(answersValue)) throw new TypeError("Questionnaire answers must be an object keyed by item ID.");
@@ -712,7 +811,9 @@ export async function createQuestionnaireResponseV1(value) {
     "responseLatencyMs",
   ]);
   const definition = await verifyQuestionnaireDefinitionV1(value.definition);
-  const module = validateQuestionnaireModuleV1(value.module, { definition });
+  const module = value.module?.version === 2
+    ? validateQuestionnaireModuleV2(value.module, { definition })
+    : validateQuestionnaireModuleV1(value.module, { definition });
   const itemId = identifier(value.itemId, "Questionnaire response creation input.itemId");
   const optionId = identifier(value.optionId, "Questionnaire response creation input.optionId");
   const item = definition.items.find((candidate) => candidate.itemId === itemId);

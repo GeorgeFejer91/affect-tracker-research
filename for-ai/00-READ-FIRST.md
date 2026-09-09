@@ -30,15 +30,19 @@ landed. Use the roadmap and exact candidate receipts before making a claim.
 Affect Research is a local-first continuous valence/arousal research instrument
 with exactly two user-visible modes:
 
-1. **Setting Up the Experiment** — authorize a workspace; load, validate, and
-   save settings; configure experiment, stimuli, counterbalancing, input,
-   visual feedback, mappings, and outbound LSL; then pass preflight.
+1. **Setting Up the Experiment** — authorize one experiment-package root; load,
+   validate, author, and byte-identically re-export one self-hashed
+   `ExperimentPackageV1`; verify its fixed `assets/stimuli/` closure; preview
+   its manual participant/block/video/ISI order, language tree,
+   questionnaire hooks, playback policy, input, visual, mapping, LSL, and
+   output policy; then pass preflight.
 2. **Running the Experiment** — freeze the resolved attempt, play complete
    stimuli, acquire ratings independently of rendering, persist local evidence,
    and complete or retain an explicit partial/recoverable result.
 
-Active v1 qualifies only Windows Tauri and the static application in current
-desktop Chrome and Edge. It has no WebXR, Quest, remote-control, collaboration,
+Active v1 targets qualification only on Windows Tauri and the static
+application in current desktop Chrome and Edge. It has no WebXR, Quest,
+remote-control, collaboration,
 direct physiology, face, touch-inference, account, upload, analytics, telemetry,
 or backend surface. Host-native unsigned Windows, macOS, and Linux packages may
 be produced with no optional Cargo features for internal Setup/interface
@@ -54,22 +58,37 @@ qualification claim.
   manifests local to the selected workspace/application namespace.
 - Treat WebView/browser input, imported JSON, directory contents, and every IPC
   argument as untrusted. Validate at the owning boundary.
-- Freeze one normalized `ResearchSettingsV2`, its explicit
-  `ResearchSettingsV1` assignment projection, one `ResolvedAssignmentPlanV1`,
-  one participant-specific `ResolvedProtocolPlanV1`, bindings, participant
-  derivation, and geometry for each questionnaire-aware attempt. Historical v1
-  attempts retain their original contract meanings.
+- One canonical, strict, self-hashed `experiment.package.json`
+  (`ExperimentPackageV1`) is the sole
+  run-defining authority. It explicitly contains every setting, playback
+  policy, the complete `assets/stimuli/` manifest, manual participant/block/
+  video order and per-occurrence ISIs, the finite language-selection tree,
+  embedded questionnaire definitions and ordered session/block/after-video
+  hooks, input/visual/LSL configuration, and output policy. No package field is
+  supplied by ambient storage, locale, filesystem order, clock, RNG, or an
+  application default.
+- Freeze the exact canonical package bytes and self-hash, verified asset
+  closure, derived settings/assets/participant-assignment/protocol hashes,
+  bindings, terminal language, participant derivation, and geometry for each
+  attempt. Historical settings, experiment, assignment, module, protocol,
+  event, manifest, and recovery versions retain their original meanings.
+- Keep the two-clean-independent-instance reproduction benchmark permanent:
+  against the same read-only asset tree, every participant × terminal-language
+  pair must yield identical package/settings/assets/assignment/protocol hashes
+  and exact sequence, and each instance must byte-identically re-export the
+  package without ambient defaults or storage.
 - Keep the research scheduler independent of video rendering and animation.
   Emit a timing-gap event for missed deadlines; never invent catch-up rows.
 - Never silently discard accepted rows or overwrite a prior attempt. Recovery
-  resumes only at a safe stimulus boundary.
+  resumes only at a safe protocol-step boundary.
 - Keep keyboard operation, visible focus, semantic labels/status, non-color
   meaning, contrast, and reduced-motion behavior.
 - Tauri Rust owns native workspace, input, playback, scheduler, timestamps,
   persistence, and outbound LSL authority. The WebView receives only narrow
   typed projections and opaque identifiers.
-- Qualified Windows local/repository playback targets the repository-pinned
-  GStreamer 1.28.6 MSVC x86_64 runtime through one Rust-owned GstPlay actor.
+- Qualified Windows declared package-asset playback targets the
+  repository-pinned GStreamer 1.28.6 MSVC x86_64 runtime through one Rust-owned
+  GstPlay actor.
   The application never downloads it at runtime or searches ambient GStreamer
   plugin or installation paths.
   Missing, modified, wrong-architecture, or unavailable native playback fails
@@ -79,10 +98,15 @@ qualification claim.
   capability report do not constitute the player actor or playback
   qualification. The contained `unsafe` raw-window GstPlay renderer
   constructor remains subject to explicit user approval and audit.
-- Questionnaire-aware work uses a new contract family: `ResearchSettingsV2`,
-  `ResolvedProtocolPlanV1`, `QuestionnaireResponseV1`, `ResearchEventV2`, and
-  `ResearchRunManifestV3`. Existing V1/V2 settings, assignments, samples,
-  events, manifests, and recovery evidence retain their historical meaning.
+- New work uses `ExperimentPackageV1` plus package-bound resolved receipts and
+  reuses only record contracts whose field meanings remain exact. Existing
+  settings V1/V2/V3, `ExperimentDefinitionV1`,
+  `ResolvedAssignmentPlanV1`, `ResolvedExperimentPlanV1`, questionnaire module
+  V1/V2, protocol plan V1/V2, samples, events, manifests, and recovery evidence
+  retain their historical meaning and remain readable without
+  reinterpretation. Legacy `settings.json`, `experiment.json`, and
+  questionnaire CSV files are explicit authoring/import inputs only; they
+  never become parallel runtime authorities.
 - Update this directory whenever product scope, schema, authority, timing,
   privacy, supported platforms, persistence, media, LSL, or release gates
   change.

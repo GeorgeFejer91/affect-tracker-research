@@ -4,9 +4,14 @@ import { readFile } from "node:fs/promises";
 import {
   IndexedDbResearchJournal,
   MemoryResearchJournal,
+  MAX_RESEARCH_RECOVERY_CONTEXT_BYTES,
   RESEARCH_JOURNAL_DATABASE,
   ResearchJournalError,
 } from "../site/src/research/browser-journal.js";
+import {
+  EXPERIMENT_PACKAGE_FILE_NAME,
+  MAX_EXPERIMENT_PACKAGE_BYTES,
+} from "../site/src/research/experiment-package.js";
 import { ResearchSamplingClock, installWorkerProtocol } from "../site/src/research/sampling-worker.js";
 import {
   capturedDigitalAction,
@@ -36,6 +41,7 @@ import {
   normalizeWorkspaceRelativePath,
   parseStrictJson,
   parseExperimentalYouTubeUrl,
+  RESEARCH_PACKAGE_ASSET_DIRECTORY,
   RESEARCH_STORAGE_NAMESPACE,
   RESEARCH_WORKSPACE_DIRECTORIES,
   RESEARCH_WORKSPACE_IDENTITY_FILE,
@@ -183,6 +189,24 @@ test("the browser journal namespace is isolated and never silently falls back", 
     () => new IndexedDbResearchJournal({ indexedDB: null, keyRange: null }),
     (error) => error instanceof ResearchJournalError && error.code === "indexeddb-unavailable",
   );
+});
+
+test("recovery context has a separate bounded envelope for package-derived projections", async () => {
+  assert.equal(
+    MAX_RESEARCH_RECOVERY_CONTEXT_BYTES,
+    MAX_EXPERIMENT_PACKAGE_BYTES * 8,
+    "the recovery envelope must not reuse the package-file byte limit",
+  );
+  const journal = new MemoryResearchJournal();
+  const packageSizedProjection = "x".repeat(MAX_EXPERIMENT_PACKAGE_BYTES + 1_024);
+  const created = await journal.reserveAttempt(reservation({
+    context: {
+      workspaceId: "11111111-1111-4111-8111-111111111111",
+      participant: { participantCode: "EF", age: 27, gender: "W", handedness: "R" },
+      packageSizedProjection,
+    },
+  }));
+  assert.equal(created.context.packageSizedProjection.length, packageSizedProjection.length);
 });
 
 test("attempt reservation is create-new and participant locks are atomic", async () => {
@@ -1282,11 +1306,13 @@ class MemoryDirectoryHandle {
   }
 }
 
-test("workspace initialization curates the four fixed libraries and recursively rescans videos", async () => {
+test("workspace initialization curates the fixed libraries and recursively rescans videos", async () => {
   const root = new MemoryDirectoryHandle();
   const workspace = new BrowserResearchWorkspace(root);
   await workspace.initialize();
-  assert.deepEqual([...root.children.keys()], [...RESEARCH_WORKSPACE_DIRECTORIES]);
+  assert.deepEqual([...root.children.keys()], [...RESEARCH_WORKSPACE_DIRECTORIES, "assets"]);
+  assert.equal(root.children.get("assets").children.has("stimuli"), true);
+  assert.equal(RESEARCH_PACKAGE_ASSET_DIRECTORY, "assets/stimuli");
   assert.equal(RESEARCH_STORAGE_NAMESPACE, "affect-research/v1");
 
   const stimuli = root.children.get("stimuli");
@@ -1386,6 +1412,103 @@ test("workspace opens a verified stimulus only beneath the curated stimuli libra
   assert.equal(file.name, "Clip One.mp4");
   assert.equal(await file.text(), "video");
   await assert.rejects(workspace.openStimulusFile("settings/not-video.json"), /supported complete-video/u);
+});
+
+test("workspace scans and opens portable package media only beneath assets/stimuli", async () => {
+  const root = new MemoryDirectoryHandle();
+  const workspace = new BrowserResearchWorkspace(root);
+  await workspace.initialize();
+  const packageStimuli = root.children.get("assets").children.get("stimuli");
+  const nested = await packageStimuli.getDirectoryHandle("condition-a", { create: true });
+  nested.children.set("Clip One.mp4", new MemoryFileHandle(
+    "Clip One.mp4",
+    new File(["portable-video"], "Clip One.mp4", { type: "video/mp4" }),
+  ));
+  nested.children.set("notes.txt", new MemoryFileHandle("notes.txt"));
+
+  const videos = await workspace.rescanPackageVideos();
+  assert.deepEqual(videos.map(({ relativePath }) => relativePath), ["condition-a/Clip One.mp4"]);
+  const file = await workspace.openPackageStimulusFile("assets/stimuli/condition-a/Clip One.mp4");
+  assert.equal(await file.text(), "portable-video");
+  await assert.rejects(
+    workspace.openPackageStimulusFile("stimuli/condition-a/Clip One.mp4"),
+    (error) => error.code === "unsafe-package-path",
+  );
+  await assert.rejects(
+    workspace.openPackageStimulusFile("assets/stimuli/condition-a/notes.txt"),
+    (error) => error.code === "unsupported-video",
+  );
+});
+
+test("workspace loads and writes only the canonical root package and attests an exact closed asset tree", async () => {
+  const root = new MemoryDirectoryHandle();
+  const workspace = new BrowserResearchWorkspace(root);
+  await workspace.initialize();
+  const sourceText = await readFile(
+    new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url),
+    "utf8",
+  );
+  const packageValue = JSON.parse(sourceText);
+
+  const saved = await workspace.saveExperimentPackage(sourceText);
+  assert.equal(saved.sourceText, sourceText);
+  assert.equal(
+    await (await root.children.get(EXPERIMENT_PACKAGE_FILE_NAME).getFile()).text(),
+    sourceText,
+  );
+
+  const packageStimuli = root.children.get("assets").children.get("stimuli");
+  for (const asset of packageValue.assets.stimuli) {
+    const path = asset.relativePath.split("/").slice(2);
+    const fileName = path.pop();
+    let directory = packageStimuli;
+    for (const segment of path) directory = await directory.getDirectoryHandle(segment, { create: true });
+    directory.children.set(fileName, new MemoryFileHandle(
+      fileName,
+      new File([asset.relativePath.replace(/^assets\//u, "")], fileName, { type: asset.mimeType }),
+    ));
+  }
+
+  const attestation = await workspace.attestExperimentPackageRoot(sourceText);
+  assert.equal(attestation.packageDocument.sourceText, sourceText);
+  assert.equal(attestation.assetManifestSha256, packageValue.integrity.assetManifestSha256);
+  assert.deepEqual(
+    attestation.assets.map(({ packagePath, sha256 }) => [packagePath, sha256]),
+    packageValue.assets.stimuli.map(({ relativePath, sha256 }) => [relativePath, sha256]),
+  );
+  assert.deepEqual(
+    attestation.assetBindings.map(({ packagePath }) => packagePath),
+    packageValue.assets.stimuli.map(({ relativePath }) => relativePath),
+  );
+
+  packageStimuli.children.set("notes.txt", new MemoryFileHandle("notes.txt"));
+  await assert.rejects(
+    workspace.attestExperimentPackageRoot(sourceText),
+    (error) => error.code === "package-asset-extra",
+  );
+  packageStimuli.children.delete("notes.txt");
+
+  const changed = packageStimuli.children.get("active-01.mp4");
+  packageStimuli.children.set("active-01.mp4", { kind: "file", name: "active-01.mp4" });
+  await assert.rejects(
+    workspace.attestExperimentPackageRoot(sourceText),
+    (error) => error.code === "package-asset-unverifiable",
+  );
+  packageStimuli.children.set("active-01.mp4", changed);
+  changed.file = new File(["changed"], "active-01.mp4", { type: "video/mp4" });
+  await assert.rejects(
+    workspace.attestExperimentPackageRoot(sourceText),
+    (error) => error.code === "package-asset-mismatch",
+  );
+  packageStimuli.children.delete("active-01.mp4");
+  await assert.rejects(
+    workspace.attestExperimentPackageRoot(sourceText),
+    (error) => error.code === "package-asset-missing",
+  );
+  await assert.rejects(
+    workspace.attestExperimentPackageRoot(`${sourceText} `),
+    (error) => error.code === "package-root-mismatch",
+  );
 });
 
 test("experimental YouTube normalization is explicit, unverified, and never invents a byte hash", () => {
@@ -1544,4 +1667,115 @@ test("runtime integration derives attempt, recovery, and participant-state proje
     { participantId: "P001", state: "Partial" },
     { participantId: "P002", state: "Complete" },
   ]), { P001: "partial", P002: "complete" });
+  const recoveryBinding = {
+    schema: "affect-research-experiment-package-recovery-binding",
+    version: 1,
+    participantId: "P001",
+    attemptNumber: 2,
+    disposition: "resume-compatible",
+    packageId: "study-package",
+    canonicalSourceByteSha256: "d".repeat(64),
+    packageDefinitionSha256: "e".repeat(64),
+    languageId: "en",
+    languageSelectionPath: ["international", "en"],
+    assignmentSha256: "f".repeat(64),
+  };
+  assert.deepEqual(participantStateDetail([
+    { participantId: "P001", state: "Partial" },
+  ], {
+    recoverableByParticipant: { P001: true },
+    recoveryBindingByParticipant: { P001: recoveryBinding },
+  }), {
+    P001: "partial",
+    __recoverable: { P001: true },
+    __recoveryBinding: { P001: recoveryBinding },
+  });
+});
+
+test("runtime recovery never crosses the exact experiment package boundary", () => {
+  const packageHash = "d".repeat(64);
+  const packageDefinitionHash = "f".repeat(64);
+  const protocolPlanHash = "1".repeat(64);
+  const packageAssignmentHash = "2".repeat(64);
+  const assetBindings = [{ stimulusId: "stimulus-1", relativePath: "assets/stimuli/video.mp4" }];
+  const attempts = [
+    {
+      participantId: "P001",
+      attemptNumber: 1,
+      status: "partial",
+      recoverable: true,
+      settingsHash: HASH_A,
+      planHash: HASH_B,
+      context: {},
+    },
+    {
+      participantId: "P001",
+      attemptNumber: 2,
+      status: "partial",
+      recoverable: true,
+      settingsHash: HASH_A,
+      planHash: HASH_B,
+      protocolPlanHash,
+      context: {
+        experimentPackage: {
+          sourceByteSha256: packageHash,
+          packageDefinitionSha256: packageDefinitionHash,
+          packageId: "package-1",
+          languageId: "en",
+          languageSelectionPath: ["english"],
+          assignmentSha256: packageAssignmentHash,
+          assetBindings,
+        },
+      },
+    },
+  ];
+  const identity = {
+    participantId: "P001",
+    settingsSha256: HASH_A,
+    assignmentPlanSha256: HASH_B,
+  };
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: null,
+  }).attemptNumber, 1);
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: packageHash,
+    experimentPackageDefinitionSha256: packageDefinitionHash,
+    experimentPackageId: "package-1",
+    experimentPackageLanguageId: "en",
+    experimentPackageLanguageSelectionPath: ["english"],
+    experimentPackageAssignmentSha256: packageAssignmentHash,
+    experimentPackageAssetBindings: assetBindings,
+    protocolPlanSha256: protocolPlanHash,
+  }).attemptNumber, 2);
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: packageHash,
+    experimentPackageAssignmentSha256: "3".repeat(64),
+  }), null);
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: packageHash,
+    experimentPackageDefinitionSha256: packageDefinitionHash,
+    experimentPackageId: "package-1",
+    experimentPackageLanguageId: "de",
+    experimentPackageLanguageSelectionPath: ["german"],
+    experimentPackageAssetBindings: assetBindings,
+    protocolPlanSha256: protocolPlanHash,
+  }), null);
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: packageHash,
+    experimentPackageDefinitionSha256: packageDefinitionHash,
+    experimentPackageId: "package-1",
+    experimentPackageLanguageId: "en",
+    experimentPackageLanguageSelectionPath: ["english"],
+    experimentPackageAssetBindings: [{ ...assetBindings[0], relativePath: "assets/stimuli/other.mp4" }],
+    protocolPlanSha256: protocolPlanHash,
+  }), null);
+  assert.equal(selectCompatibleRecovery(attempts, {
+    ...identity,
+    experimentPackageSourceByteSha256: "e".repeat(64),
+  }), null);
 });

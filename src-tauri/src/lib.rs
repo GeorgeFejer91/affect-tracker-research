@@ -1,6 +1,8 @@
 mod research_commands;
 mod research_contracts;
 mod research_error;
+mod research_experiment_package;
+mod research_external_protocol;
 mod research_gamepad;
 mod research_input;
 mod research_lsl;
@@ -104,6 +106,9 @@ pub fn run() {
             research_commands::research_choose_workspace,
             research_commands::research_workspace_status,
             research_commands::research_load_settings,
+            research_commands::research_load_experiment,
+            research_commands::research_load_experiment_package,
+            research_commands::research_save_experiment_package,
             research_commands::research_rescan_stimuli,
             research_commands::research_import_stimuli,
             research_commands::research_workspace_media_url,

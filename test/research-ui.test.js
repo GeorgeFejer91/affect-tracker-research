@@ -33,7 +33,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["experiment", "Experiment"],
-  ["stimuli", "Stimuli & Counterbalancer"],
+  ["stimuli", "Experiment Plan & Stimuli"],
   ["questionnaires", "Questionnaires & Sequence"],
   ["input", "Controller / Input Device"],
   ["visual", "Visual Feedback"],
@@ -74,35 +74,89 @@ test("Questionnaires are strict ordered protocol modules rather than a third app
   const source = await read("site/src/research/app.js");
   const markup = renderResearchUiMarkup();
   for (const id of [
-    "questionnaire-import", "questionnaire-add-maia", "questionnaire-template-download",
+    "questionnaire-import", "questionnaire-template-download",
     "questionnaire-definition-list", "questionnaire-module-list", "protocol-plan-hash",
     "protocol-sequence-preview", "questionnaire-file-input", "questionnaire-preview-dialog",
   ]) assert.match(markup, new RegExp(`id="${id}"`, "u"));
+  for (const bundled of ["maia-2-de", "maia-2-en", "tas-20-en", "ssq-six-item-en", "vr-exp-en"]) {
+    assert.match(markup, new RegExp(`data-bundled-questionnaire="${bundled}"`, "u"));
+  }
   assert.match(markup, /one row per answer option/u);
-  assert.match(markup, /does not bundle proprietary wording/u);
-  assert.match(markup, /before or after the session, or around a condition block/u);
-  assert.match(source, /target\.dataset\.questionnairePlacement \|\| target\.dataset\.questionnairePool\)\) return/u);
+  assert.match(markup, /researcher-supplied wording and response ranges/u);
+  assert.match(markup, /No reverse scoring, subscales, diagnostic interpretation, or validation status is inferred/u);
+  assert.match(markup, /after a specific video before or after its ISI/u);
+  assert.match(source, /dataset\.questionnaireStimulus/u);
+  assert.match(source, /dataset\.questionnaireIsi/u);
+  assert.match(source, /target\.dataset\.questionnairePlacement \|\| target\.dataset\.questionnaireBlock\)\) return/u);
   assert.equal((markup.match(/data-mode-panel=/gu) ?? []).length, 2);
 });
 
-test("Workspace, experiment, and counterbalancing decisions are present without legacy rating choices", () => {
+test("Workspace and externally authored experiment order are present without in-app randomization", async () => {
+  const source = await read("site/src/research/app.js");
   const markup = renderResearchUiMarkup();
-  for (const directory of ["stimuli/", "settings/", "outputs/", "recovery/"]) assert.match(markup, new RegExp(directory, "u"));
-  for (const id of ["workspace-choose", "workspace-rescan", "video-import", "video-folder-import", "settings-load", "settings-save"]) {
+  for (const directory of ["stimuli/", "assets/stimuli/", "settings/", "outputs/", "recovery/"]) assert.match(markup, new RegExp(directory, "u"));
+  for (const id of ["workspace-choose", "workspace-rescan", "video-import", "video-folder-import", "package-load", "package-generate", "package-file-status", "experiment-load", "experiment-template-download", "experiment-file-status", "settings-load", "settings-save"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
+  for (const id of [
+    "package-language-tree", "package-reproduction-status",
+    "choose-participant-language", "participant-language-dialog",
+    "participant-language-context", "participant-language-breadcrumb",
+    "participant-language-prompt", "participant-language-options",
+    "participant-language-back", "participant-language-cancel",
+  ]) {
+    assert.match(markup, new RegExp(`id="${id}"`, "u"));
+  }
+  assert.doesNotMatch(markup, /id="package-language-route"/u);
+  assert.match(markup, /One strict JSON file owns settings, language routing, questionnaires, manual video order, every ISI, playback policy, and fixed asset identities/u);
+  assert.match(markup, /Load reads <code>experiment\.package\.json<\/code> from this workspace root/u);
+  assert.match(markup, /Missing, extra, unreadable, or changed files block Start/u);
+  assert.doesNotMatch(markup, /id="package-file-input"/u);
+  assert.match(source, /workspace\.loadExperimentPackage\(\)/u);
+  assert.match(source, /workspace\.saveExperimentPackage\(sourceText\)/u);
+  assert.match(source, /workspace\.attestExperimentPackageRoot/u);
+  assert.match(markup, /Package reproduction matrix/u);
+  assert.match(source, /languageInput\.readOnly = Boolean\(experimentPackageDocument\)/u);
+  assert.match(markup, /Every terminal language explicitly lists its ordered <code>questionnaireModuleIds<\/code>/u);
+  assert.match(source, /return validateLanguageSelectionTreeV1\(parsed\)/u);
+  assert.match(source, /resolveLanguageSelectionTraversalStepV1/u);
+  assert.match(source, /validateExperimentPackageRecoveryBindingV1/u);
+  assert.match(source, /participantRecoveryBindings/u);
+  assert.match(source, /No language was selected/u);
+  assert.doesNotMatch(source, /routes\[0\]/u);
+  assert.doesNotMatch(source, /questionnaireModuleIds = questionnaireModules\.filter/u);
   assert.match(markup, /Folders are scanned recursively/u);
   assert.match(markup, /Partial ratings are always journaled locally/u);
+  assert.match(markup, /Prepare randomization outside Affect Research/u);
+  assert.match(markup, /supplies every participant’s block order, complete-video order, and the ISI after each video/u);
+  assert.match(markup, /Array order is authoritative/u);
   assert.match(markup, /id="sampling-frequency"[^>]*min="1"[^>]*max="240"[^>]*value="130"/u);
+  for (const id of ["experiment-id", "experiment-title", "participant-count"]) {
+    assert.match(markup, new RegExp(`id="${id}"[^>]*readonly`, "u"));
+  }
   assert.match(markup, /Continuous rating is always enabled/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
-  for (const mode of ["fixed", "jitter", "continue"]) assert.match(markup, new RegExp(`name="transitionMode" value="${mode}"`, "u"));
-  assert.match(markup, /single column containing every video is the ordinary one-hat design/u);
-  assert.match(markup, /Williams counterbalancing/u);
-  assert.match(markup, /Cyclic rotation/u);
-  assert.match(markup, /balanced-v1/u);
-  assert.match(markup, /Export assignment-plan\.csv/u);
-  assert.doesNotMatch(markup, /all-permutation[^<]*(?:option|button)/iu);
+  assert.match(markup, /external-order-v1/u);
+  assert.match(markup, /<code>schedules\[\]\.blocks\[\]\.videos\[\]<\/code> is executed exactly in array order/u);
+  assert.match(markup, /isiAfterMs/u);
+  assert.match(markup, /Export resolved-plan\.csv/u);
+  assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
+});
+
+test("participant language is explicit per attempt and recovery cannot reroute it", async () => {
+  const source = await read("site/src/research/app.js");
+  const markup = renderResearchUiMarkup();
+  assert.match(markup, /<dialog id="participant-language-dialog"[^>]*aria-labelledby="participant-language-title"/u);
+  assert.match(markup, /<fieldset class="participant-language-fieldset">/u);
+  assert.match(markup, /id="participant-language-error"[^>]*role="alert"/u);
+  assert.match(source, /function openParticipantLanguageDialog\(\)[\s\S]*selectedAttemptDisposition\(\) === "resume-compatible"[\s\S]*cannot be rerouted/u);
+  assert.match(source, /dataset\.languageOption = option\.optionId/u);
+  assert.match(source, /function validateRecoveryLanguageBinding\(binding\)[\s\S]*canonicalSourceByteSha256[\s\S]*packageDefinitionSha256[\s\S]*stale or invalid language route/u);
+  assert.match(source, /compiled\.assignmentSha256 !== expectedRecoveryBinding\.assignmentSha256/u);
+  assert.match(source, /RESEARCH_UI_EVENTS\.runStarted[\s\S]*clearParticipantLanguageSelection\(\)[\s\S]*setMode\("run"\)/u);
+  assert.match(source, /RESEARCH_UI_EVENTS\.startRejected[\s\S]*clearParticipantLanguageSelection\(\)[\s\S]*schedulePlanRefresh\(\)/u);
+  assert.match(source, /participant-language-cancel[\s\S]*clearParticipantLanguageSelection\(\)[\s\S]*Start remains blocked/u);
+  assert.doesNotMatch(source, /routes\[0\]|package-language-route/u);
 });
 
 test("all nine input presets, custom capture, conflict guidance, and live test are exposed", () => {
@@ -211,6 +265,8 @@ test("Run has mutually exclusive questionnaire and stimulus stages with bounded 
   for (const id of ["run-native-video-host", "run-video", "run-pause", "run-stop-early", "run-stimulus-status", "run-timing-status", "run-write-status", "run-lsl-status", "run-transition", "run-continue", "run-questionnaire-stage", "run-questionnaire-form", "run-questionnaire-previous", "run-questionnaire-next", "run-questionnaire-submit"]) {
     assert.match(run, new RegExp(`id="${id}"`, "u"));
   }
+  assert.match(run, /id="run-pause"[^>]*hidden disabled/u,
+    "Pause is unavailable until the authoritative runtime reports an active video");
   for (const setupOnly of ["experiment-id", "participant-count", "input-preset", "visual-size", "lsl-enabled", "start-experiment"]) {
     assert.doesNotMatch(run, new RegExp(`id="${setupOnly}"`, "u"));
   }
@@ -220,11 +276,21 @@ test("Run has mutually exclusive questionnaire and stimulus stages with bounded 
   assert.match(markup, /controlled stop finalizes an explicitly partial result and cannot be resumed/u);
 });
 
-test("assignment plan export uses the canonical source-identity serializer", async () => {
+test("Run input routing is enabled only by authoritative active-stimulus status", async () => {
   const source = await read("site/src/research/app.js");
-  assert.match(source, /import \{ assignmentPlanToCsv \} from "\.\/tabular\.js"/u);
-  assert.match(source, /csv = await assignmentPlanToCsv\(plan\)/u);
-  assert.doesNotMatch(source, /const cells = \["participant_id", "position", "pool_id"/u);
+  assert.match(source, /typeof detail\.ratingInputActive === "boolean"\) ratingInputEnabled = detail\.ratingInputActive/u);
+  assert.match(source, /mode === "run" && ratingInputEnabled && !activeQuestionnaire/u,
+    "questionnaire arrow-key navigation must not be routed into affect bindings");
+  assert.match(source, /pause\.hidden = !detail\.pauseAvailable/u);
+  assert.match(source, /pause\.disabled = !detail\.pauseAvailable/u);
+});
+
+test("external experiment plan export uses the canonical source-identity and ISI serializer", async () => {
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /import \{ externalExperimentPlanToCsv \} from "\.\/tabular\.js"/u);
+  assert.match(source, /csv = await externalExperimentPlanToCsv\(plan\)/u);
+  assert.match(source, /resolved-plan\.csv/u);
+  assert.doesNotMatch(source, /assignmentPlanToCsv\(plan\)/u);
 });
 
 test("the UI bridge names are explicit and stable", () => {
@@ -233,12 +299,16 @@ test("the UI bridge names are explicit and stable", () => {
     rescanWorkspaceRequest: "affect-research:rescan-workspace",
     importVideosRequest: "affect-research:import-videos-request",
     loadSettingsRequest: "affect-research:load-settings-request",
+    loadExperimentRequest: "affect-research:load-experiment-request",
+    loadExperimentPackageRequest: "affect-research:load-experiment-package-request",
+    saveExperimentPackageRequest: "affect-research:save-experiment-package-request",
     saveSettingsRequest: "affect-research:save-settings-request",
     exportPlanRequest: "affect-research:export-plan-request",
     importQuestionnaireRequest: "affect-research:import-questionnaire-request",
     questionnaireDraftRequest: "affect-research:questionnaire-draft-request",
     questionnaireSubmitRequest: "affect-research:questionnaire-submit-request",
     planReady: "affect-research:plan-ready",
+    setupSettingsReady: "affect-research:setup-settings-ready",
     inputTestState: "affect-research:input-test-state",
     inputEdge: "affect-research:input-edge",
     inputBindingChanged: "affect-research:input-binding-changed",
@@ -246,10 +316,13 @@ test("the UI bridge names are explicit and stable", () => {
     inputCaptureRequest: "affect-research:input-capture-request",
     inputCaptureCancel: "affect-research:input-capture-cancel",
     startRequest: "affect-research:start-request",
+    startRejected: "affect-research:start-rejected",
     pauseRequest: "affect-research:pause-request",
     stopEarlyRequest: "affect-research:stop-early-request",
     continueRequest: "affect-research:continue-request",
     settingsLoaded: "affect-research:settings-loaded",
+    experimentLoaded: "affect-research:experiment-loaded",
+    experimentPackageLoaded: "affect-research:experiment-package-loaded",
     capabilityStatus: "affect-research:capability-status",
     workspaceReady: "affect-research:workspace-ready",
     stimuliCatalogued: "affect-research:stimuli-catalogued",
@@ -268,6 +341,18 @@ test("Start emits an explicit attempt disposition without raw participant names"
   assert.match(source, /setInputValue\("participant-first-name", ""\)/u);
   assert.match(source, /setInputValue\("participant-last-name", ""\)/u);
   const detailBlock = source.slice(source.indexOf("const detail = {"), source.indexOf("const event = new CustomEvent", source.indexOf("const detail = {")));
+  for (const field of [
+    "experimentPackageSourceText",
+    "experimentPackageSourceByteSha256",
+    "experimentPackageDefinitionSha256",
+    "experimentPackageId",
+    "selectedLanguageId",
+    "languageSelectionPath",
+    "packageAssignmentSha256",
+    "packageAssetBindings",
+  ]) {
+    assert.match(detailBlock, new RegExp(`${field}:?`, "u"));
+  }
   assert.doesNotMatch(detailBlock, /firstName|lastName/u);
 });
 
@@ -275,7 +360,7 @@ test("pending native finalization has an explicit acquisition-free Setup dispatc
   const source = await read("site/src/research/app.js");
   assert.match(source, /__finalizationPending/u);
   assert.match(source, /__finalizationBinding/u);
-  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*protocolContract = hasQuestionnaires \? "manifestV3" : "manifestV2"[\s\S]*expectedSettingsSha256 = hasQuestionnaires \? protocolSettingsHash : settingsHash[\s\S]*binding\.protocolContract !== protocolContract[\s\S]*binding\.settingsSha256 !== expectedSettingsSha256[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
+  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*protocolContract = protocolSettingsSnapshot\?\.version === 3[\s\S]*\? "manifestV3"[\s\S]*: "manifestV2"[\s\S]*expectedSettingsSha256 = protocolContract === "manifestV3" \? protocolSettingsHash : settingsHash[\s\S]*binding\.protocolContract !== protocolContract[\s\S]*binding\.settingsSha256 !== expectedSettingsSha256[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
   assert.match(source, /Finalize pending \$\{pendingFinalization\.completionStatus\} attempt/u);
   const requestStart = source.slice(
     source.indexOf("function requestStart()"),
@@ -366,7 +451,7 @@ test("programmatic binding, color, and overlay changes invalidate the frozen pro
   assert.match(source, /onPositionChange\(position\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function resetBindingsToPreset\(\)[\s\S]*?resetInputTest\(\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /inputBinding = structuredClone\(result\.binding\);\s*resetInputTest\(\{ notify: false \}\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
-  assert.match(source, /function applyResearchSettings\(settings\)[\s\S]*?inputBinding = structuredClone\(normalized\.input\);\s*resetInputTest\(\);/u);
+  assert.match(source, /function applyResearchSettings\(settings, \{[\s\S]*?inputBinding = structuredClone\(normalized\.input\);\s*resetInputTest\(\);/u);
   assert.match(source, /if \(target\.dataset\.colorReset\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function schedulePlanRefresh\(\)[\s\S]*?settingsSnapshot = null;[\s\S]*?plan = null;[\s\S]*?capabilities\.manifestReady = false;/u);
 });
@@ -408,6 +493,22 @@ test("Setup remains scrollable on desktop and the mobile header owns intrinsic h
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title chevron"[\s\S]*?"\. summary \."[\s\S]*?white-space:\s*normal;/u);
+});
+
+test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {
+  const runtime = await read("site/src/research/runtime-bridge.js");
+  assert.match(runtime, /intervalEndsAt = this\.run\.intervalPausedForVisibility[\s\S]*?this\.monotonicNow\(\) \+ interval\.durationMs/u);
+  assert.match(runtime, /intervalEndsAt \?\? 0\) - this\.monotonicNow\(\)/u);
+  assert.match(runtime, /intervalRemainingMs = remainingMs/u,
+    "visibility loss freezes the remaining monotonic interval instead of consuming hidden time");
+  for (const match of runtime.matchAll(/const transitionStartedAt = this\.(\w+)\(\)/gu)) {
+    assert.equal(match[1], "monotonicNow");
+  }
+  const intervalBranch = runtime.slice(
+    runtime.indexOf('if (step.kind === "interval")'),
+    runtime.indexOf("this.run.questionnaireActive = false", runtime.indexOf('if (step.kind === "interval")') + 1),
+  );
+  assert.doesNotMatch(intervalBranch, /epochNow/u);
 });
 
 test("custom research controls expose one coherent accessible interaction model", async () => {

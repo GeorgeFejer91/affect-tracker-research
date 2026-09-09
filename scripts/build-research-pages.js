@@ -11,6 +11,7 @@ await mkdir(resolve(outputRoot, "src"), { recursive: true });
 await Promise.all([
   cp(resolve(sourceRoot, "index.html"), resolve(outputRoot, "index.html")),
   cp(resolve(sourceRoot, "research.css"), resolve(outputRoot, "research.css")),
+  cp(resolve(sourceRoot, "experiment-template.json"), resolve(outputRoot, "experiment-template.json")),
   cp(resolve(sourceRoot, "src", "math.js"), resolve(outputRoot, "src", "math.js")),
   cp(resolve(sourceRoot, "src", "research"), resolve(outputRoot, "src", "research"), { recursive: true }),
   cp(resolve(sourceRoot, "questionnaires"), resolve(outputRoot, "questionnaires"), { recursive: true }),

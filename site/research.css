@@ -499,6 +499,64 @@ legend {
   align-items: stretch;
 }
 
+.protocol-import-card {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: var(--surface-quiet);
+}
+
+.protocol-import-card h3,
+.protocol-import-card p {
+  margin: 0;
+}
+
+.protocol-import-card .context-label {
+  margin-bottom: 0.2rem;
+}
+
+.protocol-import-card .field-output {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.protocol-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0.8rem 0 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-quiet);
+}
+
+.protocol-facts > div {
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+}
+
+.protocol-facts > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.protocol-facts dt {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.protocol-facts dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
 .license-note {
   margin: 1rem 0;
   padding: 0.8rem 0.9rem;
@@ -1129,6 +1187,66 @@ tbody tr:last-child td {
   color: var(--success);
 }
 
+.participant-language-readiness {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-quiet);
+}
+
+.participant-language-readiness h3,
+.participant-language-readiness p {
+  margin: 0;
+}
+
+.participant-language-readiness .field-output {
+  margin: 0.45rem 0;
+}
+
+.participant-language-dialog-content {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.participant-language-dialog-content > * {
+  margin: 0;
+}
+
+.participant-language-fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.participant-language-fieldset legend {
+  margin-bottom: 0.65rem;
+  font-size: 1rem;
+}
+
+.participant-language-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.participant-language-options button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.9rem;
+  justify-content: flex-start;
+  text-align: left;
+  background: var(--surface-quiet);
+}
+
+.participant-language-actions #participant-language-back {
+  margin-right: auto;
+}
+
 .preflight-list {
   display: grid;
   gap: 0.45rem;
@@ -1671,8 +1789,14 @@ dialog::backdrop {
 
   .field-grid.three-columns,
   .preview-footer,
-  .questionnaire-layout {
+  .questionnaire-layout,
+  .protocol-facts {
     grid-template-columns: 1fr;
+  }
+
+  .protocol-facts > div + div {
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
 
   .participant-grid {
@@ -1734,7 +1858,8 @@ dialog::backdrop {
   .app-bar,
   .setup-layout,
   .run-stage,
-  .questionnaire-module-controls {
+  .questionnaire-module-controls,
+  .participant-language-readiness {
     grid-template-columns: minmax(0, 1fr);
   }
 

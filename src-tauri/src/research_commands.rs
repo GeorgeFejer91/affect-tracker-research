@@ -2,6 +2,14 @@ use crate::research_contracts::{
     DirectionV1, InputBindingV1, ResearchSettingsV1, ResolvedAssignmentPlanV1,
 };
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_experiment_package::{
+    parse_canonical_experiment_package_text, parse_experiment_package_bytes,
+    LoadedExperimentPackageReceipt, SavedExperimentPackageReceipt, EXPERIMENT_PACKAGE_FILE_NAME,
+    MAX_EXPERIMENT_PACKAGE_BYTES,
+};
+use crate::research_external_protocol::{
+    parse_experiment_definition_bytes, LoadedExperimentReceipt, MAX_EXPERIMENT_DEFINITION_BYTES,
+};
 use crate::research_input::{
     NativeInputCapability, NativeInputRegionRequest, NativeInputStatus, ResearchInputService,
 };
@@ -11,7 +19,7 @@ use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SU
 use crate::research_protocol::{
     native_protocol_capability, native_protocol_runtime_unavailable, protocol_preflight,
     NativeProtocolCapability, ProtocolPreflightReceipt, ResearchSettingsDocument,
-    ResearchSettingsV2, ResolvedProtocolPlanV1,
+    ResearchSettingsV2, ResearchSettingsV3, ResolvedProtocolPlanV1,
 };
 use crate::research_runtime::{
     FinalizeReceipt, FinalizeRecoveryRequest, FinishOutcome, MediaPlaybackFailureReceipt,
@@ -26,10 +34,15 @@ use crate::research_workspace::{
     WorkspaceStatus,
 };
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write};
+use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
+use uuid::Uuid;
+
+const MAX_SETTINGS_DOCUMENT_BYTES: usize = 5 * 1024 * 1024;
 
 fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
     if window.label() != "research" {
@@ -192,17 +205,177 @@ pub async fn research_load_settings(
     let path = selection
         .into_path()
         .map_err(|_| CommandError::forbidden("The selected settings file is not local."))?;
-    let metadata = fs::metadata(&path).map_err(CommandError::io)?;
-    if !metadata.is_file() || metadata.len() > 5 * 1024 * 1024 {
+    let file = File::open(path).map_err(CommandError::io)?;
+    let metadata = file.metadata().map_err(CommandError::io)?;
+    if !metadata.is_file()
+        || metadata.len() == 0
+        || metadata.len() > MAX_SETTINGS_DOCUMENT_BYTES as u64
+    {
         return Err(CommandError::invalid_contract(
-            "The settings file is unavailable or exceeds 5 MiB.",
+            "The settings file is unavailable, empty, or exceeds 5 MiB.",
         ));
     }
-    let bytes = fs::read(path).map_err(CommandError::io)?;
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take((MAX_SETTINGS_DOCUMENT_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(CommandError::io)?;
     Ok(Some(decode_settings_bytes(&bytes)?))
 }
 
+#[tauri::command]
+pub async fn research_load_experiment(
+    window: WebviewWindow,
+    app: AppHandle,
+) -> ResearchResult<Option<LoadedExperimentReceipt>> {
+    authorize(&window)?;
+    let Some(selection) = app
+        .dialog()
+        .file()
+        .add_filter("Affect Research experiment", &["json"])
+        .blocking_pick_file()
+    else {
+        return Ok(None);
+    };
+    let path = selection
+        .into_path()
+        .map_err(|_| CommandError::forbidden("The selected experiment file is not local."))?;
+    let file = File::open(path).map_err(CommandError::io)?;
+    let metadata = file.metadata().map_err(CommandError::io)?;
+    if !metadata.is_file()
+        || metadata.len() == 0
+        || metadata.len() > MAX_EXPERIMENT_DEFINITION_BYTES as u64
+    {
+        return Err(CommandError::invalid_contract(
+            "experiment.json is unavailable, empty, or exceeds 5 MiB.",
+        ));
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take((MAX_EXPERIMENT_DEFINITION_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(CommandError::io)?;
+    Ok(Some(parse_experiment_definition_bytes(&bytes)?))
+}
+
+#[tauri::command]
+pub async fn research_load_experiment_package(
+    window: WebviewWindow,
+    app: AppHandle,
+) -> ResearchResult<Option<LoadedExperimentPackageReceipt>> {
+    authorize(&window)?;
+    let Some(selection) = app
+        .dialog()
+        .file()
+        .add_filter("Affect Research experiment package", &["json"])
+        .blocking_pick_file()
+    else {
+        return Ok(None);
+    };
+    let path = selection
+        .into_path()
+        .map_err(|_| CommandError::forbidden("The selected package is not a local file."))?;
+    let file = File::open(path).map_err(CommandError::io)?;
+    let metadata = file.metadata().map_err(CommandError::io)?;
+    if !metadata.is_file()
+        || metadata.len() == 0
+        || metadata.len() > MAX_EXPERIMENT_PACKAGE_BYTES as u64
+    {
+        return Err(CommandError::invalid_contract(
+            "The experiment package is unavailable, empty, or exceeds its byte limit.",
+        ));
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take((MAX_EXPERIMENT_PACKAGE_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(CommandError::io)?;
+    Ok(Some(parse_experiment_package_bytes(&bytes)?))
+}
+
+#[tauri::command]
+pub async fn research_save_experiment_package(
+    window: WebviewWindow,
+    app: AppHandle,
+    source_text: String,
+) -> ResearchResult<Option<SavedExperimentPackageReceipt>> {
+    authorize(&window)?;
+    let receipt = parse_canonical_experiment_package_text(&source_text)?;
+    let Some(selection) = app
+        .dialog()
+        .file()
+        .add_filter("Affect Research experiment package", &["json"])
+        .set_file_name(EXPERIMENT_PACKAGE_FILE_NAME)
+        .blocking_save_file()
+    else {
+        return Ok(None);
+    };
+    let path = selection
+        .into_path()
+        .map_err(|_| CommandError::forbidden("The package destination is not a local file."))?;
+    write_selected_package(&path, receipt.canonical_source_text.as_bytes())?;
+    Ok(Some(SavedExperimentPackageReceipt::from_loaded(&receipt)?))
+}
+
+fn write_selected_package(path: &Path, bytes: &[u8]) -> ResearchResult<()> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| CommandError::forbidden("The package destination has no parent folder."))?;
+    if !parent.is_dir() {
+        return Err(CommandError::forbidden(
+            "The package destination folder is unavailable.",
+        ));
+    }
+    if let Ok(metadata) = fs::symlink_metadata(path) {
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "The package destination must be a regular file.",
+            ));
+        }
+    }
+
+    let staging = parent.join(format!(".affect-research-{}.staging", Uuid::new_v4()));
+    let write_result = (|| -> ResearchResult<()> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&staging)
+            .map_err(CommandError::io)?;
+        file.write_all(bytes).map_err(CommandError::io)?;
+        file.sync_all().map_err(CommandError::io)?;
+        drop(file);
+
+        if path.exists() {
+            let backup = parent.join(format!(".affect-research-{}.backup", Uuid::new_v4()));
+            fs::rename(path, &backup).map_err(CommandError::io)?;
+            if let Err(error) = fs::rename(&staging, path) {
+                let _ = fs::rename(&backup, path);
+                return Err(CommandError::io(error));
+            }
+            fs::remove_file(backup).map_err(CommandError::io)?;
+        } else {
+            fs::rename(&staging, path).map_err(CommandError::io)?;
+        }
+        Ok(())
+    })();
+    if write_result.is_err() {
+        let _ = fs::remove_file(staging);
+    }
+    write_result
+}
+
 fn decode_settings_bytes(bytes: &[u8]) -> ResearchResult<LoadedSettingsReceipt> {
+    if bytes.is_empty() || bytes.len() > MAX_SETTINGS_DOCUMENT_BYTES {
+        return Err(CommandError::invalid_contract(
+            "The settings file is unavailable, empty, or exceeds 5 MiB.",
+        ));
+    }
+    if let Ok(settings) = serde_json::from_slice::<ResearchSettingsV3>(bytes) {
+        return Ok(LoadedSettingsReceipt {
+            settings: Some(ResearchSettingsDocument::V3(
+                settings.normalize_and_validate()?,
+            )),
+            legacy_settings: None,
+            report: SettingsLoadReport::research_v3(),
+        });
+    }
     if let Ok(settings) = serde_json::from_slice::<ResearchSettingsV2>(bytes) {
         return Ok(LoadedSettingsReceipt {
             settings: Some(ResearchSettingsDocument::V2(
@@ -228,7 +401,7 @@ fn decode_settings_bytes(bytes: &[u8]) -> ResearchResult<LoadedSettingsReceipt> 
     }
     let legacy: serde_json::Value = serde_json::from_slice(bytes).map_err(|_| {
         CommandError::invalid_contract(
-            "The selected file is neither ResearchSettingsV2/ResearchSettingsV1 nor bounded portable version 1 JSON.",
+            "The selected file is neither ResearchSettingsV3/ResearchSettingsV2/ResearchSettingsV1 nor bounded portable version 1 JSON.",
         )
     })?;
     if legacy.get("schema").is_some() {
@@ -270,6 +443,17 @@ pub struct SettingsLoadReport {
 }
 
 impl SettingsLoadReport {
+    fn research_v3() -> Self {
+        Self {
+            schema: "affect-research-settings-load-report",
+            version: 1,
+            source_kind: "researchV3",
+            requires_explicit_import: false,
+            defaults: Vec::new(),
+            discarded: Vec::new(),
+        }
+    }
+
     fn research_v1() -> Self {
         Self {
             schema: "affect-research-settings-load-report",
@@ -756,6 +940,9 @@ mod tests {
             "research_input_cancel_setup",
             "research_workspace_status",
             "research_load_settings",
+            "research_load_experiment",
+            "research_load_experiment_package",
+            "research_save_experiment_package",
             "research_rescan_stimuli",
             "research_import_stimuli",
             "research_workspace_media_url",
@@ -794,6 +981,18 @@ mod tests {
         assert!(!receipt.report.requires_explicit_import);
         assert_eq!(receipt.report.source_kind, "researchV1");
 
+        let v3 = crate::research_protocol::tests::external_settings();
+        let v3_receipt =
+            decode_settings_bytes(&crate::research_contracts::canonical_json(&v3, &[]).unwrap())
+                .unwrap();
+        assert!(matches!(
+            v3_receipt.settings,
+            Some(ResearchSettingsDocument::V3(_))
+        ));
+        assert!(v3_receipt.legacy_settings.is_none());
+        assert!(!v3_receipt.report.requires_explicit_import);
+        assert_eq!(v3_receipt.report.source_kind, "researchV3");
+
         let v2 = ResearchSettingsV2 {
             schema: crate::research_contracts::RESEARCH_SETTINGS_SCHEMA.to_owned(),
             version: 2,
@@ -829,5 +1028,24 @@ mod tests {
         let malformed_research =
             br#"{"schema":"affect-research-settings","version":1,"unknown":true}"#;
         assert!(decode_settings_bytes(malformed_research).is_err());
+        assert!(decode_settings_bytes(&[]).is_err());
+        assert!(decode_settings_bytes(&vec![b' '; MAX_SETTINGS_DOCUMENT_BYTES + 1]).is_err());
+    }
+
+    #[test]
+    fn selected_package_writer_replaces_only_a_regular_selected_file() {
+        let root =
+            std::env::temp_dir().join(format!("affect-research-package-writer-{}", Uuid::new_v4()));
+        fs::create_dir(&root).unwrap();
+        let target = root.join("experiment.package.json");
+        write_selected_package(&target, b"first\n").unwrap();
+        assert_eq!(fs::read(&target).unwrap(), b"first\n");
+        write_selected_package(&target, b"second\n").unwrap();
+        assert_eq!(fs::read(&target).unwrap(), b"second\n");
+
+        let directory_target = root.join("not-a-file.json");
+        fs::create_dir(&directory_target).unwrap();
+        assert!(write_selected_package(&directory_target, b"blocked\n").is_err());
+        fs::remove_dir_all(root).unwrap();
     }
 }

@@ -11,6 +11,7 @@ import {
   validateQuestionnaireAnswers,
   validateQuestionnaireDefinitionV1,
   validateQuestionnaireModuleV1,
+  validateQuestionnaireModuleV2,
   validateQuestionnaireResponseV1,
 } from "./questionnaires.js";
 import {
@@ -18,15 +19,36 @@ import {
   validateResolvedProtocolPlanV1,
 } from "./protocol-plan.js";
 import {
+  validateResearchSettingsV3,
+  validateResolvedProtocolPlanV2,
+} from "./external-protocol.js";
+import {
+  parseExperimentDefinitionV1,
+  validateResolvedExperimentPlanV1,
+} from "./external-experiment.js";
+import { validateExperimentPackageRunBindingV1 } from "./experiment-package.js";
+import {
   validateResearchEventV2,
   validateResearchRunManifestV3,
+  validateResearchRunManifestV4,
 } from "./protocol-records.js";
 
 export const RESEARCH_JOURNAL_DATABASE = "affect-research/v1";
 export const RESEARCH_JOURNAL_VERSION = 3;
+// A package-backed context contains the bounded 16 MiB canonical source plus
+// separately frozen settings, complete experiment plan, participant protocol,
+// and asset bindings. Keep one explicit aggregate bound instead of applying
+// the package-file bound to that intentionally redundant recovery envelope.
+export const MAX_RESEARCH_RECOVERY_CONTEXT_BYTES = 128 * 1024 * 1024;
 
 const RESEARCH_ATTEMPT_VERSION_V1 = 1;
 const RESEARCH_ATTEMPT_VERSION_V2 = 2;
+const RESEARCH_ATTEMPT_VERSION_V3 = 3;
+
+function isProtocolAttempt(value) {
+  const version = typeof value === "object" && value !== null ? value.version : value;
+  return version === RESEARCH_ATTEMPT_VERSION_V2 || version === RESEARCH_ATTEMPT_VERSION_V3;
+}
 
 const ATTEMPTS = "attempts";
 const SAMPLES = "samples";
@@ -77,8 +99,11 @@ function recoveryContext(value) {
     }
     return member;
   });
-  if (!text || text.length > 4 * 1024 * 1024) {
-    fail("invalid-record", "Attempt recovery context exceeds the 4 MiB limit.");
+  if (!text || new TextEncoder().encode(text).byteLength > MAX_RESEARCH_RECOVERY_CONTEXT_BYTES) {
+    fail(
+      "invalid-record",
+      `Attempt recovery context exceeds the ${MAX_RESEARCH_RECOVERY_CONTEXT_BYTES}-byte limit.`,
+    );
   }
   return JSON.parse(text);
 }
@@ -224,13 +249,51 @@ async function validateProtocolReservation(input) {
   let settings;
   let plan;
   let protocolPlan;
+  let experimentPackage = null;
+  const externalProtocol = context.settings?.version === 3;
   try {
-    settings = await validateResearchSettingsV2(context.settings);
-    plan = await validateResolvedAssignmentPlanV1(context.plan);
-    protocolPlan = await validateResolvedProtocolPlanV1(context.protocolPlan, {
-      settingsV2: settings,
-      assignmentPlanV1: plan,
-    });
+    if (externalProtocol) {
+      settings = await validateResearchSettingsV3(context.settings);
+      plan = await validateResolvedExperimentPlanV1(context.plan);
+      protocolPlan = await validateResolvedProtocolPlanV2(context.protocolPlan, {
+        settingsV3: settings,
+        resolvedExperimentPlanV1: plan,
+      });
+      if (typeof context.experimentSourceText !== "string") {
+        throw new TypeError("External-order recovery requires exact experiment.json text.");
+      }
+      const parsedExperiment = await parseExperimentDefinitionV1(
+        new TextEncoder().encode(context.experimentSourceText),
+      );
+      if (parsedExperiment.sourceByteSha256 !== settings.externalProtocol.sourceByteSha256
+        || parsedExperiment.definitionSha256 !== settings.externalProtocol.definitionSha256
+        || plan.sourceByteSha256 !== parsedExperiment.sourceByteSha256
+        || plan.definitionSha256 !== parsedExperiment.definitionSha256) {
+        throw new TypeError("External-order recovery experiment bytes do not bind settings and plan.");
+      }
+      if (!Object.hasOwn(context, "experimentPackage")) {
+        throw new TypeError("New ResearchSettingsV3 reservations require an experiment package binding.");
+      }
+      experimentPackage = await validateExperimentPackageRunBindingV1(
+        context.experimentPackage,
+        {
+          settings,
+          experimentPlan: plan,
+          protocolPlan,
+          participantId: reservation.participantId,
+        },
+      );
+    } else {
+      if (Object.hasOwn(context, "experimentPackage")) {
+        throw new TypeError("ResearchSettingsV2 recovery cannot attach an experiment package.");
+      }
+      settings = await validateResearchSettingsV2(context.settings);
+      plan = await validateResolvedAssignmentPlanV1(context.plan);
+      protocolPlan = await validateResolvedProtocolPlanV1(context.protocolPlan, {
+        settingsV2: settings,
+        assignmentPlanV1: plan,
+      });
+    }
   } catch (error) {
     fail("invalid-record", "Questionnaire-aware recovery context violates its strict frozen contracts.", {
       cause: error,
@@ -251,18 +314,20 @@ async function validateProtocolReservation(input) {
   }
   return Object.freeze({
     ...reservation,
+    attemptVersion: externalProtocol ? RESEARCH_ATTEMPT_VERSION_V3 : RESEARCH_ATTEMPT_VERSION_V2,
     protocolPlanHash: hash(input.protocolPlanHash, "protocolPlanHash"),
     context: {
       ...context,
       settings: clone(settings),
       plan: clone(plan),
       protocolPlan: clone(protocolPlan),
+      ...(experimentPackage ? { experimentPackage: clone(experimentPackage) } : {}),
     },
   });
 }
 
 function protocolStep(attempt, protocolStepPosition) {
-  if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+  if (!isProtocolAttempt(attempt)) {
     fail("invalid-record", "Protocol state is available only for questionnaire-aware attempts.");
   }
   const steps = attempt.context?.protocolPlan?.steps;
@@ -309,7 +374,7 @@ function validateSequencedRecords(records, runId, expectedStart, kind, attempt) 
     try {
       normalized = kind === "sample"
         ? validateResearchSampleV1(record)
-        : attempt.version === RESEARCH_ATTEMPT_VERSION_V2
+        : isProtocolAttempt(attempt)
           ? validateEventV2ForAttempt(validateResearchEventV2(record), attempt)
           : validateResearchEventV1(record);
     } catch (error) {
@@ -321,7 +386,7 @@ function validateSequencedRecords(records, runId, expectedStart, kind, attempt) 
       || normalized.assignmentPlanSha256 !== attempt.planHash) {
       fail("corrupt-record", `${label}[${index}] does not bind the reserved attempt.`);
     }
-    if (kind === "sample" && attempt.version === RESEARCH_ATTEMPT_VERSION_V2) {
+    if (kind === "sample" && isProtocolAttempt(attempt)) {
       const frozenStep = attempt.context.protocolPlan.steps.find((step) => (
         step.kind === "stimulus" && step.stimulusPosition === normalized.stimulusPosition
       ));
@@ -389,7 +454,9 @@ function definitionAndModuleForStep(attempt, step) {
   let module;
   try {
     definition = validateQuestionnaireDefinitionV1(rawDefinition);
-    module = validateQuestionnaireModuleV1(rawModule, { definition });
+    module = rawModule.version === 2
+      ? validateQuestionnaireModuleV2(rawModule, { definition })
+      : validateQuestionnaireModuleV1(rawModule, { definition });
   } catch (error) {
     fail("corrupt-attempt", "The frozen questionnaire definition or module is invalid.", { cause: error });
   }
@@ -753,10 +820,19 @@ function expectedProtocolRecovery(attempt) {
 
 function validateProtocolManifestIdentity(manifest, attempt) {
   let normalized;
+  const packageBinding = attempt.context?.experimentPackage ?? null;
   try {
-    normalized = validateResearchRunManifestV3(manifest);
+    normalized = packageBinding === null
+      ? validateResearchRunManifestV3(manifest)
+      : validateResearchRunManifestV4(manifest);
   } catch (error) {
-    fail("corrupt-record", "Run manifest violates ResearchRunManifestV3.", { cause: error });
+    fail(
+      "corrupt-record",
+      packageBinding === null
+        ? "Run manifest violates ResearchRunManifestV3."
+        : "Package-backed run manifest violates ResearchRunManifestV4.",
+      { cause: error },
+    );
   }
   const participant = attempt.context?.participant;
   if (!participant || normalized.runId !== attempt.runId
@@ -782,6 +858,21 @@ function validateProtocolManifestIdentity(manifest, attempt) {
   }
   if (JSON.stringify(normalized.recovery) !== JSON.stringify(expectedProtocolRecovery(attempt))) {
     fail("corrupt-record", "Run manifest recovery differs from the frozen attempt context.");
+  }
+  if (packageBinding !== null) {
+    const receipt = normalized.experimentPackage;
+    if (receipt.canonicalSourceByteSha256 !== packageBinding.sourceByteSha256
+      || receipt.packageDefinitionSha256 !== packageBinding.packageDefinitionSha256
+      || receipt.packageId !== packageBinding.packageId
+      || receipt.languageId !== packageBinding.languageId
+      || receipt.assignmentSha256 !== packageBinding.assignmentSha256
+      || JSON.stringify(receipt.languageSelectionPath)
+        !== JSON.stringify(packageBinding.languageSelectionPath)) {
+      fail(
+        "corrupt-record",
+        "Run manifest package identity differs from the frozen experiment package binding.",
+      );
+    }
   }
   validateManifestStimuliForAttempt(normalized.stimuli, attempt);
 
@@ -902,7 +993,7 @@ async function validateProtocolManifestEvidence({
   submittedResponses,
   draftResponses,
 }) {
-  if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+  if (!isProtocolAttempt(attempt)) {
     fail("invalid-record", "Protocol finalization requires a questionnaire-aware attempt.");
   }
   if (!TERMINAL_STATUSES.has(status)) {
@@ -910,6 +1001,34 @@ async function validateProtocolManifestEvidence({
   }
   finalizedAt = isoTimestamp(finalizedAt, "finalizedAt");
   const normalized = validateProtocolManifestIdentity(manifest, attempt);
+  if (attempt.context.experimentPackage) {
+    let packageBinding;
+    try {
+      packageBinding = await validateExperimentPackageRunBindingV1(
+        attempt.context.experimentPackage,
+        {
+          settings: attempt.context.settings,
+          experimentPlan: attempt.context.plan,
+          protocolPlan: attempt.context.protocolPlan,
+          participantId: attempt.participantId,
+        },
+      );
+    } catch (error) {
+      fail(
+        "corrupt-record",
+        "Frozen experiment package binding no longer reproduces the reserved attempt.",
+        { cause: error },
+      );
+    }
+    if (normalized.experimentPackage.assetBindingsSha256
+      !== await canonicalSha256(packageBinding.assetBindings)
+      || normalized.experimentPackage.assignmentSha256 !== packageBinding.assignmentSha256) {
+      fail(
+        "corrupt-record",
+        "Run manifest assignment or asset-binding hash differs from the frozen experiment package binding.",
+      );
+    }
+  }
   const completed = normalized.completionStatus === "completed";
   if ((status === "complete") !== completed || normalized.timing.finalizedAt !== finalizedAt) {
     fail("finalization-conflict", "Journal terminal status or time differs from the run manifest.");
@@ -965,9 +1084,10 @@ function initialAttempt(reservation) {
 }
 
 function initialProtocolAttempt(reservation) {
+  const { attemptVersion, ...baseReservation } = reservation;
   return {
-    ...initialAttempt(reservation),
-    version: RESEARCH_ATTEMPT_VERSION_V2,
+    ...initialAttempt(baseReservation),
+    version: attemptVersion,
     protocolPlanHash: reservation.protocolPlanHash,
     safeProtocolStepPosition: 0,
     activeProtocolStep: null,
@@ -1060,7 +1180,8 @@ function validateProtocolInterruption(value) {
   }
   if (value.interruptedProtocolStepKind !== null
     && value.interruptedProtocolStepKind !== "stimulus"
-    && value.interruptedProtocolStepKind !== "questionnaire") {
+    && value.interruptedProtocolStepKind !== "questionnaire"
+    && value.interruptedProtocolStepKind !== "interval") {
     fail("corrupt-attempt", "Protocol interruption has an invalid interrupted step kind.");
   }
   if ((value.interruptedProtocolStepPosition === null)
@@ -1073,7 +1194,7 @@ function validateProtocolInterruption(value) {
   return value;
 }
 
-function validateStoredAttemptV2(value) {
+function validateStoredProtocolAttempt(value, expectedVersion) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     fail("corrupt-attempt", "Stored protocol attempt must be an object.");
   }
@@ -1087,7 +1208,8 @@ function validateStoredAttemptV2(value) {
   ];
   exactObject(value, "Stored protocol attempt", allowed);
   if (value.protocol !== "affect-research-browser-journal"
-    || value.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    || value.version !== expectedVersion
+    || !isProtocolAttempt(expectedVersion)) {
     fail("corrupt-attempt", "Stored protocol attempt has an unsupported protocol version.");
   }
   const reservation = validateReservation(Object.fromEntries([
@@ -1110,6 +1232,16 @@ function validateStoredAttemptV2(value) {
     || settings.experiment?.id !== reservation.experimentId
     || !Array.isArray(resolvedProtocol.steps)) {
     fail("corrupt-attempt", "Stored protocol attempt hashes do not bind its frozen context.");
+  }
+  if (expectedVersion === RESEARCH_ATTEMPT_VERSION_V2
+    && (settings.version !== 2 || resolvedProtocol.version !== 1
+      || plan.schema !== "affect-research-assignment-plan")) {
+    fail("corrupt-attempt", "Stored V2 attempt does not contain its historical contract family.");
+  }
+  if (expectedVersion === RESEARCH_ATTEMPT_VERSION_V3
+    && (settings.version !== 3 || resolvedProtocol.version !== 2
+      || plan.schema !== "affect-research-experiment-plan")) {
+    fail("corrupt-attempt", "Stored V3 attempt does not contain the external-order contract family.");
   }
   if (!Array.isArray(settings.questionnaires?.definitions)
     || !Array.isArray(settings.questionnaires?.modules)) {
@@ -1139,7 +1271,7 @@ function validateStoredAttemptV2(value) {
   }
   let activeProtocolStep = null;
   if (value.activeProtocolStep !== null) {
-    const expected = protocolStep({ ...value, version: RESEARCH_ATTEMPT_VERSION_V2 }, safeProtocolStepPosition + 1);
+    const expected = protocolStep(value, safeProtocolStepPosition + 1);
     if (JSON.stringify(value.activeProtocolStep) !== JSON.stringify(expected)) {
       fail("corrupt-attempt", "Active protocol step differs from the frozen next step.");
     }
@@ -1186,7 +1318,7 @@ function validateStoredAttemptV2(value) {
   if (value.status === "partial" && !value.recoverable
     && (value.finalizedAt === null || normalizedManifest === null
       || activeProtocolStep !== null || attempt.activeQuestionnaireDraft !== null)) {
-    fail("corrupt-attempt", "A terminal protocol partial requires a closed ManifestV3 attempt.");
+    fail("corrupt-attempt", "A terminal protocol partial requires its closed versioned manifest.");
   }
   if (normalizedManifest !== null) {
     if ((value.status === "complete") !== (normalizedManifest.completionStatus === "completed")
@@ -1196,7 +1328,7 @@ function validateStoredAttemptV2(value) {
       || value.pendingFinalization.finalizedAt !== normalizedManifest.timing.finalizedAt
       || JSON.stringify(value.pendingFinalization.recovery)
         !== JSON.stringify(normalizedManifest.recovery)) {
-      fail("corrupt-attempt", "Terminal ManifestV3 does not bind its prepared finalization descriptor.");
+      fail("corrupt-attempt", "Terminal protocol manifest does not bind its prepared finalization descriptor.");
     }
   }
   return Object.freeze(attempt);
@@ -1204,7 +1336,10 @@ function validateStoredAttemptV2(value) {
 
 function validateStoredAttempt(value) {
   if (value?.version === RESEARCH_ATTEMPT_VERSION_V1) return validateStoredAttemptV1(value);
-  if (value?.version === RESEARCH_ATTEMPT_VERSION_V2) return validateStoredAttemptV2(value);
+  if (value?.version === RESEARCH_ATTEMPT_VERSION_V2
+    || value?.version === RESEARCH_ATTEMPT_VERSION_V3) {
+    return validateStoredProtocolAttempt(value, value.version);
+  }
   fail("corrupt-attempt", "Stored attempt has an unsupported protocol version.");
 }
 
@@ -1277,7 +1412,7 @@ function validateStoredEvidence(rawAttempt, sampleEntries, eventEntries, questio
       || attempt.manifest.timing.missedSlotCount !== missedSlots) {
       fail("corrupt-record", "Terminal manifest timing totals differ from preserved journal evidence.");
     }
-    if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2) {
+    if (isProtocolAttempt(attempt)) {
       const submittedResponses = questionnaireResponses.filter(({ status }) => status === "submitted");
       const draftResponses = questionnaireResponses.filter(({ status }) => status === "draft");
       const modules = protocolResponseReceipts(attempt, submittedResponses, draftResponses, events);
@@ -1309,7 +1444,7 @@ function protocolFinalizationEvidence(
     eventEntries,
     questionnaireResponseEntries,
   );
-  if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+  if (!isProtocolAttempt(attempt)) {
     fail("invalid-record", "Protocol finalization requires a questionnaire-aware attempt.");
   }
   if (attempt.status !== "active") {
@@ -1352,11 +1487,11 @@ function protocolFinalizationDescriptor(attempt, manifest) {
 
 function interruptAttempt(attempt, reason, updatedAt) {
   if (attempt.status !== "active") return attempt;
-  const interruptedProtocolStep = attempt.version === RESEARCH_ATTEMPT_VERSION_V2
+  const interruptedProtocolStep = isProtocolAttempt(attempt)
     ? attempt.activeProtocolStep
     : null;
   attempt.status = "partial";
-  attempt.interruption = attempt.version === RESEARCH_ATTEMPT_VERSION_V2
+  attempt.interruption = isProtocolAttempt(attempt)
     ? {
       reason,
       at: updatedAt,
@@ -1376,7 +1511,10 @@ function interruptAttempt(attempt, reason, updatedAt) {
     };
   attempt.recoverable = true;
   attempt.activeStimulusIndex = null;
-  if (interruptedProtocolStep?.kind === "stimulus") attempt.activeProtocolStep = null;
+  if (interruptedProtocolStep?.kind === "stimulus"
+    || interruptedProtocolStep?.kind === "interval") {
+    attempt.activeProtocolStep = null;
+  }
   attempt.updatedAt = updatedAt;
   return attempt;
 }
@@ -1553,7 +1691,7 @@ export class IndexedDbResearchJournal {
       }
       normalizedSamples = validateSequencedRecords(samples, runId, expectedSampleSequence, "sample", attempt);
       normalizedEvents = validateSequencedRecords(events, runId, expectedEventSequence, "event", attempt);
-      if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2 && normalizedSamples.length > 0) {
+      if (isProtocolAttempt(attempt) && normalizedSamples.length > 0) {
         const active = attempt.activeProtocolStep;
         if (!active || active.kind !== "stimulus"
           || normalizedSamples.some((sample) => (
@@ -1571,7 +1709,7 @@ export class IndexedDbResearchJournal {
         : null;
       validateRecordTimeline(normalizedSamples, "sample", previousSample);
       validateRecordTimeline(normalizedEvents, "event", previousEvent);
-      if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2 && stimulusState !== null) {
+      if (isProtocolAttempt(attempt) && stimulusState !== null) {
         fail(
           "invalid-record",
           "Questionnaire-aware attempts must advance through protocol-state transitions.",
@@ -1618,7 +1756,7 @@ export class IndexedDbResearchJournal {
     identifier(input.runId, "runId");
     isoTimestamp(input.updatedAt, "updatedAt");
     return this.#mutateAttempt(input.runId, (attempt) => {
-      if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+      if (!isProtocolAttempt(attempt)) {
         fail("invalid-record", "Historical V1 attempts must use stimulus-state transitions.");
       }
       if (attempt.status !== "active") fail("attempt-final", "Only active attempts can change protocol state.");
@@ -1637,7 +1775,7 @@ export class IndexedDbResearchJournal {
     const stepPosition = integer(input.protocolStepPosition, "protocolStepPosition", 1);
     const updatedAt = isoTimestamp(input.updatedAt, "updatedAt");
     const snapshot = await this.#readAttemptSnapshot(input.runId);
-    if (!snapshot || snapshot.version !== RESEARCH_ATTEMPT_VERSION_V2 || snapshot.status !== "active") {
+    if (!snapshot || !isProtocolAttempt(snapshot) || snapshot.status !== "active") {
       fail("attempt-final", "Questionnaire drafts require an active questionnaire-aware attempt.");
     }
     const { step, responses } = await deriveQuestionnaireResponses(
@@ -1652,7 +1790,7 @@ export class IndexedDbResearchJournal {
     const store = transaction.objectStore(ATTEMPTS);
     const attempt = await requestResult(store.get(input.runId));
     try {
-      if (!attempt || attempt.version !== RESEARCH_ATTEMPT_VERSION_V2 || attempt.status !== "active") {
+      if (!attempt || !isProtocolAttempt(attempt) || attempt.status !== "active") {
         fail("attempt-final", "Questionnaire drafts require an active questionnaire-aware attempt.");
       }
       validateStoredAttempt(attempt);
@@ -1702,7 +1840,7 @@ export class IndexedDbResearchJournal {
       "wallTimeUtc", "monotonicTimeNs", "detailCode",
     ]);
     const snapshot = await this.#readAttemptSnapshot(input.runId);
-    if (!snapshot || snapshot.version !== RESEARCH_ATTEMPT_VERSION_V2 || snapshot.status !== "active") {
+    if (!snapshot || !isProtocolAttempt(snapshot) || snapshot.status !== "active") {
       fail("attempt-final", "Questionnaire submission requires an active questionnaire-aware attempt.");
     }
     const { step, responses } = await deriveQuestionnaireResponses(
@@ -1871,7 +2009,7 @@ export class IndexedDbResearchJournal {
     return this.#mutateAttempt(runId, (attempt) => {
       if (attempt.status !== "active") fail("attempt-final", "Only active attempts can prepare finalization.");
       if (descriptor.completionStatus === "completed"
-        && attempt.version === RESEARCH_ATTEMPT_VERSION_V2) {
+        && isProtocolAttempt(attempt)) {
         if (attempt.safeProtocolStepPosition !== attempt.context.protocolPlan.steps.length
           || attempt.activeProtocolStep !== null
           || attempt.activeQuestionnaireDraft !== null) {
@@ -1904,12 +2042,12 @@ export class IndexedDbResearchJournal {
     const attempt = await requestResult(attempts.get(runId));
     if (!attempt) return abort(transaction, completion, new ResearchJournalError("missing-attempt", `Run ${runId} does not exist.`));
     if (attempt.status !== "active") return abort(transaction, completion, new ResearchJournalError("attempt-final", `Run ${runId} is already terminal.`));
-    if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2) return abort(
+    if (isProtocolAttempt(attempt)) return abort(
       transaction,
       completion,
       new ResearchJournalError(
         "manifest-v3-required",
-        "Questionnaire-aware finalization requires the ResearchRunManifestV3 persistence slice.",
+        "Questionnaire-aware finalization requires the ResearchRunManifestV3/V4 persistence slice.",
       ),
     );
     const range = this.keyRange.bound([runId, 0], [runId, Number.MAX_SAFE_INTEGER]);
@@ -2178,7 +2316,7 @@ export class IndexedDbResearchJournal {
     await completion;
     if (!rawAttempt) fail("missing-attempt", `Run ${runId} does not exist.`);
     const attempt = validateStoredAttempt(rawAttempt);
-    if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    if (!isProtocolAttempt(attempt)) {
       fail("invalid-record", "Historical V1 attempts have no questionnaire responses.");
     }
     const expectedTotal = attempt.nextQuestionnaireResponseSequence - 1;
@@ -2556,7 +2694,7 @@ export class MemoryResearchJournal {
     }
     const samples = validateSequencedRecords(input.samples ?? [], input.runId, input.expectedSampleSequence, "sample", attempt);
     const events = validateSequencedRecords(input.events ?? [], input.runId, input.expectedEventSequence, "event", attempt);
-    if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2 && samples.length > 0) {
+    if (isProtocolAttempt(attempt) && samples.length > 0) {
       const active = attempt.activeProtocolStep;
       if (!active || active.kind !== "stimulus"
         || samples.some((sample) => (
@@ -2572,7 +2710,7 @@ export class MemoryResearchJournal {
     if (previousEvent) validateSequencedRecords([previousEvent], input.runId, input.expectedEventSequence - 1, "event", attempt);
     validateRecordTimeline(samples, "sample", previousSample);
     validateRecordTimeline(events, "event", previousEvent);
-    if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2 && input.stimulusState != null) {
+    if (isProtocolAttempt(attempt) && input.stimulusState != null) {
       fail(
         "invalid-record",
         "Questionnaire-aware attempts must advance through protocol-state transitions.",
@@ -2606,7 +2744,7 @@ export class MemoryResearchJournal {
       "runId", "activeProtocolStepPosition", "safeProtocolStepPosition", "updatedAt",
     ]);
     const attempt = this.#active(input.runId);
-    if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    if (!isProtocolAttempt(attempt)) {
       fail("invalid-record", "Historical V1 attempts must use stimulus-state transitions.");
     }
     const state = validateProtocolStateTransition(input, attempt);
@@ -2620,7 +2758,7 @@ export class MemoryResearchJournal {
       "runId", "expectedSafeProtocolStepPosition", "protocolStepPosition", "answers", "updatedAt",
     ]);
     const attempt = this.#active(input.runId);
-    if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    if (!isProtocolAttempt(attempt)) {
       fail("invalid-record", "Questionnaire drafts require a questionnaire-aware attempt.");
     }
     const stepPosition = integer(input.protocolStepPosition, "protocolStepPosition", 1);
@@ -2669,7 +2807,7 @@ export class MemoryResearchJournal {
       "completionEvent", "updatedAt",
     ]);
     const attempt = this.#active(input.runId);
-    if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    if (!isProtocolAttempt(attempt)) {
       fail("invalid-record", "Questionnaire submission requires a questionnaire-aware attempt.");
     }
     integer(input.expectedEventSequence, "expectedEventSequence", 1);
@@ -2794,7 +2932,7 @@ export class MemoryResearchJournal {
     const attempt = this.#active(runId);
     const descriptor = clone(validatePendingFinalization({ completionStatus, finalizedAt, recovery }));
     if (descriptor.completionStatus === "completed"
-      && attempt.version === RESEARCH_ATTEMPT_VERSION_V2) {
+      && isProtocolAttempt(attempt)) {
       if (attempt.safeProtocolStepPosition !== attempt.context.protocolPlan.steps.length
         || attempt.activeProtocolStep !== null
         || attempt.activeQuestionnaireDraft !== null) {
@@ -2819,10 +2957,10 @@ export class MemoryResearchJournal {
   async finalize({ runId, status, manifest, finalizedAt }) {
     const attempt = this.#active(runId);
     if (!TERMINAL_STATUSES.has(status)) fail("invalid-record", "Final status must be partial or complete.");
-    if (attempt.version === RESEARCH_ATTEMPT_VERSION_V2) {
+    if (isProtocolAttempt(attempt)) {
       fail(
         "manifest-v3-required",
-        "Questionnaire-aware finalization requires the ResearchRunManifestV3 persistence slice.",
+        "Questionnaire-aware finalization requires the ResearchRunManifestV3/V4 persistence slice.",
       );
     }
     const normalizedManifest = validateManifestForAttempt(manifest, attempt);
@@ -3010,7 +3148,7 @@ export class MemoryResearchJournal {
     integer(limit, "limit", 1);
     const attempt = this.#attempt(identifier(runId, "runId"));
     validateStoredAttempt(attempt);
-    if (attempt.version !== RESEARCH_ATTEMPT_VERSION_V2) {
+    if (!isProtocolAttempt(attempt)) {
       fail("invalid-record", "Historical V1 attempts have no questionnaire responses.");
     }
     const all = this.questionnaireResponses.get(runId) ?? [];

@@ -29,15 +29,35 @@ target; the roadmap and exact test/qualification receipts describe reality.
   Setup/interface-evaluation shells. Preserve their positive native-acquisition
   feature gate and all-false qualification provenance; never describe them as
   supported experiment downloads.
-- Treat strict schemas, settings/plan hashes, transient-name erasure,
+- Treat exact canonical `experiment.package.json` (`ExperimentPackageV1`)
+  bytes/self-hash, derived
+  settings/assets/assignment/protocol hashes, transient-name erasure,
   no-overwrite output, timing gaps, and safe-boundary recovery as cross-layer
   contracts rather than UI details.
+- For new work, package arrays are the only participant/block/video/ISI/hook
+  order authority. Package language-tree traversal is the only terminal-
+  language authority. Do not call, restore, or emulate the historical
+  Williams/cyclic `balanced-v1` allocator, add a seed, use OS/browser locale,
+  inspect ambient storage/defaults, or silently repair/reorder an invalid
+  package.
+- Treat `settings.json`, `experiment.json`, and questionnaire CSV as explicit
+  authoring/import inputs only. A converter reports all carried/defaulted/
+  rejected/discarded values and emits one complete canonical package; no
+  legacy artifact remains a parallel Start authority.
 - Tauri Rust owns native workspace, input, playback, scheduler, timestamps,
   persistence, and outbound LSL. Browser sampling lives in a dedicated worker
   with IndexedDB journaling. Rendering never owns the sample clock.
+- Preserve the chartered module topology. One composition root connects narrow
+  package, workspace, protocol, questionnaire, participant, input, visual,
+  media, timing, persistence/recovery, LSL, and adapter interfaces. Frontend
+  Setup/Run modules mirror those responsibilities as presentation only on
+  Tauri. Do not add circular feature imports, cross-module mutable state,
+  untyped event buses, scattered raw `invoke` calls, or policy inside command
+  handlers and UI event callbacks.
 - Keep qualified Windows media behind the opaque, Rust-owned native-media
   boundary. Never pass arbitrary filesystem paths or native handles to/from the
-  WebView; never discover a system VLC or download native runtime code in-app.
+  WebView; never discover a system GStreamer installation/plugin path or
+  download native runtime code in-app.
 - Do not restore deleted Playground features into the active tree. Historical
   WebXR/Quest, remote, Party/Ground Control, direct Polar, face, touch,
   calibration, retro, phone, and legacy study work belongs in
@@ -92,8 +112,10 @@ FFI.
 1. State the user-visible outcome and affected browser, desktop, shared,
    settings, record, LSL, privacy, accessibility, packaging, and qualification
    surfaces.
-2. Define one owner for each changed parameter and state transition. Keep UI
-   handlers as typed adapters, not hidden business logic.
+2. Define one owner for each changed parameter and state transition. Preserve
+   package bytes, every derived hash, manual order, language path, hook order,
+   playback/output policies, and per-video `isiAfterMs` through every adapter;
+   keep UI handlers as typed adapters, not hidden business logic.
 3. Specify request/response/event types, lifetimes, generations, cancellation,
    overload/error behavior, and observability before widening an IPC or native
    boundary.
@@ -107,6 +129,14 @@ FFI.
    build.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
+
+The two-clean-independent-instance package reproduction benchmark is a
+permanent gate, not a one-time implementation test. Any package-contract,
+canonicalization, asset, language, questionnaire, assignment, or protocol
+change must rerun every participant × terminal-language comparison, exact
+five-hash/sequence equality, byte-identical re-export, and instrumented
+no-ambient-default/storage proof. Do not infer native playback or research
+qualification from that deterministic receipt.
 
 ## Provenance and dependency discipline
 

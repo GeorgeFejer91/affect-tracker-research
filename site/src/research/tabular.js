@@ -2,6 +2,7 @@ import {
   validateResearchSampleV1,
   validateResolvedAssignmentPlanV1,
 } from "./contracts.js";
+import { validateResolvedExperimentPlanV1 } from "./external-experiment.js";
 
 export const RESEARCH_SAMPLE_COLUMNS = Object.freeze([
   "schema",
@@ -66,6 +67,26 @@ export const ASSIGNMENT_PLAN_COLUMNS = Object.freeze([
   "planHashSha256",
   "algorithmVersion",
   "seed",
+]);
+
+export const EXTERNAL_EXPERIMENT_PLAN_COLUMNS = Object.freeze([
+  "participantId",
+  "blockOrder",
+  "position",
+  "blockId",
+  "blockStimulusPosition",
+  "stimulusId",
+  "stimulusTitle",
+  "isiAfterMs",
+  "relativePath",
+  "stimulusSha256",
+  "stimulusByteLength",
+  "stimulusDurationMs",
+  "settingsSha256",
+  "sourceByteSha256",
+  "definitionSha256",
+  "planHashSha256",
+  "algorithmVersion",
 ]);
 
 function cell(value) {
@@ -209,4 +230,33 @@ export async function assignmentPlanToCsv(value) {
     ];
   }));
   return serializeRows(ASSIGNMENT_PLAN_COLUMNS, rows, ",");
+}
+
+/** Serialize an externally authored plan without introducing or changing order. */
+export async function externalExperimentPlanToCsv(value) {
+  const plan = await validateResolvedExperimentPlanV1(value);
+  const stimuli = new Map(plan.stimuli.map((stimulus) => [stimulus.stimulusId, stimulus]));
+  const rows = plan.assignments.flatMap((assignment) => assignment.slots.map((slot) => {
+    const stimulus = stimuli.get(slot.stimulusId);
+    return [
+      assignment.participantId,
+      assignment.blockOrder.join("|"),
+      slot.position,
+      slot.blockId,
+      slot.poolPosition,
+      stimulus.stimulusId,
+      stimulus.title,
+      slot.isiAfterMs,
+      stimulus.source.relativePath,
+      stimulus.source.sha256,
+      stimulus.source.byteLength,
+      stimulus.source.durationMs,
+      plan.settingsSha256,
+      plan.sourceByteSha256,
+      plan.definitionSha256,
+      plan.planHashSha256,
+      plan.algorithmVersion,
+    ];
+  }));
+  return serializeRows(EXTERNAL_EXPERIMENT_PLAN_COLUMNS, rows, ",");
 }

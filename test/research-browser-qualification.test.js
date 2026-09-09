@@ -645,6 +645,35 @@ test("new-attempt disposition preserves a compatible partial and sampling waits 
   }
 });
 
+test("package V3 Start reattests the selected root and closed asset tree before creating a controller", { concurrency: false }, async () => {
+  const harness = await runtimeHarness();
+  const sourceText = '{"canonical":"package-root"}\n';
+  const attested = [];
+  harness.root.researchUi.workspace.attestExperimentPackageRoot = async (expectedSourceText) => {
+    attested.push(expectedSourceText);
+    throw new Error("Undeclared package asset assets/stimuli/notes.txt must be removed before Start.");
+  };
+  try {
+    dispatchRequest(harness.root, RESEARCH_UI_EVENTS.startRequest, {
+      ...harness.startDetail,
+      researchSettings: { version: 3 },
+      experimentPackageSourceText: sourceText,
+      experimentPackageSourceByteSha256: HASH_A,
+      experimentPackageDefinitionSha256: HASH_B,
+      experimentPackageId: "package-root",
+      selectedLanguageId: "en",
+      languageSelectionPath: ["en"],
+      packageAssetBindings: [],
+    });
+    await harness.bridge.operation;
+    assert.deepEqual(attested, [sourceText]);
+    assert.equal(harness.controller.calls.length, 0);
+    assert.match(harness.root.startStatus.textContent, /Undeclared package asset/u);
+  } finally {
+    harness.destroy();
+  }
+});
+
 test("resume-compatible disposition resumes the newest exact-hash partial instead of allocating an attempt", { concurrency: false }, async () => {
   const harness = await runtimeHarness({ attemptFactory: ({ settings, plan, settingsSha256 }) => [
     { ...recoverableAttempt({ settings, plan, settingsSha256 }), attemptNumber: 1, runId: "run-recovery-001" },

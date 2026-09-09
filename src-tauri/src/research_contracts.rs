@@ -738,7 +738,7 @@ impl ResearchSettingsV1 {
 }
 
 impl StimulusV1 {
-    fn normalize_and_validate(&mut self) -> ResearchResult<()> {
+    pub(crate) fn normalize_and_validate(&mut self) -> ResearchResult<()> {
         self.stimulus_id = normalize_identifier(&self.stimulus_id, "stimulusId")?;
         self.title = normalize_text(&self.title, 1, 200, "stimulus.title")?;
         self.source.normalize_and_validate()
@@ -2499,7 +2499,7 @@ fn validate_semantic_code(value: &str, label: &str) -> ResearchResult<()> {
     Ok(())
 }
 
-fn normalize_identifier(value: &str, label: &str) -> ResearchResult<String> {
+pub(crate) fn normalize_identifier(value: &str, label: &str) -> ResearchResult<String> {
     let normalized = normalize_text(value, 1, 128, label)?.to_lowercase();
     let mut characters = normalized.chars();
     let Some(first) = characters.next() else {
@@ -2522,7 +2522,7 @@ fn normalize_identifier(value: &str, label: &str) -> ResearchResult<String> {
     Ok(normalized)
 }
 
-fn normalize_text(
+pub(crate) fn normalize_text(
     value: &str,
     minimum: usize,
     maximum: usize,

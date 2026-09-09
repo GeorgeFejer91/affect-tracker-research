@@ -10,6 +10,23 @@ import {
   validateResolvedProtocolPlanV1,
 } from "./protocol-plan.js";
 import {
+  validateResearchSettingsV3,
+  validateResolvedProtocolPlanV2,
+} from "./external-protocol.js";
+import {
+  EXPERIMENT_PACKAGE_FILE_NAME,
+  MAX_EXPERIMENT_PACKAGE_BYTES,
+  compileExperimentPackageSelectionV1,
+  enumerateLanguageRoutesV1,
+  parseExperimentPackageV1,
+  validateExperimentPackageV1,
+  validateExperimentPackageRunBindingV1,
+} from "./experiment-package.js";
+import {
+  parseExperimentDefinitionV1,
+  validateResolvedExperimentPlanV1,
+} from "./external-experiment.js";
+import {
   QUESTIONNAIRE_RESPONSE_COLUMNS,
   questionnaireToCsv,
   serializeQuestionnaireResponses,
@@ -22,6 +39,7 @@ import {
 import {
   validateResearchEventV2,
   validateResearchRunManifestV3,
+  validateResearchRunManifestV4,
 } from "./protocol-records.js";
 
 export const RESEARCH_STORAGE_NAMESPACE = "affect-research/v1";
@@ -32,6 +50,7 @@ export const RESEARCH_WORKSPACE_DIRECTORIES = Object.freeze([
   "outputs",
   "recovery",
 ]);
+export const RESEARCH_PACKAGE_ASSET_DIRECTORY = "assets/stimuli";
 
 export const VIDEO_FILE_EXTENSIONS = Object.freeze([
   ".mp4",
@@ -47,6 +66,8 @@ const WORKSPACE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a
 const MAX_SCAN_DEPTH = 32;
 const MAX_SCAN_ENTRIES = 10_000;
 const MAX_SETTINGS_SNAPSHOT_BYTES = 5 * 1024 * 1024;
+const MAX_EXPERIMENT_SOURCE_BYTES = 5 * 1024 * 1024;
+const MAX_EXPERIMENT_PLAN_SNAPSHOT_BYTES = 256 * 1024 * 1024;
 const MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES = 16 * 1024 * 1024;
 const MAX_EVENT_LOG_BYTES = 256 * 1024 * 1024;
 const MAX_TABULAR_ARTIFACT_BYTES = 512 * 1024 * 1024;
@@ -54,9 +75,15 @@ const MAX_ATTESTED_EVENT_RECORDS = 5_000_000;
 const MAX_ATTESTED_TABLE_ROWS = 5_000_000;
 const ATTEMPT_ARTIFACT_NAMES = Object.freeze([
   "settings.snapshot.json",
+  "experiment.json",
+  "experiment-plan.snapshot.json",
+  "experiment.package.json",
+  "protocol-plan.snapshot.json",
   "events.jsonl",
   "ratings.csv",
   "ratings.tsv",
+  "questionnaire-responses.csv",
+  "questionnaire-responses.tsv",
 ]);
 
 export class ResearchWorkspaceError extends Error {
@@ -447,6 +474,24 @@ async function writeNewFile(directory, name, body) {
   return handle;
 }
 
+async function replaceFile(directory, name, body) {
+  assertSafeWorkspaceSegment(name, "file name");
+  const handle = await directory.getFileHandle(name, { create: true });
+  const writable = await handle.createWritable({ keepExistingData: false });
+  try {
+    await writable.write(body);
+    await writable.close();
+  } catch (error) {
+    try {
+      await writable.abort?.();
+    } catch {
+      // The write failure remains the authoritative error.
+    }
+    throw error;
+  }
+  return handle;
+}
+
 async function writeIdempotentAttemptFile(directory, name, body) {
   assertSafeWorkspaceSegment(name, "file name");
   if (typeof body !== "string") fail("artifacts", `${name} must be serialized UTF-8 text.`);
@@ -492,6 +537,51 @@ async function* walkVideos(directory, prefix = "", state = { entries: 0 }, depth
         fileHandle: handle,
       });
     }
+  }
+}
+
+async function* walkPackageFiles(directory, prefix = "", state = { entries: 0 }, depth = 0) {
+  if (depth > MAX_SCAN_DEPTH) {
+    fail("scan-depth", `Package asset verification exceeds the supported ${MAX_SCAN_DEPTH}-directory depth.`);
+  }
+  for await (const [name, handle] of directory.entries()) {
+    state.entries += 1;
+    if (state.entries > MAX_SCAN_ENTRIES) {
+      fail(
+        "scan-capacity",
+        `Package asset verification exceeds the supported ${MAX_SCAN_ENTRIES.toLocaleString("en")}-entry scan.`,
+      );
+    }
+    const safeName = assertSafeWorkspaceSegment(name, "package asset entry");
+    if (typeof handle?.name === "string" && handle.name !== safeName) {
+      fail("package-asset-unverifiable", `Package asset handle name does not match ${safeName}.`);
+    }
+    const relativePath = prefix ? `${prefix}/${safeName}` : safeName;
+    if (handle?.kind === "directory") {
+      yield* walkPackageFiles(handle, relativePath, state, depth + 1);
+      continue;
+    }
+    if (handle?.kind !== "file" || typeof handle.getFile !== "function") {
+      fail("package-asset-unverifiable", `Package asset ${relativePath} is not a verifiable file.`);
+    }
+    let file;
+    try {
+      file = await handle.getFile();
+    } catch (error) {
+      fail("package-asset-unverifiable", `Package asset ${relativePath} could not be read.`, { cause: error });
+    }
+    if (!(file instanceof Blob)) {
+      fail("package-asset-unverifiable", `Package asset ${relativePath} did not resolve to file bytes.`);
+    }
+    yield Object.freeze({
+      relativePath,
+      name: safeName,
+      byteLength: file.size,
+      lastModified: file.lastModified,
+      mediaType: file.type || "application/octet-stream",
+      fileHandle: handle,
+      file,
+    });
   }
 }
 
@@ -797,6 +887,9 @@ async function attestManifestArtifacts(sessionDirectory, manifest) {
 
 const MANIFEST_V3_ARTIFACT_NAMES = Object.freeze({
   settings: "settings.snapshot.json",
+  experimentSource: "experiment.json",
+  experimentPlan: "experiment-plan.snapshot.json",
+  experimentPackage: "experiment.package.json",
   protocolPlan: "protocol-plan.snapshot.json",
   events: "events.jsonl",
   ratingsCsv: "ratings.csv",
@@ -807,6 +900,9 @@ const MANIFEST_V3_ARTIFACT_NAMES = Object.freeze({
 
 function maximumArtifactBytes(kind) {
   if (kind === "settings") return MAX_SETTINGS_SNAPSHOT_BYTES;
+  if (kind === "experimentSource") return MAX_EXPERIMENT_SOURCE_BYTES;
+  if (kind === "experimentPlan") return MAX_EXPERIMENT_PLAN_SNAPSHOT_BYTES;
+  if (kind === "experimentPackage") return MAX_EXPERIMENT_PACKAGE_BYTES;
   if (kind === "protocolPlan") return MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES;
   if (kind === "events") return MAX_EVENT_LOG_BYTES;
   return MAX_TABULAR_ARTIFACT_BYTES;
@@ -910,6 +1006,10 @@ function attestManifestV3ProtocolBindings(settings, protocolPlan, manifest) {
   }
 
   const expectedKinds = new Set(["settings", "protocolPlan", "events"]);
+  if (settings.version === 3) {
+    expectedKinds.add("experimentSource");
+    expectedKinds.add("experimentPlan");
+  }
   if (settings.output.csv) {
     expectedKinds.add("ratingsCsv");
     expectedKinds.add("questionnaireCsv");
@@ -919,6 +1019,9 @@ function attestManifestV3ProtocolBindings(settings, protocolPlan, manifest) {
     expectedKinds.add("questionnaireTsv");
   }
   const observedKinds = new Set(manifest.outputs.map(({ kind }) => kind));
+  if (manifest.version === 4 || observedKinds.has("experimentPackage")) {
+    expectedKinds.add("experimentPackage");
+  }
   if (expectedKinds.size !== observedKinds.size
     || [...expectedKinds].some((kind) => !observedKinds.has(kind))) {
     fail(
@@ -1287,13 +1390,16 @@ async function attestManifestV3Artifacts(sessionDirectory, manifest) {
 
   let settings;
   try {
-    settings = await validateResearchSettingsV2(parseStrictJson(texts.get("settings"), {
+    const parsedSettings = parseStrictJson(texts.get("settings"), {
       maximumBytes: MAX_SETTINGS_SNAPSHOT_BYTES,
-    }));
+    });
+    settings = parsedSettings?.version === 3
+      ? await validateResearchSettingsV3(parsedSettings)
+      : await validateResearchSettingsV2(parsedSettings);
   } catch (error) {
     fail(
       "artifact-settings-record",
-      "Frozen settings are not a strict ResearchSettingsV2 snapshot.",
+      "Frozen settings are not a strict questionnaire-aware Research settings snapshot.",
       { cause: error },
     );
   }
@@ -1304,15 +1410,73 @@ async function attestManifestV3Artifacts(sessionDirectory, manifest) {
     fail("artifact-settings-hash", "Frozen settings do not match the settings hash bound by the manifest.");
   }
 
+  let experimentPlan = null;
+  if (settings.version === 3) {
+    if (!outputs.has("experimentSource") || !outputs.has("experimentPlan")) {
+      fail(
+        "artifact-output-selection",
+        "External-order attempts require exact experiment.json and resolved experiment-plan snapshots.",
+      );
+    }
+    let parsedExperiment;
+    try {
+      parsedExperiment = await parseExperimentDefinitionV1(
+        new TextEncoder().encode(texts.get("experimentSource")),
+      );
+    } catch (error) {
+      fail(
+        "artifact-experiment-source",
+        "Frozen experiment.json is not the exact strict external protocol source.",
+        { cause: error },
+      );
+    }
+    if (parsedExperiment.sourceByteSha256 !== settings.externalProtocol.sourceByteSha256
+      || parsedExperiment.definitionSha256 !== settings.externalProtocol.definitionSha256
+      || canonicalJson(parsedExperiment.definition)
+        !== canonicalJson(settings.externalProtocol.definition)) {
+      fail(
+        "artifact-experiment-binding",
+        "Frozen experiment.json bytes do not bind the frozen external settings.",
+      );
+    }
+    try {
+      experimentPlan = await validateResolvedExperimentPlanV1(parseStrictJson(
+        texts.get("experimentPlan"),
+        { maximumBytes: MAX_EXPERIMENT_PLAN_SNAPSHOT_BYTES },
+      ));
+    } catch (error) {
+      fail(
+        "artifact-experiment-plan",
+        "Frozen resolved experiment plan is not a strict ResolvedExperimentPlanV1 snapshot.",
+        { cause: error },
+      );
+    }
+    if (texts.get("experimentPlan") !== `${canonicalJson(experimentPlan)}\n`
+      || experimentPlan.planHashSha256 !== manifest.assignmentPlanSha256
+      || experimentPlan.settingsSha256 !== manifest.settingsSha256
+      || experimentPlan.sourceByteSha256 !== parsedExperiment.sourceByteSha256
+      || experimentPlan.definitionSha256 !== parsedExperiment.definitionSha256) {
+      fail(
+        "artifact-experiment-plan-binding",
+        "Frozen resolved experiment plan does not bind the manifest, settings, and source bytes.",
+      );
+    }
+  }
+
   let protocolPlan;
   try {
-    protocolPlan = await validateResolvedProtocolPlanV1(parseStrictJson(texts.get("protocolPlan"), {
+    const parsedProtocolPlan = parseStrictJson(texts.get("protocolPlan"), {
       maximumBytes: MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES,
-    }));
+    });
+    protocolPlan = parsedProtocolPlan?.version === 2
+      ? await validateResolvedProtocolPlanV2(parsedProtocolPlan, settings.version === 3
+        ? { settingsV3: settings, resolvedExperimentPlanV1: experimentPlan }
+        : undefined)
+      : await validateResolvedProtocolPlanV1(parsedProtocolPlan);
   } catch (error) {
     fail(
       "artifact-protocol-record",
-      "Frozen protocol plan is not a strict ResolvedProtocolPlanV1 snapshot.",
+      "Frozen protocol plan is not a strict supported protocol-plan snapshot.",
       { cause: error },
     );
   }
@@ -1323,6 +1487,94 @@ async function attestManifestV3Artifacts(sessionDirectory, manifest) {
     );
   }
   attestManifestV3ProtocolBindings(settings, protocolPlan, manifest);
+
+  if (outputs.has("experimentPackage")) {
+    let parsedPackage;
+    try {
+      parsedPackage = await parseExperimentPackageV1(
+        new TextEncoder().encode(texts.get("experimentPackage")),
+      );
+    } catch (error) {
+      fail(
+        "artifact-experiment-package",
+        "Frozen experiment.package.json is not a strict portable package.",
+        { cause: error },
+      );
+    }
+    if (parsedPackage.sourceText !== parsedPackage.canonicalSourceText
+      || parsedPackage.sourceByteSha256 !== parsedPackage.canonicalSourceByteSha256) {
+      fail(
+        "artifact-experiment-package-canonical",
+        "Frozen experiment.package.json is not canonical JSON followed by one LF.",
+      );
+    }
+    if (manifest.version === 4) {
+      const receipt = manifest.experimentPackage;
+      let compiled;
+      try {
+        compiled = await compileExperimentPackageSelectionV1(parsedPackage.package, {
+          languageId: receipt.languageId,
+          languageSelectionPath: receipt.languageSelectionPath,
+          participantId: manifest.participantId,
+        });
+        await validateExperimentPackageRunBindingV1({
+          schema: "affect-research-experiment-package-run-binding",
+          version: 1,
+          sourceText: texts.get("experimentPackage"),
+          sourceByteSha256: receipt.canonicalSourceByteSha256,
+          packageDefinitionSha256: receipt.packageDefinitionSha256,
+          packageId: receipt.packageId,
+          languageId: receipt.languageId,
+          languageSelectionPath: receipt.languageSelectionPath,
+          assignmentSha256: receipt.assignmentSha256,
+          assetBindings: compiled.assetBindings,
+        }, {
+          settings,
+          experimentPlan,
+          protocolPlan,
+          participantId: manifest.participantId,
+        });
+      } catch (error) {
+        fail(
+          "artifact-experiment-package-binding",
+          "Frozen experiment.package.json does not reproduce the exact V4 package run binding.",
+          { cause: error },
+        );
+      }
+      if (compiled.assignmentSha256 !== receipt.assignmentSha256
+        || await canonicalSha256(compiled.assetBindings) !== receipt.assetBindingsSha256) {
+        fail(
+          "artifact-experiment-package-binding",
+          "Frozen experiment.package.json assignment or asset bindings do not match the V4 manifest hashes.",
+        );
+      }
+    } else {
+      let matchedSelection = false;
+      for (const route of enumerateLanguageRoutesV1(parsedPackage.package.languageSelection)) {
+        try {
+          const compiled = await compileExperimentPackageSelectionV1(parsedPackage.package, {
+            languageId: route.languageId,
+            languageSelectionPath: route.optionIds,
+            participantId: manifest.participantId,
+          });
+          if (canonicalJson(compiled.settings) === canonicalJson(settings)
+            && canonicalJson(compiled.experimentPlan) === canonicalJson(experimentPlan)
+            && canonicalJson(compiled.protocolPlan) === canonicalJson(protocolPlan)) {
+            matchedSelection = true;
+            break;
+          }
+        } catch {
+          // A historical V3 route that does not resolve this participant cannot bind the attempt.
+        }
+      }
+      if (!matchedSelection) {
+        fail(
+          "artifact-experiment-package-binding",
+          "Frozen experiment.package.json cannot reproduce this participant's settings and protocol plans.",
+        );
+      }
+    }
+  }
 
   const ratingTables = new Map();
   for (const kind of ["ratingsCsv", "ratingsTsv"]) {
@@ -1393,6 +1645,7 @@ export class BrowserResearchWorkspace {
     this.rootHandle = rootHandle;
     this.cryptoObject = cryptoObject;
     this.directories = new Map();
+    this.packageStimuliDirectory = null;
     this.workspaceId = null;
   }
 
@@ -1417,6 +1670,8 @@ export class BrowserResearchWorkspace {
     for (const name of RESEARCH_WORKSPACE_DIRECTORIES) {
       this.directories.set(name, await getChildDirectory(this.rootHandle, name, { create: true }));
     }
+    const assets = await getChildDirectory(this.rootHandle, "assets", { create: true });
+    this.packageStimuliDirectory = await getChildDirectory(assets, "stimuli", { create: true });
     this.workspaceId = await this.#loadOrCreateWorkspaceIdentity();
     return this;
   }
@@ -1434,6 +1689,150 @@ export class BrowserResearchWorkspace {
     return Object.freeze(videos);
   }
 
+  async rescanPackageVideos() {
+    await ensurePermission(this.rootHandle, "read", { request: false });
+    if (!this.packageStimuliDirectory) {
+      fail("package-assets-unavailable", "The fixed assets/stimuli package folder is unavailable.");
+    }
+    const videos = [];
+    for await (const video of walkVideos(this.packageStimuliDirectory)) videos.push(video);
+    videos.sort((left, right) => left.relativePath.localeCompare(right.relativePath, "en"));
+    return Object.freeze(videos);
+  }
+
+  async loadExperimentPackage() {
+    await ensurePermission(this.rootHandle, "read", { request: false });
+    let handle;
+    try {
+      handle = await this.rootHandle.getFileHandle(EXPERIMENT_PACKAGE_FILE_NAME, { create: false });
+    } catch (error) {
+      if (error?.name === "NotFoundError") {
+        fail(
+          "package-root-missing",
+          `The selected package root does not contain ${EXPERIMENT_PACKAGE_FILE_NAME}.`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+    let file;
+    try {
+      file = await handle.getFile();
+    } catch (error) {
+      fail("package-root-unverifiable", `${EXPERIMENT_PACKAGE_FILE_NAME} could not be read.`, { cause: error });
+    }
+    if (!(file instanceof Blob) || file.size < 1 || file.size > MAX_EXPERIMENT_PACKAGE_BYTES) {
+      fail(
+        "package-root-size",
+        `${EXPERIMENT_PACKAGE_FILE_NAME} must contain 1–${MAX_EXPERIMENT_PACKAGE_BYTES} canonical UTF-8 bytes.`,
+      );
+    }
+    try {
+      return await parseExperimentPackageV1(await file.arrayBuffer());
+    } catch (error) {
+      fail(
+        error?.code ?? "package-root-invalid",
+        `The selected root ${EXPERIMENT_PACKAGE_FILE_NAME} is not a canonical ExperimentPackageV1.`,
+        { cause: error },
+      );
+    }
+  }
+
+  async saveExperimentPackage(sourceText) {
+    await ensurePermission(this.rootHandle, "readwrite", { request: false });
+    if (typeof sourceText !== "string") {
+      fail("package-root-invalid", `${EXPERIMENT_PACKAGE_FILE_NAME} must be canonical UTF-8 text.`);
+    }
+    let expected;
+    try {
+      expected = await parseExperimentPackageV1(new TextEncoder().encode(sourceText));
+    } catch (error) {
+      fail(
+        "package-root-invalid",
+        `Only canonical ExperimentPackageV1 bytes can be written as ${EXPERIMENT_PACKAGE_FILE_NAME}.`,
+        { cause: error },
+      );
+    }
+    await replaceFile(this.rootHandle, EXPERIMENT_PACKAGE_FILE_NAME, sourceText);
+    const observed = await this.loadExperimentPackage();
+    if (observed.sourceText !== expected.sourceText
+      || observed.sourceByteSha256 !== expected.sourceByteSha256) {
+      fail("package-root-write", `${EXPERIMENT_PACKAGE_FILE_NAME} changed while it was written.`);
+    }
+    return observed;
+  }
+
+  async verifyExperimentPackageAssetClosure(packageInput) {
+    await ensurePermission(this.rootHandle, "read", { request: false });
+    if (!this.packageStimuliDirectory) {
+      fail("package-assets-unavailable", "The fixed assets/stimuli package folder is unavailable.");
+    }
+    const packageValue = await validateExperimentPackageV1(packageInput?.package ?? packageInput);
+    const expectedByPath = new Map(packageValue.assets.stimuli.map((asset) => [asset.relativePath, asset]));
+    const observedByPath = new Map();
+    for await (const entry of walkPackageFiles(this.packageStimuliDirectory)) {
+      const packagePath = `${RESEARCH_PACKAGE_ASSET_DIRECTORY}/${entry.relativePath}`;
+      const expected = expectedByPath.get(packagePath);
+      if (!expected) {
+        fail("package-asset-extra", `Undeclared package asset ${packagePath} must be removed before Start.`);
+      }
+      let observedSha256;
+      try {
+        observedSha256 = await sha256Blob(entry.file, this.cryptoObject);
+      } catch (error) {
+        fail("package-asset-unverifiable", `Package asset ${packagePath} could not be hashed.`, { cause: error });
+      }
+      if (entry.byteLength !== expected.byteLength || observedSha256 !== expected.sha256) {
+        fail("package-asset-mismatch", `Package asset ${packagePath} does not match its declared bytes.`);
+      }
+      observedByPath.set(packagePath, Object.freeze({
+        sourceKind: "workspace-file",
+        relativePath: entry.relativePath,
+        packagePath,
+        stimulusId: expected.stimulusId,
+        name: entry.name,
+        byteLength: entry.byteLength,
+        lastModified: entry.lastModified,
+        mediaType: entry.mediaType,
+        sha256: observedSha256,
+        durationMs: expected.durationMs,
+        fileHandle: entry.fileHandle,
+      }));
+    }
+    const missing = packageValue.assets.stimuli
+      .filter(({ relativePath }) => !observedByPath.has(relativePath))
+      .map(({ relativePath }) => relativePath);
+    if (missing.length > 0) {
+      fail("package-asset-missing", `Missing declared package asset${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}.`);
+    }
+    const assets = packageValue.assets.stimuli.map(({ relativePath }) => observedByPath.get(relativePath));
+    const assetBindings = packageValue.assets.stimuli.map((asset) => Object.freeze({
+      stimulusId: asset.stimulusId,
+      logicalPath: asset.relativePath.slice("assets/".length),
+      packagePath: asset.relativePath,
+      sha256: asset.sha256,
+      byteLength: asset.byteLength,
+      durationMs: asset.durationMs,
+    }));
+    return Object.freeze({
+      assetManifestSha256: packageValue.integrity.assetManifestSha256,
+      assetBindings: Object.freeze(assetBindings),
+      assets: Object.freeze(assets),
+    });
+  }
+
+  async attestExperimentPackageRoot(expectedSourceText = null) {
+    const packageDocument = await this.loadExperimentPackage();
+    if (expectedSourceText !== null && packageDocument.sourceText !== expectedSourceText) {
+      fail(
+        "package-root-mismatch",
+        `The selected root ${EXPERIMENT_PACKAGE_FILE_NAME} is not the package currently shown in Setup.`,
+      );
+    }
+    const closure = await this.verifyExperimentPackageAssetClosure(packageDocument.package);
+    return Object.freeze({ packageDocument, ...closure });
+  }
+
   async openStimulusFile(relativePath) {
     await ensurePermission(this.rootHandle, "read", { request: false });
     const normalized = normalizeWorkspaceRelativePath(relativePath, "stimulus path");
@@ -1444,6 +1843,26 @@ export class BrowserResearchWorkspace {
       fail("unsupported-video", "The selected workspace stimulus is not a supported complete-video file.");
     }
     const directory = await getNestedDirectory(this.#directory("stimuli"), parts, { create: false });
+    const handle = await directory.getFileHandle(fileName, { create: false });
+    return handle.getFile();
+  }
+
+  async openPackageStimulusFile(relativePath) {
+    await ensurePermission(this.rootHandle, "read", { request: false });
+    const normalized = normalizeWorkspaceRelativePath(relativePath, "package stimulus path");
+    const parts = normalized.split("/");
+    if (parts[0] !== "assets" || parts[1] !== "stimuli") {
+      fail("unsafe-package-path", "Package stimuli must be beneath assets/stimuli/.");
+    }
+    parts.splice(0, 2);
+    const fileName = parts.pop();
+    if (!fileName || !isSupportedVideoName(fileName)) {
+      fail("unsupported-video", "The package stimulus is not a supported complete-video file.");
+    }
+    if (!this.packageStimuliDirectory) {
+      fail("package-assets-unavailable", "The fixed assets/stimuli package folder is unavailable.");
+    }
+    const directory = await getNestedDirectory(this.packageStimuliDirectory, parts, { create: false });
     const handle = await directory.getFileHandle(fileName, { create: false });
     return handle.getFile();
   }
@@ -1484,15 +1903,17 @@ export class BrowserResearchWorkspace {
             manifestHandle,
             `${safeParticipantDirectory}/${sessionDirectoryName}/manifest.json`,
           );
-          const manifest = manifestValue?.version === 3
-            ? validateResearchRunManifestV3(manifestValue)
-            : validateResearchRunManifestV2(manifestValue);
+          const manifest = manifestValue?.version === 4
+            ? validateResearchRunManifestV4(manifestValue)
+            : manifestValue?.version === 3
+              ? validateResearchRunManifestV3(manifestValue)
+              : validateResearchRunManifestV2(manifestValue);
           if (manifest.experimentId !== safeExperimentId
             || manifest.participantId !== safeParticipantDirectory
             || manifest.sessionStem !== sessionDirectoryName) {
             throw new TypeError("Manifest identity does not match its curated output directory.");
           }
-          if (manifest.version === 3) {
+          if (manifest.version === 3 || manifest.version === 4) {
             await attestManifestV3Artifacts(sessionDirectory, manifest);
           } else {
             await attestManifestArtifacts(sessionDirectory, manifest);
@@ -1550,6 +1971,7 @@ export class BrowserResearchWorkspace {
       if (error instanceof ResearchWorkspaceError) throw error;
       fail("settings-json", "Settings file is not valid JSON.", { cause: error });
     }
+    if (parsed?.version === 3) return validateResearchSettingsV3(parsed);
     return parsed?.version === 2
       ? validateResearchSettingsV2(parsed)
       : validateResearchSettingsV1(parsed);
@@ -1557,13 +1979,16 @@ export class BrowserResearchWorkspace {
 
   async saveSettings(settings) {
     await ensurePermission(this.rootHandle, "readwrite", { request: false });
-    const normalized = settings?.version === 2
-      ? await validateResearchSettingsV2(settings)
-      : validateResearchSettingsV1(settings);
+    const normalized = settings?.version === 3
+      ? await validateResearchSettingsV3(settings)
+      : settings?.version === 2
+        ? await validateResearchSettingsV2(settings)
+        : validateResearchSettingsV1(settings);
     const experimentId = assertSafeWorkspaceSegment(normalized.experiment.id, "experiment ID");
     const name = `${experimentId}.settings.json`;
     const directory = this.#directory("settings");
-    if (normalized.version === 2 && normalized.questionnaires.definitions.length > 0) {
+    if ((normalized.version === 2 || normalized.version === 3)
+      && normalized.questionnaires.definitions.length > 0) {
       const questionnaireDirectory = await directory.getDirectoryHandle("questionnaires", { create: true });
       for (const definition of normalized.questionnaires.definitions) {
         const definitionName = `${definition.questionnaireId}.${definition.definitionSha256}.csv`;

@@ -36,16 +36,22 @@ const rules = {
     root: resolve(repositoryRoot, "dist-pages"),
     allowed: (path) => path === "index.html"
       || path === "research.css"
+      || path === "experiment-template.json"
       || path === "src/math.js"
       || path === "questionnaires/questionnaire-template.csv"
       || path === "questionnaires/maia-2-de.csv"
+      || path === "questionnaires/maia-2-en.csv"
+      || path === "questionnaires/ssq-six-item-en.csv"
+      || path === "questionnaires/tas-20-en.csv"
+      || path === "questionnaires/vr-exp-en.csv"
       || (path.startsWith("src/research/") && path !== "src/research/native-bridge.js"),
   },
   desktop: {
     root: resolve(repositoryRoot, "desktop", "dist"),
     allowed: (path) => path === "index.html"
       || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
-      || /^assets\/(?:maia-2-de|questionnaire-template)-[A-Za-z0-9_-]+\.csv$/u.test(path),
+      || /^assets\/(?:maia-2-(?:de|en)|questionnaire-template|ssq-six-item-en|tas-20-en|vr-exp-en)-[A-Za-z0-9_-]+\.csv$/u.test(path)
+      || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path),
   },
 };
 

@@ -1,4 +1,4 @@
-import { canonicalJson, canonicalSha256 } from "./canonical.js";
+import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import {
   INPUT_PRESET_IDS,
   INPUT_PRESETS,
@@ -11,9 +11,11 @@ import {
   validateStimulusV1,
 } from "./contracts.js";
 import {
-  analyzeAssignmentCoverage,
-  resolveAssignmentPlanV1,
-} from "./counterbalancer.js";
+  EXTERNAL_ORDER_ALGORITHM_VERSION,
+  parseExperimentDefinitionV1,
+  resolveExternalExperimentPlanV1,
+  validateExperimentDefinitionV1,
+} from "./external-experiment.js";
 import {
   deriveParticipantRecord,
   participantCode,
@@ -30,15 +32,27 @@ import {
   importQuestionnaireCsv,
   validateQuestionnaireAnswers,
   validateQuestionnaireDefinitionV1,
-  validateQuestionnaireModuleV1,
 } from "./questionnaires.js";
 import {
-  QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
-  projectResearchSettingsV2ToAssignmentSettingsV1,
-  resolveProtocolPlanV1,
-  validateResearchSettingsV2,
-} from "./protocol-plan.js";
-import { assignmentPlanToCsv } from "./tabular.js";
+  applyLegacySettingsV1ToResearchSettingsV3,
+  QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
+  resolveProtocolPlanV2,
+  validateQuestionnaireModuleV2,
+  validateResearchSettingsV3,
+} from "./external-protocol.js";
+import {
+  EXPERIMENT_PACKAGE_FILE_NAME,
+  compileExperimentPackageSelectionV1,
+  createExperimentPackageV1,
+  enumerateLanguageRoutesV1,
+  parseExperimentPackageV1,
+  resolveLanguageSelectionTraversalStepV1,
+  serializeExperimentPackageV1,
+  validateExperimentPackageRecoveryBindingV1,
+  validateLanguageSelectionTreeV1,
+  verifySameRealmPackageReproductionV1,
+} from "./experiment-package.js";
+import { externalExperimentPlanToCsv } from "./tabular.js";
 import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
@@ -58,7 +72,35 @@ const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
 const QUESTIONNAIRE_TEMPLATE_URL = new URL("../../questionnaires/questionnaire-template.csv", import.meta.url).href;
 const MAIA_2_DE_URL = new URL("../../questionnaires/maia-2-de.csv", import.meta.url).href;
+const BUNDLED_QUESTIONNAIRES = Object.freeze({
+  "maia-2-de": Object.freeze({ url: MAIA_2_DE_URL, logicalName: "maia-2-de.csv" }),
+  "maia-2-en": Object.freeze({ url: new URL("../../questionnaires/maia-2-en.csv", import.meta.url).href, logicalName: "maia-2-en.csv" }),
+  "tas-20-en": Object.freeze({ url: new URL("../../questionnaires/tas-20-en.csv", import.meta.url).href, logicalName: "tas-20-en.csv" }),
+  "ssq-six-item-en": Object.freeze({ url: new URL("../../questionnaires/ssq-six-item-en.csv", import.meta.url).href, logicalName: "ssq-six-item-en.csv" }),
+  "vr-exp-en": Object.freeze({ url: new URL("../../questionnaires/vr-exp-en.csv", import.meta.url).href, logicalName: "vr-exp-en.csv" }),
+});
+const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
 const SPECIFICATION_SOURCE_SHA256 = "7402c80c6da71d4a11543676acdf0a7640cdb842d55afc10dde6ad3d4978fdbe";
+const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
+  algorithmVersion: "language-tree-v1",
+  rootNodeId: "language",
+  languages: [Object.freeze({
+    languageId: "en",
+    languageTag: "en",
+    label: "English",
+    questionnaireModuleIds: Object.freeze([]),
+  })],
+  nodes: [Object.freeze({
+    nodeId: "language",
+    prompt: "Choose your language",
+    options: [Object.freeze({
+      optionId: "en",
+      label: "English",
+      target: Object.freeze({ kind: "language", languageId: "en" }),
+    })],
+  })],
+});
+const DEFAULT_LANGUAGE_SELECTION_SOURCE = JSON.stringify(DEFAULT_LANGUAGE_SELECTION_TREE, null, 2);
 
 export const UI_PRESET_IDS = Object.freeze({
   arrowKeys: "arrow-keys",
@@ -79,7 +121,7 @@ const CONTRACT_PRESET_IDS = Object.freeze(Object.fromEntries(
 export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "workspace", label: "Workspace & Libraries" }),
   Object.freeze({ id: "experiment", label: "Experiment" }),
-  Object.freeze({ id: "stimuli", label: "Stimuli & Counterbalancer" }),
+  Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
   Object.freeze({ id: "questionnaires", label: "Questionnaires & Sequence" }),
   Object.freeze({ id: "input", label: "Controller / Input Device" }),
   Object.freeze({ id: "visual", label: "Visual Feedback" }),
@@ -95,12 +137,16 @@ export const RESEARCH_UI_EVENTS = Object.freeze({
   rescanWorkspaceRequest: "affect-research:rescan-workspace",
   importVideosRequest: "affect-research:import-videos-request",
   loadSettingsRequest: "affect-research:load-settings-request",
+  loadExperimentRequest: "affect-research:load-experiment-request",
+  loadExperimentPackageRequest: "affect-research:load-experiment-package-request",
+  saveExperimentPackageRequest: "affect-research:save-experiment-package-request",
   saveSettingsRequest: "affect-research:save-settings-request",
   exportPlanRequest: "affect-research:export-plan-request",
   importQuestionnaireRequest: "affect-research:import-questionnaire-request",
   questionnaireDraftRequest: "affect-research:questionnaire-draft-request",
   questionnaireSubmitRequest: "affect-research:questionnaire-submit-request",
   planReady: "affect-research:plan-ready",
+  setupSettingsReady: "affect-research:setup-settings-ready",
   inputTestState: "affect-research:input-test-state",
   inputEdge: "affect-research:input-edge",
   inputBindingChanged: "affect-research:input-binding-changed",
@@ -108,10 +154,13 @@ export const RESEARCH_UI_EVENTS = Object.freeze({
   inputCaptureRequest: "affect-research:input-capture-request",
   inputCaptureCancel: "affect-research:input-capture-cancel",
   startRequest: "affect-research:start-request",
+  startRejected: "affect-research:start-rejected",
   pauseRequest: "affect-research:pause-request",
   stopEarlyRequest: "affect-research:stop-early-request",
   continueRequest: "affect-research:continue-request",
   settingsLoaded: "affect-research:settings-loaded",
+  experimentLoaded: "affect-research:experiment-loaded",
+  experimentPackageLoaded: "affect-research:experiment-package-loaded",
   capabilityStatus: "affect-research:capability-status",
   workspaceReady: "affect-research:workspace-ready",
   stimuliCatalogued: "affect-research:stimuli-catalogued",
@@ -165,8 +214,8 @@ function describeInputToken(token) {
 
 const SECTION_SUMMARIES = Object.freeze({
   workspace: "Choose a workspace root",
-  experiment: "Continuous rating · 130 Hz",
-  stimuli: "One hat or stratified pools",
+  experiment: "Portable package, language, identity · 130 Hz",
+  stimuli: "Externally ordered video protocol",
   questionnaires: "Add forms around sessions or blocks",
   input: "Arrow keys · step 0.1",
   visual: "Grid and Flubber",
@@ -261,7 +310,7 @@ function previewMarkup(label) {
 
 function workspaceSection() {
   return `
-    <p class="section-lead">Choose one parent folder. Affect Research creates or validates the four owned libraries beneath it; no other folder becomes writable research state.</p>
+    <p class="section-lead">Choose one parent folder. Affect Research creates or validates its owned research libraries and fixed package asset tree beneath it; no other folder becomes writable research state.</p>
     <div class="field-grid">
       <div class="field-block is-wide">
         <span class="field-label">Parent workspace</span>
@@ -275,10 +324,37 @@ function workspaceSection() {
     </div>
     <ul class="directory-list" aria-label="Workspace folders">
       <li>stimuli/</li>
+      <li>assets/stimuli/ <span class="field-help">portable package media</span></li>
       <li>settings/</li>
       <li>outputs/</li>
       <li>recovery/</li>
     </ul>
+    <section class="protocol-import-card" aria-labelledby="package-file-title">
+      <div>
+        <p class="context-label">Portable experiment authority</p>
+        <h3 id="package-file-title">experiment.package.json</h3>
+        <p class="field-help">One strict JSON file owns settings, language routing, questionnaires, manual video order, every ISI, playback policy, and fixed asset identities.</p>
+      </div>
+      <div class="button-row">
+        <button id="package-load" type="button" class="primary-action">Load experiment package</button>
+        <button id="package-generate" type="button">Generate package JSON</button>
+      </div>
+      <output id="package-file-status" class="field-output" data-state="warning">No portable package generated or loaded</output>
+        <p class="field-help">Load reads <code>experiment.package.json</code> from this workspace root; Generate writes it there. Place only its declared videos under <code>assets/stimuli/</code>. Missing, extra, unreadable, or changed files block Start.</p>
+    </section>
+    <section class="protocol-import-card" aria-labelledby="experiment-file-title">
+      <div>
+        <p class="context-label">External protocol authority</p>
+        <h3 id="experiment-file-title">experiment.json</h3>
+        <p class="field-help">Prepare randomization outside Affect Research. The file supplies every participant’s block order, complete-video order, and the ISI after each video.</p>
+      </div>
+      <div class="button-row">
+        <button id="experiment-load" type="button" class="primary-action">Load experiment.json</button>
+        <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
+      </div>
+      <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
+      <p class="field-help">Array order is authoritative. Affect Research never shuffles, balances, rotates, or otherwise reallocates this file.</p>
+    </section>
     <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
       <p>Drop complete video files or a folder here</p>
       <div class="button-row"><button id="video-import" type="button" disabled>Import videos</button><button id="video-folder-import" type="button" disabled>Import folder</button></div>
@@ -296,7 +372,7 @@ function workspaceSection() {
     <p id="workspace-status" class="status-text" role="status" aria-live="polite">Select a workspace before importing or saving.</p>
     <div class="table-scroll" aria-label="Stimulus library">
       <table>
-        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Pool</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
         <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
       </table>
     </div>`;
@@ -304,71 +380,52 @@ function workspaceSection() {
 
 function experimentSection() {
   return `
-    <p class="section-lead">Define one continuous-rating protocol. These values determine participant IDs, timing, settings filename, and output paths.</p>
+    <p class="section-lead">Experiment identity and participant IDs come from the loaded experiment.json. Sampling remains the one editable acquisition setting.</p>
     <div class="field-grid">
-      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._-]*" value="video-affect-v1" autocomplete="off"></label>
-      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="120" value="Video Affect Study" autocomplete="off"></label>
-      <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="24" required></label>
+      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="experiment-derived-help"></label>
+      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="experiment-derived-help"></label>
+      <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
+      <label class="field is-wide"><span>Language selection tree JSON</span><textarea id="package-language-tree" rows="12" maxlength="262144" spellcheck="false" aria-describedby="package-language-help">${escapeAttribute(DEFAULT_LANGUAGE_SELECTION_SOURCE)}</textarea></label>
+      <p id="package-language-help" class="field-help is-wide">Author the complete rooted selection tree here. Every terminal language explicitly lists its ordered <code>questionnaireModuleIds</code>; nested choices, labels, and route order are preserved exactly, with no locale fallback or automatic module filtering.</p>
+      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
+      <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
       <div class="field-block is-wide">
         <span class="field-label">Rating method</span>
         <output class="field-output" data-state="ready">Continuous rating is always enabled</output>
         <p class="field-help">Samples are collected only while a complete video is actively playing. There is no summary-rating mode.</p>
       </div>
-      <fieldset class="radio-group is-wide" id="transition-mode-group">
-        <legend>Between-video behavior</legend>
-        <label class="radio-field"><input type="radio" name="transitionMode" value="fixed" checked><span>Fixed duration</span></label>
-        <label class="radio-field"><input type="radio" name="transitionMode" value="jitter"><span>Deterministic jitter selected from entered durations</span></label>
-        <label class="radio-field"><input type="radio" name="transitionMode" value="continue"><span>Participant-controlled <strong>Continue when ready</strong></span></label>
-      </fieldset>
-      <label class="field" id="fixed-duration-field"><span>Fixed duration (seconds)</span><input id="fixed-duration" type="number" min="0" max="600" step="0.1" value="5" required></label>
-      <label class="field" id="jitter-durations-field" hidden><span>Jitter durations (seconds)</span><input id="jitter-durations" value="3, 5, 7" inputmode="decimal" aria-describedby="jitter-help" required><span id="jitter-help" class="field-help">Comma-separated finite durations. Selection is derived from the recorded plan seed.</span></label>
     </div>`;
 }
 
 function stimuliSection() {
   return `
-    <p class="section-lead">Place each complete video in exactly one condition column. A single column containing every video is the ordinary one-hat design; multiple columns create stratified pools.</p>
-    <div class="section-actions">
-      <button id="stimulus-add-workspace" type="button" disabled>Add workspace video</button>
-      <button id="stimulus-add-repository" type="button">Add repository asset</button>
-      <button id="stimulus-add-youtube" type="button">Add Experimental YouTube</button>
-    </div>
-    <p id="youtube-boundary" class="capability-note">YouTube is unverified and noncanonical, has no byte hash, fails offline, and is excluded from research qualification. Windows Tauri rejects it until its player boundary is qualified.</p>
-    <section id="youtube-preflight-panel" class="youtube-preflight-panel" aria-labelledby="youtube-preflight-title" hidden>
-      <div class="youtube-preflight-heading"><h3 id="youtube-preflight-title">Experimental YouTube player preflight</h3><p>Online browser check only · excluded from qualification</p></div>
-      <div id="youtube-preflight-player" class="youtube-player-host" aria-label="YouTube player preflight"></div>
-      <p id="youtube-preflight-status" class="status-text" role="status" aria-live="polite">Choose Preflight beside a YouTube stimulus.</p>
-    </section>
+    <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
     <div class="condition-toolbar">
       <div>
-        <h3>Condition columns</h3>
-        <p id="pool-mode-summary" class="field-help">One condition column · one hat</p>
+        <h3>Declared blocks</h3>
+        <p id="pool-mode-summary" class="field-help">Load experiment.json to inspect its blocks.</p>
       </div>
-      <button id="condition-add" type="button">Add condition column</button>
+      <output class="field-output">external-order-v1</output>
     </div>
-    <div id="condition-pools" class="condition-pools" aria-label="Condition video pools"></div>
-    <div id="coverage-message" class="coverage-message" role="status" aria-live="polite">Add at least one complete video and resolve participant capacity.</div>
+    <div id="condition-pools" class="condition-pools" aria-label="Externally declared experiment blocks"></div>
+    <div id="coverage-message" class="coverage-message" role="status" aria-live="polite">Load experiment.json, select a workspace, and verify every referenced complete video.</div>
     <details class="inner-disclosure" open>
-      <summary>Ordering and automatic allocation</summary>
+      <summary>Authoring contract</summary>
       <div class="disclosure-content">
-        <div class="field-grid three-columns">
-          <label class="field"><span>Condition-order algorithm</span><select id="condition-order"><option value="williams">Williams counterbalancing</option><option value="cyclic">Cyclic rotation</option></select></label>
-          <label class="field"><span>Allocation seed</span><input id="allocation-seed" value="${DEFAULT_SETTINGS.stimuli.seed}" minlength="32" maxlength="32" pattern="[a-f0-9]{32}" autocomplete="off"></label>
-          <div class="field-block"><span class="field-label">Allocation algorithm</span><output class="field-output">balanced-v1</output></div>
-        </div>
-        <p class="field-help">Each slot selects lowest total exposure, then lowest exposure at that position, then the deterministic seeded-hash tie-break. Factorial all-permutation schedules are not used.</p>
+        <p class="field-help"><code>schedules[].blocks[].videos[]</code> is executed exactly in array order. Every video row requires <code>stimulusId</code> and integer <code>isiAfterMs</code> (0–3,600,000). Even a final nonzero ISI is executed before post-block or post-session questionnaires.</p>
+        <dl class="protocol-facts"><div><dt>Randomization</dt><dd>Completed before import</dd></div><div><dt>Runtime allocation</dt><dd>None</dd></div><div><dt>Recovery</dt><dd>Restarts the interrupted video or ISI from its safe boundary</dd></div></dl>
       </div>
     </details>
     <details class="inner-disclosure" open>
       <summary>Resolved participant preview</summary>
       <div class="disclosure-content">
         <div class="plan-toolbar">
-          <div><span class="field-label">Plan hash</span><output id="plan-hash" class="hash-value">Pending valid allocation</output></div>
-          <div class="button-row"><button id="plan-window-previous" type="button" disabled>Previous participants</button><button id="plan-window-next" type="button" disabled>Next participants</button><button id="assignment-plan-export" type="button" disabled>Export assignment-plan.csv</button></div>
+          <div class="field-block"><span class="field-label">Resolved experiment plan hash</span><output id="plan-hash" class="hash-value">Pending experiment.json</output></div>
+          <div class="button-row"><button id="plan-window-previous" type="button" disabled>Previous participants</button><button id="plan-window-next" type="button" disabled>Next participants</button><button id="assignment-plan-export" type="button" disabled>Export resolved-plan.csv</button></div>
         </div>
         <div class="table-scroll">
-          <table><thead><tr><th>Participant</th><th>Condition order</th><th>Assigned complete videos</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The resolved schedule appears after the pool design passes capacity checks.</td></tr></tbody></table>
+          <table><thead><tr><th>Participant</th><th>Block order</th><th>Complete-video order and ISI</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The exact schedule appears after every referenced workspace video is verified.</td></tr></tbody></table>
         </div>
         <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
       </div>
@@ -418,16 +475,20 @@ function inputSection() {
 
 function questionnairesSection() {
   return `
-    <p class="section-lead">Place validated single-choice questionnaires before or after the session, or around a condition block. Their order becomes part of the frozen participant protocol.</p>
+    <p class="section-lead">Place strict single-choice questionnaires before or after the session, around a block, or after a specific video before or after its ISI. Array order becomes protocol order.</p>
     <div class="section-actions questionnaire-actions">
       <button id="questionnaire-import" type="button">Import questionnaire CSV</button>
-      <button id="questionnaire-add-maia" type="button">Add bundled MAIA-2 (German)</button>
+      <button type="button" data-bundled-questionnaire="maia-2-de">MAIA-2 · German</button>
+      <button type="button" data-bundled-questionnaire="maia-2-en">MAIA-2 · English</button>
+      <button type="button" data-bundled-questionnaire="tas-20-en">TAS-20 · English</button>
+      <button type="button" data-bundled-questionnaire="ssq-six-item-en">SSQ · 6-item English</button>
+      <button type="button" data-bundled-questionnaire="vr-exp-en">VR experience · English</button>
       <a id="questionnaire-template-download" class="button-link" href="${QUESTIONNAIRE_TEMPLATE_URL}" download="questionnaire-template.csv">Download CSV template</a>
     </div>
     <p class="field-help">The simple CSV uses one row per answer option. Unknown columns, duplicate IDs, ambiguous scores, malformed UTF-8, and oversized files are rejected.</p>
-    <aside class="license-note" aria-labelledby="tas20-license-title">
-      <h3 id="tas20-license-title">TAS-20 alexithymia questionnaire</h3>
-      <p>The supplied specification names TAS-20 but contains no authorized item text or scoring. Affect Research does not bundle proprietary wording; import a rights-cleared CSV after permission is recorded.</p>
+    <aside class="license-note" aria-labelledby="questionnaire-provenance-title">
+      <h3 id="questionnaire-provenance-title">Questionnaire provenance</h3>
+      <p>The English fixtures reproduce the researcher-supplied wording and response ranges. No reverse scoring, subscales, diagnostic interpretation, or validation status is inferred; review reuse rights and study scoring before deployment.</p>
     </aside>
     <div class="questionnaire-layout">
       <section aria-labelledby="questionnaire-library-title">
@@ -443,7 +504,7 @@ function questionnairesSection() {
       <summary>Participant sequence preview</summary>
       <div class="disclosure-content">
         <div class="plan-toolbar">
-          <div><span class="field-label">Protocol plan hash</span><output id="protocol-plan-hash" class="hash-value">Pending valid questionnaire sequence</output></div>
+          <div class="field-block"><span class="field-label">Protocol plan hash</span><output id="protocol-plan-hash" class="hash-value">Pending valid questionnaire sequence</output></div>
           <output id="protocol-step-summary" class="field-help">No participant protocol is resolved.</output>
         </div>
         <ol id="protocol-sequence-preview" class="protocol-sequence-preview"><li class="empty-state">The selected participant’s ordered forms and videos appear after planning succeeds.</li></ol>
@@ -604,6 +665,14 @@ function reviewSection() {
       <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
       <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
     </fieldset>
+    <section class="participant-language-readiness" aria-labelledby="participant-language-label">
+      <div>
+        <h3 id="participant-language-label">Participant language</h3>
+        <output id="participant-language-status" class="field-output" data-state="warning" aria-live="polite">Choose a package language for this participant and attempt.</output>
+        <p class="field-help">The participant follows the package-owned tree from its root. Start stays blocked until a terminal language is chosen. A compatible recovery restores its frozen route instead of asking again.</p>
+      </div>
+      <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
+    </section>
     <div class="start-bar">
       <p id="start-status" role="status" aria-live="polite">Resolve all blocking preflight items.</p>
       <button id="start-experiment" type="button" class="primary-action" disabled>Start experiment / session</button>
@@ -686,7 +755,7 @@ export function renderResearchUiMarkup(surface = "browser") {
         <section class="run-mode" data-mode-panel="run" aria-label="Running the Experiment" hidden>
           <header class="run-header">
             <div class="run-identity"><strong id="run-participant">Participant —</strong><p id="run-session">Session not started</p></div>
-            <div class="run-actions"><button id="run-pause" type="button" aria-pressed="false">Pause</button><button id="run-stop-early" type="button" class="danger-action">Stop Early</button></div>
+            <div class="run-actions"><button id="run-pause" type="button" aria-pressed="false" hidden disabled>Pause</button><button id="run-stop-early" type="button" class="danger-action">Stop Early</button></div>
           </header>
           <section id="run-questionnaire-stage" class="run-questionnaire-stage" aria-labelledby="run-questionnaire-title" hidden>
             <header class="questionnaire-run-header">
@@ -734,16 +803,13 @@ export function renderResearchUiMarkup(surface = "browser") {
       </main>
     </div>
     <input id="settings-file-input" type="file" accept="application/json,.json" hidden>
+    <input id="experiment-file-input" type="file" accept="application/json,.json" hidden>
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
     <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
     <input id="questionnaire-file-input" type="file" accept="text/csv,.csv" hidden>
     <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
       <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
       <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
-    </dialog>
-    <dialog id="stimulus-dialog" aria-labelledby="stimulus-dialog-title">
-      <div class="dialog-content"><h2 id="stimulus-dialog-title">Add stimulus</h2><div class="field-grid"><label class="field"><span>Source</span><select id="stimulus-source"><option value="workspace">Workspace file</option><option value="repository">Repository asset</option><option value="youtube">Experimental YouTube URL</option></select></label><label class="field"><span>Display title</span><input id="stimulus-title" maxlength="120"></label><label class="field is-wide"><span id="stimulus-location-label">Workspace catalogue item</span><input id="stimulus-location" maxlength="2048" autocomplete="off"></label><label class="field"><span>Condition column</span><select id="stimulus-condition"></select></label></div><p id="stimulus-dialog-help" class="field-help">Complete-file duration, byte identity, and decode verification are required before Start.</p></div>
-      <div class="dialog-actions"><button id="stimulus-dialog-cancel" type="button">Cancel</button><button id="stimulus-dialog-add" type="button" class="primary-action">Add complete video</button></div>
     </dialog>
     <dialog id="stop-early-dialog" aria-labelledby="stop-early-title">
       <div class="dialog-content"><h2 id="stop-early-title">Stop this attempt early?</h2><p>A controlled stop finalizes an explicitly partial result and cannot be resumed. Accepted samples and events are retained. Only an interrupted, recoverable attempt restarts its current video from the beginning.</p></div>
@@ -760,6 +826,19 @@ export function renderResearchUiMarkup(surface = "browser") {
     <dialog id="questionnaire-preview-dialog" aria-labelledby="questionnaire-preview-title">
       <div class="dialog-content"><p class="context-label">Questionnaire preview</p><h2 id="questionnaire-preview-title">Questionnaire</h2><p id="questionnaire-preview-instructions"></p><div id="questionnaire-preview-items" class="questionnaire-preview-items"></div><p id="questionnaire-preview-attribution" class="field-help"></p></div>
       <div class="dialog-actions"><button id="questionnaire-preview-close" type="button" class="primary-action">Close preview</button></div>
+    </dialog>
+    <dialog id="participant-language-dialog" aria-labelledby="participant-language-title" aria-describedby="participant-language-context participant-language-error">
+      <div class="dialog-content participant-language-dialog-content">
+        <p id="participant-language-context" class="context-label">Participant P001 · new attempt</p>
+        <h2 id="participant-language-title">Choose a language</h2>
+        <p id="participant-language-breadcrumb" class="field-help">Start of language selection</p>
+        <fieldset class="participant-language-fieldset">
+          <legend id="participant-language-prompt">Choose a language</legend>
+          <div id="participant-language-options" class="participant-language-options"></div>
+        </fieldset>
+        <p id="participant-language-error" class="field-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-actions participant-language-actions"><button id="participant-language-back" type="button" hidden>Back</button><button id="participant-language-cancel" type="button">Cancel</button></div>
     </dialog>
     <div id="research-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>`;
 }
@@ -812,11 +891,24 @@ function bindResearchInteractions(root, { surface }) {
   let nativeCaptureDirection = null;
   let nativeInputLastSequence = 0;
   let lastInputActive = false;
+  let ratingInputEnabled = false;
   let outputFormatsTouched = false;
   let participantWindowStart = 0;
   let participantTileWindowStart = 0;
   let dispositionContextKey = "";
   let workspace = null;
+  let experimentDocument = null;
+  let experimentPackageDocument = null;
+  let browserPackageRoot = null;
+  let packageAssetClosureSha256 = null;
+  let packageReproductionReceipt = null;
+  let compiledPackageSelection = null;
+  let selectedLanguageId = null;
+  let selectedLanguageSelectionPath = null;
+  let selectedLanguageContextKey = null;
+  let languageTraversalPath = [];
+  let languageSelectionGeneration = 0;
+  let languageSelectionBusy = false;
   let plan = null;
   let protocolPlan = null;
   let planError = null;
@@ -854,7 +946,9 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
   let manifestReadinessMessage = "Output manifests have not been scanned.";
-  const pools = [{ id: "condition-1", label: "Condition 1", videosPerParticipant: 1 }];
+  // Retained only as an inert compatibility collection for historical dialog
+  // handlers. Active v1 Research planning is owned by experimentDocument.blocks.
+  const pools = [];
   const stimuli = [];
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
@@ -862,6 +956,7 @@ function bindResearchInteractions(root, { surface }) {
   const participantRecoverability = new Map();
   const participantFinalizationPending = new Map();
   const participantFinalizationBindings = new Map();
+  const participantRecoveryBindings = new Map();
   const touchedValidationControls = new WeakSet();
 
   const setupPreview = createResearchPreview(root.querySelector(".preview-pane"), {
@@ -882,7 +977,9 @@ function bindResearchInteractions(root, { surface }) {
 
   function value(id, fallback = "") {
     const element = query(`#${id}`);
-    return element instanceof HTMLInputElement || element instanceof HTMLSelectElement
+    return element instanceof HTMLInputElement
+      || element instanceof HTMLSelectElement
+      || element instanceof HTMLTextAreaElement
       ? element.value
       : fallback;
   }
@@ -899,7 +996,9 @@ function bindResearchInteractions(root, { surface }) {
 
   function setInputValue(id, nextValue) {
     const element = query(`#${id}`);
-    if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+    if (element instanceof HTMLInputElement
+      || element instanceof HTMLSelectElement
+      || element instanceof HTMLTextAreaElement) {
       element.value = String(nextValue);
     }
   }
@@ -1226,9 +1325,11 @@ function bindResearchInteractions(root, { surface }) {
       || participantFinalizationPending.get(selectedParticipant) !== true) return null;
     const binding = participantFinalizationBindings.get(selectedParticipant);
     const playbackMode = value("native-playback-mode", "nativeGstPlay");
-    const hasQuestionnaires = (protocolSettingsSnapshot?.questionnaires?.modules?.length ?? 0) > 0;
-    const protocolContract = hasQuestionnaires ? "manifestV3" : "manifestV2";
-    const expectedSettingsSha256 = hasQuestionnaires ? protocolSettingsHash : settingsHash;
+    const protocolContract = protocolSettingsSnapshot?.version === 3
+      || (protocolSettingsSnapshot?.questionnaires?.modules?.length ?? 0) > 0
+      ? "manifestV3"
+      : "manifestV2";
+    const expectedSettingsSha256 = protocolContract === "manifestV3" ? protocolSettingsHash : settingsHash;
     if (!binding || !settingsSnapshot || !settingsHash || !plan
       || !protocolSettingsSnapshot || !protocolSettingsHash || !protocolPlan
       || binding.protocolContract !== protocolContract
@@ -1357,21 +1458,26 @@ function bindResearchInteractions(root, { surface }) {
     output.dataset.state = code ? "ready" : "warning";
   }
 
-  function betweenVideosFromUi() {
-    const selected = query('input[name="transitionMode"]:checked')?.value ?? "fixed";
-    if (selected === "continue") return { mode: "continueWhenReady" };
-    if (selected === "jitter") {
-      const entries = value("jitter-durations")
-        .split(",")
-        .map((entry) => entry.trim());
-      if (!entries.length || entries.some((entry) => entry === "" || !Number.isFinite(Number(entry)))) {
-        throw new TypeError("Jitter durations must be a comma-separated list of finite seconds.");
+  function protocolBlockIds() {
+    return experimentDocument?.definition.blocks.map(({ blockId }) => blockId) ?? [];
+  }
+
+  function resolvedStimuliFromUi() {
+    if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
+    return experimentDocument.definition.stimuli.map((reference) => {
+      const matches = stimuli.filter((stimulus) => (
+        stimulus.contractSource?.kind === "workspaceFile"
+        && stimulus.contractSource.relativePath === reference.relativePath
+      ));
+      if (matches.length !== 1 || matches[0].verification !== "verified") {
+        throw new TypeError(`${reference.relativePath} must resolve to one freshly verified workspace video.`);
       }
-      const durationsMs = entries.map((seconds) => Math.round(Number(seconds) * 1_000));
-      return { mode: "jitter", durationsMs };
-    }
-    if (value("fixed-duration").trim() === "") throw new TypeError("Fixed between-video duration is required.");
-    return { mode: "fixed", durationMs: Math.round(Number(value("fixed-duration")) * 1_000) };
+      return validateStimulusV1({
+        stimulusId: reference.stimulusId,
+        title: reference.title,
+        source: structuredClone(matches[0].contractSource),
+      });
+    });
   }
 
   function mappingsFromUi() {
@@ -1396,38 +1502,18 @@ function bindResearchInteractions(root, { surface }) {
     return inputBinding;
   }
 
-  function researchSettingsFromUi() {
-    const contractItems = stimuli.map((stimulus) => {
-      if (!stimulus.contractSource) throw new TypeError(`${stimulus.title} has not passed source verification.`);
-      return {
-        stimulusId: stimulus.id,
-        title: stimulus.title,
-        source: structuredClone(stimulus.contractSource),
-      };
-    });
-    const contractPools = stimuli.length === 0 ? [] : pools.map((pool) => ({
-      poolId: pool.id,
-      label: pool.label,
-      videosPerParticipant: pool.videosPerParticipant,
-      stimulusIds: stimuli.filter(({ poolId }) => poolId === pool.id).map(({ id }) => id),
-    }));
-    return validateResearchSettingsV1({
+  async function researchSettingsFromUi() {
+    if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
+    return validateResearchSettingsV3({
       schema: DEFAULT_SETTINGS.schema,
-      version: DEFAULT_SETTINGS.version,
+      version: 3,
       experiment: {
         id: value("experiment-id"),
         title: value("experiment-title"),
         participantCount: numberValue("participant-count"),
         samplingFrequencyHz: numberValue("sampling-frequency"),
-        betweenVideos: betweenVideosFromUi(),
       },
-      stimuli: {
-        allocationAlgorithm: "balanced-v1",
-        conditionOrder: value("condition-order"),
-        seed: value("allocation-seed").trim().toLowerCase(),
-        items: contractItems,
-        pools: contractPools,
-      },
+      stimuli: { items: resolvedStimuliFromUi() },
       input: structuredClone(synchronizedInputBinding()),
       visual: {
         gridEnabled: checked("visual-grid-visible"),
@@ -1464,57 +1550,65 @@ function bindResearchInteractions(root, { surface }) {
         mappings: mappingsFromUi(),
       },
       output: { csv: checked("output-csv"), tsv: checked("output-tsv") },
-    });
-  }
-
-  async function protocolSettingsFromUi(baseSettings = researchSettingsFromUi()) {
-    return validateResearchSettingsV2({
-      ...structuredClone(baseSettings),
-      version: 2,
       questionnaires: {
-        algorithmVersion: QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
+        algorithmVersion: QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
         definitions: questionnaireDefinitions.map((definition) => structuredClone(definition)),
         modules: questionnaireModules.map((module) => structuredClone(module)),
+      },
+      externalProtocol: {
+        algorithmVersion: EXTERNAL_ORDER_ALGORITHM_VERSION,
+        sourceByteSha256: experimentDocument.sourceByteSha256,
+        definitionSha256: experimentDocument.definitionSha256,
+        definition: structuredClone(experimentDocument.definition),
       },
     });
   }
 
-  function applyResearchSettings(settings) {
-    const normalized = validateResearchSettingsV1(settings);
+  async function protocolSettingsFromUi(baseSettings = null) {
+    return baseSettings ? validateResearchSettingsV3(baseSettings) : researchSettingsFromUi();
+  }
+
+  async function applyResearchSettings(settings, {
+    preserveVerifiedStimuli = false,
+    guard = null,
+  } = {}) {
+    const normalized = await validateResearchSettingsV3(settings);
+    if (typeof guard === "function" && !guard()) return false;
+    const preservedSourceText = experimentDocument
+      && experimentDocument.sourceByteSha256 === normalized.externalProtocol.sourceByteSha256
+      && experimentDocument.definitionSha256 === normalized.externalProtocol.definitionSha256
+      ? experimentDocument.sourceText
+      : null;
+    experimentDocument = Object.freeze({
+      definition: structuredClone(normalized.externalProtocol.definition),
+      sourceText: preservedSourceText,
+      sourceByteSha256: normalized.externalProtocol.sourceByteSha256,
+      definitionSha256: normalized.externalProtocol.definitionSha256,
+    });
     setInputValue("experiment-id", normalized.experiment.id);
     setInputValue("experiment-title", normalized.experiment.title);
     setInputValue("participant-count", normalized.experiment.participantCount);
     setInputValue("sampling-frequency", normalized.experiment.samplingFrequencyHz);
-    const transitionMode = normalized.experiment.betweenVideos.mode === "continueWhenReady"
-      ? "continue"
-      : normalized.experiment.betweenVideos.mode;
-    const transition = query(`input[name="transitionMode"][value="${transitionMode}"]`);
-    if (transition instanceof HTMLInputElement) transition.checked = true;
-    if (normalized.experiment.betweenVideos.mode === "fixed") {
-      setInputValue("fixed-duration", normalized.experiment.betweenVideos.durationMs / 1_000);
-    } else if (normalized.experiment.betweenVideos.mode === "jitter") {
-      setInputValue("jitter-durations", normalized.experiment.betweenVideos.durationsMs.map((duration) => duration / 1_000).join(", "));
-    }
-    setInputValue("condition-order", normalized.stimuli.conditionOrder);
-    setInputValue("allocation-seed", normalized.stimuli.seed);
-    pools.splice(0, pools.length, ...(normalized.stimuli.pools.length
-      ? normalized.stimuli.pools.map((pool) => ({
-        id: pool.poolId,
-        label: pool.label,
-        videosPerParticipant: pool.videosPerParticipant,
-      }))
-      : [{ id: "condition-1", label: "Condition 1", videosPerParticipant: 1 }]));
-    const poolByStimulus = new Map(normalized.stimuli.pools.flatMap((pool) => pool.stimulusIds.map((id) => [id, pool.poolId])));
-    stimuli.splice(0, stimuli.length, ...normalized.stimuli.items.map((item) => ({
-      id: item.stimulusId,
-      title: item.title,
-      source: item.source.kind === "workspaceFile" ? "workspace" : item.source.kind === "repositoryAsset" ? "repository" : "youtube",
-      location: item.source.relativePath ?? item.source.url,
-      poolId: poolByStimulus.get(item.stimulusId),
-      verification: item.source.kind === "youtube" ? "unverified" : "pending",
-      contractSource: structuredClone(item.source),
-      youtubePreflight: null,
-    })));
+    const previousStimuli = new Map(stimuli.map((stimulus) => [stimulus.id, stimulus]));
+    stimuli.splice(0, stimuli.length, ...normalized.stimuli.items.map((item) => {
+      const previous = previousStimuli.get(item.stimulusId);
+      const mayPreserve = preserveVerifiedStimuli
+        && previous?.verification === "verified"
+        && canonicalJson(previous.contractSource) === canonicalJson(item.source);
+      return {
+        id: item.stimulusId,
+        title: item.title,
+        source: "workspace",
+        location: item.source.relativePath,
+        poolId: null,
+        verification: mayPreserve ? "verified" : "pending",
+        contractSource: structuredClone(item.source),
+        packageAssetPath: mayPreserve ? previous.packageAssetPath : null,
+        decodeQualification: mayPreserve ? previous.decodeQualification : undefined,
+        file: mayPreserve ? previous.file : undefined,
+        youtubePreflight: null,
+      };
+    }));
     inputBinding = structuredClone(normalized.input);
     resetInputTest();
     setInputValue("input-preset", UI_PRESET_IDS[inputBinding.preset] ?? "custom");
@@ -1555,7 +1649,20 @@ function bindResearchInteractions(root, { surface }) {
     }
     setChecked("output-csv", normalized.output.csv);
     setChecked("output-tsv", normalized.output.tsv);
-    selectedParticipant = createParticipantIds(normalized.experiment.participantCount)[0];
+    questionnaireDefinitions.splice(
+      0,
+      questionnaireDefinitions.length,
+      ...normalized.questionnaires.definitions.map((definition) => structuredClone(definition)),
+    );
+    questionnaireModules.splice(
+      0,
+      questionnaireModules.length,
+      ...normalized.questionnaires.modules.map((module) => structuredClone(module)),
+    );
+    const normalizedParticipantIds = createParticipantIds(normalized.experiment.participantCount);
+    selectedParticipant = normalizedParticipantIds.includes(selectedParticipant)
+      ? selectedParticipant
+      : normalizedParticipantIds[0];
     participantWindowStart = 0;
     participantTileWindowStart = 0;
     settingsSnapshot = normalized;
@@ -1564,14 +1671,39 @@ function bindResearchInteractions(root, { surface }) {
     protocolSettingsHash = null;
     plan = null;
     protocolPlan = null;
+    compiledPackageSelection = null;
     renderPools();
     renderQuestionnaires();
     renderBindings();
     refreshProjection();
     schedulePlanRefresh();
-    for (const stimulus of stimuli.filter(({ source }) => source === "repository")) {
-      void verifyRepositoryStimulus(stimulus);
+    const fileStatus = query("#experiment-file-status");
+    if (fileStatus) {
+      fileStatus.dataset.state = "ready";
+      fileStatus.textContent = `${normalized.experiment.id} · ${normalized.experiment.participantCount} participants · definition ${normalized.externalProtocol.definitionSha256}`;
     }
+    return true;
+  }
+
+  function packageAssetsVerified() {
+    if (!experimentPackageDocument) return false;
+    if (surface === "browser" && (
+      browserPackageRoot !== workspace
+      || packageAssetClosureSha256
+        !== experimentPackageDocument.package.integrity.assetManifestSha256
+    )) return false;
+    return experimentPackageDocument.package.assets.stimuli.every((asset) => {
+      const logicalPath = asset.relativePath.slice("assets/".length);
+      return stimuli.some((stimulus) => (
+        stimulus.id === asset.stimulusId
+        && stimulus.location === logicalPath
+        && stimulus.packageAssetPath === asset.relativePath
+        && stimulus.verification === "verified"
+        && stimulus.contractSource?.sha256 === asset.sha256
+        && stimulus.contractSource?.byteLength === asset.byteLength
+        && stimulus.contractSource?.durationMs === asset.durationMs
+      ));
+    });
   }
 
   function preflightItems() {
@@ -1583,7 +1715,7 @@ function bindResearchInteractions(root, { surface }) {
         { id: "workspace", result: workspaceReady ? "pass" : "block", label: "Workspace", message: workspaceReady ? "Owned libraries ready" : "Reauthorize the exact parent workspace" },
         { id: "experiment", result: "pass", label: "Frozen protocol", message: `Settings ${pendingFinalization.settingsSha256}` },
         { id: "stimuli", result: "warning", label: "Stimuli", message: "Not opened for reload-only finalization" },
-        { id: "plan", result: "pass", label: "Frozen plan", message: `balanced-v1 ${pendingFinalization.assignmentPlanSha256}` },
+        { id: "plan", result: "pass", label: "Frozen plan", message: `external-order-v1 ${pendingFinalization.assignmentPlanSha256}` },
         { id: "input", result: "warning", label: "Input", message: "Not acquired for reload-only finalization" },
         { id: "output", result: "pass", label: "Output", message: `Retry durable ${pendingFinalization.completionStatus} output materialization` },
         { id: "participant", result: "pass", label: "Participant", message: `${selectedParticipant} · attempt ${pendingFinalization.attemptNumber} · no transient demographics required` },
@@ -1594,7 +1726,8 @@ function bindResearchInteractions(root, { surface }) {
         { id: "lsl", result: "warning", label: "LSL", message: "Outlets are not started for reload-only finalization" },
       ];
     }
-    const experimentValid = /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value("experiment-id"))
+    const experimentValid = Boolean(experimentDocument)
+      && /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value("experiment-id"))
       && value("experiment-title").trim().length > 0
       && Number.isInteger(numberValue("participant-count"))
       && numberValue("participant-count") >= 1;
@@ -1629,22 +1762,26 @@ function bindResearchInteractions(root, { surface }) {
       && storageReadiness?.sufficient === true
       && storageReadiness?.writeReady !== false
       && storageReadiness.requiredBytes === storageEstimate.requiredBytes);
-    const localStimuliReady = stimuli.length > 0 && stimuli
-      .filter(({ source }) => source !== "youtube")
-      .every((stimulus) => stimulus.verification === "verified");
-    const youtubeStimuli = stimuli.filter(({ source }) => source === "youtube");
-    const hasRepository = stimuli.some(({ source }) => source === "repository");
-    const hasYouTube = youtubeStimuli.length > 0;
-    const hasUnqualifiedDesktopDecode = surface === "tauri" && stimuli
-      .filter(({ source }) => source !== "youtube")
-      .some(({ decodeQualification }) => decodeQualification === "attestedUnqualified");
-    const youtubeReady = surface === "browser" && youtubeStimuli.every((stimulus) => (
-      isFreshYouTubePreflight(stimulus.youtubePreflight, stimulus.contractSource, {
-        maximumAgeMs: YOUTUBE_PREFLIGHT_MAX_AGE_MS,
-      })
+    const referencedStimuli = experimentDocument?.definition.stimuli ?? [];
+    const stimuliReady = referencedStimuli.length > 0 && referencedStimuli.every((reference) => (
+      stimuli.filter((stimulus) => stimulus.location === reference.relativePath
+        && stimulus.source === "workspace" && stimulus.verification === "verified").length === 1
     ));
-    const repositoryReady = !hasRepository || capabilities.repositoryAssetsReady;
-    const stimuliReady = localStimuliReady && repositoryReady && (!hasYouTube || youtubeReady);
+    const hasUnqualifiedDesktopDecode = surface === "tauri" && stimuli
+      .filter(({ source }) => source === "workspace")
+      .some(({ decodeQualification }) => decodeQualification === "attestedUnqualified");
+    const packageAssetsReady = packageAssetsVerified();
+    const packageReady = Boolean(
+      experimentPackageDocument
+      && packageReproductionReceipt?.byteIdenticalReexport === true
+      && packageReproductionReceipt.sameRealmDeterminismVerified === true
+      && packageAssetsReady,
+    );
+    const languageReady = Boolean(
+      compiledPackageSelection
+      && selectedPackageRoute()
+      && selectedLanguageContextKey === participantLanguageContextKey(),
+    );
     const playbackMode = value("native-playback-mode", "nativeGstPlay");
     const playbackReady = surface !== "tauri"
       || playbackMode === "unqualifiedWebview"
@@ -1661,24 +1798,45 @@ function bindResearchInteractions(root, { surface }) {
       { id: "workspace", result: workspaceReady ? "pass" : "block", label: "Workspace", message: workspaceReady ? "Owned libraries ready" : "Select and authorize one parent workspace" },
       { id: "experiment", result: experimentValid && samplingValid ? "pass" : "block", label: "Protocol", message: experimentValid && samplingValid ? `Continuous rating at ${sampleRate} Hz` : "Complete identity, participant count, and a 1–240 Hz integer rate" },
       {
+        id: "package",
+        result: packageReady ? "pass" : "block",
+        label: "Portable package",
+        message: packageReady
+          ? `${packageReproductionReceipt.caseCount} deterministic cases verified; fixed assets match ${experimentPackageDocument.package.integrity.assetManifestSha256}`
+          : experimentPackageDocument
+            ? "Rescan assets/stimuli/ and resolve any package/settings drift"
+            : "Generate or load experiment.package.json before Start",
+      },
+      {
+        id: "language",
+        result: languageReady ? "pass" : "block",
+        label: "Participant language",
+        message: languageReady
+          ? `${compiledPackageSelection.languageTag} · ${selectedPackageRoute().labels.join(" › ")}`
+          : selectedAttemptDisposition() === "resume-compatible"
+            ? "Restore the exact terminal route from the recoverable attempt"
+            : "The participant must traverse the package-owned tree to a terminal language",
+      },
+      {
         id: "stimuli",
         result: stimuliReady && poolCapacity.valid ? "pass" : "block",
         label: "Stimuli",
         message: stimuliReady && poolCapacity.valid
-          ? hasYouTube
-            ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered; local files byte-verified and YouTube player-preflighted (unverified, noncanonical, qualification excluded)`
-            : hasUnqualifiedDesktopDecode
+          ? hasUnqualifiedDesktopDecode
               ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-bound; representative WebView frames attested (unqualified playback)`
-              : `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-verified`
-          : hasYouTube && surface === "tauri"
-            ? "Experimental YouTube is browser-only and remains blocked in Windows Tauri"
-            : hasRepository && !repositoryReady
-              ? "Repository demo assets are not packaged in this Windows internal alpha; import the file into the workspace"
-            : hasYouTube && !youtubeReady
-              ? "Run a fresh visible-player preflight for every experimental YouTube stimulus"
-              : poolCapacity.message,
+              : `${referencedStimuli.length} referenced complete video${referencedStimuli.length === 1 ? "" : "s"} resolved and byte-verified`
+          : poolCapacity.message,
       },
-      { id: "plan", result: plan && settingsHash ? "pass" : "block", label: "Resolved assignment", message: plan ? `balanced-v1 ${plan.planHashSha256}` : (planError ?? "Resolve a valid deterministic assignment plan") },
+      {
+        id: "plan",
+        result: plan && settingsHash && surface !== "tauri" ? "pass" : "block",
+        label: "External protocol",
+        message: surface === "tauri" && plan
+          ? "experiment.json is validated and previewable, but native V3 execution is not enabled; Start remains fail-closed"
+          : plan
+            ? `external-order-v1 ${plan.planHashSha256}`
+            : (planError ?? "Load and resolve a valid experiment.json"),
+      },
       {
         id: "questionnaires",
         result: protocolSettingsSnapshot && protocolSettingsHash && protocolPlan ? "pass" : "block",
@@ -1799,43 +1957,23 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function analyzeLocalCapacity() {
-    if (stimuli.length === 0) return { valid: false, message: "Add at least one complete video" };
-    if (settingsSnapshot) {
-      const coverage = analyzeAssignmentCoverage(settingsSnapshot);
-      if (coverage.valid) return { valid: true, message: `Capacity covers all ${stimuli.length} selected videos.` };
-      const failures = coverage.pools
-        .filter(({ blockingReasons }) => blockingReasons.length > 0)
-        .map((pool) => {
-          if (pool.blockingReasons.includes("videos-per-participant-exceeds-pool")) {
-            return `${pool.label} contains ${pool.requiredStimuli} unique video${pool.requiredStimuli === 1 ? "" : "s"}; reduce Videos / participant to ${pool.adjustment.maximumVideosPerParticipant}.`;
-          }
-          const uncovered = pool.uncoveredStimulusIds
-            .map((id) => stimuli.find((stimulus) => stimulus.id === id)?.title ?? id)
-            .join(", ");
-          return `${pool.label} cannot cover ${uncovered}. Increase total participants to ${pool.adjustment.minimumParticipantCount} (+${pool.adjustment.additionalParticipants}) or Videos / participant to ${pool.adjustment.minimumVideosPerParticipant} (+${pool.adjustment.additionalVideosPerParticipant}).`;
-        });
-      if (failures.length > 0) return { valid: false, message: failures.join(" ") };
+    if (!experimentDocument) {
+      return { valid: false, message: "Load a valid experiment.json before resolving videos." };
     }
-    const participants = Math.max(0, Math.trunc(numberValue("participant-count")));
-    const uncovered = [];
-    for (const pool of pools) {
-      const videos = stimuli.filter(({ poolId }) => pool.id === poolId);
-      const slots = participants * Math.max(0, Math.trunc(pool.videosPerParticipant));
-      if (slots < videos.length) {
-        const requiredParticipants = pool.videosPerParticipant > 0 ? Math.ceil(videos.length / pool.videosPerParticipant) : Infinity;
-        uncovered.push({ pool, videos, requiredParticipants });
+    const problems = experimentDocument.definition.stimuli.flatMap((reference) => {
+      const matches = stimuli.filter((stimulus) => stimulus.source === "workspace"
+        && stimulus.location === reference.relativePath);
+      if (matches.length === 0) return [`Missing ${reference.relativePath}`];
+      if (matches.length > 1) return [`Ambiguous duplicate catalogue path ${reference.relativePath}`];
+      if (matches[0].verification !== "verified") return [`Verification pending for ${reference.relativePath}`];
+      return [];
+    });
+    return problems.length === 0
+      ? {
+        valid: true,
+        message: `${experimentDocument.definition.stimuli.length} referenced complete video${experimentDocument.definition.stimuli.length === 1 ? "" : "s"} resolve exactly. External participant order and ISI values are frozen.`,
       }
-    }
-    if (uncovered.length === 0) return { valid: true, message: `Capacity covers all ${stimuli.length} selected videos.` };
-    return {
-      valid: false,
-      message: uncovered.map(({ pool, videos, requiredParticipants }) => {
-        const adjustment = Number.isFinite(requiredParticipants)
-          ? `increase total participants to at least ${requiredParticipants}`
-          : `increase videos per participant in ${pool.label} to at least 1`;
-        return `${pool.label} leaves ${videos.map(({ title }) => title).join(", ")} uncovered; ${adjustment}.`;
-      }).join(" "),
-    };
+      : { valid: false, message: problems.join(". ") };
   }
 
   function renderCoverage() {
@@ -1940,7 +2078,7 @@ function bindResearchInteractions(root, { surface }) {
       placementText.textContent = "Placement";
       const placementSelect = document.createElement("select");
       placementSelect.dataset.questionnairePlacement = module.moduleId;
-      for (const [value, label] of [["beforeSession", "Before session"], ["afterSession", "After session"], ["beforeBlock", "Before condition block"], ["afterBlock", "After condition block"]]) {
+      for (const [value, label] of [["beforeSession", "Before session"], ["afterSession", "After session"], ["beforeBlock", "Before block"], ["afterBlock", "After block"], ["afterStimulus", "After a video"]]) {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = label;
@@ -1952,25 +2090,58 @@ function bindResearchInteractions(root, { surface }) {
       const poolLabel = document.createElement("label");
       poolLabel.className = "field";
       const poolText = document.createElement("span");
-      poolText.textContent = "Condition block";
+      poolText.textContent = "Block";
       const poolSelect = document.createElement("select");
-      poolSelect.dataset.questionnairePool = module.moduleId;
-      const usesPool = module.placement.kind === "beforeBlock" || module.placement.kind === "afterBlock";
-      poolSelect.disabled = !usesPool;
-      for (const pool of pools) {
+      poolSelect.dataset.questionnaireBlock = module.moduleId;
+      const usesBlock = module.placement.kind === "beforeBlock" || module.placement.kind === "afterBlock";
+      poolSelect.disabled = !usesBlock;
+      for (const block of experimentDocument?.definition.blocks ?? []) {
         const option = document.createElement("option");
-        option.value = pool.id;
-        option.textContent = pool.label;
-        option.selected = module.placement.poolId === pool.id;
+        option.value = block.blockId;
+        option.textContent = block.label;
+        option.selected = module.placement.blockId === block.blockId;
         poolSelect.append(option);
       }
       poolLabel.append(poolText, poolSelect);
+
+      const stimulusLabel = document.createElement("label");
+      stimulusLabel.className = "field";
+      const stimulusText = document.createElement("span");
+      stimulusText.textContent = "Video";
+      const stimulusSelect = document.createElement("select");
+      stimulusSelect.dataset.questionnaireStimulus = module.moduleId;
+      const usesStimulus = module.placement.kind === "afterStimulus";
+      stimulusSelect.disabled = !usesStimulus;
+      for (const stimulus of experimentDocument?.definition.stimuli ?? []) {
+        const option = document.createElement("option");
+        option.value = stimulus.stimulusId;
+        option.textContent = stimulus.title;
+        option.selected = module.placement.stimulusId === stimulus.stimulusId;
+        stimulusSelect.append(option);
+      }
+      stimulusLabel.append(stimulusText, stimulusSelect);
+
+      const isiLabel = document.createElement("label");
+      isiLabel.className = "field";
+      const isiText = document.createElement("span");
+      isiText.textContent = "Relative to ISI";
+      const isiSelect = document.createElement("select");
+      isiSelect.dataset.questionnaireIsi = module.moduleId;
+      isiSelect.disabled = !usesStimulus;
+      for (const [value, label] of [["before", "Before ISI"], ["after", "After ISI"]]) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        option.selected = module.placement.relativeToIsi === value;
+        isiSelect.append(option);
+      }
+      isiLabel.append(isiText, isiSelect);
 
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "Remove";
       remove.dataset.questionnaireRemoveModule = module.moduleId;
-      controls.append(placementLabel, poolLabel, remove);
+      controls.append(placementLabel, poolLabel, stimulusLabel, isiLabel, remove);
       item.append(heading, controls);
       return item;
     }));
@@ -1992,8 +2163,9 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (hash) hash.textContent = protocolPlan.protocolPlanHashSha256;
     const forms = protocolPlan.steps.filter(({ kind }) => kind === "questionnaire").length;
-    const videos = protocolPlan.steps.length - forms;
-    if (summary) summary.textContent = `${selectedParticipant} · ${forms} questionnaire step${forms === 1 ? "" : "s"} · ${videos} video${videos === 1 ? "" : "s"}`;
+    const videos = protocolPlan.steps.filter(({ kind }) => kind === "stimulus").length;
+    const intervals = protocolPlan.steps.filter(({ kind }) => kind === "interval").length;
+    if (summary) summary.textContent = `${selectedParticipant} · ${forms} questionnaire step${forms === 1 ? "" : "s"} · ${videos} video${videos === 1 ? "" : "s"} · ${intervals} explicit ISI step${intervals === 1 ? "" : "s"}`;
     list.replaceChildren(...protocolPlan.steps.map((step) => {
       const item = document.createElement("li");
       const text = document.createElement("span");
@@ -2004,13 +2176,21 @@ function bindResearchInteractions(root, { surface }) {
           afterSession: "After session",
           beforeBlock: "Before block",
           afterBlock: "After block",
+          afterStimulus: step.relativeToIsi === "before" ? "After video · before ISI" : "After video · after ISI",
         }[step.placement];
-        const pool = step.poolId ? pools.find(({ id }) => id === step.poolId)?.label ?? step.poolId : null;
-        text.textContent = `${placement}${pool ? ` · ${pool}` : ""} · ${definition?.title ?? step.questionnaireId}`;
+        const block = step.blockId
+          ? experimentDocument?.definition.blocks.find(({ blockId }) => blockId === step.blockId)?.label ?? step.blockId
+          : null;
+        const stimulus = step.stimulusId
+          ? experimentDocument?.definition.stimuli.find(({ stimulusId }) => stimulusId === step.stimulusId)?.title ?? step.stimulusId
+          : null;
+        text.textContent = `${placement}${block ? ` · ${block}` : ""}${stimulus ? ` · ${stimulus}` : ""} · ${definition?.title ?? step.questionnaireId}`;
+      } else if (step.kind === "interval") {
+        text.textContent = `ISI · ${(step.durationMs / 1_000).toFixed(3)} s after ${step.stimulusId}`;
       } else {
         const stimulus = stimuli.find(({ id }) => id === step.stimulusId);
-        const pool = pools.find(({ id }) => id === step.poolId)?.label ?? step.poolId;
-        text.textContent = `Video · ${pool} · ${stimulus?.title ?? step.stimulusId}`;
+        const block = experimentDocument?.definition.blocks.find(({ blockId }) => blockId === step.blockId)?.label ?? step.blockId;
+        text.textContent = `Video · ${block} · ${stimulus?.title ?? step.stimulusId}`;
       }
       item.append(text);
       return item;
@@ -2037,16 +2217,17 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function addQuestionnaireModule(definition) {
-    const module = validateQuestionnaireModuleV1({
+    const module = validateQuestionnaireModuleV2({
       schema: QUESTIONNAIRE_MODULE_SCHEMA,
-      version: 1,
+      version: 2,
       moduleId: nextQuestionnaireModuleId(definition.questionnaireId),
       questionnaireId: definition.questionnaireId,
       definitionSha256: definition.definitionSha256,
-      placement: { kind: "beforeSession", poolId: null },
+      placement: { kind: "beforeSession", blockId: null },
     }, {
       definition,
-      poolIds: pools.map(({ id }) => id),
+      blockIds: protocolBlockIds(),
+      stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     });
     questionnaireModules.push(structuredClone(module));
     renderQuestionnaires();
@@ -2113,12 +2294,13 @@ function bindResearchInteractions(root, { surface }) {
     const current = questionnaireModules[index];
     const definition = questionnaireDefinition(current.questionnaireId);
     if (!definition) throw new TypeError(`Questionnaire module ${moduleId} has no definition.`);
-    questionnaireModules[index] = structuredClone(validateQuestionnaireModuleV1({
+    questionnaireModules[index] = structuredClone(validateQuestionnaireModuleV2({
       ...current,
       placement,
     }, {
       definition,
-      poolIds: pools.map(({ id }) => id),
+      blockIds: protocolBlockIds(),
+      stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     }));
     renderQuestionnaires();
     schedulePlanRefresh();
@@ -2128,6 +2310,7 @@ function bindResearchInteractions(root, { surface }) {
     renderNameCode();
     renderParticipantGrid();
     renderCoverage();
+    renderParticipantLanguageReadiness();
     renderPreflight();
     const experimentId = value("experiment-id", "<experiment-id>") || "<experiment-id>";
     const path = query("#review-output-path");
@@ -2160,50 +2343,61 @@ function bindResearchInteractions(root, { surface }) {
 
   function renderPools() {
     const container = query("#condition-pools");
-    const conditionSelect = query("#stimulus-condition");
     if (!(container instanceof HTMLElement)) return;
-    container.replaceChildren(...pools.map((pool, index) => {
+    const blocks = experimentDocument?.definition.blocks ?? [];
+    if (blocks.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-state";
+      empty.textContent = "Load experiment.json to inspect its declared blocks.";
+      container.replaceChildren(empty);
+      renderStimulusLibrary();
+      renderCoverage();
+      return;
+    }
+    container.replaceChildren(...blocks.map((block) => {
       const section = document.createElement("section");
       section.className = "condition-pool";
-      section.dataset.poolId = pool.id;
-      section.innerHTML = `
-        <div class="condition-pool-header">
-          <label class="field"><span>Column name</span><input data-pool-label maxlength="64" value="${escapeAttribute(pool.label)}"></label>
-          <label class="field"><span>Videos / participant</span><input data-pool-count type="number" min="1" max="1000" step="1" value="${pool.videosPerParticipant}"></label>
-          <button data-pool-remove type="button" aria-label="Remove ${escapeAttribute(pool.label)}" ${pools.length === 1 ? "disabled" : ""}>Remove</button>
-        </div>
-        <ul class="condition-video-list"></ul>`;
-      const list = section.querySelector(".condition-video-list");
-      const assigned = stimuli.filter(({ poolId }) => poolId === pool.id);
-      if (assigned.length === 0) {
-        const empty = document.createElement("li");
-        empty.className = "empty-state";
-        empty.textContent = "No videos assigned.";
-        list.append(empty);
-      } else {
-        for (const stimulus of assigned) {
-          const row = document.createElement("li");
-          const text = document.createElement("span");
-          text.textContent = stimulus.title;
-          const source = document.createElement("span");
-          source.className = "stimulus-source";
-          source.textContent = stimulus.source === "youtube" ? "Experimental YouTube" : stimulus.source === "repository" ? "Repository" : "Workspace";
-          row.append(text, source);
-          list.append(row);
-        }
+      section.dataset.blockId = block.blockId;
+      const heading = document.createElement("div");
+      heading.className = "condition-pool-header";
+      const identity = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = block.label;
+      const metadata = document.createElement("p");
+      const schedules = experimentDocument.definition.schedules;
+      const counts = schedules.map((schedule) => (
+        schedule.blocks.find(({ blockId }) => blockId === block.blockId)?.videos.length ?? 0
+      ));
+      metadata.textContent = `${block.blockId} · ${Math.min(...counts)}–${Math.max(...counts)} videos per participant`;
+      identity.append(title, metadata);
+      const authority = document.createElement("output");
+      authority.className = "field-output";
+      authority.textContent = "Read-only";
+      heading.append(identity, authority);
+      const list = document.createElement("ul");
+      list.className = "condition-video-list";
+      const usedIds = [...new Set(schedules.flatMap((schedule) => (
+        schedule.blocks.find(({ blockId }) => blockId === block.blockId)?.videos.map(({ stimulusId }) => stimulusId) ?? []
+      )))];
+      for (const stimulusId of usedIds) {
+        const row = document.createElement("li");
+        const reference = experimentDocument.definition.stimuli.find((item) => item.stimulusId === stimulusId);
+        const name = document.createElement("span");
+        name.textContent = reference?.title ?? stimulusId;
+        const use = document.createElement("span");
+        use.className = "stimulus-source";
+        const exposure = schedules.reduce((sum, schedule) => sum + (
+          schedule.blocks.find(({ blockId }) => blockId === block.blockId)?.videos.filter((video) => video.stimulusId === stimulusId).length ?? 0
+        ), 0);
+        use.textContent = `${exposure} scheduled exposure${exposure === 1 ? "" : "s"}`;
+        row.append(name, use);
+        list.append(row);
       }
-      if (index === 0) section.querySelector("[data-pool-label]")?.setAttribute("aria-describedby", "pool-mode-summary");
+      section.append(heading, list);
       return section;
     }));
-    if (conditionSelect instanceof HTMLSelectElement) {
-      const prior = conditionSelect.value;
-      conditionSelect.replaceChildren(...pools.map((pool) => new Option(pool.label, pool.id)));
-      conditionSelect.value = pools.some(({ id }) => id === prior) ? prior : pools[0].id;
-    }
     const summary = query("#pool-mode-summary");
-    if (summary) summary.textContent = pools.length === 1
-      ? "One condition column · one hat. Every selected video is drawn from this pool."
-      : `${pools.length} condition columns · stratified pools.`;
+    if (summary) summary.textContent = `${blocks.length} externally declared block${blocks.length === 1 ? "" : "s"} · order may differ by participant.`;
     renderStimulusLibrary();
     renderCoverage();
   }
@@ -2239,11 +2433,17 @@ function bindResearchInteractions(root, { surface }) {
             : "Hash, duration, decode verified"
           : stimulus.verification === "failed" ? `Failed: ${stimulus.error}` : "Verification pending";
       const poolCell = document.createElement("td");
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", `Condition column for ${stimulus.title}`);
-      select.dataset.stimulusPool = stimulus.id;
-      for (const pool of pools) select.add(new Option(pool.label, pool.id, false, pool.id === stimulus.poolId));
-      poolCell.append(select);
+      const reference = experimentDocument?.definition.stimuli.find(({ relativePath }) => (
+        relativePath === stimulus.location
+      ));
+      const useCount = reference ? experimentDocument.definition.schedules.reduce((sum, schedule) => (
+        sum + schedule.blocks.reduce((blockSum, block) => (
+          blockSum + block.videos.filter(({ stimulusId }) => stimulusId === reference.stimulusId).length
+        ), 0)
+      ), 0) : 0;
+      poolCell.textContent = reference
+        ? `${reference.stimulusId} · ${useCount} scheduled`
+        : "Not referenced";
       const actionCell = document.createElement("td");
       actionCell.className = "stimulus-actions";
       if (stimulus.source === "youtube") {
@@ -2288,7 +2488,7 @@ function bindResearchInteractions(root, { surface }) {
       source,
       location: String(location ?? file?.webkitRelativePath ?? file?.name ?? ""),
       file,
-      poolId: pools[0].id,
+      poolId: null,
       verification: source === "youtube" ? "unverified" : file ? "pending" : "pending",
       contractSource: null,
       youtubePreflight: null,
@@ -2312,7 +2512,7 @@ function bindResearchInteractions(root, { surface }) {
     stimuli.push(stimulus);
     renderPools();
     schedulePlanRefresh();
-    announce(`${normalizedTitle} added to ${pools[0].label}.`);
+    announce(`${normalizedTitle} added to the workspace catalogue.`);
     return stimulus;
   }
 
@@ -2438,15 +2638,42 @@ function bindResearchInteractions(root, { surface }) {
     queueMicrotask(async () => {
       if (generation !== planRefresh) return;
       try {
-        const settings = researchSettingsFromUi();
+        const settings = await researchSettingsFromUi();
         const sha256 = await canonicalSha256(settings);
-        const coverage = analyzeAssignmentCoverage(settings);
-        const resolved = coverage.valid ? await resolveAssignmentPlanV1(settings) : null;
-        const protocolSettings = await protocolSettingsFromUi(settings);
-        const protocolSha256 = await canonicalSha256(protocolSettings);
-        const resolvedProtocol = resolved
-          ? await resolveProtocolPlanV1(protocolSettings, resolved, selectedParticipant)
-          : null;
+        const resolved = await resolveExternalExperimentPlanV1(
+          experimentDocument,
+          settings.stimuli.items,
+          sha256,
+        );
+        const protocolSettings = settings;
+        const protocolSha256 = sha256;
+        const resolvedProtocol = await resolveProtocolPlanV2(
+          settings,
+          resolved,
+          selectedParticipant,
+        );
+        let packageSelection = null;
+        if (experimentPackageDocument) {
+          const route = selectedPackageRoute();
+          if (!route) throw new TypeError("Select one terminal language route from the package tree.");
+          packageSelection = await compileExperimentPackageSelectionV1(
+            experimentPackageDocument.package,
+            {
+              languageId: route.languageId,
+              languageSelectionPath: route.optionIds,
+              participantId: selectedParticipant,
+            },
+          );
+          if (canonicalJson(packageSelection.settings) !== canonicalJson(settings)
+            || packageSelection.settingsSha256 !== sha256
+            || packageSelection.experimentPlan.planHashSha256 !== resolved.planHashSha256
+            || packageSelection.protocolPlan.protocolPlanHashSha256
+              !== resolvedProtocol.protocolPlanHashSha256) {
+            throw new TypeError(
+              "The current controls no longer match the loaded package. Generate a new package before Start.",
+            );
+          }
+        }
         if (generation !== planRefresh) return;
         settingsSnapshot = settings;
         settingsHash = sha256;
@@ -2454,7 +2681,8 @@ function bindResearchInteractions(root, { surface }) {
         protocolSettingsHash = protocolSha256;
         plan = resolved;
         protocolPlan = resolvedProtocol;
-        planError = coverage.valid ? null : "The participant-by-slot matrix does not cover every selected video.";
+        compiledPackageSelection = packageSelection;
+        planError = null;
         if (resolved) {
           root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.planReady, {
             bubbles: true,
@@ -2494,7 +2722,7 @@ function bindResearchInteractions(root, { surface }) {
     const exportButton = query("#assignment-plan-export");
     if (!(table instanceof HTMLElement)) return;
     if (!plan) {
-      table.innerHTML = '<tr><td colspan="3" class="empty-state">The resolved schedule appears after the pool design passes capacity checks.</td></tr>';
+      table.innerHTML = '<tr><td colspan="3" class="empty-state">The exact schedule appears after experiment.json and every referenced workspace video pass validation.</td></tr>';
       if (hash) hash.textContent = planError ?? "Pending valid allocation";
       if (reviewHash) reviewHash.textContent = planError ?? "Pending valid allocation";
       if (status) status.textContent = "Showing 0 of 0 participants.";
@@ -2512,9 +2740,14 @@ function bindResearchInteractions(root, { surface }) {
       const participant = document.createElement("td");
       participant.textContent = assignment.participantId;
       const order = document.createElement("td");
-      order.textContent = assignment.conditionOrder.map((poolId) => pools.find(({ id }) => id === poolId)?.label ?? poolId).join(" → ");
+      order.textContent = assignment.blockOrder.map((blockId) => (
+        experimentDocument?.definition.blocks.find((block) => block.blockId === blockId)?.label ?? blockId
+      )).join(" → ");
       const videos = document.createElement("td");
-      videos.textContent = assignment.slots.map(({ stimulusId }) => stimuli.find((item) => item.id === stimulusId)?.title ?? stimulusId).join("; ");
+      videos.textContent = assignment.slots.map(({ stimulusId, isiAfterMs }) => {
+        const stimulus = plan.stimuli.find((item) => item.stimulusId === stimulusId);
+        return `${stimulus?.title ?? stimulusId} → ISI ${(isiAfterMs / 1_000).toFixed(3)} s`;
+      }).join("; ");
       row.append(participant, order, videos);
       return row;
     }));
@@ -2530,7 +2763,7 @@ function bindResearchInteractions(root, { surface }) {
     if (!plan || !settingsSnapshot) return;
     let csv;
     try {
-      csv = await assignmentPlanToCsv(plan);
+      csv = await externalExperimentPlanToCsv(plan);
     } catch (error) {
       announce(`Assignment plan export failed: ${error.message}`);
       return;
@@ -2540,7 +2773,7 @@ function bindResearchInteractions(root, { surface }) {
         bubbles: true,
         detail: Object.freeze({
           experimentId: settingsSnapshot.experiment.id,
-          filename: "assignment-plan.csv",
+          filename: "resolved-experiment-plan.csv",
           csv,
           planHashSha256: plan.planHashSha256,
         }),
@@ -2550,7 +2783,7 @@ function bindResearchInteractions(root, { surface }) {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "assignment-plan.csv";
+    anchor.download = "resolved-experiment-plan.csv";
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -2573,6 +2806,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     try {
       workspace = await BrowserResearchWorkspace.choose({ windowObject: window });
+      browserPackageRoot = null;
+      packageAssetClosureSha256 = null;
       capabilities.directoryPermission = true;
       const output = query("#workspace-root");
       if (output) {
@@ -2635,6 +2870,45 @@ function bindResearchInteractions(root, { surface }) {
     if (!workspace) return;
     const status = query("#workspace-status");
     try {
+      if (experimentPackageDocument) {
+        if (status) status.textContent = "Scanning fixed assets/stimuli/ package media recursively…";
+        const rootAttestation = await workspace.attestExperimentPackageRoot(
+          experimentPackageDocument.canonicalSourceText,
+        );
+        const catalogue = rootAttestation.assets;
+        browserPackageRoot = workspace;
+        packageAssetClosureSha256 = rootAttestation.assetManifestSha256;
+        const byPath = new Map(catalogue.map((entry) => [
+          entry.packagePath,
+          entry,
+        ]));
+        for (const asset of experimentPackageDocument.package.assets.stimuli) {
+          const logicalPath = asset.relativePath.slice("assets/".length);
+          const stimulus = stimuli.find(({ source, location }) => (
+            source === "workspace" && location === logicalPath
+          ));
+          const entry = byPath.get(asset.relativePath);
+          if (!stimulus) continue;
+          if (!entry) {
+            stimulus.file = null;
+            stimulus.packageAssetPath = null;
+            stimulus.verification = "failed";
+            stimulus.error = `Missing fixed package asset ${asset.relativePath}.`;
+            continue;
+          }
+          stimulus.file = await entry.fileHandle.getFile();
+          stimulus.packageAssetPath = asset.relativePath;
+          await verifyLocalFile(stimulus, { relativePath: logicalPath });
+        }
+        renderPools();
+        schedulePlanRefresh();
+        if (status) {
+          status.dataset.state = "ready";
+          status.textContent = `Package scan complete. ${catalogue.length} complete video file${catalogue.length === 1 ? "" : "s"} found under assets/stimuli/.`;
+        }
+        announce("Fixed package asset rescan complete.");
+        return;
+      }
       if (status) status.textContent = "Scanning stimuli/ recursively…";
       const catalogue = await workspace.rescanVideos();
       const seenLocations = new Set();
@@ -2660,9 +2934,12 @@ function bindResearchInteractions(root, { surface }) {
       }
       announce("Workspace rescan complete.");
     } catch (error) {
-      capabilities.directoryPermission = false;
-      const renew = query("#workspace-renew");
-      if (renew instanceof HTMLButtonElement) renew.hidden = false;
+      packageAssetClosureSha256 = null;
+      if (error?.code === "permission-required") {
+        capabilities.directoryPermission = false;
+        const renew = query("#workspace-renew");
+        if (renew instanceof HTMLButtonElement) renew.hidden = false;
+      }
       if (status) {
         status.dataset.state = "error";
         status.textContent = error instanceof Error ? error.message : String(error);
@@ -2703,6 +2980,505 @@ function bindResearchInteractions(root, { surface }) {
     query("#settings-file-input")?.click();
   }
 
+  function languageTreeFromUi() {
+    const source = value("package-language-tree", DEFAULT_LANGUAGE_SELECTION_SOURCE);
+    const parsed = parseStrictJson(source, { maximumBytes: 256 * 1024 });
+    return validateLanguageSelectionTreeV1(parsed);
+  }
+
+  function packageRoutes() {
+    return experimentPackageDocument
+      ? enumerateLanguageRoutesV1(experimentPackageDocument.package.languageSelection)
+      : [];
+  }
+
+  function participantLanguageContextKey() {
+    if (!experimentPackageDocument) return null;
+    const disposition = selectedAttemptDisposition();
+    const recoveryBinding = participantRecoveryBindings.get(selectedParticipant);
+    return canonicalJson({
+      packageId: experimentPackageDocument.package.packageId,
+      canonicalSourceByteSha256: experimentPackageDocument.canonicalSourceByteSha256,
+      packageDefinitionSha256: experimentPackageDocument.package.integrity.packageDefinitionSha256,
+      participantId: selectedParticipant,
+      participantState: selectedParticipantState(),
+      disposition,
+      attemptIdentity: disposition === "resume-compatible"
+        ? recoveryBinding?.attemptNumber ?? "missing-recovery-binding"
+        : "new-attempt",
+    });
+  }
+
+  function clearParticipantLanguageSelection({ close = true } = {}) {
+    languageSelectionGeneration += 1;
+    languageSelectionBusy = false;
+    selectedLanguageId = null;
+    selectedLanguageSelectionPath = null;
+    selectedLanguageContextKey = null;
+    languageTraversalPath = [];
+    compiledPackageSelection = null;
+    if (close) closeDialog("participant-language-dialog");
+  }
+
+  function synchronizeParticipantLanguageContext() {
+    const contextKey = participantLanguageContextKey();
+    if (!experimentPackageDocument) {
+      if (selectedLanguageId || selectedLanguageContextKey) clearParticipantLanguageSelection();
+      return null;
+    }
+    if (selectedLanguageContextKey !== null && selectedLanguageContextKey !== contextKey) {
+      clearParticipantLanguageSelection();
+    }
+    return contextKey;
+  }
+
+  function selectedPackageRoute() {
+    return packageRoutes().find((route) => (
+      route.languageId === selectedLanguageId
+      && canonicalJson(route.optionIds) === canonicalJson(selectedLanguageSelectionPath)
+    )) ?? null;
+  }
+
+  function renderPackageLanguageRoutes() {
+    const languageInput = query("#package-language-tree");
+    if (languageInput) {
+      languageInput.readOnly = Boolean(experimentPackageDocument);
+      languageInput.title = experimentPackageDocument
+        ? "Language choices are frozen by the loaded package. Load experiment.json to author a new package."
+        : "Strict LanguageSelectionTreeV1 JSON for a new package.";
+    }
+  }
+
+  function renderPackageReceipt() {
+    renderPackageLanguageRoutes();
+    const status = query("#package-file-status");
+    const reproduction = query("#package-reproduction-status");
+    if (status) {
+      if (experimentPackageDocument && packageReproductionReceipt) {
+        status.dataset.state = "ready";
+        status.textContent = `${experimentPackageDocument.package.packageId} · ${experimentPackageDocument.package.integrity.packageDefinitionSha256}`;
+      } else {
+        status.dataset.state = "warning";
+        status.textContent = "No portable package generated or loaded";
+      }
+    }
+    if (reproduction) {
+      if (packageReproductionReceipt) {
+        reproduction.dataset.state = "ready";
+        reproduction.textContent = `Local deterministic projection · ${packageReproductionReceipt.caseCount} participant × language cases · canonical re-export matched`;
+      } else {
+        reproduction.dataset.state = "warning";
+        reproduction.textContent = "Not verified";
+      }
+    }
+  }
+
+  const LANGUAGE_DEPENDENT_PREFLIGHT_IDS = new Set([
+    "language", "plan", "questionnaires", "storage",
+  ]);
+
+  function languageChoicePrerequisiteBlockers() {
+    return preflightItems().filter(({ id, result }) => (
+      result === "block" && !LANGUAGE_DEPENDENT_PREFLIGHT_IDS.has(id)
+    ));
+  }
+
+  function setParticipantLanguageError(message) {
+    const error = query("#participant-language-error");
+    if (error instanceof HTMLElement) {
+      error.hidden = !message;
+      error.textContent = message ? String(message) : "";
+    }
+  }
+
+  function renderParticipantLanguageDialog({ focus = false } = {}) {
+    if (!experimentPackageDocument) return;
+    const step = resolveLanguageSelectionTraversalStepV1(
+      experimentPackageDocument.package.languageSelection,
+      languageTraversalPath,
+    );
+    if (step.kind !== "choice") return;
+    const context = query("#participant-language-context");
+    const title = query("#participant-language-title");
+    const breadcrumb = query("#participant-language-breadcrumb");
+    const prompt = query("#participant-language-prompt");
+    const options = query("#participant-language-options");
+    const back = query("#participant-language-back");
+    const recovery = participantRecoveryBindings.get(selectedParticipant);
+    if (context) context.textContent = selectedAttemptDisposition() === "resume-compatible" && recovery
+      ? `${selectedParticipant} · recover attempt ${recovery.attemptNumber}`
+      : `${selectedParticipant} · new attempt`;
+    if (title) title.textContent = "Choose participant language";
+    if (breadcrumb) breadcrumb.textContent = step.labels.length > 0
+      ? step.labels.join(" › ")
+      : "Start of package language selection";
+    if (prompt) prompt.textContent = step.prompt;
+    if (options instanceof HTMLElement) {
+      options.replaceChildren(...step.options.map((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.languageOption = option.optionId;
+        button.textContent = option.label;
+        button.disabled = languageSelectionBusy;
+        if (index === 0 && focus) queueMicrotask(() => button.focus());
+        return button;
+      }));
+    }
+    if (back instanceof HTMLButtonElement) {
+      back.hidden = languageTraversalPath.length === 0;
+      back.disabled = languageSelectionBusy;
+    }
+  }
+
+  function openParticipantLanguageDialog() {
+    const contextKey = synchronizeParticipantLanguageContext();
+    if (!experimentPackageDocument || contextKey === null || languageSelectionBusy) return;
+    if (selectedAttemptDisposition() === "resume-compatible") {
+      announce("A compatible recovery restores its frozen package language and cannot be rerouted.");
+      return;
+    }
+    const blockers = languageChoicePrerequisiteBlockers();
+    if (blockers.length > 0) {
+      announce(`Language selection is waiting for ${blockers.map(({ label }) => label).join(", ")}.`);
+      return;
+    }
+    languageTraversalPath = [];
+    setParticipantLanguageError("");
+    renderParticipantLanguageDialog();
+    const dialog = query("#participant-language-dialog");
+    if (dialog instanceof HTMLDialogElement) {
+      dialog.showModal();
+      renderParticipantLanguageDialog({ focus: true });
+    }
+  }
+
+  async function chooseParticipantLanguageOption(optionId) {
+    if (!experimentPackageDocument || languageSelectionBusy) return;
+    try {
+      const nextPath = [...languageTraversalPath, optionId];
+      const step = resolveLanguageSelectionTraversalStepV1(
+        experimentPackageDocument.package.languageSelection,
+        nextPath,
+      );
+      languageTraversalPath = nextPath;
+      setParticipantLanguageError("");
+      if (step.kind === "choice") {
+        renderParticipantLanguageDialog({ focus: true });
+        return;
+      }
+      renderParticipantLanguageDialog();
+      const activated = await activatePackageRoute(step, {
+        contextKey: participantLanguageContextKey(),
+      });
+      if (!activated) return;
+      closeDialog("participant-language-dialog");
+      announce(`${step.languageLabel} (${step.languageTag}) is frozen for ${selectedParticipant}'s next attempt.`);
+    } catch (error) {
+      clearParticipantLanguageSelection({ close: false });
+      setParticipantLanguageError(error instanceof Error ? error.message : String(error));
+      renderParticipantLanguageDialog({ focus: true });
+      renderReview();
+    }
+  }
+
+  async function restoreRecoveryLanguage(binding, contextKey) {
+    try {
+      const { binding: normalized, terminal } = validateRecoveryLanguageBinding(binding);
+      const activated = await activatePackageRoute(terminal, {
+        contextKey,
+        expectedRecoveryBinding: normalized,
+      });
+      if (activated) {
+        announce(`${terminal.languageLabel} restored from recoverable attempt ${normalized.attemptNumber}.`);
+      }
+    } catch (error) {
+      clearParticipantLanguageSelection();
+      const status = query("#participant-language-status");
+      if (status) {
+        status.dataset.state = "error";
+        status.textContent = error instanceof Error ? error.message : String(error);
+      }
+      announce(`Recovery language restore failed closed: ${error instanceof Error ? error.message : String(error)}`);
+      renderPreflight();
+    }
+  }
+
+  function renderParticipantLanguageReadiness() {
+    const status = query("#participant-language-status");
+    const choose = query("#choose-participant-language");
+    if (!(choose instanceof HTMLButtonElement) || !status) return;
+    const contextKey = synchronizeParticipantLanguageContext();
+    const route = selectedPackageRoute();
+    const disposition = selectedAttemptDisposition();
+    choose.textContent = route ? "Change participant language" : "Choose participant language";
+    if (!experimentPackageDocument || contextKey === null) {
+      choose.disabled = true;
+      status.dataset.state = "warning";
+      status.textContent = `Load or generate ${EXPERIMENT_PACKAGE_FILE_NAME} first.`;
+      return;
+    }
+    if (route && compiledPackageSelection && selectedLanguageContextKey === contextKey) {
+      choose.disabled = disposition === "resume-compatible"
+        || languageChoicePrerequisiteBlockers().length > 0;
+      status.dataset.state = "ready";
+      status.textContent = `${route.languageLabel} (${route.languageTag}) · ${route.labels.join(" › ")}`;
+      return;
+    }
+    if (languageSelectionBusy) {
+      choose.disabled = true;
+      status.dataset.state = "warning";
+      status.textContent = disposition === "resume-compatible"
+        ? "Restoring the exact language route from the recoverable attempt…"
+        : "Validating the selected language route…";
+      return;
+    }
+    if (disposition === "resume-compatible") {
+      choose.disabled = true;
+      const binding = participantRecoveryBindings.get(selectedParticipant);
+      if (!binding) {
+        status.dataset.state = "error";
+        status.textContent = "This partial attempt has no package language recovery binding. Choose Start a new attempt.";
+        return;
+      }
+      try {
+        validateRecoveryLanguageBinding(binding);
+        languageSelectionBusy = true;
+        status.dataset.state = "warning";
+        status.textContent = `Restoring attempt ${binding.attemptNumber}'s frozen language route…`;
+        queueMicrotask(() => restoreRecoveryLanguage(binding, contextKey));
+      } catch (error) {
+        status.dataset.state = "error";
+        status.textContent = error instanceof Error ? error.message : String(error);
+      }
+      return;
+    }
+    const blockers = languageChoicePrerequisiteBlockers();
+    choose.disabled = blockers.length > 0;
+    status.dataset.state = blockers.length > 0 ? "warning" : "ready";
+    status.textContent = blockers.length > 0
+      ? `Complete ${blockers.map(({ label }) => label).join(", ")} before handing language choice to the participant.`
+      : "Ready for the participant to follow the package-owned language tree.";
+  }
+
+  function validateRecoveryLanguageBinding(binding) {
+    const normalized = validateExperimentPackageRecoveryBindingV1(binding);
+    if (!experimentPackageDocument
+      || normalized.participantId !== selectedParticipant
+      || normalized.disposition !== "resume-compatible"
+      || normalized.packageId !== experimentPackageDocument.package.packageId
+      || normalized.canonicalSourceByteSha256
+        !== experimentPackageDocument.canonicalSourceByteSha256
+      || normalized.packageDefinitionSha256
+        !== experimentPackageDocument.package.integrity.packageDefinitionSha256) {
+      throw new TypeError(
+        "The recoverable attempt is bound to a different participant or experiment package.",
+      );
+    }
+    const terminal = resolveLanguageSelectionTraversalStepV1(
+      experimentPackageDocument.package.languageSelection,
+      normalized.languageSelectionPath,
+    );
+    if (terminal.kind !== "terminal" || terminal.languageId !== normalized.languageId) {
+      throw new TypeError("The recoverable attempt has a stale or invalid language route.");
+    }
+    return Object.freeze({ binding: normalized, terminal });
+  }
+
+  async function activatePackageRoute(route, {
+    contextKey = participantLanguageContextKey(),
+    expectedRecoveryBinding = null,
+  } = {}) {
+    if (!experimentPackageDocument || !route) {
+      throw new TypeError("Choose a terminal language route from a validated package.");
+    }
+    const terminal = resolveLanguageSelectionTraversalStepV1(
+      experimentPackageDocument.package.languageSelection,
+      route.optionIds,
+    );
+    if (terminal.kind !== "terminal" || terminal.languageId !== route.languageId) {
+      throw new TypeError("The language route does not resolve to the declared terminal language.");
+    }
+    const generation = ++languageSelectionGeneration;
+    languageSelectionBusy = true;
+    const participantId = experimentPackageDocument.package.settings.externalProtocol
+      .definition.schedules.some((schedule) => schedule.participantId === selectedParticipant)
+      ? selectedParticipant
+      : experimentPackageDocument.package.settings.externalProtocol.definition.schedules[0].participantId;
+    const compiled = await compileExperimentPackageSelectionV1(experimentPackageDocument.package, {
+      languageId: terminal.languageId,
+      languageSelectionPath: terminal.optionIds,
+      participantId,
+    });
+    if (expectedRecoveryBinding
+      && compiled.assignmentSha256 !== expectedRecoveryBinding.assignmentSha256) {
+      throw new TypeError(
+        "The recoverable attempt assignment does not match this package, participant, and language route.",
+      );
+    }
+    const stillCurrent = () => generation === languageSelectionGeneration
+      && contextKey !== null
+      && contextKey === participantLanguageContextKey();
+    if (!stillCurrent()) return false;
+    selectedParticipant = participantId;
+    selectedLanguageId = terminal.languageId;
+    selectedLanguageSelectionPath = [...terminal.optionIds];
+    selectedLanguageContextKey = contextKey;
+    compiledPackageSelection = compiled;
+    experimentDocument = Object.freeze({
+      definition: structuredClone(compiled.experimentDocument.definition),
+      sourceText: compiled.experimentDocument.sourceText,
+      sourceByteSha256: compiled.experimentDocument.sourceByteSha256,
+      definitionSha256: compiled.experimentDocument.definitionSha256,
+    });
+    const applied = await applyResearchSettings(compiled.settings, {
+      preserveVerifiedStimuli: true,
+      guard: stillCurrent,
+    });
+    if (!applied || !stillCurrent()) return false;
+    compiledPackageSelection = compiled;
+    languageSelectionBusy = false;
+    renderPackageReceipt();
+    renderReview();
+    return true;
+  }
+
+  async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null } = {}) {
+    const parsed = receipt?.package && receipt?.canonicalSourceText
+      ? receipt
+      : await parseExperimentPackageV1(new TextEncoder().encode(receipt?.sourceText ?? receipt));
+    packageReproductionReceipt = await verifySameRealmPackageReproductionV1(parsed.package);
+    experimentPackageDocument = parsed;
+    browserPackageRoot = surface === "browser" ? rootWorkspace : null;
+    packageAssetClosureSha256 = null;
+    clearParticipantLanguageSelection();
+    setInputValue("package-language-tree", JSON.stringify(parsed.package.languageSelection, null, 2));
+    await applyResearchSettings(parsed.package.settings, { preserveVerifiedStimuli: true });
+    renderPackageReceipt();
+    root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.setupSettingsReady, {
+      bubbles: true,
+      detail: Object.freeze({ settings: parsed.package.settings }),
+    }));
+    announce(`Loaded ${parsed.package.packageId}. Its complete ${packageReproductionReceipt.caseCount}-case protocol matrix and canonical re-export passed the local deterministic check. No language was selected; the participant must traverse the package tree before Start.`);
+    if (surface === "browser" && workspace) await requestWorkspaceRescan();
+  }
+
+  function requestExperimentPackageLoad() {
+    if (surface === "tauri") {
+      const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentPackageRequest, {
+        bubbles: true,
+        cancelable: true,
+      });
+      root.dispatchEvent(event);
+      if (!event.defaultPrevented) announce("The native experiment package adapter is not connected.");
+      return;
+    }
+    if (!workspace) {
+      announce(`Select the package root before loading ${EXPERIMENT_PACKAGE_FILE_NAME}.`);
+      return;
+    }
+    void workspace.loadExperimentPackage()
+      .then((receipt) => applyExperimentPackageReceipt(receipt, { rootWorkspace: workspace }))
+      .catch((error) => {
+        announce(`Experiment package load failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
+  }
+
+  async function generateExperimentPackage() {
+    try {
+      const settings = await researchSettingsFromUi();
+      const languageSelection = experimentPackageDocument?.package.languageSelection
+        ?? languageTreeFromUi();
+      const packageValue = await createExperimentPackageV1({
+        packageId: `${settings.experiment.id.slice(0, 119)}-package`,
+        languageSelection,
+        settings,
+      });
+      const sourceText = await serializeExperimentPackageV1(packageValue);
+      const parsed = await parseExperimentPackageV1(new TextEncoder().encode(sourceText));
+      if (surface === "tauri") {
+        await applyExperimentPackageReceipt(parsed);
+        const event = new CustomEvent(RESEARCH_UI_EVENTS.saveExperimentPackageRequest, {
+          bubbles: true,
+          cancelable: true,
+          detail: Object.freeze({
+            sourceText,
+            packageDefinitionSha256: packageValue.integrity.packageDefinitionSha256,
+          }),
+        });
+        root.dispatchEvent(event);
+        if (!event.defaultPrevented) throw new Error("The native package save adapter is not connected.");
+      } else {
+        if (!workspace) throw new Error("Select the package root before generating the experiment package.");
+        const persisted = await workspace.saveExperimentPackage(sourceText);
+        await applyExperimentPackageReceipt(persisted, { rootWorkspace: workspace });
+      }
+      announce(`${EXPERIMENT_PACKAGE_FILE_NAME} generated with a verified deterministic protocol matrix.`);
+    } catch (error) {
+      packageReproductionReceipt = null;
+      renderPackageReceipt();
+      announce(`Package generation failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function applyExperimentDocument(receipt) {
+    if (!receipt?.definition || typeof receipt.sourceText !== "string"
+      || !receipt.sourceByteSha256 || !receipt.definitionSha256) {
+      throw new TypeError("Experiment import returned no strict ExperimentDefinitionV1 receipt.");
+    }
+    const definition = validateExperimentDefinitionV1(receipt.definition);
+    experimentPackageDocument = null;
+    browserPackageRoot = null;
+    packageAssetClosureSha256 = null;
+    packageReproductionReceipt = null;
+    clearParticipantLanguageSelection();
+    const sourceByteSha256 = String(receipt.sourceByteSha256);
+    const definitionSha256 = String(receipt.definitionSha256);
+    const replacesDefinition = experimentDocument?.definitionSha256 !== definitionSha256;
+    if (!/^[a-f0-9]{64}$/u.test(sourceByteSha256)
+      || !/^[a-f0-9]{64}$/u.test(definitionSha256)
+      || await sha256Hex(new TextEncoder().encode(receipt.sourceText)) !== sourceByteSha256
+      || await canonicalSha256(definition) !== definitionSha256) {
+      throw new TypeError("Experiment import hashes do not bind the validated definition.");
+    }
+    experimentDocument = Object.freeze({
+      definition: structuredClone(definition),
+      sourceText: receipt.sourceText,
+      sourceByteSha256,
+      definitionSha256,
+    });
+    setInputValue("experiment-id", experimentDocument.definition.experimentId);
+    setInputValue("experiment-title", experimentDocument.definition.title);
+    setInputValue("participant-count", experimentDocument.definition.schedules.length);
+    selectedParticipant = experimentDocument.definition.schedules[0].participantId;
+    participantWindowStart = 0;
+    participantTileWindowStart = 0;
+    if (replacesDefinition) questionnaireModules.splice(0, questionnaireModules.length);
+    const status = query("#experiment-file-status");
+    if (status) {
+      status.dataset.state = "ready";
+      status.textContent = `${experimentDocument.definition.experimentId} · ${experimentDocument.definition.schedules.length} participants · ${experimentDocument.definition.blocks.length} blocks · definition ${experimentDocument.definitionSha256}`;
+    }
+    renderPools();
+    renderQuestionnaires();
+    renderParticipantGrid();
+    renderPackageReceipt();
+    schedulePlanRefresh();
+    announce(`Loaded ${experimentDocument.definition.experimentId} experiment.json. Exact external order and ISI values are now read-only.`);
+  }
+
+  function requestExperimentLoad() {
+    if (surface === "tauri") {
+      const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentRequest, {
+        bubbles: true,
+        cancelable: true,
+      });
+      root.dispatchEvent(event);
+      if (!event.defaultPrevented) announce("The native experiment.json adapter is not connected.");
+      return;
+    }
+    query("#experiment-file-input")?.click();
+  }
+
   function showImportReport(report) {
     const body = query("#import-report-body");
     if (!(body instanceof HTMLElement)) return;
@@ -2724,31 +3500,35 @@ function bindResearchInteractions(root, { surface }) {
     let protocolSettings = null;
     let importReport = report;
     if (payload?.schema === DEFAULT_SETTINGS.schema) {
-      if (payload.version === 2) {
-        protocolSettings = await validateResearchSettingsV2(payload);
-        settings = await projectResearchSettingsV2ToAssignmentSettingsV1(protocolSettings);
-      } else {
-        settings = validateResearchSettingsV1(payload);
+      if (payload.version !== 3) {
+        throw new TypeError("This active Research instrument loads ResearchSettingsV3. Historical V1/V2 settings remain readable by their archived contract tools but cannot restore external order.");
       }
+      protocolSettings = await validateResearchSettingsV3(payload);
+      settings = protocolSettings;
     } else {
+      if (!experimentDocument) {
+        throw new TypeError("Load experiment.json before importing portable settings so external video order and ISIs remain authoritative.");
+      }
       const imported = importPortableSettingsV1(payload);
-      settings = imported.settings;
-      importReport = imported.report;
+      settings = await applyLegacySettingsV1ToResearchSettingsV3(
+        imported.settings,
+        await researchSettingsFromUi(),
+      );
+      protocolSettings = settings;
+      importReport = [
+        ...imported.report,
+        {
+          status: "mapped",
+          sourcePath: null,
+          targetPath: "externalProtocol",
+          message: "Kept experiment identity, video order, block order, and ISIs from the loaded experiment.json.",
+        },
+      ];
     }
-    questionnaireDefinitions.splice(
-      0,
-      questionnaireDefinitions.length,
-      ...(protocolSettings?.questionnaires.definitions ?? []).map((definition) => structuredClone(definition)),
-    );
-    questionnaireModules.splice(
-      0,
-      questionnaireModules.length,
-      ...(protocolSettings?.questionnaires.modules ?? []).map((module) => structuredClone(module)),
-    );
-    applyResearchSettings(settings);
+    await applyResearchSettings(settings);
     renderQuestionnaires();
     if (importReport?.length) showImportReport(importReport);
-    announce(`Loaded ${settings.experiment.id}.settings.json. Local and repository videos require fresh verification.`);
+    announce(`Loaded ${settings.experiment.id}.settings.json. Workspace videos require fresh verification.`);
   }
 
   function requestVideoImport({ directory = false } = {}) {
@@ -3151,13 +3931,16 @@ function bindResearchInteractions(root, { surface }) {
 
   const runInputHandlers = {
     keydown(event) {
-      if (surface !== "tauri" && mode === "run") inputController.handleKeyDown(event);
+      if (surface !== "tauri" && mode === "run" && ratingInputEnabled && !activeQuestionnaire) {
+        inputController.handleKeyDown(event);
+      }
     },
     keyup(event) {
       if (surface !== "tauri" && mode === "run") inputController.handleKeyUp(event);
     },
     mousedown(event) {
-      if (surface !== "tauri" && mode === "run" && event.target instanceof Element && event.target.closest(".run-stage")) {
+      if (surface !== "tauri" && mode === "run" && ratingInputEnabled && !activeQuestionnaire
+        && event.target instanceof Element && event.target.closest(".run-stage")) {
         inputController.handleMouseDown(event);
       }
     },
@@ -3165,7 +3948,8 @@ function bindResearchInteractions(root, { surface }) {
       if (surface !== "tauri" && mode === "run") inputController.handleMouseUp(event);
     },
     wheel(event) {
-      if (surface !== "tauri" && mode === "run" && event.target instanceof Element && event.target.closest(".run-stage")) {
+      if (surface !== "tauri" && mode === "run" && ratingInputEnabled && !activeQuestionnaire
+        && event.target instanceof Element && event.target.closest(".run-stage")) {
         inputController.handleWheel(event);
       }
     },
@@ -3175,7 +3959,8 @@ function bindResearchInteractions(root, { surface }) {
   }
   const runFeedbackStage = query(".run-feedback-stage");
   const handleRunPointer = (event) => {
-    if (surface === "tauri" || mode !== "run" || !(runFeedbackStage instanceof HTMLElement)) return;
+    if (surface === "tauri" || mode !== "run" || !ratingInputEnabled || activeQuestionnaire
+      || !(runFeedbackStage instanceof HTMLElement)) return;
     inputController.handlePointer(event, runFeedbackStage.getBoundingClientRect());
   };
   runFeedbackStage?.addEventListener("pointerdown", handleRunPointer);
@@ -3249,7 +4034,13 @@ function bindResearchInteractions(root, { surface }) {
     const preflight = Object.freeze({
       inputTestPassed,
       nativeInputReceiptId: surface === "tauri" ? nativeInputReceiptId : null,
-      verifiedStimulusIds: Object.freeze(stimuli.filter(({ verification }) => verification === "verified").map(({ id }) => id)),
+      verifiedStimulusIds: Object.freeze((experimentDocument?.definition.stimuli ?? [])
+        .filter((reference) => stimuli.some((stimulus) => (
+          stimulus.source === "workspace"
+          && stimulus.location === reference.relativePath
+          && stimulus.verification === "verified"
+        )))
+        .map(({ stimulusId }) => stimulusId)),
       directoryPermission: capabilities.directoryPermission,
       indexedDbReady: capabilities.indexedDbReady,
       timingWorkerReady: capabilities.timingWorkerReady,
@@ -3259,6 +4050,14 @@ function bindResearchInteractions(root, { surface }) {
         && storageReadiness?.sufficient === true
         && storageReadiness?.writeReady !== false,
       protocolPlanReady: Boolean(researchSettings && protocolSettingsHash && resolvedProtocolPlan),
+      packageReady: Boolean(
+        experimentPackageDocument
+        && packageReproductionReceipt?.byteIdenticalReexport === true
+        && packageReproductionReceipt.sameRealmDeterminismVerified === true
+        && packageAssetsVerified()
+        && compiledPackageSelection
+        && selectedLanguageContextKey === participantLanguageContextKey(),
+      ),
     });
     const detail = {
       participantId: selectedParticipant,
@@ -3271,6 +4070,18 @@ function bindResearchInteractions(root, { surface }) {
       researchSettings,
       researchSettingsSha256: protocolSettingsHash,
       resolvedProtocolPlan,
+      experimentSourceText: experimentDocument?.sourceText ?? null,
+      experimentPackageSourceText: experimentPackageDocument?.canonicalSourceText ?? null,
+      experimentPackageSourceByteSha256: experimentPackageDocument?.canonicalSourceByteSha256 ?? null,
+      experimentPackageDefinitionSha256: experimentPackageDocument?.package.integrity.packageDefinitionSha256 ?? null,
+      experimentPackageId: experimentPackageDocument?.package.packageId ?? null,
+      selectedLanguageId,
+      languageSelectionPath: selectedLanguageSelectionPath
+        ? Object.freeze([...selectedLanguageSelectionPath])
+        : null,
+      packageAssignmentSha256: compiledPackageSelection?.assignmentSha256 ?? null,
+      packageAssetBindings: Object.freeze((compiledPackageSelection?.assetBindings ?? [])
+        .map((binding) => Object.freeze({ ...binding }))),
       preflight,
       outputFormats: { csv: checked("output-csv"), tsv: checked("output-tsv") },
       preview: Object.freeze(previewState({ locked: true })),
@@ -3292,6 +4103,8 @@ function bindResearchInteractions(root, { surface }) {
     });
     root.dispatchEvent(event);
     if (!event.defaultPrevented) {
+      clearParticipantLanguageSelection();
+      schedulePlanRefresh();
       announce("Start is waiting for the authoritative workspace and run adapter.");
       const status = query("#start-status");
       if (status) status.textContent = "Authoritative run adapter is not connected; no session was started.";
@@ -3310,6 +4123,21 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "workspace-choose") selectWorkspace();
     if (target.id === "video-import") requestVideoImport();
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
+    if (target.id === "package-load") requestExperimentPackageLoad();
+    if (target.id === "package-generate") void generateExperimentPackage();
+    if (target.id === "choose-participant-language") openParticipantLanguageDialog();
+    if (target.dataset.languageOption) void chooseParticipantLanguageOption(target.dataset.languageOption);
+    if (target.id === "participant-language-back" && !languageSelectionBusy) {
+      languageTraversalPath = languageTraversalPath.slice(0, -1);
+      setParticipantLanguageError("");
+      renderParticipantLanguageDialog({ focus: true });
+    }
+    if (target.id === "participant-language-cancel") {
+      clearParticipantLanguageSelection();
+      schedulePlanRefresh();
+      announce("Participant language selection cancelled; Start remains blocked.");
+    }
+    if (target.id === "experiment-load") requestExperimentLoad();
     if (target.id === "settings-load") requestSettingsLoad();
     if (target.id === "settings-save") requestSettingsSave();
     if (target.id === "workspace-renew") renewWorkspacePermission();
@@ -3318,18 +4146,22 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "stimulus-add-repository") openStimulusDialog("repository");
     if (target.id === "stimulus-add-youtube") openStimulusDialog("youtube");
     if (target.id === "questionnaire-import") query("#questionnaire-file-input")?.click();
-    if (target.id === "questionnaire-add-maia") {
-      void fetch(MAIA_2_DE_URL)
+    if (target.dataset.bundledQuestionnaire) {
+      const bundled = BUNDLED_QUESTIONNAIRES[target.dataset.bundledQuestionnaire];
+      if (!bundled) return;
+      void fetch(bundled.url)
         .then((response) => {
-          if (!response.ok) throw new Error(`Bundled MAIA-2 could not be read (${response.status}).`);
+          if (!response.ok) throw new Error(`Bundled questionnaire could not be read (${response.status}).`);
           return response.arrayBuffer();
         })
         .then((bytes) => importQuestionnaireBytes(bytes, {
           sourceKind: "bundled",
-          logicalName: "maia-2-de.csv",
-          sourceDocumentSha256: SPECIFICATION_SOURCE_SHA256,
+          logicalName: bundled.logicalName,
+          sourceDocumentSha256: target.dataset.bundledQuestionnaire === "maia-2-de"
+            ? SPECIFICATION_SOURCE_SHA256
+            : null,
         }))
-        .catch((error) => announce(`MAIA-2 import failed: ${error instanceof Error ? error.message : String(error)}`));
+        .catch((error) => announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`));
     }
     if (target.dataset.questionnaireAction) {
       const definition = questionnaireDefinition(target.dataset.questionnaireId);
@@ -3453,22 +4285,28 @@ function bindResearchInteractions(root, { surface }) {
       renderPlanPreview();
     }
     if (target.id === "participant-window-previous") {
+      clearParticipantLanguageSelection();
       participantTileWindowStart = Math.max(0, participantTileWindowStart - 60);
       selectedParticipant = participantIds()[participantTileWindowStart];
       renderReview();
+      schedulePlanRefresh();
       queueMicrotask(() => query(`[data-participant-id="${selectedParticipant}"]`)?.focus());
     }
     if (target.id === "participant-window-next") {
+      clearParticipantLanguageSelection();
       participantTileWindowStart += 60;
       const ids = participantIds();
       selectedParticipant = ids[Math.min(participantTileWindowStart, ids.length - 1)];
       renderReview();
+      schedulePlanRefresh();
       queueMicrotask(() => query(`[data-participant-id="${selectedParticipant}"]`)?.focus());
     }
     if (target.id === "assignment-plan-export") void exportAssignmentPlan();
     if (target.dataset.participantId) {
+      if (target.dataset.participantId !== selectedParticipant) clearParticipantLanguageSelection();
       selectedParticipant = target.dataset.participantId;
       renderReview();
+      schedulePlanRefresh();
       queueMicrotask(() => query(`[data-participant-id="${selectedParticipant}"]`)?.focus());
     }
     if (target.id === "start-experiment") requestStart();
@@ -3527,7 +4365,7 @@ function bindResearchInteractions(root, { surface }) {
     // before the change handler can commit its new value. The change handler
     // updates the module and schedules the single required refresh.
     if (target instanceof HTMLSelectElement
-      && (target.dataset.questionnairePlacement || target.dataset.questionnairePool)) return;
+      && (target.dataset.questionnairePlacement || target.dataset.questionnaireBlock)) return;
     if (target instanceof HTMLInputElement && target.type === "color") {
       setInputValue(`${target.id}-hex`, target.value.toLowerCase());
     } else if (target instanceof HTMLInputElement && target.id.endsWith("-hex")) {
@@ -3563,21 +4401,49 @@ function bindResearchInteractions(root, { surface }) {
       resetBindingsToPreset();
       inputController.resetNeutral("preset-change");
     }
+    if (target instanceof HTMLInputElement && target.name === "attemptDisposition") {
+      clearParticipantLanguageSelection();
+    }
     if (target instanceof HTMLSelectElement && target.id === "stimulus-source") updateStimulusDialogSource();
     if (target instanceof HTMLSelectElement && target.dataset.questionnairePlacement) {
       const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnairePlacement);
       if (current) {
-        const usesPool = target.value === "beforeBlock" || target.value === "afterBlock";
-        updateQuestionnaireModule(current.moduleId, {
+        const usesBlock = target.value === "beforeBlock" || target.value === "afterBlock";
+        const usesStimulus = target.value === "afterStimulus";
+        updateQuestionnaireModule(current.moduleId, usesStimulus ? {
+          kind: "afterStimulus",
+          blockId: null,
+          stimulusId: current.placement.stimulusId
+            ?? experimentDocument?.definition.stimuli[0]?.stimulusId,
+          relativeToIsi: current.placement.relativeToIsi ?? "before",
+        } : {
           kind: target.value,
-          poolId: usesPool ? (current.placement.poolId ?? pools[0].id) : null,
+          blockId: usesBlock ? (current.placement.blockId ?? protocolBlockIds()[0]) : null,
         });
       }
     }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnairePool) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnairePool);
+    if (target instanceof HTMLSelectElement && target.dataset.questionnaireBlock) {
+      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireBlock);
       if (current && (current.placement.kind === "beforeBlock" || current.placement.kind === "afterBlock")) {
-        updateQuestionnaireModule(current.moduleId, { kind: current.placement.kind, poolId: target.value });
+        updateQuestionnaireModule(current.moduleId, { kind: current.placement.kind, blockId: target.value });
+      }
+    }
+    if (target instanceof HTMLSelectElement && target.dataset.questionnaireStimulus) {
+      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireStimulus);
+      if (current?.placement.kind === "afterStimulus") {
+        updateQuestionnaireModule(current.moduleId, {
+          ...current.placement,
+          stimulusId: target.value,
+        });
+      }
+    }
+    if (target instanceof HTMLSelectElement && target.dataset.questionnaireIsi) {
+      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireIsi);
+      if (current?.placement.kind === "afterStimulus") {
+        updateQuestionnaireModule(current.moduleId, {
+          ...current.placement,
+          relativeToIsi: target.value,
+        });
       }
     }
     if (target instanceof HTMLSelectElement && target.dataset.stimulusPool) {
@@ -3629,6 +4495,7 @@ function bindResearchInteractions(root, { surface }) {
       selectedParticipant = ids[nextIndex];
       participantTileWindowStart = Math.floor(nextIndex / 60) * 60;
       renderReview();
+      schedulePlanRefresh();
       queueMicrotask(() => query(`[data-participant-id="${selectedParticipant}"]`)?.focus());
       event.preventDefault();
     }
@@ -3709,6 +4576,13 @@ function bindResearchInteractions(root, { surface }) {
     }
   });
 
+  query("#participant-language-dialog")?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    clearParticipantLanguageSelection();
+    schedulePlanRefresh();
+    announce("Participant language selection cancelled; Start remains blocked.");
+  });
+
   query("#settings-file-input")?.addEventListener("change", async (event) => {
     const [file] = [...(event.target.files ?? [])];
     event.target.value = "";
@@ -3725,11 +4599,38 @@ function bindResearchInteractions(root, { surface }) {
     }
   });
 
+  query("#experiment-file-input")?.addEventListener("change", async (event) => {
+    const [file] = [...(event.target.files ?? [])];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      await applyExperimentDocument(await parseExperimentDefinitionV1(await file.arrayBuffer()));
+    } catch (error) {
+      announce(`Experiment import failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
   root.addEventListener(RESEARCH_UI_EVENTS.settingsLoaded, async (event) => {
     try {
       await loadSettingsPayload(event.detail?.settings ?? event.detail, { report: event.detail?.report ?? null });
     } catch (error) {
       announce(error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  root.addEventListener(RESEARCH_UI_EVENTS.experimentLoaded, async (event) => {
+    try {
+      await applyExperimentDocument(event.detail?.receipt ?? event.detail);
+    } catch (error) {
+      announce(`Experiment import failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+  root.addEventListener(RESEARCH_UI_EVENTS.experimentPackageLoaded, async (event) => {
+    try {
+      await applyExperimentPackageReceipt(event.detail?.receipt ?? event.detail);
+    } catch (error) {
+      announce(`Experiment package import failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
@@ -3774,7 +4675,7 @@ function bindResearchInteractions(root, { surface }) {
       for (const entry of entries) {
         const item = validateStimulusV1(entry.stimulus ?? entry);
         const existing = stimuli.find(({ id }) => id === item.stimulusId);
-        const poolId = entry.poolId ?? existing?.poolId ?? pools[0].id;
+        const poolId = null;
         const next = {
           id: item.stimulusId,
           title: item.title,
@@ -3807,12 +4708,15 @@ function bindResearchInteractions(root, { surface }) {
     if (participant) participant.textContent = detail.participantId ?? selectedParticipant;
     if (session) session.textContent = detail.sessionStem ?? "Attempt active";
     runPreview.update(previewState({ locked: true }));
+    ratingInputEnabled = false;
+    clearParticipantLanguageSelection();
     setMode("run");
-    query("#run-pause")?.focus();
+    query("#run-stop-early")?.focus();
   });
 
   root.addEventListener(RESEARCH_UI_EVENTS.questionnaireStatus, (event) => {
     try {
+      if (event.detail?.active !== false) ratingInputEnabled = false;
       showRunQuestionnaire(event.detail ?? {});
     } catch (error) {
       announce(`Questionnaire stage failed closed: ${error instanceof Error ? error.message : String(error)}`);
@@ -3825,6 +4729,7 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener(RESEARCH_UI_EVENTS.runStatus, (event) => {
     const detail = event.detail ?? {};
+    if (typeof detail.ratingInputActive === "boolean") ratingInputEnabled = detail.ratingInputActive;
     for (const [key, selector] of Object.entries({ stimulus: "#run-stimulus-status", timing: "#run-timing-status", write: "#run-write-status", lsl: "#run-lsl-status" })) {
       const output = query(selector);
       if (output && detail[key] !== undefined) output.textContent = String(detail[key]);
@@ -3834,9 +4739,19 @@ function bindResearchInteractions(root, { surface }) {
       runPreview.update(previewState({ locked: true }));
     }
     const pause = query("#run-pause");
-    if (pause instanceof HTMLButtonElement && typeof detail.paused === "boolean") {
-      pause.textContent = detail.paused ? "Resume" : "Pause";
-      pause.setAttribute("aria-pressed", String(detail.paused));
+    if (pause instanceof HTMLButtonElement) {
+      if (typeof detail.pauseAvailable === "boolean") {
+        pause.hidden = !detail.pauseAvailable;
+        pause.disabled = !detail.pauseAvailable;
+      }
+      if (typeof detail.paused === "boolean") {
+        pause.textContent = detail.paused ? "Resume" : "Pause";
+        pause.setAttribute("aria-pressed", String(detail.paused));
+      }
+      if (pause.hidden) {
+        pause.textContent = "Pause";
+        pause.setAttribute("aria-pressed", "false");
+      }
     }
     const transition = query("#run-transition");
     if (transition instanceof HTMLElement && typeof detail.transitionActive === "boolean") {
@@ -3866,6 +4781,8 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener(RESEARCH_UI_EVENTS.runComplete, (event) => {
+    ratingInputEnabled = false;
+    clearParticipantLanguageSelection();
     activeQuestionnaire = null;
     renderRunQuestionnaire();
     const receipt = query("#completion-receipt");
@@ -3880,11 +4797,18 @@ function bindResearchInteractions(root, { surface }) {
     query("#completion-dialog")?.showModal();
   });
 
+  root.addEventListener(RESEARCH_UI_EVENTS.startRejected, (event) => {
+    clearParticipantLanguageSelection();
+    schedulePlanRefresh();
+    announce(`Start was rejected before activation: ${event.detail?.message ?? "authoritative adapter rejection"}. Choose the participant language again after resolving the blocker.`);
+  });
+
   root.addEventListener(RESEARCH_UI_EVENTS.participantStates, (event) => {
     participantStates.clear();
     participantRecoverability.clear();
     participantFinalizationPending.clear();
     participantFinalizationBindings.clear();
+    participantRecoveryBindings.clear();
     for (const [id, state] of Object.entries(event.detail ?? {})) {
       if (["available", "active", "partial", "complete"].includes(state)) participantStates.set(id, state);
     }
@@ -3902,6 +4826,18 @@ function bindResearchInteractions(root, { surface }) {
         && ["completed", "partial"].includes(binding.completionStatus)
         && Number.isSafeInteger(binding.attemptNumber) && binding.attemptNumber > 0) {
         participantFinalizationBindings.set(id, Object.freeze({ ...binding }));
+      }
+    }
+    for (const [id, binding] of Object.entries(event.detail?.__recoveryBinding ?? {})) {
+      try {
+        const normalized = validateExperimentPackageRecoveryBindingV1(binding);
+        if (normalized.participantId !== id) {
+          throw new TypeError("Recovery binding participant identity does not match its projection key.");
+        }
+        participantRecoveryBindings.set(id, normalized);
+      } catch (error) {
+        participantRecoverability.set(id, false);
+        announce(`A malformed package recovery binding for ${id} was rejected: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
     renderReview();
@@ -3933,6 +4869,7 @@ function bindResearchInteractions(root, { surface }) {
   renderPools();
   renderBindings();
   renderParticipantGrid();
+  renderPackageReceipt();
   refreshProjection();
   schedulePlanRefresh();
 
@@ -3942,6 +4879,8 @@ function bindResearchInteractions(root, { surface }) {
     get workspace() { return workspace; },
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
+    get experimentPackage() { return experimentPackageDocument?.package ?? null; },
+    get packageReproductionReceipt() { return packageReproductionReceipt; },
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
@@ -3954,13 +4893,13 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection,
     getValidatedSetup() {
       return Object.freeze({
-        settings: researchSettingsFromUi(),
+        settings: settingsSnapshot,
         settingsSha256: settingsHash,
         resolvedPlan: plan,
       });
     },
     applySettings(settings, options) {
-      loadSettingsPayload(settings, options);
+      return loadSettingsPayload(settings, options);
     },
     setCapabilities(next) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.capabilityStatus, { detail: next }));

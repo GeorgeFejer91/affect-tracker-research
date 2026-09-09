@@ -12,6 +12,7 @@ import {
   youtubePlayerError,
   youtubePlayerParameters,
 } from "../site/src/research/youtube-player.js";
+import { renderResearchUiMarkup } from "../site/src/research/app.js";
 import { assertFreshYouTubePreflights } from "../site/src/research/runtime-bridge.js";
 
 const VIDEO_ID = "dQw4w9WgXcQ";
@@ -219,18 +220,16 @@ test("embed-disabled and Referer/API identity failures remain explicit", async (
   assert.match(error.message, /error 153/u);
 });
 
-test("UI and runtime wiring keep the player visible, adjacent, browser-only, and state-authoritative", async () => {
+test("the external-plan UI is workspace-only while the legacy player remains state-authoritative", async () => {
   const [app, runtime, css] = await Promise.all([
     readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8"),
     readFile(new URL("../site/src/research/runtime-bridge.js", import.meta.url), "utf8"),
     readFile(new URL("../site/research.css", import.meta.url), "utf8"),
   ]);
-  assert.match(app, /id="youtube-preflight-player"/u);
-  assert.match(app, /id="run-youtube-player"/u);
-  assert.ok(app.indexOf('class="stimulus-stage"') < app.indexOf('class="run-feedback-stage"'));
-  assert.match(app, /surface === "browser"/u);
-  assert.match(app, /Experimental YouTube is browser-only and remains blocked in Windows Tauri/u);
-  assert.match(app, /getYouTubePreflight\(stimulusId\)/u);
+  const markup = renderResearchUiMarkup("browser");
+  assert.doesNotMatch(markup, /youtube-preflight-player|stimulus-add-youtube|Experimental YouTube URL/u);
+  assert.match(markup, /id="run-youtube-player"/u);
+  assert.ok(markup.indexOf('class="stimulus-stage"') < markup.indexOf('class="run-feedback-stage"'));
   assert.match(runtime, /return this\.youtubeAdapter\.playFromGesture\(\)/u);
   const begin = runtime.slice(runtime.indexOf("async #beginPreparedStimulus"), runtime.indexOf("async #resolvePlayable"));
   assert.ok(begin.indexOf("await (playbackPromise ?? this.#startPreparedPlayback())") < begin.indexOf("await this.controller.startStimulus(prepared.index)"));

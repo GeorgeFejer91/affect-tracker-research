@@ -45,7 +45,7 @@ The active product has exactly two user-visible modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
-The active-v1 qualification matrix is:
+The active-v1 qualification target matrix is:
 
 - Tauri v2 on Windows, with Rust-owned workspace, input, media, scheduler,
   records, recovery, and outbound LSL; and
@@ -62,19 +62,36 @@ sensor acquisition, and face/touch experiments remain outside active v1.
 
 ## Product invariants
 
-- Continuous rating is always enabled. Sampling defaults to 130 Hz and accepts
-  only integer values from 1 through 240 Hz.
-- One attempt freezes validated settings, deterministic `balanced-v1` plan,
-  participant derivation, binding, exact stimulus identity, and overlay
-  geometry.
+- Continuous rating is always enabled. Package authoring initially suggests
+  130 Hz, but every runnable package explicitly stores an integer from 1
+  through 240 Hz and runtime resolution has no omitted default.
+- One strict canonical `experiment.package.json` (`ExperimentPackageV1`) is
+  the only new-attempt protocol authority. Its self-hashed bytes explicitly own
+  settings, the exact `complete-video-v1` policy, the exact
+  `assets/stimuli/` manifest, manual participant/block/video
+  order and per-video ISIs, the language-selection tree, questionnaire
+  definitions/hooks, and output policy.
+- One attempt freezes the exact package bytes/hash, verified asset closure,
+  derived settings/assets/participant-assignment/protocol hashes, selected
+  terminal language, participant derivation, binding, exact stimulus
+  identities, questionnaire sequence, and overlay geometry. The app performs
+  no randomization or counterbalancing for new attempts and reads no ambient
+  defaults or prior storage while resolving the package.
+- Package acceptance permanently requires two clean independent instances to
+  load the same canonical bytes against the same asset tree and match package,
+  settings, assets, participant-assignment, protocol hashes, and exact sequence
+  for every participant and terminal language, with byte-identical re-export.
 - The sample clock is independent of rendering and records explicit gaps
   instead of backfill.
-- Output and recovery use create-new/no-overwrite semantics under the selected
-  Research workspace and `affect-research/v1` browser namespace.
+- The selected package root contains canonical `experiment.package.json` and
+  fixed `assets/stimuli/`, `outputs/`, and `recovery/` locations. Output and
+  recovery use create-new/no-overwrite semantics there and the isolated
+  `affect-research/v1` browser namespace.
 - New Research data is never populated by automatic import from legacy
   application data.
-- Windows qualified local/repository media targets a pinned bundled GStreamer
-  1.28.6 MSVC x86_64 runtime through GstPlay. Runtime verification is present;
+- Windows qualified declared package media targets a pinned
+  bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. Runtime
+  verification is present;
   the renderer remains unavailable until explicit `unsafe` raw-window approval,
   implementation, and audit land.
 - Tauri keyboard, mouse-button/wheel, absolute pointer/trackpad, and XInput
@@ -89,8 +106,18 @@ sensor acquisition, and face/touch experiments remain outside active v1.
 
 ## Active source map
 
-- `site/index.html`, `site/research.css`, and `site/src/research/`: static UI,
-  browser adapter, shared contracts, planner, renderer, and browser recovery.
+- `site/index.html`, `site/experiment-template.json`, `site/research.css`, and
+  `site/src/research/`: current static UI, transitional external-experiment
+  authoring/import reader, browser adapter, shared contracts, protocol planner,
+  renderer, and browser recovery. The template and V3 reader are not yet the
+  target `ExperimentPackageV1` runtime authority.
+- `site/src/research/experiment-package.js`,
+  `src-tauri/src/research_experiment_package.rs`, and
+  `test/fixtures/experiment-package-v1.canonical.json`: current strict package
+  candidate, native mirror, and cross-runtime fixture.
+- `scripts/verify-experiment-package-instance.js`: one-instance verifier used
+  by the two-clean-process deterministic reproduction test; it is not physical
+  asset-tree or decode qualification.
 - `site/src/math.js`: active procedural Flubber geometry baseline.
 - `desktop/index.html` and `desktop/vite.config.js`: isolated Tauri WebView
   entrypoint and production frontend build.

@@ -1145,6 +1145,18 @@ export class NativeResearchRuntimeBridge {
       event.preventDefault();
       this.#queue(() => this.#loadSettings());
     });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.loadExperimentRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#loadExperiment());
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.loadExperimentPackageRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#loadExperimentPackage());
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.saveExperimentPackageRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#saveExperimentPackage(event.detail));
+    });
     this.#listen(this.root, RESEARCH_UI_EVENTS.saveSettingsRequest, (event) => {
       event.preventDefault();
       this.#queue(() => this.#saveSettings(event.detail));
@@ -1175,7 +1187,16 @@ export class NativeResearchRuntimeBridge {
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.startRequest, (event) => {
       event.preventDefault();
-      this.#queue(() => this.#start(event.detail));
+      this.#queue(async () => {
+        try {
+          await this.#start(event.detail);
+        } catch (error) {
+          this.#dispatch(RESEARCH_UI_EVENTS.startRejected, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+          throw error;
+        }
+      });
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.pauseRequest, () => {
       this.#queueForCurrentRun((fence) => this.#togglePause(fence));
@@ -1457,7 +1478,7 @@ export class NativeResearchRuntimeBridge {
 
   async #adoptWorkspace(workspace, { rescan = false } = {}) {
     if (!workspace?.workspaceId || workspace.librariesReady !== true) {
-      throw new Error("The selected native workspace did not initialize all four Research libraries.");
+      throw new Error("The selected native workspace did not initialize the Research libraries and fixed package asset tree.");
     }
     this.workspace = Object.freeze({ ...workspace });
     this.catalog.clear();
@@ -1550,6 +1571,29 @@ export class NativeResearchRuntimeBridge {
     if (!payload) throw new Error("Native settings import returned no compatible payload.");
     this.#dispatch(RESEARCH_UI_EVENTS.settingsLoaded, { settings: payload });
     if (this.workspace) await this.#rescanWorkspace();
+  }
+
+  async #loadExperiment() {
+    const receipt = await this.invoke("research_load_experiment");
+    if (!receipt) return;
+    this.#dispatch(RESEARCH_UI_EVENTS.experimentLoaded, { receipt });
+  }
+
+  async #loadExperimentPackage() {
+    const receipt = await this.invoke("research_load_experiment_package");
+    if (!receipt) return;
+    this.#dispatch(RESEARCH_UI_EVENTS.experimentPackageLoaded, { receipt });
+  }
+
+  async #saveExperimentPackage(detail) {
+    if (typeof detail?.sourceText !== "string") {
+      throw new TypeError("Native package save requires canonical experiment.package.json text.");
+    }
+    const receipt = await this.invoke("research_save_experiment_package", {
+      sourceText: detail.sourceText,
+    });
+    if (!receipt) return;
+    this.#announce(`experiment.package.json saved with hash ${receipt.canonicalSourceByteSha256}.`);
   }
 
   async #saveSettings(detail) {

@@ -18,19 +18,34 @@ import {
   validateResolvedProtocolPlanV1,
 } from "./protocol-plan.js";
 import {
+  validateResearchSettingsV3,
+  validateResolvedProtocolPlanV2,
+} from "./external-protocol.js";
+import {
+  parseExperimentDefinitionV1,
+  validateResolvedExperimentPlanV1,
+} from "./external-experiment.js";
+import { validateExperimentPackageRunBindingV1 } from "./experiment-package.js";
+import {
   questionnaireResponsesToCsv,
   questionnaireResponsesToTsv,
 } from "./questionnaires.js";
 import {
   RESEARCH_RUN_MANIFEST_V3_SCHEMA,
+  RESEARCH_RUN_MANIFEST_V4_SCHEMA,
   validateResearchEventV2,
   validateResearchRunManifestV3,
+  validateResearchRunManifestV4,
 } from "./protocol-records.js";
 
 const encoder = new TextEncoder();
 const DEFAULT_BATCH_SIZE = 32;
 const DEFAULT_FLUSH_INTERVAL_MS = 100;
 const WORKER_COMMAND_TIMEOUT_MS = 5_000;
+
+function isProtocolAttemptVersion(version) {
+  return version === 2 || version === 3;
+}
 
 function uuid(cryptoObject = globalThis.crypto) {
   if (typeof cryptoObject?.randomUUID === "function") return cryptoObject.randomUUID();
@@ -111,6 +126,7 @@ export function browserPreflight(settings, plan, {
   timingWorkerReady = false,
   storageReady = false,
   manifestReady = false,
+  packageReady = false,
 } = {}) {
   const verified = new Set(verifiedStimulusIds);
   const blockers = [];
@@ -121,6 +137,12 @@ export function browserPreflight(settings, plan, {
   if (!timingWorkerReady) blockers.push({ code: "timing-worker", message: "The dedicated sampling worker is not ready." });
   if (!storageReady) blockers.push({ code: "storage", message: "The browser write/quota probe has not covered this resolved plan." });
   if (!manifestReady) blockers.push({ code: "manifest", message: "The frozen settings and assignment manifest is not ready." });
+  if (settings.version === 3 && !packageReady) {
+    blockers.push({
+      code: "experiment-package",
+      message: "Load and verify the canonical experiment package before Start.",
+    });
+  }
   for (const stimulus of plan.stimuli) {
     if (stimulus.source.kind !== "youtube" && !verified.has(stimulus.stimulusId)) {
       blockers.push({ code: "stimulus-unverified", stimulusId: stimulus.stimulusId, message: `Verify ${stimulus.title} against its hash, size, duration, and decoder.` });
@@ -240,37 +262,78 @@ export class BrowserResearchRunController extends EventTarget {
     settings: settingsInput,
     plan: planInput,
     protocolPlan: protocolPlanInput = null,
+    experimentSourceText: experimentSourceTextInput = null,
+    experimentPackageBinding: experimentPackageBindingInput = null,
     participantId,
     participant: participantInput,
     attemptNumber,
     preflight,
   }) {
     if (this.mode !== "setup" || this.context) throw new Error("A Research attempt is already active.");
-    const protocolAware = settingsInput?.version === 2;
-    const settings = protocolAware
-      ? await validateResearchSettingsV2(settingsInput)
-      : validateResearchSettingsV1(settingsInput);
+    const externalProtocol = settingsInput?.version === 3;
+    const protocolAware = settingsInput?.version === 2 || externalProtocol;
+    const settings = externalProtocol
+      ? await validateResearchSettingsV3(settingsInput)
+      : protocolAware
+        ? await validateResearchSettingsV2(settingsInput)
+        : validateResearchSettingsV1(settingsInput);
     if (!protocolAware && protocolPlanInput !== null) {
       throw new TypeError("Historical ResearchSettingsV1 attempts cannot attach a protocol plan.");
     }
-    const assignmentSettings = protocolAware
+    const assignmentSettings = settings.version === 2
       ? await projectResearchSettingsV2ToAssignmentSettingsV1(settings)
       : settings;
-    const plan = await validateResolvedAssignmentPlanV1(planInput);
+    const plan = externalProtocol
+      ? await validateResolvedExperimentPlanV1(planInput)
+      : await validateResolvedAssignmentPlanV1(planInput);
+    let experimentSourceText = null;
+    if (externalProtocol) {
+      if (typeof experimentSourceTextInput !== "string") {
+        throw new TypeError("External-order Start requires the exact imported experiment.json text.");
+      }
+      const parsedExperiment = await parseExperimentDefinitionV1(encoder.encode(experimentSourceTextInput));
+      if (parsedExperiment.sourceByteSha256 !== settings.externalProtocol.sourceByteSha256
+        || parsedExperiment.definitionSha256 !== settings.externalProtocol.definitionSha256
+        || canonicalJson(parsedExperiment.definition) !== canonicalJson(settings.externalProtocol.definition)
+        || plan.sourceByteSha256 !== parsedExperiment.sourceByteSha256
+        || plan.definitionSha256 !== parsedExperiment.definitionSha256) {
+        throw new TypeError("The exact experiment.json source does not bind settings and the resolved plan.");
+      }
+      experimentSourceText = parsedExperiment.sourceText;
+    }
     const settingsHash = await canonicalSha256(settings);
     const assignmentSettingsHash = await canonicalSha256(assignmentSettings);
     if (plan.settingsSha256 !== assignmentSettingsHash) {
       throw new TypeError("Assignment plan does not bind the selected settings projection.");
     }
-    const protocolPlan = protocolAware
-      ? await validateResolvedProtocolPlanV1(protocolPlanInput, {
-        settingsV2: settings,
-        assignmentPlanV1: plan,
+    const protocolPlan = externalProtocol
+      ? await validateResolvedProtocolPlanV2(protocolPlanInput, {
+        settingsV3: settings,
+        resolvedExperimentPlanV1: plan,
       })
-      : null;
+      : protocolAware
+        ? await validateResolvedProtocolPlanV1(protocolPlanInput, {
+          settingsV2: settings,
+          assignmentPlanV1: plan,
+        })
+        : null;
     if (protocolAware && protocolPlan.participantId !== participantId) {
       throw new TypeError("Protocol plan does not bind the selected participant.");
     }
+    if (experimentPackageBindingInput !== null && !externalProtocol) {
+      throw new TypeError("Experiment package runs require ResearchSettingsV3 external order.");
+    }
+    if (externalProtocol && experimentPackageBindingInput === null) {
+      throw new TypeError("New ResearchSettingsV3 attempts require a canonical experiment package binding.");
+    }
+    const experimentPackage = experimentPackageBindingInput === null
+      ? null
+      : await validateExperimentPackageRunBindingV1(experimentPackageBindingInput, {
+        settings,
+        experimentPlan: plan,
+        protocolPlan,
+        participantId,
+      });
     const assignment = plan.assignments.find((candidate) => candidate.participantId === participantId);
     if (!assignment) throw new TypeError("Selected participant is not present in the assignment plan.");
     const checks = browserPreflight(settings, plan, preflight);
@@ -303,6 +366,8 @@ export class BrowserResearchRunController extends EventTarget {
       settings,
       plan,
       ...(protocolAware ? { protocolPlan } : {}),
+      ...(externalProtocol ? { experimentSourceText } : {}),
+      ...(experimentPackage ? { experimentPackage } : {}),
       participant,
       build,
       startedAt,
@@ -372,22 +437,51 @@ export class BrowserResearchRunController extends EventTarget {
     const resumedAt = isoNow(this.now);
     const attempt = await this.journal.resumeAttempt({ runId, ownerId, resumedAt });
     try {
-      const protocolAware = attempt.version === 2;
-      const settings = protocolAware
-        ? await validateResearchSettingsV2(attempt.context.settings)
-        : validateResearchSettingsV1(attempt.context.settings);
-      const assignmentSettings = protocolAware
+      const externalProtocol = attempt.version === 3;
+      const protocolAware = isProtocolAttemptVersion(attempt.version);
+      const settings = externalProtocol
+        ? await validateResearchSettingsV3(attempt.context.settings)
+        : protocolAware
+          ? await validateResearchSettingsV2(attempt.context.settings)
+          : validateResearchSettingsV1(attempt.context.settings);
+      const assignmentSettings = attempt.version === 2
         ? await projectResearchSettingsV2ToAssignmentSettingsV1(settings)
         : settings;
-      const plan = await validateResolvedAssignmentPlanV1(attempt.context.plan);
+      const plan = externalProtocol
+        ? await validateResolvedExperimentPlanV1(attempt.context.plan)
+        : await validateResolvedAssignmentPlanV1(attempt.context.plan);
       const settingsHash = await canonicalSha256(settings);
       const assignmentSettingsHash = await canonicalSha256(assignmentSettings);
-      const protocolPlan = protocolAware
-        ? await validateResolvedProtocolPlanV1(attempt.context.protocolPlan, {
-          settingsV2: settings,
-          assignmentPlanV1: plan,
+      const protocolPlan = externalProtocol
+        ? await validateResolvedProtocolPlanV2(attempt.context.protocolPlan, {
+          settingsV3: settings,
+          resolvedExperimentPlanV1: plan,
         })
-        : null;
+        : protocolAware
+          ? await validateResolvedProtocolPlanV1(attempt.context.protocolPlan, {
+            settingsV2: settings,
+            assignmentPlanV1: plan,
+          })
+          : null;
+      if (externalProtocol) {
+        const parsedExperiment = await parseExperimentDefinitionV1(
+          encoder.encode(attempt.context.experimentSourceText),
+        );
+        if (parsedExperiment.sourceByteSha256 !== settings.externalProtocol.sourceByteSha256
+          || parsedExperiment.definitionSha256 !== settings.externalProtocol.definitionSha256
+          || plan.sourceByteSha256 !== parsedExperiment.sourceByteSha256
+          || plan.definitionSha256 !== parsedExperiment.definitionSha256) {
+          throw new TypeError("Recovery experiment.json bytes no longer bind the frozen protocol.");
+        }
+        if (attempt.context.experimentPackage) {
+          await validateExperimentPackageRunBindingV1(attempt.context.experimentPackage, {
+            settings,
+            experimentPlan: plan,
+            protocolPlan,
+            participantId: attempt.participantId,
+          });
+        }
+      }
       if (settingsHash !== attempt.settingsHash
         || plan.settingsSha256 !== assignmentSettingsHash
         || plan.planHashSha256 !== attempt.planHash
@@ -440,9 +534,13 @@ export class BrowserResearchRunController extends EventTarget {
       await this.#startWorker();
       this.#queueEvent("recoveryStarted", { detailCode: "safe-boundary" });
       this.#queueEvent("recoveryCompleted", {
-        detailCode: protocolAware && this.context.activeProtocolStep?.kind === "questionnaire"
+        detailCode: protocolAware && this.context.interruptedProtocolStepKind === "questionnaire"
           ? "restore-questionnaire-draft"
-          : "restart-current-video",
+          : protocolAware && this.context.interruptedProtocolStepKind === "interval"
+            ? "restart-current-interval"
+            : protocolAware && this.context.interruptedProtocolStepKind === "stimulus"
+              ? "restart-current-video"
+              : "resume-safe-protocol-boundary",
       });
       await this.flush();
       this.mode = "run";
@@ -761,6 +859,62 @@ export class BrowserResearchRunController extends EventTarget {
     await this.flush();
   }
 
+  async beginIntervalStep() {
+    this.#assertProtocolRun();
+    if (this.context.settings.version !== 3) {
+      throw new Error("Explicit interval steps require an external experiment protocol.");
+    }
+    if (this.context.activeStimulusIndex !== null || this.context.activeProtocolStep !== null) {
+      throw new Error("An interval can begin only at a safe protocol boundary.");
+    }
+    const step = this.context.protocolPlan.steps[this.context.safeProtocolStepPosition];
+    if (!step || step.kind !== "interval") {
+      throw new Error("The next safe protocol step is not an interval.");
+    }
+    await this.flush();
+    const attempt = await this.journal.setProtocolState({
+      runId: this.context.runId,
+      activeProtocolStepPosition: step.protocolPosition,
+      safeProtocolStepPosition: this.context.safeProtocolStepPosition,
+      updatedAt: isoNow(this.now),
+    });
+    this.#adoptProtocolState(attempt);
+    this.#queueEvent("transitionStarted", {
+      protocolStep: step,
+      detailCode: "external-isi",
+    });
+    await this.flush();
+    this.#emitStatus();
+    return Object.freeze(structuredClone(step));
+  }
+
+  async completeIntervalStep() {
+    this.#assertProtocolRun();
+    const step = this.context.activeProtocolStep;
+    if (this.context.settings.version !== 3 || step?.kind !== "interval") {
+      throw new Error("No external interval step is active.");
+    }
+    this.#queueEvent("transitionCompleted", {
+      protocolStep: step,
+      detailCode: "external-isi",
+    });
+    await this.flush();
+    const attempt = await this.journal.setProtocolState({
+      runId: this.context.runId,
+      activeProtocolStepPosition: null,
+      safeProtocolStepPosition: step.protocolPosition,
+      updatedAt: isoNow(this.now),
+    });
+    this.#adoptProtocolState(attempt);
+    this.#emitStatus();
+    return Object.freeze({
+      completedStep: structuredClone(step),
+      nextStep: structuredClone(
+        this.context.protocolPlan.steps[this.context.safeProtocolStepPosition] ?? null,
+      ),
+    });
+  }
+
   queueInputEdge({ direction, action, active }) {
     this.#assertRunning();
     if (this.context.protocolAware && this.context.activeProtocolStep?.kind !== "stimulus") {
@@ -900,19 +1054,19 @@ export class BrowserResearchRunController extends EventTarget {
       sessionStem: attempt.sessionStem,
       settingsHash: attempt.settingsHash,
       planHash: attempt.planHash,
-      protocolAware: attempt.version === 2,
-      protocolPlanHash: attempt.version === 2 ? attempt.protocolPlanHash : null,
-      interruptedProtocolStepKind: attempt.version === 2
+      protocolAware: isProtocolAttemptVersion(attempt.version),
+      protocolPlanHash: isProtocolAttemptVersion(attempt.version) ? attempt.protocolPlanHash : null,
+      interruptedProtocolStepKind: isProtocolAttemptVersion(attempt.version)
         ? attempt.interruption?.interruptedProtocolStepKind ?? null
         : null,
-      safeProtocolStepPosition: attempt.version === 2 ? attempt.safeProtocolStepPosition : null,
-      activeProtocolStep: attempt.version === 2 && attempt.activeProtocolStep
+      safeProtocolStepPosition: isProtocolAttemptVersion(attempt.version) ? attempt.safeProtocolStepPosition : null,
+      activeProtocolStep: isProtocolAttemptVersion(attempt.version) && attempt.activeProtocolStep
         ? structuredClone(attempt.activeProtocolStep)
         : null,
-      activeQuestionnaireDraft: attempt.version === 2 && attempt.activeQuestionnaireDraft
+      activeQuestionnaireDraft: isProtocolAttemptVersion(attempt.version) && attempt.activeQuestionnaireDraft
         ? structuredClone(attempt.activeQuestionnaireDraft)
         : null,
-      questionnaireAnswerEvidence: attempt.version === 2
+      questionnaireAnswerEvidence: isProtocolAttemptVersion(attempt.version)
         ? structuredClone(attempt.activeQuestionnaireDraft?.responses ?? []).map((response) => ({
           itemId: response.itemId,
           optionId: response.optionId,
@@ -921,7 +1075,7 @@ export class BrowserResearchRunController extends EventTarget {
           responseLatencyMs: response.responseLatencyMs,
         }))
         : [],
-      questionnaireOpenedElapsedMs: attempt.version === 2
+      questionnaireOpenedElapsedMs: isProtocolAttemptVersion(attempt.version)
         && attempt.activeProtocolStep?.kind === "questionnaire"
         ? saved.elapsedOffsetMs ?? 0
         : null,
@@ -941,7 +1095,7 @@ export class BrowserResearchRunController extends EventTarget {
     };
     this.persistedSampleSequence = attempt.nextSampleSequence;
     this.persistedEventSequence = attempt.nextEventSequence;
-    this.persistedQuestionnaireResponseSequence = attempt.version === 2
+    this.persistedQuestionnaireResponseSequence = isProtocolAttemptVersion(attempt.version)
       ? attempt.nextQuestionnaireResponseSequence
       : 1;
     this.issuedSampleSequence = attempt.nextSampleSequence;
@@ -960,7 +1114,7 @@ export class BrowserResearchRunController extends EventTarget {
   }
 
   #adoptProtocolState(attempt) {
-    if (!this.context?.protocolAware || attempt.version !== 2
+    if (!this.context?.protocolAware || !isProtocolAttemptVersion(attempt.version)
       || attempt.runId !== this.context.runId
       || attempt.protocolPlanHash !== this.context.protocolPlanHash) {
       throw new TypeError("Protocol journal state no longer binds the active attempt.");
@@ -1553,7 +1707,7 @@ export class BrowserResearchRunController extends EventTarget {
   async #materializeProtocolFinalization(descriptor, samples, events) {
     const { completionStatus, finalizedAt, recovery } = descriptor;
     const attempt = await this.journal.getAttempt(this.context.runId);
-    if (!attempt || attempt.version !== 2
+    if (!attempt || !isProtocolAttemptVersion(attempt.version)
       || attempt.protocolPlanHash !== this.context.protocolPlanHash) {
       throw new TypeError("Questionnaire recovery evidence no longer binds the frozen protocol.");
     }
@@ -1564,10 +1718,21 @@ export class BrowserResearchRunController extends EventTarget {
     const draftResponses = attempt.activeQuestionnaireDraft?.responses ?? [];
     const questionnaireResponses = [...submittedResponses, ...draftResponses];
     const settingsText = `${canonicalJson(this.context.settings)}\n`;
+    const experimentSourceText = this.context.settings.version === 3
+      ? this.context.experimentSourceText
+      : null;
+    const experimentPlanText = this.context.settings.version === 3
+      ? `${canonicalJson(this.context.plan)}\n`
+      : null;
     const protocolPlanText = `${canonicalJson(this.context.protocolPlan)}\n`;
     const eventsText = `${events.map((event) => canonicalJson(event)).join("\n")}\n`;
     const artifacts = {
       "settings.snapshot.json": settingsText,
+      ...(experimentSourceText === null ? {} : { "experiment.json": experimentSourceText }),
+      ...(experimentPlanText === null ? {} : { "experiment-plan.snapshot.json": experimentPlanText }),
+      ...(this.context.experimentPackage
+        ? { "experiment.package.json": this.context.experimentPackage.sourceText }
+        : {}),
       "protocol-plan.snapshot.json": protocolPlanText,
       "events.jsonl": eventsText,
     };
@@ -1579,6 +1744,29 @@ export class BrowserResearchRunController extends EventTarget {
         byteLength: byteLength(settingsText),
         rowCount: null,
       },
+      ...(experimentSourceText === null ? [] : [
+        {
+          kind: "experimentSource",
+          fileName: "experiment.json",
+          sha256: await sha256Hex(experimentSourceText),
+          byteLength: byteLength(experimentSourceText),
+          rowCount: null,
+        },
+        {
+          kind: "experimentPlan",
+          fileName: "experiment-plan.snapshot.json",
+          sha256: await sha256Hex(experimentPlanText),
+          byteLength: byteLength(experimentPlanText),
+          rowCount: null,
+        },
+      ]),
+      ...(this.context.experimentPackage ? [{
+        kind: "experimentPackage",
+        fileName: "experiment.package.json",
+        sha256: this.context.experimentPackage.sourceByteSha256,
+        byteLength: byteLength(this.context.experimentPackage.sourceText),
+        rowCount: null,
+      }] : []),
       {
         kind: "protocolPlan",
         fileName: "protocol-plan.snapshot.json",
@@ -1677,9 +1865,7 @@ export class BrowserResearchRunController extends EventTarget {
       submittedResponsesSha256: await canonicalSha256(submittedResponses),
       draftResponsesSha256: await canonicalSha256(draftResponses),
     };
-    const manifest = validateResearchRunManifestV3({
-      schema: RESEARCH_RUN_MANIFEST_V3_SCHEMA,
-      version: 3,
+    const manifestFields = {
       runId: this.context.runId,
       experimentId: this.context.experimentId,
       participantId: this.context.participantId,
@@ -1713,7 +1899,29 @@ export class BrowserResearchRunController extends EventTarget {
       outputs,
       recovery,
       build: this.context.build,
-    });
+    };
+    const manifest = this.context.experimentPackage
+      ? validateResearchRunManifestV4({
+        schema: RESEARCH_RUN_MANIFEST_V4_SCHEMA,
+        version: 4,
+        ...manifestFields,
+        experimentPackage: {
+          canonicalSourceByteSha256: this.context.experimentPackage.sourceByteSha256,
+          packageDefinitionSha256: this.context.experimentPackage.packageDefinitionSha256,
+          packageId: this.context.experimentPackage.packageId,
+          languageId: this.context.experimentPackage.languageId,
+          languageSelectionPath: [...this.context.experimentPackage.languageSelectionPath],
+          assignmentSha256: this.context.experimentPackage.assignmentSha256,
+          assetBindingsSha256: await canonicalSha256(
+            this.context.experimentPackage.assetBindings,
+          ),
+        },
+      })
+      : validateResearchRunManifestV3({
+        schema: RESEARCH_RUN_MANIFEST_V3_SCHEMA,
+        version: 3,
+        ...manifestFields,
+      });
     artifacts["manifest.json"] = `${canonicalJson(manifest)}\n`;
 
     let files;
@@ -1736,6 +1944,9 @@ export class BrowserResearchRunController extends EventTarget {
       files,
       settingsSha256: this.context.settingsHash,
       assignmentPlanSha256: this.context.planHash,
+      ...(this.context.experimentPackage
+        ? { assignmentSha256: this.context.experimentPackage.assignmentSha256 }
+        : {}),
       protocolPlanSha256: this.context.protocolPlanHash,
       sampleCount: samples.length,
       eventCount: events.length,

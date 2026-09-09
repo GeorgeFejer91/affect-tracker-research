@@ -7,6 +7,7 @@ import {
 import { createSessionStem } from "./identity.js";
 
 export const RESEARCH_RUN_MANIFEST_V3_SCHEMA = RESEARCH_RUN_MANIFEST_SCHEMA;
+export const RESEARCH_RUN_MANIFEST_V4_SCHEMA = RESEARCH_RUN_MANIFEST_SCHEMA;
 
 export const RESEARCH_EVENT_V2_TYPES = Object.freeze([
   ...RESEARCH_EVENT_TYPES,
@@ -17,6 +18,9 @@ export const RESEARCH_EVENT_V2_TYPES = Object.freeze([
 
 export const RESEARCH_MANIFEST_V3_OUTPUT_KINDS = Object.freeze([
   "settings",
+  "experimentSource",
+  "experimentPlan",
+  "experimentPackage",
   "protocolPlan",
   "events",
   "ratingsCsv",
@@ -39,6 +43,7 @@ const YOUTUBE_VIDEO_ID = /^[A-Za-z0-9_-]{11}$/u;
 const MAX_STIMULI = 10_000;
 const MAX_PROTOCOL_STEPS = 20_000;
 const MAX_PARTICIPANTS = 100_000;
+const MAX_LANGUAGE_SELECTION_DEPTH = 64;
 
 function isPlainObject(value) {
   return Boolean(value)
@@ -529,4 +534,86 @@ export function validateResearchRunManifestV3(value) {
     throw new TypeError("ResearchRunManifestV3 recovery stimulus IDs must be unique assignment members.");
   }
   return deepFreeze(output);
+}
+
+function experimentPackageManifestReceipt(value) {
+  exactObject(value, "ResearchRunManifestV4.experimentPackage", [
+    "canonicalSourceByteSha256", "packageDefinitionSha256", "packageId",
+    "languageId", "languageSelectionPath", "assignmentSha256", "assetBindingsSha256",
+  ]);
+  if (!Array.isArray(value.languageSelectionPath)
+    || value.languageSelectionPath.length > MAX_LANGUAGE_SELECTION_DEPTH) {
+    throw new RangeError(
+      `ResearchRunManifestV4.experimentPackage.languageSelectionPath may contain at most ${MAX_LANGUAGE_SELECTION_DEPTH} choices.`,
+    );
+  }
+  return {
+    canonicalSourceByteSha256: sha256(
+      value.canonicalSourceByteSha256,
+      "ResearchRunManifestV4.experimentPackage.canonicalSourceByteSha256",
+    ),
+    packageDefinitionSha256: sha256(
+      value.packageDefinitionSha256,
+      "ResearchRunManifestV4.experimentPackage.packageDefinitionSha256",
+    ),
+    packageId: identifier(
+      value.packageId,
+      "ResearchRunManifestV4.experimentPackage.packageId",
+    ),
+    languageId: identifier(
+      value.languageId,
+      "ResearchRunManifestV4.experimentPackage.languageId",
+    ),
+    languageSelectionPath: value.languageSelectionPath.map((optionId, index) => (
+      identifier(
+        optionId,
+        `ResearchRunManifestV4.experimentPackage.languageSelectionPath[${index}]`,
+      )
+    )),
+    assignmentSha256: sha256(
+      value.assignmentSha256,
+      "ResearchRunManifestV4.experimentPackage.assignmentSha256",
+    ),
+    assetBindingsSha256: sha256(
+      value.assetBindingsSha256,
+      "ResearchRunManifestV4.experimentPackage.assetBindingsSha256",
+    ),
+  };
+}
+
+/**
+ * Strict package-bound terminal manifest. ResearchRunManifestV3 remains an
+ * unchanged historical reader; package identity is additive only in V4.
+ */
+export function validateResearchRunManifestV4(value) {
+  exactObject(value, "ResearchRunManifestV4", [
+    "schema", "version", "runId", "experimentId", "participantId", "participantCode",
+    "age", "gender", "handedness", "attemptNumber", "sessionStem", "completionStatus",
+    "playbackMode", "playbackQualification", "settingsSha256", "assignmentPlanSha256",
+    "protocolPlanSha256", "stimuli", "protocol", "timing", "outputs", "recovery", "build",
+    "experimentPackage",
+  ]);
+  if (value.schema !== RESEARCH_RUN_MANIFEST_V4_SCHEMA || value.version !== 4) {
+    throw new TypeError("ResearchRunManifestV4 has an unsupported schema or version.");
+  }
+  const packageReceipt = experimentPackageManifestReceipt(value.experimentPackage);
+  const historicalFields = { ...value };
+  delete historicalFields.experimentPackage;
+  const historical = validateResearchRunManifestV3({
+    ...historicalFields,
+    version: 3,
+  });
+  const packageOutput = historical.outputs.find(({ kind }) => kind === "experimentPackage");
+  if (!packageOutput
+    || packageOutput.fileName !== "experiment.package.json"
+    || packageOutput.sha256 !== packageReceipt.canonicalSourceByteSha256) {
+    throw new TypeError(
+      "ResearchRunManifestV4 requires the exact canonical experiment.package.json output.",
+    );
+  }
+  return deepFreeze({
+    ...historical,
+    version: 4,
+    experimentPackage: packageReceipt,
+  });
 }
