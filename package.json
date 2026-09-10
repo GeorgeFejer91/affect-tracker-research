@@ -16,6 +16,8 @@
     "desktop:icons": "tauri icon desktop/icons/app-icon.svg -o src-tauri/icons",
     "desktop:logos:build": "node scripts/build-app-logo-concepts.mjs",
     "desktop:logos:check": "node scripts/build-app-logo-concepts.mjs --check",
+    "desktop:logos:axis:build": "node scripts/build-axis-bloom-variants.mjs",
+    "desktop:logos:axis:check": "node scripts/build-axis-bloom-variants.mjs --check",
     "desktop:logo:select": "node scripts/select-app-logo.mjs",
     "desktop:bundle": "tauri build --bundles nsis"
   },
