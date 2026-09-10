@@ -176,7 +176,16 @@ h3 {
   display: grid;
   min-height: 100%;
   place-content: center;
+  justify-items: center;
   text-align: center;
+}
+
+.research-loading::before {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 0.85rem;
+  background: center / contain no-repeat url("./assets/app-logo.svg");
+  content: "";
 }
 
 .research-loading p {
@@ -210,8 +219,15 @@ h3 {
 
 .product-block {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
+}
+
+.product-mark {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  background: center / contain no-repeat url("./assets/app-logo.svg");
 }
 
 .build-label,

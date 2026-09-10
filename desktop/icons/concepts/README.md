@@ -27,14 +27,15 @@ pnpm desktop:logos:build
 pnpm desktop:logos:check
 ```
 
-List the choices or select one as the packaged application icon:
+List the choices or select one for the packaged application and Pages branding:
 
 ```powershell
 pnpm desktop:logo:select -- --list
-pnpm desktop:logo:select -- 01-interlock
+pnpm desktop:logo:select -- axis-05-aurora-axis
 ```
 
 Selection copies only the named, allowlisted SVG to
-`desktop/icons/app-icon.svg`, then regenerates the existing Tauri PNG, ICO, and
-ICNS icon set in `src-tauri/icons/`. No package identity, permission, CSP,
-research setting, sampling behavior, record, or LSL contract changes.
+`desktop/icons/app-icon.svg` and `site/assets/app-logo.svg`, then regenerates
+the existing Tauri PNG/ICO/ICNS pack plus the bounded Pages PNG set. No package
+identity, permission, CSP, research setting, sampling behavior, record, or LSL
+contract changes.

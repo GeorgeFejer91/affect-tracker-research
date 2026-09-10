@@ -22,6 +22,6 @@ pnpm desktop:logos:axis:build
 pnpm desktop:logos:axis:check
 ```
 
-These are comparison candidates only. None is copied into
-`desktop/icons/app-icon.svg` or the generated Tauri icon pack until a final
-choice is made.
+**Aurora Axis (05) is the selected Affect Research identity.** Its exact SVG is
+copied into the desktop and Pages source assets, then used to generate the
+Tauri and browser icon sets.

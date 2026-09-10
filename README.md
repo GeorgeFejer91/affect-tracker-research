@@ -1,5 +1,10 @@
 # Affect Research
 
+<p align="center">
+  <img src="./site/assets/app-logo.svg" width="160" height="160" alt="Aurora Axis, the Affect Research app logo">
+</p>
+<p align="center"><sub><strong>Aurora Axis</strong> maps valence left-to-right and arousal bottom-to-top inside the project’s Flubber silhouette.</sub></p>
+
 Affect Research is a local-first instrument for continuous valence–arousal ratings during complete video stimuli. The active product deliberately has two modes: **Setting Up the Experiment** and **Running the Experiment**.
 
 This repository is the focused Research lineage. The complete feature-rich application and its full Git history are preserved in [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground), with the frozen application deployed at <https://GeorgeFejer91.github.io/affect-tracker-playground/>.

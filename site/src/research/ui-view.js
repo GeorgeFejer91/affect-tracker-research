@@ -511,7 +511,7 @@ export function renderResearchUiMarkup(surface = "browser") {
   return `
     <div class="research-shell" data-research-mode="setup">
       <header class="app-bar">
-        <div class="product-block"><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
+        <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
         <nav class="mode-navigation" aria-label="Application mode">
           <button type="button" data-mode-button="setup" aria-current="page">Setting Up the Experiment</button>
           <button type="button" data-mode-button="run" disabled>Running the Experiment</button>
