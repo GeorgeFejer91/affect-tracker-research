@@ -411,7 +411,7 @@ accessibility qualification receipt currently exists for Research v1.
 ### Current local working-candidate verification — 2026-09-10
 
 The package/questionnaire/language-selection/native-runtime working candidate
-passed 323/323 JavaScript tests and the allowlisted Pages and desktop
+passed 325/325 JavaScript tests and the allowlisted Pages and desktop
 frontend builds. The pnpm moderate-severity dependency audit found no known
 vulnerabilities. Rust format and both clippy matrices passed with warnings
 denied. The no-default Rust matrix passed 175/175 tests. With the exact pinned
