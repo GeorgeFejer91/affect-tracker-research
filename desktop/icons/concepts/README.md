@@ -15,6 +15,9 @@ and valence right `#5dffb0`.
 | **04 · Echo Pair** | ![Echo Pair app logo](./04-echo-pair.svg) | Two open traces form a continuous paired signal. The light tile is intentionally distinct from the other candidates. |
 | **05 · Signal Cursor** | ![Signal Cursor app logo](./05-signal-cursor.svg) | A small live Flubber marks a position inside a larger affect field. This is the most literal “tracker” concept. |
 
+Axis Bloom was selected as the direction for a focused second round. See the
+[five Axis Bloom variants](./axis-bloom-variants/README.md).
+
 ## Rebuild and select
 
 Regenerate the five SVG sources and verify they are current:
