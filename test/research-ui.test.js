@@ -147,7 +147,8 @@ test("Workspace offers an accessible local stimulus inspiration catalogue before
   const source = await read("site/src/research/app.js");
   const markup = renderResearchUiMarkup();
   assert.ok(markup.indexOf('id="stimulus-inspiration-open"') < markup.indexOf('id="video-import"'));
-  assert.match(markup, /id="stimulus-inspiration-open"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stimulus-inspiration-dialog"/u);
+  assert.match(markup, /id="stimulus-inspiration-open"[^>]*class="inspiration-action pictographic-action"[^>]*aria-label="Stimulus inspiration"[^>]*title="Stimulus inspiration"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stimulus-inspiration-dialog"/u);
+  assert.match(markup, /<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">[\s\S]*class="inspiration-spark"/u);
   assert.match(markup, /<dialog id="stimulus-inspiration-dialog"[^>]*aria-labelledby="stimulus-inspiration-title"[^>]*aria-describedby=/u);
   for (const category of ["Video", "Audio", "Vignette"]) {
     assert.match(markup, new RegExp(`>${category}<\\/h3>`, "u"));

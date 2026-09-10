@@ -184,7 +184,7 @@ function workspaceSection() {
     </section>
     <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
       <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog">Stimulus inspiration</button><button id="video-import" type="button" disabled>Import videos</button><button id="video-folder-import" type="button" disabled>Import folder</button></div>
+      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Import videos</button><button id="video-folder-import" type="button" disabled>Import folder</button></div>
       <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
     </div>
     <div class="section-actions">
