@@ -43,7 +43,9 @@ The current `research/video-protocol-v1` working candidate contains:
 - exactly two UI modes, eight ordered Setup accordions, persistent preview,
   external experiment load/summary, participant schedule preview, input
   configuration, visual/color/mapping controls, aggregate preflight, and
-  restricted Run presentation;
+  restricted Run presentation, plus a read-only local stimulus-inspiration
+  dialog that links the reviewed video, audio, and vignette sources without
+  importing media or creating a third mode;
 - browser File System Access workspace handling, bounded recursive catalogue,
   write/read/delete readiness probe, real manifest/output audits, dedicated
   sampling worker, explicit timing gaps, IndexedDB journal, CSV/TSV parity,
