@@ -286,10 +286,13 @@ test("Run input routing is enabled only by authoritative active-stimulus status"
 });
 
 test("external experiment plan export uses the canonical source-identity and ISI serializer", async () => {
-  const source = await read("site/src/research/app.js");
+  const [source, view] = await Promise.all([
+    read("site/src/research/app.js"),
+    read("site/src/research/ui-view.js"),
+  ]);
   assert.match(source, /import \{ externalExperimentPlanToCsv \} from "\.\/tabular\.js"/u);
   assert.match(source, /csv = await externalExperimentPlanToCsv\(plan\)/u);
-  assert.match(source, /resolved-plan\.csv/u);
+  assert.match(view, /resolved-plan\.csv/u);
   assert.doesNotMatch(source, /assignmentPlanToCsv\(plan\)/u);
 });
 
@@ -360,7 +363,7 @@ test("pending native finalization has an explicit acquisition-free Setup dispatc
   const source = await read("site/src/research/app.js");
   assert.match(source, /__finalizationPending/u);
   assert.match(source, /__finalizationBinding/u);
-  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*protocolContract = protocolSettingsSnapshot\?\.version === 3[\s\S]*\? "manifestV3"[\s\S]*: "manifestV2"[\s\S]*expectedSettingsSha256 = protocolContract === "manifestV3" \? protocolSettingsHash : settingsHash[\s\S]*binding\.protocolContract !== protocolContract[\s\S]*binding\.settingsSha256 !== expectedSettingsSha256[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
+  assert.match(source, /function selectedPendingFinalization\(\)[\s\S]*protocolContract = experimentPackageDocument[\s\S]*\? "manifestV4"[\s\S]*\? "manifestV3"[\s\S]*: "manifestV2"[\s\S]*expectedSettingsSha256 = protocolContract === "manifestV2" \? settingsHash : protocolSettingsHash[\s\S]*binding\.protocolContract !== protocolContract[\s\S]*binding\.settingsSha256 !== expectedSettingsSha256[\s\S]*binding\.assignmentPlanSha256 !== plan\.planHashSha256/u);
   assert.match(source, /Finalize pending \$\{pendingFinalization\.completionStatus\} attempt/u);
   const requestStart = source.slice(
     source.indexOf("function requestStart()"),
@@ -457,13 +460,23 @@ test("programmatic binding, color, and overlay changes invalidate the frozen pro
 });
 
 test("the active entrypoints load only the shared Research instrument", async () => {
-  const [siteIndex, desktopIndex] = await Promise.all([read("site/index.html"), read("desktop/index.html")]);
+  const [siteIndex, desktopIndex, browserEntry, nativeEntry, bootstrap] = await Promise.all([
+    read("site/index.html"),
+    read("desktop/index.html"),
+    read("site/src/research/browser-entry.js"),
+    read("site/src/research/native-entry.js"),
+    read("site/src/research/ui-bootstrap.js"),
+  ]);
   assert.match(siteIndex, /id="research-app" data-research-surface="browser"/u);
-  assert.match(siteIndex, /src="\.\/src\/research\/runtime-bridge\.js"/u);
-  assert.match(siteIndex, /href="\.\/research\.css"/u);
+  assert.match(siteIndex, /src="\.\/src\/research\/browser-entry\.js"/u);
+  assert.match(siteIndex, /href="\.\/research\.css\?v=0\.4\.0-alpha\.1"/u);
   assert.match(desktopIndex, /id="research-app" data-research-surface="tauri"/u);
-  assert.match(desktopIndex, /src="\.\.\/site\/src\/research\/native-bridge\.js"/u);
-  assert.match(desktopIndex, /href="\.\.\/site\/research\.css"/u);
+  assert.match(desktopIndex, /src="\.\.\/site\/src\/research\/native-entry\.js"/u);
+  assert.match(desktopIndex, /href="\.\.\/site\/research\.css\?v=0\.4\.0-alpha\.1"/u);
+  assert.match(browserEntry, /initializeRuntime: bootRuntimeBridge/u);
+  assert.match(nativeEntry, /initializeRuntime: bootNativeBridge/u);
+  assert.equal((bootstrap.match(/DOMContentLoaded/gu) ?? []).length, 1);
+  assert.match(bootstrap, /bootResearchUi\(\{ surface \}\)[\s\S]*await initializeRuntime\(root\)/u);
   for (const html of [siteIndex, desktopIndex]) {
     assert.equal((html.match(/<script/gu) ?? []).length, 1);
     assert.doesNotMatch(html, /(?:webxr|party|ground-control|polar|face-|touch-playground|vdo\.ninja)/iu);
@@ -531,4 +544,10 @@ test("custom research controls expose one coherent accessible interaction model"
   assert.match(source, /queueMicrotask\(\(\) => proceed\.focus\(\)\)/u);
   assert.doesNotMatch(preview, /addEventListener\("keydown"/u);
   assert.match(css, /@media \(forced-colors: active\)/u);
+});
+
+test("Run feedback projection owns its visible coordinate receipt as well as the stage", async () => {
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /createResearchPreview\(root\.querySelector\('\[data-mode-panel="run"\]'\)/u);
+  assert.doesNotMatch(source, /createResearchPreview\(root\.querySelector\("\.run-feedback-stage"\)/u);
 });

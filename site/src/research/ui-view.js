@@ -1,0 +1,631 @@
+import { createDefaultResearchSettings } from "./contracts.js";
+import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
+
+const DEFAULT_SETTINGS = createDefaultResearchSettings();
+const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
+const QUESTIONNAIRE_TEMPLATE_URL = new URL("../../questionnaires/questionnaire-template.csv", import.meta.url).href;
+const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
+const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
+  algorithmVersion: "language-tree-v1",
+  rootNodeId: "language",
+  languages: [Object.freeze({
+    languageId: "en",
+    languageTag: "en",
+    label: "English",
+    questionnaireModuleIds: Object.freeze([]),
+  })],
+  nodes: [Object.freeze({
+    nodeId: "language",
+    prompt: "Choose your language",
+    options: [Object.freeze({
+      optionId: "en",
+      label: "English",
+      target: Object.freeze({ kind: "language", languageId: "en" }),
+    })],
+  })],
+});
+export const DEFAULT_LANGUAGE_SELECTION_SOURCE = JSON.stringify(DEFAULT_LANGUAGE_SELECTION_TREE, null, 2);
+
+export const COLOR_FIELDS = Object.freeze([
+  Object.freeze({ id: "up", label: "High arousal anchor", value: DEFAULT_COLORS.up }),
+  Object.freeze({ id: "down", label: "Low arousal anchor", value: DEFAULT_COLORS.down }),
+  Object.freeze({ id: "left", label: "Negative valence anchor", value: DEFAULT_COLORS.left }),
+  Object.freeze({ id: "right", label: "Positive valence anchor", value: DEFAULT_COLORS.right }),
+  Object.freeze({ id: "idle", label: "Idle color", value: DEFAULT_COLORS.idle }),
+  Object.freeze({ id: "outline", label: "Outline color", value: DEFAULT_COLORS.outline }),
+  Object.freeze({ id: "halo", label: "Halo color", value: DEFAULT_COLORS.halo }),
+  Object.freeze({ id: "cursor", label: "Cursor color", value: DEFAULT_COLORS.cursor }),
+]);
+
+export function describeInputToken(token) {
+  if (token.kind === "keyboard") return token.code;
+  if (token.kind === "wheel") return `Wheel ${token.direction}`;
+  if (token.kind === "mouseButton") return `Mouse button ${token.button}`;
+  if (token.kind === "gamepadButton") return `Gamepad button ${token.button}`;
+  if (token.kind === "pointerAxis") return `Pointer ${token.axis.toUpperCase()}${token.invert ? " reversed" : ""}`;
+  if (token.kind === "gamepadAxis") return `Gamepad axis ${token.index}${token.invert ? " reversed" : ""}`;
+  return "Unassigned";
+}
+
+const SECTION_SUMMARIES = Object.freeze({
+  workspace: "Choose a workspace root",
+  experiment: "Portable package, language, identity · 130 Hz",
+  stimuli: "Externally ordered video protocol",
+  questionnaires: "Add forms around sessions or blocks",
+  input: "Arrow keys · step 0.1",
+  visual: "Grid and Flubber",
+  advanced: "Outbound LSL and mappings",
+  review: "Resolve blocking checks",
+});
+
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function previewMarkup(label) {
+  return `
+    <div class="research-preview-stage" role="img" aria-label="${escapeAttribute(label)}">
+      <div
+        class="preview-overlay"
+        data-preview-overlay
+        data-locked="false"
+        aria-hidden="true"
+      >
+        <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
+        <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
+          <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
+          <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
+          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="25" x2="100" y2="25"></line>
+          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="50" x2="100" y2="50"></line>
+          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="75" x2="100" y2="75"></line>
+          <rect data-preview-grid-outline class="preview-grid-outline" x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
+          <circle data-preview-grid-cursor class="preview-grid-cursor" cx="50" cy="50" r="4"></circle>
+        </svg>
+        <svg data-preview-flubber class="preview-flubber" viewBox="-1.62 -1.62 3.24 3.24" aria-hidden="true" focusable="false">
+          <path data-preview-flubber-halo class="preview-flubber-halo"></path>
+          <path data-preview-flubber-base class="preview-flubber-base"></path>
+          <path data-preview-flubber-outline class="preview-flubber-outline"></path>
+        </svg>
+      </div>
+    </div>`;
+}
+
+function workspaceSection() {
+  return `
+    <p class="section-lead">Choose one parent folder. Affect Research creates or validates its owned research libraries and fixed package asset tree beneath it; no other folder becomes writable research state.</p>
+    <div class="field-grid">
+      <div class="field-block is-wide">
+        <span class="field-label">Parent workspace</span>
+        <output id="workspace-root" class="field-output" data-state="warning">No workspace selected</output>
+      </div>
+    </div>
+    <div class="section-actions">
+      <button id="workspace-choose" type="button" class="primary-action">Select workspace</button>
+      <button id="workspace-renew" type="button" hidden>Renew folder access</button>
+      <button id="workspace-rescan" type="button" disabled>Rescan</button>
+    </div>
+    <ul class="directory-list" aria-label="Workspace folders">
+      <li>stimuli/</li>
+      <li>assets/stimuli/ <span class="field-help">portable package media</span></li>
+      <li>settings/</li>
+      <li>outputs/</li>
+      <li>recovery/</li>
+    </ul>
+    <section class="protocol-import-card" aria-labelledby="package-file-title">
+      <div>
+        <p class="context-label">Portable experiment authority</p>
+        <h3 id="package-file-title">experiment.package.json</h3>
+        <p class="field-help">One strict JSON file owns settings, language routing, questionnaires, manual video order, every ISI, playback policy, and fixed asset identities.</p>
+      </div>
+      <div class="button-row">
+        <button id="package-load" type="button" class="primary-action">Load experiment package</button>
+        <button id="package-generate" type="button">Generate package JSON</button>
+      </div>
+      <output id="package-file-status" class="field-output" data-state="warning">No portable package generated or loaded</output>
+        <p class="field-help">Load reads <code>experiment.package.json</code> from this workspace root; Generate writes it there. Place only its declared videos under <code>assets/stimuli/</code>. Missing, extra, unreadable, or changed files block Start.</p>
+    </section>
+    <section class="protocol-import-card" aria-labelledby="experiment-file-title">
+      <div>
+        <p class="context-label">External protocol authority</p>
+        <h3 id="experiment-file-title">experiment.json</h3>
+        <p class="field-help">Prepare randomization outside Affect Research. The file supplies every participant’s block order, complete-video order, and the ISI after each video.</p>
+      </div>
+      <div class="button-row">
+        <button id="experiment-load" type="button" class="primary-action">Load experiment.json</button>
+        <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
+      </div>
+      <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
+      <p class="field-help">Array order is authoritative. Affect Research never shuffles, balances, rotates, or otherwise reallocates this file.</p>
+    </section>
+    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
+      <p>Drop complete video files or a folder here</p>
+      <div class="button-row"><button id="video-import" type="button" disabled>Import videos</button><button id="video-folder-import" type="button" disabled>Import folder</button></div>
+      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
+    </div>
+    <div class="section-actions">
+      <button id="settings-load" type="button">Load settings.json</button>
+      <button id="settings-save" type="button" disabled>Save settings.json</button>
+    </div>
+    <div class="field-block">
+      <span class="field-label">Interrupted-run recovery</span>
+      <output class="field-output" data-state="ready">Partial ratings are always journaled locally</output>
+      <p class="field-help">Recovery resumes only at a safe stimulus boundary; a partly viewed video restarts from the beginning.</p>
+    </div>
+    <p id="workspace-status" class="status-text" role="status" aria-live="polite">Select a workspace before importing or saving.</p>
+    <div class="table-scroll" aria-label="Stimulus library">
+      <table>
+        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
+      </table>
+    </div>`;
+}
+
+function experimentSection() {
+  return `
+    <p class="section-lead">Experiment identity and participant IDs come from the loaded experiment.json. Sampling remains the one editable acquisition setting.</p>
+    <div class="field-grid">
+      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="experiment-derived-help"></label>
+      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="experiment-derived-help"></label>
+      <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
+      <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
+      <label class="field is-wide"><span>Language selection tree JSON</span><textarea id="package-language-tree" rows="12" maxlength="262144" spellcheck="false" aria-describedby="package-language-help">${escapeAttribute(DEFAULT_LANGUAGE_SELECTION_SOURCE)}</textarea></label>
+      <p id="package-language-help" class="field-help is-wide">Author the complete rooted selection tree here. Every terminal language explicitly lists its ordered <code>questionnaireModuleIds</code>; nested choices, labels, and route order are preserved exactly, with no locale fallback or automatic module filtering.</p>
+      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
+      <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
+      <div class="field-block is-wide">
+        <span class="field-label">Rating method</span>
+        <output class="field-output" data-state="ready">Continuous rating is always enabled</output>
+        <p class="field-help">Samples are collected only while a complete video is actively playing. There is no summary-rating mode.</p>
+      </div>
+    </div>`;
+}
+
+function stimuliSection() {
+  return `
+    <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
+    <div class="condition-toolbar">
+      <div>
+        <h3>Declared blocks</h3>
+        <p id="pool-mode-summary" class="field-help">Load experiment.json to inspect its blocks.</p>
+      </div>
+      <output class="field-output">external-order-v1</output>
+    </div>
+    <div id="condition-pools" class="condition-pools" aria-label="Externally declared experiment blocks"></div>
+    <div id="coverage-message" class="coverage-message" role="status" aria-live="polite">Load experiment.json, select a workspace, and verify every referenced complete video.</div>
+    <details class="inner-disclosure" open>
+      <summary>Authoring contract</summary>
+      <div class="disclosure-content">
+        <p class="field-help"><code>schedules[].blocks[].videos[]</code> is executed exactly in array order. Every video row requires <code>stimulusId</code> and integer <code>isiAfterMs</code> (0–3,600,000). Even a final nonzero ISI is executed before post-block or post-session questionnaires.</p>
+        <dl class="protocol-facts"><div><dt>Randomization</dt><dd>Completed before import</dd></div><div><dt>Runtime allocation</dt><dd>None</dd></div><div><dt>Recovery</dt><dd>Restarts the interrupted video or ISI from its safe boundary</dd></div></dl>
+      </div>
+    </details>
+    <details class="inner-disclosure" open>
+      <summary>Resolved participant preview</summary>
+      <div class="disclosure-content">
+        <div class="plan-toolbar">
+          <div class="field-block"><span class="field-label">Resolved experiment plan hash</span><output id="plan-hash" class="hash-value">Pending experiment.json</output></div>
+          <div class="button-row"><button id="plan-window-previous" type="button" disabled>Previous participants</button><button id="plan-window-next" type="button" disabled>Next participants</button><button id="assignment-plan-export" type="button" disabled>Export resolved-plan.csv</button></div>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr><th>Participant</th><th>Block order</th><th>Complete-video order and ISI</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The exact schedule appears after every referenced workspace video is verified.</td></tr></tbody></table>
+        </div>
+        <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
+      </div>
+    </details>`;
+}
+
+function inputSection() {
+  const options = `${INPUT_PRESET_OPTIONS.map(({ id, label }) => `<option value="${id}">${label}</option>`).join("")}<option value="custom" hidden>Custom binding</option>`;
+  const directions = [
+    ["up", "Increase arousal"],
+    ["down", "Decrease arousal"],
+    ["left", "Decrease valence"],
+    ["right", "Increase valence"],
+  ].map(([id, label]) => `
+    <button class="binding-button" type="button" data-binding-direction="${id}" aria-haspopup="dialog">
+      <span>${label}</span><output data-binding-value="${id}">${describeInputToken(DEFAULT_SETTINGS.input.directions[id])}</output>
+    </button>`).join("");
+  return `
+    <p class="section-lead">Select a complete preset or capture conflict-free custom actions. Digital controls change state once per physical edge; operating-system key repeat is ignored.</p>
+    <div class="field-grid">
+      <label class="field"><span>Input Device</span><select id="input-preset">${options}</select></label>
+      <label class="field"><span>Step Size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
+    </div>
+    <details class="inner-disclosure" open>
+      <summary>Custom bindings</summary>
+      <div class="disclosure-content">
+        <p class="field-help">Select a direction, then perform the keyboard, mouse, wheel, or gamepad action. A captured action cannot be assigned twice.</p>
+        <div id="binding-grid" class="binding-grid">${directions}</div>
+        <button id="binding-reset" type="button" class="section-actions">Restore selected preset</button>
+      </div>
+    </details>
+    <details class="inner-disclosure" open>
+      <summary>Live input test</summary>
+      <div class="disclosure-content">
+        <div id="input-test" class="input-test" role="group" aria-label="Live input test">
+          <div class="input-test-grid" tabindex="0" role="group" aria-label="Input test surface; focus here and use the configured input device" aria-describedby="input-test-status"><span class="input-test-cursor" aria-hidden="true"></span></div>
+          <div>
+            <p><strong>Input receipt</strong></p>
+            <p id="input-test-status" class="status-text" role="status" aria-live="polite">Focus this test and use the selected device.</p>
+            <p>Valence <span id="input-test-x">+0.000</span> · Arousal <span id="input-test-y">+0.000</span></p>
+            <button id="input-test-reset" type="button">Reset test to neutral</button>
+          </div>
+        </div>
+      </div>
+    </details>`;
+}
+
+function questionnairesSection() {
+  return `
+    <p class="section-lead">Place strict single-choice questionnaires before or after the session, around a block, or after a specific video before or after its ISI. Array order becomes protocol order.</p>
+    <div class="section-actions questionnaire-actions">
+      <button id="questionnaire-import" type="button">Import questionnaire CSV</button>
+      <button type="button" data-bundled-questionnaire="maia-2-de">MAIA-2 · German</button>
+      <button type="button" data-bundled-questionnaire="maia-2-en">MAIA-2 · English</button>
+      <button type="button" data-bundled-questionnaire="tas-20-en">TAS-20 · English</button>
+      <button type="button" data-bundled-questionnaire="ssq-six-item-en">SSQ · 6-item English</button>
+      <button type="button" data-bundled-questionnaire="vr-exp-en">VR experience · English</button>
+      <a id="questionnaire-template-download" class="button-link" href="${QUESTIONNAIRE_TEMPLATE_URL}" download="questionnaire-template.csv">Download CSV template</a>
+    </div>
+    <p class="field-help">The simple CSV uses one row per answer option. Unknown columns, duplicate IDs, ambiguous scores, malformed UTF-8, and oversized files are rejected.</p>
+    <aside class="license-note" aria-labelledby="questionnaire-provenance-title">
+      <h3 id="questionnaire-provenance-title">Questionnaire provenance</h3>
+      <p>The English fixtures reproduce the researcher-supplied wording and response ranges. No reverse scoring, subscales, diagnostic interpretation, or validation status is inferred; review reuse rights and study scoring before deployment.</p>
+    </aside>
+    <div class="questionnaire-layout">
+      <section aria-labelledby="questionnaire-library-title">
+        <div class="subsection-heading"><div><h3 id="questionnaire-library-title">Validated definitions</h3><p>Exact source bytes and normalized content are hashed independently.</p></div></div>
+        <div id="questionnaire-definition-list" class="questionnaire-definition-list" aria-live="polite"><p class="empty-state">No questionnaire definitions added.</p></div>
+      </section>
+      <section aria-labelledby="questionnaire-sequence-title">
+        <div class="subsection-heading"><div><h3 id="questionnaire-sequence-title">Protocol modules</h3><p>Drag-free ordered controls keep the sequence keyboard accessible.</p></div></div>
+        <ol id="questionnaire-module-list" class="questionnaire-module-list"><li class="empty-state">Add a validated definition to place it in the protocol.</li></ol>
+      </section>
+    </div>
+    <details class="inner-disclosure" open>
+      <summary>Participant sequence preview</summary>
+      <div class="disclosure-content">
+        <div class="plan-toolbar">
+          <div class="field-block"><span class="field-label">Protocol plan hash</span><output id="protocol-plan-hash" class="hash-value">Pending valid questionnaire sequence</output></div>
+          <output id="protocol-step-summary" class="field-help">No participant protocol is resolved.</output>
+        </div>
+        <ol id="protocol-sequence-preview" class="protocol-sequence-preview"><li class="empty-state">The selected participant’s ordered forms and videos appear after planning succeeds.</li></ol>
+      </div>
+    </details>`;
+}
+
+function colorRows() {
+  return COLOR_FIELDS.map(({ id, label, value }) => `
+    <div class="color-row" data-color-row="${id}">
+      <label for="color-${id}">${label}</label>
+      <input id="color-${id}" type="color" value="${value}" aria-label="${label} color wheel">
+      <input id="color-${id}-hex" value="${value}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-label="${label} hexadecimal value">
+      <button type="button" data-color-reset="${id}" aria-label="Reset ${escapeAttribute(label)}">Reset</button>
+    </div>`).join("");
+}
+
+function visualSection() {
+  return `
+    <p class="section-lead">Configure the in-application feedback shared by Setup and Run. The preview can be dragged while unlocked; Run always freezes its normalized position.</p>
+    <div class="field-grid">
+      <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span><strong>Grid</strong><br><span class="field-help">Show the valence–arousal field.</span></span></label>
+      <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span><strong>Flubber</strong><br><span class="field-help">Show the procedural affect form.</span></span></label>
+      <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
+      <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
+      <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
+      <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>
+      <label class="field"><span>Normalized horizontal position</span><input id="visual-position-x" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.x}" required></label>
+      <label class="field"><span>Normalized vertical position</span><input id="visual-position-y" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.y}" required></label>
+    </div>
+    <details class="inner-disclosure" open>
+      <summary>Flubber</summary>
+      <div class="disclosure-content field-grid">
+        <label class="check-field"><input id="flubber-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
+        <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="flubber-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.flubber.outlineThickness}"><output for="flubber-outline-thickness">${DEFAULT_SETTINGS.visual.flubber.outlineThickness.toFixed(2)}</output></div></label>
+        <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span>Show Halo</span></label>
+      </div>
+    </details>
+    <details class="inner-disclosure">
+      <summary>Grid</summary>
+      <div class="disclosure-content field-grid">
+        <label class="field"><span>Grid Line Thickness</span><div class="range-field"><input id="grid-line-thickness" type="range" min="0.25" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.lineThickness}"><output for="grid-line-thickness">${DEFAULT_SETTINGS.visual.grid.lineThickness.toFixed(2)}</output></div></label>
+        <label class="check-field"><input id="grid-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
+        <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="grid-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.outlineThickness}"><output for="grid-outline-thickness">${DEFAULT_SETTINGS.visual.grid.outlineThickness.toFixed(2)}</output></div></label>
+        <label class="field"><span>Cursor Size</span><div class="range-field"><input id="grid-cursor-size" type="range" min="2" max="100" step="1" value="${DEFAULT_SETTINGS.visual.grid.cursorSize}"><output for="grid-cursor-size">${DEFAULT_SETTINGS.visual.grid.cursorSize.toFixed(1)}</output></div></label>
+      </div>
+    </details>
+    <details class="inner-disclosure">
+      <summary>Color & Gradient</summary>
+      <div class="disclosure-content">
+        <p class="field-help">The four directional anchors define the valence–arousal field. This section is the sole owner of Halo Color.</p>
+        <figure class="gradient-editor" aria-labelledby="main-gradient-caption">
+          <figcaption id="main-gradient-caption">Main Gradient · valence–arousal anchors</figcaption>
+          <div class="gradient-map">
+            <canvas id="main-gradient-canvas" width="144" height="144" role="img" aria-label="Current valence–arousal color field"></canvas>
+            <button type="button" class="gradient-anchor anchor-up" data-color-anchor="up">High arousal</button>
+            <button type="button" class="gradient-anchor anchor-down" data-color-anchor="down">Low arousal</button>
+            <button type="button" class="gradient-anchor anchor-left" data-color-anchor="left">Negative valence</button>
+            <button type="button" class="gradient-anchor anchor-right" data-color-anchor="right">Positive valence</button>
+          </div>
+        </figure>
+        <div class="color-list">${colorRows()}</div>
+      </div>
+    </details>`;
+}
+
+function mappingDisclosure(mapping) {
+  const step = mapping.allowedMax > 1 ? 0.1 : 0.01;
+  const escapedLabel = escapeAttribute(mapping.label);
+  const unitSuffix = mapping.unit ? ` (${escapeAttribute(mapping.unit)})` : "";
+  return `
+    <details class="inner-disclosure mapping-disclosure" data-mapping="${mapping.id}">
+      <summary>${mapping.label}</summary>
+      <div class="disclosure-content mapping-grid">
+        <label class="field"><span>Min${mapping.unit ? ` (${mapping.unit})` : ""}</span><input id="mapping-${mapping.id}-min" data-mapping-min aria-label="${escapedLabel} minimum${unitSuffix}" type="number" min="${mapping.allowedMin}" max="${mapping.allowedMax}" step="${step}" value="${mapping.min}" required></label>
+        <label class="field"><span>Max${mapping.unit ? ` (${mapping.unit})` : ""}</span><input id="mapping-${mapping.id}-max" data-mapping-max aria-label="${escapedLabel} maximum${unitSuffix}" type="number" min="${mapping.allowedMin}" max="${mapping.allowedMax}" step="${step}" value="${mapping.max}" required></label>
+        <label class="field"><span>Driven By</span><select id="mapping-${mapping.id}-driver" data-mapping-driver aria-label="${escapedLabel} driven by"><option value="x-axis"${mapping.driver === "x-axis" ? " selected" : ""}>x-axis</option><option value="y-axis"${mapping.driver === "y-axis" ? " selected" : ""}>y-axis</option><option value="angle"${mapping.driver === "angle" ? " selected" : ""}>angle</option><option value="radius"${mapping.driver === "radius" ? " selected" : ""}>radius</option></select></label>
+        <label class="check-field"><input id="mapping-${mapping.id}-reverse" data-mapping-reverse aria-label="Reverse ${escapedLabel}" type="checkbox"${mapping.reverse ? " checked" : ""}><span>Reverse</span></label>
+        <div class="mapping-output"><span>Live preview <span data-mapping-output>0.000${mapping.unit ? ` ${mapping.unit}` : ""}</span></span><span class="mapping-meter" aria-hidden="true"><span data-mapping-meter></span></span></div>
+        <p class="field-help is-wide">Allowed output ${mapping.allowedMin}–${mapping.allowedMax}${mapping.unit ? ` ${mapping.unit}` : ""}.</p>
+      </div>
+    </details>`;
+}
+
+function advancedSection() {
+  return `
+    <p class="section-lead">Advanced settings remain part of the same frozen protocol. LSL is outbound and Windows-only; every Flubber mapping derives from one coordinate snapshot.</p>
+    <details class="inner-disclosure" open>
+      <summary>LSL</summary>
+      <div class="disclosure-content">
+        <label class="check-field"><input id="lsl-enabled" type="checkbox"><span><strong>Enable LSL</strong><br><span class="field-help">Publishes the regular eight-channel state stream and irregular semantic marker stream in Windows Tauri.</span></span></label>
+        <div class="field-grid spaced-field-grid">
+          <label class="field"><span>State Stream</span><input id="lsl-state-stream" value="AffectResearch" maxlength="128"></label>
+          <label class="field"><span>Stream Type</span><input id="lsl-stream-type" value="Affect" maxlength="128"></label>
+          <label class="field"><span>Marker Stream</span><input id="lsl-marker-stream" value="AffectResearchMarkers" maxlength="128"></label>
+          <label class="field"><span>Source ID</span><input id="lsl-source-id" value="affect-research" maxlength="128"></label>
+        </div>
+        <p id="lsl-capability" class="capability-note" role="status">Browser mode preserves these values but cannot start while LSL is enabled.</p>
+      </div>
+    </details>
+    <div aria-labelledby="mapping-title">
+      <h3 id="mapping-title" class="mapping-title">Flubber–Affect Mapping</h3>
+      <p class="field-help">x-axis and y-axis normalize from [−1, 1], radius from [0, 1], and angle from [0°, 360°). Neutral angle is zero. Reverse changes t to 1−t before interpolation.</p>
+      ${MAPPING_FIELDS.map(mappingDisclosure).join("")}
+    </div>`;
+}
+
+function reviewSection() {
+  return `
+    <p class="section-lead">Start is fail-closed. Review the resolved plan, privacy-safe participant identity, local outputs, input receipt, media verification, timing capability, and platform-specific LSL state.</p>
+    <ul id="preflight-list" class="preflight-list" aria-label="Experiment preflight checks"></ul>
+    <details class="inner-disclosure" open>
+      <summary>Resolved schedule and output</summary>
+      <div class="disclosure-content field-grid">
+        <div class="field-block is-wide"><span class="field-label">Output location</span><output id="review-output-path" class="field-output path-value">outputs/&lt;experiment-id&gt;/&lt;participant-id&gt;/&lt;session-stem&gt;/</output></div>
+        <div class="field-block"><span class="field-label">Settings hash</span><output id="settings-hash" class="field-output hash-value">Pending validated settings</output></div>
+        <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
+        <div class="field-block"><span class="field-label">Estimated storage</span><output id="storage-estimate" class="field-output">Pending verified videos</output></div>
+        <div class="field-block"><span class="field-label">Sampling capability</span><output id="timing-capability" class="field-output">Dedicated scheduler not yet verified</output></div>
+        <label class="field is-wide tauri-only"><span>Native playback qualification</span><select id="native-playback-mode"><option value="nativeGstPlay" selected>GStreamer / GstPlay · qualification required</option><option value="unqualifiedWebview">WebView video · unqualified testing only</option></select><output id="native-media-capability" class="field-help">Native runtime capability has not been checked.</output></label>
+      </div>
+    </details>
+    <details class="inner-disclosure" open>
+      <summary>Participant chooser</summary>
+      <div class="disclosure-content">
+        <p class="field-help">States are reconstructed from workspace locks, recovery journals, and manifests. They are not editable flags.</p>
+        <div class="participant-toolbar"><button id="participant-window-previous" type="button" disabled>Previous participants</button><output id="participant-window-status">Showing 1–24 of 24</output><button id="participant-window-next" type="button" disabled>Next participants</button></div>
+        <div id="participant-grid" class="participant-grid" role="radiogroup" aria-label="Participant state chooser"></div>
+        <fieldset id="attempt-disposition" class="check-group attempt-disposition" hidden>
+          <legend>Attempt handling</legend>
+          <label id="attempt-resume-option" class="radio-field"><input type="radio" name="attemptDisposition" value="resume-compatible" aria-describedby="attempt-disposition-note"><span><strong>Resume compatible partial</strong><br><span class="field-help">Verify the frozen settings and plan hashes, then restart at the last safe stimulus boundary.</span></span></label>
+          <label id="attempt-new-option" class="radio-field"><input type="radio" name="attemptDisposition" value="new-attempt" aria-describedby="attempt-disposition-note"><span><strong>Start a new attempt</strong><br><span class="field-help">Keep all earlier evidence and allocate the next create-new attempt number.</span></span></label>
+          <p id="attempt-disposition-note" class="field-help" role="status">Choose how to handle the selected participant's existing evidence.</p>
+          <label id="participant-rerun-confirm-field" class="check-field" hidden><input id="participant-rerun-confirm" type="checkbox" aria-describedby="participant-rerun-warning"><span>I confirm this completed participant should receive a new attempt.</span></label>
+        </fieldset>
+        <p id="participant-rerun-warning" class="coverage-message" hidden role="status"></p>
+        <p id="participant-active-warning" class="coverage-message" hidden role="status">This participant has an active lock. Finish or recover that active attempt before starting here.</p>
+      </div>
+    </details>
+    <details class="inner-disclosure" open>
+      <summary>Transient participant details</summary>
+      <div class="disclosure-content">
+        <p class="field-help">Names are used only to derive an uppercase two-grapheme code. Raw names and any self-description are removed before Start and never enter files, logs, markers, or recovery state.</p>
+        <div class="field-grid spaced-field-grid">
+          <label class="field"><span>First name</span><input id="participant-first-name" required autocomplete="off" maxlength="120"></label>
+          <label class="field"><span>Last name</span><input id="participant-last-name" required autocomplete="off" maxlength="120"></label>
+          <label class="field"><span>Age</span><input id="participant-age" type="number" min="1" max="120" step="1" required></label>
+          <label class="field"><span>Gender</span><select id="participant-gender" required><option value="">Select…</option><option value="W">Woman</option><option value="M">Man</option><option value="N">Non-binary</option><option value="S">Self-described</option><option value="X">Prefer not to say</option></select></label>
+          <label class="field is-wide"><span>Handedness</span><select id="participant-handedness" required><option value="">Select…</option><option value="L">Left</option><option value="R">Right</option><option value="A">Ambidextrous</option></select></label>
+          <div class="field-block is-wide"><span class="field-label">Derived participant code</span><output id="participant-code" class="field-output">Enter first and last name</output></div>
+        </div>
+      </div>
+    </details>
+    <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
+      <legend>Rating output formats</legend>
+      <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
+      <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
+      <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
+      <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
+    </fieldset>
+    <section class="participant-language-readiness" aria-labelledby="participant-language-label">
+      <div>
+        <h3 id="participant-language-label">Participant language</h3>
+        <output id="participant-language-status" class="field-output" data-state="warning" aria-live="polite">Choose a package language for this participant and attempt.</output>
+        <p class="field-help">The participant follows the package-owned tree from its root. Start stays blocked until a terminal language is chosen. A compatible recovery restores its frozen route instead of asking again.</p>
+      </div>
+      <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
+    </section>
+    <div class="start-bar">
+      <p id="start-status" role="status" aria-live="polite">Resolve all blocking preflight items.</p>
+      <button id="start-experiment" type="button" class="primary-action" disabled>Start experiment / session</button>
+    </div>`;
+}
+
+const SECTION_CONTENT = Object.freeze({
+  workspace: workspaceSection,
+  experiment: experimentSection,
+  stimuli: stimuliSection,
+  questionnaires: questionnairesSection,
+  input: inputSection,
+  visual: visualSection,
+  advanced: advancedSection,
+  review: reviewSection,
+});
+
+function accordionMarkup(section, index) {
+  const expanded = index === 0;
+  return `
+    <section class="setup-accordion" data-setup-section="${section.id}">
+      <h2 class="setup-accordion-heading">
+        <button
+          class="setup-accordion-trigger"
+          type="button"
+          id="setup-trigger-${section.id}"
+          aria-expanded="${expanded}"
+          aria-controls="setup-panel-${section.id}"
+          data-open-section="${section.id}"
+        >
+          <span class="section-number">${index + 1}</span>
+          <span class="section-title">${section.label}</span>
+          <span class="section-summary" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</span>
+          <span class="section-chevron" aria-hidden="true">${expanded ? "−" : "+"}</span>
+        </button>
+      </h2>
+      <div
+        class="setup-accordion-panel"
+        id="setup-panel-${section.id}"
+        role="region"
+        aria-labelledby="setup-trigger-${section.id}"
+        ${expanded ? "" : "hidden"}
+      >${SECTION_CONTENT[section.id]()}</div>
+    </section>`;
+}
+
+export function renderResearchUiMarkup(surface = "browser") {
+  const platformLabel = surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter";
+  return `
+    <div class="research-shell" data-research-mode="setup">
+      <header class="app-bar">
+        <div class="product-block"><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
+        <nav class="mode-navigation" aria-label="Application mode">
+          <button type="button" data-mode-button="setup" aria-current="page">Setting Up the Experiment</button>
+          <button type="button" data-mode-button="run" disabled>Running the Experiment</button>
+        </nav>
+        <p class="surface-status">${platformLabel}</p>
+      </header>
+      <main>
+        <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
+          <div class="setup-layout">
+            <form id="research-settings-form" class="setup-pane" novalidate>
+              <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 ready</output></div>
+              ${SETUP_SECTIONS.map(accordionMarkup).join("")}
+            </form>
+            <aside class="preview-pane" aria-labelledby="preview-title">
+              <header class="preview-header">
+                <div><h2 id="preview-title">Live feedback preview</h2><p>Presentation only. Sampling uses the run scheduler.</p></div>
+                <div class="preview-coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
+              </header>
+              ${previewMarkup("Live Grid and Flubber settings preview")}
+              <footer class="preview-footer">
+                <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
+                <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
+                <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
+              </footer>
+            </aside>
+          </div>
+        </section>
+        <section class="run-mode" data-mode-panel="run" aria-label="Running the Experiment" hidden>
+          <header class="run-header">
+            <div class="run-identity"><strong id="run-participant">Participant —</strong><p id="run-session">Session not started</p></div>
+            <div class="run-actions"><button id="run-pause" type="button" aria-pressed="false" hidden disabled>Pause</button><button id="run-stop-early" type="button" class="danger-action">Stop Early</button></div>
+          </header>
+          <section id="run-questionnaire-stage" class="run-questionnaire-stage" aria-labelledby="run-questionnaire-title" hidden>
+            <header class="questionnaire-run-header">
+              <div><p id="run-questionnaire-kicker" class="context-label">Questionnaire</p><h2 id="run-questionnaire-title">Form not started</h2></div>
+              <p id="run-questionnaire-progress" role="status" aria-live="polite">0 of 0 answered</p>
+            </header>
+            <p id="run-questionnaire-instructions" class="questionnaire-instructions"></p>
+            <form id="run-questionnaire-form" novalidate>
+              <div id="run-questionnaire-items" class="questionnaire-items"></div>
+              <p id="run-questionnaire-error" class="field-error" role="alert" hidden>Answer every required item before submitting.</p>
+              <div class="questionnaire-navigation">
+                <button id="run-questionnaire-previous" type="button">Previous</button>
+                <button id="run-questionnaire-next" type="button">Next</button>
+                <button id="run-questionnaire-submit" type="button" class="primary-action" hidden>Submit questionnaire</button>
+              </div>
+            </form>
+          </section>
+          <div class="run-stage">
+            <section class="stimulus-stage" aria-label="Current complete stimulus">
+              <div id="run-native-video-host" class="native-video-host" aria-label="Protocol-controlled native GstPlay stimulus surface" hidden></div>
+              <video id="run-video" preload="metadata" playsinline aria-label="Protocol-controlled current stimulus video"></video>
+              <p id="run-stimulus-placeholder" class="stimulus-placeholder">The preflighted complete video appears here after the run authority starts the attempt.</p>
+              <div id="run-youtube-player" class="youtube-player-host run-youtube-player" aria-label="Experimental YouTube stimulus player" hidden></div>
+            </section>
+            <aside class="run-feedback-stage" aria-label="Configured adjacent visual feedback">
+              ${previewMarkup("Run Grid and Flubber feedback")}
+              <p id="run-feedback-placeholder" class="run-feedback-placeholder" hidden>Visual feedback is hidden by the protocol. Sampling continues.</p>
+            </aside>
+          </div>
+          <footer class="run-footer">
+            <div class="run-status-strip" aria-label="Session status">
+              <p>Stimulus <span id="run-stimulus-status">Waiting</span></p><span class="status-separator" aria-hidden="true">|</span>
+              <p>Timing <span id="run-timing-status">Stopped</span></p><span class="status-separator" aria-hidden="true">|</span>
+              <p>Write / recovery <span id="run-write-status">Journal pending</span></p><span class="status-separator" aria-hidden="true">|</span>
+              <p>LSL <span id="run-lsl-status">Off</span></p>
+            </div>
+            <p>Valence <span data-preview-x>+0.000</span> · Arousal <span data-preview-y>+0.000</span></p>
+          </footer>
+          <section id="run-transition" class="run-transition" hidden aria-live="polite">
+            <h2>Between videos</h2>
+            <p id="run-transition-message">Sampling is stopped and the rating is neutral.</p>
+            <button id="run-continue" type="button" class="primary-action" hidden>Continue when ready</button>
+          </section>
+        </section>
+      </main>
+    </div>
+    <input id="settings-file-input" type="file" accept="application/json,.json" hidden>
+    <input id="experiment-file-input" type="file" accept="application/json,.json" hidden>
+    <input id="video-file-input" type="file" accept="video/*" multiple hidden>
+    <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
+    <input id="questionnaire-file-input" type="file" accept="text/csv,.csv" hidden>
+    <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
+      <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
+      <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
+    </dialog>
+    <dialog id="stop-early-dialog" aria-labelledby="stop-early-title">
+      <div class="dialog-content"><h2 id="stop-early-title">Stop this attempt early?</h2><p>A controlled stop finalizes an explicitly partial result and cannot be resumed. Accepted samples and events are retained. Only an interrupted, recoverable attempt restarts its current video from the beginning.</p></div>
+      <div class="dialog-actions"><button id="stop-early-cancel" type="button">Keep running</button><button id="stop-early-confirm" type="button" class="danger-action">Finalize partial result</button></div>
+    </dialog>
+    <dialog id="completion-dialog" aria-labelledby="completion-title">
+      <div class="dialog-content"><h2 id="completion-title">Attempt receipt</h2><ul id="completion-receipt" class="receipt-list"></ul></div>
+      <div class="dialog-actions"><button id="completion-return" type="button" class="primary-action">Return to Setup</button></div>
+    </dialog>
+    <dialog id="import-report-dialog" aria-labelledby="import-report-title">
+      <div class="dialog-content"><h2 id="import-report-title">Legacy import report</h2><p>Every mapped, defaulted, and discarded field is listed. Storage was not migrated.</p><div class="table-scroll"><table><thead><tr><th>Status</th><th>Source</th><th>Research target</th><th>Decision</th></tr></thead><tbody id="import-report-body"></tbody></table></div></div>
+      <div class="dialog-actions"><button id="import-report-close" type="button" class="primary-action">Close report</button></div>
+    </dialog>
+    <dialog id="questionnaire-preview-dialog" aria-labelledby="questionnaire-preview-title">
+      <div class="dialog-content"><p class="context-label">Questionnaire preview</p><h2 id="questionnaire-preview-title">Questionnaire</h2><p id="questionnaire-preview-instructions"></p><div id="questionnaire-preview-items" class="questionnaire-preview-items"></div><p id="questionnaire-preview-attribution" class="field-help"></p></div>
+      <div class="dialog-actions"><button id="questionnaire-preview-close" type="button" class="primary-action">Close preview</button></div>
+    </dialog>
+    <dialog id="participant-language-dialog" aria-labelledby="participant-language-title" aria-describedby="participant-language-context participant-language-error">
+      <div class="dialog-content participant-language-dialog-content">
+        <p id="participant-language-context" class="context-label">Participant P001 · new attempt</p>
+        <h2 id="participant-language-title">Choose a language</h2>
+        <p id="participant-language-breadcrumb" class="field-help">Start of language selection</p>
+        <fieldset class="participant-language-fieldset">
+          <legend id="participant-language-prompt">Choose a language</legend>
+          <div id="participant-language-options" class="participant-language-options"></div>
+        </fieldset>
+        <p id="participant-language-error" class="field-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-actions participant-language-actions"><button id="participant-language-back" type="button" hidden>Back</button><button id="participant-language-cancel" type="button">Cancel</button></div>
+    </dialog>
+    <div id="research-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>`;
+}

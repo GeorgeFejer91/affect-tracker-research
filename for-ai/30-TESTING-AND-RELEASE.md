@@ -14,6 +14,32 @@ versions, hardware, and test receipt.
 
 ## Automated candidate gates
 
+### Mirrored-module architecture gate
+
+- Treat the module topology in `20-ARCHITECTURE.md` as a release gate, not a
+  refactoring suggestion.
+- Source guards must fail when raw Tauri invocation escapes the named native
+  adapters, when a feature view imports native/platform internals directly, or
+  when the Tauri composition root is duplicated.
+- Build the static frontend import graph and reject every feature-module cycle.
+  Both browser and native bridges must import the DOM-free UI contract module,
+  never `app.js`; the contract module must contain no DOM or IPC access.
+- Verify the Rust package runtime keeps commands, compiler/contracts, reducer,
+  responses, input mailbox, media actor, storage, recovery, and coordinator in
+  separate source modules. Command handlers may contain no filesystem, GstPlay,
+  platform-window, or protocol-policy implementation; storage and media modules
+  may not import each other's domain.
+- Recursively reject project-authored `unsafe` outside the two approved
+  `research_native_media/gst_actor/{runtime_environment,windows_renderer}.rs`
+  FFI adapters, and deny undocumented unsafe blocks crate-wide.
+- Each native product boundary requires focused Rust tests, focused frontend
+  presentation/adapter tests, and at least one shared fixture or IPC-contract
+  test across the boundary.
+- Review every release diff for policy added to command handlers, platform
+  adapters, DOM callbacks, or a catch-all coordinator. Move such policy back to
+  its owning bounded module before packaging.
+- A passing functional test suite does not waive this architecture gate.
+
 Run the repository's exact commands from a clean candidate checkout:
 
 ```powershell
@@ -307,11 +333,13 @@ GStreamer 1.28.6 MSVC x86_64 runtime and private plugin closure.
 
 ### Player-actor security and lifecycle evidence
 
-The in-process renderer cannot be accepted until explicit user approval for its
-contained `unsafe` raw-window GstPlay constructor is recorded. Audit validated
-handle and strong-window lifetimes, GLib/GstPlay one-thread affinity, bounded
-callbacks, stale-generation fencing, panic containment, child-window ownership,
-and callbacks-after-teardown prevention.
+The researcher approved the two contained Windows `unsafe` FFI adapters on
+2026-09-10 and the isolated runtime-environment/actor/renderer source has
+landed. Acceptance still requires a commit-bound focused audit of DLL-search
+cookie lifetime, validated HWND and strong-window lifetimes, GLib/GstPlay one-
+thread affinity, bounded callbacks, stale-generation fencing, panic
+containment, child-window ownership, and callbacks-after-teardown prevention.
+Compilation and unit tests do not satisfy this gate.
 
 - Revalidate opaque media identity, root generation, hash, byte length,
   duration, and decode evidence immediately before Prepare. No WebView path or

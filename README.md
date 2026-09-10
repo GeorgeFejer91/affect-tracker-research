@@ -109,27 +109,30 @@ questionnaire CSV/protocol subsystem, narrow Tauri workspace/run modules, and a
 Rust-owned native input service. On Windows the service exposes keyboard, mouse-button,
 wheel, and bounded Pointer Grid input; gamepad D-pad/stick/custom-button presets
 become available only when the isolated XInput backend starts successfully.
-The uncommitted package slice adds browser/Rust `ExperimentPackageV1`
-readers/writers, canonical fixture/hash validation, a fixed-root asset manifest,
-language tree, exact complete-video policy, browser participant/language
-compilation, and wire `afterStimulus` hooks shown as after-video hooks. Its
+The package slice includes browser/Rust `ExperimentPackageV1` readers/writers,
+canonical fixture/hash validation, a fixed-root asset manifest, language tree,
+exact complete-video policy, participant/language compilation, and wire
+`afterStimulus` hooks shown as after-video hooks. Its
 reproduction test now launches two separate Node resolver processes in fresh
 empty profiles with different locale, timezone, directory-order, clock/RNG,
 and storage sentinels; guarded ambient clock, RNG, and browser-storage reads
 fail the test. It compares every five-hash participant/language receipt and
-exact re-export.
-Browser package-backed runs persist canonical package bytes/hash, language route,
-and asset bindings in recovery and emit an audited `experimentPackage` output
+exact re-export. Browser package-backed runs persist canonical package
+bytes/hash, language route, and asset bindings in recovery and emit an audited
+`experimentPackage` output
 in `ResearchRunManifestV4`; historical package-less V3 manifests remain V3.
 The two child processes verify the same closed read-only fixture asset tree as
 regular non-link files with exact byte lengths and SHA-256 values, rejecting
 undeclared files. This contract-resolver benchmark does not decode those
-fixture bytes or launch two installed graphical application profiles. Rust
-now reconstructs and verifies the external plan and complete
-participant/language protocol matrix; native package Start remains blocked.
-These are implementation slices, not package,
-playback, or research qualification. Existing standalone experiment/settings/
-questionnaire files are transitional authoring/import scaffolding.
+fixture bytes or launch two installed graphical application profiles. Rust now
+reconstructs and verifies the external plan and complete participant/language
+protocol matrix. A package-only native compiler, reducer, recovery journal,
+atomic run writer, sampling/input/LSL coordinator, and GstPlay media actor are
+implemented as separate backend modules. Public native package Start remains
+fail-closed until the installed runtime and physical qualification gates pass.
+These are implementation slices, not playback or research qualification.
+Existing standalone experiment/settings/questionnaire files are transitional
+authoring/import scaffolding.
 Automated tests and builds are
 implementation evidence only. They do not establish scheduler performance,
 crash durability, LSL interoperability, accessibility, media compatibility, or
@@ -139,19 +142,21 @@ The candidate remains under development. The exact open software and qualificati
 
 ### Windows native-player status
 
-The safe native-media groundwork is present: an exact GStreamer installer and
-runtime-tree pin, deterministic local/ephemeral-CI staging and verification,
+The native-media source implementation is present: an exact GStreamer installer
+and runtime-tree pin, deterministic local/ephemeral-CI staging and verification,
 optional Rust bindings, a build-time runtime-integrity gate, path-free
-capability response, and explicit qualified/unqualified receipt fields. It
-deliberately does not yet package that runtime or construct the GstPlay
-raw-window renderer. The researcher explicitly approved the one contained,
-audited Rust `unsafe` raw-window constructor on 2026-09-10; implementation and
-focused audit are now active work rather than an authorization blocker.
+capability response, serialized GstPlay actor, isolated GLib/GStreamer runtime,
+and application-owned child-window renderer. Project-authored `unsafe` is
+restricted to the two contained Windows FFI adapters approved by the researcher
+on 2026-09-10: private DLL-search activation/removal and raw child-window/GstPlay
+overlay operations.
 
-Until that actor lands and passes installed Windows qualification,
-`nativeGstPlay` fails closed. Researchers may deliberately choose the WebView
-player for development, but the attempt remains labelled
-`unqualifiedWebview` in status, events, recovery, and its final receipt. Staging
+The runtime is deliberately not included in current downloadable packages.
+Until installed Windows qualification, corresponding-source evidence, and
+redistribution review pass, `nativeGstPlay` and qualified Start fail closed.
+Researchers may deliberately choose the WebView player for development, but the
+attempt remains labelled `unqualifiedWebview` in status, events, recovery, and
+its final receipt. Staging
 the native runtime or completing a desktop build is not playback qualification.
 
 ### Questionnaire authoring status
@@ -186,10 +191,10 @@ The current Chromium external-protocol execution path predates the package
 authority and is transitional, not experiment-use evidence. Tauri can load and
 strictly validate the same historical `ExperimentDefinitionV1` through a native
 picker without receiving a WebView path; separate path-free package load/save
-commands validate and re-export `ExperimentPackageV1`. Tauri does not implement
-package Start. Native Start remains deliberately blocked before mutation until the
-package boundary, atomic package-bound run writer, and approved GstPlay actor are
-integrated.
+commands validate and re-export `ExperimentPackageV1`. The modular package-only
+native runtime is implemented behind a positive capability gate. Public native
+Start remains deliberately blocked before mutation until the installed runtime,
+media, durability, timing, accessibility, and physical workflow gates pass.
 
 ## Local development
 

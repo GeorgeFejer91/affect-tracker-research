@@ -54,6 +54,21 @@ target; the roadmap and exact test/qualification receipts describe reality.
   Tauri. Do not add circular feature imports, cross-module mutable state,
   untyped event buses, scattered raw `invoke` calls, or policy inside command
   handlers and UI event callbacks.
+- Keep shared Setup/Run identifiers and bridge event vocabulary in the DOM-free
+  `ui-contracts.js` seam. Platform bridges must never import `app.js`, and UI
+  sections must never import a platform bridge. Keep declarative instrument
+  markup in `ui-view.js`; it must not acquire IPC, workspace, persistence,
+  media, or protocol authority. Keep the authoritative native
+  package implementation under `research_native_protocol/` split into command,
+  compiler/contract, reducer/response, input, storage, recovery, and runtime
+  responsibilities; do not add package-start policy to legacy compatibility
+  runtimes.
+- Before adding a feature, name its row in the normative mirror map in
+  `20-ARCHITECTURE.md`. Keep its frontend editor/view model, native adapter,
+  Rust domain/service, and platform implementation distinguishable in source
+  and tests. If a proposed edit adds a second unrelated responsibility to
+  `app.js`, `native-bridge.js`, `research_commands.rs`, or
+  `research_runtime.rs`, extract a bounded module first or in the same change.
 - Keep qualified Windows media behind the opaque, Rust-owned native-media
   boundary. Never pass arbitrary filesystem paths or native handles to/from the
   WebView; never discover a system GStreamer installation/plugin path or
@@ -99,13 +114,13 @@ Stop and request explicit user direction before:
 - signing, publishing installers/releases, store submission, or using
   production credentials.
 
-The current GstPlay design needs one contained `unsafe` construction from an
-application-owned validated raw child-window handle. Runtime pins, staging,
-validation, types, tests, safe actor contracts, and child-window hosting may
-progress safely; constructing the raw-window video renderer must wait for
-explicit approval. After approval, confine the adapter, document every
-invariant, test malformed/missing native state, and never unwind a panic across
-FFI.
+The current GstPlay design has two approved contained Windows `unsafe` FFI
+adapters: private DLL-search activation/removal and application-owned child-
+window/GstPlay overlay operations. The researcher approved both boundaries on
+2026-09-10. Do not add a third unsafe source file without a new explicit pause
+and approval. Keep the two existing adapters private, document every handle,
+thread, teardown, and panic invariant, exercise malformed/missing native state,
+and never unwind a panic across FFI.
 
 ## Change workflow
 

@@ -1,3 +1,6 @@
+use crate::research_clock::{
+    duration_ms, format_wall_time, monotonic_ns, session_timestamp, wall_time_now,
+};
 use crate::research_contracts::*;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_input::{
@@ -6,7 +9,13 @@ use crate::research_input::{
 };
 use crate::research_lsl::{LslService, LslState};
 use crate::research_native_media::{NativeMediaService, PlaybackMode, PlaybackQualification};
+use crate::research_participant::{validate_participant_code, TransientParticipant};
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
+use crate::research_run_storage::{
+    acquire_attempt_lock, checked_run_child, checked_run_directory_name, checked_run_root,
+    count_previous_attempts, is_safe_component, require_same_run_directory, CheckedRunDirectory,
+    RunOutputDirectories,
+};
 use crate::research_timing::DeadlineClock;
 use crate::research_workspace::WorkspaceService;
 use fs2::FileExt;
@@ -21,10 +30,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 use time::format_description::well_known::Rfc3339;
-use time::macros::format_description;
 use time::OffsetDateTime;
-use unicode_normalization::UnicodeNormalization;
-use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 
 const BUILD_COMMIT: &str = env!("AFFECT_TRACKER_BUILD_COMMIT");
@@ -77,16 +83,6 @@ pub struct FinalizeRecoveryRequest {
 pub struct WorkspaceFileBinding {
     pub stimulus_id: String,
     pub workspace_file_id: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct TransientParticipant {
-    pub participant_id: String,
-    pub participant_code: String,
-    pub age: u8,
-    pub gender: GenderCodeV1,
-    pub handedness: HandednessCodeV1,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -544,6 +540,7 @@ impl ResearchRuntime {
             &request.workspace_id,
             &settings,
             &request.workspace_files,
+            request.playback_mode,
         )?;
 
         let participant_code = validate_participant_code(&request.participant.participant_code)?;
@@ -640,6 +637,7 @@ impl ResearchRuntime {
             &request.workspace_id,
             &settings,
             &request.workspace_files,
+            request.playback_mode,
         )?;
         let (sender, receiver) = mpsc::sync_channel(512);
         let input_mailbox = Arc::new(NativeInputMailbox::new(settings.input.kind));
@@ -1055,13 +1053,7 @@ impl PreparedRun {
         let run_id = Uuid::new_v4().to_string();
         let started = OffsetDateTime::now_utc();
         let started_at = format_wall_time(started)?;
-        let session_timestamp = started
-            .format(format_description!(
-                "[year][month][day]T[hour][minute][second][subsecond digits:3]Z"
-            ))
-            .map_err(|_| {
-                CommandError::io("The native session timestamp could not be formatted.")
-            })?;
+        let session_timestamp = session_timestamp(started)?;
         let output_directories = RunOutputDirectories::prepare(
             workspace_root,
             &settings.experiment.id,
@@ -2493,27 +2485,6 @@ fn validate_plan_matches_settings(
     Ok(())
 }
 
-fn validate_participant_code(code: &str) -> ResearchResult<String> {
-    let normalized = code.trim().nfc().collect::<String>();
-    let grapheme_count = UnicodeSegmentation::graphemes(normalized.as_str(), true).count();
-    let reserved = normalized.chars().any(|character| {
-        matches!(
-            character,
-            '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' | '_'
-        ) || character.is_control()
-    });
-    if grapheme_count != 2
-        || normalized.len() > 32
-        || reserved
-        || normalized.to_uppercase() != normalized
-    {
-        return Err(CommandError::invalid_contract(
-            "Participant code must contain exactly two uppercase filename-safe graphemes.",
-        ));
-    }
-    Ok(normalized)
-}
-
 fn transition_duration_ms(
     policy: &BetweenVideosV1,
     seed: &str,
@@ -2544,6 +2515,7 @@ fn verify_stimuli(
     workspace_id: &str,
     settings: &ResearchSettingsV1,
     bindings: &[WorkspaceFileBinding],
+    playback_mode: PlaybackMode,
 ) -> ResearchResult<()> {
     let workspace_count = settings
         .stimuli
@@ -2578,15 +2550,31 @@ fn verify_stimuli(
                             "A workspace stimulus has no opaque file binding.",
                         )
                     })?;
-                workspace.verify_workspace_file(
-                    workspace_id,
-                    &binding.workspace_file_id,
-                    sha256,
-                    *byte_length,
-                    relative_path,
-                    mime_type,
-                    *duration_ms,
-                )?;
+                match playback_mode {
+                    PlaybackMode::NativeGstPlay => workspace.verify_native_workspace_file(
+                        workspace_id,
+                        &binding.workspace_file_id,
+                        sha256,
+                        *byte_length,
+                        relative_path,
+                        mime_type,
+                        *duration_ms,
+                    )?,
+                    PlaybackMode::UnqualifiedWebview => workspace.verify_workspace_file(
+                        workspace_id,
+                        &binding.workspace_file_id,
+                        sha256,
+                        *byte_length,
+                        relative_path,
+                        mime_type,
+                        *duration_ms,
+                    )?,
+                    PlaybackMode::NativeLibvlc => {
+                        return Err(CommandError::native_media_unavailable(
+                            "native-libvlc-backend-retired",
+                        ));
+                    }
+                }
             }
             StimulusSourceV1::RepositoryAsset { .. } => {
                 return Err(CommandError::unsupported_source(
@@ -2607,281 +2595,6 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-}
-
-fn duration_ms(duration: Duration) -> f64 {
-    duration.as_secs_f64() * 1_000.0
-}
-
-fn monotonic_ns(offset_ns: u128, epoch: Instant, now: Instant) -> String {
-    offset_ns
-        .saturating_add(now.duration_since(epoch).as_nanos())
-        .to_string()
-}
-
-fn wall_time_now() -> ResearchResult<String> {
-    format_wall_time(OffsetDateTime::now_utc())
-}
-
-fn format_wall_time(time: OffsetDateTime) -> ResearchResult<String> {
-    time.format(format_description!(
-        "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
-    ))
-    .map_err(|_| CommandError::io("The native wall-clock timestamp could not be formatted."))
-}
-
-#[cfg(target_os = "windows")]
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RunDirectoryIdentity {
-    creation_time: u64,
-}
-
-#[cfg(unix)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RunDirectoryIdentity {
-    device: u64,
-    inode: u64,
-}
-
-#[cfg(not(any(target_os = "windows", unix)))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RunDirectoryIdentity {
-    created: Option<std::time::SystemTime>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct CheckedRunDirectory {
-    path: PathBuf,
-    identity: RunDirectoryIdentity,
-}
-
-#[derive(Debug)]
-struct RunOutputDirectories {
-    workspace: CheckedRunDirectory,
-    outputs: CheckedRunDirectory,
-    experiment: CheckedRunDirectory,
-    participant: CheckedRunDirectory,
-}
-
-impl RunOutputDirectories {
-    fn prepare(
-        workspace_root: &Path,
-        experiment_id: &str,
-        participant_id: &str,
-    ) -> ResearchResult<Self> {
-        if !is_safe_component(experiment_id) || !is_safe_component(participant_id) {
-            return Err(CommandError::invalid_contract(
-                "The run output identity contains an unsafe directory component.",
-            ));
-        }
-        let workspace = checked_run_root(workspace_root)?;
-        let outputs = checked_run_child(&workspace, "outputs")?;
-        let experiment = ensure_checked_run_child(&outputs, experiment_id)?;
-        let participant = ensure_checked_run_child(&experiment, participant_id)?;
-        let directories = Self {
-            workspace,
-            outputs,
-            experiment,
-            participant,
-        };
-        directories.revalidate()?;
-        Ok(directories)
-    }
-
-    fn revalidate(&self) -> ResearchResult<()> {
-        require_same_run_directory(&self.workspace, checked_run_root(&self.workspace.path)?)?;
-        require_same_run_directory(
-            &self.outputs,
-            checked_run_child(&self.workspace, "outputs")?,
-        )?;
-        let experiment_name = checked_run_directory_name(&self.experiment)?;
-        require_same_run_directory(
-            &self.experiment,
-            checked_run_child(&self.outputs, experiment_name)?,
-        )?;
-        let participant_name = checked_run_directory_name(&self.participant)?;
-        require_same_run_directory(
-            &self.participant,
-            checked_run_child(&self.experiment, participant_name)?,
-        )
-    }
-
-    fn create_session(&self, session_stem: &str) -> ResearchResult<PathBuf> {
-        if !is_safe_component(session_stem) {
-            return Err(CommandError::invalid_contract(
-                "The run session identity contains an unsafe directory component.",
-            ));
-        }
-        self.revalidate()?;
-        let session_path = self.participant.path.join(session_stem);
-        fs::create_dir(&session_path).map_err(|error| {
-            if error.kind() == std::io::ErrorKind::AlreadyExists {
-                CommandError::forbidden("The new run destination already exists.")
-            } else {
-                CommandError::io(error)
-            }
-        })?;
-        let session = checked_run_child(&self.participant, session_stem)?;
-        self.revalidate()?;
-        require_same_run_directory(
-            &session,
-            checked_run_child(&self.participant, session_stem)?,
-        )?;
-        Ok(session.path)
-    }
-}
-
-fn checked_run_root(path: &Path) -> ResearchResult<CheckedRunDirectory> {
-    let metadata = fs::symlink_metadata(path).map_err(|_| {
-        CommandError::forbidden("The selected workspace output root is unavailable.")
-    })?;
-    require_ordinary_run_directory(&metadata)?;
-    let canonical = path.canonicalize().map_err(|_| {
-        CommandError::forbidden("The selected workspace output root is unavailable.")
-    })?;
-    Ok(CheckedRunDirectory {
-        path: canonical,
-        identity: run_directory_identity(&metadata),
-    })
-}
-
-fn ensure_checked_run_child(
-    parent: &CheckedRunDirectory,
-    name: &str,
-) -> ResearchResult<CheckedRunDirectory> {
-    if !is_safe_component(name) {
-        return Err(CommandError::invalid_contract(
-            "The run output identity contains an unsafe directory component.",
-        ));
-    }
-    let child = parent.path.join(name);
-    match fs::symlink_metadata(&child) {
-        Ok(_) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            fs::create_dir(&child).map_err(|create_error| {
-                if create_error.kind() == std::io::ErrorKind::AlreadyExists {
-                    CommandError::forbidden(
-                        "A run output directory changed while it was being created.",
-                    )
-                } else {
-                    CommandError::io(create_error)
-                }
-            })?;
-        }
-        Err(error) => return Err(CommandError::io(error)),
-    }
-    checked_run_child(parent, name)
-}
-
-fn checked_run_child(
-    parent: &CheckedRunDirectory,
-    name: &str,
-) -> ResearchResult<CheckedRunDirectory> {
-    let child = parent.path.join(name);
-    let metadata = fs::symlink_metadata(&child)
-        .map_err(|_| CommandError::forbidden("A required run output directory is unavailable."))?;
-    require_ordinary_run_directory(&metadata)?;
-    let canonical = child
-        .canonicalize()
-        .map_err(|_| CommandError::forbidden("A required run output directory is unavailable."))?;
-    if canonical != child
-        || canonical.parent() != Some(parent.path.as_path())
-        || !canonical.starts_with(&parent.path)
-    {
-        return Err(CommandError::forbidden(
-            "A run output directory is not the exact canonical child of its selected parent.",
-        ));
-    }
-    Ok(CheckedRunDirectory {
-        path: canonical,
-        identity: run_directory_identity(&metadata),
-    })
-}
-
-fn require_ordinary_run_directory(metadata: &fs::Metadata) -> ResearchResult<()> {
-    if !metadata.is_dir() || metadata.file_type().is_symlink() {
-        return Err(CommandError::forbidden(
-            "A run output path component is not an ordinary directory.",
-        ));
-    }
-    Ok(())
-}
-
-fn checked_run_directory_name(directory: &CheckedRunDirectory) -> ResearchResult<&str> {
-    directory
-        .path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| CommandError::forbidden("A run output directory name is invalid."))
-}
-
-fn require_same_run_directory(
-    expected: &CheckedRunDirectory,
-    observed: CheckedRunDirectory,
-) -> ResearchResult<()> {
-    if observed != *expected {
-        return Err(CommandError::forbidden(
-            "A run output directory changed while the attempt was being prepared.",
-        ));
-    }
-    Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn run_directory_identity(metadata: &fs::Metadata) -> RunDirectoryIdentity {
-    use std::os::windows::fs::MetadataExt;
-    RunDirectoryIdentity {
-        // Stable safe Rust exposes creation time rather than the Windows file
-        // index. Canonical child checks remain the primary link/junction guard.
-        creation_time: metadata.creation_time(),
-    }
-}
-
-#[cfg(unix)]
-fn run_directory_identity(metadata: &fs::Metadata) -> RunDirectoryIdentity {
-    use std::os::unix::fs::MetadataExt;
-    RunDirectoryIdentity {
-        device: metadata.dev(),
-        inode: metadata.ino(),
-    }
-}
-
-#[cfg(not(any(target_os = "windows", unix)))]
-fn run_directory_identity(metadata: &fs::Metadata) -> RunDirectoryIdentity {
-    RunDirectoryIdentity {
-        created: metadata.created().ok(),
-    }
-}
-
-fn count_previous_attempts(participant_root: &Path) -> ResearchResult<u32> {
-    let mut count = 0u32;
-    for entry in fs::read_dir(participant_root).map_err(CommandError::io)? {
-        if entry
-            .map_err(CommandError::io)?
-            .file_type()
-            .map_err(CommandError::io)?
-            .is_dir()
-        {
-            count = count.saturating_add(1);
-        }
-    }
-    Ok(count)
-}
-
-fn acquire_attempt_lock(participant_root: &Path) -> ResearchResult<File> {
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(participant_root.join(".affect-research-attempt.lock"))
-        .map_err(CommandError::io)?;
-    file.try_lock_exclusive().map_err(|_| {
-        CommandError::forbidden(
-            "Another Affect Research process owns this participant's attempt lock.",
-        )
-    })?;
-    Ok(file)
 }
 
 fn event_marker(event: &ResearchEventV1) -> String {
@@ -4966,20 +4679,6 @@ fn recovery_session_dir(
         ));
     }
     Ok(session_dir)
-}
-
-fn is_safe_component(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 240
-        && value != "."
-        && value != ".."
-        && !value.chars().any(|character| {
-            character.is_control()
-                || matches!(
-                    character,
-                    '/' | '\\' | '<' | '>' | ':' | '"' | '|' | '?' | '*'
-                )
-        })
 }
 
 fn verify_snapshot(path: &Path, expected: &[u8], label: &str) -> ResearchResult<()> {

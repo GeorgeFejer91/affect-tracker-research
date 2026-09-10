@@ -3,10 +3,11 @@ use crate::research_contracts::{
     RESEARCH_NAMESPACE,
 };
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_experiment_package::ExperimentPackageV1;
 use crate::research_protocol::ResearchSettingsDocument;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -63,6 +64,7 @@ pub struct WorkspaceSourceContract {
 pub enum DecodeStatus {
     Unverified,
     AttestedUnqualified,
+    AttestedQualified,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -77,6 +79,7 @@ pub enum DecodeBackend {
 #[serde(rename_all = "camelCase")]
 pub enum DecodeEvidence {
     RepresentativeFramesV1,
+    NativeDecodedSnapshotsV1,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -197,6 +200,7 @@ pub fn source_capabilities() -> SourceCapabilities {
 pub(crate) struct ScannedStimulus {
     pub id: String,
     pub path: PathBuf,
+    pub logical_relative_path: String,
     pub sha256: String,
     pub byte_length: u64,
     pub mime_type: String,
@@ -216,6 +220,24 @@ struct MediaGrant {
     byte_length: u64,
 }
 
+/// Exact, locked workspace media authority passed only between Rust modules.
+/// Neither the path nor the file handle is serializable, so the WebView can
+/// receive only the opaque identifiers exposed by the native-media actor.
+#[derive(Debug)]
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "native-gstreamer")),
+    allow(dead_code)
+)]
+pub(crate) struct NativeMediaGrant {
+    pub(crate) media_grant_id: String,
+    pub(crate) workspace_file_id: String,
+    pub(crate) path: PathBuf,
+    pub(crate) file: File,
+    pub(crate) sha256: String,
+    pub(crate) mime_type: String,
+    pub(crate) byte_length: u64,
+}
+
 #[derive(Debug)]
 struct SelectedWorkspace {
     id: String,
@@ -233,7 +255,9 @@ struct WorkspaceLibraries {
     settings: PathBuf,
     outputs: PathBuf,
     recovery: PathBuf,
+    package_assets: PathBuf,
     identities: [DirectoryIdentity; 4],
+    package_assets_identity: DirectoryIdentity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -328,6 +352,25 @@ impl WorkspaceService {
         Ok(RescanResult {
             workspace_id: workspace.id.clone(),
             stimuli,
+        })
+    }
+
+    /// Resolves the complete, declared package media closure beneath the fixed
+    /// `assets/stimuli/` root. Any extra, missing, linked, unreadable, or
+    /// byte-mismatched file fails before the catalogue can be qualified.
+    pub fn rescan_package(
+        &self,
+        workspace_id: &str,
+        package: &ExperimentPackageV1,
+    ) -> ResearchResult<RescanResult> {
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        workspace.scanned = scan_package_videos(&libraries.package_assets, package)?;
+        workspace.media_grants.clear();
+        Ok(RescanResult {
+            workspace_id: workspace.id.clone(),
+            stimuli: workspace.scanned.iter().map(scanned_summary).collect(),
         })
     }
 
@@ -473,6 +516,95 @@ impl WorkspaceService {
             decode_attestation: candidate.decode_attestation,
             decoded_positions_ms: candidate.decoded_positions_ms.clone(),
         })
+    }
+
+    pub(crate) fn issue_native_media_grant(
+        &self,
+        workspace_id: &str,
+        workspace_file_id: &str,
+        expected_sha256: &str,
+        expected_byte_length: u64,
+        expected_mime_type: &str,
+    ) -> ResearchResult<NativeMediaGrant> {
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        validate_selected_workspace(workspace)?;
+        let candidate = scanned_candidate(
+            &workspace.scanned,
+            workspace_file_id,
+            expected_sha256,
+            expected_byte_length,
+            expected_mime_type,
+        )?
+        .clone();
+        let mut locked_file = open_read_locked(&candidate.path)?;
+        let (observed_hash, observed_bytes) = hash_open_file(&mut locked_file)?;
+        if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
+            return Err(CommandError::forbidden(
+                "The workspace stimulus changed after its latest verified scan.",
+            ));
+        }
+        Ok(NativeMediaGrant {
+            media_grant_id: Uuid::new_v4().to_string(),
+            workspace_file_id: candidate.id,
+            path: candidate.path,
+            file: locked_file,
+            sha256: candidate.sha256,
+            mime_type: candidate.mime_type,
+            byte_length: candidate.byte_length,
+        })
+    }
+
+    pub(crate) fn attest_native_decode(
+        &self,
+        workspace_id: &str,
+        expected_sha256: &str,
+        expected_byte_length: u64,
+        expected_mime_type: &str,
+        receipt: &crate::research_native_media::NativeMediaDecodeReceiptV1,
+    ) -> ResearchResult<ScannedStimulusSummary> {
+        if receipt.decoded_snapshot_count != 3
+            || receipt.decoded_positions_ms.len() != 3
+            || receipt.video_width == 0
+            || receipt.video_height == 0
+            || receipt.video_width > 32_768
+            || receipt.video_height > 32_768
+        {
+            return Err(CommandError::invalid_contract(
+                "Native GstPlay decode evidence is incomplete.",
+            ));
+        }
+        validate_native_positions(receipt.duration_ms, &receipt.decoded_positions_ms)?;
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        validate_selected_workspace(workspace)?;
+        let candidate_index = workspace
+            .scanned
+            .iter()
+            .position(|entry| {
+                entry.id == receipt.workspace_file_id
+                    && entry.sha256 == expected_sha256
+                    && entry.byte_length == expected_byte_length
+                    && entry.mime_type == expected_mime_type
+            })
+            .ok_or_else(|| {
+                CommandError::forbidden(
+                    "Native decode evidence does not match the latest workspace scan.",
+                )
+            })?;
+        let candidate = &mut workspace.scanned[candidate_index];
+        let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
+        if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
+            return Err(CommandError::forbidden(
+                "The workspace stimulus changed during native decode preflight.",
+            ));
+        }
+        candidate.duration_ms = Some(receipt.duration_ms);
+        candidate.decode_status = DecodeStatus::AttestedQualified;
+        candidate.decode_backend = Some(DecodeBackend::NativeGstPlay);
+        candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
+        candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
+        Ok(scanned_summary(candidate))
     }
 
     /// Consumes one exact locked-file grant. WebView frame evidence remains
@@ -726,6 +858,75 @@ impl WorkspaceService {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn verify_native_workspace_file(
+        &self,
+        workspace_id: &str,
+        workspace_file_id: &str,
+        expected_sha256: &str,
+        expected_byte_length: u64,
+        expected_relative_path: &str,
+        expected_mime_type: &str,
+        expected_duration_ms: f64,
+    ) -> ResearchResult<()> {
+        self.with_workspace(workspace_id, |_, scanned| {
+            let candidate = native_attested_candidate(
+                scanned,
+                workspace_file_id,
+                expected_sha256,
+                expected_byte_length,
+                expected_relative_path,
+                expected_mime_type,
+                expected_duration_ms,
+            )?;
+            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
+            if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
+                return Err(CommandError::forbidden(
+                    "A natively qualified workspace stimulus changed after attestation.",
+                ));
+            }
+            Ok(())
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn resolve_native_package_file(
+        &self,
+        workspace_id: &str,
+        expected_sha256: &str,
+        expected_byte_length: u64,
+        expected_logical_path: &str,
+        expected_mime_type: &str,
+        expected_duration_ms: f64,
+    ) -> ResearchResult<String> {
+        self.with_workspace(workspace_id, |_, scanned| {
+            let candidate = scanned
+                .iter()
+                .find(|entry| entry.logical_relative_path == expected_logical_path)
+                .ok_or_else(|| {
+                    CommandError::forbidden(
+                        "The fixed package asset is absent from the latest native scan.",
+                    )
+                })?;
+            native_attested_candidate(
+                scanned,
+                &candidate.id,
+                expected_sha256,
+                expected_byte_length,
+                expected_logical_path,
+                expected_mime_type,
+                expected_duration_ms,
+            )?;
+            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
+            if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
+                return Err(CommandError::forbidden(
+                    "A fixed package asset changed after native decode qualification.",
+                ));
+            }
+            Ok(candidate.id.clone())
+        })
+    }
+
     fn lock_selected(&self) -> MutexGuard<'_, Option<SelectedWorkspace>> {
         self.selected
             .lock()
@@ -793,6 +994,8 @@ fn ensure_workspace_libraries(root: &Path) -> ResearchResult<WorkspaceLibraries>
             Err(error) => return Err(CommandError::io(error)),
         }
     }
+    let assets = ensure_exact_child_directory(root, "assets")?;
+    let _ = ensure_exact_child_directory(&assets, "stimuli")?;
     validate_workspace_libraries(root)
 }
 
@@ -838,12 +1041,17 @@ fn validate_workspace_libraries(root: &Path) -> ResearchResult<WorkspaceLibrarie
         .map(|name| validate_exact_child_directory(root, name))
         .into_iter()
         .collect::<ResearchResult<Vec<_>>>()?;
+    let assets = validate_exact_child_directory(root, "assets")?.0;
+    let (package_assets, package_assets_identity) =
+        validate_exact_child_directory(&assets, "stimuli")?;
     Ok(WorkspaceLibraries {
         stimuli: paths[0].0.clone(),
         settings: paths[1].0.clone(),
         outputs: paths[2].0.clone(),
         recovery: paths[3].0.clone(),
+        package_assets,
         identities: std::array::from_fn(|index| paths[index].1.clone()),
+        package_assets_identity,
     })
 }
 
@@ -978,6 +1186,119 @@ fn durable_file_probe(path: &Path, payload: &[u8]) -> std::io::Result<()> {
     Ok(())
 }
 
+fn scan_package_videos(
+    package_assets_root: &Path,
+    package: &ExperimentPackageV1,
+) -> ResearchResult<Vec<ScannedStimulus>> {
+    let declared = package
+        .assets
+        .stimuli
+        .iter()
+        .map(|asset| (asset.relative_path.as_str(), asset))
+        .collect::<BTreeMap<_, _>>();
+    let mut observed = BTreeSet::new();
+    let mut queue = VecDeque::from([(package_assets_root.to_owned(), 0usize)]);
+    let mut files = Vec::with_capacity(declared.len());
+    while let Some((directory, depth)) = queue.pop_front() {
+        if depth > MAX_SCAN_DEPTH {
+            return Err(CommandError::forbidden(
+                "The fixed package asset tree exceeds the supported folder depth.",
+            ));
+        }
+        for entry in fs::read_dir(&directory).map_err(CommandError::io)? {
+            let entry = entry.map_err(CommandError::io)?;
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path).map_err(CommandError::io)?;
+            if metadata.file_type().is_symlink() {
+                return Err(CommandError::forbidden(
+                    "The fixed package asset tree cannot contain symbolic links or junctions.",
+                ));
+            }
+            if metadata.is_dir() {
+                let canonical = path.canonicalize().map_err(CommandError::io)?;
+                if !canonical.starts_with(package_assets_root) {
+                    return Err(CommandError::forbidden(
+                        "A fixed package asset directory escaped its root.",
+                    ));
+                }
+                queue.push_back((canonical, depth + 1));
+                continue;
+            }
+            if !metadata.is_file() {
+                return Err(CommandError::forbidden(
+                    "The fixed package asset tree contains a non-file entry.",
+                ));
+            }
+            if files.len() >= MAX_SCAN_FILES {
+                return Err(CommandError::forbidden(
+                    "The fixed package asset tree exceeds 10000 files.",
+                ));
+            }
+            let relative = path.strip_prefix(package_assets_root).map_err(|_| {
+                CommandError::forbidden("A fixed package asset escaped its selected root.")
+            })?;
+            let relative = relative
+                .components()
+                .map(|component| {
+                    component.as_os_str().to_str().ok_or_else(|| {
+                        CommandError::forbidden("A fixed package asset path is not valid Unicode.")
+                    })
+                })
+                .collect::<ResearchResult<Vec<_>>>()?
+                .join("/");
+            let package_path = format!("assets/stimuli/{relative}");
+            let asset = declared.get(package_path.as_str()).ok_or_else(|| {
+                CommandError::forbidden(format!(
+                    "Undeclared fixed package asset {package_path} must be removed before Start."
+                ))
+            })?;
+            let (sha256, byte_length) = hash_file(&path)?;
+            if sha256 != asset.sha256 || byte_length != asset.byte_length {
+                return Err(CommandError::forbidden(format!(
+                    "Fixed package asset {package_path} differs from experiment.package.json."
+                )));
+            }
+            observed.insert(package_path.clone());
+            let logical_relative_path = package_path
+                .strip_prefix("assets/")
+                .expect("fixed package paths are beneath assets/")
+                .to_owned();
+            let mut opaque_hash = Sha256::new();
+            opaque_hash.update(b"affect-research:package-workspace-file:v1\0");
+            opaque_hash.update(package_path.as_bytes());
+            opaque_hash.update([0]);
+            opaque_hash.update(sha256.as_bytes());
+            let opaque = format!("pa-{:x}", opaque_hash.finalize());
+            files.push(ScannedStimulus {
+                id: opaque[..27].to_owned(),
+                path,
+                logical_relative_path,
+                sha256,
+                byte_length,
+                mime_type: asset.mime_type.clone(),
+                duration_ms: None,
+                decode_status: DecodeStatus::Unverified,
+                decode_backend: None,
+                decode_attestation: None,
+                decoded_positions_ms: Vec::new(),
+            });
+        }
+    }
+    let missing = declared
+        .keys()
+        .filter(|path| !observed.contains(**path))
+        .copied()
+        .collect::<Vec<_>>();
+    if !missing.is_empty() {
+        return Err(CommandError::forbidden(format!(
+            "Missing declared fixed package assets: {}.",
+            missing.join(", ")
+        )));
+    }
+    files.sort_by(|left, right| left.logical_relative_path.cmp(&right.logical_relative_path));
+    Ok(files)
+}
+
 fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
     let stimuli_root = root
         .join("stimuli")
@@ -1035,6 +1356,7 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
             files.push(ScannedStimulus {
                 id: opaque[..27].to_owned(),
                 path,
+                logical_relative_path: logical_relative_path(&opaque[..27]),
                 sha256,
                 byte_length,
                 mime_type,
@@ -1081,18 +1403,20 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
     let source = entry
         .duration_ms
         .filter(|_| {
-            entry.decode_status == DecodeStatus::AttestedUnqualified
+            let duration_ms = entry.duration_ms.unwrap_or_default();
+            (entry.decode_status == DecodeStatus::AttestedUnqualified
                 && entry.decode_backend == Some(DecodeBackend::WebviewVideoFrameCallback)
                 && entry.decode_attestation == Some(DecodeEvidence::RepresentativeFramesV1)
-                && validate_representative_positions(
-                    entry.duration_ms.unwrap_or_default(),
-                    &entry.decoded_positions_ms,
-                )
-                .is_ok()
+                && validate_representative_positions(duration_ms, &entry.decoded_positions_ms)
+                    .is_ok())
+                || (entry.decode_status == DecodeStatus::AttestedQualified
+                    && entry.decode_backend == Some(DecodeBackend::NativeGstPlay)
+                    && entry.decode_attestation == Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+                    && validate_native_positions(duration_ms, &entry.decoded_positions_ms).is_ok())
         })
         .map(|duration_ms| WorkspaceSourceContract {
             kind: "workspaceFile",
-            relative_path: logical_relative_path(&entry.id),
+            relative_path: entry.logical_relative_path.clone(),
             mime_type: entry.mime_type.clone(),
             sha256: entry.sha256.clone(),
             byte_length: entry.byte_length,
@@ -1154,7 +1478,13 @@ fn webview_attested_candidate<'a>(
             "A WebView-attested workspace stimulus requires a positive duration.",
         ));
     }
-    if expected_relative_path != logical_relative_path(workspace_file_id) {
+    if expected_relative_path
+        != scanned
+            .iter()
+            .find(|entry| entry.id == workspace_file_id)
+            .map(|entry| entry.logical_relative_path.as_str())
+            .unwrap_or_default()
+    {
         return Err(CommandError::invalid_contract(
             "Workspace settings must use the opaque logical source locator from Rescan.",
         ));
@@ -1185,6 +1515,58 @@ fn webview_attested_candidate<'a>(
         })
 }
 
+#[allow(clippy::too_many_arguments)]
+fn native_attested_candidate<'a>(
+    scanned: &'a [ScannedStimulus],
+    workspace_file_id: &str,
+    expected_sha256: &str,
+    expected_byte_length: u64,
+    expected_relative_path: &str,
+    expected_mime_type: &str,
+    expected_duration_ms: f64,
+) -> ResearchResult<&'a ScannedStimulus> {
+    if !expected_duration_ms.is_finite() || expected_duration_ms < 10.0 {
+        return Err(CommandError::invalid_contract(
+            "A GstPlay-qualified workspace stimulus requires a complete-video duration.",
+        ));
+    }
+    if expected_relative_path
+        != scanned
+            .iter()
+            .find(|entry| entry.id == workspace_file_id)
+            .map(|entry| entry.logical_relative_path.as_str())
+            .unwrap_or_default()
+    {
+        return Err(CommandError::invalid_contract(
+            "Workspace settings must use the opaque logical source locator from Rescan.",
+        ));
+    }
+    scanned
+        .iter()
+        .find(|entry| {
+            entry.id == workspace_file_id
+                && entry.sha256 == expected_sha256
+                && entry.byte_length == expected_byte_length
+                && entry.mime_type == expected_mime_type
+                && entry.decode_status == DecodeStatus::AttestedQualified
+                && entry.decode_backend == Some(DecodeBackend::NativeGstPlay)
+                && entry.decode_attestation == Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+                && entry
+                    .duration_ms
+                    .is_some_and(|duration| (duration - expected_duration_ms).abs() <= 0.5)
+                && validate_native_positions(
+                    entry.duration_ms.unwrap_or_default(),
+                    &entry.decoded_positions_ms,
+                )
+                .is_ok()
+        })
+        .ok_or_else(|| {
+            CommandError::forbidden(
+                "The opaque workspace file and its native GstPlay attestation do not match the latest scan.",
+            )
+        })
+}
+
 fn representative_positions_ms(duration_ms: f64) -> [f64; 3] {
     let offset = (duration_ms * 0.1).min(250.0);
     [offset, duration_ms * 0.5, (duration_ms - offset).max(0.0)]
@@ -1208,6 +1590,29 @@ fn validate_representative_positions(duration_ms: f64, positions_ms: &[f64]) -> 
     {
         return Err(CommandError::invalid_contract(
             "Decoded-frame positions must bind the expected near-start, midpoint, and near-end probes.",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_native_positions(duration_ms: f64, positions_ms: &[f64]) -> ResearchResult<()> {
+    if !duration_ms.is_finite() || duration_ms < 10.0 || positions_ms.len() != 3 {
+        return Err(CommandError::invalid_contract(
+            "Native decode attestation requires three complete-video snapshots.",
+        ));
+    }
+    let expected = representative_positions_ms(duration_ms);
+    if positions_ms.iter().any(|position| !position.is_finite())
+        || positions_ms
+            .windows(2)
+            .any(|positions| positions[1] - positions[0] < 1.0)
+        || positions_ms
+            .iter()
+            .zip(expected)
+            .any(|(observed, expected)| (observed - expected).abs() > 250.0)
+    {
+        return Err(CommandError::invalid_contract(
+            "Native decoded snapshots must cover the expected start, midpoint, and end probes.",
         ));
     }
     Ok(())
@@ -1819,6 +2224,68 @@ mod tests {
         let json = serde_json::to_string(&result).unwrap();
         assert!(!json.contains("chosen"));
         assert!(!json.contains("clip.mp4/") && !json.contains("stimuli\\"));
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn native_decode_attestation_is_distinct_from_webview_evidence_at_start_revalidation() {
+        let base = temporary_directory("native-decode-attestation");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        fs::write(workspace.join("stimuli").join("clip.mp4"), b"video-bytes").unwrap();
+        let scan = service.rescan(&workspace_id).unwrap();
+        let item = &scan.stimuli[0];
+        let summary = service
+            .attest_native_decode(
+                &workspace_id,
+                &item.sha256,
+                item.byte_length,
+                &item.mime_type,
+                &crate::research_native_media::NativeMediaDecodeReceiptV1 {
+                    schema: "affect-research-native-media-decode-receipt",
+                    version: 1,
+                    session_id: Uuid::new_v4().to_string(),
+                    generation: 1,
+                    media_grant_id: Uuid::new_v4().to_string(),
+                    workspace_file_id: item.workspace_file_id.clone(),
+                    duration_ms: 1_000.0,
+                    video_width: 1_920,
+                    video_height: 1_080,
+                    audio_stream_count: 1,
+                    decoded_positions_ms: vec![100.0, 500.0, 900.0],
+                    decoded_snapshot_count: 3,
+                },
+            )
+            .unwrap();
+        let source = summary.source.unwrap();
+        service
+            .verify_native_workspace_file(
+                &workspace_id,
+                &item.workspace_file_id,
+                &item.sha256,
+                item.byte_length,
+                &source.relative_path,
+                &item.mime_type,
+                source.duration_ms,
+            )
+            .unwrap();
+        assert!(service
+            .verify_workspace_file(
+                &workspace_id,
+                &item.workspace_file_id,
+                &item.sha256,
+                item.byte_length,
+                &source.relative_path,
+                &item.mime_type,
+                source.duration_ms,
+            )
+            .is_err());
         fs::remove_dir_all(base).unwrap();
     }
 

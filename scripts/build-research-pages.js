@@ -18,5 +18,12 @@ await Promise.all([
 ]);
 
 // Browser delivery shares Research contracts and UI modules, but must not ship
-// the Tauri-only IPC adapter or its native API dependency.
-await rm(resolve(outputRoot, "src", "research", "native-bridge.js"), { force: true });
+// any Tauri-only entrypoint or native adapter implementation.
+await Promise.all([
+  "native-bridge.js",
+  "native-entry.js",
+  "native-media-catalogue.js",
+  "native-media-controller.js",
+  "native-package-protocol.js",
+  "native-run-media.js",
+].map((name) => rm(resolve(outputRoot, "src", "research", name), { force: true })));

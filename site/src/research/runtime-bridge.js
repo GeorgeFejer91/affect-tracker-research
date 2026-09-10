@@ -1,4 +1,4 @@
-import { RESEARCH_UI_EVENTS, estimateResearchStorageUse } from "./app.js";
+import { RESEARCH_UI_EVENTS, estimateResearchStorageUse } from "./ui-contracts.js";
 import { IndexedDbResearchJournal } from "./browser-journal.js";
 import { canonicalJson } from "./canonical.js";
 import { participantIds } from "./identity.js";
@@ -1667,21 +1667,15 @@ export class BrowserResearchRuntimeBridge {
   }
 }
 
-async function bootRuntimeBridge() {
-  const root = document.querySelector("#research-app[data-research-surface=\"browser\"]");
-  if (!root) return;
-  if (!root.researchUi) await delay(0);
+export async function bootRuntimeBridge(root) {
+  if (!root?.matches?.("#research-app[data-research-surface=\"browser\"]")) {
+    throw new Error("Browser Research root is missing or has the wrong surface.");
+  }
+  if (!root.researchUi) throw new Error("Research UI must initialize before the browser runtime.");
   const bridge = new BrowserResearchRuntimeBridge(root);
   root.researchRuntime = bridge;
   await bridge.initialize();
-}
-
-if (typeof document !== "undefined") {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => void bootRuntimeBridge(), { once: true });
-  } else {
-    void bootRuntimeBridge();
-  }
+  return bridge;
 }
 
 export { RUNTIME_LOCK_NAME };

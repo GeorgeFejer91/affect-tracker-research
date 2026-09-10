@@ -241,11 +241,13 @@ Rendering cadence and WebView media events never authorize native samples.
 
 The native runtime is built from the exact repository pin and deterministic
 file-hash manifest, with upstream license notices retained and ambient plugin
-paths disabled. The unavoidable raw-window GstPlay renderer construction is
-confined to a small adapter with documented window lifetime, thread affinity,
-callback, panic, and teardown invariants. Adding that `unsafe` constructor
-requires explicit user approval; the existing safe pin/stager/capability
-groundwork is not equivalent to the renderer or qualification.
+paths disabled. Unavoidable Windows FFI is confined to exactly two small
+adapters: private DLL-search activation/removal and raw-window GstPlay renderer/
+child-window operations. Both document handle lifetime, thread affinity,
+callback, panic, and teardown invariants; the crate denies undocumented unsafe
+blocks and source guards reject unsafe code anywhere else. The researcher
+approved these contained native boundaries on 2026-09-10. Their presence is not
+runtime redistribution or installed playback qualification.
 
 ### 2. Experiment
 

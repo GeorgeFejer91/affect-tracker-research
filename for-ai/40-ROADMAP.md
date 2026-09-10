@@ -130,9 +130,9 @@ adapter portion of the former native-input roadmap item. Hardware, DPI,
 multi-monitor, focus, disconnect, latency, and Pause/Stop-region qualification
 remains pending and no physical-device claim is made from automated tests.
 
-## ExperimentPackageV1 status — browser package slice; native/qualification pending
+## ExperimentPackageV1 status — browser and Rust execution landed; installed qualification pending
 
-The uncommitted candidate now includes browser and Rust
+The current candidate includes browser and Rust
 `ExperimentPackageV1` types/readers, exact canonical serialization, fixed
 `experiment.package.json` naming, the `assets/stimuli` manifest boundary, the
 exact `complete-video-v1` policy, a finite rooted language tree, embedded
@@ -170,24 +170,33 @@ SHA-256 and byte length, and reject undeclared entries. They do not decode those
 fixture bytes, verify duration, or launch two full installed GUI application
 profiles.
 
-Browser package-backed execution now validates and freezes canonical package
+Browser package-backed execution validates and freezes canonical package
 bytes/source hash, selected language route, and asset bindings in recovery. It
 materializes `experiment.package.json` as the `experimentPackage` output of
-strict `ResearchRunManifestV4`; workspace audit reparses it and recompiles the frozen
-settings, experiment plan, and protocol plan before accepting the manifest.
-Historical package-less V3 output remains readable as ManifestV3 and is never
-upgraded in place. This is browser software evidence, not installed/physical qualification.
-Native package Start remains blocked before mutation.
+strict `ResearchRunManifestV4`; workspace audit reparses it and recompiles the
+frozen settings, experiment plan, and protocol plan before accepting the
+manifest. Historical package-less V3 output remains readable as ManifestV3 and
+is never upgraded in place.
 
-The permanent gate remains pending: exact canonical bytes must be loaded in two
-clean independent instances against the same read-only asset tree and, for
-every participant and terminal language, compare full package-byte, selected-
-settings, asset-manifest, participant-assignment, and participant/language
-protocol-plan hashes plus the exact step sequence and byte-identical re-export.
-The completed gate must add decode/duration evidence on a representative media
-closure and positively prove that ambient defaults, locale, RNG, clock,
-directory order, and storage were not consulted. No complete acceptance
-receipt exists.
+The Rust-owned package path now independently parses and compiles the selected
+participant/language projection, verifies the closed asset bindings, reserves a
+create-new attempt, executes questionnaire/video/explicit-ISI steps through a
+pure reducer, coordinates native input/GstPlay/sampling/LSL, persists typed
+samples/events/questionnaire responses and a recovery journal, resumes only at
+a safe boundary, and finalizes a package-bound ManifestV4 plus canonical CSV/
+TSV and immutable package snapshot. Thin Tauri commands expose that runtime
+without accepting paths or protocol policy. Its public Start remains
+deliberately blocked before mutation because the native-media capability cannot
+report `qualifiedStartAvailable` until installed qualification is complete.
+
+The permanent contract-level gate now passes in two hostile clean Node
+processes for every participant and terminal language, comparing exact hashes,
+step sequences, closed read-only fixture assets, and byte-identical re-export
+while prohibiting ambient locale, RNG, clock, storage, cache, navigator, and
+directory-order reads. The remaining acceptance extension is two full clean
+installed/browser GUI profiles with representative decodable assets, duration
+receipts, and platform normalization. No installed/physical acceptance receipt
+exists.
 
 ## External experiment protocol status — transitional authoring path
 
@@ -208,14 +217,16 @@ browser package attempt is authorized only through the canonical package Run
 binding that reproduces this embedded V3 settings/plan/protocol tuple.
 Tauri's no-argument `research_load_experiment` owns its native picker and
 strictly returns a path-free receipt for files no larger than 5 MiB. Separate
-native package load/save commands now exist, but native transitional-V3 and
-package Start remain fail-closed before mutation. Native player/scheduler
-routing, language/after-video execution, interval recovery, and final package
-output integration are not implemented or qualified. Historical
+  native package load/save commands and the package-only native runtime now
+  exist. Transitional-V3 native Start remains retired; package Start reaches
+  the Rust preflight but remains fail-closed before mutation until media
+  qualification. Native player/scheduler routing, language/after-video
+  execution, explicit interval recovery, and final package output integration
+  are implemented and test-covered but not installed or physically qualified. Historical
 settings, experiment, assignment, module, and protocol readers retain their
 original meanings.
 
-## Questionnaire protocol status — package authoring/compile; native fail-closed
+## Questionnaire protocol status — package authoring and browser/Rust execution landed
 
 The questionnaire-aware contract now places active modules through
 `QuestionnaireModuleV2` block IDs and resolves them with the external schedule
@@ -238,14 +249,15 @@ The browser Setup surface now leaves language unset at package load, traverses
 the package-owned tree explicitly per participant/new attempt, and restores a
 compatible interrupted attempt from a narrow hash-bound recovery projection.
 There is no flattened route selector or first-route default.
-Tauri validates the package structure and questionnaire languages but does not
-own language-specific protocol compilation; it rejects transitional V3/package
-Start before mutation until its atomic native execution/writer is complete.
-Do not treat deterministic browser tests or native validation as run-ready
-evidence until Rust execution parity, physical recovery/output, accessibility,
+Tauri now owns language-specific package protocol compilation, strict answer
+derivation, durable draft/submit transactions, safe-boundary progression, and
+ManifestV4 response outputs. Transitional V3 Start stays rejected. Package
+Start stays unavailable only because installed native-media qualification has
+not opened its positive capability gate. Do not treat deterministic browser or
+Rust tests as run-ready evidence until physical recovery/output, accessibility,
 timing, media, and packaged-workflow gates pass.
 
-## Native GStreamer/GstPlay status — safe groundwork only
+## Native GStreamer/GstPlay status — actor and package integration landed; distribution/qualification open
 
 Implemented safe groundwork:
 
@@ -263,6 +275,16 @@ Implemented safe groundwork:
   optional features, exclude the GStreamer tree, positively disable native
   acquisition, and write all-false, exact-commit artifact provenance;
 - a path-free native-media capability contract;
+- an isolated Rust-owned runtime environment and serialized GLib/GstPlay actor
+  with bounded control messages, generation/run/asset fencing, native status
+  snapshots, deterministic teardown, and decode-attestation receipts;
+- the user-approved contained Windows FFI adapters in
+  `gst_actor/runtime_environment.rs` and `gst_actor/windows_renderer.rs`, which
+  own private DLL-search state and one child HWND beneath the Tauri window while
+  keeping native handles and paths out of IPC;
+- typed Prepare/viewport/Play/Pause/Stop commands integrated with the package
+  reducer, native scheduler, input mailbox, recovery journal, and status
+  projection;
 - run/receipt/recovery labelling for `nativeGstPlay`, retired parse-only
 `nativeLibvlc`, versus explicit
   `unqualifiedWebview`, including fail-closed media-error handling;
@@ -280,55 +302,49 @@ Implemented safe groundwork:
 
 Not implemented or qualified:
 
-- the serialized GLib/GstPlay player actor and callback fencing;
-- isolated runtime/plugin registry initialization and native decode discovery;
 - a reviewed minimal distributable plugin/codec closure, complete
   corresponding-source artifacts/provenance, and redistribution approval;
 - a safe installed Windows pre-`main` DLL-resolution/bootstrap design that
   cannot be masked by CI `PATH` or load an ambient GStreamer runtime;
-- the application-owned child HWND/render-rectangle adapter;
-- native playback commands/events connected to exact media grants; or
-- packaged playback, codec, DPI/resize, audio, recovery, shutdown, and soak
+- installed native decode/duration evidence across a declared representative
+  container/codec matrix; or
+- packaged playback, DPI/resize, audio, recovery, shutdown, and soak
   receipts.
 
-The capability therefore reports `playerActorReady: false` and
-`qualifiedStartAvailable: false`. The transitional native status prefers
-`nativeGstPlay`, while `ExperimentPackageV1` must carry an explicit playback
-policy; qualified Start fails closed in either case. Implementing the raw-window GstPlay renderer requires
-explicit approval for the contained `unsafe` constructor, followed by focused
-audit. The researcher granted that approval on 2026-09-10. Implementation,
-audit, and installed-artifact qualification remain incomplete; staging the
-runtime is not playback qualification.
+With the exact private runtime staged, the capability can report
+`playerActorReady: true`; it continues to report
+`qualifiedStartAvailable: false` and reason
+`native-qualification-evidence-incomplete`. `ExperimentPackageV1` carries the
+explicit `nativeGstPlay` policy and qualified Start therefore remains closed.
+The researcher approved the two contained `unsafe` Windows FFI adapters on
+2026-09-10. Focused source audit, installed-artifact qualification, and
+redistribution closure remain incomplete; compilation or staging is not
+playback qualification.
 
 ## Open software work before candidate acceptance
 
-1. Refactor the large frontend and native runtime coordinators along the
-   chartered module topology. Keep one composition root, narrow typed module
-   interfaces, an explicit native/browser adapter boundary, and focused tests;
-   do not move behavior or weaken recovery while splitting it.
-2. Finish the package authority slice: bind the exact playback
-   backend/output policy into terminal evidence, and implement atomic native
-   package execution while preserving historical readers/importers.
-3. Extend the permanently gated two-clean-process contract benchmark to two
+1. Continue shrinking the historical browser UI/journal coordinators without
+   moving authority out of the landed package/contracts, workspace, protocol,
+   questionnaire, input, media, storage, recovery, and bridge modules. The
+   current acyclic import, thin-command, and cross-domain source guards are
+   release gates, not a waiver for future catch-all growth.
+2. Extend the permanently gated two-clean-process contract benchmark to two
    full independent installed/browser application profiles, representative
    decodable read-only media with duration receipts, and platform-specific
    normalization checks. Retain the existing hostile ambient guards, closed
    asset tree, exact per-case five-hash tuple, sequence equality, and
    byte-identical re-export comparisons.
-4. Approve a minimal GStreamer redistribution/source closure and safe Windows
+3. Approve a minimal GStreamer redistribution/source closure and safe Windows
    DLL-loader bootstrap; keep every downloadable package runtime-free until it
    passes review.
-5. Implement the now-approved contained native GstPlay renderer and child-
-   window adapter, connect player lifecycle atomically to the scheduler, and
-   pass the security/lifecycle gates in
+4. Audit and physically qualify the landed actor/child-window/package lifecycle
+   against the security, format, resize, audio, shutdown, and soak gates in
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
-6. Implement native GstPlay-owned duration/decode preflight and exact lifecycle
-   authority for declared package assets after the actor exists.
-7. Exercise real full-disk/power-loss and directory-entry durability, real
+5. Exercise real full-disk/power-loss and directory-entry durability, real
    browser quota/permission loss, and packaged Setup-to-Run/recovery workflows;
    deterministic initial/streaming/journal and IndexedDB transaction fault
    coverage is now implemented.
-8. Publish the validated implementation branch through normal repository
+6. Publish the validated implementation branch through normal repository
    safeguards, verify CI, merge deliberately, deploy Research Pages, and bind
    all later qualification receipts to the exact resulting candidate.
 
@@ -392,34 +408,39 @@ LabRecorder, network reconnect, sleep/wake, packaged-candidate, or long-run
 qualification. No physical-workflow, native-playback, 30-minute timing, or
 accessibility qualification receipt currently exists for Research v1.
 
-### Current local working-candidate verification — 2026-09-09
+### Current local working-candidate verification — 2026-09-10
 
-The uncommitted package/questionnaire/language-selection working candidate
-passed 299/299 JavaScript tests, the allowlisted Pages and desktop frontend
-builds, `git diff --check`, and the high-severity pnpm dependency audit. Rust
-format and both clippy matrices passed with warnings denied. The no-default
-Rust matrix passed 152/152 tests. With the exact pinned GStreamer 1.28.6
-Windows development SDK and required-runtime gate enabled, all-feature check,
-test, and clippy passed; the matrix reported 153 passed and one explicitly
-environment-gated LSL loopback ignored. That loopback then passed in its
-separate opt-in invocation.
+The package/questionnaire/language-selection/native-runtime working candidate
+passed 323/323 JavaScript tests and the allowlisted Pages and desktop
+frontend builds. The pnpm moderate-severity dependency audit found no known
+vulnerabilities. Rust format and both clippy matrices passed with warnings
+denied. The no-default Rust matrix passed 175/175 tests. With the exact pinned
+GStreamer 1.28.6 Windows development SDK and required-runtime gate enabled,
+all-feature check, test, and clippy passed; the matrix reported 178 passed and
+one explicitly environment-gated LSL loopback ignored. That loopback then
+passed in its separate opt-in invocation.
 
 The pinned installer SHA-256 and staged 827-file runtime closure were also
-verified locally. A read-only interactive review of Setup and Review confirmed
-the two-mode shell, ordered controls, participant-language blocker, explicit
-nested language traversal, and accessible dialog semantics without console
-errors. The automated browser runtime suite completed a canonical package run
-through video, questionnaire, ISI, output, audit, interruption, and recovery
-paths. This paragraph is local working-tree evidence only: the changes have no
-candidate commit, remote CI run, package artifact, installed-app receipt, or
-physical-workflow receipt yet. It must not be cited as release or
-research-readiness qualification.
+verified locally. Interactive Chromium review covered every Setup accordion,
+Review blockers, bundled MAIA preview, keyboard input test, all mappings,
+desktop/tablet/mobile reflow, and the real Run presentation at stimulus,
+questionnaire, participant-controlled ISI, completion receipt, and return-to-
+Setup states without console errors. That visual projection fixture performs no
+acquisition and ships in neither product build. It exposed and led to fixes for
+a narrow-screen workspace-grid collision and a stale Run-footer coordinate
+receipt. The automated browser runtime suite and Rust package reducer completed
+canonical package runs through video, questionnaire, ISI, output, audit,
+interruption, and recovery paths. This is local-machine evidence only; it does
+not substitute for a remote CI run, package artifact, installed-app receipt, or
+physical-workflow receipt. It must not be cited as release or research-
+readiness qualification.
 
 Before a stable or research-ready claim, record:
 
-1. The permanent two-clean-instance `ExperimentPackageV1` reproduction
-   benchmark for every participant and terminal language, exact five-hash and
-   sequence equality, byte-identical re-export, and no ambient defaults/storage.
+1. Extend the passing hostile two-process `ExperimentPackageV1` contract
+   benchmark to two clean full installed/browser GUI instances with
+   representative decoded assets and duration evidence while retaining exact
+   hash/sequence/re-export equality and ambient-state guards.
 2. Separate visible 30-minute 130 Hz runs on declared Windows hardware in the
    packaged Tauri app, current Chrome, and current Edge: mean 129–131 Hz; p95
    lateness at most two periods; input-state p95 at most two Tauri periods and

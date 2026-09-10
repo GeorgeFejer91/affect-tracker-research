@@ -72,6 +72,59 @@ contracts have one owner; JavaScript/Rust mirrors use canonical fixtures and
 differential conformance. A coordinator may sequence modules but cannot absorb
 their validation, storage, timing, or lifecycle implementation.
 
+The following mirror map is normative for the Research product. A row may be
+split into smaller cohesive files, but responsibilities from different rows may
+not be merged into a catch-all controller or runtime module:
+
+| Product boundary | Frontend responsibility | Rust/native responsibility |
+|---|---|---|
+| Package and contracts | Authoring projections, strict browser reader, validation messages | Canonical parser/compiler, hashes, selected-language/participant projection |
+| Workspace and assets | Folder-selection affordances, catalogue projection, preview requests | Opaque workspace authority, closed-tree scan, grants, hashing and decode attestation |
+| Protocol and questionnaires | Setup editors and Run-step view models | Authoritative reducer, hook/ISI progression, drafts, submissions and recovery boundary |
+| Participant and attempt | Transient form state and status tiles | Code derivation verification, locks, create-new attempt allocation and reconstruction |
+| Input | Binding editor and live-test presentation | Device capture, conflict/edge policy, authoritative state and sampling feed |
+| Visual feedback | Preview and Run rendering only | Frozen contract validation and evidence binding; no DOM or renderer ownership |
+| Native media | Geometry/status projection through one adapter | GstPlay actor, private file grant, lifecycle, timestamps and child-window adapter |
+| Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
+| Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
+| Platform bridge | One selected browser/native adapter | Narrow authorized commands/events; no product policy in handlers |
+
+The landed package-run slice realizes that map through these explicit seams:
+
+- `site/src/research/ui-contracts.js` owns the DOM-free Setup/Run vocabulary,
+  accordion registry, event names, preset/mapping projections, and storage
+  estimate used by both platform bridges. Neither bridge imports the UI
+  composition module.
+- `site/src/research/ui-view.js` owns declarative Setup/Run markup and contains
+  no workspace, storage, IPC, or runtime authority. `app.js` is the presentation
+  interaction/composition root and imports that view rather than embedding the
+  instrument document;
+  `native-bridge.js` and `runtime-bridge.js` are platform compositions, while
+  `native-package-protocol.js`, `native-media-controller.js`,
+  `native-media-catalogue.js`, and `native-run-media.js` are bounded native
+  adapters rather than feature views.
+- `research_experiment_package.rs` owns strict package bytes and hashes;
+  `research_native_protocol/{compiler,contracts,records,reducer,responses}.rs`
+  owns pure package-run domain logic; `{input_mailbox,storage,recovery}.rs`
+  owns isolated service/failure domains; `runtime.rs` coordinates those
+  services; and `commands.rs` is the path-free serialization boundary.
+- `research_native_media/{contracts,state,gst_actor}.rs` owns playback outside
+  protocol and persistence. Its Windows renderer and private runtime
+  environment remain nested platform adapters with no protocol authority.
+
+The legacy `ResearchRuntime` and browser journal remain isolated compatibility
+readers/finalizers for historical manifests. They are not permitted to become
+an alternate Start authority for a new package attempt. New functionality goes
+into the bounded package-run modules above, not into those compatibility
+coordinators.
+
+Only the application bootstrap may select and connect platform adapters. Raw
+Tauri `invoke` calls are confined to named frontend native-adapter modules;
+feature views receive typed operations instead. Rust command handlers must call
+one service operation after authorization. Every new end-to-end feature must
+identify its row, add or extend both sides where native authority is required,
+and include a boundary-focused unit test plus a cross-boundary contract test.
+
 Files are split by cohesive authority and failure domain rather than by line
 count alone. In particular, the native run implementation is factored into
 package preparation, protocol reducer, scheduler/input/media coordination,
@@ -231,13 +284,19 @@ non-playing state fences the sampler first; actor loss is a run failure with a
 durable recovery boundary. Callback messages are bounded and generation-
 fenced so stale media/player callbacks cannot affect a later attempt.
 
-The GstPlay raw-window renderer constructor is the only intended project-
-authored `unsafe` surface. It must live in a small adapter with documented
-validated-handle lifetime, strong child-window keepalive, thread affinity,
-callback-after-teardown prevention, and no-panic-across-FFI invariants. Explicit
-user approval is required before adding it. Until that renderer lands, the safe
-runtime verifier and capability service truthfully report native playback
-unavailable and qualified Start fails closed.
+Project-authored `unsafe` is restricted to two Windows FFI adapters under
+`research_native_media/gst_actor/`: `runtime_environment.rs` owns private DLL-
+search activation/removal, and `windows_renderer.rs` owns raw child-window and
+GstPlay overlay calls. The researcher approved these contained boundaries on
+2026-09-10. Both document validated-handle lifetime, exact-once teardown,
+actor-thread affinity, callback-after-teardown prevention, and
+no-panic-across-FFI invariants. Crate lints and a recursive source allowlist
+reject undocumented blocks or unsafe code in every other module. Landing these
+adapters is software evidence only:
+the capability service may report an actor ready after exact runtime
+verification, while `qualifiedStartAvailable` and package Start remain false
+until the installed runtime, redistribution, codec/decode, lifecycle, physical
+input, timing, recovery, and workflow gates produce commit-bound receipts.
 
 `unqualifiedWebview` is a separately chosen development path, never an
 automatic fallback. Its receipt, journal, events, and manifest remain labelled
@@ -505,9 +564,10 @@ copying one instance's results into the other.
 
 This harness proves deterministic package resolution only. Native media/input/
 persistence/LSL availability remains an independently observed preflight and
-qualification boundary. In particular, current Windows `nativeGstPlay` Start
-continues to fail closed until its actor, approved renderer, and installed-
-artifact gates pass.
+qualification boundary. The Rust package protocol, actor, and approved renderer
+are implemented, but current Windows `nativeGstPlay` Start continues to fail
+closed until the installed-runtime, redistribution, format/decode, physical,
+timing, recovery, and complete-workflow gates pass.
 
 ## Recording, output, and recovery
 

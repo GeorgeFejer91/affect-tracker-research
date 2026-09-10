@@ -284,9 +284,9 @@ impl ExperimentPackageV1 {
 }
 
 #[derive(Debug, Clone)]
-struct PackageLanguageRoute {
-    language: PackageLanguageV1,
-    option_ids: Vec<String>,
+pub(crate) struct PackageLanguageRoute {
+    pub(crate) language: PackageLanguageV1,
+    pub(crate) option_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -295,7 +295,7 @@ struct ExpectedDerivedIntegrity {
     protocol_matrix_sha256: String,
 }
 
-fn enumerate_language_routes(
+pub(crate) fn enumerate_language_routes(
     language_selection: &LanguageSelectionTreeV1,
 ) -> ResearchResult<Vec<PackageLanguageRoute>> {
     let nodes: BTreeMap<&str, &LanguageSelectionNodeV1> = language_selection
@@ -358,7 +358,7 @@ fn collect_language_routes(
     Ok(())
 }
 
-fn settings_for_language(
+pub(crate) fn settings_for_language(
     settings: &ResearchSettingsV3,
     language: &PackageLanguageV1,
 ) -> ResearchResult<ResearchSettingsV3> {
@@ -399,7 +399,9 @@ fn settings_for_language(
     selected.normalize_and_validate()
 }
 
-fn resolved_experiment_plan(settings: &ResearchSettingsV3) -> ResearchResult<(Value, String)> {
+pub(crate) fn resolved_experiment_plan(
+    settings: &ResearchSettingsV3,
+) -> ResearchResult<(Value, String)> {
     let settings_sha256 = settings.canonical_sha256()?;
     let definition = &settings.external_protocol.definition;
     let mut stimuli = Vec::with_capacity(definition.stimuli.len());
@@ -467,7 +469,7 @@ fn resolved_experiment_plan(settings: &ResearchSettingsV3) -> ResearchResult<(Va
     Ok((plan, plan_hash_sha256))
 }
 
-fn participant_assignment_sha256(
+pub(crate) fn participant_assignment_sha256(
     experiment_plan: &Value,
     participant_id: &str,
 ) -> ResearchResult<String> {
@@ -545,11 +547,11 @@ fn append_questionnaire_step(
     steps.push(step);
 }
 
-fn resolved_protocol_plan_hash(
+pub(crate) fn resolved_protocol_plan(
     settings: &ResearchSettingsV3,
     experiment_plan_sha256: &str,
     participant_id: &str,
-) -> ResearchResult<String> {
+) -> ResearchResult<(Value, String)> {
     let schedule = settings
         .external_protocol
         .definition
@@ -676,7 +678,7 @@ fn resolved_protocol_plan_hash(
         }
     }
 
-    let plan = json!({
+    let mut plan = json!({
         "schema": "affect-research-protocol-plan",
         "version": 2,
         "algorithmVersion": "external-questionnaire-hooks-v1",
@@ -686,7 +688,14 @@ fn resolved_protocol_plan_hash(
         "blockOrder": schedule.blocks.iter().map(|block| block.block_id.clone()).collect::<Vec<_>>(),
         "steps": steps,
     });
-    canonical_sha256(&plan, &[])
+    let protocol_plan_hash_sha256 = canonical_sha256(&plan, &[])?;
+    plan.as_object_mut()
+        .expect("resolved protocol plan is an object")
+        .insert(
+            "protocolPlanHashSha256".to_owned(),
+            Value::String(protocol_plan_hash_sha256.clone()),
+        );
+    Ok((plan, protocol_plan_hash_sha256))
 }
 
 fn expected_derived_integrity(
@@ -703,7 +712,7 @@ fn expected_derived_integrity(
         for schedule in &selected_settings.external_protocol.definition.schedules {
             let assignment_sha256 =
                 participant_assignment_sha256(&selected_experiment_plan, &schedule.participant_id)?;
-            let protocol_plan_sha256 = resolved_protocol_plan_hash(
+            let (_, protocol_plan_sha256) = resolved_protocol_plan(
                 &selected_settings,
                 &selected_experiment_plan_sha256,
                 &schedule.participant_id,

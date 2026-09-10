@@ -44,7 +44,7 @@ const rules = {
       || path === "questionnaires/ssq-six-item-en.csv"
       || path === "questionnaires/tas-20-en.csv"
       || path === "questionnaires/vr-exp-en.csv"
-      || (path.startsWith("src/research/") && path !== "src/research/native-bridge.js"),
+      || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),
   },
   desktop: {
     root: resolve(repositoryRoot, "desktop", "dist"),

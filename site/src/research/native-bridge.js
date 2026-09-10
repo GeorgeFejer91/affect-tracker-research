@@ -4,8 +4,12 @@ import {
   INPUT_PRESET_OPTIONS,
   RESEARCH_UI_EVENTS,
   estimateResearchStorageUse,
-} from "./app.js";
+} from "./ui-contracts.js";
 import { probeVideoElement } from "./workspace.js";
+import { attestNativeGstCatalogue } from "./native-media-catalogue.js";
+import { NativeMediaController } from "./native-media-controller.js";
+import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
+import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -1043,10 +1047,38 @@ export class NativeResearchRuntimeBridge {
     this.setInterval = setIntervalObject;
     this.clearInterval = clearIntervalObject;
     this.videoFactory = videoFactory;
+    this.nativeMedia = new NativeMediaController({ invoke });
+    this.nativeRunMedia = new NativeRunMedia({
+      controller: this.nativeMedia,
+      resolveHost: () => this.root.querySelector?.("#run-native-video-host"),
+      resolveFallbackVideo: () => this.root.querySelector?.("#run-video"),
+      resolvePlaceholder: () => this.root.querySelector?.("#run-stimulus-placeholder"),
+    });
+    this.packageProtocol = new NativePackageProtocolAdapter(root, {
+      invoke,
+      dispatch: (type, detail) => this.#dispatch(type, detail),
+      prepareRunInput: async () => {
+        const inputStatus = await this.#setNativeInputRegion(".run-feedback-stage", "runFeedback");
+        if (inputStatus?.runReady !== true) {
+          throw new Error("The native Run feedback-stage allow-region is not ready.");
+        }
+      },
+      onRunActivated: () => this.#stopInputPolling(),
+      onRunReleased: () => {
+        this.#startInputPolling();
+        this.root.researchUi?.resetAffect?.("package-run-complete");
+      },
+      onRunTerminal: async () => {
+        await this.#refreshParticipantStates();
+      },
+      setIntervalObject,
+      clearIntervalObject,
+    });
     this.workspace = null;
     this.sourceCapabilities = null;
     this.nativeMediaCapability = null;
     this.nativeProtocolCapability = null;
+    this.nativePackageProtocolCapability = null;
     this.nativeInputCapability = null;
     this.catalog = new Map();
     this.recoveries = [];
@@ -1068,20 +1100,24 @@ export class NativeResearchRuntimeBridge {
   async initialize() {
     this.#bind();
     try {
-      const [workspace, sourceCapabilities, nativeMediaCapability, nativeProtocolCapability, inputCapability, inputStatus, status] = await Promise.all([
+      const [workspace, sourceCapabilities, nativeMediaCapability, nativeProtocolCapability, nativePackageProtocolCapability, inputCapability, inputStatus, status, packageStatus] = await Promise.all([
         this.invoke("research_workspace_status"),
         this.invoke("research_source_capabilities"),
         this.invoke("research_native_media_capability"),
         this.invoke("research_native_protocol_capability"),
+        this.packageProtocol.initialize(),
         this.invoke("research_input_capability"),
         this.invoke("research_input_status"),
         this.invoke("research_run_status"),
+        this.invoke("research_package_run_status"),
       ]);
       this.sourceCapabilities = sourceCapabilities;
       this.nativeMediaCapability = validateNativeMediaCapabilityV2(nativeMediaCapability);
       this.nativeProtocolCapability = validateNativeProtocolCapabilityV1(nativeProtocolCapability);
+      this.nativePackageProtocolCapability = nativePackageProtocolCapability;
       this.nativeInputCapability = inputCapability;
-      this.nativeTimingReady = nativeRunStatusHandshake(status)
+      this.nativeTimingReady = (nativeRunStatusHandshake(status)
+        || this.nativePackageProtocolCapability.nativeStartReady === true)
         && this.nativeMediaCapability.reasonCode !== INTERFACE_ONLY_PLATFORM_REASON;
       this.#applySourceCapabilities();
       this.#applyInputCapability();
@@ -1090,8 +1126,10 @@ export class NativeResearchRuntimeBridge {
         indexedDbReady: true,
         timingWorkerReady: this.nativeTimingReady,
         lslReady: false,
-        manifestReady: false,
-        manifestReason: nativeProtocolUnavailableMessage(this.nativeProtocolCapability),
+        manifestReady: this.nativePackageProtocolCapability.manifestV4Ready === true,
+        manifestReason: this.nativePackageProtocolCapability.manifestV4Ready
+          ? "Rust-owned ExperimentPackageV1 protocol and ManifestV4 persistence are available."
+          : nativeProtocolUnavailableMessage(this.nativeProtocolCapability),
         storageReady: false,
         repositoryAssetsReady: sourceCapabilities?.repositoryAsset?.supported === true,
         nativePlaybackReady: this.nativeMediaCapability.qualifiedStartAvailable === true
@@ -1104,6 +1142,9 @@ export class NativeResearchRuntimeBridge {
       if (workspace?.selected) await this.#adoptWorkspace(workspace, { rescan: true });
       if (status?.active) {
         this.#showSetupError("A native attempt is already active. Restart Affect Research to reconcile it as a recoverable partial before selecting another participant.");
+      }
+      if (packageStatus?.active) {
+        this.#showSetupError("A Rust package attempt is already active. Restart Affect Research to reconcile its recovery journal before selecting another participant.");
       }
     } catch (error) {
       this.#showSetupError(error);
@@ -1124,6 +1165,8 @@ export class NativeResearchRuntimeBridge {
     this.#stopPolling();
     this.#stopInputPolling();
     this.#clearMediaListeners();
+    this.packageProtocol.destroy();
+    void this.nativeRunMedia.stop().catch(() => {});
     this.run = null;
     this.#clearVideo();
   }
@@ -1189,7 +1232,8 @@ export class NativeResearchRuntimeBridge {
       event.preventDefault();
       this.#queue(async () => {
         try {
-          await this.#start(event.detail);
+          if (this.packageProtocol.owns(event.detail)) await this.#startPackage(event.detail);
+          else await this.#start(event.detail);
         } catch (error) {
           this.#dispatch(RESEARCH_UI_EVENTS.startRejected, {
             message: error instanceof Error ? error.message : String(error),
@@ -1199,13 +1243,35 @@ export class NativeResearchRuntimeBridge {
       });
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.pauseRequest, () => {
+      if (this.packageProtocol.active) {
+        this.#queue(() => this.packageProtocol.togglePause());
+        return;
+      }
       this.#queueForCurrentRun((fence) => this.#togglePause(fence));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.stopEarlyRequest, () => {
+      if (this.packageProtocol.active) {
+        this.#queue(() => this.packageProtocol.finish("stopEarly"));
+        return;
+      }
       this.#queueForCurrentRun((fence) => this.#finish(fence, "stopEarly"));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.continueRequest, () => {
+      if (this.packageProtocol.active) {
+        this.#queue(() => this.packageProtocol.continue());
+        return;
+      }
       this.#queueForCurrentRun((fence) => this.#continueRun(fence, { directGesture: true }));
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireDraftRequest, (event) => {
+      if (!this.packageProtocol.active) return;
+      event.preventDefault();
+      this.#queue(() => this.packageProtocol.questionnaireDraft(event.detail));
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireSubmitRequest, (event) => {
+      if (!this.packageProtocol.active) return;
+      event.preventDefault();
+      this.#queue(() => this.packageProtocol.questionnaireSubmit(event.detail));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.inputBindingChanged, (event) => {
       this.#queue(() => this.#beginNativeInputTest(event.detail?.binding));
@@ -1218,7 +1284,11 @@ export class NativeResearchRuntimeBridge {
       this.#queue(() => this.invoke("research_input_cancel_setup"));
     });
     this.#listen(this.window, "resize", () => {
-      this.#queue(() => this.#refreshNativeInputRegion());
+      this.#queue(async () => {
+        await this.#refreshNativeInputRegion();
+        if (this.packageProtocol.active) await this.packageProtocol.resize();
+        else await this.#refreshNativeMediaViewport();
+      });
     });
     this.#listen(this.root, "change", (event) => {
       if (event.target?.id === "native-playback-mode" && this.workspace) {
@@ -1306,13 +1376,24 @@ export class NativeResearchRuntimeBridge {
   }
 
   async #refreshNativeInputRegion() {
-    if (this.run) {
+    if (this.run || this.packageProtocol.active) {
       await this.#setNativeInputRegion(".run-feedback-stage", "runFeedback");
       return;
     }
     if (this.root.researchUi?.openSection === "input") {
       await this.#beginNativeInputTest();
     }
+  }
+
+  async #refreshNativeMediaViewport() {
+    if (!this.nativeMedia.activeFence) return;
+    if (this.run?.receipt?.playbackMode === "nativeGstPlay") {
+      await this.nativeRunMedia.setViewport();
+      return;
+    }
+    const host = this.root.querySelector?.(".preview-pane .research-preview-stage");
+    if (!host || host.getClientRects?.().length === 0) return;
+    await this.nativeMedia.setViewport(host);
   }
 
   async #pollNativeInputStatus() {
@@ -1506,40 +1587,65 @@ export class NativeResearchRuntimeBridge {
     if (result) await this.#catalogue(result);
   }
 
-  async #catalogue(result) {
+  async #catalogue(result, { settings = this.root.researchUi?.settings } = {}) {
     if (result?.workspaceId !== this.workspace.workspaceId || !Array.isArray(result.stimuli)) {
       throw new Error("Native stimulus scan returned an invalid workspace binding.");
     }
     const playbackMode = this.#selectedPlaybackMode();
-    if (playbackMode !== "unqualifiedWebview") {
+    let scannedStimuli = result.stimuli;
+    let decodeQualification = "attestedUnqualified";
+    if (playbackMode === "nativeGstPlay") {
+      if (this.nativeMediaCapability?.runtimeIntegrityVerified !== true
+        || this.nativeMediaCapability?.playerActorReady !== true) {
+        this.catalog.clear();
+        this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
+        throw new Error(`Native GstPlay decode verification is unavailable (${this.nativeMediaCapability?.reasonCode ?? "unknown"}).`);
+      }
+      const viewportHost = this.root.querySelector?.(".preview-pane .research-preview-stage");
+      const progress = this.root.querySelector?.("#workspace-status");
+      const result = await attestNativeGstCatalogue({
+        controller: this.nativeMedia,
+        workspaceId: this.workspace.workspaceId,
+        stimuli: scannedStimuli,
+        viewportHost,
+        onProgress: ({ index, total, scanned }) => {
+          if (progress) progress.textContent = scanned
+            ? `GstPlay decode verification ${index + 1} of ${total}: ${scanned.displayName}`
+            : `GstPlay decode verification complete for ${total} video${total === 1 ? "" : "s"}.`;
+        },
+      });
+      scannedStimuli = result.qualified;
+      decodeQualification = "attestedQualified";
+      if (result.failures.length > 0) {
+        const details = result.failures.map(({ scanned, error }) => `${scanned?.displayName ?? "Video"}: ${messageOf(error)}`);
+        throw new Error(`Native GstPlay decode verification failed for ${details.join("; ")}`);
+      }
+    } else if (playbackMode !== "unqualifiedWebview") {
       this.catalog.clear();
       this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
-      try {
-        authorizeDesktopPlaybackMode(playbackMode, this.nativeMediaCapability);
-        this.#showSetupError("The qualified native catalogue requires the native player actor adapter.");
-      } catch (error) {
-        this.#showSetupError(error);
-      }
-      return;
+      throw new Error("The retired native LibVLC playback mode is unavailable.");
     }
     const nextCatalog = new Map();
     const items = [];
     const failures = [];
-    for (const scanned of result.stimuli) {
+    for (const scanned of scannedStimuli) {
       try {
-        const summary = await probeAndAttestNativeVideo({
+        const summary = playbackMode === "nativeGstPlay" ? scanned : await probeAndAttestNativeVideo({
           invoke: this.invoke,
           workspaceId: this.workspace.workspaceId,
           summary: scanned,
           videoFactory: this.videoFactory,
         });
-        if (summary.decodeStatus !== "attestedUnqualified"
-          || summary.decodeBackend !== "webviewVideoFrameCallback"
-          || summary.decodeAttestation !== "representativeFramesV1"
-          || !summary.source) {
-          throw new Error(`${summary.displayName} did not produce an explicitly unqualified WebView source contract.`);
+        const validNative = summary.decodeStatus === "attestedQualified"
+          && summary.decodeBackend === "nativeGstPlay"
+          && summary.decodeAttestation === "nativeDecodedSnapshotsV1";
+        const validFallback = summary.decodeStatus === "attestedUnqualified"
+          && summary.decodeBackend === "webviewVideoFrameCallback"
+          && summary.decodeAttestation === "representativeFramesV1";
+        if (!(playbackMode === "nativeGstPlay" ? validNative : validFallback) || !summary.source) {
+          throw new Error(`${summary.displayName} did not produce the selected playback mode's decode contract.`);
         }
-        const existing = this.root.researchUi?.settings?.stimuli?.items?.find(({ source }) => (
+        const existing = settings?.stimuli?.items?.find(({ source }) => (
           source.kind === "workspaceFile" && source.relativePath === summary.source.relativePath
         ));
         const stimulusId = existing?.stimulusId ?? safeStimulusId(summary);
@@ -1552,7 +1658,7 @@ export class NativeResearchRuntimeBridge {
         items.push(Object.freeze({
           stimulus,
           verified: true,
-          decodeQualification: "attestedUnqualified",
+          decodeQualification,
           workspaceFileId: summary.workspaceFileId,
         }));
       } catch (error) {
@@ -1582,6 +1688,13 @@ export class NativeResearchRuntimeBridge {
   async #loadExperimentPackage() {
     const receipt = await this.invoke("research_load_experiment_package");
     if (!receipt) return;
+    if (this.workspace) {
+      const result = await this.invoke("research_rescan_package_stimuli", {
+        workspaceId: this.workspace.workspaceId,
+        sourceText: receipt.canonicalSourceText,
+      });
+      await this.#catalogue(result, { settings: receipt.package?.settings });
+    }
     this.#dispatch(RESEARCH_UI_EVENTS.experimentPackageLoaded, { receipt });
   }
 
@@ -1593,6 +1706,14 @@ export class NativeResearchRuntimeBridge {
       sourceText: detail.sourceText,
     });
     if (!receipt) return;
+    if (this.workspace) {
+      const result = await this.invoke("research_rescan_package_stimuli", {
+        workspaceId: this.workspace.workspaceId,
+        sourceText: detail.sourceText,
+      });
+      await this.#catalogue(result, { settings: this.root.researchUi?.experimentPackage?.settings });
+      await this.packageProtocol.refreshRecoveries(this.workspace.workspaceId, detail.sourceText);
+    }
     this.#announce(`experiment.package.json saved with hash ${receipt.canonicalSourceByteSha256}.`);
   }
 
@@ -1627,6 +1748,42 @@ export class NativeResearchRuntimeBridge {
       throw new Error("Native readiness requires frozen ResearchSettingsV2 and the selected participant protocol plan.");
     }
     const estimate = estimateResearchStorageUse(settings, plan);
+    const packageSourceText = this.root.researchUi?.experimentPackageSourceText;
+    if (typeof packageSourceText === "string" && packageSourceText.length > 0) {
+      const packageSelection = this.root.researchUi?.experimentPackageSelection;
+      const [storage, lsl, packagePreflight] = await Promise.all([
+        this.invoke("research_storage_readiness", {
+          workspaceId: this.workspace.workspaceId,
+          requiredBytes: estimate.requiredBytes,
+        }),
+        this.invoke("research_lsl_readiness", { settings }),
+        packageSelection
+          ? this.packageProtocol.preflight(
+            this.workspace.workspaceId,
+            packageSourceText,
+            packageSelection,
+          )
+          : Promise.resolve(null),
+      ]);
+      this.storageReadiness = Object.freeze({ ...storage, persisted: true });
+      const manifestReady = this.nativePackageProtocolCapability?.manifestV4Ready === true
+        && this.nativePackageProtocolCapability?.packageV1CompilationReady === true
+        && this.nativePackageProtocolCapability?.protocolPlanV2Ready === true
+        && this.nativePackageProtocolCapability?.questionnaireDraftsReady === true
+        && this.nativePackageProtocolCapability?.recoveryJournalReady === true
+        && (packageSelection === null || packagePreflight !== null);
+      this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
+        timingWorkerReady: packagePreflight?.nativeStartReady ?? this.nativeTimingReady,
+        storageReady: storage.sufficient === true && storage.writeReady === true,
+        storageReadiness: this.storageReadiness,
+        lslReady: lsl.ready === true,
+        manifestReady,
+        manifestReason: manifestReady
+          ? "Rust-owned package compilation, protocol, questionnaire, recovery, and ManifestV4 contracts are ready."
+          : `Rust-owned package protocol unavailable (${this.nativePackageProtocolCapability?.reasonCode ?? "unknown"}).`,
+      });
+      return;
+    }
     const [storage, lsl, protocolPreflightValue] = await Promise.all([
       this.invoke("research_storage_readiness", {
         workspaceId: this.workspace.workspaceId,
@@ -1670,6 +1827,22 @@ export class NativeResearchRuntimeBridge {
     protocolPlan = null,
   ) {
     if (!settings || !this.workspace) return;
+    const packageSourceText = this.root.researchUi?.experimentPackageSourceText;
+    if (typeof packageSourceText === "string" && packageSourceText.length > 0) {
+      const listing = await this.packageProtocol.refreshRecoveries(
+        this.workspace.workspaceId,
+        packageSourceText,
+      );
+      this.recoveries = [...listing.recoveries];
+      this.participantStateById = new Map(listing.participants.map(({ participantId, state }) => [
+        participantId,
+        state,
+      ]));
+      if (listing.quarantinedCount > 0) {
+        this.#announce(`${listing.quarantinedCount} package-bound recovery or output record${listing.quarantinedCount === 1 ? " was" : "s were"} quarantined.`);
+      }
+      return;
+    }
     const [states, recoveryListing] = await Promise.all([
       this.invoke("research_participant_states", {
         workspaceId: this.workspace.workspaceId,
@@ -1770,6 +1943,27 @@ export class NativeResearchRuntimeBridge {
       }
       throw error;
     }
+  }
+
+  async #startPackage(detail) {
+    this.#requireWorkspace();
+    if (this.run || this.packageProtocol.active) {
+      throw new Error("A native Research attempt is already active.");
+    }
+    if (detail?.playbackMode !== "nativeGstPlay") {
+      throw new Error("Reproducible experiment packages require Rust-owned native GstPlay playback.");
+    }
+    const result = await this.invoke("research_rescan_package_stimuli", {
+      workspaceId: this.workspace.workspaceId,
+      sourceText: detail.experimentPackageSourceText,
+    });
+    await this.#catalogue(result, { settings: detail.researchSettings });
+    await this.packageProtocol.preflight(
+      this.workspace.workspaceId,
+      detail.experimentPackageSourceText,
+      this.root.researchUi?.experimentPackageSelection,
+    );
+    await this.packageProtocol.start(detail, this.workspace.workspaceId);
   }
 
   async #start(detail) {
@@ -2004,6 +2198,9 @@ export class NativeResearchRuntimeBridge {
       statusRequestSequence: 0,
       lastProjectedStatusSequence: 0,
       mediaEpoch: null,
+      nativeMediaStatus: null,
+      nativeMediaSequence: 0,
+      nativeWorkspaceFileId: null,
       terminalInFlight: null,
       lastStatus: null,
     };
@@ -2027,9 +2224,6 @@ export class NativeResearchRuntimeBridge {
   async #prepareCurrentStimulus(fence, { recovery = false } = {}) {
     if (!this.#runAcceptsLifecycle(fence)) return;
     const run = this.run;
-    if (run.receipt.playbackMode !== "unqualifiedWebview") {
-      throw new Error("Qualified native playback cannot be projected through the WebView video element.");
-    }
     const stimulus = this.#currentStimulus(run);
     const entry = [...this.catalog.values()].find(({ summary }) => (
       summary.source?.relativePath === stimulus.source.relativePath
@@ -2037,6 +2231,40 @@ export class NativeResearchRuntimeBridge {
       && summary.byteLength === stimulus.source.byteLength
     ));
     if (!entry) throw new Error(`No fresh native media grant can be issued for ${stimulus.title}.`);
+    if (run.receipt.playbackMode === "nativeGstPlay") {
+      if (entry.summary.decodeStatus !== "attestedQualified"
+        || entry.summary.decodeBackend !== "nativeGstPlay"
+        || entry.summary.decodeAttestation !== "nativeDecodedSnapshotsV1") {
+        throw new Error(`${stimulus.title} lacks a fresh qualified GstPlay decode attestation.`);
+      }
+      const status = await this.nativeRunMedia.prepare({
+        workspaceId: this.workspace.workspaceId,
+        summary: entry.summary,
+      });
+      if (!this.#runAcceptsLifecycle(fence)) {
+        await this.nativeRunMedia.stop().catch(() => {});
+        return;
+      }
+      run.nativeMediaStatus = status;
+      run.nativeMediaSequence = status.sequence;
+      run.nativeWorkspaceFileId = entry.summary.workspaceFileId;
+      run.awaitingStart = true;
+      this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
+        stimulus: `${run.index + 1}/${run.assignment.slots.length} · ${stimulus.title}`,
+        timing: "Sampling stopped at safe boundary",
+        write: "Native recovery journal ready",
+        lsl: run.settings.advanced.lsl.enabled ? "Ready" : "Off",
+        transitionActive: true,
+        transitionMode: "continueWhenReady",
+        transitionMessage: recovery
+          ? "Recovery is ready at the last safe boundary. Begin the restarted video from its beginning."
+          : "The complete video passed native GstPlay frame qualification. Begin when ready.",
+      });
+      return;
+    }
+    if (run.receipt.playbackMode !== "unqualifiedWebview") {
+      throw new Error("The selected native playback backend is unavailable.");
+    }
     const receipt = await this.invoke("research_workspace_media_url", {
       workspaceId: this.workspace.workspaceId,
       workspaceFileId: entry.summary.workspaceFileId,
@@ -2045,6 +2273,7 @@ export class NativeResearchRuntimeBridge {
       mimeType: entry.summary.mimeType,
     });
     if (!this.#runAcceptsLifecycle(fence)) return;
+    run.nativeWorkspaceFileId = null;
     const video = this.#installRunVideo(fence);
     video.pause?.();
     video.src = receipt.mediaUrl;
@@ -2116,9 +2345,18 @@ export class NativeResearchRuntimeBridge {
       }
     }
     if (!this.#runAcceptsLifecycle(fence) || !run.awaitingStart) return;
-    const video = this.#video();
+    let mediaTimeMs = 0;
     try {
-      await video.play();
+      if (run.receipt.playbackMode === "nativeGstPlay") {
+        const mediaStatus = await this.nativeRunMedia.play();
+        run.nativeMediaStatus = mediaStatus;
+        run.nativeMediaSequence = mediaStatus.sequence;
+        mediaTimeMs = this.nativeRunMedia.positionMs;
+      } else {
+        const video = this.#video();
+        await video.play();
+        mediaTimeMs = video.currentTime * 1_000;
+      }
     } catch (error) {
       if (!this.#runAcceptsLifecycle(fence)) return;
       run.awaitingStart = true;
@@ -2127,7 +2365,9 @@ export class NativeResearchRuntimeBridge {
         transitionMode: "continueWhenReady",
         transitionMessage: directGesture
           ? `Playback could not start: ${messageOf(error)}`
-          : "Windows playback needs a direct gesture. Begin this video when ready.",
+          : run.receipt.playbackMode === "nativeGstPlay"
+            ? "Native GstPlay could not reach Playing. Begin this video when ready."
+            : "Windows playback needs a direct gesture. Begin this video when ready.",
       });
       return;
     }
@@ -2136,7 +2376,7 @@ export class NativeResearchRuntimeBridge {
     try {
       await this.#invokeLifecycleUpdate(
         fence,
-        stimulusUpdate(fence.runId, "started", stimulus, run.index + 1, video.currentTime * 1_000),
+        stimulusUpdate(fence.runId, "started", stimulus, run.index + 1, mediaTimeMs),
       );
     } catch (error) {
       await this.#failClosedLifecycle(fence, error, { context: "Native stimulus start failed" });
@@ -2157,7 +2397,7 @@ export class NativeResearchRuntimeBridge {
     try {
       const stimulus = this.#currentStimulus(run);
       const position = run.index + 1;
-      const mediaTimeMs = this.#video().currentTime * 1_000;
+      const mediaTimeMs = this.#mediaTimeMs(run);
       await this.#invokeLifecycleUpdate(
         fence,
         stimulusUpdate(fence.runId, "completed", stimulus, position, mediaTimeMs),
@@ -2165,6 +2405,11 @@ export class NativeResearchRuntimeBridge {
       if (!this.#runAcceptsLifecycle(fence)) return;
       this.#recordLifecycleAck(run, "betweenStimuli");
       this.root.researchUi?.resetAffect?.("safe-boundary");
+      if (run.receipt.playbackMode === "nativeGstPlay") {
+        await this.nativeRunMedia.stop();
+        run.nativeMediaStatus = null;
+        run.nativeWorkspaceFileId = null;
+      }
       if (position >= run.assignment.slots.length) {
         await this.#finish(fence, "completed");
         return;
@@ -2200,16 +2445,21 @@ export class NativeResearchRuntimeBridge {
   async #togglePause(fence) {
     if (!this.#runAcceptsLifecycle(fence) || this.run.awaitingStart) return;
     const run = this.run;
-    const video = this.#video();
     const phase = run.lastStatus?.phase;
     const stimulus = this.#currentStimulus(run);
     const position = run.index + 1;
     if (phase === "playing") {
-      video.pause();
       try {
+        if (run.receipt.playbackMode === "nativeGstPlay") {
+          const mediaStatus = await this.nativeRunMedia.pause();
+          run.nativeMediaStatus = mediaStatus;
+          run.nativeMediaSequence = mediaStatus.sequence;
+        } else {
+          this.#video().pause();
+        }
         await this.#invokeLifecycleUpdate(
           fence,
-          stimulusUpdate(fence.runId, "paused", stimulus, position, video.currentTime * 1_000),
+          stimulusUpdate(fence.runId, "paused", stimulus, position, this.#mediaTimeMs(run)),
         );
       } catch (error) {
         await this.#failClosedLifecycle(fence, error, { context: "Native pause failed" });
@@ -2221,7 +2471,13 @@ export class NativeResearchRuntimeBridge {
       }
     } else if (phase === "paused") {
       try {
-        await video.play();
+        if (run.receipt.playbackMode === "nativeGstPlay") {
+          const mediaStatus = await this.nativeRunMedia.play();
+          run.nativeMediaStatus = mediaStatus;
+          run.nativeMediaSequence = mediaStatus.sequence;
+        } else {
+          await this.#video().play();
+        }
       } catch (error) {
         if (this.#runAcceptsLifecycle(fence)) {
           this.#dispatch(RESEARCH_UI_EVENTS.runStatus, {
@@ -2235,7 +2491,7 @@ export class NativeResearchRuntimeBridge {
       try {
         await this.#invokeLifecycleUpdate(
           fence,
-          stimulusUpdate(fence.runId, "resumed", stimulus, position, video.currentTime * 1_000),
+          stimulusUpdate(fence.runId, "resumed", stimulus, position, this.#mediaTimeMs(run)),
         );
       } catch (error) {
         await this.#failClosedLifecycle(fence, error, { context: "Native resume failed" });
@@ -2258,7 +2514,7 @@ export class NativeResearchRuntimeBridge {
     try {
       await this.#invokeLifecycleUpdate(
         fence,
-        stimulusUpdate(fence.runId, "paused", stimulus, run.index + 1, this.#video().currentTime * 1_000),
+        stimulusUpdate(fence.runId, "paused", stimulus, run.index + 1, this.#mediaTimeMs(run)),
       );
     } catch (error) {
       await this.#failClosedLifecycle(fence, error, { context: "Native buffering pause failed" });
@@ -2278,7 +2534,7 @@ export class NativeResearchRuntimeBridge {
     try {
       await this.#invokeLifecycleUpdate(
         fence,
-        stimulusUpdate(fence.runId, "resumed", stimulus, run.index + 1, this.#video().currentTime * 1_000),
+        stimulusUpdate(fence.runId, "resumed", stimulus, run.index + 1, this.#mediaTimeMs(run)),
       );
     } catch (error) {
       await this.#failClosedLifecycle(fence, error, { context: "Native buffering resume failed" });
@@ -2294,9 +2550,13 @@ export class NativeResearchRuntimeBridge {
     if (!this.#runMatches(fence) || this.run.terminalInFlight) return;
     const run = this.run;
     run.terminalInFlight = "finish";
-    this.#video().pause?.();
     let receipt;
     try {
+      if (run.receipt.playbackMode === "nativeGstPlay") {
+        await this.nativeRunMedia.stop();
+      } else {
+        this.#video().pause?.();
+      }
       receipt = await this.invoke("research_finish_run", { runId: fence.runId, outcome });
       if (!nativeFinalizeReceiptMatches(receipt, {
         runId: fence.runId,
@@ -2346,8 +2606,12 @@ export class NativeResearchRuntimeBridge {
     run.awaitingStart = true;
     run.manualPaused = true;
     this.#stopPolling();
-    const video = this.#video();
-    video.pause?.();
+    const mediaTimeMs = this.#mediaTimeMs(run);
+    if (run.receipt.playbackMode === "nativeGstPlay") {
+      await this.nativeRunMedia.stop().catch(() => {});
+    } else {
+      this.#video().pause?.();
+    }
 
     let report = null;
     if (!preferFinish) {
@@ -2358,7 +2622,7 @@ export class NativeResearchRuntimeBridge {
           mediaErrorCode,
           stimulusId: stimulus.stimulusId,
           stimulusPosition: run.index + 1,
-          mediaTimeMs: video.currentTime * 1_000,
+          mediaTimeMs,
         });
       } catch {
         report = null;
@@ -2418,7 +2682,7 @@ export class NativeResearchRuntimeBridge {
   #scheduleFailClosed(fence, error, options) {
     if (!this.#runMatches(fence) || this.run.terminalInFlight) return;
     this.run.terminalInFlight = "failClosedPending";
-    this.#video().pause?.();
+    if (this.run.receipt.playbackMode !== "nativeGstPlay") this.#video().pause?.();
     this.#queue(() => this.#failClosedLifecycle(fence, error, options));
   }
 
@@ -2431,8 +2695,11 @@ export class NativeResearchRuntimeBridge {
       const run = this.run;
       const lifecycleRevision = run.lifecycleRevision;
       const requestSequence = ++run.statusRequestSequence;
-      void this.invoke("research_run_status")
-        .then((status) => {
+      const mediaStatus = run.receipt.playbackMode === "nativeGstPlay" && this.nativeRunMedia.active
+        ? this.nativeRunMedia.status()
+        : Promise.resolve(null);
+      void Promise.all([this.invoke("research_run_status"), mediaStatus])
+        .then(([status, observedMediaStatus]) => {
           if (!nativeStatusPollMayProject(run, fence, lifecycleRevision, requestSequence)) return;
           if (!this.#statusMatches(status, fence)) {
             this.#markTimingHandshakeFailed();
@@ -2450,6 +2717,7 @@ export class NativeResearchRuntimeBridge {
           }
           run.lastProjectedStatusSequence = requestSequence;
           this.#projectStatus(status, fence);
+          if (observedMediaStatus) this.#projectNativeMediaStatus(observedMediaStatus, fence);
           if (run.transitionActive
             && status.transitionReady
             && run.settings.experiment.betweenVideos.mode !== "continueWhenReady") {
@@ -2462,6 +2730,38 @@ export class NativeResearchRuntimeBridge {
           this.#scheduleFailClosed(fence, error, { context: "Native status polling failed" });
         });
     }, STATUS_POLL_MS);
+  }
+
+  #projectNativeMediaStatus(status, fence) {
+    if (!this.#runAcceptsLifecycle(fence) || this.run.receipt.playbackMode !== "nativeGstPlay") return;
+    const run = this.run;
+    if (status.sequence <= run.nativeMediaSequence) return;
+    if (run.nativeWorkspaceFileId && status.workspaceFileId !== run.nativeWorkspaceFileId) {
+      this.#scheduleFailClosed(fence, new Error("Native GstPlay status crossed the current stimulus identity."), {
+        context: "Native media synchronization failed",
+      });
+      return;
+    }
+    const edge = nativeRunMediaEdge(run.nativeMediaStatus, status, {
+      awaitingStart: run.awaitingStart,
+      manualPaused: run.manualPaused,
+      bufferPaused: run.bufferPaused,
+    });
+    run.nativeMediaStatus = status;
+    run.nativeMediaSequence = status.sequence;
+    if (edge === "failed") {
+      this.#scheduleFailClosed(
+        fence,
+        new Error(`Native GstPlay failed (${status.reasonCode ?? status.state}).`),
+        { context: "Native media playback failed" },
+      );
+    } else if (edge === "completed") {
+      this.#queue(() => this.#completeStimulus(fence));
+    } else if (edge === "bufferingStarted") {
+      this.#queue(() => this.#pauseForBuffering(fence));
+    } else if (edge === "bufferingEnded") {
+      this.#queue(() => this.#resumeAfterBuffering(fence));
+    }
   }
 
   #stopPolling() {
@@ -2502,8 +2802,15 @@ export class NativeResearchRuntimeBridge {
     return stimulus;
   }
 
+  #mediaTimeMs(run = this.run) {
+    return run?.receipt?.playbackMode === "nativeGstPlay"
+      ? this.nativeRunMedia.positionMs
+      : Math.max(0, Number(this.#video().currentTime) * 1_000 || 0);
+  }
+
   #clearVideo() {
     this.#clearMediaListeners();
+    this.nativeRunMedia.resetSurface();
     const video = this.#video();
     video.pause?.();
     video.removeAttribute?.("src");
@@ -2555,19 +2862,13 @@ export class NativeResearchRuntimeBridge {
   }
 }
 
-async function bootNativeBridge() {
-  const root = document.querySelector("#research-app[data-research-surface=\"tauri\"]");
-  if (!root) return;
-  if (!root.researchUi) await delay(0);
+export async function bootNativeBridge(root) {
+  if (!root?.matches?.("#research-app[data-research-surface=\"tauri\"]")) {
+    throw new Error("Native Research root is missing or has the wrong surface.");
+  }
+  if (!root.researchUi) throw new Error("Research UI must initialize before the native runtime.");
   const bridge = new NativeResearchRuntimeBridge(root);
   root.researchRuntime = bridge;
   await bridge.initialize();
-}
-
-if (typeof document !== "undefined") {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => void bootNativeBridge(), { once: true });
-  } else {
-    void bootNativeBridge();
-  }
+  return bridge;
 }

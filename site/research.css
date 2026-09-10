@@ -1875,6 +1875,24 @@ dialog::backdrop {
     overflow: visible;
     overscroll-behavior: auto;
   }
+
+  .directory-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .directory-list li {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .directory-list li:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .directory-list li:last-child {
+    border-bottom: 0;
+  }
 }
 
 @media (max-width: 479px) {

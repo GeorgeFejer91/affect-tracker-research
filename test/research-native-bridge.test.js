@@ -1235,14 +1235,17 @@ test("native metadata and seeking cannot pass without frame callbacks, and the g
   });
 });
 
-test("desktop entrypoint activates only the path-free Research native bridge", async () => {
-  const [html, source, appSource] = await Promise.all([
+test("desktop entrypoint sequences the shared UI before the path-free Research native bridge", async () => {
+  const [html, entrySource, source, appSource] = await Promise.all([
     readFile(new URL("../desktop/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../site/src/research/native-entry.js", import.meta.url), "utf8"),
     readFile(new URL("../site/src/research/native-bridge.js", import.meta.url), "utf8"),
     readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /src="\.\.\/site\/src\/research\/native-bridge\.js"/u);
+  assert.match(html, /src="\.\.\/site\/src\/research\/native-entry\.js"/u);
   assert.doesNotMatch(html, /runtime-bridge\.js|app\.js/u);
+  assert.match(entrySource, /import \{ bootNativeBridge \} from "\.\/native-bridge\.js"/u);
+  assert.match(entrySource, /bootstrapResearchSurface\(\{[\s\S]*surface: "tauri",[\s\S]*initializeRuntime: bootNativeBridge/u);
   for (const command of [
     "research_choose_workspace",
     "research_rescan_stimuli",
@@ -1268,8 +1271,12 @@ test("desktop entrypoint activates only the path-free Research native bridge", a
   ]) assert.match(source, new RegExp(`"${command}"`, "u"));
   assert.match(source, /selectionEnabled/u);
   assert.match(source, /playbackMode/u);
-  assert.match(source, /decodeQualification: "attestedUnqualified"/u);
-  assert.match(source, /this\.nativeTimingReady = nativeRunStatusHandshake\(status\)/u);
+  assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
+  assert.match(source, /decodeQualification = "attestedQualified"/u);
+  assert.match(source, /NativeMediaController/u);
+  assert.match(source, /attestNativeGstCatalogue/u);
+  assert.match(source, /this\.nativeTimingReady = \(nativeRunStatusHandshake\(status\)[\s\S]+nativePackageProtocolCapability\.nativeStartReady/u);
+  assert.match(source, /NativePackageProtocolAdapter/u);
   assert.doesNotMatch(source, /timingWorkerReady:\s*true/u);
   assert.match(source, /const video = previous\.cloneNode\?\.\(false\)/u);
   assert.match(source, /#mediaGenerationMatches\(fence, mediaEpoch, video\)/u);
