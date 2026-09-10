@@ -3,14 +3,16 @@
 This source folder preserves the complete published CSV ratings for the **Open
 Library for Affective Videos (OpenLAV)**. OpenLAV contains 188 emotion-inducing
 videos (12–71 seconds, approximately 40 seconds on average) tested by 422
-US participants, with about 71 ratings per video. The repository record marks
-the videos and rating files **CC BY 4.0**.
+US participants, with about 71 ratings per video. The moving-image record marks
+the videos **CC BY 3.0**; the linked data record marks the rating files
+**CC BY 4.0**.
 
 Sources:
 
 - [Official OpenLAV data record](https://doi.org/10.23668/psycharchives.5043)
 - [Official OpenLAV moving-image record](https://www.psycharchives.org/en/item/18779e98-c04b-4299-8311-dc442dc89bcd)
-- [CC BY 4.0 licence](https://creativecommons.org/licenses/by/4.0/)
+- [CC BY 3.0 licence for the videos](https://creativecommons.org/licenses/by/3.0/)
+- [CC BY 4.0 licence for the ratings](https://creativecommons.org/licenses/by/4.0/)
 
 ## What is hosted
 

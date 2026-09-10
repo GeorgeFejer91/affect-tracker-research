@@ -18,7 +18,7 @@ export const STIMULUS_INSPIRATION_GROUPS = Object.freeze([
       Object.freeze({
         name: "OpenLAV",
         expandedName: "Open Library for Affective Videos",
-        availability: "Open assets and ratings · CC BY 4.0",
+        availability: "Open · videos CC BY 3.0 · ratings CC BY 4.0",
         duration: "188 clips · 12–71 seconds",
         ratings: "Post-clip induced valence and arousal",
         description: "The strongest fully open clip sequence in this catalogue. A stitched sequence is a new compound stimulus and still needs a fixed, piloted protocol.",
