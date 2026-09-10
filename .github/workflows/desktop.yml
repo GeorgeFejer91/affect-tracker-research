@@ -1,8 +1,8 @@
-name: Desktop companion checks
+name: Affect Research Windows checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, research/video-protocol-v1]
   pull_request:
   workflow_dispatch:
 
@@ -10,17 +10,17 @@ permissions:
   contents: read
 
 jobs:
-  web-and-desktop-frontend:
-    runs-on: ubuntu-latest
+  windows:
+    runs-on: windows-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11.19.0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
@@ -28,69 +28,48 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Audit frontend dependencies
         run: pnpm audit --audit-level=moderate
-      - name: Test browser implementation
+      - name: Run Research tests
         run: pnpm test
-      - name: Build desktop WebViews
+      - name: Build focused Pages application
+        run: pnpm build:pages
+      - name: Build focused desktop WebView
         run: pnpm desktop:build
-
-  rust:
-    name: Rust (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-      - name: Install Linux native dependencies
-        if: runner.os == 'Linux'
+      # The full upstream tree is prepared only on this ephemeral validation
+      # runner so the optional Rust bindings and verifier can be tested. It is
+      # never packaged or uploaded while redistribution review is incomplete.
+      - name: Prepare pinned GStreamer inputs for compile and verifier tests only
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake libayatana-appindicator3-dev librsvg2-dev libssl-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libxtst-dev libxdo-dev
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.19.0
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - name: Install locked frontend dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build desktop WebViews
-        run: pnpm desktop:build
+          ./src-tauri/native-media/prepare-gstreamer-windows-ci.ps1 `
+            -DownloadDirectory $env:RUNNER_TEMP `
+            -DevelopmentDestinationPath (Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.6-devel') `
+            -GithubEnvironmentPath $env:GITHUB_ENV `
+            -GithubPathPath $env:GITHUB_PATH
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@1.96.0
+        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
         with:
           components: rustfmt, clippy
       - name: Cache Rust artifacts
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: src-tauri
       - name: Check Rust formatting
-        if: runner.os == 'Linux'
-        run: |
-          cargo fmt --manifest-path crates/study-core/Cargo.toml -- --check
-          cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-      - name: Test shared study core
-        run: cargo test --locked --manifest-path crates/study-core/Cargo.toml --all-features
-      - name: Lint shared study core
-        run: cargo clippy --locked --manifest-path crates/study-core/Cargo.toml --all-targets --all-features -- -D warnings
-      - name: Check Rust
-        run: cargo check --locked --manifest-path src-tauri/Cargo.toml
-      - name: Test Rust
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml
-      - name: Lint Rust
-        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-      - name: Build unsigned Windows installer
-        if: runner.os == 'Windows'
-        run: pnpm desktop:bundle
-      - name: Upload Windows installer
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: affect-tracker-desktop-windows
-          path: src-tauri/target/release/bundle/nsis/*.exe
-          if-no-files-found: error
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - name: Check native Research backend
+        env:
+          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --all-features
+      - name: Check native Research backend without optional features
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Test native Research backend with all features
+        env:
+          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features
+      - name: Test native Research backend without optional features
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Lint native Research backend
+        env:
+          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+      - name: Lint native Research backend without optional features
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features -- -D warnings

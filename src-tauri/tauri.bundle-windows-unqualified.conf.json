@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "resources": [],
+    "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. The unreviewed GStreamer runtime is not bundled; native GstPlay, LSL, native input, installed workflow, timing, and research readiness are not qualified."
+  }
+}

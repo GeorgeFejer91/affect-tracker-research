@@ -1,0 +1,61 @@
+{
+  "schema": "affect-research-native-media-runtime-pin",
+  "version": 2,
+  "backend": "gstreamer-gstplay",
+  "api": "gstplay",
+  "runtimeVersion": "1.28.6",
+  "bindingsSeries": "0.25",
+  "target": "msvc-x86_64",
+  "installer": {
+    "fileName": "gstreamer-1.0-msvc-x86_64-1.28.6.exe",
+    "url": "https://gstreamer.freedesktop.org/data/pkg/windows/1.28.6/msvc/gstreamer-1.0-msvc-x86_64-1.28.6.exe",
+    "sha256": "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5",
+    "byteLength": 528572178,
+    "signatureUrl": "https://gstreamer.freedesktop.org/data/pkg/windows/1.28.6/msvc/gstreamer-1.0-msvc-x86_64-1.28.6.exe.asc",
+    "sha256Url": "https://gstreamer.freedesktop.org/data/pkg/windows/1.28.6/msvc/gstreamer-1.0-msvc-x86_64-1.28.6.exe.sha256sum",
+    "runtimeInstallType": "runtime",
+    "developmentInstallType": "devel"
+  },
+  "sources": [
+    { "component": "gstreamer", "sha256": "62b6b9f0ad3147a6dd6420ac64a91180b14e990695bddd353b96041611d052ca" },
+    { "component": "gst-plugins-base", "sha256": "0ba699c7c6c66f4ba640be78cb38a24715add9683f3e3a199f5369dc5a4f04ac" },
+    { "component": "gst-plugins-good", "sha256": "b0c620a4b18b6ee931b4c43bbf1760d308666dc37f730a7e7f1ad327e59ce2df" },
+    { "component": "gst-plugins-bad", "sha256": "6636f2c2289ceda52c4aba971338c81e2b5780d3381bd3673c1c116ec87587c3" },
+    { "component": "gst-plugins-ugly", "sha256": "ee279da13a740fd7f060d631a673223fa3bcc8c33d350c8d0264bd332a24ecd8" },
+    { "component": "gst-libav", "sha256": "71e6eafb4fff2a66d1bb0ba8d078224dfe7e3397307d8c0bba3dc23606e08f51" }
+  ],
+  "sourceEvidence": {
+    "status": "incomplete-not-for-distribution",
+    "automatedFetchAndVerification": false,
+    "distributionApproved": false,
+    "missing": [
+      "archive file names",
+      "canonical archive URLs",
+      "archive byte lengths",
+      "artifact-retained source copies"
+    ]
+  },
+  "runtimeTree": {
+    "relativeRoot": "native-media/runtime/gstreamer-1.28.6/msvc-x86_64",
+    "manifestFileName": "runtime-files.sha256",
+    "manifestOrdering": "ordinal-relative-path-v1",
+    "manifestSha256": "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566",
+    "fileCount": 827,
+    "byteLength": 340362958,
+    "requiredPeMachine": "0x8664",
+    "requiredOptionalHeaderMagic": "0x020b"
+  },
+  "runtimeIsolation": {
+    "ambientPluginsAllowed": false,
+    "systemRuntimeAllowed": false,
+    "privateRegistryRequired": true,
+    "privateScannerRequired": true
+  },
+  "qualification": {
+    "formatMatrixRequired": true,
+    "redistributionReviewRequired": true,
+    "allFormatsClaimAllowed": false
+  },
+  "noticeFile": "GSTREAMER-RUNTIME-NOTICE.txt",
+  "productName": "Affect Research"
+}
