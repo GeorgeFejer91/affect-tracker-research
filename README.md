@@ -1,5 +1,10 @@
 # Affect Tracker: Pages + Desktop + WebXR + Native Quest
 
+<p align="center">
+  <img src="./site/assets/app-logo.svg" width="160" height="160" alt="Aurora Axis, the Affect Tracker Research app logo">
+</p>
+<p align="center"><sub><strong>Aurora Axis</strong> maps valence left-to-right and arousal bottom-to-top across the project’s Flubber silhouette.</sub></p>
+
 The repository currently contains four Affect Tracker delivery surfaces inspired by [AffectTracker](https://github.com/afourcade/AffectTracker):
 
 - A static, self-contained GitHub Pages 2D application for browser studies, including six selectable locally packaged Face + Flubber main-stage presentations with a canonical SVG fallback, with no CDN or project backend.
@@ -9,9 +14,9 @@ The repository currently contains four Affect Tracker delivery surfaces inspired
 
 All surfaces use the same valence/arousal mappings. Web and desktop share the JavaScript Flubber and face-engine adapters directly; native Quest uses an allocation-bounded Flubber port checked against JavaScript golden vectors.
 
-Live site: <https://GeorgeFejer91.github.io/affect-tracker-web/>
+Live site: <https://GeorgeFejer91.github.io/affect-tracker-research/>
 
-Experimental Meta Quest WebXR study: <https://GeorgeFejer91.github.io/affect-tracker-web/webxr.html>
+Experimental Meta Quest WebXR study: <https://GeorgeFejer91.github.io/affect-tracker-research/webxr.html>
 
 Desktop source: [`desktop/`](./desktop/) and [`src-tauri/`](./src-tauri/)
 
@@ -202,7 +207,7 @@ See [`desktop/README.md`](./desktop/README.md) for the LSL feature fallback and 
 
 ### Desktop downloads
 
-Cross-platform packages are published on the [GitHub Releases page](https://github.com/GeorgeFejer91/affect-tracker-web/releases). Each desktop release includes:
+Cross-platform packages are published on the [GitHub Releases page](https://github.com/GeorgeFejer91/affect-tracker-research/releases). Each desktop release includes:
 
 - Windows x64 NSIS installer (`.exe`).
 - Linux x64 AppImage and Debian package (`.AppImage` and `.deb`).

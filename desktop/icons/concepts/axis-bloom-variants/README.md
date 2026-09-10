@@ -13,7 +13,7 @@ while changing the geometry and visual emphasis.
 | **02 · Petal Compass** | ![Petal Compass app logo](./axis-02-petal-compass.svg) | Four overlapping Flubbers turn the directional field into a compact organic bloom. |
 | **03 · Orbit Bloom** | ![Orbit Bloom app logo](./axis-03-orbit-bloom.svg) | The four affect directions form an outer Flubber ring around a calm tracked state. |
 | **04 · Prism Bloom** | ![Prism Bloom app logo](./axis-04-prism-bloom.svg) | A Flubber-edged diamond gives the same valence-arousal model a crisper instrument-like silhouette. |
-| **05 · Aurora Axis** | ![Aurora Axis app logo](./axis-05-aurora-axis.svg) | Four blended directional glows express affect as a continuous field while retaining the axes. |
+| **05 · Aurora Axis — selected** | ![Aurora Axis app logo](./axis-05-aurora-axis.svg) | Four blended directional glows express affect as a continuous field while retaining the axes. This is the project’s canonical app logo. |
 
 ## Rebuild and verify
 
@@ -22,6 +22,6 @@ pnpm desktop:logos:axis:build
 pnpm desktop:logos:axis:check
 ```
 
-These are comparison candidates only. None is copied into
-`desktop/icons/app-icon.svg` or the generated Tauri icon pack until a final
-choice is made.
+Aurora Axis is copied into `desktop/icons/app-icon.svg` and
+`site/assets/app-logo.svg`. Its generated PNG, ICO, and ICNS assets provide the
+native application, tray, browser favicon, and link-preview variants.

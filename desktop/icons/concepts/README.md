@@ -16,7 +16,8 @@ and valence right `#5dffb0`.
 | **05 · Signal Cursor** | ![Signal Cursor app logo](./05-signal-cursor.svg) | A small live Flubber marks a position inside a larger affect field. This is the most literal “tracker” concept. |
 
 Axis Bloom was selected as the direction for a focused second round. See the
-[five Axis Bloom variants](./axis-bloom-variants/README.md).
+[five Axis Bloom variants](./axis-bloom-variants/README.md), where **05 ·
+Aurora Axis** is the final selected project logo.
 
 ## Rebuild and select
 
@@ -31,10 +32,10 @@ List the choices or select one as the packaged application icon:
 
 ```powershell
 pnpm desktop:logo:select -- --list
-pnpm desktop:logo:select -- 01-interlock
+pnpm desktop:logo:select -- axis-05-aurora-axis
 ```
 
 Selection copies only the named, allowlisted SVG to
-`desktop/icons/app-icon.svg`, then regenerates the existing Tauri PNG, ICO, and
-ICNS icon set in `src-tauri/icons/`. No package identity, permission, CSP,
-research setting, sampling behavior, record, or LSL contract changes.
+`desktop/icons/app-icon.svg` and `site/assets/app-logo.svg`, then regenerates
+the Tauri and browser PNG/ICO/ICNS icon sets. No package identity, permission,
+CSP, research setting, sampling behavior, record, or LSL contract changes.

@@ -636,6 +636,13 @@ body.is-experiment-running .flubber-party-stage { display: none; }
   text-align: left;
 }
 
+.app-brand-logo {
+  display: block;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+}
+
 .face-flubber-module { display: grid; gap: 0.65rem; }
 .main-face-toggle {
   display: grid;
@@ -1883,6 +1890,15 @@ kbd {
     display: inline;
   }
 
+  #control-panel .app-brand-logo {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  #control-panel .panel-label-mobile {
+    display: none;
+  }
+
   .experimental-badge {
     position: absolute;
     top: 0.12rem;
@@ -2079,6 +2095,15 @@ kbd {
 
   body.is-smartphone-layout .panel-label-mobile {
     display: inline;
+  }
+
+  body.is-smartphone-layout #control-panel .app-brand-logo {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  body.is-smartphone-layout #control-panel .panel-label-mobile {
+    display: none;
   }
 
   body.is-smartphone-layout .experimental-badge {
