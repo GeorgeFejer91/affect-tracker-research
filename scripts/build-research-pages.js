@@ -18,6 +18,11 @@ await Promise.all([
   cp(resolve(sourceRoot, "questionnaires"), resolve(outputRoot, "questionnaires"), { recursive: true }),
   cp(resolve(sourceRoot, "assets", "app-logo.svg"), resolve(outputRoot, "assets", "app-logo.svg")),
   cp(resolve(sourceRoot, "assets", "app-icons"), resolve(outputRoot, "assets", "app-icons"), { recursive: true }),
+  cp(
+    resolve(sourceRoot, "assets", "research-stimuli"),
+    resolve(outputRoot, "assets", "research-stimuli"),
+    { recursive: true },
+  ),
 ]);
 
 // Browser delivery shares Research contracts and UI modules, but must not ship

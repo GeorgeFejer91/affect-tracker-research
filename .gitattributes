@@ -1,6 +1,10 @@
 * text=auto eol=lf
+site/assets/research-stimuli/openlav/v1/ratings/*.csv -text whitespace=-trailing-space
+site/assets/research-stimuli/openlav/v1/metadata/original/*.txt -text whitespace=-trailing-space
 *.icns binary
 *.ico binary
 *.png binary
+*.mp4 binary
+*.xlsx binary
 *.zip binary
 *.dll binary

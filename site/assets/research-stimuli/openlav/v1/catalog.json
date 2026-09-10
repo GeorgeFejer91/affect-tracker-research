@@ -1,0 +1,76 @@
+{
+  "schema": "org.aliusresearch.affect-stimulus-catalog",
+  "version": 1,
+  "generatedDate": "2026-09-10",
+  "dataset": {
+    "name": "Open Library for Affective Videos",
+    "shortName": "OpenLAV",
+    "doi": "10.23668/psycharchives.5043",
+    "dataUrl": "https://www.psycharchives.org/en/item/009953b8-a55a-4771-b25a-f6235bb159a2",
+    "mediaUrl": "https://www.psycharchives.org/en/item/18779e98-c04b-4299-8311-dc442dc89bcd",
+    "license": {
+      "name": "CC BY 4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    "participantCount": 422,
+    "publishedClipCount": 188,
+    "publishedRawRatingCount": 13264,
+    "durationSeconds": {
+      "minimum": 12,
+      "maximum": 71,
+      "approximateMean": 40
+    }
+  },
+  "hostedSubset": {
+    "clipCount": 0,
+    "ratingTables": "complete",
+    "reasonMediaNotMirrored": "The official media remains upstream because duplicating 188 videos would exceed the remaining GitHub Pages publication budget.",
+    "intendedUse": "Stimulus selection and clip-level convergent validation of induced valence and arousal.",
+    "qualificationBoundary": "OpenLAV supplies post-clip induced-affect ratings. A concatenated sequence is not a pre-validated continuous ten-minute stimulus."
+  },
+  "ratingSemantics": {
+    "clipNormColumns": "Published valence/arousal factor-score summaries; preserve exactly and consult the codebook.",
+    "rawColumns": {
+      "sam_0": "Valence SAM, 1-9",
+      "sam_1": "Arousal SAM, 1-9"
+    },
+    "affectTrackerTransform": "No transform is applied in this archive. If raw SAM items are analysed on [-1,1], pre-register (SAM - 5) / 4."
+  },
+  "ratingsNotice": "The public-use raw file retains publisher-issued HIT/worker identifiers, age, gender, education, personality, and questionnaire fields. Prefer aggregate norms; restrict row-level use to justified research processing and do not attempt re-identification.",
+  "includedRatings": [
+    {
+      "path": "ratings/openlav__clip-norms__original.csv",
+      "rowCountIncludingHeader": 189,
+      "byteLength": 31049,
+      "publishedMd5": "142801a38b1ee040cacd5bb3f34919dc",
+      "sha256": "701cc3b5def0b3bb1104fff27dc4ac56518e2611ba0d09d79b7c938702e65ff4"
+    },
+    {
+      "path": "ratings/openlav__clip-norms-codebook__original.csv",
+      "byteLength": 1955,
+      "publishedMd5": "7b44e7baadb4722147bf91bd85ed1523",
+      "sha256": "55ad520ead1adce54509de063bc2b669219fd960d2ecbcae9af196ac5268d4a4"
+    },
+    {
+      "path": "ratings/openlav__raw-ratings__original.csv",
+      "rowCountIncludingHeader": 13265,
+      "byteLength": 8095331,
+      "publishedMd5": "30688526156d964a89d8c75178c0dddd",
+      "sha256": "12fa860560fb6d114cf86398aa4ec8e27433ceea95c9b1da7b882aee42174122"
+    },
+    {
+      "path": "ratings/openlav__raw-ratings-codebook__original.csv",
+      "byteLength": 175279,
+      "publishedMd5": "ebc9201ebb0eca2e4736cf5ed11d4914",
+      "sha256": "513541f3420ab2a7ca3606633c9b9d55cbec19dd535f84816a2af741dcfe0f45"
+    }
+  ],
+  "includedMetadata": [
+    {
+      "path": "metadata/original/openlav__source-readme__original.txt",
+      "byteLength": 675,
+      "publishedMd5": "a0c649a8223143a95ec78f0187f51332",
+      "sha256": "ca83470d3dfd829b2b1eca4e6809fff11b5394b06bf9cec0d258ab1e5c50ac21"
+    }
+  ]
+}

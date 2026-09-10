@@ -1,0 +1,31 @@
+variable name;description;possible values
+video_code;ID of the video;
+author;Name of Youtube or Vimeo channel/author that published the video ;
+source_URL;URL of the video;
+license;Type of CC-by license;CC-BY 3.0
+length_s;Length of video in seconds;
+language_free;Is the video without language?;"TRUE = language free; FALSE = contains language (English)"
+anxiety;Fraction of primary anxiety labels for the video;0-1
+compassion;Fraction of primary compassion labels for the video;0-1
+contempt;Fraction of primary contempt labels for the video;0-1
+despair;Fraction of primary despair labels for the video;0-1
+disgust;Fraction of primary disgust labels for the video;0-1
+fascination;Fraction of primary fascination labels for the video;0-1
+fear;Fraction of primary fear labels for the video;0-1
+guilt;Fraction of primary guilt labels for the video;0-1
+indifference;Fraction of primary indifference labels for the video;0-1
+irritation;Fraction of primary irritation labels for the video;0-1
+joy;Fraction of primary joy labels for the video;0-1
+no_emotion;Fraction of primary no_emotion labels for the video;0-1
+pride;Fraction of primary pride labels for the video;0-1
+rage;Fraction of primary rage labels for the video;0-1
+sadness;Fraction of primary sadness labels for the video;0-1
+satisfaction;Fraction of primary satisfaction labels for the video;0-1
+shame;Fraction of primary shame labels for the video;0-1
+surprise;Fraction of primary surprise labels for the video;0-1
+entropy;Scaled entropy score (Theil's Index) of the emotion labels of the video;"0 = low entropy (low uniformity); 1 = high entropy (high uniformity)"
+modal_emotion;The emotion category that was chosen most often as the primary emotion;
+valence;Mean valence factor score of video;
+arousal;Mean arousal factor score of video;
+valence_wsd;Standard deviation of valence scores for the video;
+arousal_wsd;Standard deviation of arousal scores for the video;

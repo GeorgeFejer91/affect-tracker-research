@@ -1,0 +1,95 @@
+{
+  "schema": "org.aliusresearch.caav-published-samples",
+  "version": 1,
+  "retrievedDate": "2026-09-10",
+  "samples": [
+    {
+      "videoId": "1_F_085",
+      "articleId": 11550273,
+      "fileId": 20759340,
+      "doi": "10.6084/m9.figshare.11550273.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_1_F_085/11550273",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759340",
+      "byteLength": 17395712,
+      "md5": "35fa49032fc0966fcc178e2191af000d",
+      "sha256": "7af78da91782ad1556983de5c1f430fd90c18b86aa3ef626a538c873b642d828"
+    },
+    {
+      "videoId": "3_M_014",
+      "articleId": 11550294,
+      "fileId": 20759367,
+      "doi": "10.6084/m9.figshare.11550294.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_3_M_014/11550294",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759367",
+      "byteLength": 17401856,
+      "md5": "c0c265ba8e587439693696a99b8d2f0d",
+      "sha256": "8f0e9df6fc7a070bd8faecc724640ac747b614f225675423e555f0817d87600c"
+    },
+    {
+      "videoId": "1_M_014",
+      "articleId": 11550267,
+      "fileId": 20759346,
+      "doi": "10.6084/m9.figshare.11550267.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_video_-_1_M_014/11550267",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759346",
+      "byteLength": 17397760,
+      "md5": "035a03b60c1f235eff2778e5890d79cb",
+      "sha256": "0a6554fdfaf81f7123c9e03771a42cc0027ab33d1f9b265317c0065ecb4a9f6e"
+    },
+    {
+      "videoId": "3_F_085",
+      "articleId": 11550276,
+      "fileId": 20759334,
+      "doi": "10.6084/m9.figshare.11550276.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_3_F_085/11550276",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759334",
+      "byteLength": 17422336,
+      "md5": "f5ce912678b62192bb863b16493515a3",
+      "sha256": "aedacbc53a88d9c3bc311af735858a6f378c5c129afb89ae2fa851a8c5378624"
+    },
+    {
+      "videoId": "1_F_014",
+      "articleId": 11550270,
+      "fileId": 20759349,
+      "doi": "10.6084/m9.figshare.11550270.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_1_F_014/11550270",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759349",
+      "byteLength": 17436672,
+      "md5": "e915b48692980dcf18c385a1fddbb9f0",
+      "sha256": "5b702be4700e1f0593a319d67c82755bdbf9a06a26b54ea5ee7371b1c115e755"
+    },
+    {
+      "videoId": "3_M_085",
+      "articleId": 11550282,
+      "fileId": 20759352,
+      "doi": "10.6084/m9.figshare.11550282.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_3_M_085/11550282",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759352",
+      "byteLength": 17418240,
+      "md5": "d97063bbb602ef2ba6a48685def362cd",
+      "sha256": "64f46e7286a4d381e260e7e951b5ee509f7966b285a5abb8cce6b46804da0d38"
+    },
+    {
+      "videoId": "3_F_014",
+      "articleId": 11550264,
+      "fileId": 20759343,
+      "doi": "10.6084/m9.figshare.11550264.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_3_F_014/11550264",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759343",
+      "byteLength": 17401856,
+      "md5": "e22446fb63b782c0fba6f9cbfb5588a0",
+      "sha256": "5e865cbe40d194ccb06a9ed336c508f99d104da6c828dbfbd5a15b7d401685ac"
+    },
+    {
+      "videoId": "1_M_085",
+      "articleId": 11550261,
+      "fileId": 20759328,
+      "doi": "10.6084/m9.figshare.11550261.v1",
+      "sourceUrl": "https://springernature.figshare.com/articles/media/Sample_Video_-_1_M_085/11550261",
+      "downloadUrl": "https://ndownloader.figshare.com/files/20759328",
+      "byteLength": 17317888,
+      "md5": "4d0ef8e515a963a4eb3ea32c28651831",
+      "sha256": "f0504f7c06a8c32daab25f99f668cb9818879867fc8d90478d140fd59d920347"
+    }
+  ]
+}
