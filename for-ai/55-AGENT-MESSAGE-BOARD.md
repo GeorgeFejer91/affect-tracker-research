@@ -37,6 +37,33 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-integration-preview-cleanup
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **open**.
+- Stage: Repository/Web Synchronization, bounded to local source convergence.
+  Branch `codex/segment-integration-preview-cleanup`, isolated worktree
+  `D:/GitHub/affect-tracker-research-integration-preview`, base `6be0a79`.
+- Documentation handoff `d1a4665` is integrated at `6be0a79`, with the prior
+  canonical draft preserved at `6223ca9`. All 14 handoff files match; checks
+  cover 15 Markdown files, 149 local links, the JSON example and 62 unique
+  capability IDs (14 checked, 48 open). Runtime source remains `305d3ac`.
+- Collect ready Preview `268e0a9` and dependent divider `20644e2` first.
+  Resolve only reviewed shared app/view/style hunks, preserve confirmation
+  footers/motion and newer roadmap authority, then run combined Node, build
+  closure and isolated offscreen layout/input checks. Baseline: 48 focused
+  UI/preview/accordion tests pass. No foreground app testing or native claims.
+- P5 owns Input/Visual/Advanced consolidation. Later cleanup collection depends
+  on clean owner handoffs; removing old Experiment requires actual retained-field
+  destinations from P1/P7. P6's editor mount must survive old Visual removal.
+  No unique v1 readers, evidence outputs or unimplemented successors are deleted.
+- Newly reported explicit P6 Q11 answer: head-forward without eye tracking,
+  world-fixed during an attempt, stop on tracking loss, recenter only before
+  the next attempt. P6 owns the scoped decision/contract update; earlier pending
+  entries are dated observations, not reasons to re-ask the answered question.
+- Deferred: unready P1/P2/P3/P4/P5/P6/P7 work, floating native overlay, Runner,
+  installed/native qualification, publication and deployment. Main remains
+  unchanged until the isolated combined candidate passes its named checks.
+
 ### 20260911-roadmap-agent-coordination-audit
 
 - Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination
