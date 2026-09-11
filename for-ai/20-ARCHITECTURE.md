@@ -16,8 +16,8 @@ researcher choices and compile one finished unified JSON package; Runner reads
 that package for acquisition and monitoring. JSON is the final interchange
 boundary, never a prerequisite hand-authored document or an exposed master
 editor. These functions do not add modes or imply separate executables. The
-current pass changes Section 2 authoring only; Runner and other-section work
-is recorded in `45-FUTURE-AGENT-CHECKLIST.md`.
+Section 2 and Segment 3 authoring slices are recorded in the roadmap; Runner
+version binding and remaining section work are in `45-FUTURE-AGENT-CHECKLIST.md`.
 
 | Concern | One active authority | Adapters/consumers |
 | --- | --- | --- |
@@ -26,6 +26,7 @@ is recorded in `45-FUTURE-AGENT-CHECKLIST.md`.
 | Playback policy | Package-owned exact `complete-video-v1` behavior | Browser/GstPlay/WebView execution backend is a separately frozen capability receipt |
 | Input bindings | Explicit package-owned `InputBindingV1` projection | Windows input adapter; Chrome/Edge event and Gamepad adapters |
 | Stimulus library | Closed package asset manifest beneath fixed `assets/stimuli/` | Tauri file commands; browser File System Access; no scan-based enrollment |
+| Video-order authoring | Canonical hash-bound library and variant design records beside the video folder | Segment 3 editor, CSV/XLSX export, browser workspace and Rust `research_stimulus_order`; never package/Run authority |
 | Participant schedule | Pure verification of package-authored manual order into participant assignment receipts | Virtualized preview, schedule CSV, run preparation; never an allocator |
 | Language selection | Finite rooted package tree and selected terminal-language path | Setup selection and participant/language protocol resolver; never OS locale |
 | Protocol sequence | Pure participant-plus-terminal-language resolver over package order and hooks | Sequence preview, questionnaire/video/interval run routing, recovery |
@@ -108,6 +109,18 @@ not be merged into a catch-all controller or runtime module:
 | Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
 | Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
 | Platform bridge | One selected browser/native adapter | Narrow authorized commands/events; no product policy in handlers |
+
+The Segment 3 authoring slice uses `stimulus-order.js` for pure browser
+validation/hashes, `stimulus-order-editor.js` for DOM presentation, and
+`stimulus-workbook.js` for bounded XLSX generation. The application composition
+injects one operation interface. Browser storage stays in `workspace.js`;
+Windows requests pass through the named native bridge and narrow commands to
+`research_workspace/stimulus_authoring.rs` and the closed
+`research_stimulus_order` domain. Shared canonical JSON and export hashes are
+fixed in `test/fixtures/stimulus-order-v1.json`. Native exports rebuild bytes
+from the owner-scanned library and use the native save picker; no WebView path
+or export body is trusted. Workspace identity and generation checks fence
+late receipts. An authoring design never changes historical package schemas.
 
 The landed package-run slice realizes that map through these explicit seams:
 

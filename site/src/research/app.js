@@ -45,6 +45,9 @@ import {
 } from "./questionnaire-assets.js";
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { createQuestionnaireEditor } from "./questionnaire-editor.js";
+import { isLibraryVideoName } from "./stimulus-order.js";
+import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
+import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
@@ -67,7 +70,6 @@ import {
 import { externalExperimentPlanToCsv } from "./tabular.js";
 import {
   BrowserResearchWorkspace,
-  isSupportedVideoName,
   normalizeWorkspaceRelativePath,
   parseStrictJson,
   parseExperimentalYouTubeUrl,
@@ -274,6 +276,18 @@ function bindResearchInteractions(root, { surface }) {
     onMove: moveQuestionnaireFamily,
   });
   const participantStates = new Map();
+  let authoringWorkspaceKey = null;
+  let sectionConfirmationBusy = false;
+  const stimulusOrderEditor = createStimulusOrderEditor({
+    root,
+    operate: operateStimulusAuthoring,
+    announce,
+    onChange() {
+      reviewedSetupSections.delete("stimuli");
+      renderSetupReviewState();
+      schedulePlanRefresh();
+    },
+  });
   const participantRecoverability = new Map();
   const participantFinalizationPending = new Map();
   const participantFinalizationBindings = new Map();
@@ -492,7 +506,17 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
-  function confirmSetupSection(sectionId) {
+  async function confirmSetupSection(sectionId) {
+    if (sectionConfirmationBusy) return;
+    sectionConfirmationBusy = true;
+    try {
+      if (sectionId === "workspace" && !(await stimulusOrderEditor.confirmLibrary())) return;
+      if (sectionId === "stimuli" && !(await stimulusOrderEditor.confirm())) return;
+      finishSetupSectionConfirmation(sectionId);
+    } finally { sectionConfirmationBusy = false; }
+  }
+
+  function finishSetupSectionConfirmation(sectionId) {
     const transition = applySetupSectionConfirmation(reviewedSetupSections, sectionId);
     reviewedSetupSections.clear();
     transition.reviewedSectionIds.forEach((id) => reviewedSetupSections.add(id));
@@ -1357,6 +1381,10 @@ function bindResearchInteractions(root, { surface }) {
         { id: "lsl", result: "warning", label: "LSL", message: "Outlets are not started for reload-only finalization" },
       ];
     }
+    if (stimulusOrderEditor.active) return [{
+      id: "variant-design", result: "block", label: "Variant design",
+      message: "Variant-table designs require Runner integration for participant allocation and recording their version annotations.",
+    }];
     const experimentValid = Boolean(experimentDocument)
       && /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value("experiment-id"))
       && value("experiment-title").trim().length > 0
@@ -2866,6 +2894,7 @@ function bindResearchInteractions(root, { surface }) {
     const previous = query("#plan-window-previous");
     const next = query("#plan-window-next");
     const exportButton = query("#assignment-plan-export");
+    if (reviewHash) reviewHash.textContent = plan?.planHashSha256 ?? planError ?? "Pending valid allocation";
     if (!(table instanceof HTMLElement)) return;
     if (!plan) {
       table.innerHTML = '<tr><td colspan="3" class="empty-state">The exact schedule appears after experiment.json and every referenced workspace video pass validation.</td></tr>';
@@ -3037,6 +3066,47 @@ function bindResearchInteractions(root, { surface }) {
       announce(error instanceof Error ? error.message : String(error));
       refreshProjection();
     }
+  }
+
+  async function operateStimulusAuthoring(operation, payload = {}) {
+    if (mode !== "setup") throw new Error("Open Setting Up the Experiment to edit the video design.");
+    if (surface === "tauri") return requestStimulusAuthoring(root, operation, payload);
+    const selected = workspace;
+    if (!selected) throw new Error("Set the work directory in Segment 1 first.");
+    let receipt;
+    if (operation === "confirm-library" || operation === "scan-library") {
+      receipt = await selected.videoLibrary({ confirm: operation === "confirm-library" });
+    } else if (operation === "save-order") {
+      receipt = await selected.saveStimulusOrder(payload.document);
+    } else if (operation === "export-library") {
+      const current = await selected.videoLibrary();
+      if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+      if (selected !== workspace) throw new Error("The workspace changed during export.");
+      const mime = payload.format === "csv" ? "text/csv;charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      const url = URL.createObjectURL(new Blob([payload.bytes], { type: mime }));
+      const link = document.createElement("a");
+      link.href = url; link.download = `video-library.${payload.format}`;
+      root.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      receipt = { exported: true };
+    } else throw new Error("Unknown video authoring operation.");
+    if (selected !== workspace) throw new Error("The workspace changed during video authoring.");
+    return receipt;
+  }
+
+  async function acceptVideoLibrary(receipt) {
+    await stimulusOrderEditor.adopt(receipt);
+    reviewedSetupSections.delete("workspace");
+    reviewedSetupSections.delete("stimuli");
+    renderSetupReviewState();
+    const status = query("#workspace-status");
+    if (status) status.textContent = `${receipt.library.videos.length} videos in the library. Confirm Segment 1 to save their annotations.`;
+    announce(status?.textContent ?? "Video library updated. Confirm Segment 1.");
+  }
+
+  async function refreshVideoLibrary() {
+    try { await acceptVideoLibrary(await operateStimulusAuthoring("scan-library")); }
+    catch (error) { announce(error.message); }
   }
 
   async function requestWorkspaceRescan() {
@@ -3579,6 +3649,7 @@ function bindResearchInteractions(root, { surface }) {
 
   async function generateExperimentPackage() {
     try {
+      if (stimulusOrderEditor.active) throw new Error("Variant designs need Runner allocation and version-recording integration before a runnable package can be generated.");
       const settings = await researchSettingsFromUi();
       const languageSelection = languageTreeFromUi();
       const packageValue = await createExperimentPackageV1({
@@ -3741,7 +3812,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function ingestBrowserFiles(fileList) {
-    const files = [...(fileList ?? [])].filter((file) => isSupportedVideoName(file.name));
+    const files = [...(fileList ?? [])].filter((file) => isLibraryVideoName(file.name));
     if (!files.length) {
       announce("No supported complete-video files were selected.");
       return;
@@ -3751,18 +3822,10 @@ function bindResearchInteractions(root, { surface }) {
       return;
     }
     try {
-      const importedPaths = await workspace.importVideoFiles(files);
-      for (let index = 0; index < files.length; index += 1) {
-        const relativePath = `stimuli/${importedPaths[index]}`;
-        const stimulus = addStimulus({
-          title: files[index].name.replaceAll("\\", "/").split("/").at(-1),
-          source: "workspace",
-          location: relativePath,
-          file: files[index],
-        });
-        if (stimulus) await verifyLocalFile(stimulus, { relativePath });
-      }
-      announce(`${files.length} complete video file${files.length === 1 ? "" : "s"} imported and verified.`);
+      const selected = workspace;
+      const receipt = await selected.importLibraryVideoFiles(files);
+      if (selected !== workspace) throw new Error("The workspace changed during import. Confirm the current video library.");
+      await acceptVideoLibrary(receipt);
     } catch (error) {
       announce(error instanceof Error ? error.message : String(error));
     }
@@ -4457,7 +4520,8 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "settings-load") requestSettingsLoad();
     if (target.id === "settings-save") requestSettingsSave();
     if (target.id === "workspace-renew") renewWorkspacePermission();
-    if (target.id === "workspace-rescan") requestWorkspaceRescan();
+    if (target.id === "workspace-rescan") void refreshVideoLibrary();
+    if (target.dataset.videoLibraryExport) void stimulusOrderEditor.download(target.dataset.videoLibraryExport);
     if (target.id === "stimulus-add-workspace") requestVideoImport();
     if (target.id === "stimulus-add-repository") openStimulusDialog("repository");
     if (target.id === "stimulus-add-youtube") openStimulusDialog("youtube");
@@ -5202,6 +5266,14 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
+    const workspaceKey = surface === "tauri" ? event.detail?.workspaceId : workspace;
+    if (workspaceKey !== authoringWorkspaceKey) {
+      authoringWorkspaceKey = workspaceKey;
+      stimulusOrderEditor.reset();
+      reviewedSetupSections.delete("workspace");
+      reviewedSetupSections.delete("stimuli");
+      renderSetupReviewState();
+    }
     root.dataset.nativeWorkspaceReady = "true";
     capabilities.directoryPermission = event.detail?.directoryPermission !== false;
     const output = query("#workspace-root");
@@ -5220,6 +5292,10 @@ function bindResearchInteractions(root, { surface }) {
     }
     refreshWorkspaceLocationButtons();
     refreshProjection();
+  });
+
+  root.addEventListener(RESEARCH_UI_EVENTS.videoLibraryChanged, (event) => {
+    void acceptVideoLibrary(event.detail).catch((error) => announce(error.message));
   });
 
   root.querySelectorAll("[data-open-section]").forEach((button) => button.addEventListener("keydown", (event) => {
@@ -5244,6 +5320,7 @@ function bindResearchInteractions(root, { surface }) {
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
+    get stimulusOrder() { return stimulusOrderEditor.document; },
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
     get experimentPackage() { return experimentPackageDocument?.package ?? null; },
@@ -5304,6 +5381,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      stimulusOrderEditor.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

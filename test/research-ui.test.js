@@ -38,7 +38,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["questionnaires", "Languages & Study Assets"],
-  ["stimuli", "Experiment Plan & Stimuli"],
+  ["stimuli", "Stimulus Presentation Order"],
   ["experiment", "Experiment"],
   ["input", "Controller / Input Device"],
   ["visual", "Visual Feedback"],
@@ -180,7 +180,8 @@ test("every Setup section requires an explicit sequential review confirmation", 
   const workspaceReadyStart = source.indexOf("root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady");
   const workspaceReadyEnd = source.indexOf('root.querySelectorAll("[data-open-section]")', workspaceReadyStart);
   assert.ok(workspaceReadyStart >= 0 && workspaceReadyEnd > workspaceReadyStart);
-  assert.doesNotMatch(source.slice(workspaceReadyStart, workspaceReadyEnd), /reviewedSetupSections\.(?:add|clear|delete)/u);
+  assert.match(source.slice(workspaceReadyStart, workspaceReadyEnd), /workspaceKey !== authoringWorkspaceKey/u);
+  assert.doesNotMatch(source.slice(workspaceReadyStart, workspaceReadyEnd), /reviewedSetupSections\.(?:add|clear)/u);
   const openSectionStart = source.indexOf("function openSetupSection(");
   const openSectionEnd = source.indexOf("function confirmSetupSection(", openSectionStart);
   assert.doesNotMatch(source.slice(openSectionStart, openSectionEnd), /reviewedSetupSections/u);
@@ -260,11 +261,9 @@ test("Workspace exposes one selected root and three fixed project locations", as
   for (const obsoleteWorkspaceStructure of [
     /class="[^"]*\bdirectory-list\b/u,
     /class="[^"]*\bprotocol-import-card\b/u,
-    /id="video-drop-zone"/u,
     /id="stimulus-library-table"/u,
     /id="settings-load"/u,
     /id="settings-save"/u,
-    /id="workspace-rescan"/u,
   ]) assert.doesNotMatch(workspacePanel, obsoleteWorkspaceStructure);
 
   for (const id of ["workspace-choose", "workspace-rescan", "video-import", "video-folder-import", "package-load", "package-generate", "package-file-status", "experiment-load", "experiment-template-download", "experiment-file-status", "settings-load", "settings-save"]) {
@@ -306,10 +305,10 @@ test("Workspace exposes one selected root and three fixed project locations", as
   }
   assert.match(markup, /Continuous rating is always enabled/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
-  assert.match(markup, /external-order-v1/u);
-  assert.match(markup, /<code>schedules\[\]\.blocks\[\]\.videos\[\]<\/code> is executed exactly in array order/u);
-  assert.match(markup, /isiAfterMs/u);
-  assert.match(markup, /Export resolved-plan\.csv/u);
+  assert.match(markup, /Stimulus presentation order/u);
+  assert.match(markup, /Participant allocation belongs to the experiment runner/u);
+  assert.match(markup, /Intervals range from 0 to 3,600,000 ms/u);
+  assert.match(markup, /Download Excel/u);
   assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
 });
 
@@ -486,12 +485,14 @@ test("external experiment plan export uses the canonical source-identity and ISI
   ]);
   assert.match(source, /import \{ externalExperimentPlanToCsv \} from "\.\/tabular\.js"/u);
   assert.match(source, /csv = await externalExperimentPlanToCsv\(plan\)/u);
-  assert.match(view, /resolved-plan\.csv/u);
+  assert.doesNotMatch(view, /id="assignment-preview"/u);
   assert.doesNotMatch(source, /assignmentPlanToCsv\(plan\)/u);
 });
 
 test("the UI bridge names are explicit and stable", () => {
   assert.deepEqual(RESEARCH_UI_EVENTS, {
+    stimulusAuthoringRequest: "affect-research:stimulus-authoring-request",
+    videoLibraryChanged: "affect-research:video-library-changed",
     selectWorkspaceRequest: "affect-research:select-workspace",
     openWorkspaceLocationRequest: "affect-research:open-workspace-location",
     rescanWorkspaceRequest: "affect-research:rescan-workspace",
@@ -746,4 +747,21 @@ test("Run feedback projection owns its visible coordinate receipt as well as the
   const source = await read("site/src/research/app.js");
   assert.match(source, /createResearchPreview\(root\.querySelector\('\[data-mode-panel="run"\]'\)/u);
   assert.doesNotMatch(source, /createResearchPreview\(root\.querySelector\("\.run-feedback-stage"\)/u);
+});
+
+
+test("Segment 3 owns variant authoring while Segment 1 owns imports and annotation confirmation", async () => {
+  const markup = renderResearchUiMarkup();
+  const start = markup.indexOf('data-setup-section="stimuli"');
+  const section = markup.slice(start, markup.indexOf('data-setup-section="experiment"', start));
+  for (const id of ["stimulus-order-editor", "stimulus-order-status", "stimulus-order-help", "stimulus-order-versions"]) assert.ok(section.includes(`id="${id}"`));
+  assert.match(section, /data-video-library-export="xlsx"/u);
+  assert.match(section, /data-video-library-export="csv"/u);
+  assert.doesNotMatch(section, /id="assignment-preview"|id="participant-count"|id="video-import"/u);
+  const workspaceStart = markup.indexOf('data-setup-section="workspace"');
+  const workspace = markup.slice(workspaceStart, markup.indexOf('data-setup-section="questionnaires"'));
+  for (const id of ["video-import", "video-folder-import", "workspace-rescan"]) assert.ok(workspace.includes(`id="${id}"`));
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /await stimulusOrderEditor.confirmLibrary\(\)/u);
+  assert.match(source, /await stimulusOrderEditor.confirm\(\)/u);
 });

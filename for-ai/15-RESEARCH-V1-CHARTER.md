@@ -250,7 +250,11 @@ confirmation in the open section alone has a breathing, outward-fading edge
 glow. A reviewed header uses a green circled check plus its text alternative,
 and its confirmation control becomes a disabled **Reviewed** receipt. Header
 chevrons continue to open and close reviewed sections without clearing review
-state or requiring confirmation again.
+state or requiring confirmation again. Editing a saved Segment 3 order, changing
+its library, or selecting another workspace clears the affected review receipt;
+the researcher must confirm the new content. Workspace confirmation writes
+video annotations, and Segment 3 confirmation writes the validated order, before
+advancing. Those authoring documents remain separate from the review trail.
 
 ### 1. Workspace & Libraries
 
@@ -392,19 +396,46 @@ builds one finite, acyclic package language tree with an explicit root and exact
 ordered module list per terminal; Review & Start still requires explicit
 participant traversal and package load never selects the first route.
 
-### 3. Experiment Plan & Stimuli
+### 3. Stimulus Presentation Order
 
-The Designer target authors a video library and manual block/participant plan
-through UI, then compiles the package-owned asset, block, and assignment
-sections. Scientific randomization/counterbalancing decisions remain the
-researcher's responsibility; the application performs no allocation. Current
-read-only external-plan controls are an implementation gap recorded for a
-future section pass, not a requirement to create JSON outside the app.
-Each stimulus declaration binds one unique complete video
-under `assets/stimuli/` by safe relative path, SHA-256, byte length, and
-duration. Each canonical participant entry contains the exact ordered blocks
-and exact ordered videos within each block, and every occurrence contains its
-explicit `isiAfterMs`.
+The researcher defines counterbalanced experiment variants as spreadsheet
+columns, with fixed Event 1, Event 2, … row labels. Cells hold a library video
+annotation or an integer ISI in milliseconds. Excel/CSV rectangles are pasted
+only through an explicit paste gesture; external randomization remains the
+researcher's responsibility. Add/remove controls determine the number of
+variants and events. This segment has no participant IDs or assignments.
+Per the researcher's 2026-09-11 clarification, participant-to-variant selection
+and binding the selected version to recorded participant data belong to the
+Runner, not Segment 3 or Segment 4. This is a future Runner contract change;
+it does not authorize hidden runtime randomization or reinterpret old records.
+
+Confirming Segment 1 scans the owned video library and stores canonical
+`assets/video-library.annotations.json`. Each annotation binds safe relative
+path, complete-file SHA-256, and byte length; the readable `video-<16 hex>` ID
+maps back to that identity, with collisions rejected. This hash binding is not
+encryption, a digital signature, proof of authorship, or decode qualification.
+Metadata stays beside `assets/stimuli/` so the exact video-only package closure
+is unchanged. CSV and genuine XLSX downloads list current video annotations;
+XLSX also contains an empty order template. Spreadsheet text is escaped and
+never emitted as formulas.
+
+Confirming Segment 3 validates and persists canonical
+`assets/stimulus-order.design.json`. Stable variant IDs and SHA-256 version
+annotations bind each variant's name, exact video order, and per-video ISIs.
+Changing one variant changes its version; unrelated library additions do not.
+A variant requires at least one video and permits each video once. ISIs must
+follow a video and be integers from 0 to 3,600,000 ms; adjacent videos imply an
+explicit authored 0 ms interval. Trailing empty rows are ignored, interior gaps
+and consecutive/leading intervals are rejected, and a terminal ISI is retained.
+The authoring projection is bounded to 64 variants, 1,024 rows and 32,000 cells.
+
+These are authoring records, not `ExperimentPackageV1` or Run authority. The
+Runner/finalizer must eventually freeze explicit participant schedules and
+version bindings in a versioned package/output contract before Prepare.
+Until that integration exists, an active variant draft or saved design blocks
+package generation and new Start so stale imported schedules cannot be run as
+though they represented the new table. Historical package parsing and runtime
+contracts retain their exact complete-video identity/duration and ISI rules.
 
 The current downloadable
 [`site/experiment-template.json`](../site/experiment-template.json) is a

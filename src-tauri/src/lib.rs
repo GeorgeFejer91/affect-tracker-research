@@ -17,6 +17,7 @@ mod research_platform;
 pub mod research_protocol;
 mod research_run_storage;
 mod research_runtime;
+mod research_stimulus_order;
 mod research_timing;
 mod research_workspace;
 
@@ -162,6 +163,10 @@ pub fn run() {
             research_commands::research_load_experiment_package,
             research_commands::research_save_experiment_package,
             research_commands::research_rescan_stimuli,
+            research_commands::research_video_library,
+            research_commands::research_save_stimulus_order,
+            research_commands::research_import_library_videos,
+            research_commands::research_export_video_library,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
             research_commands::research_workspace_media_url,

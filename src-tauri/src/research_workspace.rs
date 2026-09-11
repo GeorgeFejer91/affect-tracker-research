@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::http::{header, Method, Request, Response, StatusCode};
 use uuid::Uuid;
 
+mod stimulus_authoring;
+
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mov", "m4v", "avi", "mkv"];

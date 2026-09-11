@@ -49,6 +49,113 @@ use uuid::Uuid;
 
 const MAX_SETTINGS_DOCUMENT_BYTES: usize = 5 * 1024 * 1024;
 
+#[tauri::command]
+pub async fn research_video_library(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    confirm: bool,
+) -> ResearchResult<crate::research_stimulus_order::AuthoringReceipt> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || workspace.video_library(&workspace_id, confirm))
+        .await
+        .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_save_stimulus_order(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    document: crate::research_stimulus_order::StimulusOrderDocument,
+) -> ResearchResult<crate::research_stimulus_order::AuthoringReceipt> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        workspace.save_stimulus_order(&workspace_id, document)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_import_library_videos(
+    window: WebviewWindow,
+    app: AppHandle,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    selection_kind: ImportSelectionKind,
+) -> ResearchResult<Option<crate::research_stimulus_order::AuthoringReceipt>> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        let selections = match selection_kind {
+            ImportSelectionKind::Videos => app
+                .dialog()
+                .file()
+                .add_filter(
+                    "Video stimuli",
+                    &["mp4", "webm", "mov", "m4v", "avi", "mkv", "ogv"],
+                )
+                .blocking_pick_files(),
+            ImportSelectionKind::Folder => app
+                .dialog()
+                .file()
+                .blocking_pick_folder()
+                .map(|selection| vec![selection]),
+        };
+        let Some(selections) = selections else {
+            return Ok(None);
+        };
+        let paths = selections
+            .into_iter()
+            .map(|selection| {
+                selection
+                    .into_path()
+                    .map_err(|_| CommandError::forbidden("Imported videos must be local files."))
+            })
+            .collect::<ResearchResult<Vec<_>>>()?;
+        Ok(Some(
+            workspace.import_authoring_videos(&workspace_id, paths)?,
+        ))
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_export_video_library(
+    window: WebviewWindow,
+    app: AppHandle,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    library_sha256: String,
+    format: crate::research_stimulus_order::export::LibraryFormat,
+) -> ResearchResult<bool> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        let bytes = workspace.export_video_library(&workspace_id, &library_sha256, format)?;
+        let Some(selection) = app
+            .dialog()
+            .file()
+            .add_filter("Video library", &[format.extension()])
+            .set_file_name(format!("video-library.{}", format.extension()))
+            .blocking_save_file()
+        else {
+            return Ok(false);
+        };
+        let path = selection
+            .into_path()
+            .map_err(|_| CommandError::forbidden("The export destination must be a local file."))?;
+        crate::research_stimulus_order::export::write_export(&path, format, &bytes)?;
+        Ok(true)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
 fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
     if window.label() != "research" {
         return Err(CommandError::forbidden(

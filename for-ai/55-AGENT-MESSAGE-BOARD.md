@@ -37,6 +37,56 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-stimuli-order-table
+
+- Owner: **Segment 3**, segment `stimuli`; status **ready**. Backend Verification,
+  bounded to video-order authoring and the required Workspace confirmation seam.
+- Branch: `codex/segment-stimuli-order-table`; worktree
+  `D:\GitHub\affect-tracker-research-stimuli-order`; base
+  `954f38ff0ac0368989c6cede40c839817c88d380`. Migration verified by S2; resumed
+  at the user's request. Integration checkout remains reserved.
+- Deliverable: event-row/variant-column editor, explicit spreadsheet paste,
+  CSV/XLSX library exports, hash-bound video annotations and confirmed design
+  persistence. No randomization or participant allocation. The researcher
+  clarified that the Runner owns participant-to-variant selection and recording
+  its version; Segment 4 has no assignment responsibility. Package/Run contracts
+  remain unchanged, and active variant designs block stale package use.
+- Shared seams: Workspace import/confirmation, Section 3 markup, app composition,
+  typed bridge requests, bounded workspace methods, documentation and tests.
+  Annotation metadata is stored alongside `assets/stimuli/`, not inside the
+  immutable video-only closure. No new unsafe code or broad capability.
+- Baseline: 36 focused UI/package tests passed before the failed C: checkout.
+  Planned checks: authoring validation, storage/IPC parity, exports, background
+  rendering, independent-process reproduction and frontend build closures.
+  No GUI interaction, push, deployment, or research qualification authorized.
+
+#### Segment 3 verification and integration handoff — 2026-09-11
+
+- Ready for integration-owner collection. The bounded authoring slice is complete;
+  this does not mark the entire Backend Verification stage or Runner complete.
+- `pnpm test`: 439/439, including 15 new authoring/model/editor/storage checks
+  and shared fixture tests. Pages boundary: 173 files; desktop boundary: 8 files.
+  Frozen pnpm install and moderate-level audit pass (no new dependencies).
+- Rust locked no-default tests: 190/190 plus bin/doc targets. Shared fixture
+  validates identical library/order hashes and CSV/XLSX bytes; native tests cover
+  confirmation/save/reload, file-change rejection, and idempotent owned imports.
+  No-default clippy with warnings denied and format check pass.
+- Background `scripts/verify-stimulus-order-ui.cjs` initializes the real UI and
+  renders the saved two-variant fixture at 1600 and 800 px, with correct cells,
+  semantic labels, no assignments, accepted save receipt, and no page errors.
+  An independent openpyxl reader verifies both sheets, IDs, frozen header, no
+  formulas, and ZIP CRC. Artifacts: own `src-tauri/target/segment3-verification/`.
+  No desktop pointer/keyboard/clipboard or existing browser was controlled.
+- All-feature check fails at `glib-sys` because `pkg-config`/the GStreamer
+  development SDK are unavailable. All-feature tests/clippy, installed dialogs,
+  physical clipboard/keyboard, full accessibility, native media/timing/LSL,
+  acquisition/output version binding, CI and deployment remain open. The
+  existing desktop >500 kB chunk warning remains non-failing.
+- Integration base has since advanced to `305d3ac`; do not replace its newer
+  accordion/preview/S2 work with this branch. Reconcile the named shared seams,
+  retain both board histories, and collect the Runner follow-up from
+  `45-FUTURE-AGENT-CHECKLIST.md`. S3 does not own the integration checkout.
+
 ### 20260911-integration-preview-converged
 
 - Owner: **Add segment confirmation flow**, integration; **resolved** for source

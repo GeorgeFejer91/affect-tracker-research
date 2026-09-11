@@ -3242,3 +3242,17 @@ dialog::backdrop {
     opacity: 1;
   }
 }
+
+/* Segment 3: a plain spreadsheet with fixed event labels. */
+.stimulus-order-scroll { max-height: 32rem; margin-block: 0.75rem; }
+.stimulus-order-table { width: max-content; min-width: 100%; border-collapse: collapse; }
+.stimulus-order-table th, .stimulus-order-table td { padding: 0.35rem; border: 1px solid var(--border); }
+.stimulus-order-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+.stimulus-order-table th:first-child { position: sticky; left: 0; min-width: 6rem; background: var(--surface); z-index: 1; }
+.stimulus-order-table thead th:first-child { z-index: 3; }
+.stimulus-order-table td input { min-width: 15rem; width: 100%; font-family: var(--font-mono, monospace); }
+.variant-heading { display: flex; align-items: center; gap: 0.4rem; }
+.variant-heading input { min-width: 10rem; width: 100%; }
+.variant-versions { margin-block: 0.5rem; }
+.variant-versions > div { padding-block: 0.5rem; border-top: 1px solid var(--border); }
+.variant-versions dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; }

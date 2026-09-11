@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
+import { isLibraryVideoName, createVideoLibrary, validateVideoLibrary, validateStimulusOrderDocument, VIDEO_LIBRARY_FILE, STIMULUS_ORDER_FILE } from "./stimulus-order.js";
 import {
   validateResearchEventV1,
   validateResearchRunManifestV2,
@@ -1727,6 +1728,68 @@ export class BrowserResearchWorkspace {
     for await (const video of walkVideos(this.packageStimuliDirectory)) videos.push(video);
     videos.sort((left, right) => left.relativePath.localeCompare(right.relativePath, "en"));
     return Object.freeze(videos);
+  }
+
+  async videoLibrary({ confirm = false } = {}) {
+    await ensurePermission(this.rootHandle, confirm ? "readwrite" : "read", { request: false });
+    const assets = await getChildDirectory(this.rootHandle, "assets", { create: false });
+    const videos = await getChildDirectory(assets, "stimuli", { create: false });
+    if (!this.packageStimuliDirectory || (typeof videos.isSameEntry === "function" && !(await videos.isSameEntry(this.packageStimuliDirectory)))) fail("library-changed", "The selected video folder changed. Select the workspace again.");
+    const entries = [];
+    for await (const entry of walkPackageFiles(videos)) {
+      if (!isLibraryVideoName(entry.name)) fail("library-nonvideo", "The video folder must contain only supported complete videos. Keep authoring documents beside assets/stimuli/.");
+      entries.push({ relativePath: `assets/stimuli/${entry.relativePath}`, sha256: await sha256Blob(entry.file, this.cryptoObject), byteLength: entry.byteLength });
+    }
+    const library = await createVideoLibrary(entries);
+    if (new TextEncoder().encode(canonicalJson(library)).length > 5 * 1024 * 1024) fail("library-size", "Video library annotation exceeds 5 MiB.");
+    if (confirm) {
+      const source = `${canonicalJson(library)}\n`;
+      await replaceFile(assets, VIDEO_LIBRARY_FILE, source);
+      if (await (await (await assets.getFileHandle(VIDEO_LIBRARY_FILE)).getFile()).text() !== source) fail("library-write", "Video annotation write readback differs.");
+    }
+    let design = null, designError = null;
+    try {
+      const file = await (await assets.getFileHandle(STIMULUS_ORDER_FILE)).getFile();
+      if (file.size > 5 * 1024 * 1024) throw new Error("Oversized design");
+      const source = await file.text();
+      design = await validateStimulusOrderDocument(parseStrictJson(source), library);
+      if (`${canonicalJson(design)}\n` !== source) throw new Error("Noncanonical design");
+    } catch (error) {
+      design = null;
+      if (error?.name !== "NotFoundError") designError = "Saved variant design could not be matched to this library. Existing file preserved; review and confirm a new table.";
+    }
+    return { library, design, designError };
+  }
+
+  async saveStimulusOrder(document) {
+    await ensurePermission(this.rootHandle, "readwrite", { request: false });
+    const receipt = await this.videoLibrary();
+    const assets = await getChildDirectory(this.rootHandle, "assets", { create: false });
+    const file = await (await assets.getFileHandle(VIDEO_LIBRARY_FILE)).getFile();
+    if (file.size > 5 * 1024 * 1024) fail("library-size", "Video annotation exceeds 5 MiB.");
+    const librarySource = await file.text();
+    const library = await validateVideoLibrary(parseStrictJson(librarySource));
+    if (`${canonicalJson(library)}\n` !== librarySource) fail("library-canonical", "Confirm Segment 1 to replace the noncanonical video annotation document.");
+    if (library.integritySha256 !== receipt.library.integritySha256) fail("library-changed", "Video files changed. Confirm the current library in Segment 1 again.");
+    const design = await validateStimulusOrderDocument(document, library);
+    const source = `${canonicalJson(design)}\n`;
+    await replaceFile(assets, STIMULUS_ORDER_FILE, source);
+    if (await (await (await assets.getFileHandle(STIMULUS_ORDER_FILE)).getFile()).text() !== source) fail("order-write", "Variant design write readback differs.");
+    return { library, design, designError: null };
+  }
+
+  async importLibraryVideoFiles(files) {
+    await ensurePermission(this.rootHandle, "readwrite", { request: false });
+    const assets = await getChildDirectory(this.rootHandle, "assets", { create: false });
+    const stimuli = await getChildDirectory(assets, "stimuli", { create: false });
+    if (!this.packageStimuliDirectory || (typeof stimuli.isSameEntry === "function" && !(await stimuli.isSameEntry(this.packageStimuliDirectory)))) fail("library-changed", "The selected video folder changed. Select the workspace again.");
+    for (const file of Array.from(files ?? [])) {
+      if (!(file instanceof Blob) || !isLibraryVideoName(file.name)) fail("unsupported-video", "Select supported complete-video files.");
+      const parts = normalizeWorkspaceRelativePath(file.webkitRelativePath || file.name, "import path").split("/");
+      const fileName = parts.pop(), directory = await getNestedDirectory(stimuli, parts, { create: true });
+      await writeNewFile(directory, fileName, file);
+    }
+    return this.videoLibrary();
   }
 
   async loadExperimentPackage() {

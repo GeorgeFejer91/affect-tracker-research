@@ -23,7 +23,7 @@ export const CONTRACT_PRESET_IDS = Object.freeze(Object.fromEntries(
 export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "workspace", label: "Workspace & Libraries" }),
   Object.freeze({ id: "questionnaires", label: "Languages & Study Assets" }),
-  Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
+  Object.freeze({ id: "stimuli", label: "Stimulus Presentation Order" }),
   Object.freeze({ id: "experiment", label: "Experiment" }),
   Object.freeze({ id: "input", label: "Controller / Input Device" }),
   Object.freeze({ id: "visual", label: "Visual Feedback" }),
@@ -35,6 +35,8 @@ export const RESEARCH_MODES = Object.freeze(["setup", "run"]);
 export const ATTEMPT_DISPOSITIONS = Object.freeze(["resume-compatible", "new-attempt"]);
 
 export const RESEARCH_UI_EVENTS = Object.freeze({
+  stimulusAuthoringRequest: "affect-research:stimulus-authoring-request",
+  videoLibraryChanged: "affect-research:video-library-changed",
   selectWorkspaceRequest: "affect-research:select-workspace",
   openWorkspaceLocationRequest: "affect-research:open-workspace-location",
   rescanWorkspaceRequest: "affect-research:rescan-workspace",

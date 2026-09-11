@@ -50,3 +50,5 @@ decisions. Automated conformance establishes only the specified software
 properties. It does not establish randomization quality, construct validity,
 study validity, perceived-affect validity, physiological inference, diagnosis,
 or research readiness.
+
+| `STIMULUS-WORKBOOK` | Microsoft [SpreadsheetML document structure](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/structure-of-a-spreadsheetml-document) and [Cell / inlineStr](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.cell?view=openxml-3.0.1), consulted 2026-09-11 | Independent bounded ZIP/SpreadsheetML writers export the verified library plus an empty order sheet; all values are inline text, and CSV protects formula-like filenames. | Specification-guided project code, no copied implementation or new dependency. Shared Rust/JS golden hashes prove byte parity; spreadsheet-reader and background-render evidence do not qualify installed Excel or acquisition. |

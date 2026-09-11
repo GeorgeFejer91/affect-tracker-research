@@ -17,13 +17,15 @@ before taking the next bounded pass; keep implementation status in
   `experiment.json` or an existing package. Provide an explicit final design
   output action and a distinct finished-package intake in the Runner without
   adding a third mode or exposing raw JSON editing.
-- [ ] **Make video-library and manual-plan authoring possible through UI.**
-  Current Section 3/4 documentation and implementation have transitional
-  load/read-only plan controls. Researchers need to define the video library,
-  blocks, participant schedules, and exact per-video ISIs in the Designer.
-  Preserve explicit authored order, safe closed asset identities, and the
-  existing no-randomization rule; do not invent allocation methods or silently
-  fill package fields from ambient state.
+- [ ] **Connect saved variants to the Runner and final package.** Segment 3
+  now authors the library and variant orders, with canonical version annotations
+  and explicit ISIs. The researcher excluded participant assignments from both
+  Segment 3 and Segment 4 on 2026-09-11. Define Runner participant-to-variant
+  selection, freeze the selected variant ID/version in a versioned package and
+  participant output/recovery contract, and prove browser/Rust parity and exact
+  replay. Do not add implicit randomization or claim old records already carry
+  these versions. New table drafts currently block final package generation
+  and Start until this integration exists.
 - [ ] **Decide which feedback-design controls become runnable.** The current
   Flubber/Grid/procedural-Face selector, halo-size draft, and continuous/
   stepwise timing/hold controls are deliberately preview-only and absent from

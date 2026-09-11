@@ -56,7 +56,7 @@ export function describeInputToken(token) {
 const SECTION_SUMMARIES = Object.freeze({
   workspace: "Work folder, videos, project JSON",
   experiment: "Identity and acquisition · 130 Hz",
-  stimuli: "Externally ordered video protocol",
+  stimuli: "Variants, video order, intervals",
   questionnaires: "Languages, demographics, questionnaires",
   input: "Arrow keys · step 0.1",
   visual: "Grid and Flubber",
@@ -345,7 +345,6 @@ function workspaceSection() {
           <p><code>assets/stimuli/</code></p>
         </div>
         <div class="workspace-location-actions">
-          <button type="button" data-open-section="stimuli">Manage videos</button>
           <button type="button" class="folder-icon-button" data-open-workspace-location="videoLibrary" aria-label="Open video library in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
         </div>
       </section>
@@ -360,6 +359,11 @@ function workspaceSection() {
           <button type="button" class="folder-icon-button" data-open-workspace-location="experimentPackage" aria-label="Show project JSON in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
         </div>
       </section>
+    </div>
+    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
+      <p>Drop complete video files or a folder here</p>
+      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
+      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
     </div>
     <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
 }
@@ -408,47 +412,25 @@ function experimentSection() {
 
 function stimuliSection() {
   return `
-    <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
-    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
-      <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
-      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
+    <p class="section-lead">Define one presentation order per variant. Paste your counterbalanced orders from Excel, or enter video annotations and pauses directly.</p>
+    <div class="button-row">
+      <button type="button" data-video-library-export="xlsx" disabled>Download Excel</button>
+      <button type="button" data-video-library-export="csv" disabled>Download CSV</button>
     </div>
-    <div class="condition-toolbar">
-      <div>
-        <h3>Declared blocks</h3>
-        <p id="pool-mode-summary" class="field-help">Load experiment.json to inspect its blocks.</p>
-      </div>
-      <output class="field-output">external-order-v1</output>
-    </div>
-    <div id="condition-pools" class="condition-pools" aria-label="Externally declared experiment blocks"></div>
-    <div id="coverage-message" class="coverage-message" role="status" aria-live="polite">Load experiment.json, select a workspace, and verify every referenced complete video.</div>
-    <details class="inner-disclosure" open>
-      <summary>Authoring contract</summary>
+    <details class="inner-disclosure">
+      <summary>How this works</summary>
       <div class="disclosure-content">
-        <p class="field-help"><code>schedules[].blocks[].videos[]</code> is executed exactly in array order. Every video row requires <code>stimulusId</code> and integer <code>isiAfterMs</code> (0–3,600,000). Even a final nonzero ISI is executed before post-block or post-session questionnaires.</p>
-        <dl class="protocol-facts"><div><dt>Randomization</dt><dd>Completed before import</dd></div><div><dt>Runtime allocation</dt><dd>None</dd></div><div><dt>Recovery</dt><dd>Restarts the interrupted video or ISI from its safe boundary</dd></div></dl>
+        <p>The downloads list every library video with its annotation. The Excel workbook also includes an empty order template. Randomize or counterbalance in Excel, then copy only the variant cells, without headers or the Event column, and paste into the first destination cell.</p>
+        <p>Use one video annotation or a whole-number pause in milliseconds per cell. A pause follows its video; consecutive videos have a 0 ms interval. Each variant needs at least one video. Leave unused rows at the bottom; gaps and repeated videos within a variant are rejected. Intervals range from 0 to 3,600,000 ms.</p>
+        <p>Confirming Segment 1 saves identities that bind each video's path and exact bytes. Confirming this table saves the variant IDs and version annotations. Changing a variant's name, video order, or pauses changes its version. Participant allocation belongs to the experiment runner.</p>
+        <p>Video annotations are hash-bound references, not encryption or proof of authorship. The JSON records are stored beside the video folder. Runner allocation and recording these versions will be connected in the Runner segment.</p>
       </div>
     </details>
-    <details class="inner-disclosure" open>
-      <summary>Resolved participant preview</summary>
-      <div class="disclosure-content">
-        <div class="plan-toolbar">
-          <div class="field-block"><span class="field-label">Resolved experiment plan hash</span><output id="plan-hash" class="hash-value">Pending experiment.json</output></div>
-          <div class="button-row"><button id="plan-window-previous" type="button" disabled>Previous participants</button><button id="plan-window-next" type="button" disabled>Next participants</button><button id="assignment-plan-export" type="button" disabled>Export resolved-plan.csv</button></div>
-        </div>
-        <div class="table-scroll">
-          <table><thead><tr><th>Participant</th><th>Block order</th><th>Complete-video order and ISI</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The exact schedule appears after every referenced workspace video is verified.</td></tr></tbody></table>
-        </div>
-        <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
-      </div>
-    </details>
-    <div class="table-scroll stimulus-library" aria-label="Stimulus library">
-      <table>
-        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
-        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
-      </table>
-    </div>`;
+    <h3>Stimulus presentation order</h3>
+    <p id="stimulus-order-help" class="field-help">One column per variant. Enter a video annotation or an ISI in milliseconds. Paste a rectangle to add rows and variants automatically.</p>
+    <div id="stimulus-order-editor"></div>
+    <p id="stimulus-order-status" class="status-text" role="status" aria-live="polite">Confirm the video library in Segment 1 to begin.</p>
+    <div id="stimulus-order-versions" aria-label="Saved variant version annotations"></div>`;
 }
 
 function inputSection() {
