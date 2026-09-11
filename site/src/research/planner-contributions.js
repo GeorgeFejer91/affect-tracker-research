@@ -3,7 +3,7 @@ import { canonicalJson } from "./canonical.js";
 export const PLANNER_SEGMENTS = Object.freeze(["P1", "P2", "P3", "P4", "P5", "P6"]);
 export const PLANNER_SEGMENT_SECTIONS = Object.freeze({
   P1: "workspace", P2: "questionnaires", P3: "stimuli",
-  P4: "layout", P5: "feedback", P6: "xr-layout",
+  P4: "layout", P5: "feedback", P6: "xr",
 });
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
 const MAX_CONTRIBUTION_BYTES = 5 * 1024 * 1024;

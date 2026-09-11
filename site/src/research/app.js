@@ -1233,7 +1233,12 @@ function bindResearchInteractions(root, { surface }) {
       // A loaded design still has editable settings while media verification is
       // pending. Fingerprinting reads its declared sources without requiring a
       // decoder receipt; compilation retains the strict source verifier above.
-      return canonicalJson({ settings: researchSettingsDraft({ verifySources: false }), languageSelection: languageTreeFromUi() });
+      const settings = researchSettingsDraft({ verifySources: false });
+      // Package construction canonicalizes the imported experiment document.
+      // Its whitespace/source-byte hash may change without any design edit;
+      // retain the full definition and its semantic hash in this comparison.
+      delete settings.externalProtocol.sourceByteSha256;
+      return canonicalJson({ settings, languageSelection: languageTreeFromUi() });
     } catch {
       return null; // Invalid/pending edits cannot match an accepted compilation.
     }

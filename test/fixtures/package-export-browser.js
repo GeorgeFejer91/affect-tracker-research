@@ -1,7 +1,9 @@
-import { initializeResearchUi } from "../../site/src/research/app.js";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { parseExperimentPackageV1 } from "../../site/src/research/experiment-package.js";
+import { bootResearchUi } from "../../site/src/research/app.js";
+import { canonicalJson, sha256Hex } from "../../site/src/research/canonical.js";
+import { createExperimentPackageV1, parseExperimentPackageV1 } from "../../site/src/research/experiment-package.js";
+import { importQuestionnaireAuthoring } from "../../site/src/research/questionnaire-authoring.js";
+import english from "../../site/questionnaires/maia-2-en.csv";
+import german from "../../site/questionnaires/maia-2-de.csv";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 import packageFixture from "./experiment-package-v1.canonical.json";
 
@@ -10,8 +12,10 @@ import packageFixture from "./experiment-package-v1.canonical.json";
 const cases = [];
 const check = (name, condition) => { if (!condition) throw new Error(name); cases.push(name); };
 const root = document.querySelector("main");
-root.innerHTML = renderResearchUiMarkup("tauri");
-const ui = initializeResearchUi(root, { surface: "tauri" });
+root.id = "research-app";
+root.dataset.researchSurface = "tauri";
+bootResearchUi();
+const ui = root.researchUi;
 const query = (selector) => root.querySelector(selector);
 const waitFor = async (predicate) => {
   for (let count = 0; count < 200; count += 1) {
@@ -27,7 +31,21 @@ const change = (selector, value) => {
 };
 
 (async () => {
-  const parsed = await parseExperimentPackageV1(new TextEncoder().encode(`${canonicalJson(packageFixture)}\n`));
+  const definitions = [];
+  for (const [language, source] of [["en", english], ["de", german]]) definitions.push((await importQuestionnaireAuthoring(source,
+    { logicalName: `maia-2-${language}.csv`, sourceKind: "bundled" })).definition);
+  const modules = definitions.map((definition) => ({ schema: "affect-research-questionnaire-module", version: 2,
+    moduleId: definition.questionnaireId, questionnaireId: definition.questionnaireId, definitionSha256: definition.definitionSha256,
+    placement: { kind: "beforeSession", blockId: null } }));
+  const languageSelection = structuredClone(packageFixture.languageSelection);
+  for (const language of languageSelection.languages) language.questionnaireModuleIds = [modules.find((module) => module.questionnaireId.endsWith(language.languageTag)).moduleId];
+  languageSelection.rootNodeId = "family";
+  languageSelection.nodes.unshift({ nodeId: "family", prompt: "Select a language group", options: [
+    { optionId: "both", label: "English / Deutsch", target: { kind: "node", nodeId: "language" } },
+  ] });
+  const master = await createExperimentPackageV1({ packageId: "reopened-master", playback: packageFixture.playback,
+    settings: { ...packageFixture.settings, questionnaires: { ...packageFixture.settings.questionnaires, definitions, modules } }, languageSelection });
+  const parsed = await parseExperimentPackageV1(new TextEncoder().encode(`${canonicalJson(master)}\n`));
   const acknowledge = {
     schema: "affect-research-experiment-package-save-receipt", version: 1,
     packageId: parsed.package.packageId,
@@ -87,6 +105,56 @@ const change = (selector, value) => {
   check("active unsupported XR blocks export and Start with a routed issue", query("#package-reexport").disabled
     && query("#start-experiment").disabled && query('[data-planner-segment="P6"]')?.textContent.includes("successor"));
   unregister();
+  await load();
+  const originalP2 = ui.getQuestionnaireContributionSnapshot();
+  check("locked questionnaire contribution includes both language definitions and exact nested tree",
+    canonicalJson(originalP2.contribution) === canonicalJson({ questionnaires: parsed.package.settings.questionnaires, languageSelection }));
+  query("#package-edit").click();
+  await waitFor(() => ui.experimentPackage === null);
+  check("Edit recipe restores full editable forms and nested language structure",
+    !ui.getQuestionnaireContributionSnapshot().pending && !query('[data-sheet-cell="0:0"]').closest("fieldset").disabled
+    && canonicalJson(ui.getQuestionnaireContributionSnapshot().contribution.languageSelection) === canonicalJson(languageSelection));
+  const prettyExperiment = `${JSON.stringify(parsed.package.settings.externalProtocol.definition, null, 2)}\n`;
+  await ui.applySettings({ ...parsed.package.settings, externalProtocol: { ...parsed.package.settings.externalProtocol,
+    sourceByteSha256: await sha256Hex(prettyExperiment) } });
+  root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.workspaceReady, { detail: { label: "Synthetic fixture workspace", directoryPermission: true } }));
+  root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.stimuliCatalogued, { detail: { replace: true,
+    items: parsed.package.settings.stimuli.items.map((stimulus) => ({ stimulus, verified: true })) } }));
+  root.addEventListener(RESEARCH_UI_EVENTS.storeQuestionnaireAssetRequest, (event) => {
+    event.preventDefault();
+    const value = event.detail.request;
+    event.detail.complete({ ok: true, receipt: { familyId: value.familyId, languageTag: value.languageTag,
+      sourceSha256: value.sourceSha256, byteLength: value.bytes.length } });
+  });
+  const englishPrompt = '[data-sheet-key="maia-2/en"] [data-sheet-cell="0:0"]';
+  change(englishPrompt, "Synthetic fixture wording edit");
+  check("pending questionnaire wording blocks master export", ui.getQuestionnaireContributionSnapshot().pending && query("#package-generate").disabled);
+  query('[data-sheet-key="maia-2/en"] [data-sheet-action="save"]').click();
+  await waitFor(() => !ui.getQuestionnaireContributionSnapshot().pending);
+  change("#sampling-frequency", "111");
+  request = null;
+  query("#package-generate").click();
+  await waitFor(() => request);
+  const revised = await parseExperimentPackageV1(new TextEncoder().encode(request.sourceText));
+  check("revised master retains package identity, playback, full German form and nested route",
+    revised.package.packageId === parsed.package.packageId && canonicalJson(revised.package.playback) === canonicalJson(parsed.package.playback)
+    && canonicalJson(revised.package.settings.questionnaires.definitions.find((definition) => definition.language === "de")) === canonicalJson(definitions[1])
+    && canonicalJson(revised.package.languageSelection) === canonicalJson(languageSelection));
+  check("revised master includes accepted wording and sampling with fresh integrity",
+    revised.package.settings.experiment.samplingFrequencyHz === 111
+    && revised.package.settings.questionnaires.definitions.find((definition) => definition.language === "en").items[0].prompt === "Synthetic fixture wording edit"
+    && revised.canonicalSourceByteSha256 !== parsed.canonicalSourceByteSha256);
+  check("revised master is not adopted before persistence", ui.experimentPackage === null);
+  request.complete({ status: "saved", receipt: { ...acknowledge, packageDefinitionSha256: revised.package.integrity.packageDefinitionSha256,
+    canonicalSourceByteSha256: revised.canonicalSourceByteSha256, byteLength: new TextEncoder().encode(revised.canonicalSourceText).byteLength } });
+  await waitFor(() => !ui.packageExportStatus.busy);
+  check("acknowledged revised master becomes loaded even when experiment source formatting was canonicalized", ui.packageExportStatus.phase === "saved" && ui.experimentPackageSourceText === revised.canonicalSourceText);
+  query("#package-edit").click();
+  await waitFor(() => ui.experimentPackage === null);
+  change(englishPrompt, "Unsaved draft must not survive explicit reopen");
+  root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.experimentPackageLoaded, { detail: { receipt: revised } }));
+  await waitFor(() => ui.experimentPackage !== null && !query("#package-reexport").disabled);
+  check("explicit reopen discards old table drafts even when the accepted definition hash is unchanged", query(englishPrompt).value === "Synthetic fixture wording edit");
   ui.openSetupSection("review");
   await new Promise((resolve) => requestAnimationFrame(resolve));
   const panel = query('[data-setup-section="review"]');
@@ -96,7 +164,6 @@ const change = (selector, value) => {
     return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && button.scrollWidth <= button.clientWidth + 2;
   }));
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, cases });
-  ui.destroy();
 })().catch((error) => {
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: false, cases, error: error.stack });
   ui.destroy();

@@ -13,7 +13,7 @@ const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
 const bundle = await build({ entryPoints: ["test/fixtures/package-export-browser.js"], bundle: true,
-  write: false, format: "iife", target: "chrome105", logLevel: "silent",
+  write: false, format: "iife", target: "chrome105", logLevel: "silent", loader: { ".csv": "text" },
   define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
 const css = await readFile("site/research.css", "utf8");
 const html = `<!doctype html><meta charset="utf-8"><title>Recipe export off-screen regression</title><style>${css}</style><main></main><pre id="receipt">pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`;

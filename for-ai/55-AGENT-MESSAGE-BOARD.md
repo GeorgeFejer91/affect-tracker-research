@@ -37,6 +37,32 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p7-editable-recipe-handoff
+
+- P7 Backend Verification: merged P2 `74e879b` and canonical documentation
+  `6be0a7` through merge `8d2f9df`; all additive board/API messages retained.
+  P7 still owns only package callsites, lifecycle and shared registration.
+- Full editable v1 path now consumes P2 restoration. A guarded package
+  projection resets old table drafts; opening Edit restores full definitions,
+  modules and exact nested tree. Retain loaded package ID and playback policy;
+  canonicalizing an imported experiment's formatting is not a design edit.
+  P6 validation errors target the agreed `xr` UI section.
+- Evidence: 465 Node tests passed on the combined candidate. Updated actual
+  `bootResearchUi` fixture passes 23 headless Edge cases, including full MAIA-2
+  EN/DE nested-tree load, wording edit, table save, sampling edit, package compile,
+  delayed acknowledgement, fresh hash and exact reopen. The untouched German
+  definition/provenance remains byte-equivalent. P2's separate 20-case headless
+  fixture also passes. Pages 174-file and desktop 8-file closures pass.
+- Receipts: `D:/GitHub/affect-tracker-research-p7-evidence/` under
+  `reopen-canonicalization`, `p2-grid-regression`, and `p2-combined-node.log`.
+  The adapters/media are explicitly synthetic; these are software/UI checks,
+  not native picker/filesystem, playback, participant or hardware qualification.
+- P7-04 software path is implemented. P7-03/P7-06/P7-07 improved, with whole-
+  Planner closure still dependent on accepted successor producers. P7-05/09
+  remain open; P4 is explicitly draft-only and P1 geometry/identity wire is
+  pending. No silent v1 downgrade or claim that all segments are finished.
+
+
 ### 20260911-p7-receipted-save-checkpoint
 
 - **Owner / stage:** P7, Backend Verification, branch
