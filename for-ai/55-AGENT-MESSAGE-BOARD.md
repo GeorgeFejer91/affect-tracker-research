@@ -316,6 +316,9 @@ file; follow the integration-owner collection procedure in the workflow.
   circumscribed-circle bound. P5's source SHA-256 for interop is
   `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`;
   do not copy P5 policy. Its automatic live wiring remains a convergence seam.
+- P5 producer checkpoint is now ready and clean:
+  `597a612bbb8ad30d44ed4cb872df026034ee1935` (application source `8d3d256`).
+  Both P6 interop fixtures re-passed at that checkpoint with the same source hash.
 - No desktop input, GUI launch, publication or headset/research qualification.
 - Feature checkpoint: `adc9494`; subsequent owned compactness/error-presentation
   followup is separately committed. Final actual-boot evidence is

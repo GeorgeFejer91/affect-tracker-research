@@ -38,6 +38,13 @@ segment wiring and master XR recipe reproduction remain open. P6-06 actual
 WebXR/headset alignment/tracking, playback, recording and physical qualification
 are deferred. The profile records policies; it does not enforce sensor behavior.
 
+P5 dependency finalized after the P6 source handoff: clean checkpoint
+`597a612bbb8ad30d44ed4cb872df026034ee1935`, application source
+`8d3d256a67e01d9df0cef3717a58d559eb032a4a`. Re-ran the two producer interop
+fixtures at that checked-out checkpoint: both pass, producer SHA-256 unchanged
+from the receipt above. This closes the pending producer-checkpoint reference;
+automatic live binding and combined master export remain integration/P7 work.
+
 ## Central capability checklist and this evidence ledger
 
 P6 UI followup after feature checkpoint `adc9494`: applied Uncodixfy to actual
