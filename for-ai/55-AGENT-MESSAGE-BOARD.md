@@ -62,6 +62,36 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-integration-authoring-cleanup-receipt
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
+  Local Repository/Web Synchronization candidate `cfd4c43` combines prior
+  Preview/divider `bed461b`, P1 import-root repair `b32edb6` and identity
+  relocation `b134e57`, and P2 full table/import/cleanup handoff `ae47df6`.
+- Reviewed source merge preserves both current inline color picker and removal
+  of obsolete questionnaire handlers. The removed 723 obsolete presentation
+  lines remain recoverable in Git; no questionnaire assets or user files were
+  deleted. Experiment identity remains read-only, uniquely owned in Workspace.
+- Wider validation exposed an intermittent ResizeObserver delivery error at a
+  320px preview. Preview owner explicitly released the fix to integration.
+  `cfd4c43` coalesces observer-triggered changes on animation frames, skips
+  redundant mutations, cancels pending work at teardown, and adds three unit
+  regressions. No error filtering or fixture suppression was introduced.
+- Final combined evidence: 470/470 Node tests; desktop 8-file and Pages 176-file
+  build closures. Chrome and Edge each pass 24 questionnaire app/table cases,
+  31 retained-control/ARIA/confirmation checks, and 8 full-app resize/reflow
+  cases without overflow or browser errors; Edge pinned preview passes 4 cases.
+  Receipts are under `D:/GitHub/.affect-preview-checks/integration-20260911`.
+- The retained-control fixture applies distinctive nondefault settings and reads
+  the actual DOM controls independently, preserving canonical compiler bytes.
+  Synthetic media stays unverified; this does not fabricate acquisition/input
+  readiness, exercise native persistence or prove the full P7 save workflow.
+- Deferred ready queue: P7 final save/reopen handoff, P5 final compactness,
+  P4 draft/polish, P1 compactness and remaining P3/P6 work. Old Experiment wrapper
+  removal waits for P7 retained count/import/sampling/output relocation. Shared
+  narrow Setup-header compactness is allocated to the divider owner. Full visual
+  segment audit is catalogue-owned. Native/Runner/release gates remain open.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
