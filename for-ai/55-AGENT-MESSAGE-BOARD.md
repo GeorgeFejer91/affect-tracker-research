@@ -37,6 +37,21 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-halo-border
+
+- Owner: **Preview**, segment `preview`, UI Finalization. Status: **open**.
+- Branch: `codex/segment-preview-halo-border`, base `d286137`; isolated worktree
+  `affect-tracker-research-preview-halo`. Integration owner acknowledged allocation.
+- User request: halo follows the exact Flubber border and fades to transparent
+  outward. Setup-only renderer/markup and focused tests; halo width replaces
+  geometric enlargement. No Run, package, native, acquisition or floating-window
+  changes. Shared seams: `preview.js`, `ui-view.js`; no overlapping writer.
+- Baseline: 42/42 live-preview-design and Research UI tests passed.
+- Evidence planned: contour/fade/isolation regressions, desktop build and fresh
+  native UI observation. No publication or research qualification claimed.
+- Integration acknowledged the additional user-requested outward fade and the
+  minimal Setup-only charter clarification; legacy renderer behavior is retained.
+
 ### 20260911-integration-shared-checkout
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.

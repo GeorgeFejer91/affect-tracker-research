@@ -526,10 +526,11 @@ around this authoritative v1 projection. Its three-way selector compares
 **Flubber**, **2D Grid**, and **Responsive Face** using one shared transient x/y
 point. In the Flubber comparison, Flubber remains the foreground element above
 its 2D affect-control Grid. Four directional color swatches may open one
-color-wheel/hex popover. The preview halo is always mathematically centered on
-the Flubber; a transient halo-size control may change its relative footprint
-but no halo offset exists. A nested Advanced disclosure may expose the existing
-Flubber appearance and mapping controls without duplicating their owner.
+color-wheel/hex popover. The Setup preview halo follows the exact animated
+Flubber outline and fades to transparent outward. Its transient width control
+changes stroke thickness/spread, not geometric scale or offset. A nested
+Advanced disclosure may expose the existing Flubber appearance and mapping
+controls without duplicating their owner.
 
 The responsive Face is newly and independently drawn as procedural SVG/canvas
 geometry. Valence and arousal only pose that drawing from the same x/y snapshot

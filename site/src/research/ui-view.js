@@ -130,7 +130,12 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
         <circle data-preview-grid-cursor class="preview-grid-cursor" cx="50" cy="50" r="4"></circle>
       </svg>
       <svg data-preview-flubber class="preview-flubber" viewBox="-1.62 -1.62 3.24 3.24" aria-hidden="true" focusable="false">
-        <path data-preview-flubber-halo class="preview-flubber-halo"></path>
+        ${includeFace ? `<defs>
+          <filter id="preview-studio-halo-fade" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
+            <feGaussianBlur data-preview-halo-blur stdDeviation="0.045"></feGaussianBlur>
+          </filter>
+        </defs>` : ""}
+        <path data-preview-flubber-halo class="preview-flubber-halo"${includeFace ? ' filter="url(#preview-studio-halo-fade)"' : ""}></path>
         <path data-preview-flubber-base class="preview-flubber-base"></path>
         <path data-preview-flubber-outline class="preview-flubber-outline"></path>
       </svg>
@@ -220,7 +225,7 @@ function previewMarkup(label, { studio = false } = {}) {
           <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
           <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
           <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo size</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only scale around the centered halo.</span></label>
+          <label class="field"><span>Halo width</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</span></label>
         </div>
       </section>
 

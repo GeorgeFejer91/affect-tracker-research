@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { normalizePreviewState } from "../site/src/research/preview.js";
+import { createResearchPreview, normalizePreviewState } from "../site/src/research/preview.js";
 import { COLOR_FIELDS, renderResearchUiMarkup } from "../site/src/research/ui-view.js";
 
 const markup = renderResearchUiMarkup("browser");
@@ -229,6 +229,89 @@ test("halo and transparency controls expose their bounded appearance contract", 
     max: "100",
     step: "1",
   });
+});
+
+test("only the Setup halo fades behind the exact fill and outline", () => {
+  assert.equal(count(markup, /id="preview-studio-halo-fade"/gu), 1);
+  assert.match(studioMarkup, /<feGaussianBlur data-preview-halo-blur/u);
+  assert.match(studioMarkup, /Halo width/u);
+  assert.match(studioMarkup, /fades to transparent outward/u);
+  const halo = studioMarkup.indexOf('<path data-preview-flubber-halo');
+  assert.ok(halo < studioMarkup.indexOf('<path data-preview-flubber-base'));
+  assert.ok(halo < studioMarkup.indexOf('<path data-preview-flubber-outline'));
+  assert.match(studioMarkup, /filter="url\(#preview-studio-halo-fade\)"/u);
+  assert.equal(count(markup, /filter="url\(#preview-studio-halo-fade\)"/gu), 1);
+});
+
+test("animated studio halo stays on the boundary at every width; legacy rendering is unchanged", () => {
+  class Element {
+    attributes = new Map();
+    style = { setProperty() {} };
+    dataset = {};
+    children = new Map();
+    setAttribute(name, value) { this.attributes.set(name, value); }
+    getAttribute(name) { return this.attributes.get(name) ?? null; }
+    toggleAttribute(name, on) { if (on) this.attributes.set(name, ""); else this.attributes.delete(name); }
+    querySelector(selector) { return this.children.get(selector) ?? null; }
+    querySelectorAll() { return []; }
+    addEventListener() {}
+    removeEventListener() {}
+    matches() { return true; }
+  }
+  class Html extends Element {}
+  class Svg extends Element {}
+  class Path extends Svg {}
+  class Canvas extends Html { getContext() { return null; } }
+  let frame;
+  let reducedMotion = false;
+  const globals = {
+    HTMLElement: Html, SVGElement: Svg, SVGPathElement: Path, HTMLCanvasElement: Canvas,
+    requestAnimationFrame: (callback) => { frame = callback; return 1; },
+    cancelAnimationFrame() {}, matchMedia: () => ({ matches: reducedMotion }),
+  };
+  const originals = new Map(Object.keys(globals).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  try {
+    for (const [key, value] of Object.entries(globals)) Object.defineProperty(globalThis, key, { value, configurable: true });
+    for (const studio of [true, false]) {
+      const root = new Html();
+      if (studio) root.setAttribute("data-preview-variant", "studio");
+      for (const [name, Type] of Object.entries({
+        overlay: Html, "grid-canvas": Canvas, grid: Svg, "grid-cursor": Svg,
+        flubber: Svg, "flubber-base": Path, "flubber-outline": Path, "flubber-halo": Path,
+        "halo-blur": Svg,
+      })) root.children.set(`[data-preview-${name}]`, new Type());
+      const preview = createResearchPreview(root);
+      const halo = root.querySelector("[data-preview-flubber-halo]");
+      const outline = root.querySelector("[data-preview-flubber-outline]");
+      const base = root.querySelector("[data-preview-flubber-base]");
+      for (const haloSizePercent of [100, 150, 240]) {
+        for (const outlineThickness of [0, 2, 20]) {
+          for (const [x, y] of [[0, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+            for (reducedMotion of [false, true]) {
+              preview.update({ x, y, sizePercent: haloSizePercent === 100 ? 5 : 100, flubber: { haloSizePercent, outlineThickness } });
+              frame(performance.now() + 100);
+              assert.equal(halo.getAttribute("d"), outline.getAttribute("d"));
+              assert.equal(halo.getAttribute("d"), base.getAttribute("d"));
+              assert.ok(halo.getAttribute("d").length > 100);
+              assert.equal(halo.getAttribute("transform"), `scale(${studio ? 1 : haloSizePercent / 100})`);
+              assert.equal(Number(halo.style.strokeWidth), Math.max(1, outlineThickness * 3) * (studio ? haloSizePercent / 100 : 1));
+              assert.equal(root.querySelector("[data-preview-halo-blur]").getAttribute("stdDeviation"), studio ? String(0.03 * haloSizePercent / 100) : null);
+            }
+          }
+        }
+      }
+      preview.update({ flubber: { showHalo: false } });
+      assert.equal(halo.getAttribute("hidden"), "");
+      preview.update({ flubber: { showHalo: true } });
+      assert.equal(halo.getAttribute("hidden"), null);
+      preview.destroy();
+    }
+  } finally {
+    for (const [key, descriptor] of originals) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete globalThis[key];
+    }
+  }
 });
 
 test("advanced preview settings retain every detailed visual control and six unique mappings", () => {

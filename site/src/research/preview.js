@@ -143,6 +143,7 @@ export function createResearchPreview(root, options = {}) {
   const flubberBase = stage.querySelector("[data-preview-flubber-base]");
   const flubberOutline = stage.querySelector("[data-preview-flubber-outline]");
   const flubberHalo = stage.querySelector("[data-preview-flubber-halo]");
+  const haloBlur = stage.querySelector("[data-preview-halo-blur]");
   const controlCanvas = stage.querySelector("[data-preview-control-canvas]");
   const controlGrid = stage.querySelector("[data-preview-control-grid]");
   const controlTileLines = [...stage.querySelectorAll("[data-preview-control-tile-line]")];
@@ -232,8 +233,14 @@ export function createResearchPreview(root, options = {}) {
     setElementHidden(flubberOutline, !state.flubber.showOutline);
     flubberOutline.style.strokeWidth = String(state.flubber.outlineThickness);
     setElementHidden(flubberHalo, !state.flubber.showHalo);
-    flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3));
-    flubberHalo.setAttribute("transform", `scale(${state.flubber.haloSizePercent / 100})`);
+    const haloWidth = state.flubber.haloSizePercent / 100;
+    flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3) * (studio ? haloWidth : 1));
+    // The studio halo uses the exact animated outline; only its stroke spreads.
+    // Fill and white outline paint above the fade, keeping the inner edge crisp.
+    flubberHalo.setAttribute("transform", `scale(${studio ? 1 : haloWidth})`);
+    if (studio && haloBlur instanceof SVGElement) {
+      haloBlur.setAttribute("stdDeviation", String(0.03 * haloWidth));
+    }
 
     if (controlGrid instanceof SVGElement && controlCursor instanceof SVGElement) {
       controlGrid.dataset.responseMode = state.responseMode;
