@@ -20,8 +20,9 @@ decisions govern the intended future product: segment-owned contributions to
 one master recipe; extensible questionnaire languages with EN/DE priority;
 Excel columns per variant and chronological video-ID/named-ISI rows, with
 comma-separated millisecond durations creating an embedded ISI dictionary,
-derived boundary events and consistent video/red-ISI authoring colors; repeating
-participant assignment; reconstructible event/LSL semantics; consolidated
+derived boundary events and consistent video/red-ISI authoring colors; ordered
+versions with participant allocation policy owned by Runner; reconstructible
+event/LSL semantics; consolidated
 Flubber/input/Advanced controls; centre-relative physical/percentage screen
 layout using one fixed percentage reference; and optional world-fixed XR spatial
 authoring aligned forward at setup.
@@ -31,6 +32,14 @@ timestamps and recording, but implementation/qualification of those downstream
 responsibilities is deferred unless separately allocated. The two application
 modes remain unchanged. Open decisions and assistant recommendations in the
 catalogue are not silently promoted to accepted requirements.
+
+Later on 2026-09-11, the researcher answered the S3 allocation question:
+“Leave allocation policy to Runner.” This supersedes the earlier request for
+Planner-defined cyclic assignment. P3 authors ordered variants and their event
+profiles, with no participant-assignment UI or Planner allocation algorithm.
+Runner selection must consume those explicit variant identities; its policy and
+implementation are outside the current Planner pass. Historical v1 explicit
+schedules remain unchanged. See catalogue Q06 for this decision's chronology.
 
 For future capability design this amendment supersedes conflicting old
 eight-section, no-allocation, normalized-layout-only and desktop-only product

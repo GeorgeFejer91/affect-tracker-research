@@ -31,7 +31,7 @@ device qualification remain separately allocated future work.
 | --- | --- | --- | --- |
 | P1 Workspace & Video Library | Workspace adapters, file verification, catalogue foundations | Correct imported-file location; stable readable video IDs; saved display geometry; editable library and relocation contract | Critical: P3/P4/P6 depend on it |
 | P2 Questionnaires & Languages | Item/option codes, language coverage, imports and table editing | Reopen and revise a finished recipe; complete selected-language content; decide placements and computed scoring | Critical for studies using questionnaires |
-| P3 Versions, Timing & Markers | Strict old schedules; pending version-column editor | Named ISI dictionary, cyclic assignment, occurrence identities and complete recipe/marker contribution | Critical: the experiment sequence is otherwise incomplete |
+| P3 Versions, Timing & Markers | Strict old schedules; pending version-column editor | Named ISI dictionary, stable variant/occurrence identities and complete recipe/marker contribution | Critical: the experiment sequence is otherwise incomplete |
 | P4 Screen & Layout | Existing normalized placement as a migration input | Whole-screen editor, fixed-reference centre geometry, physical units and mixed-video fit validation | Required for the requested desktop design |
 | P5 Flubber & Controls | Saved bindings, appearance and mappings; live preview | Consolidated editor, explicit saved-control inventory and one shared layout authority | Required; much existing logic can be reused |
 | P6 Optional XR Spatial Layout | Accepted world-fixed/forward-aligned requirement | Spatial contract, 3D authoring preview, validation and round trip | Optional; does not block a desktop-only recipe |
@@ -51,7 +51,7 @@ integration needs its own owner and the workflow's convergence checks.
 | A | `contracts`, P7-05/P7-06 and named P1–P6 interfaces | Successor recipe envelope, contribution/version ownership, bounded IDs/units, capability declarations and v1 compatibility design; one valid and several invalid conformance fixtures | Mirrored contract fixtures reject unknown fields, dangling references and unsupported versions; old v1 fixtures keep their meaning. No Runner implementation |
 | B | P1, P1-03 through P1-07 | Import to the verified package asset root, catalogue annotation review, saved media geometry and stable library revisions | Import→rescan→save→reopen preserves IDs and verified bytes; duplicate names, changed bytes and relocation produce explicit outcomes |
 | C | P3, P3-02/P3-03/P3-05/P3-08/P3-09/P3-10 | Adapt the pending editor to the named-ISI dictionary and typed chronological entries; produce deterministic per-variant timelines | Paste/dictionary/edit/repeat/unknown-ID fixtures; no raw numeric table cells; no silent renumbering or order repair |
-| D | P3, P3-04/P3-06/P3-07 | Cyclic allocation and versioned event/reconstruction specification with synthetic trace fixtures | Four variants resolve ordinals 1…8 as 1,2,3,4,1,2,3,4; repeated videos remain distinguishable; malformed/incomplete event traces are detectable |
+| D | P3, P3-04/P3-06/P3-07 | Ordered variant identities with Runner-owned selection, plus versioned event/reconstruction specification and synthetic trace fixtures | Every declared variant resolves its exact sequence independently; no Planner allocation policy is introduced; repeated occurrences and malformed/incomplete traces remain distinguishable |
 | E | P2, P2-04 through P2-08 | Collect compatible S2 work, editable language/family authoring and exact save/reopen; implement only agreed placement/scoring additions | Required language coverage, preservation of imported hooks/codes, invalid/dirty draft gates and edit→export→reopen→re-export evidence |
 | F | P4, P4-02 through P4-07 | Implement the screen/layout design below against P1 geometry and a declared P5 animation envelope | Mixed-ratio geometry fixtures, unit conversion, overlap/clipping errors and preview/export/reopen agreement |
 | G | P5, P5-04 through P5-08 | Consolidate Input/Visual/Advanced around the preview; persist the agreed controls and consume P4 geometry | Every saved control round-trips; temporary simulator input does not; maximum animation extent agrees with P4; keyboard/reduced-motion checks |
@@ -83,7 +83,7 @@ the ISI dictionary, versions, all accepted controls and the chosen layouts.
 | --- | --- | --- |
 | Study/workspace/library | P1 | Study identity, recorded workspace binding, stable video annotation and identity, safe relative file reference, hash/length/duration, oriented display dimensions/aspect |
 | Questionnaire catalogue | P2 | Languages, exact definitions, item/option IDs and scores, accepted presentation/scoring rules, named module definitions and language bindings |
-| Experiment design | P3 | ISI dictionary, ordered variant IDs and typed entries, occurrence IDs, allocation rule, explicit placement references and event/marker semantics |
+| Experiment design | P3 | ISI dictionary, ordered variant IDs and typed entries, occurrence IDs, explicit Runner-selection boundary, placement references and event/marker semantics |
 | Desktop layout | P4 | Screen/reference geometry, units, fitting rule, video centre, Flubber footprint and centre offsets, runtime geometry requirements |
 | Feedback and controls | P5 | Input bindings/response behavior, appearance/mappings, approved animation settings and the envelope calculation identity |
 | Optional spatial layout | P6 | Spatial units/axes, setup alignment, distance/angle/size, centre-relative transforms and compatible-target requirements |
@@ -94,7 +94,7 @@ nine-root-member contract intact. The contract pass chooses explicit successor
 versions for changed nested models; a new outer version cannot disguise changed
 meaning in an unchanged nested v1 type. Migration reports carried, unresolved
 and unsupported settings. A v1 explicit schedule must not be guessed into a
-cyclic design; import it without reinterpretation or request deliberate redesign.
+new variant design; import it without reinterpretation or request deliberate redesign.
 
 Proposed internal handoff: each editor supplies its accepted typed contribution,
 revision and dependency revisions. Validation returns the owning segment, field
@@ -189,7 +189,7 @@ prove arbitrary edits survive the complete master-recipe round trip.
 ## P3 design: Versions, ISIs and planned event profiles
 
 Use three connected areas: **ISI definitions**, the **version table**, and a
-**derived timeline/allocation preview**. The table remains one column per version
+**derived timeline preview**. The table remains one column per version
 with chronological video-ID or named-ISI rows. Never transpose it into one row
 per participant, generate a counterbalance order or require manual start/stop cells.
 
@@ -230,18 +230,18 @@ Illustrative logical contribution (not a runnable package or frozen schema):
       { "id": "entry-b", "kind": "isi", "isiId": "ISI1" },
       { "id": "entry-c", "kind": "video", "videoId": "calm_forest" }
     ]
-  }],
-  "allocation": { "kind": "cyclicByOrdinal", "ordinalBase": 1 }
+  }]
 }
 ```
 
-Variant array order defines the cycle. The confirmed rule for participant ordinal
-p and N variants is `variants[(p - 1) mod N]`. Proposed Q06 handling binds an
-explicit stable ordinal to a participant, with retries retaining that ordinal
-and variant and skipped participants not shifting later allocation. Participant
-labels are not parsed arbitrarily into ordinals. Manual overrides and a hard
-participant-count limit remain open; a count preview must not become an
-unacknowledged allocation authority. Compiler bounds remain explicit.
+Latest Q06 answer in S3 on 2026-09-11: **“Leave allocation policy to Runner.”**
+This supersedes the earlier Planner cyclic-allocation design. Variant array
+order preserves the researcher's authored version order; it does not prescribe
+which participant receives a version. P3/P7 expose stable variant identities and
+an explicit Runner-owned selection boundary without a Planner participant UI or
+allocation algorithm. The fragment above illustrates only the authored data;
+the final versioned boundary encoding remains the contribution owners' work.
+Runner retry/skip/override and selection rules are later Runner decisions.
 
 The two forest entries are different planned occurrences although they reference
 the same video. A restart is a new execution occurrence of a planned entry, not
@@ -495,12 +495,12 @@ ownership, all of which are already confirmed.
 | --- | --- | --- |
 | Q04/Q05: video naming/relocation | Stable identity plus reviewed folder_filename annotation; portable logical workspace binding | Final P1 identity/migration contract |
 | Q02/Q14: sequence and dictionary edge cases | Explicit sequences, visible errors, stable ISI IDs; no automatic merging, renumbering or repair | P3 edge-case behavior, not the basic editor design |
-| Q06: skipped/retried participants | Fixed ordinal; retry retains its variant; no success-count allocation | Final allocation contract |
+| Q06: allocation ownership answered | Latest answer leaves allocation policy to Runner; Planner exports ordered variants without participant allocation | Runner selection/retry/skip work is deferred; not a Planner blocker |
 | Q08: exact screen reference/calibration | Shared saved reference rectangle, contain fit, design centre, explicit physical calibration | Final P4 geometry contract |
 | Q09: questionnaire placement/scoring | Preserve existing hooks and codes; implement additional requested placement and scoring explicitly | New placement/scoring features, not editable content/reopen fixes |
 | Q10: saved preview controls | Inventory existing saved values first; add only specifically approved extras | New persistent feedback behavior, not control consolidation design |
 | Q11: forward/recenter/tracking | Head-forward setup frame proposed; world-fixed anchor retained | Optional P6 final contract and later Runner behavior |
-| Q12/Q13: retained settings and drafts | P1 identity, P3 count preview, P7 acquisition/output; accepted recipes separate from drafts | Final navigation/save semantics |
+| Q12/Q13: retained settings and drafts | P1 identity, P7 any required count metadata/acquisition/output; accepted recipes separate from drafts | Final navigation/save semantics |
 | Q15: spatial profile scope/selection | Flat monoscopic plane first; explicit desktop/XR profile requirements with no silent fallback | Optional P6 and P7's spatial-target contract |
 
 Questions about questionnaire timings/scoring and which preview extras should be

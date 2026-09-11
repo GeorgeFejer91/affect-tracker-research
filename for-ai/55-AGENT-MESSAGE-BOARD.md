@@ -37,6 +37,89 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-roadmap-agent-coordination-audit
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination
+  handoff. User explicitly requested checking redundant-section deletion and
+  concurrent task alignment, and sending corrective nudges. This is read-only
+  application review plus documentation/task coordination, not implementation.
+- Integrated source remains `305d3ac`; canonical changes observed are documents
+  only. `ui-contracts.js` still registers Experiment/Input/Visual/Advanced, and
+  `ui-view.js` still defines/mounts all four. No removal has landed there.
+- Sent targeted messages to **S1**, **S2**, **S3**, **S4**, **S5**, **S6**, **S7**,
+  **Live Preview**, and **Add segment confirmation flow**. These are existing
+  tasks, not newly created implementation tasks. Requests preserve each task's
+  latest user instruction and never count as answers to open product questions.
+- Current roles: S3=P3 sequence/dictionary; S4=P4 screen layout; S5=P5 Flubber
+  consolidation; S6=P6 virtual-screen authoring; S7=P7 final recipe/export.
+  S1 explicitly reports a completed historical/migration task, not an allocated
+  P1 implementation owner. **P1 was an owner gap at initial audit; resolved by
+  the later allocation below.** S2 confirms its active user
+  request is now to finish P2 in its isolated questionnaire worktree.
+- S3 acknowledged named-only ISIs and typed occurrences, JS/Rust reconciliation,
+  contribution coordination with S7 and open Q02/Q14 edges. Its direct user has
+  excluded participant-assignment UI; do not reintroduce it through this nudge.
+- S5 acknowledged removal of old Input/Visual/Advanced navigation after rehoming
+  saved fields; appearance/input/animation remain P5-owned, layout P4/P6-owned.
+  P5 supplies a conservative full-range animation envelope to both layout owners.
+  Existing normalized v1 controls remain explicitly legacy until replacement,
+  never a second active successor geometry authority.
+- Live Preview handed off clean committed `268e0a9` and exact overlapping seams
+  to S5/integration; its writers are stopped. Preview-only additions are not
+  automatically saved settings. Historical test receipts stay bound to that
+  pending branch, not integrated completion.
+- S6's latest user clarification is a virtual screen for future WebXR with
+  precise distance, size and viewing angles. World-fixed/initial-forward was
+  already accepted. Tracking/recenter policies still require their own answer;
+  the virtual-screen clarification alone does not settle them.
+- Requests to integration: reconcile authoritative uncommitted roadmap snapshots
+  into isolated worktrees; publish one P7 contribution/guard ownership seam;
+  serialize shared UI mounts; identify P1 owner; assign old Experiment removal
+  only after retaining study identity/allocation/acquisition/output values.
+- Integration acknowledged the audit: P7 owns successor envelope/contribution
+  interfaces and the combined stale/export guard. S5 owns Input/Visual/Advanced
+  consolidation; final old Experiment shell removal is integration-owned only
+  after P7's retained-setting inventory and producer destinations are implemented
+  and tested. This coordination request does not allocate new P1 implementation.
+- P7 supplied an internal registration/change interface with snapshots containing
+  revision, enabled/pending, accepted contribution and dependency revisions;
+  payload semantics still belong to the domain owner. P3/P6 acknowledged that
+  shared handoff. P4 prepared interfaces/shared seams but has no source changes
+  or worktree while its existing stage/Q08 question is pending.
+- P6's current draft hard-validates some Q11 policy choices and still uses its
+  own simple footprint; it must keep those policies visibly unresolved until
+  answered and consume the promised P5 conservative envelope before fit claims.
+  Existing draft helpers are not integrated UI, saved recipe or XR execution.
+- Integration requested a reviewed documentation-only checkpoint of the exact
+  14 canonical roadmap files plus this uniquely owned entry, on the existing
+  isolated catalogue branch. Comparison found 13 files byte-identical and only
+  this added entry different in the board. No canonical source/index/ref writes
+  are part of preparing that handoff. Consumers must collect the checkpoint
+  without overwriting newer local board entries or claiming runtime completion.
+- Subsequent explicit user decisions: integration received user approval to assign
+  P1 to **S1**, P1-03 through P1-07, in an isolated workspace/library lane.
+  The researcher's latest message here additionally authorizes keeping every
+  segment chat assigned and nudging idle owners toward concrete remaining work.
+  No new implementation owner is duplicated. S4 acknowledged an independent
+  UI Finalization slice: non-exportable screen draft/geometry preview and focused
+  fixtures, while Q08 and accepted/exported geometry remain gated.
+- Later direct S3 answer: “Leave allocation policy to Runner.” Updated `00`,
+  the dated charter amendment, catalogue P3-04/Q06 and closure plan accordingly.
+  Ordered variants remain P3-owned; Planner cyclic policy and participant UI are
+  superseded, not implemented. Frozen historical v1 contracts are unchanged.
+  These four documents now intentionally differ from the earlier canonical
+  snapshot, in addition to this uniquely owned board entry.
+- Recurring coordination established in this task: active heartbeat
+  `keep-planner-segment-work-moving`, every ten minutes. It checks S1–S7 and
+  integration, advances bounded idle-owner work, avoids duplicate nudges and
+  reports meaningful progress, conflicts or required input. It does not authorize
+  Runner implementation, publication, foreground interaction or unreviewed merges.
+- Verification: repository/worktree heads, UI registrations, task histories and
+  direct acknowledgement messages. No source edits, builds, app interaction,
+  merges or qualification claims. This uniquely owned entry is prepared in the
+  roadmap worktree for integration-owner collection; do not overwrite active
+  canonical board edits with this entire file.
+
 ### 20260911-roadmap-planner-closure-design
 
 - Owner: **Create segment catalogue**, segment `roadmap`; **ready**.

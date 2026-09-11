@@ -62,9 +62,11 @@ qualification are deferred unless separately allocated by the researcher.
    All illustrated names/values are examples: durations, number of ISI entries
    and variant sequences are researcher-defined, with no fixed three-item list
    or prescribed timing presets.
-5. Assignment repeats by participant: with four variants, participants 1→V1,
-   2→V2, 3→V3, 4→V4, 5→V1. Store ordered variants and the assignment rule. Ordinal,
-   skip and override details remain open. Variant ID is distinct from schema version.
+5. **Latest answer in S3, 2026-09-11: “Leave allocation policy to Runner.”**
+   P3 authors ordered variants and their identities, without participant-assignment
+   UI or a Planner-selected allocation algorithm. This supersedes the earlier
+   example of repeating V1…V4 by participant ordinal; that example is no longer
+   a Planner requirement. Variant ID remains distinct from schema version.
 6. P3 defines marker/event meaning so recorded LSL streams can identify and
    reconstruct stimulus/ISI boundaries. **Runner owns actual timestamps and
    recording.** Recording implementation is outside current Planner scope.
@@ -89,15 +91,15 @@ qualification are deferred unless separately allocated by the researcher.
 | --- | --- | --- | --- |
 | P1 `workspace` | Workspace, study identity, video catalogue | Workspace reference, metadata, assets and media geometry | Partial |
 | P2 `questionnaires` | Items, scoring and languages | Definitions, variants, modules and coverage | Partial |
-| P3 `variants` | Event columns, repeating assignment, ISIs and markers | Ordered variants, allocation rule, event definitions | Missing target workflow; explicit-plan predecessor exists |
+| P3 `variants` | Event columns, ISIs and markers | Ordered variants and event definitions; Runner owns allocation | Missing target workflow; explicit-plan predecessor exists |
 | P4 `layout` | Video fitting and centre-relative Flubber layout | Units, reference geometry, offsets, size and fit policy | Missing target workflow; normalized placement exists |
 | P5 `feedback` | Flubber/input/Advanced editor and live preview | Input configuration, visual style and mappings | Partial; old controls distributed across sections |
 | P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Missing; authoring target accepted |
 | P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 
-Suggested homes for retained settings: P1 study name/ID; P3 allocation and any
-planned participant-count preview; P7 acquisition rate and recording/stream
+Suggested homes for retained settings: P1 study name/ID; P7 retained study/count
+metadata if required, with participant allocation left to Runner; P7 acquisition rate and recording/stream
 policy. P4 owns size/placement; P5 owns appearance/input. These placements are
 recommendations under Q12. Controls shown in multiple previews edit one owner.
 
@@ -199,11 +201,10 @@ chronological rows. Videos have fixed catalogue durations. Blocks, blanks,
 repeats and questionnaire placement remain Q02/Q09; the basic grammar is confirmed.
 **Receives:** P1 catalogue/durations and P2 module references.
 **Produces:** embedded ISI dictionary, ordered variants with named references,
-occurrence IDs, timing requirements, cyclic
-assignment and semantic marker definitions.
+occurrence IDs, timing requirements and semantic marker definitions.
 **Consumers:** P7 embeds; R1 resolves participants and timestamps actual events.
-**JSON:** explicit v1 participant schedules are a predecessor; variants and
-cyclic assignment require a successor recipe contract.
+**JSON:** explicit v1 participant schedules are a predecessor; ordered variants
+and their Runner-selection boundary require a successor recipe contract.
 
 **Columns = versions; rows = chronological video/ISI references.** With ISI
 input `1000, 1500, 2700`, the dictionary is `ISI1=1000ms`, `ISI2=1500ms`,
@@ -238,14 +239,15 @@ resolved explicitly. All ISI cells remain red and show their resolved millisecon
 value alongside the ID. Video/ISI identity collisions, duplicate durations and
 comma-list validation need explicit rules before implementation.
 
-The requested cycle for N variants and one-based participant ordinal p is
-`((p - 1) mod N) + 1`. Store the rule and order. Stable ordinals are recommended
-so retries/out-of-order runs do not shift allocation; skip/override policy is Q06.
+The later Q06 answer leaves allocation policy to Runner. Preserve each variant's
+identity and authored order without selecting a participant or defining a cyclic
+policy in Planner. The successor contract must explicitly identify this boundary;
+its exact wire representation is owned by P3/P7, not fixed by this document.
 
 - [x] **P3-01 — Implemented predecessor:** strict imported block/video schedules, per-video ISIs and deterministic protocol resolution exist; no variant allocation is implied.
 - [ ] **P3-02 — Missing in baseline:** variant-column/video-ID-or-ISI-name editor/paste, precise cell errors and derived timeline preview (Q01/Q03/Q14 answered). Related S3 work is pending integration.
 - [ ] **P3-03 — Missing:** derive paired events from full-video duration and referenced dictionary durations; validate boundary ordering, unknown/colliding IDs and repeat/block/blank rules (Q02).
-- [ ] **P3-04 — Missing:** authored variants and cyclic participant policy in the recipe, including retry/skip/override semantics (Q06).
+- [ ] **P3-04 — Missing:** authored variants and stable identities in the recipe, with an explicit Runner-owned selection boundary and no Planner assignment UI/algorithm (latest Q06 answer).
 - [ ] **P3-05 — Missing:** unique occurrence IDs distinguish repeated/restarted presentations of the same video.
 - [ ] **P3-06 — Missing:** versioned marker vocabulary/envelope with run, variant, video, occurrence, event, sequence and actual-timestamp meaning.
 - [ ] **P3-07 — Missing:** reconstruction contract for video/ISI, pauses, forms, interruptions and restarts from recorded stream data alone, including incomplete sequences (Q07).
@@ -371,7 +373,7 @@ separately changes it; removing old UI sections must not orphan playback semanti
 - [x] **P7-02 — Implemented component:** embedded questionnaire content, media declarations and integrity form one v1 JSON.
 - [ ] **P7-03 — Partial:** full UI create→save→reopen→revise→export without required imported `experiment.json`; plan authoring and language locks remain gaps.
 - [ ] **P7-04 — Partial:** await actual native save success before completion/locking; handle cancellation/failure/retry (audit F03).
-- [ ] **P7-05 — Missing:** successor contracts for variants/allocation, directory representation, geometry, saved feedback additions and optional XR; preserve v1 readers.
+- [ ] **P7-05 — Missing:** successor contracts for variants/Runner-selection boundary, directory representation, geometry, saved feedback additions and optional XR; preserve v1 readers.
 - [ ] **P7-06 — Missing:** cross-reference/language/geometry/marker/target validation with errors routed to owning segments.
 - [ ] **P7-07 — Missing:** invalidate stale compiled output after contribution edits; recompute derived data without overwriting unrelated choices.
 - [ ] **P7-08 — Decision:** retained metadata/acquisition/recording fields and export/reopen policy (Q12/Q13); recording implementation stays deferred.
@@ -391,7 +393,7 @@ The researcher explicitly prioritizes Planner. This section defines what the
 recipe must support, not permission to implement Runner now.
 **Runtime input:** recipe, authorized media, participant ordinal/ID, language,
 attempt/retry selection and screen/XR setup.
-**Behavior:** resolve variant from stored policy, execute events/forms, apply
+**Behavior:** select an explicit variant using Runner-owned policy, execute events/forms, apply
 saved feedback/layout, timestamp actual transitions and record.
 **Output:** responses, ratings, events, identity/timing evidence and recorded LSL
 data. Runner owns recording; exact format/mechanism, start gates and failure
@@ -399,7 +401,7 @@ handling are later decisions.
 
 - [x] **R1-01 — Implemented predecessor:** v1 package selection, explicit protocol resolution and local event/response/output contracts.
 - [x] **R1-02 — Implemented component:** native LSL outlets and local evidence/recovery components; marker identity and push-time timestamps do not meet the new reconstruction target.
-- [ ] **R1-03 — Deferred:** future recipe execution, repeating assignment and screen/feedback/XR profiles with target validation.
+- [ ] **R1-03 — Deferred:** future recipe execution, Runner-owned participant allocation and screen/feedback/XR profiles with target validation; exact allocation policy remains downstream work.
 - [ ] **R1-04 — Deferred:** occurrence-specific markers at defined observed boundaries, preserving pauses/restarts/incomplete evidence.
 - [ ] **R1-05 — Deferred:** Runner-owned recording and recovery; explicitly outside Planner implementation scope.
 - [ ] **R1-06 — Deferred:** recorded-stream-only reconstruction proof, including missing events and retries.
@@ -413,13 +415,14 @@ handling are later decisions.
 | P1 → P3 | Stable IDs, file identity and duration | Asset/identity change |
 | P1 → P4/P6 | Display geometry and aspect ratio | Media/geometry-policy change |
 | P2 → P3/P7 | Accepted definitions/languages/modules | Content/scoring/placement edit |
-| P3 → P7/R1 | Variants, assignment, ISIs/dictionary references and marker meaning | Event/timing/allocation/dictionary edit |
+| P3 → P7/R1 | Ordered variants/identities, ISIs/dictionary references and marker meaning; allocation remains Runner-owned | Event/timing/variant/dictionary edit |
 | P4/P6 ↔ P5 | Owned layout composed with owned style/input | Geometry/animation-extent edit |
 | P1–P6 → P7 | Contributions and dependency revisions | Run-defining value change |
 | P7 → R1 | Frozen master JSON and media references | Changed bytes/assets or unsupported target |
 
 The recipe must cover study/workspace reference, assets, questionnaires/languages/
-scoring, ISI dictionary/references, variants/allocation, events/timing/markers, input/visual/mappings, screen
+scoring, ISI dictionary/references, variants with a Runner-selection boundary,
+events/timing/markers, input/visual/mappings, screen
 layout, optional XR, playback/acquisition/output policy, schema identity and
 integrity. These are logical categories, not finalized JSON root keys. P7 owns
 composition; each segment owns its contribution's meaning. Actual answers,
@@ -443,13 +446,13 @@ An open decision blocks only its dependent capability.
 | Q03 | Answered; revised by Q14 / P3 | Video duration is fixed by the catalogue; ISI durations are milliseconds entered in the dictionary field. | Table cells use names, not raw numbers. Derive boundaries; Runner supplies actual timestamps. |
 | Q04 | Open / P1 | How do duplicate names, nested folders, renames, rescans and non-ASCII names affect IDs? | Readable annotations plus immutable asset identity; collision/rename rule needs agreement. |
 | Q05 | Open / P1/P7 | Original absolute directory, portable root, or both with explicit relocation? | Portable binding recommended; recording directory information is accepted. |
-| Q06 | Open / P3 | Is cyclic allocation tied to participant number despite skips/run order; what about reruns, withdrawal, count limits and overrides? | Stable ordinal/same variant on retry recommended; not a successful-session counter. |
+| Q06 | Answered: owner changed / P3/R1 | Latest direct answer in S3 on 2026-09-11: “Leave allocation policy to Runner.” P3 preserves ordered variants; no participant-assignment UI or Planner allocation algorithm. | Supersedes earlier cyclic/fixed-ordinal Planner proposal. Runner algorithm/retry/skip policy is deferred, not a Planner blocker. |
 | Q07 | Owner answered; details deferred / R1 | Runner owns recording; implementation is outside current Planner scope. Format, receiver/start gate, failure handling and visible-onset evidence remain open. | Planner specifies required event fields/semantics now; no recording implementation. |
 | Q08 | Percentage basis answered; details open / P4 | Use one fixed reference area across all videos. Exact reference extent/selection, physical calibration, axes and stable Flubber centre remain open. | Centre-to-centre anchoring and fixed-reference percentages are accepted; fixed design centre remains recommended. |
 | Q09 | Open / P2 | Required questionnaire placements, computed scoring and missing-answer semantics beyond option codes? | Preserve explicit existing definitions/placements until answered. |
 | Q10 | Open / P5 | Which simulator/draft controls must become saved experiment controls, including hold, halo, tiles and alternate renderer choices? | Enumerate saved controls/units; do not assume every draft is approved. |
 | Q11 | Anchor answered; details open / P6 | World-fixed, initially forward-aligned. How does recentering/tracking loss work; is forward head pose or measured eye gaze? | Head-forward recommended; do not infer eye-tracking support. |
-| Q12 | Open / P1/P3/P7 | Accept proposed homes/exposure for study identity, participant-count preview, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values. |
+| Q12 | Open / P1/P7 | Accept proposed homes/exposure for study identity, any retained participant-count metadata, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values; participant allocation is Runner-owned under updated Q06. |
 | Q13 | Open / P7 | Does final JSON restore only accepted runnable design or also drafts/provenance; how are edits to used recipes versioned? | Separate editable drafts from immutable run evidence. |
 | Q14 | Named-only/user-defined values answered; lifecycle details open / P3 | Researcher-supplied durations create named ISI entries; the sample names/times/count are illustrative. Version cells use names only, excluding raw numeric values. | Embed dictionary/references. Stable IDs and dependency invalidation are recommended; naming/duplicate/delete details remain open. |
 | Q15 | Open / P6/P7 | Are desktop and XR alternative profiles in one recipe or separate target requirements; does initial spatial authoring use a flat monoscopic plane, and which plane rotations/depth offsets are exposed? | Explicit selected target, no silent desktop fallback; flat plane proposed first. Rotatable inspection is distinct from saved plane rotation. |
@@ -463,7 +466,7 @@ whole-project implementation allocation:
 1. Allocate the successor contribution/schema seam and fixtures first. Close only
    the P1/P3 decisions needed for their next slice; preserve frozen v1 semantics.
 2. Finish P1's import/catalogue/geometry handoff and adapt pending P3 work to the
-   named dictionary, event sequence, cyclic rule and marker definitions. P2's
+   named dictionary, event sequence, variant identities and marker definitions. P2's
    accepted-definition/editable-save work can progress in its own lane.
 3. Complete P4 geometry and P5 consolidated saved controls through one layout
    owner. Connect accepted contributions to P7 incrementally.

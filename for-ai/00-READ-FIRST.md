@@ -49,7 +49,7 @@ landed. Use the roadmap and exact candidate receipts before making a claim.
 
 The following describes the existing v1 generation. The charter's 2026-09-11
 amendment adopts the central roadmap's final-state Planner direction, including
-chronological variant columns/repeating assignment, consolidated Flubber
+chronological variant columns with Runner-owned participant allocation, consolidated Flubber
 controls, screen geometry and optional XR authoring. Their successor schemas
 are not yet implemented. References below to a current Section 2 pass describe
 historical scope; every new pass follows the current request and catalogue.
