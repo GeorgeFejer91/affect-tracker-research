@@ -474,7 +474,9 @@ test("preview CSS has responsive and forced-color coverage without gradients or 
   assert.match(forcedColors, /forced-color-adjust:\s*none/u);
 
   assert.doesNotMatch(cssSource, /(?:linear|radial|conic|repeating-linear|repeating-radial)-gradient\s*\(/iu);
-  assert.doesNotMatch(cssSource, /(?:box-shadow|text-shadow)\s*:|drop-shadow\s*\(/iu);
+  // Only the separately owned, user-requested confirmation edge may glow.
+  const withoutConfirmationGlow = cssSource.replace(/[^{}]*\.setup-section-confirm-button\[data-review-state="pending"\]::after\s*\{[^{}]*\}/gu, "");
+  assert.doesNotMatch(withoutConfirmationGlow, /(?:box-shadow|text-shadow)\s*:|drop-shadow\s*\(/iu);
 });
 
 test("preview normalization accepts modes and bounds halo size and transparency", () => {

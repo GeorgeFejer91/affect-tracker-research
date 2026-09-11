@@ -635,7 +635,6 @@ function reviewSection() {
       </div>
       <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
     </section>
-    ${sectionConfirmationMarkup(SETUP_SECTIONS[SETUP_SECTIONS.length - 1], SETUP_SECTIONS.length - 1)}
     <div class="start-bar">
       <p id="start-status" role="status" aria-live="polite">Resolve all blocking preflight items.</p>
       <button id="start-experiment" type="button" class="primary-action" disabled>Start experiment / session</button>
@@ -695,7 +694,7 @@ function accordionMarkup(section, index) {
         aria-labelledby="setup-trigger-${section.id}"
         data-motion-state="${expanded ? "open" : "closed"}"
         ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
-      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner">${SECTION_CONTENT[section.id]()}${section.id === "review" ? "" : sectionConfirmationMarkup(section, index)}</div></div></div>
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner">${SECTION_CONTENT[section.id]()}${sectionConfirmationMarkup(section, index)}</div></div></div>
     </section>`;
 }
 

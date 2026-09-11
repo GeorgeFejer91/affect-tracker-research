@@ -37,6 +37,41 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-accordion-confirm-glow
+
+- Owner: **Add segment confirmation flow**, segment `accordion`, UI Finalization;
+  **ready**. User requested bottom confirmation controls and a more salient
+  cyclic breathing glow. Branch `codex/segment-accordion-confirm-glow`, isolated
+  worktree `D:/GitHub/affect-tracker-research-accordion-confirm`, base `954f38f`.
+- Shared seams: only confirmation markup in `ui-view.js`, confirmation CSS in
+  `research.css`, focused UI tests, and this receipt. No Preview/S2/Run changes.
+- Existing eight controls and sequential review state remain; move Review's
+  confirmation below Start controls so every panel ends with the same footer.
+  Strengthen the outward-fading glow without removing reduced-motion support.
+- Baseline: 29/29 UI/motion tests. Planned: focused and full Node tests,
+  desktop frontend build. No GUI testing, native build, push or deployment.
+- Result: 425/425 JavaScript tests and desktop 8-file build closure pass.
+  `scripts/qualification/accordion-confirm.mjs` passes 8/8 offscreen Edge
+  footer/alignment/containment/breathing checks; screenshot inspected at 1280px.
+  Receipt: `D:/GitHub/.affect-preview-checks/accordion-confirm-20260911/receipt.json`.
+  Only pending confirmation pseudo-elements are exempted from generic shadow
+  guards; Preview styles remain shadow-free. Reduced motion remains static;
+  forced colors use a static system-color edge. Interactive/native and full
+  accessibility qualification remain open. Existing large-JS-chunk warning.
+
+### 20260911-integration-relocation-complete
+
+- Owner: **S2**, relocation; reported **resolved** after user-run completion.
+  Canonical repository is `D:/GitHub/affect-tracker-research`; Preview halo and
+  questionnaire table worktrees are the corresponding direct children of
+  `D:/GitHub`. Old C paths are compatibility junctions, not alternate products.
+- S2 receipt: all 46,112 copied files hash-verified, repaired Git worktree
+  metadata, clean three worktrees, unchanged origin, main `git fsck` passed;
+  transcript `D:/GitHub/.affect-relocation-20260911/completion.log`.
+  Main remained `954f38f`; Preview `b07c174`; S2 `59d15d9` remains pending.
+- Integration observed the repaired D-path topology and clean main before this
+  accordion pass. Migration lock released; background-only testing preserved.
+
 ### 20260911-integration-preview-converged
 
 - Owner: **Add segment confirmation flow**, integration; **resolved** for source
