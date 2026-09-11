@@ -119,6 +119,12 @@ contracts and never affect Start, Run, hashes, records, LSL, or evidence.
   block starts at the focused cell, preserves row/column order, and rejects
   malformed, oversized, or invalid values with an actionable location. The
   researcher can also add/remove rows and edit individual cells.
+- The whole table includes item text, per-item **Answer / Code** pairs, and a
+  final **Required** (`true`/`false`) column. Answer labels are participant-visible;
+  codes are recorded values. A codes-only view preserves labels. Headered
+  whole-table paste at the first cell replaces all rows and sets option count;
+  headerless paste updates only its rectangle. Copy supports selected ranges
+  or the complete table with headers; templates use that same visible layout.
 - Keep participant-visible response labels separate from numeric recorded
   values. For example, the display labels may be **Never … Always** while an
   item row records `0, 1, 2, 3, 4, 5`; a reverse-coded row can record
@@ -154,6 +160,12 @@ contracts and never affect Start, Run, hashes, records, LSL, or evidence.
   English TAS fixture is excluded from distributable builds; no German TAS
   asset is currently supplied. Broader Inspiration and Phenomenological
   Control UI are deferred from this simplified section.
+- Use one **Add prebuilt questionnaire asset** button, opening a separate
+  selection dialog within Setup, not individual instrument toolbar buttons.
+  Present EN/DE variants separately; selecting one fills its exact item,
+  answer-label and coding cells only. Require the language to be selected first;
+  never auto-load another language or overwrite a draft. TAS entries remain
+  visibly unavailable until authorized distributable assets are supplied.
 - Keep the fixed demographics contract intact; its language/localization work
   is a future checklist item. The questionnaire editor does not collect
   participant responses or change which demographic data may be persisted.

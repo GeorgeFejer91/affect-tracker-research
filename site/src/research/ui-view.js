@@ -489,7 +489,7 @@ function inputSection() {
 
 function questionnairesSection() {
   return `
-    <p class="section-lead">Add the questionnaires participants complete before the video task. Paste items from Excel, then set the answer labels and recorded values.</p>
+    <p class="section-lead">Add the questionnaires participants complete before the video task. Paste items, answer labels and recorded values together from Excel.</p>
     <div class="questionnaire-language-controls">
       <label class="field"><span>Add a language</span><select id="study-language-add"><option value="de">Deutsch · German</option></select></label>
       <button id="study-language-add-button" type="button">Add language</button>
@@ -498,15 +498,24 @@ function questionnairesSection() {
     <p id="study-language-mode-note" class="field-help">Each questionnaire needs its own version in every selected language.</p>
     <div class="questionnaire-add-toolbar" aria-label="Add a pre-task questionnaire">
       <button id="questionnaire-add-blank" type="button" class="primary-action">Add questionnaire</button>
-      <button type="button" data-questionnaire-preset="maia-2">Add MAIA-2</button>
-      <button type="button" data-questionnaire-preset="tas-20">Add TAS-20</button>
+      <button id="questionnaire-prebuilt-open" type="button" aria-haspopup="dialog">Add prebuilt questionnaire asset</button>
     </div>
-    <p class="field-help questionnaire-preset-note">MAIA-2 includes English and German items. TAS-20 opens a table for your authorized items.</p>
     <div id="questionnaire-sheet-list" class="questionnaire-sheet-list"></div>
     <output id="questionnaire-coverage-status" class="field-output" aria-live="polite">No questionnaires added.</output>
     <output id="questionnaire-import-status" class="field-help" aria-live="polite"></output>
     <p class="field-help">Participant details (age, gender and handedness) remain included before the task.</p>
     <input id="questionnaire-sheet-file" type="file" accept=".csv,.txt,.json" hidden>
+    <dialog id="questionnaire-prebuilt-dialog" class="research-dialog questionnaire-prebuilt-dialog" aria-labelledby="questionnaire-prebuilt-title">
+      <div class="dialog-heading"><h2 id="questionnaire-prebuilt-title">Prebuilt questionnaire assets</h2><button id="questionnaire-prebuilt-close" type="button">Back to questionnaires</button></div>
+      <p>Choose each language version separately. Ready-to-use assets fill the item, answer-label and coding cells. Other selected study languages still need their matching version.</p>
+      <div id="questionnaire-prebuilt-list"></div>
+      <p id="questionnaire-prebuilt-status" role="status" aria-live="polite"></p>
+    </dialog>
+    <dialog id="questionnaire-sheet-copy" class="research-dialog questionnaire-sheet-copy" aria-labelledby="questionnaire-sheet-copy-title">
+      <div class="dialog-heading"><h2 id="questionnaire-sheet-copy-title">Copy questionnaire table</h2><button type="button" data-sheet-copy-close>Close</button></div>
+      <p>Press Ctrl+C, then paste into Excel. The selected text includes every item, answer label, code and required flag in the current table view.</p>
+      <textarea id="questionnaire-sheet-copy-text" readonly rows="12" aria-label="Selected tab-delimited questionnaire table"></textarea>
+    </dialog>
     <dialog id="questionnaire-sheet-preview" class="research-dialog questionnaire-sheet-preview" aria-labelledby="questionnaire-sheet-preview-title">
       <div class="dialog-heading"><h2 id="questionnaire-sheet-preview-title">Questionnaire preview</h2><button type="button" data-sheet-preview-close aria-label="Close questionnaire preview">Close</button></div>
       <div id="questionnaire-sheet-preview-content"></div>

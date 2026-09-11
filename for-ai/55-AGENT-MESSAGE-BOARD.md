@@ -37,6 +37,21 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-questionnaires-table-catalogue
+
+- Owner: **S2**, questionnaires segment. Status: **open**.
+- Base: `d286137`; branch `codex/segment-questionnaires-table-catalogue`;
+  isolated worktree `affect-tracker-research-questionnaires-table`.
+- Confirmed follow-up: whole-table spreadsheet copy/paste including visible
+  labels and recorded codes, plus one prebuilt asset-selection dialog with
+  separate English/German versions. Keep TAS rights-gated and Runner untouched.
+- Seams: questionnaire sheet/editor/catalogue, Section 2 markup/dialog and CSS,
+  questionnaire-only app hooks, focused tests and Section 2 documentation.
+- Integration owner acknowledged allocation; preview owns its separate hunks.
+- Baseline: 48/48 questionnaire sheet/integration and UI tests passed.
+- Evidence planned: atomic full-table round trips/rejections, preset provenance,
+  language/draft guards, build closure and rebuilt native UI observation.
+
 ### 20260911-integration-shared-checkout
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.
