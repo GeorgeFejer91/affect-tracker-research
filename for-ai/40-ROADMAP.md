@@ -46,6 +46,21 @@ This is not installed Tauri, Chrome, physical calibration, interactive assistive
 technology, runtime-screen compatibility, playback or research qualification.
 Integration must collect this branch before claiming canonical availability.
 
+The separate P4 compactness follow-up (`codex/segment-p4-layout-compact`) composes
+that feature with accepted preview/divider base `bed461b`. It groups dimensions
+and offsets in paired rows, removes nested form borders/repeated copy, places
+missing-media limits beside the miniature and preserves visible validation.
+The default editor is approximately 19% shorter at desktop width and 26% shorter
+in the 432px Setup pane. Actual `bootResearchUi` screenshots at 1280×900 include
+top/middle/footer positions, physical-unit fields, missing inputs, invalid fields
+and a synthetic portrait/envelope injected only by the non-shipping harness.
+Final evidence: 459/459 JavaScript tests, 164/164 headless Edge assertions across
+12 captures and desktop 8-file closure. Receipts and inspected screenshots are
+under `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`; reproduce with
+`scripts/qualification/screen-layout-compact.mjs`. Scroll remains necessary,
+with all controls and confirmation reachable. No geometry semantics, accepted
+contribution, runtime authority or qualification status changed.
+
 ## Repository transition — verified
 
 - Research retains ancestry through exact pre-split commit

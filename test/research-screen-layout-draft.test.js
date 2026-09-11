@@ -125,7 +125,7 @@ test("the provisional fixture adapter rejects unowned real geometry and duplicat
 test("draft markup provides numeric alternatives and explicitly excludes export and Run", () => {
   const markup = screenLayoutDraftMarkup();
   assert.match(markup, /not saved in the experiment package or applied during Run/u);
-  assert.match(markup, /Q08 choices await confirmation/u);
+  assert.match(markup, /These choices await confirmation/u);
   assert.match(markup, /aria-live="polite"/u);
   assert.match(markup, /for="layout-offsetX"/u);
   assert.match(markup, /for="layout-offsetY"/u);

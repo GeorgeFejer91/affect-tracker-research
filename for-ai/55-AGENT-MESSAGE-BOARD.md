@@ -62,6 +62,54 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p4-layout-compactness
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization, explicitly allocated
+  by the researcher's cross-task rendered-UI compactness follow-up. Apply
+  uncodixfy within the existing P4-02/P4-04/P4-06 non-exportable draft only.
+- Branch `codex/segment-p4-layout-compact`, isolated worktree
+  `D:/GitHub/affect-tracker-research-screen-layout-polish`; accepted base
+  `bed461b`, composed with ready P4 feature `3094bb8` at `3529787`. Original
+  feature handoff remains untouched. Reviewed composition keeps both owners'
+  initialization/teardown, all preview invalid-field exclusions and pane ID.
+- No additional researcher input, accepted JSON contribution or changed geometry
+  semantics. P1/P5 remain unavailable producers; Q08/export/Run stay deferred.
+  Current source has repeated draft/provenance text, boxed form groups and
+  full-width unit controls; inspect actual rendering before choosing changes.
+- Allowed files: P4 view/editor copy, P4-only CSS, dedicated background screenshot
+  harness and owned evidence entries. Do not alter preview effects, other
+  sections, contracts, shared application behavior or native authority.
+- Baseline: 49/49 focused P4/UI/divider checks on the changed composed candidate.
+  Collect actual `bootResearchUi` screenshots at desktop and minimum Setup-pane
+  widths with populated, unavailable-media and invalid-number states. Inspect
+  labels/errors/focus/target sizes, scroll reachability and redundancy; record
+  residuals without claiming installed or physical accessibility qualification.
+- Integration and catalogue tasks receive the separate ready polish commit and
+  screenshot receipts; do not delay feature collection for this visual follow-up.
+- Result: two-column dimension/centre/offset pairs, aligned numeric controls,
+  unboxed fieldsets, shorter spacing and miniature, missing-input notice directly
+  below the diagram, one draft/export notice and short status, conventions in a
+  disclosure, complete shape legend and reference strokes painted over video.
+  Fixed a rendered invalid-border specificity conflict in P4's scoped CSS.
+- Evidence: final 459/459 JavaScript tests, desktop 8-file frontend closure,
+  164/164 headless Edge assertions in 12 actual `bootResearchUi` screenshots.
+  Each application frame is 1280×900; Setup panes are 795px and 432px including
+  scrollbars. Captures cover top/middle/footer, measured physical values,
+  missing producers, invalid numbers and explicitly synthetic portrait/bounds.
+  The portrait case injects fixtures only in the harness-served bootstrap module;
+  production source and settings contain none. Numeric focus, visible invalid
+  borders, paired rows, target/text size and footer reachability are checked.
+- Receipts/screenshots: `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`;
+  reproducible with `scripts/qualification/screen-layout-compact.mjs`. Inspected
+  desktop top, narrow middle/footer/error/physical and portrait screenshots.
+  Default editor height fell from 1415→1150px desktop and 1755→1304px narrow.
+- Residuals: vertical scrolling is still required; header may wrap at the minimum
+  pane width. Q08, actual P1/P5 composition and accepted save/export remain open.
+  P5 reports retained normalized fields under **Legacy package layout**, with
+  explicit legacy copy; its ready branch, not this P4 pass, owns that change.
+  No installed Tauri, physical measurement, assistive-technology or runtime claim.
+  Writers stop after handoff; the integration owner reviews the combined UI.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.

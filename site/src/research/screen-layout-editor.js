@@ -39,8 +39,8 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
     errors.hidden = !issues.length;
     for (const control of controls) control.setAttribute("aria-invalid", String(issues.some(item => item.field === control.dataset.layoutField)));
     query("[data-layout-status]").textContent = issues.length
-      ? `${issues.length} draft ${issues.length === 1 ? "issue" : "issues"}. Layout is not exportable.`
-      : "Draft geometry calculated. Layout is not exportable; confirmation and producer interfaces are pending.";
+      ? `${issues.length} draft ${issues.length === 1 ? "issue" : "issues"} to resolve.`
+      : "Draft geometry calculated.";
     for (const unit of root.querySelectorAll("[data-layout-unit]")) {
       const field = unit.dataset.layoutUnit;
       if (field.startsWith("screen") || field.startsWith("physical")) continue;
@@ -49,7 +49,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
           : field === "offsetX" ? "reference width" : field === "offsetY" ? "reference height" : "shorter reference side";
       unit.textContent = draft.units === "mm" ? "(mm)" : `(% ${basis})`;
     }
-    if (dependencies.media?.length || dependencies.envelope) query("[data-layout-dependencies]").textContent = "Synthetic verification fixtures only. These samples are not library media or an accepted P5 animation envelope; layout remains unqualified and non-exportable.";
+    if (dependencies.media?.length || dependencies.envelope) query("[data-layout-dependencies]").textContent = "Synthetic verification samples only. These video and animation bounds are illustrative; actual media fit remains unverified.";
   }
 
   function edit(event) {
