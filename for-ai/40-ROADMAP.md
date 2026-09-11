@@ -26,6 +26,15 @@ remain Pages171/desktop8. Receipts are owner-level, pending canonical integratio
 
 ## Central capability checklist and this evidence ledger
 
+The separate table-first compactness follow-up on `ae47df6` preserves all
+controls inside a secondary disclosure, retains live errors above the grid,
+and removes duplicate empty coverage output. 445 Node tests, 27 isolated DOM
+cases each in Edge/Chrome and both build closures pass. Six actual
+`bootResearchUi` screenshots cover empty/populated/error at desktop and narrow
+widths. The source-bound visual receipt records input hashes and working-tree
+status; see `20260911-p2-table-first-visual-follow-up` on the message board.
+This does not close any scientific-contract or installed-qualification gate.
+
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
 Planner roadmap and segment capability checklist adopted by the charter's
 2026-09-11 amendment. It records what each segment must do, user inputs, JSON
