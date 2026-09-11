@@ -62,6 +62,62 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p5-feedback-editor
+
+- Owner: **Implement segment 5**, P5 `feedback`; **ready** for integration-owner
+  collection. User allocated P5, reaffirmed the updated roadmap, and separately
+  requested redundancy/compactness cleanup through coordination. Stage: UI
+  Finalization, P5-04/P5-05/P5-07/P5-08; background evidence only.
+- Branch `codex/segment-p5-feedback-editor`, isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback`, base
+  `305d3ac`. Accepted docs `6be0a79` and Preview/divider `bed461b` merged normally.
+  Source candidate `8d3d256a67e01d9df0cef3717a58d559eb032a4a`; functional
+  consolidation `87c3d6d`, subsequent narrow-pane corrections kept separately.
+- Intended/current comparison: bindings/test formerly occupied `inputSection`,
+  Visual was a shortcut, Advanced held LSL, and appearance/mappings lived in the
+  preview. Those three obsolete builders/registry entries/routes are now removed.
+  All retained values are mounted once in persistent P5 or unchanged LSL Review.
+  No P1/P2/P3/P4/P6 implementation or P7 package handler was edited.
+- Input is researcher-owned binding/style/mappings and transient preview input;
+  JSON remains existing `input`, `visual`, `advanced.mappings`, plus the unchanged
+  Review-mounted `advanced.lsl`. See the scoped control/units inventory and
+  exact evidence in [the P5 receipt](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
+- Shared hunks: `SETUP_SECTIONS.feedback`; `feedbackNavigationMarkup` and
+  persistent aside; P5 review/focus/summary/readiness handling; CSS and updated
+  confirmation fixture. Markup extraction is in `feedback-controls-view.js`.
+  Existing Preview palette, halo, pinning, interaction, divider and teardown
+  behavior were reconciled, not replaced by the older base.
+- The studio retains output, map and `.preview-controls-scroll`. Its controls
+  order is Appearance, Controls, response drafts, Advanced, metrics, confirmation.
+  Old LSL markup is now `lslSettingsMarkup()` in Review. P7's new package widgets
+  and Sample Hz relocation must be retained independently at integration.
+- Subsequent explicit user direction: no independent Live Preview JSON
+  confirmation; capture its final settings through Section 7 naming/save.
+  Integration owns removal of the P5 confirmation/navigation review mark.
+  Retain that newer orchestration when merging this branch; do not reintroduce
+  the older fixture's six-step confirmation requirement.
+- Final D12/V17 cleanup removes four duplicate visible anchor rows, preserving
+  all existing canonical saved IDs as hidden state read/written by the map's
+  shared picker. Four distinct idle/outline/halo/cursor rows remain. D12/V16
+  fallback requires 18rem of controls space; five measured cases prove pinning
+  when sufficient and whole-pane scrolling for cramped/text-scaled layouts.
+- P4/P6 own separate `layout`/`xr` mounts; neither is inside the deleted Visual
+  builder. Both received the saved-v1 extent API. P6 independently reports two
+  producer interoperability cases against the actual helper; that is P6 evidence,
+  not P5 accepted-geometry qualification. P7 focus mapping must use `feedback`.
+- Q10 remains open. Legacy normalized size/x/y/lock remain clearly labelled;
+  they do not configure successor Screen/VR geometry. Further Face Morph work
+  requested in Live Preview is a separate owner allocation, not restored here.
+- Verification: 452 JS tests; desktop/Pages frontend closures; real-boot Chrome
+  and Edge saved-field, reflow, focus and overlap checks; desktop/320px populated,
+  empty, error, Advanced, color-dialog and long-label screenshots. The roadmap
+  records artifact hashes and local receipt paths. No native app was launched,
+  desktop input synthesized, workspace writer invoked, or Run qualification claimed.
+- Integration action: merge the clean source/receipt checkpoint, preserve newer
+  P1/P2/P4/P6/P7 mounts/guards and ownership entries, then run combined gates before
+  checking capabilities. The isolated C: worktree is a real directory, not a D:
+  junction; its location has been reported to integration, not silently moved.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
