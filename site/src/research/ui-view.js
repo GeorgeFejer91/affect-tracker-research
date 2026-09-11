@@ -713,9 +713,16 @@ export function renderResearchUiMarkup(surface = "browser") {
       <main>
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
-            <div class="setup-pane">
+            <div class="setup-pane" id="setup-sections">
               <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 reviewed · 0 ready</output></div>
               ${SETUP_SECTIONS.map(accordionMarkup).join("")}
+            </div>
+            <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"
+              aria-label="Resize sections and live preview" aria-orientation="vertical"
+              aria-controls="setup-sections" aria-valuemin="0" aria-valuemax="100" aria-valuenow="63"
+              aria-describedby="setup-resizer-help"
+              title="Drag to resize. Arrow keys adjust; double-click resets.">
+              <span id="setup-resizer-help" class="sr-only">Drag left or right to resize. Use Left and Right arrows, Shift for larger steps, Home or End for the limits, and Enter to reset. Escape cancels a drag.</span>
             </div>
             <aside class="preview-pane" aria-labelledby="preview-title">
               <header class="preview-header">

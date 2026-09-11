@@ -98,6 +98,21 @@ The current `research/video-protocol-v1` working candidate contains:
 
 ## Bounded Setup feedback-design preview — non-authoritative working slice
 
+The isolated 2026-09-11 `setup-layout` UI Finalization pass adds a draggable
+divider between Setup sections and Live Preview. A bounded presentation
+controller owns pointer capture/cancellation, keyboard sizing, reset, and
+window-resize clamping. Its session-local proportion never enters settings,
+package bytes, Run geometry, storage, or evidence. The divider is hidden in
+the existing narrow stacked layout. The pass has 434/434 JavaScript checks,
+a rebuilt desktop frontend closure, and eight offscreen real-UI bootstrap/
+mode/geometry checks each in Chrome and Edge. These receipts cover pane
+geometry and isolation, not physical interaction or installed qualification.
+On the integration base, narrowing Preview to 320px in a wide viewport exposes
+36px of pre-existing internal overflow; the ready Preview owner's container
+reflow in `7c908949` must be composed before minimum-width content fit is
+accepted. Integration and any reload of the existing application remain with
+the designated integration owner.
+
 The 2026-09-11 `accordion` UI follow-up gives every panel the same final
 confirmation footer, including Review below its Start controls, and strengthens
 the warm breathing edge with outward-fading layers. Review state and Start

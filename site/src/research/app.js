@@ -27,6 +27,7 @@ import { createResearchPreview, drawAffectField } from "./preview.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
+import { createSetupLayout } from "./setup-layout.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
   validateQuestionnaireAnswers,
@@ -173,6 +174,7 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   const announcer = root.querySelector("#research-announcer");
   let openSection = "workspace";
   let readySetupSectionCount = 0;
@@ -420,6 +422,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
+    setupLayout.setEnabled(mode === "setup");
     if (mode !== "setup") previewResponseSimulator?.releaseAll();
     shell.dataset.researchMode = mode;
     root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
@@ -5304,6 +5307,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      setupLayout.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();
