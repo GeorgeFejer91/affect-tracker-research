@@ -258,12 +258,16 @@ Subsequent owner handoffs, still requiring combined verification:
   shorter draft copy and visible error border address V09–V12 locally.
 - P3 `ae5cecd`, merged with its documentation base at `bc8921d`, removes the
   inert pool/stimulus-dialog/native opener chains and implements the named-ISI
-  table. Root inspected updated empty/populated/error images. An overwritten
-  error capture now correctly places the saved-design warning above the table;
-  older images are superseded. Actual invalid-cell focus/reveal, reliable
-  identity colors beyond ten palette slots and immutable source-hashed captures
-  remain a bounded owner follow-up. A `dataset.state` assertion alone is not
-  error-visibility evidence.
+  table. Final follow-up `4a2389c` resolves the two visual findings: root inspected
+  a real invalid-reference confirmation with visible Event 1/Variant 6 error
+  and focused, horizontally revealed cell at 800px, plus the populated table's
+  distinct sample colors. Identity-derived hue/tone no longer depends on other
+  catalogue entries; an 80-video stability regression is reported. Text remains
+  authoritative for perceptually similar large-library colors. The immutable
+  receipt names clean `4a2389c` and hashes served source; its directory is
+  `src-tauri/target/segment3-verification/4a2389c1a175-1789141158726` in the P3
+  worktree. Older unbound and injected-status captures are superseded. Combined
+  integration remains pending; a `dataset.state` check alone would not suffice.
 - P5 source `8d3d256`, documentation handoff `597a612`: independent final
   reinspection resolves both remaining material issues. Map-to-dialog is the
   sole visible anchor editor, and the settings-space threshold is 18rem with
