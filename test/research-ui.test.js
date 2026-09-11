@@ -284,7 +284,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
 
   assert.match(workspacePanel, /<code>assets\/stimuli\/<\/code>/u);
   assert.match(workspacePanel, /<code>experiment\.package\.json<\/code>/u);
-  assert.match(workspacePanel, /outputs and recovery are managed automatically/u);
+  assert.match(workspacePanel, /Videos, project JSON, outputs, and recovery stay inside it/u);
+  assert.match(workspacePanel, /id="workspace-status"[^>]*><\/p>/u);
   for (const id of ["experiment-id", "experiment-title"]) {
     assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
     assert.match(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));

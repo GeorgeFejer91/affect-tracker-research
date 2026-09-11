@@ -326,7 +326,7 @@ function stimulusInspirationMarkup() {
 function workspaceSection() {
   const folderIcon = folderIconMarkup();
   return `
-    <p class="section-lead">Set one work directory. The video library and project JSON remain fixed inside it; outputs and recovery are managed automatically.</p>
+    <p class="section-lead">Choose one work directory. Videos, project JSON, outputs, and recovery stay inside it.</p>
     <div class="workspace-location-list" aria-label="Project locations">
       <section class="workspace-location-row" data-workspace-location="workspaceRoot" aria-labelledby="workspace-location-root-title">
         <div class="workspace-location-copy">
@@ -366,7 +366,7 @@ function workspaceSection() {
       <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
       <p id="workspace-experiment-identity-help" class="field-help is-wide">Identity is read from the loaded project JSON or compatibility experiment file.</p>
     </div>
-    <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
+    <p id="workspace-status" class="status-text" role="status" aria-live="polite"></p>`;
 }
 
 function experimentSection() {

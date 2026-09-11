@@ -1,7 +1,15 @@
 import { bootResearchUi } from "../../site/src/research/app.js?visual-qualification=2";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 
-const FIXTURE_STATES = Object.freeze(["setup", "stimulus", "questionnaire", "interval", "complete"]);
+const FIXTURE_STATES = Object.freeze([
+  "setup",
+  "workspace-empty",
+  "workspace-populated",
+  "stimulus",
+  "questionnaire",
+  "interval",
+  "complete",
+]);
 const requestedState = new URLSearchParams(window.location.search).get("state") ?? "stimulus";
 
 if (!FIXTURE_STATES.includes(requestedState)) {
@@ -60,7 +68,22 @@ async function showQuestionnaire() {
   });
 }
 
-if (requestedState === "setup") {
+if (requestedState === "workspace-empty" || requestedState === "workspace-populated") {
+  if (root.querySelector("#setup-panel-workspace")?.hidden) {
+    root.researchUi.openSetupSection("workspace");
+  }
+  if (requestedState === "workspace-populated") {
+    root.querySelector("#workspace-root").textContent = "affect-study-2026";
+    root.querySelector("#experiment-id").value = "affect-validation";
+    root.querySelector("#experiment-title").value = "Affect validation study";
+    const packageStatus = root.querySelector("#package-file-status");
+    packageStatus.textContent = "experiment.package.json loaded";
+    packageStatus.dataset.state = "ready";
+    const workspaceStatus = root.querySelector("#workspace-status");
+    workspaceStatus.textContent = "Work directory ready. Project locations are available.";
+    workspaceStatus.dataset.state = "ready";
+  }
+} else if (requestedState === "setup") {
   root.researchUi.openSetupSection("review");
 } else if (requestedState === "questionnaire") {
   await showQuestionnaire();

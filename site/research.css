@@ -638,6 +638,10 @@ legend {
   border-top: 1px solid var(--border);
 }
 
+#workspace-status:empty {
+  display: none;
+}
+
 .workspace-location-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
