@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Affect Research exact-width visual fixture</title>
+    <style>
+      html, body { margin: 0; background: #101310; }
+      iframe { display: block; width: 432px; height: 1000px; border: 0; }
+    </style>
+  </head>
+  <body>
+    <iframe title="Affect Research 432 pixel fixture"></iframe>
+    <script>
+      const state = new URLSearchParams(location.search).get("state") ?? "workspace-populated";
+      document.querySelector("iframe").src = `./research-ui-visual.html?state=${encodeURIComponent(state)}`;
+    </script>
+  </body>
+</html>

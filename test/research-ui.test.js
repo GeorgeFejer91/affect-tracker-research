@@ -748,6 +748,7 @@ test("Setup remains scrollable on desktop and the mobile header owns intrinsic h
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
+  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
 });
 
 test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {

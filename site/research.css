@@ -3089,14 +3089,6 @@ dialog::backdrop {
     overscroll-behavior: auto;
   }
 
-  .workspace-location-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .workspace-location-actions {
-    justify-content: flex-start;
-  }
-
   .directory-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3125,6 +3117,14 @@ dialog::backdrop {
 }
 
 @media (max-width: 479px) {
+  .workspace-location-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-location-actions {
+    justify-content: flex-start;
+  }
+
   .setup-accordion-trigger {
     grid-template-areas:
       "number title review chevron"
