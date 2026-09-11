@@ -37,6 +37,23 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-integration-preview-converged
+
+- Owner: **Add segment confirmation flow**, integration; **resolved** for source
+  convergence. Combined candidate: `2be0242584301cb3e9946684293cb271b2eb2881`.
+- Merged Preview `1118ffa`, `c2b07ee` and receipt `b07c174`; retained the newer
+  background-only testing policy from **Update agent testing policy** (`c33b4e5`).
+  The halo and tile entries below are historical pass receipts; their source
+  integration is complete, but their interactive acceptance remains open.
+- Combined checks: 423/423 JavaScript tests, Pages 169-file closure, desktop
+  8-file closure. Updated the obsolete foreground-testing assertion to enforce
+  the user-requested background policy. Native code and contracts unchanged;
+  no Rust matrix or native executable rebuild repeated in this integration pass.
+- No GUI launch, window control, or input performed by integration. Existing
+  executable windows are not claimed to contain the new integrated source.
+  No push/deployment; interactive, physical and research gates remain open.
+- S2 table/catalogue work remains on its separate branch pending handoff.
+
 ### 20260911-preview-stepwise-tiles
 
 - Owner: **Preview**, segment `preview`, UI Finalization; **open**.

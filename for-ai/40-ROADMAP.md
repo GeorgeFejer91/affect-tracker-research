@@ -120,7 +120,9 @@ count drives only the transient simulator; saved input step size remains
 reachable under Advanced with unchanged package/Run meaning. The tile pass
 passes 423/423 JavaScript checks locally, including bounds, exact neutral,
 one-cell stepping, mode transitions and invalid-draft Start isolation. Native
-visual observation and integration remain pending; these checks do not qualify
+visual observation remains pending; source integration completed locally at
+`2be0242` with 423/423 combined JavaScript checks and both frontend closures.
+These checks do not qualify
 Run, sampling, playback, accessibility, deployment or experiment use.
 
 The responsive Face in this slice is procedural presentation only. Camera,
