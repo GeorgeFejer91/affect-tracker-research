@@ -244,6 +244,11 @@ Subsequent owner handoffs, still requiring combined verification:
 
 - P1 `9d4b663`: narrowed row stacking to 479px, actual workspace-ready/error
   event projections, nine captures at 1440/720/exact432px and hash manifest.
+  Separate D01 `3df60fa` relocates actual import/drop/rescan/catalogue controls
+  into Workspace and removes the detour. Root captured and inspected all three
+  pages at 1280×900/800×700 using the reusable harness; source stable, no runtime
+  or overflow errors. Receipt: `D:/GitHub/.affect-preview-checks/p1-relocation-root-3df60fa`.
+  Compose both handoffs; neither alone contains both changes.
 - P2 `9ff3d5f`: empty-coverage duplication removed, table moved approximately
   282px earlier, invalid cell and error visible together. Independent review
   matched all 36 source hashes in the final receipt. Expanded settings,
@@ -251,15 +256,45 @@ Subsequent owner handoffs, still requiring combined verification:
 - P4 `466412a`: root inspected the revised desktop top, narrow fields/footer
   and invalid state. Paired fields, adjacent missing-input notice, full legend,
   shorter draft copy and visible error border address V09–V12 locally.
-- P5 `fc9694b`: narrow collisions and redundant overlay caption repaired;
-  final source wording was newer than initial captures. Duplicate anchor color
-  editors and the small settings scroller remain explicit owner follow-ups.
+- P3 `ae5cecd`, merged with its documentation base at `bc8921d`, removes the
+  inert pool/stimulus-dialog/native opener chains and implements the named-ISI
+  table. Root inspected updated empty/populated/error images. An overwritten
+  error capture now correctly places the saved-design warning above the table;
+  older images are superseded. Actual invalid-cell focus/reveal, reliable
+  identity colors beyond ten palette slots and immutable source-hashed captures
+  remain a bounded owner follow-up. A `dataset.state` assertion alone is not
+  error-visibility evidence.
+- P5 source `8d3d256`, documentation handoff `597a612`: independent final
+  reinspection resolves both remaining material issues. Map-to-dialog is the
+  sole visible anchor editor, and the settings-space threshold is 18rem with
+  whole-pane fallback. Final Controls, Advanced, error and color dialog are
+  readable at desktop/320px. All 24 HTML/PNG receipt pairs match their hashes
+  and source tree. Final evidence: the owner's `single-flow-states` directory;
+  older `polish-states` captures are superseded. No new material issue found
+  in that scoped recheck; combined integration is still required.
 - P6 `5d60ef6`: owner reports Profile tools disclosure, external readable
   diagram legend and stabilized eight actual app captures. Earlier 760/420px
   blank captures were rejected; newer settled-pane captures supersede them.
+  Root inspected the final desktop/narrow scene and narrow error screenshots:
+  legend and readouts are readable, profile tools are disclosed and the footer
+  is visible. Evidence: `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911`.
+- P7 `06d14fe` compactness source: root inspected empty/populated/error Review
+  and lower narrow controls. Grouped prerequisites and simple status rows are
+  clearer; detailed sections are collapsed. The lower language row still
+  squeezes its status into a narrow column beside a wide button; owner is
+  wrapping that row and recapturing it. New sequential acceptance/name-save
+  semantics remain a distinct pending pass.
 - Integration candidate `c7ba103` removes old Experiment/Input/Visual/Advanced
   with retained destinations; canonical was still `ba2110f` when reported.
   Do not present the isolated candidate as the current installed application.
+
+**Intentional integration pause:** the integration owner explicitly asked not
+to be repeatedly woken while awaiting the researcher's answer to its new
+confirmation-semantics pass check. Ready commits remain queued. Do not appoint
+another merger or treat a coordination message as that answer. The recurring
+monitor now respects this pause. Independently authorized owner fixes and
+visual review may finish in isolation. V28/final combined acceptance remain
+open until integration resumes and the exact combined source is rendered.
 
 For each item, replace pending text with its exact integrated source commit,
 the inspected screenshot paths/state/viewport, and relevant focused regression
