@@ -2284,11 +2284,33 @@ tbody tr:last-child td {
   font-size: 0.74rem;
 }
 
-[data-preview-control-tile-line],
 [data-preview-control-outline] {
   vector-effect: non-scaling-stroke;
   stroke: rgb(244 242 234 / 72%);
   stroke-width: 1;
+}
+
+.preview-tile-lines {
+  fill: none;
+  stroke: rgb(244 242 234 / 72%);
+}
+
+.preview-active-tile rect {
+  fill: none;
+}
+
+.preview-tile-contrast {
+  stroke: #111310;
+  stroke-width: calc(var(--tile-outline-width, 1) * 2);
+}
+
+.preview-tile-highlight {
+  stroke: #ffffff;
+  stroke-width: var(--tile-outline-width, 1);
+}
+
+#preview-tile-count {
+  appearance: auto;
 }
 
 [data-preview-control-cursor] {

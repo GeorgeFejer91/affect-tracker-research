@@ -6,6 +6,7 @@ import {
   createProjectionOffsets,
 } from "../math.js";
 import { createResponsiveFaceGeometry } from "./responsive-face.js";
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, previewTileGeometry, previewTileLines } from "./preview-tiles.js";
 
 const profiles = createProfiles();
 const offsets = createProjectionOffsets("affect-research-v1-preview");
@@ -60,6 +61,7 @@ function normalizedState(source = {}) {
     lockPosition: source.lockPosition === true,
     displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
     responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
+    tileCount: parsePreviewTileCount(source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
     colors: {
       up: normalizeHex(colors.up, DEFAULT_COLORS.up),
       down: normalizeHex(colors.down, DEFAULT_COLORS.down),
@@ -143,9 +145,12 @@ export function createResearchPreview(root, options = {}) {
   const flubberBase = stage.querySelector("[data-preview-flubber-base]");
   const flubberOutline = stage.querySelector("[data-preview-flubber-outline]");
   const flubberHalo = stage.querySelector("[data-preview-flubber-halo]");
+  const haloBlur = stage.querySelector("[data-preview-halo-blur]");
   const controlCanvas = stage.querySelector("[data-preview-control-canvas]");
   const controlGrid = stage.querySelector("[data-preview-control-grid]");
-  const controlTileLines = [...stage.querySelectorAll("[data-preview-control-tile-line]")];
+  const tileLines = [...stage.querySelectorAll("[data-preview-tile-lines]")];
+  const activeTiles = [...stage.querySelectorAll("[data-preview-active-tile]")];
+  const tileStatus = stage.querySelector("[data-preview-tile-status]");
   const controlOutline = stage.querySelector("[data-preview-control-outline]");
   const controlCursor = stage.querySelector("[data-preview-control-cursor]");
   const faceSvg = stage.querySelector("[data-preview-face]");
@@ -178,6 +183,7 @@ export function createResearchPreview(root, options = {}) {
   let lastFrame = performance.now();
   let phase = 0;
   let paletteFingerprint = "";
+  let renderedTileCount = null;
   let draggingPointer = null;
 
   function setPositionFromPointer(event) {
@@ -204,6 +210,7 @@ export function createResearchPreview(root, options = {}) {
     const gridVisible = outputMode === "grid" || (outputMode === "legacy" && state.gridVisible);
     const flubberVisible = outputMode === "flubber" || (outputMode === "legacy" && state.flubberVisible);
     const faceVisible = outputMode === "face";
+    const tiled = studio && state.responseMode === "stepwise";
     overlay.hidden = state.hideFeedback || (!gridVisible && !flubberVisible && !faceVisible);
     overlay.dataset.locked = String(state.lockPosition);
     overlay.style.setProperty("--overlay-left", `${state.position.x * 100}%`);
@@ -220,8 +227,10 @@ export function createResearchPreview(root, options = {}) {
     setElementHidden(flubberSvg, !flubberVisible);
     setElementHidden(faceSvg, !faceVisible);
     for (const line of gridLines) {
+      setElementHidden(line, tiled);
       line.style.strokeWidth = String(state.grid.lineThickness);
     }
+    setElementHidden(gridCursor, tiled);
     if (gridOutline instanceof SVGElement) {
       setElementHidden(gridOutline, !state.grid.showOutline);
       gridOutline.style.strokeWidth = String(state.grid.outlineThickness);
@@ -232,17 +241,52 @@ export function createResearchPreview(root, options = {}) {
     setElementHidden(flubberOutline, !state.flubber.showOutline);
     flubberOutline.style.strokeWidth = String(state.flubber.outlineThickness);
     setElementHidden(flubberHalo, !state.flubber.showHalo);
-    flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3));
-    flubberHalo.setAttribute("transform", `scale(${state.flubber.haloSizePercent / 100})`);
+    const haloWidth = state.flubber.haloSizePercent / 100;
+    flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3) * (studio ? haloWidth : 1));
+    // The studio halo uses the exact animated outline; only its stroke spreads.
+    // Fill and white outline paint above the fade, keeping the inner edge crisp.
+    flubberHalo.setAttribute("transform", `scale(${studio ? 1 : haloWidth})`);
+    if (studio && haloBlur instanceof SVGElement) {
+      haloBlur.setAttribute("stdDeviation", String(0.03 * haloWidth));
+    }
 
     if (controlGrid instanceof SVGElement && controlCursor instanceof SVGElement) {
       controlGrid.dataset.responseMode = state.responseMode;
-      for (const line of controlTileLines) setElementHidden(line, state.responseMode !== "stepwise");
+      setElementHidden(controlCursor, tiled);
       if (controlOutline instanceof SVGElement) {
         controlOutline.style.strokeWidth = String(state.grid.outlineThickness);
       }
       controlCursor.setAttribute("cx", String(((state.x + 1) / 2) * 100));
       controlCursor.setAttribute("cy", String((1 - (state.y + 1) / 2) * 100));
+    }
+
+    if (studio) {
+      if (tiled && renderedTileCount !== state.tileCount) {
+        const path = previewTileLines(state.tileCount);
+        for (const line of tileLines) {
+          line.setAttribute("d", path);
+          line.style.strokeWidth = String(Math.min(0.4, 8 / state.tileCount));
+        }
+        renderedTileCount = state.tileCount;
+      }
+      for (const line of tileLines) setElementHidden(line, !tiled);
+      const tile = previewTileGeometry(state.x, state.y, state.tileCount);
+      for (const highlight of activeTiles) {
+        setElementHidden(highlight, !tiled);
+        const stroke = Math.min(1.1, tile.width * 0.12);
+        highlight.style.setProperty("--tile-outline-width", String(stroke));
+        for (const rectangle of highlight.querySelectorAll("rect")) {
+          rectangle.setAttribute("x", String(tile.x + stroke));
+          rectangle.setAttribute("y", String(tile.y + stroke));
+          rectangle.setAttribute("width", String(tile.width - stroke * 2));
+          rectangle.setAttribute("height", String(tile.height - stroke * 2));
+        }
+      }
+      if (tileStatus instanceof HTMLElement) {
+        tileStatus.hidden = !tiled;
+        const label = `Current tile: column ${tile.column + 1}, row ${tile.row + 1} of ${state.tileCount}.`;
+        if (tileStatus.textContent !== label) tileStatus.textContent = label;
+      }
     }
 
     for (const anchor of stage.querySelectorAll("[data-color-anchor]")) {

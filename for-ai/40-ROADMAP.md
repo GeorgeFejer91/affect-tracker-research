@@ -114,6 +114,15 @@ package reproduction gate retain their exact behavior. A future runnable
 version requires an explicit package/settings/input/visual schema generation
 and the complete changed-runtime qualification matrix.
 
+The isolated Preview follow-up adds a border-aligned outward-fading halo and
+an odd tiles-per-axis spinner (3–2001) with outlined active cells. The tile
+count drives only the transient simulator; saved input step size remains
+reachable under Advanced with unchanged package/Run meaning. The tile pass
+passes 423/423 JavaScript checks locally, including bounds, exact neutral,
+one-cell stepping, mode transitions and invalid-draft Start isolation. Native
+visual observation and integration remain pending; these checks do not qualify
+Run, sampling, playback, accessibility, deployment or experiment use.
+
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,
 affect inference, uploads, networking, and personal data remain absent. The

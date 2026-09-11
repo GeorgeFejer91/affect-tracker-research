@@ -1,3 +1,5 @@
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, snapPreviewCoordinate } from "./preview-tiles.js";
+
 const DIRECTIONS = Object.freeze(["left", "right", "up", "down"]);
 const DIRECTION_SET = new Set(DIRECTIONS);
 const MODES = new Set(["continuous", "stepwise"]);
@@ -6,7 +8,7 @@ const HOLD_RULES = new Set(["separatePresses", "repeatWhileHeld"]);
 const DEFAULT_CONFIGURATION = Object.freeze({
   mode: "stepwise",
   fullSpanDurationMs: 2_000,
-  stepSize: 0.1,
+  tileCount: DEFAULT_PREVIEW_TILE_COUNT,
   holdRule: "separatePresses",
   repeatDelayMs: 500,
 });
@@ -85,7 +87,8 @@ export function createPreviewResponseSimulator({
       y: point.y,
       mode: configuration.mode,
       fullSpanDurationMs: configuration.fullSpanDurationMs,
-      stepSize: configuration.stepSize,
+      tileCount: configuration.tileCount,
+      stepSize: 2 / (configuration.tileCount - 1),
       holdRule: configuration.holdRule,
       repeatDelayMs: configuration.repeatDelayMs,
       heldDirections: Object.freeze(DIRECTIONS.filter((direction) => heldDirections.has(direction))),
@@ -96,12 +99,12 @@ export function createPreviewResponseSimulator({
     if (point.x !== previous.x || point.y !== previous.y) onChange(snapshot());
   }
 
-  function applyDirection(direction, amount = configuration.stepSize) {
+  function applyDirection(direction, amount = 2 / (configuration.tileCount - 1)) {
     const previous = point;
     const delta = directionDelta(direction, amount);
     point = {
-      x: clamp(point.x + delta.x, -1, 1),
-      y: clamp(point.y + delta.y, -1, 1),
+      x: snapPreviewCoordinate(point.x + delta.x, configuration.tileCount),
+      y: snapPreviewCoordinate(point.y + delta.y, configuration.tileCount),
     };
     emitIfChanged(previous);
   }
@@ -200,14 +203,23 @@ export function createPreviewResponseSimulator({
         250,
         15_000,
       ),
-      stepSize: clamp(finite(source.stepSize, configuration.stepSize), 0.001, 1),
+      tileCount: parsePreviewTileCount(source.tileCount) ?? configuration.tileCount,
       holdRule: HOLD_RULES.has(source.holdRule) ? source.holdRule : configuration.holdRule,
       repeatDelayMs: clamp(finite(source.repeatDelayMs, configuration.repeatDelayMs), 500, 5_000),
     };
     const releasesHeldInput = nextConfiguration.mode !== configuration.mode
-      || nextConfiguration.holdRule !== configuration.holdRule;
+      || nextConfiguration.holdRule !== configuration.holdRule
+      || nextConfiguration.tileCount !== configuration.tileCount;
     configuration = nextConfiguration;
     if (releasesHeldInput) clearHolds();
+    if (configuration.mode === "stepwise") {
+      const previous = point;
+      point = {
+        x: snapPreviewCoordinate(point.x, configuration.tileCount),
+        y: snapPreviewCoordinate(point.y, configuration.tileCount),
+      };
+      emitIfChanged(previous);
+    }
     return snapshot();
   }
 
@@ -261,8 +273,8 @@ export function createPreviewResponseSimulator({
       : {};
     const previous = point;
     point = {
-      x: normalizedCoordinate(source.x),
-      y: normalizedCoordinate(source.y),
+      x: configuration.mode === "stepwise" ? snapPreviewCoordinate(normalizedCoordinate(source.x), configuration.tileCount) : normalizedCoordinate(source.x),
+      y: configuration.mode === "stepwise" ? snapPreviewCoordinate(normalizedCoordinate(source.y), configuration.tileCount) : normalizedCoordinate(source.y),
     };
     emitIfChanged(previous);
     return snapshot();
