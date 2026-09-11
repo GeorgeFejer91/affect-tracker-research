@@ -501,7 +501,8 @@ test("preview CSS has responsive and forced-color coverage without gradients or 
   assert.match(compactDesktop, /\.preview-header\s*\{/u);
   assert.match(compactDesktop, /\.preview-feedback-modes\s*\{/u);
   assert.match(compactDesktop, /\.preview-affect-map-layout\s*\{/u);
-  assert.match(compactDesktop, /\.preview-advanced-settings \.mapping-grid/u);
+  const compactPane = between(cssSource, "@container preview-pane (max-width: 36rem)", "@container preview-pane (max-width: 24rem)");
+  assert.match(compactPane, /\.preview-advanced-settings \.mapping-grid/u);
 
   const compactPhone = between(cssSource, "@media (max-width: 479px)", "@media (prefers-reduced-motion: reduce)");
   assert.match(compactPhone, /\.preview-affect-map-layout\s*\{/u);

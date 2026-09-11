@@ -2136,46 +2136,6 @@ tbody tr:last-child td {
   overflow: visible;
 }
 
-@container preview-pane (max-width: 36rem) {
-  .feedback-input-settings .field-grid,
-  .feedback-input-settings .binding-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .preview-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-  .preview-feedback-modes { width: 100%; }
-  .preview-affect-map .preview-affect-map-layout {
-    grid-template-columns: minmax(3.5rem, 1fr) minmax(6.5rem, 8rem) minmax(3.5rem, 1fr);
-  }
-  .preview-affect-map .preview-color-anchor.anchor-left,
-  .preview-affect-map .preview-color-anchor.anchor-right {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    padding-inline: 0.25rem;
-    text-align: center;
-  }
-  .research-preview-studio .preview-subsection-heading,
-  .research-preview-studio .preview-simulator-help { flex-wrap: wrap; gap: 0.4rem; }
-  .preview-quick-appearance .field-grid,
-  .preview-advanced-settings .field-grid,
-  .preview-advanced-settings .mapping-grid,
-  .preview-footer { grid-template-columns: minmax(0, 1fr); }
-  .preview-advanced-settings .color-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .preview-advanced-settings .color-row input[id$="-hex"] { grid-column: 1; }
-  .preview-advanced-settings .color-row button { grid-column: 2; }
-}
-
-@container preview-pane (max-width: 24rem) {
-  .feedback-input-settings .input-test {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .feedback-input-settings .input-test-grid { max-width: 8rem; }
-  .preview-advanced-settings .color-row button { grid-column: 1 / -1; }
-}
-
 .preview-primary-stage:focus-visible,
 .preview-controls-scroll:focus-visible {
   outline: 2px solid var(--accent-strong);
@@ -2542,6 +2502,46 @@ tbody tr:last-child td {
   justify-content: end;
   gap: 0.25rem 0.45rem;
   padding-top: 0.75rem;
+}
+
+@container preview-pane (max-width: 36rem) {
+  .feedback-input-settings .field-grid,
+  .feedback-input-settings .binding-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .preview-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .preview-feedback-modes { width: 100%; }
+  .preview-affect-map .preview-affect-map-layout {
+    grid-template-columns: minmax(3.5rem, 1fr) minmax(6.5rem, 8rem) minmax(3.5rem, 1fr);
+  }
+  .preview-affect-map .preview-color-anchor.anchor-left,
+  .preview-affect-map .preview-color-anchor.anchor-right {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding-inline: 0.25rem;
+    text-align: center;
+  }
+  .research-preview-studio .preview-subsection-heading,
+  .research-preview-studio .preview-simulator-help { flex-wrap: wrap; gap: 0.4rem; }
+  .preview-quick-appearance .field-grid,
+  .preview-advanced-settings .field-grid,
+  .preview-advanced-settings .mapping-grid,
+  .preview-footer { grid-template-columns: minmax(0, 1fr); }
+  .preview-advanced-settings .color-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .preview-advanced-settings .color-row input[id$="-hex"] { grid-column: 1; }
+  .preview-advanced-settings .color-row button { grid-column: 2; }
+}
+
+@container preview-pane (max-width: 24rem) {
+  .feedback-input-settings .input-test {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feedback-input-settings .input-test-grid { max-width: 8rem; }
+  .preview-advanced-settings .color-row button { grid-column: 1 / -1; }
 }
 
 #preview-color-dialog .field-grid {

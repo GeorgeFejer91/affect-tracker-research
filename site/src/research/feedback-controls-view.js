@@ -128,8 +128,8 @@ export function feedbackAdvancedMarkup() {
         <div class="disclosure-content">
           <p class="field-help">Saved rendering details and animation mappings. Animation frequency is separate from the acquisition sampling rate.</p>
           <section aria-labelledby="preview-visibility-title">
-            <h3 id="preview-visibility-title">Existing package layout</h3>
-            <p class="field-help">Normalized layout for current packages. Screen and spatial layouts have their own editor.</p>
+            <h3 id="preview-visibility-title">Legacy package layout</h3>
+            <p class="field-help">Legacy normalized layout for existing packages.</p>
             <div class="field-grid">
               <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
               <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>

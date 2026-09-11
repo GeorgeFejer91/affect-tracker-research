@@ -148,6 +148,11 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
       { focus: document.activeElement?.id, invalid: [...root.querySelectorAll('[aria-invalid="true"]')].map((element) => element.id) });
     check("validation did not start a session", ui.mode === "setup");
     checkControlSeparation("invalid field and reset controls do not overlap");
+    const errorRow = invalidColor.closest(".color-row");
+    check("invalid color controls fit their row", [...errorRow.querySelectorAll("input,button")].every((element) => {
+      const bounds = element.getBoundingClientRect(), row = errorRow.getBoundingClientRect();
+      return bounds.left >= row.left - 1 && bounds.right <= row.right + 1;
+    }));
     if (screenshotState === "error") {
       ui.destroy();
       return { pass: true, surface, screenshotState, rows };
