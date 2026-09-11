@@ -142,15 +142,17 @@ test("window resizing clamps the rendered width while retaining the preferred pr
   f.size.width = 800;
   f.observer.callback();
   assert.equal(f.width(), 472);
+  f.down();
   f.size.width = 760;
   f.observer.callback();
   assert.equal(f.width(), 432);
   assert.equal(f.separator.tabIndex, -1);
+  assert.equal(f.separator.capture, null, "window resize ends the drag when both minima meet");
   f.size.width = 640; f.size.grip = 0;
   f.observer.callback();
   assert.equal(f.separator.tabIndex, -1);
   f.down();
-  assert.equal(f.separator.capture, undefined);
+  assert.equal(f.separator.capture, null);
   f.size.width = 1600; f.size.grip = 8;
   f.observer.callback();
   assert.equal(f.width(), (1600 - 8) * preferred);

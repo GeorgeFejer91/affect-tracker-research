@@ -29,10 +29,8 @@ export function createSetupLayout(layout) {
     const size = measure();
     separator.tabIndex = size.resizable ? 0 : -1;
     separator.setAttribute("aria-disabled", String(!size.resizable));
-    if (!size.visible) {
-      finishDrag();
-      return;
-    }
+    if (!size.resizable) finishDrag();
+    if (!size.visible) return;
     const width = Math.max(size.min, Math.min(size.max, preferredFraction * size.available));
     layout.style.setProperty("--setup-sections-width", `${width}px`);
     separator.setAttribute("aria-valuemin", String(Math.round(100 * size.min / size.available)));
