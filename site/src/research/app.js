@@ -24,6 +24,7 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
+import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
@@ -173,6 +174,7 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
   let openSection = "workspace";
   let readySetupSectionCount = 0;
@@ -339,6 +341,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function isValidationControl(element) {
+    if (element?.closest?.("[data-screen-layout-draft]")) return false;
     return element instanceof HTMLInputElement
       || element instanceof HTMLSelectElement
       || element instanceof HTMLTextAreaElement;
@@ -508,7 +511,7 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection(null);
     renderSetupReviewState();
     announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
       : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
   }
 
@@ -4258,7 +4261,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]:not(#preview-tile-count)');
+      const invalid = [...root.querySelectorAll('[aria-invalid="true"]:not(#preview-tile-count)')]
+        .find(control => !control.closest("[data-screen-layout-draft]"));
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
       const focusTarget = isValidationControl(invalid)
@@ -5304,6 +5308,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      layoutDraftEditor.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

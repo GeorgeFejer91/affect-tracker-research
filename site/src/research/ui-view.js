@@ -2,6 +2,7 @@ import { createDefaultResearchSettings } from "./contracts.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
+import { screenLayoutDraftMarkup } from "./screen-layout-view.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
@@ -57,6 +58,7 @@ const SECTION_SUMMARIES = Object.freeze({
   workspace: "Work folder, videos, project JSON",
   experiment: "Identity and acquisition · 130 Hz",
   stimuli: "Externally ordered video protocol",
+  layout: "Proposed layout · not exportable",
   questionnaires: "Languages, demographics, questionnaires",
   input: "Arrow keys · step 0.1",
   visual: "Grid and Flubber",
@@ -643,6 +645,7 @@ function reviewSection() {
 
 const SECTION_CONTENT = Object.freeze({
   workspace: workspaceSection,
+  layout: screenLayoutDraftMarkup,
   experiment: experimentSection,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
@@ -714,7 +717,7 @@ export function renderResearchUiMarkup(surface = "browser") {
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
             <div class="setup-pane">
-              <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 reviewed · 0 ready</output></div>
+              <div class="setup-intro"><p>Review each section before preparing a session.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
               ${SETUP_SECTIONS.map(accordionMarkup).join("")}
             </div>
             <aside class="preview-pane" aria-labelledby="preview-title">

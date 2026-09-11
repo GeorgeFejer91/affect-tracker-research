@@ -37,6 +37,43 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p4-screen-layout-draft
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization. The researcher's
+  cross-task coordination explicitly allocated an independent non-exportable
+  draft while Q08/pass confirmation for persisted geometry remains pending.
+- Branch: `codex/segment-p4-screen-layout`; worktree
+  `D:/GitHub/affect-tracker-research-screen-layout`; initial base `305d3ac`.
+  Merged the integration owner's documentation checkpoint `6be0a79` normally;
+  preserved the original P4 entry and inherited instruction snapshot externally.
+  Inherited instruction changes are not P4 implementation or product approval.
+- Scope: pure proposed geometry, numeric draft editor and whole-screen miniature.
+  Q08 conventions stay labelled proposals; no accepted contribution, package,
+  Start, Run, persistence, acquisition or qualification change. P4-02/P4-04/
+  P4-06 receive draft evidence only; no P4 capability is marked complete.
+- Inputs: researcher-entered draft screen/reference/size/offset/calibration;
+  P1 geometry and P5 envelope are explicit unavailable dependencies. Synthetic
+  media/envelopes live only in non-shipping verification fixtures. P1's proposed
+  verified display dimensions/revision and P5's proposed saved-v1 envelope are
+  acknowledged but are not yet integrated or treated as frozen contracts here.
+- Shared seams: `ui-contracts.js` section registry; `ui-view.js` section mount
+  and summary; `app.js` initialization/teardown and generic-form draft isolation;
+  scoped `research.css`. New draft model/view/editor modules own all geometry.
+  P5 and P7 were notified; no other segment calculation or native owner is edited.
+  Legacy Input/Visual/Advanced removal stays P5-owned; Experiment removal stays
+  with integration after retained-value handoff. Counts now derive from registry.
+- Evidence: baseline 54/54 focused checks; final 437/437 JavaScript tests,
+  91/91 isolated headless Edge assertions in four scenarios, inspected application
+  and narrow screenshots, desktop frontend build/eight-file closure. Mixed-ratio
+  containment, fixed centres, conversion, invalid/overlap/clipping cases, package
+  isolation, reflow and semantic checks pass. Reproduce with the committed
+  `scripts/qualification/screen-layout-draft.mjs`; local receipts live under
+  `D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+- Requested action: integration owner collects the clean P4 commit and reconciles
+  shared mounts with P5/P7. Physical calibration, interactive accessibility,
+  native/Runner, real-media composition and publication gates remain unverified.
+  Canonical checkout was not modified; writers stop after the ready handoff.
+
 ### 20260911-roadmap-agent-coordination-audit
 
 - Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination
