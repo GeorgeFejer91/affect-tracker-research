@@ -1,11 +1,11 @@
 import {
-  affectPaletteColor,
   buildFlubberPath,
   clamp,
   createProfiles,
   createProjectionOffsets,
 } from "../math.js";
 import { createResponsiveFaceGeometry } from "./responsive-face.js";
+import { previewPaletteColor, MAX_RENDERED_HALO_PERCENT } from "./preview-appearance.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, previewTileGeometry, previewTileLines } from "./preview-tiles.js";
 
 const profiles = createProfiles();
@@ -61,6 +61,7 @@ function normalizedState(source = {}) {
     lockPosition: source.lockPosition === true,
     displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
     responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
+    colorAnchorMode: source.colorAnchorMode === "corners" ? "corners" : "axes",
     tileCount: parsePreviewTileCount(source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
     tileRows: parsePreviewTileCount(source.tileRows ?? source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
     colors: {
@@ -77,7 +78,9 @@ function normalizedState(source = {}) {
       showOutline: flubber.showOutline !== false,
       outlineThickness: clamp(finite(flubber.outlineThickness, 2), 0, 20),
       showHalo: flubber.showHalo !== false,
-      haloSizePercent: clamp(finite(flubber.haloSizePercent, 100), 100, 240),
+      haloSizePercent: clamp(finite(flubber.haloSizePercent, 100), 0, MAX_RENDERED_HALO_PERCENT),
+      haloGradient: flubber.haloGradient !== false,
+      haloSteepness: clamp(finite(flubber.haloSteepness, 1), .1, 10),
     },
     grid: {
       lineThickness: clamp(finite(grid.lineThickness, 1), 0.25, 20),
@@ -99,7 +102,7 @@ function formatCoordinate(value) {
   return `${number >= 0 ? "+" : ""}${number.toFixed(3)}`;
 }
 
-export function drawAffectField(canvas, colors) {
+export function drawAffectField(canvas, colors, mode = "axes") {
   if (!(canvas instanceof HTMLCanvasElement)) return;
   const size = 72;
   canvas.width = size;
@@ -111,7 +114,7 @@ export function drawAffectField(canvas, colors) {
     const y = 1 - (row / (size - 1)) * 2;
     for (let column = 0; column < size; column += 1) {
       const x = (column / (size - 1)) * 2 - 1;
-      const cssColor = affectPaletteColor(x, y, colors);
+      const cssColor = previewPaletteColor(x, y, colors, mode);
       const channels = cssColor.match(/\d+/g)?.map(Number) ?? [183, 183, 183];
       const offset = (row * size + column) * 4;
       image.data[offset] = channels[0];
@@ -147,6 +150,7 @@ export function createResearchPreview(root, options = {}) {
   const flubberOutline = stage.querySelector("[data-preview-flubber-outline]");
   const flubberHalo = stage.querySelector("[data-preview-flubber-halo]");
   const haloBlur = stage.querySelector("[data-preview-halo-blur]");
+  const haloFalloff = stage.querySelector("[data-preview-halo-falloff]");
   const controlCanvas = stage.querySelector("[data-preview-control-canvas]");
   const controlGrid = stage.querySelector("[data-preview-control-grid]");
   const tileLines = [...stage.querySelectorAll("[data-preview-tile-lines]")];
@@ -200,11 +204,11 @@ export function createResearchPreview(root, options = {}) {
   }
 
   function renderStatic() {
-    const fingerprint = `${state.colors.up}:${state.colors.down}:${state.colors.left}:${state.colors.right}`;
+    const fingerprint = `${state.colorAnchorMode}:${state.colors.up}:${state.colors.down}:${state.colors.left}:${state.colors.right}`;
     if (fingerprint !== paletteFingerprint) {
       paletteFingerprint = fingerprint;
-      drawAffectField(gridCanvas, state.colors);
-      if (controlCanvas instanceof HTMLCanvasElement) drawAffectField(controlCanvas, state.colors);
+      drawAffectField(gridCanvas, state.colors, studio ? state.colorAnchorMode : "axes");
+      if (controlCanvas instanceof HTMLCanvasElement) drawAffectField(controlCanvas, state.colors, state.colorAnchorMode);
     }
 
     const outputMode = studio ? state.displayMode : "legacy";
@@ -241,7 +245,7 @@ export function createResearchPreview(root, options = {}) {
     gridCursor.setAttribute("r", String(state.grid.cursorSize));
     setElementHidden(flubberOutline, !state.flubber.showOutline);
     flubberOutline.style.strokeWidth = String(state.flubber.outlineThickness);
-    setElementHidden(flubberHalo, !state.flubber.showHalo);
+    setElementHidden(flubberHalo, !state.flubber.showHalo || (studio && state.flubber.haloSizePercent === 0));
     const haloWidth = state.flubber.haloSizePercent / 100;
     flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3) * (studio ? haloWidth : 1));
     // The studio halo uses the exact animated outline; only its stroke spreads.
@@ -249,6 +253,8 @@ export function createResearchPreview(root, options = {}) {
     flubberHalo.setAttribute("transform", `scale(${studio ? 1 : haloWidth})`);
     if (studio && haloBlur instanceof SVGElement) {
       haloBlur.setAttribute("stdDeviation", String(0.03 * haloWidth));
+      flubberHalo.setAttribute("filter", state.flubber.haloGradient ? "url(#preview-studio-halo-fade)" : "none");
+      haloFalloff?.setAttribute("exponent", String(state.flubber.haloSteepness));
     }
 
     if (controlGrid instanceof SVGElement && controlCursor instanceof SVGElement) {
@@ -353,8 +359,10 @@ export function createResearchPreview(root, options = {}) {
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
     const idle = Math.hypot(state.x, state.y) < 0.005;
-    overlay.style.setProperty("--flubber-color", idle ? state.colors.idle : rendered.color);
-    overlay.style.setProperty("--face-color", idle ? state.colors.idle : rendered.color);
+    const color = studio && state.colorAnchorMode === "corners"
+      ? previewPaletteColor(state.x, state.y, state.colors, "corners", state.saturation) : rendered.color;
+    overlay.style.setProperty("--flubber-color", idle ? state.colors.idle : color);
+    overlay.style.setProperty("--face-color", idle ? state.colors.idle : color);
     flubberBase.setAttribute("d", rendered.path);
     flubberOutline.setAttribute("d", rendered.path);
     flubberHalo.setAttribute("d", rendered.path);

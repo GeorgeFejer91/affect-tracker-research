@@ -134,6 +134,7 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
         ${includeFace ? `<defs>
           <filter id="preview-studio-halo-fade" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
             <feGaussianBlur data-preview-halo-blur stdDeviation="0.045"></feGaussianBlur>
+            <feComponentTransfer><feFuncA data-preview-halo-falloff type="gamma" amplitude="1" exponent="1" offset="0"></feFuncA></feComponentTransfer>
           </filter>
         </defs>` : ""}
         <path data-preview-flubber-halo class="preview-flubber-halo"${includeFace ? ' filter="url(#preview-studio-halo-fade)"' : ""}></path>
@@ -165,6 +166,11 @@ function previewMarkup(label, { studio = false } = {}) {
           <h3 id="preview-affect-map-title">2D affect map</h3>
           <p>Choose an anchor to edit its color.</p>
         </div>
+        <div class="preview-anchor-modes" role="group" aria-label="Color anchor placement">
+          <label class="radio-field"><input type="radio" name="previewColorAnchors" value="axes" checked><span>Axes</span></label>
+          <label class="radio-field"><input type="radio" name="previewColorAnchors" value="corners"><span>Corners</span></label>
+          <span class="field-help">Placement is preview-only.</span>
+        </div>
         <div class="preview-affect-map-layout">
           <button type="button" class="preview-color-anchor anchor-up" data-color-anchor="up" aria-haspopup="dialog" aria-controls="preview-color-dialog">
             <span class="preview-color-swatch" data-color-anchor-swatch="up" aria-hidden="true"></span><span data-color-anchor-label>High arousal</span>
@@ -191,6 +197,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-simulator-help">
           <p id="preview-response-simulator-help">Focus the map and use the arrow keys to try the selected response behavior.</p>
           <button id="preview-response-reset" type="button">Reset to neutral</button>
+          <button id="preview-recolor" type="button">Recolor</button>
         </div>
         <output data-preview-tile-status class="field-help" role="status" aria-live="polite" aria-atomic="true"></output>
         <output data-preview-input-availability class="field-help" role="status" aria-live="polite"></output>
@@ -235,7 +242,9 @@ function previewMarkup(label, { studio = false } = {}) {
           <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
           <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
           <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo width</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</span></label>
+          <label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</output></label>
+          <label class="check-field"><input id="preview-halo-gradient" type="checkbox" checked><span>Fade halo outward</span></label>
+          <label class="field"><span>Gradient steepness</span><input id="preview-halo-steepness" data-preview-appearance-input type="number" min="0.1" max="10" step="0.1" value="1" aria-describedby="preview-halo-steepness-help"><output id="preview-halo-steepness-help" class="field-help">1 = normal; higher values fade faster. Does not change halo width.</output></label>
         </div>
       </section>
 

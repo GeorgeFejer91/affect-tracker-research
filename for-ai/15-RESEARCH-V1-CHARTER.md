@@ -546,9 +546,24 @@ point. In the Flubber comparison, Flubber remains the foreground element above
 its 2D affect-control Grid. Four directional color swatches may open one
 color-wheel/hex popover. The Setup preview halo follows the exact animated
 Flubber outline and fades to transparent outward. Its transient width control
-changes stroke thickness/spread, not geometric scale or offset. A nested
+  changes stroke thickness/spread, not geometric scale or offset. A nested
 Advanced disclosure may expose the existing Flubber appearance and mapping
 controls without duplicating their owner.
+
+Per the researcher's 2026-09-11 follow-up, the design preview also provides
+Axes/Corners placement. Corners reuse the four color controls in clockwise
+order: up = upper left, right = upper right, down = lower right, left = lower
+left. Bilinear corner blending and separate display labels are transient;
+saved v1 axis identities and Run interpolation are unchanged. Reset to neutral
+explicitly applies #b7b7b7 to all four anchors and idle through their existing
+color owner, and centers the preview point. Recolor applies four randomly
+chosen RGB colors only on an explicit button press; the chosen literal colors
+use the existing settings path, never randomized package resolution or Run.
+Halo width accepts finite nonnegative numeric drafts without a slider ceiling;
+rendering caps at 10000% with explicit feedback, and zero hides it. A transient
+gradient switch and alpha-falloff steepness (0.1–10) leave its contour and width
+unchanged. Invalid appearance drafts retain the last accepted rendering and
+cannot block Start. These controls add no window or native authority.
 
 The responsive Face is newly and independently drawn as procedural SVG/canvas
 geometry. Valence and arousal only pose that drawing from the same x/y snapshot

@@ -38,9 +38,10 @@ window.checkPreview=async()=>{
  simulator.reset();layout.refresh();
  animationFrames[0]?.(performance.now());
  const controls=pane.querySelector('.preview-controls-scroll'),header=pane.querySelector('.preview-header');
- const before=[header,stage,map].map(e=>e.getBoundingClientRect().top),lowerBefore=controls.firstElementChild.getBoundingClientRect().top;
  const fallback=pane.classList.contains('preview-pane-scroll-all');
- const scroller=fallback?pane:controls;scroller.scrollTop=250;
+ const scroller=fallback?pane:controls;scroller.scrollTop=0;
+ const before=[header,stage,map].map(e=>e.getBoundingClientRect().top),lowerBefore=controls.firstElementChild.getBoundingClientRect().top;
+ scroller.scrollTop=250;
  const after=[header,stage,map].map(e=>e.getBoundingClientRect().top);
  const pinned=before.every((top,i)=>Math.abs(top-after[i])<1);
  const lowerMoved=controls.firstElementChild.getBoundingClientRect().top<lowerBefore;

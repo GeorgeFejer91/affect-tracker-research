@@ -147,7 +147,7 @@ test("the affect map has four exact directional anchors and one complete color d
   });
   assert.match(dialog, /Display alias for this setup session only/u);
   assert.match(appSource, /function schedulePreviewColorPaint\(\)[\s\S]*requestAnimationFrame/u);
-  assert.match(appSource, /setupPreview\.update\(\{ colors \}\)/u);
+  assert.match(appSource, /setupPreview\.update\(\{ colors, colorAnchorMode: previewColorMode\(\) \}\)/u);
   assert.match(appSource, /hex\.setAttribute\("aria-invalid", "true"\)/u);
   assert.match(appSource, /hex\.setAttribute\("aria-errormessage", "preview-color-error"\)/u);
   assert.match(appSource, /setErrorReference\(hex, "preview-color-error", valid \? false : true\)|setErrorReference\(hex, "preview-color-error", true\)/u);
@@ -216,7 +216,7 @@ test("Stepwise owns a draft tile spinner and the saved step size remains under A
   assert.match(stepwisePanel, /name="previewGridSizing" value="custom"/u);
   assert.equal(countId(stepwisePanel, "input-step-size"), 0);
   const validation = between(appSource, "function syncControlValidation(", "function syncOutputFormatValidation(");
-  assert.match(validation, /if \(control\?\.hasAttribute\("data-preview-grid-input"\)\) return true;/u);
+  assert.match(validation, /control\?\.hasAttribute\("data-preview-grid-input"\).*data-preview-appearance-input.*return true;/u);
   assert.match(appSource, /\[aria-invalid="true"\]:not\(\[data-preview-grid-input\]\)/u);
   assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<details id="preview-advanced-settings"')), "input-step-size"), {
     type: "number",
@@ -232,12 +232,14 @@ test("halo and transparency controls expose their bounded appearance contract", 
   assert.match(haloVisible, /\schecked(?:\s|>)/u);
   assert.match(studioMarkup, /The halo stays centered behind Flubber\./u);
   assertAttributes(inputTag(studioMarkup, "preview-halo-size"), {
-    type: "range",
-    min: "100",
-    max: "240",
-    step: "5",
+    type: "number",
+    min: "0",
+    step: "any",
     value: "150",
   });
+  assert.doesNotMatch(inputTag(studioMarkup, "preview-halo-size"), /\smax=/u);
+  assertAttributes(inputTag(studioMarkup, "preview-halo-gradient"), { type: "checkbox" });
+  assertAttributes(inputTag(studioMarkup, "preview-halo-steepness"), { type: "number", min: "0.1", max: "10", value: "1" });
   assertAttributes(inputTag(studioMarkup, "visual-transparency"), {
     type: "range",
     min: "0",
@@ -306,7 +308,7 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       for (const [name, Type] of Object.entries({
         overlay: Html, "grid-canvas": Canvas, grid: Svg, "grid-cursor": Svg,
         flubber: Svg, "flubber-base": Path, "flubber-outline": Path, "flubber-halo": Path,
-        "halo-blur": Svg,
+        "halo-blur": Svg, "halo-falloff": Svg,
       })) root.children.set(`[data-preview-${name}]`, new Type());
       const tilePath = new Path();
       const tile = new Svg();
@@ -344,6 +346,17 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       preview.update({ flubber: { showHalo: true } });
       assert.equal(halo.getAttribute("hidden"), null);
       if (studio) {
+        for (const haloGradient of [false, true]) {
+          for (const haloSteepness of [0.1, 1, 10]) {
+            preview.update({ flubber: { haloSizePercent: 350, haloGradient, haloSteepness, outlineThickness: 2 } });
+            assert.equal(halo.getAttribute("filter"), haloGradient ? "url(#preview-studio-halo-fade)" : "none");
+            assert.equal(root.querySelector("[data-preview-halo-falloff]").getAttribute("exponent"), String(haloSteepness));
+            assert.equal(Number(halo.style.strokeWidth), 21);
+            assert.equal(halo.getAttribute("transform"), "scale(1)");
+          }
+        }
+        preview.update({ flubber: { haloSizePercent: 0 } });
+        assert.equal(halo.getAttribute("hidden"), "");
         for (const [tileCount, tileRows] of [[3, 3], [5, 5], [21, 21], [2001, 2001], [3, 5], [5, 3], [3, 2001], [2001, 3]]) {
           for (const sizePercent of [5, 100]) {
             preview.update({ x: 0, y: 0, tileCount, tileRows, sizePercent, responseMode: "stepwise" });
@@ -418,11 +431,11 @@ test("the application projects design state only to Setup and bypasses planning 
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
   );
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{ haloSizePercent:\s*numberValue\("preview-halo-size", 150\) \} : \{\}\)/u,
+    /\.\.\.\(design \? \{ haloSizePercent: previewHaloDraft\.width,\s*haloGradient: checked\("preview-halo-gradient"\), haloSteepness: previewHaloDraft\.steepness \} : \{\}\)/u,
   );
   assert.match(previewStateSource, /const point = design \? previewDesignPoint : inputPoint/u);
   assert.doesNotMatch(
@@ -516,8 +529,9 @@ test("preview normalization accepts modes and bounds halo size and transparency"
     assert.equal(normalizePreviewState({ responseMode }).responseMode, responseMode);
   }
 
-  assert.equal(normalizePreviewState({ flubber: { haloSizePercent: -1 } }).flubber.haloSizePercent, 100);
-  assert.equal(normalizePreviewState({ flubber: { haloSizePercent: 999 } }).flubber.haloSizePercent, 240);
+  assert.equal(normalizePreviewState({ flubber: { haloSizePercent: -1 } }).flubber.haloSizePercent, 0);
+  assert.equal(normalizePreviewState({ flubber: { haloSizePercent: 999 } }).flubber.haloSizePercent, 999);
+  assert.equal(normalizePreviewState({ flubber: { haloSizePercent: 1e300 } }).flubber.haloSizePercent, 10000);
   assert.equal(normalizePreviewState({ flubber: { haloSizePercent: "175" } }).flubber.haloSizePercent, 175);
   assert.equal(normalizePreviewState({ transparencyPercent: -1 }).transparencyPercent, 0);
   assert.equal(normalizePreviewState({ transparencyPercent: 999 }).transparencyPercent, 100);

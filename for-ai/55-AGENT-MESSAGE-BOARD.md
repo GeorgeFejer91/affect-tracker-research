@@ -8,6 +8,31 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260911-preview-palette-halo
+
+- Owner: Live Preview. Stage: UI implementation, allocated by integration.
+- Branch `codex/segment-preview-palette-halo`, base `7c90894`; isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Deliverable: grey reset, explicit random Recolor, Axes/Corners preview,
+  numeric halo width, gradient switch and steepness. Shared seams: preview
+  state, app handlers, view and styles; retain divider owner's `20644e2`.
+- Evidence: unit tests, background rendering and bundle closure. No user
+  window reload/control. Native floating-window audit is read-only; native
+  implementation and saved Runner contracts require a named backend pass.
+- Status: ready for integration; no change to package resolution randomness
+  or Run. 440/440 JS tests, 21 actual-app isolated headless Edge checks,
+  four pinned-layout/input cases and desktop 8-file closure pass. No native
+  build/qualification, user-window interaction, reload, push or deployment.
+- Reset applies grey to four anchor and idle controls using their existing
+  owner. Recolor generates colors only on explicit click. Placement and halo
+  controls stay transient. Updated charter/roadmap document the exact UI scope.
+- Read-only floating audit: config and capability describe only `research`;
+  `lib.rs` registers app-level commands and main-window lifecycle. A second
+  webview requires a command caller/permission audit, fixed local label/URL,
+  bounded projection-only payload and close/focus/drag lifecycle. No assumption
+  that empty overlay permissions alone fence every app command. Native and
+  persistence/Runner work remain open pending a named backend intent check.
+
 - Designated local integration branch: `codex/research-unified`.
 - Integration owner: task **Add segment confirmation flow**, allocated by the
   user on 2026-09-11 to workflow documentation, local convergence, and launch.

@@ -31,6 +31,16 @@ before taking the next bounded pass; keep implementation status in
   the owning contracts, provide browser/Rust parity, and verify persistence,
   hashes, input/timing, rendering, recovery, and accessibility before claiming
   the saved experiment uses those choices.
+- [ ] **Finish the requested floating Live Preview in a named native pass.**
+  The 2026-09-11 request includes a checkbox beside the three-way selector for
+  a transparent, draggable, always-on-top Windows projection with a boundary
+  visible only during selection. UI palette/halo work does not implement it.
+  Approve the narrow charter/window authority change; audit all app command
+  callers, fixed-label/URL lifecycle and projection-only state before adding a
+  webview. Do not restore historical Playground PiP or promise an OS overlay
+  from static Chrome/Edge. Saved corner placement, gradient controls and
+  rectangular-grid/hold behavior belong to the separate runnable-controls
+  version decision above, not a hidden local-storage workaround.
 - [ ] **Review authoring-draft persistence and save/reopen semantics.** Confirm
   what happens to unsaved Section 2 edits when a researcher closes/reloads or
   loads another design. Keep invalid/unsaved variants visibly pending and block

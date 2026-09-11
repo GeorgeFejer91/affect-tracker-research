@@ -153,6 +153,28 @@ four offscreen layout/input fixtures (wide, 320px pane, short, 2× text scale).
 The fixtures step the animation clock explicitly and use isolated DOM input,
 not the user's desktop. Native/physical behavior and integration remain pending.
 
+The isolated palette/halo follow-up implements explicit grey reset (four
+anchors plus idle), Recolor through the existing color controls, transient
+Axes/Corners bilinear placement and independent display labels, numeric halo
+width (finite input, reported 10000% rendering cap), fade on/off and gamma
+steepness. No schema or Run renderer is changed. Evidence: 440/440 JavaScript
+tests; 21 actual-app isolated headless Edge UI/pixel/reflow checks; four pinned
+layout/input fixtures; desktop frontend 8-file closure. The layout fixture now
+zeros its own scroll position after focus before measuring scroll movement.
+The existing >500 kB bundle warning remains. Artifacts are local under
+`D:/GitHub/.affect-preview-checks/palette-halo-20260911`, in `preview-appearance`
+and `preview-appearance-layout`; they are not installed-app or native qualification.
+
+The floating-window audit found a sole configured `research` window, a
+sole-window capability, and app-level commands that need a caller-boundary
+audit before adding a second webview. No floating checkbox/window is shipped
+by this checkpoint. The proposed separate backend pass must own a fixed local
+overlay URL/label, transparent always-on-top lifecycle, bounded projection,
+drag/focus behavior, close/reopen and main-window shutdown, command isolation,
+and Windows evidence. Static Chrome/Edge cannot be claimed to provide the
+same OS overlay. Preview persistence/Runner adoption likewise remains a
+separate versioned-contract decision; the checklist item remains open.
+
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,
 affect inference, uploads, networking, and personal data remain absent. The
