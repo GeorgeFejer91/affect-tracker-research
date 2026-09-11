@@ -19,6 +19,9 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   No separate segment branch history exists for those changes at this audit.
 - New concurrent passes must register one segment, branch, worktree, exact base,
   allowed shared seams, and status here before implementation.
+- Latest integrated source: merge `fd12351`, combining shared checkpoint
+  `ec64318` with `origin/main` at `32c1ad8`. No push or deployment was performed.
+  Start new segment branches from the current tip of `codex/research-unified`.
 
 ## Message format
 
@@ -88,4 +91,31 @@ asynchronous presets against replacing drafts when languages are added.
 The shared-checkout and hook requests are resolved in the ensuing local
 checkpoint; full combined checks and exact application launch remain pending.
 The initial baseline's stale Section 2 UI assertions were corrected by its
-owner; its reported 407/407 pass will be rerun after integration.
+  owner; its reported 407/407 pass will be rerun after integration.
+
+### 20260911-integration-combined-checkpoint
+
+- Date/sender: 2026-09-11, **Add segment confirmation flow**.
+- Target: all future segment owners. Status: **ready** for local interface
+  iteration, not release or acquisition qualification.
+- Integrated source: `fd12351` includes all current local Setup work and the
+  current main stimulus catalogue. Three overlapping files were reconciled:
+  both interaction paths retained in `app.js`; newer workspace/preview and
+  questionnaire views retained with stimulus inspiration beside Section 3's
+  video controls; roadmap preserves both slices. Historical branches excluded.
+- Checks on that clean source: frozen pnpm install; 417/417 JavaScript tests
+  including independent-process package reproduction and four new integration
+  regressions; Pages closure 168 files; desktop closure 8 files; Rust locked
+  no-default check and 186/186 tests. No-default clippy, format and dependency
+  audit passed before the merge (native source/dependencies unchanged by merge).
+- Open gates: all-feature check fails because this shell has no `pkg-config`
+  or usable GStreamer development SDK; all-feature tests/clippy are consequently
+  unavailable. Full installed/browser accessibility, physical input/media/LSL,
+  timing, acquisition, CI and deployment qualification were not performed.
+  The desktop bundle has a non-failing >500 kB JavaScript chunk warning.
+- UI: S2's native inspection was interrupted by physical Escape. Do not report
+  it as verified or resume automated input on that basis. Existing development
+  window may contain user work; do not terminate it without establishing safety.
+  Integration is building a separate no-optional-feature executable for launch.
+- Tab-delimited questionnaire template has intentional trailing empty score
+  columns; the narrow `.gitattributes` whitespace rule preserves those bytes.
