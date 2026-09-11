@@ -110,7 +110,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
         <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only (keep answer labels)</option></select></label>
         <p class="sheet-paste-help">Paste Excel cells anywhere in the table. Answer columns are what participants see; Code columns are recorded values. Required accepts true or false. One answer per item.</p>
-        <p class="sheet-paste-help">Include the template headers in the first cell to replace the whole table and set its option count. Without headers, paste changes only that range. Shift-click or Shift+arrow selects a range; Ctrl+C copies it. Ctrl+A selects all cells.</p>
+        <p class="sheet-paste-help">Include the template headers in the first cell to replace the whole table and set its option count. Without headers, paste changes only that range. Shift-click or Shift+arrow selects a range; Ctrl+C copies it. Ctrl+A selects all cells. A replacement table retains item identity/subscale only for unambiguously matched items; new items receive new identities. The final recipe retains full metadata.</p>
         <div class="sheet-table-scroll" tabindex="0" role="region" aria-label="${escape(family.label)} ${escape(language.label)} questionnaire table">
           <table class="sheet-table"><thead><tr><th scope="col">#</th>${questionnaireGridColumns(sheet, entry.layout).map((label) => `<th scope="col">${escape(label)}</th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${sheet.rows.map((row, i) => rowMarkup(entry, row, i)).join("")}</tbody></table>
         </div>
@@ -131,6 +131,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   function render() {
     if (!container) return;
     const active = activeEntries();
+    // A rebuilt table has new cells; never keep an invisible, stale paste target.
+    active.forEach(({ entry }) => { entry.selection = null; });
     container.innerHTML = active.length ? active.map(entryMarkup).join("")
       : '<p class="empty-state">No questionnaires yet. Add a blank table or start with MAIA-2.</p>';
     container.querySelectorAll("details[data-sheet-key]").forEach((details) => {
@@ -170,9 +172,11 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       entry.error = "";
       render();
       const result = await sheetToAuthoring(entry.sheet);
+      if (entries.get(key) !== entry || context.locked) throw new Error("The questionnaire table changed while preparing its save.");
       const bytes = result.sourceBytes ?? entry.sourceBytes;
       await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
         definition: result.definition, sourceBytes: bytes,
+        expectedPresetToken: entry.presetToken,
         authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt });
       entry.sourceDefinitionHash = result.definition.definitionSha256;
       entry.sheet = sheetFromDefinition(result.definition, { familyId: entry.sheet.familyId, authoringResult: result });
@@ -236,6 +240,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     try {
       if (target.dataset.sheetCell) {
         const [row, column] = target.dataset.sheetCell.split(":").map(Number);
+        entry.selection = { anchor: [row, column], end: [row, column] };
+        paintSelection(target.closest("[data-sheet-key]"), entry);
         setQuestionnaireGridCell(entry.sheet, row, column, target.value, entry.layout);
         entry.invalid.delete(target.dataset.sheetCell);
         target.removeAttribute("aria-invalid");
@@ -326,12 +332,16 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     if (context.locked || entry.busy) return;
     const current = cell.dataset.sheetCell.split(":").map(Number);
     const last = questionnaireGridColumns(entry.sheet, entry.layout).length - 1;
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+    if (event.key === "Tab") {
+      entry.selection = null;
+      paintSelection(details, entry);
+      return; // Keep normal browser focus navigation and its new paste origin.
+    } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
       event.preventDefault(); event.stopPropagation();
       entry.selection = { anchor: [0, 0], end: [entry.sheet.rows.length - 1, last] };
     } else if (event.key === "Escape") entry.selection = null;
-    else if ((event.shiftKey || event.altKey) && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)
-      || event.key === "Enter" && !event.shiftKey) {
+    else if (((event.shiftKey || event.altKey) && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key))
+      || (event.key === "Enter" && !event.shiftKey)) {
       event.preventDefault(); event.stopPropagation();
       const from = event.shiftKey && entry.selection ? entry.selection.end : current;
       const next = [Math.max(0, Math.min(entry.sheet.rows.length - 1, from[0] + (event.key === "ArrowUp" ? -1 : ["ArrowDown", "Enter"].includes(event.key) ? 1 : 0))),
@@ -346,12 +356,15 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const cell = event.target.closest("[data-sheet-cell]");
     if (!cell) return;
     const entry = entries.get(cell.closest("[data-sheet-key]").dataset.sheetKey);
-    if (!entry.selection || cell.selectionStart !== cell.selectionEnd) return;
+    if (!entry.selection) return;
+    const range = selectionRange(entry);
+    const multipleCells = range.top !== range.bottom || range.left !== range.right;
+    if (!multipleCells && cell.selectionStart !== cell.selectionEnd) return;
     event.preventDefault(); event.stopPropagation();
     try {
       if (entry.invalid.size) throw new TypeError("Correct highlighted cells before copying.");
       event.clipboardData.setData("text/plain", serializeQuestionnaireGrid(entry.sheet, {
-        layout: entry.layout, header: false, range: selectionRange(entry),
+        layout: entry.layout, header: false, range,
       }));
     } catch (error) { entry.error = error.message; refreshEntryState(cell, entry); }
   });

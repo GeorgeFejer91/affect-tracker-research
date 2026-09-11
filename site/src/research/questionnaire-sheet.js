@@ -403,7 +403,24 @@ export function applyQuestionnaireGridPaste(sheet, text, { row = 0, column = 0, 
     setOptionCount(candidate, count);
     records = records.slice(1);
     if (!records.length) throw new TypeError("The pasted table has headers but no items.");
-    candidate.rows = candidate.rows.slice(0, records.length);
+    const previousRows = candidate.rows;
+    const visibleRows = questionnaireGridRows(candidate, layout);
+    const used = new Set();
+    const reservedIds = new Set(previousRows.map(r => r.itemId));
+    candidate.rows = records.map((record, index) => {
+      // A projection carries no scientific IDs. Match an unambiguous existing
+      // row, never attach its subscale merely because a new item occupies it.
+      let matches = visibleRows.map((cells, i) => ({ cells, i })).filter(({cells,i}) => !used.has(i)
+        && record.every((cell,c) => String(cells[c]) === cell));
+      if (matches.length !== 1) matches = previousRows.map((r,i) => ({r,i}))
+        .filter(({r,i}) => !used.has(i) && r.prompt === record[0]);
+      if (matches.length === 1) { used.add(matches[0].i); return previousRows[matches[0].i]; }
+      const itemId = nextId(reservedIds, "item-"); reservedIds.add(itemId);
+      const fresh = blankRow(candidate, itemId);
+      // Codes-only explicitly leaves the existing displayed labels in place.
+      if (layout === "codes-only" && previousRows[index]) fresh.options = previousRows[index].options.map(o => ({...o}));
+      return fresh;
+    });
   }
   if (row + records.length > 1024 || column + records[0].length > questionnaireGridColumns(candidate, layout).length) {
     throw new RangeError("Pasted range does not fit. Include the table headers to set the answer count automatically.");

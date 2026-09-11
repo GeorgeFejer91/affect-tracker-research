@@ -290,7 +290,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(markup, /Package reproduction matrix/u);
   assert.match(source, /loadedLanguageSelection = structuredClone\(parsed\.package\.languageSelection\)/u);
-  assert.match(source, /return createCoveredFlatLanguageSelectionV1/u);
+  assert.match(source, /const flat = createCoveredFlatLanguageSelectionV1/u);
+  assert.match(source, /reconcileQuestionnaireModuleMappings\(loadedLanguageSelection/u);
   assert.match(source, /resolveLanguageSelectionTraversalStepV1/u);
   assert.match(source, /validateExperimentPackageRecoveryBindingV1/u);
   assert.match(source, /participantRecoveryBindings/u);

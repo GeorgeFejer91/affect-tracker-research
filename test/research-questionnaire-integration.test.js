@@ -66,4 +66,27 @@ test("app integration uses preservation and guards preset adoption after asynchr
   assert.doesNotMatch(save, /\.placement\s*=/u);
   assert.match(source, /onlyIfPristine: true/u);
   assert.match(source, /if \(loaded && capabilities\.directoryPermission\)/u);
+  assert.equal((save.match(/questionnaireEditor\.presetToken\(familyId, language\) !== expectedPresetToken/gu) ?? []).length, 2);
+});
+
+test("a delayed preset cannot adopt into a removed and re-added pristine slot", async () => {
+  const subject = editor(); subject.sync(context());
+  const oldToken = subject.presetToken("custom", "en");
+  subject.sync({ ...context(), families: [] }); subject.sync(context());
+  assert.notEqual(subject.presetToken("custom", "en"), oldToken);
+  assert.equal(subject.loadDefinition(await definition("Stale"), {
+    familyId: "custom", onlyIfPristine: true, expectedPresetToken: oldToken,
+  }), false);
+  assert.equal(subject.canLoadPreset("custom", "en"), true);
+});
+
+test("removing a slot during save preparation does not call the asset store for its replacement", async () => {
+  let stores = 0;
+  const subject = editor(async () => { stores++; }); subject.sync(context());
+  subject.loadDefinition(await definition("Old"), { familyId: "custom" });
+  const saving = subject.save("custom/en");
+  subject.sync({ ...context(), families: [] }); subject.sync(context());
+  await saving;
+  assert.equal(stores, 0);
+  assert.equal(subject.canLoadPreset("custom", "en"), true);
 });

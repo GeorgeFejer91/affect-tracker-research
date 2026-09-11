@@ -102,3 +102,33 @@ test("catalogue has separate EN/DE variants, no implicit language addition, and 
     assert.equal(prebuiltQuestionnaireAvailability(asset, { languages: ["en", "de"], locked: true }).disabled, true);
   }
 });
+
+test("full labelled tables preserve heterogeneous options, identities, subscales and provenance", async () => {
+  const source = make(); applyQuestionnaireGridPaste(source, table);
+  // A longer second item makes the first row's trailing cells intentional padding.
+  source.optionCount = 3; source.optionLabels.push(null);
+  source.rows[1].options.push({ optionId: "custom-third", label: "Perhaps", scoreValue: 2 });
+  source.rows[0].subscale = "original-subscale";
+  const imported = await sheetToAuthoring(source);
+  const sheet = sheetFromDefinition(imported.definition, { familyId: "custom", authoringResult: imported });
+  applyQuestionnaireGridPaste(sheet, serializeQuestionnaireGrid(sheet));
+  assert.deepEqual(sheet.rows.map(r => r.options.length), [2, 3]);
+  assert.equal((await sheetToAuthoring(sheet)).unchanged, true);
+  assert.deepEqual((await sheetToAuthoring(sheet)).definition, imported.definition);
+});
+
+test("whole-table replacement follows uniquely matched item metadata, not old row positions", async () => {
+  const source = make(); applyQuestionnaireGridPaste(source, table);
+  source.rows[0].subscale = "first-subscale";
+  source.rows[1].subscale = "second-subscale";
+  const original = (await sheetToAuthoring(source)).definition;
+  const sheet = sheetFromDefinition(original,{familyId:"custom"});
+  const lines = serializeQuestionnaireGrid(sheet).trimEnd().split("\r\n");
+  applyQuestionnaireGridPaste(sheet,[lines[0],lines[2],lines[1]].join("\r\n"));
+  assert.equal(sheet.rows[0].itemId,original.items[1].itemId);
+  assert.equal(sheet.rows[0].subscale,"second-subscale");
+  applyQuestionnaireGridPaste(sheet,serializeQuestionnaireGrid(sheet).replace("Second item","Entirely new item"));
+  assert.equal(sheet.rows[0].subscale,null);
+  assert.ok(!original.items.some(i=>i.itemId===sheet.rows[0].itemId));
+  assert.equal(sheet.rows[1].subscale,"first-subscale");
+});
