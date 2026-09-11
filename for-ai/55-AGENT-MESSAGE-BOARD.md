@@ -391,6 +391,50 @@ file; follow the integration-owner collection procedure in the workflow.
   This is a component fixture, not installed-app or physical-input evidence.
   No GUI interaction, native rebuild, push or deployment performed.
 
+### 20260911-setup-layout-resize
+
+- Owner: **Add draggable segment boundary**, segment `setup-layout`, UI
+  Finalization; **acknowledged** by integration owner before implementation.
+  Branch `codex/segment-setup-layout-resize`, isolated worktree
+  `D:/GitHub/affect-tracker-research-setup-layout-resize`, base `305d3ac`.
+- User deliverable: drag the boundary between Setup sections and Live Preview
+  to resize the panes. Shared seams: outer form/section/preview sibling markup
+  in `ui-view.js`, outer grid/divider CSS, bounded `setup-layout.js` controller,
+  bootstrap/mode/cleanup in `app.js`, focused tests and background fixture.
+- Transient layout only; no package/storage, Run, native, or domain changes.
+  Preview owner contacted about pinned-pane overflow and narrow-width reflow;
+  preview internals remain that owner's segment. S3 shared hunks inspected.
+- Baseline: 38/38 focused UI, accordion-motion and architecture tests pass.
+  Collect drag bounds/cancel/keyboard/cleanup tests, rebuilt desktop frontend,
+  and offscreen width/reflow receipts. No desktop control, native launch,
+  deployment or qualification claim. Integration owner collects ready commit;
+  main checkout and the user's existing app remain untouched by this pass.
+
+#### Divider handoff — 2026-09-11
+
+- Status: **ready** for integration with Preview reflow. Pointer capture,
+  primary-pointer ownership, min widths, keyboard 10/50px steps, Home/End,
+  Enter/double-click reset, Escape revert, cancel/blur/lost-capture/mode
+  cleanup, proportional window resize, and destroy/remount are test-covered.
+- 46/46 focused and 434/434 full JavaScript tests pass; frozen install and
+  rebuilt desktop frontend 8-file closure pass. Existing >500kB bundle warning
+  remains. `scripts/qualification/setup-layout.mjs` passes eight offscreen
+  real-UI bootstrap/mode/pane-geometry checks each in Edge and Chrome, with
+  unchanged settings and no console/runtime errors. Chrome screenshot at
+  432px sections / 840px preview inspected.
+- Receipts: `D:/GitHub/.affect-preview-checks/setup-layout-{edge,chrome}-20260911/receipt.json`.
+  The fixture reports internal overflow separately: the old Preview at 320px
+  inside a 1280px viewport has 36px overflow. Preview owner supplies all
+  internal container reflow via ready `7c908949` with its documented
+  `8524fa2` / `59279f5` dependencies. Integrator must verify that composed
+  candidate before claiming content fit at this limit; no preview-internal
+  fixes were taken over here.
+- No native code/build, desktop interaction, app reload, main-branch mutation,
+  Pages deployment, or publication. Full keyboard/accessibility/installed
+  qualification remains open. Next is local convergence by the allocated
+  integrator and user UI acceptance; no backend stage escalation is needed
+  for transient pane sizing.
+
 ### 20260911-integration-confirm-tile-receipt
 
 - Owner: **Add segment confirmation flow**, integration; **resolved**.

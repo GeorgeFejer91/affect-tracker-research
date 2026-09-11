@@ -31,6 +31,7 @@ import { createPreviewInteraction } from "./preview-interaction.js";
 import { createPreviewLayout } from "./preview-layout.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
+import { createSetupLayout } from "./setup-layout.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
   validateQuestionnaireAnswers,
@@ -177,6 +178,7 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   const announcer = root.querySelector("#research-announcer");
   let openSection = "workspace";
   let readySetupSectionCount = 0;
@@ -427,6 +429,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
+    setupLayout.setEnabled(mode === "setup");
     if (mode !== "setup") {
       previewInteraction?.releaseAll();
       previewResponseSimulator?.releaseAll();
@@ -5371,6 +5374,7 @@ function bindResearchInteractions(root, { surface }) {
       previewInteraction?.destroy();
       previewInteraction = null;
       inlineColorPicker.destroy();
+      setupLayout.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

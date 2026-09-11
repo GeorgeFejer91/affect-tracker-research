@@ -281,7 +281,7 @@ h3 {
 
 .setup-layout {
   display: grid;
-  grid-template-columns: minmax(34rem, 1.25fr) minmax(23rem, 0.75fr);
+  grid-template-columns: var(--setup-sections-width, minmax(0, 1.666667fr)) 8px minmax(0, 1fr);
   min-height: 0;
   height: 100%;
 }
@@ -292,8 +292,41 @@ h3 {
   max-height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-right: 1px solid var(--border);
   scrollbar-color: #4e554b #181a17;
+}
+
+.setup-resizer {
+  position: relative;
+  min-width: 0;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  background: var(--surface-quiet);
+  border-inline: 1px solid var(--border);
+}
+
+.setup-resizer::after {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 1.5rem) 2px;
+  background: var(--muted);
+}
+
+.setup-resizer:hover,
+.setup-resizer:focus-visible,
+.setup-layout[data-resizing] > .setup-resizer {
+  background: var(--accent);
+}
+
+.setup-resizer:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.setup-layout[data-resizing],
+.setup-layout[data-resizing] * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .setup-intro {
@@ -3005,10 +3038,6 @@ dialog::backdrop {
 }
 
 @media (max-width: 1050px) {
-  .setup-layout {
-    grid-template-columns: minmax(27rem, 1.1fr) minmax(20rem, 0.9fr);
-  }
-
   .setup-accordion-panel-inner {
     padding-left: 1.25rem;
   }
@@ -3083,6 +3112,10 @@ dialog::backdrop {
 }
 
 @media (max-width: 759px) {
+  .setup-resizer {
+    display: none;
+  }
+
   html,
   body,
   #research-app {
