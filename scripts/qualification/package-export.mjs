@@ -1,4 +1,4 @@
-// node scripts/qualification/package-export.mjs <edge-or-chrome.exe> <output-directory> [width]
+// node scripts/qualification/package-export.mjs <edge-or-chrome.exe> <output-directory> [width] [populated|empty|error|lower|legacy|details]
 import { execFile } from "node:child_process";
 import { readFile, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
@@ -9,6 +9,7 @@ import { build } from "esbuild";
 
 const [browser, destination, width = "1366", renderState = "populated"] = process.argv.slice(2);
 assert.ok(browser && destination && /^\d{3,4}$/u.test(width), "Provide an executable, isolated output folder, and optional viewport width.");
+assert.ok(["populated", "empty", "error", "lower", "legacy", "details"].includes(renderState), "Unknown render state.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
@@ -19,7 +20,7 @@ const css = await readFile("site/research.css", "utf8");
 const html = `<!doctype html><meta charset="utf-8"><title>Recipe export off-screen regression</title><style>${css}</style><main></main><pre id="receipt">pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`;
 const fixture = join(output, "package-export.html");
 await writeFile(fixture, html);
-const { stdout, stderr } = await promisify(execFile)(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+const { stdout, stderr } = await promisify(execFile)(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--force-prefers-reduced-motion",
   `--user-data-dir=${profile}`, `--window-size=${width},1000`, `--screenshot=${join(output, "review.png")}`, "--virtual-time-budget=15000", "--dump-dom", `${pathToFileURL(fixture).href}#${renderState}`],
 { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
 await writeFile(join(output, "dom.html"), stdout);

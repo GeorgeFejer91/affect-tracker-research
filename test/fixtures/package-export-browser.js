@@ -21,9 +21,18 @@ const renderState = location.hash.slice(1);
 const renderReceipt = async () => {
   if (query("#setup-trigger-review").getAttribute("aria-expanded") !== "true") ui.openSetupSection("review");
   await new Promise((resolve) => setTimeout(resolve, 450));
-  query("#setup-trigger-review").scrollIntoView({ block: "start" });
+  const anchor = renderState === "legacy" ? query("#review-legacy-files")
+    : renderState === "details" ? query("#review-provenance") : query("#setup-trigger-review");
+  if (anchor instanceof HTMLDetailsElement) anchor.open = true;
+  window.scrollTo(0, 0);
+  const pane = query(".setup-pane");
+  pane.scrollTop += renderState === "lower"
+    ? query("#setup-panel-review").getBoundingClientRect().bottom - pane.getBoundingClientRect().bottom
+    : anchor.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+  check("rendered Review has no horizontal overflow", pane.scrollWidth <= pane.clientWidth + 1);
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, renderState,
-    reviewHeight: query("#setup-panel-review .setup-accordion-panel-inner").scrollHeight, cases });
+    reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    pageScrollTop: window.scrollY, reviewHeight: query("#setup-panel-review .setup-accordion-panel-inner").scrollHeight, cases });
 };
 const waitFor = async (predicate) => {
   for (let count = 0; count < 200; count += 1) {
@@ -67,6 +76,7 @@ const change = (selector, value) => {
     await waitFor(() => ui.experimentPackage && !query("#package-generate").disabled);
   };
   await load();
+  if (renderState === "legacy") { await renderReceipt(); return; }
   check("recipe load preserves its exact canonical text", ui.experimentPackageSourceText === parsed.canonicalSourceText);
   check("recipe load does not choose a participant language", ui.experimentPackageSelection === null);
   check("sampling, formats and reproduction appear once in Review", ["sampling-frequency", "output-csv", "output-tsv", "package-reproduction-status"].every((id) =>

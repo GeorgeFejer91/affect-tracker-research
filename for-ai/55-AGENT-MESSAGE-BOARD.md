@@ -37,6 +37,25 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p7-lower-review-visual-closeout
+
+- Completed root-requested lower Review/footer and expanded legacy/provenance
+  screenshots at 800px with the actual reduced-motion app path. Receipts verify
+  `reducedMotion: true` and `pageScrollTop: 0`; only the setup pane is scrolled.
+- The expanded legacy source hash exposed a narrow-pane overflow, now fixed by
+  a bounded grid and hash wrapping. The participant-language message now wraps
+  above its button in narrow panes rather than being squeezed beside it. No
+  confirmation, naming, sampling or recipe semantics changed in this closeout.
+- Inspected final files under `D:/GitHub/affect-tracker-research-p7-evidence/`:
+  `compact-lower-final/review.png`, `compact-details-final/review.png` and
+  `compact-legacy-narrow-fixed/review.png`. Full fixture now has 27 passing cases,
+  including no horizontal overflow; narrow populated content is 1712px and the
+  explicitly expanded provenance state is 2220px. Existing 465-test suite and
+  focused 71-test follow-up pass; final Pages174/desktop8 builds pass after CSS.
+- Source ready for integration. Remaining native/hardware qualification and new
+  successor/naming/acceptance work retain the limits recorded above.
+
+
 ### 20260911-p7-compact-review-receipt
 
 - P7's separately requested compactness pass uses the `uncodixfy` skill and

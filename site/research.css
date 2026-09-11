@@ -1136,6 +1136,34 @@ legend {
   overflow-wrap: anywhere;
 }
 
+#review-legacy-files .authoring-tools {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#review-legacy-files .authoring-tools > section {
+  min-width: 0;
+}
+
+#review-legacy-files p,
+#review-legacy-files output {
+  overflow-wrap: anywhere;
+}
+
+[data-setup-section="review"] .participant-language-readiness {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+[data-setup-section="review"] .participant-language-readiness > div {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+[data-setup-section="review"] .participant-language-readiness > button {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .package-finalization h3,
 .package-finalization p {
   margin: 0;
