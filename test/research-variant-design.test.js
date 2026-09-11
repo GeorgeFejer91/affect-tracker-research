@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { canonicalJson } from "../site/src/research/canonical.js";
 import { createVideoLibrary } from "../site/src/research/stimulus-order.js";
-import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, validateVariantDesign, validateVariantDocument, variantDesignToDraft, videoColor } from "../site/src/research/variant-design.js";
+import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, validateVariantDesign, validateVariantDocument, variantDesignToDraft, videoColor, videoColorMap } from "../site/src/research/variant-design.js";
 
 const { library, document, videos, timelines } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
 const [a, b] = library.videos.map(video => video.annotationId);
@@ -50,7 +50,7 @@ test("paste rejects unknown, numeric and formula cells atomically with precise l
 });
 test("invalid gaps, kinds, colliding identities, hashes and policy changes cannot confirm", async () => {
   let draft = fresh(); draft.rows[1][0] = "";
-  await assert.rejects(createVariantDocument(draft, library), /Event 2/);
+  await assert.rejects(createVariantDocument(draft, library), error => error.row === 1 && error.column === 0 && /Event 2/.test(error.message));
   const conflict = structuredClone(library); conflict.videos[0].annotationId = "ISI1";
   await assert.rejects(createVariantDocument(fresh(), conflict));
   for (const mutate of [v => v.contribution.variants[0].entries[0].kind = "isi", v => v.contribution.allocation.kind = "cyclicByOrdinal", v => v.draft.rows[1][0] = "500", v => v.contribution.markerContract.clock = "animationFrame", v => v.extra = true]) {
@@ -58,6 +58,19 @@ test("invalid gaps, kinds, colliding identities, hashes and policy changes canno
   }
   const changed = structuredClone(document.contribution); changed.variants[0].entries[0].kind = "isi";
   await assert.rejects(validateVariantDesign(changed, library));
+});
+test("video colors remain attached to identities across catalogue changes and beyond ten videos", async () => {
+  const expanded = await createVideoLibrary(Array.from({ length: 80 }, (_, i) => ({ relativePath: `assets/stimuli/${i}.mp4`, sha256: i.toString(16).padStart(64, "0"), byteLength: i + 1 })));
+  const colors = videoColorMap(expanded), reversed = videoColorMap({ videos: [...expanded.videos].reverse() });
+  assert.equal(new Set(colors.values()).size, 80);
+  for (const [id, color] of colors) {
+    assert.equal(reversed.get(id), color);
+    assert.equal(videoColorMap({ videos: [{ annotationId: id }] }).get(id), color);
+  }
+  const hue = id => Number(/hsl\(([\d.]+)/u.exec(videoColor(id))[1]);
+  assert.ok(Math.abs(hue(a) - hue(b)) > 90, "the example pair has clearly separated hues");
+  const hues = [...colors.keys()].map(hue);
+  assert.ok(Math.max(...hues) - Math.min(...hues) > 200);
 });
 test("unrelated library additions preserve versions; row and column growth preserve occurrence IDs", async () => {
   const entries = library.videos.map(({ annotationId, ...entry }) => entry);

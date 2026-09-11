@@ -27,7 +27,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   }
   const cellMarkup = (cell, r, c, locked) => {
     const info = describe(cell);
-    return `<td data-order-kind="${info.kind}"${info.color ? ` style="--video-color:${info.color}"` : ""}><input data-order-row="${r}" data-order-column="${c}" aria-label="Event ${r + 1}, ${escape(draft.columns[c].title)}" aria-describedby="stimulus-order-help stimulus-order-status" list="video-annotation-options" value="${escape(cell)}" autocomplete="off" spellcheck="false" placeholder="Video ID or ISI name" ${locked ? "disabled" : ""}><span class="order-cell-cue">${escape(info.cue)}</span></td>`;
+    return `<td data-order-kind="${info.kind}"${info.color ? ` style="--video-color:${info.color}"` : ""}><input data-order-row="${r}" data-order-column="${c}" aria-label="Event ${r + 1}, ${escape(draft.columns[c].title)}" aria-describedby="stimulus-order-help stimulus-order-status" ${info.kind === "invalid" ? 'aria-invalid="true"' : ""} list="video-annotation-options" value="${escape(cell)}" autocomplete="off" spellcheck="false" placeholder="Video ID or ISI name" ${locked ? "disabled" : ""}><span class="order-cell-cue">${escape(info.cue)}</span></td>`;
   };
   function renderVersions() {
     if (!versions) return;
@@ -90,7 +90,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   }
   async function confirm() {
     if (busy || !library) { report("Confirm the video library in Segment 1 first.", true); return false; }
-    busy = true; const token = generation; render();
+    busy = true; const token = generation; let issue = null; render();
     try {
       const document = await createVariantDocument(draft, library);
       const receipt = await operate("save-order", { document });
@@ -99,8 +99,26 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       confirmed = saved; edited = false; legacy = null; generation++; notify();
       report(`${saved.contribution.variants.length} variants saved with version annotations. Allocation policy belongs to the Runner.`);
       return true;
-    } catch (error) { report(error.message, true); return false; }
-    finally { busy = false; render(); notify(); }
+    } catch (error) { issue = error; report(error.message, true); return false; }
+    finally {
+      busy = false; render(); notify();
+      if (issue && token === generation) revealIssue(issue);
+    }
+  }
+  function revealIssue(error) {
+    const isiId = /^(ISI[1-9][0-9]*) duration/u.exec(error.message)?.[1];
+    const selector = Number.isInteger(error.row) && Number.isInteger(error.column)
+      ? `[data-order-row="${error.row}"][data-order-column="${error.column}"]`
+      : isiId ? `[data-isi-id="${isiId}"]` : null;
+    const control = selector ? host?.querySelector(selector) : null;
+    if (control) {
+      control.setAttribute("aria-invalid", "true");
+      control.focus({ preventScroll: true });
+      control.scrollIntoView?.({ block: "nearest", inline: "center", behavior: "instant" });
+    } else if (status) {
+      status.tabIndex = -1; status.focus?.({ preventScroll: true });
+      status.scrollIntoView?.({ block: "nearest", behavior: "instant" });
+    }
   }
   function updateCellCue(control) {
     const parent = control.closest?.("td"), info = describe(control.value);

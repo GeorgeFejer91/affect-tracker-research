@@ -3,12 +3,19 @@
 const { chromium } = require("playwright");
 const { createServer } = require("node:http");
 const { readFile, mkdir, writeFile } = require("node:fs/promises");
+const { createHash } = require("node:crypto");
+const { execFileSync } = require("node:child_process");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 
 (async () => {
   const root = path.resolve(__dirname, "..");
-  const output = path.join(root, "src-tauri/target/segment3-verification");
+  const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  const dirty = execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).trim();
+  const output = path.join(root, "src-tauri/target/segment3-verification", `${commit.slice(0, 12)}-${Date.now()}`);
+  const sources = new Map();
+  const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
+  sources.set("scripts/verify-stimulus-order-ui.cjs", sha256(await readFile(__filename)));
   await mkdir(output, { recursive: true });
   const server = createServer(async (request, response) => {
     try {
@@ -17,7 +24,9 @@ const assert = require("node:assert/strict");
       const file = path.resolve(root, "." + decodeURIComponent(pathname));
       if (!file.startsWith(root + path.sep)) throw new Error("Outside fixture root");
       response.setHeader("Content-Type", file.endsWith(".js") ? "text/javascript" : file.endsWith(".css") ? "text/css" : "application/json");
-      response.end(await readFile(file));
+      const bytes = await readFile(file);
+      sources.set(path.relative(root, file).replaceAll(path.sep, "/"), sha256(bytes));
+      response.end(bytes);
     } catch { response.statusCode = 404; response.end(); }
   });
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -97,36 +106,55 @@ const assert = require("node:assert/strict");
       if (state === "error") await page.evaluate(async () => {
         const fixture = await (await fetch("/test/fixtures/variant-design-v1.json")).json();
         const { RESEARCH_UI_EVENTS } = await import("/site/src/research/ui-contracts.js");
+        const { createVideoLibrary } = await import("/site/src/research/stimulus-order.js");
+        const { createVariantDraft, createVariantDocument, pasteVariantTable } = await import("/site/src/research/variant-design.js");
         const root = document.querySelector("#research-app");
+        const [a, b] = fixture.library.videos.map(video => video.annotationId);
+        // An accepted six-column order then loses the last column's video in
+        // a valid P1 rescan. This exercises real stale-reference validation.
+        const draft = pasteVariantTable(createVariantDraft(), 0, 0, [a,a,a,a,a,b].join("\t"), fixture.library);
+        await root.researchUi.restoreStimulusOrder(await createVariantDocument(draft, fixture.library), { library: fixture.library });
+        const library = await createVideoLibrary(fixture.library.videos.slice(0, 1).map(({ annotationId, ...entry }) => entry));
         const changed = new Promise(resolve => {
           const observer = new MutationObserver(() => {
-            if (root.querySelector("#stimulus-order-status").textContent.includes("Saved design is invalid")) { observer.disconnect(); resolve(); }
+            if (root.querySelector('[data-order-kind="invalid"]')) { observer.disconnect(); resolve(); }
           });
-          observer.observe(root.querySelector("#stimulus-order-status"), { childList: true });
+          observer.observe(root.querySelector("#stimulus-order-editor"), { childList: true, subtree: true });
         });
-        root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.videoLibraryChanged, { detail: { library: fixture.library, design: null, designError: "Saved design is invalid. Review and confirm the table again." } }));
+        root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.videoLibraryChanged, { detail: { library, design: null } }));
         await changed;
       });
       for (const width of [1600, 800]) {
         await page.setViewportSize({ width, height: 1200 });
+        if (state === "error") assert.equal(await page.evaluate(() => document.querySelector("#research-app").researchUi.confirmStimulusOrder()), false);
         const check = await page.evaluate(() => {
           const root = document.querySelector("#research-app"), scroll = root.querySelector(".stimulus-order-scroll");
+          const focused = document.activeElement, bounds = focused.getBoundingClientRect(), pane = scroll.getBoundingClientRect();
           return { open: root.researchUi.openSection, viewportContained: document.documentElement.scrollWidth <= innerWidth,
             tableWidth: scroll.clientWidth, tableScrollWidth: scroll.scrollWidth,
             tableContained: scroll.getBoundingClientRect().right <= root.querySelector(".setup-pane").getBoundingClientRect().right,
-            snapshot: root.researchUi.getStimulusOrderSnapshot(), errorVisible: root.querySelector("#stimulus-order-status").dataset.state === "error" };
+            snapshot: root.researchUi.getStimulusOrderSnapshot(), errorVisible: root.querySelector("#stimulus-order-status").dataset.state === "error",
+            errorText: root.querySelector("#stimulus-order-status").textContent,
+            focusedCell: [focused.dataset.orderRow, focused.dataset.orderColumn],
+            focusedInvalid: focused.getAttribute("aria-invalid") === "true",
+            focusedCellVisible: bounds.left >= pane.left && bounds.right <= pane.right && bounds.top >= 0 && bounds.bottom <= innerHeight };
         });
         assert.equal(check.open, "stimuli"); assert.equal(check.viewportContained, true);
         assert.equal(check.tableContained, true);
         if (width === 800 && state !== "empty") assert.ok(check.tableScrollWidth > check.tableWidth);
         if (state === "populated") assert.equal(check.snapshot.pending, false);
-        if (state === "error") { assert.equal(check.errorVisible, true); assert.equal(check.snapshot.contribution, null); }
+        if (state === "error") {
+          assert.equal(check.errorVisible, true); assert.equal(check.snapshot.contribution, null);
+          assert.match(check.errorText, /Event 1, Variant 6: Unknown annotation/);
+          assert.deepEqual(check.focusedCell, ["0", "5"]);
+          assert.equal(check.focusedInvalid, true); assert.equal(check.focusedCellVisible, true);
+        }
         bootChecks.push({ state, width, ...check, snapshot: undefined });
         await page.screenshot({ path: path.join(output, `segment3-boot-${state}-${width}.png`), fullPage: true });
       }
     }
     assert.deepEqual(errors, []);
-    const evidence = { ...receipt, snapshot: undefined, contained, bootChecks, errors, output };
+    const evidence = { commit, dirty, sourceSha256: Object.fromEntries([...sources].sort()), ...receipt, snapshot: undefined, contained, bootChecks, errors, output };
     await writeFile(path.join(output, "segment3-ui-receipt.json"), JSON.stringify(evidence, null, 2) + "\n");
     console.log(JSON.stringify(evidence));
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

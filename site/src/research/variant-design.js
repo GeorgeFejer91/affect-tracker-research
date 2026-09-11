@@ -15,6 +15,12 @@ export const MARKER_CONTRACT = Object.freeze({
 export const ALLOCATION = Object.freeze({ kind: "runnerAssigned" });
 const enc = new TextEncoder();
 const clone = value => structuredClone(value);
+export class VariantCellError extends TypeError {
+  constructor(message, row, column, title) {
+    super(`Event ${row + 1}, ${title}: ${message}`);
+    this.row = row; this.column = column;
+  }
+}
 export function exactKeys(value, keys, label) {
   if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join() !== [...keys].sort().join()) throw new TypeError(`${label}: unexpected or missing fields.`);
 }
@@ -119,7 +125,7 @@ export function pasteVariantTable(draft, r, c, source, library) {
   matrix.forEach((row, dr) => row.forEach((cell, dc) => {
     const value = cell.trim();
     try { resolveVariantCell(value, library, next.isiDefinitions); }
-    catch (error) { throw new TypeError(`Event ${r + dr + 1}, ${next.columns[c + dc].title}: ${error.message}`); }
+    catch (error) { throw new VariantCellError(error.message, r + dr, c + dc, next.columns[c + dc].title); }
     next.rows[r + dr][c + dc] = value;
   }));
   validateVariantDraft(next); return next;
@@ -129,15 +135,15 @@ export function resolveVariantEntries(draft, library) {
   if (draft.isiDefinitions.some(isi => library.videos.some(video => video.annotationId === isi.isiId))) throw new TypeError("Video and ISI identities collide.");
   return draft.columns.map((column, c) => {
     let last = draft.rows.findLastIndex(row => row[c] !== "");
-    if (last < 0) throw new TypeError(`${column.title}: add at least one video.`);
+    if (last < 0) throw new VariantCellError("add at least one video.", 0, c, column.title);
     const entries = draft.rows.slice(0, last + 1).map((row, r) => {
       let cell;
       try { cell = resolveVariantCell(row[c], library, draft.isiDefinitions); }
-      catch (error) { throw new TypeError(`Event ${r + 1}, ${column.title}: ${error.message}`); }
-      if (!cell) throw new TypeError(`Event ${r + 1}, ${column.title}: fill or remove the interior blank.`);
+      catch (error) { throw new VariantCellError(error.message, r, c, column.title); }
+      if (!cell) throw new VariantCellError("fill or remove the interior blank.", r, c, column.title);
       return { entryId: draft.entryIds[r][c], kind: cell.kind, referenceId: cell.referenceId };
     });
-    if (!entries.some(entry => entry.kind === "video")) throw new TypeError(`${column.title}: add at least one video.`);
+    if (!entries.some(entry => entry.kind === "video")) throw new VariantCellError("add at least one video.", 0, c, column.title);
     return { ...column, entries };
   });
 }
@@ -232,15 +238,16 @@ function colorIndex(annotationId) {
   for (const byte of enc.encode(annotationId)) hash = Math.imul(hash ^ byte, 16777619) >>> 0;
   return hash;
 }
-const colorFromIndex = index => `hsl(${45 + (index % 281000) / 1000} ${45 + Math.floor(index / 281000) / 1000}% 75%)`;
-export const videoColor = annotationId => colorFromIndex(colorIndex(annotationId));
+// IDs already contain a uniformly distributed content digest. Use that identity
+// directly: adding/removing/reordering catalogue entries cannot recolor a video.
+// The hue range excludes the red reserved for ISIs; text remains authoritative
+// because large catalogues inevitably contain perceptually similar colors.
+export function videoColor(annotationId) {
+  const match = /^video-([a-f0-9]{8})([a-f0-9]{8})$/u.exec(annotationId);
+  const hueSeed = match ? Number.parseInt(match[1], 16) : colorIndex(annotationId);
+  const toneSeed = match ? Number.parseInt(match[2], 16) : colorIndex(`tone:${annotationId}`);
+  return `hsl(${(45 + hueSeed / 0xffffffff * 255).toFixed(6)} ${55 + toneSeed % 26}% ${70 + (toneSeed >>> 8) % 11}%)`;
+}
 export function videoColorMap(library) {
-  const colors = new Map(), used = new Set();
-  for (const id of library.videos.map(video => video.annotationId).sort()) {
-    let index = colorIndex(id) % 10;
-    while (used.has(index)) index++;
-    used.add(index);
-    colors.set(id, `hsl(${45 + (index % 10) * 28 + Math.floor(index / 10) / 1000} 55% 75%)`);
-  }
-  return colors;
+  return new Map(library.videos.map(video => [video.annotationId, videoColor(video.annotationId)]));
 }
