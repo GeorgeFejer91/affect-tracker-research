@@ -2382,7 +2382,7 @@ tbody tr:last-child td {
 }
 
 #preview-color-dialog .field-grid {
-  align-items: end;
+  align-items: start;
 }
 
 #preview-color-dialog .preview-color-label-field {
@@ -2391,8 +2391,30 @@ tbody tr:last-child td {
 
 #preview-color-picker {
   width: 100%;
-  min-height: 5.5rem;
-  padding: 0.3rem;
+  min-width: 0;
+}
+
+#preview-color-picker canvas {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+#preview-color-picker [data-inline-color-map] {
+  aspect-ratio: 32 / 21;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+#preview-color-picker [data-inline-hue-strip] {
+  height: 1rem;
+}
+
+#preview-color-hue {
+  width: 100%;
+  min-height: 1.5rem;
+  padding: 0;
 }
 
 .preview-footer {

@@ -37,6 +37,26 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-inline-color
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**, allocation
+  acknowledged by integration. Base `305d3ac`, branch
+  `codex/segment-preview-inline-color`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`.
+- User asks for an embedded color map instead of a native picker nested inside
+  the anchor-color dialog. Scope: bounded canvas HSV picker, dialog markup/CSS,
+  app open/draft/teardown hooks and focused/headless tests. No S2 overlap.
+- Preserve hex, Reset, Apply, Cancel and close-to-cancel behavior; drag changes
+  only the existing preview draft. No package/Run/native changes or GUI tests.
+- Baseline: 47/47 preview/UI tests. Planned: conversion/input/teardown checks,
+  background browser integration and rendering, full JavaScript regressions.
+- Ready receipt: 428/428 JavaScript tests and desktop frontend 8-file closure
+  pass. Isolated off-screen Edge component paint, keyboard, hex callback,
+  teardown and dialog fit pass at the supported 760px minimum and 1000px.
+  Screenshots/JSON: `D:/GitHub/.affect-preview-checks/inline-color-20260911`.
+  This is a component fixture, not installed-app or physical-input evidence.
+  No GUI interaction, native rebuild, push or deployment performed.
+
 ### 20260911-integration-confirm-tile-receipt
 
 - Owner: **Add segment confirmation flow**, integration; **resolved**.

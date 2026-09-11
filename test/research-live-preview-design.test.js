@@ -128,7 +128,11 @@ test("the affect map has four exact directional anchors and one complete color d
 
   assert.equal(count(markup, /<dialog\s+id="preview-color-dialog"/gu), 1);
   const dialog = between(markup, '<dialog id="preview-color-dialog"', '<dialog id="stop-early-dialog"');
-  assertAttributes(inputTag(dialog, "preview-color-picker"), { type: "color" });
+  assert.doesNotMatch(dialog, /type="color"/u);
+  assert.match(dialog, /<canvas data-inline-color-map[^>]*tabindex="0"/u);
+  assertAttributes(inputTag(dialog, "preview-color-hue"), { type: "range", min: "0", max: "360", step: "1" });
+  assert.match(appSource, /inlineColorPicker\.setColor\(previewColorDraft\)/u);
+  assert.match(appSource, /inlineColorPicker\.destroy\(\)/u);
   assertAttributes(inputTag(dialog, "preview-color-hex"), {
     minlength: "7",
     maxlength: "7",

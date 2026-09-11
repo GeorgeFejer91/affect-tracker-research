@@ -800,7 +800,12 @@ export function renderResearchUiMarkup(surface = "browser") {
       <div class="dialog-content">
         <h2 id="preview-color-dialog-title">Choose an affect color</h2>
         <div class="field-grid">
-          <label class="field"><span>Color map</span><input id="preview-color-picker" type="color" value="${DEFAULT_COLORS.up}"></label>
+          <div id="preview-color-picker" class="field">
+            <span>Color map</span>
+            <canvas data-inline-color-map width="320" height="210" tabindex="0" role="group" aria-label="Color map"></canvas>
+            <label class="field"><span>Hue</span><canvas data-inline-hue-strip width="360" height="16" aria-hidden="true"></canvas><input id="preview-color-hue" data-inline-color-hue type="range" min="0" max="360" step="1" value="0"></label>
+            <output data-inline-color-status class="field-help"></output>
+          </div>
           <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
           <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
         </div>

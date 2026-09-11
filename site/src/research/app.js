@@ -25,6 +25,7 @@ import {
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
+import { createInlineColorPicker } from "./inline-color-picker.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
@@ -527,13 +528,13 @@ function bindResearchInteractions(root, { surface }) {
     const label = query("#preview-color-label");
     const title = query("#preview-color-dialog-title");
     if (!definition || !(dialog instanceof HTMLDialogElement)
-      || !(picker instanceof HTMLInputElement) || !(hex instanceof HTMLInputElement)
+      || !(picker instanceof HTMLElement) || !(hex instanceof HTMLInputElement)
       || !(label instanceof HTMLInputElement) || !definition.axisLabel) return;
     previewColorAnchor = definition.id;
     previewColorDraft = colorValues()[definition.id];
     const currentLabel = previewAxisLabels.get(definition.id) ?? definition.axisLabel;
     previewColorLabelDraft = currentLabel;
-    picker.value = previewColorDraft;
+    inlineColorPicker.setColor(previewColorDraft);
     hex.value = previewColorDraft;
     label.value = currentLabel === definition.axisLabel ? "" : currentLabel;
     label.placeholder = definition.axisLabel;
@@ -598,13 +599,12 @@ function bindResearchInteractions(root, { surface }) {
   function setPreviewColorDraft(nextValue, { synchronizeHex = false } = {}) {
     const normalized = String(nextValue ?? "").trim().toLowerCase();
     const valid = /^#[0-9a-f]{6}$/u.test(normalized);
-    const picker = query("#preview-color-picker");
     const hex = query("#preview-color-hex");
     const status = query("#preview-color-status");
     const error = query("#preview-color-error");
     const apply = query("#preview-color-apply");
     previewColorDraft = valid ? normalized : null;
-    if (valid && picker instanceof HTMLInputElement) picker.value = normalized;
+    if (valid) inlineColorPicker.setColor(normalized);
     if (synchronizeHex && hex instanceof HTMLInputElement) hex.value = normalized;
     if (status) {
       status.textContent = valid
@@ -3977,6 +3977,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   const previewColorDialog = query("#preview-color-dialog");
+  const inlineColorPicker = createInlineColorPicker(query("#preview-color-picker"), {
+    onChange: hex => setPreviewColorDraft(hex, { synchronizeHex: true }),
+  });
   if (previewColorDialog instanceof HTMLDialogElement) {
     previewColorDialog.addEventListener("close", () => {
       if (!previewColorAnchor) return;
@@ -4671,10 +4674,6 @@ function bindResearchInteractions(root, { surface }) {
       filterQuestionnaireInspiration();
       return;
     }
-    if (target instanceof HTMLInputElement && target.id === "preview-color-picker") {
-      setPreviewColorDraft(target.value, { synchronizeHex: true });
-      return;
-    }
     if (target instanceof HTMLInputElement && target.id === "preview-color-hex") {
       setPreviewColorDraft(target.value);
       return;
@@ -5304,6 +5303,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      inlineColorPicker.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();
