@@ -36,7 +36,7 @@ const settings = await validateResearchSettingsV3({
 const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
 const results = [];
 const cases = purpose === "snapshots"
-  ? ["empty", "controls", "error"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])
+  ? ["empty", "controls", "error", "advanced", "color", "long-label"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])
   : [["browser", 1280, 1], ["browser", 900, 1], ["browser", 640, 1], ["browser", 500, 1.5625], ["tauri", 1280, 1], ["tauri", 900, 1], ["browser", 1280, 2]];
 for (const [surface, width, zoom, screenshotState = "default"] of cases) {
   const name = `${surface}-${width}-${zoom}${screenshotState === "default" ? "" : `-${screenshotState}`}`;
