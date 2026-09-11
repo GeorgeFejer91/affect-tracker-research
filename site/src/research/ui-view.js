@@ -412,24 +412,23 @@ function experimentSection() {
 
 function stimuliSection() {
   return `
-    <p class="section-lead">Define one presentation order per variant. Paste your counterbalanced orders from Excel, or enter video annotations and pauses directly.</p>
-    <div class="button-row">
+    <p id="stimulus-order-help" data-order-requires-library class="section-lead">One column per variant. Paste video annotations and ISI names from Excel in their presentation order, without headers.</p>
+    <div class="button-row" data-order-requires-library>
       <button type="button" data-video-library-export="xlsx" disabled>Download Excel</button>
       <button type="button" data-video-library-export="csv" disabled>Download CSV</button>
     </div>
-    <details class="inner-disclosure">
+    <details class="inner-disclosure" data-order-requires-library>
       <summary>How this works</summary>
       <div class="disclosure-content">
         <p>The downloads list every library video with its annotation. The Excel workbook also includes an empty order template. Randomize or counterbalance in Excel, then copy only the variant cells, without headers or the Event column, and paste into the first destination cell.</p>
-        <p>Use one video annotation or a whole-number pause in milliseconds per cell. A pause follows its video; consecutive videos have a 0 ms interval. Each variant needs at least one video. Leave unused rows at the bottom; gaps and repeated videos within a variant are rejected. Intervals range from 0 to 3,600,000 ms.</p>
+        <p>Define pauses by entering comma-separated durations, then use their ISI names in the table. Each cell contains one video annotation or one ISI name. Durations range from 0 to 3,600,000 ms. Leave unused rows at the bottom; empty cells inside a sequence require correction.</p>
         <p>Confirming Segment 1 saves identities that bind each video's path and exact bytes. Confirming this table saves the variant IDs and version annotations. Changing a variant's name, video order, or pauses changes its version. Participant allocation belongs to the experiment runner.</p>
-        <p>Video annotations are hash-bound references, not encryption or proof of authorship. The JSON records are stored beside the video folder. Runner allocation and recording these versions will be connected in the Runner segment.</p>
+        <p>Video annotations bind file identities; they are not encryption or proof of authorship. The saved design retains each occurrence and its planned start/end events. The Runner chooses the allocation policy and records actual times and the selected variant version.</p>
       </div>
     </details>
-    <h3>Stimulus presentation order</h3>
-    <p id="stimulus-order-help" class="field-help">One column per variant. Enter a video annotation or an ISI in milliseconds. Paste a rectangle to add rows and variants automatically.</p>
-    <div id="stimulus-order-editor"></div>
     <p id="stimulus-order-status" class="status-text" role="status" aria-live="polite">Confirm the video library in Segment 1 to begin.</p>
+    <button type="button" data-order-prerequisite data-open-section="workspace">Open Segment 1</button>
+    <div id="stimulus-order-editor"></div>
     <div id="stimulus-order-versions" aria-label="Saved variant version annotations"></div>`;
 }
 

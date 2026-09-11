@@ -1,6 +1,6 @@
 use super::*;
 use crate::research_stimulus_order::{
-    document_bytes, AuthoringReceipt, StimulusOrderDocument, VideoIdentity, VideoLibrary,
+    document_bytes, variants::StoredStimulusOrder, AuthoringReceipt, VideoIdentity, VideoLibrary,
     LIBRARY_FILE, MAX_DOCUMENT_BYTES, ORDER_FILE,
 };
 
@@ -179,7 +179,7 @@ impl WorkspaceService {
             if confirm { store(&assets.join(LIBRARY_FILE), &library)?; }
             let design_path = assets.join(ORDER_FILE);
             let (design, design_error) = if design_path.try_exists().map_err(CommandError::io)? {
-                match read_document::<StimulusOrderDocument>(&design_path).and_then(|design| { design.validate(&library)?; Ok(design) }) {
+                match read_document::<StoredStimulusOrder>(&design_path).and_then(|design| { design.validate(&library)?; Ok(design) }) {
                     Ok(design) => (Some(design), None),
                     Err(_) => (None, Some("Saved variant design could not be matched to this library. Existing file preserved; review and confirm a new table.".into())),
                 }
@@ -187,11 +187,12 @@ impl WorkspaceService {
             Ok(AuthoringReceipt { library, design, design_error })
         })
     }
-    pub fn save_stimulus_order(
+    pub fn save_stimulus_order<T: Into<StoredStimulusOrder>>(
         &self,
         workspace_id: &str,
-        document: StimulusOrderDocument,
+        document: T,
     ) -> ResearchResult<AuthoringReceipt> {
+        let document = document.into();
         self.with_workspace(workspace_id, |root, _| {
             let folders = validate_workspace_libraries(root)?;
             let assets = folders
@@ -256,6 +257,53 @@ impl WorkspaceService {
 mod tests {
     use super::*;
     #[test]
+    fn named_design_is_saved_and_reopened_without_legacy_reinterpretation() {
+        use crate::research_stimulus_order::variants::{
+            IsiDefinition, VariantDocument, VariantDraft,
+        };
+        use crate::research_stimulus_order::VariantColumn;
+        let base = std::env::temp_dir().join(format!("research-named-order-{}", Uuid::new_v4()));
+        let root = base.join("workspace");
+        fs::create_dir_all(&root).unwrap();
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let id = service.select(root.clone()).unwrap().workspace_id.unwrap();
+        fs::write(
+            root.join("assets/stimuli/one.mp4"),
+            b"synthetic video identity",
+        )
+        .unwrap();
+        let library = service.video_library(&id, true).unwrap().library;
+        let video = library.videos[0].annotation_id.clone();
+        let draft = VariantDraft {
+            columns: vec![VariantColumn {
+                variant_id: "variant-1".into(),
+                title: "Variant 1".into(),
+            }],
+            rows: vec![vec![video.clone()], vec!["ISI1".into()], vec![video]],
+            entry_ids: (1..=3)
+                .map(|n| vec![format!("variant-1-entry-{n}")])
+                .collect(),
+            isi_definitions: vec![IsiDefinition {
+                isi_id: "ISI1".into(),
+                duration_ms: 500,
+            }],
+            next_isi_ordinal: 2,
+        };
+        let document = VariantDocument::create(draft, &library).unwrap();
+        assert_eq!(
+            service
+                .save_stimulus_order(&id, document.clone())
+                .unwrap()
+                .design,
+            Some(document.clone().into())
+        );
+        assert_eq!(
+            service.video_library(&id, false).unwrap().design,
+            Some(document.into())
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+    #[test]
     fn library_is_stable_and_metadata_stays_outside_video_closure() {
         let root = std::env::temp_dir().join(format!("research-order-{}", Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
@@ -300,7 +348,9 @@ mod tests {
 
     #[test]
     fn workspace_confirmation_save_reload_and_changed_video_rejection() {
-        use crate::research_stimulus_order::{digest, OrderedVideo, Variant, VariantColumn};
+        use crate::research_stimulus_order::{
+            digest, OrderedVideo, StimulusOrderDocument, Variant, VariantColumn,
+        };
         let base = std::env::temp_dir().join(format!("research-order-store-{}", Uuid::new_v4()));
         let root = base.join("workspace");
         fs::create_dir_all(&root).unwrap();
@@ -341,11 +391,11 @@ mod tests {
                 .save_stimulus_order(&id, design.clone())
                 .unwrap()
                 .design,
-            Some(design.clone())
+            Some(design.clone().into())
         );
         assert_eq!(
             service.video_library(&id, false).unwrap().design,
-            Some(design.clone())
+            Some(design.clone().into())
         );
         assert!(!root.join("assets/stimuli").join(LIBRARY_FILE).exists());
         let saved_path = root.join("assets").join(ORDER_FILE);

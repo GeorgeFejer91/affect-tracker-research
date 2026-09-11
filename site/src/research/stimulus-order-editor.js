@@ -1,52 +1,78 @@
 import { canonicalJson } from "./canonical.js";
-import {
-  addOrderColumn, addOrderRow, createStimulusOrder, createStimulusOrderDocument,
-  pasteStimulusOrder, resolveStimulusVariants, setOrderCell, validateStimulusOrderDocument,
-  validateVideoLibrary, videoLibraryCsv,
-} from "./stimulus-order.js";
+import { validateVideoLibrary, videoLibraryCsv } from "./stimulus-order.js";
 import { videoLibraryWorkbook } from "./stimulus-workbook.js";
+import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, resolveVariantCell, resolveVariantEntries, validateStoredVariantDocument, validateVariantDraft, validateVariantDesign, variantDesignToDraft, videoColorMap } from "./variant-design.js";
 
-const escape = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+const escape = value => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
-/** Presentation owner. Storage is injected by the one platform composition. */
+/** P3 presentation owner. P1 supplies library receipts; P7 consumes accepted snapshots. */
 export function createStimulusOrderEditor({ root, operate, onChange = () => {}, announce = () => {} }) {
-  let draft = createStimulusOrder(), library = null, confirmed = null, busy = false, generation = 0, edited = false;
-  const host = root.querySelector("#stimulus-order-editor");
-  const status = root.querySelector("#stimulus-order-status");
-  const versions = root.querySelector("#stimulus-order-versions");
+  let draft = createVariantDraft(), library = null, confirmed = null, busy = false, generation = 0, edited = false;
+  let catalogue = null, libraryRevision = 0, legacy = null, colors = new Map();
+  const host = root.querySelector("#stimulus-order-editor"), status = root.querySelector("#stimulus-order-status"), versions = root.querySelector("#stimulus-order-versions");
   const report = (message, failed = false) => {
     if (status) { status.textContent = message; status.dataset.state = failed ? "error" : "ready"; }
     announce(message);
   };
-  function changed() { confirmed = null; edited = true; generation++; if (versions) versions.replaceChildren(); onChange(); }
+  const notify = () => { onChange(); root.researchUi?.plannerContributionChanged?.("P3"); };
+  function changed() { confirmed = null; edited = true; generation++; if (versions) versions.replaceChildren(); notify(); }
+  function describe(cell) {
+    try {
+      const value = resolveVariantCell(cell, library, draft.isiDefinitions);
+      if (!value) return { kind: "empty", cue: "", color: "" };
+      if (value.kind === "isi") return { kind: "isi", cue: `ISI · ${value.durationMs} ms`, color: "" };
+      const video = (catalogue?.videos ?? library.videos).find(item => (item.annotationId ?? item.videoId) === cell);
+      return { kind: "video", cue: `Video · ${Number.isSafeInteger(video?.durationMs) ? `${video.durationMs} ms` : "full duration"}`, color: colors.get(cell) };
+    } catch { return { kind: "invalid", cue: "Unknown video or ISI name", color: "" }; }
+  }
+  const cellMarkup = (cell, r, c, locked) => {
+    const info = describe(cell);
+    return `<td data-order-kind="${info.kind}"${info.color ? ` style="--video-color:${info.color}"` : ""}><input data-order-row="${r}" data-order-column="${c}" aria-label="Event ${r + 1}, ${escape(draft.columns[c].title)}" aria-describedby="stimulus-order-help stimulus-order-status" list="video-annotation-options" value="${escape(cell)}" autocomplete="off" spellcheck="false" placeholder="Video ID or ISI name" ${locked ? "disabled" : ""}><span class="order-cell-cue">${escape(info.cue)}</span></td>`;
+  };
+  function renderVersions() {
+    if (!versions) return;
+    if (legacy) { versions.innerHTML = '<button type="button" data-order-convert-legacy>Convert saved design</button>'; return; }
+    versions.innerHTML = confirmed ? `<details class="inner-disclosure"><summary>${confirmed.contribution.variants.length} saved variants · versions and planned events</summary><div class="disclosure-content">${confirmed.contribution.variants.map(variant => {
+      let timing;
+      try { const timeline = compileVariantTimeline(confirmed.contribution, variant.variantId, catalogue?.videos ?? library.videos); timing = `<p>Planned duration: ${timeline.plannedDurationMs} ms. Actual times are recorded by the Runner.</p>`; }
+      catch { timing = "<p>Planned offsets need verified video durations from Segment 1. The ordered boundaries below are preserved.</p>"; }
+      return `<h4>${escape(variant.title)} · ${variant.variantId}</h4><p class="variant-versions"><code>${variant.versionSha256}</code></p>${timing}<ol class="planned-events">${variant.entries.map(entry => `<li>${escape(entry.referenceId)} · ${entry.kind === "isi" ? "ISI" : "Video"} start → end <small>${entry.entryId}</small></li>`).join("")}</ol>`;
+    }).join("")}</div></details>` : "";
+  }
   function render() {
     if (!host) return;
+    host.hidden = !library;
+    const section = host.closest?.('[data-setup-section="stimuli"]');
+    if (section) section.dataset.libraryReady = String(Boolean(library));
+    root.querySelectorAll("[data-order-requires-library]").forEach(element => { element.hidden = !library; });
+    root.querySelectorAll("[data-order-prerequisite]").forEach(element => { element.hidden = Boolean(library); });
     const locked = busy || !library;
-    host.innerHTML = `<div class="table-scroll stimulus-order-scroll" tabindex="0" role="region" aria-label="Stimulus presentation order"><table class="stimulus-order-table"><caption class="sr-only">Each column is a variant. Enter video annotations or intervals in milliseconds.</caption><thead><tr><th scope="col">Event</th>${draft.columns.map((column, c) => `<th scope="col"><div class="variant-heading"><input data-order-title="${c}" aria-label="Variant ${c + 1} name" maxlength="120" value="${escape(column.title)}" ${locked ? "disabled" : ""}><button type="button" data-order-remove-column="${c}" aria-label="Remove ${escape(column.title)}" ${locked || draft.columns.length === 1 ? "disabled" : ""}>×</button></div></th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${draft.rows.map((row, r) => `<tr><th scope="row">Event ${r + 1}</th>${row.map((cell, c) => `<td><input data-order-row="${r}" data-order-column="${c}" aria-label="Event ${r + 1}, ${escape(draft.columns[c].title)}" aria-describedby="stimulus-order-help stimulus-order-status" list="video-annotation-options" value="${escape(cell)}" autocomplete="off" spellcheck="false" placeholder="Video or ISI (ms)" ${locked ? "disabled" : ""}></td>`).join("")}<td><button type="button" data-order-remove-row="${r}" aria-label="Remove Event ${r + 1}" ${locked || draft.rows.length === 1 ? "disabled" : ""}>×</button></td></tr>`).join("")}</tbody></table></div><div class="button-row"><button type="button" data-order-add-row ${locked ? "disabled" : ""}>Add event</button><button type="button" data-order-add-column ${locked ? "disabled" : ""}>Add variant</button></div><datalist id="video-annotation-options">${(library?.videos ?? []).map((video) => `<option value="${video.annotationId}">${escape(video.relativePath.slice("assets/stimuli/".length))}</option>`).join("")}</datalist>`;
-    root.querySelectorAll("[data-video-library-export]").forEach((button) => { button.disabled = locked || library.videos.length === 0; });
-    root.querySelectorAll('[data-confirm-section="stimuli"]').forEach((button) => { if (button.dataset.reviewState !== "reviewed") button.disabled = locked; });
-    if (versions) versions.innerHTML = confirmed ? `<details class="inner-disclosure"><summary>${confirmed.variants.length} saved variant${confirmed.variants.length === 1 ? "" : "s"} · version annotations</summary><dl class="variant-versions disclosure-content">${confirmed.variants.map((variant) => `<div><dt>${escape(variant.title)} · ${variant.variantId}</dt><dd><code>${variant.versionSha256}</code></dd></div>`).join("")}</dl></details>` : "";
+    host.innerHTML = `<div class="isi-definitions"><label for="isi-duration-list">ISI durations (ms)</label><div class="isi-create-row"><input id="isi-duration-list" data-isi-list placeholder="e.g. 500, 1500" aria-describedby="isi-list-help" ${locked ? "disabled" : ""}><button type="button" data-isi-add ${locked ? "disabled" : ""}>Add ISIs</button></div><p id="isi-list-help" class="field-help">Enter comma-separated whole milliseconds. Use the generated names in the table.</p><div class="isi-dictionary">${draft.isiDefinitions.map(isi => {
+      const count = draft.rows.reduce((total, row) => total + row.filter(cell => cell === isi.isiId).length, 0);
+      return `<div class="isi-definition"><label for="duration-${isi.isiId}">${isi.isiId}</label><input id="duration-${isi.isiId}" data-isi-id="${isi.isiId}" type="number" min="0" max="3600000" step="1" value="${isi.durationMs}" aria-label="${isi.isiId} duration in milliseconds" ${locked ? "disabled" : ""}><span data-isi-usage="${isi.isiId}">ms · ${count} use${count === 1 ? "" : "s"}</span><button type="button" data-isi-remove="${isi.isiId}" aria-label="Remove ${isi.isiId}" ${locked || count ? "disabled" : ""}>×</button></div>`;
+    }).join("")}</div></div><div class="table-scroll stimulus-order-scroll" tabindex="0" role="region" aria-label="Stimulus presentation order"><table class="stimulus-order-table"><caption class="sr-only">Each column is a variant. Enter video annotations or named ISIs.</caption><thead><tr><th scope="col">Event</th>${draft.columns.map((column, c) => `<th scope="col"><div class="variant-heading"><input data-order-title="${c}" aria-label="Variant ${c + 1} name" maxlength="120" value="${escape(column.title)}" ${locked ? "disabled" : ""}><button type="button" data-order-remove-column="${c}" aria-label="Remove ${escape(column.title)}" ${locked || draft.columns.length === 1 ? "disabled" : ""}>×</button></div></th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${draft.rows.map((row, r) => `<tr><th scope="row">Event ${r + 1}</th>${row.map((cell, c) => cellMarkup(cell, r, c, locked)).join("")}<td><button type="button" data-order-remove-row="${r}" aria-label="Remove Event ${r + 1}" ${locked || draft.rows.length === 1 ? "disabled" : ""}>×</button></td></tr>`).join("")}</tbody></table></div><div class="button-row"><button type="button" data-order-add-row ${locked ? "disabled" : ""}>Add event</button><button type="button" data-order-add-column ${locked ? "disabled" : ""}>Add variant</button></div><datalist id="video-annotation-options">${(library?.videos ?? []).map(video => `<option value="${escape(video.annotationId)}">${escape(video.relativePath.slice("assets/stimuli/".length))}</option>`).join("")}${draft.isiDefinitions.map(isi => `<option value="${isi.isiId}">ISI · ${isi.durationMs} ms</option>`).join("")}</datalist>`;
+    root.querySelectorAll("[data-video-library-export]").forEach(button => { button.disabled = locked || !library?.videos.length; });
+    root.querySelectorAll('[data-confirm-section="stimuli"]').forEach(button => { if (button.dataset.reviewState !== "reviewed") button.disabled = locked; });
+    renderVersions();
   }
+  function validatePending() { const variants = resolveVariantEntries(draft, library); report(`${variants.length} variant${variants.length === 1 ? "" : "s"}. Changes pending confirmation.`); }
   function use(next, focus) {
-    draft = next; changed(); render();
+    validateVariantDraft(next); draft = next; changed(); render();
     if (focus) host?.querySelector(focus)?.focus();
-    try { const variants = resolveStimulusVariants(draft, library); report(`${variants.length} variant${variants.length === 1 ? "" : "s"}. Changes pending confirmation.`); }
-    catch (error) { report(error.message, true); }
+    try { validatePending(); } catch (error) { report(error.message, true); }
   }
   async function adopt(receipt, { loadSaved = false } = {}) {
-    const token = generation;
-    const next = await validateVideoLibrary(receipt.library ?? receipt);
+    const token = generation, next = await validateVideoLibrary(receipt.library ?? receipt);
     if (token !== generation) throw new Error("The workspace or table changed during the library scan. Rescan the library.");
-    const design = loadSaved && !edited && receipt.design ? await validateStimulusOrderDocument(receipt.design, next) : null;
+    const design = loadSaved && !edited && receipt.design ? await validateStoredVariantDocument(receipt.design, next) : null;
     if (token !== generation) throw new Error("The workspace or table changed while loading. Confirm Segment 1 again.");
     const stale = library?.integritySha256 !== next.integritySha256;
-    library = next;
-    if (stale || receipt.designError) { generation++; if (confirmed || receipt.designError) edited = true; confirmed = null; onChange(); }
-    if (design) {
-      draft = { columns: design.columns, rows: design.rows }; confirmed = design; edited = false;
-    }
-    render();
-    report(receipt.designError || `${library.videos.length} video${library.videos.length === 1 ? "" : "s"} in the library. Paste video annotations and ISIs into the table.`, Boolean(receipt.designError));
+    library = next; colors = videoColorMap(library);
+    if (stale || receipt.designError) { generation++; libraryRevision++; if (confirmed || receipt.designError) edited = true; confirmed = null; catalogue = null; legacy = null; notify(); }
+    if (design?.version === 2) { draft = structuredClone(design.draft); confirmed = design; edited = false; }
+    if (design?.version === 1) { legacy = design; report("A legacy numeric-ISI design is saved. Use Convert saved design to review its named ISIs before confirming."); }
+    else report(receipt.designError || `${library.videos.length} videos available. Define ISIs and paste the variant columns.`, Boolean(receipt.designError));
+    render(); notify();
   }
   async function confirmLibrary() {
     if (busy) return false;
@@ -57,81 +83,110 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       const receipt = await operate("confirm-library");
       if (token !== generation) throw new Error("The workspace changed during confirmation. Confirm Segment 1 again.");
       await adopt(receipt, { loadSaved: true });
-      if (workspaceStatus) workspaceStatus.textContent = `${library.videos.length} video annotations saved. Segment 3 is ready for presentation orders.`;
+      if (workspaceStatus) workspaceStatus.textContent = `${library.videos.length} video annotations saved. Segment 3 is ready.`;
       return true;
-    }
-    catch (error) { if (workspaceStatus) workspaceStatus.textContent = error.message; report(error.message, true); return false; }
-    finally { busy = false; render(); }
+    } catch (error) { if (workspaceStatus) workspaceStatus.textContent = error.message; report(error.message, true); return false; }
+    finally { busy = false; render(); notify(); }
   }
   async function confirm() {
     if (busy || !library) { report("Confirm the video library in Segment 1 first.", true); return false; }
     busy = true; const token = generation; render();
     try {
-      const document = await createStimulusOrderDocument(draft, library);
+      const document = await createVariantDocument(draft, library);
       const receipt = await operate("save-order", { document });
-      const saved = await validateStimulusOrderDocument(receipt.design, library);
+      const saved = await validateStoredVariantDocument(receipt.design, library);
       if (token !== generation || canonicalJson(saved) !== canonicalJson(document)) throw new Error("The table changed while saving. Confirm the current table again.");
-      confirmed = saved; edited = false; onChange();
-      report(`${saved.variants.length} variant${saved.variants.length === 1 ? "" : "s"} saved with version annotations. Participant allocation belongs to the Runner.`);
+      confirmed = saved; edited = false; legacy = null; generation++; notify();
+      report(`${saved.contribution.variants.length} variants saved with version annotations. Allocation policy belongs to the Runner.`);
       return true;
     } catch (error) { report(error.message, true); return false; }
-    finally { busy = false; render(); }
+    finally { busy = false; render(); notify(); }
   }
-  const onInput = (event) => {
+  function updateCellCue(control) {
+    const parent = control.closest?.("td"), info = describe(control.value);
+    if (!parent) return;
+    parent.dataset.orderKind = info.kind; parent.style?.setProperty("--video-color", info.color);
+    const cue = parent.querySelector(".order-cell-cue"); if (cue) cue.textContent = info.cue;
+  }
+  function refreshCues() {
+    host?.querySelectorAll?.("[data-order-row]").forEach(updateCellCue);
+    for (const isi of draft.isiDefinitions) {
+      const count = draft.rows.reduce((total, row) => total + row.filter(cell => cell === isi.isiId).length, 0);
+      const usage = host?.querySelector('[data-isi-usage="' + isi.isiId + '"]');
+      const remove = host?.querySelector('[data-isi-remove="' + isi.isiId + '"]');
+      if (usage) usage.textContent = 'ms · ' + count + ' use' + (count === 1 ? '' : 's');
+      if (remove) remove.disabled = busy || count > 0;
+    }
+  }
+  const onInput = event => {
     const control = event.target;
-    if (busy) return;
-    if (control.dataset.orderRow === undefined && control.dataset.orderTitle === undefined) return;
-    // Invalidate a previously saved receipt immediately, including invalid edits.
+    if (busy || (control.dataset.orderRow === undefined && control.dataset.orderTitle === undefined && control.dataset.isiId === undefined)) return;
     if (control.dataset.orderRow !== undefined) draft.rows[Number(control.dataset.orderRow)][Number(control.dataset.orderColumn)] = control.value;
-    else draft.columns[Number(control.dataset.orderTitle)].title = control.value;
-    changed(); control.removeAttribute("aria-invalid");
+    else if (control.dataset.orderTitle !== undefined) draft.columns[Number(control.dataset.orderTitle)].title = control.value;
+    else draft.isiDefinitions.find(isi => isi.isiId === control.dataset.isiId).durationMs = control.value === "" ? null : Number(control.value);
+    changed(); refreshCues(); control.removeAttribute("aria-invalid");
   };
-  const onEdit = (event) => {
+  const onEdit = event => {
     const control = event.target;
-    if (busy || !library) return;
+    if (busy || !library || (control.dataset.orderRow === undefined && control.dataset.orderTitle === undefined && control.dataset.isiId === undefined)) return;
     try {
       if (control.dataset.orderRow !== undefined) {
-        const r = Number(control.dataset.orderRow), c = Number(control.dataset.orderColumn);
-        const value = control.value;
-        // Keep invalid text in the draft so confirmation cannot save stale cells.
-        draft.rows[r][c] = value;
-        const next = setOrderCell(draft, r, c, value, library);
-        draft = next; control.value = next.rows[r][c]; changed();
-      } else if (control.dataset.orderTitle !== undefined) {
-        draft.columns[Number(control.dataset.orderTitle)].title = control.value;
-        changed();
-      }
-      const variants = resolveStimulusVariants(draft, library);
-      report(`${variants.length} variant${variants.length === 1 ? "" : "s"}. Changes pending confirmation.`);
+        const r = Number(control.dataset.orderRow), c = Number(control.dataset.orderColumn); draft.rows[r][c] = control.value;
+        resolveVariantCell(control.value.trim(), library, draft.isiDefinitions); draft.rows[r][c] = control.value.trim(); control.value = draft.rows[r][c];
+      } else if (control.dataset.orderTitle !== undefined) draft.columns[Number(control.dataset.orderTitle)].title = control.value;
+      else draft = editIsi(draft, control.dataset.isiId, control.value === "" ? null : Number(control.value));
+      changed(); refreshCues(); validatePending();
     } catch (error) { changed(); control.setAttribute("aria-invalid", "true"); report(error.message, true); }
   };
-  const onPaste = (event) => {
+  const onPaste = event => {
     const control = event.target;
     if (busy || !library || control.dataset.orderRow === undefined) return;
     event.preventDefault();
-    try {
-      const r = Number(control.dataset.orderRow), c = Number(control.dataset.orderColumn);
-      use(pasteStimulusOrder(draft, r, c, event.clipboardData?.getData("text/plain") ?? "", library), `[data-order-row="${r}"][data-order-column="${c}"]`);
-    } catch (error) { report(error.message, true); }
+    try { const r = Number(control.dataset.orderRow), c = Number(control.dataset.orderColumn); use(pasteVariantTable(draft, r, c, event.clipboardData?.getData("text/plain") ?? "", library), `[data-order-row="${r}"][data-order-column="${c}"]`); }
+    catch (error) { report(error.message, true); }
   };
-  const onClick = (event) => {
+  const onClick = event => {
     const button = event.target.closest?.("button");
     if (!button || busy || !library) return;
     try {
-      if (button.hasAttribute("data-order-add-row")) use(addOrderRow(draft), `[data-order-row="${draft.rows.length}"][data-order-column="0"]`);
-      else if (button.hasAttribute("data-order-add-column")) use(addOrderColumn(draft), `[data-order-title="${draft.columns.length}"]`);
-      else if (button.dataset.orderRemoveRow !== undefined) { const next = structuredClone(draft); next.rows.splice(Number(button.dataset.orderRemoveRow), 1); use(next, "[data-order-add-row]"); }
-      else if (button.dataset.orderRemoveColumn !== undefined) { const c = Number(button.dataset.orderRemoveColumn), next = structuredClone(draft); next.columns.splice(c, 1); next.rows.forEach((row) => row.splice(c, 1)); use(next, "[data-order-add-column]"); }
+      if (button.hasAttribute("data-isi-add")) use(addIsiDurations(draft, host.querySelector("[data-isi-list]")?.value ?? ""), "[data-isi-list]");
+      else if (button.dataset.isiRemove) use(removeIsi(draft, button.dataset.isiRemove), "[data-isi-list]");
+      else if (button.hasAttribute("data-order-convert-legacy") && legacy) { const next = migrateLegacyOrder(legacy); legacy = null; use(next); report("Legacy order converted to named ISIs. Original file is preserved until you confirm this revision."); }
+      else if (button.hasAttribute("data-order-add-row")) use(addVariantRow(draft), `[data-order-row="${draft.rows.length}"][data-order-column="0"]`);
+      else if (button.hasAttribute("data-order-add-column")) use(addVariantColumn(draft), `[data-order-title="${draft.columns.length}"]`);
+      else if (button.dataset.orderRemoveRow !== undefined) { const next = structuredClone(draft), r = Number(button.dataset.orderRemoveRow); next.rows.splice(r, 1); next.entryIds.splice(r, 1); use(next, "[data-order-add-row]"); }
+      else if (button.dataset.orderRemoveColumn !== undefined) { const next = structuredClone(draft), c = Number(button.dataset.orderRemoveColumn); next.columns.splice(c, 1); next.rows.forEach(row => row.splice(c, 1)); next.entryIds.forEach(row => row.splice(c, 1)); use(next, "[data-order-add-column]"); }
     } catch (error) { report(error.message, true); }
   };
   host?.addEventListener("input", onInput); host?.addEventListener("change", onEdit); host?.addEventListener("paste", onPaste); host?.addEventListener("click", onClick);
-  render();
+  versions?.addEventListener?.("click", onClick); render();
   return {
     confirm, confirmLibrary, adopt,
-    reset() { generation++; library = null; confirmed = null; draft = createStimulusOrder(); edited = false; render(); },
+    async restore(document, receipt) {
+      const token = generation, next = await validateVideoLibrary(receipt.library ?? receipt);
+      const verified = await validateStoredVariantDocument(document, next);
+      if (token !== generation) throw new Error("The design changed while reopening.");
+      if (verified.version !== 2) throw new Error("Legacy designs require explicit conversion.");
+      library = next; colors = videoColorMap(library); draft = structuredClone(verified.draft); confirmed = verified; edited = false; legacy = null; generation++; libraryRevision++; render(); notify(); report(`${confirmed.contribution.variants.length} variants reopened. Edits require confirmation.`);
+    },
+    async restoreContribution(contribution, receipt) {
+      const token = generation, next = await validateVideoLibrary(receipt.library ?? receipt);
+      const accepted = await validateVariantDesign(contribution, next);
+      const document = await createVariantDocument(variantDesignToDraft(accepted), next);
+      if (token !== generation) throw new Error("The design changed while reopening.");
+      library = next; colors = videoColorMap(library); draft = structuredClone(document.draft); confirmed = document;
+      edited = false; legacy = null; generation++; libraryRevision++; render(); notify();
+    },
+    setCatalogue(snapshot) {
+      if (snapshot && (!Number.isSafeInteger(snapshot.revision) || snapshot.revision < 0 || !Array.isArray(snapshot.videos))) throw new TypeError("Invalid Segment 1 catalogue snapshot.");
+      if (snapshot && snapshot.revision !== libraryRevision) { changed(); libraryRevision = snapshot.revision; }
+      catalogue = snapshot ? structuredClone(snapshot) : null; render(); notify();
+    },
+    getSnapshot() { return { revision: generation, enabled: edited || Boolean(confirmed) || Boolean(legacy), pending: busy || edited || Boolean(legacy) || Boolean(library && !confirmed), contribution: confirmed ? structuredClone(confirmed.contribution) : null, dependencyRevisions: library ? [{ segment: "P1", revision: libraryRevision }] : [] }; },
+    reset() { generation++; libraryRevision++; library = null; catalogue = null; confirmed = null; legacy = null; draft = createVariantDraft(); edited = false; render(); notify(); },
     get document() { return confirmed ? structuredClone(confirmed) : null; },
-    get active() { return edited || Boolean(confirmed); },
-    get pending() { return edited || Boolean(library && !confirmed); },
+    get active() { return edited || Boolean(confirmed) || Boolean(legacy); },
+    get pending() { return busy || edited || Boolean(legacy) || Boolean(library && !confirmed); },
     async download(format) {
       if (busy) return;
       busy = true; render();
@@ -139,11 +194,10 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
         if (!library || !["csv", "xlsx"].includes(format)) throw new Error("Confirm the video library before downloading.");
         const verified = await validateVideoLibrary(library);
         const bytes = format === "csv" ? new TextEncoder().encode(videoLibraryCsv(verified)) : videoLibraryWorkbook(verified);
-        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256 });
-        report(`Video library ${format.toUpperCase()} export ready.`);
+        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256 }); report(`Video library ${format.toUpperCase()} export ready.`);
       } catch (error) { report(error.message, true); }
-      finally { busy = false; render(); }
+      finally { busy = false; render(); notify(); }
     },
-    destroy() { generation++; host?.removeEventListener("input", onInput); host?.removeEventListener("change", onEdit); host?.removeEventListener("paste", onPaste); host?.removeEventListener("click", onClick); },
+    destroy() { generation++; host?.removeEventListener("input", onInput); host?.removeEventListener("change", onEdit); host?.removeEventListener("paste", onPaste); host?.removeEventListener("click", onClick); versions?.removeEventListener?.("click", onClick); },
   };
 }

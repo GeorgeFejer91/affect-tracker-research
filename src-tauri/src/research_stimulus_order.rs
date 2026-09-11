@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub mod export;
+pub mod variants;
 pub const LIBRARY_FILE: &str = "video-library.annotations.json";
 pub const ORDER_FILE: &str = "stimulus-order.design.json";
 pub const MAX_DOCUMENT_BYTES: u64 = 5 * 1024 * 1024;
@@ -266,7 +267,7 @@ impl StimulusOrderDocument {
 #[serde(rename_all = "camelCase")]
 pub struct AuthoringReceipt {
     pub library: VideoLibrary,
-    pub design: Option<StimulusOrderDocument>,
+    pub design: Option<variants::StoredStimulusOrder>,
     pub design_error: Option<String>,
 }
 

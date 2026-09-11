@@ -155,3 +155,20 @@ test("browser authoring accepts the same video suffixes as native imports", asyn
   const receipt = await workspace.importLibraryVideoFiles([new File(["mkv"], "third.MKV"), new File(["ogv"], "fourth.ogv"), new File(["avi"], "fifth.avi")]);
   assert.equal(receipt.library.videos.length, 5);
 });
+
+test("browser named-ISI save and clean reopen preserve the contribution; corrupt saves never masquerade as accepted", async () => {
+  const { createVariantDocument, createVariantDraft, addIsiDurations, pasteVariantTable } = await import("../site/src/research/variant-design.js");
+  const { root, workspace, assets } = await workspaceFixture();
+  const { library } = await workspace.videoLibrary({ confirm: true });
+  const [a, b] = library.videos.map(video => video.annotationId);
+  const draft = pasteVariantTable(addIsiDurations(createVariantDraft(), "500, 1500"), 0, 0, `${a}\t${b}\nISI1\tISI2\n${b}\t${a}`, library);
+  const document = await createVariantDocument(draft, library);
+  assert.deepEqual((await workspace.saveStimulusOrder(document)).design, document);
+  const reopened = new BrowserResearchWorkspace(root); await reopened.initialize();
+  assert.deepEqual((await reopened.videoLibrary()).design, document);
+  const handle = assets.children.get(STIMULUS_ORDER_FILE), old = await handle.file.text();
+  assert.equal(old, canonicalJson(document) + "\n");
+  handle.file = new File([old.replace('"runnerAssigned"', '"cyclicByOrdinal"')], STIMULUS_ORDER_FILE);
+  const rejected = await reopened.videoLibrary();
+  assert.equal(rejected.design, null); assert.match(rejected.designError, /Saved/);
+});

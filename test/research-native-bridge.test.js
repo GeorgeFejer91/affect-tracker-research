@@ -1276,7 +1276,7 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   ]) assert.match(source, new RegExp(`"${command}"`, "u"));
   assert.match(source, /const WORKSPACE_LOCATIONS = new Set\(\["workspaceRoot", "videoLibrary", "experimentPackage"\]\)/u);
   assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
-  assert.match(source, /selectionEnabled/u);
+  assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
   assert.match(source, /playbackMode/u);
   assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
   assert.match(source, /decodeQualification = "attestedQualified"/u);

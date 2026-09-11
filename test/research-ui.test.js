@@ -305,9 +305,10 @@ test("Workspace exposes one selected root and three fixed project locations", as
   }
   assert.match(markup, /Continuous rating is always enabled/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
-  assert.match(markup, /Stimulus presentation order/u);
+  assert.match(markup, /Stimulus Presentation Order/u);
   assert.match(markup, /Participant allocation belongs to the experiment runner/u);
-  assert.match(markup, /Intervals range from 0 to 3,600,000 ms/u);
+  assert.match(markup, /Durations range from 0 to 3,600,000 ms/u);
+  assert.match(markup, /one video annotation or one ISI name/u);
   assert.match(markup, /Download Excel/u);
   assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
 });

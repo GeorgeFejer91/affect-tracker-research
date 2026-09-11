@@ -68,7 +68,7 @@ pub async fn research_save_stimulus_order(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
     workspace_id: String,
-    document: crate::research_stimulus_order::StimulusOrderDocument,
+    document: crate::research_stimulus_order::variants::StoredStimulusOrder,
 ) -> ResearchResult<crate::research_stimulus_order::AuthoringReceipt> {
     authorize(&window)?;
     let workspace = Arc::clone(&workspace);

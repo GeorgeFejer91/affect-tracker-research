@@ -1,5 +1,6 @@
+import { validateStoredVariantDocument } from "./variant-design.js";
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
-import { isLibraryVideoName, createVideoLibrary, validateVideoLibrary, validateStimulusOrderDocument, VIDEO_LIBRARY_FILE, STIMULUS_ORDER_FILE } from "./stimulus-order.js";
+import { isLibraryVideoName, createVideoLibrary, validateVideoLibrary, VIDEO_LIBRARY_FILE, STIMULUS_ORDER_FILE } from "./stimulus-order.js";
 import {
   validateResearchEventV1,
   validateResearchRunManifestV2,
@@ -1752,7 +1753,7 @@ export class BrowserResearchWorkspace {
       const file = await (await assets.getFileHandle(STIMULUS_ORDER_FILE)).getFile();
       if (file.size > 5 * 1024 * 1024) throw new Error("Oversized design");
       const source = await file.text();
-      design = await validateStimulusOrderDocument(parseStrictJson(source), library);
+      design = await validateStoredVariantDocument(parseStrictJson(source), library);
       if (`${canonicalJson(design)}\n` !== source) throw new Error("Noncanonical design");
     } catch (error) {
       design = null;
@@ -1771,7 +1772,7 @@ export class BrowserResearchWorkspace {
     const library = await validateVideoLibrary(parseStrictJson(librarySource));
     if (`${canonicalJson(library)}\n` !== librarySource) fail("library-canonical", "Confirm Segment 1 to replace the noncanonical video annotation document.");
     if (library.integritySha256 !== receipt.library.integritySha256) fail("library-changed", "Video files changed. Confirm the current library in Segment 1 again.");
-    const design = await validateStimulusOrderDocument(document, library);
+    const design = await validateStoredVariantDocument(document, library);
     const source = `${canonicalJson(design)}\n`;
     await replaceFile(assets, STIMULUS_ORDER_FILE, source);
     if (await (await (await assets.getFileHandle(STIMULUS_ORDER_FILE)).getFile()).text() !== source) fail("order-write", "Variant design write readback differs.");

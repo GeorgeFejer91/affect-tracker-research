@@ -37,6 +37,63 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-variants-final-planner
+
+- Owner **S3**, P3 `variants`; open, Backend Verification continuation authorized
+  by the user's “finish segment 3” request and registered by integration.
+- Branch `codex/segment-stimuli-order-table`, worktree
+  `D:/GitHub/affect-tracker-research-stimuli-order`, predecessor `01444a7`.
+  Current canonical working-tree `for-ai/` amendment and catalogue/closure plan
+  were read completely; their uncommitted documentation is preserved.
+- P3-02/03/05/06/07/08/09/10: named ISI dictionary, chronological typed entries,
+  persistent occurrence IDs, planned boundary specification, colors, authoring
+  save/reopen and typed P7 contribution. Historical numeric v1 reader preserved.
+- User answered allocation question: **Leave allocation policy to Runner**.
+  This supersedes the catalogue's earlier cyclic allocation direction for P3-04
+  and Q06. P3 stores ordered variants with version hashes and runner ownership,
+  without participant controls or a cyclic algorithm.
+- User subsequently confirmed Q02/Q14: repeated videos and leading/consecutive/
+  terminal ISIs are allowed in exact order; unequal lengths use trailing padding,
+  interior blanks reject; ISI names stay stable, duplicate durations are allowed,
+  referenced definitions cannot be deleted, and duration edits invalidate acceptance.
+- Producer P1 owns verified video IDs, duration and future readable annotations.
+  P3 owns dictionary/sequence/event meaning; P7 owns final composition, shared
+  stale-export guards and save acknowledgement. Agreed snapshot registry seam:
+  revision, enabled, pending, contribution and dependencyRevisions; P7 rechecks
+  before/after asynchronous work. P1 successor owner being allocated separately.
+- Allowed seams: stimulus-order editor/model/workbook tests, new bounded variant
+  contract and Rust mirror, stored-document dispatch, P3 UI/CSS; app.js exposes
+  the editor snapshot only. No P7 finalizer, other segment controls or Runner edits.
+- Baseline: existing 15/15 P3 Node tests pass. Collect successor contract/parity,
+  unknown/numeric/collision/revision/save-failure tests and background rendering;
+  combined checks at handoff. Physical/installed/recording qualification deferred.
+
+#### Successor component checkpoint — 2026-09-11
+
+- User's exact Q02/Q14 reply: **“Yes, use these rules”**. The rules above are
+  accepted, not proposals. Allocation reply remains **“Leave allocation policy
+  to Runner”**. Other catalogue decisions remain with their owners.
+- Implemented named-ISI ordered variants, exact occurrence IDs, contribution
+  hashes, explicit v1 migration, v2 browser/native authoring save/reopen, and
+  the pure planned marker/reconstruction specification. No runtime recorder,
+  allocation algorithm or actual clock is implemented by this slice.
+- Removed unreachable S3 predecessor add-video/pool/dialog handlers and their
+  absent-control bridge projection after the user requested redundancy cleanup.
+  Retained active catalogue rendering, verification and historical readers.
+- Checks: 452/452 Node tests; 192/192 locked no-default Rust tests; no-default
+  all-target clippy with warnings denied; format and whitespace checks pass.
+  Pages/desktop closure builds passed (175/8 files), with the existing large
+  desktop chunk warning. No dependency or unsafe-boundary changes.
+- Actual `bootResearchUi` renders: empty, populated and invalid stored design
+  at 1600 and 800 px; no page errors. Empty state is one prerequisite/action;
+  populated table scrolls inside its 400 px pane. Inspected screenshots and
+  machine-readable `segment3-ui-receipt.json` are in this worktree's ignored
+  `src-tauri/target/segment3-verification/` directory.
+- P1's new immutable assetId/readable annotation catalogue remains an explicit
+  producer dependency: this checkpoint still uses the predecessor hash-bound
+  library. P7 owns registry/final recipe composition. Do not claim the successor
+  complete or ready for recording until these source seams are integrated.
+
 ### 20260911-stimuli-order-table
 
 - Owner: **Segment 3**, segment `stimuli`; status **ready**. Backend Verification,

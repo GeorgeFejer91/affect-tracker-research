@@ -1124,7 +1124,6 @@ export class NativeResearchRuntimeBridge {
       clearIntervalObject,
     });
     this.workspace = null;
-    this.sourceCapabilities = null;
     this.nativeMediaCapability = null;
     this.nativeProtocolCapability = null;
     this.nativePackageProtocolCapability = null;
@@ -1160,7 +1159,6 @@ export class NativeResearchRuntimeBridge {
         this.invoke("research_run_status"),
         this.invoke("research_package_run_status"),
       ]);
-      this.sourceCapabilities = sourceCapabilities;
       this.nativeMediaCapability = validateNativeMediaCapabilityV2(nativeMediaCapability);
       this.nativeProtocolCapability = validateNativeProtocolCapabilityV1(nativeProtocolCapability);
       this.nativePackageProtocolCapability = nativePackageProtocolCapability;
@@ -1168,7 +1166,6 @@ export class NativeResearchRuntimeBridge {
       this.nativeTimingReady = (nativeRunStatusHandshake(status)
         || this.nativePackageProtocolCapability.nativeStartReady === true)
         && this.nativeMediaCapability.reasonCode !== INTERFACE_ONLY_PLATFORM_REASON;
-      this.#applySourceCapabilities();
       this.#applyInputCapability();
       this.root.researchUi?.applyNativeInputStatus?.(inputStatus);
       this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
@@ -1393,27 +1390,6 @@ export class NativeResearchRuntimeBridge {
       }
     });
 
-  }
-
-  #applySourceCapabilities() {
-    const controls = [
-      ["#stimulus-add-repository", "repositoryAsset", "repository"],
-      ["#stimulus-add-youtube", "youtube", "youtube"],
-    ];
-    const sourceSelect = this.root.querySelector?.("#stimulus-source");
-    for (const [selector, capabilityKey, optionValue] of controls) {
-      const selectable = this.sourceCapabilities?.[capabilityKey]?.selectionEnabled === true;
-      const button = this.root.querySelector?.(selector);
-      if (button) {
-        button.hidden = !selectable;
-        button.disabled = !selectable;
-      }
-      const option = sourceSelect?.querySelector?.(`option[value="${optionValue}"]`);
-      if (option) {
-        option.hidden = !selectable;
-        option.disabled = !selectable;
-      }
-    }
   }
 
   #applyInputCapability(binding = this.root.researchUi?.inputBinding) {
