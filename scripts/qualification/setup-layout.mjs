@@ -46,6 +46,16 @@ try {
  const left=root.querySelector('.setup-pane'), grip=root.querySelector('[data-setup-resizer]'), right=root.querySelector('.preview-pane');
  const a=left.getBoundingClientRect(), b=grip.getBoundingClientRect(), c=right.getBoundingClientRect(), all=form.getBoundingClientRect();
  const stacked=innerWidth<760;
+ const compactHeaders=left.clientWidth<=479;
+ const headers=[...left.querySelectorAll('.setup-accordion-trigger')].map(trigger=>{
+  const title=trigger.querySelector('.section-title'), summary=trigger.querySelector('.section-summary');
+  const t=title.getBoundingClientRect(), s=summary.getBoundingClientRect(), h=trigger.getBoundingClientRect();
+  return {title:title.textContent.trim(),separateRows:s.top>=t.bottom-1,
+   titleLines:t.height/parseFloat(getComputedStyle(title).lineHeight),
+   contained:t.left>=h.left&&t.right<=h.right&&s.left>=h.left&&s.right<=h.right&&s.bottom<=h.bottom,
+   titleOverflow:title.scrollWidth-title.clientWidth,
+   summaryOverflow:summary.scrollWidth-summary.clientWidth};
+ });
  const receipt={name:${JSON.stringify(scenario.name)},viewport:innerWidth,stacked,
   sections:a.width,preview:c.width,divider:b.width,
   contained:stacked ? a.width<=innerWidth+1&&c.width<=innerWidth+1 : Math.abs(a.width+b.width+c.width-all.width)<1 && Math.abs(b.left-a.right)<1 && Math.abs(c.left-b.right)<1,
@@ -55,6 +65,7 @@ try {
   settingsUnchanged:settings===JSON.stringify(ui.settings),
   sectionsOverflow:left.scrollWidth-left.clientWidth,
   previewOverflow:right.scrollWidth-right.clientWidth,
+  compactHeaders,headers,
   errors};
  parent.postMessage(receipt,location.origin);
 } catch(error) { parent.postMessage({name:${JSON.stringify(scenario.name)},errors:[String(error)]},location.origin); }
@@ -99,6 +110,8 @@ try {
   for (const row of rows) {
     assert.deepEqual(row.errors, [], JSON.stringify(row));
     assert.ok(row.contained && row.minimums && row.verticalScroll && row.gripHidden && row.settingsUnchanged && row.sectionsOverflow === 0 && row.previewOverflow === 0, JSON.stringify(row));
+    assert.ok(row.headers.length>0 && row.headers.every(header=>header.contained && header.separateRows===row.compactHeaders &&
+      (!row.compactHeaders || (header.titleLines<=1.05 && header.titleOverflow===0 && header.summaryOverflow===0))), JSON.stringify(row));
   }
   console.log(JSON.stringify({ pass: true, cases: rows.length, output, rows }));
 } finally { server.close(); }
