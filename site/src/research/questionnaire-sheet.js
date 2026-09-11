@@ -173,7 +173,9 @@ export function sheetFromDefinition(value, { familyId = value?.questionnaireId, 
 }
 
 /** Parse an explicit TSV/CSV rectangle. There is no content-based delimiter guessing or formula evaluation. */
-export function parseSheetTable(text, { delimiter = "\t" } = {}) {
+export function parseSheetTable(text, { delimiter = "\t", maxColumns = 65, maxRows = 1024 } = {}) {
+  integer(maxColumns, 1, 130, "Table column limit");
+  integer(maxRows, 1, 1025, "Table row limit");
   if (typeof text !== "string" || text.length > QUESTIONNAIRE_SHEET_LIMITS.bytes
     || encoder.encode(text).byteLength > QUESTIONNAIRE_SHEET_LIMITS.bytes) throw new RangeError("Pasted table exceeds the 4 MiB limit.");
   if (delimiter !== "\t" && delimiter !== ",") throw new TypeError("Choose a tab or comma delimiter.");
@@ -187,11 +189,11 @@ export function parseSheetTable(text, { delimiter = "\t" } = {}) {
   };
   const finishField = () => {
     record.push(field); field = ""; closed = false;
-    if (record.length > QUESTIONNAIRE_SHEET_LIMITS.options + 1) throw new RangeError("Pasted table exceeds 65 columns.");
+    if (record.length > maxColumns) throw new RangeError(`Pasted table exceeds ${maxColumns} columns.`);
   };
   const finishRecord = () => {
     finishField(); records.push(record); record = [];
-    if (records.length > QUESTIONNAIRE_SHEET_LIMITS.rows) throw new RangeError("Pasted table exceeds 1024 rows.");
+    if (records.length > maxRows) throw new RangeError(`Pasted table exceeds ${maxRows} rows.`);
   };
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index];
@@ -329,6 +331,149 @@ export function reverseSheetRowCodes(sheet, row) {
 function csvCell(value) {
   const text = value === null ? "" : String(value);
   return /[",\r\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+/** The visible spreadsheet is an authoring projection, never a new wire schema. */
+export function questionnaireGridColumns(sheet, layout = "labels-and-codes") {
+  if (!["labels-and-codes", "codes-only"].includes(layout)) throw new TypeError("Unknown table layout.");
+  return ["Item", ...Array.from({ length: sheet.optionCount }, (_, i) => layout === "codes-only"
+    ? [`Code ${i + 1}`] : [`Answer ${i + 1}`, `Code ${i + 1}`]).flat(), "Required"];
+}
+
+export function questionnaireGridRows(sheet, layout = "labels-and-codes") {
+  questionnaireGridColumns(sheet, layout);
+  return sheet.rows.map((row) => [row.prompt, ...Array.from({ length: sheet.optionCount }, (_, i) => {
+    const option = row.options[i];
+    return layout === "codes-only" ? [option?.scoreValue ?? ""] : [option?.label ?? "", option?.scoreValue ?? ""];
+  }).flat(), row.required ? "true" : "false"]);
+}
+
+function refreshSharedLabels(sheet) {
+  sheet.optionLabels = Array.from({ length: sheet.optionCount }, (_, i) => {
+    const label = sheet.rows[0]?.options[i]?.label;
+    return label !== undefined && sheet.rows.every((r) => r.options[i]?.label === label) ? label : null;
+  });
+}
+
+function editGridCell(candidate, row, column, value, layout) {
+  const last = questionnaireGridColumns(candidate, layout).length - 1;
+  if (column === 0) candidate.rows[row].prompt = safeText(String(value), 4000, "Item prompt");
+  else if (column === last) {
+    if (!["true", "false"].includes(String(value).trim().toLowerCase())) throw new TypeError("Required must be true or false.");
+    candidate.rows[row].required = String(value).trim().toLowerCase() === "true";
+  } else if (layout === "codes-only") editCell(candidate, row, column, value);
+  else {
+    const option = candidate.rows[row].options[Math.floor((column - 1) / 2)];
+    if (!option) throw new RangeError("This item has no answer in that column; change the option count first.");
+    if (column % 2) option.label = safeText(String(value), 500, "Answer label");
+    else option.scoreValue = score(value);
+  }
+}
+
+export function setQuestionnaireGridCell(sheet, row, column, value, layout = "labels-and-codes") {
+  stateFor(sheet);
+  integer(row, 0, sheet.rows.length - 1, "Item row");
+  integer(column, 0, questionnaireGridColumns(sheet, layout).length - 1, "Table column");
+  const candidate = copy(sheet);
+  editGridCell(candidate, row, column, value, layout);
+  refreshSharedLabels(candidate);
+  return commit(sheet, candidate, [candidate.rows[row].itemId]);
+}
+
+/** Headered tables replace all rows; headerless rectangles update only the focused range. */
+export function applyQuestionnaireGridPaste(sheet, text, { row = 0, column = 0, delimiter = "\t", layout = "labels-and-codes" } = {}) {
+  stateFor(sheet);
+  integer(row, 0, 1023, "Starting row");
+  integer(column, 0, questionnaireGridColumns(sheet, layout).length - 1, "Starting column");
+  let records = parseSheetTable(text, { delimiter, maxColumns: 130, maxRows: 1025 });
+  if (!records.length) return { sheet, layout };
+  const header = records[0];
+  const hasHeader = /^(?:Item|Questionnaire item|Question)$/iu.test(header[0])
+    && /^(?:Answer|Code) 1$/u.test(header[1] ?? "");
+  const candidate = cloneQuestionnaireSheet(sheet);
+  if (hasHeader) {
+    if (row !== 0 || column !== 0) throw new TypeError("Paste a table with headers into the first item cell.");
+    layout = header[1] === "Code 1" ? "codes-only" : "labels-and-codes";
+    const required = header.at(-1) === "Required";
+    const count = (header.length - 1 - Number(required)) / (layout === "codes-only" ? 1 : 2);
+    integer(count, 2, 64, "Header answer-option count");
+    const expected = questionnaireGridColumns({ optionCount: count }, layout);
+    if (!required) expected.pop();
+    if (header.slice(1).some((cell, i) => cell !== expected[i + 1])) throw new TypeError("Use ordered Answer 1, Code 1… columns and an optional final Required column.");
+    setOptionCount(candidate, count);
+    records = records.slice(1);
+    if (!records.length) throw new TypeError("The pasted table has headers but no items.");
+    const previousRows = candidate.rows;
+    const visibleRows = questionnaireGridRows(candidate, layout);
+    const used = new Set();
+    const reservedIds = new Set(previousRows.map(r => r.itemId));
+    candidate.rows = records.map((record, index) => {
+      // A projection carries no scientific IDs. Match an unambiguous existing
+      // row, never attach its subscale merely because a new item occupies it.
+      let matches = visibleRows.map((cells, i) => ({ cells, i })).filter(({cells,i}) => !used.has(i)
+        && record.every((cell,c) => String(cells[c]) === cell));
+      if (matches.length !== 1) matches = previousRows.map((r,i) => ({r,i}))
+        .filter(({r,i}) => !used.has(i) && r.prompt === record[0]);
+      if (matches.length === 1) { used.add(matches[0].i); return previousRows[matches[0].i]; }
+      const itemId = nextId(reservedIds, "item-"); reservedIds.add(itemId);
+      const fresh = blankRow(candidate, itemId);
+      // Codes-only explicitly leaves the existing displayed labels in place.
+      if (layout === "codes-only" && previousRows[index]) fresh.options = previousRows[index].options.map(o => ({...o}));
+      return fresh;
+    });
+  }
+  if (row + records.length > 1024 || column + records[0].length > questionnaireGridColumns(candidate, layout).length) {
+    throw new RangeError("Pasted range does not fit. Include the table headers to set the answer count automatically.");
+  }
+  const ids = new Set(candidate.rows.map((r) => r.itemId));
+  while (candidate.rows.length < row + records.length) {
+    const id = nextId(ids, "item-"); ids.add(id); candidate.rows.push(blankRow(candidate, id));
+  }
+  records.forEach((record, r) => {
+    if (hasHeader) {
+      const options = candidate.rows[r].options;
+      const optionIds = new Set(options.map((o) => o.optionId));
+      while (options.length < candidate.optionCount) {
+        const id = nextId(optionIds, "option-"); optionIds.add(id);
+        options.push({ optionId: id, label: candidate.optionLabels[options.length] ?? String(options.length + 1), scoreValue: null });
+      }
+    }
+    record.forEach((cell, c) => {
+      try { editGridCell(candidate, row + r, column + c, cell, layout); }
+      catch (error) { throw new TypeError(`Item ${row + r + 1}, ${questionnaireGridColumns(candidate, layout)[column + c]}: ${error.message}`); }
+    });
+    // A full labelled export pads heterogeneous short rows with empty pairs.
+    if (hasHeader && layout === "labels-and-codes") {
+      const options = candidate.rows[r].options;
+      while (options.length > 2 && options.at(-1).label === "" && options.at(-1).scoreValue === null) options.pop();
+    }
+  });
+  refreshSharedLabels(candidate);
+  commit(sheet, candidate, records.map((_r, i) => candidate.rows[row + i].itemId));
+  return { sheet, layout };
+}
+
+/** Bounded text for an explicit copy/download gesture. Never reads the clipboard. */
+export function serializeQuestionnaireGrid(sheet, { layout = "labels-and-codes", delimiter = "\t", header = true, range = null } = {}) {
+  draftBounds(sheet);
+  if (!["\t", ","].includes(delimiter)) throw new TypeError("Choose a tab or comma delimiter.");
+  const columns = questionnaireGridColumns(sheet, layout);
+  let rows = questionnaireGridRows(sheet, layout);
+  if (range) {
+    const { top, bottom, left, right } = range;
+    integer(top, 0, rows.length - 1, "Selection first row"); integer(bottom, top, rows.length - 1, "Selection last row");
+    integer(left, 0, columns.length - 1, "Selection first column"); integer(right, left, columns.length - 1, "Selection last column");
+    rows = rows.slice(top, bottom + 1).map((r) => r.slice(left, right + 1));
+    if (header) rows.unshift(columns.slice(left, right + 1));
+  } else if (header) rows.unshift(columns);
+  const output = rows.map((record) => record.map((value) => {
+    const text = String(value);
+    // Numeric negatives are valid codes; text that Excel could execute is not exported.
+    if (typeof value !== "number" && /^[\s]*[=+@-]/u.test(text)) throw new TypeError("Formula-like text cannot be copied to Excel safely. Remove its leading formula character first.");
+    return text.includes(delimiter) || /["\r\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  }).join(delimiter)).join("\r\n") + "\r\n";
+  if (encoder.encode(output).byteLength > QUESTIONNAIRE_SHEET_LIMITS.bytes) throw new RangeError("Export exceeds the 4 MiB table limit.");
+  return output;
 }
 
 /** Compile only explicit item data through the existing canonical importer. No runner contract is extended. */

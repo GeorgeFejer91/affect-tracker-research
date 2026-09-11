@@ -7,7 +7,8 @@ filename order before taking project action.
 ## Authority map
 
 - [`15-RESEARCH-V1-CHARTER.md`](./15-RESEARCH-V1-CHARTER.md) is the sole active
-  product and architecture authority.
+  product and architecture authority, including its dated amendment delegating
+  final-state capabilities and segment ownership to `60-SEGMENT-CATALOGUE.md`.
 - [`05-PROJECT-METADATA.md`](./05-PROJECT-METADATA.md) records repository,
   checkpoint, product, and source identity.
 - [`10-PRODUCT-REQUIREMENTS.md`](./10-PRODUCT-REQUIREMENTS.md) restates the
@@ -16,15 +17,28 @@ filename order before taking project action.
   timing, data, and presentation authority.
 - [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md) defines acceptance
   and qualification evidence.
-- [`40-ROADMAP.md`](./40-ROADMAP.md) is the implementation-status authority.
+- [`40-ROADMAP.md`](./40-ROADMAP.md) retains implementation and qualification
+  receipts; `60-SEGMENT-CATALOGUE.md` owns the current capability checklist.
 - [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md) tracks
-  deferred work discovered outside the current Section 2 pass.
+  historical deferred issues, mapped to central catalogue IDs for current work.
 - [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md) defines the pass-intent
   check, three-stage development and verification workflow, change discipline,
   and skill routing.
 - [`55-AGENT-MESSAGE-BOARD.md`](./55-AGENT-MESSAGE-BOARD.md) coordinates
   single-segment ownership, branch integration, suggestions, and compatibility
   issues. It does not grant implementation permission or amend the charter.
+- [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
+  roadmap and capability checklist: purpose, user input, JSON contribution,
+  consumers, existing behavior, remaining items and decisions for each segment.
+  Every pass starts with assigned segment/checklist IDs and updates only that
+  segment's status/evidence and explicitly allocated shared seams.
+- [`61-IMPLEMENTATION-AUDIT.md`](./61-IMPLEMENTATION-AUDIT.md) preserves the dated
+  current-source field/function audit and redundancy findings; it is evidence
+  for comparison, not a competing final-state specification.
+- [`62-PLANNER-CLOSURE-PLAN.md`](./62-PLANNER-CLOSURE-PLAN.md) prioritizes incomplete
+  Planner work and proposes missing-segment designs, interfaces and bounded
+  implementation passes. It does not mark capabilities complete or replace
+  `60` as the decision register/checklist.
 - [`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md) and
   [`references.bib`](./references.bib) record active source decisions.
 
@@ -32,6 +46,13 @@ Target language is never evidence that implementation or qualification has
 landed. Use the roadmap and exact candidate receipts before making a claim.
 
 ## Product boundary
+
+The following describes the existing v1 generation. The charter's 2026-09-11
+amendment adopts the central roadmap's final-state Planner direction, including
+chronological variant columns with Runner-owned participant allocation, consolidated Flubber
+controls, screen geometry and optional XR authoring. Their successor schemas
+are not yet implemented. References below to a current Section 2 pass describe
+historical scope; every new pass follows the current request and catalogue.
 
 Affect Research is a local-first continuous valence/arousal research instrument
 with exactly two user-visible modes:

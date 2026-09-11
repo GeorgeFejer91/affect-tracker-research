@@ -1,6 +1,7 @@
 import {
   createQuestionnaireSheet, cloneQuestionnaireSheet, sheetFromDefinition, sheetToAuthoring,
-  applySheetPaste, setSheetCell, setOptionCount, setOptionLabels,
+  applyQuestionnaireGridPaste, setQuestionnaireGridCell, setOptionCount,
+  questionnaireGridColumns, questionnaireGridRows, serializeQuestionnaireGrid,
   appendSheetRows, removeSheetRow, reverseSheetRowCodes,
 } from "./questionnaire-sheet.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
@@ -25,7 +26,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 });
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
-      repeatLabels: 1, sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
+      repeatLabels: 1, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
+      sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
   }
 
   function activeEntries() {
@@ -80,24 +82,24 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   }
 
   function rowMarkup(entry, row, index) {
-    const promptKey = `${index}:0`;
-    const prompt = entry.invalid.has(promptKey) ? entry.invalid.get(promptKey) : row.prompt;
-    const codeCells = row.options.map((option, column) => {
-      const cell = `${index}:${column + 1}`;
-      const displayed = entry.invalid.has(cell) ? entry.invalid.get(cell) : option.scoreValue ?? "";
-      return `<td><input type="text" inputmode="decimal" data-sheet-cell="${index}:${column + 1}"
-        aria-label="Item ${index + 1}, recorded value ${column + 1}" value="${escape(displayed)}"
-        ${entry.invalid.has(cell) ? 'aria-invalid="true"' : ""}></td>`;
+    const columns = questionnaireGridColumns(entry.sheet, entry.layout);
+    const values = questionnaireGridRows({ ...entry.sheet, rows: [row] }, entry.layout)[0];
+    const cells = values.map((value, column) => {
+      const key = `${index}:${column}`;
+      const displayed = entry.invalid.has(key) ? entry.invalid.get(key) : value;
+      const required = column === columns.length - 1;
+      const label = column > 0 && !required && entry.layout === "labels-and-codes" && column % 2 === 1;
+      const optionIndex = entry.layout === "codes-only" ? column - 1 : Math.floor((column - 1) / 2);
+      if (column > 0 && !required && optionIndex >= row.options.length) return '<td aria-label="No option for this item">—</td>';
+      return `<td class="${column === 0 ? "sheet-prompt-cell" : label ? "sheet-answer-cell" : "sheet-code-cell"}"><textarea rows="2" data-sheet-cell="${key}" aria-label="Item ${index + 1}, ${escape(columns[column])}" ${!label && column > 0 && !required ? 'inputmode="decimal"' : ""} ${entry.invalid.has(key) ? 'aria-invalid="true"' : ""}>${escape(displayed)}</textarea></td>`;
     }).join("");
     return `<tr><th scope="row">${index + 1}</th>
-      <td class="sheet-prompt-cell"><textarea rows="2" data-sheet-cell="${index}:0" aria-label="Item ${index + 1} text" ${entry.invalid.has(promptKey) ? 'aria-invalid="true"' : ""}>${escape(prompt)}</textarea></td>
-      ${codeCells}${Array.from({ length: entry.sheet.optionCount - row.options.length }, () => '<td aria-label="No option for this item">—</td>').join("")}<td><input type="checkbox" data-sheet-required="${index}" aria-label="Require an answer to item ${index + 1}" ${row.required ? "checked" : ""}></td>
+      ${cells}
       <td class="sheet-row-actions"><button type="button" data-sheet-action="reverse" data-row="${index}" aria-label="Reverse recorded values for item ${index + 1}" title="Reverse recorded values">⇄</button><button type="button" data-sheet-action="delete-row" data-row="${index}" aria-label="Delete item ${index + 1}" title="Delete item">×</button></td></tr>`;
   }
 
   function entryMarkup({ family, language, key, entry }, index) {
     const sheet = entry.sheet;
-    const labels = Array.from({ length: sheet.optionCount }, (_, i) => `<label class="field"><span>Option ${i + 1}</span><input type="text" data-sheet-label="${i}" aria-label="Displayed label for option ${i + 1}" value="${escape(sheet.optionLabels[i])}" placeholder="${sheet.optionLabels[i] === null ? "Labels vary by item" : "Answer label"}"></label>`).join("");
     return `<details class="questionnaire-sheet" data-sheet-key="${escape(key)}" ${entry.open ? "open" : ""}>
       <summary><span class="sheet-heading"><strong>${escape(sheet.title || family.label)}</strong><span>${escape(language.label)} · ${sheet.rows.filter((r) => r.prompt.trim()).length} items</span></span><span class="sheet-save-state">${status(entry)}</span><svg class="sheet-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary>
       <fieldset class="sheet-body" ${context.locked || entry.busy ? "disabled" : ""}>
@@ -106,13 +108,13 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           <label class="field"><span>Answer options</span><input type="number" min="2" max="64" step="1" data-sheet-option-count value="${sheet.optionCount}"></label>
           <label class="field"><span>Answers</span><select data-sheet-required-all><option value="" selected>Set for all items…</option><option value="required">Required</option><option value="optional">Optional</option></select></label></div>
         <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
-        <div class="sheet-labels-heading"><strong>Displayed answer labels</strong><span>One answer per item</span></div>
-        <div class="sheet-labels">${labels}</div>
-        <p class="sheet-paste-help">Paste from Excel into any cell. First column: item text. Following columns: recorded values, including reverse coding. Participants see the labels above.</p>
+        <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only (keep answer labels)</option></select></label>
+        <p class="sheet-paste-help">Paste Excel cells anywhere in the table. Answer columns are what participants see; Code columns are recorded values. Required accepts true or false. One answer per item.</p>
+        <p class="sheet-paste-help">Include the template headers in the first cell to replace the whole table and set its option count. Without headers, paste changes only that range. Shift-click or Shift+arrow selects a range; Ctrl+C copies it. Ctrl+A selects all cells. A replacement table retains item identity/subscale only for unambiguously matched items; new items receive new identities. The final recipe retains full metadata.</p>
         <div class="sheet-table-scroll" tabindex="0" role="region" aria-label="${escape(family.label)} ${escape(language.label)} questionnaire table">
-          <table class="sheet-table"><thead><tr><th scope="col">#</th><th scope="col">Questionnaire item</th>${Array.from({length: sheet.optionCount}, (_, i) => `<th scope="col">Code ${i + 1}</th>`).join("")}<th scope="col">Required</th><th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${sheet.rows.map((row, i) => rowMarkup(entry, row, i)).join("")}</tbody></table>
+          <table class="sheet-table"><thead><tr><th scope="col">#</th>${questionnaireGridColumns(sheet, entry.layout).map((label) => `<th scope="col">${escape(label)}</th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${sheet.rows.map((row, i) => rowMarkup(entry, row, i)).join("")}</tbody></table>
         </div>
-        <div class="sheet-actions"><button type="button" data-sheet-action="add-row">Add row</button><button type="button" data-sheet-action="upload">Import file</button><button type="button" data-sheet-action="template">Download table template</button><button type="button" data-sheet-action="undo" ${entry.undo ? "" : "disabled"}>Undo edit</button></div>
+        <div class="sheet-actions"><button type="button" data-sheet-action="add-row">Add row</button><button type="button" data-sheet-action="copy-table">Copy whole table</button><button type="button" data-sheet-action="upload">Import file</button><button type="button" data-sheet-action="template">Download table template</button><button type="button" data-sheet-action="undo" ${entry.undo ? "" : "disabled"}>Undo edit</button></div>
         <details class="sheet-options"><summary>Display and source details</summary><div class="sheet-options-content">
           <label class="field"><span>Repeat answer labels in preview</span><select data-sheet-repeat><option value="1" ${entry.repeatLabels === 1 ? "selected" : ""}>Above every item</option><option value="5" ${entry.repeatLabels === 5 ? "selected" : ""}>Every 5 items</option><option value="10" ${entry.repeatLabels === 10 ? "selected" : ""}>Every 10 items</option></select></label>
           <p class="field-help">Label spacing previews the questionnaire design here. Saving this setting into the finished experiment is planned with the runner work.</p>
@@ -129,6 +131,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   function render() {
     if (!container) return;
     const active = activeEntries();
+    // A rebuilt table has new cells; never keep an invisible, stale paste target.
+    active.forEach(({ entry }) => { entry.selection = null; });
     container.innerHTML = active.length ? active.map(entryMarkup).join("")
       : '<p class="empty-state">No questionnaires yet. Add a blank table or start with MAIA-2.</p>';
     container.querySelectorAll("details[data-sheet-key]").forEach((details) => {
@@ -156,7 +160,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   function preserveUndo(entry) {
     entry.undo = { sheet: cloneQuestionnaireSheet(entry.sheet), dirty: entry.dirty,
       sourceBytes: entry.sourceBytes, authoringResult: entry.authoringResult,
-      sourceDefinitionHash: entry.sourceDefinitionHash };
+      sourceDefinitionHash: entry.sourceDefinitionHash, layout: entry.layout, pristine: entry.pristine };
   }
 
   async function save(key) {
@@ -168,9 +172,11 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       entry.error = "";
       render();
       const result = await sheetToAuthoring(entry.sheet);
+      if (entries.get(key) !== entry || context.locked) throw new Error("The questionnaire table changed while preparing its save.");
       const bytes = result.sourceBytes ?? entry.sourceBytes;
       await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
         definition: result.definition, sourceBytes: bytes,
+        expectedPresetToken: entry.presetToken,
         authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt });
       entry.sourceDefinitionHash = result.definition.definitionSha256;
       entry.sheet = sheetFromDefinition(result.definition, { familyId: entry.sheet.familyId, authoringResult: result });
@@ -186,10 +192,11 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     }
   }
 
-  function loadDefinition(definition, { familyId, sourceBytes = null, authoringResult = null, onlyIfPristine = false } = {}) {
+  function loadDefinition(definition, { familyId, sourceBytes = null, authoringResult = null, onlyIfPristine = false, expectedPresetToken = null } = {}) {
     const key = keyFor(familyId, definition.language);
     const entry = entries.get(key);
-    if (!entry || context.locked || entry.busy || (onlyIfPristine && !entry.pristine)) return false;
+    if (!entry || context.locked || entry.busy || (onlyIfPristine && !entry.pristine)
+      || (expectedPresetToken !== null && expectedPresetToken !== entry.presetToken)) return false;
     preserveUndo(entry);
     entry.sheet = sheetFromDefinition(definition, { familyId, authoringResult });
     entry.sourceBytes = sourceBytes;
@@ -228,16 +235,17 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
-    if (target.matches("[data-sheet-option-count], [data-sheet-label], select")) return;
+    if (target.matches("[data-sheet-option-count], select")) return;
     preserveUndo(entry);
     try {
       if (target.dataset.sheetCell) {
         const [row, column] = target.dataset.sheetCell.split(":").map(Number);
-        setSheetCell(entry.sheet, row, column, target.value);
+        entry.selection = { anchor: [row, column], end: [row, column] };
+        paintSelection(target.closest("[data-sheet-key]"), entry);
+        setQuestionnaireGridCell(entry.sheet, row, column, target.value, entry.layout);
         entry.invalid.delete(target.dataset.sheetCell);
         target.removeAttribute("aria-invalid");
       } else if (target.dataset.sheetMeta) entry.sheet[target.dataset.sheetMeta] = target.value;
-      else if (target.dataset.sheetRequired !== undefined) entry.sheet.rows[Number(target.dataset.sheetRequired)].required = target.checked;
       else return;
       entry.error = "";
     } catch (error) {
@@ -255,15 +263,14 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     if (!entry || entry.busy || context.locked) return;
     try {
       if (target.hasAttribute("data-sheet-repeat")) { entry.repeatLabels = Number(target.value); return; }
-      if (!target.matches("[data-sheet-option-count], [data-sheet-label], [data-sheet-required-all]")) return;
+      if (target.hasAttribute("data-sheet-layout")) {
+        if (entry.invalid.size) throw new TypeError("Correct highlighted cells before changing table columns.");
+        entry.layout = target.value; entry.selection = null; render(); return;
+      }
+      if (!target.matches("[data-sheet-option-count], [data-sheet-required-all]")) return;
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values first.");
       preserveUndo(entry);
       if (target.hasAttribute("data-sheet-option-count")) setOptionCount(entry.sheet, Number(target.value));
-      if (target.dataset.sheetLabel !== undefined) {
-        const labels = [...entry.sheet.optionLabels];
-        labels[Number(target.dataset.sheetLabel)] = target.value;
-        setOptionLabels(entry.sheet, labels);
-      }
       if (target.hasAttribute("data-sheet-required-all") && target.value) entry.sheet.rows.forEach((row) => { row.required = target.value === "required"; });
       entry.error = "";
       markChanged(entry);
@@ -273,22 +280,93 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
 
   container?.addEventListener("paste", (event) => {
     const target = event.target;
-    if (!target.dataset.sheetCell) return;
+    if (!target.closest(".sheet-table-scroll")) return;
     event.preventDefault();
     event.stopPropagation();
     const entry = entries.get(target.closest("[data-sheet-key]").dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
-    const [row, column] = target.dataset.sheetCell.split(":").map(Number);
+    const selected = entry.selection ? selectionRange(entry) : null;
+    const [row, column] = selected ? [selected.top, selected.left] : target.dataset.sheetCell?.split(":").map(Number) ?? [0, 0];
     try {
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values before pasting a range.");
       preserveUndo(entry);
       // Only text supplied by this explicit paste gesture is consumed. Never read the ambient clipboard.
-      applySheetPaste(entry.sheet, event.clipboardData.getData("text/plain"), { row, column });
+      const result = applyQuestionnaireGridPaste(entry.sheet, event.clipboardData.getData("text/plain"), { row, column, layout: entry.layout });
+      entry.layout = result.layout; entry.selection = null;
       entry.error = "";
       markChanged(entry);
     } catch (error) { entry.error = error.message; }
     render();
     container.querySelector(`[data-sheet-key="${keyFor(entry.sheet.familyId, entry.sheet.language)}"] [data-sheet-cell="${row}:${column}"]`)?.focus();
+  });
+
+  function selectionRange(entry) {
+    const { anchor, end } = entry.selection;
+    return { top: Math.min(anchor[0], end[0]), bottom: Math.max(anchor[0], end[0]),
+      left: Math.min(anchor[1], end[1]), right: Math.max(anchor[1], end[1]) };
+  }
+
+  function paintSelection(details, entry) {
+    const range = entry.selection ? selectionRange(entry) : null;
+    details.querySelectorAll("[data-sheet-cell]").forEach((cell) => {
+      const [r, c] = cell.dataset.sheetCell.split(":").map(Number);
+      cell.parentElement.classList.toggle("sheet-cell-selected", Boolean(range && r >= range.top && r <= range.bottom && c >= range.left && c <= range.right));
+    });
+  }
+
+  container?.addEventListener("click", (event) => {
+    const cell = event.target.closest("[data-sheet-cell]");
+    if (!cell) return;
+    const details = cell.closest("[data-sheet-key]");
+    const entry = entries.get(details.dataset.sheetKey);
+    const position = cell.dataset.sheetCell.split(":").map(Number);
+    entry.selection = { anchor: event.shiftKey && entry.selection ? entry.selection.anchor : position, end: position };
+    paintSelection(details, entry);
+  });
+
+  container?.addEventListener("keydown", (event) => {
+    const cell = event.target.closest("[data-sheet-cell]");
+    if (!cell) return;
+    const details = cell.closest("[data-sheet-key]");
+    const entry = entries.get(details.dataset.sheetKey);
+    if (context.locked || entry.busy) return;
+    const current = cell.dataset.sheetCell.split(":").map(Number);
+    const last = questionnaireGridColumns(entry.sheet, entry.layout).length - 1;
+    if (event.key === "Tab") {
+      entry.selection = null;
+      paintSelection(details, entry);
+      return; // Keep normal browser focus navigation and its new paste origin.
+    } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+      event.preventDefault(); event.stopPropagation();
+      entry.selection = { anchor: [0, 0], end: [entry.sheet.rows.length - 1, last] };
+    } else if (event.key === "Escape") entry.selection = null;
+    else if (((event.shiftKey || event.altKey) && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key))
+      || (event.key === "Enter" && !event.shiftKey)) {
+      event.preventDefault(); event.stopPropagation();
+      const from = event.shiftKey && entry.selection ? entry.selection.end : current;
+      const next = [Math.max(0, Math.min(entry.sheet.rows.length - 1, from[0] + (event.key === "ArrowUp" ? -1 : ["ArrowDown", "Enter"].includes(event.key) ? 1 : 0))),
+        Math.max(0, Math.min(last, from[1] + (event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0)))];
+      entry.selection = { anchor: event.shiftKey && entry.selection ? entry.selection.anchor : event.shiftKey ? current : next, end: next };
+      details.querySelector(`[data-sheet-cell="${next.join(":")}"]`)?.focus();
+    } else return;
+    paintSelection(details, entry);
+  });
+
+  container?.addEventListener("copy", (event) => {
+    const cell = event.target.closest("[data-sheet-cell]");
+    if (!cell) return;
+    const entry = entries.get(cell.closest("[data-sheet-key]").dataset.sheetKey);
+    if (!entry.selection) return;
+    const range = selectionRange(entry);
+    const multipleCells = range.top !== range.bottom || range.left !== range.right;
+    if (!multipleCells && cell.selectionStart !== cell.selectionEnd) return;
+    event.preventDefault(); event.stopPropagation();
+    try {
+      if (entry.invalid.size) throw new TypeError("Correct highlighted cells before copying.");
+      event.clipboardData.setData("text/plain", serializeQuestionnaireGrid(entry.sheet, {
+        layout: entry.layout, header: false, range,
+      }));
+    } catch (error) { entry.error = error.message; refreshEntryState(cell, entry); }
   });
 
   container?.addEventListener("click", async (event) => {
@@ -306,11 +384,18 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       if (action === "remove") { onRemove(entry.sheet.familyId); return; }
       if (action.startsWith("move-")) { onMove(entry.sheet.familyId, action === "move-up" ? -1 : 1); return; }
       if (action === "template") {
-        const csv = ["Item", ...entry.sheet.optionLabels.map((_, i) => `Code ${i + 1}`)].join(",") + "\r\n"
-          + ["Replace with your questionnaire item", ...entry.sheet.optionLabels.map((_, i) => String(i + 1))].join(",") + "\r\n";
+        const template = createQuestionnaireSheet({ familyId: entry.sheet.familyId, language: entry.sheet.language, optionCount: entry.sheet.optionCount, rowCount: 1 });
+        template.rows[0].prompt = "Replace with your questionnaire item";
+        const csv = serializeQuestionnaireGrid(template, { layout: entry.layout, delimiter: "," });
         const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
         const link = document.createElement("a"); link.href = url; link.download = `${entry.sheet.familyId}-${entry.sheet.language}-table.csv`; link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+      }
+      if (action === "copy-table") {
+        if (entry.invalid.size) throw new TypeError("Correct highlighted cells before copying.");
+        const text = root.querySelector("#questionnaire-sheet-copy-text");
+        text.value = serializeQuestionnaireGrid(entry.sheet, { layout: entry.layout });
+        root.querySelector("#questionnaire-sheet-copy").showModal(); text.focus(); text.select(); return;
       }
       if (action === "undo" && entry.undo) {
         Object.assign(entry, entry.undo); entry.undo = null; entry.invalid.clear(); entry.error = "";
@@ -336,20 +421,20 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     try {
       if (file.size > 4 * 1024 * 1024) throw new RangeError("Questionnaire files must be no larger than 4 MiB.");
       const bytes = new Uint8Array(await file.arrayBuffer());
+      if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while opening the file. Import it again into the intended table.");
       const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       if (file.name.toLowerCase().endsWith(".json") || /^format_version[,\t]/u.test(text)) {
         const imported = await importQuestionnaireAuthoring(bytes, { logicalName: file.name });
+        if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while importing. Import it again into the intended table.");
         if (imported.definition.language !== entry.sheet.language) throw new TypeError(`This table requires ${entry.sheet.language}; the file declares ${imported.definition.language}.`);
         if (context.familyForDefinition(imported.definition) !== entry.sheet.familyId) throw new TypeError("This file belongs to a different questionnaire. Add its questionnaire first.");
         entry.busy = false;
         loadDefinition(imported.definition, { familyId: entry.sheet.familyId, sourceBytes: bytes, authoringResult: imported });
       } else {
         const delimiter = file.name.toLowerCase().endsWith(".csv") ? "," : "\t";
-        let body = text;
-        const header = body.split(/\r?\n/u, 1)[0];
-        if (/^(?:Item|Questionnaire item|Question)(?:,|\t)Code 1(?:,|\t)/iu.test(header)) body = body.slice(header.length).replace(/^\r?\n/u, "");
         preserveUndo(entry);
-        applySheetPaste(entry.sheet, body, { row: 0, column: 0, delimiter });
+        const result = applyQuestionnaireGridPaste(entry.sheet, text, { delimiter, layout: entry.layout });
+        entry.layout = result.layout; entry.selection = null;
         entry.invalid.clear(); entry.error = ""; markChanged(entry);
       }
     } catch (error) { entry.error = error.message; }
@@ -357,8 +442,10 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   root.querySelector("[data-sheet-preview-close]")?.addEventListener("click", () => dialog.close());
+  root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+    presetToken(familyId, language) { return entries.get(keyFor(familyId, language))?.presetToken ?? null; },
     canLoadPreset(familyId, language) { const entry = entries.get(keyFor(familyId, language)); return Boolean(entry?.pristine && !entry.busy && !context.locked); },
     isPending(familyId, language) { const entry = entries.get(keyFor(familyId, language)); return Boolean(entry && (entry.dirty || entry.busy || entry.invalid.size)); },
     pendingKeys() { return activeEntries().filter(({ entry }) => entry.dirty || entry.busy || entry.invalid.size).map(({ key }) => key); },
