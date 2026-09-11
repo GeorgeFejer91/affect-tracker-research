@@ -40,7 +40,7 @@ file; follow the integration-owner collection procedure in the workflow.
 ### 20260911-integration-shared-checkout
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.
-- Target: **S2** and integration owner. Status: **open**.
+- Target: **S2** and integration owner. Status: **resolved**; see integration response.
 - Base: `research/video-protocol-v1` at
   `2017b622e0f816b94fb8c2331dc307291d744f10`.
 - Observation: one worktree contains uncommitted workspace, accordion, preview,
@@ -58,7 +58,8 @@ file; follow the integration-owner collection procedure in the workflow.
 ### 20260911-integration-current-app
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.
-- Target: integration/launch owner. Status: **open**.
+- Target: integration/launch owner. Status: **resolved** for exact launch;
+  interaction qualification remains open.
 - Observation: newer source is not proof that an already installed or previously
   built executable contains it. Earlier launch observations showed an installed
   Affect Research executable while source changes remained uncommitted.
@@ -71,7 +72,7 @@ file; follow the integration-owner collection procedure in the workflow.
 ### 20260911-questionnaires-preserve-hooks
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.
-- Target: **S2**. Status: **open**.
+- Target: **S2**. Status: **resolved** by the integration regression tests below.
 - Affected seam: `site/src/research/app.js`, `saveEditedQuestionnaire`.
 - Observation: reviewed working diff overwrites an existing module's placement
   with `beforeSession` and updates only the first matching module. This conflicts
@@ -119,3 +120,19 @@ The initial baseline's stale Section 2 UI assertions were corrected by its
   Integration is building a separate no-optional-feature executable for launch.
 - Tab-delimited questionnaire template has intentional trailing empty score
   columns; the narrow `.gitattributes` whitespace rule preserves those bytes.
+
+#### Exact local launch receipt — 2026-09-11
+
+`pnpm exec tauri build --no-bundle -- --no-default-features` completed against
+clean commit `d07a23932ed8c4388ffef2695b2eee026595db42`. The optimized executable
+at `src-tauri/target/release/affect-research.exe` has SHA-256
+`d283e4a5397d58c9e65e7b87f85c6d41a26b11752ece9ca57016021e3879e85b`.
+It was launched directly, and the returned release-process window was observed
+read-only: newer three-row Workspace, bottom Confirm button, Section 2 title,
+and Flubber/Grid/Face preview were visible. No automated input was resumed.
+The release window was left open; the separate debug window was preserved.
+This receipt is a documentation-only follow-up to that exact built commit,
+not a new application binary. No installer was replaced or published, and no
+interactive Section 2/accordion/reduced-motion or full native qualification
+claim follows from this read-only screen observation. Cargo also emitted a
+non-failing existing bin/lib PDB output-name collision warning during the build.
