@@ -313,6 +313,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /workspace\.loadExperimentPackage\(\)/u);
   assert.match(source, /workspace\.saveExperimentPackage\(sourceText\)/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
+  assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);
+  assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(markup, /Package reproduction matrix/u);

@@ -1970,7 +1970,9 @@ export class BrowserResearchWorkspace {
 
   async importVideoFiles(files) {
     await ensurePermission(this.rootHandle, "readwrite", { request: false });
-    const stimuli = this.#directory("stimuli");
+    if (!this.packageStimuliDirectory) {
+      fail("package-assets-unavailable", "The fixed assets/stimuli package folder is unavailable.");
+    }
     const imported = [];
     for (const file of Array.from(files ?? [])) {
       if (!(file instanceof Blob) || !isSupportedVideoName(file.name)) {
@@ -1980,7 +1982,7 @@ export class BrowserResearchWorkspace {
       const relativePath = normalizeWorkspaceRelativePath(suggested, "import path");
       const parts = relativePath.split("/");
       const fileName = parts.pop();
-      const directory = await getNestedDirectory(stimuli, parts, { create: true });
+      const directory = await getNestedDirectory(this.packageStimuliDirectory, parts, { create: true });
       await writeNewFile(directory, fileName, file);
       imported.push(relativePath);
     }
