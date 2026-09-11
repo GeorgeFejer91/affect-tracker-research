@@ -1,5 +1,29 @@
 # Research v1 roadmap
 
+## P2 spreadsheet and contribution receipts — 2026-09-11
+
+Pending owner branch `codex/segment-questionnaires-table-catalogue`:
+`74e879b` adds the whole labelled/coded spreadsheet, separate EN/DE prebuilt
+catalogue, metadata-safe row replacement, stale-slot protection and complete
+questionnaire contribution/restoration APIs. `a7bda6a` removes superseded
+questionnaire dialogs/renderers/import handlers/styles; scientific contracts,
+active sheet import/preview and all source assets remain.
+
+After synchronizing canonical `6be0a7`, 445/445 Node checks and 20 off-screen
+Edge app/grid checks pass; Pages171 and desktop8 artifact closures pass. The
+two-process multilingual authoring fixture reopens and re-exports edited recipe
+bytes identically. No user browser, OS clipboard, foreground input, native build,
+hardware, acquisition or Runner qualification was performed. The Vite bundle
+size warning remains informational. P7 owns package load/Edit recipe call sites
+and final save acknowledgement; owner-level restoration is not proof of the
+fully integrated final-step workflow. Capability limits remain in P2-04–P2-08.
+
+The subsequent pristine-family full-import adoption repair retains exact uploaded
+identities and protects existing/edited slots. The final candidate passes all
+445 Node checks and 24 isolated headless Edge cases (including file-import
+adoption, wrong-language rejection and draft protection); both build closures
+remain Pages171/desktop8. Receipts are owner-level, pending canonical integration.
+
 ## Central capability checklist and this evidence ledger
 
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state

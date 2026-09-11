@@ -12,7 +12,7 @@ const escape = (value) => String(value ?? "").replace(/[&<>"']/gu, (char) => ({
 const keyFor = (familyId, language) => `${familyId}/${language}`;
 
 /** Section 2 presentation owner. Drafts never become run authority until saved. */
-export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove }) {
+export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove, onAdoptImportedFamily }) {
   const container = root.querySelector("#questionnaire-sheet-list");
   const fileInput = root.querySelector("#questionnaire-sheet-file");
   const dialog = root.querySelector("#questionnaire-sheet-preview");
@@ -427,9 +427,16 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         const imported = await importQuestionnaireAuthoring(bytes, { logicalName: file.name });
         if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while importing. Import it again into the intended table.");
         if (imported.definition.language !== entry.sheet.language) throw new TypeError(`This table requires ${entry.sheet.language}; the file declares ${imported.definition.language}.`);
-        if (context.familyForDefinition(imported.definition) !== entry.sheet.familyId) throw new TypeError("This file belongs to a different questionnaire. Add its questionnaire first.");
+        const familyId = context.familyForDefinition(imported.definition);
+        if (familyId !== entry.sheet.familyId) {
+          const pristineFamily = [...entries.values()].filter(e => e.sheet.familyId === entry.sheet.familyId)
+            .every(e => e.pristine && (!e.busy || e === entry));
+          if (!pristineFamily || !onAdoptImportedFamily?.(entry.sheet.familyId, familyId)) {
+            throw new TypeError("This file belongs to a different questionnaire. Import it into a new, empty questionnaire or its existing matching language table.");
+          }
+        }
         entry.busy = false;
-        loadDefinition(imported.definition, { familyId: entry.sheet.familyId, sourceBytes: bytes, authoringResult: imported });
+        loadDefinition(imported.definition, { familyId, sourceBytes: bytes, authoringResult: imported });
       } else {
         const delimiter = file.name.toLowerCase().endsWith(".csv") ? "," : "\t";
         preserveUndo(entry);
