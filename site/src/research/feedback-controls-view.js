@@ -74,7 +74,9 @@ export function feedbackInputMarkup() {
 }
 
 function colorRows() {
-  return COLOR_FIELDS.map(({ id, label, value }) => `
+  return COLOR_FIELDS.map(({ id, label, value, axisLabel }) => axisLabel ? `
+    <input id="color-${id}" type="hidden" value="${value}">
+    <input id="color-${id}-hex" type="hidden" value="${value}">` : `
     <div class="color-row" data-color-row="${id}">
       <label for="color-${id}">${label}</label>
       <input id="color-${id}" type="color" value="${value}" aria-label="${label} color wheel">
@@ -154,9 +156,9 @@ export function feedbackAdvancedMarkup() {
             </div>
           </details>
           <details class="inner-disclosure">
-            <summary>Color &amp; Gradient</summary>
+            <summary>Other colors</summary>
             <div class="disclosure-content">
-              <p class="field-help">The directional controls around the 2D map select its four anchors. This list also owns idle, outline, halo, and cursor colors.</p>
+              <p class="field-help">Edit the four directional colors on the 2D affect map.</p>
               <div class="color-list">${colorRows()}</div>
             </div>
           </details>

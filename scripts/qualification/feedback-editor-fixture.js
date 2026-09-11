@@ -105,7 +105,17 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     change("grid-outline-thickness", 3.75);
     change("grid-outline-visible", false);
     change("grid-cursor-size", 19);
-    for (const id of Object.keys(settings.visual.colors)) change(`color-${id}-hex`, "#123456");
+    for (const id of Object.keys(settings.visual.colors)) {
+      const anchor = query(`[data-color-anchor="${id}"]`);
+      if (anchor) {
+        anchor.click();
+        change("preview-color-hex", "#123456");
+        query("#preview-color-apply").click();
+      } else change(`color-${id}-hex`, "#123456");
+    }
+    check("map anchors have one editing flow", ["up", "down", "left", "right"].every((id) =>
+      query(`#color-${id}`).type === "hidden" && query(`#color-${id}-hex`).type === "hidden"
+      && !query(`[data-color-reset="${id}"]`)) && pane.querySelectorAll(".color-row").length === 4);
     for (const { id } of MAPPING_FIELDS) {
       change(`mapping-${id}-min`, 0.2);
       change(`mapping-${id}-max`, 0.6);
@@ -137,8 +147,8 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     // Give unrelated required legacy fields valid fixture values before testing P5 focus.
     change("participant-first-name", "Fixture"); change("participant-last-name", "Only");
     change("participant-age", 30); change("participant-gender", "X"); change("participant-handedness", "R");
-    const invalidColor = query("#color-up-hex");
-    change("color-up-hex", "invalid");
+    const invalidColor = query("#color-idle-hex");
+    change("color-idle-hex", "invalid");
     for (const details of pane.querySelectorAll("details")) details.open = false;
     query("#start-experiment").disabled = false; // Fixture only: exercise the blocked validation path.
     query("#start-experiment").click();

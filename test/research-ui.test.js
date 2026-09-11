@@ -419,7 +419,12 @@ test("visual feedback has independent Grid and Flubber controls and one color ow
   for (const anchor of ["up", "down", "left", "right", "idle", "outline", "halo", "cursor"]) {
     assert.match(markup, new RegExp(`id="color-${anchor}"`, "u"));
     assert.match(markup, new RegExp(`id="color-${anchor}-hex"`, "u"));
-    assert.match(markup, new RegExp(`data-color-reset="${anchor}"`, "u"));
+    if (["up", "down", "left", "right"].includes(anchor)) {
+      assert.match(markup, new RegExp(`id="color-${anchor}-hex" type="hidden"`, "u"));
+      assert.doesNotMatch(markup, new RegExp(`data-color-reset="${anchor}"`, "u"));
+    } else {
+      assert.match(markup, new RegExp(`data-color-reset="${anchor}"`, "u"));
+    }
   }
   assert.match(markup, /id="main-gradient-canvas"/u);
   assert.equal((markup.match(/data-color-anchor=/gu) ?? []).length, 4);
