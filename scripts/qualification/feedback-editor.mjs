@@ -12,7 +12,7 @@ import { createDefaultResearchSettings } from "../../site/src/research/contracts
 import { parseExperimentDefinitionV1, EXTERNAL_ORDER_ALGORITHM_VERSION } from "../../site/src/research/external-experiment.js";
 import { validateResearchSettingsV3, QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from "../../site/src/research/external-protocol.js";
 
-const [browser, destination] = process.argv.slice(2);
+const [browser, destination, purpose] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
@@ -35,10 +35,13 @@ const settings = await validateResearchSettingsV3({
 });
 const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
 const results = [];
-for (const [surface, width, zoom] of [["browser", 1280, 1], ["browser", 900, 1], ["browser", 640, 1], ["browser", 500, 1.5625], ["tauri", 1280, 1], ["tauri", 900, 1], ["browser", 1280, 2]]) {
-  const name = `${surface}-${width}-${zoom}`;
+const cases = purpose === "snapshots"
+  ? ["empty", "controls", "error"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])
+  : [["browser", 1280, 1], ["browser", 900, 1], ["browser", 640, 1], ["browser", 500, 1.5625], ["tauri", 1280, 1], ["tauri", 900, 1], ["browser", 1280, 2]];
+for (const [surface, width, zoom, screenshotState = "default"] of cases) {
+  const name = `${surface}-${width}-${zoom}${screenshotState === "default" ? "" : `-${screenshotState}`}`;
   const profile = await mkdtemp(join(output, `${name}-profile-`));
-  const fixture = { settings, experimentReceipt: parsed, surface, zoom };
+  const fixture = { settings, experimentReceipt: parsed, surface, zoom, screenshotState };
   const bundle = await build({ write: false, bundle: true, format: "esm", platform: "browser",
     stdin: { resolveDir: dirname(fileURLToPath(import.meta.url)), contents:
       `import { checkFeedbackEditor } from './feedback-editor-fixture.js';

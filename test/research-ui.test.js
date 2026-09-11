@@ -209,7 +209,9 @@ test("every browser and desktop review step ends with one confirmation footer", 
       const panel = markup.slice(start, end);
       assert.equal((panel.match(/data-confirm-section=/gu) ?? []).length, 1);
       assert.match(panel, new RegExp(`data-confirm-section="${id}"`, "u"));
-      assert.match(panel, /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: confirmation ends panel`);
+      assert.match(panel, id === "feedback"
+        ? /<\/button>\s*<\/div>\s*<\/div>\s*<\/div>\s*$/u
+        : /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: confirmation ends panel`);
     }
   }
 });
@@ -720,7 +722,7 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   assert.match(css, /:focus-visible/u);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(css, /@media \(max-width: 759px\)/u);
-  assert.match(css, /grid-template-columns: minmax\(34rem, 1\.25fr\) minmax\(23rem, 0\.75fr\)/u);
+  assert.match(css, /grid-template-columns: var\(--setup-sections-width, minmax\(0, 1\.666667fr\)\) 8px minmax\(0, 1fr\)/u);
 });
 
 test("Setup remains scrollable on desktop and the mobile header owns intrinsic height", async () => {

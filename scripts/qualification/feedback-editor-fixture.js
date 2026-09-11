@@ -1,17 +1,17 @@
 // Non-shipping DOM fixture. No platform adapter, workspace, media, acquisition or IPC.
-import { initializeResearchUi } from "../../site/src/research/app.js";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
+import { bootResearchUi } from "../../site/src/research/app.js";
 import { MAPPING_FIELDS, RESEARCH_UI_EVENTS, SETUP_SECTIONS } from "../../site/src/research/ui-contracts.js";
 
-export async function checkFeedbackEditor({ settings, experimentReceipt, surface, zoom = 1 }) {
+export async function checkFeedbackEditor({ settings, experimentReceipt, surface, zoom = 1, screenshotState = "default" }) {
   const rows = [];
   const check = (name, condition, detail = null) => {
     rows.push({ name, pass: Boolean(condition), ...(detail === null ? {} : { detail }) });
     if (!condition) throw new Error(`${name}: ${JSON.stringify(detail)}`);
   };
   const root = document.querySelector("#research-app");
-  root.innerHTML = renderResearchUiMarkup(surface);
-  const ui = initializeResearchUi(root, { surface });
+  root.dataset.researchSurface = surface;
+  bootResearchUi({ surface });
+  const ui = root.researchUi;
   const query = (selector) => root.querySelector(selector);
   const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
   const savedFeedback = (value) => ({ input: value.input, visual: value.visual, mappings: value.advanced.mappings });
@@ -39,6 +39,12 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     control.dispatchEvent(new Event("change", { bubbles: true }));
   };
   try {
+    if (screenshotState === "empty") {
+      ui.openSetupSection("feedback", { focus: true });
+      check("empty real boot has no accepted experiment", ui.settings === null && ui.mode === "setup");
+      ui.destroy();
+      return { pass: true, surface, screenshotState, rows };
+    }
     root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.experimentLoaded, { detail: experimentReceipt }));
     await settle(() => query("#experiment-file-status")?.dataset.state === "ready");
     await load(settings);
@@ -54,7 +60,8 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     }
     query('[data-open-section="feedback"]').click();
     check("feedback navigation focuses its title", document.activeElement?.id === "preview-title");
-    check("advanced is the last settings group", query("#preview-advanced-settings").parentElement.lastElementChild.id === "preview-advanced-settings");
+    const settingsGroups = [...query(".preview-controls-scroll").children].filter((element) => element.matches("section, details"));
+    check("advanced is the last settings group", settingsGroups.at(-1)?.id === "preview-advanced-settings");
     const savedIds = ["input-preset", "input-step-size", "visual-grid-visible", "visual-flubber-visible",
       "visual-hide-feedback", "visual-size", "visual-position-x", "visual-position-y", "visual-lock-position",
       "visual-transparency", "flubber-outline-visible", "flubber-outline-thickness", "flubber-halo-visible",
@@ -123,6 +130,10 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
       && invalidColor.getClientRects().length > 0 && invalidColor.closest("details").open,
       { focus: document.activeElement?.id, invalid: [...root.querySelectorAll('[aria-invalid="true"]')].map((element) => element.id) });
     check("validation did not start a session", ui.mode === "setup");
+    if (screenshotState === "error") {
+      ui.destroy();
+      return { pass: true, surface, screenshotState, rows };
+    }
     await load(settings);
     query('[data-feedback-preview-mode="flubber"]').click();
     for (const details of pane.querySelectorAll("details")) details.open = true;
@@ -140,6 +151,7 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     ui.openSetupSection("feedback", { focus: true });
     query("#preview-advanced-settings").open = false;
     pane.scrollIntoView({ block: "start" });
+    if (screenshotState === "controls") query("#input-preset").focus();
     ui.destroy();
     return { pass: true, surface, viewport: { width: innerWidth, height: innerHeight, presentationScale: zoom }, rows };
   } catch (error) {

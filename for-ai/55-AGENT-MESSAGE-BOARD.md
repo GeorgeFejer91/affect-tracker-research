@@ -8,6 +8,31 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260911-preview-palette-halo
+
+- Owner: Live Preview. Stage: UI implementation, allocated by integration.
+- Branch `codex/segment-preview-palette-halo`, base `7c90894`; isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Deliverable: grey reset, explicit random Recolor, Axes/Corners preview,
+  numeric halo width, gradient switch and steepness. Shared seams: preview
+  state, app handlers, view and styles; retain divider owner's `20644e2`.
+- Evidence: unit tests, background rendering and bundle closure. No user
+  window reload/control. Native floating-window audit is read-only; native
+  implementation and saved Runner contracts require a named backend pass.
+- Status: ready for integration; no change to package resolution randomness
+  or Run. 440/440 JS tests, 21 actual-app isolated headless Edge checks,
+  four pinned-layout/input cases and desktop 8-file closure pass. No native
+  build/qualification, user-window interaction, reload, push or deployment.
+- Reset applies grey to four anchor and idle controls using their existing
+  owner. Recolor generates colors only on explicit click. Placement and halo
+  controls stay transient. Updated charter/roadmap document the exact UI scope.
+- Read-only floating audit: config and capability describe only `research`;
+  `lib.rs` registers app-level commands and main-window lifecycle. A second
+  webview requires a command caller/permission audit, fixed local label/URL,
+  bounded projection-only payload and close/focus/drag lifecycle. No assumption
+  that empty overlay permissions alone fence every app command. Native and
+  persistence/Runner work remain open pending a named backend intent check.
+
 - Designated local integration branch: `codex/research-unified`.
 - Integration owner: task **Add segment confirmation flow**, allocated by the
   user on 2026-09-11 to workflow documentation, local convergence, and launch.
@@ -36,6 +61,49 @@ ask the owner/integrator to reconcile it. Git worktrees do not live-sync this
 file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
+
+### 20260911-integration-preview-cleanup
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **open**.
+- Stage: Repository/Web Synchronization, bounded to local source convergence.
+  Branch `codex/segment-integration-preview-cleanup`, isolated worktree
+  `D:/GitHub/affect-tracker-research-integration-preview`, base `6be0a79`.
+- Documentation handoff `d1a4665` is integrated at `6be0a79`, with the prior
+  canonical draft preserved at `6223ca9`. All 14 handoff files match; checks
+  cover 15 Markdown files, 149 local links, the JSON example and 62 unique
+  capability IDs (14 checked, 48 open). Runtime source remains `305d3ac`.
+- Collect ready Preview `268e0a9` and dependent divider `20644e2` first.
+  Resolve only reviewed shared app/view/style hunks, preserve confirmation
+  footers/motion and newer roadmap authority, then run combined Node, build
+  closure and isolated offscreen layout/input checks. Baseline: 48 focused
+  UI/preview/accordion tests pass. No foreground app testing or native claims.
+- P5 owns Input/Visual/Advanced consolidation. Later cleanup collection depends
+  on clean owner handoffs; removing old Experiment requires actual retained-field
+  destinations from P1/P7. P6's editor mount must survive old Visual removal.
+  No unique v1 readers, evidence outputs or unimplemented successors are deleted.
+- Newly reported explicit P6 Q11 answer: head-forward without eye tracking,
+  world-fixed during an attempt, stop on tracking loss, recenter only before
+  the next attempt. P6 owns the scoped decision/contract update; earlier pending
+  entries are dated observations, not reasons to re-ask the answered question.
+- Deferred: unready P1/P2/P3/P4/P5/P6/P7 work, floating native overlay, Runner,
+  installed/native qualification, publication and deployment. Main remains
+  unchanged until the isolated combined candidate passes its named checks.
+- Ready receipt: combined source `0d0ccb6` plus the teardown test correction
+  passes 448/448 JavaScript tests, desktop 8-file and Pages 174-file closures.
+  Background checks pass: Edge appearance 21, pinned layout/input 4,
+  confirmation footers 8, and full-app resize/reflow 8 each in Edge and Chrome.
+  Both pane overflow values are zero in every resize case, including a 320px
+  preview. Inspected confirmation and narrow-preview screenshots. Receipts:
+  `D:/GitHub/.affect-preview-checks/integration-20260911`.
+- Source conflicts combined divider mode/teardown with all preview cleanup;
+  board conflicts retain every distinct entry. The former teardown source test
+  assumed divider cleanup must be the first statement; it now checks all four
+  cleanup calls inside the controller teardown. The resize gate now requires
+  zero preview overflow as well as zero sections overflow. No behavior is removed
+  to satisfy a test. The existing >500 kB desktop bundle warning remains.
+- S2 subsequently supplied clean `74e879b`; collect in the next bounded pass,
+  including its P7 restore dependency. This preview checkpoint does not claim
+  the unfinished multi-segment cleanup or any native/installed qualification.
 
 ### 20260911-roadmap-agent-coordination-audit
 
@@ -272,6 +340,116 @@ file; follow the integration-owner collection procedure in the workflow.
   wording to describe extensible language variants using one shared authoring,
   validation, package and Runner-selection model. Current picker/preload audit
   remains unchanged; no two-language schema restriction is implied.
+
+### 20260911-preview-pinned-input
+
+- Owner **Live Preview**, UI Finalization; **open**, allocated by integration.
+  Branch `codex/segment-preview-pinned-input`, dependent base `8524fa2`, isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Fixed preview header/output/map; independently scrolling lower controls with
+  whole-pane fallback for short windows/zoom. Direct map-point selection and
+  focus-gated configured-binding presentation via bounded preview-only adapter.
+  Shared seams: previewMarkup, preview CSS, old simulator handlers and teardown.
+  S3 confirmed no overlap with its ready `01444a7` seams; main stays untouched.
+- Reuse existing binding tokens, preserve rectangular snapping, release holds
+  on blur/binding/mode/visibility/teardown. No global input capture, acquisition
+  receipts, package, Run, native service or validation changes. Corners/reset
+  ambiguity and floating/halo follow-ups excluded from this bounded pass.
+- Baseline 58/58 preview/UI/simulator tests. Planned: focus/mapping/pointer and
+  lifecycle unit tests, offscreen layout/scroll receipts and full JS/build gates.
+- Ready evidence: 436/436 JavaScript tests, desktop 8-file closure and 4/4
+  offscreen composition receipts under
+  `D:/GitHub/.affect-preview-checks/pinned-input-20260911`. Tested real tile hit
+  regions, keyboard/custom priority, mouse/wheel, gamepad edge/reconnect/axes,
+  focus/dialog/mode exclusion and teardown with process-local fixtures.
+- Coordinated with **Add draggable segment boundary**: it owns outer grid and
+  divider; this pass owns preview container queries and content-fit observer.
+  No native/physical test, active-app reload, push or deployment performed.
+
+### 20260911-preview-rectangular-grid
+
+- Owner **Preview**, UI Finalization; **open**, integration allocation acknowledged.
+  Branch `codex/segment-preview-rectangular-grid`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`, dependent base `59279f5`
+  (inline color checkpoint submitted separately for integration).
+- User explicitly requests steps per side (1 → 3×3, 2 → 5×5), plus independent
+  columns/rows (3×5, 5×3). Scope: preview tile geometry/simulator/renderer,
+  named app/view controls, tests and narrow preview-only charter amendment.
+  Steps accept every whole number 1–1000; direct dimensions stay odd 3–2001
+  to retain exact central zero and existing bounded renderer cost.
+- Preserve invalid drafts without changing accepted geometry, release holds on
+  dimension change, use independent x/y snap/step. Saved stepSize, package,
+  acquisition and Run remain unchanged. No GUI tests/push/deployment.
+- Ready: baseline 15/15 tile/simulator tests; final 431/431 JavaScript tests,
+  desktop 8-file frontend closure and 10/10 off-screen Edge tile-paint cases.
+  Tests cover every step count, invalid drafts, independent axes, exact neutral,
+  rectangular renderer geometry, row-only hold release and saved-input isolation.
+  Receipt: `D:/GitHub/.affect-preview-checks/rectangular-grid-20260911`.
+  Integration/main remains untouched; native visual verification is unperformed.
+
+### 20260911-preview-inline-color
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**, allocation
+  acknowledged by integration. Base `305d3ac`, branch
+  `codex/segment-preview-inline-color`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`.
+- User asks for an embedded color map instead of a native picker nested inside
+  the anchor-color dialog. Scope: bounded canvas HSV picker, dialog markup/CSS,
+  app open/draft/teardown hooks and focused/headless tests. No S2 overlap.
+- Preserve hex, Reset, Apply, Cancel and close-to-cancel behavior; drag changes
+  only the existing preview draft. No package/Run/native changes or GUI tests.
+- Baseline: 47/47 preview/UI tests. Planned: conversion/input/teardown checks,
+  background browser integration and rendering, full JavaScript regressions.
+- Ready receipt: 428/428 JavaScript tests and desktop frontend 8-file closure
+  pass. Isolated off-screen Edge component paint, keyboard, hex callback,
+  teardown and dialog fit pass at the supported 760px minimum and 1000px.
+  Screenshots/JSON: `D:/GitHub/.affect-preview-checks/inline-color-20260911`.
+  This is a component fixture, not installed-app or physical-input evidence.
+  No GUI interaction, native rebuild, push or deployment performed.
+
+### 20260911-setup-layout-resize
+
+- Owner: **Add draggable segment boundary**, segment `setup-layout`, UI
+  Finalization; **acknowledged** by integration owner before implementation.
+  Branch `codex/segment-setup-layout-resize`, isolated worktree
+  `D:/GitHub/affect-tracker-research-setup-layout-resize`, base `305d3ac`.
+- User deliverable: drag the boundary between Setup sections and Live Preview
+  to resize the panes. Shared seams: outer form/section/preview sibling markup
+  in `ui-view.js`, outer grid/divider CSS, bounded `setup-layout.js` controller,
+  bootstrap/mode/cleanup in `app.js`, focused tests and background fixture.
+- Transient layout only; no package/storage, Run, native, or domain changes.
+  Preview owner contacted about pinned-pane overflow and narrow-width reflow;
+  preview internals remain that owner's segment. S3 shared hunks inspected.
+- Baseline: 38/38 focused UI, accordion-motion and architecture tests pass.
+  Collect drag bounds/cancel/keyboard/cleanup tests, rebuilt desktop frontend,
+  and offscreen width/reflow receipts. No desktop control, native launch,
+  deployment or qualification claim. Integration owner collects ready commit;
+  main checkout and the user's existing app remain untouched by this pass.
+
+#### Divider handoff — 2026-09-11
+
+- Status: **ready** for integration with Preview reflow. Pointer capture,
+  primary-pointer ownership, min widths, keyboard 10/50px steps, Home/End,
+  Enter/double-click reset, Escape revert, cancel/blur/lost-capture/mode
+  cleanup, proportional window resize, and destroy/remount are test-covered.
+- 46/46 focused and 434/434 full JavaScript tests pass; frozen install and
+  rebuilt desktop frontend 8-file closure pass. Existing >500kB bundle warning
+  remains. `scripts/qualification/setup-layout.mjs` passes eight offscreen
+  real-UI bootstrap/mode/pane-geometry checks each in Edge and Chrome, with
+  unchanged settings and no console/runtime errors. Chrome screenshot at
+  432px sections / 840px preview inspected.
+- Receipts: `D:/GitHub/.affect-preview-checks/setup-layout-{edge,chrome}-20260911/receipt.json`.
+  The fixture reports internal overflow separately: the old Preview at 320px
+  inside a 1280px viewport has 36px overflow. Preview owner supplies all
+  internal container reflow via ready `7c908949` with its documented
+  `8524fa2` / `59279f5` dependencies. Integrator must verify that composed
+  candidate before claiming content fit at this limit; no preview-internal
+  fixes were taken over here.
+- No native code/build, desktop interaction, app reload, main-branch mutation,
+  Pages deployment, or publication. Full keyboard/accessibility/installed
+  qualification remains open. Next is local convergence by the allocated
+  integrator and user UI acceptance; no backend stage escalation is needed
+  for transient pane sizing.
 
 ### 20260911-integration-confirm-tile-receipt
 

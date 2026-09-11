@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
 import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
+import { SETUP_SECTIONS } from "../../site/src/research/ui-contracts.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide browser executable and isolated output directory.");
@@ -21,10 +22,10 @@ await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>Offscreen 
 <script>
 (async () => {
  const rows=[];
- for (const accordion of document.querySelectorAll('.setup-accordion')) {
+ for (const accordion of document.querySelectorAll('[data-setup-section]')) {
   const panel=accordion.querySelector('.setup-accordion-panel');
-  panel.hidden=false; panel.inert=false; panel.dataset.motionState='open';
-  const inner=panel.querySelector('.setup-accordion-panel-inner');
+  if(panel) { panel.hidden=false; panel.inert=false; panel.dataset.motionState='open'; }
+  const inner=panel?.querySelector('.setup-accordion-panel-inner') ?? accordion.querySelector('.preview-controls-scroll');
   const footer=inner.lastElementChild;
   const button=footer.querySelector('[data-confirm-section]');
   const animations=button.getAnimations({subtree:true});
@@ -38,7 +39,7 @@ await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>Offscreen 
    rightAligned:Math.abs(bounds.right-foot.right)<2,contained:bounds.left>=foot.left-1,
    breathing:bright>dim+.4,layered:shadows!=='none'});
   animations.forEach(animation=>{animation.currentTime=0;});
-  if(accordion.dataset.setupSection!=='workspace') { panel.hidden=true;panel.dataset.motionState='closed'; }
+  if(panel && accordion.dataset.setupSection!=='workspace') { panel.hidden=true;panel.dataset.motionState='closed'; }
  }
  document.querySelector('#receipt').textContent=JSON.stringify(rows);
 })().catch(error=>document.querySelector('#receipt').textContent='ERROR:'+error.message);
@@ -52,6 +53,6 @@ const raw = stdout.match(/<pre id="receipt">([^<]+)<\/pre>/u)?.[1];
 assert.ok(raw, "No offscreen receipt.");
 const receipt = JSON.parse(raw);
 await writeFile(join(output, "receipt.json"), JSON.stringify(receipt, null, 2));
-assert.equal(receipt.length, 8);
+assert.equal(receipt.length, SETUP_SECTIONS.length);
 for (const row of receipt) assert.ok(row.footerLast && row.rightAligned && row.contained && row.breathing && row.layered, JSON.stringify(row));
 console.log(JSON.stringify({ pass: true, sections: receipt.length, output }));

@@ -9,6 +9,7 @@ const DEFAULT_CONFIGURATION = Object.freeze({
   mode: "stepwise",
   fullSpanDurationMs: 2_000,
   tileCount: DEFAULT_PREVIEW_TILE_COUNT,
+  tileRows: DEFAULT_PREVIEW_TILE_COUNT,
   holdRule: "separatePresses",
   repeatDelayMs: 500,
 });
@@ -88,7 +89,9 @@ export function createPreviewResponseSimulator({
       mode: configuration.mode,
       fullSpanDurationMs: configuration.fullSpanDurationMs,
       tileCount: configuration.tileCount,
+      tileRows: configuration.tileRows,
       stepSize: 2 / (configuration.tileCount - 1),
+      stepSizeY: 2 / (configuration.tileRows - 1),
       holdRule: configuration.holdRule,
       repeatDelayMs: configuration.repeatDelayMs,
       heldDirections: Object.freeze(DIRECTIONS.filter((direction) => heldDirections.has(direction))),
@@ -99,12 +102,13 @@ export function createPreviewResponseSimulator({
     if (point.x !== previous.x || point.y !== previous.y) onChange(snapshot());
   }
 
-  function applyDirection(direction, amount = 2 / (configuration.tileCount - 1)) {
+  function applyDirection(direction) {
     const previous = point;
+    const amount = 2 / ((direction === "left" || direction === "right" ? configuration.tileCount : configuration.tileRows) - 1);
     const delta = directionDelta(direction, amount);
     point = {
       x: snapPreviewCoordinate(point.x + delta.x, configuration.tileCount),
-      y: snapPreviewCoordinate(point.y + delta.y, configuration.tileCount),
+      y: snapPreviewCoordinate(point.y + delta.y, configuration.tileRows),
     };
     emitIfChanged(previous);
   }
@@ -196,6 +200,10 @@ export function createPreviewResponseSimulator({
     const source = next !== null && (typeof next === "object" || typeof next === "function")
       ? next
       : {};
+    // Legacy square callers can supply tileCount alone; rectangular drafts are atomic.
+    const columns = parsePreviewTileCount(source.tileCount);
+    const rows = parsePreviewTileCount(source.tileRows ?? source.tileCount);
+    const validDimensions = columns !== null && rows !== null;
     const nextConfiguration = {
       mode: MODES.has(source.mode) ? source.mode : configuration.mode,
       fullSpanDurationMs: clamp(
@@ -203,20 +211,22 @@ export function createPreviewResponseSimulator({
         250,
         15_000,
       ),
-      tileCount: parsePreviewTileCount(source.tileCount) ?? configuration.tileCount,
+      tileCount: validDimensions ? columns : configuration.tileCount,
+      tileRows: validDimensions ? rows : configuration.tileRows,
       holdRule: HOLD_RULES.has(source.holdRule) ? source.holdRule : configuration.holdRule,
       repeatDelayMs: clamp(finite(source.repeatDelayMs, configuration.repeatDelayMs), 500, 5_000),
     };
     const releasesHeldInput = nextConfiguration.mode !== configuration.mode
       || nextConfiguration.holdRule !== configuration.holdRule
-      || nextConfiguration.tileCount !== configuration.tileCount;
+      || nextConfiguration.tileCount !== configuration.tileCount
+      || nextConfiguration.tileRows !== configuration.tileRows;
     configuration = nextConfiguration;
     if (releasesHeldInput) clearHolds();
     if (configuration.mode === "stepwise") {
       const previous = point;
       point = {
         x: snapPreviewCoordinate(point.x, configuration.tileCount),
-        y: snapPreviewCoordinate(point.y, configuration.tileCount),
+        y: snapPreviewCoordinate(point.y, configuration.tileRows),
       };
       emitIfChanged(previous);
     }
@@ -274,7 +284,7 @@ export function createPreviewResponseSimulator({
     const previous = point;
     point = {
       x: configuration.mode === "stepwise" ? snapPreviewCoordinate(normalizedCoordinate(source.x), configuration.tileCount) : normalizedCoordinate(source.x),
-      y: configuration.mode === "stepwise" ? snapPreviewCoordinate(normalizedCoordinate(source.y), configuration.tileCount) : normalizedCoordinate(source.y),
+      y: configuration.mode === "stepwise" ? snapPreviewCoordinate(normalizedCoordinate(source.y), configuration.tileRows) : normalizedCoordinate(source.y),
     };
     emitIfChanged(previous);
     return snapshot();

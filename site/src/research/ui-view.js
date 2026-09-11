@@ -114,6 +114,7 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
         ${includeFace ? `<defs>
           <filter id="preview-studio-halo-fade" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
             <feGaussianBlur data-preview-halo-blur stdDeviation="0.045"></feGaussianBlur>
+            <feComponentTransfer><feFuncA data-preview-halo-falloff type="gamma" amplitude="1" exponent="1" offset="0"></feFuncA></feComponentTransfer>
           </filter>
         </defs>` : ""}
         <path data-preview-flubber-halo class="preview-flubber-halo"${includeFace ? ' filter="url(#preview-studio-halo-fade)"' : ""}></path>
@@ -135,7 +136,7 @@ function previewMarkup(label, { studio = false } = {}) {
 
   return `
     <div class="research-preview-stage research-preview-studio" data-preview-variant="studio" role="group" aria-label="${escapedLabel}">
-      <div class="preview-primary-stage" role="img" aria-label="Selected feedback rendering">
+      <div class="preview-primary-stage" tabindex="0" role="group" aria-label="Selected feedback rendering and configured input preview" aria-describedby="preview-response-simulator-help">
         ${previewOverlayMarkup({ includeFace: true })}
         <p class="preview-mode-label">Previewing <span data-preview-mode-label>Flubber</span></p>
       </div>
@@ -144,6 +145,11 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-subsection-heading">
           <h3 id="preview-affect-map-title">2D affect map</h3>
           <p>Choose an anchor to edit its color.</p>
+        </div>
+        <div class="preview-anchor-modes" role="group" aria-label="Color anchor placement">
+          <label class="radio-field"><input type="radio" name="previewColorAnchors" value="axes" checked><span>Axes</span></label>
+          <label class="radio-field"><input type="radio" name="previewColorAnchors" value="corners"><span>Corners</span></label>
+          <span class="field-help">Placement is preview-only.</span>
         </div>
         <div class="preview-affect-map-layout">
           <button type="button" class="preview-color-anchor anchor-up" data-color-anchor="up" aria-haspopup="dialog" aria-controls="preview-color-dialog">
@@ -171,10 +177,13 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-simulator-help">
           <p id="preview-response-simulator-help">Focus the map and use the arrow keys to try the selected response behavior.</p>
           <button id="preview-response-reset" type="button">Reset to neutral</button>
+          <button id="preview-recolor" type="button">Recolor</button>
         </div>
         <output data-preview-tile-status class="field-help" role="status" aria-live="polite" aria-atomic="true"></output>
+        <output data-preview-input-availability class="field-help" role="status" aria-live="polite"></output>
       </section>
 
+      <div class="preview-controls-scroll" tabindex="0" role="region" aria-label="Flubber and Controls settings">
       ${feedbackAppearanceMarkup()}
       ${feedbackInputMarkup()}
 
@@ -191,7 +200,17 @@ function previewMarkup(label, { studio = false } = {}) {
           <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
         </div>
         <div data-response-preview-panel="stepwise">
-          <label class="field"><span>Tiles per axis</span><input id="preview-tile-count" type="number" min="3" max="2001" step="2" value="21" aria-describedby="preview-tile-count-help"><output id="preview-tile-count-help" class="field-help">Odd number, 3–2001. 21 × 21 tiles: 10 steps each side of zero.</output></label>
+          <fieldset class="check-group">
+            <legend>Grid dimensions</legend>
+            <label class="radio-field"><input type="radio" name="previewGridSizing" value="square" checked><span>Steps each side of zero</span></label>
+            <label class="radio-field"><input type="radio" name="previewGridSizing" value="custom"><span>Custom grid (columns × rows)</span></label>
+          </fieldset>
+          <label class="field" data-preview-grid-square><span>Steps each side of zero</span><input id="preview-tile-count" data-preview-grid-input type="number" min="1" max="1000" step="1" value="10" aria-describedby="preview-tile-count-help"></label>
+          <div class="field-grid" data-preview-grid-custom hidden>
+            <label class="field"><span>Columns</span><input id="preview-tile-columns" data-preview-grid-input type="number" min="3" max="2001" step="2" value="21" disabled aria-describedby="preview-tile-count-help"></label>
+            <label class="field"><span>Rows</span><input id="preview-tile-rows" data-preview-grid-input type="number" min="3" max="2001" step="2" value="21" disabled aria-describedby="preview-tile-count-help"></label>
+          </div>
+          <output id="preview-tile-count-help" class="field-help" role="status" aria-live="polite">21 × 21 tiles. 10 steps each side of zero; 1 creates 3 × 3, 2 creates 5 × 5.</output>
           <fieldset class="check-group">
             <legend>Hold rule</legend>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
@@ -204,6 +223,14 @@ function previewMarkup(label, { studio = false } = {}) {
       </details>
 
       ${feedbackAdvancedMarkup()}
+      <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
+      <footer class="preview-footer">
+        <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
+        <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
+        <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
+      </footer>
+      ${sectionConfirmationMarkup(SETUP_SECTIONS.find(({ id }) => id === "feedback"), SETUP_SECTIONS.findIndex(({ id }) => id === "feedback"))}
+      </div>
     </div>`;
 }
 
@@ -577,28 +604,27 @@ export function renderResearchUiMarkup(surface = "browser") {
       <main>
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
-            <div class="setup-pane">
+            <div class="setup-pane" id="setup-sections">
               <div class="setup-intro"><p>Review the design before creating a session.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
               ${SETUP_SECTIONS.map((section, index) => section.id === "feedback" ? feedbackNavigationMarkup(section, index) : accordionMarkup(section, index)).join("")}
             </div>
+            <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"
+              aria-label="Resize sections and live preview" aria-orientation="vertical"
+              aria-controls="setup-sections" aria-valuemin="0" aria-valuemax="100" aria-valuenow="63"
+              aria-describedby="setup-resizer-help"
+              title="Drag to resize. Arrow keys adjust; double-click resets.">
+              <span id="setup-resizer-help" class="sr-only">Drag left or right to resize. Use Left and Right arrows, Shift for larger steps, Home or End for the limits, and Enter to reset. Escape cancels a drag.</span>
+            </div>
             <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
               <header class="preview-header">
-                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p>Appearance, device and animation settings.</p><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
+                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p>Mode selection is preview-only.</p><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
                 <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode; selection is not saved">
                   <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
                   <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
                   <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
                 </div>
               </header>
-              <p class="field-help">The Flubber, Grid and Face comparison is preview-only. Saved visibility controls are under Appearance.</p>
               ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
-              <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
-              <footer class="preview-footer">
-                <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
-                <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
-                <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
-              </footer>
-              ${sectionConfirmationMarkup(SETUP_SECTIONS.find(({ id }) => id === "feedback"), SETUP_SECTIONS.findIndex(({ id }) => id === "feedback"))}
             </aside>
           </form>
         </section>
@@ -666,7 +692,12 @@ export function renderResearchUiMarkup(surface = "browser") {
       <div class="dialog-content">
         <h2 id="preview-color-dialog-title">Choose an affect color</h2>
         <div class="field-grid">
-          <label class="field"><span>Color map</span><input id="preview-color-picker" type="color" value="${DEFAULT_COLORS.up}"></label>
+          <div id="preview-color-picker" class="field">
+            <span>Color map</span>
+            <canvas data-inline-color-map width="320" height="210" tabindex="0" role="group" aria-label="Color map"></canvas>
+            <label class="field"><span>Hue</span><canvas data-inline-hue-strip width="360" height="16" aria-hidden="true"></canvas><input id="preview-color-hue" data-inline-color-hue type="range" min="0" max="360" step="1" value="0"></label>
+            <output data-inline-color-status class="field-help"></output>
+          </div>
           <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
           <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
         </div>

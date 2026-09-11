@@ -114,6 +114,21 @@ The current `research/video-protocol-v1` working candidate contains:
 
 ## Bounded Setup feedback-design preview — non-authoritative working slice
 
+The isolated 2026-09-11 `setup-layout` UI Finalization pass adds a draggable
+divider between Setup sections and Live Preview. A bounded presentation
+controller owns pointer capture/cancellation, keyboard sizing, reset, and
+window-resize clamping. Its session-local proportion never enters settings,
+package bytes, Run geometry, storage, or evidence. The divider is hidden in
+the existing narrow stacked layout. The pass has 434/434 JavaScript checks,
+a rebuilt desktop frontend closure, and eight offscreen real-UI bootstrap/
+mode/geometry checks each in Chrome and Edge. These receipts cover pane
+geometry and isolation, not physical interaction or installed qualification.
+On the integration base, narrowing Preview to 320px in a wide viewport exposes
+36px of pre-existing internal overflow; the ready Preview owner's container
+reflow in `7c908949` must be composed before minimum-width content fit is
+accepted. Integration and any reload of the existing application remain with
+the designated integration owner.
+
 The 2026-09-11 `accordion` UI follow-up gives every panel the same final
 confirmation footer, including Review below its Start controls, and strengthens
 the warm breathing edge with outward-fading layers. Review state and Start
@@ -147,6 +162,49 @@ visual observation remains pending; source integration completed locally at
 `2be0242` with 423/423 combined JavaScript checks and both frontend closures.
 These checks do not qualify
 Run, sampling, playback, accessibility, deployment or experiment use.
+
+The researcher's 2026-09-11 follow-up replaces the square-only count field
+with steps each side of zero (1–1000), and adds independent odd columns/rows
+(3–2001). The isolated Preview branch provides centered rectangular outlines,
+axis-specific stepping/snap and atomic invalid-draft retention. The candidate
+passes 431/431 JavaScript tests, the desktop frontend 8-file closure and ten
+off-screen Edge tile-paint fixtures (including 3×5 and 5×3 at 180/360px).
+This is isolated source/component evidence, not current installed-app behavior;
+integration/reload is deferred to the integration owner pending user safety.
+No package, Run, native input or saved stepSize contract changes are included.
+
+The next isolated Preview follow-up pins the header/output/map above a lower
+settings scroller, reflows within a 320px preview pane, and falls back to one
+whole-pane scroller when short height or enlarged text cannot fit the pinned
+area plus usable controls. Direct map clicks select actual rectangular cells;
+focused map/output input uses configured WebView-visible bindings and arrow
+fallback. No native device service, acquisition receipt or Run path is added.
+Candidate checks: 436/436 JavaScript tests, desktop 8-file frontend closure,
+four offscreen layout/input fixtures (wide, 320px pane, short, 2× text scale).
+The fixtures step the animation clock explicitly and use isolated DOM input,
+not the user's desktop. Native/physical behavior and integration remain pending.
+
+The isolated palette/halo follow-up implements explicit grey reset (four
+anchors plus idle), Recolor through the existing color controls, transient
+Axes/Corners bilinear placement and independent display labels, numeric halo
+width (finite input, reported 10000% rendering cap), fade on/off and gamma
+steepness. No schema or Run renderer is changed. Evidence: 440/440 JavaScript
+tests; 21 actual-app isolated headless Edge UI/pixel/reflow checks; four pinned
+layout/input fixtures; desktop frontend 8-file closure. The layout fixture now
+zeros its own scroll position after focus before measuring scroll movement.
+The existing >500 kB bundle warning remains. Artifacts are local under
+`D:/GitHub/.affect-preview-checks/palette-halo-20260911`, in `preview-appearance`
+and `preview-appearance-layout`; they are not installed-app or native qualification.
+
+The floating-window audit found a sole configured `research` window, a
+sole-window capability, and app-level commands that need a caller-boundary
+audit before adding a second webview. No floating checkbox/window is shipped
+by this checkpoint. The proposed separate backend pass must own a fixed local
+overlay URL/label, transparent always-on-top lifecycle, bounded projection,
+drag/focus behavior, close/reopen and main-window shutdown, command isolation,
+and Windows evidence. Static Chrome/Edge cannot be claimed to provide the
+same OS overlay. Preview persistence/Runner adoption likewise remains a
+separate versioned-contract decision; the checklist item remains open.
 
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,
