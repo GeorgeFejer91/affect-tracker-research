@@ -19,6 +19,14 @@ const editor = (onSave = async () => {}) => createQuestionnaireEditor({
   root: { querySelector: () => null }, onSave,
 });
 
+test("P2 frozen snapshot reads the full package catalogue rather than the participant settings subset", async () => {
+  const source = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
+  const snapshot = source.slice(source.indexOf("function getQuestionnaireContributionSnapshot()"), source.indexOf("async function restoreQuestionnaireContribution("));
+  assert.match(snapshot, /const source = coverageSource\(\)/u);
+  assert.match(snapshot, /definitions: structuredClone\(source.definitions\)/u);
+  assert.match(snapshot, /modules: structuredClone\(source.modules\)/u);
+});
+
 test("editing one definition updates every reference without changing hooks, targets or order", () => {
   const modules = [
     { moduleId: "a", questionnaireId: "custom-en", definitionSha256: "old", placement: { kind: "afterStimulus", stimulusId: "v1", relativeToIsi: "after" } },

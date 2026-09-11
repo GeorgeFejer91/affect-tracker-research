@@ -3251,9 +3251,12 @@ function bindResearchInteractions(root, { surface }) {
     let contribution = null;
     let pending = !languageEditorLocked && (questionnaireEditor.pendingKeys().length > 0 || questionnaireEditor.hasPresentationDraft());
     try {
+      // Participant route projection replaces the UI settings subset, not P2's
+      // complete frozen contribution. Never serialize that subset as the study.
+      const source = coverageSource();
       contribution = {
         questionnaires: { algorithmVersion: QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
-          definitions: structuredClone(questionnaireDefinitions), modules: structuredClone(questionnaireModules) },
+          definitions: structuredClone(source.definitions), modules: structuredClone(source.modules) },
         languageSelection: structuredClone(languageTreeFromUi()),
       };
     } catch { pending = true; }
