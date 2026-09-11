@@ -17,6 +17,14 @@ root.dataset.researchSurface = "tauri";
 bootResearchUi();
 const ui = root.researchUi;
 const query = (selector) => root.querySelector(selector);
+const renderState = location.hash.slice(1);
+const renderReceipt = async () => {
+  if (query("#setup-trigger-review").getAttribute("aria-expanded") !== "true") ui.openSetupSection("review");
+  await new Promise((resolve) => setTimeout(resolve, 450));
+  query("#setup-trigger-review").scrollIntoView({ block: "start" });
+  document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, renderState,
+    reviewHeight: query("#setup-panel-review .setup-accordion-panel-inner").scrollHeight, cases });
+};
 const waitFor = async (predicate) => {
   for (let count = 0; count < 200; count += 1) {
     if (predicate()) return;
@@ -31,6 +39,7 @@ const change = (selector, value) => {
 };
 
 (async () => {
+  if (renderState === "empty") { await renderReceipt(); return; }
   const definitions = [];
   for (const [language, source] of [["en", english], ["de", german]]) definitions.push((await importQuestionnaireAuthoring(source,
     { logicalName: `maia-2-${language}.csv`, sourceKind: "bundled" })).definition);
@@ -55,7 +64,7 @@ const change = (selector, value) => {
   };
   const load = async () => {
     root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.experimentPackageLoaded, { detail: { receipt: parsed } }));
-    await waitFor(() => ui.experimentPackage && !query("#package-reexport").disabled);
+    await waitFor(() => ui.experimentPackage && !query("#package-generate").disabled);
   };
   await load();
   check("recipe load preserves its exact canonical text", ui.experimentPackageSourceText === parsed.canonicalSourceText);
@@ -67,25 +76,25 @@ const change = (selector, value) => {
   root.addEventListener(RESEARCH_UI_EVENTS.saveExperimentPackageRequest, (event) => {
     event.preventDefault(); request = event.detail; writes += 1;
   });
-  query("#package-reexport").click();
+  query("#package-generate").click();
   await waitFor(() => request);
   check("delayed native write shows waiting and retains its source", ui.packageExportStatus.phase === "saving"
     && request.sourceText === parsed.canonicalSourceText && ui.packageExportStatus.saved === null);
-  check("duplicate save and recipe load are disabled during writing", query("#package-reexport").disabled && query("#package-load").disabled);
-  query("#package-reexport").click();
+  check("duplicate save and recipe load are disabled during writing", query("#package-generate").disabled && query("#package-load").disabled);
+  query("#package-generate").click();
   check("duplicate click does not invoke another writer", writes === 1);
   request.complete({ status: "cancelled" });
   await waitFor(() => !ui.packageExportStatus.busy);
-  check("cancellation leaves loaded recipe available for retry", ui.packageExportStatus.phase === "cancelled" && !query("#package-reexport").disabled);
+  check("cancellation leaves loaded recipe available for retry", ui.packageExportStatus.phase === "cancelled" && !query("#package-generate").disabled);
   request = null;
-  query("#package-reexport").click();
+  query("#package-generate").click();
   await waitFor(() => request);
   request.complete({ status: "saved", receipt: acknowledge });
   await waitFor(() => !ui.packageExportStatus.busy);
   check("validated acknowledgement makes exact re-export saved", ui.packageExportStatus.phase === "saved"
     && ui.packageExportStatus.saved.sourceText === parsed.canonicalSourceText);
   request = null;
-  query("#package-reexport").click();
+  query("#package-generate").click();
   await waitFor(() => request);
   change("#sampling-frequency", "120");
   check("sampling edit immediately invalidates the loaded receipt", query("#package-file-status").dataset.state === "warning"
@@ -93,17 +102,18 @@ const change = (selector, value) => {
   request.complete({ status: "saved", receipt: acknowledge });
   await waitFor(() => !ui.packageExportStatus.busy);
   check("acknowledged old write preserves newer sampling and requires new export", query("#sampling-frequency").value === "120"
-    && ui.packageExportStatus.phase === "changed" && query("#package-reexport").disabled);
+    && ui.packageExportStatus.phase === "changed" && query("#package-generate").disabled);
   check("stale recipe cannot start", query("#start-experiment").disabled);
   await load();
   check("intentional reopen restores the saved sampling value", Number(query("#sampling-frequency").value) === parsed.package.settings.experiment.samplingFrequencyHz);
   let contribution = { revision: 0, enabled: false, pending: false, contribution: { preview: true }, dependencyRevisions: [] };
   const unregister = ui.registerPlannerContribution("P6", () => contribution);
-  check("disabled optional XR draft leaves v1 available", !query("#package-reexport").disabled);
+  check("disabled optional XR draft leaves v1 available", !query("#package-generate").disabled);
   contribution = { ...contribution, enabled: true, revision: 1 };
   ui.plannerContributionChanged("P6");
-  check("active unsupported XR blocks export and Start with a routed issue", query("#package-reexport").disabled
-    && query("#start-experiment").disabled && query('[data-planner-segment="P6"]')?.textContent.includes("successor"));
+  check("active unsupported XR blocks export and Start with a routed issue", query("#package-generate").disabled
+    && query("#start-experiment").disabled && query('[data-planner-segment="P6"]')?.textContent.includes("current recipe format"));
+  if (renderState === "error") { await renderReceipt(); return; }
   unregister();
   await load();
   const originalP2 = ui.getQuestionnaireContributionSnapshot();
@@ -153,17 +163,24 @@ const change = (selector, value) => {
   await waitFor(() => ui.experimentPackage === null);
   change(englishPrompt, "Unsaved draft must not survive explicit reopen");
   root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.experimentPackageLoaded, { detail: { receipt: revised } }));
-  await waitFor(() => ui.experimentPackage !== null && !query("#package-reexport").disabled);
+  await waitFor(() => ui.experimentPackage !== null && !query("#package-generate").disabled);
   check("explicit reopen discards old table drafts even when the accepted definition hash is unchanged", query(englishPrompt).value === "Synthetic fixture wording edit");
-  ui.openSetupSection("review");
-  await new Promise((resolve) => requestAnimationFrame(resolve));
+  await waitFor(() => query("#preflight-list").textContent.includes("Choose the participant's language to prepare the schedule."));
+  check("embedded experiment source passes verification before the explicit language prerequisite", !query("#preflight-list").textContent.includes("sourceByteSha256"));
+  if (query("#setup-trigger-review").getAttribute("aria-expanded") !== "true") ui.openSetupSection("review");
+  await new Promise((resolve) => setTimeout(resolve, 450));
   const panel = query('[data-setup-section="review"]');
   const bounds = panel.getBoundingClientRect();
   check("finalization controls fit Review horizontally", [...panel.querySelectorAll(".package-finalization button")].every((button) => {
     const rect = button.getBoundingClientRect();
-    return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && button.scrollWidth <= button.clientWidth + 2;
+    return rect.width > 0 && rect.height > 0 && rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && button.scrollWidth <= button.clientWidth + 2;
   }));
-  document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, cases });
+  check("participant preparation and provenance start collapsed while blockers stay visible", ["review-provenance", "review-participant-chooser", "review-participant-details"].every((id) => !query(`#${id}`).open)
+    && query("#preflight-list").getBoundingClientRect().height > 0);
+  query('[data-review-reveal="review-participant-details"]')?.click();
+  check("participant blocker opens details and focuses its first control", query("#review-participant-details").open && document.activeElement.id === "participant-first-name");
+  query("#review-participant-details").open = false;
+  await renderReceipt();
 })().catch((error) => {
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: false, cases, error: error.stack });
   ui.destroy();

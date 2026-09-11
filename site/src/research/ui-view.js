@@ -366,7 +366,7 @@ function workspaceSection() {
 
 function experimentCompatibilityMarkup() {
   return `
-    <details class="inner-disclosure">
+    <details id="review-legacy-files" class="inner-disclosure">
       <summary>Legacy experiment and settings compatibility</summary>
       <div class="disclosure-content authoring-tools">
         <section aria-labelledby="experiment-file-title">
@@ -579,12 +579,10 @@ function advancedSection() {
 
 function reviewSection() {
   return `
-    <p class="section-lead">Finish the design and save its recipe here. Participant and playback checks below apply when starting an experiment.</p>
     <section class="package-finalization" aria-labelledby="package-finalization-title">
-      <div><h3 id="package-finalization-title">Review, recipe & export</h3><p>Save the accepted design as one experiment.package.json. Video files stay in the selected library.</p></div>
+      <div><h3 id="package-finalization-title">Recipe file</h3><p>Includes questionnaires and settings. Keep videos in the project library.</p></div>
       <div class="button-row">
         <button id="package-generate" type="button" class="primary-action">Save recipe</button>
-        <button id="package-reexport" type="button" disabled>Re-export unchanged recipe</button>
         <button id="package-edit" type="button" disabled>Edit recipe</button>
       </div>
     </section>
@@ -592,21 +590,22 @@ function reviewSection() {
     <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
     <div class="field-grid spaced-field-grid">
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
-      <div class="field-block"><span class="field-label">Rating method</span><output class="field-output">Continuous rating is always enabled</output><p class="field-help">Samples are collected only while a complete video is actively playing.</p></div>
-      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
+      <p class="field-help">Continuous rating is always enabled during video playback.</p>
     </div>
     <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
       <legend>Rating output formats</legend>
       <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
       <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
-      <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
+      <p id="output-format-help" class="field-help">Choose at least one. CSV and TSV contain the same records.</p>
       <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
     </fieldset>
     ${experimentCompatibilityMarkup()}
+    <h3 class="review-checks-title">Before starting</h3>
     <ul id="preflight-list" class="preflight-list" aria-label="Experiment preflight checks"></ul>
-    <details class="inner-disclosure" open>
-      <summary>Resolved schedule and output</summary>
+    <details id="review-provenance" class="inner-disclosure">
+      <summary>Schedule, playback & output details</summary>
       <div class="disclosure-content field-grid">
+        <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
         <div class="field-block is-wide"><span class="field-label">Output location</span><output id="review-output-path" class="field-output path-value">outputs/&lt;experiment-id&gt;/&lt;participant-id&gt;/&lt;session-stem&gt;/</output></div>
         <div class="field-block"><span class="field-label">Settings hash</span><output id="settings-hash" class="field-output hash-value">Pending validated settings</output></div>
         <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
@@ -615,10 +614,10 @@ function reviewSection() {
         <label class="field is-wide tauri-only"><span>Native playback qualification</span><select id="native-playback-mode"><option value="nativeGstPlay" selected>GStreamer / GstPlay · qualification required</option><option value="unqualifiedWebview">WebView video · unqualified testing only</option></select><output id="native-media-capability" class="field-help">Native runtime capability has not been checked.</output></label>
       </div>
     </details>
-    <details class="inner-disclosure" open>
+    <details id="review-participant-chooser" class="inner-disclosure">
       <summary>Participant chooser</summary>
       <div class="disclosure-content">
-        <p class="field-help">States are reconstructed from workspace locks, recovery journals, and manifests. They are not editable flags.</p>
+        <p class="field-help">Availability and recovery are read from saved attempts.</p>
         <div class="participant-toolbar"><button id="participant-window-previous" type="button" disabled>Previous participants</button><output id="participant-window-status">Showing 1–24 of 24</output><button id="participant-window-next" type="button" disabled>Next participants</button></div>
         <div id="participant-grid" class="participant-grid" role="radiogroup" aria-label="Participant state chooser"></div>
         <fieldset id="attempt-disposition" class="check-group attempt-disposition" hidden>
@@ -632,8 +631,8 @@ function reviewSection() {
         <p id="participant-active-warning" class="coverage-message" hidden role="status">This participant has an active lock. Finish or recover that active attempt before starting here.</p>
       </div>
     </details>
-    <details class="inner-disclosure" open>
-      <summary>Transient participant details</summary>
+    <details id="review-participant-details" class="inner-disclosure">
+      <summary>Participant details</summary>
       <div class="disclosure-content">
         <p class="field-help">Names are used only to derive an uppercase two-grapheme code. Raw names and any self-description are removed before Start and never enter files, logs, markers, or recovery state.</p>
         <div class="field-grid spaced-field-grid">
@@ -650,7 +649,7 @@ function reviewSection() {
       <div>
         <h3 id="participant-language-label">Participant language</h3>
         <output id="participant-language-status" class="field-output" data-state="warning" aria-live="polite">Choose a package language for this participant and attempt.</output>
-        <p class="field-help">The participant follows the package-owned tree from its root. Start stays blocked until a terminal language is chosen. A compatible recovery restores its frozen route instead of asking again.</p>
+        <p class="field-help">Choose a language before starting. A resumed attempt keeps its original language.</p>
       </div>
       <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
     </section>

@@ -37,6 +37,37 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p7-compact-review-receipt
+
+- P7's separately requested compactness pass uses the `uncodixfy` skill and
+  actual `bootResearchUi` screenshots. One Save recipe action also re-exports
+  an unchanged loaded recipe. Edit recipe remains separate. Sampling/output
+  choices remain visible; provenance/playback and participant preparation are
+  closed disclosures with visible blocker links that reveal/focus their controls.
+- Repeated explanations share a compact row while independent gate identities,
+  counts and Start/recovery decisions remain intact. Status symbols have accessible
+  labels. Unsupported settings errors name the editor without internal schema
+  terminology. Required errors and the sticky Start status remain visible.
+- Screenshot audit additionally exposed a package projection defect: when no
+  original experiment document was open, the UI lacked its canonical source text.
+  Guarded package projection now reconstructs that text with the existing v1
+  serializer. Source verification passes before the explicit language prerequisite.
+- Evidence: 465 Node tests; 26 full P7 headless cases on desktop Edge and narrow
+  Chrome, including revealed participant controls, unchanged/revised save and
+  canonical source restoration; empty and unsupported-XR render scenarios in
+  both widths. Pages 174-file / desktop 8-file closures pass. Screenshots inspected
+  under `D:/GitHub/affect-tracker-research-p7-evidence/compact-*`.
+  Final content heights: empty desktop 1361px/narrow 1687px; populated desktop
+  1421px/narrow 1931px; unsupported-XR desktop 1498px/narrow 2069px. These are
+  different fixture states, not paired performance measurements against main.
+- Integration should collect after `b6647c0`; current screenshots intentionally
+  use this isolated branch, so other owners' newer header/P5/section-count work
+  is absent. No native or physical qualification. Save naming and sequential
+  accepted-contribution changes requested subsequently are a separate main-owned
+  pass awaiting the main task's confirmation; no new naming/acceptance semantics
+  are implemented here.
+
+
 ### 20260911-p7-editable-recipe-handoff
 
 - P7 Backend Verification: merged P2 `74e879b` and canonical documentation

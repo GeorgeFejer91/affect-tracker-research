@@ -451,8 +451,8 @@ test("Advanced contains the exact LSL fields and six mapping disclosures", () =>
 
 test("Review and Start carries privacy, participant-state, format, and fail-closed controls", () => {
   const markup = renderResearchUiMarkup();
-  assert.match(markup, /Available|States are reconstructed/u);
-  assert.match(markup, /locks, recovery journals, and manifests/u);
+  assert.match(markup, /Availability and recovery/u);
+  assert.match(markup, /Availability and recovery are read from saved attempts/u);
   for (const id of ["participant-first-name", "participant-last-name", "participant-age", "participant-gender", "participant-handedness", "participant-code"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
