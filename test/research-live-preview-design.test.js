@@ -457,8 +457,8 @@ test("the application projects design state only to Setup and bypasses planning 
     appSource,
     /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?\.\.\.\(dimensions \?\? \{\}\),[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
   );
-  assert.match(appSource, /previewResponseSimulator\?\.press\(direction\)/u);
-  assert.match(appSource, /previewResponseSimulator\?\.release\(direction\)/u);
+  assert.match(appSource, /createPreviewInteraction\(\{[\s\S]*?simulator: previewResponseSimulator, getBinding: \(\) => inputBinding,[\s\S]*?isEnabled: \(\) => mode === "setup"/u);
+  assert.match(appSource, /previewInteraction\?\.destroy\(\)/u);
   assert.match(appSource, /previewResponseSimulator\?\.reset\(\)/u);
   assert.match(appSource, /previewResponseSimulator\?\.destroy\(\)/u);
 });

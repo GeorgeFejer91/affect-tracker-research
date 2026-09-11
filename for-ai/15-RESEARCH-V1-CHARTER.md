@@ -494,6 +494,14 @@ instead of the continuous cursor. Arrow edges move one tile using the
 corresponding axis dimension; changing either dimension snaps each coordinate
 to its nearest tile and releases held input. Invalid drafts retain the last
 accepted complete grid without changing saved settings or Start readiness.
+The preview map supports direct pointer selection: continuous coordinates or
+the actual cell under the pointer for rectangular Stepwise grids. While the
+map or output stage is explicitly focused, the preview may consume the current
+binding's WebView-visible keyboard, mouse/wheel and gamepad tokens as transient
+presentation input; arrow keys remain an accessible fallback. Text/dialog focus,
+Setup exit, hidden documents, focus loss and teardown release held preview input.
+Unavailable WebView gamepads are reported, never replaced by a native service.
+These interactions do not constitute the separate native input test or its receipt.
 The saved input step size remains separately reachable under Advanced preview
 settings. Stepwise may compare separate physical presses with a bounded
 wait-and-repeat hold rule.

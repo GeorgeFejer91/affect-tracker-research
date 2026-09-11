@@ -37,6 +37,31 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-pinned-input
+
+- Owner **Live Preview**, UI Finalization; **open**, allocated by integration.
+  Branch `codex/segment-preview-pinned-input`, dependent base `8524fa2`, isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Fixed preview header/output/map; independently scrolling lower controls with
+  whole-pane fallback for short windows/zoom. Direct map-point selection and
+  focus-gated configured-binding presentation via bounded preview-only adapter.
+  Shared seams: previewMarkup, preview CSS, old simulator handlers and teardown.
+  S3 confirmed no overlap with its ready `01444a7` seams; main stays untouched.
+- Reuse existing binding tokens, preserve rectangular snapping, release holds
+  on blur/binding/mode/visibility/teardown. No global input capture, acquisition
+  receipts, package, Run, native service or validation changes. Corners/reset
+  ambiguity and floating/halo follow-ups excluded from this bounded pass.
+- Baseline 58/58 preview/UI/simulator tests. Planned: focus/mapping/pointer and
+  lifecycle unit tests, offscreen layout/scroll receipts and full JS/build gates.
+- Ready evidence: 436/436 JavaScript tests, desktop 8-file closure and 4/4
+  offscreen composition receipts under
+  `D:/GitHub/.affect-preview-checks/pinned-input-20260911`. Tested real tile hit
+  regions, keyboard/custom priority, mouse/wheel, gamepad edge/reconnect/axes,
+  focus/dialog/mode exclusion and teardown with process-local fixtures.
+- Coordinated with **Add draggable segment boundary**: it owns outer grid and
+  divider; this pass owns preview container queries and content-fit observer.
+  No native/physical test, active-app reload, push or deployment performed.
+
 ### 20260911-preview-rectangular-grid
 
 - Owner **Preview**, UI Finalization; **open**, integration allocation acknowledged.

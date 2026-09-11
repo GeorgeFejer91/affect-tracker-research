@@ -1907,11 +1907,13 @@ tbody tr:last-child td {
 }
 
 .preview-pane {
-  display: block;
+  container: preview-pane / inline-size;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   max-height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   padding: 1.1rem;
   background: #151714;
@@ -2005,9 +2007,10 @@ tbody tr:last-child td {
 
 .research-preview-studio {
   display: grid;
+  grid-template-rows: auto auto minmax(8rem, 1fr);
   gap: 0.75rem;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2016,12 +2019,72 @@ tbody tr:last-child td {
 
 .research-preview-studio > .preview-primary-stage {
   position: relative;
-  min-height: 14rem;
+  height: clamp(6rem, 17vh, 12rem);
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
   background: #090a09;
   touch-action: none;
+}
+
+.preview-controls-scroll {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0.2rem 0.3rem 0.5rem;
+}
+
+.preview-pane-scroll-all {
+  display: block;
+  overflow-y: auto;
+}
+
+.preview-pane-scroll-all .research-preview-studio {
+  grid-template-rows: auto;
+  overflow: visible;
+}
+
+.preview-pane-scroll-all .preview-controls-scroll {
+  overflow: visible;
+}
+
+@container preview-pane (max-width: 36rem) {
+  .preview-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .preview-feedback-modes { width: 100%; }
+  .preview-affect-map .preview-affect-map-layout {
+    grid-template-columns: minmax(3.5rem, 1fr) minmax(6.5rem, 8rem) minmax(3.5rem, 1fr);
+  }
+  .preview-affect-map .preview-color-anchor.anchor-left,
+  .preview-affect-map .preview-color-anchor.anchor-right {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding-inline: 0.25rem;
+    text-align: center;
+  }
+  .research-preview-studio .preview-subsection-heading,
+  .research-preview-studio .preview-simulator-help { flex-wrap: wrap; gap: 0.4rem; }
+  .preview-quick-appearance .field-grid,
+  .preview-advanced-settings .field-grid,
+  .preview-advanced-settings .mapping-grid,
+  .preview-footer { grid-template-columns: minmax(0, 1fr); }
+  .preview-advanced-settings .color-row { grid-template-columns: minmax(0, 1fr) 2.75rem; }
+  .preview-advanced-settings .color-row input[id$="-hex"] { grid-column: 1; }
+  .preview-advanced-settings .color-row button { grid-column: 2; }
+}
+
+.preview-primary-stage:focus-visible,
+.preview-controls-scroll:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: -3px;
 }
 
 .research-preview-studio::after {
@@ -2249,6 +2312,8 @@ tbody tr:last-child td {
   border: 1px solid var(--border-strong);
   border-radius: 4px;
   background: #111310;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 .preview-control-surface > canvas,

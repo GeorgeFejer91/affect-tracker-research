@@ -155,7 +155,7 @@ function previewMarkup(label, { studio = false } = {}) {
 
   return `
     <div class="research-preview-stage research-preview-studio" data-preview-variant="studio" role="group" aria-label="${escapedLabel}">
-      <div class="preview-primary-stage" role="img" aria-label="Selected feedback rendering">
+      <div class="preview-primary-stage" tabindex="0" role="group" aria-label="Selected feedback rendering and configured input preview" aria-describedby="preview-response-simulator-help">
         ${previewOverlayMarkup({ includeFace: true })}
         <p class="preview-mode-label">Previewing <span data-preview-mode-label>Flubber</span></p>
       </div>
@@ -193,8 +193,10 @@ function previewMarkup(label, { studio = false } = {}) {
           <button id="preview-response-reset" type="button">Reset to neutral</button>
         </div>
         <output data-preview-tile-status class="field-help" role="status" aria-live="polite" aria-atomic="true"></output>
+        <output data-preview-input-availability class="field-help" role="status" aria-live="polite"></output>
       </section>
 
+      <div class="preview-controls-scroll" tabindex="0" role="region" aria-label="Live preview settings">
       <section class="preview-response-settings" aria-labelledby="preview-response-title">
         <div class="preview-subsection-heading"><h3 id="preview-response-title">Response control</h3></div>
         <div class="preview-segmented-control" role="group" aria-label="Response preview mode">
@@ -283,6 +285,13 @@ function previewMarkup(label, { studio = false } = {}) {
           </section>
         </div>
       </details>
+      <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
+      <footer class="preview-footer">
+        <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
+        <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
+        <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
+      </footer>
+      </div>
     </div>`;
 }
 
@@ -737,12 +746,6 @@ export function renderResearchUiMarkup(surface = "browser") {
                 </div>
               </header>
               ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
-              <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
-              <footer class="preview-footer">
-                <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
-                <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
-                <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
-              </footer>
             </aside>
           </form>
         </section>

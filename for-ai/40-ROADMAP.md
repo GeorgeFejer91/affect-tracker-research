@@ -142,6 +142,17 @@ This is isolated source/component evidence, not current installed-app behavior;
 integration/reload is deferred to the integration owner pending user safety.
 No package, Run, native input or saved stepSize contract changes are included.
 
+The next isolated Preview follow-up pins the header/output/map above a lower
+settings scroller, reflows within a 320px preview pane, and falls back to one
+whole-pane scroller when short height or enlarged text cannot fit the pinned
+area plus usable controls. Direct map clicks select actual rectangular cells;
+focused map/output input uses configured WebView-visible bindings and arrow
+fallback. No native device service, acquisition receipt or Run path is added.
+Candidate checks: 436/436 JavaScript tests, desktop 8-file frontend closure,
+four offscreen layout/input fixtures (wide, 320px pane, short, 2× text scale).
+The fixtures step the animation clock explicitly and use isolated DOM input,
+not the user's desktop. Native/physical behavior and integration remain pending.
+
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,
 affect inference, uploads, networking, and personal data remain absent. The

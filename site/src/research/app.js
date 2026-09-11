@@ -26,6 +26,8 @@ import { ResearchInputController, withCustomDigitalAction } from "./input-contro
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { createInlineColorPicker } from "./inline-color-picker.js";
+import { createPreviewInteraction } from "./preview-interaction.js";
+import { createPreviewLayout } from "./preview-layout.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
@@ -183,6 +185,7 @@ function bindResearchInteractions(root, { surface }) {
   let inputPoint = { x: 0, y: 0 };
   let previewDesignPoint = { x: 0, y: 0 };
   let previewResponseSimulator = null;
+  let previewInteraction = null;
   let feedbackPreviewMode = "flubber";
   let responsePreviewMode = "stepwise";
   let previewColorAnchor = null;
@@ -421,7 +424,10 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
-    if (mode !== "setup") previewResponseSimulator?.releaseAll();
+    if (mode !== "setup") {
+      previewInteraction?.releaseAll();
+      previewResponseSimulator?.releaseAll();
+    }
     shell.dataset.researchMode = mode;
     root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
       panel.hidden = panel.getAttribute("data-mode-panel") !== mode;
@@ -795,6 +801,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPreviewDesignControls() {
+    previewInteraction?.sync();
     const custom = query('input[name="previewGridSizing"]:checked')?.value === "custom";
     const tileHelp = query("#preview-tile-count-help");
     const tileCount = previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT;
@@ -839,8 +846,8 @@ function bindResearchInteractions(root, { surface }) {
     const simulatorHelp = query("#preview-response-simulator-help");
     if (simulatorHelp) {
       simulatorHelp.textContent = responsePreviewMode === "continuous"
-        ? "Focus the map and hold the arrow keys to preview full-span travel time. Opposing directions cancel."
-        : "Focus the map and use the arrow keys to move one outlined tile at a time.";
+        ? "Click the map to set a point. Focus the map or Flubber to use your configured controls or arrow keys; hold to preview travel time."
+        : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
   }
 
@@ -4163,36 +4170,16 @@ function bindResearchInteractions(root, { surface }) {
   if (inputTestGrid instanceof HTMLElement) inputController.attach(inputTestGrid);
 
   const previewControlSurface = query(".preview-control-surface");
-  const previewDirectionByKey = Object.freeze({
-    ArrowLeft: "left",
-    ArrowRight: "right",
-    ArrowUp: "up",
-    ArrowDown: "down",
+  previewInteraction = createPreviewInteraction({
+    map: previewControlSurface, stage: query(".preview-primary-stage"),
+    simulator: previewResponseSimulator, getBinding: () => inputBinding,
+    isEnabled: () => mode === "setup",
+    onAvailability: message => {
+      const output = query("[data-preview-input-availability]");
+      if (output && output.textContent !== message) output.textContent = message;
+    },
   });
-  const previewSimulatorHandlers = {
-    keydown(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
-      previewResponseSimulator?.press(direction);
-      event.preventDefault();
-    },
-    keyup(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction) return;
-      previewResponseSimulator?.release(direction);
-      event.preventDefault();
-    },
-    blur() {
-      previewResponseSimulator?.releaseAll();
-    },
-  };
-  if (previewControlSurface instanceof HTMLElement) {
-    for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-      previewControlSurface.addEventListener(type, handler);
-    }
-  }
-  const releasePreviewResponse = () => previewResponseSimulator?.releaseAll();
-  window.addEventListener("blur", releasePreviewResponse);
+  const previewLayout = createPreviewLayout(query(".preview-pane"));
 
   const runInputHandlers = {
     keydown(event) {
@@ -5321,6 +5308,9 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      previewLayout.destroy();
+      previewInteraction?.destroy();
+      previewInteraction = null;
       inlineColorPicker.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
@@ -5330,12 +5320,6 @@ function bindResearchInteractions(root, { surface }) {
       previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
-      if (previewControlSurface instanceof HTMLElement) {
-        for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-          previewControlSurface.removeEventListener(type, handler);
-        }
-      }
-      window.removeEventListener("blur", releasePreviewResponse);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);
