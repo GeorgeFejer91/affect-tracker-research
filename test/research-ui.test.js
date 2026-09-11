@@ -241,9 +241,10 @@ test("Section 2 uses multilingual questionnaire tables and hides backend documen
     "questionnaire-add-blank", "questionnaire-sheet-list", "questionnaire-sheet-file",
     "questionnaire-sheet-preview", "questionnaire-coverage-status",
   ]) assert.ok(section.includes(`id="${id}"`), id);
-  for (const preset of ["maia-2", "tas-20"]) assert.ok(section.includes(`data-questionnaire-preset="${preset}"`));
+  for (const id of ["questionnaire-prebuilt-open", "questionnaire-prebuilt-dialog", "questionnaire-prebuilt-list", "questionnaire-sheet-copy"]) assert.ok(section.includes(`id="${id}"`));
+  assert.doesNotMatch(section, /data-questionnaire-preset/u);
   assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|JSON|sourceSha256/u);
-  assert.match(section, /Paste items from Excel/u);
+  assert.match(section, /Paste items, answer labels and recorded values together from Excel/u);
   assert.match(section, /before the video task/u);
   assert.match(editor, /event\.clipboardData\.getData\("text\/plain"\)/u);
   assert.doesNotMatch(editor, /navigator\.clipboard|document\.execCommand/u);
@@ -319,7 +320,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(markup, /Package reproduction matrix/u);
   assert.match(source, /loadedLanguageSelection = structuredClone\(parsed\.package\.languageSelection\)/u);
-  assert.match(source, /return createCoveredFlatLanguageSelectionV1/u);
+  assert.match(source, /const flat = createCoveredFlatLanguageSelectionV1/u);
+  assert.match(source, /reconcileQuestionnaireModuleMappings\(loadedLanguageSelection/u);
   assert.match(source, /resolveLanguageSelectionTraversalStepV1/u);
   assert.match(source, /validateExperimentPackageRecoveryBindingV1/u);
   assert.match(source, /participantRecoveryBindings/u);

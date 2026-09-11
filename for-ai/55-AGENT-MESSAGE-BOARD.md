@@ -126,6 +126,65 @@ file; follow the integration-owner collection procedure in the workflow.
   GUI qualification, canonical integration merge, or unrelated UI cleanup is
   included in this pass.
 
+### 20260911-p2-finish-grid-reopen
+
+- Owner: S2, P2 `questionnaires`; active Backend Verification follow-up to the
+  researcher's explicit "finish segment 2" request. Isolated branch
+  `codex/segment-questionnaires-table-catalogue`, checkpoint `59d15d9`.
+- Brief: finish the user-facing multilingual spreadsheet/catalogue and expose
+  full accepted questionnaire content for editable recipe reopening. Inputs:
+  explicit table/file edits and language choices; output: existing definitions,
+  codes, module hooks and exact language tree. P1 supplies source storage, P3
+  consumes placements, P7 composes/saves the recipe. No new runnable schema.
+- Checklist: P2-03 grid regressions; P2-04/P2-08 accepted-content restore seam and
+  multilingual edit/compile/reopen fixtures; P2-05 exact MAIA EN/DE preloads.
+  Q09 computed scoring/extra placement and P2-07 versioned display repetition
+  remain decisions; TAS redistribution remains unavailable pending rights/assets.
+- Shared files: only S2 helpers/imports/API in `app.js`, questionnaire modules,
+  scoped tests/fixture and this entry. P7 owns package apply/save/invalidation
+  handlers and must call the P2 restore seam after applying settings. Preserve
+  imported module placements, all references and nested language tree order.
+- Evidence: 435/435 full Node tests, Pages build/170-file closure and desktop
+  frontend build/8-file closure pass. The headless fixture covers full-grid
+  paste/copy, Undo, preload labels/codes, app-level editable restore and dirty
+  revisions; two independent processes preserve edited EN/DE recipe bytes.
+  No user browser, OS clipboard, desktop input or Runner qualification used.
+- Canonical roadmap authority (60/61/62 and changed routers) was read; its
+  uncommitted documentation belongs to the roadmap/integration owners. This
+  branch does not replace it. User approved merge/reload after saving work.
+- P7 handoff: `getQuestionnaireContributionSnapshot()` and async
+  `restoreQuestionnaireContribution(value, { isCurrent })` in `app.js`;
+  domain validator/projection in `questionnaire-contribution.js`. P7 owns
+  wiring to package load/Edit recipe and final save acknowledgement. Do not
+  claim full integrated P2-04/P2-08 closure before that collection/check.
+- Limits: draft durability remains Q13; display repetition remains preview-only;
+  historical `und` or colliding family/language slots reject editable restore
+  explicitly. Nested language routes survive content edits; roster edits for
+  those imported trees require a future routing editor instead of flattening.
+  Removing a flat-tree language removes its setup variants, never source files.
+  No new scoring formula, translation, native runtime or Runner work added.
+
+### 20260911-questionnaires-table-catalogue
+
+- Owner: **S2**, questionnaires segment. Status: **open**.
+- Base: `d286137`; branch `codex/segment-questionnaires-table-catalogue`;
+  isolated worktree `affect-tracker-research-questionnaires-table`.
+- Confirmed follow-up: whole-table spreadsheet copy/paste including visible
+  labels and recorded codes, plus one prebuilt asset-selection dialog with
+  separate English/German versions. Keep TAS rights-gated and Runner untouched.
+- Seams: questionnaire sheet/editor/catalogue, Section 2 markup/dialog and CSS,
+  questionnaire-only app hooks, focused tests and Section 2 documentation.
+- Integration owner acknowledged allocation; preview owns its separate hunks.
+- Baseline: 48/48 questionnaire sheet/integration and UI tests passed.
+- Evidence planned: atomic full-table round trips/rejections, preset provenance,
+  language/draft guards and background build/renderer checks. Interactive native
+  checks require fresh user opt-in under the newer integration policy.
+- Resumed on D: after verified relocation at source checkpoint `59d15d9`.
+  User explicitly requested finishing Section 2. The bounded deliverable remains
+  its spreadsheet/catalogue and authoring integration, not Runner completion.
+  Integration acknowledged continued isolated ownership; no main checkout writes.
+  The earlier native build failed from disk exhaustion, not a passing native gate.
+
 ### 20260911-roadmap-agent-coordination-audit
 
 - Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination
