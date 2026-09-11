@@ -88,6 +88,22 @@ file; follow the integration-owner collection procedure in the workflow.
 - Deferred: unready P1/P2/P3/P4/P5/P6/P7 work, floating native overlay, Runner,
   installed/native qualification, publication and deployment. Main remains
   unchanged until the isolated combined candidate passes its named checks.
+- Ready receipt: combined source `0d0ccb6` plus the teardown test correction
+  passes 448/448 JavaScript tests, desktop 8-file and Pages 174-file closures.
+  Background checks pass: Edge appearance 21, pinned layout/input 4,
+  confirmation footers 8, and full-app resize/reflow 8 each in Edge and Chrome.
+  Both pane overflow values are zero in every resize case, including a 320px
+  preview. Inspected confirmation and narrow-preview screenshots. Receipts:
+  `D:/GitHub/.affect-preview-checks/integration-20260911`.
+- Source conflicts combined divider mode/teardown with all preview cleanup;
+  board conflicts retain every distinct entry. The former teardown source test
+  assumed divider cleanup must be the first statement; it now checks all four
+  cleanup calls inside the controller teardown. The resize gate now requires
+  zero preview overflow as well as zero sections overflow. No behavior is removed
+  to satisfy a test. The existing >500 kB desktop bundle warning remains.
+- S2 subsequently supplied clean `74e879b`; collect in the next bounded pass,
+  including its P7 restore dependency. This preview checkpoint does not claim
+  the unfinished multi-segment cleanup or any native/installed qualification.
 
 ### 20260911-roadmap-agent-coordination-audit
 

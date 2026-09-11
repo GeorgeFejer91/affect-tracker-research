@@ -207,5 +207,9 @@ test("both entrypoints expose one labelled Setup separator and keep layout state
   assert.doesNotMatch(source, /\bimport\b|localStorage|sessionStorage|indexedDB|dispatchEvent|invoke\(/u);
   const app = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
   assert.match(app, /setupLayout\.setEnabled\(mode === "setup"\)/u);
-  assert.match(app, /destroy\(\) \{\s*setupLayout\.destroy\(\)/u);
+  const teardown = app.match(/    destroy\(\) \{([\s\S]*?)\n    \},/u)?.[1];
+  assert.ok(teardown, "the app controller exposes its teardown");
+  for (const cleanup of ["setupLayout.destroy()", "previewLayout.destroy()", "previewInteraction?.destroy()", "inlineColorPicker.destroy()"]) {
+    assert.ok(teardown.includes(cleanup), `combined teardown retains ${cleanup}`);
+  }
 });
