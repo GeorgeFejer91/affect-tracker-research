@@ -1,5 +1,11 @@
 # Project metadata and source map
 
+The final-state capability plan and current segment checklist live in
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), adopted by the charter's
+2026-09-11 amendment. This file retains v1/source-history facts; old no-allocation
+invariants and Section 2 pass scope describe that generation. They do not reject
+the approved future variant/layout/XR authoring direction or allocate new work.
+
 ## Canonical identity
 
 - Project: **Affect Tracker Research**
@@ -7,7 +13,8 @@
 - Repository: <https://github.com/GeorgeFejer91/affect-tracker-research>
 - Pages target: <https://GeorgeFejer91.github.io/affect-tracker-research/>
 - Primary branch: `main`
-- Active implementation branch: `research/video-protocol-v1`
+- Designated local integration branch: `codex/research-unified`
+- Historical v1 implementation branch: `research/video-protocol-v1`
 - License: BSD-3-Clause
 - Origin attribution: [`afourcade/AffectTracker`](https://github.com/afourcade/AffectTracker)
 - Canonical Windows clone:

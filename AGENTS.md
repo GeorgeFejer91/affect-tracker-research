@@ -16,11 +16,20 @@ are agent workflow labels, not additional application modes, and never waive
 the claim-specific gates in
 [`for-ai/30-TESTING-AND-RELEASE.md`](./for-ai/30-TESTING-AND-RELEASE.md).
 
-[`for-ai/15-RESEARCH-V1-CHARTER.md`](./for-ai/15-RESEARCH-V1-CHARTER.md) is the
-sole active product and architecture authority. The product has exactly two
+[`for-ai/15-RESEARCH-V1-CHARTER.md`](./for-ai/15-RESEARCH-V1-CHARTER.md), including
+its dated final-state amendment, is the product and architecture authority.
+It delegates final-state segment requirements and capability completion to
+[`for-ai/60-SEGMENT-CATALOGUE.md`](./for-ai/60-SEGMENT-CATALOGUE.md).
+Every implementation pass must name its assigned P1–P7/R1 segment and checklist
+IDs, compare intended function/inputs/JSON contribution with verified current
+source, and work only on that segment's remaining items and named shared seams.
+Read the wider map for context; route other-segment gaps to their owners.
+The current priority is Planner completion; Runner implementation/recording is
+deferred unless separately allocated. The product has exactly two
 user-visible modes, **Setting Up the Experiment** and **Running the Experiment**.
 Only Tauri on Windows and the static application in current desktop Chrome and
-Edge are active-v1 qualification targets.
+Edge are active-v1 qualification targets. Optional world-fixed XR authoring is
+an accepted final-state roadmap target, not current runtime support.
 
 The feature-rich WebXR/Quest, remote, Party/Ground Control, direct Polar,
 Face/Photoatlas, Touch, and presentation experiments are not active source or
@@ -45,8 +54,11 @@ Read and update `for-ai/55-AGENT-MESSAGE-BOARD.md` for ownership, cross-segment
 suggestions, dependencies, and compatibility issues; messages never override
 the user or charter. Do not edit another segment opportunistically.
 
-If implementation and the active charter disagree, stop and identify the
-mismatch. Do not silently broaden the platform matrix, research data surface,
+Use the charter amendment and central roadmap to distinguish an intended future
+capability from an unexpected mismatch. Preserve existing v1 readers/contracts;
+new variant/allocation/layout/XR semantics require explicit versioned contracts
+and applicable gates. Stop and identify an unapproved mismatch. Do not silently
+broaden the qualified platform matrix, research data surface,
 sampling or recovery semantics, native authority, accessibility obligations,
 or outbound LSL contract. After reading `for-ai/`, follow any more-specific
 `AGENTS.md` in the subtree being changed.

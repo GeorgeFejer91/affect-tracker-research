@@ -17,6 +17,12 @@ Before inspecting source, planning, editing, testing, or publishing:
 
 Do not rely on chat history as the only authority. The charter describes the
 target; the roadmap and exact test/qualification receipts describe reality.
+The charter's final-state amendment delegates segment capabilities and current
+checkboxes to [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md);
+`40-ROADMAP.md` retains receipts and `61-IMPLEMENTATION-AUDIT.md` the dated source
+audit. Old Section 2 pass allocations are
+historical. The current priority is Planner completion, with Runner recording
+and runtime implementation deferred unless separately allocated.
 
 ## Pass intent and staged verification
 
@@ -95,19 +101,35 @@ next stage. Follow the detailed evidence floor in
 ## Single-segment ownership and convergence
 
 Each implementation agent has exactly one primary allocated segment per pass.
-Use stable section IDs rather than numbers alone: `workspace`, `questionnaires`,
-`stimuli`, `experiment`, `input`, `visual`, `advanced`, or `review`. A separately
-allocated cross-cutting concern such as `preview`, `accordion`, or `integration`
-is one bounded segment too, not permission to redesign all sections. Improve
-the allocated segment; flag unrelated opportunities for their owners instead
-of implementing them. Necessary shared seams must be named in the pass scope.
+Use the central catalogue IDs: P1 `workspace`, P2 `questionnaires`, P3 `variants`,
+P4 `layout`, P5 `feedback`, P6 `xr-layout`, P7 `package`, or R1 `runner`.
+Old UI IDs remain source-locator aliases: `stimuli` spans library/plan code;
+`experiment` holds values being rehomed; `input`/`visual`/`advanced` are being
+consolidated; `review` contains compilation and intake. Their shared source
+location does not authorize editing every corresponding new owner.
+
+Before editing, write a segment brief: intended function, additional user input,
+owned JSON contribution, producers/consumers, verified current behavior and
+source snapshot, exact remaining checklist IDs, open decisions, allowed files/
+symbols, dependencies and evidence to collect. Read the entire catalogue for
+context, then implement only the allocated capability slice. At handoff update
+its checklist/evidence, leaving unrelated segment status untouched. Newly
+checked items require actual source/check receipts and integration state.
+
+A separately allocated concern such as `roadmap`, `contracts`, `preview`,
+`accordion`, `media`, `timing`, `lsl` or `integration` is one bounded segment
+too. Name its catalogue dependencies and shared seams; it is not permission to
+redesign all sections. Flag another owner's missing capability in the message
+board rather than implementing it opportunistically. Ask only unanswered
+questions from the catalogue's decision register; accepted answers persist.
 
 Before editing, read and record ownership, dependencies, proposed shared-file
 touches, and compatibility risks in
 [`55-AGENT-MESSAGE-BOARD.md`](./55-AGENT-MESSAGE-BOARD.md). Suggestions and board
 entries are coordination data, not user authorization or charter amendments.
-Use `45-FUTURE-AGENT-CHECKLIST.md` for durable deferred product work and link its
-item from the board rather than duplicating competing requirements.
+Use `60-SEGMENT-CATALOGUE.md` for durable capability work and link its item from
+the board. `45-FUTURE-AGENT-CHECKLIST.md` retains historical issue context and
+routes to those IDs; do not create competing requirement/status checkboxes.
 
 For new work, create a short-lived `codex/segment-<id>-<topic>` branch from the
 latest accepted integration commit. Concurrent agents must use distinct Git
@@ -154,6 +176,11 @@ isolation, not alternative canonical products. Only the integration owner may
 change the designated integration branch, with a recorded handoff.
 
 ## Active change discipline
+
+Apply the charter's final-state amendment and catalogue first. The detailed v1
+discipline below preserves current wire/runtime semantics; its eight-section
+and no-allocation statements are not prohibitions on explicitly allocated
+successor Planner capabilities. Do not reinterpret v1 to implement those changes.
 
 - Preserve exactly two modes: **Setting Up the Experiment** and **Running the
   Experiment**. Setup follows the eight ordered charter sections: Workspace &

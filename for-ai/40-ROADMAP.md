@@ -1,5 +1,21 @@
 # Research v1 roadmap
 
+## Central capability checklist and this evidence ledger
+
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
+Planner roadmap and segment capability checklist adopted by the charter's
+2026-09-11 amendment. It records what each segment must do, user inputs, JSON
+contributions, implemented components, remaining work and unanswered decisions.
+Update capability completion there; retain detailed implementation/qualification
+receipts here. [`61-IMPLEMENTATION-AUDIT.md`](./61-IMPLEMENTATION-AUDIT.md) preserves
+the source audit at `305d3ac`. This file's older candidate history is evidence
+with its original scope, not a competing target or proof of new capabilities.
+
+Current priority is Planner completion; Runner execution/recording work is
+deferred. No variant, physical-layout or XR implementation becomes complete
+merely because it is accepted in the target roadmap. Pending branches must be
+integrated and verified before checking canonical capability items.
+
 [`15-RESEARCH-V1-CHARTER.md`](./15-RESEARCH-V1-CHARTER.md) defines the target.
 This file records implementation and qualification truth. The first internal
 candidate is `0.4.0-alpha.1`; it is neither stable nor research-ready.
