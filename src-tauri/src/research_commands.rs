@@ -34,9 +34,9 @@ use crate::research_runtime::{
 };
 use crate::research_workspace::{
     source_capabilities, AssignmentPlanExportReceipt, DecodeAttestationRequest,
-    ImportSelectionKind, MediaUrlReceipt, RescanResult, SavedSettingsReceipt,
-    ScannedStimulusSummary, SourceCapabilities, StorageReadiness, WorkspaceService,
-    WorkspaceStatus,
+    ImportSelectionKind, MediaUrlReceipt, QuestionnaireAssetReceipt, RescanResult,
+    SavedSettingsReceipt, ScannedStimulusSummary, SourceCapabilities, StorageReadiness,
+    WorkspaceLocation, WorkspaceService, WorkspaceStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
@@ -340,6 +340,17 @@ pub async fn research_choose_workspace(
         .into_path()
         .map_err(|_| CommandError::forbidden("The selected workspace is not a local folder."))?;
     workspace.select(path)
+}
+
+#[tauri::command]
+pub fn research_open_workspace_location(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    location: WorkspaceLocation,
+) -> ResearchResult<()> {
+    authorize(&window)?;
+    workspace.open_location(&workspace_id, location)
 }
 
 #[tauri::command]
@@ -732,6 +743,34 @@ pub fn research_save_settings(
     workspace.save_settings_document(&workspace_id, settings)
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct QuestionnaireAssetStoreRequest {
+    pub workspace_id: String,
+    pub family_id: String,
+    pub language_tag: String,
+    pub format: String,
+    pub source_sha256: String,
+    pub bytes: Vec<u8>,
+}
+
+#[tauri::command]
+pub fn research_store_questionnaire_asset(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    request: QuestionnaireAssetStoreRequest,
+) -> ResearchResult<QuestionnaireAssetReceipt> {
+    authorize(&window)?;
+    workspace.store_questionnaire_asset(
+        &request.workspace_id,
+        &request.family_id,
+        &request.language_tag,
+        &request.format,
+        &request.source_sha256,
+        &request.bytes,
+    )
+}
+
 #[tauri::command]
 pub fn research_storage_readiness(
     window: WebviewWindow,
@@ -1082,6 +1121,7 @@ mod tests {
         // Keep this assertion near the boundary as a visible security invariant.
         let names = [
             "research_choose_workspace",
+            "research_open_workspace_location",
             "research_source_capabilities",
             "research_native_media_capability",
             "research_native_media_status",
@@ -1109,6 +1149,7 @@ mod tests {
             "research_workspace_media_url",
             "research_attest_workspace_decode",
             "research_save_settings",
+            "research_store_questionnaire_asset",
             "research_storage_readiness",
             "research_export_assignment_plan",
             "research_lsl_readiness",
@@ -1126,6 +1167,37 @@ mod tests {
             "research_participant_states",
         ];
         assert!(names.iter().all(|name| name.starts_with("research_")));
+    }
+
+    #[test]
+    fn questionnaire_asset_store_request_is_closed_and_uses_camel_case() {
+        let request = serde_json::from_value::<QuestionnaireAssetStoreRequest>(serde_json::json!({
+            "workspaceId": "workspace-id",
+            "familyId": "maia-2",
+            "languageTag": "de",
+            "format": "json",
+            "sourceSha256": "0".repeat(64),
+            "bytes": [123, 125]
+        }))
+        .unwrap();
+        assert_eq!(request.workspace_id, "workspace-id");
+        assert_eq!(request.family_id, "maia-2");
+        assert_eq!(request.language_tag, "de");
+        assert_eq!(request.format, "json");
+        assert_eq!(request.bytes, vec![123, 125]);
+
+        assert!(
+            serde_json::from_value::<QuestionnaireAssetStoreRequest>(serde_json::json!({
+                "workspaceId": "workspace-id",
+                "familyId": "maia-2",
+                "languageTag": "de",
+                "format": "json",
+                "sourceSha256": "0".repeat(64),
+                "bytes": [123, 125],
+                "path": "C:/outside.json"
+            }))
+            .is_err()
+        );
     }
 
     #[test]

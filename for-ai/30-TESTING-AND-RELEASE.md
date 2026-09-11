@@ -12,6 +12,35 @@ a stable or research-ready claim. Acceptance evidence must bind the exact Git
 commit, package/output contract versions and derived hashes, built artifact hashes, OS/browser
 versions, hardware, and test receipt.
 
+## Staged use of these gates
+
+The three development stages in
+[`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md) make verification modular; they
+do not lower any acceptance criterion or turn deferred evidence into passing
+evidence. Apply the following normal evidence floor for a pass:
+
+| Development stage | Evidence required for a normal handoff | Evidence normally deferred |
+| --- | --- | --- |
+| **UI Finalization** | Focused tests for the changed presentation and UI contracts; relevant keyboard, focus, reflow, reduced-motion, and no-console-error checks; isolation tests for any synthetic preview; a rebuilt, reopened, and visually exercised local Windows Tauri development app. | Unchanged Rust/backend matrices, installer qualification, full clean-candidate gates, remote CI, Pages deployment, and physical research qualification. |
+| **Backend Verification** | Focused owner-level tests followed by the applicable cross-layer browser/Rust contract, IPC, workspace, input, media, scheduler, persistence/recovery, output, and LSL gates for the functionality under review. A stage-completion pass must inventory every current local application function rather than sampling only recently changed code. Record unavailable hardware or physical checks as open rather than passing. | Unrelated interface polishing and repository publication or deployment unless they are part of the confirmed pass. |
+| **Repository/Web Synchronization** | Inspect the complete candidate diff; run the clean-candidate automated gates below unless a gate is explicitly inapplicable; verify Pages and desktop build closures; bind results to the exact commit; after authorized publication, verify the remote commit, CI, and cache-bypassed Chrome and Edge Pages result. | Installed, hardware, long-run, and research-readiness qualification only when the confirmed pass does not claim them. |
+
+The changed surface sets a non-negotiable verification floor. A UI-labelled
+pass that changes a schema, canonical bytes/hash, IPC, native authority,
+persistence, packaging, or release behavior must pause for a revised intent
+check and move to the stricter applicable stage. Conversely, unrelated backend
+and release matrices need not run after every presentation-only iteration.
+For Backend Verification stage completion, derive a canonical checklist from
+the normative mirror map in `20-ARCHITECTURE.md`, current implementation truth
+in `40-ROADMAP.md`, and the applicable sections of this file. Record every
+current local application function as pass, fail, unavailable, or deferred,
+with exact evidence or rationale. Name every omitted candidate gate, why it is
+inapplicable, and how its omission limits the claim; a gate is never
+inapplicable when its owning authority or claimed surface changed.
+Any stable, release, experiment-use, or research-ready claim still requires
+every applicable gate in this file for one exact candidate, regardless of the
+stage used while developing it.
+
 ## Automated candidate gates
 
 ### Mirrored-module architecture gate
@@ -98,39 +127,101 @@ qualification evidence.
   every carried, defaulted, rejected, and discarded value. Prove that existing
   app data, browser storage, OS locale, prior packages, and platform defaults
   never merge automatically.
-- Verify all eight Setup accordions, their exact order and single-open state,
-  persistent preview, package load/re-export and legacy authoring import,
-  explicit 1–240 Hz package value with 130 Hz only as an authoring suggestion,
-  always-on continuous rating, and absence of summary-only acquisition or
-  in-app randomization controls.
+- Verify all eight Setup accordions in exact order—Workspace & Libraries,
+  Languages & Study Assets, Experiment Plan & Stimuli, Experiment, Input,
+  Visual, Advanced, Review & Start—and their single-open state, persistent
+  preview, package load/re-export and legacy authoring import, explicit
+  1–240 Hz package value with 130 Hz only as an authoring suggestion, always-on
+  continuous rating, and absence of summary-only acquisition or in-app
+  randomization controls.
+- Verify every Setup accordion has a keyboard-operable bottom confirmation;
+  confirming marks only that section Reviewed with visible and non-color
+  meaning, collapses it, focuses and opens the next ordered section, and leaves
+  none open after the eighth. A fresh load—including one whose Workspace is
+  already ready—must begin 0/8 reviewed. Exercise reversible open/close motion,
+  rapid direction changes, dynamic panel height, chevron toggling after review,
+  the disabled Reviewed receipt, the circled non-color check, the outward-
+  fading confirmation glow, narrow-width layout, forced colors, and immediate
+  reduced-motion settlement. Prove readiness/preflight refreshes and accordion
+  toggles cannot create, erase, persist, or serialize the session-local review
+  trail.
+- When the bounded Setup feedback-design preview is present, prove its selector,
+  procedural Face, halo-size value, and continuous/stepwise timing or hold
+  values are absent from canonical package/settings bytes, every derived hash,
+  Start and Run projections, records, recovery, LSL, and evidence. Prove the
+  current JavaScript and Rust v1/v3 validators reject those fields if injected.
 
 ### Questionnaires and protocol sequence
 
+- For the bounded 2026-09-11 Section 2 pass, verify the authoring/table,
+  normalization, exact-language coverage, source-storage, and package
+  integration boundaries below. Record Runner and other-section findings in
+  `45-FUTURE-AGENT-CHECKLIST.md`; do not expand this pass into Runner
+  implementation or claim the whole Backend Verification stage complete.
 - Strictly parse UTF-8 RFC 4180 `questionnaire-csv-v1`: exact 14-column header,
   optional BOM, bounded byte/row/item/option/text counts, consistent repeated
   metadata, contiguous item rows, unique IDs, explicit required flags, and
-  finite-or-blank scores. Reject every unknown, missing, malformed, duplicate,
-  noncontiguous, inconsistent, or control-character case. Prove the CSV is
-  consumed only by an explicit converter and the resulting definition is
-  embedded in the canonical package before Start.
-- Prove authoring-source and embedded canonical definition hashes independently,
-  plus JS/Rust canonical-hash parity. Golden-test bundled German MAIA-2
+  finite-or-blank scores. Strictly parse the matching tab-delimited
+  `questionnaire-txt-v1` and closed nested `questionnaire-json-v1` templates;
+  reject ambiguous extension/type, duplicate JSON keys, unknown/missing fields,
+  malformed encoding, invalid bounds, noncontiguous/inconsistent rows, and
+  control characters. Prove TXT and JSON deterministically normalize into
+  canonical Questionnaire CSV v1 and every format produces the same definition
+  for equivalent content.
+- Prove original-source, canonical-CSV, and embedded-definition hashes
+  independently, plus JS/Rust canonical-hash parity. Store original uploads
+  content-addressed beneath validated
+  `assets/questionnaires/<family>/<language>/` descendants; test idempotent
+  same-byte reuse, altered existing content, traversal, link/reparse, format,
+  length, and hash rejection. Prove the source is used only by the explicit
+  converter and the resulting definition is embedded in the canonical package
+  before Start.
+- Golden-test bundled German MAIA-2
   item/option order, reverse-scored items 5–12 and 15, eight subscales,
   attribution, and source identity.
-- Golden-test the bundled English researcher-supplied VR Experience, MAIA-2,
-  six-item SSQ, and TAS-20 fixtures for exact item/option order, numeric response
-  values, and Max Planck Institute for Human Brain and Cognitive Sciences,
-  Department of Neurology attribution. Verify that all remain identified as
-  unvalidated authoring candidates. For TAS-20, prove that no reverse scoring,
-  subscales, totals, thresholds, or diagnostic interpretation is inferred, and
-  keep documented rights/reuse approval as a blocking pre-deployment gate.
+- Golden-test every retained researcher-supplied compatibility fixture for
+  exact item/option order and provenance while keeping it unavailable as a
+  reusable preload unless redistribution terms are clearly verified. For
+  TAS-20, prove that no reverse scoring, subscales, totals, thresholds, or
+  diagnostic interpretation is inferred and that rights/reuse approval remains
+  blocking. For Phenomenological Control, prove public availability alone does
+  not make an item asset bundled and that no short adaptation is labelled a
+  validated standard.
+- UI-test compact language selection, add/remove questionnaire family, and one
+  keyboard-operable disclosure/table per family/language pair. Verify cell
+  editing, row add/remove, TSV/CSV rectangular paste beginning at the focused
+  cell, blank cells, quotes/embedded line breaks, malformed or oversized paste,
+  invalid numeric values, and atomic rejection without partial cell mutation.
+  Prove paste cannot evaluate a formula or read/log ambient clipboard content.
+- Verify displayed labels and recorded values remain independent, including
+  reverse-coded rows under unchanged labels; preserve explicit existing
+  scores/provenance and reject non-finite/out-of-range encodings. Exercise
+  option-count changes and required/optional flags while retaining one selected
+  response per item. Confirm label-repetition every-item/5/10 controls are
+  clearly preview-only and absent from current canonical package bytes,
+  hashes, Runner behavior, records, and recovery.
+- UI-test that Section 2 exposes secondary CSV/TXT/JSON template/import actions,
+  MAIA-2/TAS-20 English/German controls, meaningful coverage state, and no raw
+  package/master JSON. New editor modules must use `beforeSession`; existing
+  other-placement modules must not be silently moved or discarded. Broader
+  Inspiration/Phenomenological Control controls are absent from the simplified
+  active surface. For every requested family,
+  cross every selected study language and block finalization on each missing
+  exact-language definition/module; `und`, another language, OS/browser locale,
+  and implicit translation must not satisfy coverage.
+- Verify only authorized assets are bundled: MAIA English/German preserve
+  item order, labels, values, scoring and source attribution; TAS source-tree
+  retention must not leak its English fixture into either distributable build,
+  and no German TAS content is silently generated. If the historical Inspiration
+  metadata module remains in source, it must not become a second active
+  questionnaire editor or a permission/validation claim.
 - Property-test the finite rooted language-selection tree: all edges resolve,
   no cycles or unreachable/duplicate terminals exist, and no OS/browser locale
   or prior language state is read. For each terminal language, compile exactly
   its ordered `questionnaireModuleIds`; reject unknown, duplicate,
   language-incompatible, or globally unmapped modules. An empty terminal list
-  is an explicit no-questionnaire route and never falls back to another
-  language.
+  is permitted for new authoring only when no questionnaire family was
+  requested; it never falls back to another language.
 - UI-test nested and single-language participant traversal, ordered prompts,
   Back and Cancel behavior, absence of a flattened selector or first-route
   default, Start blocking before a terminal, and selection reset across
@@ -244,6 +335,20 @@ qualification evidence.
   feedback without stopped acquisition, normalized drag bounds, sole Lock
   position ownership, forced Run lock, outline/halo/cursor geometry, and every
   color wheel/hex/reset path.
+- UI-test the Setup-only comparison with Flubber above its 2D Grid, one Grid
+  marker, and a deterministic procedural Face driven from the identical x/y
+  snapshot. Exercise keyboard-accessible directional color swatches and their
+  color-wheel/hex popover, and prove the halo stays centered at every preview
+  size.
+- Exercise the draft Continuous/Stepwise simulator at its numeric bounds:
+  continuous full-span duration; tiled stepwise Grid; separate-press versus
+  wait-and-repeat hold behavior; opposing inputs; reset; mode changes; and
+  teardown. These tests are UI-design evidence only and must not be counted as
+  Run input, scheduler, sampling, or timing qualification.
+- Verify the responsive-Face preview remains usable with keyboard navigation,
+  non-color-only state, reduced motion, high contrast, and 200% reflow, and
+  loads no camera, microphone, image, network, tracking, inference, upload, or
+  personal-data surface.
 - Golden-test all six mapping labels, bounds, package-authoring suggestions,
   explicit package values, drivers, Reverse,
   neutral angle zero, axes/corners, min=max, and interpolation.
@@ -252,7 +357,8 @@ qualification evidence.
 
 - Exercise secure-context/user-activation directory selection, exact handle
   retention, permission renewal/revocation, fixed `assets/stimuli/` import/
-  rescan bounds, closed declared-asset verification, and isolated
+  rescan bounds, fixed content-addressed `assets/questionnaires/` authoring
+  storage, closed declared-stimulus verification, and isolated
   `affect-research/v1` IndexedDB/local-storage keys.
 - Prove workspace readiness with actual create/read/delete probes. Validate
   package bytes/hash, derived receipts, journals, events, ratings, and manifests
@@ -279,8 +385,9 @@ qualification evidence.
   integrity in Rust rather than trusting well-formed supplied hashes. Keep
   `research_load_experiment` coverage as legacy authoring/import evidence only;
   its `LoadedExperimentReceipt` cannot authorize a package run.
-- Assert `librariesReady` reflects the exact package root and fixed asset,
-  output, and recovery descendants. Remove one, replace it with a file or a new same-path
+- Assert `librariesReady` reflects the exact package root and fixed stimulus,
+  questionnaire-authoring, output, and recovery descendants. Remove one,
+  replace it with a file or a new same-path
   directory, and replace it with a symlink/junction to an external directory;
   status and every privileged operation must fail closed without recreating the
   library or exposing a native path.
@@ -479,6 +586,11 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 - Verify the allowlisted Pages and desktop build closures contain no WebXR,
   Quest, remote/VDO/BRSP, Party/Ground Control, direct Polar, face, touch,
   calibration, retro, phone/Picture-in-Picture, or legacy media assets/routes.
+- The preceding legacy-face exclusion permits only the explicitly allowlisted,
+  project-authored Setup procedural-Face preview. Prove it contributes no
+  Face/Photoatlas assets or dependencies, camera/microphone permissions,
+  tracking/inference/runtime/package code, uploads, networking, personal data,
+  Start/Run behavior, or research evidence.
 - Qualify current Chrome and Edge separately against the exact deployed commit,
   including cache-bypassed loading at
   `https://GeorgeFejer91.github.io/affect-tracker-research/`.

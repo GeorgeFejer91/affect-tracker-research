@@ -18,11 +18,37 @@ The product has exactly two user-visible application modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
+These modes provide two applet functions. The **Affect Tracker Designer** in
+Setting Up lets researchers choose experiment settings, define a video
+library/manual plan, and design questionnaires through user-facing controls.
+Its primary final output is one unified JSON file containing all relevant
+parameters needed to run the experiment. The **Experiment Runner** in Running
+accepts that finished package as its main input and provides acquisition and
+monitoring, producing local questionnaire-response/rating tables and evidence
+plus the existing optional outbound Windows LSL streams and markers. “Applet”
+does not imply another mode or require separate executables.
+
+Master JSON is an internal compilation and final output format. The Designer
+must not depend on the researcher creating, viewing, or editing JSON. Loading
+an existing finished package is optional reuse; external settings/experiment
+JSON remain compatibility import paths rather than the normal design workflow.
+The current 2026-09-11 pass is bounded to Designer Section 2. Runner changes
+and other-section gaps are deferred to
+[`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
+
 Dialogs, disclosures, recovery prompts, and the eight Setup accordions are
 parts of those modes, not additional modes. Active Research removes the former
 WebXR, native Quest, Party, Ground Control, remote-control, direct Polar, Face,
 and other Playground surfaces from the active application. Their history is
 preserved without giving it active product or release authority.
+
+One bounded exception is authorized for Setup presentation only: a clearly
+labelled, non-authoritative feedback-design preview may compare classic
+Flubber, a 2D affect Grid, and a new project-authored procedural responsive
+Face. This exception is not the historical Face/Photoatlas experiment and does
+not add a third application mode, participant-facing Run renderer, camera or
+microphone access, tracking or inference, images, uploads, personal data, or
+research evidence.
 
 The desktop product name is **Affect Research**. It retains bundle identifier
 `io.github.georgefejer91.affecttracker` and existing application-data
@@ -95,9 +121,9 @@ development mode whose attempt evidence remains permanently unqualified.
 One strict `ExperimentPackageV1` JSON file is the sole authority for every new
 attempt. There is no independently runnable settings, experiment, assignment,
 questionnaire, language, playback, or output document. Historical
-`settings.json`, `experiment.json`, questionnaire CSV, and related contracts
-remain readable as explicit authoring/import inputs, but Start accepts only a
-complete validated package.
+`settings.json`, `experiment.json`, standardized questionnaire CSV,
+tab-delimited TXT, JSON, and related contracts remain readable as explicit
+authoring/import inputs, but Start accepts only a complete validated package.
 
 The root contract is closed-world. Its only members are `schema`, `version`,
 `packageId`, `assetRoot`, `assets`, `languageSelection`, `playback`, `settings`,
@@ -173,6 +199,13 @@ ordered block its before-block hooks and each video followed by its pre-ISI
 after-video hooks, that video's ISI, and its post-ISI after-video hooks, then
 after-block hooks, and finally after-session hooks.
 
+The Section 2 authoring gate is stricter than generic historical compatibility:
+once a researcher requests a questionnaire family, every selected study
+language must have its own exact-language definition and module before a new
+package can be finalized. `und`, another language, browser/OS locale, and
+implicit translation do not satisfy family coverage. This gate does not
+reinterpret already stored historical questionnaire or package schemas.
+
 Package load leaves the participant language unset. In Review & Start, the
 participant follows each package-owned prompt and ordered option from the root;
 even a one-language tree requires one explicit choice. A terminal route is
@@ -202,22 +235,40 @@ single-open top-level accordions on the left and one persistent live feedback
 preview on the right. Opening one accordion closes the other seven without
 discarding valid edits.
 
+Each accordion ends with a session-local **Confirm section** action. Confirming
+marks the section **Reviewed** using a visible check and a non-color text
+alternative, collapses it, and opens the next section; the eighth confirmation
+collapses without cycling to the first. A fresh application load begins with
+all sections unreviewed, even when the Workspace folders already exist. The
+review trail is transient presentation state and is never inferred from
+readiness, persisted, serialized, or admitted to package/hash, preflight,
+Start, Run, recovery, record, LSL, or qualification authority.
+
+Each accordion opens and closes with a short, smooth, reversible size/fade
+transition; reduced-motion preference settles without animation. The pending
+confirmation in the open section alone has a breathing, outward-fading edge
+glow. A reviewed header uses a green circled check plus its text alternative,
+and its confirmation control becomes a disabled **Reviewed** receipt. Header
+chevrons continue to open and close reviewed sections without clearing review
+state or requiring confirmation again.
+
 ### 1. Workspace & Libraries
 
 - The researcher chooses one experiment-package root whose canonical package
   file is `experiment.package.json`.
 - The application creates or validates the fixed `assets/stimuli/`,
-  `outputs/`, and `recovery/` descendants. It never infers the scientific
-  manifest from directory enumeration.
+  `assets/questionnaires/`, `outputs/`, and `recovery/` descendants. It never
+  infers the scientific video manifest from directory enumeration.
 - Video drop/import accepts complete videos, copies or stages them through the
   owning adapter beneath `assets/stimuli/`, and supports recursive discovery
   plus explicit **Rescan**. Discovery never silently enrolls a file.
 - **Load experiment package** accepts only exact canonical
   `ExperimentPackageV1` bytes with a valid self-hash and complete reference
   graph. **Save/re-export package** emits those exact canonical bytes.
-- Legacy experiment/settings JSON and questionnaire CSV import are explicit
-  authoring actions. They produce a conversion report and a new complete
-  package; they never remain live runtime inputs or supply silent defaults.
+- Legacy experiment/settings JSON and questionnaire CSV/TXT/JSON import are
+  explicit authoring actions. They produce a conversion report and a new
+  complete package; they never remain live runtime inputs or supply silent
+  defaults.
 - Tauri owns the workspace through narrow root/run commands and never exposes
   arbitrary native paths to the WebView.
 - Chrome and Edge use a File System Access directory handle obtained in a
@@ -249,27 +300,107 @@ blocks and source guards reject unsafe code anywhere else. The researcher
 approved these contained native boundaries on 2026-09-10. Their presence is not
 runtime redistribution or installed playback qualification.
 
-### 2. Experiment
+### 2. Languages & Study Assets
 
-- Experiment ID, title, participant count, and participant IDs come from the
-  loaded `ExperimentPackageV1`. Setup presents them as resolved protocol facts
-  rather than generating a study design.
-- Participant schedule entries are consecutive `P001` onward in array order,
-  using at least three digits and enough zero-padding for the largest ID.
-- Continuous rating is always enabled and has no off toggle.
-- Sampling frequency is explicitly stored as an integer from 1 through 240 Hz.
-  Package authoring initially suggests 130 Hz, but runtime resolution has no
-  omitted default.
-- There is no single-summary or summary-only rating option.
-- The app exposes no global fixed/jitter/continue transition choice. Every
-  authored video occurrence declares an integer `isiAfterMs` from 0 through
-  3,600,000.
+Section 2 is a compact researcher-facing questionnaire editor for forms shown
+before the video/Flubber task. The researcher selects study languages, adds a
+questionnaire family, and edits one accordion per family/language pair. Each
+header names the questionnaire and language, shows item count/readiness, and
+has an up/down disclosure chevron. Keyboard opening and closing preserve
+valid edits. Raw `ExperimentPackageV1`/master JSON stays behind the UI and is
+created or updated by the finalization owner after authoring checks pass.
+
+The researcher selects one or more explicit study languages. Adding a
+questionnaire family creates a coverage obligation across that complete
+selection: every selected language needs one exact-language definition and a
+module for the family. A missing family/language pair is visible and blocks
+package finalization. An `und` definition, another language, OS/browser locale,
+or an implicit translation cannot satisfy the obligation.
+
+The main control inside each accordion is an Excel-like item table with direct
+cell editing and explicit rectangular paste from a spreadsheet. Paste begins
+at the focused cell, preserves row/column order, and is bounded and validated
+before replacement. Invalid cells receive an actionable item/column error.
+Researchers can add/remove rows and set questionnaire title/instructions,
+answer-option count, visible option labels, and required/optional items.
+The current model is single-choice: option count does not mean that multiple
+responses may be selected for an item.
+
+Participant-visible option labels and recorded numeric values are independent.
+An item row containing prompt text and `1 | 2 | 3 | 4` records those values
+under the separately authored displayed labels. A reverse-coded row can use
+`4 | 3 | 2 | 1` with the same labels. Numeric coding is an explicit response
+encoding; the app never infers subscales, totals, thresholds, or scientific
+interpretation from it. Existing option scores and instrument provenance are
+preserved unless explicitly edited through their owning authoring controls.
+
+Compact label-display settings may preview labels above every item, every 5
+items, or every 10 items. Current questionnaire/package contracts do not carry
+this preference, so this pass labels it as design-preview state only. Runtime
+adoption requires a versioned persisted contract with browser/Rust/Runner
+parity; it is recorded for a later pass rather than silently added to v1 or
+applied to Runner behavior.
+
+The fixed demographics form keeps its existing privacy contract. It is not an
+uploaded questionnaire: first/last name and self-description remain transient,
+while only the derived participant code, age, and closed gender/handedness
+codes may be frozen for a run. Localizing that form is a future checklist item,
+not part of this questionnaire-editor pass.
+
+Secondary file-import actions accept bounded strict UTF-8 CSV, tab-delimited
+TXT, or JSON questionnaire documents and populate the same table editor.
+Downloadable templates define all three
+representations. CSV retains the exact 14-column `questionnaire-csv-v1`
+contract; TXT uses `questionnaire-txt-v1` with the same columns and one
+tab-delimited row per option; JSON uses the closed `questionnaire-json-v1` nested
+representation. TXT and JSON are adapters only: each is deterministically
+converted into canonical Questionnaire CSV v1, then passed through the same
+strict definition importer. Unknown/duplicate fields, malformed encoding,
+invalid limits, or ambiguous format identity reject. Direct edits and pasted
+tables also compile through this canonical definition boundary. No master JSON
+editor is needed or exposed by this flow.
+
+The authoring receipt separately binds the original source bytes, canonical CSV
+projection, and normalized definition. The workspace owner stores the original
+source content-addressed beneath
+`assets/questionnaires/<family>/<language>/<sha256>.<format>`. Those files form
+an authoring/provenance library, not the `assets.stimuli` scientific video
+closure. Start and Run never open them; the single package embeds the complete
+canonical definitions, scoring rules, provenance, modules, and hooks.
+
+The current preset focus is MAIA-2 and TAS-20 in English and German. Official
+MAIA assets may preload the selected supported languages with exact wording,
+source, attribution, translation, and scoring provenance retained. TAS-20
+provides preparation slots requiring authorized researcher-supplied assets;
+the retained English source fixture is excluded from distributable builds and
+no German asset is supplied implicitly. A slot does not confer permission or
+scientific validity. Public availability alone never permits a bundled
+preload. Broader Inspiration and Phenomenological Control controls are deferred
+from this simplified Section 2; retained provenance/history does not require
+them in the active editor.
+
+New Section 2 modules have stable IDs and use `beforeSession`, preserving
+authored family order for every selected language. The existing package and
+historical module contracts retain the supported placements
+`beforeSession`, `afterSession`, `beforeBlock`, `afterBlock`, and
+`afterStimulus` (shown as **after video**). Session hooks have no target, block
+hooks bind `blockId`, and after-video hooks bind `stimulusId` plus explicit
+`relativeToIsi` `before`/`after`. Existing non-pre-session modules must not be
+silently moved or discarded by the simplified editor. Same-hook order is
+normative. Finalization
+builds one finite, acyclic package language tree with an explicit root and exact
+ordered module list per terminal; Review & Start still requires explicit
+participant traversal and package load never selects the first route.
 
 ### 3. Experiment Plan & Stimuli
 
-Randomization and counterbalancing happen before Affect Research is opened.
-The active target consumes the package-owned asset, block, and participant
-assignment sections. Each stimulus declaration binds one unique complete video
+The Designer target authors a video library and manual block/participant plan
+through UI, then compiles the package-owned asset, block, and assignment
+sections. Scientific randomization/counterbalancing decisions remain the
+researcher's responsibility; the application performs no allocation. Current
+read-only external-plan controls are an implementation gap recorded for a
+future section pass, not a requirement to create JSON outside the app.
+Each stimulus declaration binds one unique complete video
 under `assets/stimuli/` by safe relative path, SHA-256, byte length, and
 duration. Each canonical participant entry contains the exact ordered blocks
 and exact ordered videos within each block, and every occurrence contains its
@@ -310,65 +441,23 @@ schedule export. Participant state is one of **Available**, **Active**,
 **Partial**, or **Complete**, reconstructed from package-root locks, recovery
 journals, and manifests. These are observed states, never editable flags.
 
-### 4. Questionnaires & Sequence
+### 4. Experiment
 
-Questionnaires are first-class package-owned protocol steps, not overlays or
-metadata. A strict UTF-8 RFC 4180 CSV remains the smallest supported authoring
-input, with this exact header:
-
-```csv
-format_version,questionnaire_id,questionnaire_version,title,language,instructions,attribution,item_id,prompt,required,subscale,option_id,option_label,score_value
-```
-
-`format_version` is exactly `questionnaire-csv-v1`. Each row defines one option
-for one closed single-choice item. Contiguous row order defines item and option
-order. Repeated metadata must be identical; IDs are unique; required values are
-explicit; scores are finite numbers or blank. UTF-8, bytes, rows, items,
-options, and text are bounded. Unknown/missing columns, control characters,
-noncontiguous items, inconsistent metadata, and duplicate IDs reject. Exact
-source bytes and the normalized definition receive separate SHA-256 hashes in
-the conversion receipt; the complete normalized definition, scoring, and
-provenance are then embedded in the package. The CSV is not read during Start.
-
-The bundled German MAIA-2 definition preserves the official 37 prompt strings,
-0–5 labels, reverse scoring for items 5–12 and 15, eight subscales, citation,
-translation credit, and source-document identity. Four additional bundled
-English authoring candidates preserve researcher-supplied content: VR
-Experience (2 items), MAIA-2 (37 items), the supplied six-item SSQ, and TAS-20
-(20 items). They retain the supplied wording, response labels, numeric response
-values, and attribution to the Max Planck Institute for Human Brain and
-Cognitive Sciences, Department of Neurology. No scoring or subscale
-interpretation was supplied for those four fixtures; numeric response values
-remain response encodings rather than inferred scoring rules.
-
-The TAS-20 candidate must remain unscored: do not infer reverse scoring,
-subscales, totals, thresholds, or diagnostic interpretation. No rights/reuse
-proof accompanied the supplied dictionary, so deployment or data collection
-requires explicit approval and a recorded licensing/reuse receipt. Its presence
-in the repository is not instrument validation or licensing authorization.
-
-A package module places one embedded definition at `beforeSession`,
-`afterSession`, `beforeBlock`, `afterBlock`, or `afterStimulus` (shown as
-**after video**). Session hooks have
-no target, block hooks bind one stable `blockId`, and video hooks bind one
-stable `stimulusId`. Any number of modules may share a hook and retain package
-order. Every terminal language contains an explicit ordered module-ID list;
-each configured module must appear in at least one such list, and each mapped
-definition's language must equal that terminal tag or `und`. A language may
-intentionally list no modules. Missing, unknown, duplicate, or incompatible
-mappings reject the package rather than falling back to browser/OS language or
-another definition. Every module selected by the route is a mandatory protocol
-step;
-items marked `required=true` must be answered, while optional items may remain
-unanswered.
-The package language tree has one explicit root, ordered bounded choice nodes,
-and terminal leaves containing canonical BCP 47 language tags. All edges must
-resolve, the graph must be finite and acyclic, every terminal must be reachable,
-and a single-language package still uses an explicit terminal leaf. Setup
-supports CSV import, template download, add/remove, reordering, placement,
-language mapping, definition/hash status, instrument preview, and a
-participant-by-terminal-language protocol preview. Saving embeds the result in
-the single package; no researcher CSV remains runtime authority.
+- The Designer target authors experiment ID, title, participant count, and
+  explicit manual participant IDs/schedules through UI, then compiles them
+  into `ExperimentPackageV1`. The Runner consumes them as immutable protocol
+  facts. Replacing current read-only/import-based controls belongs to a later
+  section pass.
+- Participant schedule entries are consecutive `P001` onward in array order,
+  using at least three digits and enough zero-padding for the largest ID.
+- Continuous rating is always enabled and has no off toggle.
+- Sampling frequency is explicitly stored as an integer from 1 through 240 Hz.
+  Package authoring initially suggests 130 Hz, but runtime resolution has no
+  omitted default.
+- There is no single-summary or summary-only rating option.
+- The app exposes no global fixed/jitter/continue transition choice. Every
+  authored video occurrence declares an integer `isiAfterMs` from 0 through
+  3,600,000.
 
 ### 5. Input
 
@@ -393,6 +482,15 @@ Custom binding asks the researcher to select a direction and then perform the
 desired keyboard, mouse, wheel, or gamepad action. It rejects conflicts across
 the complete binding set and provides an inert live test before Start.
 The package-embedded `InputBindingV1` object is the one binding authority.
+
+The Setup-only feedback-design preview may additionally demonstrate proposed
+**Continuous** and **Stepwise** response behavior. The continuous draft may
+show a bounded full-span press duration. The stepwise draft may tile the Grid
+and compare separate physical presses with a bounded wait-and-repeat hold rule.
+This is transient design state only: it does not serialize into
+`InputBindingV1`, alter native/browser input authority, change OS-repeat
+suppression, enter Start or Run, or produce samples, events, LSL, recovery, or
+qualification evidence.
 
 ### 6. Visual
 
@@ -422,6 +520,31 @@ The **Color & Gradient** group owns the four directional valence/arousal anchor
 colors, idle color, outline color, halo color, and cursor color. Every color has
 a color wheel, hexadecimal entry, and reset. This group is the sole halo-color
 owner; the Flubber group does not duplicate that field.
+
+The persistent Setup preview may place a bounded **Design preview** editor
+around this authoritative v1 projection. Its three-way selector compares
+**Flubber**, **2D Grid**, and **Responsive Face** using one shared transient x/y
+point. In the Flubber comparison, Flubber remains the foreground element above
+its 2D affect-control Grid. Four directional color swatches may open one
+color-wheel/hex popover. The preview halo is always mathematically centered on
+the Flubber; a transient halo-size control may change its relative footprint
+but no halo offset exists. A nested Advanced disclosure may expose the existing
+Flubber appearance and mapping controls without duplicating their owner.
+
+The responsive Face is newly and independently drawn as procedural SVG/canvas
+geometry. Valence and arousal only pose that drawing from the same x/y snapshot
+used by Grid and Flubber. It has no camera, microphone, face tracking,
+participant imagery, Photoatlas asset or code, affect inference, upload,
+personal-data, or scientific interpretation surface.
+
+Every design-preview addition in the preceding two paragraphs is Setup-only
+and non-authoritative. It is not part of `VisualSettingsV1` or
+`ResearchSettingsV3`, is never serialized into `ExperimentPackageV1`, and
+cannot alter Start, Run feedback, canonical bytes or hashes, sampling,
+`animationActive`, records, recovery, LSL, or evidence. Current strict readers
+must reject any attempt to place these draft fields in v1. Runtime adoption
+requires a future explicit package/settings/input/visual version and its full
+cross-runtime, persistence, timing, accessibility, and qualification gates.
 
 ### 7. Advanced
 
@@ -568,6 +691,12 @@ After this candidate contract is frozen, adding or changing package, asset,
 terminal-language, after-video-hook, playback-policy, or output-policy identity
 requires a new version rather than reinterpretation.
 
+The Setup feedback-design preview does not amend any member or meaning in this
+contract family. In particular, its selector, procedural Face, halo-size draft,
+and continuous/stepwise timing or hold drafts are not implicit defaults and
+must not be encoded through existing Grid/Flubber Boolean combinations,
+`stepSize`, unused values, local storage, or another ambient side channel.
+
 Every contract rejects unknown fields, duplicate identifiers or keys,
 unsupported versions/algorithms, invalid enums, non-finite or out-of-range
 numbers, unsafe paths, excessive sizes/counts/depth, and hash mismatches.
@@ -581,11 +710,13 @@ module/item/option, playback, and output-policy identity. Each package attempt
 materializes the exact canonical `experiment.package.json` bytes plus its
 derived immutable receipts.
 
-Legacy portable settings, external experiment definitions, and questionnaire
-CSVs remain unchanged authoring/import schemas. An explicit converter may use
-them only when it reports every carried/defaulted/discarded/rejected field and
-emits a complete canonical package. No local storage, app data, prior package,
-OS locale, directory ordering, or platform default is silently migrated.
+Legacy portable settings and external experiment definitions remain unchanged
+authoring/import schemas. Questionnaire CSV/TXT/JSON are explicit authoring
+representations whose accepted values all pass through canonical Questionnaire
+CSV v1. A converter may use them only when it reports every carried/defaulted/
+discarded/rejected field and emits a complete canonical package. No local
+storage, app data, prior package, OS locale, directory ordering, or platform
+default is silently migrated.
 
 ## Authority and timing
 
@@ -684,6 +815,12 @@ preflight before Start. Missing, extra, linked, or mismatched asset entries
 fail closed. Repository/network assets and Experimental YouTube remain
 historical or future adapters and are invalid package sources.
 
+Questionnaire source documents are stored separately as content-addressed
+authoring assets beneath `assets/questionnaires/<family>/<language>/`. They are
+not members of `assets.stimuli`, are not enumerated into the package asset
+manifest, and are never reopened as questionnaire authority during Start or
+Run.
+
 ## Permanent independent-instance reproduction gate
 
 Package acceptance permanently requires a reproduction benchmark, not merely a
@@ -723,11 +860,17 @@ changed Research runtime.
 
 ## Privacy, accessibility, and observability
 
-Active Research stores no raw names, self-described gender text, composed
-keystrokes, clipboard contents, unrelated application/window names, raw pointer
+Active Research stores no raw names, self-described gender text, captured
+participant keystrokes, ambient clipboard contents, unrelated application/window names, raw pointer
 trajectory, physiology, face/camera data, or remote identifiers. Global native
 input, when selected on Windows, is disclosed and records only the bounded
 physical controls required by `InputBindingV1`.
+
+An explicit researcher paste into the focused questionnaire table is authorized
+authoring input. The editor may consume the paste event's table text, validate
+it, and retain the resulting questionnaire content. It must not poll/read the
+ambient clipboard, capture unrelated content, or log the pasted payload. This
+does not authorize clipboard capture during participant acquisition.
 
 Setup and Run require semantic controls, keyboard operation, visible focus,
 non-color-only state, high contrast, reduced-motion support, and polite status
@@ -747,7 +890,9 @@ The first internal target is `0.4.0-alpha.1`. It is not research-ready or stable
 until the exact candidate passes all gates in `30-TESTING-AND-RELEASE.md`,
 including:
 
-- strict schema round-trip/rejection/hash/import fixtures;
+- strict schema round-trip/rejection/hash/import fixtures, including
+  CSV/TXT/JSON questionnaire normalization, source-asset storage, and complete
+  selected-language family coverage;
 - strict canonical `ExperimentPackageV1` fixtures, self-hash and derived-hash
   parity, fixed asset closure, manual-order preservation, language-tree and all
   hook placements, no participant duplicates, and explicit terminal/

@@ -32,15 +32,6 @@ const fixtures = [
     firstLabel: "None", lastLabel: "Severe",
     contentDigest: "9dd9b6c89468623e4e368820ae91db8435d5574909cea4a8c6041303745f8d51",
   },
-  {
-    fileName: "tas-20-en.csv", questionnaireId: "tas-20-en", itemCount: 20,
-    title: "Toronto Alexithymia Scale",
-    optionCount: 5, minimumScore: 1, maximumScore: 5,
-    firstPrompt: "I am often confused about what emotion I am feeling",
-    lastPrompt: "Looking for hidden meanings in movies or plays distracts from my enjoyment",
-    firstLabel: "I don't agree at all", lastLabel: "I completely agree",
-    contentDigest: "c44915d8acaac1a07a5a299c9a50d73ad73fbf4aeffb41c2940a856a8f6cdd33",
-  },
 ];
 
 async function importFixture(fileName) {
@@ -50,7 +41,7 @@ async function importFixture(fileName) {
   );
 }
 
-test("researcher-supplied questionnaire CSV fixtures preserve names, IDs, wording, and ranges", async () => {
+test("distributable questionnaire CSV fixtures preserve names, IDs, wording, and ranges", async () => {
   for (const expected of fixtures) {
     const { definition } = await importFixture(expected.fileName);
     assert.equal(definition.questionnaireId, expected.questionnaireId);
@@ -80,10 +71,19 @@ test("researcher-supplied questionnaire CSV fixtures preserve names, IDs, wordin
       expected.contentDigest,
       `${expected.fileName} wording, option labels, and numeric values must remain exact`,
     );
-    assert.match(definition.attribution, /Max Planck Institute for Human Brain and Cognitive Sciences/u);
-    assert.match(definition.attribution, /Stephanstrasse 1a, 04103 Leipzig, Germany/u);
-    assert.match(definition.attribution, /required-item flags are application authoring defaults/u);
-    assert.match(definition.attribution, /Scoring\/subscale interpretation was not supplied and is not inferred\./u);
+    if (expected.questionnaireId === "maia-2-en") {
+      assert.match(definition.attribution, /MAIA-2 © 2018 University of California, San Francisco/u);
+      assert.match(definition.attribution, /public domain/u);
+      assert.match(definition.attribution, /available without charge and no written permission is required/u);
+      assert.match(definition.attribution, /Project modification disclosure/u);
+      assert.match(definition.attribution, /https:\/\/osher\.ucsf\.edu\/sites\/osher\.ucsf\.edu\/files\/inline-files\/MAIA-2\.pdf/u);
+      assert.match(definition.attribution, /https:\/\/doi\.org\/10\.1371\/journal\.pone\.0208034/u);
+    } else {
+      assert.match(definition.attribution, /Max Planck Institute for Human Brain and Cognitive Sciences/u);
+      assert.match(definition.attribution, /Stephanstrasse 1a, 04103 Leipzig, Germany/u);
+      assert.match(definition.attribution, /required-item flags are application authoring defaults/u);
+      assert.match(definition.attribution, /Scoring\/subscale interpretation was not supplied and is not inferred\./u);
+    }
   }
 });
 

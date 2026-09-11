@@ -45,6 +45,14 @@ The active product has exactly two user-visible modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
+Their functions are the **Affect Tracker Designer** (UI-authored experiment
+settings, video plan, and questionnaires → one finished unified JSON package)
+and **Experiment Runner** (finished package → acquisition/monitoring and local
+response/rating outputs plus optional outbound LSL). These names describe the
+existing modes, not extra modes. Master JSON is an internal compilation/output
+format, never a required hand-authored input to the Designer. Runner work is
+outside the current Section 2 pass; see `45-FUTURE-AGENT-CHECKLIST.md`.
+
 The active-v1 qualification target matrix is:
 
 - Tauri v2 on Windows, with Rust-owned workspace, input, media, scheduler,
@@ -59,6 +67,10 @@ internal Setup/interface-evaluation artifacts; native acquisition is blocked
 and their provenance marks every qualification claim false. macOS and Linux experiment runs,
 Firefox, Safari, mobile, WebXR, Quest, remote/collaborative surfaces, direct
 sensor acquisition, and face/touch experiments remain outside active v1.
+The bounded Setup-only procedural responsive-Face design preview is not a face
+experiment, participant-data surface, or runtime feedback mode. It consumes
+only the existing transient x/y preview projection and has no package, Start,
+Run, record, LSL, or qualification authority.
 
 ## Product invariants
 
@@ -71,6 +83,14 @@ sensor acquisition, and face/touch experiments remain outside active v1.
   `assets/stimuli/` manifest, manual participant/block/video
   order and per-video ISIs, the language-selection tree, questionnaire
   definitions/hooks, and output policy.
+- Setup Section 2 is **Languages & Study Assets**. It is a user-facing
+  spreadsheet authoring surface with no raw package JSON: select study
+  languages, add a questionnaire family, and edit one disclosure/table for
+  each family/language pair. Item prompts, participant-visible option labels,
+  recorded numeric values, and required/optional responses have explicit
+  owners. New Section 2 modules run before the video task. Every requested questionnaire
+  family requires an exact definition/module for every selected language
+  before package finalization.
 - One attempt freezes the exact package bytes/hash, verified asset closure,
   derived settings/assets/participant-assignment/protocol hashes, selected
   terminal language, participant derivation, binding, exact stimulus
@@ -84,16 +104,20 @@ sensor acquisition, and face/touch experiments remain outside active v1.
 - The sample clock is independent of rendering and records explicit gaps
   instead of backfill.
 - The selected package root contains canonical `experiment.package.json` and
-  fixed `assets/stimuli/`, `outputs/`, and `recovery/` locations. Output and
+  fixed `assets/stimuli/`, `assets/questionnaires/`, `outputs/`, and
+  `recovery/` locations. Questionnaire uploads are content-addressed authoring
+  sources under `assets/questionnaires/<family>/<language>/`; only the
+  canonical definition embedded in the package is Run authority. Output and
   recovery use create-new/no-overwrite semantics there and the isolated
   `affect-research/v1` browser namespace.
 - New Research data is never populated by automatic import from legacy
   application data.
 - Windows qualified declared package media targets a pinned
   bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. Runtime
-  verification is present;
-  the renderer remains unavailable until explicit `unsafe` raw-window approval,
-  implementation, and audit land.
+  verification, actor, and renderer implementation are present. The two
+  contained Windows FFI adapters were approved on 2026-09-10; focused audit,
+  redistribution, and installed qualification remain open. Qualified Start
+  remains fail-closed; consult `40-ROADMAP.md` for current evidence.
 - Tauri keyboard, mouse-button/wheel, absolute pointer/trackpad, and XInput
   gamepad input is owned by one safe Rust service with focus/region fencing,
   one-use binding/device receipts, and a bounded fail-closed Run mailbox.
@@ -106,11 +130,13 @@ sensor acquisition, and face/touch experiments remain outside active v1.
 
 ## Active source map
 
-- `site/index.html`, `site/experiment-template.json`, `site/research.css`, and
-  `site/src/research/`: current static UI, transitional external-experiment
-  authoring/import reader, browser adapter, shared contracts, protocol planner,
-  renderer, and browser recovery. The template and V3 reader are not yet the
-  target `ExperimentPackageV1` runtime authority.
+- `site/index.html`, `site/experiment-template.json`,
+  `site/questionnaires/questionnaire-template.{csv,txt,json}`,
+  `site/research.css`, and `site/src/research/`: current static UI,
+  transitional external-experiment and questionnaire authoring/import readers,
+  browser adapter, shared contracts, protocol planner, renderer, and browser
+  recovery. The templates and V3 reader are not the target
+  `ExperimentPackageV1` runtime authority.
 - `site/src/research/experiment-package.js`,
   `src-tauri/src/research_experiment_package.rs`, and
   `test/fixtures/experiment-package-v1.canonical.json`: current strict package

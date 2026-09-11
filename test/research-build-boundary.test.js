@@ -6,14 +6,19 @@ const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
 test("Research production builds have closed, Research-only input boundaries", async () => {
-  const [vite, pages] = await Promise.all([
+  const [vite, pages, verifier] = await Promise.all([
     read("desktop/vite.config.js"),
     read("scripts/build-research-pages.js"),
+    read("scripts/verify-research-build.js"),
   ]);
   assert.match(vite, /publicDir:\s*false/u);
   assert.match(vite, /input:\s*\{\s*research:\s*resolve\(desktopRoot,\s*"index\.html"\)/u);
+  assert.match(vite, /"\/site":\s*resolve\(desktopRoot,\s*"\.\.\/site"\)/u);
   assert.doesNotMatch(vite, /site\/vendor|overlay\.html|study\.html|webxr/iu);
   assert.match(pages, /resolve\(sourceRoot,\s*"src",\s*"research"\)/u);
+  assert.match(pages, /distributableQuestionnaireFiles/u);
+  assert.doesNotMatch(pages, /tas-20-en\.csv/u);
+  assert.doesNotMatch(verifier, /tas-20-en/u);
   assert.doesNotMatch(pages, /vendor|overlay\.html|study\.html|webxr/iu);
 });
 

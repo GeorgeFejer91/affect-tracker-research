@@ -51,6 +51,7 @@ export const RESEARCH_WORKSPACE_DIRECTORIES = Object.freeze([
   "recovery",
 ]);
 export const RESEARCH_PACKAGE_ASSET_DIRECTORY = "assets/stimuli";
+export const RESEARCH_QUESTIONNAIRE_ASSET_DIRECTORY = "assets/questionnaires";
 
 export const VIDEO_FILE_EXTENSIONS = Object.freeze([
   ".mp4",
@@ -67,12 +68,16 @@ const MAX_SCAN_DEPTH = 32;
 const MAX_SCAN_ENTRIES = 10_000;
 const MAX_SETTINGS_SNAPSHOT_BYTES = 5 * 1024 * 1024;
 const MAX_EXPERIMENT_SOURCE_BYTES = 5 * 1024 * 1024;
+const MAX_QUESTIONNAIRE_SOURCE_BYTES = 5 * 1024 * 1024;
 const MAX_EXPERIMENT_PLAN_SNAPSHOT_BYTES = 256 * 1024 * 1024;
 const MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES = 16 * 1024 * 1024;
 const MAX_EVENT_LOG_BYTES = 256 * 1024 * 1024;
 const MAX_TABULAR_ARTIFACT_BYTES = 512 * 1024 * 1024;
 const MAX_ATTESTED_EVENT_RECORDS = 5_000_000;
 const MAX_ATTESTED_TABLE_ROWS = 5_000_000;
+const QUESTIONNAIRE_ASSET_IDENTIFIER = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
+const QUESTIONNAIRE_ASSET_FORMATS = new Set(["csv", "txt", "json"]);
+const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 const ATTEMPT_ARTIFACT_NAMES = Object.freeze([
   "settings.snapshot.json",
   "experiment.json",
@@ -199,6 +204,28 @@ export function assertSafeWorkspaceSegment(value, label = "path segment") {
     fail("unsafe-segment", `${label} contains an unsafe or unsupported path component.`);
   }
   return value;
+}
+
+function canonicalQuestionnaireAssetIdentifier(value, label) {
+  if (typeof value !== "string" || !QUESTIONNAIRE_ASSET_IDENTIFIER.test(value)) {
+    fail("questionnaire-asset-identifier", `${label} must be a canonical lowercase identifier.`);
+  }
+  return value;
+}
+
+function questionnaireSourceBytes(value) {
+  let bytes;
+  if (value instanceof Uint8Array) bytes = new Uint8Array(value);
+  else if (value instanceof ArrayBuffer) bytes = new Uint8Array(value.slice(0));
+  else if (ArrayBuffer.isView(value)) {
+    bytes = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+  } else {
+    fail("questionnaire-asset-bytes", "Questionnaire source content must be supplied as bytes.");
+  }
+  if (bytes.byteLength < 1 || bytes.byteLength > MAX_QUESTIONNAIRE_SOURCE_BYTES) {
+    fail("questionnaire-asset-size", "A questionnaire source must contain 1 byte–5 MiB.");
+  }
+  return bytes;
 }
 
 export function normalizeWorkspaceRelativePath(value, label = "relative path") {
@@ -1646,6 +1673,7 @@ export class BrowserResearchWorkspace {
     this.cryptoObject = cryptoObject;
     this.directories = new Map();
     this.packageStimuliDirectory = null;
+    this.questionnaireAssetsDirectory = null;
     this.workspaceId = null;
   }
 
@@ -1672,6 +1700,7 @@ export class BrowserResearchWorkspace {
     }
     const assets = await getChildDirectory(this.rootHandle, "assets", { create: true });
     this.packageStimuliDirectory = await getChildDirectory(assets, "stimuli", { create: true });
+    this.questionnaireAssetsDirectory = await getChildDirectory(assets, "questionnaires", { create: true });
     this.workspaceId = await this.#loadOrCreateWorkspaceIdentity();
     return this;
   }
@@ -1956,6 +1985,67 @@ export class BrowserResearchWorkspace {
       imported.push(relativePath);
     }
     return Object.freeze(imported);
+  }
+
+  async saveQuestionnaireAsset({
+    familyId,
+    languageTag,
+    format,
+    sourceSha256,
+    bytes: source,
+  } = {}) {
+    const safeFamilyId = canonicalQuestionnaireAssetIdentifier(familyId, "Questionnaire family ID");
+    const safeLanguageTag = canonicalQuestionnaireAssetIdentifier(languageTag, "Questionnaire language tag");
+    if (!QUESTIONNAIRE_ASSET_FORMATS.has(format)) {
+      fail("questionnaire-asset-format", "Questionnaire source format must be csv, txt, or json.");
+    }
+    if (typeof sourceSha256 !== "string" || !SHA256_PATTERN.test(sourceSha256)) {
+      fail("questionnaire-asset-hash", "Questionnaire source SHA-256 must be a lowercase digest.");
+    }
+    const bytes = questionnaireSourceBytes(source);
+    await ensurePermission(this.rootHandle, "readwrite", { request: false });
+    if (!this.workspaceId || !this.questionnaireAssetsDirectory) {
+      fail("not-initialized", "Initialize the workspace before storing questionnaire assets.");
+    }
+    const sourceBlob = new Blob([bytes]);
+    const observedSha256 = await sha256Blob(sourceBlob, this.cryptoObject);
+    if (observedSha256 !== sourceSha256) {
+      fail("questionnaire-asset-hash", "Questionnaire source bytes do not match their declared SHA-256.");
+    }
+
+    const familyDirectory = await getChildDirectory(
+      this.questionnaireAssetsDirectory,
+      safeFamilyId,
+      { create: true },
+    );
+    const languageDirectory = await getChildDirectory(
+      familyDirectory,
+      safeLanguageTag,
+      { create: true },
+    );
+    const fileName = `${sourceSha256}.${format}`;
+    let handle;
+    if (await fileExists(languageDirectory, fileName)) {
+      handle = await languageDirectory.getFileHandle(fileName, { create: false });
+    } else {
+      handle = await writeNewFile(languageDirectory, fileName, bytes);
+    }
+    const stored = await handle.getFile();
+    if (stored.size !== bytes.byteLength
+      || await sha256Blob(stored, this.cryptoObject) !== sourceSha256) {
+      fail(
+        "questionnaire-asset-collision",
+        "Stored questionnaire source bytes do not match their content-addressed filename.",
+      );
+    }
+    return Object.freeze({
+      workspaceId: this.workspaceId,
+      familyId: safeFamilyId,
+      languageTag: safeLanguageTag,
+      relativePath: `${RESEARCH_QUESTIONNAIRE_ASSET_DIRECTORY}/${safeFamilyId}/${safeLanguageTag}/${fileName}`,
+      sourceSha256,
+      byteLength: bytes.byteLength,
+    });
   }
 
   async loadSettingsFile(file) {

@@ -17,8 +17,14 @@ filename order before taking project action.
 - [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md) defines acceptance
   and qualification evidence.
 - [`40-ROADMAP.md`](./40-ROADMAP.md) is the implementation-status authority.
-- [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md) defines change discipline and
-  skill routing.
+- [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md) tracks
+  deferred work discovered outside the current Section 2 pass.
+- [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md) defines the pass-intent
+  check, three-stage development and verification workflow, change discipline,
+  and skill routing.
+- [`55-AGENT-MESSAGE-BOARD.md`](./55-AGENT-MESSAGE-BOARD.md) coordinates
+  single-segment ownership, branch integration, suggestions, and compatibility
+  issues. It does not grant implementation permission or amend the charter.
 - [`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md) and
   [`references.bib`](./references.bib) record active source decisions.
 
@@ -30,21 +36,38 @@ landed. Use the roadmap and exact candidate receipts before making a claim.
 Affect Research is a local-first continuous valence/arousal research instrument
 with exactly two user-visible modes:
 
-1. **Setting Up the Experiment** — authorize one experiment-package root; load,
-   validate, author, and byte-identically re-export one self-hashed
-   `ExperimentPackageV1`; verify its fixed `assets/stimuli/` closure; preview
-   its manual participant/block/video/ISI order, language tree,
-   questionnaire hooks, playback policy, input, visual, mapping, LSL, and
-   output policy; then pass preflight.
-2. **Running the Experiment** — freeze the resolved attempt, play complete
-   stimuli, acquire ratings independently of rendering, persist local evidence,
-   and complete or retain an explicit partial/recoverable result.
+1. **Setting Up the Experiment** — the **Affect Tracker Designer** applet lets
+   the researcher choose settings, define the video library and manual plan,
+   and author questionnaires through ordinary controls and spreadsheet-like
+   tables. Its primary finished output is one unified, validated,
+   self-hashed `ExperimentPackageV1` JSON file containing all run parameters.
+   Researchers are never expected to supply, view, or hand-edit master JSON
+   to design an experiment. Loading a finished package is an optional reuse
+   path; historical JSON imports are compatibility tools.
+2. **Running the Experiment** — the **Experiment Runner** applet takes that
+   finished package as its main input, acquires questionnaire responses and
+   continuous ratings, and exposes acquisition/monitoring controls. It writes
+   local response/rating tables and evidence and can emit outbound Windows LSL
+   streams/markers under the existing contract.
+
+These are two functions within the existing two modes, not additional modes or
+an assertion that they have separate executables. The current 2026-09-11 pass
+is limited to Designer Section 2; Runner work and other-section gaps go in the
+future-agent checklist and are not implemented in this pass.
 
 Active v1 targets qualification only on Windows Tauri and the static
 application in current desktop Chrome and Edge. It has no WebXR, Quest,
-remote-control, collaboration,
-direct physiology, face, touch-inference, account, upload, analytics, telemetry,
-or backend surface. Host-native unsigned Windows, macOS, and Linux packages may
+remote-control, collaboration, direct physiology, participant-face experiment,
+touch-inference, account, upload, analytics, telemetry, or backend surface.
+A clearly labelled Setup-only feedback-design preview may compare classic
+Flubber, a 2D affect Grid, and a project-authored procedural responsive Face
+driven only by the same transient x/y preview point. That draft surface is not
+a Run renderer or research contract: it does not serialize into
+`ExperimentPackageV1`, `ResearchSettingsV3`, `InputBindingV1`, or
+`VisualSettingsV1`, and it does not affect Start, Run, hashes, LSL, records, or
+qualification. Camera, microphone, face tracking or inference, Photoatlas,
+participant images, uploads, and personal data remain prohibited. Host-native
+unsigned Windows, macOS, and Linux packages may
 be produced with no optional Cargo features for internal Setup/interface
 evaluation, but native experiment Start must fail closed there and those
 artifacts carry no research, timing, media, input, recovery, or LSL
@@ -67,6 +90,22 @@ qualification claim.
   hooks, input/visual/LSL configuration, and output policy. No package field is
   supplied by ambient storage, locale, filesystem order, clock, RNG, or an
   application default.
+- Section 2 accepts strict standardized questionnaire CSV, tab-delimited TXT,
+  or JSON authoring documents, as well as researcher-initiated table paste and
+  direct cell edits, and normalizes accepted content through the
+  canonical `questionnaire-csv-v1` definition before package embedding. A
+  requested questionnaire family must have an exact variant/module for every
+  selected study language before package finalization; no language fallback or
+  implicit translation satisfies that gate.
+- Section 2 centers on one questionnaire accordion per family and language,
+  editable item rows, separate participant-visible labels and recorded numeric
+  values, and compact response settings. Its authored questionnaires are
+  pre-session (`beforeSession`) assets. MAIA-2 and TAS-20 English/German are
+  the current preset focus; only the authorized MAIA assets are bundled.
+- Keep questionnaire source uploads content-addressed beneath
+  `assets/questionnaires/<family>/<language>/`. This authoring/provenance
+  library is not the closed scientific video manifest and is never a second
+  runtime authority.
 - Freeze the exact canonical package bytes and self-hash, verified asset
   closure, derived settings/assets/participant-assignment/protocol hashes,
   bindings, terminal language, participant derivation, and geometry for each
@@ -95,18 +134,20 @@ qualification claim.
   closed. The WebView player is an explicitly selected, receipt-labelled
   unqualified development fallback only.
 - The checked-in runtime pin, deterministic stager, tree verifier, and
-  capability report do not constitute the player actor or playback
-  qualification. The contained `unsafe` raw-window GstPlay renderer
-  constructor remains subject to explicit user approval and audit.
+  capability report alone do not establish playback qualification. The two
+  contained Windows FFI adapters were approved on 2026-09-10 and the actor and
+  renderer are implemented; their focused audit and installed qualification
+  remain open as recorded in `40-ROADMAP.md`. Any additional unsafe boundary
+  still requires explicit user approval.
 - New work uses `ExperimentPackageV1` plus package-bound resolved receipts and
   reuses only record contracts whose field meanings remain exact. Existing
   settings V1/V2/V3, `ExperimentDefinitionV1`,
   `ResolvedAssignmentPlanV1`, `ResolvedExperimentPlanV1`, questionnaire module
   V1/V2, protocol plan V1/V2, samples, events, manifests, and recovery evidence
   retain their historical meaning and remain readable without
-  reinterpretation. Legacy `settings.json`, `experiment.json`, and
-  questionnaire CSV files are explicit authoring/import inputs only; they
-  never become parallel runtime authorities.
+  reinterpretation. Legacy `settings.json`, `experiment.json`, and standardized
+  questionnaire CSV/TXT/JSON files are explicit authoring/import inputs only;
+  they never become parallel runtime authorities.
 - Update this directory whenever product scope, schema, authority, timing,
   privacy, supported platforms, persistence, media, LSL, or release gates
   change.

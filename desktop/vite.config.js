@@ -7,6 +7,11 @@ export default defineConfig({
   root: desktopRoot,
   publicDir: false,
   clearScreen: false,
+  resolve: {
+    alias: {
+      "/site": resolve(desktopRoot, "../site"),
+    },
+  },
   server: {
     port: 1420,
     strictPort: true,

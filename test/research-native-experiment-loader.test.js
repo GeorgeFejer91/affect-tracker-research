@@ -155,6 +155,17 @@ test("native experiment load event invokes the path-free picker and forwards its
       canonicalSourceByteSha256: "c".repeat(64),
       byteLength: 3,
     };
+    if (command === "research_store_questionnaire_asset") {
+      const { request } = args[1];
+      return {
+        workspaceId: request.workspaceId,
+        familyId: request.familyId,
+        languageTag: request.languageTag,
+        relativePath: `assets/questionnaires/${request.familyId}/${request.languageTag}/${request.sourceSha256}.${request.format}`,
+        sourceSha256: request.sourceSha256,
+        byteLength: request.bytes.length,
+      };
+    }
     throw new Error(`Unexpected command: ${command}`);
   };
   const bridge = new NativeResearchRuntimeBridge(root, {
@@ -214,6 +225,60 @@ test("native experiment load event invokes the path-free picker and forwards its
   assert.deepEqual(
     calls.filter(([command]) => command === "research_save_experiment_package"),
     [["research_save_experiment_package", { sourceText: "{}\n" }]],
+  );
+
+  bridge.workspace = Object.freeze({
+    workspaceId: "11111111-1111-4111-8111-111111111111",
+  });
+  const questionnaireAssetRequest = new CustomEvent(
+    RESEARCH_UI_EVENTS.storeQuestionnaireAssetRequest,
+    {
+      cancelable: true,
+      detail: {
+        familyId: "maia-2",
+        languageTag: "de",
+        format: "json",
+        sourceSha256: "e".repeat(64),
+        bytes: Uint8Array.of(1, 2, 3),
+      },
+    },
+  );
+  root.dispatchEvent(questionnaireAssetRequest);
+  await bridge.operation;
+  assert.equal(questionnaireAssetRequest.defaultPrevented, true);
+  assert.deepEqual(
+    calls.filter(([command]) => command === "research_store_questionnaire_asset"),
+    [["research_store_questionnaire_asset", {
+      request: {
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        familyId: "maia-2",
+        languageTag: "de",
+        format: "json",
+        sourceSha256: "e".repeat(64),
+        bytes: [1, 2, 3],
+      },
+    }]],
+  );
+
+  root.dispatchEvent(new CustomEvent(
+    RESEARCH_UI_EVENTS.storeQuestionnaireAssetRequest,
+    {
+      cancelable: true,
+      detail: {
+        familyId: "MAIA-2",
+        languageTag: "de",
+        format: "json",
+        sourceSha256: "e".repeat(64),
+        bytes: Uint8Array.of(1, 2, 3),
+      },
+    },
+  ));
+  await bridge.operation;
+  assert.match(root.startStatus.textContent, /canonical lowercase/u);
+  assert.equal(
+    calls.filter(([command]) => command === "research_store_questionnaire_asset").length,
+    1,
+    "invalid WebView metadata must not cross the native command boundary",
   );
 
   packageResult = null;

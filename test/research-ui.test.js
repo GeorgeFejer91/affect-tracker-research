@@ -9,6 +9,7 @@ import {
   RESEARCH_MODES,
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
+  applySetupSectionConfirmation,
   nextOpenSetupSection,
   normalizeResearchMode,
   normalizeAttemptDisposition,
@@ -21,6 +22,10 @@ import {
   normalizePreviewState,
 } from "../site/src/research/preview.js";
 import {
+  SETUP_ACCORDION_MOTION_MS,
+  SETUP_ACCORDION_MOTION_QUERY,
+} from "../site/src/research/setup-accordion-motion.js";
+import {
   affectPaletteColor,
   buildFlubberPath,
   createProfiles,
@@ -32,9 +37,9 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 
 const expectedSections = [
   ["workspace", "Workspace & Libraries"],
-  ["experiment", "Experiment"],
+  ["questionnaires", "Languages & Study Assets"],
   ["stimuli", "Experiment Plan & Stimuli"],
-  ["questionnaires", "Questionnaires & Sequence"],
+  ["experiment", "Experiment"],
   ["input", "Controller / Input Device"],
   ["visual", "Visual Feedback"],
   ["advanced", "Advanced"],
@@ -67,39 +72,206 @@ test("Setup has the exact eight ordered single-open accordion contracts", () => 
   assert.equal(normalizeSetupSection("visual"), "visual");
   assert.equal(normalizeSetupSection("nope"), "workspace");
   assert.equal(nextOpenSetupSection("workspace", "experiment"), "experiment");
+  assert.equal(nextOpenSetupSection("workspace", "workspace"), null);
   assert.equal(nextOpenSetupSection("experiment", "nope"), "workspace");
 });
 
-test("Questionnaires are strict ordered protocol modules rather than a third app mode", async () => {
-  const source = await read("site/src/research/app.js");
+test("Setup accordion panels animate open and closed without weakening semantics", async () => {
   const markup = renderResearchUiMarkup();
-  for (const id of [
-    "questionnaire-import", "questionnaire-template-download",
-    "questionnaire-definition-list", "questionnaire-module-list", "protocol-plan-hash",
-    "protocol-sequence-preview", "questionnaire-file-input", "questionnaire-preview-dialog",
-  ]) assert.match(markup, new RegExp(`id="${id}"`, "u"));
-  for (const bundled of ["maia-2-de", "maia-2-en", "tas-20-en", "ssq-six-item-en", "vr-exp-en"]) {
-    assert.match(markup, new RegExp(`data-bundled-questionnaire="${bundled}"`, "u"));
+  const [source, motionSource, css] = await Promise.all([
+    read("site/src/research/app.js"),
+    read("site/src/research/setup-accordion-motion.js"),
+    read("site/research.css"),
+  ]);
+
+  assert.ok(Number.isFinite(SETUP_ACCORDION_MOTION_MS));
+  assert.ok(SETUP_ACCORDION_MOTION_MS > 0 && SETUP_ACCORDION_MOTION_MS <= 300);
+  assert.equal(SETUP_ACCORDION_MOTION_QUERY, "(prefers-reduced-motion: reduce)");
+  assert.equal((markup.match(/data-motion-state="open"/gu) ?? []).length, 1);
+  assert.equal((markup.match(/data-motion-state="closed"/gu) ?? []).length, 7);
+  assert.equal((markup.match(/hidden inert/gu) ?? []).length, 7);
+  assert.equal((markup.match(/class="setup-accordion-panel-clip"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/class="setup-accordion-panel-inner"/gu) ?? []).length, 8);
+  assert.match(source, /import \{ setSetupAccordionPanelExpanded \} from "\.\/setup-accordion-motion\.js";/u);
+  assert.match(source, /const wasOpen = trigger instanceof HTMLButtonElement/u);
+  assert.match(source, /panelChanges\.push\(\[panel, isOpen\]\)[\s\S]*?focusTarget\?\.focus\(\);[\s\S]*?panelChanges\.forEach/u);
+  assert.match(motionSource, /const panelTransitions = new WeakMap\(\);/u);
+  assert.match(motionSource, /clearPanelTransition\(panel\);/u);
+  assert.match(motionSource, /panel\.hidden = false;[\s\S]*panel\.getBoundingClientRect\(\);/u);
+  assert.match(motionSource, /panel\.inert = !expanded;/u);
+  assert.match(motionSource, /event\.propertyName === "grid-template-rows"/u);
+  assert.match(motionSource, /window\.setTimeout\(finish, SETUP_ACCORDION_MOTION_MS \+ SETUP_ACCORDION_SETTLE_BUFFER_MS\)/u);
+  assert.match(motionSource, /current\.finish !== finish/u);
+  assert.match(motionSource, /if \(prefersReducedMotion\(\)\) \{\s*settlePanel\(panel, expanded\);/u);
+  assert.match(css, /\.setup-accordion-panel\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*1fr;[\s\S]*?transition:[\s\S]*?grid-template-rows/u);
+  assert.match(css, /\.setup-accordion-panel\[data-motion-state="closed"\],[\s\S]*?grid-template-rows:\s*0fr;[\s\S]*?opacity:\s*0;/u);
+  assert.match(css, /\.setup-accordion-panel-clip\s*\{[\s\S]*?min-height:\s*0;/u);
+  assert.match(css, /data-motion-state="closing"\] \.setup-accordion-panel-clip[\s\S]*?overflow:\s*clip;/u);
+  assert.match(css, /data-motion-state="opening"\],[\s\S]*?data-motion-state="closing"\][\s\S]*?will-change:\s*grid-template-rows, opacity;/u);
+});
+
+test("every Setup section requires an explicit sequential review confirmation", async () => {
+  const markup = renderResearchUiMarkup();
+  const source = await read("site/src/research/app.js");
+  const css = await read("site/research.css");
+
+  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/class="setup-section-confirm-button"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-reviewed="false"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-review-state="pending"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-section-review-status="[^"]+"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-section-review-check="[^"]+" aria-hidden="true" hidden>✓<\/span>/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-section-review-label="[^"]+">Not reviewed<\/span>/gu) ?? []).length, 8);
+  assert.match(markup, /id="setup-progress"[^>]*>0 of 8 reviewed · 0 ready<\/output>/u);
+  assert.match(markup, /data-confirm-section="review"[\s\S]*?>Confirm review<\/button>/u);
+  for (const [index, { id }] of SETUP_SECTIONS.entries()) {
+    const sectionStart = markup.indexOf(`data-setup-section="${id}"`);
+    const sectionEnd = index + 1 < SETUP_SECTIONS.length
+      ? markup.indexOf(`data-setup-section="${SETUP_SECTIONS[index + 1].id}"`, sectionStart)
+      : markup.indexOf('<aside class="preview-pane"', sectionStart);
+    const sectionMarkup = markup.slice(sectionStart, sectionEnd);
+    const buttonTag = sectionMarkup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
+    assert.ok(buttonTag, `${id} must expose its own confirmation button`);
+    assert.match(buttonTag, /\btype="button"/u);
+    assert.match(buttonTag, new RegExp(`aria-describedby="setup-confirmation-status-${id}"`, "u"));
+    assert.match(sectionMarkup, new RegExp(`data-section-review-check="${id}"`, "u"));
+    assert.match(sectionMarkup, new RegExp(`data-section-review-label="${id}"`, "u"));
   }
-  assert.match(markup, /one row per answer option/u);
-  assert.match(markup, /researcher-supplied wording and response ranges/u);
-  assert.match(markup, /No reverse scoring, subscales, diagnostic interpretation, or validation status is inferred/u);
-  assert.match(markup, /after a specific video before or after its ISI/u);
-  assert.match(source, /dataset\.questionnaireStimulus/u);
-  assert.match(source, /dataset\.questionnaireIsi/u);
-  assert.match(source, /target\.dataset\.questionnairePlacement \|\| target\.dataset\.questionnaireBlock\)\) return/u);
+
+  let reviewedSectionIds = [];
+  for (const [index, section] of SETUP_SECTIONS.entries()) {
+    const transition = applySetupSectionConfirmation(reviewedSectionIds, section.id);
+    assert.deepEqual(
+      transition.reviewedSectionIds,
+      SETUP_SECTIONS.slice(0, index + 1).map(({ id }) => id),
+    );
+    assert.equal(transition.nextSectionId, SETUP_SECTIONS[index + 1]?.id ?? null);
+    const repeated = applySetupSectionConfirmation(transition.reviewedSectionIds, section.id);
+    assert.deepEqual(repeated.reviewedSectionIds, transition.reviewedSectionIds);
+    reviewedSectionIds = transition.reviewedSectionIds;
+  }
+  assert.deepEqual(
+    applySetupSectionConfirmation(["visual"], "workspace").reviewedSectionIds,
+    ["workspace", "visual"],
+  );
+  const jumpedToReview = applySetupSectionConfirmation([], "review");
+  assert.deepEqual(jumpedToReview.reviewedSectionIds, ["review"]);
+  assert.equal(jumpedToReview.nextSectionId, null);
+  assert.throws(() => applySetupSectionConfirmation([], "unknown"), /Unknown Setup section confirmation/u);
+
+  assert.match(source, /const reviewedSetupSections = new Set\(\);/u);
+  assert.match(source, /checkmark\.hidden = !reviewed/u);
+  assert.match(source, /reviewLabel\.textContent = reviewed \? "Reviewed" : "Not reviewed"/u);
+  assert.match(source, /button\.disabled = reviewed/u);
+  assert.match(source, /button\.dataset\.reviewState = reviewed \? "reviewed" : "pending"/u);
+  assert.doesNotMatch(source, /Confirm again/u);
+  assert.match(source, /openSetupSection\(transition\.nextSectionId, \{ focus: true \}\)/u);
+  assert.match(source, /setup-trigger-\$\{sectionId\}[^\n]*\.focus\(\);\s*openSetupSection\(null\)/u);
+  assert.match(source, /reviewedSetupSections\.size === SETUP_SECTIONS\.length/u);
+  assert.match(source, /readySetupSectionCount = readySections;\s*renderSetupReviewState\(\);/u);
+  const preflightStart = source.indexOf("function preflightItems()");
+  const preflightEnd = source.indexOf("function renderPreflight()", preflightStart);
+  assert.ok(preflightStart >= 0 && preflightEnd > preflightStart);
+  assert.doesNotMatch(source.slice(preflightStart, preflightEnd), /reviewedSetupSections/u);
+  const requestStartStart = source.indexOf("function requestStart()");
+  const requestStartEnd = source.indexOf('root.addEventListener("click"', requestStartStart);
+  assert.ok(requestStartStart >= 0 && requestStartEnd > requestStartStart);
+  assert.doesNotMatch(source.slice(requestStartStart, requestStartEnd), /reviewedSetupSections/u);
+  const workspaceReadyStart = source.indexOf("root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady");
+  const workspaceReadyEnd = source.indexOf('root.querySelectorAll("[data-open-section]")', workspaceReadyStart);
+  assert.ok(workspaceReadyStart >= 0 && workspaceReadyEnd > workspaceReadyStart);
+  assert.doesNotMatch(source.slice(workspaceReadyStart, workspaceReadyEnd), /reviewedSetupSections\.(?:add|clear|delete)/u);
+  const openSectionStart = source.indexOf("function openSetupSection(");
+  const openSectionEnd = source.indexOf("function confirmSetupSection(", openSectionStart);
+  assert.doesNotMatch(source.slice(openSectionStart, openSectionEnd), /reviewedSetupSections/u);
+
+  assert.match(css, /\.setup-section-confirmation\s*\{[\s\S]*?justify-content:\s*flex-end;/u);
+  assert.match(css, /\.section-review-status\s*\{[\s\S]*?color:\s*var\(--success\);/u);
+  assert.match(css, /\.section-review-status \[data-section-review-check\]:not\(\[hidden\]\)\s*\{[\s\S]*?border:\s*1px solid currentcolor;[\s\S]*?border-radius:\s*50%;[\s\S]*?background:\s*rgb\(117 189 143 \/ 12%\);/u);
+  assert.match(css, /\.setup-accordion-panel\[data-motion-state="open"\] \.setup-section-confirm-button\[data-review-state="pending"\]::after,[\s\S]*?animation:\s*setup-confirm-attention/u);
+  const reviewedStyleStart = css.indexOf('.setup-section-confirm-button[data-review-state="reviewed"]');
+  const reviewedStyleEnd = css.indexOf("}", reviewedStyleStart);
+  assert.ok(reviewedStyleStart >= 0 && reviewedStyleEnd > reviewedStyleStart);
+  assert.doesNotMatch(css.slice(reviewedStyleStart, reviewedStyleEnd), /animation/u);
+  assert.match(css, /@keyframes setup-confirm-attention[\s\S]*?filter:\s*blur\(2px\);[\s\S]*?opacity:\s*0\.78;[\s\S]*?filter:\s*blur\(7px\);[\s\S]*?opacity:\s*0\.28;/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.setup-accordion-panel\[data-motion-state="open"\][\s\S]*?animation:\s*none !important;[\s\S]*?filter:\s*blur\(4px\);/u);
+  const reviewPanelStart = markup.indexOf('id="setup-panel-review"');
+  const reviewPanelEnd = markup.indexOf('<aside class="preview-pane"', reviewPanelStart);
+  const reviewPanel = markup.slice(reviewPanelStart, reviewPanelEnd);
+  assert.ok(reviewPanel.indexOf('data-confirm-section="review"') < reviewPanel.indexOf('class="start-bar"'));
+});
+
+test("Section 2 uses multilingual questionnaire tables and hides backend documents", async () => {
+  const source = await read("site/src/research/app.js");
+  const editor = await read("site/src/research/questionnaire-editor.js");
+  const markup = renderResearchUiMarkup();
+  const sectionStart = markup.indexOf('id="setup-panel-questionnaires"');
+  const sectionEnd = markup.indexOf('data-setup-section="stimuli"', sectionStart);
+  const section = markup.slice(sectionStart, sectionEnd);
+  for (const id of [
+    "study-language-add", "study-language-add-button", "study-language-list",
+    "questionnaire-add-blank", "questionnaire-sheet-list", "questionnaire-sheet-file",
+    "questionnaire-sheet-preview", "questionnaire-coverage-status",
+  ]) assert.ok(section.includes(`id="${id}"`), id);
+  for (const preset of ["maia-2", "tas-20"]) assert.ok(section.includes(`data-questionnaire-preset="${preset}"`));
+  assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|JSON|sourceSha256/u);
+  assert.match(section, /Paste items from Excel/u);
+  assert.match(section, /before the video task/u);
+  assert.match(editor, /event\.clipboardData\.getData\("text\/plain"\)/u);
+  assert.doesNotMatch(editor, /navigator\.clipboard|document\.execCommand/u);
+  assert.match(editor, /data-sheet-cell/u);
+  assert.match(editor, /data-sheet-repeat/u);
+  assert.match(editor, /data-sheet-required/u);
+  assert.match(source, /questionnaireEditor\.pendingKeys\(\)/u);
+  assert.match(source, /requestQuestionnaireAssetStorage\(root, payload\)/u);
+  assert.match(source, /createCoveredFlatLanguageSelectionV1/u);
+  assert.doesNotMatch(source, /questionnaires\/tas-20-en\.csv/u);
   assert.equal((markup.match(/data-mode-panel=/gu) ?? []).length, 2);
 });
 
-test("Workspace and externally authored experiment order are present without in-app randomization", async () => {
+test("Workspace exposes one selected root and three fixed project locations", async () => {
   const source = await read("site/src/research/app.js");
   const markup = renderResearchUiMarkup();
-  for (const directory of ["stimuli/", "assets/stimuli/", "settings/", "outputs/", "recovery/"]) assert.match(markup, new RegExp(directory, "u"));
+  const workspacePanelStart = markup.indexOf('id="setup-panel-workspace"');
+  const workspacePanelEnd = markup.indexOf('data-setup-section="questionnaires"', workspacePanelStart);
+  assert.ok(workspacePanelStart >= 0 && workspacePanelEnd > workspacePanelStart, "the workspace accordion panel must be independently inspectable");
+  const workspacePanel = markup.slice(workspacePanelStart, workspacePanelEnd);
+
+  assert.deepEqual(
+    [...workspacePanel.matchAll(/data-workspace-location="([^"]+)"/gu)].map((match) => match[1]),
+    ["workspaceRoot", "videoLibrary", "experimentPackage"],
+    "the three project locations must retain their task order",
+  );
+  assert.equal((workspacePanel.match(/id="workspace-choose"/gu) ?? []).length, 1);
+  assert.match(workspacePanel, /<button id="workspace-choose"[^>]*>Set work directory<\/button>/u);
+
+  const openLocationButtons = [...workspacePanel.matchAll(/<button\b[^>]*data-open-workspace-location="([^"]+)"[^>]*>/gu)];
+  assert.equal(openLocationButtons.length, 3);
+  assert.deepEqual(openLocationButtons.map((match) => match[1]), ["workspaceRoot", "videoLibrary", "experimentPackage"]);
+  for (const [button] of openLocationButtons) {
+    assert.match(button, /\btype="button"/u);
+    assert.match(button, /\baria-label="[^"]+"/u);
+    assert.match(button, /\sdisabled(?:\s|>)/u, "location buttons remain unavailable until the root is ready");
+  }
+
+  assert.match(workspacePanel, /<code>assets\/stimuli\/<\/code>/u);
+  assert.match(workspacePanel, /<code>experiment\.package\.json<\/code>/u);
+  assert.match(workspacePanel, /outputs and recovery are managed automatically/u);
+  for (const obsoleteWorkspaceStructure of [
+    /class="[^"]*\bdirectory-list\b/u,
+    /class="[^"]*\bprotocol-import-card\b/u,
+    /id="video-drop-zone"/u,
+    /id="stimulus-library-table"/u,
+    /id="settings-load"/u,
+    /id="settings-save"/u,
+    /id="workspace-rescan"/u,
+  ]) assert.doesNotMatch(workspacePanel, obsoleteWorkspaceStructure);
+
   for (const id of ["workspace-choose", "workspace-rescan", "video-import", "video-folder-import", "package-load", "package-generate", "package-file-status", "experiment-load", "experiment-template-download", "experiment-file-status", "settings-load", "settings-save"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
   for (const id of [
-    "package-language-tree", "package-reproduction-status",
+    "package-reproduction-status",
     "choose-participant-language", "participant-language-dialog",
     "participant-language-context", "participant-language-breadcrumb",
     "participant-language-prompt", "participant-language-options",
@@ -107,18 +279,17 @@ test("Workspace and externally authored experiment order are present without in-
   ]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
+  assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
-  assert.match(markup, /One strict JSON file owns settings, language routing, questionnaires, manual video order, every ISI, playback policy, and fixed asset identities/u);
-  assert.match(markup, /Load reads <code>experiment\.package\.json<\/code> from this workspace root/u);
-  assert.match(markup, /Missing, extra, unreadable, or changed files block Start/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
   assert.match(source, /workspace\.loadExperimentPackage\(\)/u);
   assert.match(source, /workspace\.saveExperimentPackage\(sourceText\)/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
+  assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
+  assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(markup, /Package reproduction matrix/u);
-  assert.match(source, /languageInput\.readOnly = Boolean\(experimentPackageDocument\)/u);
-  assert.match(markup, /Every terminal language explicitly lists its ordered <code>questionnaireModuleIds<\/code>/u);
-  assert.match(source, /return validateLanguageSelectionTreeV1\(parsed\)/u);
+  assert.match(source, /loadedLanguageSelection = structuredClone\(parsed\.package\.languageSelection\)/u);
+  assert.match(source, /return createCoveredFlatLanguageSelectionV1/u);
   assert.match(source, /resolveLanguageSelectionTraversalStepV1/u);
   assert.match(source, /validateExperimentPackageRecoveryBindingV1/u);
   assert.match(source, /participantRecoveryBindings/u);
@@ -126,7 +297,6 @@ test("Workspace and externally authored experiment order are present without in-
   assert.doesNotMatch(source, /routes\[0\]/u);
   assert.doesNotMatch(source, /questionnaireModuleIds = questionnaireModules\.filter/u);
   assert.match(markup, /Folders are scanned recursively/u);
-  assert.match(markup, /Partial ratings are always journaled locally/u);
   assert.match(markup, /Prepare randomization outside Affect Research/u);
   assert.match(markup, /supplies every participant’s block order, complete-video order, and the ISI after each video/u);
   assert.match(markup, /Array order is authoritative/u);
@@ -299,6 +469,7 @@ test("external experiment plan export uses the canonical source-identity and ISI
 test("the UI bridge names are explicit and stable", () => {
   assert.deepEqual(RESEARCH_UI_EVENTS, {
     selectWorkspaceRequest: "affect-research:select-workspace",
+    openWorkspaceLocationRequest: "affect-research:open-workspace-location",
     rescanWorkspaceRequest: "affect-research:rescan-workspace",
     importVideosRequest: "affect-research:import-videos-request",
     loadSettingsRequest: "affect-research:load-settings-request",
@@ -308,6 +479,7 @@ test("the UI bridge names are explicit and stable", () => {
     saveSettingsRequest: "affect-research:save-settings-request",
     exportPlanRequest: "affect-research:export-plan-request",
     importQuestionnaireRequest: "affect-research:import-questionnaire-request",
+    storeQuestionnaireAssetRequest: "affect-research:store-questionnaire-asset-request",
     questionnaireDraftRequest: "affect-research:questionnaire-draft-request",
     questionnaireSubmitRequest: "affect-research:questionnaire-submit-request",
     planReady: "affect-research:plan-ready",
@@ -505,7 +677,7 @@ test("Setup remains scrollable on desktop and the mobile header owns intrinsic h
   assert.match(css, /\.setup-pane\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*100%;[\s\S]*?overflow-y:\s*auto;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
-  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title chevron"[\s\S]*?"\. summary \."[\s\S]*?white-space:\s*normal;/u);
+  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
 });
 
 test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {

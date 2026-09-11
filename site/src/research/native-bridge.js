@@ -10,6 +10,7 @@ import { attestNativeGstCatalogue } from "./native-media-catalogue.js";
 import { NativeMediaController } from "./native-media-controller.js";
 import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
 import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
+import { completeQuestionnaireAssetStorageRequest } from "./questionnaire-storage-request.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -18,6 +19,10 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const RUN_PHASES = new Set(["prepared", "betweenStimuli", "playing", "paused", "finalizing", "finished", "failed"]);
 const PLAYBACK_MODES = new Set(["nativeGstPlay", "nativeLibvlc", "unqualifiedWebview"]);
 const PLAYBACK_QUALIFICATIONS = new Set(["qualifiedNative", "unqualified"]);
+const WORKSPACE_LOCATIONS = new Set(["workspaceRoot", "videoLibrary", "experimentPackage"]);
+const QUESTIONNAIRE_ASSET_IDENTIFIER = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
+const QUESTIONNAIRE_ASSET_FORMATS = new Set(["csv", "txt", "json"]);
+const MAX_QUESTIONNAIRE_SOURCE_BYTES = 5 * 1024 * 1024;
 const NATIVE_MEDIA_CAPABILITY_KEYS = Object.freeze([
   "ambientRuntimeAllowed", "api", "backend", "bindingsVersion", "defaultPlaybackMode",
   "pinnedRuntimeVersion", "playerActorReady", "qualifiedFormatMatrixReady",
@@ -46,6 +51,50 @@ function expectedPlaybackQualification(playbackMode) {
   return ["nativeGstPlay", "nativeLibvlc"].includes(playbackMode)
     ? "qualifiedNative"
     : "unqualified";
+}
+
+function nativeQuestionnaireAssetRequest(detail) {
+  if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+    throw new TypeError("Questionnaire asset storage requires a typed request.");
+  }
+  const allowedKeys = new Set(["familyId", "languageTag", "format", "sourceSha256", "bytes"]);
+  const unknownKey = Object.keys(detail).find((key) => !allowedKeys.has(key));
+  if (unknownKey) {
+    throw new TypeError(`Questionnaire asset storage request contains unknown field ${unknownKey}.`);
+  }
+  if (!QUESTIONNAIRE_ASSET_IDENTIFIER.test(detail.familyId ?? "")
+    || !QUESTIONNAIRE_ASSET_IDENTIFIER.test(detail.languageTag ?? "")) {
+    throw new TypeError("Questionnaire asset folder identifiers must use canonical lowercase spelling.");
+  }
+  if (!QUESTIONNAIRE_ASSET_FORMATS.has(detail.format)) {
+    throw new TypeError("Questionnaire source format must be csv, txt, or json.");
+  }
+  if (typeof detail.sourceSha256 !== "string" || !SHA256_PATTERN.test(detail.sourceSha256)) {
+    throw new TypeError("Questionnaire source SHA-256 must be a lowercase digest.");
+  }
+  let bytes;
+  if (detail.bytes instanceof Uint8Array) bytes = [...detail.bytes];
+  else if (detail.bytes instanceof ArrayBuffer) bytes = [...new Uint8Array(detail.bytes.slice(0))];
+  else if (ArrayBuffer.isView(detail.bytes)) {
+    bytes = [...new Uint8Array(
+      detail.bytes.buffer.slice(detail.bytes.byteOffset, detail.bytes.byteOffset + detail.bytes.byteLength),
+    )];
+  } else if (Array.isArray(detail.bytes)
+    && detail.bytes.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255)) {
+    bytes = [...detail.bytes];
+  } else {
+    throw new TypeError("Questionnaire source content must be supplied as bytes.");
+  }
+  if (bytes.length < 1 || bytes.length > MAX_QUESTIONNAIRE_SOURCE_BYTES) {
+    throw new RangeError("A questionnaire source must contain 1 byte–5 MiB.");
+  }
+  return Object.freeze({
+    familyId: detail.familyId,
+    languageTag: detail.languageTag,
+    format: detail.format,
+    sourceSha256: detail.sourceSha256,
+    bytes: Object.freeze(bytes),
+  });
 }
 
 export function validateNativeMediaCapabilityV2(value) {
@@ -1176,6 +1225,10 @@ export class NativeResearchRuntimeBridge {
       event.preventDefault();
       this.#queue(() => this.#chooseWorkspace());
     });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.openWorkspaceLocationRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => this.#openWorkspaceLocation(event.detail?.location));
+    });
     this.#listen(this.root, RESEARCH_UI_EVENTS.rescanWorkspaceRequest, (event) => {
       event.preventDefault();
       this.#queue(() => this.#rescanWorkspace());
@@ -1203,6 +1256,13 @@ export class NativeResearchRuntimeBridge {
     this.#listen(this.root, RESEARCH_UI_EVENTS.saveSettingsRequest, (event) => {
       event.preventDefault();
       this.#queue(() => this.#saveSettings(event.detail));
+    });
+    this.#listen(this.root, RESEARCH_UI_EVENTS.storeQuestionnaireAssetRequest, (event) => {
+      event.preventDefault();
+      this.#queue(() => completeQuestionnaireAssetStorageRequest(event.detail, (detail) => {
+        const request = nativeQuestionnaireAssetRequest(detail);
+        return this.#storeQuestionnaireAsset(request);
+      }));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.exportPlanRequest, (event) => {
       event.preventDefault();
@@ -1283,6 +1343,16 @@ export class NativeResearchRuntimeBridge {
     this.#listen(this.root, RESEARCH_UI_EVENTS.inputCaptureCancel, () => {
       this.#queue(() => this.invoke("research_input_cancel_setup"));
     });
+    this.#listen(this.root, "focusin", (event) => {
+      if (this.run || this.packageProtocol.active || this.root.researchUi?.openSection !== "input") return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("#binding-capture-dialog")) return;
+      if (target?.closest(".input-test-grid")) {
+        this.#queue(() => this.#beginNativeInputTest());
+        return;
+      }
+      this.#queue(() => this.invoke("research_input_cancel_setup"));
+    });
     this.#listen(this.window, "resize", () => {
       this.#queue(async () => {
         await this.#refreshNativeInputRegion();
@@ -1357,6 +1427,11 @@ export class NativeResearchRuntimeBridge {
     }
     const grid = this.root.querySelector?.(".input-test-grid");
     if (!grid || grid.getClientRects?.().length === 0) return;
+    const activeElement = this.root.ownerDocument?.activeElement;
+    if (activeElement !== grid && !grid.contains?.(activeElement)) {
+      await this.invoke("research_input_cancel_setup");
+      return;
+    }
     await this.#setNativeInputRegion(".input-test-grid", "setupTest");
     const status = await this.invoke("research_input_begin_test", { binding });
     this.root.researchUi?.applyNativeInputStatus?.(status);
@@ -1391,7 +1466,7 @@ export class NativeResearchRuntimeBridge {
       await this.nativeRunMedia.setViewport();
       return;
     }
-    const host = this.root.querySelector?.(".preview-pane .research-preview-stage");
+    const host = this.root.querySelector?.(".preview-pane .preview-primary-stage");
     if (!host || host.getClientRects?.().length === 0) return;
     await this.nativeMedia.setViewport(host);
   }
@@ -1557,6 +1632,17 @@ export class NativeResearchRuntimeBridge {
     await this.#adoptWorkspace(workspace, { rescan: true });
   }
 
+  async #openWorkspaceLocation(location) {
+    this.#requireWorkspace();
+    if (!WORKSPACE_LOCATIONS.has(location)) {
+      throw new Error("The requested project location is not part of the selected workspace.");
+    }
+    await this.invoke("research_open_workspace_location", {
+      workspaceId: this.workspace.workspaceId,
+      location,
+    });
+  }
+
   async #adoptWorkspace(workspace, { rescan = false } = {}) {
     if (!workspace?.workspaceId || workspace.librariesReady !== true) {
       throw new Error("The selected native workspace did not initialize the Research libraries and fixed package asset tree.");
@@ -1601,7 +1687,7 @@ export class NativeResearchRuntimeBridge {
         this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
         throw new Error(`Native GstPlay decode verification is unavailable (${this.nativeMediaCapability?.reasonCode ?? "unknown"}).`);
       }
-      const viewportHost = this.root.querySelector?.(".preview-pane .research-preview-stage");
+      const viewportHost = this.root.querySelector?.(".preview-pane .preview-primary-stage");
       const progress = this.root.querySelector?.("#workspace-status");
       const result = await attestNativeGstCatalogue({
         controller: this.nativeMedia,
@@ -1724,6 +1810,29 @@ export class NativeResearchRuntimeBridge {
       settings: detail.settings,
     });
     this.#announce(`${receipt.fileName} saved with hash ${receipt.settingsSha256}.`);
+  }
+
+  async #storeQuestionnaireAsset(request) {
+    this.#requireWorkspace();
+    const nativeRequest = {
+      workspaceId: this.workspace.workspaceId,
+      ...request,
+    };
+    const receipt = await this.invoke("research_store_questionnaire_asset", {
+      request: nativeRequest,
+    });
+    const expectedPath = `assets/questionnaires/${request.familyId}/${request.languageTag}/${request.sourceSha256}.${request.format}`;
+    if (!receipt
+      || receipt.workspaceId !== this.workspace.workspaceId
+      || receipt.familyId !== request.familyId
+      || receipt.languageTag !== request.languageTag
+      || receipt.relativePath !== expectedPath
+      || receipt.sourceSha256 !== request.sourceSha256
+      || receipt.byteLength !== request.bytes.length) {
+      throw new Error("Native questionnaire asset storage returned an invalid workspace receipt.");
+    }
+    this.#announce(`Questionnaire source saved to ${receipt.relativePath}.`);
+    return receipt;
   }
 
   async #exportPlan(detail) {

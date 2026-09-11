@@ -10,6 +10,15 @@ candidate conforms or is qualified. Delivery status belongs in
 
 ## Authority map
 
+The two product functions are **Affect Tracker Designer** in Setting Up and
+**Experiment Runner** in Running. Designer controls/table editors collect
+researcher choices and compile one finished unified JSON package; Runner reads
+that package for acquisition and monitoring. JSON is the final interchange
+boundary, never a prerequisite hand-authored document or an exposed master
+editor. These functions do not add modes or imply separate executables. The
+current pass changes Section 2 authoring only; Runner and other-section work
+is recorded in `45-FUTURE-AGENT-CHECKLIST.md`.
+
 | Concern | One active authority | Adapters/consumers |
 | --- | --- | --- |
 | Experiment package | Exact canonical bytes plus verified self-hashed `ExperimentPackageV1` | Package load/author/re-export and explicit legacy importers |
@@ -20,7 +29,10 @@ candidate conforms or is qualified. Delivery status belongs in
 | Participant schedule | Pure verification of package-authored manual order into participant assignment receipts | Virtualized preview, schedule CSV, run preparation; never an allocator |
 | Language selection | Finite rooted package tree and selected terminal-language path | Setup selection and participant/language protocol resolver; never OS locale |
 | Protocol sequence | Pure participant-plus-terminal-language resolver over package order and hooks | Sequence preview, questionnaire/video/interval run routing, recovery |
-| Questionnaire definitions | Strict definitions embedded in the package with language/scoring/provenance | CSV authoring importer, Setup preview, runtime score derivation |
+| Questionnaire definitions | Strict definitions embedded in the package with language/scoring/provenance | Spreadsheet cells/paste and CSV/TXT/JSON adapters through canonical Questionnaire CSV v1, Setup preview, runtime score derivation |
+| Questionnaire source library | Content-addressed original authoring bytes beneath `assets/questionnaires/<family>/<language>/` | Workspace adapters and provenance receipts only; never Run authority or part of the stimulus manifest |
+| Questionnaire language coverage | Every requested family crossed with every selected study language | Section 2 coverage projection and package-finalization gate; no `und` or locale fallback |
+| Questionnaire label repetition draft | Ephemeral Section 2 presentation state | Every-item/5/10 design preview only; no current package, Runner, recovery, hash, or output authority |
 | Participant/attempt state | Locks, journals, and immutable schema-compatible manifests | Four-state chooser projection; never editable flags |
 | Run lifecycle | One run authority per attempt | Setup Start, Run Pause/Stop Early, recovery |
 | Native media | One Windows Rust actor over a pinned bundled GStreamer/GstPlay runtime | Opaque media grants/session IDs and child-window viewport projection |
@@ -28,12 +40,20 @@ candidate conforms or is qualified. Delivery status belongs in
 | Sampling | Run-owned monotonic scheduler | Canonical rows and Windows regular LSL outlet |
 | Recording | Canonical typed sample/event/questionnaire-response model plus package-derived hashes | Package output policy, CSV, TSV, `events.jsonl`, manifest, recovery journal |
 | Presentation | In-app normalized Grid/Flubber renderer | Persistent Setup preview and adjacent Run feedback; never a clock |
+| Setup feedback-design preview | Transient, presentation-only projection over the same preview x/y | Classic Flubber, 2D Grid, and procedural responsive Face comparison; no package, Start, Run, record, or evidence authority |
 | LSL | Windows Rust outbound adapter | Regular eight-channel state plus irregular semantic markers |
 
 No UI handler, legacy importer, renderer, WebView, browser video fallback,
 ambient storage, OS locale, or LSL adapter creates a second package, experiment
 order, settings, language, affect, lifecycle, timestamp, playback, output, or
 record authority.
+
+The Setup feedback-design preview is intentionally outside the runtime
+authority graph. Its proposed selector, halo size, and continuous/stepwise
+timing or hold values remain ephemeral view state and are never merged into the
+current canonical settings projection. Its procedural Face is a renderer over
+the same transient x/y point, not another affect engine or an inference/data
+plane.
 
 ## Module topology and composition rules
 
@@ -167,36 +187,61 @@ numbers, excessive counts/depth/bytes, and hash mismatches. A changed meaning
 requires a new version or an explicit migration; it never becomes permissive
 interpretation.
 
-Old portable settings, external experiment, and questionnaire CSV formats
-remain byte/meaning compatible with their existing readers. A separately
-selected authoring importer may contribute to a package only after showing
-every carried, defaulted, rejected, and discarded field. It preserves the
-source receipt and writes one new complete canonical package. No browser
-storage, Tauri app data, OS locale, prior package, or platform default is
-automatically merged.
+Old portable settings and external experiment formats remain byte/meaning
+compatible with their existing readers. Questionnaire CSV, tab-delimited TXT,
+and JSON are explicit authoring representations; TXT and JSON deterministically
+adapt into canonical Questionnaire CSV v1 before the existing strict definition
+importer. A separately selected authoring importer may contribute to a package
+only after showing every carried, defaulted, rejected, and discarded field. It
+preserves original-source, canonical-CSV, and definition receipts and writes
+one new complete canonical package. No browser storage, Tauri app data, OS
+locale, prior package, or platform default is automatically merged.
 
 ## Setup composition
 
 One Setup shell owns only the exact eight-accordion order, single-open state,
-status summary, and Start orchestration. Each accordion keeps a narrow owner:
+session-local reviewed-section set, status summary, and Start orchestration.
+Each accordion exposes one bottom confirmation action; its pure UI transition
+adds that section to the reviewed set, collapses it, and selects the next
+ordered section or no section after the eighth. Readiness projections never
+write this set, and the set never enters storage, platform bridges, packages,
+hashes, preflight, Start, Run, records, recovery, LSL, or evidence. Each
+accordion keeps a narrow owner:
+
+`setup-accordion-motion.js` owns only the reversible grid-track presentation
+transition, immediate inert/ARIA state, transition cancellation/settlement,
+and reduced-motion fallback. Header toggles do not mutate the reviewed-section
+set. Once reviewed, the confirmation control is a disabled receipt rather than
+a second transition into review state.
 
 1. Workspace & Libraries — package-root authorization, fixed
-   `assets/stimuli/`/output/recovery creation, explicit asset import/rescan,
-   package load/re-export, and reported legacy authoring import;
-2. Experiment — package-defined identity, participant range, continuous-rating
-   assertion, and explicit sample rate;
+   `assets/stimuli/`/`assets/questionnaires/`/output/recovery creation,
+   explicit asset import/rescan, package load/re-export, and reported legacy
+   authoring import;
+2. Languages & Study Assets — compact study-language selection, questionnaire
+   family controls, one disclosure and spreadsheet editor per family/language,
+   separate visible labels and recorded values, response settings, optional
+   CSV/TXT/JSON imports/templates, content-addressed source storage, and exact
+   coverage. New modules use `beforeSession`; MAIA-2/TAS-20 English/German are
+   the preset focus. Label-repetition preview is separate from package state;
 3. Experiment Plan & Stimuli — closed asset manifest, strict manual schedule,
    exact order/ISI preview, media verification, playback policy, and asset/
    assignment hashes;
-4. Questionnaires & Sequence — package language tree, embedded definitions,
-   ordered session/block/after-video hooks, legacy CSV authoring import,
-   participant-by-terminal-language preview, protocol plan and hashes;
+4. Experiment — package-defined identity, participant range, continuous-rating
+   assertion, and explicit sample rate;
 5. Input — presets, custom capture, conflict validation, live test;
 6. Visual — normalized overlay, Grid/Flubber visibility and geometry, colors;
 7. Advanced — outbound LSL fields and six independent affect mappings; and
 8. Review & Start — aggregate preflight, language path, derived participant/
    demographic data, package-owned output policy, lock/reservation, and atomic
    mode transition.
+
+The Visual presentation may contain one nested, clearly labelled design-preview
+surface comparing Flubber, Grid, and a procedural responsive Face. It may also
+preview centered halo sizing and proposed input-response controls. This nested
+surface remains part of Setup rather than a ninth accordion or third mode, and
+its transient model must be structurally separate from the current settings
+authoring model so package creation cannot accidentally serialize it.
 
 The persistent preview receives immutable projected settings and affect state.
 It cannot mutate a run, sample from animation frames, or act as a native
@@ -207,10 +252,14 @@ forced true once Run starts.
 ## Workspace and media boundary
 
 One selected experiment-package root contains the canonical package file,
-fixed `assets/stimuli/`, `outputs/`, and `recovery/`. All generated paths are
-descendants of that root and are constructed from validated bounded
-identifiers; the WebView never supplies or receives an arbitrary native path.
-The declared asset manifest—not a scan—owns the permitted scientific files.
+fixed `assets/stimuli/`, `assets/questionnaires/`, `outputs/`, and `recovery/`.
+All generated paths are descendants of that root and are constructed from
+validated bounded identifiers; the WebView never supplies or receives an
+arbitrary native path. The declared stimulus manifest—not a scan—owns the
+permitted scientific video files. Original questionnaire authoring sources are
+stored by source digest beneath validated
+`assets/questionnaires/<family>/<language>/` descendants and never become
+members of that runtime manifest.
 
 Tauri Rust owns root selection, safe child creation, staged copy/import,
 recursive rescan, streaming hashes, media probes, create-new output ownership,
@@ -381,15 +430,60 @@ and retain all earlier evidence.
 
 ## Language, questionnaire, and protocol architecture
 
-The CSV importer accepts one bounded UTF-8 RFC 4180 byte stream and requires
-the exact `questionnaire-csv-v1` 14-column header. One row is one allowed
-single-choice option. It canonicalizes a `QuestionnaireDefinitionV1` only after
-checking consistent repeated metadata, contiguous item rows, unique item and
-option IDs, explicit required flags, finite-or-blank scores, safe text, and all
-size limits. The source-byte hash and definition self-hash are separate in the
-authoring conversion receipt. Runtime score/label authority comes from the
-embedded frozen definition; the WebView cannot supply authoritative scores and
-the CSV is not opened during Start.
+The Section 2 table model is a bounded authoring adapter. It owns editable
+questionnaire metadata, ordered item prompts, explicit required flags, ordered
+visible option labels, and per-item numeric recorded values. Spreadsheet paste
+uses only the explicit event on a focused editor; it validates one bounded
+rectangular text block before changing cells, preserves row/column order, and
+never reads the ambient clipboard, evaluates spreadsheet formulas, or logs
+source payloads. Validation errors identify the item/cell without leaking
+unrelated content. File import populates the same authoring model.
+
+Visible labels, stable option IDs, and numeric codes remain distinct definition
+fields. The editor's recorded code maps to the existing nullable `scoreValue`;
+it does not introduce a second numeric response-value field. Reverse coding is
+an explicit per-option `scoreValue` choice, never an inferred instrument rule
+or a display-label rewrite. Existing supplied scoring,
+subscale, and attribution metadata must be preserved unless the researcher
+explicitly changes the owning field. The existing definition represents a
+single selected option per item; a configurable option count does not widen it
+to multi-select.
+
+Each requested family/language pair has its own accordion and table model.
+The view can add a missing variant, but neither importing one language nor
+changing the language selection synthesizes translation content. Canonical
+definition creation goes through the existing strict Questionnaire CSV v1
+boundary and package finalization remains the only package owner. A new
+Section 2 module uses `beforeSession`; imported modules with other placements
+retain their exact contract and must not be silently rewritten.
+
+The label-repetition control previews above-every-item/every-5/every-10 layout
+from separate transient state. Current package/questionnaire contracts have no
+such field. Persisting and running the preference requires a future versioned
+contract, browser/Rust parity, renderer support, reproduction and recovery
+evidence. Do not encode it through unrelated existing members or ambient
+storage. Runner implementation is outside this pass.
+
+The questionnaire authoring adapter accepts one bounded strict UTF-8 CSV,
+tab-delimited TXT, or JSON byte stream selected by explicit extension/type; it
+does not guess from content. CSV requires the exact `questionnaire-csv-v1`
+14-column header. TXT requires `questionnaire-txt-v1` and the same
+tab-delimited columns. JSON requires the exact closed
+`questionnaire-json-v1` root/item/option shape and rejects duplicate keys. TXT
+and JSON deterministically produce canonical Questionnaire CSV v1 bytes, then
+all three formats pass through the same strict importer.
+
+One canonical row is one allowed single-choice option. The importer creates a
+`QuestionnaireDefinitionV1` only after checking consistent repeated metadata,
+contiguous item rows, unique item and option IDs, explicit required flags,
+finite-or-blank scores, safe text, and all size limits. Original-source,
+canonical-CSV, and definition hashes remain distinct in authoring receipts.
+The workspace service stores the original bytes by digest at
+`assets/questionnaires/<family>/<language>/<sha256>.<format>`, verifies existing
+content on idempotent reuse, and returns only a bounded relative receipt. The
+WebView never supplies an arbitrary native path. Runtime score/label authority
+comes from the embedded frozen definition; no authoring source is opened during
+Start or Run.
 
 The package language-tree owner validates one root, ordered choice edges,
 acyclic reachability, unique terminal language tags, and each terminal's exact
@@ -398,6 +492,23 @@ terminal, and each mapped definition is language-compatible. Selecting a
 terminal language freezes the exact path and module list. There is no
 OS-locale, browser-locale, storage, definition-language filtering, or
 first-definition fallback.
+
+Before authoring may finalize a new package, the Section 2 coverage owner forms
+the Cartesian product of requested questionnaire families and selected study
+languages. Every pair must resolve to an exact-language definition and module;
+`und` does not satisfy this authoring obligation. Missing pairs remain visible
+blockers. Family identity and language selection are bounded canonical values,
+and a source upload cannot silently add, remove, or translate a study language.
+
+The Section 2 view projects language controls, family/language accordions,
+editable tables, compact response settings, upload/template actions, and
+coverage. MAIA-2 and TAS-20 English/German are the preset focus; only authorized
+MAIA text is bundled. TAS slots require supplied assets and applicable reuse
+evidence. The wider Inspiration/Phenomenological Control UI is deferred. The
+view never renders or accepts raw master package JSON, and the package
+finalizer owns language-tree construction and definition embedding. Fixed
+demographics and their privacy contract remain unchanged; localization is
+tracked outside this pass.
 
 The Setup language controller replays only an ordered option-ID path through
 the validated package tree. It has no flattened route selector and package
@@ -455,6 +566,14 @@ gamepad sticks supply continuous/absolute values and have no step-size meaning.
 Custom capture observes exactly the next allowed physical action, then validates
 global conflicts before replacing the binding.
 
+Any continuous full-span duration or stepwise hold-repeat demonstration in the
+Setup design preview is a non-authoritative simulator over preview input. It
+does not alter `ResearchInputService`, the browser Run adapter, the worker or
+native monotonic scheduler, input receipts, mailboxes, events, samples, or
+recovery. A future runtime implementation must put movement integration in the
+owning monotonic input/run authority rather than animation frames and must ship
+as a versioned input/settings/package contract.
+
 On Tauri, one Rust `ResearchInputService` owns Setup capture/testing and Run
 input. A fresh input test exercises all four directions and yields a one-use,
 15-minute receipt bound to the canonical binding hash and device epoch. Focus,
@@ -498,6 +617,13 @@ mapping parameters come only from the validated package settings projection. Gri
 visibility, color, geometry, and feedback hiding are presentation state.
 Rendering consumes a snapshot and never supplies research timestamps or
 samples.
+
+The Setup-only responsive Face follows the same renderer rule. It is
+project-authored procedural geometry driven directly by the shared preview x/y
+snapshot. It may not load Photoatlas or participant images, acquire camera or
+microphone input, track or infer a face or affect, communicate remotely, or
+persist personal data. It is never instantiated as Run feedback under the
+current contract.
 
 ## Run and timing boundary
 
@@ -654,6 +780,11 @@ experiment-runtime source is not part of the active tree or artifact closure. It
 recoverable from Playground and Git history only. Build verification must fail
 if those surfaces, assets, routes, permissions, or dependencies re-enter an
 active Research artifact without an explicit charter change.
+
+The authorized Setup design-preview Face is not a restoration of that
+superseded source family. Build guards may allow only the specifically bounded
+project-authored procedural preview module and must continue to reject legacy
+Face/Photoatlas assets, routes, permissions, dependencies, and runtime code.
 
 ## Platform expectations
 

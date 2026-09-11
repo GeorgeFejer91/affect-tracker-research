@@ -45,7 +45,7 @@ pub fn run() {
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
             let workspace = Arc::new(
-                WorkspaceService::new(app_data_dir.clone())
+                WorkspaceService::with_default_workspace(app_data_dir.clone())
                     .map_err(|error| std::io::Error::other(error.message))?,
             );
             let resource_dir = app.path().resource_dir()?;
@@ -155,6 +155,7 @@ pub fn run() {
             research_commands::research_input_status,
             research_commands::research_input_cancel_setup,
             research_commands::research_choose_workspace,
+            research_commands::research_open_workspace_location,
             research_commands::research_workspace_status,
             research_commands::research_load_settings,
             research_commands::research_load_experiment,
@@ -166,6 +167,7 @@ pub fn run() {
             research_commands::research_workspace_media_url,
             research_commands::research_attest_workspace_decode,
             research_commands::research_save_settings,
+            research_commands::research_store_questionnaire_asset,
             research_commands::research_storage_readiness,
             research_commands::research_export_assignment_plan,
             research_commands::research_lsl_readiness,

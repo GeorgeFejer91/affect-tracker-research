@@ -1,9 +1,14 @@
 import { createDefaultResearchSettings } from "./contracts.js";
+import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
-const QUESTIONNAIRE_TEMPLATE_URL = new URL("../../questionnaires/questionnaire-template.csv", import.meta.url).href;
+const QUESTIONNAIRE_TEMPLATE_URLS = Object.freeze({
+  csv: new URL("../../questionnaires/questionnaire-template.csv", import.meta.url).href,
+  txt: new URL("../../questionnaires/questionnaire-template.txt", import.meta.url).href,
+  json: new URL("../../questionnaires/questionnaire-template.json", import.meta.url).href,
+});
 const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
 const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
   algorithmVersion: "language-tree-v1",
@@ -27,10 +32,10 @@ const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
 export const DEFAULT_LANGUAGE_SELECTION_SOURCE = JSON.stringify(DEFAULT_LANGUAGE_SELECTION_TREE, null, 2);
 
 export const COLOR_FIELDS = Object.freeze([
-  Object.freeze({ id: "up", label: "High arousal anchor", value: DEFAULT_COLORS.up }),
-  Object.freeze({ id: "down", label: "Low arousal anchor", value: DEFAULT_COLORS.down }),
-  Object.freeze({ id: "left", label: "Negative valence anchor", value: DEFAULT_COLORS.left }),
-  Object.freeze({ id: "right", label: "Positive valence anchor", value: DEFAULT_COLORS.right }),
+  Object.freeze({ id: "up", label: "High arousal anchor", axisLabel: "High arousal", value: DEFAULT_COLORS.up }),
+  Object.freeze({ id: "down", label: "Low arousal anchor", axisLabel: "Low arousal", value: DEFAULT_COLORS.down }),
+  Object.freeze({ id: "left", label: "Negative valence anchor", axisLabel: "Negative valence", value: DEFAULT_COLORS.left }),
+  Object.freeze({ id: "right", label: "Positive valence anchor", axisLabel: "Positive valence", value: DEFAULT_COLORS.right }),
   Object.freeze({ id: "idle", label: "Idle color", value: DEFAULT_COLORS.idle }),
   Object.freeze({ id: "outline", label: "Outline color", value: DEFAULT_COLORS.outline }),
   Object.freeze({ id: "halo", label: "Halo color", value: DEFAULT_COLORS.halo }),
@@ -48,10 +53,10 @@ export function describeInputToken(token) {
 }
 
 const SECTION_SUMMARIES = Object.freeze({
-  workspace: "Choose a workspace root",
-  experiment: "Portable package, language, identity · 130 Hz",
+  workspace: "Work folder, videos, project JSON",
+  experiment: "Identity and acquisition · 130 Hz",
   stimuli: "Externally ordered video protocol",
-  questionnaires: "Add forms around sessions or blocks",
+  questionnaires: "Languages, demographics, questionnaires",
   input: "Arrow keys · step 0.1",
   visual: "Grid and Flubber",
   advanced: "Outbound LSL and mappings",
@@ -66,115 +71,287 @@ function escapeAttribute(value) {
     .replaceAll(">", "&gt;");
 }
 
-function previewMarkup(label) {
+const INSPIRATION_STATUS_LABELS = Object.freeze({
+  bundled: "Ready to include",
+  reusePermitted: "Reuse source available",
+  nonCommercial: "Non-commercial terms",
+  permissionRequired: "Permission required",
+  verifyTerms: "Verify terms",
+});
+
+function inspirationActionId(entry) {
+  if (entry.id === "maia-2") return "maia-2";
+  if (entry.id === "tas-20") return "tas-20";
+  if (entry.id === "phenomenological-control-scale-10") return "phencon-long";
+  if (entry.id === "phencon-short-adaptation") return "phencon-short";
+  return entry.id;
+}
+
+function inspirationCatalogueMarkup() {
+  return QUESTIONNAIRE_INSPIRATION_CATALOGUE.map((entry) => `
+    <article class="inspiration-entry" data-inspiration-entry data-inspiration-domain="${entry.domain}" data-inspiration-search="${escapeAttribute(`${entry.name} ${entry.shortName}`.toLowerCase())}">
+      <header><div><p class="context-label">${entry.domain === "emotion" ? "Emotion" : "Interoception"}</p><h3>${escapeAttribute(entry.shortName)}</h3><p>${escapeAttribute(entry.name)}</p></div><span class="asset-state" data-state="${entry.reuseStatus}">${INSPIRATION_STATUS_LABELS[entry.reuseStatus]}</span></header>
+      <p>${escapeAttribute(entry.reuseNote)}</p>
+      <p class="field-help">Languages found: ${entry.languageTags.map((language) => language.toUpperCase()).join(" · ")} · Form: ${entry.forms.join(", ")}</p>
+      <div class="button-row"><a class="button-link" href="${entry.sourceUrl}" target="_blank" rel="noreferrer">Open ${escapeAttribute(entry.sourceLabel)}</a><button type="button" data-questionnaire-inspiration-prepare="${inspirationActionId(entry)}">${entry.bundledAssetIds.length ? "Include available assets" : "Prepare asset slots"}</button></div>
+    </article>`).join("");
+}
+
+function previewOverlayMarkup({ includeFace = false } = {}) {
+  const faceMarkup = includeFace ? `
+      <svg data-preview-face class="preview-face" viewBox="0 0 200 200" aria-hidden="true" focusable="false" hidden>
+        <ellipse data-preview-face-head class="preview-face-head" cx="100" cy="100" rx="65" ry="78"></ellipse>
+        <path data-preview-face-brow="left" class="preview-face-brow" d="M55 72 Q72 62 87 72"></path>
+        <path data-preview-face-brow="right" class="preview-face-brow" d="M113 72 Q128 62 145 72"></path>
+        <ellipse data-preview-face-eye="left" class="preview-face-eye" cx="73" cy="91" rx="13" ry="9"></ellipse>
+        <ellipse data-preview-face-eye="right" class="preview-face-eye" cx="127" cy="91" rx="13" ry="9"></ellipse>
+        <circle data-preview-face-pupil="left" class="preview-face-pupil" cx="73" cy="91" r="5"></circle>
+        <circle data-preview-face-pupil="right" class="preview-face-pupil" cx="127" cy="91" r="5"></circle>
+        <path data-preview-face-mouth-shape class="preview-face-mouth-shape" d="M62 128 Q100 152 138 128 Q100 168 62 128 Z"></path>
+        <path data-preview-face-mouth-line class="preview-face-mouth-line" d="M62 128 Q100 152 138 128"></path>
+      </svg>` : "";
   return `
-    <div class="research-preview-stage" role="img" aria-label="${escapeAttribute(label)}">
-      <div
-        class="preview-overlay"
-        data-preview-overlay
-        data-locked="false"
-        aria-hidden="true"
-      >
-        <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
-        <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-          <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
-          <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
-          <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
-          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="25" x2="100" y2="25"></line>
-          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="50" x2="100" y2="50"></line>
-          <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="75" x2="100" y2="75"></line>
-          <rect data-preview-grid-outline class="preview-grid-outline" x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
-          <circle data-preview-grid-cursor class="preview-grid-cursor" cx="50" cy="50" r="4"></circle>
-        </svg>
-        <svg data-preview-flubber class="preview-flubber" viewBox="-1.62 -1.62 3.24 3.24" aria-hidden="true" focusable="false">
-          <path data-preview-flubber-halo class="preview-flubber-halo"></path>
-          <path data-preview-flubber-base class="preview-flubber-base"></path>
-          <path data-preview-flubber-outline class="preview-flubber-outline"></path>
-        </svg>
-      </div>
+    <div
+      class="preview-overlay"
+      data-preview-overlay
+      data-locked="false"
+      aria-hidden="true"
+    >
+      <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
+      <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
+        <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
+        <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
+        <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="25" x2="100" y2="25"></line>
+        <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="50" x2="100" y2="50"></line>
+        <line data-preview-grid-line class="preview-grid-lines" x1="0" y1="75" x2="100" y2="75"></line>
+        <rect data-preview-grid-outline class="preview-grid-outline" x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
+        <circle data-preview-grid-cursor class="preview-grid-cursor" cx="50" cy="50" r="4"></circle>
+      </svg>
+      <svg data-preview-flubber class="preview-flubber" viewBox="-1.62 -1.62 3.24 3.24" aria-hidden="true" focusable="false">
+        <path data-preview-flubber-halo class="preview-flubber-halo"></path>
+        <path data-preview-flubber-base class="preview-flubber-base"></path>
+        <path data-preview-flubber-outline class="preview-flubber-outline"></path>
+      </svg>
+      ${faceMarkup}
     </div>`;
 }
 
-function workspaceSection() {
+function previewMarkup(label, { studio = false } = {}) {
+  const escapedLabel = escapeAttribute(label);
+  if (!studio) {
+    return `
+      <div class="research-preview-stage" role="img" aria-label="${escapedLabel}">
+        ${previewOverlayMarkup()}
+      </div>`;
+  }
+
   return `
-    <p class="section-lead">Choose one parent folder. Affect Research creates or validates its owned research libraries and fixed package asset tree beneath it; no other folder becomes writable research state.</p>
-    <div class="field-grid">
-      <div class="field-block is-wide">
-        <span class="field-label">Parent workspace</span>
-        <output id="workspace-root" class="field-output" data-state="warning">No workspace selected</output>
+    <div class="research-preview-stage research-preview-studio" data-preview-variant="studio" role="group" aria-label="${escapedLabel}">
+      <div class="preview-primary-stage" role="img" aria-label="Selected feedback rendering">
+        ${previewOverlayMarkup({ includeFace: true })}
+        <p class="preview-mode-label">Previewing <span data-preview-mode-label>Flubber</span></p>
       </div>
-    </div>
-    <div class="section-actions">
-      <button id="workspace-choose" type="button" class="primary-action">Select workspace</button>
-      <button id="workspace-renew" type="button" hidden>Renew folder access</button>
-      <button id="workspace-rescan" type="button" disabled>Rescan</button>
-    </div>
-    <ul class="directory-list" aria-label="Workspace folders">
-      <li>stimuli/</li>
-      <li>assets/stimuli/ <span class="field-help">portable package media</span></li>
-      <li>settings/</li>
-      <li>outputs/</li>
-      <li>recovery/</li>
-    </ul>
-    <section class="protocol-import-card" aria-labelledby="package-file-title">
-      <div>
-        <p class="context-label">Portable experiment authority</p>
-        <h3 id="package-file-title">experiment.package.json</h3>
-        <p class="field-help">One strict JSON file owns settings, language routing, questionnaires, manual video order, every ISI, playback policy, and fixed asset identities.</p>
-      </div>
-      <div class="button-row">
-        <button id="package-load" type="button" class="primary-action">Load experiment package</button>
-        <button id="package-generate" type="button">Generate package JSON</button>
-      </div>
-      <output id="package-file-status" class="field-output" data-state="warning">No portable package generated or loaded</output>
-        <p class="field-help">Load reads <code>experiment.package.json</code> from this workspace root; Generate writes it there. Place only its declared videos under <code>assets/stimuli/</code>. Missing, extra, unreadable, or changed files block Start.</p>
-    </section>
-    <section class="protocol-import-card" aria-labelledby="experiment-file-title">
-      <div>
-        <p class="context-label">External protocol authority</p>
-        <h3 id="experiment-file-title">experiment.json</h3>
-        <p class="field-help">Prepare randomization outside Affect Research. The file supplies every participant’s block order, complete-video order, and the ISI after each video.</p>
-      </div>
-      <div class="button-row">
-        <button id="experiment-load" type="button" class="primary-action">Load experiment.json</button>
-        <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
-      </div>
-      <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
-      <p class="field-help">Array order is authoritative. Affect Research never shuffles, balances, rotates, or otherwise reallocates this file.</p>
-    </section>
-    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
-      <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="video-import" type="button" disabled>Import videos</button><button id="video-folder-import" type="button" disabled>Import folder</button></div>
-      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
-    </div>
-    <div class="section-actions">
-      <button id="settings-load" type="button">Load settings.json</button>
-      <button id="settings-save" type="button" disabled>Save settings.json</button>
-    </div>
-    <div class="field-block">
-      <span class="field-label">Interrupted-run recovery</span>
-      <output class="field-output" data-state="ready">Partial ratings are always journaled locally</output>
-      <p class="field-help">Recovery resumes only at a safe stimulus boundary; a partly viewed video restarts from the beginning.</p>
-    </div>
-    <p id="workspace-status" class="status-text" role="status" aria-live="polite">Select a workspace before importing or saving.</p>
-    <div class="table-scroll" aria-label="Stimulus library">
-      <table>
-        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
-        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
-      </table>
+
+      <section class="preview-affect-map" aria-labelledby="preview-affect-map-title">
+        <div class="preview-subsection-heading">
+          <h3 id="preview-affect-map-title">2D affect map</h3>
+          <p>Choose an anchor to edit its color.</p>
+        </div>
+        <div class="preview-affect-map-layout">
+          <button type="button" class="preview-color-anchor anchor-up" data-color-anchor="up" aria-haspopup="dialog" aria-controls="preview-color-dialog">
+            <span class="preview-color-swatch" data-color-anchor-swatch="up" aria-hidden="true"></span><span data-color-anchor-label>High arousal</span>
+          </button>
+          <button type="button" class="preview-color-anchor anchor-left" data-color-anchor="left" aria-haspopup="dialog" aria-controls="preview-color-dialog">
+            <span class="preview-color-swatch" data-color-anchor-swatch="left" aria-hidden="true"></span><span data-color-anchor-label>Negative valence</span>
+          </button>
+          <div class="preview-control-surface" tabindex="0" role="group" aria-label="Response simulator on the valence and arousal color field" aria-describedby="preview-response-simulator-help" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown">
+            <canvas id="main-gradient-canvas" data-preview-control-canvas width="240" height="240" aria-hidden="true"></canvas>
+            <svg data-preview-control-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+              <line data-preview-control-tile-line x1="25" y1="0" x2="25" y2="100"></line>
+              <line data-preview-control-tile-line x1="50" y1="0" x2="50" y2="100"></line>
+              <line data-preview-control-tile-line x1="75" y1="0" x2="75" y2="100"></line>
+              <line data-preview-control-tile-line x1="0" y1="25" x2="100" y2="25"></line>
+              <line data-preview-control-tile-line x1="0" y1="50" x2="100" y2="50"></line>
+              <line data-preview-control-tile-line x1="0" y1="75" x2="100" y2="75"></line>
+              <rect data-preview-control-outline x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
+              <circle data-preview-control-cursor cx="50" cy="50" r="4"></circle>
+            </svg>
+          </div>
+          <button type="button" class="preview-color-anchor anchor-right" data-color-anchor="right" aria-haspopup="dialog" aria-controls="preview-color-dialog">
+            <span class="preview-color-swatch" data-color-anchor-swatch="right" aria-hidden="true"></span><span data-color-anchor-label>Positive valence</span>
+          </button>
+          <button type="button" class="preview-color-anchor anchor-down" data-color-anchor="down" aria-haspopup="dialog" aria-controls="preview-color-dialog">
+            <span class="preview-color-swatch" data-color-anchor-swatch="down" aria-hidden="true"></span><span data-color-anchor-label>Low arousal</span>
+          </button>
+        </div>
+        <div class="preview-simulator-help">
+          <p id="preview-response-simulator-help">Focus the map and use the arrow keys to try the selected response behavior.</p>
+          <button id="preview-response-reset" type="button">Reset to neutral</button>
+        </div>
+      </section>
+
+      <section class="preview-response-settings" aria-labelledby="preview-response-title">
+        <div class="preview-subsection-heading"><h3 id="preview-response-title">Response control</h3></div>
+        <div class="preview-segmented-control" role="group" aria-label="Response preview mode">
+          <button type="button" data-response-preview-mode="continuous" aria-pressed="false">Continuous</button>
+          <button type="button" data-response-preview-mode="stepwise" aria-pressed="true">Stepwise</button>
+        </div>
+        <div data-response-preview-panel="continuous" hidden>
+          <label class="field"><span>Full-span duration</span><div class="range-field"><input id="preview-full-span-duration" type="range" min="250" max="15000" step="250" value="2000"><output for="preview-full-span-duration">2,000 ms</output></div></label>
+          <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
+        </div>
+        <div data-response-preview-panel="stepwise">
+          <label class="field"><span>Step Size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
+          <fieldset class="check-group">
+            <legend>Hold rule</legend>
+            <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
+            <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
+          </fieldset>
+          <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
+          <p class="field-help">Draft preview only: hold behavior and repeat delay are not saved with the experiment. Step size remains part of the saved input settings.</p>
+        </div>
+      </section>
+
+      <section id="preview-quick-appearance" class="preview-quick-appearance" aria-labelledby="preview-appearance-title">
+        <div class="preview-subsection-heading"><h3 id="preview-appearance-title">Appearance</h3></div>
+        <div class="field-grid">
+          <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
+          <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
+          <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
+          <label class="field"><span>Halo size</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only scale around the centered halo.</span></label>
+        </div>
+      </section>
+
+      <details id="preview-advanced-settings" class="inner-disclosure preview-advanced-settings">
+        <summary>Advanced preview settings</summary>
+        <div class="disclosure-content">
+          <p class="field-help">These saved controls refine visibility, position, rendering, colors, and affect mappings.</p>
+          <section aria-labelledby="preview-visibility-title">
+            <h3 id="preview-visibility-title">Visibility and position</h3>
+            <div class="field-grid">
+              <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span><strong>Grid</strong><br><span class="field-help">Show the valence–arousal field.</span></span></label>
+              <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span><strong>Flubber</strong><br><span class="field-help">Show the procedural affect form.</span></span></label>
+              <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
+              <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>
+              <label class="field"><span>Normalized horizontal position</span><input id="visual-position-x" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.x}" required></label>
+              <label class="field"><span>Normalized vertical position</span><input id="visual-position-y" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.y}" required></label>
+            </div>
+          </section>
+          <details class="inner-disclosure" open>
+            <summary>Flubber outline</summary>
+            <div class="disclosure-content field-grid">
+              <label class="check-field"><input id="flubber-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
+              <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="flubber-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.flubber.outlineThickness}"><output for="flubber-outline-thickness">${DEFAULT_SETTINGS.visual.flubber.outlineThickness.toFixed(2)}</output></div></label>
+            </div>
+          </details>
+          <details class="inner-disclosure">
+            <summary>Grid appearance</summary>
+            <div class="disclosure-content field-grid">
+              <label class="field"><span>Grid Line Thickness</span><div class="range-field"><input id="grid-line-thickness" type="range" min="0.25" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.lineThickness}"><output for="grid-line-thickness">${DEFAULT_SETTINGS.visual.grid.lineThickness.toFixed(2)}</output></div></label>
+              <label class="check-field"><input id="grid-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
+              <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="grid-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.outlineThickness}"><output for="grid-outline-thickness">${DEFAULT_SETTINGS.visual.grid.outlineThickness.toFixed(2)}</output></div></label>
+              <label class="field"><span>Cursor Size</span><div class="range-field"><input id="grid-cursor-size" type="range" min="2" max="100" step="1" value="${DEFAULT_SETTINGS.visual.grid.cursorSize}"><output for="grid-cursor-size">${DEFAULT_SETTINGS.visual.grid.cursorSize.toFixed(1)}</output></div></label>
+            </div>
+          </details>
+          <details class="inner-disclosure">
+            <summary>Color &amp; Gradient</summary>
+            <div class="disclosure-content">
+              <p class="field-help">The directional controls around the 2D map select its four anchors. This list also owns idle, outline, halo, and cursor colors.</p>
+              <div class="color-list">${colorRows()}</div>
+            </div>
+          </details>
+          <section aria-labelledby="preview-mapping-title">
+            <h3 id="preview-mapping-title" class="mapping-title">Flubber–Affect Mapping</h3>
+            <p class="field-help">x-axis and y-axis normalize from [−1, 1], radius from [0, 1], and angle from [0°, 360°). Neutral angle is zero. Reverse changes t to 1−t before interpolation.</p>
+            ${MAPPING_FIELDS.map(mappingDisclosure).join("")}
+          </section>
+        </div>
+      </details>
     </div>`;
+}
+
+function folderIconMarkup() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3.75 6.75h6l1.5 2.25h9v8.25a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75Z"></path>
+      <path d="M3.75 9h16.5"></path>
+    </svg>`;
+}
+
+function workspaceSection() {
+  const folderIcon = folderIconMarkup();
+  return `
+    <p class="section-lead">Set one work directory. The video library and project JSON remain fixed inside it; outputs and recovery are managed automatically.</p>
+    <div class="workspace-location-list" aria-label="Project locations">
+      <section class="workspace-location-row" data-workspace-location="workspaceRoot" aria-labelledby="workspace-location-root-title">
+        <div class="workspace-location-copy">
+          <h3 id="workspace-location-root-title">Work directory</h3>
+          <output id="workspace-root" data-state="warning">No work directory set</output>
+        </div>
+        <div class="workspace-location-actions">
+          <button id="workspace-choose" type="button" class="primary-action">Set work directory</button>
+          <button type="button" class="folder-icon-button" data-open-workspace-location="workspaceRoot" aria-label="Open work directory in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
+          <button id="workspace-renew" type="button" hidden>Restore access</button>
+        </div>
+      </section>
+      <section class="workspace-location-row" data-workspace-location="videoLibrary" aria-labelledby="workspace-location-video-title">
+        <div class="workspace-location-copy">
+          <h3 id="workspace-location-video-title">Video library</h3>
+          <p><code>assets/stimuli/</code></p>
+        </div>
+        <div class="workspace-location-actions">
+          <button type="button" data-open-section="stimuli">Manage videos</button>
+          <button type="button" class="folder-icon-button" data-open-workspace-location="videoLibrary" aria-label="Open video library in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
+        </div>
+      </section>
+      <section class="workspace-location-row" data-workspace-location="experimentPackage" aria-labelledby="workspace-location-json-title">
+        <div class="workspace-location-copy">
+          <h3 id="workspace-location-json-title">Project JSON</h3>
+          <p><code>experiment.package.json</code></p>
+          <output id="package-file-status" data-state="warning">No project JSON loaded</output>
+        </div>
+        <div class="workspace-location-actions">
+          <button id="package-load" type="button">Load JSON</button>
+          <button type="button" class="folder-icon-button" data-open-workspace-location="experimentPackage" aria-label="Show project JSON in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
+        </div>
+      </section>
+    </div>
+    <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
 }
 
 function experimentSection() {
   return `
     <p class="section-lead">Experiment identity and participant IDs come from the loaded experiment.json. Sampling remains the one editable acquisition setting.</p>
+    <details class="inner-disclosure">
+      <summary>Advanced file compatibility</summary>
+      <div class="disclosure-content authoring-tools">
+        <section aria-labelledby="experiment-file-title">
+          <div>
+            <p class="context-label">External protocol authority</p>
+            <h3 id="experiment-file-title">experiment.json</h3>
+            <p class="field-help">Prepare randomization outside Affect Research. The file supplies every participant’s block order, complete-video order, and the ISI after each video. Array order is authoritative.</p>
+          </div>
+          <div class="button-row">
+            <button id="experiment-load" type="button">Load experiment.json</button>
+            <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
+          </div>
+          <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
+        </section>
+        <section aria-labelledby="legacy-settings-title">
+          <div>
+            <p class="context-label">Compatibility</p>
+            <h3 id="legacy-settings-title">Legacy settings</h3>
+          </div>
+          <div class="button-row"><button id="settings-load" type="button">Load settings.json</button><button id="settings-save" type="button" disabled>Save settings.json</button></div>
+        </section>
+      </div>
+    </details>
     <div class="field-grid">
       <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
-      <label class="field is-wide"><span>Language selection tree JSON</span><textarea id="package-language-tree" rows="12" maxlength="262144" spellcheck="false" aria-describedby="package-language-help">${escapeAttribute(DEFAULT_LANGUAGE_SELECTION_SOURCE)}</textarea></label>
-      <p id="package-language-help" class="field-help is-wide">Author the complete rooted selection tree here. Every terminal language explicitly lists its ordered <code>questionnaireModuleIds</code>; nested choices, labels, and route order are preserved exactly, with no locale fallback or automatic module filtering.</p>
       <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
       <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
       <div class="field-block is-wide">
@@ -188,6 +365,11 @@ function experimentSection() {
 function stimuliSection() {
   return `
     <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
+    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
+      <p>Drop complete video files or a folder here</p>
+      <div class="button-row"><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
+      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
+    </div>
     <div class="condition-toolbar">
       <div>
         <h3>Declared blocks</h3>
@@ -216,7 +398,13 @@ function stimuliSection() {
         </div>
         <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
       </div>
-    </details>`;
+    </details>
+    <div class="table-scroll stimulus-library" aria-label="Stimulus library">
+      <table>
+        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
+      </table>
+    </div>`;
 }
 
 function inputSection() {
@@ -231,10 +419,9 @@ function inputSection() {
       <span>${label}</span><output data-binding-value="${id}">${describeInputToken(DEFAULT_SETTINGS.input.directions[id])}</output>
     </button>`).join("");
   return `
-    <p class="section-lead">Select a complete preset or capture conflict-free custom actions. Digital controls change state once per physical edge; operating-system key repeat is ignored.</p>
+    <p class="section-lead">Select a complete preset or capture conflict-free custom actions. Digital controls change state once per physical edge; operating-system key repeat is ignored. Set the saved step size and explore draft response behavior in the live preview.</p>
     <div class="field-grid">
       <label class="field"><span>Input Device</span><select id="input-preset">${options}</select></label>
-      <label class="field"><span>Step Size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
     </div>
     <details class="inner-disclosure" open>
       <summary>Custom bindings</summary>
@@ -262,41 +449,28 @@ function inputSection() {
 
 function questionnairesSection() {
   return `
-    <p class="section-lead">Place strict single-choice questionnaires before or after the session, around a block, or after a specific video before or after its ISI. Array order becomes protocol order.</p>
-    <div class="section-actions questionnaire-actions">
-      <button id="questionnaire-import" type="button">Import questionnaire CSV</button>
-      <button type="button" data-bundled-questionnaire="maia-2-de">MAIA-2 · German</button>
-      <button type="button" data-bundled-questionnaire="maia-2-en">MAIA-2 · English</button>
-      <button type="button" data-bundled-questionnaire="tas-20-en">TAS-20 · English</button>
-      <button type="button" data-bundled-questionnaire="ssq-six-item-en">SSQ · 6-item English</button>
-      <button type="button" data-bundled-questionnaire="vr-exp-en">VR experience · English</button>
-      <a id="questionnaire-template-download" class="button-link" href="${QUESTIONNAIRE_TEMPLATE_URL}" download="questionnaire-template.csv">Download CSV template</a>
+    <p class="section-lead">Add the questionnaires participants complete before the video task. Paste items from Excel, then set the answer labels and recorded values.</p>
+    <div class="questionnaire-language-controls">
+      <label class="field"><span>Add a language</span><select id="study-language-add"><option value="de">Deutsch · German</option></select></label>
+      <button id="study-language-add-button" type="button">Add language</button>
     </div>
-    <p class="field-help">The simple CSV uses one row per answer option. Unknown columns, duplicate IDs, ambiguous scores, malformed UTF-8, and oversized files are rejected.</p>
-    <aside class="license-note" aria-labelledby="questionnaire-provenance-title">
-      <h3 id="questionnaire-provenance-title">Questionnaire provenance</h3>
-      <p>The English fixtures reproduce the researcher-supplied wording and response ranges. No reverse scoring, subscales, diagnostic interpretation, or validation status is inferred; review reuse rights and study scoring before deployment.</p>
-    </aside>
-    <div class="questionnaire-layout">
-      <section aria-labelledby="questionnaire-library-title">
-        <div class="subsection-heading"><div><h3 id="questionnaire-library-title">Validated definitions</h3><p>Exact source bytes and normalized content are hashed independently.</p></div></div>
-        <div id="questionnaire-definition-list" class="questionnaire-definition-list" aria-live="polite"><p class="empty-state">No questionnaire definitions added.</p></div>
-      </section>
-      <section aria-labelledby="questionnaire-sequence-title">
-        <div class="subsection-heading"><div><h3 id="questionnaire-sequence-title">Protocol modules</h3><p>Drag-free ordered controls keep the sequence keyboard accessible.</p></div></div>
-        <ol id="questionnaire-module-list" class="questionnaire-module-list"><li class="empty-state">Add a validated definition to place it in the protocol.</li></ol>
-      </section>
+    <ul id="study-language-list" class="study-language-list"></ul>
+    <p id="study-language-mode-note" class="field-help">Each questionnaire needs its own version in every selected language.</p>
+    <div class="questionnaire-add-toolbar" aria-label="Add a pre-task questionnaire">
+      <button id="questionnaire-add-blank" type="button" class="primary-action">Add questionnaire</button>
+      <button type="button" data-questionnaire-preset="maia-2">Add MAIA-2</button>
+      <button type="button" data-questionnaire-preset="tas-20">Add TAS-20</button>
     </div>
-    <details class="inner-disclosure" open>
-      <summary>Participant sequence preview</summary>
-      <div class="disclosure-content">
-        <div class="plan-toolbar">
-          <div class="field-block"><span class="field-label">Protocol plan hash</span><output id="protocol-plan-hash" class="hash-value">Pending valid questionnaire sequence</output></div>
-          <output id="protocol-step-summary" class="field-help">No participant protocol is resolved.</output>
-        </div>
-        <ol id="protocol-sequence-preview" class="protocol-sequence-preview"><li class="empty-state">The selected participant’s ordered forms and videos appear after planning succeeds.</li></ol>
-      </div>
-    </details>`;
+    <p class="field-help questionnaire-preset-note">MAIA-2 includes English and German items. TAS-20 opens a table for your authorized items.</p>
+    <div id="questionnaire-sheet-list" class="questionnaire-sheet-list"></div>
+    <output id="questionnaire-coverage-status" class="field-output" aria-live="polite">No questionnaires added.</output>
+    <output id="questionnaire-import-status" class="field-help" aria-live="polite"></output>
+    <p class="field-help">Participant details (age, gender and handedness) remain included before the task.</p>
+    <input id="questionnaire-sheet-file" type="file" accept=".csv,.txt,.json" hidden>
+    <dialog id="questionnaire-sheet-preview" class="research-dialog questionnaire-sheet-preview" aria-labelledby="questionnaire-sheet-preview-title">
+      <div class="dialog-heading"><h2 id="questionnaire-sheet-preview-title">Questionnaire preview</h2><button type="button" data-sheet-preview-close aria-label="Close questionnaire preview">Close</button></div>
+      <div id="questionnaire-sheet-preview-content"></div>
+    </dialog>`;
 }
 
 function colorRows() {
@@ -311,51 +485,8 @@ function colorRows() {
 
 function visualSection() {
   return `
-    <p class="section-lead">Configure the in-application feedback shared by Setup and Run. The preview can be dragged while unlocked; Run always freezes its normalized position.</p>
-    <div class="field-grid">
-      <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span><strong>Grid</strong><br><span class="field-help">Show the valence–arousal field.</span></span></label>
-      <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span><strong>Flubber</strong><br><span class="field-help">Show the procedural affect form.</span></span></label>
-      <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
-      <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
-      <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
-      <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>
-      <label class="field"><span>Normalized horizontal position</span><input id="visual-position-x" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.x}" required></label>
-      <label class="field"><span>Normalized vertical position</span><input id="visual-position-y" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.y}" required></label>
-    </div>
-    <details class="inner-disclosure" open>
-      <summary>Flubber</summary>
-      <div class="disclosure-content field-grid">
-        <label class="check-field"><input id="flubber-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
-        <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="flubber-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.flubber.outlineThickness}"><output for="flubber-outline-thickness">${DEFAULT_SETTINGS.visual.flubber.outlineThickness.toFixed(2)}</output></div></label>
-        <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span>Show Halo</span></label>
-      </div>
-    </details>
-    <details class="inner-disclosure">
-      <summary>Grid</summary>
-      <div class="disclosure-content field-grid">
-        <label class="field"><span>Grid Line Thickness</span><div class="range-field"><input id="grid-line-thickness" type="range" min="0.25" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.lineThickness}"><output for="grid-line-thickness">${DEFAULT_SETTINGS.visual.grid.lineThickness.toFixed(2)}</output></div></label>
-        <label class="check-field"><input id="grid-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
-        <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="grid-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.outlineThickness}"><output for="grid-outline-thickness">${DEFAULT_SETTINGS.visual.grid.outlineThickness.toFixed(2)}</output></div></label>
-        <label class="field"><span>Cursor Size</span><div class="range-field"><input id="grid-cursor-size" type="range" min="2" max="100" step="1" value="${DEFAULT_SETTINGS.visual.grid.cursorSize}"><output for="grid-cursor-size">${DEFAULT_SETTINGS.visual.grid.cursorSize.toFixed(1)}</output></div></label>
-      </div>
-    </details>
-    <details class="inner-disclosure">
-      <summary>Color & Gradient</summary>
-      <div class="disclosure-content">
-        <p class="field-help">The four directional anchors define the valence–arousal field. This section is the sole owner of Halo Color.</p>
-        <figure class="gradient-editor" aria-labelledby="main-gradient-caption">
-          <figcaption id="main-gradient-caption">Main Gradient · valence–arousal anchors</figcaption>
-          <div class="gradient-map">
-            <canvas id="main-gradient-canvas" width="144" height="144" role="img" aria-label="Current valence–arousal color field"></canvas>
-            <button type="button" class="gradient-anchor anchor-up" data-color-anchor="up">High arousal</button>
-            <button type="button" class="gradient-anchor anchor-down" data-color-anchor="down">Low arousal</button>
-            <button type="button" class="gradient-anchor anchor-left" data-color-anchor="left">Negative valence</button>
-            <button type="button" class="gradient-anchor anchor-right" data-color-anchor="right">Positive valence</button>
-          </div>
-        </figure>
-        <div class="color-list">${colorRows()}</div>
-      </div>
-    </details>`;
+    <p class="section-lead">Appearance controls now sit beside the live renderer so changes remain visible while you work. The same saved settings are used during Run.</p>
+    <button type="button" data-preview-focus="appearance" aria-controls="preview-quick-appearance">Go to appearance controls</button>`;
 }
 
 function mappingDisclosure(mapping) {
@@ -378,7 +509,7 @@ function mappingDisclosure(mapping) {
 
 function advancedSection() {
   return `
-    <p class="section-lead">Advanced settings remain part of the same frozen protocol. LSL is outbound and Windows-only; every Flubber mapping derives from one coordinate snapshot.</p>
+    <p class="section-lead">LSL remains part of the frozen protocol and is outbound and Windows-only. Advanced feedback settings are available beside the live renderer.</p>
     <details class="inner-disclosure" open>
       <summary>LSL</summary>
       <div class="disclosure-content">
@@ -392,16 +523,16 @@ function advancedSection() {
         <p id="lsl-capability" class="capability-note" role="status">Browser mode preserves these values but cannot start while LSL is enabled.</p>
       </div>
     </details>
-    <div aria-labelledby="mapping-title">
-      <h3 id="mapping-title" class="mapping-title">Flubber–Affect Mapping</h3>
-      <p class="field-help">x-axis and y-axis normalize from [−1, 1], radius from [0, 1], and angle from [0°, 360°). Neutral angle is zero. Reverse changes t to 1−t before interpolation.</p>
-      ${MAPPING_FIELDS.map(mappingDisclosure).join("")}
-    </div>`;
+    <button type="button" data-preview-focus="advanced" aria-controls="preview-advanced-settings">Go to advanced preview settings</button>`;
 }
 
 function reviewSection() {
   return `
     <p class="section-lead">Start is fail-closed. Review the resolved plan, privacy-safe participant identity, local outputs, input receipt, media verification, timing capability, and platform-specific LSL state.</p>
+    <section class="package-finalization" aria-labelledby="package-finalization-title">
+      <div><p class="context-label">Final setup step</p><h3 id="package-finalization-title">Build the experiment package</h3><p>After all languages, questionnaire assets, videos, and settings are ready, create the internal project package. Its raw JSON stays behind this interface.</p></div>
+      <button id="package-generate" type="button" class="primary-action">Build project package</button>
+    </section>
     <ul id="preflight-list" class="preflight-list" aria-label="Experiment preflight checks"></ul>
     <details class="inner-disclosure" open>
       <summary>Resolved schedule and output</summary>
@@ -460,6 +591,7 @@ function reviewSection() {
       </div>
       <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
     </section>
+    ${sectionConfirmationMarkup(SETUP_SECTIONS[SETUP_SECTIONS.length - 1], SETUP_SECTIONS.length - 1)}
     <div class="start-bar">
       <p id="start-status" role="status" aria-live="polite">Resolve all blocking preflight items.</p>
       <button id="start-experiment" type="button" class="primary-action" disabled>Start experiment / session</button>
@@ -477,10 +609,25 @@ const SECTION_CONTENT = Object.freeze({
   review: reviewSection,
 });
 
+function sectionConfirmationMarkup(section, index) {
+  const isLast = index === SETUP_SECTIONS.length - 1;
+  return `
+    <div class="setup-section-confirmation">
+      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed yet. Confirm once to mark this section reviewed.</p>
+      <button
+        class="setup-section-confirm-button"
+        type="button"
+        data-confirm-section="${section.id}"
+        data-review-state="pending"
+        aria-describedby="setup-confirmation-status-${section.id}"
+      >${isLast ? "Confirm review" : "Confirm section"}</button>
+    </div>`;
+}
+
 function accordionMarkup(section, index) {
   const expanded = index === 0;
   return `
-    <section class="setup-accordion" data-setup-section="${section.id}">
+    <section class="setup-accordion" data-setup-section="${section.id}" data-reviewed="false">
       <h2 class="setup-accordion-heading">
         <button
           class="setup-accordion-trigger"
@@ -493,6 +640,7 @@ function accordionMarkup(section, index) {
           <span class="section-number">${index + 1}</span>
           <span class="section-title">${section.label}</span>
           <span class="section-summary" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</span>
+          <span class="section-review-status" data-section-review-status="${section.id}"><span data-section-review-check="${section.id}" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="${section.id}">Not reviewed</span></span>
           <span class="section-chevron" aria-hidden="true">${expanded ? "−" : "+"}</span>
         </button>
       </h2>
@@ -501,8 +649,9 @@ function accordionMarkup(section, index) {
         id="setup-panel-${section.id}"
         role="region"
         aria-labelledby="setup-trigger-${section.id}"
-        ${expanded ? "" : "hidden"}
-      >${SECTION_CONTENT[section.id]()}</div>
+        data-motion-state="${expanded ? "open" : "closed"}"
+        ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner">${SECTION_CONTENT[section.id]()}${section.id === "review" ? "" : sectionConfirmationMarkup(section, index)}</div></div></div>
     </section>`;
 }
 
@@ -520,24 +669,29 @@ export function renderResearchUiMarkup(surface = "browser") {
       </header>
       <main>
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
-          <div class="setup-layout">
-            <form id="research-settings-form" class="setup-pane" novalidate>
-              <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 ready</output></div>
+          <form id="research-settings-form" class="setup-layout" novalidate>
+            <div class="setup-pane">
+              <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 reviewed · 0 ready</output></div>
               ${SETUP_SECTIONS.map(accordionMarkup).join("")}
-            </form>
+            </div>
             <aside class="preview-pane" aria-labelledby="preview-title">
               <header class="preview-header">
                 <div><h2 id="preview-title">Live feedback preview</h2><p>Presentation only. Sampling uses the run scheduler.</p></div>
-                <div class="preview-coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
+                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode">
+                  <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
+                  <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
+                  <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+                </div>
               </header>
-              ${previewMarkup("Live Grid and Flubber settings preview")}
+              ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
+              <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
               <footer class="preview-footer">
                 <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
                 <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
                 <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
               </footer>
             </aside>
-          </div>
+          </form>
         </section>
         <section class="run-mode" data-mode-panel="run" aria-label="Running the Experiment" hidden>
           <header class="run-header">
@@ -593,10 +747,24 @@ export function renderResearchUiMarkup(surface = "browser") {
     <input id="experiment-file-input" type="file" accept="application/json,.json" hidden>
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
     <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
-    <input id="questionnaire-file-input" type="file" accept="text/csv,.csv" hidden>
+    <input id="questionnaire-file-input" type="file" accept="text/csv,text/plain,application/json,.csv,.txt,.json" hidden>
     <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
       <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
       <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
+    </dialog>
+    <dialog id="preview-color-dialog" aria-labelledby="preview-color-dialog-title" aria-describedby="preview-color-status">
+      <div class="dialog-content">
+        <h2 id="preview-color-dialog-title">Choose an affect color</h2>
+        <div class="field-grid">
+          <label class="field"><span>Color map</span><input id="preview-color-picker" type="color" value="${DEFAULT_COLORS.up}"></label>
+          <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
+          <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
+        </div>
+        <p id="preview-color-label-help" class="field-help">Display alias for this setup session only. The saved valence/arousal axis identity does not change.</p>
+        <p id="preview-color-status" class="status-text" role="status" aria-live="polite">Editing the selected directional anchor.</p>
+        <p id="preview-color-error" class="field-error" role="alert" hidden>Enter a six-digit hexadecimal color.</p>
+      </div>
+      <div class="dialog-actions"><button id="preview-color-reset" type="button">Reset</button><button id="preview-color-cancel" type="button">Cancel</button><button id="preview-color-apply" type="button" class="primary-action">Apply color</button></div>
     </dialog>
     <dialog id="stop-early-dialog" aria-labelledby="stop-early-title">
       <div class="dialog-content"><h2 id="stop-early-title">Stop this attempt early?</h2><p>A controlled stop finalizes an explicitly partial result and cannot be resumed. Accepted samples and events are retained. Only an interrupted, recoverable attempt restarts its current video from the beginning.</p></div>
@@ -613,6 +781,20 @@ export function renderResearchUiMarkup(surface = "browser") {
     <dialog id="questionnaire-preview-dialog" aria-labelledby="questionnaire-preview-title">
       <div class="dialog-content"><p class="context-label">Questionnaire preview</p><h2 id="questionnaire-preview-title">Questionnaire</h2><p id="questionnaire-preview-instructions"></p><div id="questionnaire-preview-items" class="questionnaire-preview-items"></div><p id="questionnaire-preview-attribution" class="field-help"></p></div>
       <div class="dialog-actions"><button id="questionnaire-preview-close" type="button" class="primary-action">Close preview</button></div>
+    </dialog>
+    <dialog id="questionnaire-inspiration-dialog" class="inspiration-dialog" aria-labelledby="questionnaire-inspiration-title">
+      <div class="dialog-content">
+        <p class="context-label">Research asset library</p>
+        <h2 id="questionnaire-inspiration-title">Questionnaire inspiration</h2>
+        <p>Explore commonly used emotion and interoception measures. “Publicly available” and “permission to redistribute” are different; use the status and linked source before adding instrument wording.</p>
+        <div class="inspiration-toolbar">
+          <label class="field"><span>Find a measure</span><input id="questionnaire-inspiration-search" type="search" autocomplete="off" placeholder="e.g. interoception or MAIA"></label>
+          <label class="field"><span>Domain</span><select id="questionnaire-inspiration-domain"><option value="all">All relevant measures</option><option value="emotion">Emotion</option><option value="interoception">Interoception</option></select></label>
+        </div>
+        <div id="questionnaire-inspiration-list" class="inspiration-list">${inspirationCatalogueMarkup()}</div>
+        <p id="questionnaire-inspiration-empty" class="empty-state" hidden>No measures match this filter.</p>
+      </div>
+      <div class="dialog-actions"><button id="questionnaire-inspiration-close" type="button" class="primary-action">Close</button></div>
     </dialog>
     <dialog id="participant-language-dialog" aria-labelledby="participant-language-title" aria-describedby="participant-language-context participant-language-error">
       <div class="dialog-content participant-language-dialog-content">

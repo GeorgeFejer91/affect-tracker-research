@@ -1,0 +1,52 @@
+{
+  "format_version": "questionnaire-json-v1",
+  "questionnaire_id": "example-questionnaire",
+  "questionnaire_version": "1",
+  "title": "Replace with questionnaire title",
+  "language": "en",
+  "instructions": "Replace with concise participant instructions.",
+  "attribution": "Replace with the questionnaire source, citation, license, and translation attribution.",
+  "items": [
+    {
+      "item_id": "item-01",
+      "prompt": "Replace with the first prompt.",
+      "required": true,
+      "subscale": "Example scale",
+      "options": [
+        {
+          "option_id": "never",
+          "option_label": "Never",
+          "score_value": 0
+        },
+        {
+          "option_id": "sometimes",
+          "option_label": "Sometimes",
+          "score_value": 1
+        },
+        {
+          "option_id": "often",
+          "option_label": "Often",
+          "score_value": 2
+        }
+      ]
+    },
+    {
+      "item_id": "item-02",
+      "prompt": "Replace with an optional second prompt.",
+      "required": false,
+      "subscale": null,
+      "options": [
+        {
+          "option_id": "no",
+          "option_label": "No",
+          "score_value": null
+        },
+        {
+          "option_id": "yes",
+          "option_label": "Yes",
+          "score_value": null
+        }
+      ]
+    }
+  ]
+}

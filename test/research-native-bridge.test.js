@@ -1248,6 +1248,8 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   assert.match(entrySource, /bootstrapResearchSurface\(\{[\s\S]*surface: "tauri",[\s\S]*initializeRuntime: bootNativeBridge/u);
   for (const command of [
     "research_choose_workspace",
+    "research_open_workspace_location",
+    "research_store_questionnaire_asset",
     "research_rescan_stimuli",
     "research_import_stimuli",
     "research_native_media_capability",
@@ -1269,6 +1271,8 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
     "research_finish_run",
     "research_report_media_failure",
   ]) assert.match(source, new RegExp(`"${command}"`, "u"));
+  assert.match(source, /const WORKSPACE_LOCATIONS = new Set\(\["workspaceRoot", "videoLibrary", "experimentPackage"\]\)/u);
+  assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
   assert.match(source, /selectionEnabled/u);
   assert.match(source, /playbackMode/u);
   assert.match(source, /let decodeQualification = "attestedUnqualified"/u);

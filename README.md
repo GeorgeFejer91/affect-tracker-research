@@ -7,6 +7,14 @@
 
 Affect Research is a local-first instrument for continuous valence–arousal ratings during complete video stimuli. The active product deliberately has two modes: **Setting Up the Experiment** and **Running the Experiment**.
 
+Those modes provide two functions: the **Affect Tracker Designer** lets a
+researcher choose settings, define the video library/manual plan, and build
+questionnaires through UI; its main finished output is one unified experiment
+JSON file. The **Experiment Runner** takes that finished file for acquisition
+and monitoring. Researchers are not expected to write or edit master JSON.
+The current pass focuses on Designer Section 2; Runner and other-section work
+is tracked in the [future-agent checklist](./for-ai/45-FUTURE-AGENT-CHECKLIST.md).
+
 This repository is the focused Research lineage. The complete feature-rich application and its full Git history are preserved in [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground), with the frozen application deployed at <https://GeorgeFejer91.github.io/affect-tracker-playground/>.
 
 ## Reproducibility checkpoint
@@ -25,17 +33,29 @@ Playground `main` has exactly one checkpoint descendant: repository-relocation c
 The approved target is an ordered, keyboard-accessible Setup instrument with a persistent live preview:
 
 1. Workspace & Libraries
-2. Experiment
+2. Languages & Study Assets
 3. Experiment Plan & Stimuli
-4. Questionnaires & Sequence
+4. Experiment
 5. Controller / Input Device
 6. Visual Feedback
 7. Advanced
 8. Review & Start
 
-Randomization is prepared outside the app. The target Setup workflow loads one
-strict canonical, self-hashed `experiment.package.json`
-(`ExperimentPackageV1`) file as the sole run-defining authority. It explicitly
+Section 2 centers on a compact spreadsheet-like questionnaire editor. Select
+study languages, add a questionnaire family, and edit one accordion/table per
+language. Paste item prompts and numeric response codes from Excel, edit
+participant-visible labels separately, and set option count and required/
+optional responses. New questionnaires are placed before the video task. If a questionnaire
+family is requested, every selected study language needs its own matching
+definition/module before finalization; there is no silent translation or
+language fallback.
+
+The Designer target compiles one strict canonical, self-hashed
+`experiment.package.json` (`ExperimentPackageV1`) as its final output, and the
+Runner loads it as the sole run-defining authority. Existing finished packages
+may be loaded for reuse; external JSON imports are compatibility paths, not
+the normal design workflow. Scientific randomization decisions remain the
+researcher's responsibility. The package explicitly
 contains all settings, the serialized `complete-video-v1` playback policy, the
 closed asset manifest under fixed `assets/stimuli/`,
 complete manual participant/block/video order and each video's `isiAfterMs`, a
@@ -51,11 +71,22 @@ attempt restores its exact hash-bound route without asking again, while a new
 participant, new attempt, cancel, rejected Start, or completion clears it.
 
 The current [`experiment.json` template](./site/experiment-template.json),
-portable settings files, and questionnaire CSVs are transitional authoring/
-import inputs. They must be converted with an explicit report into one complete
-package and never remain parallel runtime authorities. Historical Williams/
+portable settings files, and standardized questionnaire CSV, tab-delimited TXT,
+or JSON documents are transitional authoring/import inputs. The three
+questionnaire adapters normalize through the canonical 14-column
+`questionnaire-csv-v1` contract, preserve source receipts, and embed the
+resulting canonical definition in one complete package. The source document
+never remains a parallel runtime authority, and raw package JSON stays behind
+the UI even during finalization; the user receives the finished file rather
+than an editor for its internals. Historical Williams/
 cyclic `balanced-v1` plans and current V3 external-experiment records remain
 readable in their original schema versions but are not new package contracts.
+
+Researcher-supplied questionnaire source documents are retained as
+content-addressed authoring assets beneath
+`assets/questionnaires/<family>/<language>/`. That source library is separate
+from the closed runtime video manifest beneath `assets/stimuli/`; Run uses the
+canonical questionnaire definitions embedded in the package.
 
 The target Run mode freezes exact package bytes/full-byte/self hashes, derived
 settings/asset-manifest/participant-assignment/protocol hashes, selected terminal language,
@@ -109,8 +140,8 @@ Branch `research/video-protocol-v1` contains the implementation candidate:
 isolated Research-only Pages and desktop build boundaries, strict browser/Rust
 historical contracts and canonical hashes, transitional strict external-
 experiment resolution, the
-two-mode UI, browser worker sampling and recovery persistence, a strict
-questionnaire CSV/protocol subsystem, narrow Tauri workspace/run modules, and a
+two-mode UI, browser worker sampling and recovery persistence, strict
+questionnaire CSV/TXT/JSON authoring adapters and protocol subsystem, narrow Tauri workspace/run modules, and a
 Rust-owned native input service. On Windows the service exposes keyboard, mouse-button,
 wheel, and bounded Pointer Grid input; gamepad D-pad/stick/custom-button presets
 become available only when the isolated XInput backend starts successfully.
@@ -166,31 +197,30 @@ the native runtime or completing a desktop build is not playback qualification.
 
 ### Questionnaire authoring status
 
-The reusable [`questionnaire-csv-v1` template](./site/questionnaires/questionnaire-template.csv)
-uses one row per answer option for closed single-choice/Likert instruments.
-Researchers can import validated CSVs,
-author modules before/after the session or a selected block and after a selected
-video before or after its ISI, embed language-tagged or `und` definitions,
-reorder them without drag-only controls, and preview the resolved
-participant/language sequence. Each terminal language explicitly lists its
-ordered questionnaire module IDs; package compilation uses that exact list and
-never falls back by locale or definition language. A runnable package embeds
-those definitions and hooks; CSV remains an authoring input. The bundled
-[German MAIA-2 definition](./site/questionnaires/maia-2-de.csv) contains 37
-items with source, attribution, and scoring metadata. The repository also
-bundles four English researcher-supplied authoring candidates:
-[VR Experience](./site/questionnaires/vr-exp-en.csv),
-[MAIA-2](./site/questionnaires/maia-2-en.csv), the supplied
-[six-item SSQ](./site/questionnaires/ssq-six-item-en.csv), and
-[TAS-20](./site/questionnaires/tas-20-en.csv). Each preserves the supplied
-wording, response labels, numeric response values, and attribution to the Max
-Planck Institute for Human Brain and Cognitive Sciences, Department of
-Neurology, Stephanstrasse 1a, 04103 Leipzig, Germany. No scoring or subscale interpretation was supplied for these four
-candidates. In particular, the TAS-20 fixture does not infer reverse scoring,
-subscales, totals, thresholds, or diagnostic meaning. No TAS-20 rights/reuse
-proof was supplied, so approval and recording of that evidence is an explicit
-pre-deployment gate. Bundling a candidate records its provenance; it is not
-instrument validation or licensing authorization.
+Section 2 keeps downloadable [CSV](./site/questionnaires/questionnaire-template.csv),
+[tab-delimited TXT](./site/questionnaires/questionnaire-template.txt), and
+[JSON](./site/questionnaires/questionnaire-template.json) templates for the
+same closed single-choice/Likert questionnaire model as secondary ways to
+populate the spreadsheet editor. Direct edits and paste compile through the
+same canonical `questionnaire-csv-v1` boundary. Per-language accordions expose
+prompts and recorded codes, separate response labels, option count, and
+required/optional items. Numeric codes use the existing `scoreValue` field,
+including researcher-chosen reverse coding. New editor modules run before the
+session; existing other-placement contracts keep their meanings. Unsaved,
+invalid, or missing language variants block package finalization.
+
+The preset focus is MAIA-2 and TAS-20 in English and German. Authorized MAIA
+assets can preload with exact attribution, translation, and scoring provenance
+retained. TAS-20 is a preparation slot requiring supplied authorized files;
+its retained English source fixture is excluded from distributions, and no
+German asset is supplied. Broad Inspiration/Phenomenological Control controls
+are deferred from the simplified section. Public availability or a slot never
+grants redistribution rights.
+
+Label repetition above every item, every 5 items, or every 10 items is a
+clearly labelled design preview. It is not persisted by current v1 or used by
+the Runner; a future versioned contract and participant-renderer pass is
+tracked in the checklist. The current Section 2 pass changes no Runner behavior.
 
 The current Chromium external-protocol execution path predates the package
 authority and is transitional, not experiment-use evidence. Tauri can load and
@@ -262,7 +292,8 @@ Names are transient and are reduced before persistence to a two-grapheme
 participant code: the last grapheme of the first name followed by the first
 grapheme of the last name. The selected package root contains canonical package
 bytes as `experiment.package.json`, fixed `assets/stimuli/`, `outputs/`, and
-`recovery/`; legacy authoring
+`recovery/`, plus content-addressed questionnaire source files beneath
+`assets/questionnaires/<family>/<language>/`; legacy authoring
 files are not runtime authority. Browser state uses the isolated
 `affect-research/v1` namespace only for locks/journals/recovery and cannot fill
 package fields. The desktop retains bundle ID

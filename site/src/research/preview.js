@@ -5,10 +5,13 @@ import {
   createProfiles,
   createProjectionOffsets,
 } from "../math.js";
+import { createResponsiveFaceGeometry } from "./responsive-face.js";
 
 const profiles = createProfiles();
 const offsets = createProjectionOffsets("affect-research-v1-preview");
 const TWO_PI = Math.PI * 2;
+const PREVIEW_MODES = new Set(["legacy", "flubber", "grid", "face"]);
+const RESPONSE_MODES = new Set(["continuous", "stepwise"]);
 const DEFAULT_COLORS = Object.freeze({
   up: "#f2c94c",
   down: "#2f80ed",
@@ -29,6 +32,14 @@ function normalizeHex(value, fallback) {
   return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
 }
 
+function setElementHidden(element, hidden) {
+  if (element instanceof HTMLElement) {
+    element.hidden = hidden;
+  } else if (element instanceof SVGElement) {
+    element.toggleAttribute("hidden", hidden);
+  }
+}
+
 function normalizedState(source = {}) {
   const colors = source.colors ?? {};
   const flubber = source.flubber ?? {};
@@ -47,6 +58,8 @@ function normalizedState(source = {}) {
       y: clamp(finite(position.y, 0.5), 0, 1),
     },
     lockPosition: source.lockPosition === true,
+    displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
+    responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
     colors: {
       up: normalizeHex(colors.up, DEFAULT_COLORS.up),
       down: normalizeHex(colors.down, DEFAULT_COLORS.down),
@@ -61,6 +74,7 @@ function normalizedState(source = {}) {
       showOutline: flubber.showOutline !== false,
       outlineThickness: clamp(finite(flubber.outlineThickness, 2), 0, 20),
       showHalo: flubber.showHalo !== false,
+      haloSizePercent: clamp(finite(flubber.haloSizePercent, 100), 100, 240),
     },
     grid: {
       lineThickness: clamp(finite(grid.lineThickness, 1), 0.25, 20),
@@ -119,6 +133,7 @@ export function createResearchPreview(root, options = {}) {
   }
 
   const overlay = stage.querySelector("[data-preview-overlay]");
+  const primaryStage = stage.querySelector(".preview-primary-stage") ?? stage;
   const gridCanvas = stage.querySelector("[data-preview-grid-canvas]");
   const gridSvg = stage.querySelector("[data-preview-grid]");
   const gridLines = [...stage.querySelectorAll("[data-preview-grid-line]")];
@@ -128,6 +143,28 @@ export function createResearchPreview(root, options = {}) {
   const flubberBase = stage.querySelector("[data-preview-flubber-base]");
   const flubberOutline = stage.querySelector("[data-preview-flubber-outline]");
   const flubberHalo = stage.querySelector("[data-preview-flubber-halo]");
+  const controlCanvas = stage.querySelector("[data-preview-control-canvas]");
+  const controlGrid = stage.querySelector("[data-preview-control-grid]");
+  const controlTileLines = [...stage.querySelectorAll("[data-preview-control-tile-line]")];
+  const controlOutline = stage.querySelector("[data-preview-control-outline]");
+  const controlCursor = stage.querySelector("[data-preview-control-cursor]");
+  const faceSvg = stage.querySelector("[data-preview-face]");
+  const faceHead = stage.querySelector("[data-preview-face-head]");
+  const faceBrows = {
+    left: stage.querySelector('[data-preview-face-brow="left"]'),
+    right: stage.querySelector('[data-preview-face-brow="right"]'),
+  };
+  const faceEyes = {
+    left: stage.querySelector('[data-preview-face-eye="left"]'),
+    right: stage.querySelector('[data-preview-face-eye="right"]'),
+  };
+  const facePupils = {
+    left: stage.querySelector('[data-preview-face-pupil="left"]'),
+    right: stage.querySelector('[data-preview-face-pupil="right"]'),
+  };
+  const faceMouthShape = stage.querySelector("[data-preview-face-mouth-shape]");
+  const faceMouthLine = stage.querySelector("[data-preview-face-mouth-line]");
+  const studio = stage.getAttribute("data-preview-variant") === "studio";
 
   if (!(overlay instanceof HTMLElement) || !(gridCanvas instanceof HTMLCanvasElement)
     || !(gridSvg instanceof SVGElement) || !(gridCursor instanceof SVGElement)
@@ -144,7 +181,7 @@ export function createResearchPreview(root, options = {}) {
   let draggingPointer = null;
 
   function setPositionFromPointer(event) {
-    const bounds = stage.getBoundingClientRect();
+    const bounds = primaryStage.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
     const position = {
       x: clamp((event.clientX - bounds.left) / bounds.width, 0, 1),
@@ -160,9 +197,14 @@ export function createResearchPreview(root, options = {}) {
     if (fingerprint !== paletteFingerprint) {
       paletteFingerprint = fingerprint;
       drawAffectField(gridCanvas, state.colors);
+      if (controlCanvas instanceof HTMLCanvasElement) drawAffectField(controlCanvas, state.colors);
     }
 
-    overlay.hidden = state.hideFeedback || (!state.gridVisible && !state.flubberVisible);
+    const outputMode = studio ? state.displayMode : "legacy";
+    const gridVisible = outputMode === "grid" || (outputMode === "legacy" && state.gridVisible);
+    const flubberVisible = outputMode === "flubber" || (outputMode === "legacy" && state.flubberVisible);
+    const faceVisible = outputMode === "face";
+    overlay.hidden = state.hideFeedback || (!gridVisible && !flubberVisible && !faceVisible);
     overlay.dataset.locked = String(state.lockPosition);
     overlay.style.setProperty("--overlay-left", `${state.position.x * 100}%`);
     overlay.style.setProperty("--overlay-top", `${state.position.y * 100}%`);
@@ -171,27 +213,68 @@ export function createResearchPreview(root, options = {}) {
     overlay.style.setProperty("--outline-color", state.colors.outline);
     overlay.style.setProperty("--halo-color", state.colors.halo);
     overlay.style.setProperty("--cursor-color", state.colors.cursor);
+    stage.style.setProperty("--cursor-color", state.colors.cursor);
 
-    gridCanvas.hidden = !state.gridVisible;
-    gridSvg.hidden = !state.gridVisible;
-    flubberSvg.hidden = !state.flubberVisible;
+    setElementHidden(gridCanvas, !gridVisible);
+    setElementHidden(gridSvg, !gridVisible);
+    setElementHidden(flubberSvg, !flubberVisible);
+    setElementHidden(faceSvg, !faceVisible);
     for (const line of gridLines) {
       line.style.strokeWidth = String(state.grid.lineThickness);
     }
     if (gridOutline instanceof SVGElement) {
-      gridOutline.hidden = !state.grid.showOutline;
+      setElementHidden(gridOutline, !state.grid.showOutline);
       gridOutline.style.strokeWidth = String(state.grid.outlineThickness);
     }
     gridCursor.setAttribute("cx", String(((state.x + 1) / 2) * 100));
     gridCursor.setAttribute("cy", String((1 - (state.y + 1) / 2) * 100));
     gridCursor.setAttribute("r", String(state.grid.cursorSize));
-    flubberOutline.hidden = !state.flubber.showOutline;
+    setElementHidden(flubberOutline, !state.flubber.showOutline);
     flubberOutline.style.strokeWidth = String(state.flubber.outlineThickness);
-    flubberHalo.hidden = !state.flubber.showHalo;
+    setElementHidden(flubberHalo, !state.flubber.showHalo);
     flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3));
+    flubberHalo.setAttribute("transform", `scale(${state.flubber.haloSizePercent / 100})`);
+
+    if (controlGrid instanceof SVGElement && controlCursor instanceof SVGElement) {
+      controlGrid.dataset.responseMode = state.responseMode;
+      for (const line of controlTileLines) setElementHidden(line, state.responseMode !== "stepwise");
+      if (controlOutline instanceof SVGElement) {
+        controlOutline.style.strokeWidth = String(state.grid.outlineThickness);
+      }
+      controlCursor.setAttribute("cx", String(((state.x + 1) / 2) * 100));
+      controlCursor.setAttribute("cy", String((1 - (state.y + 1) / 2) * 100));
+    }
+
+    for (const anchor of stage.querySelectorAll("[data-color-anchor]")) {
+      const id = anchor.getAttribute("data-color-anchor");
+      if (id && Object.hasOwn(state.colors, id)) anchor.style.setProperty("--anchor-color", state.colors[id]);
+    }
+
+    if (faceSvg instanceof SVGElement && faceHead instanceof SVGElement
+      && faceBrows.left instanceof SVGElement && faceBrows.right instanceof SVGElement
+      && faceEyes.left instanceof SVGElement && faceEyes.right instanceof SVGElement
+      && facePupils.left instanceof SVGElement && facePupils.right instanceof SVGElement
+      && faceMouthShape instanceof SVGElement && faceMouthLine instanceof SVGElement) {
+      const geometry = createResponsiveFaceGeometry({ valence: state.x, arousal: state.y });
+      faceHead.setAttribute("cx", String(geometry.face.cx));
+      faceHead.setAttribute("cy", String(geometry.face.cy));
+      faceHead.setAttribute("rx", String(geometry.face.rx));
+      faceHead.setAttribute("ry", String(geometry.face.ry));
+      for (const side of ["left", "right"]) {
+        faceBrows[side].setAttribute("d", geometry.brows[side].d);
+        faceEyes[side].setAttribute("cx", String(geometry.eyes[side].cx));
+        faceEyes[side].setAttribute("cy", String(geometry.eyes[side].cy));
+        faceEyes[side].setAttribute("rx", String(geometry.eyes[side].rx));
+        faceEyes[side].setAttribute("ry", String(geometry.eyes[side].ry));
+        facePupils[side].setAttribute("cx", String(geometry.eyes[side].cx));
+        facePupils[side].setAttribute("cy", String(geometry.eyes[side].cy));
+      }
+      faceMouthShape.setAttribute("d", geometry.mouth.shape.d);
+      faceMouthLine.setAttribute("d", geometry.mouth.center.d);
+    }
     stage.setAttribute(
       "aria-label",
-      `Visual feedback preview. Position ${Math.round(state.position.x * 100)} percent across and ${Math.round(state.position.y * 100)} percent down. ${state.lockPosition ? "Position locked." : "Pointer dragging is available; keyboard users can set the two normalized position fields."}`,
+      `${studio ? `${outputMode === "grid" ? "2D Grid" : outputMode === "face" ? "Responsive Face" : "Classic Flubber"} design preview.` : "Visual feedback preview."} Position ${Math.round(state.position.x * 100)} percent across and ${Math.round(state.position.y * 100)} percent down. ${state.lockPosition ? "Position locked." : "Pointer dragging is available; keyboard users can set the two normalized position fields."}`,
     );
     root.querySelectorAll("[data-preview-x]").forEach((output) => { output.textContent = formatCoordinate(state.x); });
     root.querySelectorAll("[data-preview-y]").forEach((output) => { output.textContent = formatCoordinate(state.y); });
@@ -222,6 +305,7 @@ export function createResearchPreview(root, options = {}) {
     });
     const idle = Math.hypot(state.x, state.y) < 0.005;
     overlay.style.setProperty("--flubber-color", idle ? state.colors.idle : rendered.color);
+    overlay.style.setProperty("--face-color", idle ? state.colors.idle : rendered.color);
     flubberBase.setAttribute("d", rendered.path);
     flubberOutline.setAttribute("d", rendered.path);
     flubberHalo.setAttribute("d", rendered.path);

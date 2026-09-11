@@ -24,12 +24,27 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
+import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
+import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
-  importQuestionnaireCsv,
   validateQuestionnaireAnswers,
   validateQuestionnaireDefinitionV1,
 } from "./questionnaires.js";
+import {
+  importQuestionnaireAuthoring,
+} from "./questionnaire-authoring.js";
+import {
+  DEFAULT_STUDY_LANGUAGES,
+  STUDY_LANGUAGE_OPTIONS,
+  analyzeQuestionnaireLanguageCoverage,
+  createCoveredFlatLanguageSelectionV1,
+  questionnaireFamilyId,
+  updateQuestionnaireDefinitionReferences,
+} from "./questionnaire-assets.js";
+import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
+import { createQuestionnaireEditor } from "./questionnaire-editor.js";
+import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
@@ -46,7 +61,6 @@ import {
   resolveLanguageSelectionTraversalStepV1,
   serializeExperimentPackageV1,
   validateExperimentPackageRecoveryBindingV1,
-  validateLanguageSelectionTreeV1,
   verifySameRealmPackageReproductionV1,
 } from "./experiment-package.js";
 import { externalExperimentPlanToCsv } from "./tabular.js";
@@ -73,6 +87,7 @@ import {
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
   UI_PRESET_IDS,
+  applySetupSectionConfirmation,
   estimateResearchStorageUse,
   nextOpenSetupSection,
   normalizeAttemptDisposition,
@@ -81,7 +96,6 @@ import {
 } from "./ui-contracts.js";
 import {
   COLOR_FIELDS,
-  DEFAULT_LANGUAGE_SELECTION_SOURCE,
   describeInputToken,
   renderResearchUiMarkup,
 } from "./ui-view.js";
@@ -96,6 +110,7 @@ export {
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
   UI_PRESET_IDS,
+  applySetupSectionConfirmation,
   estimateResearchStorageUse,
   nextOpenSetupSection,
   normalizeAttemptDisposition,
@@ -108,9 +123,20 @@ const MAIA_2_DE_URL = new URL("../../questionnaires/maia-2-de.csv", import.meta.
 const BUNDLED_QUESTIONNAIRES = Object.freeze({
   "maia-2-de": Object.freeze({ url: MAIA_2_DE_URL, logicalName: "maia-2-de.csv" }),
   "maia-2-en": Object.freeze({ url: new URL("../../questionnaires/maia-2-en.csv", import.meta.url).href, logicalName: "maia-2-en.csv" }),
-  "tas-20-en": Object.freeze({ url: new URL("../../questionnaires/tas-20-en.csv", import.meta.url).href, logicalName: "tas-20-en.csv" }),
   "ssq-six-item-en": Object.freeze({ url: new URL("../../questionnaires/ssq-six-item-en.csv", import.meta.url).href, logicalName: "ssq-six-item-en.csv" }),
   "vr-exp-en": Object.freeze({ url: new URL("../../questionnaires/vr-exp-en.csv", import.meta.url).href, logicalName: "vr-exp-en.csv" }),
+});
+const QUESTIONNAIRE_FAMILY_LABELS = Object.freeze({
+  "maia-2": "MAIA-2",
+  "tas-20": "TAS-20",
+  "phencon-long": "PhenCon · full",
+  "phencon-short": "Custom PhenCon short adaptation — not standardized",
+});
+const PRESET_BUNDLED_ASSETS = Object.freeze({
+  "maia-2": Object.freeze(["maia-2-en", "maia-2-de"]),
+  "tas-20": Object.freeze([]),
+  "phencon-long": Object.freeze([]),
+  "phencon-short": Object.freeze([]),
 });
 const SPECIFICATION_SOURCE_SHA256 = "7402c80c6da71d4a11543676acdf0a7640cdb842d55afc10dde6ad3d4978fdbe";
 export function bootResearchUi({ surface: requestedSurface } = {}) {
@@ -148,9 +174,22 @@ function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
   const announcer = root.querySelector("#research-announcer");
   let openSection = "workspace";
+  let readySetupSectionCount = 0;
+  const reviewedSetupSections = new Set();
   let mode = "setup";
   let selectedParticipant = "P001";
   let inputPoint = { x: 0, y: 0 };
+  let previewDesignPoint = { x: 0, y: 0 };
+  let previewResponseSimulator = null;
+  let feedbackPreviewMode = "flubber";
+  let responsePreviewMode = "stepwise";
+  let previewColorAnchor = null;
+  let previewColorDraft = null;
+  let previewColorLabelDraft = null;
+  let previewColorRefreshFrame = null;
+  const previewAxisLabels = new Map(COLOR_FIELDS
+    .filter(({ axisLabel }) => typeof axisLabel === "string")
+    .map(({ id, axisLabel }) => [id, axisLabel]));
   let inputBinding = structuredClone(DEFAULT_SETTINGS.input);
   let inputController = null;
   let gamepadCaptureFrame = null;
@@ -177,6 +216,12 @@ function bindResearchInteractions(root, { surface }) {
   let languageTraversalPath = [];
   let languageSelectionGeneration = 0;
   let languageSelectionBusy = false;
+  let studyLanguages = DEFAULT_STUDY_LANGUAGES.map((language) => ({ ...language }));
+  let languageEditorLocked = false;
+  let loadedLanguageSelection = null;
+  let pendingQuestionnaireUpload = null;
+  const requestedQuestionnaireFamilies = [];
+  const questionnaireAuthoringReceipts = new Map();
   let plan = null;
   let protocolPlan = null;
   let planError = null;
@@ -220,6 +265,13 @@ function bindResearchInteractions(root, { surface }) {
   const stimuli = [];
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
+  const questionnaireEditor = createQuestionnaireEditor({
+    root,
+    onChange: () => schedulePlanRefresh(),
+    onSave: saveEditedQuestionnaire,
+    onRemove: removeQuestionnaireFamily,
+    onMove: moveQuestionnaireFamily,
+  });
   const participantStates = new Map();
   const participantRecoverability = new Map();
   const participantFinalizationPending = new Map();
@@ -240,6 +292,13 @@ function bindResearchInteractions(root, { surface }) {
   const runPreview = createResearchPreview(root.querySelector('[data-mode-panel="run"]'), {
     initialState: { lockPosition: true },
   });
+  previewResponseSimulator = createPreviewResponseSimulator({
+    onChange(point) {
+      previewDesignPoint = { x: point.x, y: point.y };
+      projectDesignPreview();
+    },
+  });
+  configurePreviewResponseSimulator();
 
   function query(selector) {
     return root.querySelector(selector);
@@ -358,6 +417,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
+    if (mode !== "setup") previewResponseSimulator?.releaseAll();
     shell.dataset.researchMode = mode;
     root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
       panel.hidden = panel.getAttribute("data-mode-panel") !== mode;
@@ -370,20 +430,57 @@ function bindResearchInteractions(root, { surface }) {
     announce(mode === "run" ? "Running the Experiment mode" : "Setting Up the Experiment mode");
   }
 
+  function renderSetupReviewState() {
+    for (const { id } of SETUP_SECTIONS) {
+      const reviewed = reviewedSetupSections.has(id);
+      const section = query(`[data-setup-section="${id}"]`);
+      const checkmark = query(`[data-section-review-check="${id}"]`);
+      const reviewLabel = query(`[data-section-review-label="${id}"]`);
+      const confirmation = query(`[data-section-confirmation-status="${id}"]`);
+      const button = query(`[data-confirm-section="${id}"]`);
+      if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
+      if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
+      if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed
+        ? "Reviewed for this setup session. Use the section header to open or close it."
+        : "Not reviewed yet. Confirm once to mark this section reviewed.";
+      if (button instanceof HTMLButtonElement) {
+        button.disabled = reviewed;
+        button.dataset.reviewState = reviewed ? "reviewed" : "pending";
+        button.textContent = reviewed
+          ? "Reviewed"
+          : id === SETUP_SECTIONS[SETUP_SECTIONS.length - 1].id ? "Confirm review" : "Confirm section";
+      }
+    }
+    const progress = query("#setup-progress");
+    if (progress) {
+      progress.textContent = `${reviewedSetupSections.size} of ${SETUP_SECTIONS.length} reviewed · ${readySetupSectionCount} ready`;
+    }
+  }
+
   function openSetupSection(sectionId, { focus = false } = {}) {
-    openSection = nextOpenSetupSection(openSection, sectionId);
+    openSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    const panelChanges = [];
+    let focusTarget = null;
     root.querySelectorAll("[data-setup-section]").forEach((section) => {
       const isOpen = section.getAttribute("data-setup-section") === openSection;
       const trigger = section.querySelector(".setup-accordion-trigger");
       const panel = section.querySelector(".setup-accordion-panel");
+      const wasOpen = trigger instanceof HTMLButtonElement
+        ? trigger.getAttribute("aria-expanded") === "true"
+        : panel instanceof HTMLElement && !panel.hidden;
       if (trigger instanceof HTMLButtonElement) {
         trigger.setAttribute("aria-expanded", String(isOpen));
         const chevron = trigger.querySelector(".section-chevron");
         if (chevron) chevron.textContent = isOpen ? "−" : "+";
-        if (isOpen && focus) trigger.focus();
+        if (isOpen && focus) focusTarget = trigger;
       }
-      if (panel instanceof HTMLElement) panel.hidden = !isOpen;
+      if (panel instanceof HTMLElement && wasOpen !== isOpen) {
+        panelChanges.push([panel, isOpen]);
+      }
     });
+    focusTarget?.focus();
+    panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
     if (surface === "tauri" && openSection === "input") {
       queueMicrotask(() => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputBindingChanged, {
         bubbles: true,
@@ -392,11 +489,188 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
+  function confirmSetupSection(sectionId) {
+    const transition = applySetupSectionConfirmation(reviewedSetupSections, sectionId);
+    reviewedSetupSections.clear();
+    transition.reviewedSectionIds.forEach((id) => reviewedSetupSections.add(id));
+    const current = SETUP_SECTIONS.find(({ id }) => id === sectionId);
+    if (transition.nextSectionId) {
+      const next = SETUP_SECTIONS.find(({ id }) => id === transition.nextSectionId);
+      openSetupSection(transition.nextSectionId, { focus: true });
+      renderSetupReviewState();
+      announce(`${current?.label ?? "Setup section"} reviewed. ${next?.label ?? "The next section"} opened.`);
+      return;
+    }
+    query(`#setup-trigger-${sectionId}`)?.focus();
+    openSetupSection(null);
+    renderSetupReviewState();
+    announce(reviewedSetupSections.size === SETUP_SECTIONS.length
+      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
+  }
+
   function colorValues() {
     return Object.fromEntries(COLOR_FIELDS.map(({ id, value: fallback }) => {
       const current = value(`color-${id}-hex`, fallback).trim().toLowerCase();
       return [id, /^#[0-9a-f]{6}$/.test(current) ? current : fallback];
     }));
+  }
+
+  function openPreviewColorDialog(anchorId) {
+    const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+    const dialog = query("#preview-color-dialog");
+    const picker = query("#preview-color-picker");
+    const hex = query("#preview-color-hex");
+    const label = query("#preview-color-label");
+    const title = query("#preview-color-dialog-title");
+    if (!definition || !(dialog instanceof HTMLDialogElement)
+      || !(picker instanceof HTMLInputElement) || !(hex instanceof HTMLInputElement)
+      || !(label instanceof HTMLInputElement) || !definition.axisLabel) return;
+    previewColorAnchor = definition.id;
+    previewColorDraft = colorValues()[definition.id];
+    const currentLabel = previewAxisLabels.get(definition.id) ?? definition.axisLabel;
+    previewColorLabelDraft = currentLabel;
+    picker.value = previewColorDraft;
+    hex.value = previewColorDraft;
+    label.value = currentLabel === definition.axisLabel ? "" : currentLabel;
+    label.placeholder = definition.axisLabel;
+    if (title) title.textContent = `${definition.label} color`;
+    const status = query("#preview-color-status");
+    const error = query("#preview-color-error");
+    if (status) {
+      status.textContent = "Choose a color and, if useful, add a custom display label.";
+      delete status.dataset.state;
+    }
+    if (error instanceof HTMLElement) error.hidden = true;
+    hex.removeAttribute("aria-invalid");
+    hex.removeAttribute("aria-errormessage");
+    setErrorReference(hex, "preview-color-error", false);
+    const apply = query("#preview-color-apply");
+    if (apply instanceof HTMLButtonElement) apply.disabled = false;
+    dialog.showModal();
+    queueMicrotask(() => hex.focus());
+  }
+
+  function paintPreviewColorDraft() {
+    const colors = colorValues();
+    if (previewColorAnchor && previewColorDraft) colors[previewColorAnchor] = previewColorDraft;
+    const nextGradientFingerprint = [colors.up, colors.down, colors.left, colors.right].join(":");
+    if (nextGradientFingerprint !== gradientFingerprint) {
+      gradientFingerprint = nextGradientFingerprint;
+      const canvas = query("#main-gradient-canvas");
+      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, colors);
+    }
+    setupPreview.update({ colors });
+  }
+
+  function schedulePreviewColorPaint() {
+    if (previewColorRefreshFrame !== null) return;
+    previewColorRefreshFrame = requestAnimationFrame(() => {
+      previewColorRefreshFrame = null;
+      paintPreviewColorDraft();
+    });
+  }
+
+  function cancelPreviewColorPaint() {
+    if (previewColorRefreshFrame === null) return;
+    cancelAnimationFrame(previewColorRefreshFrame);
+    previewColorRefreshFrame = null;
+  }
+
+  function setPreviewColorLabelDraft(nextValue) {
+    const definition = COLOR_FIELDS.find(({ id }) => id === previewColorAnchor);
+    if (!definition?.axisLabel) return;
+    const normalized = String(nextValue ?? "").trim().replace(/\s+/gu, " ");
+    previewColorLabelDraft = normalized || definition.axisLabel;
+  }
+
+  function renderPreviewAxisLabel(anchorId, label) {
+    root.querySelectorAll(`[data-color-anchor="${anchorId}"]`).forEach((anchor) => {
+      const output = anchor.querySelector("[data-color-anchor-label]");
+      if (output) output.textContent = label;
+      anchor.setAttribute("aria-label", `${label}. Edit anchor color.`);
+    });
+  }
+
+  function setPreviewColorDraft(nextValue, { synchronizeHex = false } = {}) {
+    const normalized = String(nextValue ?? "").trim().toLowerCase();
+    const valid = /^#[0-9a-f]{6}$/u.test(normalized);
+    const picker = query("#preview-color-picker");
+    const hex = query("#preview-color-hex");
+    const status = query("#preview-color-status");
+    const error = query("#preview-color-error");
+    const apply = query("#preview-color-apply");
+    previewColorDraft = valid ? normalized : null;
+    if (valid && picker instanceof HTMLInputElement) picker.value = normalized;
+    if (synchronizeHex && hex instanceof HTMLInputElement) hex.value = normalized;
+    if (status) {
+      status.textContent = valid
+        ? "Valid color. Apply to keep it, or Cancel to restore the current setting."
+        : "Enter a complete value such as #f2c94c.";
+      status.dataset.state = valid ? "ready" : "warning";
+    }
+    if (error instanceof HTMLElement) error.hidden = valid;
+    if (hex instanceof HTMLInputElement) {
+      if (valid) {
+        hex.removeAttribute("aria-invalid");
+        hex.removeAttribute("aria-errormessage");
+        setErrorReference(hex, "preview-color-error", false);
+      } else {
+        hex.setAttribute("aria-invalid", "true");
+        hex.setAttribute("aria-errormessage", "preview-color-error");
+        setErrorReference(hex, "preview-color-error", true);
+      }
+    }
+    if (apply instanceof HTMLButtonElement) apply.disabled = !valid;
+    schedulePreviewColorPaint();
+  }
+
+  function dismissPreviewColorDialog({ apply = false } = {}) {
+    const anchorId = previewColorAnchor;
+    const draft = previewColorDraft;
+    const labelDraft = previewColorLabelDraft;
+    cancelPreviewColorPaint();
+    previewColorAnchor = null;
+    previewColorDraft = null;
+    previewColorLabelDraft = null;
+    if (apply && anchorId && draft) {
+      const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+      const axisLabel = labelDraft || definition?.axisLabel;
+      setInputValue(`color-${anchorId}`, draft);
+      setInputValue(`color-${anchorId}-hex`, draft);
+      if (axisLabel) {
+        previewAxisLabels.set(anchorId, axisLabel);
+        renderPreviewAxisLabel(anchorId, axisLabel);
+      }
+      schedulePlanRefresh();
+      announce(`${axisLabel ?? definition?.label ?? "Preview"} color and display label updated.`);
+    }
+    closeDialog("preview-color-dialog");
+    refreshProjection();
+  }
+
+  function isPreviewOnlyControl(target) {
+    return target instanceof HTMLInputElement && (
+      ["preview-halo-size", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule"
+    );
+  }
+
+  function isPreviewResponseControl(target) {
+    return target instanceof HTMLInputElement && (
+      ["input-step-size", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule"
+    );
+  }
+
+  function configurePreviewResponseSimulator() {
+    previewResponseSimulator?.configure({
+      mode: responsePreviewMode,
+      fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
+      stepSize: numberValue("input-step-size", 0.1),
+      holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
+      repeatDelayMs: numberValue("preview-repeat-delay", 500),
+    });
   }
 
   function driverValue(driver, x, y) {
@@ -408,7 +682,7 @@ function bindResearchInteractions(root, { surface }) {
     return angle / 360;
   }
 
-  function mappingValues(x, y) {
+  function mappingValues(x, y, { render = true } = {}) {
     const mappings = Object.fromEntries(MAPPING_FIELDS.map((spec) => {
       const disclosure = query(`[data-mapping="${spec.id}"]`);
       if (!(disclosure instanceof HTMLElement)) return [spec.contractId, {
@@ -429,6 +703,7 @@ function bindResearchInteractions(root, { surface }) {
     } catch {
       values = evaluateFlubberMappings(DEFAULT_SETTINGS.advanced.mappings, { x, y });
     }
+    if (!render) return values;
     for (const spec of MAPPING_FIELDS) {
       const disclosure = query(`[data-mapping="${spec.id}"]`);
       if (!(disclosure instanceof HTMLElement)) continue;
@@ -444,11 +719,14 @@ function bindResearchInteractions(root, { surface }) {
     return values;
   }
 
-  function previewState({ locked = false } = {}) {
-    const mappings = mappingValues(inputPoint.x, inputPoint.y);
+  function previewState({ locked = false, design = false } = {}) {
+    const point = design ? previewDesignPoint : inputPoint;
+    const mappings = mappingValues(point.x, point.y, { render: design });
+    const colors = colorValues();
+    if (design && previewColorAnchor && previewColorDraft) colors[previewColorAnchor] = previewColorDraft;
     return {
-      x: inputPoint.x,
-      y: inputPoint.y,
+      x: point.x,
+      y: point.y,
       gridVisible: checked("visual-grid-visible"),
       flubberVisible: checked("visual-flubber-visible"),
       hideFeedback: checked("visual-hide-feedback"),
@@ -456,11 +734,16 @@ function bindResearchInteractions(root, { surface }) {
       transparencyPercent: numberValue("visual-transparency", 0),
       position: { x: numberValue("visual-position-x", 0.5), y: numberValue("visual-position-y", 0.5) },
       lockPosition: locked || checked("visual-lock-position"),
-      colors: colorValues(),
+      ...(design ? {
+        displayMode: feedbackPreviewMode,
+        responseMode: responsePreviewMode,
+      } : {}),
+      colors,
       flubber: {
         showOutline: checked("flubber-outline-visible"),
         outlineThickness: numberValue("flubber-outline-thickness", 2),
         showHalo: checked("flubber-halo-visible"),
+        ...(design ? { haloSizePercent: numberValue("preview-halo-size", 150) } : {}),
       },
       grid: {
         lineThickness: numberValue("grid-line-thickness", 1),
@@ -478,6 +761,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function refreshRangeOutputs() {
+    const formatDuration = (duration) => duration >= 1000
+      ? `${(duration / 1000).toFixed(duration % 1000 === 0 ? 0 : 1)} s`
+      : `${Math.round(duration)} ms`;
     const fields = [
       ["sampling-frequency", (v) => `${Math.round(v)} Hz`],
       ["visual-size", (v) => `${Math.round(v)}%`],
@@ -486,6 +772,9 @@ function bindResearchInteractions(root, { surface }) {
       ["grid-line-thickness", (v) => v.toFixed(2)],
       ["grid-outline-thickness", (v) => v.toFixed(2)],
       ["grid-cursor-size", (v) => v.toFixed(1)],
+      ["preview-halo-size", (v) => `${Math.round(v)}%`],
+      ["preview-full-span-duration", formatDuration],
+      ["preview-repeat-delay", formatDuration],
     ];
     for (const [id, format] of fields) {
       const input = query(`#${id}`);
@@ -496,9 +785,37 @@ function bindResearchInteractions(root, { surface }) {
     if (sampling) sampling.textContent = `${Math.round(numberValue("sampling-frequency", 130))} Hz`;
   }
 
-  function refreshProjection() {
-    refreshRangeOutputs();
-    const projected = previewState();
+  function renderPreviewDesignControls() {
+    root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
+    });
+    root.querySelectorAll("[data-response-preview-mode]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-response-preview-mode") === responsePreviewMode));
+    });
+    root.querySelectorAll("[data-response-preview-panel]").forEach((panel) => {
+      if (panel instanceof HTMLElement) {
+        panel.hidden = panel.getAttribute("data-response-preview-panel") !== responsePreviewMode;
+      }
+    });
+    const repeatSettings = query("[data-preview-repeat-settings]");
+    const repeatSelected = query('input[name="previewHoldRule"]:checked')?.value === "repeatWhileHeld";
+    if (repeatSettings instanceof HTMLElement) repeatSettings.hidden = !repeatSelected;
+    const modeLabel = query("[data-preview-mode-label]");
+    if (modeLabel) {
+      modeLabel.textContent = feedbackPreviewMode === "grid"
+        ? "2D Grid"
+        : feedbackPreviewMode === "face" ? "Responsive Face" : "Classic Flubber";
+    }
+    const simulatorHelp = query("#preview-response-simulator-help");
+    if (simulatorHelp) {
+      simulatorHelp.textContent = responsePreviewMode === "continuous"
+        ? "Focus the map and hold the arrow keys to preview full-span travel time. Opposing directions cancel."
+        : "Focus the map and use the arrow keys to preview steps and the selected hold rule.";
+    }
+  }
+
+  function projectDesignPreview() {
+    const projected = previewState({ design: true });
     const nextGradientFingerprint = [projected.colors.up, projected.colors.down, projected.colors.left, projected.colors.right].join(":");
     if (nextGradientFingerprint !== gradientFingerprint) {
       gradientFingerprint = nextGradientFingerprint;
@@ -506,6 +823,16 @@ function bindResearchInteractions(root, { surface }) {
       if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors);
     }
     setupPreview.update(projected);
+  }
+
+  function refreshDesignPreview() {
+    refreshRangeOutputs();
+    renderPreviewDesignControls();
+    projectDesignPreview();
+  }
+
+  function refreshProjection({ designAlreadyProjected = false } = {}) {
+    if (!designAlreadyProjected) refreshDesignPreview();
     runPreview.update(previewState({ locked: true }));
     renderExperimentConditionalFields();
     renderInputPreset();
@@ -943,6 +1270,14 @@ function bindResearchInteractions(root, { surface }) {
       questionnaireModules.length,
       ...normalized.questionnaires.modules.map((module) => structuredClone(module)),
     );
+    questionnaireAuthoringReceipts.clear();
+    if (!languageEditorLocked) {
+      requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length);
+      for (const module of questionnaireModules) {
+        const definition = questionnaireDefinition(module.questionnaireId);
+        if (definition) requestQuestionnaireFamily(familyIdForDefinition(definition));
+      }
+    }
     const normalizedParticipantIds = createParticipantIds(normalized.experiment.participantCount);
     selectedParticipant = normalizedParticipantIds.includes(selectedParticipant)
       ? selectedParticipant
@@ -1044,6 +1379,7 @@ function bindResearchInteractions(root, { surface }) {
       && (resumesExistingAttempt || participantRecord));
     const outputValid = checked("output-csv") || checked("output-tsv");
     const lslValid = !checked("lsl-enabled") || (surface === "tauri" && capabilities.lslReady);
+    const questionnaireCoverage = questionnaireLanguageCoverage();
     const workspaceReady = capabilities.directoryPermission;
     const storageEstimate = estimateResearchStorageUse(settingsSnapshot, plan);
     const storageReady = Boolean(storageEstimate
@@ -1135,12 +1471,15 @@ function bindResearchInteractions(root, { surface }) {
       },
       {
         id: "questionnaires",
-        result: protocolSettingsSnapshot && protocolSettingsHash && protocolPlan ? "pass" : "block",
-        label: "Questionnaire sequence",
-        message: protocolPlan
+        result: protocolSettingsSnapshot && protocolSettingsHash && protocolPlan
+          && questionnaireCoverage.complete ? "pass" : "block",
+        label: "Languages & questionnaire assets",
+        message: !questionnaireCoverage.complete
+          ? `Supply ${questionnaireCoverage.missing.map(({ familyId, label }) => `${questionnaireFamilyLabel(familyId)} in ${label}`).join("; ")}`
+          : protocolPlan
           ? questionnaireModules.length === 0
-            ? `Video-only protocol frozen as ${protocolPlan.protocolPlanHashSha256}`
-            : `${questionnaireModules.length} module${questionnaireModules.length === 1 ? "" : "s"} frozen as ${protocolPlan.protocolPlanHashSha256}`
+            ? `${studyLanguages.length} language${studyLanguages.length === 1 ? "" : "s"}; demographics ready; video-only protocol frozen as ${protocolPlan.protocolPlanHashSha256}`
+            : `${questionnaireCoverage.familyRows.length} module${questionnaireCoverage.familyRows.length === 1 ? "" : "s"} complete across ${studyLanguages.length} language${studyLanguages.length === 1 ? "" : "s"}`
           : (planError ?? "Validate the session and block hooks"),
       },
       {
@@ -1242,16 +1581,16 @@ function bindResearchInteractions(root, { surface }) {
     const pass = (id) => items.some((item) => item.id === id && item.result !== "block");
     const readySections = [
       pass("workspace"),
-      pass("experiment"),
-      pass("stimuli") && pass("plan"),
       pass("questionnaires") || selectedPendingFinalization(),
+      pass("stimuli") && pass("plan"),
+      pass("experiment"),
       pass("input"),
       Boolean(protocolSettingsSnapshot) || selectedPendingFinalization(),
       pass("timing") && pass("lsl") && (surface !== "tauri" || pass("playback")),
       items.every(({ result }) => result !== "block"),
     ].filter(Boolean).length;
-    const progress = query("#setup-progress");
-    if (progress) progress.textContent = `${readySections} of 8 ready`;
+    readySetupSectionCount = readySections;
+    renderSetupReviewState();
   }
 
   function analyzeLocalCapacity() {
@@ -1287,6 +1626,210 @@ function bindResearchInteractions(root, { surface }) {
     return questionnaireDefinitions.find((definition) => definition.questionnaireId === questionnaireId) ?? null;
   }
 
+  function familyIdForDefinition(definition) {
+    return questionnaireFamilyId({
+      questionnaireId: definition.questionnaireId,
+      language: definition.language,
+    });
+  }
+
+  function questionnaireFamilyLabel(familyId) {
+    if (QUESTIONNAIRE_FAMILY_LABELS[familyId]) return QUESTIONNAIRE_FAMILY_LABELS[familyId];
+    const definition = questionnaireDefinitions.find((candidate) => (
+      familyIdForDefinition(candidate) === familyId
+    ));
+    if (definition) return definition.title;
+    const catalogueFamilyId = {
+      "phencon-long": "phenomenological-control-scale-10",
+      "phencon-short": "phencon-short-adaptation",
+    }[familyId] ?? familyId;
+    return QUESTIONNAIRE_INSPIRATION_CATALOGUE.find(({ id }) => id === catalogueFamilyId)?.shortName
+      ?? familyId.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+  }
+
+  function coverageSource() {
+    if (languageEditorLocked && experimentPackageDocument) {
+      return {
+        definitions: experimentPackageDocument.package.settings.questionnaires.definitions,
+        modules: experimentPackageDocument.package.settings.questionnaires.modules,
+      };
+    }
+    return { definitions: questionnaireDefinitions, modules: questionnaireModules };
+  }
+
+  function questionnaireLanguageCoverage() {
+    const source = coverageSource();
+    return analyzeQuestionnaireLanguageCoverage({
+      definitions: source.definitions,
+      modules: languageEditorLocked ? source.modules : source.modules.filter((module) => {
+        const definition = source.definitions.find(({ questionnaireId }) => questionnaireId === module.questionnaireId);
+        return definition && !questionnaireEditor.isPending(familyIdForDefinition(definition), definition.language);
+      }),
+      languages: studyLanguages,
+      requestedFamilyIds: requestedQuestionnaireFamilies,
+    });
+  }
+
+  function requestQuestionnaireFamily(familyId) {
+    if (!requestedQuestionnaireFamilies.includes(familyId)) {
+      requestedQuestionnaireFamilies.push(familyId);
+    }
+  }
+
+  function familyIsIncluded(familyId) {
+    return requestedQuestionnaireFamilies.includes(familyId)
+      || questionnaireModules.some((module) => {
+        const definition = questionnaireDefinition(module.questionnaireId);
+        return definition && familyIdForDefinition(definition) === familyId;
+      });
+  }
+
+  function questionnaireModuleGroups() {
+    const groups = [];
+    const byFamily = new Map();
+    for (const module of questionnaireModules) {
+      const definition = questionnaireDefinition(module.questionnaireId);
+      const familyId = definition ? familyIdForDefinition(definition) : module.questionnaireId;
+      let group = byFamily.get(familyId);
+      if (!group) {
+        group = { familyId, modules: [] };
+        byFamily.set(familyId, group);
+        groups.push(group);
+      }
+      group.modules.push(module);
+    }
+    return groups;
+  }
+
+  function renderStudyLanguages() {
+    const list = query("#study-language-list");
+    if (list instanceof HTMLElement) {
+      list.replaceChildren(...studyLanguages.map((language) => {
+        const item = document.createElement("li");
+        const identity = document.createElement("span");
+        const title = document.createElement("strong");
+        title.textContent = language.label;
+        const tag = document.createElement("small");
+        tag.textContent = language.languageTag;
+        identity.append(title, tag);
+        if (languageEditorLocked || studyLanguages.length === 1) {
+          const state = document.createElement("span");
+          state.className = "asset-state";
+          state.dataset.state = "ready";
+          state.textContent = languageEditorLocked ? "Package-owned" : "Required";
+          item.append(identity, state);
+        } else {
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.dataset.studyLanguageRemove = language.languageId;
+          remove.setAttribute("aria-label", `Remove ${language.label}`);
+          item.append(identity, remove);
+        }
+        return item;
+      }));
+    }
+    const select = query("#study-language-add");
+    const add = query("#study-language-add-button");
+    const selectedIds = new Set(studyLanguages.map(({ languageId }) => languageId));
+    const available = STUDY_LANGUAGE_OPTIONS.filter(({ languageId }) => !selectedIds.has(languageId));
+    if (select instanceof HTMLSelectElement) {
+      select.replaceChildren(...available.map((language) => {
+        const option = document.createElement("option");
+        option.value = language.languageId;
+        option.textContent = `${language.label} · ${language.languageTag}`;
+        return option;
+      }));
+      select.disabled = languageEditorLocked || available.length === 0;
+    }
+    if (add instanceof HTMLButtonElement) add.disabled = languageEditorLocked || available.length === 0;
+    const note = query("#study-language-mode-note");
+    if (note) note.textContent = languageEditorLocked
+      ? "These choices belong to the loaded project package. Load an experiment definition to author a different language set."
+      : `${studyLanguages.length} language${studyLanguages.length === 1 ? "" : "s"} selected. Add and save each questionnaire in every language.`;
+  }
+
+  function renderQuestionnaireCoverage() {
+    const coverage = questionnaireLanguageCoverage();
+    const head = query("#questionnaire-coverage-head");
+    const body = query("#questionnaire-coverage-body");
+    const status = query("#questionnaire-coverage-status");
+    if (head instanceof HTMLElement) {
+      const row = document.createElement("tr");
+      for (const label of ["Module", ...studyLanguages.map(({ label }) => label), "Actions"]) {
+        const cell = document.createElement("th");
+        cell.textContent = label;
+        row.append(cell);
+      }
+      head.replaceChildren(row);
+    }
+    if (body instanceof HTMLElement) {
+      if (coverage.familyRows.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = studyLanguages.length + 2;
+        cell.className = "empty-state";
+        cell.textContent = "Include a module to check its language assets.";
+        row.append(cell);
+        body.replaceChildren(row);
+      } else {
+        body.replaceChildren(...coverage.familyRows.map((family) => {
+          const row = document.createElement("tr");
+          row.dataset.questionnaireCoverageFamily = family.familyId;
+          const identity = document.createElement("th");
+          identity.scope = "row";
+          const title = document.createElement("strong");
+          title.textContent = questionnaireFamilyLabel(family.familyId);
+          const detail = document.createElement("small");
+          detail.textContent = family.complete ? "All selected languages ready" : "Translation required";
+          identity.append(title, detail);
+          row.append(identity);
+          for (const language of family.languages) {
+            const cell = document.createElement("td");
+            const state = document.createElement("span");
+            state.className = "asset-state";
+            state.dataset.state = language.covered ? "ready" : "missing";
+            state.textContent = language.covered ? "Ready" : "Missing";
+            cell.append(state);
+            if (!language.covered && !languageEditorLocked) {
+              const upload = document.createElement("button");
+              upload.type = "button";
+              upload.textContent = "Upload file";
+              upload.dataset.questionnaireUploadFamily = family.familyId;
+              upload.dataset.questionnaireUploadLanguage = language.languageTag;
+              upload.setAttribute("aria-label", `Upload ${questionnaireFamilyLabel(family.familyId)} in ${language.label}`);
+              cell.append(upload);
+            }
+            row.append(cell);
+          }
+          const actions = document.createElement("td");
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "Remove module";
+          remove.dataset.questionnaireRemoveFamily = family.familyId;
+          remove.disabled = languageEditorLocked;
+          actions.append(remove);
+          row.append(actions);
+          return row;
+        }));
+      }
+    }
+    if (status) {
+      status.dataset.state = coverage.complete ? "ready" : "error";
+      status.textContent = coverage.familyRows.length === 0
+        ? "No questionnaire modules included."
+        : coverage.complete
+          ? `${coverage.familyRows.length} module${coverage.familyRows.length === 1 ? "" : "s"} complete in every selected language.`
+          : `${coverage.missing.length} required language asset${coverage.missing.length === 1 ? " is" : "s are"} missing.`;
+    }
+    root.querySelectorAll("[data-questionnaire-preset]").forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const included = familyIsIncluded(button.dataset.questionnairePreset);
+      button.textContent = `${included ? "Added" : "Add"} ${questionnaireFamilyLabel(button.dataset.questionnairePreset)}`;
+      button.disabled = languageEditorLocked || included;
+    });
+  }
+
   function renderQuestionnaireDefinitions() {
     const container = query("#questionnaire-definition-list");
     if (!(container instanceof HTMLElement)) return;
@@ -1307,7 +1850,13 @@ function bindResearchInteractions(root, { surface }) {
       const title = document.createElement("strong");
       title.textContent = definition.title;
       const metadata = document.createElement("p");
-      metadata.textContent = `${definition.items.length} items · ${definition.language} · ${definition.source.kind === "bundled" ? "bundled" : "researcher CSV"}`;
+      const language = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === definition.language);
+      const receipt = questionnaireAuthoringReceipts.get(definition.questionnaireId);
+      const format = receipt?.original?.formatVersion
+        ?.replace("questionnaire-", "")
+        .replace("-v1", "")
+        .toUpperCase();
+      metadata.textContent = `${definition.items.length} items · ${language?.label ?? definition.language}${format ? ` · ${format} upload` : ""}`;
       identity.append(title, metadata);
       const actions = document.createElement("div");
       actions.className = "button-row";
@@ -1324,10 +1873,10 @@ function bindResearchInteractions(root, { surface }) {
         actions.append(button);
       }
       heading.append(identity, actions);
-      const digest = document.createElement("p");
-      digest.className = "questionnaire-metadata hash-value";
-      digest.textContent = `Definition ${definition.definitionSha256} · source ${definition.source.sha256}`;
-      article.append(heading, digest);
+      const readiness = document.createElement("p");
+      readiness.className = "questionnaire-metadata";
+      readiness.textContent = "Validated and ready for language coverage.";
+      article.append(heading, readiness);
       return article;
     }));
   }
@@ -1342,18 +1891,24 @@ function bindResearchInteractions(root, { surface }) {
       list.replaceChildren(empty);
       return;
     }
-    list.replaceChildren(...questionnaireModules.map((module, index) => {
+    const groups = questionnaireModuleGroups();
+    list.replaceChildren(...groups.map((group, index) => {
+      const module = group.modules[0];
       const definition = questionnaireDefinition(module.questionnaireId);
       const item = document.createElement("li");
       item.className = "questionnaire-module";
       item.dataset.moduleId = module.moduleId;
+      item.dataset.questionnaireFamily = group.familyId;
       const heading = document.createElement("div");
       heading.className = "questionnaire-module-heading";
       const identity = document.createElement("div");
       const title = document.createElement("strong");
-      title.textContent = definition?.title ?? module.questionnaireId;
+      title.textContent = questionnaireFamilyLabel(group.familyId);
       const metadata = document.createElement("p");
-      metadata.textContent = `Module ${index + 1} · ${module.moduleId}`;
+      const languages = group.modules.map((candidate) => questionnaireDefinition(candidate.questionnaireId)?.language)
+        .filter(Boolean)
+        .map((tag) => STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === tag)?.label ?? tag);
+      metadata.textContent = `Sequence ${index + 1} · ${languages.join(" + ")} asset${languages.length === 1 ? "" : "s"}`;
       identity.append(title, metadata);
       const order = document.createElement("div");
       order.className = "button-row";
@@ -1361,9 +1916,9 @@ function bindResearchInteractions(root, { surface }) {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = label;
-        button.dataset.questionnaireMove = direction;
-        button.dataset.moduleId = module.moduleId;
-        button.disabled = direction === "up" ? index === 0 : index === questionnaireModules.length - 1;
+        button.dataset.questionnaireMoveFamily = direction;
+        button.dataset.questionnaireFamily = group.familyId;
+        button.disabled = direction === "up" ? index === 0 : index === groups.length - 1;
         order.append(button);
       }
       heading.append(identity, order);
@@ -1437,8 +1992,8 @@ function bindResearchInteractions(root, { surface }) {
 
       const remove = document.createElement("button");
       remove.type = "button";
-      remove.textContent = "Remove";
-      remove.dataset.questionnaireRemoveModule = module.moduleId;
+      remove.textContent = "Remove module";
+      remove.dataset.questionnaireRemoveFamily = group.familyId;
       controls.append(placementLabel, poolLabel, stimulusLabel, isiLabel, remove);
       item.append(heading, controls);
       return item;
@@ -1460,11 +2015,18 @@ function bindResearchInteractions(root, { surface }) {
       return;
     }
     if (hash) hash.textContent = protocolPlan.protocolPlanHashSha256;
-    const forms = protocolPlan.steps.filter(({ kind }) => kind === "questionnaire").length;
-    const videos = protocolPlan.steps.filter(({ kind }) => kind === "stimulus").length;
-    const intervals = protocolPlan.steps.filter(({ kind }) => kind === "interval").length;
-    if (summary) summary.textContent = `${selectedParticipant} · ${forms} questionnaire step${forms === 1 ? "" : "s"} · ${videos} video${videos === 1 ? "" : "s"} · ${intervals} explicit ISI step${intervals === 1 ? "" : "s"}`;
-    list.replaceChildren(...protocolPlan.steps.map((step) => {
+    const previewLanguage = studyLanguages.find(({ languageId }) => languageId === selectedLanguageId)
+      ?? studyLanguages[0];
+    const previewSteps = protocolPlan.steps.filter((step) => {
+      if (step.kind !== "questionnaire") return true;
+      const definition = questionnaireDefinition(step.questionnaireId);
+      return !definition || definition.language === "und" || definition.language === previewLanguage.languageTag;
+    });
+    const forms = previewSteps.filter(({ kind }) => kind === "questionnaire").length;
+    const videos = previewSteps.filter(({ kind }) => kind === "stimulus").length;
+    const intervals = previewSteps.filter(({ kind }) => kind === "interval").length;
+    if (summary) summary.textContent = `${selectedParticipant} · ${previewLanguage.label} preview · ${forms} questionnaire step${forms === 1 ? "" : "s"} · ${videos} video${videos === 1 ? "" : "s"} · ${intervals} explicit ISI step${intervals === 1 ? "" : "s"}`;
+    list.replaceChildren(...previewSteps.map((step) => {
       const item = document.createElement("li");
       const text = document.createElement("span");
       if (step.kind === "questionnaire") {
@@ -1496,13 +2058,26 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderQuestionnaires() {
-    renderQuestionnaireDefinitions();
-    renderQuestionnaireModules();
+    renderStudyLanguages();
+    const source = coverageSource();
+    questionnaireEditor.sync({
+      families: requestedQuestionnaireFamilies.map((id) => ({ id, label: questionnaireFamilyLabel(id) })),
+      languages: studyLanguages,
+      definitions: source.definitions,
+      familyForDefinition: familyIdForDefinition,
+      locked: languageEditorLocked,
+    });
+    renderQuestionnaireCoverage();
     renderProtocolPreview();
+    const add = query("#questionnaire-add-blank");
+    if (add) add.disabled = languageEditorLocked;
     const summary = query('[data-section-summary="questionnaires"]');
-    if (summary) summary.textContent = questionnaireModules.length === 0
-      ? "No forms configured"
-      : `${questionnaireModules.length} ordered form${questionnaireModules.length === 1 ? "" : "s"}`;
+    if (summary) {
+      const coverage = questionnaireLanguageCoverage();
+      summary.textContent = coverage.familyRows.length === 0
+        ? `${studyLanguages.length} language${studyLanguages.length === 1 ? "" : "s"} · demographics ready`
+        : `${studyLanguages.length} language${studyLanguages.length === 1 ? "" : "s"} · ${coverage.familyRows.length} module${coverage.familyRows.length === 1 ? "" : "s"} · ${coverage.complete ? "ready" : "assets missing"}`;
+    }
   }
 
   function nextQuestionnaireModuleId(questionnaireId) {
@@ -1515,22 +2090,119 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function addQuestionnaireModule(definition) {
+    const familyId = familyIdForDefinition(definition);
+    const familyIndexes = questionnaireModules
+      .map((candidate, index) => ({ candidate, index }))
+      .filter(({ candidate }) => {
+        const candidateDefinition = questionnaireDefinition(candidate.questionnaireId);
+        return candidateDefinition && familyIdForDefinition(candidateDefinition) === familyId;
+      });
+    const placement = familyIndexes[0]?.candidate.placement
+      ? structuredClone(familyIndexes[0].candidate.placement)
+      : { kind: "beforeSession", blockId: null };
     const module = validateQuestionnaireModuleV2({
       schema: QUESTIONNAIRE_MODULE_SCHEMA,
       version: 2,
       moduleId: nextQuestionnaireModuleId(definition.questionnaireId),
       questionnaireId: definition.questionnaireId,
       definitionSha256: definition.definitionSha256,
-      placement: { kind: "beforeSession", blockId: null },
+      placement,
     }, {
       definition,
       blockIds: protocolBlockIds(),
       stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     });
-    questionnaireModules.push(structuredClone(module));
+    const insertAt = familyIndexes.length
+      ? familyIndexes.at(-1).index + 1
+      : questionnaireModules.length;
+    questionnaireModules.splice(insertAt, 0, structuredClone(module));
     renderQuestionnaires();
     schedulePlanRefresh();
-    announce(`${definition.title} added before the session. Choose another hook if needed.`);
+    announce(`${definition.title} added to the questionnaire sequence. Choose another hook if needed.`);
+  }
+
+  function questionnaireImportStatus(message, state = "neutral") {
+    const output = query("#questionnaire-import-status");
+    if (!output) return;
+    output.textContent = message;
+    output.dataset.state = state;
+  }
+
+  async function storeQuestionnaireSource(bytes, definition, authoringReceipt) {
+    if (!capabilities.directoryPermission) {
+      throw new Error("Select the parent work directory before adding questionnaire assets.");
+    }
+    const familyId = familyIdForDefinition(definition);
+    const format = {
+      "questionnaire-csv-v1": "csv",
+      "questionnaire-txt-v1": "txt",
+      "questionnaire-json-v1": "json",
+    }[authoringReceipt.original.formatVersion];
+    if (!format) throw new TypeError("Questionnaire source format is unsupported.");
+    const payload = {
+      familyId,
+      languageTag: definition.language,
+      format,
+      sourceSha256: authoringReceipt.original.sha256,
+      bytes: new Uint8Array(bytes instanceof ArrayBuffer ? bytes.slice(0) : bytes),
+    };
+    if (surface === "browser") {
+      if (!workspace || typeof workspace.saveQuestionnaireAsset !== "function") {
+        throw new Error("The browser questionnaire asset store is not available.");
+      }
+      return workspace.saveQuestionnaireAsset(payload);
+    }
+    return requestQuestionnaireAssetStorage(root, payload);
+  }
+
+  async function saveEditedQuestionnaire({ familyId, language, definition, sourceBytes, authoringReceipt }) {
+    if (languageEditorLocked || mode !== "setup") throw new Error("This experiment is locked for editing.");
+    if (!requestedQuestionnaireFamilies.includes(familyId)
+      || !studyLanguages.some(({ languageTag }) => languageTag === language)) {
+      throw new Error("This questionnaire or language is no longer included.");
+    }
+    validateQuestionnaireDefinitionV1(definition);
+    if (definition.language !== language || familyIdForDefinition(definition) !== familyId) {
+      throw new TypeError("The edited questionnaire does not match its language table.");
+    }
+    if (sourceBytes && authoringReceipt) await storeQuestionnaireSource(sourceBytes, definition, authoringReceipt);
+    else if (!questionnaireDefinition(definition.questionnaireId)) throw new Error("The questionnaire source is missing; import or edit the table and save again.");
+    // A storage receipt cannot adopt an asset into a slot removed while saving.
+    if (languageEditorLocked || !requestedQuestionnaireFamilies.includes(familyId)
+      || !studyLanguages.some(({ languageTag }) => languageTag === language)) {
+      throw new Error("The setup changed while saving. The source is retained; the questionnaire was not added.");
+    }
+    const existingIndex = questionnaireDefinitions.findIndex(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
+    if (existingIndex < 0) questionnaireDefinitions.push(structuredClone(definition));
+    else questionnaireDefinitions[existingIndex] = structuredClone(definition);
+    if (authoringReceipt) questionnaireAuthoringReceipts.set(definition.questionnaireId, authoringReceipt);
+    if (questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
+      questionnaireModules.splice(0, questionnaireModules.length,
+        ...updateQuestionnaireDefinitionReferences(questionnaireModules, definition));
+    } else addQuestionnaireModule(definition);
+    announce(`${definition.title} in ${language} saved. Existing protocol placements were preserved.`);
+  }
+
+  function addBlankQuestionnaire() {
+    if (languageEditorLocked) return;
+    let number = 1;
+    while (requestedQuestionnaireFamilies.includes(`questionnaire-${number}`)) number += 1;
+    requestQuestionnaireFamily(`questionnaire-${number}`);
+    renderQuestionnaires();
+    schedulePlanRefresh();
+  }
+
+  function moveQuestionnaireFamily(familyId, direction) {
+    if (languageEditorLocked) return;
+    const index = requestedQuestionnaireFamilies.indexOf(familyId);
+    const next = index + direction;
+    if (index < 0 || next < 0 || next >= requestedQuestionnaireFamilies.length) return;
+    [requestedQuestionnaireFamilies[index], requestedQuestionnaireFamilies[next]]
+      = [requestedQuestionnaireFamilies[next], requestedQuestionnaireFamilies[index]];
+    questionnaireModules.sort((a, b) => requestedQuestionnaireFamilies.indexOf(familyIdForDefinition(questionnaireDefinition(a.questionnaireId)))
+      - requestedQuestionnaireFamilies.indexOf(familyIdForDefinition(questionnaireDefinition(b.questionnaireId))));
+    renderQuestionnaires();
+    schedulePlanRefresh();
   }
 
   async function importQuestionnaireBytes(input, {
@@ -1538,27 +2210,183 @@ function bindResearchInteractions(root, { surface }) {
     logicalName = "questionnaire.csv",
     sourceDocumentSha256 = null,
     addModule = true,
+    expectedFamilyId = null,
+    expectedLanguageTag = null,
   } = {}) {
-    const imported = await importQuestionnaireCsv(input, {
+    questionnaireImportStatus(`Validating ${logicalName}…`);
+    const imported = await importQuestionnaireAuthoring(input, {
       sourceKind,
       logicalName,
       sourceDocumentSha256,
     });
+    const familyId = familyIdForDefinition(imported.definition);
+    if (expectedFamilyId && familyId !== expectedFamilyId) {
+      throw new TypeError(
+        `This slot expects ${questionnaireFamilyLabel(expectedFamilyId)}, but the file identifies the ${questionnaireFamilyLabel(familyId)} module.`,
+      );
+    }
+    if (expectedLanguageTag && imported.definition.language !== expectedLanguageTag) {
+      const expectedLanguage = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === expectedLanguageTag)?.label
+        ?? expectedLanguageTag;
+      throw new TypeError(
+        `This slot expects ${expectedLanguage} (${expectedLanguageTag}), but the file declares ${imported.definition.language}.`,
+      );
+    }
+    if (imported.definition.language === "und") {
+      throw new TypeError("Questionnaire assets must declare the exact participant language; und cannot satisfy language coverage.");
+    }
+    if (!studyLanguages.some(({ languageTag }) => languageTag === imported.definition.language)) {
+      throw new TypeError(
+        `Add ${imported.definition.language} to Study languages before uploading this questionnaire asset.`,
+      );
+    }
     const existing = questionnaireDefinition(imported.definition.questionnaireId);
     if (existing && existing.definitionSha256 !== imported.definition.definitionSha256) {
       throw new TypeError(
         `${imported.definition.questionnaireId} is already loaded with a different definition hash. Remove its modules and definition before replacing it.`,
       );
     }
+    await storeQuestionnaireSource(input, imported.definition, imported.authoringReceipt);
     if (!existing) questionnaireDefinitions.push(structuredClone(imported.definition));
     const definition = existing ?? imported.definition;
-    if (addModule) addQuestionnaireModule(definition);
+    questionnaireAuthoringReceipts.set(definition.questionnaireId, imported.authoringReceipt);
+    requestQuestionnaireFamily(familyId);
+    if (addModule && !questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
+      addQuestionnaireModule(definition);
+    }
     else {
       renderQuestionnaires();
       schedulePlanRefresh();
     }
-    if (existing) announce(`${definition.title} was already validated; no duplicate definition was created.`);
+    questionnaireImportStatus(
+      `${definition.title} · ${definition.language} is ready in its module asset folder.`,
+      "ready",
+    );
+    if (existing) announce(`${definition.title} was already validated; its source asset was verified without creating a duplicate.`);
     return definition;
+  }
+
+  async function importBundledQuestionnaire(assetId, { familyId = null, languageTag = null } = {}) {
+    const bundled = BUNDLED_QUESTIONNAIRES[assetId];
+    if (!bundled) throw new TypeError(`Bundled questionnaire asset ${assetId} is unavailable.`);
+    const response = await fetch(bundled.url);
+    if (!response.ok) throw new Error(`Bundled questionnaire could not be read (${response.status}).`);
+    return importQuestionnaireBytes(await response.arrayBuffer(), {
+      sourceKind: "bundled",
+      logicalName: bundled.logicalName,
+      sourceDocumentSha256: assetId === "maia-2-de" ? SPECIFICATION_SOURCE_SHA256 : null,
+      expectedFamilyId: familyId,
+      expectedLanguageTag: languageTag,
+    });
+  }
+
+  async function prepareQuestionnairePreset(familyId) {
+    if (languageEditorLocked) return;
+    requestQuestionnaireFamily(familyId);
+    renderQuestionnaires();
+    if (familyId !== "maia-2") {
+      questionnaireImportStatus("Paste your authorized TAS-20 items into each language table.");
+      schedulePlanRefresh();
+      return;
+    }
+    try {
+      for (const language of studyLanguages) {
+        const assetId = `maia-2-${language.languageTag}`;
+        const bundled = BUNDLED_QUESTIONNAIRES[assetId];
+        if (!bundled || questionnaireDefinition(assetId)
+          || !questionnaireEditor.canLoadPreset(familyId, language.languageTag)) continue;
+        const response = await fetch(bundled.url);
+        if (!response.ok) throw new Error("The MAIA-2 asset could not be opened.");
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        const imported = await importQuestionnaireAuthoring(bytes, {
+          sourceKind: "bundled",
+          logicalName: bundled.logicalName,
+          sourceDocumentSha256: assetId === "maia-2-de" ? SPECIFICATION_SOURCE_SHA256 : null,
+        });
+        const loaded = questionnaireEditor.loadDefinition(imported.definition, {
+          familyId, sourceBytes: bytes, authoringResult: imported, onlyIfPristine: true,
+        });
+        if (loaded && capabilities.directoryPermission) await questionnaireEditor.save(`${familyId}/${language.languageTag}`);
+      }
+      questionnaireImportStatus("MAIA-2 items added for the available languages. Review the tables before continuing.");
+    } catch (error) {
+      questionnaireImportStatus(error instanceof Error ? error.message : String(error), "error");
+    }
+    schedulePlanRefresh();
+  }
+
+  function removeQuestionnaireFamily(familyId) {
+    if (languageEditorLocked) return;
+    const questionnaireIds = new Set(questionnaireDefinitions
+      .filter((definition) => familyIdForDefinition(definition) === familyId)
+      .map(({ questionnaireId }) => questionnaireId));
+    for (let index = questionnaireModules.length - 1; index >= 0; index -= 1) {
+      if (questionnaireIds.has(questionnaireModules[index].questionnaireId)) questionnaireModules.splice(index, 1);
+    }
+    for (let index = questionnaireDefinitions.length - 1; index >= 0; index -= 1) {
+      if (!questionnaireIds.has(questionnaireDefinitions[index].questionnaireId)) continue;
+      questionnaireAuthoringReceipts.delete(questionnaireDefinitions[index].questionnaireId);
+      questionnaireDefinitions.splice(index, 1);
+    }
+    const requestedIndex = requestedQuestionnaireFamilies.indexOf(familyId);
+    if (requestedIndex >= 0) requestedQuestionnaireFamilies.splice(requestedIndex, 1);
+    renderQuestionnaires();
+    schedulePlanRefresh();
+    announce(`${questionnaireFamilyLabel(familyId)} was removed from this setup. Stored source files were retained in the workspace.`);
+  }
+
+  function addStudyLanguage() {
+    if (languageEditorLocked) return;
+    const languageId = value("study-language-add");
+    const language = STUDY_LANGUAGE_OPTIONS.find((candidate) => candidate.languageId === languageId);
+    if (!language || studyLanguages.some((candidate) => candidate.languageId === language.languageId)) return;
+    studyLanguages.push({ ...language });
+    clearParticipantLanguageSelection();
+    renderQuestionnaires();
+    schedulePlanRefresh();
+    announce(`${language.label} added. Every included questionnaire now requires a matching ${language.languageTag} asset.`);
+    if (familyIsIncluded("maia-2")) void prepareQuestionnairePreset("maia-2");
+  }
+
+  function removeStudyLanguage(languageId) {
+    if (languageEditorLocked || studyLanguages.length === 1) return;
+    const index = studyLanguages.findIndex((language) => language.languageId === languageId);
+    if (index < 0) return;
+    const [removed] = studyLanguages.splice(index, 1);
+    clearParticipantLanguageSelection();
+    renderQuestionnaires();
+    schedulePlanRefresh();
+    announce(`${removed.label} removed from the participant language choices.`);
+  }
+
+  function requestQuestionnaireUpload({ familyId = null, languageTag = null } = {}) {
+    if (languageEditorLocked) {
+      announce("Questionnaire assets are frozen by the loaded project package.");
+      return;
+    }
+    pendingQuestionnaireUpload = familyId ? { familyId, languageTag } : null;
+    query("#questionnaire-file-input")?.click();
+  }
+
+  function filterQuestionnaireInspiration() {
+    const search = value("questionnaire-inspiration-search").trim().toLowerCase();
+    const domain = value("questionnaire-inspiration-domain", "all");
+    let visible = 0;
+    root.querySelectorAll("[data-inspiration-entry]").forEach((entry) => {
+      if (!(entry instanceof HTMLElement)) return;
+      const matches = (domain === "all" || entry.dataset.inspirationDomain === domain)
+        && (!search || entry.dataset.inspirationSearch?.includes(search));
+      entry.hidden = !matches;
+      if (matches) visible += 1;
+    });
+    const empty = query("#questionnaire-inspiration-empty");
+    if (empty instanceof HTMLElement) empty.hidden = visible > 0;
+  }
+
+  function openQuestionnaireInspiration() {
+    filterQuestionnaireInspiration();
+    const dialog = query("#questionnaire-inspiration-dialog");
+    if (dialog instanceof HTMLDialogElement) dialog.showModal();
   }
 
   function showQuestionnairePreview(definition) {
@@ -1592,14 +2420,20 @@ function bindResearchInteractions(root, { surface }) {
     const current = questionnaireModules[index];
     const definition = questionnaireDefinition(current.questionnaireId);
     if (!definition) throw new TypeError(`Questionnaire module ${moduleId} has no definition.`);
-    questionnaireModules[index] = structuredClone(validateQuestionnaireModuleV2({
-      ...current,
-      placement,
-    }, {
-      definition,
-      blockIds: protocolBlockIds(),
-      stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
-    }));
+    const familyId = familyIdForDefinition(definition);
+    for (let candidateIndex = 0; candidateIndex < questionnaireModules.length; candidateIndex += 1) {
+      const candidate = questionnaireModules[candidateIndex];
+      const candidateDefinition = questionnaireDefinition(candidate.questionnaireId);
+      if (!candidateDefinition || familyIdForDefinition(candidateDefinition) !== familyId) continue;
+      questionnaireModules[candidateIndex] = structuredClone(validateQuestionnaireModuleV2({
+        ...candidate,
+        placement,
+      }, {
+        definition: candidateDefinition,
+        blockIds: protocolBlockIds(),
+        stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
+      }));
+    }
     renderQuestionnaires();
     schedulePlanRefresh();
   }
@@ -2117,7 +2951,7 @@ function bindResearchInteractions(root, { surface }) {
       const status = query("#workspace-status");
       if (status) {
         status.dataset.state = "ready";
-        status.textContent = "Workspace authorized. stimuli/, settings/, outputs/, and recovery/ are ready.";
+        status.textContent = "Work directory ready. Project locations are available.";
       }
       for (const id of ["workspace-rescan", "settings-save", "stimulus-add-workspace", "video-import", "video-folder-import"]) {
         const button = query(`#${id}`);
@@ -2135,6 +2969,37 @@ function bindResearchInteractions(root, { surface }) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       announce(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  function openWorkspaceLocation(location) {
+    if (!["workspaceRoot", "videoLibrary", "experimentPackage"].includes(location)) {
+      announce("The requested project location is not available.");
+      return;
+    }
+    if (surface !== "tauri") {
+      announce("Opening project locations in File Explorer is available in the Windows desktop app.");
+      return;
+    }
+    const event = new CustomEvent(RESEARCH_UI_EVENTS.openWorkspaceLocationRequest, {
+      bubbles: true,
+      cancelable: true,
+      detail: Object.freeze({ location }),
+    });
+    root.dispatchEvent(event);
+    if (!event.defaultPrevented) announce("The Windows folder adapter is not connected yet.");
+  }
+
+  function refreshWorkspaceLocationButtons() {
+    const canOpen = surface === "tauri" && capabilities.directoryPermission;
+    root.querySelectorAll("[data-open-workspace-location]").forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      button.disabled = !canOpen;
+      button.title = canOpen
+        ? button.getAttribute("aria-label") ?? "Open in File Explorer"
+        : surface === "tauri"
+          ? "Set the work directory before opening it"
+          : "Available in the Windows desktop app";
+    });
   }
 
   async function renewWorkspacePermission() {
@@ -2281,9 +3146,18 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function languageTreeFromUi() {
-    const source = value("package-language-tree", DEFAULT_LANGUAGE_SELECTION_SOURCE);
-    const parsed = parseStrictJson(source, { maximumBytes: 256 * 1024 });
-    return validateLanguageSelectionTreeV1(parsed);
+    if (languageEditorLocked && loadedLanguageSelection) return loadedLanguageSelection;
+    const pending = questionnaireEditor.pendingKeys();
+    if (pending.length) throw new TypeError(`Save the questionnaire tables first: ${pending.join(", ")}.`);
+    if (questionnaireEditor.hasPresentationDraft()) {
+      throw new TypeError("Repeated label headers are a design preview. Return each preview to ‘Above every item’ before building with the current experiment format.");
+    }
+    return createCoveredFlatLanguageSelectionV1({
+      definitions: questionnaireDefinitions,
+      modules: questionnaireModules,
+      languages: studyLanguages,
+      requestedFamilyIds: requestedQuestionnaireFamilies,
+    });
   }
 
   function packageRoutes() {
@@ -2340,13 +3214,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPackageLanguageRoutes() {
-    const languageInput = query("#package-language-tree");
-    if (languageInput) {
-      languageInput.readOnly = Boolean(experimentPackageDocument);
-      languageInput.title = experimentPackageDocument
-        ? "Language choices are frozen by the loaded package. Load experiment.json to author a new package."
-        : "Strict LanguageSelectionTreeV1 JSON for a new package.";
-    }
+    renderStudyLanguages();
+    renderQuestionnaireCoverage();
   }
 
   function renderPackageReceipt() {
@@ -2359,7 +3228,7 @@ function bindResearchInteractions(root, { surface }) {
         status.textContent = `${experimentPackageDocument.package.packageId} · ${experimentPackageDocument.package.integrity.packageDefinitionSha256}`;
       } else {
         status.dataset.state = "warning";
-        status.textContent = "No portable package generated or loaded";
+        status.textContent = "No project JSON loaded";
       }
     }
     if (reproduction) {
@@ -2651,7 +3520,20 @@ function bindResearchInteractions(root, { surface }) {
     browserPackageRoot = surface === "browser" ? rootWorkspace : null;
     packageAssetClosureSha256 = null;
     clearParticipantLanguageSelection();
-    setInputValue("package-language-tree", JSON.stringify(parsed.package.languageSelection, null, 2));
+    loadedLanguageSelection = structuredClone(parsed.package.languageSelection);
+    languageEditorLocked = true;
+    studyLanguages = parsed.package.languageSelection.languages.map((language) => ({
+      languageId: language.languageId,
+      languageTag: language.languageTag,
+      label: language.label,
+    }));
+    requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length);
+    for (const module of parsed.package.settings.questionnaires.modules) {
+      const definition = parsed.package.settings.questionnaires.definitions.find((candidate) => (
+        candidate.questionnaireId === module.questionnaireId
+      ));
+      if (definition) requestQuestionnaireFamily(familyIdForDefinition(definition));
+    }
     await applyResearchSettings(parsed.package.settings, { preserveVerifiedStimuli: true });
     renderPackageReceipt();
     root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.setupSettingsReady, {
@@ -2686,8 +3568,7 @@ function bindResearchInteractions(root, { surface }) {
   async function generateExperimentPackage() {
     try {
       const settings = await researchSettingsFromUi();
-      const languageSelection = experimentPackageDocument?.package.languageSelection
-        ?? languageTreeFromUi();
+      const languageSelection = languageTreeFromUi();
       const packageValue = await createExperimentPackageV1({
         packageId: `${settings.experiment.id.slice(0, 119)}-package`,
         languageSelection,
@@ -2730,6 +3611,8 @@ function bindResearchInteractions(root, { surface }) {
     browserPackageRoot = null;
     packageAssetClosureSha256 = null;
     packageReproductionReceipt = null;
+    loadedLanguageSelection = null;
+    languageEditorLocked = false;
     clearParticipantLanguageSelection();
     const sourceByteSha256 = String(receipt.sourceByteSha256);
     const definitionSha256 = String(receipt.definitionSha256);
@@ -2752,7 +3635,10 @@ function bindResearchInteractions(root, { surface }) {
     selectedParticipant = experimentDocument.definition.schedules[0].participantId;
     participantWindowStart = 0;
     participantTileWindowStart = 0;
-    if (replacesDefinition) questionnaireModules.splice(0, questionnaireModules.length);
+    if (replacesDefinition) {
+      questionnaireModules.splice(0, questionnaireModules.length);
+      requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length);
+    }
     const status = query("#experiment-file-status");
     if (status) {
       status.dataset.state = "ready";
@@ -2892,6 +3778,8 @@ function bindResearchInteractions(root, { surface }) {
 
   function updateInputPoint(x, y, receipt, { fromInput = false, inputActive = false, source = null } = {}) {
     inputPoint = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) };
+    const simulatorOwnsDesignProjection = mode === "setup" && previewResponseSimulator !== null;
+    if (simulatorOwnsDesignProjection) previewResponseSimulator.setPoint(inputPoint);
     if (fromInput && surface !== "tauri") inputTestPassed = true;
     const grid = query(".input-test-grid");
     if (grid instanceof HTMLElement) {
@@ -2917,7 +3805,7 @@ function bindResearchInteractions(root, { surface }) {
         passed: inputTestPassed,
       }),
     }));
-    refreshProjection();
+    refreshProjection({ designAlreadyProjected: simulatorOwnsDesignProjection });
   }
 
   function applyNativeInputStatus(status) {
@@ -3076,6 +3964,18 @@ function bindResearchInteractions(root, { surface }) {
     if (dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
   }
 
+  const previewColorDialog = query("#preview-color-dialog");
+  if (previewColorDialog instanceof HTMLDialogElement) {
+    previewColorDialog.addEventListener("close", () => {
+      if (!previewColorAnchor) return;
+      cancelPreviewColorPaint();
+      previewColorAnchor = null;
+      previewColorDraft = null;
+      previewColorLabelDraft = null;
+      refreshProjection();
+    });
+  }
+
   function renderRunQuestionnaire({ focus = false } = {}) {
     const stage = query("#run-questionnaire-stage");
     const runStage = query(".run-stage");
@@ -3228,6 +4128,38 @@ function bindResearchInteractions(root, { surface }) {
     },
   });
   if (inputTestGrid instanceof HTMLElement) inputController.attach(inputTestGrid);
+
+  const previewControlSurface = query(".preview-control-surface");
+  const previewDirectionByKey = Object.freeze({
+    ArrowLeft: "left",
+    ArrowRight: "right",
+    ArrowUp: "up",
+    ArrowDown: "down",
+  });
+  const previewSimulatorHandlers = {
+    keydown(event) {
+      const direction = previewDirectionByKey[event.key];
+      if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
+      previewResponseSimulator?.press(direction);
+      event.preventDefault();
+    },
+    keyup(event) {
+      const direction = previewDirectionByKey[event.key];
+      if (!direction) return;
+      previewResponseSimulator?.release(direction);
+      event.preventDefault();
+    },
+    blur() {
+      previewResponseSimulator?.releaseAll();
+    },
+  };
+  if (previewControlSurface instanceof HTMLElement) {
+    for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
+      previewControlSurface.addEventListener(type, handler);
+    }
+  }
+  const releasePreviewResponse = () => previewResponseSimulator?.releaseAll();
+  window.addEventListener("blur", releasePreviewResponse);
 
   const runInputHandlers = {
     keydown(event) {
@@ -3426,13 +4358,69 @@ function bindResearchInteractions(root, { surface }) {
   root.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target.closest("button") : null;
     if (!(target instanceof HTMLButtonElement)) return;
+    if (["flubber", "grid", "face"].includes(target.dataset.feedbackPreviewMode)) {
+      feedbackPreviewMode = target.dataset.feedbackPreviewMode;
+      refreshProjection();
+      announce(`${feedbackPreviewMode === "grid" ? "2D Grid" : feedbackPreviewMode === "face" ? "Responsive Face" : "Classic Flubber"} selected in the design preview.`);
+      return;
+    }
+    if (["continuous", "stepwise"].includes(target.dataset.responsePreviewMode)) {
+      responsePreviewMode = target.dataset.responsePreviewMode;
+      configurePreviewResponseSimulator();
+      refreshProjection();
+      announce(`${responsePreviewMode === "continuous" ? "Continuous" : "Stepwise"} response design selected.`);
+      return;
+    }
+    if (target.dataset.previewFocus) {
+      const destination = target.dataset.previewFocus === "advanced"
+        ? query("#preview-advanced-settings")
+        : query("#visual-size");
+      if (destination instanceof HTMLDetailsElement) {
+        destination.open = true;
+        destination.scrollIntoView({ behavior: "smooth", block: "start" });
+        destination.querySelector("summary")?.focus();
+      } else if (destination instanceof HTMLElement) {
+        destination.scrollIntoView({ behavior: "smooth", block: "center" });
+        destination.focus();
+      }
+      return;
+    }
+    if (target.id === "preview-color-reset" && previewColorAnchor) {
+      const definition = COLOR_FIELDS.find(({ id }) => id === previewColorAnchor);
+      if (definition) {
+        setPreviewColorDraft(definition.value, { synchronizeHex: true });
+        setPreviewColorLabelDraft("");
+        const label = query("#preview-color-label");
+        if (label instanceof HTMLInputElement) label.value = "";
+      }
+      return;
+    }
+    if (target.id === "preview-color-cancel") {
+      dismissPreviewColorDialog();
+      return;
+    }
+    if (target.id === "preview-color-apply") {
+      dismissPreviewColorDialog({ apply: true });
+      return;
+    }
+    if (target.id === "preview-response-reset") {
+      previewResponseSimulator?.reset();
+      announce("The response design preview returned to neutral.");
+      query(".preview-control-surface")?.focus();
+      return;
+    }
     if (target.dataset.modeButton && target.dataset.modeButton !== mode) {
       announce(mode === "run"
         ? "Complete the attempt or use Stop Early before returning to Setup."
         : "Running mode becomes available only after an attempt starts.");
     }
+    if (target.dataset.confirmSection) {
+      confirmSetupSection(target.dataset.confirmSection);
+      return;
+    }
     if (target.dataset.openSection) openSetupSection(target.dataset.openSection);
     if (target.id === "workspace-choose") selectWorkspace();
+    if (target.dataset.openWorkspaceLocation) openWorkspaceLocation(target.dataset.openWorkspaceLocation);
     if (target.id === "video-import") requestVideoImport();
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
     if (target.id === "package-load") requestExperimentPackageLoad();
@@ -3457,22 +4445,26 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "stimulus-add-workspace") requestVideoImport();
     if (target.id === "stimulus-add-repository") openStimulusDialog("repository");
     if (target.id === "stimulus-add-youtube") openStimulusDialog("youtube");
-    if (target.id === "questionnaire-import") query("#questionnaire-file-input")?.click();
+    if (target.id === "study-language-add-button") addStudyLanguage();
+    if (target.dataset.studyLanguageRemove) removeStudyLanguage(target.dataset.studyLanguageRemove);
+    if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
+    if (target.id === "questionnaire-import") requestQuestionnaireUpload();
+    if (target.dataset.questionnaireUploadFamily) {
+      requestQuestionnaireUpload({
+        familyId: target.dataset.questionnaireUploadFamily,
+        languageTag: target.dataset.questionnaireUploadLanguage,
+      });
+    }
+    if (target.dataset.questionnairePreset) void prepareQuestionnairePreset(target.dataset.questionnairePreset);
+    if (target.id === "questionnaire-inspiration") openQuestionnaireInspiration();
+    if (target.id === "questionnaire-inspiration-close") closeDialog("questionnaire-inspiration-dialog");
+    if (target.dataset.questionnaireInspirationPrepare) {
+      closeDialog("questionnaire-inspiration-dialog");
+      void prepareQuestionnairePreset(target.dataset.questionnaireInspirationPrepare);
+    }
+    if (target.dataset.questionnaireRemoveFamily) removeQuestionnaireFamily(target.dataset.questionnaireRemoveFamily);
     if (target.dataset.bundledQuestionnaire) {
-      const bundled = BUNDLED_QUESTIONNAIRES[target.dataset.bundledQuestionnaire];
-      if (!bundled) return;
-      void fetch(bundled.url)
-        .then((response) => {
-          if (!response.ok) throw new Error(`Bundled questionnaire could not be read (${response.status}).`);
-          return response.arrayBuffer();
-        })
-        .then((bytes) => importQuestionnaireBytes(bytes, {
-          sourceKind: "bundled",
-          logicalName: bundled.logicalName,
-          sourceDocumentSha256: target.dataset.bundledQuestionnaire === "maia-2-de"
-            ? SPECIFICATION_SOURCE_SHA256
-            : null,
-        }))
+      void importBundledQuestionnaire(target.dataset.bundledQuestionnaire)
         .catch((error) => announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`));
     }
     if (target.dataset.questionnaireAction) {
@@ -3489,22 +4481,15 @@ function bindResearchInteractions(root, { surface }) {
         }
       }
     }
-    if (target.dataset.questionnaireMove) {
-      const index = questionnaireModules.findIndex(({ moduleId }) => moduleId === target.dataset.moduleId);
-      const nextIndex = target.dataset.questionnaireMove === "up" ? index - 1 : index + 1;
-      if (index >= 0 && nextIndex >= 0 && nextIndex < questionnaireModules.length) {
-        [questionnaireModules[index], questionnaireModules[nextIndex]] = [questionnaireModules[nextIndex], questionnaireModules[index]];
+    if (target.dataset.questionnaireMoveFamily) {
+      const groups = questionnaireModuleGroups();
+      const index = groups.findIndex(({ familyId }) => familyId === target.dataset.questionnaireFamily);
+      const nextIndex = target.dataset.questionnaireMoveFamily === "up" ? index - 1 : index + 1;
+      if (index >= 0 && nextIndex >= 0 && nextIndex < groups.length) {
+        [groups[index], groups[nextIndex]] = [groups[nextIndex], groups[index]];
+        questionnaireModules.splice(0, questionnaireModules.length, ...groups.flatMap(({ modules }) => modules));
         renderQuestionnaires();
         schedulePlanRefresh();
-      }
-    }
-    if (target.dataset.questionnaireRemoveModule) {
-      const index = questionnaireModules.findIndex(({ moduleId }) => moduleId === target.dataset.questionnaireRemoveModule);
-      if (index >= 0) {
-        const [removed] = questionnaireModules.splice(index, 1);
-        renderQuestionnaires();
-        schedulePlanRefresh();
-        announce(`Module ${removed.moduleId} removed from the participant protocol.`);
       }
     }
     if (target.id === "questionnaire-preview-close") closeDialog("questionnaire-preview-dialog");
@@ -3562,7 +4547,7 @@ function bindResearchInteractions(root, { surface }) {
         schedulePlanRefresh();
       }
     }
-    if (target.dataset.colorAnchor) query(`#color-${target.dataset.colorAnchor}`)?.click();
+    if (target.dataset.colorAnchor) openPreviewColorDialog(target.dataset.colorAnchor);
     if (target.id === "stimulus-dialog-cancel") closeDialog("stimulus-dialog");
     if (target.id === "stimulus-dialog-add") {
       const source = value("stimulus-source", "workspace");
@@ -3666,6 +4651,22 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("input", (event) => {
     const target = event.target;
+    if (target instanceof HTMLInputElement && target.id === "questionnaire-inspiration-search") {
+      filterQuestionnaireInspiration();
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "preview-color-picker") {
+      setPreviewColorDraft(target.value, { synchronizeHex: true });
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "preview-color-hex") {
+      setPreviewColorDraft(target.value);
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "preview-color-label") {
+      setPreviewColorLabelDraft(target.value);
+      return;
+    }
     if (target instanceof HTMLInputElement && target.dataset.questionnaireAnswer && activeQuestionnaire) {
       activeQuestionnaire.answers[target.dataset.questionnaireAnswer] = target.value;
       dispatchQuestionnaireAnswers(RESEARCH_UI_EVENTS.questionnaireDraftRequest);
@@ -3694,6 +4695,11 @@ function bindResearchInteractions(root, { surface }) {
         // Native HTML validation and the blocking preflight expose the invalid interim value.
       }
     }
+    if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
+    if (isPreviewOnlyControl(target)) {
+      refreshProjection();
+      return;
+    }
     if (isValidationControl(target) && touchedValidationControls.has(target)) {
       syncControlValidation(target);
     }
@@ -3705,6 +4711,15 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("change", (event) => {
     const target = event.target;
+    if (target instanceof HTMLSelectElement && target.id === "questionnaire-inspiration-domain") {
+      filterQuestionnaireInspiration();
+      return;
+    }
+    if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
+    if (isPreviewOnlyControl(target)) {
+      refreshProjection();
+      return;
+    }
     if (target instanceof HTMLInputElement && ["output-csv", "output-tsv"].includes(target.id)) {
       outputFormatsTouched = true;
       syncOutputFormatValidation();
@@ -3877,15 +4892,25 @@ function bindResearchInteractions(root, { surface }) {
     const [file] = [...(event.target.files ?? [])];
     event.target.value = "";
     if (!file) return;
+    const expected = pendingQuestionnaireUpload;
+    pendingQuestionnaireUpload = null;
     try {
       const bytes = await file.arrayBuffer();
       await importQuestionnaireBytes(bytes, {
         sourceKind: "researcherCsv",
         logicalName: file.name,
+        expectedFamilyId: expected?.familyId ?? null,
+        expectedLanguageTag: expected?.languageTag ?? null,
       });
     } catch (error) {
+      questionnaireImportStatus(error instanceof Error ? error.message : String(error), "error");
       announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`);
     }
+  });
+
+  query("#questionnaire-inspiration-dialog")?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialog("questionnaire-inspiration-dialog");
   });
 
   query("#participant-language-dialog")?.addEventListener("cancel", (event) => {
@@ -3972,7 +4997,11 @@ function bindResearchInteractions(root, { surface }) {
       manifestReadinessMessage = "Output manifests have not passed the readability scan.";
     }
     const renew = query("#workspace-renew");
-    if (renew instanceof HTMLButtonElement) renew.hidden = capabilities.directoryPermission;
+    const workspaceSelected = surface === "tauri"
+      ? root.dataset.nativeWorkspaceReady === "true"
+      : Boolean(workspace);
+    if (renew instanceof HTMLButtonElement) renew.hidden = capabilities.directoryPermission || !workspaceSelected;
+    refreshWorkspaceLocationButtons();
     refreshProjection();
   });
 
@@ -4164,10 +5193,16 @@ function bindResearchInteractions(root, { surface }) {
       output.textContent = event.detail?.label ?? (event.detail?.surface === "browser" ? "Browser workspace ready" : "Windows workspace ready");
       output.dataset.state = "ready";
     }
+    const status = query("#workspace-status");
+    if (status) {
+      status.dataset.state = "ready";
+      status.textContent = "Work directory ready. Project locations are available.";
+    }
     for (const id of ["workspace-rescan", "settings-save", "stimulus-add-workspace", "video-import", "video-folder-import"]) {
       const button = query(`#${id}`);
       if (button instanceof HTMLButtonElement) button.disabled = false;
     }
+    refreshWorkspaceLocationButtons();
     refreshProjection();
   });
 
@@ -4180,15 +5215,18 @@ function bindResearchInteractions(root, { surface }) {
   }));
 
   renderPools();
+  renderQuestionnaires();
   renderBindings();
   renderParticipantGrid();
   renderPackageReceipt();
+  renderSetupReviewState();
   refreshProjection();
   schedulePlanRefresh();
 
   return Object.freeze({
     get mode() { return mode; },
     get openSection() { return openSection; },
+    get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
@@ -4254,8 +5292,16 @@ function bindResearchInteractions(root, { surface }) {
       youtubePreflightAdapter = null;
       setupPreview.destroy();
       runPreview.destroy();
+      previewResponseSimulator?.destroy();
+      previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
+      if (previewControlSurface instanceof HTMLElement) {
+        for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
+          previewControlSurface.removeEventListener(type, handler);
+        }
+      }
+      window.removeEventListener("blur", releasePreviewResponse);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);

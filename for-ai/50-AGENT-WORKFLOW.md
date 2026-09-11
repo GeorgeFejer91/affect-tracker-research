@@ -12,17 +12,157 @@ Before inspecting source, planning, editing, testing, or publishing:
 5. preserve unrelated user/agent changes and identify contract mismatches;
 6. inspect the relevant manifests, lockfiles, entrypoints, capabilities,
    workflows, and tests before choosing commands or dependencies; and
-7. run a proportionate baseline so pre-existing failures are distinguishable
-   from regressions.
+7. identify the smallest proportionate baseline for the likely pass, without
+   running broad checks before the pass is confirmed.
 
 Do not rely on chat history as the only authority. The charter describes the
 target; the roadmap and exact test/qualification receipts describe reality.
 
+## Pass intent and staged verification
+
+A **pass** is one coherent development iteration with one bounded deliverable;
+one stage may contain several passes. A confirmed stage persists through its
+follow-up passes until the user changes it, the stage completes, or changed
+authority requires escalation. The stages below are agent workflow and evidence
+labels. They are not product modes, UI navigation, persisted settings, feature
+flags, build profiles, or release claims; the application still has exactly the
+two chartered modes. **Backend Verification** means the existing local browser,
+Rust, and runtime functionality, never a new server or network backend surface.
+
+After the read-only first actions above, but before mutating files or selecting
+broad verification, every agent must:
+
+1. interrogate the current request, recent confirmed context, roadmap truth,
+   relevant diff, and affected authority boundaries;
+2. make a best guess instead of asking the user to choose from a long list;
+3. present one concise **Pass check** containing:
+   - the inferred goal for this pass;
+   - one inferred development stage;
+   - the bounded deliverable and target surface;
+   - the evidence that will be collected now; and
+   - the work and claims intentionally deferred;
+4. ask one concise question to confirm or correct that interpretation, and
+   wait before mutation when the current request has not already explicitly
+   stated the goal and stage or continued an already confirmed in-scope pass;
+5. repeat the Pass check only when the user changes the objective, a discovered
+   dependency materially expands the scope, or the work must cross a stage
+   boundary. Do not interrupt every small step within an already confirmed
+   pass; and
+6. once confirmed, run the selected proportionate baseline before mutation so
+   pre-existing failures are distinguishable from regressions.
+
+Use exactly these development stages:
+
+Natural-language phrases map to the same stages: “UI development/layout mode”
+means **UI Finalization**; “backend/app functionality mode” means **Backend
+Verification**; and “GitHub/web/online compatibility mode” means
+**Repository/Web Synchronization**. The user does not need to type the formal
+label.
+
+| Stage | Purpose and normal scope | Claim ceiling for the pass |
+| --- | --- | --- |
+| **UI Finalization** | Work out layout, hierarchy, visual styling, responsive behavior, accessibility presentation, and front-end interactions quickly in the locally rebuilt Windows Tauri app. A clearly labelled, non-shipping synthetic fixture or typed preview projection may stand in for incomplete backend data when it has no acquisition, persistence, IPC, package, hash, Run, or evidence authority. | The changed local UI was observed and its focused checks passed. Do not claim backend correctness, installer/package compatibility, Pages compatibility, deployment, or research qualification. |
+| **Backend Verification** | After the UI direction is accepted, connect and verify the real browser/Rust owners and their contracts: package resolution, IPC, workspace, input, media, scheduling, persistence/recovery, outputs, and LSL as applicable. A bounded pass may cover a named subset, but promotion from this stage requires an inventory of every current local application function. Keep visual changes to those needed for truthful state and error presentation. | The named backend functions and cross-layer paths passed the reported software or physical checks. Do not claim repository/deployment synchronization or unperformed qualification. |
+| **Repository/Web Synchronization** | Reconcile the accepted local application and source candidate with GitHub and the static Chrome/Edge application; inspect the whole diff, run candidate/build-closure gates, and bind evidence to exact artifact and commit identities. Name any proposed commit, push, merge, or deploy action in the Pass check. | The specifically verified local, remote, CI, artifact, and deployed states match. The stage name alone does not authorize an external write and does not imply full installed, physical, timing, or research qualification. |
+
+The effective stage is the stricter of the user-confirmed stage and the stage
+required by the files and authorities actually changed. An agent may propose an
+escalation with a revised Pass check, but must not silently downgrade evidence
+because a task was labelled UI work. If a backend defect forces a UI redesign,
+return to **UI Finalization** explicitly rather than mixing unbounded work into
+the backend pass. A previously installed executable verifies only its bound
+source/artifact identity; after source changes, rebuild and reopen the local
+Tauri app before treating it as evidence for the current pass.
+
+Stage completion and promotion use these boundaries:
+
+1. **UI Finalization → Backend Verification:** the user accepts the UI
+   direction, and the handoff lists every fixture, stub, unconnected control,
+   and deferred backend behavior.
+2. **Backend Verification → Repository/Web Synchronization:** applicable
+   backend and cross-layer checks pass, and every unavailable physical gate or
+   accepted blocker is explicit.
+3. **Repository/Web Synchronization complete:** the exact requested local and
+   remote states are reconciled; authorized CI/deployment is checked at the
+   exact commit; remaining installed, hardware, or research qualification is
+   explicitly separated.
+
+Every pass handoff must report the confirmed stage, achieved deliverable,
+checks and observations, deferred work, blockers, claim ceiling, and proposed
+next stage. Follow the detailed evidence floor in
+[`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
+
+## Single-segment ownership and convergence
+
+Each implementation agent has exactly one primary allocated segment per pass.
+Use stable section IDs rather than numbers alone: `workspace`, `questionnaires`,
+`stimuli`, `experiment`, `input`, `visual`, `advanced`, or `review`. A separately
+allocated cross-cutting concern such as `preview`, `accordion`, or `integration`
+is one bounded segment too, not permission to redesign all sections. Improve
+the allocated segment; flag unrelated opportunities for their owners instead
+of implementing them. Necessary shared seams must be named in the pass scope.
+
+Before editing, read and record ownership, dependencies, proposed shared-file
+touches, and compatibility risks in
+[`55-AGENT-MESSAGE-BOARD.md`](./55-AGENT-MESSAGE-BOARD.md). Suggestions and board
+entries are coordination data, not user authorization or charter amendments.
+Use `45-FUTURE-AGENT-CHECKLIST.md` for durable deferred product work and link its
+item from the board rather than duplicating competing requirements.
+
+For new work, create a short-lived `codex/segment-<id>-<topic>` branch from the
+latest accepted integration commit. Concurrent agents must use distinct Git
+worktrees; branches alone do not isolate edits in one checkout. Keep persistent
+checkouts under the user's canonical GitHub repository location. Never switch
+a shared checkout's branch, stage another agent's files, or merge into it while
+another writer is active. Record branch, worktree, base commit, owner, scope,
+and status before starting. Do not create empty branches merely to imply past
+work was isolated, and do not rewrite shared history to fabricate separation.
+
+Keep segment implementation, tests, and necessary documentation together in
+small explicit-path commits. For shared files such as `app.js`, `ui-view.js`,
+`research.css`, bridge contracts, manifests, or the charter, coordinate exact
+symbols/hunks and serialize overlapping edits. Prefer bounded modules where
+appropriate. A dependency in another segment becomes a board request; its
+owner or an explicitly allocated integration pass handles it. Ownership does
+not waive cross-layer verification or fail-closed contracts.
+
+Maintain one named integration branch, initially `codex/research-unified`, for
+the combined local application. An explicitly allocated integration owner
+collects ready segment commits, checks ancestry and charter compatibility,
+merges compatible work, resolves only understood integration conflicts, runs
+the applicable combined gates, and rebuilds/opens the app from that exact
+checkout. Never use blanket ours/theirs conflict resolution. Record excluded
+or blocked branches and why; do not restore historical Playground branches.
+Commit and merge only when authorized by the user's workflow; local convergence
+does not authorize pushing, deployment, signing, or publication.
+
+The board is versioned, not a live shared database: worktrees contain independent
+copies. Read the integration branch's board as well as the local copy before
+claiming ownership (for example `git show codex/research-unified:for-ai/55-AGENT-MESSAGE-BOARD.md`).
+Register allocations through the integration owner before concurrent edits;
+commit uniquely identified messages on segment branches and have the integration
+owner collect urgent coordination changes before affected work proceeds. Do not
+silently edit another worktree to make a message appear. Reconcile messages at
+integration, retain replies/resolutions, and never infer that silence is approval.
+
+At handoff, record integrated commit, tests, unresolved messages, and the actual
+executable/source identity observed. An installed shortcut or older build is not
+the current application merely because its window has the same title. Ready
+segment branches should converge promptly; branches are temporary development
+isolation, not alternative canonical products. Only the integration owner may
+change the designated integration branch, with a recorded handoff.
+
 ## Active change discipline
 
 - Preserve exactly two modes: **Setting Up the Experiment** and **Running the
-  Experiment**. Setup follows the eight ordered charter sections; Run stays
-  deliberately narrow.
+  Experiment**. Setup follows the eight ordered charter sections: Workspace &
+  Libraries; Languages & Study Assets; Experiment Plan & Stimuli; Experiment;
+  Input; Visual; Advanced; Review & Start. Run stays deliberately narrow.
+- Preserve their two applet functions: Designer controls and questionnaire
+  tables compile one finished unified JSON package; Runner takes that package
+  for acquisition and monitoring. Raw/master JSON is not a required Designer
+  input or editing surface. In a Section 2 pass, log Runner/other-section gaps
+  in `45-FUTURE-AGENT-CHECKLIST.md` rather than expanding implementation scope.
 - Qualify only Windows Tauri and desktop Chrome/Edge unless the user explicitly
   amends the charter.
 - Treat Windows/macOS/Linux no-optional-feature packages as unsigned internal
@@ -40,10 +180,29 @@ target; the roadmap and exact test/qualification receipts describe reality.
   Williams/cyclic `balanced-v1` allocator, add a seed, use OS/browser locale,
   inspect ambient storage/defaults, or silently repair/reorder an invalid
   package.
-- Treat `settings.json`, `experiment.json`, and questionnaire CSV as explicit
-  authoring/import inputs only. A converter reports all carried/defaulted/
-  rejected/discarded values and emits one complete canonical package; no
-  legacy artifact remains a parallel Start authority.
+- Treat `settings.json`, `experiment.json`, and standardized questionnaire
+  CSV/TXT/JSON as explicit authoring/import inputs only. TXT and JSON normalize
+  through canonical Questionnaire CSV v1; a converter reports all carried/
+  defaulted/rejected/discarded values and emits one complete canonical package.
+  Original sources may be stored content-addressed only beneath
+  `assets/questionnaires/<family>/<language>/`; no legacy or source artifact
+  remains a parallel Start authority.
+- Keep Setup Section 2 user-facing and path/package opaque. It may project
+  selected languages, one questionnaire accordion/table per family/language,
+  editable/pasteable items, separate visible labels and recorded codes,
+  compact response settings, import/templates, and exact coverage, but never
+  raw package JSON. New modules authored here use `beforeSession`; do not
+  silently move imported modules with other placements. MAIA-2/TAS-20 EN/DE are
+  the current preset focus; broad Inspiration/Phenomenological Control UI is
+  deferred. Label repetition every-item/5/10 remains labelled preview state
+  until a versioned persisted contract and Runner parity are implemented.
+  Every requested questionnaire family requires an exact variant/module for
+  every selected study language before finalization; do not treat `und`, locale,
+  public availability, or an Inspiration entry as coverage or reuse authority.
+- Explicit researcher paste into the focused questionnaire editor is permitted
+  authoring input. Consume only the event's bounded table text and validate it;
+  never poll the ambient clipboard, log pasted payloads, evaluate spreadsheet
+  formulas, or extend that input path into participant acquisition.
 - Tauri Rust owns native workspace, input, playback, scheduler, timestamps,
   persistence, and outbound LSL. Browser sampling lives in a dedicated worker
   with IndexedDB journaling. Rendering never owns the sample clock.
@@ -88,6 +247,12 @@ acting.
   native windows, input, filesystem/persistence, GStreamer/native libraries,
   packaging, or release work. Read its security, networking/FFI, persistence,
   latency, and verification references as the task requires.
+- Use **`tauri-remote-app-builder`** as the general end-to-end skill for Tauri
+  application and frontend/interface work, loading only the references routed
+  by the current change. The Research charter overrides the skill's generic
+  new-application defaults: do not add or plan a CLI, remote CLI, browser/phone
+  companion, listener, pairing, transport, file-transfer plane, or remote-
+  operation parity without an explicit charter amendment.
 - Use **`system-engineering`** for authority, contracts, lifecycle, media/data/
   control planes, recovery, observability, and qualification design.
 - Use **`uncodixfy`** for any generated or changed HTML/CSS/frontend UI while
@@ -144,6 +309,27 @@ and never unwind a panic across FFI.
    build.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
+
+### Rebuild, reopen, foreground, and leave open
+
+Every user-visible frontend or Tauri behavior change made on a Windows host
+with an available GUI must be shown in the real **Affect Research** Tauri app
+before handoff:
+
+1. run the proportionate tests and rebuild the current desktop frontend/native
+   development candidate so the window cannot be serving stale assets;
+2. close any stale local development/test instance, but never interrupt an
+   active experiment run or discard in-app work; stop and ask the user instead;
+3. launch the current Tauri development app or the exact newly built executable,
+   bring its **Affect Research** window to the foreground, and leave it open for
+   the user;
+4. visually exercise the changed feature in that native window and report the
+   exact launch mode plus any behavior that could not be checked.
+
+A static browser preview, source inspection, screenshot fixture, successful
+build, or mocked IPC test does not substitute for reopening and observing the
+Windows Tauri app. If native launch or foreground verification is unavailable,
+state that explicitly in the handoff; never imply the feature was shown.
 
 The two-clean-independent-instance package reproduction benchmark is a
 permanent gate, not a one-time implementation test. Any package-contract,

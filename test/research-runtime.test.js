@@ -42,9 +42,11 @@ import {
   parseStrictJson,
   parseExperimentalYouTubeUrl,
   RESEARCH_PACKAGE_ASSET_DIRECTORY,
+  RESEARCH_QUESTIONNAIRE_ASSET_DIRECTORY,
   RESEARCH_STORAGE_NAMESPACE,
   RESEARCH_WORKSPACE_DIRECTORIES,
   RESEARCH_WORKSPACE_IDENTITY_FILE,
+  sha256Blob,
 } from "../site/src/research/workspace.js";
 
 const HASH_A = "a".repeat(64);
@@ -1312,7 +1314,9 @@ test("workspace initialization curates the fixed libraries and recursively resca
   await workspace.initialize();
   assert.deepEqual([...root.children.keys()], [...RESEARCH_WORKSPACE_DIRECTORIES, "assets"]);
   assert.equal(root.children.get("assets").children.has("stimuli"), true);
+  assert.equal(root.children.get("assets").children.has("questionnaires"), true);
   assert.equal(RESEARCH_PACKAGE_ASSET_DIRECTORY, "assets/stimuli");
+  assert.equal(RESEARCH_QUESTIONNAIRE_ASSET_DIRECTORY, "assets/questionnaires");
   assert.equal(RESEARCH_STORAGE_NAMESPACE, "affect-research/v1");
 
   const stimuli = root.children.get("stimuli");
@@ -1396,6 +1400,83 @@ test("workspace imports preserve safe relative subfolders and never overwrite", 
   assert.throws(() => normalizeWorkspaceRelativePath("../escape.mp4"), /unsafe/u);
   assert.equal(isSupportedVideoName("example.WEBM"), true);
   assert.equal(isSupportedVideoName("example.csv"), false);
+});
+
+test("workspace stores questionnaire authoring sources in verified content-addressed language folders", async () => {
+  const root = new MemoryDirectoryHandle();
+  const workspace = new BrowserResearchWorkspace(root);
+  await workspace.initialize();
+  const bytes = new TextEncoder().encode("questionnaire source\n");
+  const sourceSha256 = await sha256Blob(new Blob([bytes]));
+  const expected = {
+    workspaceId: workspace.workspaceId,
+    familyId: "maia-2",
+    languageTag: "de",
+    relativePath: `assets/questionnaires/maia-2/de/${sourceSha256}.txt`,
+    sourceSha256,
+    byteLength: bytes.byteLength,
+  };
+
+  assert.deepEqual(await workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256,
+    bytes,
+  }), expected);
+  assert.deepEqual(await workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256,
+    bytes,
+  }), expected, "storing the same immutable source is idempotent");
+
+  const questionnaireRoot = root.children.get("assets").children.get("questionnaires");
+  const languageDirectory = questionnaireRoot.children.get("maia-2").children.get("de");
+  assert.deepEqual([...languageDirectory.children.keys()], [`${sourceSha256}.txt`]);
+  assert.equal(await (await languageDirectory.children.get(`${sourceSha256}.txt`).getFile()).text(), "questionnaire source\n");
+
+  languageDirectory.children.get(`${sourceSha256}.txt`).file = new File(
+    ["changed source\n"],
+    `${sourceSha256}.txt`,
+  );
+  await assert.rejects(workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256,
+    bytes,
+  }), (error) => error.code === "questionnaire-asset-collision");
+
+  await assert.rejects(workspace.saveQuestionnaireAsset({
+    familyId: "MAIA-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256,
+    bytes,
+  }), (error) => error.code === "questionnaire-asset-identifier");
+  await assert.rejects(workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "pdf",
+    sourceSha256,
+    bytes,
+  }), (error) => error.code === "questionnaire-asset-format");
+  await assert.rejects(workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256: "a".repeat(64),
+    bytes,
+  }), (error) => error.code === "questionnaire-asset-hash");
+  await assert.rejects(workspace.saveQuestionnaireAsset({
+    familyId: "maia-2",
+    languageTag: "de",
+    format: "txt",
+    sourceSha256,
+    bytes: new Uint8Array(),
+  }), (error) => error.code === "questionnaire-asset-size");
 });
 
 test("workspace opens a verified stimulus only beneath the curated stimuli library", async () => {

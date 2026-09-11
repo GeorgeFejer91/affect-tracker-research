@@ -15,6 +15,13 @@ in [`40-ROADMAP.md`](./40-ROADMAP.md).
 - Desktop name: **Affect Research**.
 - Exactly two modes: **Setting Up the Experiment** and **Running the
   Experiment**.
+- These modes provide two applet functions: **Affect Tracker Designer** authors
+  experiment settings, the video library/manual plan, and questionnaires via
+  UI controls and outputs one complete unified JSON package; **Experiment
+  Runner** consumes a finished package for acquisition and monitoring. JSON
+  compilation belongs behind the Designer UI. A researcher need not create or
+  edit JSON to design a study. This is a product-role distinction, not an
+  additional mode or a separate-executable requirement.
 - First qualification targets: Tauri on Windows and the static application in
   current desktop Google Chrome and Microsoft Edge.
 - Manual CI may create unsigned Windows x64 NSIS, macOS ARM64/x64 DMG, and
@@ -32,20 +39,50 @@ in [`40-ROADMAP.md`](./40-ROADMAP.md).
 - WebXR, native Quest, remote control, Ground Control, Party/Universe, Remote
   Flubber, direct Polar, Face/Photoatlas, Touch inference, and the other former
   Playground surfaces are absent from the active source, navigation, and
-  release claims. Their source and documentation remain in Playground/history.
+  release claims. A new project-authored procedural Face may appear only inside
+  the bounded Setup feedback-design preview described below; it restores none
+  of those historical sources or requirements. Their source and documentation
+  remain in Playground/history.
 
 ## Setting Up the Experiment
 
 Setup uses eight ordered, single-open accordions on the left and a persistent
 live feedback preview on the right.
 
+Every Setup accordion ends with an explicit **Confirm section** action. A
+confirmation marks that section **Reviewed** with a visible check symbol and
+text alternative, collapses it, and opens the next section; confirming the
+eighth section collapses it without wrapping to the first. All eight begin
+unreviewed on each fresh application load, including Workspace when its fixed
+folders already exist. This session-local review trail is presentation state:
+it is not inferred from readiness, persisted, serialized, or used as package,
+hash, preflight, Start, Run, recovery, or evidence authority.
+
+Accordion opening and closing uses one short, smooth, reversible size/fade
+transition; reduced-motion preference settles it immediately. Only the open,
+unreviewed section gives its confirmation control a restrained breathing glow
+that is strongest at the edge and fades outward. Reviewed headers show the
+check inside a green circle. Their confirmation control becomes a disabled
+**Reviewed** receipt, while the header chevron may open or close the section
+without clearing the mark or requiring another confirmation.
+
+The persistent preview may include a clearly labelled **Design preview** that
+compares classic Flubber, a 2D affect Grid with one point marker, and a
+project-authored procedural responsive Face. All three consume the same
+transient x/y preview point. This comparison is Setup-only and
+non-authoritative. It may demonstrate a centered, manually sized Flubber halo
+and proposed continuous-versus-stepwise control timing and hold behavior, but
+those draft choices are not saved to the current package/settings/input/visual
+contracts and never affect Start, Run, hashes, records, LSL, or evidence.
+
 ### Workspace & Libraries
 
 - Choose one experiment-package root.
-- Create or validate the fixed `assets/stimuli/`, `outputs/`, and `recovery/`
-  descendants. The scientific asset closure consists only of files declared
-  beneath `assets/stimuli/`; directory enumeration order is never protocol
-  authority.
+- Create or validate the fixed `assets/stimuli/`, `assets/questionnaires/`,
+  `outputs/`, and `recovery/` descendants. The scientific video-asset closure
+  consists only of files declared beneath `assets/stimuli/`; questionnaire
+  source uploads are a separate authoring/provenance library and directory
+  enumeration order is never protocol authority.
 - Drop/import complete videos into `assets/stimuli/` recursively and provide
   **Rescan** without silently adding them to the package manifest.
 - Load, strictly validate, and save/re-export one canonical package-root file,
@@ -57,26 +94,79 @@ live feedback preview on the right.
   identically. Noncanonical JSON can enter only an explicit authoring
   conversion.
 - Treat historical `experiment.json`, compatible `settings.json`, and
-  questionnaire CSV files only as explicit authoring/import inputs. Conversion
-  reports every carried, defaulted, rejected, and discarded field and produces
-  a new package; Start never reads those files as a second authority.
+  standardized questionnaire CSV/TXT/JSON files only as explicit
+  authoring/import inputs. Conversion reports every carried, defaulted,
+  rejected, and discarded field and produces a new package; Start never reads
+  those files as a second authority.
 - Windows uses a Rust-owned workspace boundary. Chrome/Edge uses a directly
   authorized File System Access root plus the isolated `affect-research/v1`
   IndexedDB/storage namespace.
 
-### Experiment
+### Languages & Study Assets
 
-- Read experiment ID, title, continuous-rating assertion, sampling frequency,
-  and complete participant schedule from the loaded package; display them as
-  protocol facts rather than randomization controls.
-- Require consecutive participant IDs `P001` onward in schedule-array order,
-  using at least three digits and enough zero-padding for the largest ID.
-- Continuous rating is always enabled. No continuous toggle, single-summary,
-  or summary-only option is present.
-- Authoring may initially propose 130 Hz, but a runnable package explicitly
-  stores an integer from 1 through 240 Hz. Runtime resolution has no default.
-- There is no global fixed/jitter/continue selector. Each externally authored
-  video occurrence has an integer `isiAfterMs` from 0 through 3,600,000.
+- Section 2 is a compact questionnaire editor for assets administered before
+  the video/Flubber task. Its primary interaction is an Excel-like table, not
+  raw package/master JSON. Finalization incorporates the validated table
+  content into the internally compiled unified package.
+- Select one or more study languages, then **Add questionnaire**. Every added
+  family creates one accordion per selected language, named by questionnaire
+  and language. The header exposes an up/down disclosure chevron, item count,
+  and meaningful readiness/error state; keyboard opening/closing preserves
+  edits. Adding a language creates the corresponding missing variant rather
+  than translating or duplicating another language's item text.
+- Each accordion contains editable item rows and supports an explicit paste
+  from cells copied in Excel or another spreadsheet. Pasting a rectangular
+  block starts at the focused cell, preserves row/column order, and rejects
+  malformed, oversized, or invalid values with an actionable location. The
+  researcher can also add/remove rows and edit individual cells.
+- Keep participant-visible response labels separate from numeric recorded
+  values. For example, the display labels may be **Never … Always** while an
+  item row records `0, 1, 2, 3, 4, 5`; a reverse-coded row can record
+  `5, 4, 3, 2, 1, 0` under the same displayed labels. Changing recorded values
+  never silently changes labels or creates subscales, diagnostic thresholds,
+  or a scoring interpretation. Preserve explicit existing instrument scoring
+  provenance when editing a preloaded definition.
+- Provide compact settings for questionnaire title/instructions, number of
+  answer options, displayed option labels, and required/optional items. The
+  current contract permits one selected response per item; option count is
+  not a multi-select response limit. Multi-select would need a separate
+  versioned contract and is not part of this pass.
+- Provide a labelled design preview for repeating answer labels above every
+  item, every 5 items, or every 10 items. Current v1 has no persisted contract
+  for this layout preference; it remains preview state until a future
+  versioned package/browser/Rust/Runner change is complete. Do not imply the
+  current Runner uses it or silently encode it through unrelated fields.
+- For every requested questionnaire family, every selected language needs an
+  exact-language definition/module before package finalization. Missing or
+  invalid variants remain visible and block finalization; `und`, another
+  language, OS/browser locale, and implicit translation never satisfy coverage.
+- Keep strict UTF-8 CSV, tab-delimited TXT, and JSON import plus downloadable
+  format templates as secondary ways to populate the same editor. All accepted
+  file or table content normalizes through canonical `questionnaire-csv-v1`.
+  JSON imports are optional questionnaire interchange, never required master
+  package editing. Preserve original-source, canonical-CSV, and definition
+  receipts and content-addressed authoring assets under
+  `assets/questionnaires/<family>/<language>/`.
+- Focus the preset controls on MAIA-2 and TAS-20 in English/German. MAIA-2 may
+  preload the retained authorized assets with source, attribution, translation,
+  and scoring provenance. TAS-20 remains an upload/paste preparation slot until
+  applicable reuse rights and each language asset are supplied. The retained
+  English TAS fixture is excluded from distributable builds; no German TAS
+  asset is currently supplied. Broader Inspiration and Phenomenological
+  Control UI are deferred from this simplified section.
+- Keep the fixed demographics contract intact; its language/localization work
+  is a future checklist item. The questionnaire editor does not collect
+  participant responses or change which demographic data may be persisted.
+- New Section 2 modules use `beforeSession`, in authored family order for each
+  terminal language. Existing package/historical hook contracts retain their
+  exact meanings, including other placements; do not rewrite imported non-
+  pre-session modules to fit this editor. The finalizer owns the finite
+  language tree and package embedding.
+
+The current pass is limited to this Designer section and its authoring
+integration. The Experiment Runner and other Setup sections are out of scope;
+record issues there in
+[`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ### Experiment Plan & Stimuli
 
@@ -95,9 +185,11 @@ live feedback preview on the right.
   `browserMediaAdapters`; qualified Windows requires `nativeGstPlay`; explicit
   `unqualifiedWebview` stays permanently labelled unqualified. No unavailable
   mode silently falls back.
-- Array order is authority. Affect Research does not shuffle, balance, seed,
-  rotate, select from pools, or otherwise randomize it. The external authoring
-  process owns study-design validity.
+- Array order is authority. The Designer target lets a researcher define the
+  video library and manual plan through UI; it does not shuffle, balance, seed,
+  rotate, select from pools, or otherwise randomize the plan. The researcher
+  owns study-design validity. Current read-only/import-based plan controls are
+  a recorded implementation gap, not a requirement to hand-author JSON.
 - Every participant schedule contains the complete block-ID set exactly once;
   block and video order may differ between participants. Every referenced
   stimulus exists, each participant sees a stimulus at most once, and every
@@ -113,58 +205,20 @@ live feedback preview on the right.
 - Derive **Available**, **Active**, **Partial**, and **Complete** from locks,
   journals, and manifests. They are not editable flags.
 
-### Questionnaires & Sequence
+### Experiment
 
-- The package embeds every runnable questionnaire definition, scoring rule,
-  attribution/source receipt, language variant, and ordered hook. A CSV is an
-  authoring/import source only; its exact 14-column strict
-  `questionnaire-csv-v1` validation and conversion report remain required, but
-  Start never depends on that external CSV.
-- The package owns a finite, acyclic language-selection tree with one explicit
-  root. Ordered choice nodes lead only to declared nodes and every reachable
-  leaf declares one terminal BCP 47 language. A single-language package still
-  declares an explicit terminal leaf. OS/browser locale and previously selected
-  language never choose a branch.
-- In Review & Start, a participant must traverse that tree from its root through
-  the displayed ordered choices. Start remains blocked until the traversal
-  reaches a terminal language; loading a package never selects its first route.
-  Changing participant or new-attempt disposition, cancelling selection, a
-  rejected Start, and completion all clear the pending selection. A compatible
-  recovery instead restores its hash-bound frozen route and never asks the
-  participant to choose again.
-- Every terminal-language record owns an explicit ordered
-  `questionnaireModuleIds` list. The selected route compiles exactly that list;
-  there is no definition-language filtering or fallback. Every package module
-  must be mapped by at least one terminal, and a mapped definition must use the
-  terminal's exact language tag or `und`. Supported placements are
-  `beforeSession`, `afterSession`, `beforeBlock`, `afterBlock`, and wire kind
-  `afterStimulus`, shown as **after video**; block hooks bind `blockId` and video
-  hooks bind `stimulusId` plus an explicit `relativeToIsi` value of `before` or
-  `after`. Modules at the same hook and side of the ISI retain the language
-  record's order.
-- The deterministic step order is before-session hooks; for each manually
-  ordered block, before-block hooks; then for each video, the video,
-  after-video hooks whose `relativeToIsi` is `before`, its exact ISI, and
-  after-video hooks whose `relativeToIsi` is `after`; then after-block hooks;
-  and finally after-session hooks.
-- Preserve the verified German MAIA-2 definition and its official wording,
-  anchors, scoring, subscales, citation, translation credit, and source
-  identity as an authoring asset that is embedded into a package when selected.
-- Bundle the researcher-supplied English VR Experience, MAIA-2, six-item SSQ,
-  and TAS-20 authoring fixtures with their supplied wording, response labels,
-  numeric response values, and Max Planck Institute for Human Brain and
-  Cognitive Sciences, Department of Neurology attribution. Treat all four as
-  unvalidated, unscored candidates: their numeric response values are response
-  encodings, not permission to infer scoring or subscale interpretation.
-- Preserve the supplied 20-item TAS-20 fixture exactly. Do not infer reverse
-  scoring, subscales, totals, thresholds, or diagnostic interpretation. Because
-  no rights/reuse proof was supplied, recorded approval of its reuse and
-  licensing is an explicit pre-deployment gate. Bundling is neither validation
-  nor licensing authorization.
-- Provide legacy Import CSV, package authoring controls, definition/hash
-  status, add/remove/reorder, placement and language mapping, questionnaire
-  preview, and participant-by-terminal-language sequence preview. Saving emits
-  one complete package, not additional runtime configuration files.
+- The Designer target authors experiment ID, title, sampling frequency, and a
+  complete manual participant schedule through UI and compiles those values
+  into the finished package. The Runner reads them as immutable protocol facts.
+  Current import/read-only controls are tracked for a later section pass.
+- Require consecutive participant IDs `P001` onward in schedule-array order,
+  using at least three digits and enough zero-padding for the largest ID.
+- Continuous rating is always enabled. No continuous toggle, single-summary,
+  or summary-only option is present.
+- Authoring may initially propose 130 Hz, but a runnable package explicitly
+  stores an integer from 1 through 240 Hz. Runtime resolution has no default.
+- There is no global fixed/jitter/continue selector. Each explicitly authored
+  video occurrence has an integer `isiAfterMs` from 0 through 3,600,000.
 
 ### Input
 
@@ -177,6 +231,12 @@ live feedback preview on the right.
   **N/A**.
 - Custom binding selects a direction, captures one keyboard/mouse/wheel/gamepad
   action, rejects any conflict, and supports an inert live test.
+- The Setup design preview may expose proposed **Continuous** and **Stepwise**
+  response controls. Continuous may demonstrate a full-span press duration;
+  Stepwise may demonstrate separate-press versus wait-and-repeat behavior and a
+  tiled Grid. These controls remain transient design exploration. Current
+  `InputBindingV1` retains edge-only digital steps, ignores OS key repeat, and
+  receives no new fields or meanings.
 
 ### Visual
 
@@ -191,6 +251,17 @@ live feedback preview on the right.
 - Color & Gradient owns four directional VA anchor colors plus idle, outline,
   halo, and cursor colors. Every color has wheel, hex, and reset. Halo color has
   no second owner.
+- Within the Setup-only design preview, the Flubber presentation stays above
+  its 2D affect-control Grid, directional color swatches may open a bounded
+  color-wheel/hex editor, and the halo remains exactly centered on the Flubber
+  while a transient size control changes only its preview footprint.
+- A three-way preview selector may show **Flubber**, **2D Grid**, or
+  **Responsive Face**. The Face is procedural SVG/canvas presentation driven
+  only by x/y; it uses no camera, microphone, tracking, inference, Photoatlas,
+  image asset, upload, or participant/personal data.
+- A nested preview disclosure may present the existing Flubber aesthetic and
+  mapping controls as design feedback. It must not create a second owner for
+  the current Visual or Advanced settings.
 
 ### Advanced
 
@@ -287,6 +358,13 @@ tables.
 Unknown or omitted fields, an invalid self-hash, noncanonical Start bytes,
 unresolved tree/reference edges, or hash mismatch reject.
 
+The Setup design-preview selector, procedural Face, halo-size draft, and
+continuous/stepwise timing or hold drafts are deliberately absent from these
+contracts. A runnable use of any of them requires a future explicitly versioned
+package/settings/input/visual contract with browser/Rust parity and new
+qualification evidence; current readers must continue to reject such added
+fields.
+
 The self-hash is `integrity.packageDefinitionSha256`, computed over canonical
 JSON with the whole derived `integrity` member omitted. That member also fixes
 `settingsSha256`, `assetManifestSha256`, `experimentPlanSha256`, and
@@ -300,11 +378,12 @@ contract explicitly reserves `experimentPackage` plus its package recovery
 binding; after that contract freezes, changed record meanings require a new
 version rather than overloading historical fields.
 
-Portable settings, `experiment.json`, and questionnaire CSV remain explicit,
-one-way authoring/import inputs. Conversion reports every carry/default/
-discard/rejection, stores source receipts for provenance, and emits a complete
-new package. No local storage, app-data, prior package, or platform default is
-silently merged.
+Portable settings, `experiment.json`, and questionnaire CSV/TXT/JSON remain
+explicit, one-way authoring/import inputs. All questionnaire representations
+normalize through canonical Questionnaire CSV v1. Conversion reports every
+carry/default/discard/rejection, stores source receipts for provenance, and
+emits a complete new package. No local storage, app-data, prior package, or
+platform default is silently merged.
 
 Write each attempt to:
 
@@ -374,9 +453,14 @@ text, raw names, paths, settings bodies, or video.
 - Keyboard operation, visible focus, semantic labels, non-color state, high
   contrast, reduced motion, and polite announcements are required.
 - Hiding feedback cannot hide timing, write/recovery, or LSL status.
-- Store no raw names, self-described gender text, composed input, clipboard,
+- Store no raw names, self-described gender text, captured participant input,
+  ambient clipboard contents,
   unrelated app/window names, raw pointer trajectories, physiology, face/camera
   data, or remote identifiers.
+- An explicit researcher paste into the questionnaire table is permitted
+  authoring input. Read only the paste event supplied to that focused editor;
+  validate and incorporate the questionnaire cells. Never poll the clipboard,
+  capture unrelated clipboard data, or log the pasted payload.
 - Research settings, plans, questionnaire definitions/responses, media
   identity, outputs, journals, and LSL remain local. No active-v1 account,
   upload, webhook, peer transport, or telemetry is permitted.

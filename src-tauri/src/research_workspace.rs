@@ -1,9 +1,9 @@
 use crate::research_contracts::{
-    canonical_json, resolve_assignment_plan_v1, ResearchSettingsV1, ResolvedAssignmentPlanV1,
-    RESEARCH_NAMESPACE,
+    canonical_json, normalize_identifier, resolve_assignment_plan_v1, validate_sha256,
+    ResearchSettingsV1, ResolvedAssignmentPlanV1, RESEARCH_NAMESPACE,
 };
 use crate::research_error::{CommandError, ResearchResult};
-use crate::research_experiment_package::ExperimentPackageV1;
+use crate::research_experiment_package::{ExperimentPackageV1, EXPERIMENT_PACKAGE_FILE_NAME};
 use crate::research_protocol::ResearchSettingsDocument;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -19,6 +19,7 @@ const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mov", "m4v", "avi", "mkv"];
 const MAX_PROTOCOL_CHUNK: u64 = 8 * 1024 * 1024;
+const MAX_QUESTIONNAIRE_SOURCE_BYTES: usize = 5 * 1024 * 1024;
 const WORKSPACE_LIBRARY_NAMES: [&str; 4] = ["stimuli", "settings", "outputs", "recovery"];
 
 #[derive(Debug, Clone, Serialize)]
@@ -30,6 +31,14 @@ pub struct WorkspaceStatus {
     pub namespace: &'static str,
     pub stimuli_count: usize,
     pub libraries_ready: bool,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum WorkspaceLocation {
+    WorkspaceRoot,
+    VideoLibrary,
+    ExperimentPackage,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -256,8 +265,10 @@ struct WorkspaceLibraries {
     outputs: PathBuf,
     recovery: PathBuf,
     package_assets: PathBuf,
+    questionnaire_assets: PathBuf,
     identities: [DirectoryIdentity; 4],
     package_assets_identity: DirectoryIdentity,
+    questionnaire_assets_identity: DirectoryIdentity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -272,6 +283,12 @@ struct DirectoryIdentity {
     created: Option<std::time::SystemTime>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum WorkspaceOpenTarget {
+    OpenDirectory(PathBuf),
+    RevealFile(PathBuf),
+}
+
 #[derive(Debug)]
 pub struct WorkspaceService {
     selected: Mutex<Option<SelectedWorkspace>>,
@@ -284,6 +301,29 @@ impl WorkspaceService {
         Ok(Self {
             selected: Mutex::new(None),
         })
+    }
+
+    pub fn with_default_workspace(app_data_dir: PathBuf) -> ResearchResult<Self> {
+        let service = Self::new(app_data_dir.clone())?;
+        let workspace_path = app_data_dir.join("workspace");
+        match fs::symlink_metadata(&workspace_path) {
+            Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
+            Ok(_) => {
+                return Err(CommandError::forbidden(
+                    "The default workspace must be an ordinary directory.",
+                ));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                fs::create_dir(&workspace_path).map_err(CommandError::io)?;
+            }
+            Err(error) => return Err(CommandError::io(error)),
+        }
+        // Packaged Windows hosts may redirect app-data descendants into the
+        // package's LocalCache. Resolve the OS-owned location after creation,
+        // then apply the normal strict workspace/library validation there.
+        let workspace = workspace_path.canonicalize().map_err(CommandError::io)?;
+        service.select(workspace)?;
+        Ok(service)
     }
 
     pub fn status(&self) -> WorkspaceStatus {
@@ -340,6 +380,48 @@ impl WorkspaceService {
         };
         *self.lock_selected() = Some(selected);
         Ok(self.status())
+    }
+
+    pub fn open_location(
+        &self,
+        workspace_id: &str,
+        location: WorkspaceLocation,
+    ) -> ResearchResult<()> {
+        match self.resolve_open_location(workspace_id, location)? {
+            WorkspaceOpenTarget::OpenDirectory(path) => {
+                tauri_plugin_opener::open_path(path, None::<&str>).map_err(CommandError::io)
+            }
+            WorkspaceOpenTarget::RevealFile(path) => {
+                tauri_plugin_opener::reveal_item_in_dir(path).map_err(CommandError::io)
+            }
+        }
+    }
+
+    fn resolve_open_location(
+        &self,
+        workspace_id: &str,
+        location: WorkspaceLocation,
+    ) -> ResearchResult<WorkspaceOpenTarget> {
+        let guard = self.lock_selected();
+        let workspace = selected_ref(&guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        Ok(match location {
+            WorkspaceLocation::WorkspaceRoot => {
+                WorkspaceOpenTarget::OpenDirectory(workspace.root.clone())
+            }
+            WorkspaceLocation::VideoLibrary => {
+                WorkspaceOpenTarget::OpenDirectory(libraries.package_assets)
+            }
+            WorkspaceLocation::ExperimentPackage => {
+                let package = workspace.root.join(EXPERIMENT_PACKAGE_FILE_NAME);
+                match fs::symlink_metadata(&package) {
+                    Ok(metadata) if metadata.is_file() && !metadata.file_type().is_symlink() => {
+                        WorkspaceOpenTarget::RevealFile(package)
+                    }
+                    _ => WorkspaceOpenTarget::OpenDirectory(workspace.root.clone()),
+                }
+            }
+        })
     }
 
     pub fn rescan(&self, workspace_id: &str) -> ResearchResult<RescanResult> {
@@ -416,6 +498,79 @@ impl WorkspaceService {
             workspace_id: workspace.id.clone(),
             file_name,
             settings_sha256: format!("{:x}", Sha256::digest(&bytes)),
+        })
+    }
+
+    pub fn store_questionnaire_asset(
+        &self,
+        workspace_id: &str,
+        family_id: &str,
+        language_tag: &str,
+        format: &str,
+        source_sha256: &str,
+        bytes: &[u8],
+    ) -> ResearchResult<QuestionnaireAssetReceipt> {
+        if bytes.is_empty() || bytes.len() > MAX_QUESTIONNAIRE_SOURCE_BYTES {
+            return Err(CommandError::invalid_contract(
+                "A questionnaire source must contain 1 byte–5 MiB.",
+            ));
+        }
+        let safe_family = normalize_identifier(family_id, "questionnaire family ID")?;
+        let safe_language = normalize_identifier(language_tag, "questionnaire language tag")?;
+        if safe_family != family_id || safe_language != language_tag {
+            return Err(CommandError::invalid_contract(
+                "Questionnaire asset folders require canonical lowercase identifiers.",
+            ));
+        }
+        let extension = match format {
+            "csv" => "csv",
+            "txt" => "txt",
+            "json" => "json",
+            _ => {
+                return Err(CommandError::invalid_contract(
+                    "Questionnaire source format must be csv, txt, or json.",
+                ))
+            }
+        };
+        validate_sha256(source_sha256, "questionnaire source SHA-256")?;
+        let observed_sha256 = format!("{:x}", Sha256::digest(bytes));
+        if observed_sha256 != source_sha256 {
+            return Err(CommandError::invalid_contract(
+                "Questionnaire source bytes do not match their declared SHA-256.",
+            ));
+        }
+        let file_name = format!("{source_sha256}.{extension}");
+        self.with_workspace(workspace_id, |root, _| {
+            let libraries = validate_workspace_libraries(root)?;
+            let family =
+                ensure_exact_child_directory(&libraries.questionnaire_assets, &safe_family)?;
+            let language = ensure_exact_child_directory(&family, &safe_language)?;
+            let target = language.join(&file_name);
+            if let Ok(metadata) = fs::symlink_metadata(&target) {
+                if !metadata.is_file() || metadata.file_type().is_symlink() {
+                    return Err(CommandError::forbidden(
+                        "A stored questionnaire source must be an ordinary file.",
+                    ));
+                }
+            }
+            write_create_new_or_verify(&target, bytes)?;
+            let (stored_sha256, byte_length) = hash_file(&target)?;
+            if stored_sha256 != source_sha256 || byte_length != bytes.len() as u64 {
+                return Err(CommandError::forbidden(
+                    "The stored questionnaire source does not match its import receipt.",
+                ));
+            }
+            Ok(())
+        })?;
+        let relative_path =
+            format!("assets/questionnaires/{safe_family}/{safe_language}/{file_name}");
+        Ok(QuestionnaireAssetReceipt {
+            workspace_id: workspace_id.to_owned(),
+            family_id: safe_family,
+            language_tag: safe_language,
+            relative_path,
+            source_sha256: source_sha256.to_owned(),
+            byte_length: bytes.len() as u64,
         })
     }
 
@@ -957,6 +1112,17 @@ pub struct SavedSettingsReceipt {
     pub settings_sha256: String,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestionnaireAssetReceipt {
+    pub workspace_id: String,
+    pub family_id: String,
+    pub language_tag: String,
+    pub relative_path: String,
+    pub source_sha256: String,
+    pub byte_length: u64,
+}
+
 fn selected_ref<'a>(
     guard: &'a MutexGuard<'_, Option<SelectedWorkspace>>,
     workspace_id: &str,
@@ -996,6 +1162,7 @@ fn ensure_workspace_libraries(root: &Path) -> ResearchResult<WorkspaceLibraries>
     }
     let assets = ensure_exact_child_directory(root, "assets")?;
     let _ = ensure_exact_child_directory(&assets, "stimuli")?;
+    let _ = ensure_exact_child_directory(&assets, "questionnaires")?;
     validate_workspace_libraries(root)
 }
 
@@ -1044,14 +1211,18 @@ fn validate_workspace_libraries(root: &Path) -> ResearchResult<WorkspaceLibrarie
     let assets = validate_exact_child_directory(root, "assets")?.0;
     let (package_assets, package_assets_identity) =
         validate_exact_child_directory(&assets, "stimuli")?;
+    let (questionnaire_assets, questionnaire_assets_identity) =
+        validate_exact_child_directory(&assets, "questionnaires")?;
     Ok(WorkspaceLibraries {
         stimuli: paths[0].0.clone(),
         settings: paths[1].0.clone(),
         outputs: paths[2].0.clone(),
         recovery: paths[3].0.clone(),
         package_assets,
+        questionnaire_assets,
         identities: std::array::from_fn(|index| paths[index].1.clone()),
         package_assets_identity,
+        questionnaire_assets_identity,
     })
 }
 
@@ -1983,7 +2154,7 @@ mod tests {
     }
 
     #[test]
-    fn selecting_a_workspace_creates_only_the_four_research_libraries() {
+    fn selecting_a_workspace_creates_required_libraries_and_asset_roots() {
         let base = temporary_directory("workspace");
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
         let workspace = base.join("chosen");
@@ -1994,6 +2165,374 @@ mod tests {
         for library in ["stimuli", "settings", "outputs", "recovery"] {
             assert!(workspace.join(library).is_dir());
         }
+        assert!(workspace.join("assets").join("stimuli").is_dir());
+        assert!(workspace.join("assets").join("questionnaires").is_dir());
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn questionnaire_sources_are_content_addressed_and_idempotent() {
+        let base = temporary_directory("questionnaire-asset");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let bytes = b"format_version,questionnaire_id\nquestionnaire-csv-v1,maia-2-en\n";
+        let source_sha256 = format!("{:x}", Sha256::digest(bytes));
+
+        let receipt = service
+            .store_questionnaire_asset(&workspace_id, "maia-2", "en", "csv", &source_sha256, bytes)
+            .unwrap();
+        let repeated = service
+            .store_questionnaire_asset(&workspace_id, "maia-2", "en", "csv", &source_sha256, bytes)
+            .unwrap();
+
+        assert_eq!(repeated, receipt);
+        assert_eq!(receipt.workspace_id, workspace_id);
+        assert_eq!(receipt.family_id, "maia-2");
+        assert_eq!(receipt.language_tag, "en");
+        assert_eq!(receipt.source_sha256, source_sha256);
+        assert_eq!(receipt.byte_length, bytes.len() as u64);
+        assert_eq!(
+            receipt.relative_path,
+            format!("assets/questionnaires/maia-2/en/{source_sha256}.csv")
+        );
+        assert_eq!(
+            fs::read(workspace.join(&receipt.relative_path)).unwrap(),
+            bytes
+        );
+        let wire = serde_json::to_value(&receipt).unwrap();
+        assert_eq!(wire["familyId"], "maia-2");
+        assert_eq!(wire["languageTag"], "en");
+        assert_eq!(wire["sourceSha256"], source_sha256);
+        assert_eq!(wire["byteLength"], bytes.len() as u64);
+        assert_eq!(wire.as_object().unwrap().len(), 6);
+        assert!(!wire.to_string().contains("chosen"));
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn questionnaire_source_storage_rejects_malformed_or_mismatched_inputs() {
+        let base = temporary_directory("questionnaire-invalid");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let bytes = b"questionnaire";
+        let source_sha256 = format!("{:x}", Sha256::digest(bytes));
+
+        for (family_id, language_tag, format, digest, source) in [
+            (
+                "../maia-2",
+                "en",
+                "csv",
+                source_sha256.as_str(),
+                bytes.as_slice(),
+            ),
+            (
+                "maia-2",
+                "en/gb",
+                "csv",
+                source_sha256.as_str(),
+                bytes.as_slice(),
+            ),
+            (
+                "MAIA-2",
+                "en",
+                "csv",
+                source_sha256.as_str(),
+                bytes.as_slice(),
+            ),
+            (
+                "maia-2",
+                "en",
+                "CSV",
+                source_sha256.as_str(),
+                bytes.as_slice(),
+            ),
+            ("maia-2", "en", "csv", "0", bytes.as_slice()),
+            (
+                "maia-2",
+                "en",
+                "csv",
+                source_sha256.as_str(),
+                b"changed".as_slice(),
+            ),
+            (
+                "maia-2",
+                "en",
+                "csv",
+                source_sha256.as_str(),
+                b"".as_slice(),
+            ),
+        ] {
+            let error = service
+                .store_questionnaire_asset(
+                    &workspace_id,
+                    family_id,
+                    language_tag,
+                    format,
+                    digest,
+                    source,
+                )
+                .unwrap_err();
+            assert_eq!(error.code, "invalid_research_contract");
+        }
+
+        let oversized = vec![b'x'; MAX_QUESTIONNAIRE_SOURCE_BYTES + 1];
+        let oversized_sha256 = format!("{:x}", Sha256::digest(&oversized));
+        let error = service
+            .store_questionnaire_asset(
+                &workspace_id,
+                "maia-2",
+                "en",
+                "json",
+                &oversized_sha256,
+                &oversized,
+            )
+            .unwrap_err();
+        assert_eq!(error.code, "invalid_research_contract");
+        assert_eq!(
+            fs::read_dir(workspace.join("assets").join("questionnaires"))
+                .unwrap()
+                .count(),
+            0
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn questionnaire_source_storage_rejects_conflicting_content_and_missing_root() {
+        let base = temporary_directory("questionnaire-conflict");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let bytes = b"questionnaire";
+        let source_sha256 = format!("{:x}", Sha256::digest(bytes));
+        let language = workspace
+            .join("assets")
+            .join("questionnaires")
+            .join("tas-20")
+            .join("de");
+        fs::create_dir_all(&language).unwrap();
+        fs::write(language.join(format!("{source_sha256}.txt")), b"conflict").unwrap();
+
+        let error = service
+            .store_questionnaire_asset(&workspace_id, "tas-20", "de", "txt", &source_sha256, bytes)
+            .unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
+
+        let non_file_target = language.join(format!("{source_sha256}.json"));
+        fs::create_dir(&non_file_target).unwrap();
+        let error = service
+            .store_questionnaire_asset(&workspace_id, "tas-20", "de", "json", &source_sha256, bytes)
+            .unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
+        assert!(non_file_target.is_dir());
+
+        let questionnaire_root = workspace.join("assets").join("questionnaires");
+        fs::remove_dir_all(&questionnaire_root).unwrap();
+        assert!(!service.status().libraries_ready);
+        let error = service
+            .store_questionnaire_asset(&workspace_id, "tas-20", "de", "txt", &source_sha256, bytes)
+            .unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
+        assert!(!questionnaire_root.exists());
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn default_workspace_is_the_app_data_child_and_can_be_changed() {
+        let base = temporary_directory("default-workspace");
+        let app_data = base.join("app-data");
+        let service = WorkspaceService::with_default_workspace(app_data.clone()).unwrap();
+        let default_root = app_data.canonicalize().unwrap().join("workspace");
+        let initial_status = service.status();
+
+        assert!(initial_status.selected);
+        assert!(initial_status.libraries_ready);
+        assert_eq!(initial_status.display_name.as_deref(), Some("workspace"));
+        for library in ["stimuli", "settings", "outputs", "recovery"] {
+            assert!(default_root.join(library).is_dir());
+        }
+        assert!(default_root.join("assets").join("stimuli").is_dir());
+        assert!(default_root.join("assets").join("questionnaires").is_dir());
+
+        let replacement = base.join("chosen");
+        fs::create_dir(&replacement).unwrap();
+        let replacement_status = service.select(replacement).unwrap();
+        assert!(replacement_status.selected);
+        assert!(replacement_status.libraries_ready);
+        assert_eq!(replacement_status.display_name.as_deref(), Some("chosen"));
+        assert_ne!(replacement_status.workspace_id, initial_status.workspace_id);
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn workspace_location_wire_values_are_closed_and_camel_case() {
+        assert_eq!(
+            serde_json::from_str::<WorkspaceLocation>("\"workspaceRoot\"").unwrap(),
+            WorkspaceLocation::WorkspaceRoot
+        );
+        assert_eq!(
+            serde_json::from_str::<WorkspaceLocation>("\"videoLibrary\"").unwrap(),
+            WorkspaceLocation::VideoLibrary
+        );
+        assert_eq!(
+            serde_json::from_str::<WorkspaceLocation>("\"experimentPackage\"").unwrap(),
+            WorkspaceLocation::ExperimentPackage
+        );
+        assert!(serde_json::from_str::<WorkspaceLocation>("\"settings\"").is_err());
+    }
+
+    #[test]
+    fn workspace_open_locations_resolve_without_launching_the_os_opener() {
+        let base = temporary_directory("open-locations");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let root = workspace.canonicalize().unwrap();
+        let package = root.join(EXPERIMENT_PACKAGE_FILE_NAME);
+        fs::write(&package, b"{}").unwrap();
+
+        assert_eq!(
+            service
+                .resolve_open_location(&workspace_id, WorkspaceLocation::WorkspaceRoot)
+                .unwrap(),
+            WorkspaceOpenTarget::OpenDirectory(root.clone())
+        );
+        assert_eq!(
+            service
+                .resolve_open_location(&workspace_id, WorkspaceLocation::VideoLibrary)
+                .unwrap(),
+            WorkspaceOpenTarget::OpenDirectory(root.join("assets").join("stimuli"))
+        );
+        assert_eq!(
+            service
+                .resolve_open_location(&workspace_id, WorkspaceLocation::ExperimentPackage)
+                .unwrap(),
+            WorkspaceOpenTarget::RevealFile(package)
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn workspace_open_resolution_rejects_wrong_and_stale_workspace_ids() {
+        let base = temporary_directory("open-stale-workspace");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let first = base.join("first");
+        let second = base.join("second");
+        fs::create_dir(&first).unwrap();
+        fs::create_dir(&second).unwrap();
+        let stale_id = service.select(first).unwrap().workspace_id.unwrap();
+
+        let error = service
+            .resolve_open_location(
+                "not-the-selected-workspace",
+                WorkspaceLocation::WorkspaceRoot,
+            )
+            .unwrap_err();
+        assert_eq!(error.code, "workspace_required");
+
+        service.select(second).unwrap();
+        let error = service
+            .resolve_open_location(&stale_id, WorkspaceLocation::WorkspaceRoot)
+            .unwrap_err();
+        assert_eq!(error.code, "workspace_required");
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn workspace_open_resolution_rejects_a_replaced_video_library() {
+        let base = temporary_directory("open-replaced-library");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let video_library = workspace.join("assets").join("stimuli");
+
+        fs::remove_dir(&video_library).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::create_dir(&video_library).unwrap();
+
+        let error = service
+            .resolve_open_location(&workspace_id, WorkspaceLocation::VideoLibrary)
+            .unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn non_regular_package_entry_opens_the_project_root() {
+        let base = temporary_directory("open-package-directory");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let root = workspace.canonicalize().unwrap();
+        fs::create_dir(root.join(EXPERIMENT_PACKAGE_FILE_NAME)).unwrap();
+
+        assert_eq!(
+            service
+                .resolve_open_location(&workspace_id, WorkspaceLocation::ExperimentPackage)
+                .unwrap(),
+            WorkspaceOpenTarget::OpenDirectory(root)
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[cfg(any(target_os = "windows", unix))]
+    #[test]
+    fn linked_package_entry_opens_the_project_root() {
+        let base = temporary_directory("open-package-link");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        let external = base.join("external");
+        fs::create_dir(&workspace).unwrap();
+        fs::create_dir(&external).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let root = workspace.canonicalize().unwrap();
+        let package = workspace.join(EXPERIMENT_PACKAGE_FILE_NAME);
+        create_directory_link(&external, &package);
+
+        assert_eq!(
+            service
+                .resolve_open_location(&workspace_id, WorkspaceLocation::ExperimentPackage)
+                .unwrap(),
+            WorkspaceOpenTarget::OpenDirectory(root)
+        );
+
+        remove_directory_link(&package);
         fs::remove_dir_all(base).unwrap();
     }
 

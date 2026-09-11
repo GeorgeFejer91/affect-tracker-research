@@ -22,9 +22,9 @@ export const CONTRACT_PRESET_IDS = Object.freeze(Object.fromEntries(
 
 export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "workspace", label: "Workspace & Libraries" }),
-  Object.freeze({ id: "experiment", label: "Experiment" }),
+  Object.freeze({ id: "questionnaires", label: "Languages & Study Assets" }),
   Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
-  Object.freeze({ id: "questionnaires", label: "Questionnaires & Sequence" }),
+  Object.freeze({ id: "experiment", label: "Experiment" }),
   Object.freeze({ id: "input", label: "Controller / Input Device" }),
   Object.freeze({ id: "visual", label: "Visual Feedback" }),
   Object.freeze({ id: "advanced", label: "Advanced" }),
@@ -36,6 +36,7 @@ export const ATTEMPT_DISPOSITIONS = Object.freeze(["resume-compatible", "new-att
 
 export const RESEARCH_UI_EVENTS = Object.freeze({
   selectWorkspaceRequest: "affect-research:select-workspace",
+  openWorkspaceLocationRequest: "affect-research:open-workspace-location",
   rescanWorkspaceRequest: "affect-research:rescan-workspace",
   importVideosRequest: "affect-research:import-videos-request",
   loadSettingsRequest: "affect-research:load-settings-request",
@@ -45,6 +46,7 @@ export const RESEARCH_UI_EVENTS = Object.freeze({
   saveSettingsRequest: "affect-research:save-settings-request",
   exportPlanRequest: "affect-research:export-plan-request",
   importQuestionnaireRequest: "affect-research:import-questionnaire-request",
+  storeQuestionnaireAssetRequest: "affect-research:store-questionnaire-asset-request",
   questionnaireDraftRequest: "affect-research:questionnaire-draft-request",
   questionnaireSubmitRequest: "affect-research:questionnaire-submit-request",
   planReady: "affect-research:plan-ready",
@@ -99,7 +101,20 @@ export function normalizeSetupSection(sectionId) {
 
 export function nextOpenSetupSection(currentSectionId, requestedSectionId) {
   const requested = normalizeSetupSection(requestedSectionId);
-  return requested === currentSectionId ? currentSectionId : requested;
+  return requested === currentSectionId ? null : requested;
+}
+
+export function applySetupSectionConfirmation(reviewedSectionIds = [], sectionId) {
+  const sectionIndex = SETUP_SECTIONS.findIndex(({ id }) => id === sectionId);
+  if (sectionIndex < 0) throw new RangeError("Unknown Setup section confirmation.");
+  const reviewed = new Set(reviewedSectionIds);
+  reviewed.add(sectionId);
+  return Object.freeze({
+    reviewedSectionIds: Object.freeze(SETUP_SECTIONS
+      .map(({ id }) => id)
+      .filter((id) => reviewed.has(id))),
+    nextSectionId: SETUP_SECTIONS[sectionIndex + 1]?.id ?? null,
+  });
 }
 
 export function normalizeResearchMode(mode) {

@@ -40,10 +40,18 @@ The current `research/video-protocol-v1` working candidate contains:
   `experiment.json` template, and a native no-path experiment picker/validator.
   This pre-package path preserves exact authored participant/block/video/ISI
   order and invokes no allocator, but it is not `ExperimentPackageV1`;
-- exactly two UI modes, eight ordered Setup accordions, persistent preview,
-  external experiment load/summary, participant schedule preview, input
+- exactly two UI modes, eight ordered Setup accordions—Workspace, Languages &
+  Study Assets, Plan & Stimuli, Experiment, Input, Visual, Advanced, and
+  Review—persistent preview, external experiment load/summary, participant
+  schedule preview, input
   configuration, visual/color/mapping controls, aggregate preflight, and
-  restricted Run presentation;
+  restricted Run presentation. Every accordion now has a session-local review
+  confirmation that marks it Reviewed, collapses it, and advances in order;
+  short reversible grid-track motion animates opening and closing, the pending
+  action carries an outward-fading glow, and a reviewed section retains a
+  circled green check while its chevron remains freely toggleable without
+  reconfirmation. This presentation state begins empty on reload and remains
+  separate from readiness, Start, package, persistence, and evidence authority;
 - browser File System Access workspace handling, bounded recursive catalogue,
   write/read/delete readiness probe, real manifest/output audits, dedicated
   sampling worker, explicit timing gaps, IndexedDB journal, CSV/TSV parity,
@@ -84,6 +92,30 @@ The current `research/video-protocol-v1` working candidate contains:
   builds; Start remains fail-closed through a positive native-acquisition
   feature gate until a qualified platform/runtime package is deliberately
   produced.
+
+## Bounded Setup feedback-design preview — non-authoritative working slice
+
+The current bounded interface slice may add a polished Setup-only comparison of
+classic Flubber, a 2D affect Grid, and a project-authored procedural responsive
+Face driven solely by the existing transient preview x/y. It may present a
+centered halo-size control, directional color popovers, the existing Flubber
+appearance/mapping controls, and proposed continuous-versus-stepwise duration
+and hold behavior for design review.
+
+This slice is deliberately not a runtime or contract implementation. None of
+those draft values serialize into `ExperimentPackageV1`,
+`ResearchSettingsV3`, `InputBindingV1`, or `VisualSettingsV1`; they do not
+change canonical bytes or hashes, Start, Run feedback, native/browser input,
+sampling, records, recovery, LSL, or evidence. The current strict contracts and
+package reproduction gate retain their exact behavior. A future runnable
+version requires an explicit package/settings/input/visual schema generation
+and the complete changed-runtime qualification matrix.
+
+The responsive Face in this slice is procedural presentation only. Camera,
+microphone, participant images, Face/Photoatlas source or assets, tracking,
+affect inference, uploads, networking, and personal data remain absent. The
+bounded Setup UI, interaction, isolation, and desktop visual checks are now
+implemented; this still records no Run implementation or runtime qualification.
 
 The safe-hardening sequence is published through commits
 `eefa257d1696c8c22b9d6c9c619a2531457ee2c9` (persistence, IndexedDB, and LSL
@@ -226,36 +258,69 @@ strictly returns a path-free receipt for files no larger than 5 MiB. Separate
 settings, experiment, assignment, module, and protocol readers retain their
 original meanings.
 
-## Questionnaire protocol status — package authoring and browser/Rust execution landed
+## Questionnaire protocol status — bounded Section 2 spreadsheet-authoring pass
 
-The questionnaire-aware contract now places active modules through
-`QuestionnaireModuleV2` block IDs and resolves them with the external schedule
-in `ResolvedProtocolPlanV2`. The browser retains strict
-`questionnaire-csv-v1`, the bundled verified German MAIA-2, and bundled
-researcher-supplied English VR Experience, MAIA-2, six-item SSQ, and TAS-20
-authoring candidates with their institutional attribution. The TAS-20 candidate
-is unscored and still requires documented rights/reuse approval before
-deployment; bundling is not validation or licensing authorization. The browser
-also retains response/event/recovery records, an eighth Setup accordion, and
-mutually exclusive Run questionnaire/video/interval stages. Historical
-V1/V2 readers are not reinterpreted. The browser package slice embeds these
-definitions/modules, compiles each terminal language's exact ordered
-`questionnaireModuleIds`, and places wire `afterStimulus` hooks on their
-explicitly authored side of the ISI.
-Browser recovery and
-`ResearchRunManifestV4` now retain and audit the canonical package binding, but
-decode-backed reproduction and physical workflow gates remain open.
-The browser Setup surface now leaves language unset at package load, traverses
-the package-owned tree explicitly per participant/new attempt, and restores a
-compatible interrupted attempt from a narrow hash-bound recovery projection.
-There is no flattened route selector or first-route default.
-Tauri now owns language-specific package protocol compilation, strict answer
-derivation, durable draft/submit transactions, safe-boundary progression, and
-ManifestV4 response outputs. Transitional V3 Start stays rejected. Package
-Start stays unavailable only because installed native-media qualification has
-not opened its positive capability gate. Do not treat deterministic browser or
-Rust tests as run-ready evidence until physical recovery/output, accessibility,
-timing, media, and packaged-workflow gates pass.
+The landed questionnaire runtime places active modules through
+`QuestionnaireModuleV2` block IDs, resolves them with the external schedule in
+`ResolvedProtocolPlanV2`, embeds definitions/modules in the package, and places
+wire `afterStimulus` hooks on their explicit side of the ISI. Browser and Tauri
+retain strict answer derivation, response/event/recovery records, safe-boundary
+progression, and ManifestV4 outputs. Historical V1/V2 readers are not
+reinterpreted.
+
+The preceding working slice moved questionnaires into **Languages & Study
+Assets** Section 2, added explicit selected study languages, CSV/TXT/JSON
+templates and strict adapters through canonical Questionnaire CSV v1,
+content-addressed source storage under
+`assets/questionnaires/<family>/<language>/`, and exact family-by-language
+coverage. Raw package JSON was removed from that authoring surface.
+
+The researcher refined this scope on 2026-09-11: Section 2 should be a compact
+spreadsheet editor. Add a questionnaire family and obtain one accordion/table
+per selected language; paste item prompts and numeric codes from a spreadsheet;
+edit visible response labels separately; choose option count and required/
+optional items; and preview label repetition every item/5/10. New authored
+modules use `beforeSession` only. The editor's numeric code is the existing
+nullable `scoreValue`, not a new output field. The current answer contract
+remains single-choice and unanswered optional items currently omit rows.
+Label repetition is transient preview state because no current versioned
+package/questionnaire presentation contract persists it.
+
+This is a bounded **Backend Verification** pass for Designer Section 2 and
+its authoring/package integration, not completion of that stage. Dirty or
+invalid draft variants must block package finalization, and a save must wait
+for the validated owning workspace receipt before reporting success. Exact
+selected-language coverage still blocks finalization without implicit
+translation, `und`, or locale fallback. The parent pass records its focused
+tests, build results, and rebuilt real-Tauri observations before handoff;
+this scope/status entry alone is not verification evidence.
+
+The active preset focus is MAIA-2 and TAS-20 English/German. Official authorized
+MAIA assets retain their source/attribution/scoring provenance. The
+researcher-supplied English TAS-20 fixture remains unscored and rights-gated in
+source, is excluded from distributable builds, and cannot be presented as a
+licensed preload; no German TAS asset is supplied. Broad Inspiration and
+Phenomenological Control UI are deferred from the simplified section. Retained
+catalogue metadata/provenance never gives reuse or validation authority.
+
+Package load still leaves participant language unset, Review & Start still
+traverses the package-owned tree explicitly per participant/new attempt, and a
+compatible interrupted attempt still restores only its narrow hash-bound
+route. Package compilation uses each terminal's exact ordered module list.
+This authoring revision needs current focused owner/integration, build, and
+real-Tauri interface evidence before it can be described as verified. It does
+not close the existing decode-backed reproduction, physical workflow,
+accessibility, timing, media, durability, or packaged-workflow gates, and
+public native Start remains fail-closed.
+
+The product roles are now explicit in the charter: Designer UI produces one
+finished unified JSON package; Runner consumes it for acquisition/monitoring.
+The existing external-plan/read-only controls and load/preflight/Start-heavy
+navigation do not yet complete that Designer target. Runner implementation and
+other-section improvements are explicitly outside this pass and recorded in
+[`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md), together with
+label-layout persistence, optional-response output, demographics localization,
+LSL stream-versus-file ownership, and remaining native qualification.
 
 ## Native GStreamer/GstPlay status — actor and package integration landed; distribution/qualification open
 
@@ -434,6 +499,12 @@ interruption, and recovery paths. This is local-machine evidence only; it does
 not substitute for a remote CI run, package artifact, installed-app receipt, or
 physical-workflow receipt. It must not be cited as release or research-
 readiness qualification.
+
+Those counts and interactive observations predate the current Languages & Study
+Assets Section 2 authoring expansion. They do not verify CSV/TXT/JSON adapter
+parity, family-by-language finalization, content-addressed questionnaire source
+storage, the Inspiration catalogue, the changed accordion order, or its rebuilt
+Tauri presentation.
 
 Before a stable or research-ready claim, record:
 
