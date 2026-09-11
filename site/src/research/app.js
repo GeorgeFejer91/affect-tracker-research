@@ -4421,6 +4421,10 @@ function bindResearchInteractions(root, { surface }) {
     if (target.dataset.openSection) openSetupSection(target.dataset.openSection);
     if (target.id === "workspace-choose") selectWorkspace();
     if (target.dataset.openWorkspaceLocation) openWorkspaceLocation(target.dataset.openWorkspaceLocation);
+    if (target.id === "stimulus-inspiration-open") {
+      const dialog = query("#stimulus-inspiration-dialog");
+      if (dialog instanceof HTMLDialogElement && !dialog.open) dialog.showModal();
+    }
     if (target.id === "video-import") requestVideoImport();
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
     if (target.id === "package-load") requestExperimentPackageLoad();

@@ -313,6 +313,30 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
 });
 
+test("Workspace offers an accessible local stimulus inspiration catalogue before video import", async () => {
+  const source = await read("site/src/research/app.js");
+  const markup = renderResearchUiMarkup();
+  assert.ok(markup.indexOf('id="stimulus-inspiration-open"') < markup.indexOf('id="video-import"'));
+  assert.match(markup, /id="stimulus-inspiration-open"[^>]*class="inspiration-action pictographic-action"[^>]*aria-label="Stimulus inspiration"[^>]*title="Stimulus inspiration"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stimulus-inspiration-dialog"/u);
+  assert.match(markup, /<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">[\s\S]*class="inspiration-spark"/u);
+  assert.match(markup, /<dialog id="stimulus-inspiration-dialog"[^>]*aria-labelledby="stimulus-inspiration-title"[^>]*aria-describedby=/u);
+  for (const category of ["Video", "Audio", "Vignette"]) {
+    assert.match(markup, new RegExp(`>${category}<\\/h3>`, "u"));
+  }
+  for (const sourceName of ["CAAV", "OpenLAV", "Emo-FilM / LIRIS-ACCEDE", "CASE", "DEAM", "Emo-Soundscapes", "IDEST", "SENDv1"]) {
+    assert.match(markup, new RegExp(`>${sourceName.replaceAll("/", "\\/")}<`, "u"));
+  }
+  assert.equal((markup.match(/DOI: /gu) ?? []).length, 8);
+  assert.equal((markup.match(/>Official source/gu) ?? []).length, 8);
+  assert.match(markup, /nothing is downloaded or added to this experiment/u);
+  assert.match(markup, /induced or felt valence–arousal is the closest validation target/u);
+  assert.match(markup, /Perceived or expressed emotion is complementary, not equivalent/u);
+  assert.match(markup, /revalidate anything edited, concatenated, translated, narrated, or synthesized/u);
+  assert.match(markup, /<form method="dialog" class="dialog-actions">/u);
+  assert.match(source, /target\.id === "stimulus-inspiration-open"[\s\S]*dialog\.showModal\(\)/u);
+  assert.equal((markup.match(/data-mode-panel=/gu) ?? []).length, 2);
+});
+
 test("participant language is explicit per attempt and recovery cannot reroute it", async () => {
   const source = await read("site/src/research/app.js");
   const markup = renderResearchUiMarkup();

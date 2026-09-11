@@ -1,0 +1,161 @@
+{
+  "schema": "org.aliusresearch.research-stimulus-sources",
+  "version": 1,
+  "reviewedDate": "2026-09-10",
+  "datasets": [
+    {
+      "id": "caav",
+      "name": "Chieti Affective Action Video (CAAV)",
+      "status": "mirrored-subset",
+      "hostedClipCount": 96,
+      "hostedCatalog": "caav/v1/catalog.json",
+      "sourceUrl": "https://springernature.figshare.com/articles/dataset/CAAV_database/11215067",
+      "paperUrl": "https://www.nature.com/articles/s41597-020-0366-1",
+      "mediaRights": "CC0 1.0",
+      "decision": "Included: official item metadata gives a clear CC0 licence."
+    },
+    {
+      "id": "devo-2",
+      "name": "DEVO-2",
+      "status": "upstream-only-rights-review-required",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://osf.io/hk32g/",
+      "paperUrl": "https://doi.org/10.3758/s13428-025-02652-z",
+      "mediaRights": "No verified blanket redistribution licence for every stimulus",
+      "decision": "Not mirrored until every clip's source-level redistribution permission is documented."
+    },
+    {
+      "id": "avdos",
+      "name": "Affective Video Database Online Study (AVDOS)",
+      "status": "upstream-only-rights-review-required",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://doi.org/10.6084/m9.figshare.27651384.v2",
+      "paperUrl": "https://doi.org/10.1109/ACII55700.2022.9953891",
+      "mediaRights": "Figshare item is CC BY 4.0; underlying third-party clip rights remain unresolved",
+      "decision": "Not mirrored because the stimuli were sourced from services including YouTube, Twitch, and Reddit and need a clip-level rights audit."
+    },
+    {
+      "id": "liris-accede",
+      "name": "LIRIS-ACCEDE",
+      "status": "controlled-access-upstream-only",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://liris-accede.ec-lyon.fr/database.php",
+      "paperUrl": "https://liris-accede.ec-lyon.fr/",
+      "mediaRights": "Signed EULA and institutional access required; original film licences vary",
+      "decision": "Not mirrored. Acquire through the official EULA flow and audit the licence of each selected film or clip."
+    },
+    {
+      "id": "one-minute-silent-videos",
+      "name": "One-Minute Silent Videos",
+      "status": "ratings-only-upstream",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://osf.io/ejvf4/",
+      "paperUrl": "https://doi.org/10.5964/ejop.14685",
+      "mediaRights": "Ratings are public; exact videos are linked or supplied by the authors without a verified blanket media licence",
+      "decision": "Not mirrored until the selected source videos have documented redistribution permission."
+    },
+    {
+      "id": "expanded-emdb",
+      "name": "Expanded Emotional Movie Database",
+      "status": "controlled-access-upstream-only",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://doi.org/10.1007/s11031-026-10220-x",
+      "paperUrl": "https://doi.org/10.1007/s11031-026-10220-x",
+      "mediaRights": "Access agreement required",
+      "decision": "Not mirrored because access and redistribution are controlled by agreement."
+    },
+    {
+      "id": "emo-film",
+      "name": "Emo-FilM",
+      "status": "upstream-only-selection-review",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://doi.org/10.1038/s41597-025-04803-5",
+      "paperUrl": "https://doi.org/10.1038/s41597-025-04803-5",
+      "mediaRights": "Film-level Creative Commons conditions must be preserved",
+      "decision": "Priority candidate for a coherent ten-minute benchmark because LIRIS supplies continuous induced valence/arousal. Not mirrored until official EULA access and film-level licence/cut review are complete."
+    },
+    {
+      "id": "openlav",
+      "name": "Open Library for Affective Videos",
+      "status": "complete-ratings-mirrored-media-upstream",
+      "hostedClipCount": 0,
+      "hostedRatingRowCount": 13264,
+      "hostedCatalog": "openlav/v1/catalog.json",
+      "sourceUrl": "https://www.psycharchives.org/en/item/009953b8-a55a-4771-b25a-f6235bb159a2",
+      "mediaUrl": "https://www.psycharchives.org/en/item/18779e98-c04b-4299-8311-dc442dc89bcd",
+      "paperUrl": "https://doi.org/10.23668/psycharchives.5043",
+      "mediaRights": "Videos are CC BY 3.0; the linked ratings/data record is CC BY 4.0",
+      "decision": "All original aggregate/raw rating CSVs and codebooks are mirrored. The 188 videos remain upstream because the Pages site has insufficient capacity for another full media corpus."
+    },
+    {
+      "id": "deam",
+      "name": "Database for Emotional Analysis of Music",
+      "status": "recommended-audio-upstream",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://cvml.unige.ch/databases/DEAM/",
+      "paperUrl": "https://doi.org/10.1371/journal.pone.0173392",
+      "mediaRights": "Release and song-level Creative Commons/non-commercial conditions require preservation",
+      "decision": "Best public continuous valence/arousal audio benchmark, but ratings concern emotion perceived in music rather than necessarily induced listener affect."
+    },
+    {
+      "id": "idest",
+      "name": "International Database of Emotional Short Texts",
+      "status": "recommended-vignette-upstream",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://osf.io/9tga3/",
+      "paperUrl": "https://doi.org/10.1371/journal.pone.0274480",
+      "mediaRights": "Article permits academic research; verify an explicit derivative/redistribution licence before publishing audio",
+      "decision": "Best vignette candidate. Any narration or text-to-speech output is a new audio stimulus and requires fresh induced-affect validation."
+    },
+    {
+      "id": "case",
+      "name": "Continuously Annotated Signals of Emotion",
+      "status": "ratings-upstream-media-rights-restricted",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://gitlab.com/karan-shr/case_dataset",
+      "paperUrl": "https://doi.org/10.1038/s41597-019-0209-0",
+      "mediaRights": "Several stimuli are commercial film or web excerpts",
+      "decision": "Strongest procedural analogue for simultaneous continuous induced V/A, but not suitable for public media mirroring."
+    },
+    {
+      "id": "amigos",
+      "name": "AMIGOS",
+      "status": "controlled-access-upstream-only",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://eecs.qmul.ac.uk/mmv/datasets/amigos/",
+      "paperUrl": "https://doi.org/10.1109/TAFFC.2018.2884461",
+      "mediaRights": "Controlled research access and commercial film excerpts",
+      "decision": "Long-form comparison corpus, but longer than the target and unsuitable for a public stimulus mirror."
+    },
+    {
+      "id": "emo-soundscapes",
+      "name": "Emo-Soundscapes",
+      "status": "recommended-short-audio-upstream",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://www.metacreation.net/projects/emo-soundscapes",
+      "paperUrl": "https://doi.org/10.1109/ACII.2017.8273600",
+      "mediaRights": "Creative Commons per-clip licences",
+      "decision": "Excellent six-second perceived-V/A audio coverage, but a ten-minute montage would be a new high-switching compound stimulus."
+    },
+    {
+      "id": "sendv1",
+      "name": "Stanford Emotional Narratives Dataset v1",
+      "status": "not-recommended-for-2d-induction",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://github.com/StanfordSocialNeuroscienceLab/SEND",
+      "paperUrl": "https://doi.org/10.1109/TAFFC.2019.2955949",
+      "mediaRights": "Repository terms and participant media controls apply",
+      "decision": "Narratives have continuous observer valence but no arousal; they do not provide two-dimensional induced-affect ground truth."
+    },
+    {
+      "id": "k-emocon",
+      "name": "K-EmoCon",
+      "status": "not-recommended-controlled-access",
+      "hostedClipCount": 0,
+      "sourceUrl": "https://zenodo.org/records/3931963",
+      "paperUrl": "https://doi.org/10.1038/s41597-020-00630-y",
+      "mediaRights": "Controlled access",
+      "decision": "Ten-minute debates are social-interaction recordings, not standardized emotion-inducing stimuli."
+    }
+  ]
+}

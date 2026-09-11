@@ -1,4 +1,5 @@
 import { createDefaultResearchSettings } from "./contracts.js";
+import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
 
@@ -279,6 +280,45 @@ function folderIconMarkup() {
     </svg>`;
 }
 
+function stimulusInspirationMarkup() {
+  const groups = STIMULUS_INSPIRATION_GROUPS.map((group) => `
+    <section class="stimulus-inspiration-group" aria-labelledby="stimulus-inspiration-${group.id}">
+      <header>
+        <h3 id="stimulus-inspiration-${group.id}">${group.label}</h3>
+        <p>${group.summary}</p>
+      </header>
+      <ul class="stimulus-inspiration-list">
+        ${group.sources.map((source) => `<li>
+          <div class="stimulus-source-heading">
+            <div><strong>${source.name}</strong><span>${source.expandedName}</span></div>
+            <span class="stimulus-availability">${source.availability}</span>
+          </div>
+          <p>${source.description}</p>
+          <dl>
+            <div><dt>Format</dt><dd>${source.duration}</dd></div>
+            <div><dt>Ratings</dt><dd>${source.ratings}</dd></div>
+          </dl>
+          <div class="stimulus-source-links">
+            <a href="${source.doiUrl}" target="_blank" rel="noopener noreferrer">DOI: ${source.doi}</a>
+            <a href="${source.sourceUrl}" target="_blank" rel="noopener noreferrer">Official source<span class="sr-only"> for ${source.name}</span></a>
+          </div>
+        </li>`).join("")}
+      </ul>
+    </section>`).join("");
+
+  return `
+    <dialog id="stimulus-inspiration-dialog" aria-labelledby="stimulus-inspiration-title" aria-describedby="stimulus-inspiration-intro stimulus-inspiration-note">
+      <div class="dialog-content stimulus-inspiration-content">
+        <p class="context-label">Research source catalogue</p>
+        <h2 id="stimulus-inspiration-title">Stimulus inspiration</h2>
+        <p id="stimulus-inspiration-intro" class="stimulus-inspiration-intro">Open materials and academically useful comparison corpora for valence–arousal studies. Links open the original source; nothing is downloaded or added to this experiment.</p>
+        <div class="stimulus-inspiration-groups">${groups}</div>
+        <p id="stimulus-inspiration-note" class="stimulus-inspiration-note"><strong>Before choosing:</strong> induced or felt valence–arousal is the closest validation target for this tracker. Perceived or expressed emotion is complementary, not equivalent. Verify the exact version and licence, and revalidate anything edited, concatenated, translated, narrated, or synthesized.</p>
+      </div>
+      <form method="dialog" class="dialog-actions"><button id="stimulus-inspiration-close" type="submit" class="primary-action">Close catalogue</button></form>
+    </dialog>`;
+}
+
 function workspaceSection() {
   const folderIcon = folderIconMarkup();
   return `
@@ -367,7 +407,7 @@ function stimuliSection() {
     <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
     <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
       <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
+      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
       <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
     </div>
     <div class="condition-toolbar">
@@ -748,6 +788,7 @@ export function renderResearchUiMarkup(surface = "browser") {
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
     <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
     <input id="questionnaire-file-input" type="file" accept="text/csv,text/plain,application/json,.csv,.txt,.json" hidden>
+    ${stimulusInspirationMarkup()}
     <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
       <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
       <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>

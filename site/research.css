@@ -2669,6 +2669,17 @@ dialog {
   width: min(64rem, calc(100vw - 2rem));
 }
 
+#stimulus-inspiration-dialog {
+  width: min(76rem, calc(100vw - 2rem));
+  max-height: min(52rem, calc(100dvh - 2rem));
+  overflow: hidden;
+}
+
+#stimulus-inspiration-dialog[open] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 dialog::backdrop {
   background: rgb(0 0 0 / 68%);
 }
@@ -2679,6 +2690,164 @@ dialog::backdrop {
 
 .dialog-content h2 {
   margin-bottom: 0.55rem;
+}
+
+.stimulus-inspiration-content {
+  overflow: auto;
+}
+
+.stimulus-inspiration-intro {
+  max-width: 72ch;
+  color: var(--muted);
+}
+
+.stimulus-inspiration-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.stimulus-inspiration-group {
+  min-width: 0;
+}
+
+.stimulus-inspiration-group > header {
+  min-height: 4.3rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.stimulus-inspiration-group h3,
+.stimulus-inspiration-group header p,
+.stimulus-inspiration-list p,
+.stimulus-inspiration-list dl {
+  margin-bottom: 0;
+}
+
+.stimulus-inspiration-group h3 {
+  color: var(--accent-strong);
+  font-size: 1.02rem;
+}
+
+.stimulus-inspiration-group header p,
+.stimulus-inspiration-list p,
+.stimulus-inspiration-list dd,
+.stimulus-source-heading span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.stimulus-inspiration-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.stimulus-inspiration-list > li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stimulus-source-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.stimulus-source-heading > div {
+  min-width: 0;
+}
+
+.stimulus-source-heading strong,
+.stimulus-source-heading span {
+  display: block;
+}
+
+.stimulus-source-heading .stimulus-availability {
+  flex: 0 0 auto;
+  max-width: 10rem;
+  color: var(--success);
+  text-align: right;
+}
+
+.stimulus-inspiration-list > li > p {
+  margin-top: 0.55rem;
+}
+
+.stimulus-inspiration-list dl {
+  margin-top: 0.6rem;
+}
+
+.stimulus-inspiration-list dl > div {
+  display: grid;
+  grid-template-columns: 3.6rem minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.stimulus-inspiration-list dt {
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.stimulus-inspiration-list dd {
+  margin: 0;
+}
+
+.stimulus-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  margin-top: 0.65rem;
+}
+
+.stimulus-source-links a {
+  color: var(--accent-strong);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  text-underline-offset: 0.16rem;
+}
+
+.stimulus-inspiration-note {
+  padding: 0.8rem;
+  margin: 1rem 0 0;
+  border-left: 3px solid var(--warning);
+  background: var(--surface-quiet);
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.stimulus-inspiration-note strong {
+  color: var(--text);
+}
+
+.inspiration-action {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.pictographic-action {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  padding: 0.45rem;
+  display: inline-grid;
+  place-items: center;
+}
+
+.pictographic-action svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pictographic-action .inspiration-spark {
+  stroke-width: 1.9;
 }
 
 .dialog-actions {
@@ -2917,6 +3086,14 @@ dialog::backdrop {
 
   .directory-list li:last-child {
     border-bottom: 0;
+  }
+
+  .stimulus-inspiration-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stimulus-inspiration-group > header {
+    min-height: 0;
   }
 }
 

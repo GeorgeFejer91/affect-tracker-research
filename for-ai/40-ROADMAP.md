@@ -52,6 +52,9 @@ The current `research/video-protocol-v1` working candidate contains:
   circled green check while its chevron remains freely toggleable without
   reconfirmation. This presentation state begins empty on reload and remains
   separate from readiness, Start, package, persistence, and evidence authority;
+- a read-only local stimulus-inspiration
+  dialog that links the reviewed video, audio, and vignette sources without
+  importing media or creating a third mode;
 - browser File System Access workspace handling, bounded recursive catalogue,
   write/read/delete readiness probe, real manifest/output audits, dedicated
   sampling worker, explicit timing gaps, IndexedDB journal, CSV/TSV parity,
