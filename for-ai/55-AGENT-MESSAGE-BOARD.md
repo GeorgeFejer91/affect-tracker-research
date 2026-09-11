@@ -144,6 +144,318 @@ file; follow the integration-owner collection procedure in the workflow.
   retain both board histories, and collect the Runner follow-up from
   `45-FUTURE-AGENT-CHECKLIST.md`. S3 does not own the integration checkout.
 
+### 20260911-roadmap-agent-coordination-audit
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination
+  handoff. User explicitly requested checking redundant-section deletion and
+  concurrent task alignment, and sending corrective nudges. This is read-only
+  application review plus documentation/task coordination, not implementation.
+- Integrated source remains `305d3ac`; canonical changes observed are documents
+  only. `ui-contracts.js` still registers Experiment/Input/Visual/Advanced, and
+  `ui-view.js` still defines/mounts all four. No removal has landed there.
+- Sent targeted messages to **S1**, **S2**, **S3**, **S4**, **S5**, **S6**, **S7**,
+  **Live Preview**, and **Add segment confirmation flow**. These are existing
+  tasks, not newly created implementation tasks. Requests preserve each task's
+  latest user instruction and never count as answers to open product questions.
+- Current roles: S3=P3 sequence/dictionary; S4=P4 screen layout; S5=P5 Flubber
+  consolidation; S6=P6 virtual-screen authoring; S7=P7 final recipe/export.
+  S1 explicitly reports a completed historical/migration task, not an allocated
+  P1 implementation owner. **P1 was an owner gap at initial audit; resolved by
+  the later allocation below.** S2 confirms its active user
+  request is now to finish P2 in its isolated questionnaire worktree.
+- S3 acknowledged named-only ISIs and typed occurrences, JS/Rust reconciliation,
+  contribution coordination with S7 and open Q02/Q14 edges. Its direct user has
+  excluded participant-assignment UI; do not reintroduce it through this nudge.
+- S5 acknowledged removal of old Input/Visual/Advanced navigation after rehoming
+  saved fields; appearance/input/animation remain P5-owned, layout P4/P6-owned.
+  P5 supplies a conservative full-range animation envelope to both layout owners.
+  Existing normalized v1 controls remain explicitly legacy until replacement,
+  never a second active successor geometry authority.
+- Live Preview handed off clean committed `268e0a9` and exact overlapping seams
+  to S5/integration; its writers are stopped. Preview-only additions are not
+  automatically saved settings. Historical test receipts stay bound to that
+  pending branch, not integrated completion.
+- S6's latest user clarification is a virtual screen for future WebXR with
+  precise distance, size and viewing angles. World-fixed/initial-forward was
+  already accepted. Tracking/recenter policies still require their own answer;
+  the virtual-screen clarification alone does not settle them.
+- Requests to integration: reconcile authoritative uncommitted roadmap snapshots
+  into isolated worktrees; publish one P7 contribution/guard ownership seam;
+  serialize shared UI mounts; identify P1 owner; assign old Experiment removal
+  only after retaining study identity/allocation/acquisition/output values.
+- Integration acknowledged the audit: P7 owns successor envelope/contribution
+  interfaces and the combined stale/export guard. S5 owns Input/Visual/Advanced
+  consolidation; final old Experiment shell removal is integration-owned only
+  after P7's retained-setting inventory and producer destinations are implemented
+  and tested. This coordination request does not allocate new P1 implementation.
+- P7 supplied an internal registration/change interface with snapshots containing
+  revision, enabled/pending, accepted contribution and dependency revisions;
+  payload semantics still belong to the domain owner. P3/P6 acknowledged that
+  shared handoff. P4 prepared interfaces/shared seams but has no source changes
+  or worktree while its existing stage/Q08 question is pending.
+- P6's current draft hard-validates some Q11 policy choices and still uses its
+  own simple footprint; it must keep those policies visibly unresolved until
+  answered and consume the promised P5 conservative envelope before fit claims.
+  Existing draft helpers are not integrated UI, saved recipe or XR execution.
+- Integration requested a reviewed documentation-only checkpoint of the exact
+  14 canonical roadmap files plus this uniquely owned entry, on the existing
+  isolated catalogue branch. Comparison found 13 files byte-identical and only
+  this added entry different in the board. No canonical source/index/ref writes
+  are part of preparing that handoff. Consumers must collect the checkpoint
+  without overwriting newer local board entries or claiming runtime completion.
+- Subsequent explicit user decisions: integration received user approval to assign
+  P1 to **S1**, P1-03 through P1-07, in an isolated workspace/library lane.
+  The researcher's latest message here additionally authorizes keeping every
+  segment chat assigned and nudging idle owners toward concrete remaining work.
+  No new implementation owner is duplicated. S4 acknowledged an independent
+  UI Finalization slice: non-exportable screen draft/geometry preview and focused
+  fixtures, while Q08 and accepted/exported geometry remain gated.
+- Later direct S3 answer: “Leave allocation policy to Runner.” Updated `00`,
+  the dated charter amendment, catalogue P3-04/Q06 and closure plan accordingly.
+  Ordered variants remain P3-owned; Planner cyclic policy and participant UI are
+  superseded, not implemented. Frozen historical v1 contracts are unchanged.
+  These four documents now intentionally differ from the earlier canonical
+  snapshot, in addition to this uniquely owned board entry.
+- Recurring coordination established in this task: active heartbeat
+  `keep-planner-segment-work-moving`, every ten minutes. It checks S1–S7 and
+  integration, advances bounded idle-owner work, avoids duplicate nudges and
+  reports meaningful progress, conflicts or required input. It does not authorize
+  Runner implementation, publication, foreground interaction or unreviewed merges.
+- Verification: repository/worktree heads, UI registrations, task histories and
+  direct acknowledgement messages. No source edits, builds, app interaction,
+  merges or qualification claims. This uniquely owned entry is prepared in the
+  roadmap worktree for integration-owner collection; do not overwrite active
+  canonical board edits with this entire file.
+
+### 20260911-roadmap-planner-closure-design
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready**.
+- User asks which segments remain incomplete, a plan for the crucial gaps, and
+  designs for missing segments. This continues the confirmed documentation and
+  architecture pass in Backend Verification; no application implementation.
+- Base: `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`. Preparation branch/worktree:
+  `codex/segment-catalogue-current-state`,
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-segment-catalogue`.
+- Scope: new `62-PLANNER-CLOSURE-PLAN.md`, routing in `00-READ-FIRST.md` and
+  `60-SEGMENT-CATALOGUE.md`, and this entry. Catalogue capability IDs remain the
+  sole completion checklist; this pass checks no application item as complete.
+- Inputs: current integrated audit, accepted researcher decisions and pending
+  S2/S3/preview source. Output: prioritized single-owner slices, proposed UI and
+  contribution contracts, acceptance examples and a decision dependency map for
+  P1–P7. R1 execution/recording remains deferred.
+- Independent read-only reviewers inspect pending P2/P3 reuse and P4/P6 geometry.
+  Root owns documentation edits. Evidence: source identity, branch comparisons,
+  plan/checklist consistency, Markdown links, whitespace and guarded canonical
+  installation/readback. No builds, app interaction or research qualification.
+- Delivery continues the user's central-folder allocation: only the four named
+  documentation paths may be installed into canonical source after preimage/HEAD
+  checks. No application merge, ref change, commit, push or deployment.
+- Delivered design: segment status/priorities; nine bounded passes; P1–P7 editor,
+  ownership and recipe contributions; P4 screen geometry and optional P6 spatial
+  model; pending-branch reuse gaps; Q15 target/profile decision. All catalogue
+  application capability statuses remain unchanged.
+- Independent reviews confirmed P2's grid export is not full-definition
+  interchange and P3's JS/Rust still enforce numeric/post-video ISI rules. The
+  plan preserves named-only ISIs and identifies native folder-flattening and
+  missing media geometry. Geometry review corrected angular-size scope and
+  retained non-overlap; P5 supplies the full animation/input-range footprint.
+- Documentation verification passed: 15 Markdown files, 149 local links/anchors,
+  all referenced checklist/decision IDs valid, 62 unique capabilities unchanged
+  (14 implemented components, 48 open); illustrative JSON parses and the specified
+  screen/XR arithmetic checks pass. `git diff --check` passes. These are document
+  checks, not new application tests or UI/runtime evidence. Q09/Q10 researcher
+  questions remain pending; no recommendation was promoted to an accepted answer.
+- Canonical delivery completed: all four allowlisted paths passed preimage checks
+  and byte-identical readback in `D:/GitHub/affect-tracker-research`; HEAD remains
+  `305d3ac`. Documentation is uncommitted. No application file was changed.
+
+### 20260911-roadmap-central-planner
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready**.
+  Researcher explicitly requested the central final-state capability checklist
+  and mandatory one-segment agent focus in the project's `for-ai/`.
+- Pass: Backend Verification, documentation/architecture only. Finish Planner
+  planning; Runner implementation/recording remains deferred. Baseline canonical
+  source is `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, clean when checked.
+- Preparation: existing isolated branch `codex/segment-catalogue-current-state`
+  and its worktree. Scope: root `AGENTS.md`; `for-ai/00`, `05`, `10`, `15`, `20`,
+  `30`, `40`, `45`, `50`, `55` Markdown routers/authority notes; rewritten
+  `60-SEGMENT-CATALOGUE.md`; extracted `61-IMPLEMENTATION-AUDIT.md`.
+- Delivery scope: the user's central-folder request allocates installation of
+  these explicit documentation paths into the canonical checkout after fresh
+  preimage/HEAD checks. Other project tasks were observed idle. No application
+  integration ownership, source merge, branch switch/ref change, commit, push,
+  deployment or runtime modification is included. Preserve every other board entry.
+- Confirmed answers: version columns/chronological event rows; Runner owns
+  recording with implementation deferred; XR world-fixed and forward-aligned at
+  setup. Follow-up answers confirm video-ID cells use fixed catalogue duration,
+  numeric cells are millisecond ISIs, each video ID has a consistent distinct
+  authoring color and ISIs are red. Percentage offsets use one fixed reference
+  area for all videos. Remaining edge cases stay open in the decision register.
+- Independent read-only reviews checked authority conflicts and source status.
+  In particular, current native package markers contain only event type, and
+  pending S3 `01444a7` does not yet embed its design into the master package.
+- Final documentation checks passed: 14 Markdown documents, 141 local links/anchors,
+  62 unique capability IDs across P1–P7/R1, including the accepted ISI dictionary
+  (14 implemented components, 48 open),
+  and all 79 Research JS/Rust source modules covered by the dated audit.
+  Whitespace and `git diff --check` pass. Exact canonical path/hash readback
+  follows installation. Original 59-test audit receipt remains historical;
+  no new software test/qualification result is claimed by this pass.
+- Canonical installation completed: 13 explicit documentation files copied to
+  `D:/GitHub/affect-tracker-research` with exact preimage checks and 13/13
+  byte-identical readbacks. HEAD remains `305d3ac`; documentation is uncommitted.
+  No application file, branch ref, commit, merge, push or deployment changed.
+- Subsequent researcher proposal: comma-separated ISI durations create reusable
+  ISI1…ISIn dictionary entries referenced in variant columns. Added P3-10/Q14;
+  researcher confirmed **named ISIs only**, superseding raw numeric table cells.
+  Updated the central roadmap, charter amendment and historical issue routing.
+  Dictionary and references belong in the master recipe; lifecycle edge cases
+  remain open and no application implementation occurred.
+- Researcher clarified that all shown ISI durations/names/counts are examples:
+  final durations, dictionary size and experiment sequences are user-defined,
+  not fixed presets. The accepted named-reference rule remains in place.
+
+### 20260911-catalogue-current-state
+
+- Owner: current **Segment catalogue audit** task; segment `catalogue`; **ready**.
+  User requested a whole-project current-state function/input/output catalogue
+  and an editable running checklist in `for-ai/`; confirmed this is a system-wide
+  audit for later cleanup, not an application implementation pass.
+- Stage: Backend Verification, documentation/source audit only; no stage-complete
+  or runtime qualification claim. Baseline integration commit
+  `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, initially clean.
+- Branch: `codex/segment-catalogue-current-state`; isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-segment-catalogue`.
+- Scope: new `60-SEGMENT-CATALOGUE.md`, its `00-READ-FIRST.md` index link,
+  and this uniquely identified board entry. All application sources are read-only.
+  Pending S2/S3 work is distinguished from the integrated baseline.
+- Delivered: `60-SEGMENT-CATALOGUE.md` covers eight Setup sections, presentation,
+  package fields/hashes, Runner steps, shared services, generated files and
+  supporting project responsibilities; 18 redundancy review items, 10 findings,
+  and 41 editable review/follow-up checkboxes after the follow-ups below. Source index accounts for all
+  43 Research JavaScript modules and 36 Rust files in the 420-file baseline.
+- Evidence: actual package fixture parsed/compiled; 59/59 focused existing Node
+  tests passed on Node `v24.19.0`; 81 local Markdown links/anchors resolved;
+  catalogue whitespace/source-coverage/count checks and `git diff --check` pass.
+  UI interaction, native builds, hardware, qualification, publication, and
+  implementation of discovered gaps remain deferred. Exact test command and
+  limitations are recorded in the catalogue.
+- Integration: no writes to the active integration checkout; collect this
+  documentation after review. Files are uncommitted in the isolated worktree;
+  no agreement from other segment owners is inferred. No merge/push/deployment.
+
+- Researcher follow-up, 2026-09-11: clarified modular Designer contributions
+  combined into one downloadable master JSON. Catalogue now explicitly maps
+  the contribution owners, records working-directory serialization, automatic
+  folder/video annotation IDs, EN/DE questionnaire/scoring annotations, and
+  saved preview parameters as target requirements. Four C01–C04 review items
+  distinguish that target from existing v1 path/discovery/preview limits.
+  This remains documentation-only, with no schema or application changes.
+- Researcher confirmed cartography comes first: map intended responsibilities,
+  producer/consumer handoffs and final JSON contributions to improve information
+  flow before cleanup. Added a proposed handoff table, including S4 participant
+  count → S3 schedules and the single-owner preview/input/visual/mapping seams.
+  The intended map is explicitly separated from the current implementation audit.
+- Latest redesign discussion: researcher requests Excel-pasted counterbalance
+  variants with repeating participant assignment (P5→V1 for four variants),
+  video/ISI LSL markers sufficient for temporal reconstruction, removal of
+  standalone Experiment/Visual/Advanced sections, consolidated Flubber input
+  and advanced controls, a screen-layout section with physical/relative units,
+  and optional APK/WebXR spatial authoring. Replaced the earlier target table
+  and handoffs with P1–P7 proposed owners; retained S1–S8 as audited current state.
+  Added C05–C08 for version/assignment, marker, screen and XR contracts. Explicitly
+  recorded conflicts with current no-allocation/desktop-only/eight-section v1;
+  no runtime, schema, charter or supported-platform change implemented. Native
+  LSL source and official LSL/WebXR references inform the timing/space caveats.
+- Placement clarification: researcher specifies Flubber geometric centre
+  relative to each displayed video's geometric centre. Catalogue now defines
+  the centre-offset relationship and separates that decision from proposed
+  axis, stable animated-shape anchor and percentage-reference conventions.
+  P4 owns the relationship; preview/Runner share it. Maximum-video checks
+  validate fit without silently changing per-video offsets. Documentation only.
+- Language clarification: researcher confirms English and German are the
+  current priorities, with additional languages intended later. Revised P2
+  wording to describe extensible language variants using one shared authoring,
+  validation, package and Runner-selection model. Current picker/preload audit
+  remains unchanged; no two-language schema restriction is implied.
+
+### 20260911-integration-confirm-tile-receipt
+
+- Owner: **Add segment confirmation flow**, integration; **resolved**.
+  Candidate `fa16b23140644d64aacbb1d455363d776701b56a` combines accordion
+  `1253459` and Preview `1b81ad2`. Board append conflict retained both messages;
+  source hunks merged without conflict. S2 and S3 unfinished work excluded.
+- Combined checks: 426/426 JavaScript tests, desktop 8-file and Pages 169-file
+  closures, offscreen Edge confirmation 8/8 and tile paint 6/6 checks pass.
+  Receipts under `D:/GitHub/.affect-preview-checks/{accordion,tile}-integrated-20260911`.
+- No native mutation/build by integration; S2 owns the separately requested
+  source-bound app launch. No GUI testing, push/deployment or qualification
+  claim. Reduced-motion/forced-color source guards pass; full interactive
+  accessibility remains open. Existing large-JS-chunk warning remains.
+
+### 20260911-accordion-confirm-glow
+
+- Owner: **Add segment confirmation flow**, segment `accordion`, UI Finalization;
+  **ready**. User requested bottom confirmation controls and a more salient
+  cyclic breathing glow. Branch `codex/segment-accordion-confirm-glow`, isolated
+  worktree `D:/GitHub/affect-tracker-research-accordion-confirm`, base `954f38f`.
+- Shared seams: only confirmation markup in `ui-view.js`, confirmation CSS in
+  `research.css`, focused UI tests, and this receipt. No Preview/S2/Run changes.
+- Existing eight controls and sequential review state remain; move Review's
+  confirmation below Start controls so every panel ends with the same footer.
+  Strengthen the outward-fading glow without removing reduced-motion support.
+- Baseline: 29/29 UI/motion tests. Planned: focused and full Node tests,
+  desktop frontend build. No GUI testing, native build, push or deployment.
+- Result: 425/425 JavaScript tests and desktop 8-file build closure pass.
+  `scripts/qualification/accordion-confirm.mjs` passes 8/8 offscreen Edge
+  footer/alignment/containment/breathing checks; screenshot inspected at 1280px.
+  Receipt: `D:/GitHub/.affect-preview-checks/accordion-confirm-20260911/receipt.json`.
+  Only pending confirmation pseudo-elements are exempted from generic shadow
+  guards; Preview styles remain shadow-free. Reduced motion remains static;
+  forced colors use a static system-color edge. Interactive/native and full
+  accessibility qualification remain open. Existing large-JS-chunk warning.
+
+### 20260911-integration-relocation-complete
+
+- Owner: **S2**, relocation; reported **resolved** after user-run completion.
+  Canonical repository is `D:/GitHub/affect-tracker-research`; Preview halo and
+  questionnaire table worktrees are the corresponding direct children of
+  `D:/GitHub`. Old C paths are compatibility junctions, not alternate products.
+- S2 receipt: all 46,112 copied files hash-verified, repaired Git worktree
+  metadata, clean three worktrees, unchanged origin, main `git fsck` passed;
+  transcript `D:/GitHub/.affect-relocation-20260911/completion.log`.
+  Main remained `954f38f`; Preview `b07c174`; S2 `59d15d9` remains pending.
+- Integration observed the repaired D-path topology and clean main before this
+  accordion pass. Migration lock released; background-only testing preserved.
+
+### 20260911-preview-tile-paint
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**. Migration
+  verified and lock released by S2. Base `954f38f`, branch
+  `codex/segment-preview-tile-paint`, worktree
+  `D:/GitHub/affect-tracker-research-preview-tile-paint`.
+- Scope allocated by integration: tile SVG paint defaults and focused tests;
+  shared seams `ui-view.js` tile markup and `preview.js` tile stroke projection.
+  No S2, saved input, package, Run, native build or GUI changes.
+- User screenshot: no grid strokes and solid black active cell. Source and
+  localhost:1420 stylesheet both contain correct tile CSS; the screenshot is
+  consistent with absent styles, but stale asset delivery is not proven.
+- Baseline: 20/20 focused preview/tile tests. Make intrinsic SVG fill/stroke
+  explicit while retaining CSS theming; add background style-independent paint
+  regression. Interactive acceptance and asset-delivery diagnosis remain open.
+- Handoff: **ready**. Explicit SVG paint defaults and stroke geometry retain
+  CSS overrides; 67/67 focused tests and 424/424 full JavaScript tests pass.
+- Off-screen Edge raster check passes 6/6 cases (3/9/21 tiles, 180/360 px),
+  verifying grid ink, active-border ink and transparent cell interior without
+  tile CSS. Screenshot inspected: visible subdivisions, hollow active outline.
+  Command: `node scripts/qualification/preview-tile-paint.mjs <edge.exe> <output-dir>`.
+  Receipt: `D:/GitHub/.affect-preview-checks/tile-paint-20260911/receipt.json`.
+- No native build, installer, user-window launch/control, or desktop input.
+  This is source/raster evidence only, not proof of what assets an already-open
+  app loaded. Native interactive acceptance, delivery diagnosis and publication
+  remain unverified; integration owner receives the tested commit for convergence.
+
 ### 20260911-integration-preview-converged
 
 - Owner: **Add segment confirmation flow**, integration; **resolved** for source

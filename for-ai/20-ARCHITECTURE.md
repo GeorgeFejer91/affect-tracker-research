@@ -8,6 +8,15 @@ target architecture; it is not evidence that the current implementation
 candidate conforms or is qualified. Delivery status belongs in
 [`40-ROADMAP.md`](./40-ROADMAP.md).
 
+The charter's 2026-09-11 amendment delegates final-state segment capabilities,
+input/output ownership and remaining work to
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md). This file retains the
+existing v1 contract/mirror map. Explicit schedules, eight accordions, current
+geometry and desktop targets are v1 facts; the successor version must implement
+the accepted variant/screen/XR direction without reinterpreting those schemas.
+References to the current Section 2 pass below are historical scope. Each future
+agent follows its assigned catalogue segment and names any affected mirror seam.
+
 ## Authority map
 
 The two product functions are **Affect Tracker Designer** in Setting Up and

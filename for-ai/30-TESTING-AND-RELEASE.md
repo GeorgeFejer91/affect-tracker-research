@@ -6,6 +6,16 @@ These gates apply only to Affect Research v1. The feature-rich application's
 tests and physical receipts remain historical evidence in Playground and do
 not qualify the changed Research runtime.
 
+Apply the charter's 2026-09-11 amendment and
+[`central segment checklist`](./60-SEGMENT-CATALOGUE.md) when planning successor
+capabilities. Eight-section and no-cyclic-allocation assertions below remain v1
+regression gates; they are not a prohibition on the approved future Planner
+design. A new contract requires new explicit variant/layout/XR fixtures and
+corresponding gates while retaining historical readers and timing, persistence,
+privacy, accessibility and independent-reproduction obligations. References to
+the bounded Section 2 pass are historical allocations. No Planner checkbox
+qualifies a Runner, LSL recording or an APK/WebXR target.
+
 The first internal target is `0.4.0-alpha.1`. Documentation, schemas, mocks,
 compilation, a staged native runtime, or one successful adapter never establish
 a stable or research-ready claim. Acceptance evidence must bind the exact Git

@@ -265,6 +265,7 @@ export function createResearchPreview(root, options = {}) {
         const path = previewTileLines(state.tileCount);
         for (const line of tileLines) {
           line.setAttribute("d", path);
+          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / state.tileCount)));
           line.style.strokeWidth = String(Math.min(0.4, 8 / state.tileCount));
         }
         renderedTileCount = state.tileCount;
@@ -276,6 +277,8 @@ export function createResearchPreview(root, options = {}) {
         const stroke = Math.min(1.1, tile.width * 0.12);
         highlight.style.setProperty("--tile-outline-width", String(stroke));
         for (const rectangle of highlight.querySelectorAll("rect")) {
+          // Essential paint geometry must also work without the page stylesheet.
+          rectangle.setAttribute("stroke-width", String(stroke * (rectangle.getAttribute("data-preview-tile-edge") === "contrast" ? 2 : 1)));
           rectangle.setAttribute("x", String(tile.x + stroke));
           rectangle.setAttribute("y", String(tile.y + stroke));
           rectangle.setAttribute("width", String(tile.width - stroke * 2));
