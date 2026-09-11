@@ -120,7 +120,7 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
     >
       <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
       <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-        ${includeFace ? '<path data-preview-tile-lines class="preview-tile-lines" hidden></path><g data-preview-active-tile class="preview-active-tile" hidden><rect class="preview-tile-contrast"></rect><rect class="preview-tile-highlight"></rect></g>' : ""}
+        ${includeFace ? '<path data-preview-tile-lines class="preview-tile-lines" fill="none" stroke="#f4f2ea" hidden></path><g data-preview-active-tile class="preview-active-tile" hidden><rect data-preview-tile-edge="contrast" class="preview-tile-contrast" fill="none" stroke="#111310" stroke-width="2"></rect><rect data-preview-tile-edge="highlight" class="preview-tile-highlight" fill="none" stroke="#ffffff" stroke-width="1"></rect></g>' : ""}
         <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
@@ -175,8 +175,8 @@ function previewMarkup(label, { studio = false } = {}) {
           <div class="preview-control-surface" tabindex="0" role="group" aria-label="Response simulator on the valence and arousal color field" aria-describedby="preview-response-simulator-help" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown">
             <canvas id="main-gradient-canvas" data-preview-control-canvas width="240" height="240" aria-hidden="true"></canvas>
             <svg data-preview-control-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-              <path data-preview-tile-lines class="preview-tile-lines"></path>
-              <g data-preview-active-tile class="preview-active-tile"><rect class="preview-tile-contrast"></rect><rect class="preview-tile-highlight"></rect></g>
+              <path data-preview-tile-lines class="preview-tile-lines" fill="none" stroke="#f4f2ea"></path>
+              <g data-preview-active-tile class="preview-active-tile"><rect data-preview-tile-edge="contrast" class="preview-tile-contrast" fill="none" stroke="#111310" stroke-width="2"></rect><rect data-preview-tile-edge="highlight" class="preview-tile-highlight" fill="none" stroke="#ffffff" stroke-width="1"></rect></g>
               <rect data-preview-control-outline x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
               <circle data-preview-control-cursor cx="50" cy="50" r="4"></circle>
             </svg>

@@ -238,6 +238,19 @@ test("halo and transparency controls expose their bounded appearance contract", 
   });
 });
 
+test("both tiled previews carry visible, hollow SVG paint without relying on CSS", () => {
+  const lines = [...studioMarkup.matchAll(/<path\b[^>]*data-preview-tile-lines[^>]*>/gu)];
+  assert.equal(lines.length, 2);
+  for (const [tag] of lines) assertAttributes(tag, { fill: "none", stroke: "#f4f2ea" });
+  const edges = [...studioMarkup.matchAll(/<rect\b[^>]*data-preview-tile-edge="(contrast|highlight)"[^>]*>/gu)];
+  assert.equal(edges.length, 4);
+  for (const [tag, edge] of edges) assertAttributes(tag, {
+    fill: "none", stroke: edge === "contrast" ? "#111310" : "#ffffff",
+    "stroke-width": edge === "contrast" ? "2" : "1",
+  });
+  assert.doesNotMatch(runMarkup, /data-preview-tile-edge/u);
+});
+
 test("only the Setup halo fades behind the exact fill and outline", () => {
   assert.equal(count(markup, /id="preview-studio-halo-fade"/gu), 1);
   assert.match(studioMarkup, /<feGaussianBlur data-preview-halo-blur/u);
@@ -290,6 +303,8 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       const tilePath = new Path();
       const tile = new Svg();
       const rectangles = [new Svg(), new Svg()];
+      rectangles[0].setAttribute("data-preview-tile-edge", "contrast");
+      rectangles[1].setAttribute("data-preview-tile-edge", "highlight");
       tile.children.set("rect", rectangles);
       root.children.set("[data-preview-tile-lines]", [tilePath]);
       root.children.set("[data-preview-active-tile]", [tile]);
@@ -330,6 +345,8 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
             assert.equal((tilePath.getAttribute("d").match(/M/g) ?? []).length, 2 * (tileCount - 1));
             assert.ok(Math.abs(Number(rectangles[0].getAttribute("x")) + Number(rectangles[0].getAttribute("width")) / 2 - 50) < 1e-10);
             assert.equal(rectangles[0].getAttribute("x"), rectangles[1].getAttribute("x"));
+            assert.equal(Number(rectangles[0].getAttribute("stroke-width")), Number(rectangles[1].getAttribute("stroke-width")) * 2);
+            assert.equal(Number(tilePath.getAttribute("stroke-width")), Math.min(0.4, 8 / tileCount));
           }
         }
         preview.update({ responseMode: "continuous" });

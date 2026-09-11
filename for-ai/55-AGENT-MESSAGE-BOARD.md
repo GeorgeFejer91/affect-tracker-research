@@ -37,6 +37,33 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-tile-paint
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**. Migration
+  verified and lock released by S2. Base `954f38f`, branch
+  `codex/segment-preview-tile-paint`, worktree
+  `D:/GitHub/affect-tracker-research-preview-tile-paint`.
+- Scope allocated by integration: tile SVG paint defaults and focused tests;
+  shared seams `ui-view.js` tile markup and `preview.js` tile stroke projection.
+  No S2, saved input, package, Run, native build or GUI changes.
+- User screenshot: no grid strokes and solid black active cell. Source and
+  localhost:1420 stylesheet both contain correct tile CSS; the screenshot is
+  consistent with absent styles, but stale asset delivery is not proven.
+- Baseline: 20/20 focused preview/tile tests. Make intrinsic SVG fill/stroke
+  explicit while retaining CSS theming; add background style-independent paint
+  regression. Interactive acceptance and asset-delivery diagnosis remain open.
+- Handoff: **ready**. Explicit SVG paint defaults and stroke geometry retain
+  CSS overrides; 67/67 focused tests and 424/424 full JavaScript tests pass.
+- Off-screen Edge raster check passes 6/6 cases (3/9/21 tiles, 180/360 px),
+  verifying grid ink, active-border ink and transparent cell interior without
+  tile CSS. Screenshot inspected: visible subdivisions, hollow active outline.
+  Command: `node scripts/qualification/preview-tile-paint.mjs <edge.exe> <output-dir>`.
+  Receipt: `D:/GitHub/.affect-preview-checks/tile-paint-20260911/receipt.json`.
+- No native build, installer, user-window launch/control, or desktop input.
+  This is source/raster evidence only, not proof of what assets an already-open
+  app loaded. Native interactive acceptance, delivery diagnosis and publication
+  remain unverified; integration owner receives the tested commit for convergence.
+
 ### 20260911-integration-preview-converged
 
 - Owner: **Add segment confirmation flow**, integration; **resolved** for source
