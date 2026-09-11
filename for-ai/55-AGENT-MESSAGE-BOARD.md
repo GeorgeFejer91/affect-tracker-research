@@ -37,6 +37,159 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-roadmap-planner-closure-design
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready**.
+- User asks which segments remain incomplete, a plan for the crucial gaps, and
+  designs for missing segments. This continues the confirmed documentation and
+  architecture pass in Backend Verification; no application implementation.
+- Base: `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`. Preparation branch/worktree:
+  `codex/segment-catalogue-current-state`,
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-segment-catalogue`.
+- Scope: new `62-PLANNER-CLOSURE-PLAN.md`, routing in `00-READ-FIRST.md` and
+  `60-SEGMENT-CATALOGUE.md`, and this entry. Catalogue capability IDs remain the
+  sole completion checklist; this pass checks no application item as complete.
+- Inputs: current integrated audit, accepted researcher decisions and pending
+  S2/S3/preview source. Output: prioritized single-owner slices, proposed UI and
+  contribution contracts, acceptance examples and a decision dependency map for
+  P1–P7. R1 execution/recording remains deferred.
+- Independent read-only reviewers inspect pending P2/P3 reuse and P4/P6 geometry.
+  Root owns documentation edits. Evidence: source identity, branch comparisons,
+  plan/checklist consistency, Markdown links, whitespace and guarded canonical
+  installation/readback. No builds, app interaction or research qualification.
+- Delivery continues the user's central-folder allocation: only the four named
+  documentation paths may be installed into canonical source after preimage/HEAD
+  checks. No application merge, ref change, commit, push or deployment.
+- Delivered design: segment status/priorities; nine bounded passes; P1–P7 editor,
+  ownership and recipe contributions; P4 screen geometry and optional P6 spatial
+  model; pending-branch reuse gaps; Q15 target/profile decision. All catalogue
+  application capability statuses remain unchanged.
+- Independent reviews confirmed P2's grid export is not full-definition
+  interchange and P3's JS/Rust still enforce numeric/post-video ISI rules. The
+  plan preserves named-only ISIs and identifies native folder-flattening and
+  missing media geometry. Geometry review corrected angular-size scope and
+  retained non-overlap; P5 supplies the full animation/input-range footprint.
+- Documentation verification passed: 15 Markdown files, 149 local links/anchors,
+  all referenced checklist/decision IDs valid, 62 unique capabilities unchanged
+  (14 implemented components, 48 open); illustrative JSON parses and the specified
+  screen/XR arithmetic checks pass. `git diff --check` passes. These are document
+  checks, not new application tests or UI/runtime evidence. Q09/Q10 researcher
+  questions remain pending; no recommendation was promoted to an accepted answer.
+- Canonical delivery completed: all four allowlisted paths passed preimage checks
+  and byte-identical readback in `D:/GitHub/affect-tracker-research`; HEAD remains
+  `305d3ac`. Documentation is uncommitted. No application file was changed.
+
+### 20260911-roadmap-central-planner
+
+- Owner: **Create segment catalogue**, segment `roadmap`; **ready**.
+  Researcher explicitly requested the central final-state capability checklist
+  and mandatory one-segment agent focus in the project's `for-ai/`.
+- Pass: Backend Verification, documentation/architecture only. Finish Planner
+  planning; Runner implementation/recording remains deferred. Baseline canonical
+  source is `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, clean when checked.
+- Preparation: existing isolated branch `codex/segment-catalogue-current-state`
+  and its worktree. Scope: root `AGENTS.md`; `for-ai/00`, `05`, `10`, `15`, `20`,
+  `30`, `40`, `45`, `50`, `55` Markdown routers/authority notes; rewritten
+  `60-SEGMENT-CATALOGUE.md`; extracted `61-IMPLEMENTATION-AUDIT.md`.
+- Delivery scope: the user's central-folder request allocates installation of
+  these explicit documentation paths into the canonical checkout after fresh
+  preimage/HEAD checks. Other project tasks were observed idle. No application
+  integration ownership, source merge, branch switch/ref change, commit, push,
+  deployment or runtime modification is included. Preserve every other board entry.
+- Confirmed answers: version columns/chronological event rows; Runner owns
+  recording with implementation deferred; XR world-fixed and forward-aligned at
+  setup. Follow-up answers confirm video-ID cells use fixed catalogue duration,
+  numeric cells are millisecond ISIs, each video ID has a consistent distinct
+  authoring color and ISIs are red. Percentage offsets use one fixed reference
+  area for all videos. Remaining edge cases stay open in the decision register.
+- Independent read-only reviews checked authority conflicts and source status.
+  In particular, current native package markers contain only event type, and
+  pending S3 `01444a7` does not yet embed its design into the master package.
+- Final documentation checks passed: 14 Markdown documents, 141 local links/anchors,
+  62 unique capability IDs across P1–P7/R1, including the accepted ISI dictionary
+  (14 implemented components, 48 open),
+  and all 79 Research JS/Rust source modules covered by the dated audit.
+  Whitespace and `git diff --check` pass. Exact canonical path/hash readback
+  follows installation. Original 59-test audit receipt remains historical;
+  no new software test/qualification result is claimed by this pass.
+- Canonical installation completed: 13 explicit documentation files copied to
+  `D:/GitHub/affect-tracker-research` with exact preimage checks and 13/13
+  byte-identical readbacks. HEAD remains `305d3ac`; documentation is uncommitted.
+  No application file, branch ref, commit, merge, push or deployment changed.
+- Subsequent researcher proposal: comma-separated ISI durations create reusable
+  ISI1…ISIn dictionary entries referenced in variant columns. Added P3-10/Q14;
+  researcher confirmed **named ISIs only**, superseding raw numeric table cells.
+  Updated the central roadmap, charter amendment and historical issue routing.
+  Dictionary and references belong in the master recipe; lifecycle edge cases
+  remain open and no application implementation occurred.
+- Researcher clarified that all shown ISI durations/names/counts are examples:
+  final durations, dictionary size and experiment sequences are user-defined,
+  not fixed presets. The accepted named-reference rule remains in place.
+
+### 20260911-catalogue-current-state
+
+- Owner: current **Segment catalogue audit** task; segment `catalogue`; **ready**.
+  User requested a whole-project current-state function/input/output catalogue
+  and an editable running checklist in `for-ai/`; confirmed this is a system-wide
+  audit for later cleanup, not an application implementation pass.
+- Stage: Backend Verification, documentation/source audit only; no stage-complete
+  or runtime qualification claim. Baseline integration commit
+  `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, initially clean.
+- Branch: `codex/segment-catalogue-current-state`; isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-segment-catalogue`.
+- Scope: new `60-SEGMENT-CATALOGUE.md`, its `00-READ-FIRST.md` index link,
+  and this uniquely identified board entry. All application sources are read-only.
+  Pending S2/S3 work is distinguished from the integrated baseline.
+- Delivered: `60-SEGMENT-CATALOGUE.md` covers eight Setup sections, presentation,
+  package fields/hashes, Runner steps, shared services, generated files and
+  supporting project responsibilities; 18 redundancy review items, 10 findings,
+  and 41 editable review/follow-up checkboxes after the follow-ups below. Source index accounts for all
+  43 Research JavaScript modules and 36 Rust files in the 420-file baseline.
+- Evidence: actual package fixture parsed/compiled; 59/59 focused existing Node
+  tests passed on Node `v24.19.0`; 81 local Markdown links/anchors resolved;
+  catalogue whitespace/source-coverage/count checks and `git diff --check` pass.
+  UI interaction, native builds, hardware, qualification, publication, and
+  implementation of discovered gaps remain deferred. Exact test command and
+  limitations are recorded in the catalogue.
+- Integration: no writes to the active integration checkout; collect this
+  documentation after review. Files are uncommitted in the isolated worktree;
+  no agreement from other segment owners is inferred. No merge/push/deployment.
+
+- Researcher follow-up, 2026-09-11: clarified modular Designer contributions
+  combined into one downloadable master JSON. Catalogue now explicitly maps
+  the contribution owners, records working-directory serialization, automatic
+  folder/video annotation IDs, EN/DE questionnaire/scoring annotations, and
+  saved preview parameters as target requirements. Four C01–C04 review items
+  distinguish that target from existing v1 path/discovery/preview limits.
+  This remains documentation-only, with no schema or application changes.
+- Researcher confirmed cartography comes first: map intended responsibilities,
+  producer/consumer handoffs and final JSON contributions to improve information
+  flow before cleanup. Added a proposed handoff table, including S4 participant
+  count → S3 schedules and the single-owner preview/input/visual/mapping seams.
+  The intended map is explicitly separated from the current implementation audit.
+- Latest redesign discussion: researcher requests Excel-pasted counterbalance
+  variants with repeating participant assignment (P5→V1 for four variants),
+  video/ISI LSL markers sufficient for temporal reconstruction, removal of
+  standalone Experiment/Visual/Advanced sections, consolidated Flubber input
+  and advanced controls, a screen-layout section with physical/relative units,
+  and optional APK/WebXR spatial authoring. Replaced the earlier target table
+  and handoffs with P1–P7 proposed owners; retained S1–S8 as audited current state.
+  Added C05–C08 for version/assignment, marker, screen and XR contracts. Explicitly
+  recorded conflicts with current no-allocation/desktop-only/eight-section v1;
+  no runtime, schema, charter or supported-platform change implemented. Native
+  LSL source and official LSL/WebXR references inform the timing/space caveats.
+- Placement clarification: researcher specifies Flubber geometric centre
+  relative to each displayed video's geometric centre. Catalogue now defines
+  the centre-offset relationship and separates that decision from proposed
+  axis, stable animated-shape anchor and percentage-reference conventions.
+  P4 owns the relationship; preview/Runner share it. Maximum-video checks
+  validate fit without silently changing per-video offsets. Documentation only.
+- Language clarification: researcher confirms English and German are the
+  current priorities, with additional languages intended later. Revised P2
+  wording to describe extensible language variants using one shared authoring,
+  validation, package and Runner-selection model. Current picker/preload audit
+  remains unchanged; no two-language schema restriction is implied.
+
 ### 20260911-integration-confirm-tile-receipt
 
 - Owner: **Add segment confirmation flow**, integration; **resolved**.

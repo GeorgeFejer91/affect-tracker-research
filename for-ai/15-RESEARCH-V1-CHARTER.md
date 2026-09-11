@@ -2,14 +2,52 @@
 
 ## Status and precedence
 
-This file is the sole active product and architecture authority for Affect
-Tracker Research v1. It supersedes the former feature-rich program, whose
+This file, including the final-state amendment below, is the product and
+architecture authority for Affect Tracker Research. It supersedes the former feature-rich program, whose
 complete source and documentation remain in Playground and Git history.
 
 This is a target contract, not implementation or qualification evidence.
 [`40-ROADMAP.md`](./40-ROADMAP.md) records what has actually landed, and
 [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md) defines the evidence
 required before a Research v1 claim.
+
+## Final-state roadmap amendment — 2026-09-11
+
+The researcher explicitly adopts
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) as the central final-state
+Planner roadmap, segment ownership map and capability checklist. Its accepted
+decisions govern the intended future product: segment-owned contributions to
+one master recipe; extensible questionnaire languages with EN/DE priority;
+Excel columns per variant and chronological video-ID/named-ISI rows, with
+comma-separated millisecond durations creating an embedded ISI dictionary,
+derived boundary events and consistent video/red-ISI authoring colors; repeating
+participant assignment; reconstructible event/LSL semantics; consolidated
+Flubber/input/Advanced controls; centre-relative physical/percentage screen
+layout using one fixed percentage reference; and optional world-fixed XR spatial
+authoring aligned forward at setup.
+
+Current priority is Planner completion. The Runner owns execution, actual event
+timestamps and recording, but implementation/qualification of those downstream
+responsibilities is deferred unless separately allocated. The two application
+modes remain unchanged. Open decisions and assistant recommendations in the
+catalogue are not silently promoted to accepted requirements.
+
+For future capability design this amendment supersedes conflicting old
+eight-section, no-allocation, normalized-layout-only and desktop-only product
+direction. The detailed text below still specifies **the existing v1 generation**:
+its nine-field package, complete-video policy, explicit schedules and record
+semantics must not be retroactively reinterpreted. New variants/allocation,
+geometry, saved feedback additions and XR require explicit successor contracts,
+mirrored fixtures and applicable claim-specific gates. Optional XR authoring is
+not current APK/WebXR support and does not reactivate unrelated Playground code.
+
+Retain native authority, independent reproduction, safe persistence/recovery,
+accessibility, privacy, bounded interfaces and qualification obligations.
+`40-ROADMAP.md` remains the evidence ledger; the catalogue owns capability status;
+`61-IMPLEMENTATION-AUDIT.md` is a dated source snapshot. Old references to a
+“current Section 2 pass” are historical allocations, not a perpetual restriction
+on future segments. Every new pass follows its current user allocation and the
+catalogue's one-segment brief/checklist discipline.
 
 ## Product decision
 
