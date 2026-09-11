@@ -287,6 +287,7 @@ h3 {
 }
 
 .setup-pane {
+  container: setup-pane / inline-size;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
@@ -3173,7 +3174,7 @@ dialog::backdrop {
   }
 }
 
-@media (max-width: 479px) {
+@container setup-pane (max-width: 479px) {
   .setup-accordion-trigger {
     grid-template-areas:
       "number title review chevron"
@@ -3205,7 +3206,9 @@ dialog::backdrop {
   .section-chevron {
     grid-area: chevron;
   }
+}
 
+@media (max-width: 479px) {
   .setup-section-confirmation {
     align-items: stretch;
   }

@@ -740,7 +740,7 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   assert.match(css, /grid-template-columns: var\(--setup-sections-width, minmax\(0, 1\.666667fr\)\) 8px minmax\(0, 1fr\)/u);
 });
 
-test("Setup remains scrollable on desktop and the mobile header owns intrinsic height", async () => {
+test("Setup remains scrollable and narrow pane headers own intrinsic height", async () => {
   const css = await read("site/research.css");
   assert.match(css, /\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/u);
   assert.match(css, /\.setup-mode\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?height:\s*100%;/u);
@@ -748,7 +748,7 @@ test("Setup remains scrollable on desktop and the mobile header owns intrinsic h
   assert.match(css, /\.setup-pane\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*100%;[\s\S]*?overflow-y:\s*auto;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
-  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
+  assert.match(css, /@container setup-pane \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
 });
 
 test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {

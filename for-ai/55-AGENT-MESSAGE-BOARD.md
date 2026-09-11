@@ -92,6 +92,45 @@ file; follow the integration-owner collection procedure in the workflow.
   narrow Setup-header compactness is allocated to the divider owner. Full visual
   segment audit is catalogue-owned. Native/Runner/release gates remain open.
 
+### 20260911-setup-header-reflow
+
+- Owner: **Add draggable segment boundary**, allocated by integration for the
+  every-segment Uncodixfy audit; stage **UI Finalization**. Branch
+  `codex/segment-setup-header-reflow`, isolated worktree
+  `D:/GitHub/affect-tracker-research-setup-layout-resize`, base `bed461b`.
+- Bounded `setup-layout` concern: use the actual Setup pane width to put section
+  titles and summaries on separate rows. Current source uses a 479px viewport
+  rule, so summaries squeeze titles at the supported 432px pane in a 1280px
+  window. Reproduced in the integration `layout-chrome/wide-preview.png`.
+- Additional input: existing divider only. JSON contribution: none; CSS consumes
+  rendered pane width and presents existing accordion labels. Catalogue seam:
+  P1–P7 section headers and P5 adjacent Preview composition, with no capability
+  completion claim or P4 experimental geometry change. No open product decision.
+- Allowed changes: outer `.setup-pane` container declaration, accordion header
+  scoped responsive CSS, existing UI test/background layout fixture and this entry.
+  Preserve fonts, labels, confirmation/glow/motion and all Preview internals.
+- Baseline: 39/39 UI, divider and accordion motion tests pass. Collect actual
+  pane/header geometry and screenshots in isolated headless Chrome and Edge,
+  focused regressions and desktop frontend closure. Ready commit goes to the
+  sole integration owner. Native/interactive qualification and publication are
+  deferred; no foreground control or canonical-checkout writes.
+- Status: **ready**. CSS now applies the existing two-row header rule through
+  `@container setup-pane (max-width: 479px)`; the confirmation-footer viewport
+  rule is retained separately. The old source assertion was updated to match
+  the pane-based rule. No font, label, markup or controller changes.
+- Regression evidence: the new background geometry assertion failed on the
+  base at 432px (three titles occupied two lines beside their summaries), then
+  passed all eight scenarios in Chrome and all eight in Edge. Every narrow
+  header title is one line, summaries occupy their own row, and neither text
+  nor pane overflows. Wide headers retain one-row geometry; settings are equal
+  before/after and no runtime errors were reported. Screenshots inspected at
+  432px and default width. Receipts/screenshots:
+  `D:/GitHub/.affect-preview-checks/setup-header-reflow-20260911/{before-chrome,chrome,edge}`.
+- Final checks: 39/39 focused UI/divider/motion tests and desktop frontend
+  8-file closure pass. Existing >500kB bundle warning remains. Source is ready
+  for local collection by integration; no user app interaction/reopening,
+  native qualification, publishing or deployment was performed.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
