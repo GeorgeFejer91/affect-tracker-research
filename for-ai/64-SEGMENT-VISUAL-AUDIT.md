@@ -233,6 +233,34 @@ or restore an earlier pending warning. Final owner app captures are pending.
 
 ## Completion rules
 
+The later confirmation requirement is recorded in catalogue decision 11:
+sequential contribution acceptance, with final Live Preview capture and named
+JSON save in P7. The existing review-only buttons do not satisfy it. A new
+backend acceptance/save pass is separate from the already-authorized UI cleanup;
+its pending stage confirmation must not prevent independent visual inspection
+or collection of ready UI fixes. Keep acceptance and persisted state distinct.
+
+Subsequent owner handoffs, still requiring combined verification:
+
+- P1 `9d4b663`: narrowed row stacking to 479px, actual workspace-ready/error
+  event projections, nine captures at 1440/720/exact432px and hash manifest.
+- P2 `9ff3d5f`: empty-coverage duplication removed, table moved approximately
+  282px earlier, invalid cell and error visible together. Independent review
+  matched all 36 source hashes in the final receipt. Expanded settings,
+  Save/Preview/footer and the German accordion still need rendered coverage.
+- P4 `466412a`: root inspected the revised desktop top, narrow fields/footer
+  and invalid state. Paired fields, adjacent missing-input notice, full legend,
+  shorter draft copy and visible error border address V09–V12 locally.
+- P5 `fc9694b`: narrow collisions and redundant overlay caption repaired;
+  final source wording was newer than initial captures. Duplicate anchor color
+  editors and the small settings scroller remain explicit owner follow-ups.
+- P6 `5d60ef6`: owner reports Profile tools disclosure, external readable
+  diagram legend and stabilized eight actual app captures. Earlier 760/420px
+  blank captures were rejected; newer settled-pane captures supersede them.
+- Integration candidate `c7ba103` removes old Experiment/Input/Visual/Advanced
+  with retained destinations; canonical was still `ba2110f` when reported.
+  Do not present the isolated candidate as the current installed application.
+
 For each item, replace pending text with its exact integrated source commit,
 the inspected screenshot paths/state/viewport, and relevant focused regression
 receipt. Check the box only after the scoped change is integrated and verified.
