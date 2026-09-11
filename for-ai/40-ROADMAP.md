@@ -1,5 +1,21 @@
 # Research v1 roadmap
 
+## Central capability checklist and this evidence ledger
+
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
+Planner roadmap and segment capability checklist adopted by the charter's
+2026-09-11 amendment. It records what each segment must do, user inputs, JSON
+contributions, implemented components, remaining work and unanswered decisions.
+Update capability completion there; retain detailed implementation/qualification
+receipts here. [`61-IMPLEMENTATION-AUDIT.md`](./61-IMPLEMENTATION-AUDIT.md) preserves
+the source audit at `305d3ac`. This file's older candidate history is evidence
+with its original scope, not a competing target or proof of new capabilities.
+
+Current priority is Planner completion; Runner execution/recording work is
+deferred. No variant, physical-layout or XR implementation becomes complete
+merely because it is accepted in the target roadmap. Pending branches must be
+integrated and verified before checking canonical capability items.
+
 [`15-RESEARCH-V1-CHARTER.md`](./15-RESEARCH-V1-CHARTER.md) defines the target.
 This file records implementation and qualification truth. The first internal
 candidate is `0.4.0-alpha.1`; it is neither stable nor research-ready.
@@ -98,6 +114,13 @@ The current `research/video-protocol-v1` working candidate contains:
 
 ## Bounded Setup feedback-design preview — non-authoritative working slice
 
+The 2026-09-11 `accordion` UI follow-up gives every panel the same final
+confirmation footer, including Review below its Start controls, and strengthens
+the warm breathing edge with outward-fading layers. Review state and Start
+authority are unchanged. The isolated candidate passes 425/425 JavaScript
+checks, desktop frontend closure, and 8/8 offscreen Edge footer/alignment/glow
+checks. These are presentation receipts, not installed or research qualification.
+
 The current bounded interface slice may add a polished Setup-only comparison of
 classic Flubber, a 2D affect Grid, and a project-authored procedural responsive
 Face driven solely by the existing transient preview x/y. It may present a
@@ -113,6 +136,17 @@ sampling, records, recovery, LSL, or evidence. The current strict contracts and
 package reproduction gate retain their exact behavior. A future runnable
 version requires an explicit package/settings/input/visual schema generation
 and the complete changed-runtime qualification matrix.
+
+The isolated Preview follow-up adds a border-aligned outward-fading halo and
+an odd tiles-per-axis spinner (3–2001) with outlined active cells. The tile
+count drives only the transient simulator; saved input step size remains
+reachable under Advanced with unchanged package/Run meaning. The tile pass
+passes 423/423 JavaScript checks locally, including bounds, exact neutral,
+one-cell stepping, mode transitions and invalid-draft Start isolation. Native
+visual observation remains pending; source integration completed locally at
+`2be0242` with 423/423 combined JavaScript checks and both frontend closures.
+These checks do not qualify
+Run, sampling, playback, accessibility, deployment or experiment use.
 
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,

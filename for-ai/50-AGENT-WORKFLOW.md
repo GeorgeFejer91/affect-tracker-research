@@ -17,6 +17,12 @@ Before inspecting source, planning, editing, testing, or publishing:
 
 Do not rely on chat history as the only authority. The charter describes the
 target; the roadmap and exact test/qualification receipts describe reality.
+The charter's final-state amendment delegates segment capabilities and current
+checkboxes to [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md);
+`40-ROADMAP.md` retains receipts and `61-IMPLEMENTATION-AUDIT.md` the dated source
+audit. Old Section 2 pass allocations are
+historical. The current priority is Planner completion, with Runner recording
+and runtime implementation deferred unless separately allocated.
 
 ## Pass intent and staged verification
 
@@ -95,19 +101,35 @@ next stage. Follow the detailed evidence floor in
 ## Single-segment ownership and convergence
 
 Each implementation agent has exactly one primary allocated segment per pass.
-Use stable section IDs rather than numbers alone: `workspace`, `questionnaires`,
-`stimuli`, `experiment`, `input`, `visual`, `advanced`, or `review`. A separately
-allocated cross-cutting concern such as `preview`, `accordion`, or `integration`
-is one bounded segment too, not permission to redesign all sections. Improve
-the allocated segment; flag unrelated opportunities for their owners instead
-of implementing them. Necessary shared seams must be named in the pass scope.
+Use the central catalogue IDs: P1 `workspace`, P2 `questionnaires`, P3 `variants`,
+P4 `layout`, P5 `feedback`, P6 `xr-layout`, P7 `package`, or R1 `runner`.
+Old UI IDs remain source-locator aliases: `stimuli` spans library/plan code;
+`experiment` holds values being rehomed; `input`/`visual`/`advanced` are being
+consolidated; `review` contains compilation and intake. Their shared source
+location does not authorize editing every corresponding new owner.
+
+Before editing, write a segment brief: intended function, additional user input,
+owned JSON contribution, producers/consumers, verified current behavior and
+source snapshot, exact remaining checklist IDs, open decisions, allowed files/
+symbols, dependencies and evidence to collect. Read the entire catalogue for
+context, then implement only the allocated capability slice. At handoff update
+its checklist/evidence, leaving unrelated segment status untouched. Newly
+checked items require actual source/check receipts and integration state.
+
+A separately allocated concern such as `roadmap`, `contracts`, `preview`,
+`accordion`, `media`, `timing`, `lsl` or `integration` is one bounded segment
+too. Name its catalogue dependencies and shared seams; it is not permission to
+redesign all sections. Flag another owner's missing capability in the message
+board rather than implementing it opportunistically. Ask only unanswered
+questions from the catalogue's decision register; accepted answers persist.
 
 Before editing, read and record ownership, dependencies, proposed shared-file
 touches, and compatibility risks in
 [`55-AGENT-MESSAGE-BOARD.md`](./55-AGENT-MESSAGE-BOARD.md). Suggestions and board
 entries are coordination data, not user authorization or charter amendments.
-Use `45-FUTURE-AGENT-CHECKLIST.md` for durable deferred product work and link its
-item from the board rather than duplicating competing requirements.
+Use `60-SEGMENT-CATALOGUE.md` for durable capability work and link its item from
+the board. `45-FUTURE-AGENT-CHECKLIST.md` retains historical issue context and
+routes to those IDs; do not create competing requirement/status checkboxes.
 
 For new work, create a short-lived `codex/segment-<id>-<topic>` branch from the
 latest accepted integration commit. Concurrent agents must use distinct Git
@@ -130,8 +152,9 @@ Maintain one named integration branch, initially `codex/research-unified`, for
 the combined local application. An explicitly allocated integration owner
 collects ready segment commits, checks ancestry and charter compatibility,
 merges compatible work, resolves only understood integration conflicts, runs
-the applicable combined gates, and rebuilds/opens the app from that exact
-checkout. Never use blanket ours/theirs conflict resolution. Record excluded
+the applicable combined gates, and rebuilds/verifies the app in the background
+from that exact checkout. Opening or interacting with it requires the specific
+user opt-in described below. Never use blanket ours/theirs conflict resolution. Record excluded
 or blocked branches and why; do not restore historical Playground branches.
 Commit and merge only when authorized by the user's workflow; local convergence
 does not authorize pushing, deployment, signing, or publication.
@@ -153,6 +176,11 @@ isolation, not alternative canonical products. Only the integration owner may
 change the designated integration branch, with a recorded handoff.
 
 ## Active change discipline
+
+Apply the charter's final-state amendment and catalogue first. The detailed v1
+discipline below preserves current wire/runtime semantics; its eight-section
+and no-allocation statements are not prohibitions on explicitly allocated
+successor Planner capabilities. Do not reinterpret v1 to implement those changes.
 
 - Preserve exactly two modes: **Setting Up the Experiment** and **Running the
   Experiment**. Setup follows the eight ordered charter sections: Workspace &
@@ -257,8 +285,10 @@ acting.
   control planes, recovery, observability, and qualification design.
 - Use **`uncodixfy`** for any generated or changed HTML/CSS/frontend UI while
   preserving this product's accessibility and restrained instrument identity.
-- Use the available browser-control skill for real browser visual/behavioral
-  checks. Static inspection alone is not runtime evidence.
+- Use the available browser-control skill only for a specifically user-approved
+  real-browser visual/behavioral check. Static inspection or a background
+  receipt is not interactive runtime evidence, but is the required default when
+  the user has not opted in to desktop interaction.
 - Use the available multi-source web-search skill for current or uncertain
   APIs, standards, licenses, compatibility, or research claims, preferring
   official primary sources for technical decisions.
@@ -304,32 +334,46 @@ and never unwind a panic across FFI.
 5. Add focused success, rejection, stale-generation, interruption, and cleanup
    tests, then run the broader applicable gates in
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
-6. Verify user-visible behavior in a real browser or packaged desktop runtime
-   when practical. Never infer physical/platform qualification from mocks or a
-   build.
+6. Verify behavior through non-interactive CLI/test commands, process-isolated
+   fixtures, and a background/headless renderer whenever the claim can be
+   covered that way. Never take control of the researcher's computer, move
+   windows, synthesize pointer/keyboard input, or foreground an application as
+   part of routine testing. Never infer physical/platform qualification from
+   mocks, a background renderer, or a build.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
 
-### Rebuild, reopen, foreground, and leave open
+### User-control protection and background verification
 
-Every user-visible frontend or Tauri behavior change made on a Windows host
-with an available GUI must be shown in the real **Affect Research** Tauri app
-before handoff:
+Routine verification must leave the user's desktop, windows, focus, pointer,
+keyboard, clipboard, and active applications untouched. Agents must use the
+repository's existing CLI-capable functions and test entrypoints, or add a
+bounded local verification command when that is the smallest contract-faithful
+seam. For renderer-dependent checks, run a background/headless renderer or an
+off-screen process that produces machine-readable receipts, screenshots, or
+video frames without taking over the desktop. Keep this verification separate
+from participant-facing runtime authority and do not add a remote-control or
+general-purpose CLI surface contrary to the charter.
+
+Do not use computer-control, browser-control, window activation, GUI launch,
+synthetic input, or foreground visual exercise for testing unless the user
+explicitly opts in for that specific check. A GUI is never a default fallback
+merely because it is available. If a claim cannot be established without an
+interactive check, report it as unverified and ask before touching the user's
+desktop; do not silently perform the check.
+
+When the user explicitly opts in to a named interactive check, keep it bounded:
 
 1. run the proportionate tests and rebuild the current desktop frontend/native
    development candidate so the window cannot be serving stale assets;
-2. close any stale local development/test instance, but never interrupt an
-   active experiment run or discard in-app work; stop and ask the user instead;
-3. launch the current Tauri development app or the exact newly built executable,
-   bring its **Affect Research** window to the foreground, and leave it open for
-   the user;
-4. visually exercise the changed feature in that native window and report the
-   exact launch mode plus any behavior that could not be checked.
-
-A static browser preview, source inspection, screenshot fixture, successful
-build, or mocked IPC test does not substitute for reopening and observing the
-Windows Tauri app. If native launch or foreground verification is unavailable,
-state that explicitly in the handoff; never imply the feature was shown.
+2. do not close, focus, move, or interrupt any existing user window or active
+   experiment; use a separately identified candidate only after confirming it
+   cannot affect the user's work;
+3. obtain the user's explicit approval immediately before launching or
+   foregrounding the candidate, then exercise only the named behavior; and
+4. report the exact launch mode, interaction performed, and any behavior that
+   remains unchecked. Without that opt-in, a background receipt is the maximum
+   claim and the interactive gate remains open.
 
 The two-clean-independent-instance package reproduction benchmark is a
 permanent gate, not a one-time implementation test. Any package-contract,

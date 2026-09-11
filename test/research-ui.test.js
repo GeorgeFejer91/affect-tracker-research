@@ -193,12 +193,40 @@ test("every Setup section requires an explicit sequential review confirmation", 
   const reviewedStyleEnd = css.indexOf("}", reviewedStyleStart);
   assert.ok(reviewedStyleStart >= 0 && reviewedStyleEnd > reviewedStyleStart);
   assert.doesNotMatch(css.slice(reviewedStyleStart, reviewedStyleEnd), /animation/u);
-  assert.match(css, /@keyframes setup-confirm-attention[\s\S]*?filter:\s*blur\(2px\);[\s\S]*?opacity:\s*0\.78;[\s\S]*?filter:\s*blur\(7px\);[\s\S]*?opacity:\s*0\.28;/u);
+  assert.match(css, /@keyframes setup-confirm-attention[\s\S]*?filter:\s*blur\(1px\);[\s\S]*?opacity:\s*1;[\s\S]*?filter:\s*blur\(4px\);[\s\S]*?opacity:\s*0\.38;/u);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.setup-accordion-panel\[data-motion-state="open"\][\s\S]*?animation:\s*none !important;[\s\S]*?filter:\s*blur\(4px\);/u);
   const reviewPanelStart = markup.indexOf('id="setup-panel-review"');
   const reviewPanelEnd = markup.indexOf('<aside class="preview-pane"', reviewPanelStart);
   const reviewPanel = markup.slice(reviewPanelStart, reviewPanelEnd);
-  assert.ok(reviewPanel.indexOf('data-confirm-section="review"') < reviewPanel.indexOf('class="start-bar"'));
+  assert.ok(reviewPanel.indexOf('data-confirm-section="review"') > reviewPanel.indexOf('class="start-bar"'));
+});
+
+test("all eight browser and desktop panels end with exactly one confirmation footer", () => {
+  for (const surface of ["browser", "tauri"]) {
+    const markup = renderResearchUiMarkup(surface);
+    for (const { id } of SETUP_SECTIONS) {
+      const start = markup.indexOf(`id="setup-panel-${id}"`);
+      const footer = markup.indexOf('class="setup-section-confirmation"', start);
+      const end = markup.indexOf('</div></div></div>\n    </section>', footer);
+      assert.ok(start >= 0 && footer > start && end > footer, `${surface}/${id}: footer exists`);
+      const panel = markup.slice(start, end);
+      assert.equal((panel.match(/data-confirm-section=/gu) ?? []).length, 1);
+      assert.match(panel, new RegExp(`data-confirm-section="${id}"`, "u"));
+      assert.match(panel, /<\/button>\s*<\/div>$/u, `${surface}/${id}: confirmation ends panel`);
+    }
+  }
+});
+
+test("pending confirmation has a stronger layered breathing edge with accessible fallbacks", async () => {
+  const css = await read("site/research.css");
+  const glow = css.slice(css.indexOf('.setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button'), css.indexOf('.setup-section-confirm-button[data-review-state="reviewed"]'));
+  assert.match(glow, /border: 2px solid rgb\(240 197 105 \/ 95%\)/u);
+  assert.match(glow, /box-shadow: 0 0 7px 2px rgb\(240 197 105 \/ 48%\), 0 0 18px 5px rgb\(240 197 105 \/ 20%\)/u);
+  assert.match(glow, /animation: setup-confirm-attention 2\.2s ease-in-out infinite/u);
+  assert.match(glow, /pointer-events: none/u);
+  const keyframes = css.slice(css.indexOf("@keyframes setup-confirm-attention"), css.indexOf(".section-lead,"));
+  assert.doesNotMatch(keyframes, /inset:|transform:/u, "breathing must not move the button edge");
+  assert.match(css.slice(css.indexOf("@media (forced-colors: active)")), /border-color: Highlight;\s*animation: none;\s*box-shadow: none;/u);
 });
 
 test("Section 2 uses multilingual questionnaire tables and hides backend documents", async () => {
@@ -684,7 +712,12 @@ test("the active entrypoints load only the shared Research instrument", async ()
 test("the Research stylesheet passes the compact Uncodixfy guardrails", async () => {
   const css = await read("site/research.css");
   assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/iu);
-  assert.doesNotMatch(css, /backdrop-filter|box-shadow|text-transform|letter-spacing/iu);
+  assert.doesNotMatch(css, /backdrop-filter|text-transform|letter-spacing/iu);
+  // The user-requested confirmation edge is the sole decorative-shadow exception.
+  for (const rule of css.split("}")) {
+    if (!rule.includes("box-shadow:")) continue;
+    assert.match(rule, /\.setup-section-confirm-button\[data-review-state="pending"\]::after\s*\{/u);
+  }
   assert.doesNotMatch(css, /\.(?:hero|eyebrow|glass|pill|dashboard-card)\b/iu);
   for (const match of css.matchAll(/border-radius:\s*([\d.]+)px/gu)) {
     assert.ok(Number(match[1]) <= 8, `border radius ${match[1]}px exceeds the compact UI limit`);

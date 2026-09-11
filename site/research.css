@@ -462,18 +462,21 @@ h3 {
 
 .setup-section-confirm-button[data-review-state="pending"] {
   border-color: var(--accent-strong);
+  color: var(--accent-strong);
+  font-weight: 700;
 }
 
 .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
 .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after {
   position: absolute;
-  inset: -3px;
-  border: 2px solid rgb(240 197 105 / 78%);
+  inset: -2px;
+  border: 2px solid rgb(240 197 105 / 95%);
   border-radius: 8px;
-  filter: blur(3px);
-  opacity: 0.72;
+  box-shadow: 0 0 7px 2px rgb(240 197 105 / 48%), 0 0 18px 5px rgb(240 197 105 / 20%);
+  filter: blur(1px);
+  opacity: 0.95;
   pointer-events: none;
-  animation: setup-confirm-attention 1.8s ease-in-out infinite;
+  animation: setup-confirm-attention 2.2s ease-in-out infinite;
   content: "";
 }
 
@@ -486,15 +489,13 @@ h3 {
 @keyframes setup-confirm-attention {
   0%,
   100% {
-    inset: -3px;
-    filter: blur(2px);
-    opacity: 0.78;
+    filter: blur(1px);
+    opacity: 1;
   }
 
   50% {
-    inset: -7px;
-    filter: blur(7px);
-    opacity: 0.28;
+    filter: blur(4px);
+    opacity: 0.38;
   }
 }
 
@@ -2295,11 +2296,33 @@ tbody tr:last-child td {
   font-size: 0.74rem;
 }
 
-[data-preview-control-tile-line],
 [data-preview-control-outline] {
   vector-effect: non-scaling-stroke;
   stroke: rgb(244 242 234 / 72%);
   stroke-width: 1;
+}
+
+.preview-tile-lines {
+  fill: none;
+  stroke: rgb(244 242 234 / 72%);
+}
+
+.preview-active-tile rect {
+  fill: none;
+}
+
+.preview-tile-contrast {
+  stroke: #111310;
+  stroke-width: calc(var(--tile-outline-width, 1) * 2);
+}
+
+.preview-tile-highlight {
+  stroke: #ffffff;
+  stroke-width: var(--tile-outline-width, 1);
+}
+
+#preview-tile-count {
+  appearance: auto;
 }
 
 [data-preview-control-cursor] {
@@ -3227,6 +3250,8 @@ dialog::backdrop {
   .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
   .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after {
     border-color: Highlight;
+    animation: none;
+    box-shadow: none;
     filter: none;
     opacity: 1;
   }

@@ -68,8 +68,11 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
   assert.match(release, /passing functional test suite does not waive this architecture gate/iu);
   assert.match(workflow, /name its row in the normative mirror map/u);
   assert.match(workflow, /tauri-remote-app-builder/u);
-  assert.match(workflow, /Rebuild, reopen, foreground, and leave open/u);
-  assert.match(workflow, /static browser preview[\s\S]*does not substitute[\s\S]*Windows Tauri app/u);
+  assert.match(workflow, /User-control protection and background verification/u);
+  assert.match(workflow, /Do not use computer-control, browser-control, window activation, GUI launch/u);
+  assert.match(workflow, /explicitly opts in for that specific check/u);
+  assert.match(release, /Non-interactive verification default/u);
+  assert.match(release, /does not establish physical, installed,[\s\S]*accessibility, timing, hardware, or research qualification/u);
 });
 
 test("raw Tauri invocation remains confined to explicit native adapter modules", async () => {

@@ -120,6 +120,7 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
     >
       <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
       <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        ${includeFace ? '<path data-preview-tile-lines class="preview-tile-lines" fill="none" stroke="#f4f2ea" hidden></path><g data-preview-active-tile class="preview-active-tile" hidden><rect data-preview-tile-edge="contrast" class="preview-tile-contrast" fill="none" stroke="#111310" stroke-width="2"></rect><rect data-preview-tile-edge="highlight" class="preview-tile-highlight" fill="none" stroke="#ffffff" stroke-width="1"></rect></g>' : ""}
         <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
@@ -130,7 +131,12 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
         <circle data-preview-grid-cursor class="preview-grid-cursor" cx="50" cy="50" r="4"></circle>
       </svg>
       <svg data-preview-flubber class="preview-flubber" viewBox="-1.62 -1.62 3.24 3.24" aria-hidden="true" focusable="false">
-        <path data-preview-flubber-halo class="preview-flubber-halo"></path>
+        ${includeFace ? `<defs>
+          <filter id="preview-studio-halo-fade" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
+            <feGaussianBlur data-preview-halo-blur stdDeviation="0.045"></feGaussianBlur>
+          </filter>
+        </defs>` : ""}
+        <path data-preview-flubber-halo class="preview-flubber-halo"${includeFace ? ' filter="url(#preview-studio-halo-fade)"' : ""}></path>
         <path data-preview-flubber-base class="preview-flubber-base"></path>
         <path data-preview-flubber-outline class="preview-flubber-outline"></path>
       </svg>
@@ -169,12 +175,8 @@ function previewMarkup(label, { studio = false } = {}) {
           <div class="preview-control-surface" tabindex="0" role="group" aria-label="Response simulator on the valence and arousal color field" aria-describedby="preview-response-simulator-help" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown">
             <canvas id="main-gradient-canvas" data-preview-control-canvas width="240" height="240" aria-hidden="true"></canvas>
             <svg data-preview-control-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-              <line data-preview-control-tile-line x1="25" y1="0" x2="25" y2="100"></line>
-              <line data-preview-control-tile-line x1="50" y1="0" x2="50" y2="100"></line>
-              <line data-preview-control-tile-line x1="75" y1="0" x2="75" y2="100"></line>
-              <line data-preview-control-tile-line x1="0" y1="25" x2="100" y2="25"></line>
-              <line data-preview-control-tile-line x1="0" y1="50" x2="100" y2="50"></line>
-              <line data-preview-control-tile-line x1="0" y1="75" x2="100" y2="75"></line>
+              <path data-preview-tile-lines class="preview-tile-lines" fill="none" stroke="#f4f2ea"></path>
+              <g data-preview-active-tile class="preview-active-tile"><rect data-preview-tile-edge="contrast" class="preview-tile-contrast" fill="none" stroke="#111310" stroke-width="2"></rect><rect data-preview-tile-edge="highlight" class="preview-tile-highlight" fill="none" stroke="#ffffff" stroke-width="1"></rect></g>
               <rect data-preview-control-outline x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
               <circle data-preview-control-cursor cx="50" cy="50" r="4"></circle>
             </svg>
@@ -190,6 +192,7 @@ function previewMarkup(label, { studio = false } = {}) {
           <p id="preview-response-simulator-help">Focus the map and use the arrow keys to try the selected response behavior.</p>
           <button id="preview-response-reset" type="button">Reset to neutral</button>
         </div>
+        <output data-preview-tile-status class="field-help" role="status" aria-live="polite" aria-atomic="true"></output>
       </section>
 
       <section class="preview-response-settings" aria-labelledby="preview-response-title">
@@ -203,14 +206,14 @@ function previewMarkup(label, { studio = false } = {}) {
           <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
         </div>
         <div data-response-preview-panel="stepwise">
-          <label class="field"><span>Step Size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
+          <label class="field"><span>Tiles per axis</span><input id="preview-tile-count" type="number" min="3" max="2001" step="2" value="21" aria-describedby="preview-tile-count-help"><output id="preview-tile-count-help" class="field-help">Odd number, 3–2001. 21 × 21 tiles: 10 steps each side of zero.</output></label>
           <fieldset class="check-group">
             <legend>Hold rule</legend>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
           </fieldset>
           <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
-          <p class="field-help">Draft preview only: hold behavior and repeat delay are not saved with the experiment. Step size remains part of the saved input settings.</p>
+          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Advanced preview settings.</p>
         </div>
       </section>
 
@@ -220,7 +223,7 @@ function previewMarkup(label, { studio = false } = {}) {
           <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
           <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
           <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo size</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only scale around the centered halo.</span></label>
+          <label class="field"><span>Halo width</span><div class="range-field"><input id="preview-halo-size" type="range" min="100" max="240" step="5" value="150"><output for="preview-halo-size">150%</output></div><span class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</span></label>
         </div>
       </section>
 
@@ -228,6 +231,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <summary>Advanced preview settings</summary>
         <div class="disclosure-content">
           <p class="field-help">These saved controls refine visibility, position, rendering, colors, and affect mappings.</p>
+          <label class="field"><span>Saved input step size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
           <section aria-labelledby="preview-visibility-title">
             <h3 id="preview-visibility-title">Visibility and position</h3>
             <div class="field-grid">
@@ -640,7 +644,6 @@ function reviewSection() {
       </div>
       <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
     </section>
-    ${sectionConfirmationMarkup(SETUP_SECTIONS[SETUP_SECTIONS.length - 1], SETUP_SECTIONS.length - 1)}
     <div class="start-bar">
       <p id="start-status" role="status" aria-live="polite">Resolve all blocking preflight items.</p>
       <button id="start-experiment" type="button" class="primary-action" disabled>Start experiment / session</button>
@@ -700,7 +703,7 @@ function accordionMarkup(section, index) {
         aria-labelledby="setup-trigger-${section.id}"
         data-motion-state="${expanded ? "open" : "closed"}"
         ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
-      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner">${SECTION_CONTENT[section.id]()}${section.id === "review" ? "" : sectionConfirmationMarkup(section, index)}</div></div></div>
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner">${SECTION_CONTENT[section.id]()}${sectionConfirmationMarkup(section, index)}</div></div></div>
     </section>`;
 }
 

@@ -2,14 +2,61 @@
 
 ## Status and precedence
 
-This file is the sole active product and architecture authority for Affect
-Tracker Research v1. It supersedes the former feature-rich program, whose
+This file, including the final-state amendment below, is the product and
+architecture authority for Affect Tracker Research. It supersedes the former feature-rich program, whose
 complete source and documentation remain in Playground and Git history.
 
 This is a target contract, not implementation or qualification evidence.
 [`40-ROADMAP.md`](./40-ROADMAP.md) records what has actually landed, and
 [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md) defines the evidence
 required before a Research v1 claim.
+
+## Final-state roadmap amendment — 2026-09-11
+
+The researcher explicitly adopts
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) as the central final-state
+Planner roadmap, segment ownership map and capability checklist. Its accepted
+decisions govern the intended future product: segment-owned contributions to
+one master recipe; extensible questionnaire languages with EN/DE priority;
+Excel columns per variant and chronological video-ID/named-ISI rows, with
+comma-separated millisecond durations creating an embedded ISI dictionary,
+derived boundary events and consistent video/red-ISI authoring colors; ordered
+versions with participant allocation policy owned by Runner; reconstructible
+event/LSL semantics; consolidated
+Flubber/input/Advanced controls; centre-relative physical/percentage screen
+layout using one fixed percentage reference; and optional world-fixed XR spatial
+authoring aligned forward at setup.
+
+Current priority is Planner completion. The Runner owns execution, actual event
+timestamps and recording, but implementation/qualification of those downstream
+responsibilities is deferred unless separately allocated. The two application
+modes remain unchanged. Open decisions and assistant recommendations in the
+catalogue are not silently promoted to accepted requirements.
+
+Later on 2026-09-11, the researcher answered the S3 allocation question:
+“Leave allocation policy to Runner.” This supersedes the earlier request for
+Planner-defined cyclic assignment. P3 authors ordered variants and their event
+profiles, with no participant-assignment UI or Planner allocation algorithm.
+Runner selection must consume those explicit variant identities; its policy and
+implementation are outside the current Planner pass. Historical v1 explicit
+schedules remain unchanged. See catalogue Q06 for this decision's chronology.
+
+For future capability design this amendment supersedes conflicting old
+eight-section, no-allocation, normalized-layout-only and desktop-only product
+direction. The detailed text below still specifies **the existing v1 generation**:
+its nine-field package, complete-video policy, explicit schedules and record
+semantics must not be retroactively reinterpreted. New variants/allocation,
+geometry, saved feedback additions and XR require explicit successor contracts,
+mirrored fixtures and applicable claim-specific gates. Optional XR authoring is
+not current APK/WebXR support and does not reactivate unrelated Playground code.
+
+Retain native authority, independent reproduction, safe persistence/recovery,
+accessibility, privacy, bounded interfaces and qualification obligations.
+`40-ROADMAP.md` remains the evidence ledger; the catalogue owns capability status;
+`61-IMPLEMENTATION-AUDIT.md` is a dated source snapshot. Old references to a
+“current Section 2 pass” are historical allocations, not a perpetual restriction
+on future segments. Every new pass follows its current user allocation and the
+catalogue's one-segment brief/checklist discipline.
 
 ## Product decision
 
@@ -485,8 +532,13 @@ The package-embedded `InputBindingV1` object is the one binding authority.
 
 The Setup-only feedback-design preview may additionally demonstrate proposed
 **Continuous** and **Stepwise** response behavior. The continuous draft may
-show a bounded full-span press duration. The stepwise draft may tile the Grid
-and compare separate physical presses with a bounded wait-and-repeat hold rule.
+show a bounded full-span press duration. The stepwise draft uses a custom odd
+tile count per axis (3–2001), equal steps either side of a central zero tile,
+and an outlined active tile instead of the continuous cursor. Arrow edges move
+one tile; changing count snaps to the nearest tile and releases held input.
+The saved input step size remains separately reachable under Advanced preview
+settings. Stepwise may compare separate physical presses with a bounded
+wait-and-repeat hold rule.
 This is transient design state only: it does not serialize into
 `InputBindingV1`, alter native/browser input authority, change OS-repeat
 suppression, enter Start or Run, or produce samples, events, LSL, recovery, or
@@ -526,10 +578,11 @@ around this authoritative v1 projection. Its three-way selector compares
 **Flubber**, **2D Grid**, and **Responsive Face** using one shared transient x/y
 point. In the Flubber comparison, Flubber remains the foreground element above
 its 2D affect-control Grid. Four directional color swatches may open one
-color-wheel/hex popover. The preview halo is always mathematically centered on
-the Flubber; a transient halo-size control may change its relative footprint
-but no halo offset exists. A nested Advanced disclosure may expose the existing
-Flubber appearance and mapping controls without duplicating their owner.
+color-wheel/hex popover. The Setup preview halo follows the exact animated
+Flubber outline and fades to transparent outward. Its transient width control
+changes stroke thickness/spread, not geometric scale or offset. A nested
+Advanced disclosure may expose the existing Flubber appearance and mapping
+controls without duplicating their owner.
 
 The responsive Face is newly and independently drawn as procedural SVG/canvas
 geometry. Valence and arousal only pose that drawing from the same x/y snapshot

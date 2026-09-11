@@ -7,6 +7,13 @@ authority. This file restates its user-visible requirements. The former
 feature-rich requirements remain available in Git history and the frozen
 checkpoint; they are not active requirements in this branch.
 
+Apply the charter's 2026-09-11 final-state amendment first. The central
+[`segment roadmap`](./60-SEGMENT-CATALOGUE.md) owns future capability requirements
+and completion. The detailed requirements below describe the existing v1
+generation; old eight-section/no-allocation rules and Section 2-only pass scope
+must not be mistaken for the final Planner plan or new agent allocation.
+Successor contracts preserve historical v1 meanings and require their own gates.
+
 The documentation describes the target. Current implementation status belongs
 in [`40-ROADMAP.md`](./40-ROADMAP.md).
 
