@@ -37,6 +37,20 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-integration-confirm-tile-receipt
+
+- Owner: **Add segment confirmation flow**, integration; **resolved**.
+  Candidate `fa16b23140644d64aacbb1d455363d776701b56a` combines accordion
+  `1253459` and Preview `1b81ad2`. Board append conflict retained both messages;
+  source hunks merged without conflict. S2 and S3 unfinished work excluded.
+- Combined checks: 426/426 JavaScript tests, desktop 8-file and Pages 169-file
+  closures, offscreen Edge confirmation 8/8 and tile paint 6/6 checks pass.
+  Receipts under `D:/GitHub/.affect-preview-checks/{accordion,tile}-integrated-20260911`.
+- No native mutation/build by integration; S2 owns the separately requested
+  source-bound app launch. No GUI testing, push/deployment or qualification
+  claim. Reduced-motion/forced-color source guards pass; full interactive
+  accessibility remains open. Existing large-JS-chunk warning remains.
+
 ### 20260911-accordion-confirm-glow
 
 - Owner: **Add segment confirmation flow**, segment `accordion`, UI Finalization;
