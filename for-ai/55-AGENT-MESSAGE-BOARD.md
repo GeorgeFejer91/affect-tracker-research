@@ -37,6 +37,22 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p2-full-import-slot-adoption
+
+- Owner S2/P2, follow-up to finishing Section 2. A complete definition file used
+  to require a pre-existing matching family ID, which Add questionnaire could
+  not create. A wholly pristine generic family can now adopt the imported ID;
+  all scientific content/provenance remain unchanged. Any edited language variant,
+  existing destination family or language mismatch rejects without replacement.
+- Shared seam: editor `onAdoptImportedFamily` callback and P2 app helper only.
+  P7 contribution/restoration signatures and package handlers are unchanged.
+  Headless fixture exercises explicit in-memory file input (native picker stubbed),
+  family adoption, missing second language, wrong-language rejection and draft
+  protection. No raw JSON editor, automatic translation or source rewrite added.
+- Ready evidence: 445/445 Node tests; 24/24 isolated headless Edge cases;
+  Pages171/desktop8 build closures and whitespace pass. Native/Runner qualification
+  and complete P7-integrated save/reopen remain separate evidence gates.
+
 ### 20260911-p2-redundant-presentation-cleanup
 
 - Owner: S2/P2, bounded D02/D03 cleanup relayed by the roadmap coordinator

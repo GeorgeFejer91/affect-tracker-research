@@ -175,11 +175,11 @@ presentation/scoring semantics need explicit ownership/versioning.
 - [x] **P2-01 — Implemented component:** single-choice definitions, distinct labels/nullable numeric codes, hashes and module references.
 - [x] **P2-02 — Implemented component:** family×language coverage and terminal-language references; picker already supports more than EN/DE.
 - [x] **P2-03 — Implemented component:** bounded sheet editing/paste, file normalization and dirty/invalid compilation gates.
-- [ ] **P2-04 — Partial:** editable save/reopen, draft handling and revision of a loaded package; current load locks the language editor.
+- [ ] **P2-04 — Partial:** P2 full-content restore/snapshot seam is implemented in pending `74e879b`; P7 owns its package load/Edit recipe wiring and acknowledged save. Invalid draft durability remains Q13. Historical language-neutral or colliding slots reject editable restoration explicitly; nested language roster editing remains unsupported.
 - [ ] **P2-05 — Partial:** complete requested instruments in priority languages, then explicit further-language authoring; a picker entry is not available instrument content.
 - [ ] **P2-06 — Decision:** placement, computed totals/subscale scoring beyond explicit option codes, and missing-answer behavior (Q09). Explicit reverse-coded option values already work.
 - [ ] **P2-07 — Partial:** save approved presentation choices; label repetition5/10 is currently preview-only and blocks Build until reset.
-- [ ] **P2-08 — Missing:** complete multilingual edit→export→reopen→re-export proof with no stale content/hashes; Runner proof remains deferred.
+- [ ] **P2-08 — Partial:** pending `74e879b` proves EN/DE edit→package→full-definition restore→byte-identical re-export in two independent processes and off-screen app restoration/dirty-revision behavior. P7-integrated final-step UI evidence remains open; Runner proof is deferred.
 
 **Acceptance:** each selected language has exact required definitions; labels
 and codes remain distinct; missing variants reject; imports preserve declared

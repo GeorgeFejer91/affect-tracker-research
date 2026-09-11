@@ -98,6 +98,28 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   appRoot.querySelector('[data-study-language-remove="de"]').click();
   const removedLanguage = app.getQuestionnaireContributionSnapshot();
   check('removing a language removes only its accepted variants and prevents orphaned export references', !removedLanguage.pending && removedLanguage.contribution.questionnaires.definitions.length === 1 && removedLanguage.contribution.questionnaires.definitions[0].language === 'en' && removedLanguage.contribution.languageSelection.languages.length === 1);
+  await app.restoreQuestionnaireContribution({questionnaires:{algorithmVersion:QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,definitions:[],modules:[]},
+    languageSelection:createCoveredFlatLanguageSelectionV1({definitions:[],modules:[],languages,requestedFamilyIds:[]})});
+  appRoot.querySelector('#questionnaire-add-blank').click();
+  const input = appRoot.querySelector('#questionnaire-sheet-file');
+  input.click = () => {}; // No native picker: this is an explicit fixture file.
+  appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-action="upload"]').click();
+  Object.defineProperty(input,'files',{configurable:true,value:[new File([english],'maia-2-en.csv',{type:'text/csv'})]});
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="maia-2/en"]');attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('full-definition file import adopts its identity into a pristine generic family', Boolean(appRoot.querySelector('[data-sheet-key="maia-2/en"] [data-sheet-cell="36:0"]')) && !appRoot.querySelector('[data-sheet-key="questionnaire-1/en"]'));
+  check('adopted family still requires an independently supplied second language', app.getQuestionnaireContributionSnapshot().pending && appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-cell="0:0"]').value === '');
+  appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-action="upload"]').click();
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="maia-2/de"] .sheet-error').textContent;attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('a wrong-language file cannot fill another language table', appRoot.querySelector('[data-sheet-key="maia-2/de"] .sheet-error').textContent.includes('requires de') && appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-cell="0:0"]').value === '');
+  appRoot.querySelector('#questionnaire-add-blank').click();
+  const customPrompt = appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-cell="0:0"]');
+  customPrompt.value = 'Keep this draft'; customPrompt.dispatchEvent(new Event('input',{bubbles:true}));
+  appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-action="upload"]').click();
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] .sheet-error').textContent;attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('full-definition family adoption cannot overwrite an edited generic questionnaire', appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-cell="0:0"]').value === 'Keep this draft' && appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] .sheet-error').textContent.includes('different questionnaire'));
   app.destroy();
   document.querySelector('#receipt').textContent = JSON.stringify({passed:true, cases:results.length, results});
 })().catch(error => { document.querySelector('#receipt').textContent = JSON.stringify({passed:false, error:error.stack, results}); });

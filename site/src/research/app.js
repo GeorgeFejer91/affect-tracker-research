@@ -279,6 +279,7 @@ function bindResearchInteractions(root, { surface }) {
     onSave: saveEditedQuestionnaire,
     onRemove: removeQuestionnaireFamily,
     onMove: moveQuestionnaireFamily,
+    onAdoptImportedFamily: adoptImportedQuestionnaireFamily,
   });
   const participantStates = new Map();
   const participantRecoverability = new Map();
@@ -1960,6 +1961,19 @@ function bindResearchInteractions(root, { surface }) {
     requestQuestionnaireFamily(`questionnaire-${number}`);
     renderQuestionnaires();
     schedulePlanRefresh();
+  }
+
+  function adoptImportedQuestionnaireFamily(previousId, familyId) {
+    if (languageEditorLocked || mode !== "setup" || !/^questionnaire-\d+$/u.test(previousId)
+      || requestedQuestionnaireFamilies.includes(familyId)
+      || questionnaireDefinitions.some(d => familyIdForDefinition(d) === previousId)) return false;
+    const index = requestedQuestionnaireFamilies.indexOf(previousId);
+    if (index < 0) return false;
+    // The editor verifies every variant is still pristine before this rename.
+    // Preserve imported scientific identities rather than rewriting the source.
+    requestedQuestionnaireFamilies[index] = familyId;
+    renderQuestionnaires();
+    return true;
   }
 
   function moveQuestionnaireFamily(familyId, direction) {
