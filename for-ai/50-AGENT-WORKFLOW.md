@@ -130,8 +130,9 @@ Maintain one named integration branch, initially `codex/research-unified`, for
 the combined local application. An explicitly allocated integration owner
 collects ready segment commits, checks ancestry and charter compatibility,
 merges compatible work, resolves only understood integration conflicts, runs
-the applicable combined gates, and rebuilds/opens the app from that exact
-checkout. Never use blanket ours/theirs conflict resolution. Record excluded
+the applicable combined gates, and rebuilds/verifies the app in the background
+from that exact checkout. Opening or interacting with it requires the specific
+user opt-in described below. Never use blanket ours/theirs conflict resolution. Record excluded
 or blocked branches and why; do not restore historical Playground branches.
 Commit and merge only when authorized by the user's workflow; local convergence
 does not authorize pushing, deployment, signing, or publication.
