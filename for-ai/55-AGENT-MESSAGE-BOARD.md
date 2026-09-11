@@ -37,6 +37,72 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p7-receipted-save-checkpoint
+
+- **Owner / stage:** P7, Backend Verification, branch
+  `codex/segment-p7-recipe-export`, isolated worktree
+  `D:/GitHub/affect-tracker-research-p7-recipe-export`, base `305d3ac`.
+- **Delivered:** one receipted save controller and one contribution review guard
+  for P7-04/P7-07, plus P7-03/P7-06 seams. Native event acceptance never means
+  persistence; the six-field acknowledgement must match the exact canonical
+  bytes, package hash and byte length. Cancellation/failure permit retry. Edits
+  during compilation prevent writes; edits during a write survive its receipt.
+  Decoder readiness is separate from design persistence.
+- **Shared integration:** controller initialization binds available P2, P3 and
+  P6 producer APIs. P2 must exactly match full v1 questionnaires and language
+  tree. Active successor content cannot disappear into v1. Invalid/pending
+  contributions, stale dependencies and cycles route to owners and block export
+  and ordinary Start. Pending finalization keeps its existing recovery path.
+  P2 ready `74e879b` supplies full editable restoration; P7 layers it next.
+- **Redundancy cleanup:** Review owns sampling, output formats, reproduction,
+  fixed continuous-rating explanation and one legacy-import disclosure with
+  readonly participant count. P1 owns identity relocation; P5 owns LSL relocation;
+  integration owns removal of the emptied Experiment wrapper. Legacy readers,
+  validation, command vocabulary and persisted v1 meanings remain intact.
+- **Evidence:** 446 Node tests passed, including 20 new save/contribution tests;
+  15 isolated headless Edge UI cases passed at widths 1366, 768 and 640. The UI
+  test exposed and fixed stale detection while media verification is pending.
+  Pages boundary verified 172 files; desktop frontend boundary verified 8 files.
+  `git diff --check` passed. Headless fixtures simulate the native acknowledgement;
+  no installed picker, write, player, hardware or research qualification claimed.
+- **Still open:** P7-05/P7-09 successor composition requires accepted P1/P3/P4/P6
+  contracts and exact native mirrors. This checkpoint does not make the whole
+  Planner complete or implement Runner allocation/recording. No canonical branch
+  edits, GUI automation, remote publication or new unsafe boundary.
+
+
+### 20260911-p7-recipe-export
+
+- Owner: **S7**, P7 package; **open**, Backend Verification. User requested
+  segment 7 and clarified it is the final Planner step. Integration acknowledged
+  this allocation. Branch `codex/segment-p7-recipe-export`, worktree
+  `D:/GitHub/affect-tracker-research-p7-recipe-export`, base `305d3ac`.
+- Current canonical uncommitted charter amendment and `60`/`61`/`62` were read
+  completely; this branch's older documentation is not a replacement authority.
+- Scope: P7-03/04/06/07 and the available contribution interface for P7-05/09.
+  Input is accepted owner content/revisions and explicit export actions; output
+  is canonical recipe bytes, verified save receipts and actionable review state.
+  Retain playback/output policy and historical v1 meanings. P7 owns compilation,
+  save acknowledgement and the combined stale/export/Start guard, never editor
+  semantics or Runner acquisition.
+- Shared seams: `app.js` package generation/load/review, `ui-view.js` Review,
+  `ui-contracts.js` vocabulary, `native-bridge.js` package save; new bounded P7
+  lifecycle/contribution modules, focused tests and required build allowlist.
+  P3 and P6 receive one registration/change API; P2 owns questionnaire restoration;
+  P5 moves existing LSL controls to Review without changing their saved meanings.
+- Verified source: native generation applies/locks before save acknowledgement;
+  browser save already reads back canonical bytes. No successor master envelope
+  or P4 accepted contract exists. Pending owner contracts must not be omitted
+  silently or relabelled as complete. Decisions Q12/Q13/Q15 remain open except
+  where the user or owning segment supplies an explicit answer.
+- Baseline: frozen pnpm install; 76 focused package, UI, native bridge,
+  questionnaire integration and architecture tests pass. Initial missing Tauri
+  dependency in the new worktree was resolved by the frozen install.
+- Evidence planned: acknowledgement/cancel/failure/retry/late-completion and
+  stale-edit tests, owner/dependency errors, canonical re-export and independent
+  reproduction, background frontend builds and applicable native contract tests.
+  No user-window interaction, Runner/device work, push or deployment.
+
 ### 20260911-integration-confirm-tile-receipt
 
 - Owner: **Add segment confirmation flow**, integration; **resolved**.

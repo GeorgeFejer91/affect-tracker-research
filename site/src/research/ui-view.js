@@ -364,11 +364,10 @@ function workspaceSection() {
     <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
 }
 
-function experimentSection() {
+function experimentCompatibilityMarkup() {
   return `
-    <p class="section-lead">Experiment identity and participant IDs come from the loaded experiment.json. Sampling remains the one editable acquisition setting.</p>
     <details class="inner-disclosure">
-      <summary>Advanced file compatibility</summary>
+      <summary>Legacy experiment and settings compatibility</summary>
       <div class="disclosure-content authoring-tools">
         <section aria-labelledby="experiment-file-title">
           <div>
@@ -381,6 +380,8 @@ function experimentSection() {
             <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
           </div>
           <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
+          <label class="field"><span>Legacy planned participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="participant-count-legacy-help"></label>
+          <p id="participant-count-legacy-help" class="field-help">This is the imported v1 schedule count. Change it by editing and reloading experiment.json.</p>
         </section>
         <section aria-labelledby="legacy-settings-title">
           <div>
@@ -390,19 +391,16 @@ function experimentSection() {
           <div class="button-row"><button id="settings-load" type="button">Load settings.json</button><button id="settings-save" type="button" disabled>Save settings.json</button></div>
         </section>
       </div>
-    </details>
+    </details>`;
+}
+
+function experimentSection() {
+  return `
+    <p class="section-lead">Experiment identity comes from the loaded experiment.json.</p>
     <div class="field-grid">
       <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="experiment-derived-help"></label>
-      <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
-      <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
-      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
       <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
-      <div class="field-block is-wide">
-        <span class="field-label">Rating method</span>
-        <output class="field-output" data-state="ready">Continuous rating is always enabled</output>
-        <p class="field-help">Samples are collected only while a complete video is actively playing. There is no summary-rating mode.</p>
-      </div>
     </div>`;
 }
 
@@ -572,11 +570,30 @@ function advancedSection() {
 
 function reviewSection() {
   return `
-    <p class="section-lead">Start is fail-closed. Review the resolved plan, privacy-safe participant identity, local outputs, input receipt, media verification, timing capability, and platform-specific LSL state.</p>
+    <p class="section-lead">Finish the design and save its recipe here. Participant and playback checks below apply when starting an experiment.</p>
     <section class="package-finalization" aria-labelledby="package-finalization-title">
-      <div><p class="context-label">Final setup step</p><h3 id="package-finalization-title">Build the experiment package</h3><p>After all languages, questionnaire assets, videos, and settings are ready, create the internal project package. Its raw JSON stays behind this interface.</p></div>
-      <button id="package-generate" type="button" class="primary-action">Build project package</button>
+      <div><h3 id="package-finalization-title">Review, recipe & export</h3><p>Save the accepted design as one experiment.package.json. Video files stay in the selected library.</p></div>
+      <div class="button-row">
+        <button id="package-generate" type="button" class="primary-action">Save recipe</button>
+        <button id="package-reexport" type="button" disabled>Re-export unchanged recipe</button>
+        <button id="package-edit" type="button" disabled>Edit recipe</button>
+      </div>
     </section>
+    <p id="package-save-status" role="status" aria-live="polite">Review the design, then save its recipe.</p>
+    <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
+    <div class="field-grid spaced-field-grid">
+      <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
+      <div class="field-block"><span class="field-label">Rating method</span><output class="field-output">Continuous rating is always enabled</output><p class="field-help">Samples are collected only while a complete video is actively playing.</p></div>
+      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
+    </div>
+    <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
+      <legend>Rating output formats</legend>
+      <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
+      <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
+      <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
+      <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
+    </fieldset>
+    ${experimentCompatibilityMarkup()}
     <ul id="preflight-list" class="preflight-list" aria-label="Experiment preflight checks"></ul>
     <details class="inner-disclosure" open>
       <summary>Resolved schedule and output</summary>
@@ -620,13 +637,6 @@ function reviewSection() {
         </div>
       </div>
     </details>
-    <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
-      <legend>Rating output formats</legend>
-      <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
-      <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
-      <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
-      <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
-    </fieldset>
     <section class="participant-language-readiness" aria-labelledby="participant-language-label">
       <div>
         <h3 id="participant-language-label">Participant language</h3>
