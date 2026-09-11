@@ -58,6 +58,22 @@ file; follow the integration-owner collection procedure in the workflow.
   automation resumed; Rust, physical input, timing, LSL, release/deployment and
   full accessibility gates deferred because this is transient UI geometry only.
 
+#### Tile build handoff — 2026-09-11
+
+- Source: `c2b07eecc8df21fb6c5a1dd9f5fe78581408e611`, following halo `1118ffa`.
+- `pnpm exec tauri build --debug --no-bundle -- --no-default-features` passed.
+  Exact isolated executable SHA-256:
+  `94cccfe4ece2aa5e8811e454d91c4843515796e31ac44496b85b68a600ea44e9`.
+- Launched directly from the isolated worktree; process 66652 returned the
+  expected path and responsive **Affect Research** title. Older windows preserved.
+- Read-only capture selected the exact returned process window, but the helper
+  returned an unrelated foreground surface, not the application. This is **not**
+  native visual evidence. No mouse, keyboard, or foreground-changing action was
+  sent, and the candidate was left running for manual review.
+- Ready for integration-owner review with these limits, not UI acceptance or
+  research qualification. Next: manual/native UI acceptance, then any separately
+  approved Backend Verification for persisted tile behavior.
+
 ### 20260911-preview-halo-border
 
 - Owner: **Preview**, segment `preview`, UI Finalization. Status: **open**.
