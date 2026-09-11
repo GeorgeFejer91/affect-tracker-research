@@ -136,3 +136,18 @@ not a new application binary. No installer was replaced or published, and no
 interactive Section 2/accordion/reduced-motion or full native qualification
 claim follows from this read-only screen observation. Cargo also emitted a
 non-failing existing bin/lib PDB output-name collision warning during the build.
+
+### 20260911-integration-background-verification
+
+- Date/sender: 2026-09-11, **Add segment confirmation flow**.
+- Target: all future agents and integration owner. Status: **resolved** by
+  updating `50-AGENT-WORKFLOW.md` and `30-TESTING-AND-RELEASE.md`.
+- Observation: the prior workflow required foregrounding the Tauri app and
+  interactive visual exercise for routine UI verification, which can take
+  control of the researcher's desktop.
+- Decision: routine testing now uses bounded local CLI/test entrypoints,
+  isolated processes, and background/headless or off-screen renderers with
+  machine-readable receipts. Window activation, synthetic input, and
+  browser/computer-control tooling require explicit opt-in for a named check.
+- Evidence: documentation diff inspected locally; no application, user window,
+  or experiment was launched or interacted with during this documentation pass.

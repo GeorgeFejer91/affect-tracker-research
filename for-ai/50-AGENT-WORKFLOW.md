@@ -257,8 +257,10 @@ acting.
   control planes, recovery, observability, and qualification design.
 - Use **`uncodixfy`** for any generated or changed HTML/CSS/frontend UI while
   preserving this product's accessibility and restrained instrument identity.
-- Use the available browser-control skill for real browser visual/behavioral
-  checks. Static inspection alone is not runtime evidence.
+- Use the available browser-control skill only for a specifically user-approved
+  real-browser visual/behavioral check. Static inspection or a background
+  receipt is not interactive runtime evidence, but is the required default when
+  the user has not opted in to desktop interaction.
 - Use the available multi-source web-search skill for current or uncertain
   APIs, standards, licenses, compatibility, or research claims, preferring
   official primary sources for technical decisions.
@@ -304,32 +306,46 @@ and never unwind a panic across FFI.
 5. Add focused success, rejection, stale-generation, interruption, and cleanup
    tests, then run the broader applicable gates in
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
-6. Verify user-visible behavior in a real browser or packaged desktop runtime
-   when practical. Never infer physical/platform qualification from mocks or a
-   build.
+6. Verify behavior through non-interactive CLI/test commands, process-isolated
+   fixtures, and a background/headless renderer whenever the claim can be
+   covered that way. Never take control of the researcher's computer, move
+   windows, synthesize pointer/keyboard input, or foreground an application as
+   part of routine testing. Never infer physical/platform qualification from
+   mocks, a background renderer, or a build.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
 
-### Rebuild, reopen, foreground, and leave open
+### User-control protection and background verification
 
-Every user-visible frontend or Tauri behavior change made on a Windows host
-with an available GUI must be shown in the real **Affect Research** Tauri app
-before handoff:
+Routine verification must leave the user's desktop, windows, focus, pointer,
+keyboard, clipboard, and active applications untouched. Agents must use the
+repository's existing CLI-capable functions and test entrypoints, or add a
+bounded local verification command when that is the smallest contract-faithful
+seam. For renderer-dependent checks, run a background/headless renderer or an
+off-screen process that produces machine-readable receipts, screenshots, or
+video frames without taking over the desktop. Keep this verification separate
+from participant-facing runtime authority and do not add a remote-control or
+general-purpose CLI surface contrary to the charter.
+
+Do not use computer-control, browser-control, window activation, GUI launch,
+synthetic input, or foreground visual exercise for testing unless the user
+explicitly opts in for that specific check. A GUI is never a default fallback
+merely because it is available. If a claim cannot be established without an
+interactive check, report it as unverified and ask before touching the user's
+desktop; do not silently perform the check.
+
+When the user explicitly opts in to a named interactive check, keep it bounded:
 
 1. run the proportionate tests and rebuild the current desktop frontend/native
    development candidate so the window cannot be serving stale assets;
-2. close any stale local development/test instance, but never interrupt an
-   active experiment run or discard in-app work; stop and ask the user instead;
-3. launch the current Tauri development app or the exact newly built executable,
-   bring its **Affect Research** window to the foreground, and leave it open for
-   the user;
-4. visually exercise the changed feature in that native window and report the
-   exact launch mode plus any behavior that could not be checked.
-
-A static browser preview, source inspection, screenshot fixture, successful
-build, or mocked IPC test does not substitute for reopening and observing the
-Windows Tauri app. If native launch or foreground verification is unavailable,
-state that explicitly in the handoff; never imply the feature was shown.
+2. do not close, focus, move, or interrupt any existing user window or active
+   experiment; use a separately identified candidate only after confirming it
+   cannot affect the user's work;
+3. obtain the user's explicit approval immediately before launching or
+   foregrounding the candidate, then exercise only the named behavior; and
+4. report the exact launch mode, interaction performed, and any behavior that
+   remains unchecked. Without that opt-in, a background receipt is the maximum
+   claim and the interactive gate remains open.
 
 The two-clean-independent-instance package reproduction benchmark is a
 permanent gate, not a one-time implementation test. Any package-contract,
