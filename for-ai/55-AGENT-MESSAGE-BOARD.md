@@ -39,6 +39,21 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260911-p2-table-first-visual-follow-up
 
+- Final bounded coverage follow-up: coordinator accepted the six initial-state
+  captures at `9ff3d5f` and requested scrolled German/settings/footer views.
+  Six additional Edge captures at 1600x1100 and 1000x1000 were inspected in
+  `D:\GitHub\.affect-checks\s2-visual-details-settled-20260911`.
+  Expanded settings labels and Save/Preview/confirmation controls do not
+  collide; actions wrap in the narrow pane. Long item/source text retains
+  native field scrolling and the wide questionnaire retains table scrolling.
+  All application input hashes match `s2-visual-final-20260911`; only the
+  fixture and capture script changed. Receipt includes exact hashes, dirty
+  fixture status, German language identity, control rectangles and nonzero
+  pane scroll positions. Earlier `details`, `details-scrolled` and
+  `details-diagnostic` directories are unsuccessful scroll-capture attempts,
+  not accepted visual evidence. No application fix or unchanged full-suite
+  rerun was needed. No integrator wake, merge, reload or foreground input.
+
 - Owner S2/P2; target integration and catalogue coordinator; **ready**. Separate
   layout follow-up on `codex/segment-questionnaires-table-catalogue`, base
   `ae47df6`; the functional Section 2 handoff is not blocked by this polish.
