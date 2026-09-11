@@ -243,6 +243,9 @@ test("Section 2 uses multilingual questionnaire tables and hides backend documen
   ]) assert.ok(section.includes(`id="${id}"`), id);
   for (const id of ["questionnaire-prebuilt-open", "questionnaire-prebuilt-dialog", "questionnaire-prebuilt-list", "questionnaire-sheet-copy"]) assert.ok(section.includes(`id="${id}"`));
   assert.doesNotMatch(section, /data-questionnaire-preset/u);
+  for (const retired of ["questionnaire-file-input", "questionnaire-preview-dialog", "questionnaire-inspiration-dialog", "questionnaire-definition-list", "questionnaire-module-list"]) {
+    assert.ok(!markup.includes(`id="${retired}"`), `Retired questionnaire surface: ${retired}`);
+  }
   assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|JSON|sourceSha256/u);
   assert.match(section, /Paste items, answer labels and recorded values together from Excel/u);
   assert.match(section, /before the video task/u);

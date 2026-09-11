@@ -222,7 +222,6 @@ function bindResearchInteractions(root, { surface }) {
   let studyLanguages = DEFAULT_STUDY_LANGUAGES.map((language) => ({ ...language }));
   let languageEditorLocked = false;
   let loadedLanguageSelection = null;
-  let pendingQuestionnaireUpload = null;
   const requestedQuestionnaireFamilies = [];
   const questionnaireAuthoringReceipts = new Map();
   let plan = null;
@@ -1704,22 +1703,6 @@ function bindResearchInteractions(root, { surface }) {
       });
   }
 
-  function questionnaireModuleGroups() {
-    const groups = [];
-    const byFamily = new Map();
-    for (const module of questionnaireModules) {
-      const definition = questionnaireDefinition(module.questionnaireId);
-      const familyId = definition ? familyIdForDefinition(definition) : module.questionnaireId;
-      let group = byFamily.get(familyId);
-      if (!group) {
-        group = { familyId, modules: [] };
-        byFamily.set(familyId, group);
-        groups.push(group);
-      }
-      group.modules.push(module);
-    }
-    return groups;
-  }
 
   function renderStudyLanguages() {
     const list = query("#study-language-list");
@@ -1771,69 +1754,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function renderQuestionnaireCoverage() {
     const coverage = questionnaireLanguageCoverage();
-    const head = query("#questionnaire-coverage-head");
-    const body = query("#questionnaire-coverage-body");
     const status = query("#questionnaire-coverage-status");
-    if (head instanceof HTMLElement) {
-      const row = document.createElement("tr");
-      for (const label of ["Module", ...studyLanguages.map(({ label }) => label), "Actions"]) {
-        const cell = document.createElement("th");
-        cell.textContent = label;
-        row.append(cell);
-      }
-      head.replaceChildren(row);
-    }
-    if (body instanceof HTMLElement) {
-      if (coverage.familyRows.length === 0) {
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-        cell.colSpan = studyLanguages.length + 2;
-        cell.className = "empty-state";
-        cell.textContent = "Include a module to check its language assets.";
-        row.append(cell);
-        body.replaceChildren(row);
-      } else {
-        body.replaceChildren(...coverage.familyRows.map((family) => {
-          const row = document.createElement("tr");
-          row.dataset.questionnaireCoverageFamily = family.familyId;
-          const identity = document.createElement("th");
-          identity.scope = "row";
-          const title = document.createElement("strong");
-          title.textContent = questionnaireFamilyLabel(family.familyId);
-          const detail = document.createElement("small");
-          detail.textContent = family.complete ? "All selected languages ready" : "Translation required";
-          identity.append(title, detail);
-          row.append(identity);
-          for (const language of family.languages) {
-            const cell = document.createElement("td");
-            const state = document.createElement("span");
-            state.className = "asset-state";
-            state.dataset.state = language.covered ? "ready" : "missing";
-            state.textContent = language.covered ? "Ready" : "Missing";
-            cell.append(state);
-            if (!language.covered && !languageEditorLocked) {
-              const upload = document.createElement("button");
-              upload.type = "button";
-              upload.textContent = "Upload file";
-              upload.dataset.questionnaireUploadFamily = family.familyId;
-              upload.dataset.questionnaireUploadLanguage = language.languageTag;
-              upload.setAttribute("aria-label", `Upload ${questionnaireFamilyLabel(family.familyId)} in ${language.label}`);
-              cell.append(upload);
-            }
-            row.append(cell);
-          }
-          const actions = document.createElement("td");
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.textContent = "Remove module";
-          remove.dataset.questionnaireRemoveFamily = family.familyId;
-          remove.disabled = languageEditorLocked;
-          actions.append(remove);
-          row.append(actions);
-          return row;
-        }));
-      }
-    }
     if (status) {
       status.dataset.state = coverage.complete ? "ready" : "error";
       status.textContent = coverage.familyRows.length === 0
@@ -1842,183 +1763,8 @@ function bindResearchInteractions(root, { surface }) {
           ? `${coverage.familyRows.length} module${coverage.familyRows.length === 1 ? "" : "s"} complete in every selected language.`
           : `${coverage.missing.length} required language asset${coverage.missing.length === 1 ? " is" : "s are"} missing.`;
     }
-    root.querySelectorAll("[data-questionnaire-preset]").forEach((button) => {
-      if (!(button instanceof HTMLButtonElement)) return;
-      const included = familyIsIncluded(button.dataset.questionnairePreset);
-      button.textContent = `${included ? "Added" : "Add"} ${questionnaireFamilyLabel(button.dataset.questionnairePreset)}`;
-      button.disabled = languageEditorLocked || included;
-    });
   }
 
-  function renderQuestionnaireDefinitions() {
-    const container = query("#questionnaire-definition-list");
-    if (!(container instanceof HTMLElement)) return;
-    if (questionnaireDefinitions.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "empty-state";
-      empty.textContent = "No questionnaire definitions added.";
-      container.replaceChildren(empty);
-      return;
-    }
-    container.replaceChildren(...questionnaireDefinitions.map((definition) => {
-      const article = document.createElement("article");
-      article.className = "questionnaire-definition";
-      article.dataset.questionnaireId = definition.questionnaireId;
-      const heading = document.createElement("div");
-      heading.className = "questionnaire-definition-heading";
-      const identity = document.createElement("div");
-      const title = document.createElement("strong");
-      title.textContent = definition.title;
-      const metadata = document.createElement("p");
-      const language = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === definition.language);
-      const receipt = questionnaireAuthoringReceipts.get(definition.questionnaireId);
-      const format = receipt?.original?.formatVersion
-        ?.replace("questionnaire-", "")
-        .replace("-v1", "")
-        .toUpperCase();
-      metadata.textContent = `${definition.items.length} items · ${language?.label ?? definition.language}${format ? ` · ${format} upload` : ""}`;
-      identity.append(title, metadata);
-      const actions = document.createElement("div");
-      actions.className = "button-row";
-      for (const [label, action] of [["Preview", "preview"], ["Add to sequence", "add-module"], ["Remove", "remove-definition"]]) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = label;
-        button.dataset.questionnaireAction = action;
-        button.dataset.questionnaireId = definition.questionnaireId;
-        if (action === "remove-definition") {
-          button.disabled = questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
-          button.title = button.disabled ? "Remove its protocol modules first." : "Remove this unused definition.";
-        }
-        actions.append(button);
-      }
-      heading.append(identity, actions);
-      const readiness = document.createElement("p");
-      readiness.className = "questionnaire-metadata";
-      readiness.textContent = "Validated and ready for language coverage.";
-      article.append(heading, readiness);
-      return article;
-    }));
-  }
-
-  function renderQuestionnaireModules() {
-    const list = query("#questionnaire-module-list");
-    if (!(list instanceof HTMLElement)) return;
-    if (questionnaireModules.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "empty-state";
-      empty.textContent = "Add a validated definition to place it in the protocol.";
-      list.replaceChildren(empty);
-      return;
-    }
-    const groups = questionnaireModuleGroups();
-    list.replaceChildren(...groups.map((group, index) => {
-      const module = group.modules[0];
-      const definition = questionnaireDefinition(module.questionnaireId);
-      const item = document.createElement("li");
-      item.className = "questionnaire-module";
-      item.dataset.moduleId = module.moduleId;
-      item.dataset.questionnaireFamily = group.familyId;
-      const heading = document.createElement("div");
-      heading.className = "questionnaire-module-heading";
-      const identity = document.createElement("div");
-      const title = document.createElement("strong");
-      title.textContent = questionnaireFamilyLabel(group.familyId);
-      const metadata = document.createElement("p");
-      const languages = group.modules.map((candidate) => questionnaireDefinition(candidate.questionnaireId)?.language)
-        .filter(Boolean)
-        .map((tag) => STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === tag)?.label ?? tag);
-      metadata.textContent = `Sequence ${index + 1} · ${languages.join(" + ")} asset${languages.length === 1 ? "" : "s"}`;
-      identity.append(title, metadata);
-      const order = document.createElement("div");
-      order.className = "button-row";
-      for (const [label, direction] of [["Move up", "up"], ["Move down", "down"]]) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = label;
-        button.dataset.questionnaireMoveFamily = direction;
-        button.dataset.questionnaireFamily = group.familyId;
-        button.disabled = direction === "up" ? index === 0 : index === groups.length - 1;
-        order.append(button);
-      }
-      heading.append(identity, order);
-
-      const controls = document.createElement("div");
-      controls.className = "questionnaire-module-controls";
-      const placementLabel = document.createElement("label");
-      placementLabel.className = "field";
-      const placementText = document.createElement("span");
-      placementText.textContent = "Placement";
-      const placementSelect = document.createElement("select");
-      placementSelect.dataset.questionnairePlacement = module.moduleId;
-      for (const [value, label] of [["beforeSession", "Before session"], ["afterSession", "After session"], ["beforeBlock", "Before block"], ["afterBlock", "After block"], ["afterStimulus", "After a video"]]) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
-        option.selected = module.placement.kind === value;
-        placementSelect.append(option);
-      }
-      placementLabel.append(placementText, placementSelect);
-
-      const poolLabel = document.createElement("label");
-      poolLabel.className = "field";
-      const poolText = document.createElement("span");
-      poolText.textContent = "Block";
-      const poolSelect = document.createElement("select");
-      poolSelect.dataset.questionnaireBlock = module.moduleId;
-      const usesBlock = module.placement.kind === "beforeBlock" || module.placement.kind === "afterBlock";
-      poolSelect.disabled = !usesBlock;
-      for (const block of experimentDocument?.definition.blocks ?? []) {
-        const option = document.createElement("option");
-        option.value = block.blockId;
-        option.textContent = block.label;
-        option.selected = module.placement.blockId === block.blockId;
-        poolSelect.append(option);
-      }
-      poolLabel.append(poolText, poolSelect);
-
-      const stimulusLabel = document.createElement("label");
-      stimulusLabel.className = "field";
-      const stimulusText = document.createElement("span");
-      stimulusText.textContent = "Video";
-      const stimulusSelect = document.createElement("select");
-      stimulusSelect.dataset.questionnaireStimulus = module.moduleId;
-      const usesStimulus = module.placement.kind === "afterStimulus";
-      stimulusSelect.disabled = !usesStimulus;
-      for (const stimulus of experimentDocument?.definition.stimuli ?? []) {
-        const option = document.createElement("option");
-        option.value = stimulus.stimulusId;
-        option.textContent = stimulus.title;
-        option.selected = module.placement.stimulusId === stimulus.stimulusId;
-        stimulusSelect.append(option);
-      }
-      stimulusLabel.append(stimulusText, stimulusSelect);
-
-      const isiLabel = document.createElement("label");
-      isiLabel.className = "field";
-      const isiText = document.createElement("span");
-      isiText.textContent = "Relative to ISI";
-      const isiSelect = document.createElement("select");
-      isiSelect.dataset.questionnaireIsi = module.moduleId;
-      isiSelect.disabled = !usesStimulus;
-      for (const [value, label] of [["before", "Before ISI"], ["after", "After ISI"]]) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
-        option.selected = module.placement.relativeToIsi === value;
-        isiSelect.append(option);
-      }
-      isiLabel.append(isiText, isiSelect);
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "Remove module";
-      remove.dataset.questionnaireRemoveFamily = group.familyId;
-      controls.append(placementLabel, poolLabel, stimulusLabel, isiLabel, remove);
-      item.append(heading, controls);
-      return item;
-    }));
-  }
 
   function renderProtocolPreview() {
     const hash = query("#protocol-plan-hash");
@@ -2235,80 +1981,6 @@ function bindResearchInteractions(root, { surface }) {
     schedulePlanRefresh();
   }
 
-  async function importQuestionnaireBytes(input, {
-    sourceKind = "researcherCsv",
-    logicalName = "questionnaire.csv",
-    sourceDocumentSha256 = null,
-    addModule = true,
-    expectedFamilyId = null,
-    expectedLanguageTag = null,
-  } = {}) {
-    questionnaireImportStatus(`Validating ${logicalName}…`);
-    const imported = await importQuestionnaireAuthoring(input, {
-      sourceKind,
-      logicalName,
-      sourceDocumentSha256,
-    });
-    const familyId = familyIdForDefinition(imported.definition);
-    if (expectedFamilyId && familyId !== expectedFamilyId) {
-      throw new TypeError(
-        `This slot expects ${questionnaireFamilyLabel(expectedFamilyId)}, but the file identifies the ${questionnaireFamilyLabel(familyId)} module.`,
-      );
-    }
-    if (expectedLanguageTag && imported.definition.language !== expectedLanguageTag) {
-      const expectedLanguage = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === expectedLanguageTag)?.label
-        ?? expectedLanguageTag;
-      throw new TypeError(
-        `This slot expects ${expectedLanguage} (${expectedLanguageTag}), but the file declares ${imported.definition.language}.`,
-      );
-    }
-    if (imported.definition.language === "und") {
-      throw new TypeError("Questionnaire assets must declare the exact participant language; und cannot satisfy language coverage.");
-    }
-    if (!studyLanguages.some(({ languageTag }) => languageTag === imported.definition.language)) {
-      throw new TypeError(
-        `Add ${imported.definition.language} to Study languages before uploading this questionnaire asset.`,
-      );
-    }
-    const existing = questionnaireDefinition(imported.definition.questionnaireId);
-    if (existing && existing.definitionSha256 !== imported.definition.definitionSha256) {
-      throw new TypeError(
-        `${imported.definition.questionnaireId} is already loaded with a different definition hash. Remove its modules and definition before replacing it.`,
-      );
-    }
-    await storeQuestionnaireSource(input, imported.definition, imported.authoringReceipt);
-    if (!existing) questionnaireDefinitions.push(structuredClone(imported.definition));
-    const definition = existing ?? imported.definition;
-    questionnaireAuthoringReceipts.set(definition.questionnaireId, imported.authoringReceipt);
-    requestQuestionnaireFamily(familyId);
-    if (addModule && !questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
-      addQuestionnaireModule(definition);
-    }
-    else {
-      renderQuestionnaires();
-      schedulePlanRefresh();
-    }
-    questionnaireImportStatus(
-      `${definition.title} · ${definition.language} is ready in its module asset folder.`,
-      "ready",
-    );
-    if (existing) announce(`${definition.title} was already validated; its source asset was verified without creating a duplicate.`);
-    return definition;
-  }
-
-  async function importBundledQuestionnaire(assetId, { familyId = null, languageTag = null } = {}) {
-    const bundled = BUNDLED_QUESTIONNAIRES[assetId];
-    if (!bundled) throw new TypeError(`Bundled questionnaire asset ${assetId} is unavailable.`);
-    const response = await fetch(bundled.url);
-    if (!response.ok) throw new Error(`Bundled questionnaire could not be read (${response.status}).`);
-    return importQuestionnaireBytes(await response.arrayBuffer(), {
-      sourceKind: "bundled",
-      logicalName: bundled.logicalName,
-      sourceDocumentSha256: assetId === "maia-2-de" ? SPECIFICATION_SOURCE_SHA256 : null,
-      expectedFamilyId: familyId,
-      expectedLanguageTag: languageTag,
-    });
-  }
 
   function renderPrebuiltQuestionnaires() {
     const list = query("#questionnaire-prebuilt-list");
@@ -2442,84 +2114,6 @@ function bindResearchInteractions(root, { surface }) {
     announce(`${removed.label} and its questionnaire variants removed from this setup. Stored source files were retained in the workspace.`);
   }
 
-  function requestQuestionnaireUpload({ familyId = null, languageTag = null } = {}) {
-    if (languageEditorLocked) {
-      announce("Questionnaire assets are frozen by the loaded project package.");
-      return;
-    }
-    pendingQuestionnaireUpload = familyId ? { familyId, languageTag } : null;
-    query("#questionnaire-file-input")?.click();
-  }
-
-  function filterQuestionnaireInspiration() {
-    const search = value("questionnaire-inspiration-search").trim().toLowerCase();
-    const domain = value("questionnaire-inspiration-domain", "all");
-    let visible = 0;
-    root.querySelectorAll("[data-inspiration-entry]").forEach((entry) => {
-      if (!(entry instanceof HTMLElement)) return;
-      const matches = (domain === "all" || entry.dataset.inspirationDomain === domain)
-        && (!search || entry.dataset.inspirationSearch?.includes(search));
-      entry.hidden = !matches;
-      if (matches) visible += 1;
-    });
-    const empty = query("#questionnaire-inspiration-empty");
-    if (empty instanceof HTMLElement) empty.hidden = visible > 0;
-  }
-
-  function openQuestionnaireInspiration() {
-    filterQuestionnaireInspiration();
-    const dialog = query("#questionnaire-inspiration-dialog");
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
-  }
-
-  function showQuestionnairePreview(definition) {
-    const title = query("#questionnaire-preview-title");
-    const instructions = query("#questionnaire-preview-instructions");
-    const attribution = query("#questionnaire-preview-attribution");
-    const items = query("#questionnaire-preview-items");
-    if (title) title.textContent = definition.title;
-    if (instructions) instructions.textContent = definition.instructions;
-    if (attribution) attribution.textContent = definition.attribution;
-    if (items instanceof HTMLElement) {
-      items.replaceChildren(...definition.items.map((item) => {
-        const article = document.createElement("article");
-        article.className = "questionnaire-preview-item";
-        const heading = document.createElement("h3");
-        heading.textContent = `${item.order}. ${item.prompt}`;
-        const options = document.createElement("p");
-        options.className = "questionnaire-preview-options";
-        options.textContent = item.options.map(({ label }) => label).join(" · ");
-        article.append(heading, options);
-        return article;
-      }));
-    }
-    const dialog = query("#questionnaire-preview-dialog");
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
-  }
-
-  function updateQuestionnaireModule(moduleId, placement) {
-    const index = questionnaireModules.findIndex((module) => module.moduleId === moduleId);
-    if (index < 0) return;
-    const current = questionnaireModules[index];
-    const definition = questionnaireDefinition(current.questionnaireId);
-    if (!definition) throw new TypeError(`Questionnaire module ${moduleId} has no definition.`);
-    const familyId = familyIdForDefinition(definition);
-    for (let candidateIndex = 0; candidateIndex < questionnaireModules.length; candidateIndex += 1) {
-      const candidate = questionnaireModules[candidateIndex];
-      const candidateDefinition = questionnaireDefinition(candidate.questionnaireId);
-      if (!candidateDefinition || familyIdForDefinition(candidateDefinition) !== familyId) continue;
-      questionnaireModules[candidateIndex] = structuredClone(validateQuestionnaireModuleV2({
-        ...candidate,
-        placement,
-      }, {
-        definition: candidateDefinition,
-        blockIds: protocolBlockIds(),
-        stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
-      }));
-    }
-    renderQuestionnaires();
-    schedulePlanRefresh();
-  }
 
   function renderReview() {
     renderNameCode();
@@ -4579,55 +4173,11 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "study-language-add-button") addStudyLanguage();
     if (target.dataset.studyLanguageRemove) removeStudyLanguage(target.dataset.studyLanguageRemove);
     if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
-    if (target.id === "questionnaire-import") requestQuestionnaireUpload();
-    if (target.dataset.questionnaireUploadFamily) {
-      requestQuestionnaireUpload({
-        familyId: target.dataset.questionnaireUploadFamily,
-        languageTag: target.dataset.questionnaireUploadLanguage,
-      });
-    }
     if (target.id === "questionnaire-prebuilt-open") {
       renderPrebuiltQuestionnaires(); query("#questionnaire-prebuilt-dialog").showModal();
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
-    if (target.id === "questionnaire-inspiration") openQuestionnaireInspiration();
-    if (target.id === "questionnaire-inspiration-close") closeDialog("questionnaire-inspiration-dialog");
-    if (target.dataset.questionnaireInspirationPrepare) {
-      closeDialog("questionnaire-inspiration-dialog");
-      void prepareQuestionnairePreset(target.dataset.questionnaireInspirationPrepare);
-    }
-    if (target.dataset.questionnaireRemoveFamily) removeQuestionnaireFamily(target.dataset.questionnaireRemoveFamily);
-    if (target.dataset.bundledQuestionnaire) {
-      void importBundledQuestionnaire(target.dataset.bundledQuestionnaire)
-        .catch((error) => announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`));
-    }
-    if (target.dataset.questionnaireAction) {
-      const definition = questionnaireDefinition(target.dataset.questionnaireId);
-      if (definition && target.dataset.questionnaireAction === "preview") showQuestionnairePreview(definition);
-      if (definition && target.dataset.questionnaireAction === "add-module") addQuestionnaireModule(definition);
-      if (definition && target.dataset.questionnaireAction === "remove-definition") {
-        const index = questionnaireDefinitions.findIndex(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
-        if (index >= 0 && !questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
-          questionnaireDefinitions.splice(index, 1);
-          renderQuestionnaires();
-          schedulePlanRefresh();
-          announce(`${definition.title} removed from the validated definition library.`);
-        }
-      }
-    }
-    if (target.dataset.questionnaireMoveFamily) {
-      const groups = questionnaireModuleGroups();
-      const index = groups.findIndex(({ familyId }) => familyId === target.dataset.questionnaireFamily);
-      const nextIndex = target.dataset.questionnaireMoveFamily === "up" ? index - 1 : index + 1;
-      if (index >= 0 && nextIndex >= 0 && nextIndex < groups.length) {
-        [groups[index], groups[nextIndex]] = [groups[nextIndex], groups[index]];
-        questionnaireModules.splice(0, questionnaireModules.length, ...groups.flatMap(({ modules }) => modules));
-        renderQuestionnaires();
-        schedulePlanRefresh();
-      }
-    }
-    if (target.id === "questionnaire-preview-close") closeDialog("questionnaire-preview-dialog");
     if (target.id === "condition-add") {
       const index = pools.length + 1;
       pools.push({ id: `condition-${index}-${Date.now()}`, label: `Condition ${index}`, videosPerParticipant: 1 });
@@ -4786,10 +4336,6 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("input", (event) => {
     const target = event.target;
-    if (target instanceof HTMLInputElement && target.id === "questionnaire-inspiration-search") {
-      filterQuestionnaireInspiration();
-      return;
-    }
     if (target instanceof HTMLInputElement && target.id === "preview-color-picker") {
       setPreviewColorDraft(target.value, { synchronizeHex: true });
       return;
@@ -4808,12 +4354,6 @@ function bindResearchInteractions(root, { surface }) {
       renderRunQuestionnaire();
       return;
     }
-    // Selects dispatch `input` before `change`. These controls are rendered
-    // from questionnaireModules, so refreshing here would replace the select
-    // before the change handler can commit its new value. The change handler
-    // updates the module and schedules the single required refresh.
-    if (target instanceof HTMLSelectElement
-      && (target.dataset.questionnairePlacement || target.dataset.questionnaireBlock)) return;
     if (target instanceof HTMLInputElement && target.type === "color") {
       setInputValue(`${target.id}-hex`, target.value.toLowerCase());
     } else if (target instanceof HTMLInputElement && target.id.endsWith("-hex")) {
@@ -4846,10 +4386,6 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("change", (event) => {
     const target = event.target;
-    if (target instanceof HTMLSelectElement && target.id === "questionnaire-inspiration-domain") {
-      filterQuestionnaireInspiration();
-      return;
-    }
     if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
     if (isPreviewOnlyControl(target)) {
       refreshProjection();
@@ -4867,47 +4403,6 @@ function bindResearchInteractions(root, { surface }) {
       clearParticipantLanguageSelection();
     }
     if (target instanceof HTMLSelectElement && target.id === "stimulus-source") updateStimulusDialogSource();
-    if (target instanceof HTMLSelectElement && target.dataset.questionnairePlacement) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnairePlacement);
-      if (current) {
-        const usesBlock = target.value === "beforeBlock" || target.value === "afterBlock";
-        const usesStimulus = target.value === "afterStimulus";
-        updateQuestionnaireModule(current.moduleId, usesStimulus ? {
-          kind: "afterStimulus",
-          blockId: null,
-          stimulusId: current.placement.stimulusId
-            ?? experimentDocument?.definition.stimuli[0]?.stimulusId,
-          relativeToIsi: current.placement.relativeToIsi ?? "before",
-        } : {
-          kind: target.value,
-          blockId: usesBlock ? (current.placement.blockId ?? protocolBlockIds()[0]) : null,
-        });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireBlock) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireBlock);
-      if (current && (current.placement.kind === "beforeBlock" || current.placement.kind === "afterBlock")) {
-        updateQuestionnaireModule(current.moduleId, { kind: current.placement.kind, blockId: target.value });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireStimulus) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireStimulus);
-      if (current?.placement.kind === "afterStimulus") {
-        updateQuestionnaireModule(current.moduleId, {
-          ...current.placement,
-          stimulusId: target.value,
-        });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireIsi) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireIsi);
-      if (current?.placement.kind === "afterStimulus") {
-        updateQuestionnaireModule(current.moduleId, {
-          ...current.placement,
-          relativeToIsi: target.value,
-        });
-      }
-    }
     if (target instanceof HTMLSelectElement && target.dataset.stimulusPool) {
       const stimulus = stimuli.find(({ id }) => id === target.dataset.stimulusPool);
       if (stimulus) stimulus.poolId = target.value;
@@ -5023,30 +4518,6 @@ function bindResearchInteractions(root, { surface }) {
     event.target.value = "";
   });
 
-  query("#questionnaire-file-input")?.addEventListener("change", async (event) => {
-    const [file] = [...(event.target.files ?? [])];
-    event.target.value = "";
-    if (!file) return;
-    const expected = pendingQuestionnaireUpload;
-    pendingQuestionnaireUpload = null;
-    try {
-      const bytes = await file.arrayBuffer();
-      await importQuestionnaireBytes(bytes, {
-        sourceKind: "researcherCsv",
-        logicalName: file.name,
-        expectedFamilyId: expected?.familyId ?? null,
-        expectedLanguageTag: expected?.languageTag ?? null,
-      });
-    } catch (error) {
-      questionnaireImportStatus(error instanceof Error ? error.message : String(error), "error");
-      announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
-  query("#questionnaire-inspiration-dialog")?.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    closeDialog("questionnaire-inspiration-dialog");
-  });
 
   query("#participant-language-dialog")?.addEventListener("cancel", (event) => {
     event.preventDefault();
