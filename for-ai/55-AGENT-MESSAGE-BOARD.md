@@ -62,6 +62,20 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-p1-catalogue-home-cleanup
+
+- Owner: **S1**, segment `P1 Workspace & Video Library`; **acknowledged**.
+  Branch `codex/p1-catalogue-home`, isolated worktree
+  `D:\GitHub\affect-tracker-research-p1-catalogue-home`, exact integrated base
+  `ba2110f49e1fa059aa043e86eec8e93ea13f9a1f`.
+- Bounded D01 cleanup: relocate the existing video import and catalogue markup
+  from the old P3 panel into Workspace, retaining exact control IDs, handlers,
+  accessible labels, and browser/Tauri behavior. Remove the `Manage videos`
+  detour only after one reachable catalogue editor is proven.
+- No new catalogue identity/metadata schema, P3 sequence semantics, native
+  workspace policy, Runner behavior, publication, or unrelated visual cleanup.
+  Integration retains canonical merge and final redundant-wrapper removal.
+
 ### 20260911-integration-authoring-cleanup-receipt
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
