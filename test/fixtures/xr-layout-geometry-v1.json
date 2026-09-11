@@ -1,0 +1,1605 @@
+{
+  "canonicalSha256": "0d156643d2fe08979dfe00b9ab0a8fe037614d3778f530d2b9d48a2d222748b8",
+  "cases": [
+    {
+      "name": "forward",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": null,
+      "expected": {
+        "videoCentre": [
+          0,
+          0,
+          -2
+        ],
+        "rotation": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "videoCorners": [
+          [
+            -0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            0.3375,
+            -2
+          ],
+          [
+            -0.6,
+            0.3375,
+            -2
+          ]
+        ],
+        "feedbackCentre": [
+          0,
+          -0.65,
+          -2
+        ],
+        "feedbackBounds": [
+          [
+            -0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.525,
+            -2
+          ],
+          [
+            -0.125,
+            -0.525,
+            -2
+          ]
+        ],
+        "fittedSize": [
+          1.2,
+          0.675
+        ],
+        "fittedCorners": [
+          [
+            -0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            0.3375,
+            -2
+          ],
+          [
+            -0.6,
+            0.3375,
+            -2
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 33.39848846798724,
+          "heightDegrees": 19.156845838921488
+        },
+        "videoAngles": {
+          "horizontal": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 33.39848846798724,
+          "heightDegrees": 19.156845838921488
+        }
+      }
+    },
+    {
+      "name": "wide-video",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": [
+        1920,
+        1080
+      ],
+      "expected": {
+        "videoCentre": [
+          0,
+          0,
+          -2
+        ],
+        "rotation": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "videoCorners": [
+          [
+            -0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            0.3375,
+            -2
+          ],
+          [
+            -0.6,
+            0.3375,
+            -2
+          ]
+        ],
+        "feedbackCentre": [
+          0,
+          -0.65,
+          -2
+        ],
+        "feedbackBounds": [
+          [
+            -0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.525,
+            -2
+          ],
+          [
+            -0.125,
+            -0.525,
+            -2
+          ]
+        ],
+        "fittedSize": [
+          1.2,
+          0.675
+        ],
+        "fittedCorners": [
+          [
+            -0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            0.3375,
+            -2
+          ],
+          [
+            -0.6,
+            0.3375,
+            -2
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 33.39848846798724,
+          "heightDegrees": 19.156845838921488
+        },
+        "videoAngles": {
+          "horizontal": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 33.39848846798724,
+          "heightDegrees": 19.156845838921488
+        }
+      }
+    },
+    {
+      "name": "portrait-video",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": [
+        1080,
+        1920
+      ],
+      "expected": {
+        "videoCentre": [
+          0,
+          0,
+          -2
+        ],
+        "rotation": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "videoCorners": [
+          [
+            -0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            -0.3375,
+            -2
+          ],
+          [
+            0.6,
+            0.3375,
+            -2
+          ],
+          [
+            -0.6,
+            0.3375,
+            -2
+          ]
+        ],
+        "feedbackCentre": [
+          0,
+          -0.65,
+          -2
+        ],
+        "feedbackBounds": [
+          [
+            -0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.775,
+            -2
+          ],
+          [
+            0.125,
+            -0.525,
+            -2
+          ],
+          [
+            -0.125,
+            -0.525,
+            -2
+          ]
+        ],
+        "fittedSize": [
+          0.37968750000000007,
+          0.675
+        ],
+        "fittedCorners": [
+          [
+            -0.18984375000000003,
+            -0.3375,
+            -2
+          ],
+          [
+            0.18984375000000003,
+            -0.3375,
+            -2
+          ],
+          [
+            0.18984375000000003,
+            0.3375,
+            -2
+          ],
+          [
+            -0.18984375000000003,
+            0.3375,
+            -2
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 33.39848846798724,
+          "heightDegrees": 19.156845838921488
+        },
+        "videoAngles": {
+          "horizontal": [
+            -5.422376269846427,
+            5.422376269846427
+          ],
+          "vertical": [
+            -9.578422919460744,
+            9.578422919460744
+          ],
+          "widthDegrees": 10.844752539692854,
+          "heightDegrees": 19.156845838921488
+        }
+      }
+    },
+    {
+      "name": "yaw-and-centre",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 3,
+          "azimuthDegrees": 20,
+          "elevationDegrees": 10,
+          "yawDegrees": 25,
+          "pitchDegrees": -10,
+          "rollDegrees": 15,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": [
+        2048,
+        1080
+      ],
+      "expected": {
+        "videoCentre": [
+          1.0104722665003953,
+          0.520944533000791,
+          -2.7762497351949698
+        ],
+        "rotation": [
+          [
+            0.8564321730139204,
+            -0.3054560093378022,
+            0.4161977407267834
+          ],
+          [
+            0.25488700224417876,
+            0.9512512425641977,
+            0.17364817766693033
+          ],
+          [
+            -0.4489504973976868,
+            -0.04263449166454669,
+            0.8925389352890299
+          ]
+        ],
+        "videoCorners": [
+          [
+            0.5997043658435514,
+            0.04696503728886703,
+            -2.4924902958195734
+          ],
+          [
+            1.6274229734602557,
+            0.35282943998188154,
+            -3.0312308926967972
+          ],
+          [
+            1.4212401671572392,
+            0.994924028712715,
+            -3.060009174570366
+          ],
+          [
+            0.3935215595405349,
+            0.6890596260197005,
+            -2.5212685776931423
+          ]
+        ],
+        "feedbackCentre": [
+          1.2090186725699668,
+          -0.09736877466593752,
+          -2.7485373156130146
+        ],
+        "feedbackBounds": [
+          [
+            1.140146652110452,
+            -0.24813605526698457,
+            -2.6870891919802355
+          ],
+          [
+            1.354254695363932,
+            -0.1844143047059399,
+            -2.799326816329657
+          ],
+          [
+            1.2778906930294816,
+            0.05339850593510953,
+            -2.8099854392457937
+          ],
+          [
+            1.0637826497760015,
+            -0.010323244625935146,
+            -2.6977478148963723
+          ]
+        ],
+        "fittedSize": [
+          1.2,
+          0.6328125
+        ],
+        "fittedCorners": [
+          [
+            0.5932611531465821,
+            0.06703049318670556,
+            -2.4933896171281225
+          ],
+          [
+            1.6209797607632865,
+            0.3728948958797201,
+            -3.0321302140053463
+          ],
+          [
+            1.4276833798542086,
+            0.9748585728148764,
+            -3.059109853261817
+          ],
+          [
+            0.39996477223750415,
+            0.668994170121862,
+            -2.520369256384593
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            8.871194234350371,
+            28.23069244023206
+          ],
+          "vertical": [
+            1.049530070884549,
+            16.429919162713475
+          ],
+          "widthDegrees": 19.359498205881685,
+          "heightDegrees": 15.380389091828926
+        },
+        "videoAngles": {
+          "horizontal": [
+            9.01724157624102,
+            28.129003303156658
+          ],
+          "vertical": [
+            1.4981250359999079,
+            16.107309293344944
+          ],
+          "widthDegrees": 19.11176172691564,
+          "heightDegrees": 14.609184257345035
+        }
+      }
+    },
+    {
+      "name": "roll",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 90,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": null,
+      "expected": {
+        "videoCentre": [
+          0,
+          0,
+          -2
+        ],
+        "rotation": [
+          [
+            6.123233995736766e-17,
+            -1,
+            0
+          ],
+          [
+            1,
+            6.123233995736766e-17,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "videoCorners": [
+          [
+            0.33749999999999997,
+            -0.6,
+            -2
+          ],
+          [
+            0.3375000000000001,
+            0.6,
+            -2
+          ],
+          [
+            -0.33749999999999997,
+            0.6,
+            -2
+          ],
+          [
+            -0.3375000000000001,
+            -0.6,
+            -2
+          ]
+        ],
+        "feedbackCentre": [
+          0.65,
+          -3.9801020972288984e-17,
+          -2
+        ],
+        "feedbackBounds": [
+          [
+            0.775,
+            -0.12500000000000003,
+            -2
+          ],
+          [
+            0.775,
+            0.12499999999999994,
+            -2
+          ],
+          [
+            0.525,
+            0.12499999999999996,
+            -2
+          ],
+          [
+            0.525,
+            -0.12500000000000003,
+            -2
+          ]
+        ],
+        "fittedSize": [
+          1.2,
+          0.675
+        ],
+        "fittedCorners": [
+          [
+            0.33749999999999997,
+            -0.6,
+            -2
+          ],
+          [
+            0.3375000000000001,
+            0.6,
+            -2
+          ],
+          [
+            -0.33749999999999997,
+            0.6,
+            -2
+          ],
+          [
+            -0.3375000000000001,
+            -0.6,
+            -2
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            -9.578422919460747,
+            9.578422919460747
+          ],
+          "vertical": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "widthDegrees": 19.156845838921495,
+          "heightDegrees": 33.39848846798724
+        },
+        "videoAngles": {
+          "horizontal": [
+            -9.578422919460747,
+            9.578422919460747
+          ],
+          "vertical": [
+            -16.69924423399362,
+            16.69924423399362
+          ],
+          "widthDegrees": 19.156845838921495,
+          "heightDegrees": 33.39848846798724
+        }
+      }
+    },
+    {
+      "name": "small-distant",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 100,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 0.001,
+          "heightMetres": 0.001,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "media": null,
+      "expected": {
+        "videoCentre": [
+          0,
+          0,
+          -100
+        ],
+        "rotation": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "videoCorners": [
+          [
+            -0.0005,
+            -0.0005,
+            -100
+          ],
+          [
+            0.0005,
+            -0.0005,
+            -100
+          ],
+          [
+            0.0005,
+            0.0005,
+            -100
+          ],
+          [
+            -0.0005,
+            0.0005,
+            -100
+          ]
+        ],
+        "feedbackCentre": [
+          0,
+          -0.65,
+          -100
+        ],
+        "feedbackBounds": [
+          [
+            -0.125,
+            -0.775,
+            -100
+          ],
+          [
+            0.125,
+            -0.775,
+            -100
+          ],
+          [
+            0.125,
+            -0.525,
+            -100
+          ],
+          [
+            -0.125,
+            -0.525,
+            -100
+          ]
+        ],
+        "fittedSize": [
+          0.001,
+          0.001
+        ],
+        "fittedCorners": [
+          [
+            -0.0005,
+            -0.0005,
+            -100
+          ],
+          [
+            0.0005,
+            -0.0005,
+            -100
+          ],
+          [
+            0.0005,
+            0.0005,
+            -100
+          ],
+          [
+            -0.0005,
+            0.0005,
+            -100
+          ]
+        ],
+        "screenAngles": {
+          "horizontal": [
+            -0.00028647889756302434,
+            0.00028647889756302434
+          ],
+          "vertical": [
+            -0.00028647889756302434,
+            0.00028647889756302434
+          ],
+          "widthDegrees": 0.0005729577951260487,
+          "heightDegrees": 0.0005729577951260487
+        },
+        "videoAngles": {
+          "horizontal": [
+            -0.00028647889756302434,
+            0.00028647889756302434
+          ],
+          "vertical": [
+            -0.00028647889756302434,
+            0.00028647889756302434
+          ],
+          "widthDegrees": 0.0005729577951260487,
+          "heightDegrees": 0.0005729577951260487
+        }
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "unknown root",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        },
+        "worldPose": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "unknown video",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain",
+          "angularWidth": 30
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "missing rotation",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "version",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 2,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "desktop fallback",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "desktop",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "stereo",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "side-by-side",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "head locked",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "head-locked",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "gaze",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "eye-gaze",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "recenter",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "anytime",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "continue after loss",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "continue"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "zero distance",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 0,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "negative width",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": -1,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "angle bound",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 81,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "null number",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": null,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "overlap",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": 0,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "gap",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 2
+        }
+      }
+    },
+    {
+      "name": "behind viewer",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 0.1,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 80,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    },
+    {
+      "name": "back facing",
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 80,
+          "elevationDegrees": 0,
+          "yawDegrees": 80,
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      }
+    }
+  ]
+}

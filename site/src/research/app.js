@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -174,6 +175,10 @@ function createInteractionController(root, { surface }) {
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
   const announcer = root.querySelector("#research-announcer");
+  const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
+    onChange: () => root.researchUi?.plannerContributionChanged?.("P6"),
+  }) : null;
   let openSection = "workspace";
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
@@ -508,7 +513,7 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection(null);
     renderSetupReviewState();
     announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
       : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
   }
 
@@ -5241,6 +5246,9 @@ function bindResearchInteractions(root, { surface }) {
 
   return Object.freeze({
     get mode() { return mode; },
+    getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
+    setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
@@ -5304,6 +5312,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      xrLayoutEditor?.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

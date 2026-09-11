@@ -1,4 +1,5 @@
 import { createDefaultResearchSettings } from "./contracts.js";
+import { xrLayoutEditorMarkup } from "./xr-layout-view.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
@@ -648,6 +649,7 @@ const SECTION_CONTENT = Object.freeze({
   questionnaires: questionnairesSection,
   input: inputSection,
   visual: visualSection,
+  xr: xrLayoutEditorMarkup,
   advanced: advancedSection,
   review: reviewSection,
 });
@@ -714,7 +716,7 @@ export function renderResearchUiMarkup(surface = "browser") {
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
             <div class="setup-pane">
-              <div class="setup-intro"><p>Eight decisions lead to one frozen session.</p><output id="setup-progress" class="setup-progress">0 of 8 reviewed · 0 ready</output></div>
+              <div class="setup-intro"><p>Review the setup before preparing the experiment.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
               ${SETUP_SECTIONS.map(accordionMarkup).join("")}
             </div>
             <aside class="preview-pane" aria-labelledby="preview-title">

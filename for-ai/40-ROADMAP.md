@@ -1,5 +1,43 @@
 # Research v1 roadmap
 
+## P6 virtual-screen authoring — 2026-09-11
+
+Backend Verification in `codex/segment-p6-virtual-screen`, isolated at
+`D:/GitHub/affect-tracker-research-p6-virtual-screen`; source base `305d3ac`,
+canonical documentation `6be0a79`. **Pending combined integration.** P6 owns
+checklist P6-01/02/03/05; Q11/P6-04 policies explicitly confirmed by the user.
+[The P6 contract](63-P6-XR-LAYOUT.md) records exact fields, units, algorithms,
+producer seams and downstream limits. No frozen v1 schema changes.
+
+Implemented: optional virtual-screen authoring in its own Setup section;
+metre/angle size, distance, centre direction, yaw/pitch/roll and local feedback
+offsets; rotatable 3D inspection; strict versioned canonical authoring profile;
+JS/Rust validation, transforms and P5 full-envelope conversion; atomic import,
+dirty/dependency invalidation and editable reopen. Geometry uses one fixed
+contain-fit rectangle for all P1 assets. Camera/media selection is inspection only.
+
+Checks executed on Windows, Node 24.19.0, repository lockfiles unchanged:
+
+- `node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js`: **443 passed**, including **17 P6** tests.
+- `cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features`: **191 passed**; focused `research_xr_layout` has **5 passed**. No optional native player/device/LSL qualification implied.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --all-targets -- -D warnings` and `cargo fmt --manifest-path src-tauri/Cargo.toml --check`: passed.
+- `pnpm desktop:build` and `pnpm build:pages`: passed, **8 desktop / 173 Pages files**. Existing Vite >500 kB chunk warning remains; no new dependency/runtime assets.
+- `node scripts/qualification/xr-layout-background.mjs <browser.exe> <output>`: **18 checks each** in separate Chrome/Edge headless processes, isolated profiles. Reflow, native form focus, invalid/stale state, editable reopen, delayed reads, teardown, camera/asset isolation and full envelope rendering passed.
+- `node scripts/qualification/xr-feedback-interop.mjs <P5 feedback-envelope.js>`: **2 actual producer fixtures** passed, source SHA-256 `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`. Full animation mathematics remains P5-owned.
+
+Receipts/screenshots are local under
+`D:/GitHub/.affect-preview-checks/p6-{chrome,edge}-final-20260911/`;
+Node/Rust logs are `p6-{node,rust}-final.log` in that parent. This is offscreen
+component evidence, not visible/full-app/native/headset qualification.
+
+Integrate with P7 `e524b9f` automatic registry and active-XR v1 export/Start
+exclusion, plus its issue route correction to `xr`. P1 geometry producer and
+P5 live envelope binding remain named producer/convergence dependencies.
+The typed interfaces and actual P5 adapter have been checked; automatic cross-
+segment wiring and master XR recipe reproduction remain open. P6-06 actual
+WebXR/headset alignment/tracking, playback, recording and physical qualification
+are deferred. The profile records policies; it does not enforce sensor behavior.
+
 ## Central capability checklist and this evidence ledger
 
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
