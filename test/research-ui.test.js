@@ -39,7 +39,6 @@ const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["questionnaires", "Languages & Study Assets"],
   ["stimuli", "Experiment Plan & Stimuli"],
-  ["experiment", "Experiment"],
   ["feedback", "Flubber & Controls"],
   ["review", "Review & Start"],
 ];
@@ -73,9 +72,9 @@ test("Setup retains ordered review steps with one persistent P5 editor", () => {
   assert.equal((markup.match(/aria-expanded="true"/gu) ?? []).length, 1);
   assert.equal(normalizeSetupSection("feedback"), "feedback");
   assert.equal(normalizeSetupSection("nope"), "workspace");
-  assert.equal(nextOpenSetupSection("workspace", "experiment"), "experiment");
+  assert.equal(nextOpenSetupSection("workspace", "review"), "review");
   assert.equal(nextOpenSetupSection("workspace", "workspace"), null);
-  assert.equal(nextOpenSetupSection("experiment", "nope"), "workspace");
+  assert.equal(nextOpenSetupSection("review", "nope"), "workspace");
 });
 
 test("Setup accordion panels animate open and closed without weakening semantics", async () => {
@@ -124,7 +123,7 @@ test("every Setup section requires an explicit sequential review confirmation", 
   assert.equal((markup.match(/data-section-review-status="[^"]+"/gu) ?? []).length, expectedSections.length);
   assert.equal((markup.match(/data-section-review-check="[^"]+" aria-hidden="true" hidden>✓<\/span>/gu) ?? []).length, expectedSections.length);
   assert.equal((markup.match(/data-section-review-label="[^"]+">Not reviewed<\/span>/gu) ?? []).length, expectedSections.length);
-  assert.match(markup, /id="setup-progress"[^>]*>0 of 6 reviewed · 0 ready<\/output>/u);
+  assert.ok(markup.includes(`>0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output>`));
   assert.match(markup, /data-confirm-section="review"[\s\S]*?>Confirm review<\/button>/u);
   for (const { id } of SETUP_SECTIONS) {
     const buttonTag = markup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
@@ -292,10 +291,7 @@ test("Workspace exposes one selected root and three fixed project locations", as
     assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
     assert.match(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));
   }
-  const experimentPanelStart = markup.indexOf('id="setup-panel-experiment"');
-  const experimentPanelEnd = markup.indexOf('data-setup-section="input"', experimentPanelStart);
-  const experimentPanel = markup.slice(experimentPanelStart, experimentPanelEnd);
-  assert.doesNotMatch(experimentPanel, /id="experiment-(?:id|title)"/u);
+  assert.doesNotMatch(markup, /id="setup-panel-experiment"/u);
   for (const obsoleteWorkspaceStructure of [
     /class="[^"]*\bdirectory-list\b/u,
     /class="[^"]*\bprotocol-import-card\b/u,

@@ -31,7 +31,6 @@ export { COLOR_FIELDS, describeInputToken } from "./feedback-controls-view.js";
 
 const SECTION_SUMMARIES = Object.freeze({
   workspace: "Work folder, videos, project JSON",
-  experiment: "Identity and acquisition · 130 Hz",
   stimuli: "Externally ordered video protocol",
   questionnaires: "Languages, demographics, questionnaires",
   feedback: "Appearance, input and animation",
@@ -326,14 +325,6 @@ function experimentCompatibilityMarkup() {
     </details>`;
 }
 
-function experimentSection() {
-  return `
-    <p class="section-lead">Experiment identity comes from the loaded experiment.json.</p>
-    <div class="field-grid">
-      <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
-    </div>`;
-}
-
 function stimuliSection() {
   return `
     <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
@@ -517,7 +508,6 @@ function reviewSection() {
 
 const SECTION_CONTENT = Object.freeze({
   workspace: workspaceSection,
-  experiment: experimentSection,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
   review: reviewSection,
@@ -527,7 +517,7 @@ function sectionConfirmationMarkup(section, index) {
   const isLast = index === SETUP_SECTIONS.length - 1;
   return `
     <div class="setup-section-confirmation">
-      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed yet. Confirm once to mark this section reviewed.</p>
+      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed</p>
       <button
         class="setup-section-confirm-button"
         type="button"

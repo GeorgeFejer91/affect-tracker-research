@@ -492,10 +492,7 @@ function bindResearchInteractions(root, { surface }) {
         const navigationStatus = query("[data-feedback-nav-status]");
         if (navigationStatus) navigationStatus.textContent = reviewed ? "Reviewed" : "Not reviewed";
       }
-      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed
-        ? id === "feedback" ? "Reviewed for this setup session. Flubber & Controls stays available."
-          : "Reviewed for this setup session. Use the section header to open or close it."
-        : "Not reviewed yet. Confirm once to mark this section reviewed.";
+      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed ? "Reviewed" : "Not reviewed";
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed;
         button.dataset.reviewState = reviewed ? "reviewed" : "pending";
@@ -1756,14 +1753,14 @@ function bindResearchInteractions(root, { surface }) {
         : "All blocking checks pass. Start will freeze this attempt."
       : `${blocking.length} blocking preflight item${blocking.length === 1 ? "" : "s"} remain.`;
     const pass = (id) => items.some((item) => item.id === id && item.result !== "block");
-    const readySections = [
-      pass("workspace"),
-      pass("questionnaires") || selectedPendingFinalization(),
-      pass("stimuli") && pass("plan"),
-      pass("experiment"),
-      pass("input") && (Boolean(protocolSettingsSnapshot) || selectedPendingFinalization()),
-      items.every(({ result }) => result !== "block"),
-    ].filter(Boolean).length;
+    const readinessBySection = {
+      workspace: pass("workspace") && pass("experiment"),
+      questionnaires: pass("questionnaires") || selectedPendingFinalization(),
+      stimuli: pass("stimuli") && pass("plan"),
+      feedback: pass("input") && (Boolean(protocolSettingsSnapshot) || selectedPendingFinalization()),
+      review: items.every(({ result }) => result !== "block"),
+    };
+    const readySections = SETUP_SECTIONS.filter(({ id }) => readinessBySection[id] === true).length;
     readySetupSectionCount = readySections;
     renderSetupReviewState();
   }
