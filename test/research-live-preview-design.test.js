@@ -196,12 +196,12 @@ test("continuous and stepwise response controls retain their exact timing contra
   ]);
 });
 
-test("Stepwise owns a draft tile spinner and the saved step size remains under Advanced", () => {
+test("Stepwise owns a draft tile spinner and the saved step size stays with device Controls", () => {
   assert.equal(countId(markup, "input-step-size"), 1);
   const stepwisePanel = between(
     studioMarkup,
     '<div data-response-preview-panel="stepwise">',
-    '<section id="preview-quick-appearance"',
+    '<details id="preview-advanced-settings"',
   );
   assertAttributes(inputTag(stepwisePanel, "preview-tile-count"), {
     type: "number", min: "3", max: "2001", step: "2", value: "21",
@@ -210,7 +210,7 @@ test("Stepwise owns a draft tile spinner and the saved step size remains under A
   const validation = between(appSource, "function syncControlValidation(", "function syncOutputFormatValidation(");
   assert.match(validation, /if \(control\?\.id === "preview-tile-count"\) return true;/u);
   assert.match(appSource, /\[aria-invalid="true"\]:not\(#preview-tile-count\)/u);
-  assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<details id="preview-advanced-settings"')), "input-step-size"), {
+  assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<section id="feedback-input-settings"')), "input-step-size"), {
     type: "number",
     min: "0.001",
     max: "1",
@@ -369,9 +369,6 @@ test("advanced preview settings retain every detailed visual control and six uni
   assert.ok(advancedStart >= 0);
   const advanced = studioMarkup.slice(advancedStart);
   const advancedVisualIds = [
-    "visual-grid-visible",
-    "visual-flubber-visible",
-    "visual-hide-feedback",
     "visual-lock-position",
     "visual-position-x",
     "visual-position-y",
@@ -385,7 +382,7 @@ test("advanced preview settings retain every detailed visual control and six uni
   ];
   for (const id of advancedVisualIds) assert.equal(countId(advanced, id), 1, id);
 
-  for (const id of ["visual-size", "visual-transparency", "flubber-halo-visible"]) {
+  for (const id of ["visual-size", "visual-transparency", "flubber-halo-visible", "visual-grid-visible", "visual-flubber-visible", "visual-hide-feedback"]) {
     assert.equal(countId(studioMarkup, id), 1, id);
   }
 

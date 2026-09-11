@@ -1918,6 +1918,41 @@ tbody tr:last-child td {
   scrollbar-color: #4e554b #181a17;
 }
 
+.feedback-navigation {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.feedback-navigation button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.feedback-input-settings {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.feedback-input-settings .binding-button,
+.feedback-input-settings .input-test p {
+  overflow-wrap: anywhere;
+}
+
+.feedback-input-settings .input-test {
+  grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr);
+}
+
+.preview-pane > .setup-section-confirmation {
+  margin-top: 1rem;
+}
+
 .preview-header {
   display: flex;
   align-items: start;

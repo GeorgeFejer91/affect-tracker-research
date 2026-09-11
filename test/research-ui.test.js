@@ -40,9 +40,7 @@ const expectedSections = [
   ["questionnaires", "Languages & Study Assets"],
   ["stimuli", "Experiment Plan & Stimuli"],
   ["experiment", "Experiment"],
-  ["input", "Controller / Input Device"],
-  ["visual", "Visual Feedback"],
-  ["advanced", "Advanced"],
+  ["feedback", "Flubber & Controls"],
   ["review", "Review & Start"],
 ];
 
@@ -56,20 +54,24 @@ test("the active instrument exposes exactly Setup and Run modes", () => {
   assert.equal(normalizeResearchMode("unknown"), "setup");
 });
 
-test("Setup has the exact eight ordered single-open accordion contracts", () => {
+test("Setup retains ordered review steps with one persistent P5 editor", () => {
   assert.deepEqual(SETUP_SECTIONS.map(({ id, label }) => [id, label]), expectedSections);
   const markup = renderResearchUiMarkup();
-  assert.equal((markup.match(/class="setup-accordion"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/class="setup-accordion"/gu) ?? []).length, expectedSections.length - 1);
   let cursor = -1;
   for (const [id, label] of expectedSections) {
-    const next = markup.indexOf(`data-setup-section="${id}"`);
+    const next = markup.indexOf(`id="setup-trigger-${id}"`);
     assert.ok(next > cursor, `${label} must retain protocol order`);
-    assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
-    assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
+    if (id === "feedback") {
+      assert.match(markup, /data-open-section="feedback" aria-controls="preview-title"/u);
+    } else {
+      assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
+      assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
+    }
     cursor = next;
   }
   assert.equal((markup.match(/aria-expanded="true"/gu) ?? []).length, 1);
-  assert.equal(normalizeSetupSection("visual"), "visual");
+  assert.equal(normalizeSetupSection("feedback"), "feedback");
   assert.equal(normalizeSetupSection("nope"), "workspace");
   assert.equal(nextOpenSetupSection("workspace", "experiment"), "experiment");
   assert.equal(nextOpenSetupSection("workspace", "workspace"), null);
@@ -88,10 +90,10 @@ test("Setup accordion panels animate open and closed without weakening semantics
   assert.ok(SETUP_ACCORDION_MOTION_MS > 0 && SETUP_ACCORDION_MOTION_MS <= 300);
   assert.equal(SETUP_ACCORDION_MOTION_QUERY, "(prefers-reduced-motion: reduce)");
   assert.equal((markup.match(/data-motion-state="open"/gu) ?? []).length, 1);
-  assert.equal((markup.match(/data-motion-state="closed"/gu) ?? []).length, 7);
-  assert.equal((markup.match(/hidden inert/gu) ?? []).length, 7);
-  assert.equal((markup.match(/class="setup-accordion-panel-clip"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/class="setup-accordion-panel-inner"/gu) ?? []).length, 8);
+  assert.equal((markup.match(/data-motion-state="closed"/gu) ?? []).length, expectedSections.length - 2);
+  assert.equal((markup.match(/hidden inert/gu) ?? []).length, expectedSections.length - 2);
+  assert.equal((markup.match(/class="setup-accordion-panel-clip"/gu) ?? []).length, expectedSections.length - 1);
+  assert.equal((markup.match(/class="setup-accordion-panel-inner"/gu) ?? []).length, expectedSections.length - 1);
   assert.match(source, /import \{ setSetupAccordionPanelExpanded \} from "\.\/setup-accordion-motion\.js";/u);
   assert.match(source, /const wasOpen = trigger instanceof HTMLButtonElement/u);
   assert.match(source, /panelChanges\.push\(\[panel, isOpen\]\)[\s\S]*?focusTarget\?\.focus\(\);[\s\S]*?panelChanges\.forEach/u);
@@ -115,27 +117,22 @@ test("every Setup section requires an explicit sequential review confirmation", 
   const source = await read("site/src/research/app.js");
   const css = await read("site/research.css");
 
-  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/class="setup-section-confirm-button"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/data-reviewed="false"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/data-review-state="pending"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/data-section-review-status="[^"]+"/gu) ?? []).length, 8);
-  assert.equal((markup.match(/data-section-review-check="[^"]+" aria-hidden="true" hidden>✓<\/span>/gu) ?? []).length, 8);
-  assert.equal((markup.match(/data-section-review-label="[^"]+">Not reviewed<\/span>/gu) ?? []).length, 8);
-  assert.match(markup, /id="setup-progress"[^>]*>0 of 8 reviewed · 0 ready<\/output>/u);
+  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/class="setup-section-confirm-button"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/data-reviewed="false"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/data-review-state="pending"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/data-section-review-status="[^"]+"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/data-section-review-check="[^"]+" aria-hidden="true" hidden>✓<\/span>/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/data-section-review-label="[^"]+">Not reviewed<\/span>/gu) ?? []).length, expectedSections.length);
+  assert.match(markup, /id="setup-progress"[^>]*>0 of 6 reviewed · 0 ready<\/output>/u);
   assert.match(markup, /data-confirm-section="review"[\s\S]*?>Confirm review<\/button>/u);
-  for (const [index, { id }] of SETUP_SECTIONS.entries()) {
-    const sectionStart = markup.indexOf(`data-setup-section="${id}"`);
-    const sectionEnd = index + 1 < SETUP_SECTIONS.length
-      ? markup.indexOf(`data-setup-section="${SETUP_SECTIONS[index + 1].id}"`, sectionStart)
-      : markup.indexOf('<aside class="preview-pane"', sectionStart);
-    const sectionMarkup = markup.slice(sectionStart, sectionEnd);
-    const buttonTag = sectionMarkup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
+  for (const { id } of SETUP_SECTIONS) {
+    const buttonTag = markup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
     assert.ok(buttonTag, `${id} must expose its own confirmation button`);
     assert.match(buttonTag, /\btype="button"/u);
     assert.match(buttonTag, new RegExp(`aria-describedby="setup-confirmation-status-${id}"`, "u"));
-    assert.match(sectionMarkup, new RegExp(`data-section-review-check="${id}"`, "u"));
-    assert.match(sectionMarkup, new RegExp(`data-section-review-label="${id}"`, "u"));
+    assert.match(markup, new RegExp(`data-section-review-check="${id}"`, "u"));
+    assert.match(markup, new RegExp(`data-section-review-label="${id}"`, "u"));
   }
 
   let reviewedSectionIds = [];
@@ -151,8 +148,8 @@ test("every Setup section requires an explicit sequential review confirmation", 
     reviewedSectionIds = transition.reviewedSectionIds;
   }
   assert.deepEqual(
-    applySetupSectionConfirmation(["visual"], "workspace").reviewedSectionIds,
-    ["workspace", "visual"],
+    applySetupSectionConfirmation(["feedback"], "workspace").reviewedSectionIds,
+    ["workspace", "feedback"],
   );
   const jumpedToReview = applySetupSectionConfirmation([], "review");
   assert.deepEqual(jumpedToReview.reviewedSectionIds, ["review"]);
@@ -201,18 +198,18 @@ test("every Setup section requires an explicit sequential review confirmation", 
   assert.ok(reviewPanel.indexOf('data-confirm-section="review"') > reviewPanel.indexOf('class="start-bar"'));
 });
 
-test("all eight browser and desktop panels end with exactly one confirmation footer", () => {
+test("every browser and desktop review step ends with one confirmation footer", () => {
   for (const surface of ["browser", "tauri"]) {
     const markup = renderResearchUiMarkup(surface);
     for (const { id } of SETUP_SECTIONS) {
-      const start = markup.indexOf(`id="setup-panel-${id}"`);
+      const start = markup.indexOf(id === "feedback" ? '<aside class="preview-pane"' : `id="setup-panel-${id}"`);
       const footer = markup.indexOf('class="setup-section-confirmation"', start);
-      const end = markup.indexOf('</div></div></div>\n    </section>', footer);
+      const end = markup.indexOf(id === "feedback" ? '</aside>' : '</div></div></div>\n    </section>', footer);
       assert.ok(start >= 0 && footer > start && end > footer, `${surface}/${id}: footer exists`);
       const panel = markup.slice(start, end);
       assert.equal((panel.match(/data-confirm-section=/gu) ?? []).length, 1);
       assert.match(panel, new RegExp(`data-confirm-section="${id}"`, "u"));
-      assert.match(panel, /<\/button>\s*<\/div>$/u, `${surface}/${id}: confirmation ends panel`);
+      assert.match(panel, /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: confirmation ends panel`);
     }
   }
 });
@@ -398,8 +395,8 @@ test("all nine input presets, custom capture, conflict guidance, and live test a
     assert.match(markup, new RegExp(`<option value="${id}">${label.replace("/", "\\/")}</option>`, "u"));
   }
   assert.match(markup, /id="input-step-size"[^>]*value="0\.1"/u);
-  assert.match(markup, /Digital controls change state once per physical edge/u);
-  assert.match(markup, /operating-system key repeat is ignored/u);
+  assert.match(markup, /Digital input moves once per physical press/u);
+  assert.match(markup, /ignores operating-system repeat/u);
   assert.match(markup, /captured action cannot be assigned twice/u);
   assert.match(markup, /id="binding-capture-dialog"/u);
   assert.match(markup, /id="input-test"/u);
