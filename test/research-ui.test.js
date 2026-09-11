@@ -326,6 +326,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
+  assert.match(source, /directoryPermission \? "ready" : "warning"/u);
+  assert.match(source, /Work directory access is unavailable\. Restore access or select it again\./u);
   assert.match(markup, /Package reproduction matrix/u);
   assert.match(source, /loadedLanguageSelection = structuredClone\(parsed\.package\.languageSelection\)/u);
   assert.match(source, /return createCoveredFlatLanguageSelectionV1/u);

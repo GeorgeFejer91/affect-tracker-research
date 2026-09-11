@@ -5,6 +5,7 @@ const FIXTURE_STATES = Object.freeze([
   "setup",
   "workspace-empty",
   "workspace-populated",
+  "workspace-error",
   "stimulus",
   "questionnaire",
   "interval",
@@ -68,20 +69,23 @@ async function showQuestionnaire() {
   });
 }
 
-if (requestedState === "workspace-empty" || requestedState === "workspace-populated") {
+if (["workspace-empty", "workspace-populated", "workspace-error"].includes(requestedState)) {
   if (root.querySelector("#setup-panel-workspace")?.hidden) {
     root.researchUi.openSetupSection("workspace");
   }
+  if (requestedState !== "workspace-empty") {
+    dispatch(RESEARCH_UI_EVENTS.workspaceReady, {
+      surface: "browser",
+      label: "synthetic-isolated-workspace",
+      directoryPermission: requestedState === "workspace-populated",
+    });
+  }
   if (requestedState === "workspace-populated") {
-    root.querySelector("#workspace-root").textContent = "affect-study-2026";
     root.querySelector("#experiment-id").value = "affect-validation";
     root.querySelector("#experiment-title").value = "Affect validation study";
     const packageStatus = root.querySelector("#package-file-status");
     packageStatus.textContent = "experiment.package.json loaded";
     packageStatus.dataset.state = "ready";
-    const workspaceStatus = root.querySelector("#workspace-status");
-    workspaceStatus.textContent = "Work directory ready. Project locations are available.";
-    workspaceStatus.dataset.state = "ready";
   }
 } else if (requestedState === "setup") {
   root.researchUi.openSetupSection("review");

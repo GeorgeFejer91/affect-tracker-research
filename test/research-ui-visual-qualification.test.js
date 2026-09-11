@@ -16,7 +16,7 @@ test("the non-shipping visual fixture projects every protocol UI state through r
   assert.match(html, /research\.css\?v=0\.4\.0-alpha\.1/u);
   assert.match(source, /bootResearchUi/u);
   assert.match(source, /RESEARCH_UI_EVENTS/u);
-  for (const state of ["setup", "workspace-empty", "workspace-populated", "stimulus", "questionnaire", "interval", "complete"]) {
+  for (const state of ["setup", "workspace-empty", "workspace-populated", "workspace-error", "stimulus", "questionnaire", "interval", "complete"]) {
     assert.match(source, new RegExp(`"${state}"`, "u"));
   }
   assert.match(source, /visual-projection-only/u);
