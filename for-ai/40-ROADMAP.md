@@ -22,6 +22,29 @@ candidate is `0.4.0-alpha.1`; it is neither stable nor research-ready.
 
 ## Segment 3 video-order authoring — bounded backend verification
 
+Successor component `ae5cecd`, reconciled with the canonical baseline in
+`bc8921d`, replaces numeric cells with a named ISI dictionary and ordered typed
+entries. User Q02/Q14 acceptance allows repeats and ISIs anywhere, forbids
+interior blanks, and fixes stable-name/duplicate/delete behavior. New occurrence
+IDs and per-variant hashes survive editable reopen. Version 2 authoring documents
+dispatch alongside the preserved numeric v1 reader in browser and Rust storage.
+P7 receives a typed accepted contribution; participant policy is `runnerAssigned`.
+
+Component evidence: 452 Node tests and 192 locked no-default Rust tests pass,
+as do no-default all-target clippy with warnings denied and format/whitespace
+checks. Actual boot screenshots cover empty/populated/error at 1600/800 px;
+empty state has one prerequisite and the populated 400 px pane contains its
+horizontal table scroll. Marker reconstruction tests use synthetic streams only.
+Final reconciled suite: 456/456 JavaScript tests. Follow-up rendering uses an
+actual removed-library-reference error in offscreen Variant 6 and verifies
+focus/reveal; identity-derived colors stay stable across catalogue changes.
+Receipt and screenshots: immutable commit/timestamp subdirectories of the own
+`src-tauri/target/segment3-verification/`, including served-source SHA-256 hashes.
+Current v1 library lacks verified durations and the future readable/immutable-ID
+split; these remain P1 dependencies. P7 successor master composition and Runner
+recording are separate allocated work. Central items remain unchecked pending
+source integration. The earlier numeric-authoring evidence follows.
+
 The `codex/segment-stimuli-order-table` slice adds a minimal event/variant table,
 explicit TSV/CSV paste, add/remove controls, CSV/XLSX library downloads, help,
 and confirmed variant versions. Segment 1 owns video imports and confirmation

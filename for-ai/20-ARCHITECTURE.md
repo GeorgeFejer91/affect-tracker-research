@@ -119,17 +119,25 @@ not be merged into a catch-all controller or runtime module:
 | Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
 | Platform bridge | One selected browser/native adapter | Narrow authorized commands/events; no product policy in handlers |
 
-The Segment 3 authoring slice uses `stimulus-order.js` for pure browser
-validation/hashes, `stimulus-order-editor.js` for DOM presentation, and
+The Segment 3 authoring slice uses `stimulus-order.js` for the library and
+historical numeric design reader, `variant-design.js` for the successor named
+ISI/occurrence contract, `stimulus-order-editor.js` for DOM presentation, and
 `stimulus-workbook.js` for bounded XLSX generation. The application composition
 injects one operation interface. Browser storage stays in `workspace.js`;
 Windows requests pass through the named native bridge and narrow commands to
 `research_workspace/stimulus_authoring.rs` and the closed
 `research_stimulus_order` domain. Shared canonical JSON and export hashes are
-fixed in `test/fixtures/stimulus-order-v1.json`. Native exports rebuild bytes
+fixed in `test/fixtures/stimulus-order-v1.json`; the named successor's JS/Rust
+canonical contract is fixed in `test/fixtures/variant-design-v1.json` and
+`research_stimulus_order/variants.rs`. Native exports rebuild bytes
 from the owner-scanned library and use the native save picker; no WebView path
 or export body is trusted. Workspace identity and generation checks fence
 late receipts. An authoring design never changes historical package schemas.
+P7 consumes accepted revision/dependency snapshots and owns final composition.
+`planned-marker-contract.js` and `docs/planner-marker-contract-v1.md` define a
+bounded expected event profile and reconstruction fixtures; they read no clock,
+record no samples and open no outlet. P1's verified duration and future readable
+annotation/immutable asset-ID contract remain producer dependencies.
 
 The landed package-run slice realizes that map through these explicit seams:
 

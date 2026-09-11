@@ -342,8 +342,14 @@ qualification evidence.
   canonical bytes, readback, bounded counts and stale-workspace rejection.
 - Round-trip the shared two-variant 500/1500 ms example through JS and Rust.
   Bind exact name/order/ISI to each version; preserve unrelated variants and
-  reject bad versions, unknown IDs, duplicate video occurrences, gaps, leading
-  or consecutive ISIs, malformed rectangles, oversized input and stale receipts.
+  reject bad versions, unknown IDs, interior gaps, malformed rectangles,
+  oversized input and stale receipts. Successor fixtures accept repeated videos
+  and leading/consecutive/final named ISIs, preserving each occurrence. Keep
+  numeric/post-video version 1 rejection tests under the historical reader.
+- Verify stable ISI names, duplicate durations, referenced-delete rejection and
+  duration-edit invalidation. Check paired planned boundaries with exact catalogue
+  durations; missing duration must remain unavailable. Synthetic marker fixtures
+  must retain interruptions/incomplete sequences without repairing gaps.
 - Exercise explicit paste transactionality, edit invalidation before blur,
   failed saves, reload, changed-library preservation and delayed responses.
   No participant assignment may appear in this editor or its document.

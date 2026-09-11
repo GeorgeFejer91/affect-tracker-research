@@ -39,7 +39,7 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260911-variants-final-planner
 
-- Owner **S3**, P3 `variants`; open, Backend Verification continuation authorized
+- Owner **S3**, P3 `variants`; component ready, Backend Verification continuation authorized
   by the user's “finish segment 3” request and registered by integration.
 - Branch `codex/segment-stimuli-order-table`, worktree
   `D:/GitHub/affect-tracker-research-stimuli-order`, predecessor `01444a7`.
@@ -93,6 +93,38 @@ file; follow the integration-owner collection procedure in the workflow.
   producer dependency: this checkpoint still uses the predecessor hash-bound
   library. P7 owns registry/final recipe composition. Do not claim the successor
   complete or ready for recording until these source seams are integrated.
+
+#### Final P3 UI and contract handoff — 2026-09-11
+
+- Canonical checkpoint `6be0a7` merged into the own worktree in `bc8921d`;
+  both message-board histories retained and the obsolete checklist language
+  reconciled with accepted Runner allocation ownership. No canonical writes.
+- Q02/Q14 acceptance is recorded in the central catalogue; capability boxes
+  remain unchecked until integration verifies them. P1's current `3df60fa`
+  relocation keeps automatic IDs and one visible catalogue in Workspace.
+  Any future P1 identity schema must be adapted explicitly; verified durations
+  remain unavailable in the current v1 catalogue. P7's `b6647c0` registry sees
+  P3 but intentionally blocks legacy master save/Start for its active successor
+  contribution. The new master composer is a separate pending allocation.
+- Independent UI review requested actual invalid-cell evidence and stable
+  colors. Confirmation now focuses and reveals the first invalid cell, including
+  a horizontally hidden sixth variant, with row/column text and aria-invalid.
+  Colors derive directly from video identity across a continuous non-red hue
+  range; adding/removing/reordering the catalogue does not recolor existing IDs.
+  An 80-video regression checks stability; text remains authoritative where
+  large libraries have perceptually similar colors.
+- The headless script now saves immutable commit/timestamp capture directories
+  with exact served-source SHA-256 manifest, clean/dirty state and semantic
+  checks. Its invalid case restores six valid variants, accepts a valid P1
+  rescan that removes one referenced video, then invokes the actual editor's
+  confirmation method. Both wide/narrow checks reveal/focus Event 1, Variant 6;
+  there is no injected error string, keyboard, pointer or clipboard input.
+- These changes are scoped P3 finalization; the integration owner is holding
+  shared composition on its separate confirmation-stage question. Source is
+  handed off for collection when that stage resumes, not merged by this owner.
+- Final reconciled JavaScript suite: 456/456 passed. Rust source is unchanged
+  since the 192/192 locked no-default and clippy/format receipt above; no
+  unnecessary native rerun or new runtime qualification is claimed.
 
 ### 20260911-stimuli-order-table
 

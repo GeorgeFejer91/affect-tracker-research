@@ -447,7 +447,8 @@ participant traversal and package load never selects the first route.
 
 The researcher defines counterbalanced experiment variants as spreadsheet
 columns, with fixed Event 1, Event 2, … row labels. Cells hold a library video
-annotation or an integer ISI in milliseconds. Excel/CSV rectangles are pasted
+annotation or a named ISI. The researcher enters whole millisecond durations
+in a reusable ISI dictionary. Excel/CSV rectangles are pasted
 only through an explicit paste gesture; external randomization remains the
 researcher's responsibility. Add/remove controls determine the number of
 variants and events. This segment has no participant IDs or assignments.
@@ -468,17 +469,26 @@ never emitted as formulas.
 
 Confirming Segment 3 validates and persists canonical
 `assets/stimulus-order.design.json`. Stable variant IDs and SHA-256 version
-annotations bind each variant's name, exact video order, and per-video ISIs.
+annotations bind each variant's name, exact video/ISI sequence, occurrence IDs,
+and referenced definitions. The successor authoring document is version 2;
+its embedded `affect-research-variant-design` contribution is version 1.
 Changing one variant changes its version; unrelated library additions do not.
-A variant requires at least one video and permits each video once. ISIs must
-follow a video and be integers from 0 to 3,600,000 ms; adjacent videos imply an
-explicit authored 0 ms interval. Trailing empty rows are ignored, interior gaps
-and consecutive/leading intervals are rejected, and a terminal ISI is retained.
+A variant requires at least one video and permits repeated videos. ISIs may
+appear anywhere, including consecutive and final positions; their dictionary
+durations are integers from 0 to 3,600,000 ms. No implicit interval is inserted
+between adjacent videos. Trailing padding permits unequal column lengths;
+interior blanks reject. Stable ISI names are not renumbered, duplicate durations
+are allowed, and a used definition cannot be deleted. Duration edits invalidate
+confirmation. These Q02/Q14 rules were explicitly accepted on 2026-09-11.
 The authoring projection is bounded to 64 variants, 1,024 rows and 32,000 cells.
 
+Historical numeric/post-video version 1 designs retain their original reader
+and require explicit conversion/reconfirmation; no old records are reinterpreted.
+
 These are authoring records, not `ExperimentPackageV1` or Run authority. The
-Runner/finalizer must eventually freeze explicit participant schedules and
-version bindings in a versioned package/output contract before Prepare.
+finalizer must embed these ordered variants in the successor recipe. Runner
+owns allocation policy and must freeze selected version bindings in its output
+contract before acquisition; no participant schedule is authored by P3.
 Until that integration exists, an active variant draft or saved design blocks
 package generation and new Start so stale imported schedules cannot be run as
 though they represented the new table. Historical package parsing and runtime
