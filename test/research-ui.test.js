@@ -285,6 +285,14 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(workspacePanel, /<code>assets\/stimuli\/<\/code>/u);
   assert.match(workspacePanel, /<code>experiment\.package\.json<\/code>/u);
   assert.match(workspacePanel, /outputs and recovery are managed automatically/u);
+  for (const id of ["experiment-id", "experiment-title"]) {
+    assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
+    assert.match(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));
+  }
+  const experimentPanelStart = markup.indexOf('id="setup-panel-experiment"');
+  const experimentPanelEnd = markup.indexOf('data-setup-section="input"', experimentPanelStart);
+  const experimentPanel = markup.slice(experimentPanelStart, experimentPanelEnd);
+  assert.doesNotMatch(experimentPanel, /id="experiment-(?:id|title)"/u);
   for (const obsoleteWorkspaceStructure of [
     /class="[^"]*\bdirectory-list\b/u,
     /class="[^"]*\bprotocol-import-card\b/u,

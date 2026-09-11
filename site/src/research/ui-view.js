@@ -361,6 +361,11 @@ function workspaceSection() {
         </div>
       </section>
     </div>
+    <div class="field-grid">
+      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
+      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
+      <p id="workspace-experiment-identity-help" class="field-help is-wide">Identity is read from the loaded project JSON or compatibility experiment file.</p>
+    </div>
     <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
 }
 
@@ -392,8 +397,6 @@ function experimentSection() {
       </div>
     </details>
     <div class="field-grid">
-      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="experiment-derived-help"></label>
-      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
       <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
