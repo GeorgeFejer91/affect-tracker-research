@@ -1161,67 +1161,6 @@ legend {
   font-size: 0.84rem;
 }
 
-.inspiration-dialog {
-  width: min(72rem, calc(100vw - 2rem));
-}
-
-.inspiration-dialog .dialog-content {
-  max-height: min(74vh, 48rem);
-  overflow: auto;
-}
-
-.inspiration-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.35fr);
-  gap: 0.75rem;
-  margin-block: 1rem;
-}
-
-.inspiration-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--border);
-}
-
-.inspiration-entry {
-  display: grid;
-  align-content: start;
-  gap: 0.55rem;
-  min-width: 0;
-  padding: 0.9rem 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.inspiration-entry:nth-child(odd) {
-  padding-right: 1rem;
-}
-
-.inspiration-entry:nth-child(even) {
-  padding-left: 1rem;
-  border-left: 1px solid var(--border);
-}
-
-.inspiration-entry header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.inspiration-entry h3,
-.inspiration-entry p {
-  margin: 0;
-}
-
-.inspiration-entry header p:not(.context-label),
-.inspiration-entry > p:not(.field-help) {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.inspiration-entry[hidden] {
-  display: none;
-}
 
 .questionnaire-layout {
   display: grid;
@@ -1253,54 +1192,12 @@ legend {
   font-size: 0.8rem;
 }
 
-.questionnaire-definition-list,
-.questionnaire-module-list,
 .protocol-sequence-preview {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.questionnaire-definition,
-.questionnaire-module {
-  display: grid;
-  gap: 0.55rem;
-  padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.questionnaire-definition:last-child,
-.questionnaire-module:last-child {
-  border-bottom: 0;
-}
-
-.questionnaire-definition-heading,
-.questionnaire-module-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.questionnaire-definition-heading strong,
-.questionnaire-module-heading strong {
-  display: block;
-}
-
-.questionnaire-metadata,
-.questionnaire-definition-heading p,
-.questionnaire-module-heading p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.questionnaire-module-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 0.5rem;
-  align-items: end;
-}
 
 .protocol-sequence-preview {
   counter-reset: protocol-step;
@@ -2703,39 +2600,6 @@ tbody tr:last-child td {
   border-top: 1px solid var(--border);
 }
 
-.questionnaire-preview-items {
-  display: grid;
-  gap: 0.85rem;
-  max-height: 55vh;
-  overflow: auto;
-}
-
-#questionnaire-preview-dialog[open] {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  max-height: calc(100dvh - 2rem);
-  overflow: hidden;
-}
-
-#questionnaire-preview-dialog .dialog-content {
-  min-height: 0;
-  overflow: auto;
-}
-
-.questionnaire-preview-item {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.questionnaire-preview-item p {
-  margin: 0 0 0.35rem;
-}
-
-.questionnaire-preview-options {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
 
 .stimulus-stage,
 .run-feedback-stage {
@@ -3180,20 +3044,15 @@ dialog::backdrop {
   .app-bar,
   .setup-layout,
   .run-stage,
-  .questionnaire-module-controls,
   .language-add-row,
   .pretrial-preset-grid,
-  .inspiration-toolbar,
-  .inspiration-list,
   .participant-language-readiness {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .pretrial-preset,
   .pretrial-preset:nth-child(odd),
-  .pretrial-preset:nth-child(even),
-  .inspiration-entry:nth-child(odd),
-  .inspiration-entry:nth-child(even) {
+  .pretrial-preset:nth-child(even) {
     padding-inline: 0;
     border-left: 0;
     border-bottom: 1px solid var(--border);
@@ -3203,8 +3062,7 @@ dialog::backdrop {
     border-bottom: 1px solid var(--border);
   }
 
-  .pretrial-preset:last-child,
-  .inspiration-entry:last-child {
+  .pretrial-preset:last-child {
     border-bottom: 0;
   }
 

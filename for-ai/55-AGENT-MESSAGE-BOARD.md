@@ -126,6 +126,30 @@ file; follow the integration-owner collection procedure in the workflow.
   GUI qualification, canonical integration merge, or unrelated UI cleanup is
   included in this pass.
 
+### 20260911-p2-redundant-presentation-cleanup
+
+- Owner: S2/P2, bounded D02/D03 cleanup relayed by the roadmap coordinator
+  after the researcher's request to remove app redundancies. Feature handoff
+  `74e879b` stays independently ready; this is a separate cleanup commit.
+- Source trace: `renderQuestionnaires` mounts only the sheet editor and coverage
+  status. Old definition/module lists and coverage-table containers are absent;
+  their generated upload/action controls are unreachable. The old Inspiration
+  dialog has no opener, and the old preview/file input only serve those paths.
+- Remove only those obsolete renderers, dialog markup, event handlers and exact
+  unused styles/templates. Retain active per-sheet import/preview, full-definition
+  adapters, prebuilt catalogue, family-label metadata, language roles, module
+  contracts/hooks and source assets. No Runner or other segment cleanup.
+- Evidence to collect: no obsolete selectors/functions in active closure,
+  import/grid/full contribution regressions, headless app fixture, both builds.
+- Completed trace/removal: obsolete definition/module renderers, unused coverage
+  table builder/preset-button loop, old standalone file input/import chain,
+  preview/Inspiration dialogs and associated handlers/styles/template constants.
+  Active sheet imports, catalogue, module validators/hooks and family-label
+  metadata remain. Removed 723 obsolete source/style/markup lines, recoverable
+  in Git. No questionnaire asset or user file was removed.
+- Evidence: 445/445 Node checks, 20 headless app/grid checks, Pages171 and desktop8
+  closure pass; active markup regression rejects the retired surface IDs.
+
 ### 20260911-p2-finish-grid-reopen
 
 - Owner: S2, P2 `questionnaires`; active Backend Verification follow-up to the

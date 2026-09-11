@@ -1,15 +1,9 @@
 import { createDefaultResearchSettings } from "./contracts.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
-import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
-const QUESTIONNAIRE_TEMPLATE_URLS = Object.freeze({
-  csv: new URL("../../questionnaires/questionnaire-template.csv", import.meta.url).href,
-  txt: new URL("../../questionnaires/questionnaire-template.txt", import.meta.url).href,
-  json: new URL("../../questionnaires/questionnaire-template.json", import.meta.url).href,
-});
 const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
 const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
   algorithmVersion: "language-tree-v1",
@@ -72,31 +66,6 @@ function escapeAttribute(value) {
     .replaceAll(">", "&gt;");
 }
 
-const INSPIRATION_STATUS_LABELS = Object.freeze({
-  bundled: "Ready to include",
-  reusePermitted: "Reuse source available",
-  nonCommercial: "Non-commercial terms",
-  permissionRequired: "Permission required",
-  verifyTerms: "Verify terms",
-});
-
-function inspirationActionId(entry) {
-  if (entry.id === "maia-2") return "maia-2";
-  if (entry.id === "tas-20") return "tas-20";
-  if (entry.id === "phenomenological-control-scale-10") return "phencon-long";
-  if (entry.id === "phencon-short-adaptation") return "phencon-short";
-  return entry.id;
-}
-
-function inspirationCatalogueMarkup() {
-  return QUESTIONNAIRE_INSPIRATION_CATALOGUE.map((entry) => `
-    <article class="inspiration-entry" data-inspiration-entry data-inspiration-domain="${entry.domain}" data-inspiration-search="${escapeAttribute(`${entry.name} ${entry.shortName}`.toLowerCase())}">
-      <header><div><p class="context-label">${entry.domain === "emotion" ? "Emotion" : "Interoception"}</p><h3>${escapeAttribute(entry.shortName)}</h3><p>${escapeAttribute(entry.name)}</p></div><span class="asset-state" data-state="${entry.reuseStatus}">${INSPIRATION_STATUS_LABELS[entry.reuseStatus]}</span></header>
-      <p>${escapeAttribute(entry.reuseNote)}</p>
-      <p class="field-help">Languages found: ${entry.languageTags.map((language) => language.toUpperCase()).join(" · ")} · Form: ${entry.forms.join(", ")}</p>
-      <div class="button-row"><a class="button-link" href="${entry.sourceUrl}" target="_blank" rel="noreferrer">Open ${escapeAttribute(entry.sourceLabel)}</a><button type="button" data-questionnaire-inspiration-prepare="${inspirationActionId(entry)}">${entry.bundledAssetIds.length ? "Include available assets" : "Prepare asset slots"}</button></div>
-    </article>`).join("");
-}
 
 function previewOverlayMarkup({ includeFace = false } = {}) {
   const faceMarkup = includeFace ? `
@@ -831,7 +800,6 @@ export function renderResearchUiMarkup(surface = "browser") {
     <input id="experiment-file-input" type="file" accept="application/json,.json" hidden>
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
     <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
-    <input id="questionnaire-file-input" type="file" accept="text/csv,text/plain,application/json,.csv,.txt,.json" hidden>
     ${stimulusInspirationMarkup()}
     <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
       <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
@@ -867,24 +835,6 @@ export function renderResearchUiMarkup(surface = "browser") {
     <dialog id="import-report-dialog" aria-labelledby="import-report-title">
       <div class="dialog-content"><h2 id="import-report-title">Legacy import report</h2><p>Every mapped, defaulted, and discarded field is listed. Storage was not migrated.</p><div class="table-scroll"><table><thead><tr><th>Status</th><th>Source</th><th>Research target</th><th>Decision</th></tr></thead><tbody id="import-report-body"></tbody></table></div></div>
       <div class="dialog-actions"><button id="import-report-close" type="button" class="primary-action">Close report</button></div>
-    </dialog>
-    <dialog id="questionnaire-preview-dialog" aria-labelledby="questionnaire-preview-title">
-      <div class="dialog-content"><p class="context-label">Questionnaire preview</p><h2 id="questionnaire-preview-title">Questionnaire</h2><p id="questionnaire-preview-instructions"></p><div id="questionnaire-preview-items" class="questionnaire-preview-items"></div><p id="questionnaire-preview-attribution" class="field-help"></p></div>
-      <div class="dialog-actions"><button id="questionnaire-preview-close" type="button" class="primary-action">Close preview</button></div>
-    </dialog>
-    <dialog id="questionnaire-inspiration-dialog" class="inspiration-dialog" aria-labelledby="questionnaire-inspiration-title">
-      <div class="dialog-content">
-        <p class="context-label">Research asset library</p>
-        <h2 id="questionnaire-inspiration-title">Questionnaire inspiration</h2>
-        <p>Explore commonly used emotion and interoception measures. “Publicly available” and “permission to redistribute” are different; use the status and linked source before adding instrument wording.</p>
-        <div class="inspiration-toolbar">
-          <label class="field"><span>Find a measure</span><input id="questionnaire-inspiration-search" type="search" autocomplete="off" placeholder="e.g. interoception or MAIA"></label>
-          <label class="field"><span>Domain</span><select id="questionnaire-inspiration-domain"><option value="all">All relevant measures</option><option value="emotion">Emotion</option><option value="interoception">Interoception</option></select></label>
-        </div>
-        <div id="questionnaire-inspiration-list" class="inspiration-list">${inspirationCatalogueMarkup()}</div>
-        <p id="questionnaire-inspiration-empty" class="empty-state" hidden>No measures match this filter.</p>
-      </div>
-      <div class="dialog-actions"><button id="questionnaire-inspiration-close" type="button" class="primary-action">Close</button></div>
     </dialog>
     <dialog id="participant-language-dialog" aria-labelledby="participant-language-title" aria-describedby="participant-language-context participant-language-error">
       <div class="dialog-content participant-language-dialog-content">
