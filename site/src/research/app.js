@@ -53,6 +53,9 @@ import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "./questionnaire-contribution.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
+import { requestExperimentPackageSave } from "./package-save-request.js";
+import { createPackageExportController } from "./package-export-controller.js";
+import { createPlannerContributionRegistry, registerAvailablePlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
@@ -164,6 +167,7 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
   const controller = createUiController(root, { surface });
   root.researchUi = controller;
+  registerAvailablePlannerContributions(controller);
   return controller;
 }
 
@@ -218,6 +222,25 @@ function bindResearchInteractions(root, { surface }) {
   let workspace = null;
   let experimentDocument = null;
   let experimentPackageDocument = null;
+  let editablePackageDefaults = null;
+  let packageIsStale = false;
+  let packageLoadGeneration = 0;
+  let observedPackageDraft = null;
+  let observedContributions = canonicalJson({ snapshots: [], issues: [] });
+  let packageContributionFingerprint = null;
+  const packageExport = createPackageExportController({ onChange: () => renderPackageExportReview() });
+  const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
+    const next = plannerContributions.read().fingerprint;
+    if (next === observedContributions) return;
+    observedContributions = next;
+    packageExport.invalidate();
+    if (experimentPackageDocument) {
+      packageIsStale = true;
+      packageReproductionReceipt = null;
+    }
+    clearParticipantLanguageSelection();
+    schedulePlanRefresh();
+  } });
   let browserPackageRoot = null;
   let packageAssetClosureSha256 = null;
   let packageReproductionReceipt = null;
@@ -1214,9 +1237,9 @@ function bindResearchInteractions(root, { surface }) {
     return inputBinding;
   }
 
-  async function researchSettingsFromUi() {
+  function researchSettingsDraft({ verifySources = true } = {}) {
     if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
-    return validateResearchSettingsV3({
+    return {
       schema: DEFAULT_SETTINGS.schema,
       version: 3,
       experiment: {
@@ -1225,8 +1248,14 @@ function bindResearchInteractions(root, { surface }) {
         participantCount: numberValue("participant-count"),
         samplingFrequencyHz: numberValue("sampling-frequency"),
       },
-      stimuli: { items: resolvedStimuliFromUi() },
-      input: structuredClone(synchronizedInputBinding()),
+      stimuli: { items: verifySources ? resolvedStimuliFromUi() : experimentDocument.definition.stimuli.map((reference) => ({
+        ...reference,
+        sources: stimuli.filter((stimulus) => stimulus.contractSource?.kind === "workspaceFile"
+          && stimulus.contractSource.relativePath === reference.relativePath)
+          .map((stimulus) => structuredClone(stimulus.contractSource)),
+      })) },
+      input: structuredClone(verifySources ? synchronizedInputBinding()
+        : inputBinding.kind === "digital" ? { ...inputBinding, stepSize: numberValue("input-step-size", 0.1) } : inputBinding),
       visual: {
         gridEnabled: checked("visual-grid-visible"),
         flubberEnabled: checked("visual-flubber-visible"),
@@ -1273,7 +1302,39 @@ function bindResearchInteractions(root, { surface }) {
         definitionSha256: experimentDocument.definitionSha256,
         definition: structuredClone(experimentDocument.definition),
       },
-    });
+    };
+  }
+
+  async function researchSettingsFromUi() {
+    return validateResearchSettingsV3(researchSettingsDraft());
+  }
+
+  function packageDraftFingerprint() {
+    try {
+      // A loaded design still has editable settings while media verification is
+      // pending. Fingerprinting reads its declared sources without requiring a
+      // decoder receipt; compilation retains the strict source verifier above.
+      const settings = researchSettingsDraft({ verifySources: false });
+      // Package construction canonicalizes the imported experiment document.
+      // Its whitespace/source-byte hash may change without any design edit;
+      // retain the full definition and its semantic hash in this comparison.
+      delete settings.externalProtocol.sourceByteSha256;
+      return canonicalJson({ settings, languageSelection: languageTreeFromUi() });
+    } catch {
+      return null; // Invalid/pending edits cannot match an accepted compilation.
+    }
+  }
+
+  function observePackageDraft() {
+    const current = packageDraftFingerprint();
+    if (current === observedPackageDraft) return;
+    observedPackageDraft = current;
+    packageExport.invalidate();
+    if (experimentPackageDocument) {
+      packageIsStale = true;
+      packageReproductionReceipt = null;
+      clearParticipantLanguageSelection();
+    }
   }
 
   async function protocolSettingsFromUi(baseSettings = null) {
@@ -1283,9 +1344,11 @@ function bindResearchInteractions(root, { surface }) {
   async function applyResearchSettings(settings, {
     preserveVerifiedStimuli = false,
     guard = null,
+    packageProjection = false,
   } = {}) {
     const normalized = await validateResearchSettingsV3(settings);
     if (typeof guard === "function" && !guard()) return false;
+    if (packageProjection) questionnaireEditor.reset();
     const preservedSourceText = experimentDocument
       && experimentDocument.sourceByteSha256 === normalized.externalProtocol.sourceByteSha256
       && experimentDocument.definitionSha256 === normalized.externalProtocol.definitionSha256
@@ -1396,6 +1459,7 @@ function bindResearchInteractions(root, { surface }) {
     renderQuestionnaires();
     renderBindings();
     refreshProjection();
+    if (packageProjection) observedPackageDraft = packageDraftFingerprint();
     schedulePlanRefresh();
     const fileStatus = query("#experiment-file-status");
     if (fileStatus) {
@@ -1502,6 +1566,10 @@ function bindResearchInteractions(root, { surface }) {
     const packageAssetsReady = packageAssetsVerified();
     const packageReady = Boolean(
       experimentPackageDocument
+      && !packageIsStale
+      && !packageExport.snapshot().busy
+      && plannerContributions.read().issues.length === 0
+      && packageContributionFingerprint === plannerContributions.read().fingerprint
       && packageReproductionReceipt?.byteIdenticalReexport === true
       && packageReproductionReceipt.sameRealmDeterminismVerified === true
       && packageAssetsReady,
@@ -2527,6 +2595,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function schedulePlanRefresh() {
+    observePackageDraft();
+    renderPackageReceipt();
     planRefresh += 1;
     const generation = planRefresh;
     settingsSnapshot = null;
@@ -3039,12 +3109,12 @@ function bindResearchInteractions(root, { surface }) {
     const status = query("#package-file-status");
     const reproduction = query("#package-reproduction-status");
     if (status) {
-      if (experimentPackageDocument && packageReproductionReceipt) {
+      if (experimentPackageDocument && packageReproductionReceipt && !packageIsStale) {
         status.dataset.state = "ready";
         status.textContent = `${experimentPackageDocument.package.packageId} · ${experimentPackageDocument.package.integrity.packageDefinitionSha256}`;
       } else {
         status.dataset.state = "warning";
-        status.textContent = "No project JSON loaded";
+        status.textContent = packageIsStale ? "Recipe changed · save the current design" : "No project JSON loaded";
       }
     }
     if (reproduction) {
@@ -3055,6 +3125,47 @@ function bindResearchInteractions(root, { surface }) {
         reproduction.dataset.state = "warning";
         reproduction.textContent = "Not verified";
       }
+    }
+    renderPackageExportReview();
+  }
+
+  function renderPackageExportReview() {
+    const state = packageExport.snapshot();
+    const review = plannerContributions.read();
+    const output = query("#package-save-status");
+    const messages = {
+      editing: packageIsStale ? "The current design has changes to save." : "Review the design, then save its recipe.",
+      compiling: "Validating the current design…",
+      saving: "Waiting for the file writer. Finish or cancel the save dialog.",
+      saved: "Recipe saved. The writer confirmed its exact bytes and hash.",
+      cancelled: "Save cancelled. The design is still editable; try again when ready.",
+      changed: "The design changed during export. Newer edits remain here; save them again.",
+      error: "Save was not confirmed. The design remains available to retry.",
+    };
+    if (output) {
+      output.textContent = messages[state.phase];
+      output.dataset.state = state.phase === "saved" && !packageIsStale ? "ready" : "warning";
+    }
+    for (const id of ["package-generate", "package-reexport", "package-edit", "package-load"]) {
+      const button = query(`#${id}`);
+      if (!button) continue;
+      button.disabled = mode !== "setup" || state.busy
+        || (id === "package-generate" && (languageEditorLocked || review.issues.length > 0))
+        || (id === "package-reexport" && (!experimentPackageDocument || packageIsStale || review.issues.length > 0))
+        || (id === "package-edit" && !experimentPackageDocument);
+    }
+    const list = query("#package-contribution-issues");
+    if (list) {
+      list.replaceChildren(...review.issues.map(({ segment, message }) => {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.plannerSegment = segment;
+        button.textContent = message;
+        item.append(button);
+        return item;
+      }));
+      list.hidden = review.issues.length === 0;
     }
   }
 
@@ -3318,6 +3429,7 @@ function bindResearchInteractions(root, { surface }) {
     const applied = await applyResearchSettings(compiled.settings, {
       preserveVerifiedStimuli: true,
       guard: stillCurrent,
+      packageProjection: true,
     });
     if (!applied || !stillCurrent()) return false;
     compiledPackageSelection = compiled;
@@ -3327,12 +3439,20 @@ function bindResearchInteractions(root, { surface }) {
     return true;
   }
 
-  async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null } = {}) {
-    const parsed = receipt?.package && receipt?.canonicalSourceText
-      ? receipt
-      : await parseExperimentPackageV1(new TextEncoder().encode(receipt?.sourceText ?? receipt));
-    packageReproductionReceipt = await verifySameRealmPackageReproductionV1(parsed.package);
+  async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null, guard = null } = {}) {
+    const generation = ++packageLoadGeneration;
+    const parsed = await parseExperimentPackageV1(new TextEncoder().encode(
+      receipt?.canonicalSourceText ?? receipt?.sourceText ?? receipt,
+    ));
+    const reproduction = await verifySameRealmPackageReproductionV1(parsed.package);
+    const current = () => generation === packageLoadGeneration && (!guard || guard());
+    if (!current()) return false;
+    if (!guard) packageExport.invalidate();
+    packageReproductionReceipt = reproduction;
     experimentPackageDocument = parsed;
+    editablePackageDefaults = { experimentId: parsed.package.settings.experiment.id,
+      packageId: parsed.package.packageId, playback: structuredClone(parsed.package.playback) };
+    packageIsStale = false;
     browserPackageRoot = surface === "browser" ? rootWorkspace : null;
     packageAssetClosureSha256 = null;
     clearParticipantLanguageSelection();
@@ -3350,17 +3470,25 @@ function bindResearchInteractions(root, { surface }) {
       ));
       if (definition) requestQuestionnaireFamily(familyIdForDefinition(definition));
     }
-    await applyResearchSettings(parsed.package.settings, { preserveVerifiedStimuli: true });
+    if (!await applyResearchSettings(parsed.package.settings, {
+      preserveVerifiedStimuli: true, packageProjection: true, guard: current,
+    })) return false;
+    packageContributionFingerprint = plannerContributions.read().fingerprint;
+    observedContributions = packageContributionFingerprint;
     renderPackageReceipt();
     root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.setupSettingsReady, {
       bubbles: true,
       detail: Object.freeze({ settings: parsed.package.settings }),
     }));
     announce(`Loaded ${parsed.package.packageId}. Its complete ${packageReproductionReceipt.caseCount}-case protocol matrix and canonical re-export passed the local deterministic check. No language was selected; the participant must traverse the package tree before Start.`);
-    if (surface === "browser" && workspace) await requestWorkspaceRescan();
+    if (workspace) void requestWorkspaceRescan().catch((error) => {
+      announce(`Recipe loaded; workspace verification still needs attention: ${error instanceof Error ? error.message : String(error)}`);
+    });
+    return true;
   }
 
   function requestExperimentPackageLoad() {
+    if (packageExport.snapshot().busy || mode !== "setup") return;
     if (surface === "tauri") {
       const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentPackageRequest, {
         bubbles: true,
@@ -3381,39 +3509,95 @@ function bindResearchInteractions(root, { surface }) {
       });
   }
 
-  async function generateExperimentPackage() {
+  async function generateExperimentPackage({ reexport = false } = {}) {
+    observePackageDraft();
+    const draft = observedPackageDraft;
+    const contributionFingerprint = plannerContributions.read().fingerprint;
+    const currentWorkspace = workspace;
     try {
-      const settings = await researchSettingsFromUi();
-      const languageSelection = languageTreeFromUi();
-      const packageValue = await createExperimentPackageV1({
-        packageId: `${settings.experiment.id.slice(0, 119)}-package`,
-        languageSelection,
-        settings,
+      const result = await packageExport.save({
+        isCurrent: () => mode === "setup" && currentWorkspace === workspace
+          && packageDraftFingerprint() === draft
+          && plannerContributions.read().fingerprint === contributionFingerprint,
+        compile: async () => {
+          await plannerContributions.assertPackageV1();
+          if (reexport) {
+            if (!experimentPackageDocument || packageIsStale) throw new Error("Open an unchanged recipe before re-exporting.");
+            await plannerContributions.assertPackageV1(experimentPackageDocument.package);
+            return experimentPackageDocument;
+          }
+          if (languageEditorLocked) throw new Error("Choose Edit recipe before revising the loaded design.");
+          const settings = await researchSettingsFromUi();
+          const languageSelection = languageTreeFromUi();
+          const retained = editablePackageDefaults?.experimentId === settings.experiment.id ? editablePackageDefaults : null;
+          const packageValue = await createExperimentPackageV1({
+            packageId: retained?.packageId ?? `${settings.experiment.id.slice(0, 119)}-package`,
+            ...(retained ? { playback: retained.playback } : {}), languageSelection, settings,
+          });
+          await plannerContributions.assertPackageV1(packageValue);
+          const sourceText = await serializeExperimentPackageV1(packageValue);
+          return parseExperimentPackageV1(new TextEncoder().encode(sourceText));
+        },
+        write: async (parsed) => {
+          if (surface === "tauri") return requestExperimentPackageSave(root, parsed);
+          if (!currentWorkspace) throw new Error("Select the package root before saving the recipe.");
+          const sourceText = parsed.canonicalSourceText;
+          const persisted = await workspace.saveExperimentPackage(sourceText);
+          if (persisted.canonicalSourceText !== sourceText
+            || persisted.canonicalSourceByteSha256 !== parsed.canonicalSourceByteSha256) {
+            throw new Error("The browser writer did not confirm the exact recipe bytes.");
+          }
+          return persisted;
+        },
+        adopt: async (parsed, guard) => {
+          if (!reexport) return applyExperimentPackageReceipt(parsed, { rootWorkspace: currentWorkspace, guard });
+          return true;
+        },
       });
-      const sourceText = await serializeExperimentPackageV1(packageValue);
-      const parsed = await parseExperimentPackageV1(new TextEncoder().encode(sourceText));
-      if (surface === "tauri") {
-        await applyExperimentPackageReceipt(parsed);
-        const event = new CustomEvent(RESEARCH_UI_EVENTS.saveExperimentPackageRequest, {
-          bubbles: true,
-          cancelable: true,
-          detail: Object.freeze({
-            sourceText,
-            packageDefinitionSha256: packageValue.integrity.packageDefinitionSha256,
-          }),
-        });
-        root.dispatchEvent(event);
-        if (!event.defaultPrevented) throw new Error("The native package save adapter is not connected.");
-      } else {
-        if (!workspace) throw new Error("Select the package root before generating the experiment package.");
-        const persisted = await workspace.saveExperimentPackage(sourceText);
-        await applyExperimentPackageReceipt(persisted, { rootWorkspace: workspace });
-      }
-      announce(`${EXPERIMENT_PACKAGE_FILE_NAME} generated with a verified deterministic protocol matrix.`);
+      if (result.status === "saved") announce(`${EXPERIMENT_PACKAGE_FILE_NAME} saved. Its exact canonical bytes were acknowledged.`);
+      else if (result.status === "cancelled") announce("Save cancelled. Your design is still available.");
+      else if (result.status !== "busy") announce("The design changed during export. Newer edits were preserved; save the current design again.");
     } catch (error) {
+      announce(`Recipe export failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    renderPackageReceipt();
+    renderReview();
+  }
+
+  async function editExperimentPackage() {
+    if (!experimentPackageDocument || packageExport.snapshot().busy || mode !== "setup") return;
+    const restore = root.researchUi?.restoreQuestionnaireContribution;
+    if (typeof restore !== "function") {
+      announce("Editable recipe restoration requires the questionnaire contribution adapter. The loaded recipe is preserved.");
+      return;
+    }
+    const original = experimentPackageDocument;
+    const generation = ++packageLoadGeneration;
+    const draft = packageDraftFingerprint();
+    const isCurrent = () => generation === packageLoadGeneration
+      && experimentPackageDocument === original && packageDraftFingerprint() === draft
+      && mode === "setup" && !packageExport.snapshot().busy;
+    try {
+      // P2 restores full definitions/modules and the exact tree, never a grid-only
+      // projection or the currently selected participant-language subset.
+      const restored = await restore({
+        questionnaires: structuredClone(original.package.settings.questionnaires),
+        languageSelection: structuredClone(original.package.languageSelection),
+      }, { isCurrent });
+      if (restored === false || generation !== packageLoadGeneration || experimentPackageDocument !== original) return;
+      experimentPackageDocument = null;
+      packageContributionFingerprint = null;
+      packageIsStale = false;
       packageReproductionReceipt = null;
+      packageAssetClosureSha256 = null;
+      languageEditorLocked = false;
+      clearParticipantLanguageSelection();
+      packageExport.invalidate();
       renderPackageReceipt();
-      announce(`Package generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      schedulePlanRefresh();
+      announce("Recipe opened for editing. Save a new snapshot when the changes are ready.");
+    } catch (error) {
+      announce(`Recipe editing could not be opened: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -3424,6 +3608,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     const definition = validateExperimentDefinitionV1(receipt.definition);
     experimentPackageDocument = null;
+    editablePackageDefaults = null;
     browserPackageRoot = null;
     packageAssetClosureSha256 = null;
     packageReproductionReceipt = null;
@@ -4234,6 +4419,13 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
     if (target.id === "package-load") requestExperimentPackageLoad();
     if (target.id === "package-generate") void generateExperimentPackage();
+    if (target.id === "package-reexport") void generateExperimentPackage({ reexport: true });
+    if (target.id === "package-edit") void editExperimentPackage();
+    if (target.dataset.plannerSegment) {
+      const section = PLANNER_SEGMENT_SECTIONS[target.dataset.plannerSegment];
+      if (SETUP_SECTIONS.some(({ id }) => id === section)) openSetupSection(section, { focus: true });
+      else announce(`${target.dataset.plannerSegment} has no accepted editor in this build. Its active contribution blocks export.`);
+    }
     if (target.id === "choose-participant-language") openParticipantLanguageDialog();
     if (target.dataset.languageOption) void chooseParticipantLanguageOption(target.dataset.languageOption);
     if (target.id === "participant-language-back" && !languageSelectionBusy) {
@@ -4940,6 +5132,12 @@ function bindResearchInteractions(root, { surface }) {
       });
     },
     get packageReproductionReceipt() { return packageReproductionReceipt; },
+    get packageExportStatus() { return packageExport.snapshot(); },
+    registerPlannerContribution(segment, getSnapshot, options) {
+      return plannerContributions.register(segment, getSnapshot, options);
+    },
+    plannerContributionChanged(segment) { plannerContributions.changed(segment); },
+    getPlannerContributionReview() { return plannerContributions.read(); },
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
@@ -4981,6 +5179,7 @@ function bindResearchInteractions(root, { surface }) {
       previewInteraction = null;
       inlineColorPicker.destroy();
       setupLayout.destroy();
+      packageExport.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

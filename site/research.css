@@ -1142,12 +1142,28 @@ legend {
 
 .package-finalization {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 0.9rem;
   border-left: 3px solid var(--accent);
+}
+
+.package-finalization > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.package-finalization .button-row {
+  margin: 0;
+}
+
+#package-contribution-issues button {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .package-finalization h3,
