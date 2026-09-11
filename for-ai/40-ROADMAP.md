@@ -132,6 +132,16 @@ visual observation remains pending; source integration completed locally at
 These checks do not qualify
 Run, sampling, playback, accessibility, deployment or experiment use.
 
+The researcher's 2026-09-11 follow-up replaces the square-only count field
+with steps each side of zero (1–1000), and adds independent odd columns/rows
+(3–2001). The isolated Preview branch provides centered rectangular outlines,
+axis-specific stepping/snap and atomic invalid-draft retention. The candidate
+passes 431/431 JavaScript tests, the desktop frontend 8-file closure and ten
+off-screen Edge tile-paint fixtures (including 3×5 and 5×3 at 180/360px).
+This is isolated source/component evidence, not current installed-app behavior;
+integration/reload is deferred to the integration owner pending user safety.
+No package, Run, native input or saved stepSize contract changes are included.
+
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,
 affect inference, uploads, networking, and personal data remain absent. The

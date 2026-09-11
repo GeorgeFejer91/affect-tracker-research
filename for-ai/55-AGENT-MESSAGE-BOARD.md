@@ -37,6 +37,27 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-rectangular-grid
+
+- Owner **Preview**, UI Finalization; **open**, integration allocation acknowledged.
+  Branch `codex/segment-preview-rectangular-grid`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`, dependent base `59279f5`
+  (inline color checkpoint submitted separately for integration).
+- User explicitly requests steps per side (1 → 3×3, 2 → 5×5), plus independent
+  columns/rows (3×5, 5×3). Scope: preview tile geometry/simulator/renderer,
+  named app/view controls, tests and narrow preview-only charter amendment.
+  Steps accept every whole number 1–1000; direct dimensions stay odd 3–2001
+  to retain exact central zero and existing bounded renderer cost.
+- Preserve invalid drafts without changing accepted geometry, release holds on
+  dimension change, use independent x/y snap/step. Saved stepSize, package,
+  acquisition and Run remain unchanged. No GUI tests/push/deployment.
+- Ready: baseline 15/15 tile/simulator tests; final 431/431 JavaScript tests,
+  desktop 8-file frontend closure and 10/10 off-screen Edge tile-paint cases.
+  Tests cover every step count, invalid drafts, independent axes, exact neutral,
+  rectangular renderer geometry, row-only hold release and saved-input isolation.
+  Receipt: `D:/GitHub/.affect-preview-checks/rectangular-grid-20260911`.
+  Integration/main remains untouched; native visual verification is unperformed.
+
 ### 20260911-preview-inline-color
 
 - Owner **Preview**, segment `preview`, UI Finalization; **open**, allocation

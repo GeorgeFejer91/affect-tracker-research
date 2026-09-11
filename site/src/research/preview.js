@@ -62,6 +62,7 @@ function normalizedState(source = {}) {
     displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
     responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
     tileCount: parsePreviewTileCount(source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
+    tileRows: parsePreviewTileCount(source.tileRows ?? source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
     colors: {
       up: normalizeHex(colors.up, DEFAULT_COLORS.up),
       down: normalizeHex(colors.down, DEFAULT_COLORS.down),
@@ -261,20 +262,21 @@ export function createResearchPreview(root, options = {}) {
     }
 
     if (studio) {
-      if (tiled && renderedTileCount !== state.tileCount) {
-        const path = previewTileLines(state.tileCount);
+      const dimensions = `${state.tileCount}:${state.tileRows}`;
+      if (tiled && renderedTileCount !== dimensions) {
+        const path = previewTileLines(state.tileCount, state.tileRows);
         for (const line of tileLines) {
           line.setAttribute("d", path);
-          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / state.tileCount)));
-          line.style.strokeWidth = String(Math.min(0.4, 8 / state.tileCount));
+          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows))));
+          line.style.strokeWidth = String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows)));
         }
-        renderedTileCount = state.tileCount;
+        renderedTileCount = dimensions;
       }
       for (const line of tileLines) setElementHidden(line, !tiled);
-      const tile = previewTileGeometry(state.x, state.y, state.tileCount);
+      const tile = previewTileGeometry(state.x, state.y, state.tileCount, state.tileRows);
       for (const highlight of activeTiles) {
         setElementHidden(highlight, !tiled);
-        const stroke = Math.min(1.1, tile.width * 0.12);
+        const stroke = Math.min(1.1, Math.min(tile.width, tile.height) * 0.12);
         highlight.style.setProperty("--tile-outline-width", String(stroke));
         for (const rectangle of highlight.querySelectorAll("rect")) {
           // Essential paint geometry must also work without the page stylesheet.
@@ -287,7 +289,7 @@ export function createResearchPreview(root, options = {}) {
       }
       if (tileStatus instanceof HTMLElement) {
         tileStatus.hidden = !tiled;
-        const label = `Current tile: column ${tile.column + 1}, row ${tile.row + 1} of ${state.tileCount}.`;
+        const label = `Current tile: column ${tile.column + 1} of ${state.tileCount}, row ${tile.row + 1} of ${state.tileRows}.`;
         if (tileStatus.textContent !== label) tileStatus.textContent = label;
       }
     }
@@ -391,7 +393,9 @@ export function createResearchPreview(root, options = {}) {
 
   return Object.freeze({
     update(nextState) {
-      state = normalizedState({ ...state, ...nextState });
+      const square = Object.hasOwn(nextState, "tileCount") && !Object.hasOwn(nextState, "tileRows")
+        ? { tileRows: nextState.tileCount } : {};
+      state = normalizedState({ ...state, ...nextState, ...square });
       renderStatic();
     },
     snapshot() {

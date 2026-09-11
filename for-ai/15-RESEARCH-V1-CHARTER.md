@@ -485,10 +485,15 @@ The package-embedded `InputBindingV1` object is the one binding authority.
 
 The Setup-only feedback-design preview may additionally demonstrate proposed
 **Continuous** and **Stepwise** response behavior. The continuous draft may
-show a bounded full-span press duration. The stepwise draft uses a custom odd
-tile count per axis (3–2001), equal steps either side of a central zero tile,
-and an outlined active tile instead of the continuous cursor. Arrow edges move
-one tile; changing count snaps to the nearest tile and releases held input.
+show a bounded full-span press duration. Per the researcher's 2026-09-11 UI
+request, the stepwise draft offers whole steps each side of zero (1–1000;
+1 gives 3×3 and 2 gives 5×5), or independent odd columns and rows (3–2001)
+for rectangular grids such as 3×5 and 5×3. Both dimensions preserve equal
+steps either side of one central zero tile, with an outlined active tile
+instead of the continuous cursor. Arrow edges move one tile using the
+corresponding axis dimension; changing either dimension snaps each coordinate
+to its nearest tile and releases held input. Invalid drafts retain the last
+accepted complete grid without changing saved settings or Start readiness.
 The saved input step size remains separately reachable under Advanced preview
 settings. Stepwise may compare separate physical presses with a bounded
 wait-and-repeat hold rule.

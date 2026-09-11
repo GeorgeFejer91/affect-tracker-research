@@ -206,7 +206,17 @@ function previewMarkup(label, { studio = false } = {}) {
           <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
         </div>
         <div data-response-preview-panel="stepwise">
-          <label class="field"><span>Tiles per axis</span><input id="preview-tile-count" type="number" min="3" max="2001" step="2" value="21" aria-describedby="preview-tile-count-help"><output id="preview-tile-count-help" class="field-help">Odd number, 3–2001. 21 × 21 tiles: 10 steps each side of zero.</output></label>
+          <fieldset class="check-group">
+            <legend>Grid dimensions</legend>
+            <label class="radio-field"><input type="radio" name="previewGridSizing" value="square" checked><span>Steps each side of zero</span></label>
+            <label class="radio-field"><input type="radio" name="previewGridSizing" value="custom"><span>Custom grid (columns × rows)</span></label>
+          </fieldset>
+          <label class="field" data-preview-grid-square><span>Steps each side of zero</span><input id="preview-tile-count" data-preview-grid-input type="number" min="1" max="1000" step="1" value="10" aria-describedby="preview-tile-count-help"></label>
+          <div class="field-grid" data-preview-grid-custom hidden>
+            <label class="field"><span>Columns</span><input id="preview-tile-columns" data-preview-grid-input type="number" min="3" max="2001" step="2" value="21" disabled aria-describedby="preview-tile-count-help"></label>
+            <label class="field"><span>Rows</span><input id="preview-tile-rows" data-preview-grid-input type="number" min="3" max="2001" step="2" value="21" disabled aria-describedby="preview-tile-count-help"></label>
+          </div>
+          <output id="preview-tile-count-help" class="field-help" role="status" aria-live="polite">21 × 21 tiles. 10 steps each side of zero; 1 creates 3 × 3, 2 creates 5 × 5.</output>
           <fieldset class="check-group">
             <legend>Hold rule</legend>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>

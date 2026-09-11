@@ -208,12 +208,16 @@ test("Stepwise owns a draft tile spinner and the saved step size remains under A
     '<section id="preview-quick-appearance"',
   );
   assertAttributes(inputTag(stepwisePanel, "preview-tile-count"), {
-    type: "number", min: "3", max: "2001", step: "2", value: "21",
+    type: "number", min: "1", max: "1000", step: "1", value: "10",
   });
+  for (const id of ["preview-tile-columns", "preview-tile-rows"]) {
+    assertAttributes(inputTag(stepwisePanel, id), { type: "number", min: "3", max: "2001", step: "2", value: "21" });
+  }
+  assert.match(stepwisePanel, /name="previewGridSizing" value="custom"/u);
   assert.equal(countId(stepwisePanel, "input-step-size"), 0);
   const validation = between(appSource, "function syncControlValidation(", "function syncOutputFormatValidation(");
-  assert.match(validation, /if \(control\?\.id === "preview-tile-count"\) return true;/u);
-  assert.match(appSource, /\[aria-invalid="true"\]:not\(#preview-tile-count\)/u);
+  assert.match(validation, /if \(control\?\.hasAttribute\("data-preview-grid-input"\)\) return true;/u);
+  assert.match(appSource, /\[aria-invalid="true"\]:not\(\[data-preview-grid-input\]\)/u);
   assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<details id="preview-advanced-settings"')), "input-step-size"), {
     type: "number",
     min: "0.001",
@@ -340,17 +344,20 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       preview.update({ flubber: { showHalo: true } });
       assert.equal(halo.getAttribute("hidden"), null);
       if (studio) {
-        for (const tileCount of [3, 5, 21, 2001]) {
+        for (const [tileCount, tileRows] of [[3, 3], [5, 5], [21, 21], [2001, 2001], [3, 5], [5, 3], [3, 2001], [2001, 3]]) {
           for (const sizePercent of [5, 100]) {
-            preview.update({ x: 0, y: 0, tileCount, sizePercent, responseMode: "stepwise" });
+            preview.update({ x: 0, y: 0, tileCount, tileRows, sizePercent, responseMode: "stepwise" });
             assert.equal(controlCursor.getAttribute("hidden"), "");
             assert.equal(root.querySelector("[data-preview-grid-cursor]").getAttribute("hidden"), "");
             assert.equal(tile.getAttribute("hidden"), null);
-            assert.equal((tilePath.getAttribute("d").match(/M/g) ?? []).length, 2 * (tileCount - 1));
+            assert.equal((tilePath.getAttribute("d").match(/M/g) ?? []).length, tileCount + tileRows - 2);
             assert.ok(Math.abs(Number(rectangles[0].getAttribute("x")) + Number(rectangles[0].getAttribute("width")) / 2 - 50) < 1e-10);
             assert.equal(rectangles[0].getAttribute("x"), rectangles[1].getAttribute("x"));
             assert.equal(Number(rectangles[0].getAttribute("stroke-width")), Number(rectangles[1].getAttribute("stroke-width")) * 2);
-            assert.equal(Number(tilePath.getAttribute("stroke-width")), Math.min(0.4, 8 / tileCount));
+            assert.ok(Math.abs(Number(rectangles[0].getAttribute("y")) + Number(rectangles[0].getAttribute("height")) / 2 - 50) < 1e-10);
+            assert.ok(Number(rectangles[0].getAttribute("height")) > 0);
+            assert.ok(Number(rectangles[0].getAttribute("width")) > 0);
+            assert.equal(Number(tilePath.getAttribute("stroke-width")), Math.min(0.4, 8 / Math.max(tileCount, tileRows)));
           }
         }
         preview.update({ responseMode: "continuous" });
@@ -411,7 +418,7 @@ test("the application projects design state only to Setup and bypasses planning 
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*\} : \{\}\)/u,
   );
   assert.match(
     previewStateSource,
@@ -435,10 +442,11 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.match(appSource, /refreshProjection\(\{ designAlreadyProjected: simulatorOwnsDesignProjection \}\)/u);
 
   const previewOnlySource = between(appSource, "function isPreviewOnlyControl(", "function driverValue(");
-  for (const id of ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"]) {
+  for (const id of ["preview-halo-size", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"]) {
     assert.match(previewOnlySource, new RegExp(`"${id}"`, "u"));
   }
   assert.match(previewOnlySource, /target\.name === "previewHoldRule"/u);
+  assert.match(previewOnlySource, /target\.name === "previewGridSizing"/u);
   assert.doesNotMatch(previewOnlySource, /schedulePlanRefresh/u);
   assert.equal(count(
     appSource,
@@ -447,7 +455,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.match(appSource, /createPreviewResponseSimulator\(\{[\s\S]*?previewDesignPoint = \{ x: point\.x, y: point\.y \};[\s\S]*?projectDesignPreview\(\)/u);
   assert.match(
     appSource,
-    /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?tileCount:[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
+    /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?\.\.\.\(dimensions \?\? \{\}\),[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
   );
   assert.match(appSource, /previewResponseSimulator\?\.press\(direction\)/u);
   assert.match(appSource, /previewResponseSimulator\?\.release\(direction\)/u);

@@ -26,7 +26,7 @@ import { ResearchInputController, withCustomDigitalAction } from "./input-contro
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { createInlineColorPicker } from "./inline-color-picker.js";
-import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
@@ -367,7 +367,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function syncControlValidation(control, { force = false } = {}) {
     // This draft has its own inline feedback and cannot block experiment Start.
-    if (control?.id === "preview-tile-count") return true;
+    if (control?.hasAttribute("data-preview-grid-input")) return true;
     if (!isValidationControl(control) || !control.id || !control.willValidate || control.disabled) return true;
     const inactive = control.closest("#fixed-duration-field[hidden], #jitter-durations-field[hidden]") !== null;
     const invalid = !inactive && !control.checkValidity();
@@ -654,23 +654,27 @@ function bindResearchInteractions(root, { surface }) {
 
   function isPreviewOnlyControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-halo-size", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing"
     );
   }
 
   function isPreviewResponseControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing"
     );
   }
 
   function configurePreviewResponseSimulator() {
+    const dimensions = parsePreviewGrid({
+      mode: query('input[name="previewGridSizing"]:checked')?.value,
+      steps: value("preview-tile-count"), columns: value("preview-tile-columns"), rows: value("preview-tile-rows"),
+    });
     previewResponseSimulator?.configure({
       mode: responsePreviewMode,
       fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
-      tileCount: value("preview-tile-count"),
+      ...(dimensions ?? {}),
       holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
       repeatDelayMs: numberValue("preview-repeat-delay", 500),
     });
@@ -741,6 +745,7 @@ function bindResearchInteractions(root, { surface }) {
         displayMode: feedbackPreviewMode,
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
+        tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
       } : {}),
       colors,
       flubber: {
@@ -790,14 +795,27 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPreviewDesignControls() {
-    const tileInput = query("#preview-tile-count");
+    const custom = query('input[name="previewGridSizing"]:checked')?.value === "custom";
     const tileHelp = query("#preview-tile-count-help");
     const tileCount = previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT;
-    const validTileCount = parsePreviewTileCount(tileInput?.value) !== null;
-    tileInput?.setAttribute("aria-invalid", String(!validTileCount));
-    if (tileHelp) tileHelp.textContent = validTileCount
-      ? `Odd number, 3–2001. ${tileCount} × ${tileCount} tiles: ${(tileCount - 1) / 2} steps each side of zero.`
-      : `Enter an odd whole number from 3 to 2001. Preview remains at ${tileCount} × ${tileCount}.`;
+    const tileRows = previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT;
+    let valid = true;
+    for (const id of ["preview-tile-count", "preview-tile-columns", "preview-tile-rows"]) {
+      const input = query(`#${id}`);
+      if (!(input instanceof HTMLInputElement)) continue;
+      const active = id === "preview-tile-count" ? !custom : custom;
+      const parsed = id === "preview-tile-count" ? parsePreviewSteps(input.value) : parsePreviewTileCount(input.value);
+      input.disabled = !active;
+      input.setAttribute("aria-invalid", String(active && parsed === null));
+      if (active && parsed === null) valid = false;
+    }
+    const squareFields = query("[data-preview-grid-square]");
+    const customFields = query("[data-preview-grid-custom]");
+    if (squareFields) squareFields.hidden = custom;
+    if (customFields) customFields.hidden = !custom;
+    if (tileHelp) tileHelp.textContent = valid
+      ? `${tileCount} × ${tileRows} tiles. ${(tileCount - 1) / 2} steps left/right, ${(tileRows - 1) / 2} up/down, plus the central zero tile. ${custom ? "Odd dimensions, 3–2001." : "1 creates 3 × 3; 2 creates 5 × 5. Whole numbers, 1–1000."}`
+      : `Enter ${custom ? "odd whole dimensions from 3 to 2001" : "a whole step count from 1 to 1000"}. Preview remains at ${tileCount} × ${tileRows}.`;
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
@@ -4261,7 +4279,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]:not(#preview-tile-count)');
+      const invalid = query('[aria-invalid="true"]:not([data-preview-grid-input])');
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
       const focusTarget = isValidationControl(invalid)
