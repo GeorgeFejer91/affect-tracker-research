@@ -196,14 +196,21 @@ test("continuous and stepwise response controls retain their exact timing contra
   ]);
 });
 
-test("Step Size remains one saved control owned by the stepwise panel", () => {
+test("Stepwise owns a draft tile spinner and the saved step size remains under Advanced", () => {
   assert.equal(countId(markup, "input-step-size"), 1);
   const stepwisePanel = between(
     studioMarkup,
     '<div data-response-preview-panel="stepwise">',
     '<section id="preview-quick-appearance"',
   );
-  assertAttributes(inputTag(stepwisePanel, "input-step-size"), {
+  assertAttributes(inputTag(stepwisePanel, "preview-tile-count"), {
+    type: "number", min: "3", max: "2001", step: "2", value: "21",
+  });
+  assert.equal(countId(stepwisePanel, "input-step-size"), 0);
+  const validation = between(appSource, "function syncControlValidation(", "function syncOutputFormatValidation(");
+  assert.match(validation, /if \(control\?\.id === "preview-tile-count"\) return true;/u);
+  assert.match(appSource, /\[aria-invalid="true"\]:not\(#preview-tile-count\)/u);
+  assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<details id="preview-advanced-settings"')), "input-step-size"), {
     type: "number",
     min: "0.001",
     max: "1",
@@ -253,7 +260,7 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
     getAttribute(name) { return this.attributes.get(name) ?? null; }
     toggleAttribute(name, on) { if (on) this.attributes.set(name, ""); else this.attributes.delete(name); }
     querySelector(selector) { return this.children.get(selector) ?? null; }
-    querySelectorAll() { return []; }
+    querySelectorAll(selector) { return this.children.get(selector) ?? []; }
     addEventListener() {}
     removeEventListener() {}
     matches() { return true; }
@@ -280,6 +287,15 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
         flubber: Svg, "flubber-base": Path, "flubber-outline": Path, "flubber-halo": Path,
         "halo-blur": Svg,
       })) root.children.set(`[data-preview-${name}]`, new Type());
+      const tilePath = new Path();
+      const tile = new Svg();
+      const rectangles = [new Svg(), new Svg()];
+      tile.children.set("rect", rectangles);
+      root.children.set("[data-preview-tile-lines]", [tilePath]);
+      root.children.set("[data-preview-active-tile]", [tile]);
+      const controlCursor = new Svg();
+      root.children.set("[data-preview-control-grid]", new Svg());
+      root.children.set("[data-preview-control-cursor]", controlCursor);
       const preview = createResearchPreview(root);
       const halo = root.querySelector("[data-preview-flubber-halo]");
       const outline = root.querySelector("[data-preview-flubber-outline]");
@@ -304,6 +320,23 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       assert.equal(halo.getAttribute("hidden"), "");
       preview.update({ flubber: { showHalo: true } });
       assert.equal(halo.getAttribute("hidden"), null);
+      if (studio) {
+        for (const tileCount of [3, 5, 21, 2001]) {
+          for (const sizePercent of [5, 100]) {
+            preview.update({ x: 0, y: 0, tileCount, sizePercent, responseMode: "stepwise" });
+            assert.equal(controlCursor.getAttribute("hidden"), "");
+            assert.equal(root.querySelector("[data-preview-grid-cursor]").getAttribute("hidden"), "");
+            assert.equal(tile.getAttribute("hidden"), null);
+            assert.equal((tilePath.getAttribute("d").match(/M/g) ?? []).length, 2 * (tileCount - 1));
+            assert.ok(Math.abs(Number(rectangles[0].getAttribute("x")) + Number(rectangles[0].getAttribute("width")) / 2 - 50) < 1e-10);
+            assert.equal(rectangles[0].getAttribute("x"), rectangles[1].getAttribute("x"));
+          }
+        }
+        preview.update({ responseMode: "continuous" });
+        assert.equal(tile.getAttribute("hidden"), "");
+        assert.equal(tilePath.getAttribute("hidden"), "");
+        assert.equal(controlCursor.getAttribute("hidden"), null);
+      }
       preview.destroy();
     }
   } finally {
@@ -357,7 +390,7 @@ test("the application projects design state only to Setup and bypasses planning 
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*\} : \{\}\)/u,
   );
   assert.match(
     previewStateSource,
@@ -381,7 +414,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.match(appSource, /refreshProjection\(\{ designAlreadyProjected: simulatorOwnsDesignProjection \}\)/u);
 
   const previewOnlySource = between(appSource, "function isPreviewOnlyControl(", "function driverValue(");
-  for (const id of ["preview-halo-size", "preview-full-span-duration", "preview-repeat-delay"]) {
+  for (const id of ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"]) {
     assert.match(previewOnlySource, new RegExp(`"${id}"`, "u"));
   }
   assert.match(previewOnlySource, /target\.name === "previewHoldRule"/u);
@@ -393,7 +426,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.match(appSource, /createPreviewResponseSimulator\(\{[\s\S]*?previewDesignPoint = \{ x: point\.x, y: point\.y \};[\s\S]*?projectDesignPreview\(\)/u);
   assert.match(
     appSource,
-    /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?stepSize:[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
+    /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?tileCount:[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
   );
   assert.match(appSource, /previewResponseSimulator\?\.press\(direction\)/u);
   assert.match(appSource, /previewResponseSimulator\?\.release\(direction\)/u);

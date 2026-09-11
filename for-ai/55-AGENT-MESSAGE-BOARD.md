@@ -37,6 +37,27 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-preview-stepwise-tiles
+
+- Owner: **Preview**, segment `preview`, UI Finalization; **open**.
+- Continues isolated `codex/segment-preview-halo-border` from halo checkpoint
+  `1118ffa`; integration owner acknowledged dependent branch continuation and
+  non-overlapping preview seams in `app.js`, `ui-view.js`, renderer and CSS.
+- Requested deliverable: odd tiles-per-axis spinner (3–2001), centered zero,
+  one-tile keyboard steps and responsive outlined active tile in both preview
+  grids. Tile count is transient; saved step size stays reachable under Advanced
+  with unchanged package/Run semantics. No S2 hunks or authority changes.
+- Baseline: 55/55 focused UI/halo/simulator tests. Planned: pure tile bounds and
+  snapping, renderer state/geometry, keyboard simulator, isolation, desktop build.
+- Halo build at `1118ffa` passed; native observation was stopped by Escape and
+  remains unverified. No current native or research qualification is claimed.
+- Tile implementation checks: 59/59 focused tests; full JavaScript suite
+  423/423; desktop build and 8-file closure pass. Invalid tile drafts are
+  explicitly excluded from Start field validation and focus routing.
+- Native rebuild/visual check and integration pending. No mouse/keyboard
+  automation resumed; Rust, physical input, timing, LSL, release/deployment and
+  full accessibility gates deferred because this is transient UI geometry only.
+
 ### 20260911-preview-halo-border
 
 - Owner: **Preview**, segment `preview`, UI Finalization. Status: **open**.

@@ -25,6 +25,7 @@ import {
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
@@ -364,6 +365,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function syncControlValidation(control, { force = false } = {}) {
+    // This draft has its own inline feedback and cannot block experiment Start.
+    if (control?.id === "preview-tile-count") return true;
     if (!isValidationControl(control) || !control.id || !control.willValidate || control.disabled) return true;
     const inactive = control.closest("#fixed-duration-field[hidden], #jitter-durations-field[hidden]") !== null;
     const invalid = !inactive && !control.checkValidity();
@@ -651,14 +654,14 @@ function bindResearchInteractions(root, { surface }) {
 
   function isPreviewOnlyControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-halo-size", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
       || target.name === "previewHoldRule"
     );
   }
 
   function isPreviewResponseControl(target) {
     return target instanceof HTMLInputElement && (
-      ["input-step-size", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      ["preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
       || target.name === "previewHoldRule"
     );
   }
@@ -667,7 +670,7 @@ function bindResearchInteractions(root, { surface }) {
     previewResponseSimulator?.configure({
       mode: responsePreviewMode,
       fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
-      stepSize: numberValue("input-step-size", 0.1),
+      tileCount: value("preview-tile-count"),
       holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
       repeatDelayMs: numberValue("preview-repeat-delay", 500),
     });
@@ -737,6 +740,7 @@ function bindResearchInteractions(root, { surface }) {
       ...(design ? {
         displayMode: feedbackPreviewMode,
         responseMode: responsePreviewMode,
+        tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
       } : {}),
       colors,
       flubber: {
@@ -786,6 +790,14 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPreviewDesignControls() {
+    const tileInput = query("#preview-tile-count");
+    const tileHelp = query("#preview-tile-count-help");
+    const tileCount = previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT;
+    const validTileCount = parsePreviewTileCount(tileInput?.value) !== null;
+    tileInput?.setAttribute("aria-invalid", String(!validTileCount));
+    if (tileHelp) tileHelp.textContent = validTileCount
+      ? `Odd number, 3–2001. ${tileCount} × ${tileCount} tiles: ${(tileCount - 1) / 2} steps each side of zero.`
+      : `Enter an odd whole number from 3 to 2001. Preview remains at ${tileCount} × ${tileCount}.`;
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
@@ -810,7 +822,7 @@ function bindResearchInteractions(root, { surface }) {
     if (simulatorHelp) {
       simulatorHelp.textContent = responsePreviewMode === "continuous"
         ? "Focus the map and hold the arrow keys to preview full-span travel time. Opposing directions cancel."
-        : "Focus the map and use the arrow keys to preview steps and the selected hold rule.";
+        : "Focus the map and use the arrow keys to move one outlined tile at a time.";
     }
   }
 
@@ -4246,7 +4258,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]');
+      const invalid = query('[aria-invalid="true"]:not(#preview-tile-count)');
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
       const focusTarget = isValidationControl(invalid)

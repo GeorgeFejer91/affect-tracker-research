@@ -70,7 +70,7 @@ test("configuration and points clamp safely while invalid enum values retain the
   simulator.configure({
     mode: "continuous",
     fullSpanDurationMs: -1,
-    stepSize: 40,
+    tileCount: 3,
     holdRule: "repeatWhileHeld",
     repeatDelayMs: Number.POSITIVE_INFINITY,
   });
@@ -80,6 +80,7 @@ test("configuration and points clamp safely while invalid enum values retain the
     mode: "continuous",
     fullSpanDurationMs: 250,
     stepSize: 1,
+    tileCount: 3,
     holdRule: "repeatWhileHeld",
     repeatDelayMs: 500,
     heldDirections: [],
@@ -88,7 +89,7 @@ test("configuration and points clamp safely while invalid enum values retain the
   simulator.configure({
     mode: "invalid",
     fullSpanDurationMs: 50_000,
-    stepSize: -5,
+    tileCount: 2001,
     holdRule: "invalid",
     repeatDelayMs: 20_000,
   });
@@ -148,7 +149,7 @@ test("opposing continuous directions cancel without accumulating deferred travel
 test("stepwise separate-press mode applies exactly one clamped tile step per edge", () => {
   const changes = [];
   const { clock, simulator } = createHarness((state) => changes.push(state));
-  simulator.configure({ mode: "stepwise", stepSize: 0.25, holdRule: "separatePresses" });
+  simulator.configure({ mode: "stepwise", tileCount: 9, holdRule: "separatePresses" });
   simulator.press("left", 0);
   simulator.press("left", 100);
   clock.frame(5_000);
@@ -173,7 +174,7 @@ test("repeat mode steps immediately and once per elapsed repeat interval", () =>
   const { clock, simulator } = createHarness();
   simulator.configure({
     mode: "stepwise",
-    stepSize: 0.1,
+    tileCount: 21,
     holdRule: "repeatWhileHeld",
     repeatDelayMs: 500,
   });
@@ -193,7 +194,7 @@ test("opposing held inputs cancel repeat ticks and skipped ticks never catch up"
   const { clock, simulator } = createHarness();
   simulator.configure({
     mode: "stepwise",
-    stepSize: 0.2,
+    tileCount: 11,
     holdRule: "repeatWhileHeld",
     repeatDelayMs: 500,
   });
@@ -240,7 +241,7 @@ test("mode and hold-rule changes release active keys without moving the point", 
   assert.deepEqual(simulator.snapshot().heldDirections, []);
   assert.equal(clock.pending, 0);
 
-  simulator.configure({ holdRule: "repeatWhileHeld", stepSize: 0.2 });
+  simulator.configure({ holdRule: "repeatWhileHeld", tileCount: 11 });
   simulator.press("up", 400);
   assertPoint(simulator.snapshot(), 0, 0.2);
   clock.set(700);

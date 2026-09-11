@@ -120,6 +120,7 @@ function previewOverlayMarkup({ includeFace = false } = {}) {
     >
       <canvas class="preview-grid-canvas" data-preview-grid-canvas aria-hidden="true"></canvas>
       <svg data-preview-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        ${includeFace ? '<path data-preview-tile-lines class="preview-tile-lines" hidden></path><g data-preview-active-tile class="preview-active-tile" hidden><rect class="preview-tile-contrast"></rect><rect class="preview-tile-highlight"></rect></g>' : ""}
         <line data-preview-grid-line class="preview-grid-lines" x1="25" y1="0" x2="25" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="50" y1="0" x2="50" y2="100"></line>
         <line data-preview-grid-line class="preview-grid-lines" x1="75" y1="0" x2="75" y2="100"></line>
@@ -174,12 +175,8 @@ function previewMarkup(label, { studio = false } = {}) {
           <div class="preview-control-surface" tabindex="0" role="group" aria-label="Response simulator on the valence and arousal color field" aria-describedby="preview-response-simulator-help" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown">
             <canvas id="main-gradient-canvas" data-preview-control-canvas width="240" height="240" aria-hidden="true"></canvas>
             <svg data-preview-control-grid viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-              <line data-preview-control-tile-line x1="25" y1="0" x2="25" y2="100"></line>
-              <line data-preview-control-tile-line x1="50" y1="0" x2="50" y2="100"></line>
-              <line data-preview-control-tile-line x1="75" y1="0" x2="75" y2="100"></line>
-              <line data-preview-control-tile-line x1="0" y1="25" x2="100" y2="25"></line>
-              <line data-preview-control-tile-line x1="0" y1="50" x2="100" y2="50"></line>
-              <line data-preview-control-tile-line x1="0" y1="75" x2="100" y2="75"></line>
+              <path data-preview-tile-lines class="preview-tile-lines"></path>
+              <g data-preview-active-tile class="preview-active-tile"><rect class="preview-tile-contrast"></rect><rect class="preview-tile-highlight"></rect></g>
               <rect data-preview-control-outline x="0.5" y="0.5" width="99" height="99" fill="none"></rect>
               <circle data-preview-control-cursor cx="50" cy="50" r="4"></circle>
             </svg>
@@ -195,6 +192,7 @@ function previewMarkup(label, { studio = false } = {}) {
           <p id="preview-response-simulator-help">Focus the map and use the arrow keys to try the selected response behavior.</p>
           <button id="preview-response-reset" type="button">Reset to neutral</button>
         </div>
+        <output data-preview-tile-status class="field-help" role="status" aria-live="polite" aria-atomic="true"></output>
       </section>
 
       <section class="preview-response-settings" aria-labelledby="preview-response-title">
@@ -208,14 +206,14 @@ function previewMarkup(label, { studio = false } = {}) {
           <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
         </div>
         <div data-response-preview-panel="stepwise">
-          <label class="field"><span>Step Size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
+          <label class="field"><span>Tiles per axis</span><input id="preview-tile-count" type="number" min="3" max="2001" step="2" value="21" aria-describedby="preview-tile-count-help"><output id="preview-tile-count-help" class="field-help">Odd number, 3–2001. 21 × 21 tiles: 10 steps each side of zero.</output></label>
           <fieldset class="check-group">
             <legend>Hold rule</legend>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
           </fieldset>
           <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
-          <p class="field-help">Draft preview only: hold behavior and repeat delay are not saved with the experiment. Step size remains part of the saved input settings.</p>
+          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Advanced preview settings.</p>
         </div>
       </section>
 
@@ -233,6 +231,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <summary>Advanced preview settings</summary>
         <div class="disclosure-content">
           <p class="field-help">These saved controls refine visibility, position, rendering, colors, and affect mappings.</p>
+          <label class="field"><span>Saved input step size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
           <section aria-labelledby="preview-visibility-title">
             <h3 id="preview-visibility-title">Visibility and position</h3>
             <div class="field-grid">

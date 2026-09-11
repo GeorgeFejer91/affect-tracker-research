@@ -485,8 +485,13 @@ The package-embedded `InputBindingV1` object is the one binding authority.
 
 The Setup-only feedback-design preview may additionally demonstrate proposed
 **Continuous** and **Stepwise** response behavior. The continuous draft may
-show a bounded full-span press duration. The stepwise draft may tile the Grid
-and compare separate physical presses with a bounded wait-and-repeat hold rule.
+show a bounded full-span press duration. The stepwise draft uses a custom odd
+tile count per axis (3–2001), equal steps either side of a central zero tile,
+and an outlined active tile instead of the continuous cursor. Arrow edges move
+one tile; changing count snaps to the nearest tile and releases held input.
+The saved input step size remains separately reachable under Advanced preview
+settings. Stepwise may compare separate physical presses with a bounded
+wait-and-repeat hold rule.
 This is transient design state only: it does not serialize into
 `InputBindingV1`, alter native/browser input authority, change OS-repeat
 suppression, enter Start or Run, or produce samples, events, LSL, recovery, or
