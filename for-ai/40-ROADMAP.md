@@ -98,6 +98,13 @@ The current `research/video-protocol-v1` working candidate contains:
 
 ## Bounded Setup feedback-design preview — non-authoritative working slice
 
+The 2026-09-11 `accordion` UI follow-up gives every panel the same final
+confirmation footer, including Review below its Start controls, and strengthens
+the warm breathing edge with outward-fading layers. Review state and Start
+authority are unchanged. The isolated candidate passes 425/425 JavaScript
+checks, desktop frontend closure, and 8/8 offscreen Edge footer/alignment/glow
+checks. These are presentation receipts, not installed or research qualification.
+
 The current bounded interface slice may add a polished Setup-only comparison of
 classic Flubber, a 2D affect Grid, and a project-authored procedural responsive
 Face driven solely by the existing transient preview x/y. It may present a
