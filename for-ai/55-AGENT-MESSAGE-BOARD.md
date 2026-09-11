@@ -105,6 +105,27 @@ file; follow the integration-owner collection procedure in the workflow.
   including its P7 restore dependency. This preview checkpoint does not claim
   the unfinished multi-segment cleanup or any native/installed qualification.
 
+### 20260911-p1-workspace-library-start
+
+- Owner: **S1**, segment `P1 Workspace & Video Library`; **acknowledged**.
+  Branch `codex/segment-p1-workspace-library`, isolated worktree
+  `D:\GitHub\affect-tracker-research-workspace-library`, exact base
+  `6be0a7952c0c224aa704552e8858a3caf754824b`.
+- Assigned checklist: P1-03 through P1-07. First bounded Backend Verification
+  slice repairs the browser import destination/package-root handoff and adds
+  focused import/rescan/export-path regression evidence without mutating a
+  researcher workspace during tests.
+- Allowed shared seams: P1-owned browser/native workspace and video-catalogue
+  producers, their focused tests, and P1 contribution registration to P7's
+  shared authoring registry. P3 consumes immutable asset identity and readable
+  annotations; P4/P6 consume oriented display geometry plus catalogue revision;
+  S2 remains questionnaire/storage owner; P7 owns master composition and export.
+- Q04 annotation normalization/collision policy and Q05 portable-root JSON shape
+  remain explicit open decisions. The import-root defect and metadata producer
+  interfaces do not depend on choosing those policies. No Runner, publication,
+  GUI qualification, canonical integration merge, or unrelated UI cleanup is
+  included in this pass.
+
 ### 20260911-roadmap-agent-coordination-audit
 
 - Owner: **Create segment catalogue**, segment `roadmap`; **ready** coordination

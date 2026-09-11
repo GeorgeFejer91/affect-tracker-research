@@ -3167,8 +3167,8 @@ function bindResearchInteractions(root, { surface }) {
         announce("Fixed package asset rescan complete.");
         return;
       }
-      if (status) status.textContent = "Scanning stimuli/ recursively…";
-      const catalogue = await workspace.rescanVideos();
+      if (status) status.textContent = "Scanning fixed assets/stimuli/ video library recursively…";
+      const catalogue = await workspace.rescanPackageVideos();
       const seenLocations = new Set();
       for (const entry of catalogue) {
         const location = `stimuli/${entry.relativePath}`;
@@ -3188,7 +3188,7 @@ function bindResearchInteractions(root, { surface }) {
       schedulePlanRefresh();
       if (status) {
         status.dataset.state = "ready";
-        status.textContent = `Rescan complete. ${catalogue.length} complete video file${catalogue.length === 1 ? "" : "s"} found.`;
+        status.textContent = `Rescan complete. ${catalogue.length} complete video file${catalogue.length === 1 ? "" : "s"} found under assets/stimuli/.`;
       }
       announce("Workspace rescan complete.");
     } catch (error) {

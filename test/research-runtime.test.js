@@ -1388,7 +1388,7 @@ test("strict settings JSON rejects duplicate keys, invalid numbers, and oversize
   );
 });
 
-test("workspace imports preserve safe relative subfolders and never overwrite", async () => {
+test("workspace imports preserve safe relative subfolders beneath the package asset root and never overwrite", async () => {
   const root = new MemoryDirectoryHandle();
   const workspace = new BrowserResearchWorkspace(root);
   await workspace.initialize();
@@ -1396,7 +1396,15 @@ test("workspace imports preserve safe relative subfolders and never overwrite", 
   Object.defineProperty(file, "webkitRelativePath", { value: "Pool One/Clip One.mp4" });
   assert.deepEqual(await workspace.importVideoFiles([file]), ["Pool One/Clip One.mp4"]);
   await assert.rejects(workspace.importVideoFiles([file]), (error) => error.code === "already-exists");
-  assert.equal((await workspace.rescanVideos())[0].relativePath, "Pool One/Clip One.mp4");
+  assert.deepEqual(await workspace.rescanVideos(), [], "legacy stimuli/ remains readable but receives no new imports");
+  const imported = await workspace.rescanPackageVideos();
+  assert.equal(imported[0].relativePath, "Pool One/Clip One.mp4");
+  assert.equal(await (await imported[0].fileHandle.getFile()).text(), "1234");
+  assert.equal(root.children.get("stimuli").children.has("Pool One"), false);
+  assert.equal(
+    root.children.get("assets").children.get("stimuli").children.has("Pool One"),
+    true,
+  );
   assert.throws(() => normalizeWorkspaceRelativePath("../escape.mp4"), /unsafe/u);
   assert.equal(isSupportedVideoName("example.WEBM"), true);
   assert.equal(isSupportedVideoName("example.csv"), false);
