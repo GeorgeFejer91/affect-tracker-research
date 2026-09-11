@@ -1,0 +1,246 @@
+# Segment redundancy and visual compactness audit
+
+This is the running visual cleanup checklist requested on 2026-09-11.
+It supplements, rather than replaces, the capability catalogue in
+[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), the dated functional
+redundancy inventory D01–D18 in [`61-IMPLEMENTATION-AUDIT.md`](./61-IMPLEMENTATION-AUDIT.md),
+and the implementation sequence in [`62-PLANNER-CLOSURE-PLAN.md`](./62-PLANNER-CLOSURE-PLAN.md).
+The charter remains the product authority. A cleaner screen is not proof that
+its recipe contribution or Runner implementation is complete.
+
+## Scope and ownership
+
+Stage: **UI Finalization**. Inspect every actual rendered Planner segment for
+repeated functions, controls and explanations; unnecessary panels and spacing;
+clear grouping, labels, error feedback and keyboard access. Apply the locally
+installed Uncodixfy skill, retaining the established app palette and the
+researcher's explicitly requested Flubber/halo and confirmation effects.
+
+Root coordination owns this record and `scripts/qualification/segment-visual-audit.mjs`.
+Existing P1–P7 tasks own their segment fixes. The integration task owns source
+convergence, the old Experiment shell and shared navigation. The divider owner
+may adjust narrow section headers; Preview/P5 owns preview content and its
+scroll layout. Do not create another implementation owner for these seams.
+
+Every finding below needs its own evidence. “Owner ready” is a handoff state,
+not evidence of canonical integration. “Rendered” means the real bootstrapped
+application was captured and a person or visual agent inspected the image;
+source searches and zero-overflow assertions alone do not satisfy that term.
+
+## Capture method and baseline
+
+The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
+It still has the historical eight sections. New P4/P6 views and consolidated
+P5/P7 require another pass after integration; do not call the old eight views
+the final seven-segment design.
+
+The reusable capture script runs the actual `bootResearchUi()` in an isolated
+headless browser and fresh process-local profiles. It opens each registered
+section through the application controller, uses exact 1280×900 and 800×700
+iframe viewports, and scrolls through long sections with overlap. It collects
+the source commit, dirty-source guard, viewport, section height, visible
+controls, duplicate IDs, horizontal overflow and runtime errors. It uses the
+application's real reduced-motion preference for settled static captures;
+this is not animation or physical-input qualification. No user window is
+attached or controlled. The app's default data state is recorded explicitly.
+
+Local evidence directories:
+
+- `D:/GitHub/.affect-preview-checks/segment-audit-bed461b-v2`: 11 screenshots of
+  Input and Review, including both viewports and all Review pages.
+- `D:/GitHub/.affect-preview-checks/segment-audit-bed461b-sections`: 17 screenshots
+  covering Workspace, Questionnaires, Stimuli, Experiment, Visual and Advanced.
+- `D:/GitHub/.affect-preview-checks/integration-20260911`: additional inspected
+  integrated preview, resize, confirmation and enlarged-text captures.
+
+Both settled baseline manifests report stable source and no runtime errors or
+horizontal pane overflow. These results do not establish aesthetic quality,
+all control behavior, contrast compliance or backend correctness. The first
+`segment-audit-bed461b` experiment measured during accordion motion and is
+superseded; do not use its geometry or page coverage as an acceptance receipt.
+Dark space outside a controlled iframe belongs to the capture wrapper, not
+the application layout.
+
+## Segment checklist
+
+### P1 — Workspace and video library
+
+- [ ] **V01** Finish the single import/catalogue home in P1 and remove the
+  “Manage videos” detour after relocation. Keep choose-workspace and open-folder
+  actions distinct, and preserve historical recipe loading until the P7 path
+  replaces it. Coordinate the existing P3 importer handlers; do not duplicate them.
+- [ ] **V02** Retain one short directory explanation and one live status/error
+  region. Remove the repeated initial “Set a work directory to begin” sentence.
+  Owner handoff `9f2d84b` implements this visual change; integrated reinspection
+  is pending.
+- [ ] **V03** Verify empty, ready, populated-library and error states through
+  actual application events. The initial P1 populated-text fixture directly
+  edited DOM labels; it did not prove readiness transitions and left the root
+  amber. Disabled Explorer buttons are expected on the browser surface, so do
+  not enable them just for a screenshot. Revised fixture requested.
+
+The initial ready handoff has four inspected app screenshots in
+`D:/GitHub/affect-tracker-research-workspace-library/artifacts/p1-workspace-visual`.
+Narrow rows may stack to preserve readable labels and target sizes. Do not
+compress them by making actions difficult to hit or removing path/error text.
+
+### P2 — Questionnaires and languages
+
+- [ ] **V04** Remove obsolete parallel questionnaire dialogs/import chains and
+  styles while retaining the active sheet editor, full-definition import,
+  canonical validation, language/family identity and scientific provenance.
+  Owner cleanup `a7bda6a`, followed by import-adoption repair `ae47df6`, was
+  collected into canonical `ba2110f`. Inspect that actual rendered result.
+- [ ] **V05** Audit the active editor's empty, populated and invalid-cell states
+  at desktop and narrow pane widths. Consolidate repeated import instructions,
+  toolbars and status copy. Keep language labels and option-label/score
+  distinctions explicit. The P2 owner is producing real bootstrap captures.
+
+Full questionnaire definitions and table projections are different representations,
+not interchangeable redundant exports. Validated wording, provenance and
+independent validators must survive layout cleanup.
+
+### P3 — Versions, named ISIs and event markers
+
+- [ ] **V06** Keep one version table with one column per version and chronological
+  video-ID/ISI-name rows. Place its ISI dictionary and relevant validation beside
+  it. Remove inert pool/stimulus-dialog handlers and stale import entry points
+  through the P3 owner; retain active library rendering until P1 relocation.
+- [ ] **V07** Inspect a populated named-ISI table, an invalid reference and long
+  IDs at desktop/narrow widths. Contain intentional table scrolling within the
+  table, keep row/column error context visible, and retain text identities as
+  well as video/ISI colors. Avoid repeated marker/JSON descriptions around the
+  same table.
+- [ ] **V08** Reinspect P3's final handoff after its accepted edge rules land.
+  The S3 task reports the user's explicit approval of repeated videos/ISIs,
+  leading/consecutive/final ISIs, exact order, unequal column lengths with
+  trailing padding, interior-blank rejection, stable ISI names, duplicate
+  durations, referenced-ISI deletion protection and invalidation after duration
+  edits. S3 owns the exact Q02/Q14 catalogue update. Allocation policy remains
+  a Runner concern under the newer user decision.
+
+The old baseline's read-only external-protocol display is not the final table.
+Do not mistake a screenshot of that display for coverage of named-ISI authoring.
+
+### P4 — Screen and layout
+
+Independent review inspected all four owner images at clean `3094bb8` and
+matched all 13 source hashes and six artifact hashes in the owner's receipt:
+`D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+
+- [ ] **V09** Pair width/height and centre X/Y in two-column groups. The current
+  wide 3+1 arrangement separates related fields and leaves empty cells. Keep
+  the narrow single-column fallback and explicit units.
+- [ ] **V10** Put missing actual-video/envelope information next to the
+  miniature. Keep one persistent draft notice and a concise current status;
+  move conventions into a disclosure. Remove internal “Q08” and “producer
+  interfaces” terms from researcher-facing copy.
+- [ ] **V11** Identify the video and maximum-animation shapes in the diagram
+  legend; preserve the dashed reference when boundaries coincide, including
+  forced colors. Do not let the video outline obscure its reference.
+- [ ] **V12** Capture the full real application at ordinary desktop height and
+  narrow pane width, including bottom status/reset, physical mode, portrait
+  video and invalid geometry. The initial 1800px images omit lower controls;
+  the 360px image is a standalone fixture.
+- [ ] **V13** Make the transition from legacy size/position to P4 geometry
+  explicit. P4 reference-relative diameter/offset and the old P5 “Size (% of
+  stage)” cannot appear to be two equivalent geometry authorities.
+
+P4 remains a non-exportable draft until its conventions and real dependency
+contracts are accepted. Compact warnings must still communicate that limit.
+
+### P5 — Flubber, input and live preview
+
+- [ ] **V14** Remove old Input, Visual and Advanced wrappers once all retained
+  settings have their tested destination beside Preview or in Review. Ready
+  consolidation handoff `87c3d6d` is awaiting integration at this record's
+  baseline. Preserve the real input-test receipt separately from the simulator.
+- [ ] **V15** Remove the redundant absolute “Selected feedback · design preview”
+  caption, which overlaps the Flubber at enlarged text and constrained width.
+  Consolidate repeated renderer/draft captions and map explanations. Keep one
+  clear distinction between saved settings and preview-only behavior.
+- [ ] **V16** Preserve useful controls space below the pinned preview. The
+  inspected 320px capture leaves only 149px for a 1,339px settings document.
+  Reduce repeated copy/nesting first, then use the existing whole-pane scroll
+  fallback when meaningful settings space cannot fit. Preserve pinning where
+  it remains usable, as the user requested.
+- [ ] **V17** Flatten extra grid-dimension boxes and repeated labels; retain the
+  semantic fieldset and clear square/custom dimensions. Keep task labels legible
+  rather than shrinking them to make verbose instructions fit.
+- [ ] **V18** Reinspect actual Controls, Appearance, expanded Advanced, the
+  color dialog and long custom anchor labels at desktop and 320px preview
+  widths. P5's own later render found binding/reset and color-row collisions
+  despite zero pane overflow; its separate polish pass owns those fixes.
+
+Colors, explicit Recolor, halo and confirmation breathing are user-requested
+features. They are not candidates for deletion merely because a generic style
+guide discourages ornamental UI. The overlay-caption defect concerns text
+placement, not the Flubber outline or halo.
+
+### P6 — Optional XR layout
+
+- [ ] **V19** Mount a distinct optional XR segment and remove dependence on the
+  deleted Visual wrapper. Align P7 routing and contribution guards atomically.
+- [ ] **V20** Inspect actual bootstrapped disabled, populated and error states
+  at desktop/narrow width. Keep enablement, essential distance/size/angle inputs
+  and the spatial preview together; disclose advanced conventions rather than
+  repeating implementation prose around the diagram.
+- [ ] **V21** Verify that inspection-camera rotation remains visually distinct
+  from authored geometry, and pending envelope/fit limitations stay next to the
+  preview. No screenshot can claim headset tracking, runtime or APK qualification.
+
+P6's later user answer accepts head-forward setup without eye tracking,
+world-fixed placement during the attempt, stopping on tracking loss and
+recentering only between attempts. Preserve this decision; do not re-ask it
+or restore an earlier pending warning. Final owner app captures are pending.
+
+### P7 — Review and recipe export
+
+- [ ] **V22** Present one actionable recipe/export path, with retained sampling,
+  output and LSL settings in their agreed home. Keep save/acceptance failures
+  and stale revisions explicit. Collect P1 identity and P7 legacy destinations
+  before deleting old Experiment.
+- [ ] **V23** Compact the preflight presentation without merging distinct
+  checks. The baseline repeats the same missing `experiment.json` explanation
+  across three rows, and every row has its own border and “Blocking” label.
+  Group repeated prerequisites and use a compact status list/table while
+  preserving each issue and focus destination.
+- [ ] **V24** Reduce default disclosure height for detailed provenance and
+  legacy Runner preparation when no package exists. The default baseline is
+  2,352px tall at desktop and 2,894px at 800×700. Hashes, participant selection,
+  transient details and language recovery are retained capabilities, not safe
+  deletions. Preserve all Start gates and visible actionable errors.
+- [ ] **V25** Replace implementation prose such as “fail-closed” and
+  “package-owned tree” with concise researcher-facing actions. Inspect the
+  final integrated Review through its confirmation footer, plus valid, stale,
+  cancelled-save and failed-save states. P7's feature handoff and independent
+  visual pass remain distinct receipts.
+
+### Shared navigation and final integration
+
+- [ ] **V26** Reflow section titles/summaries according to the actual Setup
+  pane width. At 432px inside a wide viewport, same-row summaries squeeze the
+  title. Reuse the existing two-row pattern through a pane container query;
+  do not hide labels or shrink typography to solve it.
+- [ ] **V27** Remove the old fixed “Eight decisions” slogan. Keep the dynamic
+  progress count and shorten repeated footer instructions while preserving
+  reviewed/dirty/ready distinctions, descriptions, focus and confirmation motion.
+- [ ] **V28** Audit the combined clean commit, not only independent branches:
+  expected registry, unique retained fields, valid labels/ARIA references,
+  navigation/error focus, P4/P6 mounts, saved values and invalidation behavior.
+  Capture all final registered sections at both viewports and inspect their
+  full content, including newly consolidated Preview settings.
+
+## Completion rules
+
+For each item, replace pending text with its exact integrated source commit,
+the inspected screenshot paths/state/viewport, and relevant focused regression
+receipt. Check the box only after the scoped change is integrated and verified.
+An owner-only screenshot can justify a fix or review handoff, but does not
+close the combined-app item. Record exceptions explicitly instead of silently
+dropping unresolved work.
+
+Keep scientific and recovery evidence, frozen schema readers, browser/Rust
+independent validation, platform authority and physical-input gates. They are
+intentional boundaries in D04 and D13–D18, not UI redundancy. This audit does
+not approve new product contracts or qualify experiment execution.

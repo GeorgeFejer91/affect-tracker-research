@@ -62,6 +62,25 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260911-roadmap-rendered-compactness-audit
+
+- Owner: **Create segment catalogue**, `roadmap` coordination/visual QA;
+  **open**, user explicitly requested all-segment Uncodixfy cleanup and actual
+  rendered verification. Stage: UI Finalization.
+- Owns only `64-SEGMENT-VISUAL-AUDIT.md`, the new background
+  `scripts/qualification/segment-visual-audit.mjs` and this unique board entry.
+  Existing segment owners retain app edits; integration retains shared merging.
+- Isolated `codex/segment-catalogue-current-state`, app base `bed461b`. Collected
+  28 settled actual-app baseline screenshots across all eight historical
+  sections at 1280×900/800×700; stable source and no runtime/pane-overflow errors.
+  Earlier transition-time capture is superseded. New P4/P6/P5/P7 need final
+  combined reinspection. Visual agents independently inspected Preview/P4/P1.
+- Concrete findings and owned follow-ups are V01–V28 in the new audit record.
+  No app capability box is closed by delegation, source inspection or a clean
+  screenshot alone. Background monitor now tracks rendered compactness too.
+- Deferred claims: current installed app, physical/native input, backend
+  qualification, Runner, publishing and whole-Planner completion.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
