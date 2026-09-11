@@ -488,8 +488,13 @@ function bindResearchInteractions(root, { surface }) {
       if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
       if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
       if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      if (id === "feedback") {
+        const navigationStatus = query("[data-feedback-nav-status]");
+        if (navigationStatus) navigationStatus.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      }
       if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed
-        ? "Reviewed for this setup session. Use the section header to open or close it."
+        ? id === "feedback" ? "Reviewed for this setup session. Flubber & Controls stays available."
+          : "Reviewed for this setup session. Use the section header to open or close it."
         : "Not reviewed yet. Confirm once to mark this section reviewed.";
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed;
@@ -506,7 +511,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
-    openSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    openSection = sectionId === "feedback" ? "feedback"
+      : sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
     const panelChanges = [];
     let focusTarget = null;
     root.querySelectorAll("[data-setup-section]").forEach((section) => {
@@ -526,9 +532,11 @@ function bindResearchInteractions(root, { surface }) {
         panelChanges.push([panel, isOpen]);
       }
     });
+    if (openSection === "feedback") focusTarget = query("#preview-title");
     focusTarget?.focus();
+    if (openSection === "feedback") focusTarget?.scrollIntoView({ block: "start", behavior: "auto" });
     panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
-    if (surface === "tauri" && openSection === "input") {
+    if (surface === "tauri" && openSection === "feedback") {
       queueMicrotask(() => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputBindingChanged, {
         bubbles: true,
         detail: Object.freeze({ binding: structuredClone(inputBinding) }),
@@ -552,7 +560,7 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection(null);
     renderSetupReviewState();
     announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
       : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
   }
 
@@ -1007,7 +1015,7 @@ function bindResearchInteractions(root, { surface }) {
       : "N/A for this continuous / absolute input.";
     const previewInput = query("#preview-input-source");
     if (previewInput) previewInput.textContent = preset.label;
-    const summary = query('[data-section-summary="input"]');
+    const summary = query('[data-section-summary="feedback"]');
     if (summary) summary.textContent = preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
   }
 
@@ -1753,9 +1761,7 @@ function bindResearchInteractions(root, { surface }) {
       pass("questionnaires") || selectedPendingFinalization(),
       pass("stimuli") && pass("plan"),
       pass("experiment"),
-      pass("input"),
-      Boolean(protocolSettingsSnapshot) || selectedPendingFinalization(),
-      pass("timing") && pass("lsl") && (surface !== "tauri" || pass("playback")),
+      pass("input") && (Boolean(protocolSettingsSnapshot) || selectedPendingFinalization()),
       items.every(({ result }) => result !== "block"),
     ].filter(Boolean).length;
     readySetupSectionCount = readySections;
@@ -4233,6 +4239,10 @@ function bindResearchInteractions(root, { surface }) {
       const invalid = query('[aria-invalid="true"]:not([data-preview-grid-input]):not([data-preview-appearance-input])');
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
+      // P5 is persistent; reveal nested disclosures before focusing a saved field.
+      for (let parent = invalid?.parentElement; parent && parent !== root; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+      }
       const focusTarget = isValidationControl(invalid)
         ? invalid
         : invalid?.querySelector?.("input, select, textarea, button");

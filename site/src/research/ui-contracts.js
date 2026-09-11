@@ -25,9 +25,7 @@ export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "questionnaires", label: "Languages & Study Assets" }),
   Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
   Object.freeze({ id: "experiment", label: "Experiment" }),
-  Object.freeze({ id: "input", label: "Controller / Input Device" }),
-  Object.freeze({ id: "visual", label: "Visual Feedback" }),
-  Object.freeze({ id: "advanced", label: "Advanced" }),
+  Object.freeze({ id: "feedback", label: "Flubber & Controls" }),
   Object.freeze({ id: "review", label: "Review & Start" }),
 ]);
 
