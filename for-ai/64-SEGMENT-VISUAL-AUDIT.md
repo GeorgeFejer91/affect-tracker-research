@@ -278,12 +278,14 @@ Subsequent owner handoffs, still requiring combined verification:
   Root inspected the final desktop/narrow scene and narrow error screenshots:
   legend and readouts are readable, profile tools are disclosed and the footer
   is visible. Evidence: `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911`.
-- P7 `06d14fe` compactness source: root inspected empty/populated/error Review
-  and lower narrow controls. Grouped prerequisites and simple status rows are
-  clearer; detailed sections are collapsed. The lower language row still
-  squeezes its status into a narrow column beside a wide button; owner is
-  wrapping that row and recapturing it. New sequential acceptance/name-save
-  semantics remain a distinct pending pass.
+- P7 `6bac40f` includes `06d14fe` compactness and the lower-row follow-up. Root
+  inspected empty/populated/error Review, then final lower, expanded details
+  and legacy narrow captures. The language status/help now spans the available
+  width with its button below; the footer and retained details remain readable.
+  The final receipt records reduced motion, zero document scroll and 27 actual
+  bootstrap checks. No remaining material P7 visual defect was established in
+  these states. New sequential acceptance/name-save semantics and combined
+  source verification remain distinct pending work.
 - Integration candidate `c7ba103` removes old Experiment/Input/Visual/Advanced
   with retained destinations; canonical was still `ba2110f` when reported.
   Do not present the isolated candidate as the current installed application.
