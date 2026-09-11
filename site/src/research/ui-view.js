@@ -55,6 +55,7 @@ export function describeInputToken(token) {
 }
 
 const SECTION_SUMMARIES = Object.freeze({
+  xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
   experiment: "Identity and acquisition · 130 Hz",
   stimuli: "Externally ordered video protocol",

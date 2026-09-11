@@ -6,10 +6,10 @@ const numericField = (id, label, value, min, max, step) => `
 
 export function xrLayoutEditorMarkup() {
   return `<div class="xr-layout-editor" data-xr-layout-editor>
-    <h3>VR screen layout</h3>
     <label class="check-field"><input type="checkbox" data-xr-enabled><span>Design a screen for WebXR</span></label>
-    <p class="field-help">A flat video screen fixed in virtual space. This authoring profile requires a future WebXR Runner.</p>
+    <p class="field-help">Set the size and position of a flat screen in virtual space. WebXR playback is planned.</p>
     <div data-xr-content hidden>
+      <p class="field-error" id="xr-layout-error" data-xr-error role="alert" hidden></p>
       <fieldset class="xr-profile-fields"><legend>Screen position</legend>
         <div class="field-grid">
           ${numericField("video.distanceMetres", "Distance from setup viewer (m)", 2, 0.1, 100, "any")}
@@ -34,13 +34,13 @@ export function xrLayoutEditorMarkup() {
           </div>
         </details>
       </fieldset>
-      <fieldset class="xr-profile-fields"><legend>Screen tilt</legend>
+      <details class="inner-disclosure"><summary>Screen tilt</summary><div class="disclosure-content">
         <div class="field-grid">
           ${numericField("video.yawDegrees", "Yaw (°)", 0, -80, 80, "any")}
           ${numericField("video.pitchDegrees", "Pitch (°)", 0, -80, 80, "any")}
           ${numericField("video.rollDegrees", "Roll (°)", 0, -180, 180, "any")}
         </div>
-      </fieldset>
+      </div></details>
       <fieldset class="xr-profile-fields"><legend>Feedback footprint</legend>
         <label class="check-field"><input type="checkbox" data-xr-field="feedback.enabled" checked><span>Include adjacent feedback</span></label>
         <div class="field-grid">
@@ -49,7 +49,7 @@ export function xrLayoutEditorMarkup() {
           ${numericField("feedback.diameterMetres", "Maximum footprint diameter (m)", 0.25, 0.001, 100, "any")}
           ${numericField("feedback.minimumGapMetres", "Minimum screen gap (m)", 0.02, 0, 10, "any")}
         </div>
-        <p class="field-help">Offsets use the screen's local axes, including its tilt. The footprint reserves space for the complete animation; appearance comes from Flubber &amp; Controls.</p>
+        <p class="field-help">Offsets follow the tilted screen's axes. Diameter includes the complete animation and halo; edit appearance in Flubber &amp; Controls.</p>
       </fieldset>
       <details class="inner-disclosure"><summary>Setup alignment</summary><div class="disclosure-content">
         <p>Head-forward at setup, with gravity defining up. Content stays fixed when the participant moves. Re-centering is between attempts; tracking loss stops the attempt.</p>
@@ -59,6 +59,7 @@ export function xrLayoutEditorMarkup() {
         <label class="field"><span>Inspect video fit</span><select data-xr-media disabled><option value="">Authored screen</option></select></label>
         <div data-xr-scene></div>
         <figcaption>3D inspection preview. Viewing angles refer to the initial setup viewpoint; this is not a headset field-of-view simulation.</figcaption>
+        <p class="field-help">From the setup viewer: +x is right, +y is up, −z is forward. Rectangles show the screen and fitted video. The circle reserves feedback space; the dashed square shows the connected animation bound.</p>
       </figure>
       <div class="xr-view-controls" role="group" aria-label="Inspect the 3D layout">
         <button type="button" data-xr-view="front">Front</button><button type="button" data-xr-view="side">Side</button>
@@ -67,14 +68,15 @@ export function xrLayoutEditorMarkup() {
         <label class="field"><span>Inspection elevation (°)</span><input type="range" data-xr-camera="elevation" min="-90" max="90" value="20"></label>
       </div>
       <dl class="xr-geometry-readout" data-xr-readout></dl>
-      <p class="field-error" data-xr-error role="alert" hidden></p>
       <p class="field-help" data-xr-dependencies>Library geometry and the feedback envelope must be bound by the master recipe before experiment export.</p>
       <div class="xr-profile-actions">
         <button type="button" data-xr-action="accept">Accept layout</button>
+      </div>
+      <details class="inner-disclosure"><summary>Profile tools</summary><div class="disclosure-content xr-profile-actions">
         <button type="button" data-xr-action="export">Download authoring profile</button>
         <label class="field"><span>Open authoring profile</span><input type="file" accept=".json,application/json" data-xr-file></label>
-      </div>
-      <p role="status" aria-live="polite" data-xr-status>Layout draft. Not included in desktop v1 packages.</p>
+      </div></details>
+      <p role="status" aria-live="polite" data-xr-status>Accept the layout to download its authoring profile.</p>
     </div>
   </div>`;
 }

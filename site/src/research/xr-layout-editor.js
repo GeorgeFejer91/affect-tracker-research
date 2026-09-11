@@ -46,6 +46,13 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
   const q = (selector) => host.querySelector(selector);
   const fields = [...host.querySelectorAll("[data-xr-field]")];
   const status = (message) => { q("[data-xr-status]").textContent = message; };
+  const describeError = (problem) => {
+    const field = fields.find((input) => input.dataset.xrField === problem.field);
+    const label = field?.closest("label")?.querySelector("span")?.textContent;
+    if (label) return problem.message.replace(problem.field, label);
+    if (problem.code === "fields") return "This profile has missing or unsupported layout fields. Open a profile exported by this editor.";
+    return problem.message;
+  };
   const notify = () => onChange(state.getSnapshot());
   const setFields = () => {
     const draft = state.getDraft();
@@ -63,7 +70,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     q("[data-xr-media]").disabled = !snapshot.enabled || !catalogueGeometry?.length;
     const error = q("[data-xr-error]");
     error.hidden = true;
-    for (const field of fields) field.removeAttribute("aria-invalid");
+    for (const field of fields) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); }
     let valid = false;
     try {
       const geometry = resolveXrLayoutProfileV1(draft, media);
@@ -88,22 +95,25 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
         ? "Applying angular size replaces the metre dimensions; moving the screen later keeps its physical size."
         : "For an offset or tilted screen, edit metres. The readout shows its actual setup-view angular extents.";
     } catch (problem) {
-      error.textContent = problem.message;
+      error.textContent = describeError(problem);
       error.hidden = !snapshot.enabled;
       q("[data-xr-scene]").replaceChildren();
       q("[data-xr-readout]").replaceChildren();
       for (const field of fields) {
-        if (field.dataset.xrField.startsWith(problem.field ?? "profile")) field.setAttribute("aria-invalid", "true");
+        if (field.dataset.xrField.startsWith(problem.field ?? "profile")) {
+          field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", "xr-layout-error");
+        }
       }
     }
     q('[data-xr-action="accept"]').disabled = !snapshot.enabled || !valid;
     q('[data-xr-action="export"]').disabled = !snapshot.enabled || snapshot.pending;
-    const unbound = ["P1 catalogue", "P5 feedback"].filter((name) => !snapshot.dependencyRevisions.some(({ segment }) => name.startsWith(segment)));
+    const unbound = [["P1", "video library"], ["P5", "feedback settings"]]
+      .filter(([id]) => !snapshot.dependencyRevisions.some(({ segment }) => id === segment)).map(([, label]) => label);
     q("[data-xr-dependencies]").textContent = unbound.length
-      ? `Master recipe integration pending: ${unbound.join(" and ")} revisions are unbound. This download contains layout authoring only.`
+      ? `Connect the ${unbound.join(" and ")} before exporting a complete XR experiment. Layout profiles remain available.`
       : feedbackEnvelope === null && draft.feedback.enabled
-        ? "Dependency revisions are recorded; the full P5 animation envelope still needs to be bound."
-        : "Dependency revisions and feedback bounds are recorded for master recipe validation. Runtime compatibility is checked separately.";
+        ? "Connect the full feedback animation bounds before exporting a complete XR experiment."
+        : "Video and feedback geometry is connected. Complete XR experiment export is planned.";
   }
   function edit() {
     fileGeneration += 1;
@@ -150,7 +160,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
         const next = withXrAngularSize(state.getDraft(), Number(q('[data-xr-angle="width"]').value), Number(q('[data-xr-angle="height"]').value));
         fileGeneration += 1; state.setDraft(next); setFields(); notify(); status("Angular size applied to metre dimensions. Accept the layout to export.");
       }
-      if (button.dataset.xrAction === "accept") { state.accept(); notify(); status("Layout accepted. Available as a P6 authoring contribution; master XR recipe integration is pending."); }
+      if (button.dataset.xrAction === "accept") { state.accept(); notify(); status("Layout accepted. You can download its authoring profile."); }
       if (button.dataset.xrAction === "export") {
         const url = URL.createObjectURL(new Blob([state.serialize()], { type: "application/json;charset=utf-8" }));
         const anchor = host.ownerDocument.createElement("a");
@@ -159,7 +169,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
         status("Authoring-profile download requested. Reopen the downloaded file to verify it; this is not a runnable experiment package.");
       }
       render();
-    } catch (error) { status(error.message); }
+    } catch (error) { status(describeError(error)); }
   }, { signal: abort.signal });
   // Let typing use native controls without feeding the parent rating simulator.
   host.addEventListener("keydown", (event) => event.stopPropagation(), { signal: abort.signal });
@@ -171,15 +181,18 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       if (file.size > XR_LAYOUT_MAX_BYTES) throw new Error("The XR profile exceeds 8192 bytes.");
       const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await file.arrayBuffer());
       if (disposed || generation !== fileGeneration || revision !== state.getSnapshot().revision) return;
-      state.load(source); setFields(); render(); notify(); status("Authoring profile reopened. All saved geometry is editable; master recipe integration is pending.");
+      state.load(source); setFields(); render(); notify(); status("Authoring profile reopened. All saved geometry is editable.");
     } catch (error) {
-      if (!disposed && generation === fileGeneration) status(`Profile was not opened: ${error.message}`);
+      if (!disposed && generation === fileGeneration) status(`Profile was not opened: ${describeError(error)}`);
     } finally { if (!disposed && generation === fileGeneration) q("[data-xr-file]").value = ""; }
   }
   setFields(); render();
   return Object.freeze({
     getSnapshot: () => state.getSnapshot(),
-    loadProfile(source) { fileGeneration += 1; state.load(source); setFields(); render(); notify(); },
+    loadProfile(source) {
+      fileGeneration += 1; state.load(source); setFields(); render(); notify();
+      status("Authoring profile reopened. All saved geometry is editable.");
+    },
     setDependencies({ catalogueRevision, feedbackRevision, previewMedia = null,
       catalogueGeometry: nextCatalogue = null, feedbackEnvelope: nextEnvelope = null }) {
       if (previewMedia !== null) resolveXrLayoutProfileV1(createDefaultXrLayoutProfile(), previewMedia);

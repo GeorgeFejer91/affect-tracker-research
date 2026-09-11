@@ -40,6 +40,25 @@ are deferred. The profile records policies; it does not enforce sensor behavior.
 
 ## Central capability checklist and this evidence ledger
 
+P6 UI followup after feature checkpoint `adc9494`: applied Uncodixfy to actual
+`bootResearchUi` captures. Removed the duplicate heading and nested fieldset
+boxes, grouped tilt and profile interchange tools in disclosures, moved readable
+field errors next to inputs with `aria-describedby`, added an external axes/shape
+legend and corrected the XR section summary/reopen status. Shared confirmation
+effects and all profile controls remain present. No spatial contract changed.
+
+Final followup checks: **47 focused UI/P6 tests**, both **8/173 build closures**,
+and **74 assertions across 8 actual-boot captures** passed. The offscreen fixture
+uses settled accordions, reduced motion and pane-only scrolling. Final inspected
+PNGs and JSON receipts are under
+`D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911/`, with `1440` and
+`820` prefixes and `empty-controls`, `populated-controls`, `populated-scene`,
+`error-controls` suffixes. Observed P6 panes are 800/815 px and 383/398 px.
+Earlier `760` breakpoint-adjacent and `420` captures had blank/clipped compositor
+results and are **excluded from visual acceptance**; metrics alone were inadequate.
+The final desktop/narrow PNGs were inspected. Combined P5/P7 integration still
+needs the integration owner's captures and applicable routing/guard checks.
+
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
 Planner roadmap and segment capability checklist adopted by the charter's
 2026-09-11 amendment. It records what each segment must do, user inputs, JSON

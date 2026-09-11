@@ -317,6 +317,14 @@ file; follow the integration-owner collection procedure in the workflow.
   `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`;
   do not copy P5 policy. Its automatic live wiring remains a convergence seam.
 - No desktop input, GUI launch, publication or headset/research qualification.
+- Feature checkpoint: `adc9494`; subsequent owned compactness/error-presentation
+  followup is separately committed. Final actual-boot evidence is
+  `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911/`: 8 inspected
+  empty/populated/scene/error captures, 74 assertions, panes 383–815 px.
+  47 focused tests and both build closures pass after the UI followup.
+  Earlier blank breakpoint-adjacent captures are excluded. The external legend
+  retains readable axis/shape meanings when SVG labels shrink. New shared hunk:
+  `SECTION_SUMMARIES.xr` and its P6-only changed-state projection.
 
 ### 20260911-integration-confirm-tile-receipt
 

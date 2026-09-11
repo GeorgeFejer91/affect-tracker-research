@@ -177,7 +177,11 @@ function bindResearchInteractions(root, { surface }) {
   const announcer = root.querySelector("#research-announcer");
   const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
   const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
-    onChange: () => root.researchUi?.plannerContributionChanged?.("P6"),
+    onChange: (snapshot) => {
+      const summary = root.querySelector('[data-section-summary="xr"]');
+      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Layout accepted";
+      root.researchUi?.plannerContributionChanged?.("P6");
+    },
   }) : null;
   let openSection = "workspace";
   let readySetupSectionCount = 0;
