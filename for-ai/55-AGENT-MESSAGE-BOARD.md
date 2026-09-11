@@ -8,6 +8,31 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260911-preview-palette-halo
+
+- Owner: Live Preview. Stage: UI implementation, allocated by integration.
+- Branch `codex/segment-preview-palette-halo`, base `7c90894`; isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Deliverable: grey reset, explicit random Recolor, Axes/Corners preview,
+  numeric halo width, gradient switch and steepness. Shared seams: preview
+  state, app handlers, view and styles; retain divider owner's `20644e2`.
+- Evidence: unit tests, background rendering and bundle closure. No user
+  window reload/control. Native floating-window audit is read-only; native
+  implementation and saved Runner contracts require a named backend pass.
+- Status: ready for integration; no change to package resolution randomness
+  or Run. 440/440 JS tests, 21 actual-app isolated headless Edge checks,
+  four pinned-layout/input cases and desktop 8-file closure pass. No native
+  build/qualification, user-window interaction, reload, push or deployment.
+- Reset applies grey to four anchor and idle controls using their existing
+  owner. Recolor generates colors only on explicit click. Placement and halo
+  controls stay transient. Updated charter/roadmap document the exact UI scope.
+- Read-only floating audit: config and capability describe only `research`;
+  `lib.rs` registers app-level commands and main-window lifecycle. A second
+  webview requires a command caller/permission audit, fixed local label/URL,
+  bounded projection-only payload and close/focus/drag lifecycle. No assumption
+  that empty overlay permissions alone fence every app command. Native and
+  persistence/Runner work remain open pending a named backend intent check.
+
 - Designated local integration branch: `codex/research-unified`.
 - Integration owner: task **Add segment confirmation flow**, allocated by the
   user on 2026-09-11 to workflow documentation, local convergence, and launch.
@@ -299,6 +324,72 @@ file; follow the integration-owner collection procedure in the workflow.
   wording to describe extensible language variants using one shared authoring,
   validation, package and Runner-selection model. Current picker/preload audit
   remains unchanged; no two-language schema restriction is implied.
+
+### 20260911-preview-pinned-input
+
+- Owner **Live Preview**, UI Finalization; **open**, allocated by integration.
+  Branch `codex/segment-preview-pinned-input`, dependent base `8524fa2`, isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Fixed preview header/output/map; independently scrolling lower controls with
+  whole-pane fallback for short windows/zoom. Direct map-point selection and
+  focus-gated configured-binding presentation via bounded preview-only adapter.
+  Shared seams: previewMarkup, preview CSS, old simulator handlers and teardown.
+  S3 confirmed no overlap with its ready `01444a7` seams; main stays untouched.
+- Reuse existing binding tokens, preserve rectangular snapping, release holds
+  on blur/binding/mode/visibility/teardown. No global input capture, acquisition
+  receipts, package, Run, native service or validation changes. Corners/reset
+  ambiguity and floating/halo follow-ups excluded from this bounded pass.
+- Baseline 58/58 preview/UI/simulator tests. Planned: focus/mapping/pointer and
+  lifecycle unit tests, offscreen layout/scroll receipts and full JS/build gates.
+- Ready evidence: 436/436 JavaScript tests, desktop 8-file closure and 4/4
+  offscreen composition receipts under
+  `D:/GitHub/.affect-preview-checks/pinned-input-20260911`. Tested real tile hit
+  regions, keyboard/custom priority, mouse/wheel, gamepad edge/reconnect/axes,
+  focus/dialog/mode exclusion and teardown with process-local fixtures.
+- Coordinated with **Add draggable segment boundary**: it owns outer grid and
+  divider; this pass owns preview container queries and content-fit observer.
+  No native/physical test, active-app reload, push or deployment performed.
+
+### 20260911-preview-rectangular-grid
+
+- Owner **Preview**, UI Finalization; **open**, integration allocation acknowledged.
+  Branch `codex/segment-preview-rectangular-grid`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`, dependent base `59279f5`
+  (inline color checkpoint submitted separately for integration).
+- User explicitly requests steps per side (1 → 3×3, 2 → 5×5), plus independent
+  columns/rows (3×5, 5×3). Scope: preview tile geometry/simulator/renderer,
+  named app/view controls, tests and narrow preview-only charter amendment.
+  Steps accept every whole number 1–1000; direct dimensions stay odd 3–2001
+  to retain exact central zero and existing bounded renderer cost.
+- Preserve invalid drafts without changing accepted geometry, release holds on
+  dimension change, use independent x/y snap/step. Saved stepSize, package,
+  acquisition and Run remain unchanged. No GUI tests/push/deployment.
+- Ready: baseline 15/15 tile/simulator tests; final 431/431 JavaScript tests,
+  desktop 8-file frontend closure and 10/10 off-screen Edge tile-paint cases.
+  Tests cover every step count, invalid drafts, independent axes, exact neutral,
+  rectangular renderer geometry, row-only hold release and saved-input isolation.
+  Receipt: `D:/GitHub/.affect-preview-checks/rectangular-grid-20260911`.
+  Integration/main remains untouched; native visual verification is unperformed.
+
+### 20260911-preview-inline-color
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**, allocation
+  acknowledged by integration. Base `305d3ac`, branch
+  `codex/segment-preview-inline-color`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`.
+- User asks for an embedded color map instead of a native picker nested inside
+  the anchor-color dialog. Scope: bounded canvas HSV picker, dialog markup/CSS,
+  app open/draft/teardown hooks and focused/headless tests. No S2 overlap.
+- Preserve hex, Reset, Apply, Cancel and close-to-cancel behavior; drag changes
+  only the existing preview draft. No package/Run/native changes or GUI tests.
+- Baseline: 47/47 preview/UI tests. Planned: conversion/input/teardown checks,
+  background browser integration and rendering, full JavaScript regressions.
+- Ready receipt: 428/428 JavaScript tests and desktop frontend 8-file closure
+  pass. Isolated off-screen Edge component paint, keyboard, hex callback,
+  teardown and dialog fit pass at the supported 760px minimum and 1000px.
+  Screenshots/JSON: `D:/GitHub/.affect-preview-checks/inline-color-20260911`.
+  This is a component fixture, not installed-app or physical-input evidence.
+  No GUI interaction, native rebuild, push or deployment performed.
 
 ### 20260911-integration-confirm-tile-receipt
 

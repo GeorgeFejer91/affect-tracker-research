@@ -24,8 +24,12 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
+import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
-import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
+import { createInlineColorPicker } from "./inline-color-picker.js";
+import { createPreviewInteraction } from "./preview-interaction.js";
+import { createPreviewLayout } from "./preview-layout.js";
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
@@ -182,12 +186,15 @@ function bindResearchInteractions(root, { surface }) {
   let inputPoint = { x: 0, y: 0 };
   let previewDesignPoint = { x: 0, y: 0 };
   let previewResponseSimulator = null;
+  let previewInteraction = null;
   let feedbackPreviewMode = "flubber";
   let responsePreviewMode = "stepwise";
   let previewColorAnchor = null;
   let previewColorDraft = null;
   let previewColorLabelDraft = null;
   let previewColorRefreshFrame = null;
+  const previewHaloDraft = { width: 150, steepness: 1 };
+  const previewCornerLabels = new Map(Object.entries(CORNER_LABELS));
   const previewAxisLabels = new Map(COLOR_FIELDS
     .filter(({ axisLabel }) => typeof axisLabel === "string")
     .map(({ id, axisLabel }) => [id, axisLabel]));
@@ -366,7 +373,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function syncControlValidation(control, { force = false } = {}) {
     // This draft has its own inline feedback and cannot block experiment Start.
-    if (control?.id === "preview-tile-count") return true;
+    if (control?.hasAttribute("data-preview-grid-input") || control?.hasAttribute("data-preview-appearance-input")) return true;
     if (!isValidationControl(control) || !control.id || !control.willValidate || control.disabled) return true;
     const inactive = control.closest("#fixed-duration-field[hidden], #jitter-durations-field[hidden]") !== null;
     const invalid = !inactive && !control.checkValidity();
@@ -420,7 +427,10 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
-    if (mode !== "setup") previewResponseSimulator?.releaseAll();
+    if (mode !== "setup") {
+      previewInteraction?.releaseAll();
+      previewResponseSimulator?.releaseAll();
+    }
     shell.dataset.researchMode = mode;
     root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
       panel.hidden = panel.getAttribute("data-mode-panel") !== mode;
@@ -519,21 +529,45 @@ function bindResearchInteractions(root, { surface }) {
     }));
   }
 
-  function openPreviewColorDialog(anchorId) {
+  function previewColorMode() {
+    return query('input[name="previewColorAnchors"]:checked')?.value === "corners" ? "corners" : "axes";
+  }
+
+  function previewLabels() {
+    return previewColorMode() === "corners" ? previewCornerLabels : previewAxisLabels;
+  }
+
+  function previewColorDefinition(anchorId) {
     const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+    return definition && previewColorMode() === "corners" && CORNER_LABELS[anchorId]
+      ? { ...definition, label: CORNER_LABELS[anchorId], axisLabel: CORNER_LABELS[anchorId] }
+      : definition;
+  }
+
+  function applyPreviewPalette(colors) {
+    for (const [id, color] of Object.entries(colors)) {
+      setInputValue(`color-${id}`, color);
+      setInputValue(`color-${id}-hex`, color);
+    }
+    schedulePlanRefresh();
+    refreshProjection();
+  }
+
+  function openPreviewColorDialog(anchorId) {
+    const definition = previewColorDefinition(anchorId);
     const dialog = query("#preview-color-dialog");
     const picker = query("#preview-color-picker");
     const hex = query("#preview-color-hex");
     const label = query("#preview-color-label");
     const title = query("#preview-color-dialog-title");
     if (!definition || !(dialog instanceof HTMLDialogElement)
-      || !(picker instanceof HTMLInputElement) || !(hex instanceof HTMLInputElement)
+      || !(picker instanceof HTMLElement) || !(hex instanceof HTMLInputElement)
       || !(label instanceof HTMLInputElement) || !definition.axisLabel) return;
     previewColorAnchor = definition.id;
     previewColorDraft = colorValues()[definition.id];
-    const currentLabel = previewAxisLabels.get(definition.id) ?? definition.axisLabel;
+    const currentLabel = previewLabels().get(definition.id) ?? definition.axisLabel;
     previewColorLabelDraft = currentLabel;
-    picker.value = previewColorDraft;
+    inlineColorPicker.setColor(previewColorDraft);
     hex.value = previewColorDraft;
     label.value = currentLabel === definition.axisLabel ? "" : currentLabel;
     label.placeholder = definition.axisLabel;
@@ -557,13 +591,13 @@ function bindResearchInteractions(root, { surface }) {
   function paintPreviewColorDraft() {
     const colors = colorValues();
     if (previewColorAnchor && previewColorDraft) colors[previewColorAnchor] = previewColorDraft;
-    const nextGradientFingerprint = [colors.up, colors.down, colors.left, colors.right].join(":");
+    const nextGradientFingerprint = [previewColorMode(), colors.up, colors.down, colors.left, colors.right].join(":");
     if (nextGradientFingerprint !== gradientFingerprint) {
       gradientFingerprint = nextGradientFingerprint;
       const canvas = query("#main-gradient-canvas");
-      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, colors);
+      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, colors, previewColorMode());
     }
-    setupPreview.update({ colors });
+    setupPreview.update({ colors, colorAnchorMode: previewColorMode() });
   }
 
   function schedulePreviewColorPaint() {
@@ -581,7 +615,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function setPreviewColorLabelDraft(nextValue) {
-    const definition = COLOR_FIELDS.find(({ id }) => id === previewColorAnchor);
+    const definition = previewColorDefinition(previewColorAnchor);
     if (!definition?.axisLabel) return;
     const normalized = String(nextValue ?? "").trim().replace(/\s+/gu, " ");
     previewColorLabelDraft = normalized || definition.axisLabel;
@@ -598,13 +632,12 @@ function bindResearchInteractions(root, { surface }) {
   function setPreviewColorDraft(nextValue, { synchronizeHex = false } = {}) {
     const normalized = String(nextValue ?? "").trim().toLowerCase();
     const valid = /^#[0-9a-f]{6}$/u.test(normalized);
-    const picker = query("#preview-color-picker");
     const hex = query("#preview-color-hex");
     const status = query("#preview-color-status");
     const error = query("#preview-color-error");
     const apply = query("#preview-color-apply");
     previewColorDraft = valid ? normalized : null;
-    if (valid && picker instanceof HTMLInputElement) picker.value = normalized;
+    if (valid) inlineColorPicker.setColor(normalized);
     if (synchronizeHex && hex instanceof HTMLInputElement) hex.value = normalized;
     if (status) {
       status.textContent = valid
@@ -637,12 +670,12 @@ function bindResearchInteractions(root, { surface }) {
     previewColorDraft = null;
     previewColorLabelDraft = null;
     if (apply && anchorId && draft) {
-      const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+      const definition = previewColorDefinition(anchorId);
       const axisLabel = labelDraft || definition?.axisLabel;
       setInputValue(`color-${anchorId}`, draft);
       setInputValue(`color-${anchorId}-hex`, draft);
       if (axisLabel) {
-        previewAxisLabels.set(anchorId, axisLabel);
+        previewLabels().set(anchorId, axisLabel);
         renderPreviewAxisLabel(anchorId, axisLabel);
       }
       schedulePlanRefresh();
@@ -654,23 +687,27 @@ function bindResearchInteractions(root, { surface }) {
 
   function isPreviewOnlyControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-halo-size", "preview-halo-gradient", "preview-halo-steepness", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing" || target.name === "previewColorAnchors"
     );
   }
 
   function isPreviewResponseControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing"
     );
   }
 
   function configurePreviewResponseSimulator() {
+    const dimensions = parsePreviewGrid({
+      mode: query('input[name="previewGridSizing"]:checked')?.value,
+      steps: value("preview-tile-count"), columns: value("preview-tile-columns"), rows: value("preview-tile-rows"),
+    });
     previewResponseSimulator?.configure({
       mode: responsePreviewMode,
       fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
-      tileCount: value("preview-tile-count"),
+      ...(dimensions ?? {}),
       holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
       repeatDelayMs: numberValue("preview-repeat-delay", 500),
     });
@@ -741,13 +778,16 @@ function bindResearchInteractions(root, { surface }) {
         displayMode: feedbackPreviewMode,
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
+        tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
+        colorAnchorMode: previewColorMode(),
       } : {}),
       colors,
       flubber: {
         showOutline: checked("flubber-outline-visible"),
         outlineThickness: numberValue("flubber-outline-thickness", 2),
         showHalo: checked("flubber-halo-visible"),
-        ...(design ? { haloSizePercent: numberValue("preview-halo-size", 150) } : {}),
+        ...(design ? { haloSizePercent: previewHaloDraft.width,
+          haloGradient: checked("preview-halo-gradient"), haloSteepness: previewHaloDraft.steepness } : {}),
       },
       grid: {
         lineThickness: numberValue("grid-line-thickness", 1),
@@ -776,7 +816,6 @@ function bindResearchInteractions(root, { surface }) {
       ["grid-line-thickness", (v) => v.toFixed(2)],
       ["grid-outline-thickness", (v) => v.toFixed(2)],
       ["grid-cursor-size", (v) => v.toFixed(1)],
-      ["preview-halo-size", (v) => `${Math.round(v)}%`],
       ["preview-full-span-duration", formatDuration],
       ["preview-repeat-delay", formatDuration],
     ];
@@ -790,14 +829,53 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPreviewDesignControls() {
-    const tileInput = query("#preview-tile-count");
+    previewInteraction?.sync();
+    const map = query(".preview-affect-map");
+    if (map) map.dataset.colorAnchorMode = previewColorMode();
+    for (const [id, label] of previewLabels()) renderPreviewAxisLabel(id, label);
+    for (const [id, key, minimum, maximum] of [
+      ["preview-halo-size", "width", 0, Infinity],
+      ["preview-halo-steepness", "steepness", 0.1, 10],
+    ]) {
+      const input = query(`#${id}`);
+      if (!(input instanceof HTMLInputElement)) continue;
+      const parsed = parsePreviewNumber(input.value, minimum);
+      const valid = parsed !== null && parsed <= maximum;
+      input.setAttribute("aria-invalid", String(!valid));
+      if (valid) previewHaloDraft[key] = parsed;
+      if (key === "steepness") input.disabled = !checked("preview-halo-gradient");
+    }
+    const haloHelp = query("#preview-halo-help");
+    if (haloHelp) haloHelp.textContent = query("#preview-halo-size")?.getAttribute("aria-invalid") === "true"
+      ? `Enter a finite number at least 0. Keeping ${previewHaloDraft.width}%.`
+      : previewHaloDraft.width > MAX_RENDERED_HALO_PERCENT
+        ? `Requested ${previewHaloDraft.width}%; rendered at ${MAX_RENDERED_HALO_PERCENT}% for bounded drawing.`
+        : "Preview-only width. Follows the outline; 0 hides the halo.";
+    const steepnessHelp = query("#preview-halo-steepness-help");
+    if (steepnessHelp) steepnessHelp.textContent = query("#preview-halo-steepness")?.getAttribute("aria-invalid") === "true"
+      ? `Enter 0.1–10. Keeping ${previewHaloDraft.steepness}.`
+      : "1 = normal; higher values fade faster. Does not change halo width.";
+    const custom = query('input[name="previewGridSizing"]:checked')?.value === "custom";
     const tileHelp = query("#preview-tile-count-help");
     const tileCount = previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT;
-    const validTileCount = parsePreviewTileCount(tileInput?.value) !== null;
-    tileInput?.setAttribute("aria-invalid", String(!validTileCount));
-    if (tileHelp) tileHelp.textContent = validTileCount
-      ? `Odd number, 3–2001. ${tileCount} × ${tileCount} tiles: ${(tileCount - 1) / 2} steps each side of zero.`
-      : `Enter an odd whole number from 3 to 2001. Preview remains at ${tileCount} × ${tileCount}.`;
+    const tileRows = previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT;
+    let valid = true;
+    for (const id of ["preview-tile-count", "preview-tile-columns", "preview-tile-rows"]) {
+      const input = query(`#${id}`);
+      if (!(input instanceof HTMLInputElement)) continue;
+      const active = id === "preview-tile-count" ? !custom : custom;
+      const parsed = id === "preview-tile-count" ? parsePreviewSteps(input.value) : parsePreviewTileCount(input.value);
+      input.disabled = !active;
+      input.setAttribute("aria-invalid", String(active && parsed === null));
+      if (active && parsed === null) valid = false;
+    }
+    const squareFields = query("[data-preview-grid-square]");
+    const customFields = query("[data-preview-grid-custom]");
+    if (squareFields) squareFields.hidden = custom;
+    if (customFields) customFields.hidden = !custom;
+    if (tileHelp) tileHelp.textContent = valid
+      ? `${tileCount} × ${tileRows} tiles. ${(tileCount - 1) / 2} steps left/right, ${(tileRows - 1) / 2} up/down, plus the central zero tile. ${custom ? "Odd dimensions, 3–2001." : "1 creates 3 × 3; 2 creates 5 × 5. Whole numbers, 1–1000."}`
+      : `Enter ${custom ? "odd whole dimensions from 3 to 2001" : "a whole step count from 1 to 1000"}. Preview remains at ${tileCount} × ${tileRows}.`;
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
@@ -821,18 +899,18 @@ function bindResearchInteractions(root, { surface }) {
     const simulatorHelp = query("#preview-response-simulator-help");
     if (simulatorHelp) {
       simulatorHelp.textContent = responsePreviewMode === "continuous"
-        ? "Focus the map and hold the arrow keys to preview full-span travel time. Opposing directions cancel."
-        : "Focus the map and use the arrow keys to move one outlined tile at a time.";
+        ? "Click the map to set a point. Focus the map or Flubber to use your configured controls or arrow keys; hold to preview travel time."
+        : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
   }
 
   function projectDesignPreview() {
     const projected = previewState({ design: true });
-    const nextGradientFingerprint = [projected.colors.up, projected.colors.down, projected.colors.left, projected.colors.right].join(":");
+    const nextGradientFingerprint = [projected.colorAnchorMode, projected.colors.up, projected.colors.down, projected.colors.left, projected.colors.right].join(":");
     if (nextGradientFingerprint !== gradientFingerprint) {
       gradientFingerprint = nextGradientFingerprint;
       const canvas = query("#main-gradient-canvas");
-      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors);
+      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors, projected.colorAnchorMode);
     }
     setupPreview.update(projected);
   }
@@ -3977,6 +4055,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   const previewColorDialog = query("#preview-color-dialog");
+  const inlineColorPicker = createInlineColorPicker(query("#preview-color-picker"), {
+    onChange: hex => setPreviewColorDraft(hex, { synchronizeHex: true }),
+  });
   if (previewColorDialog instanceof HTMLDialogElement) {
     previewColorDialog.addEventListener("close", () => {
       if (!previewColorAnchor) return;
@@ -4142,36 +4223,16 @@ function bindResearchInteractions(root, { surface }) {
   if (inputTestGrid instanceof HTMLElement) inputController.attach(inputTestGrid);
 
   const previewControlSurface = query(".preview-control-surface");
-  const previewDirectionByKey = Object.freeze({
-    ArrowLeft: "left",
-    ArrowRight: "right",
-    ArrowUp: "up",
-    ArrowDown: "down",
+  previewInteraction = createPreviewInteraction({
+    map: previewControlSurface, stage: query(".preview-primary-stage"),
+    simulator: previewResponseSimulator, getBinding: () => inputBinding,
+    isEnabled: () => mode === "setup",
+    onAvailability: message => {
+      const output = query("[data-preview-input-availability]");
+      if (output && output.textContent !== message) output.textContent = message;
+    },
   });
-  const previewSimulatorHandlers = {
-    keydown(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
-      previewResponseSimulator?.press(direction);
-      event.preventDefault();
-    },
-    keyup(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction) return;
-      previewResponseSimulator?.release(direction);
-      event.preventDefault();
-    },
-    blur() {
-      previewResponseSimulator?.releaseAll();
-    },
-  };
-  if (previewControlSurface instanceof HTMLElement) {
-    for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-      previewControlSurface.addEventListener(type, handler);
-    }
-  }
-  const releasePreviewResponse = () => previewResponseSimulator?.releaseAll();
-  window.addEventListener("blur", releasePreviewResponse);
+  const previewLayout = createPreviewLayout(query(".preview-pane"));
 
   const runInputHandlers = {
     keydown(event) {
@@ -4258,7 +4319,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]:not(#preview-tile-count)');
+      const invalid = query('[aria-invalid="true"]:not([data-preview-grid-input]):not([data-preview-appearance-input])');
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
       const focusTarget = isValidationControl(invalid)
@@ -4417,8 +4478,14 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target.id === "preview-response-reset") {
       previewResponseSimulator?.reset();
-      announce("The response design preview returned to neutral.");
+      applyPreviewPalette(Object.fromEntries([...PREVIEW_ANCHORS, "idle"].map((id) => [id, PREVIEW_GREY])));
+      announce("All color anchors reset to grey and the preview returned to neutral.");
       query(".preview-control-surface")?.focus();
+      return;
+    }
+    if (target.id === "preview-recolor") {
+      applyPreviewPalette(randomPreviewAnchors());
+      announce("Each color anchor was assigned a random color.");
       return;
     }
     if (target.dataset.modeButton && target.dataset.modeButton !== mode) {
@@ -4669,10 +4736,6 @@ function bindResearchInteractions(root, { surface }) {
     const target = event.target;
     if (target instanceof HTMLInputElement && target.id === "questionnaire-inspiration-search") {
       filterQuestionnaireInspiration();
-      return;
-    }
-    if (target instanceof HTMLInputElement && target.id === "preview-color-picker") {
-      setPreviewColorDraft(target.value, { synchronizeHex: true });
       return;
     }
     if (target instanceof HTMLInputElement && target.id === "preview-color-hex") {
@@ -5304,6 +5367,10 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      previewLayout.destroy();
+      previewInteraction?.destroy();
+      previewInteraction = null;
+      inlineColorPicker.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();
@@ -5312,12 +5379,6 @@ function bindResearchInteractions(root, { surface }) {
       previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
-      if (previewControlSurface instanceof HTMLElement) {
-        for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-          previewControlSurface.removeEventListener(type, handler);
-        }
-      }
-      window.removeEventListener("blur", releasePreviewResponse);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);

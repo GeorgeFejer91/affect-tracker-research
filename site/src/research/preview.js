@@ -1,11 +1,11 @@
 import {
-  affectPaletteColor,
   buildFlubberPath,
   clamp,
   createProfiles,
   createProjectionOffsets,
 } from "../math.js";
 import { createResponsiveFaceGeometry } from "./responsive-face.js";
+import { previewPaletteColor, MAX_RENDERED_HALO_PERCENT } from "./preview-appearance.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, previewTileGeometry, previewTileLines } from "./preview-tiles.js";
 
 const profiles = createProfiles();
@@ -61,7 +61,9 @@ function normalizedState(source = {}) {
     lockPosition: source.lockPosition === true,
     displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
     responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
+    colorAnchorMode: source.colorAnchorMode === "corners" ? "corners" : "axes",
     tileCount: parsePreviewTileCount(source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
+    tileRows: parsePreviewTileCount(source.tileRows ?? source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
     colors: {
       up: normalizeHex(colors.up, DEFAULT_COLORS.up),
       down: normalizeHex(colors.down, DEFAULT_COLORS.down),
@@ -76,7 +78,9 @@ function normalizedState(source = {}) {
       showOutline: flubber.showOutline !== false,
       outlineThickness: clamp(finite(flubber.outlineThickness, 2), 0, 20),
       showHalo: flubber.showHalo !== false,
-      haloSizePercent: clamp(finite(flubber.haloSizePercent, 100), 100, 240),
+      haloSizePercent: clamp(finite(flubber.haloSizePercent, 100), 0, MAX_RENDERED_HALO_PERCENT),
+      haloGradient: flubber.haloGradient !== false,
+      haloSteepness: clamp(finite(flubber.haloSteepness, 1), .1, 10),
     },
     grid: {
       lineThickness: clamp(finite(grid.lineThickness, 1), 0.25, 20),
@@ -98,7 +102,7 @@ function formatCoordinate(value) {
   return `${number >= 0 ? "+" : ""}${number.toFixed(3)}`;
 }
 
-export function drawAffectField(canvas, colors) {
+export function drawAffectField(canvas, colors, mode = "axes") {
   if (!(canvas instanceof HTMLCanvasElement)) return;
   const size = 72;
   canvas.width = size;
@@ -110,7 +114,7 @@ export function drawAffectField(canvas, colors) {
     const y = 1 - (row / (size - 1)) * 2;
     for (let column = 0; column < size; column += 1) {
       const x = (column / (size - 1)) * 2 - 1;
-      const cssColor = affectPaletteColor(x, y, colors);
+      const cssColor = previewPaletteColor(x, y, colors, mode);
       const channels = cssColor.match(/\d+/g)?.map(Number) ?? [183, 183, 183];
       const offset = (row * size + column) * 4;
       image.data[offset] = channels[0];
@@ -146,6 +150,7 @@ export function createResearchPreview(root, options = {}) {
   const flubberOutline = stage.querySelector("[data-preview-flubber-outline]");
   const flubberHalo = stage.querySelector("[data-preview-flubber-halo]");
   const haloBlur = stage.querySelector("[data-preview-halo-blur]");
+  const haloFalloff = stage.querySelector("[data-preview-halo-falloff]");
   const controlCanvas = stage.querySelector("[data-preview-control-canvas]");
   const controlGrid = stage.querySelector("[data-preview-control-grid]");
   const tileLines = [...stage.querySelectorAll("[data-preview-tile-lines]")];
@@ -199,11 +204,11 @@ export function createResearchPreview(root, options = {}) {
   }
 
   function renderStatic() {
-    const fingerprint = `${state.colors.up}:${state.colors.down}:${state.colors.left}:${state.colors.right}`;
+    const fingerprint = `${state.colorAnchorMode}:${state.colors.up}:${state.colors.down}:${state.colors.left}:${state.colors.right}`;
     if (fingerprint !== paletteFingerprint) {
       paletteFingerprint = fingerprint;
-      drawAffectField(gridCanvas, state.colors);
-      if (controlCanvas instanceof HTMLCanvasElement) drawAffectField(controlCanvas, state.colors);
+      drawAffectField(gridCanvas, state.colors, studio ? state.colorAnchorMode : "axes");
+      if (controlCanvas instanceof HTMLCanvasElement) drawAffectField(controlCanvas, state.colors, state.colorAnchorMode);
     }
 
     const outputMode = studio ? state.displayMode : "legacy";
@@ -240,7 +245,7 @@ export function createResearchPreview(root, options = {}) {
     gridCursor.setAttribute("r", String(state.grid.cursorSize));
     setElementHidden(flubberOutline, !state.flubber.showOutline);
     flubberOutline.style.strokeWidth = String(state.flubber.outlineThickness);
-    setElementHidden(flubberHalo, !state.flubber.showHalo);
+    setElementHidden(flubberHalo, !state.flubber.showHalo || (studio && state.flubber.haloSizePercent === 0));
     const haloWidth = state.flubber.haloSizePercent / 100;
     flubberHalo.style.strokeWidth = String(Math.max(1, state.flubber.outlineThickness * 3) * (studio ? haloWidth : 1));
     // The studio halo uses the exact animated outline; only its stroke spreads.
@@ -248,6 +253,8 @@ export function createResearchPreview(root, options = {}) {
     flubberHalo.setAttribute("transform", `scale(${studio ? 1 : haloWidth})`);
     if (studio && haloBlur instanceof SVGElement) {
       haloBlur.setAttribute("stdDeviation", String(0.03 * haloWidth));
+      flubberHalo.setAttribute("filter", state.flubber.haloGradient ? "url(#preview-studio-halo-fade)" : "none");
+      haloFalloff?.setAttribute("exponent", String(state.flubber.haloSteepness));
     }
 
     if (controlGrid instanceof SVGElement && controlCursor instanceof SVGElement) {
@@ -261,20 +268,21 @@ export function createResearchPreview(root, options = {}) {
     }
 
     if (studio) {
-      if (tiled && renderedTileCount !== state.tileCount) {
-        const path = previewTileLines(state.tileCount);
+      const dimensions = `${state.tileCount}:${state.tileRows}`;
+      if (tiled && renderedTileCount !== dimensions) {
+        const path = previewTileLines(state.tileCount, state.tileRows);
         for (const line of tileLines) {
           line.setAttribute("d", path);
-          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / state.tileCount)));
-          line.style.strokeWidth = String(Math.min(0.4, 8 / state.tileCount));
+          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows))));
+          line.style.strokeWidth = String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows)));
         }
-        renderedTileCount = state.tileCount;
+        renderedTileCount = dimensions;
       }
       for (const line of tileLines) setElementHidden(line, !tiled);
-      const tile = previewTileGeometry(state.x, state.y, state.tileCount);
+      const tile = previewTileGeometry(state.x, state.y, state.tileCount, state.tileRows);
       for (const highlight of activeTiles) {
         setElementHidden(highlight, !tiled);
-        const stroke = Math.min(1.1, tile.width * 0.12);
+        const stroke = Math.min(1.1, Math.min(tile.width, tile.height) * 0.12);
         highlight.style.setProperty("--tile-outline-width", String(stroke));
         for (const rectangle of highlight.querySelectorAll("rect")) {
           // Essential paint geometry must also work without the page stylesheet.
@@ -287,7 +295,7 @@ export function createResearchPreview(root, options = {}) {
       }
       if (tileStatus instanceof HTMLElement) {
         tileStatus.hidden = !tiled;
-        const label = `Current tile: column ${tile.column + 1}, row ${tile.row + 1} of ${state.tileCount}.`;
+        const label = `Current tile: column ${tile.column + 1} of ${state.tileCount}, row ${tile.row + 1} of ${state.tileRows}.`;
         if (tileStatus.textContent !== label) tileStatus.textContent = label;
       }
     }
@@ -351,8 +359,10 @@ export function createResearchPreview(root, options = {}) {
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
     const idle = Math.hypot(state.x, state.y) < 0.005;
-    overlay.style.setProperty("--flubber-color", idle ? state.colors.idle : rendered.color);
-    overlay.style.setProperty("--face-color", idle ? state.colors.idle : rendered.color);
+    const color = studio && state.colorAnchorMode === "corners"
+      ? previewPaletteColor(state.x, state.y, state.colors, "corners", state.saturation) : rendered.color;
+    overlay.style.setProperty("--flubber-color", idle ? state.colors.idle : color);
+    overlay.style.setProperty("--face-color", idle ? state.colors.idle : color);
     flubberBase.setAttribute("d", rendered.path);
     flubberOutline.setAttribute("d", rendered.path);
     flubberHalo.setAttribute("d", rendered.path);
@@ -391,7 +401,9 @@ export function createResearchPreview(root, options = {}) {
 
   return Object.freeze({
     update(nextState) {
-      state = normalizedState({ ...state, ...nextState });
+      const square = Object.hasOwn(nextState, "tileCount") && !Object.hasOwn(nextState, "tileRows")
+        ? { tileRows: nextState.tileCount } : {};
+      state = normalizedState({ ...state, ...nextState, ...square });
       renderStatic();
     },
     snapshot() {
