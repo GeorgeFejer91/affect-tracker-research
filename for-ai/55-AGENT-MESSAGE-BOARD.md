@@ -3333,3 +3333,14 @@ Strict native Clippy at `dffe166` was blocked by the three pre-existing unused
 workspace functions (rescan, scan_videos, logical_relative_path); no lint
 suppression or unrelated source repair was made. A Clippy-specific error gate
 and clean combined native rebuild/rerun are the next evidence actions.
+
+RR-04 / E2E-RUNNER Backend Verification update: clean combined `5c66ce6`
+passed 25 focused native tests (one opt-in diagnostic ignored), plus the
+Clippy-specific gate with the same three existing dead-code warnings. Actual
+attempts 03 and 04 both stopped at `native-gstplay-startup-timeout`, before
+actor-started or MediaInfo, so neither establishes a reducer result. Receipts
+remain under `D:/GitHub/.affect-native-diagnostic-build/attempt-03` and
+`attempt-04`. The approved next bounded diagnostic adds test-only monotonic
+phase traces around GStreamer initialization, child-window creation, hidden
+parent creation and event-loop readiness. No production behavior, unsafe
+boundary or qualification flag changes in this checkpoint.

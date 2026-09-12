@@ -328,11 +328,19 @@ fn initialize_and_run(
     shared_status: Arc<Mutex<NativeMediaStatusV1>>,
 ) -> Result<(), &'static str> {
     let runtime = PrivateRuntimeEnvironment::activate(&config.runtime_root, &config.state_root)?;
+    #[cfg(test)]
+    diagnostic::actor_phase("gstreamer-init-start");
     runtime.initialize_gstreamer()?;
+    #[cfg(test)]
+    diagnostic::actor_phase("gstreamer-init-done");
     let context = gst::glib::MainContext::new();
     context
         .with_thread_default(|| {
+            #[cfg(test)]
+            diagnostic::actor_phase("child-create-start");
             let child = ChildVideoWindow::create(config.parent_window_handle)?;
+            #[cfg(test)]
+            diagnostic::actor_phase("child-create-done");
             let _ = child.hide();
             let (signals_sender, signals_receiver) = mpsc::channel::<GenerationSignal>();
             let mut status = NativeMediaStatusV1::ready();

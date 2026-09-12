@@ -8,6 +8,13 @@ use std::os::windows::fs::OpenOptionsExt;
 const CLIP_SHA256: &str = "b5327e7465ec92a4c93f3236a1ebab4556cdf508e24eafe6c593eac1e13afd49";
 const CLIP_BYTES: u64 = 86_870_779;
 static MUTED_DIAGNOSTIC: AtomicBool = AtomicBool::new(false);
+static DIAGNOSTIC_STARTED: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+
+pub(super) fn actor_phase(stage: &str) {
+    if MUTED_DIAGNOSTIC.load(Ordering::Acquire) {
+        trace(stage, serde_json::json!({}));
+    }
+}
 
 pub(super) fn mute_if_opted_in(play: &gst_play::Play) {
     if MUTED_DIAGNOSTIC.load(Ordering::Acquire) {
@@ -26,6 +33,7 @@ fn trace(stage: &str, value: serde_json::Value) {
             "schema": "affect-native-engineering-diagnostic-v1",
             "stage": stage, "value": value,
             "buildCommit": env!("AFFECT_TRACKER_BUILD_COMMIT"),
+            "elapsedMs": DIAGNOSTIC_STARTED.get().map(|start| start.elapsed().as_millis()),
             "qualified": false, "installedQualification": false,
         })
     );
@@ -245,6 +253,7 @@ fn offscreen_native_actor_lifecycle() -> Result<(), String> {
     if std::env::var("AFFECT_NATIVE_DIAGNOSTIC_OPT_IN").as_deref() != Ok("1") {
         return Err("explicit-diagnostic-opt-in-required".into());
     }
+    let _ = DIAGNOSTIC_STARTED.set(Instant::now());
     let runtime = PathBuf::from(
         std::env::var_os("AFFECT_NATIVE_DIAGNOSTIC_RUNTIME").ok_or("runtime-required")?,
     );
@@ -274,6 +283,7 @@ fn offscreen_native_actor_lifecycle() -> Result<(), String> {
             .visible(false).focused(false).skip_taskbar(true).inner_size(320.0, 180.0)
             .data_directory(state.join("webview"))
             .build()?;
+        trace("hidden-parent-created", serde_json::json!({}));
         let app_handle = app.handle().clone();
         thread::Builder::new().name("native-diagnostic-owner".into()).spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| exercise(parent, runtime, state.join("gstreamer"), clip)));
@@ -293,7 +303,11 @@ fn offscreen_native_actor_lifecycle() -> Result<(), String> {
         })?;
         Ok(())
     }).build(context).map_err(|_| "hidden-test-app-build-failed")?;
-    let exit = app.run_return(|_, _| {});
+    let exit = app.run_return(|_, event| {
+        if matches!(event, tauri::RunEvent::Ready) {
+            trace("event-loop-ready", serde_json::json!({}));
+        }
+    });
     if exit != 0 {
         return Err(format!("hidden-test-app-exit-{exit}"));
     }
