@@ -9,6 +9,8 @@ import { createScreenLayoutDependencyBinding, screenLayoutReferenceCandidates } 
 import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
 import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 import { connectScreenLayoutProducers } from "../site/src/research/screen-layout-composition.js";
+import { createWorkspaceContributionV1 } from "../site/src/research/workspace-contribution.js";
+import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 
 const clone = value => structuredClone(value);
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
@@ -190,8 +192,13 @@ test("actual P1 shared conformance fixture and P5 source compose through one sub
   let binding, state, pending;
   state = createScreenLayoutState({ resolve: d => binding ? binding.resolve(d) : resolveScreenLayoutDraft(d) });
   const controller = {
-    getVideoCatalogueContributionSnapshot: p1.getSnapshot,
-    subscribeVideoCatalogueChanges: p1.subscribe,
+    getWorkspaceContributionSnapshot() {
+      const snapshot = p1.getSnapshot();
+      return { ...snapshot, contribution: snapshot.contribution ? createWorkspaceContributionV1({
+        study: createStudyIdentityV1({ id: "fixture", title: "Fixture" }), videoCatalogue: snapshot.contribution,
+      }) : null };
+    },
+    subscribeWorkspaceContributionChanges: p1.subscribe,
     getFeedbackLayoutSnapshot: p5.getLayoutSnapshot,
     subscribeFeedbackChanges: p5.subscribe,
     connectScreenLayoutDependencies(dependencies) {

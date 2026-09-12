@@ -48,6 +48,12 @@ try {
  send();await until(()=>p().videos.length===fixture.entries.length);
  check('all verified P1 identities are rendered',p().videos.every(v=>fixture.entries.some(e=>e.assetId===v.id)));
  check('current P1 owner revision is bound',snap().dependencyRevisions.find(d=>d.segment==='P1').revision===ui.getVideoCatalogueContributionSnapshot().revision);
+ const workspaceBefore=ui.getWorkspaceContributionSnapshot(),p4StudyBefore=snap().revision;
+ edit(app.querySelector('#experiment-title'),'Revised layout study');
+ await until(()=>snap().revision>p4StudyBefore&&p().videos.length===fixture.entries.length);
+ const workspaceAfter=ui.getWorkspaceContributionSnapshot();
+ check('study edit retains exact nested catalogue',JSON.stringify(workspaceBefore.contribution.videoCatalogue)===JSON.stringify(workspaceAfter.contribution.videoCatalogue));
+ check('study edit binds the registered P1 revision',snap().dependencyRevisions.find(d=>d.segment==='P1').revision===workspaceAfter.revision&&ui.getPlannerContributionReview().snapshots.find(s=>s.segment==='P1').revision===workspaceAfter.revision);
  check('saved P5 maximum bounds are present',p().geometry.maximumFeedback.width>0);
  const selected=root.querySelector('[data-layout-video]'),beforeSelect=snap().revision,geometry=JSON.stringify(p().geometry);
  selected.value=selected.options[selected.options.length-1].value;selected.dispatchEvent(new Event('change',{bubbles:true}));

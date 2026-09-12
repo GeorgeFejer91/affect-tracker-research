@@ -17,7 +17,7 @@ export function screenLayoutReferenceCandidates(videos) {
 
 /** Connect owner APIs. P1 validates its catalogue asynchronously; P5 alone
  * resolves animation bounds at P4's explicit draft viewport side. No DOM reads. */
-export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, projectCatalogue,
+export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, projectCatalogue, projectSnapshot = value => value,
   getFeedbackLayoutSnapshot, onChange = () => {} } = {}) {
   let alive = true;
   let generation = 0;
@@ -57,10 +57,15 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
       const identity = canonicalJson({ enabled: source.enabled, contribution: source.contribution, dependencyRevisions: source.dependencyRevisions });
       const checkedRevision = checkRevision(source, previousCatalogue, identity);
       const key = canonicalJson(source);
-      const projected = await projectCatalogue(source.contribution);
+      const extracted = validatePlannerContributionSnapshot(await projectSnapshot(source));
+      if (extracted.revision !== source.revision || !extracted.enabled || extracted.pending || !extracted.contribution
+        || canonicalJson(extracted.dependencyRevisions) !== canonicalJson(source.dependencyRevisions)) {
+        throw new TypeError("Catalogue extraction changed the registered owner revision or readiness.");
+      }
+      const projected = await projectCatalogue(extracted.contribution);
       if (!alive || operation !== generation) return;
       if (canonicalJson(readCatalogue()) !== key) throw new TypeError("The video library changed during geometry validation.");
-      if (!projected || projected.catalogueRevision !== source.contribution.revision
+      if (!projected || projected.catalogueRevision !== extracted.contribution.revision
         || !Array.isArray(projected.videos) || !projected.videos.length || projected.videos.length > 500) {
         throw new TypeError("The verified display geometry projection is missing or inconsistent.");
       }
@@ -71,11 +76,11 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
           throw new TypeError("A verified video has invalid display dimensions or a duplicate identity.");
         }
         ids.add(video.assetId);
-        const entry = source.contribution.entries.find(item => item.assetId === video.assetId);
+        const entry = extracted.contribution.entries.find(item => item.assetId === video.assetId);
         if (!entry) throw new TypeError("Display geometry does not match its catalogue identity.");
         return { id: video.assetId, label: entry.annotationId, width: video.displayWidth, height: video.displayHeight };
       });
-      if (ids.size !== source.contribution.entries.length) throw new TypeError("Display geometry must cover the complete catalogue.");
+      if (ids.size !== extracted.contribution.entries.length) throw new TypeError("Display geometry must cover the complete catalogue.");
       previousCatalogue = checkedRevision;
       catalogue = source;
       catalogueKey = key;
