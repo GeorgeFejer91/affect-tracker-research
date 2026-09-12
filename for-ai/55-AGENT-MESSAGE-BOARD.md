@@ -4507,6 +4507,17 @@ operation composition and boot wiring; root owns the allocated bridge helper.
 
 ### 20260912-root-native-workspace-publication
 
+Main collected the frozen bridge as d4b8292; focused bridge tests pass 38/38.
+The native authoring boot now subscribes before its readiness acknowledgement,
+orders revision notices and flushes them before dispatch/replies without
+serializing active commands. The effect adapter accepts a beforeDispatch
+revision barrier and rechecks cancellation afterward. App composition must
+connect that barrier; this does not claim that core9 is already installed.
+Final qualification additionally requires the same saved master in actual
+Runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
+Both final executables require explicit pinned native-gstreamer build support;
+the current builder defaults alone do not establish that capability.
+
 - Main explicitly allocated the P1-03/P1-06/P1-07 shared native bridge seam,
   Backend Verification, base `13ea36e`, isolated
   `D:/GitHub/affect-tracker-research-native-workspace-root` on

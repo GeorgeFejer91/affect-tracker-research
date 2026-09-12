@@ -4,6 +4,19 @@ import { createPlannerNativeEffects } from "../site/src/research/planner-authori
 const context = () => ({ sessionId: crypto.randomUUID(), requestId: crypto.randomUUID(), expectedRevision: 0 });
 const ack = (extra = {}) => ({ schema: "affect-research-planner-native-result", version: 1, operation: "saveRecipe",
   effect: { written: true, basename: "recipe.json" }, payload: { saved: true }, error: null, superseded: null, ...extra });
+
+test("revision barrier completes before dispatch and cancellation is rechecked", async () => {
+  const c = context(), receipts = []; let release, current = true, calls = 0;
+  const gate = new Promise(resolve => { release = resolve; });
+  const adapter = createPlannerNativeEffects({ sessionId: c.sessionId,
+    beforeDispatch: () => gate, invoke: async () => { calls++; return ack(); } });
+  const pending = adapter.execute(c, { type: "writeRecipe", grantId: crypto.randomUUID(), sourceText: "{}\n" },
+    { isCurrent: () => current, recordEffect: r => receipts.push(r) });
+  assert.equal(calls, 0); assert.equal(receipts.length, 0);
+  current = false; release();
+  await assert.rejects(pending, /ended before native dispatch/);
+  assert.equal(calls, 0); assert.equal(receipts.length, 0);
+});
 test("native adapter sends detached command identity and returns actual payload", async () => {
   const c = context(), receipts = [], action = { type: "writeRecipe", grantId: crypto.randomUUID(), sourceText: "{}\n" };
   const adapter = createPlannerNativeEffects({ sessionId: c.sessionId, invoke: async (name, { request }) => {

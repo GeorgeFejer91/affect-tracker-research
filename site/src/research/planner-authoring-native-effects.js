@@ -14,7 +14,7 @@ const PUBLIC_OPERATIONS = Object.freeze({ readQuestionnaire: "importQuestionnair
 
 /** Fixed native RPC transport only. Native owns original-request/grant/CAS
  * authorization, source validation, filesystem effects and retained receipts. */
-export function createPlannerNativeEffects({ invoke, sessionId }) {
+export function createPlannerNativeEffects({ invoke, sessionId, beforeDispatch = async () => {} }) {
   if (typeof invoke !== "function" || !UUID.test(sessionId)) throw new TypeError("Native effects require the owned session.");
   let disposed = false;
   return Object.freeze({
@@ -31,6 +31,8 @@ export function createPlannerNativeEffects({ invoke, sessionId }) {
       if (typeof isCurrent !== "function" || typeof recordEffect !== "function") throw new TypeError("Native effects require command guards and receipt retention.");
       const request = structuredClone({ context, action });
       if (new TextEncoder().encode(canonicalJson({ request })).byteLength + 1 > MAX_FRAME_BYTES) commandFailure("request_limit", "Native effect exceeds the encoded transport limit.");
+      if (disposed || signal?.aborted || !isCurrent()) commandFailure("canceled", "The command ended before native dispatch.");
+      await beforeDispatch();
       if (disposed || signal?.aborted || !isCurrent()) commandFailure("canceled", "The command ended before native dispatch.");
       // A rejected/lost RPC is not proof that a write did not occur. The native
       // ledger supplies a more precise receipt when its acknowledgement arrives.

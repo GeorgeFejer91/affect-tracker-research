@@ -15,21 +15,43 @@ export async function bootPlannerAuthoringNative(root, invoke = tauriInvoke) {
   if (!session) throw new Error("Planner authoring session is unavailable.");
   let disposed = false;
   const pending = new Set();
-  await invoke("research_planner_authoring_ready", { sessionId: session.sessionId, revision: session.revision });
+  let unsubscribe = () => {};
+  const destroy = () => {
+    if (disposed) return;
+    disposed = true; unsubscribe(); session.destroy();
+  };
+  // Subscribe before awaiting readiness so edits during the handshake are not
+  // lost. Keep revision delivery ordered without waiting for active effects.
+  let revisions = invoke("research_planner_authoring_ready", { sessionId: session.sessionId, revision: session.revision });
+  unsubscribe = session.subscribe(revision => {
+    revisions = revisions.then(() => {
+      if (!disposed) return invoke("research_planner_authoring_revision", {
+        request: { sessionId: session.sessionId, revision },
+      });
+    });
+    void revisions.catch(destroy);
+  });
+  const flushRevision = async () => {
+    let observed;
+    do { observed = revisions; await observed; } while (observed !== revisions);
+    if (disposed) throw new Error("Planner authoring transport is closed.");
+  };
+  try { await flushRevision(); } catch (error) { destroy(); throw error; }
   const run = async () => {
     while (!disposed) {
       const request = await invoke("research_planner_authoring_next");
       if (request === null || disposed) break;
-      const task = session.execute(request).then(async response => {
+      const task = flushRevision().then(() => session.execute(request)).then(async response => {
+        await flushRevision();
         if (!disposed) await invoke("research_planner_authoring_complete", { response });
       });
       pending.add(task);
       // A transport failure closes this owned gateway; the native deadline
       // reports the unknown outcome and tears down the owned hidden process.
-      void task.catch(() => { disposed = true; session.destroy(); }).finally(() => pending.delete(task));
+      void task.catch(destroy).finally(() => pending.delete(task));
     }
     await Promise.allSettled([...pending]);
   };
-  void run().catch(() => { disposed = true; session.destroy(); });
-  return Object.freeze({ destroy() { disposed = true; session.destroy(); } });
+  void run().catch(destroy);
+  return Object.freeze({ flushRevision, destroy });
 }

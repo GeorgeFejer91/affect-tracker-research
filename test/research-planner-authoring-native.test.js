@@ -3,6 +3,39 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { bootPlannerAuthoringNative } from "../site/src/research/planner-authoring-native.js";
 
+test("native revision notices are ordered across readiness and drained before replies", async () => {
+  let notify, ready, releaseRevision, completed;
+  const readyGate = new Promise(resolve => { ready = resolve; });
+  const revisionGate = new Promise(resolve => { releaseRevision = resolve; });
+  const completion = new Promise(resolve => { completed = resolve; });
+  const calls = []; let supplied = false, unsubscribed = 0;
+  const session = { sessionId: crypto.randomUUID(), revision: 0,
+    subscribe(listener) { notify = listener; return () => { unsubscribed++; }; },
+    async execute() { calls.push("execute"); this.revision = 2; notify(2); return { revision: 2 }; },
+    destroy() {},
+  };
+  const boot = bootPlannerAuthoringNative({ researchUi: { plannerAuthoringSession: session } }, async (command, args) => {
+    if (command.endsWith("_status")) return { enabled: true, transport: "stdio" };
+    if (command.endsWith("_ready")) return readyGate;
+    if (command.endsWith("_revision")) {
+      assert.deepEqual(args, { request: { sessionId: session.sessionId, revision: args.request.revision } });
+      calls.push(`revision:${args.request.revision}`);
+      if (args.request.revision === 2) await revisionGate;
+      return;
+    }
+    if (command.endsWith("_next")) { if (supplied) return null; supplied = true; return {}; }
+    calls.push("complete"); completed();
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  session.revision = 1; notify(1); ready();
+  const bridge = await boot;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ["revision:1", "execute", "revision:2"]);
+  releaseRevision(); await completion;
+  assert.deepEqual(calls, ["revision:1", "execute", "revision:2", "complete"]);
+  bridge.destroy(); bridge.destroy(); assert.equal(unsubscribed, 1);
+});
+
 test("CLI explicitly builds one hidden native WebView with its owned profile", async () => {
   const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
   assert.match(source, /context\.config\(\)\.app\.windows\.len\(\) != 1/u);
@@ -27,6 +60,7 @@ test("owned native bridge dispatches through the real session and drains replies
   const completion = new Promise(resolve => { done = resolve; });
   const responses = [], received = []; let destroyed = 0;
   const session = { sessionId: crypto.randomUUID(), revision: 7,
+    subscribe() { return () => {}; },
     async execute(request) { received.push(request); if (request.requestId === "first") await gate; return { requestId: request.requestId }; },
     destroy() { destroyed++; },
   };
@@ -50,6 +84,7 @@ test("disposing the bridge prevents late command results from publishing", async
   const staging = new Promise(resolve => { started = resolve; });
   let requested = false, destroyed = 0, completed = 0;
   const session = { sessionId: crypto.randomUUID(), revision: 0,
+    subscribe() { return () => {}; },
     async execute() { started(); await gate; return {}; }, destroy() { destroyed++; },
   };
   const bridge = await bootPlannerAuthoringNative({ researchUi: { plannerAuthoringSession: session } }, async command => {
