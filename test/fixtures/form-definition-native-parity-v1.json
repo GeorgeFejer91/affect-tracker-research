@@ -1,0 +1,392 @@
+{
+  "referenceCommit": "ffe11d89671d4b6879556046607f49d8a354d193",
+  "referencePath": "site/src/research/form-definition.js",
+  "referenceSha256": "f495bb7803b6d2b4888c7b01a3adfcd35be2c83b832ca427e4c7a925e165ebb4",
+  "vectors": [
+    {
+      "label": "/version=1.0",
+      "pointer": "/version",
+      "jsonValue": "1.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/version=1e0",
+      "pointer": "/version",
+      "jsonValue": "1e0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/version=2",
+      "pointer": "/version",
+      "jsonValue": "2",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/version=true",
+      "pointer": "/version",
+      "jsonValue": "true",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/version=\"1\"",
+      "pointer": "/version",
+      "jsonValue": "\"1\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/order=1.0",
+      "pointer": "/items/0/order",
+      "jsonValue": "1.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/0/order=0",
+      "pointer": "/items/0/order",
+      "jsonValue": "0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/order=2",
+      "pointer": "/items/0/order",
+      "jsonValue": "2",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/order=-0",
+      "pointer": "/items/0/order",
+      "jsonValue": "-0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/order=1.5",
+      "pointer": "/items/0/order",
+      "jsonValue": "1.5",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/response/maxUtf8Bytes=1.0",
+      "pointer": "/items/0/response/maxUtf8Bytes",
+      "jsonValue": "1.0",
+      "accepted": true,
+      "canonicalFileSha256": "a1079fe8259af06f2eeea3ad3b0152bda12d3ca99e351da46f86c6e2ddea8228"
+    },
+    {
+      "label": "/items/0/response/maxUtf8Bytes=1024.0",
+      "pointer": "/items/0/response/maxUtf8Bytes",
+      "jsonValue": "1024.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/0/response/maxUtf8Bytes=1025",
+      "pointer": "/items/0/response/maxUtf8Bytes",
+      "jsonValue": "1025",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/response/maxUtf8Bytes=-0",
+      "pointer": "/items/0/response/maxUtf8Bytes",
+      "jsonValue": "-0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/response/maxUtf8Bytes=null",
+      "pointer": "/items/0/response/maxUtf8Bytes",
+      "jsonValue": "null",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=0.0",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "0.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/1/response/min=-0",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "-0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=-0.0",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "-0.0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=-0e5",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "-0e5",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=-1",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "-1",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=0.5",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "0.5",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=\"0\"",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "\"0\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/min=false",
+      "pointer": "/items/1/response/min",
+      "jsonValue": "false",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/max=9007199254740991.0",
+      "pointer": "/items/1/response/max",
+      "jsonValue": "9007199254740991.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/1/response/max=9007199254740992",
+      "pointer": "/items/1/response/max",
+      "jsonValue": "9007199254740992",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/max=18446744073709551615",
+      "pointer": "/items/1/response/max",
+      "jsonValue": "18446744073709551615",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/1/response/max=1e999",
+      "pointer": "/items/1/response/max",
+      "jsonValue": "1e999",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/2/response/options/0/order=1.0",
+      "pointer": "/items/2/response/options/0/order",
+      "jsonValue": "1.0",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/2/response/options/0/order=\"1\"",
+      "pointer": "/items/2/response/options/0/order",
+      "jsonValue": "\"1\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/2/response/options/0/order=true",
+      "pointer": "/items/2/response/options/0/order",
+      "jsonValue": "true",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/2/response/options/0/order=-0",
+      "pointer": "/items/2/response/options/0/order",
+      "jsonValue": "-0",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/required=false",
+      "pointer": "/items/0/required",
+      "jsonValue": "false",
+      "accepted": true,
+      "canonicalFileSha256": "52ee86872efa95f22003dab21dbff5296bfed7e90fc0a2e851bc7c38b60fcbe7"
+    },
+    {
+      "label": "/items/0/required=null",
+      "pointer": "/items/0/required",
+      "jsonValue": "null",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/required=\"true\"",
+      "pointer": "/items/0/required",
+      "jsonValue": "\"true\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/items/0/response/kind=\"text\"",
+      "pointer": "/items/0/response/kind",
+      "jsonValue": "\"text\"",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/items/0/response/kind=\"unknown\"",
+      "pointer": "/items/0/response/kind",
+      "jsonValue": "\"unknown\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/provenance/kind=\"projectAuthored\"",
+      "pointer": "/provenance/kind",
+      "jsonValue": "\"projectAuthored\"",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/provenance/kind=\"imported\"",
+      "pointer": "/provenance/kind",
+      "jsonValue": "\"imported\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "/provenance/validationStatus=\"notValidated\"",
+      "pointer": "/provenance/validationStatus",
+      "jsonValue": "\"notValidated\"",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "/provenance/validationStatus=\"validated\"",
+      "pointer": "/provenance/validationStatus",
+      "jsonValue": "\"validated\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"en\"",
+      "pointer": "/language",
+      "jsonValue": "\"en\"",
+      "accepted": true,
+      "canonicalFileSha256": "06dd0975e6e614ee36282b29b31ec30a37c052dd91a77c9e9a88894ab10c52d1"
+    },
+    {
+      "label": "language \"de\"",
+      "pointer": "/language",
+      "jsonValue": "\"de\"",
+      "accepted": true,
+      "canonicalFileSha256": "294cb0cfa28a5d8ca7febb100f48f1bd5b0116778f8697899c35ef85feed9b6e"
+    },
+    {
+      "label": "language \"UND\"",
+      "pointer": "/language",
+      "jsonValue": "\"UND\"",
+      "accepted": true,
+      "canonicalFileSha256": "b719f8ba2056ab86cf3eaa371a942751000fe9b1130db420c067c291918f8a4b"
+    },
+    {
+      "label": "language \"und\"",
+      "pointer": "/language",
+      "jsonValue": "\"und\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"en-US\"",
+      "pointer": "/language",
+      "jsonValue": "\"en-US\"",
+      "accepted": true,
+      "canonicalFileSha256": "a26779ac0749860c646ab2c63b0dadfc0fab9a091eea405652aad8f9da44f53e"
+    },
+    {
+      "label": "language \"zh-Hant-TW\"",
+      "pointer": "/language",
+      "jsonValue": "\"zh-Hant-TW\"",
+      "accepted": true,
+      "canonicalFileSha256": "06b62cd7916637951c2b4219267906803c98df88c048b8a05dba1cd9a85a1888"
+    },
+    {
+      "label": "language \"abcdefgh-12345678\"",
+      "pointer": "/language",
+      "jsonValue": "\"abcdefgh-12345678\"",
+      "accepted": true,
+      "canonicalFileSha256": "bdf2932fc8a751f69d390d395aefc0b4483ebebe69fd98a6a3fa79446c7fb9af"
+    },
+    {
+      "label": "language \"en-\"",
+      "pointer": "/language",
+      "jsonValue": "\"en-\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"en_uk\"",
+      "pointer": "/language",
+      "jsonValue": "\"en_uk\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"en\\n\"",
+      "pointer": "/language",
+      "jsonValue": "\"en\\n\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "title scalars 0",
+      "pointer": "/title",
+      "jsonValue": "\"\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "title scalars 500",
+      "pointer": "/title",
+      "jsonValue": "\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"",
+      "accepted": true,
+      "canonicalFileSha256": "8b34e9c6de15eab30ae50bdb4d1b1f9d6e9faaa9e246079b35c99ad08de5b606"
+    },
+    {
+      "label": "title scalars 501",
+      "pointer": "/title",
+      "jsonValue": "\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "title scalars 13",
+      "pointer": "/title",
+      "jsonValue": "\"\\t\\n\\r       　﻿\"",
+      "accepted": true,
+      "canonicalFileSha256": "165cf61e90c16f48175c44035db6388c20ed852edf95adf88eb107d1f6cee49e"
+    },
+    {
+      "label": "title scalars 6",
+      "pointer": "/title",
+      "jsonValue": "\" é é \"",
+      "accepted": true,
+      "canonicalFileSha256": "98c0bc3ebc596b55addc6e9e0782651ac07ffc0e982bb8eb88ba1c1d65c8b332"
+    }
+  ]
+}

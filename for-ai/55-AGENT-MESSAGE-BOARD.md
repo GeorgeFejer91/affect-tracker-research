@@ -71,6 +71,21 @@
 - S4 owns the new standalone native FormDefinition validator; Main stays on
   core9 integration. No source duplication or v1 reader widening is permitted.
 
+### 20260912-p2-native-form-validator
+
+- Main/root allocated S4 the standalone P2 / E2E-DEMOGRAPHICS native validator,
+  focused tests and docs only; Backend Verification, isolated branch
+  `codex/segment-p2-native-form`, Main base `f3a2bc2`. Previous P4 work is frozen.
+- Main/Runner agreed the exact public typed API before edits. The module reuses
+  existing canonical JSON/hash authority, admits whole-float JSON integers while
+  rejecting negative zero/coercion/unsafe values, and preserves text exactly.
+- Evidence: final native suite 22/22, both frozen EN/DE byte/hash fixtures,
+  malformed contracts and 55 production-JS-reference acceptance/canonical
+  vectors; rustfmt/diff checks pass. See `docs/native-form-definition-v1.md`.
+- Main owns lib/master/app integration; Runner owns answers/mandatory submission,
+  participant controls and XDF. No historical reader, integration or other-segment
+  source changed, and no runtime/qualification claim follows from these checks.
+
 ### 20260912-cli-helper-collection-and-target
 
 - Main, CLI-SHARED / CLI-P7 bounded integration pass. Collected native selection
