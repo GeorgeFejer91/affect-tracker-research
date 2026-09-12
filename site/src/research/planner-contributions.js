@@ -126,6 +126,33 @@ export function validatePlannerContributionSnapshot(input) {
   return JSON.parse(serialized);
 }
 
+function bindPreparedOwner(candidate) {
+  if (!candidate || typeof candidate !== "object") throw new TypeError("Invalid prepared Planner owner.");
+  const getter = Object.getOwnPropertyDescriptor(candidate, "snapshot")?.get;
+  const methods = Object.fromEntries(["isCurrent", "commit", "afterCommit"].map((key) => [key, candidate[key]]));
+  if (typeof getter !== "function" || Object.values(methods).some((method) => typeof method !== "function")) {
+    throw new TypeError("Prepared Planner owners require a snapshot getter and synchronous publication methods.");
+  }
+  const snapshot = validatePlannerContributionSnapshot(getter.call(candidate));
+  const identity = canonicalJson(snapshot);
+  const unchanged = () => Object.getOwnPropertyDescriptor(candidate, "snapshot")?.get === getter
+    && Object.entries(methods).every(([key, method]) => candidate[key] === method)
+    && canonicalJson(validatePlannerContributionSnapshot(getter.call(candidate))) === identity;
+  const invoke = (key) => {
+    if (!unchanged()) throw new TypeError("Prepared Planner owner was substituted.");
+    const result = methods[key].call(candidate);
+    if (result && typeof result.then === "function") throw new TypeError("Prepared owner publication must be synchronous.");
+    return result;
+  };
+  return {
+    snapshot,
+    unchanged,
+    isCurrent: () => unchanged() && methods.isCurrent.call(candidate) === true && unchanged(),
+    commit: () => invoke("commit"),
+    afterCommit: () => invoke("afterCommit"),
+  };
+}
+
 export function createPlannerContributionRegistry({ onChange = () => {} } = {}) {
   const owners = new Map();
   const accepted = new Map();
@@ -143,7 +170,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
   // Exclusions bind the explicit disabled choice, not an optional preview's
   // unsaved camera/draft revisions. Enabled contributions bind every field.
   const identityOf = (snapshot) => snapshot.enabled ? canonicalJson(snapshot) : "excluded";
-  function read({ format = "package-v1" } = {}) {
+  function readState({ format = "package-v1" } = {}, preview = null) {
     const snapshots = [];
     const issues = [];
     const issue = (segment, code, message) => issues.push(Object.freeze({ segment, code, message }));
@@ -151,15 +178,15 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       const owner = owners.get(segment);
       if (!owner) continue;
       try {
-        const snapshot = validatePlannerContributionSnapshot(owner.getSnapshot());
+        const snapshot = validatePlannerContributionSnapshot(preview?.segment === segment ? preview.snapshot : owner.getSnapshot());
         const observation = canonicalJson(snapshot);
-        if (owner.observation !== observation) { owner.observation = observation; owner.epoch += 1; }
+        if (!preview && owner.observation !== observation) { owner.observation = observation; owner.epoch += 1; }
         const identity = canonicalJson({ enabled: snapshot.enabled, contribution: snapshot.contribution, dependencyRevisions: snapshot.dependencyRevisions });
         if (owner.previous && (snapshot.revision < owner.previous.revision
           || (snapshot.revision === owner.previous.revision && identity !== owner.previous.identity))) {
           throw new TypeError("Contribution revision did not advance.");
         }
-        owner.previous = { revision: snapshot.revision, identity };
+        if (!preview) owner.previous = { revision: snapshot.revision, identity };
         snapshots.push({ segment, ...snapshot });
         if (!snapshot.enabled) continue;
         if (snapshot.pending || snapshot.contribution === null) {
@@ -169,7 +196,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
           issue(segment, "successor-required", `${segment}: this active contribution requires a successor recipe contract; v1 cannot include it.`);
         }
       } catch {
-        owner.epoch += 1;
+        if (!preview) owner.epoch += 1;
         issue(segment, "contribution-invalid", `${segment}: its contribution or revision is invalid. Reopen the owning editor.`);
       }
     }
@@ -203,7 +230,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
         if (invalid) issue(snapshot.segment, "dependency-stale", `${snapshot.segment}: its dependency on ${invalid.segment} is invalid.`);
       }
     }
-    for (const [segment, receipt] of accepted) {
+    for (const [segment, receipt] of preview ? [] : accepted) {
       const snapshot = snapshots.find((entry) => entry.segment === segment);
       if (!snapshot || owners.get(segment) !== receipt.owner
         || identityOf(snapshot) !== receipt.identity
@@ -215,6 +242,8 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
     }
     return Object.freeze({ snapshots, issues: Object.freeze(issues), fingerprint: canonicalJson({ snapshots: active, issues }) });
   }
+  // Preview substitution stays private and never alters observations/acceptance.
+  function read(options) { return readState(options); }
   function requiredIds(segments) {
     if (!Array.isArray(segments) || new Set(segments).size !== segments.length) throw new TypeError("Required Planner segments must be unique.");
     return segments.map(segmentId);
@@ -252,31 +281,38 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
     collect(snapshot);
     return { dependencies, selectedTarget };
   }
-  async function prepareAcceptance(segment, { selectedTarget = null, isCurrent = () => true, signal } = {}) {
+  async function prepareAcceptance(segment, { selectedTarget = null, isCurrent = () => true, signal, preparedOwner = null } = {}) {
     segmentId(segment);
     const owner = owners.get(segment);
     if (!owner) throw new TypeError(`${segment}: its contribution owner is unavailable.`);
-    const before = read({ format: "contributions" });
+    const live = read({ format: "contributions" });
+    const original = live.snapshots.find((entry) => entry.segment === segment);
+    if (!original) throw new TypeError(`${segment}: its contribution or revision is invalid.`);
+    const candidate = preparedOwner === null ? null : bindPreparedOwner(preparedOwner);
+    const before = candidate ? readState({ format: "contributions" }, { segment, snapshot: candidate.snapshot }) : live;
     const problem = before.issues.find((entry) => entry.segment === segment);
     if (problem) throw new TypeError(problem.message);
     const snapshot = before.snapshots.find((entry) => entry.segment === segment);
     const context = validationContext(before, snapshot, selectedTarget);
     const identity = identityOf(snapshot);
     const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf({ segment: id, ...value })]);
-    const epochs = [[segment, owner.epoch], ...dependencies.map(([id]) => [id, owners.get(id).epoch])];
+    const epochs = [segment, ...dependencies.map(([id]) => id)].map((id) => [id, owners.get(id).epoch, owners.get(id)]);
     const generation = acceptanceGeneration;
-    let committed = false, projected = false;
+    let committed = false, projected = false, commitStarted = false;
+    const dependenciesCurrent = (after) => !dependencies.some(([id, value]) => {
+      const dependency = after.snapshots.find((entry) => entry.segment === id);
+      return !dependency || identityOf(dependency) !== value;
+    });
     const current = () => {
-      if (committed || signal?.aborted || isCurrent() !== true) return false;
+      if (committed || commitStarted || signal?.aborted || isCurrent() !== true || (candidate && !candidate.isCurrent())) return false;
       const after = read({ format: "contributions" });
       const latest = after.snapshots.find((entry) => entry.segment === segment);
+      const validated = candidate ? readState({ format: "contributions" }, { segment, snapshot: candidate.snapshot }) : after;
       return acceptanceGeneration === generation && owners.get(segment) === owner && !!latest
-        && !epochs.some(([id, epoch]) => owners.get(id)?.epoch !== epoch)
-        && identityOf(latest) === identity && !after.issues.some((entry) => entry.segment === segment)
-        && !dependencies.some(([id, value]) => {
-          const dependency = after.snapshots.find((entry) => entry.segment === id);
-          return !dependency || identityOf(dependency) !== value;
-        });
+        && !epochs.some(([id, epoch, originalOwner]) => owners.get(id) !== originalOwner || owners.get(id)?.epoch !== epoch)
+        && (candidate ? canonicalJson(latest) === canonicalJson(original) : identityOf(latest) === identity)
+        && !validated.issues.some((entry) => entry.segment === segment) && dependenciesCurrent(validated)
+        && (!candidate || candidate.unchanged());
     };
     const check = () => { if (!current()) throw new TypeError(`${segment}: its contribution changed during confirmation.`); };
     check();
@@ -291,13 +327,35 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       commit() {
         if (committed) return structuredClone(snapshot);
         check();
+        if (candidate) {
+          if (acceptanceGeneration === Number.MAX_SAFE_INTEGER) throw new RangeError("Planner acceptance generation exhausted.");
+          commitStarted = true;
+          candidate.commit();
+          const actual = validatePlannerContributionSnapshot(owner.getSnapshot());
+          const after = readState({ format: "contributions" }, { segment, snapshot: actual });
+          if (signal?.aborted || isCurrent() !== true || acceptanceGeneration !== generation
+            || owners.get(segment) !== owner || !candidate.unchanged()
+            || canonicalJson({ segment, ...actual }) !== canonicalJson(snapshot)
+            || epochs.some(([id, epoch, originalOwner]) => id !== segment
+              && (owners.get(id) !== originalOwner || owners.get(id)?.epoch !== epoch))
+            || after.issues.some((entry) => entry.segment === segment) || !dependenciesCurrent(after)) {
+            throw new TypeError(`${segment}: committed owner does not match its verified confirmation.`);
+          }
+        }
         const receipt = { owner, snapshot: structuredClone(snapshot), identity, dependencies, stale: false };
         advanceAcceptance(); accepted.set(segment, receipt); committed = true;
         return structuredClone(snapshot);
       },
       afterCommit() {
         if (!committed) throw new TypeError("Confirm state before projecting acceptance.");
-        if (!projected) { projected = true; notify(); }
+        if (!projected) {
+          projected = true;
+          const failures = [];
+          try { candidate?.afterCommit(); } catch (error) { failures.push(error); }
+          try { notify(); } catch (error) { failures.push(error); }
+          if (failures.length === 1) throw failures[0];
+          if (failures.length) throw new AggregateError(failures, "Planner confirmation projection failed.");
+        }
       },
     });
   }
