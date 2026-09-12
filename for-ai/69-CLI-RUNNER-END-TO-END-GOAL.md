@@ -87,8 +87,17 @@ than mixing versions. The downloaded PDF SHA-256 is
 `d982b1953026f3f6246efc9a75fb97fc02abfbe3a7fe0f0b1ad2390fccc7cf3c`.
 Source and inspected rendering are in
 `D:/GitHub/.affect-checks/tas20-german-source-20260912/`.
-S2 owns local import-file preparation and independent item/anchor verification;
-production CLI import remains pending. Retain raw supplied response codes;
+S2 prepared `tas-20-de-handrack-2016-local.csv` in that evidence directory:
+124978 bytes, SHA-256
+`7b32c878cf83d2b0348498355402f1a8d1db5853aeffeaf2f74863ea701eef92`.
+All 20 items and five anchors were independently compared with the original
+page. Root reproduced production CSV import using `sourceKind:researcherCsv`
+and the exact logical filename, giving definition SHA-256
+`c8a6c8c8609caa590124144ce03dd9fb12570edcd15fb556a4b4c32dbb3eb60d`.
+The external `tas20-de-import-receipt.json` and `root-import-review.json` retain
+input options and evidence limits. All four questionnaire inputs are now
+available for the local mock; production CLI import remains pending.
+Retain raw supplied response codes;
 instrument-scoring validation and public redistribution are not inferred from
 the researcher's local-use authorization. A second Greifswald download returned
 bot-challenge HTML, not a usable PDF, and must not become an input.
