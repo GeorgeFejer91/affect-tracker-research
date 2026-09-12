@@ -1,0 +1,234 @@
+{
+  "workspace": {
+    "schema": "affect-research-workspace-contribution",
+    "version": 1,
+    "study": {
+      "schema": "affect-research-study-identity",
+      "version": 1,
+      "id": "spatial-fixture",
+      "title": "Spatial profile round trip"
+    },
+    "workspaceLayout": {
+      "assetRoot": "assets",
+      "videoLibrary": "assets/stimuli",
+      "projectFile": "experiment.package.json"
+    },
+    "videoCatalogue": {
+      "schema": "affect-research-video-catalogue-contribution",
+      "version": 1,
+      "revision": 1,
+      "entries": [
+        {
+          "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "annotationId": "session1_landscape",
+          "sourceRelativePath": "stimuli/session1/landscape.mp4",
+          "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "byteLength": 1024,
+          "durationMs": 12345,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080,
+            "displayAspect": {
+              "numerator": 16,
+              "denominator": 9
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        },
+        {
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "annotationId": "session2_portrait",
+          "sourceRelativePath": "stimuli/session2/portrait.mp4",
+          "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "byteLength": 2048,
+          "durationMs": 23456,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1080,
+            "displayHeightPx": 1920,
+            "displayAspect": {
+              "numerator": 9,
+              "denominator": 16
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        }
+      ],
+      "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+    }
+  },
+  "feedback": {
+    "input": {
+      "schema": "affect-research-input-binding",
+      "version": 1,
+      "preset": "arrowKeys",
+      "kind": "digital",
+      "stepSize": 0.1,
+      "directions": {
+        "up": {
+          "kind": "keyboard",
+          "code": "ArrowUp"
+        },
+        "down": {
+          "kind": "keyboard",
+          "code": "ArrowDown"
+        },
+        "left": {
+          "kind": "keyboard",
+          "code": "ArrowLeft"
+        },
+        "right": {
+          "kind": "keyboard",
+          "code": "ArrowRight"
+        }
+      },
+      "axes": null
+    },
+    "visual": {
+      "gridEnabled": true,
+      "flubberEnabled": true,
+      "sizePercent": 32,
+      "transparency": 0.05,
+      "hideFeedback": false,
+      "overlayPosition": {
+        "x": 0.72,
+        "y": 0.5
+      },
+      "lockPosition": false,
+      "flubber": {
+        "showOutline": true,
+        "outlineThickness": 0,
+        "showHalo": true
+      },
+      "grid": {
+        "lineThickness": 1,
+        "showOutline": true,
+        "outlineThickness": 2,
+        "cursorSize": 14
+      },
+      "colors": {
+        "up": "#f2c94c",
+        "down": "#2f80ed",
+        "left": "#eb5757",
+        "right": "#27ae60",
+        "idle": "#9ca3af",
+        "outline": "#f8fafc",
+        "halo": "#93c5fd",
+        "cursor": "#ffffff"
+      }
+    },
+    "mappings": {
+      "oscillationFrequency": {
+        "min": 0.5,
+        "max": 2.5,
+        "drivenBy": "y-axis",
+        "reverse": false
+      },
+      "edgeSmoothness": {
+        "min": 0,
+        "max": 1,
+        "drivenBy": "x-axis",
+        "reverse": false
+      },
+      "projectionAmplitude": {
+        "min": 0.2,
+        "max": 1,
+        "drivenBy": "y-axis",
+        "reverse": false
+      },
+      "pulseSynchrony": {
+        "min": 0.2,
+        "max": 1,
+        "drivenBy": "x-axis",
+        "reverse": false
+      },
+      "waveSizeVariation": {
+        "min": 0,
+        "max": 1,
+        "drivenBy": "x-axis",
+        "reverse": true
+      },
+      "saturation": {
+        "min": 0,
+        "max": 1,
+        "drivenBy": "radius",
+        "reverse": false
+      }
+    }
+  },
+  "profiles": [
+    {
+      "schema": "affect-research-xr-layout",
+      "version": 1,
+      "target": "webxr-immersive-vr",
+      "projection": "flat-monoscopic",
+      "coordinateSystem": "right-up-back-metres",
+      "alignment": {
+        "kind": "world-fixed-initial-forward",
+        "forwardReference": "head-forward",
+        "upReference": "gravity-up",
+        "recenterPolicy": "between-attempts-only",
+        "trackingLossPolicy": "stop-attempt"
+      },
+      "video": {
+        "distanceMetres": 4.25,
+        "azimuthDegrees": 17,
+        "elevationDegrees": -8,
+        "yawDegrees": 23,
+        "pitchDegrees": 11,
+        "rollDegrees": -17,
+        "widthMetres": 1.75,
+        "heightMetres": 0.95,
+        "fit": "contain"
+      },
+      "feedback": {
+        "enabled": true,
+        "offsetXMetres": -0.3,
+        "offsetYMetres": -1.1,
+        "diameterMetres": 0.36,
+        "minimumGapMetres": 0.08
+      }
+    },
+    {
+      "schema": "affect-research-xr-layout",
+      "version": 1,
+      "target": "webxr-immersive-vr",
+      "projection": "flat-monoscopic",
+      "coordinateSystem": "right-up-back-metres",
+      "alignment": {
+        "kind": "world-fixed-initial-forward",
+        "forwardReference": "head-forward",
+        "upReference": "gravity-up",
+        "recenterPolicy": "between-attempts-only",
+        "trackingLossPolicy": "stop-attempt"
+      },
+      "video": {
+        "distanceMetres": 4.25,
+        "azimuthDegrees": 17,
+        "elevationDegrees": -8,
+        "yawDegrees": 23,
+        "pitchDegrees": 11,
+        "rollDegrees": -17,
+        "widthMetres": 1.75,
+        "heightMetres": 0.95,
+        "fit": "contain"
+      },
+      "feedback": {
+        "enabled": false,
+        "offsetXMetres": -0.3,
+        "offsetYMetres": -1.1,
+        "diameterMetres": 0.36,
+        "minimumGapMetres": 0.08
+      }
+    }
+  ]
+}
