@@ -269,6 +269,9 @@ function bindResearchInteractions(root, { surface }) {
   let editablePackageDefaults = null;
   let packageIsStale = false;
   let packageLoadGeneration = 0;
+  // Invalid drafts can have the same null fingerprint. This monotonic intent
+  // revision also protects field edits and edit/revert while a file is opening.
+  let packageEditRevision = 0;
   let observedPackageDraft = null;
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
@@ -292,6 +295,7 @@ function bindResearchInteractions(root, { surface }) {
     const next = plannerContributions.read().fingerprint;
     if (next === observedContributions) return;
     observedContributions = next;
+    packageEditRevision += 1;
     packageExport.invalidate();
     if (experimentPackageDocument) {
       packageIsStale = true;
@@ -3787,12 +3791,13 @@ function bindResearchInteractions(root, { surface }) {
 
   async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null, guard = null } = {}) {
     const generation = ++packageLoadGeneration;
+    const editRevision = packageEditRevision;
     const parsed = await parseExperimentPackageV1(new TextEncoder().encode(
       receipt?.canonicalSourceText ?? receipt?.sourceText ?? receipt,
     ));
     const reproduction = await verifySameRealmPackageReproductionV1(parsed.package);
     const preparedSettings = await validateResearchSettingsV3(parsed.package.settings);
-    const current = () => generation === packageLoadGeneration && (!guard || guard());
+    const current = () => generation === packageLoadGeneration && editRevision === packageEditRevision && (!guard || guard());
     if (!current()) return false;
     if (!guard) packageExport.invalidate();
     setInputValue("planner-presentation-target", "");
@@ -3852,9 +3857,10 @@ function bindResearchInteractions(root, { surface }) {
       return;
     }
     const generation = ++packageLoadGeneration;
+    const editRevision = packageEditRevision;
     const draft = packageDraftFingerprint();
     const current = () => mode === "setup" && !packageExport.snapshot().busy
-      && packageDraftFingerprint() === draft;
+      && packageEditRevision === editRevision && packageDraftFingerprint() === draft;
     // Call the picker directly from the Open action. A selected recipe file
     // carries no authorization for its declared media or fixed package root.
     void openBrowserExperimentPackage()
@@ -4934,6 +4940,7 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener("input", (event) => {
+    packageEditRevision += 1;
     const target = event.target;
     if (target instanceof HTMLInputElement && target.id === "preview-color-hex") {
       setPreviewColorDraft(target.value);
@@ -4986,6 +4993,7 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener("change", (event) => {
+    packageEditRevision += 1;
     const target = event.target;
     if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
     if (isPreviewOnlyControl(target)) {

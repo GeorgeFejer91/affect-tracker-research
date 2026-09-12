@@ -20,6 +20,46 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
 (async () => {
   const root = document.querySelector("main"); root.id = "research-app"; root.dataset.researchSurface = "browser";
   bootResearchUi(); const ui = root.researchUi, q = selector => root.querySelector(selector);
+  const source = `${canonicalJson(legacyRecipe)}\n`, bytes = new TextEncoder().encode(source);
+  const handle = { kind: "file", getFile: async () => ({ size: bytes.byteLength, arrayBuffer: async () => bytes.slice().buffer }) };
+  // No legacy experiment document exists yet, so draft fingerprints are null.
+  // A delayed file selection must not overwrite even invalid or reverted edits.
+  await wait(100);
+  for (const { edited, revert, label } of [
+    { edited: "119", revert: false, label: "newer field edits" },
+    { edited: "117", revert: true, label: "edit/revert intent" },
+    { edited: "", revert: false, label: "invalid field edits" },
+  ]) {
+    let release;
+    window.showOpenFilePicker = () => new Promise(resolve => { release = () => resolve([handle]); });
+    q("#research-announcer").textContent = "";
+    q("#package-load").click();
+    const before = q("#sampling-frequency").value;
+    q("#sampling-frequency").value = edited;
+    q("#sampling-frequency").dispatchEvent(new Event("input", { bubbles: true }));
+    if (revert) {
+      q("#sampling-frequency").value = before;
+      q("#sampling-frequency").dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    release();
+    await until(() => q("#research-announcer").textContent.includes("Newer edits were preserved"));
+    check(`incomplete-draft file open preserves ${label}`,
+      ui.experimentPackage === null && q("#sampling-frequency").value === (revert ? before : edited));
+  }
+  const originalDigest = crypto.subtle.digest.bind(crypto.subtle);
+  let releaseParsing;
+  crypto.subtle.digest = (algorithm, data) => {
+    crypto.subtle.digest = originalDigest;
+    return new Promise((resolve, reject) => { releaseParsing = () => originalDigest(algorithm, data).then(resolve, reject); });
+  };
+  window.showOpenFilePicker = () => Promise.resolve([handle]);
+  q("#research-announcer").textContent = "";
+  q("#package-load").click(); await until(() => releaseParsing);
+  q("#experiment-title").value = "Keep my newer study title";
+  q("#experiment-title").dispatchEvent(new Event("input", { bubbles: true }));
+  releaseParsing(); await until(() => q("#research-announcer").textContent.includes("Newer edits were preserved"));
+  check("edits during real asynchronous file validation prevent adoption", ui.experimentPackage === null
+    && q("#experiment-title").value === "Keep my newer study title");
   const publish = (entries = catalogue.entries) => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.stimuliCatalogued, { detail: {
     replace: true, items: entries.map((entry, index) => ({
       stimulus: { stimulusId: `cycle-${index}`, title: entry.annotationId, source: {
@@ -112,11 +152,10 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   check("restored variants confirm through the same footer cycle", accepted("stimuli") && ui.openSection === "layout");
   // Existing v1 files remain readable with all current producers connected.
   // A synthetic file handle verifies the controller seam, not an OS picker.
-  const source = `${canonicalJson(legacyRecipe)}\n`, bytes = new TextEncoder().encode(source);
   let picks = 0;
   window.showOpenFilePicker = () => {
     picks += 1;
-    return Promise.resolve([{ kind: "file", getFile: async () => ({ size: bytes.byteLength, arrayBuffer: async () => bytes.slice().buffer }) }]);
+    return Promise.resolve([handle]);
   };
   q("#package-load").click();
   check("legacy recipe picker is requested directly by its click", picks === 1);
