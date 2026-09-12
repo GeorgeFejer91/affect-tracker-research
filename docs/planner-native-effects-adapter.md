@@ -27,3 +27,13 @@ late acknowledgement retention, closed actions/grants, predispatch cancellation,
 lost-response unknown outcome and mismatched-operation rejection. This adapter
 is not yet registered in production app boot or connected to core9 owners;
 these tests do not establish actual native writes or a complete CLI run.
+
+`withPlannerCore9(owner, prepare)` separately supplies the exact nine public
+consequence descriptors and delegates to the host's actual preparation functions.
+P1 owns four workspace/media operations, P2 owns import/save, and P7 owns confirm,
+final Save and Open. Only Open opts into sequence publication. P5 confirmation
+rejects with `final_capture`; valid independent confirmations are P1/P2/P3/P4/P6.
+The wrapper preserves the existing owner methods/settings and adds no state.
+Two metadata/delegation tests pass. It is intentionally not installed into the
+app until its preparation handlers are connected; advertised metadata alone is
+not evidence that native operations work.

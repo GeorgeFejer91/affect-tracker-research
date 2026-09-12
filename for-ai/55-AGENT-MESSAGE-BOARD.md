@@ -2,6 +2,9 @@
 
 ### 20260912-main-native-effect-js-adapter
 
+- Added exact nine-command metadata/delegation wrapper with P5 final_capture
+  enforcement. Seven wrapper/transport checks pass. App installation is pending
+  actual preparation handlers, not inferred from catalogue metadata.
 - Main implemented the frozen closed native effect RPC adapter, bound to the
   coordinator's command identity, opaque grant IDs and original public operation.
   Unknown dispatch and late actual receipts survive stale/cancel rejection.
