@@ -27,6 +27,7 @@ mod research_planner_recipe_file;
 pub mod research_planner_recipe_policy;
 pub mod research_planner_recipe_supported;
 pub mod research_planner_recipe_v2;
+pub mod research_planner_recipe_v3;
 mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;

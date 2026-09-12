@@ -1,7 +1,7 @@
 import { canonicalJson } from "./canonical.js";
 import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS,
-  validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, freezeRecipeValue } from "./planner-recipe-wire.js";
+  validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3, freezeRecipeValue } from "./planner-recipe-wire.js";
 
 /** Session receipt -> detached authored payloads. Domain validation still occurs
  * in the compiler. Session revisions and explicit acceptance never become file
@@ -12,7 +12,7 @@ export function capturePlannerRecipeInputV1(registry, options) {
 
 /** Explicit version from the accepted owner's contract, never ambient state. */
 export function capturePlannerRecipeInputVersion(registry, { version, recipeId, presentationTarget, policy, isCurrent }) {
-  if (![1, 2].includes(version)) throw new TypeError("Capture requires an explicit supported Planner recipe version.");
+  if (![1, 2, 3].includes(version)) throw new TypeError("Capture requires an explicit supported Planner recipe version.");
   if (typeof isCurrent !== "function" || typeof registry.getAcceptanceGeneration !== "function") {
     throw new TypeError("Recipe capture requires a caller edit/operation/disposal guard and an acceptance generation.");
   }
@@ -33,7 +33,7 @@ export function capturePlannerRecipeInputVersion(registry, { version, recipeId, 
     segments[segment] = segment === "P6" ? { status: "included", profile: structuredClone(snapshot.contribution) }
       : structuredClone(snapshot.contribution);
   }
-  const validate = version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
+  const validate = captureStructure(version);
   const core = validate({ schema: PLANNER_RECIPE_SCHEMA, version,
     recipeId, presentationTarget, policy: structuredClone(policy), segments }, { integrity: false });
   // Canonical cloning rejects non-JSON values before a delayed compiler can see
@@ -90,9 +90,8 @@ export function capturePlannerRecipeInputPreparedFeedback(registry, {
     segments[segment] = segment === "P6" ? { status: "included", profile: structuredClone(snapshot.contribution) }
       : structuredClone(snapshot.contribution);
   }
-  const version = segments.P2.version;
-  if (![1, 2].includes(version)) throw new TypeError("Unsupported questionnaire contribution version for final capture.");
-  const validate = version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
+  const version = plannerRecipeVersionForContributions(segments.P1, segments.P2);
+  const validate = captureStructure(version);
   const core = validate({ schema: PLANNER_RECIPE_SCHEMA, version, recipeId, presentationTarget,
     policy: structuredClone(policy), segments }, { integrity: false });
   const input = freezeRecipeValue(JSON.parse(canonicalJson(core)));
@@ -110,4 +109,16 @@ export function capturePlannerRecipeInputPreparedFeedback(registry, {
   };
   if (!current()) throw new TypeError("The design changed during prepared feedback capture.");
   return Object.freeze({ input, isCurrent: current });
+}
+
+/** New capture follows explicit accepted contracts, never upgrades loaded bytes. */
+export function plannerRecipeVersionForContributions(workspace, questionnaires) {
+  if (workspace?.version === 3 && questionnaires?.version === 2) return 3;
+  if ([1, 2].includes(workspace?.version) && [1, 2].includes(questionnaires?.version)) return questionnaires.version;
+  throw new TypeError("Unsupported workspace/questionnaire combination for final capture.");
+}
+
+function captureStructure(version) {
+  if (version === 3) return validatePlannerRecipeStructureV3;
+  return version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
 }

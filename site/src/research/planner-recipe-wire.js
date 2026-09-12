@@ -90,6 +90,10 @@ export function validatePlannerRecipeStructureV2(value, { integrity = true } = {
   return validateStructure(value, integrity, 2, ["planner-recipe-reproduction-v3"]);
 }
 
+export function validatePlannerRecipeStructureV3(value, { integrity = true } = {}) {
+  return validateStructure(value, integrity, 3, ["planner-recipe-reproduction-v4"]);
+}
+
 function validateStructure(value, integrity, version, algorithms) {
   exactRecipeObject(value, integrity ? [...CORE_KEYS, "integrity"] : CORE_KEYS, "Planner recipe");
   if (value.schema !== PLANNER_RECIPE_SCHEMA || value.version !== version) {

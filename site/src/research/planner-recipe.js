@@ -1,17 +1,17 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { parseExperimentPackageV1, EXPERIMENT_PACKAGE_SCHEMA } from "./experiment-package.js";
-import { validateWorkspaceContribution } from "./workspace-contribution.js";
+import { validateWorkspaceContribution, validateWorkspaceContributionV3 } from "./workspace-contribution.js";
 import { validateQuestionnaireRecipeContributionV1, validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
 import { validateQuestionnaireRecipeContributionV2, compilePlannerQuestionnaireRoutesV2 } from "./questionnaire-recipe-v2.js";
 import { validateVariantDesign } from "./variant-design.js";
-import { projectSavedVariantCatalogue } from "./variant-catalogue-adapter.js";
+import { projectSavedVariantCatalogue, projectSupportedSavedVariantCatalogue } from "./variant-catalogue-adapter.js";
 import { validateFeedbackContributionV2 } from "./feedback-settings.js";
-import { resolveDesktopLayoutContribution } from "./desktop-layout-contribution.js";
-import { validateXrLayoutSelection, resolveSavedXrLayoutContribution } from "./xr-layout-recipe.js";
+import { resolveDesktopLayoutContribution, resolveSupportedDesktopLayoutContribution } from "./desktop-layout-contribution.js";
+import { validateXrLayoutSelection, resolveSavedXrLayoutContribution, resolveSupportedSavedXrLayoutContribution } from "./xr-layout-recipe.js";
 import { compilePlannerQuestionnaireRoutesV1, PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
-import { reproducePreparedPlannerRecipeV1, reconstructPreparedPlannerRecipeSelectionV1, reconstructPreparedPlannerRecipeSelectionV2 } from "./planner-recipe-reproduction.js";
+import { reproducePreparedPlannerRecipeV1, reconstructPreparedPlannerRecipeSelectionV1, reconstructPreparedPlannerRecipeSelectionV2, reconstructPreparedPlannerRecipeSelectionV3 } from "./planner-recipe-reproduction.js";
 import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS, PLANNER_RECIPE_INTEGRITY_ALGORITHM,
-  MAX_PLANNER_RECIPE_BYTES, readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2,
+  MAX_PLANNER_RECIPE_BYTES, readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3,
   boundPlannerRecipeMatrix, freezeRecipeValue, exactRecipeObject, assertPlannerRecipeJsonValue } from "./planner-recipe-wire.js";
 
 const encoder = new TextEncoder();
@@ -34,19 +34,22 @@ function captureJson(value) {
 /** Every owner validates complete saved content, independently of live media
  * readiness. A rejected/incomplete owner never becomes an omitted segment. */
 async function prepareCore(input, version = 1) {
-  const structure = version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
+  const structure = recipeStructure(version);
   const core = structure(captureJson(input), { integrity: false });
   const source = core.segments;
   boundPlannerRecipeMatrix(source.P2.languageSelection, source.P3.variants?.length,
     source.P6.status === "included" ? 2 : 1);
-  const workspace = await owned("P1", () => validateWorkspaceContribution(source.P1));
+  if (version < 3 && ![1, 2].includes(source.P1.version)) {
+    throw new PlannerRecipeIssue("P1", "segments.P1.version", "unsupported-version", "Planner recipe v1/v2 requires workspace v1/v2.");
+  }
+  const workspace = await owned("P1", () => (version === 3 ? validateWorkspaceContributionV3 : validateWorkspaceContribution)(source.P1));
   const questionnaires = await owned("P2", async () => {
-    if (version === 2) return validateQuestionnaireRecipeContributionV2(source.P2);
+    if (version >= 2) return validateQuestionnaireRecipeContributionV2(source.P2);
     const result = await validateQuestionnaireRecipeContributionV1(source.P2);
     await validateQuestionnaireRecipeContribution(result);
     return result;
   });
-  const compiledForms = await owned("P2", () => version === 2 ? compilePlannerQuestionnaireRoutesV2(questionnaires) : compilePlannerQuestionnaireRoutesV1({
+  const compiledForms = await owned("P2", () => version >= 2 ? compilePlannerQuestionnaireRoutesV2(questionnaires) : compilePlannerQuestionnaireRoutesV1({
     questionnaires: questionnaires.questionnaires, languageSelection: questionnaires.languageSelection,
   }));
   const presentationByDefinition = new Map(questionnaires.presentation.definitions.map(value => [value.questionnaireId, value]));
@@ -54,12 +57,12 @@ async function prepareCore(input, version = 1) {
     beforeSession: route.beforeSession.map(value => ({ ...value, presentation: structuredClone(presentationByDefinition.get(value.definition.questionnaireId)) })),
     afterSession: route.afterSession.map(value => ({ ...value, presentation: structuredClone(presentationByDefinition.get(value.definition.questionnaireId)) })),
   }));
-  const variantCatalogue = await owned("P3", () => projectSavedVariantCatalogue(workspace));
+  const variantCatalogue = await owned("P3", () => (version === 3 ? projectSupportedSavedVariantCatalogue : projectSavedVariantCatalogue)(workspace));
   const variants = await owned("P3", () => validateVariantDesign(source.P3, variantCatalogue.library));
   const feedback = await owned("P5", () => validateFeedbackContributionV2(source.P5));
-  const desktopLayout = await owned("P4", () => resolveDesktopLayoutContribution(source.P4, { workspace, feedback }));
+  const desktopLayout = await owned("P4", () => (version === 3 ? resolveSupportedDesktopLayoutContribution : resolveDesktopLayoutContribution)(source.P4, { workspace, feedback }));
   const selection = await owned("P6", () => validateXrLayoutSelection(source.P6));
-  const xrLayout = selection.status === "included" ? await owned("P6", () => resolveSavedXrLayoutContribution(selection.profile, {
+  const xrLayout = selection.status === "included" ? await owned("P6", () => (version === 3 ? resolveSupportedSavedXrLayoutContribution : resolveSavedXrLayoutContribution)(selection.profile, {
     workspaceContribution: workspace, feedbackContribution: feedback, selectedTarget: core.presentationTarget,
   })) : null;
   const normalized = { P1: workspace, P2: questionnaires, P3: variants, P4: desktopLayout.profile, P5: feedback, P6: selection };
@@ -96,7 +99,7 @@ export async function createPlannerRecipeV1(options) {
 }
 
 async function verifyRecipe(value, version = 1) {
-  const saved = (version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1)(captureJson(value));
+  const saved = recipeStructure(version)(captureJson(value));
   const { integrity, ...core } = saved;
   const verified = await compilePrepared(await prepareCore(core, version), integrity.algorithmVersion);
   if (canonicalJson(integrity) !== canonicalJson(verified.recipe.integrity)) {
@@ -168,5 +171,30 @@ export async function parseSupportedPlannerRecipe(bytes) {
   if (value?.schema !== PLANNER_RECIPE_SCHEMA) throw new TypeError("Expected a Planner recipe.");
   if (value.version === 1) return parsePlannerRecipeV1(bytes);
   if (value.version === 2) return parsePlannerRecipeV2(bytes);
+  if (value.version === 3) return parsePlannerRecipeV3(bytes);
   throw new TypeError("Unsupported Planner recipe version.");
+}
+
+function recipeStructure(version) {
+  if (version === 1) return validatePlannerRecipeStructureV1;
+  if (version === 2) return validatePlannerRecipeStructureV2;
+  if (version === 3) return validatePlannerRecipeStructureV3;
+  throw new TypeError("Unsupported Planner recipe version.");
+}
+
+export async function compilePlannerRecipeV3(core) {
+  return (await compilePrepared(await prepareCore(core, 3), "planner-recipe-reproduction-v4")).recipe;
+}
+export async function validatePlannerRecipeV3(value) { return (await verifyRecipe(value, 3)).recipe; }
+export async function serializePlannerRecipeV3(value) { return `${canonicalJson(await validatePlannerRecipeV3(value))}\n`; }
+export async function parsePlannerRecipeV3(bytes) {
+  const source = readPlannerRecipeJsonBytes(bytes);
+  return freezeRecipeValue({ recipe: await validatePlannerRecipeV3(source.value), canonicalSourceText: source.canonicalSourceText,
+    canonicalSourceByteSha256: await sha256Hex(encoder.encode(source.canonicalSourceText)) });
+}
+export async function reproducePlannerRecipeV3(value) { return (await verifyRecipe(value, 3)).reproduction.matrix; }
+export async function reconstructPlannerRecipeSelectionV3(value, selector) {
+  const verified = await verifyRecipe(value, 3);
+  return reconstructPreparedPlannerRecipeSelectionV3(verified.prepared, verified.reproduction,
+    verified.recipe.integrity.definitionSha256, selector);
 }

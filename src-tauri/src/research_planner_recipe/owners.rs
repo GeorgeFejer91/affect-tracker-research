@@ -49,6 +49,14 @@ pub(crate) fn desktop(
     workspace: &WorkspaceContribution,
     feedback: &FeedbackContributionV2,
 ) -> ResearchResult<Value> {
+    desktop_media(profile, &media(workspace), feedback)
+}
+
+pub(crate) fn desktop_media(
+    profile: &DesktopLayoutContributionV1,
+    media: &[MediaGeometry],
+    feedback: &FeedbackContributionV2,
+) -> ResearchResult<Value> {
     profile
         .validate()
         .map_err(|code| invalid(format!("P4: {code}")))?;
@@ -58,7 +66,7 @@ pub(crate) fn desktop(
     let envelope = resolve_feedback_envelope_v2(feedback, base.feedback.width)?;
     let result = profile
         .resolve(
-            &media(workspace),
+            media,
             &FeedbackEnvelope {
                 algorithm_version: &envelope.algorithm_version,
                 origin: &envelope.origin,
@@ -82,6 +90,14 @@ pub(crate) fn xr(
     workspace: &WorkspaceContribution,
     feedback: &FeedbackContributionV2,
 ) -> ResearchResult<Value> {
+    xr_media(profile, &media(workspace), feedback)
+}
+
+pub(crate) fn xr_media(
+    profile: &XrLayoutProfileV1,
+    media: &[MediaGeometry],
+    feedback: &FeedbackContributionV2,
+) -> ResearchResult<Value> {
     profile
         .validate()
         .map_err(|code| invalid(format!("P6: {code}")))?;
@@ -95,7 +111,7 @@ pub(crate) fn xr(
             envelope.half_extent_css_px,
         )
         .map_err(|code| invalid(format!("P6: {code}")))?;
-    let videos = media(workspace)
+    let videos = media
         .iter()
         .map(|video| {
             let geometry = profile

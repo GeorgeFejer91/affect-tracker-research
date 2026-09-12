@@ -1,6 +1,6 @@
 import { canonicalJson } from "./canonical.js";
-import { validateWorkspaceContribution } from "./workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { validateWorkspaceContribution, validateSupportedWorkspaceContribution } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { DESKTOP_LAYOUT_SCHEMA, DESKTOP_LAYOUT_MAX_BYTES, DesktopLayoutError,
@@ -9,13 +9,21 @@ import { DESKTOP_LAYOUT_SCHEMA, DESKTOP_LAYOUT_MAX_BYTES, DesktopLayoutError,
 
 /** Full saved content, with no editor, permission, storage or revision authority. */
 export async function resolveDesktopLayoutContribution(value, { workspace, feedback } = {}) {
+  return resolveSavedDesktop(value, { workspace, feedback }, validateWorkspaceContribution, projectVideoDisplayGeometry);
+}
+
+export async function resolveSupportedDesktopLayoutContribution(value, { workspace, feedback } = {}) {
+  return resolveSavedDesktop(value, { workspace, feedback }, validateSupportedWorkspaceContribution, projectSupportedVideoDisplayGeometry);
+}
+
+async function resolveSavedDesktop(value, { workspace, feedback }, validateWorkspace, projectGeometry) {
   const profile = validateDesktopLayoutProfileV1(value);
   // Capture all asynchronous inputs before the first await.
   const capturedWorkspace = structuredClone(workspace), capturedFeedback = structuredClone(feedback);
   const validFeedback = validateFeedbackContribution(capturedFeedback);
   if (canonicalJson(validFeedback) !== canonicalJson(capturedFeedback)) throw new DesktopLayoutError("feedback", "noncanonical", "Saved feedback settings must be canonical.");
-  const validWorkspace = await validateWorkspaceContribution(capturedWorkspace);
-  const { videos } = await projectVideoDisplayGeometry(validWorkspace.videoCatalogue);
+  const validWorkspace = await validateWorkspace(capturedWorkspace);
+  const { videos } = await projectGeometry(validWorkspace.videoCatalogue);
   const side = resolveDesktopLayoutBase(profile).geometry.feedback.width;
   const result = resolveDesktopLayoutGeometry(profile, videos, resolveFeedbackEnvelope(validFeedback, side));
   if (result.issues.length) {
