@@ -8,7 +8,8 @@ use crate::research_planner_recipe::{
 };
 use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_questionnaire_recipe_v2::QuestionnaireRecipeContributionV2;
-use crate::research_workspace_contribution::validate_workspace_contribution;
+use crate::research_workspace_contribution::{validate_workspace_contribution, WorkspaceContribution};
+use crate::research_workspace_contribution::v3::{validate_workspace_contribution_v3, WorkspaceContributionV3};
 use owners::hash;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -52,11 +53,48 @@ struct Prepared {
     matrix: Value,
 }
 
+enum PreparedWorkspace {
+    Legacy(WorkspaceContribution),
+    Controlled(WorkspaceContributionV3),
+}
+impl PreparedWorkspace {
+    fn media(&self) -> Vec<crate::research_desktop_layout::MediaGeometry> {
+        match self {
+            Self::Legacy(value) => owners::media(value),
+            Self::Controlled(value) => {
+                let mut seen = std::collections::BTreeSet::new();
+                value.video_catalogue.entries.iter()
+                    .filter(|entry| seen.insert(&entry.asset_id))
+                    .map(|entry| crate::research_desktop_layout::MediaGeometry {
+                        asset_id: entry.asset_id.clone(),
+                        display_width: entry.geometry.display_width_px() as f64,
+                        display_height: entry.geometry.display_height_px() as f64,
+                    }).collect()
+            }
+        }
+    }
+    fn variants(&self, contribution: &Value, definition_hash: &str) -> ResearchResult<Value> {
+        match self {
+            Self::Legacy(value) => crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants(value, contribution, definition_hash),
+            Self::Controlled(value) => crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants_v3(value, contribution, definition_hash),
+        }
+    }
+}
+
 impl PlannerRecipeV2 {
     fn prepare(&self) -> ResearchResult<Prepared> {
+        self.prepare_version(2)
+    }
+
+    fn prepare_version(&self, version: u32) -> ResearchResult<Prepared> {
+        let algorithm = match version {
+            2 => ALGORITHM,
+            3 => "planner-recipe-reproduction-v4",
+            _ => return Err(invalid("Unsupported Planner recipe version.")),
+        };
         if self.schema != SCHEMA
-            || self.version != 2
-            || self.integrity.algorithm_version != ALGORITHM
+            || self.version != version
+            || self.integrity.algorithm_version != algorithm
         {
             return Err(invalid("Unsupported Planner recipe schema or algorithm."));
         }
@@ -83,7 +121,15 @@ impl PlannerRecipeV2 {
         self.policy.validate()?;
         self.segments.p2.validate()?;
         self.segments.p5.validate()?;
-        let workspace = validate_workspace_contribution(&self.segments.p1)?;
+        if version == 2 && !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
+            return Err(invalid("Planner recipe v2 requires workspace v1/v2."));
+        }
+        let workspace = if version == 3 {
+            PreparedWorkspace::Controlled(validate_workspace_contribution_v3(&self.segments.p1)?)
+        } else {
+            PreparedWorkspace::Legacy(validate_workspace_contribution(&self.segments.p1)?)
+        };
+        let media = workspace.media();
         let route_count = owners::route_count(&self.segments.p2.language_selection)?;
         let variant_count = self
             .segments
@@ -128,12 +174,7 @@ impl PlannerRecipeV2 {
             }
         }
         let routes = self.segments.p2.routes()?;
-        let reproduced =
-            crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants(
-                &workspace,
-                &self.segments.p3,
-                &definition_hash,
-            )?;
+        let reproduced = workspace.variants(&self.segments.p3, &definition_hash)?;
         let variants = reproduced["variants"]
             .as_array()
             .ok_or_else(|| invalid("P3 reproduction is incomplete."))?
@@ -142,9 +183,9 @@ impl PlannerRecipeV2 {
             return Err(invalid("Reproduction omitted a saved variant or route."));
         }
         let mut presentations = vec![json!({"presentationTarget":"desktop-screen","layout":
-            owners::desktop(&self.segments.p4, &workspace, &self.segments.p5)?})];
+            owners::desktop_media(&self.segments.p4, &media, &self.segments.p5)?})];
         if let XrSelectionV1::Included { profile } = &self.segments.p6 {
-            presentations.push(json!({"presentationTarget":"webxr-immersive-vr","layout":owners::xr(profile, &workspace, &self.segments.p5)?}));
+            presentations.push(json!({"presentationTarget":"webxr-immersive-vr","layout":owners::xr_media(profile, &media, &self.segments.p5)?}));
         }
         let variant_hashes = variants.iter().map(|v| Ok(json!({"variantId":v["variantId"],"versionSha256":v["versionSha256"],
             "timelineSha256":hash(&v["timeline"])?,"markerProfileSha256":hash(&v["markerProfile"])?}))).collect::<ResearchResult<Vec<_>>>()?;
@@ -165,7 +206,7 @@ impl PlannerRecipeV2 {
                         "layout":if desktop {"desktop-layout-resolution-v1"} else {"xr-layout-resolution-v1"},
                         "feedbackEnvelope":"feedback-envelope-v2",
                         "feedbackFootprint":if desktop {Value::Null} else {json!("xr-feedback-footprint-v1")}},
-                    "profile":p["layout"]["profile"],"media":owners::media(&workspace),"feedback":self.segments.p5});
+                    "profile":p["layout"]["profile"],"media":media,"feedback":self.segments.p5});
                 Ok(json!({"presentationTarget":p["presentationTarget"],"layoutIdentitySha256":hash(&identity)?}))
         }).collect::<ResearchResult<Vec<_>>>()?;
         let policy_hash = hash(&self.policy)?;
@@ -214,7 +255,19 @@ impl PlannerRecipeV2 {
         Ok(bytes)
     }
     pub fn reconstruct_selection(&self, selector: &Value) -> ResearchResult<Value> {
-        let prepared = self.prepare()?;
+        self.reconstruct_selection_version(selector, 2)
+    }
+
+    pub(crate) fn validate_version(&self, version: u32) -> ResearchResult<()> {
+        self.prepare_version(version).map(|_| ())
+    }
+
+    pub(crate) fn reproduce_version(&self, version: u32) -> ResearchResult<Value> {
+        Ok(self.prepare_version(version)?.matrix)
+    }
+
+    pub(crate) fn reconstruct_selection_version(&self, selector: &Value, version: u32) -> ResearchResult<Value> {
+        let prepared = self.prepare_version(version)?;
         let keys = selector
             .as_object()
             .ok_or_else(|| invalid("Explicit selection is required."))?;
@@ -252,7 +305,7 @@ impl PlannerRecipeV2 {
             .find(|p| p["presentationTarget"] == selector["presentationTarget"])
             .ok_or_else(|| invalid("Selected presentation is absent."))?;
         Ok(
-            json!({"schema":"affect-research-planner-selection","version":2,"recipeId":self.recipe_id,
+            json!({"schema":"affect-research-planner-selection","version":version,"recipeId":self.recipe_id,
             "definitionSha256":self.integrity.definition_sha256,"presentationTarget":self.presentation_target,
             "study":self.segments.p1["study"],"assets":self.segments.p1["videoCatalogue"]["entries"],
             "policy":self.policy,"feedback":self.segments.p5,

@@ -5,7 +5,7 @@ import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { withPlannerCore9 } from "./planner-authoring-core9.js";
 import { createPlannerCore9Composition } from "./planner-core9-composition.js";
 import { QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION, verifySupportedQuestionnaireRecipeContribution } from "./questionnaire-recipe-v2.js";
-import { capturePlannerRecipeInputPreparedFeedback, capturePlannerRecipeInputVersion } from "./planner-recipe-capture.js";
+import { capturePlannerRecipeInputPreparedFeedback, capturePlannerRecipeInputVersion, plannerRecipeVersionForContributions } from "./planner-recipe-capture.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
 import {
@@ -81,7 +81,7 @@ import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { prepareBrowserPackageSave } from "./package-file-picker.js";
 import { openSupportedBrowserPlannerRecipeFile, prepareSupportedBrowserPlannerRecipeSave } from "./planner-recipe-file.js";
-import { parseSupportedPlannerRecipe, compilePlannerRecipeV1, compilePlannerRecipeV2 } from "./planner-recipe.js";
+import { parseSupportedPlannerRecipe, compilePlannerRecipeV1, compilePlannerRecipeV2, compilePlannerRecipeV3 } from "./planner-recipe.js";
 import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
 import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
@@ -381,7 +381,8 @@ function bindResearchInteractions(root, { surface }) {
       parseDocument: parseSupportedPlannerRecipe,
       compileDocument: compileSupportedRecipeDocument,
       captureInput: (registry, options) => capturePlannerRecipeInputVersion(registry, {
-        ...options, version: getQuestionnaireRecipeContributionSnapshot().contribution.version,
+        ...options, version: plannerRecipeVersionForContributions(getWorkspaceContributionSnapshot().contribution,
+          getQuestionnaireRecipeContributionSnapshot().contribution),
       }),
     },
     getDocument: () => experimentPackageDocument,
@@ -6130,7 +6131,9 @@ function bindResearchInteractions(root, { surface }) {
     observedContributions = packageContributionFingerprint;
   }
   async function compileSupportedRecipeDocument(input) {
-    const recipe = await (input.version === 2 ? compilePlannerRecipeV2 : compilePlannerRecipeV1)(input);
+    const compile = ({ 1: compilePlannerRecipeV1, 2: compilePlannerRecipeV2, 3: compilePlannerRecipeV3 })[input.version];
+    if (!compile) throw new TypeError("Unsupported Planner recipe version.");
+    const recipe = await compile(input);
     return parseSupportedPlannerRecipe(new TextEncoder().encode(`${canonicalJson(recipe)}\n`));
   }
   async function prepareQuestionnaireRestoration(contribution, context) {

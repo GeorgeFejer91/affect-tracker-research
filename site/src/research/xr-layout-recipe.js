@@ -1,5 +1,5 @@
-import { validateWorkspaceContribution } from "./workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { validateWorkspaceContribution, validateSupportedWorkspaceContribution } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
@@ -40,11 +40,23 @@ export function resolveXrLayoutContribution(profile, dependencies, selectedTarge
 export async function resolveSavedXrLayoutContribution(profile, {
   workspaceContribution, feedbackContribution, selectedTarget,
 }) {
+  return resolveSavedXr(profile, { workspaceContribution, feedbackContribution, selectedTarget }, validateWorkspaceContribution, projectVideoDisplayGeometry);
+}
+
+export async function resolveSupportedSavedXrLayoutContribution(profile, {
+  workspaceContribution, feedbackContribution, selectedTarget,
+}) {
+  return resolveSavedXr(profile, { workspaceContribution, feedbackContribution, selectedTarget }, validateSupportedWorkspaceContribution, projectSupportedVideoDisplayGeometry);
+}
+
+async function resolveSavedXr(profile, {
+  workspaceContribution, feedbackContribution, selectedTarget,
+}, validateWorkspace, projectGeometry) {
   const validated = checkedProfile(profile, selectedTarget);
   const savedWorkspace = structuredClone(workspaceContribution);
   const savedFeedback = validateFeedbackContribution(feedbackContribution);
-  const workspace = await validateWorkspaceContribution(savedWorkspace);
-  const projection = await projectVideoDisplayGeometry(workspace.videoCatalogue);
+  const workspace = await validateWorkspace(savedWorkspace);
+  const projection = await projectGeometry(workspace.videoCatalogue);
   if (projection.videos.length === 0) {
     throw new XrLayoutError("dependencies", "media-missing", "The XR experiment layout requires at least one declared video.");
   }

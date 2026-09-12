@@ -147,6 +147,9 @@ impl PlannerRecipeV1 {
         self.policy.validate()?;
         self.segments.p2.validate()?;
         self.segments.p5.validate()?;
+        if !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
+            return Err(CommandError::invalid_contract("Planner recipe v1 requires workspace v1/v2."));
+        }
         let workspace = validate_workspace_contribution(&self.segments.p1)?;
         let route_count = owners::route_count(&self.segments.p2.language_selection)?;
         let variant_count = self
