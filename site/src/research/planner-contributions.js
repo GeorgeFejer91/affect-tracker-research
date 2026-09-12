@@ -35,7 +35,7 @@ export function registerAvailablePlannerContributions(controller) {
       }));
   }
   for (const [segment, getter, validator, subscription] of [
-    ["P1", "getVideoCatalogueContributionSnapshot", "validateVideoCatalogueContribution", "subscribeVideoCatalogueChanges"],
+    ["P1", "getWorkspaceContributionSnapshot", "validateWorkspaceContribution", "subscribeWorkspaceContributionChanges"],
     ["P3", "getStimulusOrderSnapshot", "validateStimulusVariantContribution"],
     ["P4", "getScreenLayoutContributionSnapshot", "validateScreenLayoutContribution"],
     ["P5", "getFeedbackContributionSnapshot", "validateFeedbackContribution", "subscribeFeedbackChanges"],
