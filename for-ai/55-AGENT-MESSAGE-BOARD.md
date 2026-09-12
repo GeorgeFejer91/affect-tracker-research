@@ -73,6 +73,11 @@
 
 ### 20260912-p2-native-form-validator
 
+- Follow-up from Runner/S3: align the initial JS/native 4 MiB cap to the frozen
+  contract's 16 MiB bound. Focused regression accepts >4 MiB and rejects >16 MiB
+  while preserving all individual field limits. Corrected suite passes 22/22
+  through the exact-source external standalone harness. Main/Runner collect this fix.
+
 - Main/root allocated S4 the standalone P2 / E2E-DEMOGRAPHICS native validator,
   focused tests and docs only; Backend Verification, isolated branch
   `codex/segment-p2-native-form`, Main base `f3a2bc2`. Previous P4 work is frozen.
