@@ -31,6 +31,176 @@ mod tests {
     }
 
     #[test]
+    fn mixed_native_catalogue_requires_each_exact_attestation_version() {
+        use crate::research_native_media::NativeMediaDecodeReceiptV1;
+        use crate::research_video_geometry::{
+            NativeDisplayMetadataReceiptV1, NativeVideoOrientationV1, VideoRatioV1,
+        };
+        let base = std::env::temp_dir().join(format!("affect-p1-mixed-{}", Uuid::new_v4()));
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let root = base.join("workspace");
+        fs::create_dir_all(&root).unwrap();
+        let workspace_id = service.select(root.clone()).unwrap().workspace_id.unwrap();
+        fs::write(
+            root.join("assets/stimuli/controlled.mp4"),
+            b"controlled-video",
+        )
+        .unwrap();
+        fs::write(
+            root.join("assets/stimuli/historical.mp4"),
+            b"historical-video",
+        )
+        .unwrap();
+        let scan = service.rescan_planner_videos(&workspace_id).unwrap();
+        let controlled = scan
+            .stimuli
+            .iter()
+            .find(|v| v.display_name == "controlled.mp4")
+            .unwrap();
+        let historical = scan
+            .stimuli
+            .iter()
+            .find(|v| v.display_name == "historical.mp4")
+            .unwrap();
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../test/fixtures/controlled-video-geometry-v3.json"
+        ))
+        .unwrap();
+        let metadata = serde_json::from_value(
+            fixture["workspace"]["videoCatalogue"]["entries"][0]["geometry"]
+                ["nativeDisplayMetadata"]
+                .clone(),
+        )
+        .unwrap();
+        let mut receipt2 = NativeMediaDecodeReceiptV2 {
+            schema: "affect-research-native-media-decode-receipt",
+            version: 2,
+            session_id: Uuid::new_v4().to_string(),
+            generation: 1,
+            media_grant_id: Uuid::new_v4().to_string(),
+            workspace_file_id: controlled.workspace_file_id.clone(),
+            duration_ms: 1000.0,
+            video_width: 1920,
+            video_height: 1080,
+            audio_stream_count: 1,
+            decoded_snapshot_count: 3,
+            decoded_positions_ms: vec![100.0, 500.0, 900.0],
+            display_metadata: metadata,
+        };
+        receipt2.video_width = receipt2.display_metadata.encoded_width_px;
+        receipt2.video_height = receipt2.display_metadata.encoded_height_px;
+        let receipt1 = NativeMediaDecodeReceiptV1 {
+            schema: receipt2.schema,
+            version: 1,
+            session_id: Uuid::new_v4().to_string(),
+            generation: 2,
+            media_grant_id: Uuid::new_v4().to_string(),
+            workspace_file_id: historical.workspace_file_id.clone(),
+            duration_ms: 1000.0,
+            video_width: receipt2.video_width,
+            video_height: receipt2.video_height,
+            audio_stream_count: 1,
+            decoded_snapshot_count: 3,
+            decoded_positions_ms: receipt2.decoded_positions_ms.clone(),
+            display_metadata: NativeDisplayMetadataReceiptV1 {
+                schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
+                version: 1,
+                encoded_width_px: receipt2.video_width,
+                encoded_height_px: receipt2.video_height,
+                pixel_aspect_ratio: VideoRatioV1 {
+                    numerator: 1,
+                    denominator: 1,
+                },
+                orientation: NativeVideoOrientationV1::Identity,
+                snapshot_width_px: receipt2.video_width,
+                snapshot_height_px: receipt2.video_height,
+                snapshot_pixel_aspect_ratio: VideoRatioV1 {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+        };
+        let new = service
+            .attest_native_decode_v2(
+                &workspace_id,
+                &controlled.sha256,
+                controlled.byte_length,
+                &controlled.mime_type,
+                &receipt2,
+            )
+            .unwrap();
+        let old = service
+            .attest_native_decode(
+                &workspace_id,
+                &historical.sha256,
+                historical.byte_length,
+                &historical.mime_type,
+                &receipt1,
+            )
+            .unwrap();
+        let entry = |item: &ScannedStimulusSummary, geometry: serde_json::Value| {
+            serde_json::json!({
+                "assetId": format!("asset-{}", item.sha256), "annotationId": item.display_name,
+                "sourceRelativePath": format!("stimuli/{}", item.display_name),
+                "packageRelativePath": format!("assets/stimuli/{}", item.display_name),
+                "sha256": item.sha256, "byteLength": item.byte_length, "durationMs": 1000, "geometry": geometry,
+            })
+        };
+        let mut catalogue = serde_json::json!({
+            "schema": "affect-research-video-catalogue-contribution", "version": 3,
+            "revision": 1, "annotationPolicy": "relative-path-reversible-v1",
+            "entries": [entry(controlled, serde_json::to_value(new.display_geometry).unwrap()),
+                entry(historical, serde_json::to_value(old.display_geometry).unwrap())],
+        });
+        rehash(&mut catalogue);
+        let bound = service
+            .validate_runner_video_catalogue_v3(&workspace_id, &catalogue)
+            .unwrap();
+        assert!(matches!(
+            bound[0].display_geometry,
+            VideoDisplayGeometryV3::Controlled(_)
+        ));
+        assert!(matches!(
+            bound[1].display_geometry,
+            VideoDisplayGeometryV3::Historical(_)
+        ));
+        assert_eq!(
+            service
+                .validate_planner_video_catalogue_v3(&workspace_id, &catalogue)
+                .unwrap()
+                .version,
+            3
+        );
+        let mut browser = catalogue.clone();
+        browser["entries"][1]["geometry"]["source"] = "browser-decoder".into();
+        browser["entries"][1]["geometry"]["rotationDegrees"] = serde_json::Value::Null;
+        browser["entries"][1]["geometry"]["pixelAspectRatio"] = serde_json::Value::Null;
+        browser["entries"][1]["geometry"]["metadataInterpretation"] =
+            "decoder-oriented-display".into();
+        rehash(&mut browser);
+        assert!(validate_video_catalogue_contribution_v3(&browser).is_ok());
+        assert!(service
+            .validate_runner_video_catalogue_v3(&workspace_id, &browser)
+            .is_err());
+        receipt2.workspace_file_id = historical.workspace_file_id.clone();
+        receipt2.generation = 3;
+        service
+            .attest_native_decode_v2(
+                &workspace_id,
+                &historical.sha256,
+                historical.byte_length,
+                &historical.mime_type,
+                &receipt2,
+            )
+            .unwrap();
+        assert!(service
+            .validate_runner_video_catalogue_v3(&workspace_id, &catalogue)
+            .is_err());
+        drop(service);
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
     fn controlled_catalogue_binds_full_proof_and_rejects_changed_content_or_cache() {
         let base = std::env::temp_dir().join(format!("affect-p1-controlled-{}", Uuid::new_v4()));
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
