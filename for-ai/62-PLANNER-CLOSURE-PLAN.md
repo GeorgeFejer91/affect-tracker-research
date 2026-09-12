@@ -133,20 +133,23 @@ duration, displayed width×height, aspect and verification state. The researcher
 reviews collisions and annotations before accepting the catalogue. Import and
 rescan are explicit actions; directory enumeration never defines experiment order.
 
-Proposed identity model: a persistent catalogue identity plus a readable annotation
-initially derived from all relative folder components and the extensionless
-filename joined with underscores. Keep the byte hash separate: changed media is
-not the same verified asset merely because it retains a filename. P3 paste uses
-the readable annotation and resolves it to the saved identity; rename/replacement
-requires an explicit dependency update, never a silent new video in an old slot.
+Answered Q04 uses two explicit identities. `assetId=asset-<full lowercase SHA-256>`
+is immutable content identity and can repeat when identical bytes exist at
+different locations. `annotationId` is the automatic v2 location identity derived
+from the complete path below `stimuli/`, including every folder and the filename
+extension. Within each component `%` becomes `%25` and `_` becomes `%5F`; components
+join with `_`. A first-component `=`, `+`, `@` or `-` is escaped as `%3D`, `%2B`,
+`%40` or `%2D` so spreadsheet transport cannot rewrite it. Source text must already
+be NFC and components cannot have leading/trailing trim whitespace; inputs are
+rejected rather than normalized. Decode must reproduce the exact source path and
+canonical re-encoding. Collision is a hard error, never enumeration-based suffixing.
 
-Q04 still owns normalization, case/Unicode, nesting and collision rules. Proposed
-collision flow: display every conflict and require a unique reviewed annotation;
-do not assign different suffixes according to filesystem enumeration. Keep
-existing IDs during unrelated rescans. Missing files and replacement bytes block
-dependent export until resolved. Reuse content-bound identities from pending S3
-where compatible; a `video-<hash>` display name alone does not fulfill the requested
-folder_filename annotation workflow.
+The v2 reference is the pair `{assetId, annotationId}`: content identity proves
+the bytes while location identity selects one catalogue entry. Moving/renaming
+changes `annotationId` and invalidates dependent acceptance while byte-identical
+content retains `assetId`. Geometry consumers may deduplicate immutable content;
+reference consumers must retain each pair. Historical v1 readers keep their prior
+annotation semantics and no implicit migration is claimed.
 
 For Q05, propose a recorded logical workspace/library binding with safe relative
 asset paths. Selecting/rebinding a directory authorizes the platform adapter;
@@ -155,11 +158,11 @@ filesystem access. If original absolute path provenance is required, settle its
 bounded representation and native authority explicitly before adding it. Display
 geometry must account for orientation and display aspect, not just encoded pixels.
 
-Pending S3 currently preserves browser source-relative folders but flattens native
-imports into `assets/stimuli/imported/` with hash-suffixed filenames. P1 must retain
-reviewed source folder/name annotations separately from storage paths on both
-platforms. Its pending four-field annotation records also lack duration/display
-geometry; extend the contribution explicitly instead of inferring them in P3/P4.
+Planner imports on both browser and native surfaces now preserve safe relative
+subfolders under `assets/stimuli/`; native imports no longer flatten names or add
+hash suffixes. P1 v2 carries duration and verified oriented display geometry, while
+unsupported or incomplete media withdraws the whole contribution instead of
+letting P3/P4 infer missing data.
 
 ## P2 design: Questionnaires & Languages
 

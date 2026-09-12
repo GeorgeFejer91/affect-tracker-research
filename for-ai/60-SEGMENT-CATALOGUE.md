@@ -166,22 +166,23 @@ turn into Runner, device or recording work.
 ## P1 — Workspace & Video Library
 
 **Purpose:** establish the study workspace and one reusable video catalogue.
-**User input:** working directory, study name/ID, imported folders/files, review
-of annotations and explicit corrections. Naming and relocation are Q04/Q05.
+**User input:** working directory, study name/ID and imported folders/files.
+Location IDs are automatic under answered Q04; physical relocation is Q05.
 **Receives:** user-selected files/directory through the owning platform adapter.
-**Produces:** catalogue with stable ID, display name, file reference, hash,
-length, duration and display geometry.
+**Produces:** catalogue locations with an automatic reversible path ID, immutable
+content identity, file reference, hash, length, duration and display geometry.
 **Consumers:** P2 source storage; P3 video IDs; P4/P6 geometry; P7 assets.
-**JSON:** current `assetRoot`, `assets.stimuli[]` and matching logical registry;
-directory representation and saved geometry need the successor recipe contract.
+**JSON:** versioned P1 workspace/catalogue contributions use only the fixed logical
+layout `assets`, `assets/stimuli`, `experiment.package.json`; v2 catalogue entries
+bind the `{assetId, annotationId}` content/location reference pair.
 
 - [x] **P1-01 — Implemented component:** browser/native workspace selection and authorization (`workspace.js`, `research_workspace.rs`).
 - [x] **P1-02 — Implemented component:** declared-asset verification binds safe paths, hashes, byte lengths and duration. Decode qualification remains separate.
-- [ ] **P1-03 — Partial:** active package-root import/rescan; fix browser `stimuli/` versus `assets/stimuli/` handoff (audit F02).
-- [ ] **P1-04 — Missing:** reviewed folder_filename annotations with explicit collision, nesting, rename and rescan rules (Q04).
-- [ ] **P1-05 — Decision:** directory JSON representation and authorized relocation (Q05); recording a path grants no filesystem permission.
-- [ ] **P1-06 — Missing:** preserve oriented/display dimensions and aspect ratios in the contribution. Existing probes observe dimensions but package assets omit them.
-- [ ] **P1-07 — Partial:** editable library save/reopen and dependency invalidation without silently changing accepted identities.
+- [x] **P1-03 — Implemented component:** browser/native Planner import and rescan use `assets/stimuli/`, preserve safe relative subfolders and reject conflicting overwrite.
+- [x] **P1-04 — Implemented component:** v2 derives a reversible, NFC-exact location ID from every relative path component and filename extension. `_`, `%` and leading spreadsheet formula characters are escaped; unsupported whitespace/non-NFC paths reject; collisions are hard errors. Moving/renaming changes the location ID without changing equal content identity.
+- [ ] **P1-05 — Partial / Q05:** authored JSON stores only the fixed logical layout and relative declarations. Reopen requires explicit fresh root authorization plus exact rehash/reprobe. A custom native workspace choice remains session-local; absolute provenance and permission persistence are not compile authority.
+- [ ] **P1-06 — Partial:** browser decoder-oriented geometry and a safe native GstPlay orientation/PAR/square-pixel snapshot receipt feed catalogue v2. Pure/browser checks pass; installed GStreamer runtime qualification remains open, and ambiguous/missing/reflection metadata stays pending.
+- [x] **P1-07 — Implemented component:** v1/v2 library content restores through a latest-operation fence, remains pending until exact media rebind and invalidates dependents on path, byte, duration or geometry change. P7 still owns master save/reopen composition.
 
 **Acceptance:** collisions, rescans and moves have explicit outcomes; each ID
 resolves to declared bytes after export/reload. No second catalogue or directory-
