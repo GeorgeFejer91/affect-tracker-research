@@ -213,3 +213,35 @@ This establishes actual native hidden Planner policy command execution. It does
 not establish all-segment integration, real media import, final recipe export,
 visible UI parity or Runner execution. Main may now rebuild the candidate to
 integrate the ready owner handoffs and consequential file/media operations.
+
+### Actual native clip diagnostic and corrected next action
+
+Live Preview's isolated diagnostic checkpoint is `dffe166`; its first completed
+real-runtime attempt used a test-only copied executable with the required
+Common Controls manifest. The prepared artifact SHA-256 is
+`6a6ec53bf5da70aba680bef7736fc54d0efd9cf3754d20af90a4217ec1f14904`.
+Root independently verified that artifact and inspected
+`D:/GitHub/.affect-native-diagnostic-build/attempt-02/` receipts and stdout.
+The exact Great Dictator clip decoded three sampled positions, reported
+1920×1080 and 254406 ms, and exercised Play/Pause/Resume/Stop/new generation and
+actor-thread exit before parent exit. This native duration differs by1ms from
+the preliminary ffprobe description; the final recipe must use its actual P1
+import receipt, not a hard-coded preliminary duration.
+
+Although the test process exited successfully, all five inspected Paused/Playing
+snapshots retained `gstreamer-media-info-incomplete`. Root classified this as a
+defect-reproducing engineering diagnostic, not clean playback or qualification;
+see its `root-review.json`. Incomplete initial MediaInfo had become Failed,
+then subsequent backend states overwrote that failure. S1's initial terminal
+latch `9a68e7c` would expose this startup failure, so main must wait for its
+corrective follow-up. S1 owns partial metadata readiness versus genuine terminal
+failure in `state.rs`; Live Preview owns the actual combined-candidate rerun.
+Installed bootstrap, source closure, lifecycle and physical acceptance gates
+remain distinct. No Start capability flag has been enabled by this diagnostic.
+
+Root also validated the four real questionnaire source files together through
+the production importer and contribution validator. Both language routes cover
+MAIA-2 then TAS-20, 37+20 items, beforeSession. The external
+`root-bilingual-source-preflight.json` in the TAS source evidence directory
+records the import identities and explicit source-only limitation; no master
+JSON or production CLI session was created by that preflight.
