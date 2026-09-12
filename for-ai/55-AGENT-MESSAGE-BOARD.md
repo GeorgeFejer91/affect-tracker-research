@@ -497,6 +497,16 @@ file; follow the integration-owner collection procedure in the workflow.
   a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
   Rust now derives V2 envelopes through P5's actual native validator/projector
   before comparing them with the shared P6 geometry fixture.
+- Shared actual-master UI follow-up collected `219cf31` in `d34951d`. The
+  expanded owned fixture currently exposes two unresolved integration defects:
+  the capture-phase edit read consumes P1's new snapshot before its change
+  notification, leaving prepared XR geometry attached to the old revision;
+  and the raw-geometry V1 master hash passes Node but fails Chrome validation.
+  Main/S1 own the notification repair; S7 owns versioned cross-runtime identity.
+  The default `all` fixture retains the immediate-withdraw assertion. Explicit
+  `master` scope isolates full reopen/save checks while the first defect is open.
+  Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
 
 ### 20260912-p7-complete-planner-master
 
