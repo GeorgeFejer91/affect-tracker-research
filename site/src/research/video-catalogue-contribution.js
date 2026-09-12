@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
+import { CONTROLLED_GEOMETRY_SOURCE, validateControlledVideoDisplayGeometry } from "./video-display-controlled.js";
 
 export const VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA = "affect-research-video-catalogue-contribution";
 export const VIDEO_CATALOGUE_CONTRIBUTION_VERSION = 1;
@@ -205,12 +206,14 @@ function normalizeEntry(value, index, { version = 1 } = {}) {
     sha256: value.sha256,
     byteLength: positiveInteger(value.byteLength, `${label}.byteLength`),
     durationMs: positiveInteger(value.durationMs, `${label}.durationMs`),
-    geometry: normalizeGeometry(value.geometry, `${label}.geometry`, { allowNative: version >= 2 }),
+    geometry: version === 3 && value.geometry?.source === CONTROLLED_GEOMETRY_SOURCE
+      ? validateControlledVideoDisplayGeometry(value.geometry)
+      : normalizeGeometry(value.geometry, `${label}.geometry`, { allowNative: version >= 2 }),
   };
 }
 
-function normalizeEntryV2(value, index) {
-  const entry = normalizeEntry(value, index, { version: 2 });
+function normalizeEntryV2(value, index, version = 2) {
+  const entry = normalizeEntry(value, index, { version });
   const expected = videoAnnotationIdFromRelativePathV1(entry.sourceRelativePath);
   if (entry.annotationId !== expected
     || videoRelativePathFromAnnotationIdV1(entry.annotationId) !== entry.sourceRelativePath) {
@@ -242,10 +245,10 @@ function normalizeCore(value) {
   return { schema: VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA, version: 1, revision, entries };
 }
 
-function normalizeCoreV2(value) {
+function normalizeCoreV2(value, version = VIDEO_CATALOGUE_CONTRIBUTION_CURRENT_VERSION) {
   exactObject(value, ["schema", "version", "revision", "annotationPolicy", "entries"], "Video catalogue contribution core");
   if (value.schema !== VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA
-    || value.version !== VIDEO_CATALOGUE_CONTRIBUTION_CURRENT_VERSION
+    || value.version !== version
     || value.annotationPolicy !== VIDEO_LOCATION_ID_POLICY_V1) {
     throw new TypeError("Video catalogue contribution schema/version/policy is unsupported.");
   }
@@ -253,7 +256,7 @@ function normalizeCoreV2(value) {
   if (!Array.isArray(value.entries) || value.entries.length < 1 || value.entries.length > 10_000) {
     throw new TypeError("Current video catalogue entries must be a bounded non-empty array.");
   }
-  const entries = value.entries.map(normalizeEntryV2).sort(compareLocationIdentity);
+  const entries = value.entries.map((entry, index) => normalizeEntryV2(entry, index, version)).sort(compareLocationIdentity);
   const locationIds = new Set();
   const packagePaths = new Set();
   const contentByAssetId = new Map();
@@ -276,7 +279,7 @@ function normalizeCoreV2(value) {
   }
   return {
     schema: VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA,
-    version: VIDEO_CATALOGUE_CONTRIBUTION_CURRENT_VERSION,
+    version,
     revision,
     annotationPolicy: VIDEO_LOCATION_ID_POLICY_V1,
     entries,
@@ -329,6 +332,12 @@ export function workspaceStimuliToVideoCatalogueEntriesV1(stimuli) {
 
 /** Current projection: the catalogue identity is derived, never hand-edited. */
 export function workspaceStimuliToVideoCatalogueEntries(stimuli) {
+  return projectWorkspaceEntries(stimuli, 2);
+}
+export function workspaceStimuliToSupportedVideoCatalogueEntries(stimuli) {
+  return projectWorkspaceEntries(stimuli, 3);
+}
+function projectWorkspaceEntries(stimuli, version) {
   if (!Array.isArray(stimuli) || stimuli.length < 1 || stimuli.length > 10_000) {
     throw new TypeError("The video catalogue requires a bounded non-empty workspace list.");
   }
@@ -347,7 +356,7 @@ export function workspaceStimuliToVideoCatalogueEntries(stimuli) {
       byteLength: stimulus.contractSource.byteLength,
       durationMs: stimulus.contractSource.durationMs,
       geometry: stimulus.displayGeometry,
-    }, index);
+    }, index, version);
   });
 }
 
@@ -382,6 +391,33 @@ export async function createVideoCatalogueContribution({ revision, entries }) {
     entries,
   });
   return deepFreeze({ ...structuredClone(core), integritySha256: await canonicalSha256(core) });
+}
+
+export async function createVideoCatalogueContributionV3({ revision, entries }) {
+  const core = normalizeCoreV2({ schema: VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA, version: 3,
+    revision, annotationPolicy: VIDEO_LOCATION_ID_POLICY_V1, entries }, 3);
+  return deepFreeze({ ...structuredClone(core), integritySha256: await canonicalSha256(core) });
+}
+export async function validateVideoCatalogueContributionV3(value) {
+  exactObject(value, ["schema", "version", "revision", "annotationPolicy", "entries", "integritySha256"], "Video catalogue v3");
+  if (value.schema !== VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA || value.version !== 3
+    || value.annotationPolicy !== VIDEO_LOCATION_ID_POLICY_V1) throw new TypeError("Unsupported video catalogue v3 contract.");
+  const expected = await createVideoCatalogueContributionV3(value);
+  if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Video catalogue v3 integrity or canonical content mismatch.");
+  return expected;
+}
+export function validateSupportedVideoCatalogueContribution(value) {
+  return value?.version === 3 ? validateVideoCatalogueContributionV3(value) : validateVideoCatalogueContribution(value);
+}
+export function validateSupportedVideoDisplayGeometry(value) {
+  return value?.source === CONTROLLED_GEOMETRY_SOURCE ? deepFreeze(validateControlledVideoDisplayGeometry(value)) : validateVideoDisplayGeometry(value);
+}
+export async function reviseSupportedVideoCatalogueContribution(previous, entries) {
+  const prior = previous === null ? null : await validateSupportedVideoCatalogueContribution(previous);
+  const version3 = prior?.version === 3 || entries.some(entry => entry.geometry?.source === CONTROLLED_GEOMETRY_SOURCE);
+  if (!version3) return reviseVideoCatalogueContribution(previous, entries);
+  const candidate = await createVideoCatalogueContributionV3({ revision: prior ? prior.revision + 1 : 1, entries });
+  return prior?.version === 3 && canonicalJson(prior.entries) === canonicalJson(candidate.entries) ? previous : candidate;
 }
 
 export async function validateVideoCatalogueContribution(value) {
@@ -435,7 +471,12 @@ export async function projectVideoDisplayGeometryV1(value) {
 }
 
 export async function projectVideoDisplayGeometry(value) {
-  const catalogue = await validateVideoCatalogueContribution(value);
+  return projectGeometry(await validateVideoCatalogueContribution(value));
+}
+export async function projectSupportedVideoDisplayGeometry(value) {
+  return projectGeometry(await validateSupportedVideoCatalogueContribution(value));
+}
+function projectGeometry(catalogue) {
   const content = new Map();
   for (const entry of catalogue.entries) {
     if (!content.has(entry.assetId)) content.set(entry.assetId, Object.freeze({
@@ -565,6 +606,7 @@ export function createVideoCatalogueProducerV1({
 export function createVideoCatalogueProducer({
   onChange = () => {},
   validateRestoredContribution = validateVideoCatalogueContribution,
+  reviseContribution = reviseVideoCatalogueContribution,
 } = {}) {
   if (typeof onChange !== "function" || typeof validateRestoredContribution !== "function") {
     throw new TypeError("Video catalogue producer inputs are malformed.");
@@ -597,7 +639,7 @@ export function createVideoCatalogueProducer({
     const operation = ++generation;
     publish({ ...snapshot, pending: true });
     try {
-      const contribution = await reviseVideoCatalogueContribution(lastAccepted, entries);
+      const contribution = await reviseContribution(lastAccepted, entries);
       if (operation !== generation) return snapshot;
       const identityChanged = snapshot.contribution === null
         || canonicalJson(snapshot.contribution) !== canonicalJson(contribution);
@@ -636,7 +678,7 @@ export function createVideoCatalogueProducer({
     let committed = false, projected = false, committedGeneration;
     const current = () => !committed && operation === generation && previous === snapshot && isCurrent();
     const contribution = restored === null
-      ? await reviseVideoCatalogueContribution(lastAccepted, structuredClone(entries))
+      ? await reviseContribution(lastAccepted, structuredClone(entries))
       : await validateRestoredContribution(structuredClone(restored));
     if (!current()) throw new Error("Video catalogue changed during preparation.");
     return Object.freeze({ isCurrent: current,
@@ -670,4 +712,9 @@ export function createVideoCatalogueProducer({
       return () => listeners.delete(listener);
     },
   });
+}
+
+export function createSupportedVideoCatalogueProducer(options = {}) {
+  return createVideoCatalogueProducer({ ...options, validateRestoredContribution: validateSupportedVideoCatalogueContribution,
+    reviseContribution: reviseSupportedVideoCatalogueContribution });
 }

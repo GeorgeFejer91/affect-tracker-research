@@ -7,6 +7,7 @@ import {
   projectVideoDisplayGeometryV1,
   validateVideoCatalogueContribution,
   validateVideoCatalogueContributionV1,
+  validateVideoCatalogueContributionV3,
 } from "./video-catalogue-contribution.js";
 
 export const WORKSPACE_CONTRIBUTION_SCHEMA = "affect-research-workspace-contribution";
@@ -105,6 +106,23 @@ export async function validateWorkspaceContribution(value) {
     throw new TypeError("Workspace contribution is noncanonical.");
   }
   return expected;
+}
+
+export function createWorkspaceContributionV3({ study, videoCatalogue } = {}) {
+  if (videoCatalogue?.schema !== "affect-research-video-catalogue-contribution" || videoCatalogue.version !== 3) throw new TypeError("Workspace v3 requires catalogue v3.");
+  return deepFreeze({ schema: WORKSPACE_CONTRIBUTION_SCHEMA, version: 3, study: validateStudyIdentityV1(study),
+    workspaceLayout: { ...WORKSPACE_RELATIVE_LAYOUT_V1 }, videoCatalogue: structuredClone(videoCatalogue) });
+}
+export async function validateWorkspaceContributionV3(value) {
+  exactObject(value, ["schema", "version", "study", "workspaceLayout", "videoCatalogue"], "Workspace v3");
+  if (value.schema !== WORKSPACE_CONTRIBUTION_SCHEMA || value.version !== 3) throw new TypeError("Unsupported workspace v3 contract.");
+  const videoCatalogue = await validateVideoCatalogueContributionV3(value.videoCatalogue);
+  const expected = createWorkspaceContributionV3({ study: value.study, videoCatalogue });
+  if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Noncanonical workspace v3 content.");
+  return expected;
+}
+export function validateSupportedWorkspaceContribution(value) {
+  return value?.version === 3 ? validateWorkspaceContributionV3(value) : validateWorkspaceContribution(value);
 }
 
 function validateSnapshotShape(value, label) {
@@ -326,6 +344,7 @@ export function createWorkspaceContributionProducer({
   getStudyIdentity,
   getVideoCatalogueSnapshot,
   onChange = () => {},
+  createCurrentContribution = createWorkspaceContribution,
 } = {}) {
   if (typeof getStudyIdentity !== "function" || typeof getVideoCatalogueSnapshot !== "function"
     || typeof onChange !== "function") {
@@ -347,7 +366,7 @@ export function createWorkspaceContributionProducer({
           ? createWorkspaceContributionV1({
             study: getStudyIdentity(), videoCatalogue: videoSnapshot.contribution,
           })
-          : createWorkspaceContribution({
+          : createCurrentContribution({
             study: getStudyIdentity(), videoCatalogue: videoSnapshot.contribution,
           });
         pending = false;
@@ -383,4 +402,9 @@ export function createWorkspaceContributionProducer({
       return () => listeners.delete(listener);
     },
   });
+}
+
+export function createSupportedWorkspaceContributionProducer(options = {}) {
+  return createWorkspaceContributionProducer({ ...options, createCurrentContribution: value => value.videoCatalogue.version === 3
+    ? createWorkspaceContributionV3(value) : createWorkspaceContribution(value) });
 }
