@@ -80,6 +80,13 @@ import {
 } from "./experiment-package.js";
 import { externalExperimentPlanToCsv } from "./tabular.js";
 import {
+  assetIdFromSha256,
+  browserDisplayGeometry,
+  createVideoCatalogueProducerV1,
+  validateVideoCatalogueContributionV1,
+  workspaceStimuliToVideoCatalogueEntriesV1,
+} from "./video-catalogue-contribution.js";
+import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
   normalizeWorkspaceRelativePath,
@@ -320,6 +327,9 @@ function bindResearchInteractions(root, { surface }) {
   const stimuli = [];
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
+  const videoCatalogueProducer = createVideoCatalogueProducerV1({
+    onChange: () => root.researchUi?.plannerContributionChanged?.("P1"),
+  });
   let questionnaireContributionRevision = 0;
   let questionnaireContributionFingerprint = null;
   const questionnaireEditor = createQuestionnaireEditor({
@@ -1420,6 +1430,7 @@ function bindResearchInteractions(root, { surface }) {
         contractSource: structuredClone(item.source),
         packageAssetPath: mayPreserve ? previous.packageAssetPath : null,
         decodeQualification: mayPreserve ? previous.decodeQualification : undefined,
+        displayGeometry: mayPreserve ? previous.displayGeometry : null,
         file: mayPreserve ? previous.file : undefined,
         youtubePreflight: null,
       };
@@ -1495,6 +1506,7 @@ function bindResearchInteractions(root, { surface }) {
     plan = null;
     protocolPlan = null;
     compiledPackageSelection = null;
+    void refreshVideoCatalogueContribution();
     renderPools();
     renderQuestionnaires();
     renderBindings();
@@ -2554,6 +2566,7 @@ function bindResearchInteractions(root, { surface }) {
       }
     }
     stimuli.push(stimulus);
+    void refreshVideoCatalogueContribution();
     renderPools();
     schedulePlanRefresh();
     announce(`${normalizedTitle} added to the workspace catalogue.`);
@@ -2576,6 +2589,9 @@ function bindResearchInteractions(root, { surface }) {
       stimulus.byteLength = stimulus.file.size;
       stimulus.sha256 = digest;
       stimulus.verification = probe.decodeVerified ? "verified" : "failed";
+      stimulus.displayGeometry = probe.decodeVerified
+        ? browserDisplayGeometry({ videoWidth: probe.videoWidth, videoHeight: probe.videoHeight })
+        : null;
       stimulus.contractSource = {
         kind: stimulus.source === "repository" ? "repositoryAsset" : "workspaceFile",
         relativePath,
@@ -2586,8 +2602,10 @@ function bindResearchInteractions(root, { surface }) {
       };
     } catch (error) {
       stimulus.verification = "failed";
+      stimulus.displayGeometry = null;
       stimulus.error = error instanceof Error ? error.message : String(error);
     }
+    await refreshVideoCatalogueContribution();
     renderPools();
     schedulePlanRefresh();
   }
@@ -3003,6 +3021,7 @@ function bindResearchInteractions(root, { surface }) {
           stimuli.splice(index, 1);
         }
       }
+      void refreshVideoCatalogueContribution();
       renderPools();
       schedulePlanRefresh();
       if (status) {
@@ -3096,6 +3115,22 @@ function bindResearchInteractions(root, { surface }) {
     }
     return { revision: questionnaireContributionRevision, enabled: true, pending,
       contribution, dependencyRevisions: [] };
+  }
+
+  /** P1 accepted-data handoff. One incomplete video invalidates the whole view. */
+  async function refreshVideoCatalogueContribution() {
+    try {
+      return await videoCatalogueProducer.replaceEntries(
+        workspaceStimuliToVideoCatalogueEntriesV1(stimuli),
+      );
+    } catch {
+      videoCatalogueProducer.withdraw();
+      return videoCatalogueProducer.getSnapshot();
+    }
+  }
+
+  function getVideoCatalogueContributionSnapshot() {
+    return videoCatalogueProducer.getSnapshot();
   }
 
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
@@ -4620,6 +4655,7 @@ function bindResearchInteractions(root, { surface }) {
       const index = stimuli.findIndex(({ id }) => id === target.dataset.stimulusRemove);
       if (index >= 0) {
         const [removed] = stimuli.splice(index, 1);
+        void refreshVideoCatalogueContribution();
         renderPools();
         schedulePlanRefresh();
         announce(`${removed.title} removed from the protocol.`);
@@ -4997,12 +5033,14 @@ function bindResearchInteractions(root, { surface }) {
             ? "unverifiedNoncanonical"
             : entry.decodeQualification ?? existing?.decodeQualification ?? "verified",
           contractSource: structuredClone(item.source),
+          displayGeometry: entry.displayGeometry ? structuredClone(entry.displayGeometry) : null,
           youtubePreflight: null,
         };
         if (existing) Object.assign(existing, next);
         else stimuli.push(next);
       }
       renderPools();
+      void refreshVideoCatalogueContribution();
       schedulePlanRefresh();
     } catch (error) {
       announce(error instanceof Error ? error.message : String(error));
@@ -5237,6 +5275,9 @@ function bindResearchInteractions(root, { surface }) {
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
+    getVideoCatalogueContributionSnapshot,
+    subscribeVideoCatalogueChanges(listener) { return videoCatalogueProducer.subscribe(listener); },
+    validateVideoCatalogueContribution: validateVideoCatalogueContributionV1,
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },

@@ -1,0 +1,52 @@
+{
+  "schema": "affect-research-video-catalogue-contribution",
+  "version": 1,
+  "revision": 1,
+  "entries": [
+    {
+      "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "annotationId": "session1_landscape",
+      "sourceRelativePath": "stimuli/session1/landscape.mp4",
+      "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byteLength": 1024,
+      "durationMs": 12345,
+      "geometry": {
+        "status": "verified",
+        "source": "browser-decoder",
+        "displayWidthPx": 1920,
+        "displayHeightPx": 1080,
+        "displayAspect": {
+          "numerator": 16,
+          "denominator": 9
+        },
+        "rotationDegrees": null,
+        "pixelAspectRatio": null,
+        "metadataInterpretation": "decoder-oriented-display"
+      }
+    },
+    {
+      "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "annotationId": "session2_portrait",
+      "sourceRelativePath": "stimuli/session2/portrait.mp4",
+      "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "byteLength": 2048,
+      "durationMs": 23456,
+      "geometry": {
+        "status": "verified",
+        "source": "browser-decoder",
+        "displayWidthPx": 1080,
+        "displayHeightPx": 1920,
+        "displayAspect": {
+          "numerator": 9,
+          "denominator": 16
+        },
+        "rotationDegrees": null,
+        "pixelAspectRatio": null,
+        "metadataInterpretation": "decoder-oriented-display"
+      }
+    }
+  ],
+  "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+}
