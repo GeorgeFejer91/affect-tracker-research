@@ -86,3 +86,32 @@ tests do not prove this master can run. Add precise gaps and actual receipts as
 they are established. The active goal is not complete until the requested
 artifact and applicable execution comparisons pass; remaining input or platform
 limits must be reported truthfully rather than silently reducing the objective.
+
+### First setting-parity audit — 2026-09-12
+
+Canonical remains `460f516`. Main's isolated CLI candidate is `178d453`, including
+shared foundation `2310efc`; root independently ran its 13 focused session tests
+successfully. They cover policy read/edit, invalid/stale/cancellation/lifetime
+cases and truthful postcommit failure reporting. They do not establish native
+CLI operation or all-segment UI parity. Owner worktrees remain in progress.
+
+The audit changed these implementation actions:
+
+- P2: typed graph/terminal-route ordering and before/after-session module edits
+  lack direct current UI controls. S2 now owns a bounded UI follow-up using the
+  existing questionnaire/language owners; main retains shared composition.
+  A raw JSON import is not a substitute for these user-facing controls.
+- P3: stable-ID row, variant and ISI reordering requires matching local table
+  actions. S3 is implementing both through the same pure operation path.
+  Exact internal draft/allocator/occurrence replacement is not a user setting:
+  expose its snapshot read-only in the CLI, retaining strict internal Open and
+  recovery restoration without a new raw-identity editor.
+- P5: disabled legacy geometry/digital-step values are retained compatibility
+  data under V2, not active controls. Their CLI writability must match the UI:
+  read-only under V2, with exact round-trip preservation. P4/P6 geometry and V2
+  response remain authoritative. Do not add a redundant compatibility editor.
+
+All other active authoring fields still require both-way CLI/UI coverage. These
+decisions do not permit removing an active capability merely to avoid a missing
+UI implementation. Registry metadata, tests of pure adapters, native operations
+and actual UI behavior remain distinct evidence layers.

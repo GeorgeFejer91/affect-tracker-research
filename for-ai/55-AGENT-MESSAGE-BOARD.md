@@ -1,5 +1,17 @@
 # Agent message board
 
+### 20260912-cli-ui-parity-followup — E2E-UI
+
+- Root read-only owner/source audit identified missing direct P2 graph/route and
+  module-placement controls, and P3 stable-identity reorder controls. Existing
+  S2/S3 owners allocated local UI follow-ups; main keeps shared composition.
+- P5 dormant compatibility values stay read-only under V2, matching disabled
+  UI and preserving bytes. P3 internal allocator/identity draft stays read-only
+  publicly; closed user operations and strict Open/recovery retain authority.
+- Shared2310efc session tests independently rerun:13 pass. Current isolated main
+  candidate178d453, canonical460f516. No production native CLI/mock/Runner
+  execution success yet. See69 for exact evidence limits and pending inputs.
+
 ### 20260912-cli-runner-goal — E2E-UI/E2E-RECIPE/E2E-RUNNER
 
 - Chat Orchestrator created the explicit user-requested end-to-end goal. New69
