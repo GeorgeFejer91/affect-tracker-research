@@ -1,5 +1,26 @@
 # Agent message board
 
+### 20260912-p4-rendered-cli-parity
+
+- Owner S4, **E2E-UI/P4**, Backend Verification follow-up explicitly allocated
+  by Chat Orchestrator after Main collected the CLI adapter. New isolated
+  `codex/segment-p4-rendered-cli-parity`, worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-p4-rendered-cli-parity`,
+  base Main's frozen `84264ad`. All changed for-ai content was refreshed in
+  lexical order against the completely read prior snapshot, including full68/69.
+- Existing evidence covers all 15 fields and 2 operations in DOM doubles; the
+  remaining deliverable is P4-only actual rendered Planner qualification with
+  exact UI/typed-owner readback and exported-profile parity, reference/source/
+  dependency invalidation, both units/methods and wide/narrow Chrome/Edge scenes.
+  Thirteen owner baseline tests pass before artifact edits.
+- Reuse the existing isolated headless-browser infrastructure. Fixtures explicitly
+  inject synthetic catalogue geometry at P1's boundary; never claim actual import,
+  native CLI, physical interaction or Runner execution. No app/adapter/native edits
+  are allocated absent a proven routed gap. Main owns final combined registration
+  and supplies a frozen source for a final rerun; no mutating build is a receipt.
+- Only new P4 qualification runner/fixture and owned evidence/documentation hunks
+  are being written. Existing user windows, focus and applications stay untouched.
+
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 
 - Researcher authorized retained English TAS-20 for the local mock and asked
