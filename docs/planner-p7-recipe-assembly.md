@@ -28,6 +28,14 @@ deliver the complete successor master recipe.
 - `installPlannerContributions()` retains live property getters and removes
   subscriptions before producer destruction, including failed initialization and
   repeated teardown.
+- Review exposes one explicit presentation selector. Controller
+  `getSelectedPlannerTarget()` returns `null`, `desktop-screen`, or
+  `webxr-immersive-vr`; initial selection is null and no value is inferred from
+  the host or P6 profile. Integration passes this getter into P6 acceptance's
+  `selectedTarget` option. A changed selection expires active P6 acceptance and
+  compiled output, preserving unrelated P2 acceptance and a disabled P6 exclusion.
+  A selected target cannot be silently omitted into a v1 save. This is a session
+  interface, not a finalized master profile-combination contract or XR execution.
 
 ## Retained policy component
 

@@ -4,6 +4,7 @@ import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { SETUP_SECTIONS } from "./ui-contracts.js";
 import { feedbackAppearanceMarkup, feedbackInputMarkup, feedbackAdvancedMarkup } from "./feedback-controls-view.js";
 import { screenLayoutDraftMarkup } from "./screen-layout-view.js";
+import { PLANNER_TARGETS } from "./planner-target.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
@@ -422,6 +423,8 @@ function reviewSection() {
       </div>
     </section>
     <p id="package-save-status" role="status" aria-live="polite">Review the design, then save its recipe.</p>
+    <label class="field"><span>Presentation target</span><select id="planner-presentation-target" aria-describedby="planner-target-status"><option value="">Choose presentation…</option>${PLANNER_TARGETS.map(({ id, label }) => `<option value="${id}">${label}</option>`).join("")}</select></label>
+    <p id="planner-target-status" class="field-help" role="status">Choose the intended presentation. XR execution requires a compatible future Runner.</p>
     <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
     ${lslSettingsMarkup()}
     <div class="field-grid spaced-field-grid">

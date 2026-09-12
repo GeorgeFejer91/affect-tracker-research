@@ -91,6 +91,10 @@ const change = (selector, value) => {
     query("#package-load").click();
     await waitFor(() => Number(query("#sampling-frequency").value) === packageFixture.settings.experiment.samplingFrequencyHz);
     check("intentional reopen atomically restores the saved recipe", ui.experimentPackageSourceText === source);
+    check("a legacy recipe supplies no invented presentation selection", ui.getSelectedPlannerTarget() === null);
+    change("#planner-presentation-target", "webxr-immersive-vr");
+    check("explicit target is exposed and cannot be silently omitted from a v1 save", ui.getSelectedPlannerTarget() === "webxr-immersive-vr"
+      && query("#package-generate").disabled && ui.packageReproductionReceipt === null);
     ui.destroy(); ui.destroy();
     check("destroy removes the installed root controller exactly once", root.researchUi === undefined);
     bootResearchUi();
