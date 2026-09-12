@@ -33,6 +33,14 @@ build or installed/runtime qualification is included in this receipt.
   file capture/open/save and P4/P6 fixtures after S1 fields/helpers are fixed.
   Actual native clip rebind/master export and Runner/XDF remain final gates;
   no current artifact or foreground app change in this source pass.
+- Native f44170b compilation passes; desktop selection hashes and both master
+  bytes/reproduction matrices match JS. New XR whole-selection hash assertion
+  exposed the established P6 trig-float tolerance boundary. Test-only adjustment
+  compares a JS-locked layout at existing absolute 1e-10 and exact remaining
+  selection bytes; native rerun pending, no product/hash/reader rule change.
+  All 16 file tests pass on D: TEMP/TMP; initial C: StorageFull failures retained.
+  C: has zero free bytes; no cleanup authorized/performed. Native/Runner/S1/root
+  notified to retain new scratch on D: and preserve the foreground app.
 
 ### S1 Rust reader and P3 follow-up
 

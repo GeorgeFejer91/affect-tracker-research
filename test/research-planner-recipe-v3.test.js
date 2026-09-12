@@ -32,6 +32,8 @@ test("master3 preserves controlled provenance across canonical bytes, selection 
       if (selector.presentationTarget !== recipe.presentationTarget) continue;
       const selected = await reconstructPlannerRecipeSelectionV3(recipe, selector);
       assert.equal(selected.version, 3);
+      if (name === "xr") assert.equal(`${canonicalJson(selected.layout)}\n`,
+        await readFile(new URL("./fixtures/planner-recipe-v3-xr-layout.json", import.meta.url), "utf8"));
       assert.deepEqual(selected.assets, recipe.segments.P1.videoCatalogue.entries);
       assert.equal(selected.assets[0].geometry.nativeDisplayMetadata.sourceOrientation.stream.status, "absent");
       selectionHashes.push({ selector, sha256: await canonicalSha256(selected) });

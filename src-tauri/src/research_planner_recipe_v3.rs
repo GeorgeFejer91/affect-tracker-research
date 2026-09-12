@@ -69,16 +69,53 @@ mod tests {
             );
             let cases: Vec<Value> = serde_json::from_str(selections).unwrap();
             for case in cases {
-                let selected = loaded
+                let mut selected = loaded
                     .recipe
                     .reconstruct_selection(&case["selector"])
                     .unwrap();
                 assert_eq!(selected["version"], 3);
+                if selected["presentationTarget"] == "webxr-immersive-vr" {
+                    let expected_layout: Value = serde_json::from_str(include_str!(
+                        "../../test/fixtures/planner-recipe-v3-xr-layout.json"
+                    ))
+                    .unwrap();
+                    // Existing P6 absolute geometry tolerance, not a hash tolerance.
+                    // Compare native geometry first; use the JS layout only in this
+                    // test copy to check every other selected byte against its hash.
+                    compare_xr_geometry(&selected["layout"], &expected_layout, "layout");
+                    selected["layout"] = expected_layout;
+                }
                 assert_eq!(
                     canonical_sha256(&selected, &[]).unwrap(),
                     case["sha256"].as_str().unwrap()
                 );
             }
+        }
+    }
+
+    fn compare_xr_geometry(actual: &Value, expected: &Value, path: &str) {
+        match (actual, expected) {
+            (Value::Object(a), Value::Object(b)) => {
+                assert_eq!(
+                    a.keys().collect::<Vec<_>>(),
+                    b.keys().collect::<Vec<_>>(),
+                    "{path}"
+                );
+                for (key, value) in a {
+                    compare_xr_geometry(value, &b[key], &format!("{path}/{key}"));
+                }
+            }
+            (Value::Array(a), Value::Array(b)) => {
+                assert_eq!(a.len(), b.len(), "{path}");
+                for (index, (a, b)) in a.iter().zip(b).enumerate() {
+                    compare_xr_geometry(a, b, &format!("{path}/{index}"));
+                }
+            }
+            (Value::Number(a), Value::Number(b)) => assert!(
+                (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-10,
+                "{path}: {a} vs {b}"
+            ),
+            _ => assert_eq!(actual, expected, "{path}"),
         }
     }
 

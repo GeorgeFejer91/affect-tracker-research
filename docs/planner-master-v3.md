@@ -26,6 +26,15 @@ language/variant selections, canonical master bytes and expected reproduction
 and selected-content hashes. They are not researcher-authored native evidence.
 54 focused JavaScript checks pass, including historical master1/2, strict
 rejections, supported Save/Open/exact-copy and proof-only identity changes.
-Rust cross-language tests are added but await assembled execution at this draft
-checkpoint. Native producer/actor integration and actual CLI rebind/master
+Native libtest compilation at f44170b passes. Initial execution passes exact
+master bytes, reproduction matrices and all desktop selection hashes, but fails
+the newly added exact XR selection hash assertion. P6 already specifies an
+absolute 1e-10 derived-geometry tolerance because cross-language trigonometric
+floats are not byte identities. A JS-locked XR layout fixture now checks that
+existing tolerance separately, then verifies the exact remaining selection hash
+using the expected layout in a test-only copy. This test adjustment awaits native
+rerun; no product geometry, hashing or reader rules are changed.
+All 16 native file tests pass with D: TEMP/TMP. The initial default-C: invocation
+failed with StorageFull and is retained in main-master3-f44170b-tests-01 evidence.
+Native producer/actor integration and actual CLI rebind/master
 export remain separate gates. No foreground executable was replaced or opened.
