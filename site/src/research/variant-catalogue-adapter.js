@@ -91,3 +91,9 @@ export async function validateStimulusVariantContribution(contribution, { depend
   for (const variant of accepted.variants) compileVariantTimeline(accepted, variant.variantId, projection.videos);
   return true;
 }
+export async function validateSupportedStimulusVariantContribution(contribution, { dependencies } = {}) {
+  const projection = await projectSupportedVariantCatalogue(dependencies?.P1);
+  const accepted = await validateVariantDesign(contribution, projection.library);
+  for (const variant of accepted.variants) compileVariantTimeline(accepted, variant.variantId, projection.videos);
+  return true;
+}

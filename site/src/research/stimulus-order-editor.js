@@ -4,7 +4,7 @@ import { videoLibraryCsv } from "./stimulus-order.js";
 import { validateVariantLibrary as validateVideoLibrary } from "./variant-library.js";
 import { videoLibraryWorkbook } from "./stimulus-workbook.js";
 import { normalizeVariantCatalogue, validateVariantCatalogueLibrary } from "./variant-video-catalogue.js";
-import { normalizeVariantCatalogueSource, projectSavedVariantCatalogue, projectVariantCatalogue } from "./variant-catalogue-adapter.js";
+import { normalizeVariantCatalogueSource, projectSupportedSavedVariantCatalogue as projectSavedVariantCatalogue, projectSupportedVariantCatalogue as projectVariantCatalogue } from "./variant-catalogue-adapter.js";
 import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, resolveVariantCell, resolveVariantEntries, validateStoredVariantDocument, validateVariantDraft, validateVariantDesign, variantDesignToDraft, videoColorMap } from "./variant-design.js";
 
 const escape = value => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
