@@ -201,7 +201,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
         <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
       </footer>
-      ${sectionConfirmationMarkup(SETUP_SECTIONS.find(({ id }) => id === "feedback"), SETUP_SECTIONS.findIndex(({ id }) => id === "feedback"))}
+      <p class="field-help">Live Preview settings are captured with the final JSON in Section 7.</p>
       </div>
     </div>`;
 }
@@ -431,7 +431,6 @@ function reviewSection() {
     <section class="package-finalization" aria-labelledby="package-finalization-title">
       <div><h3 id="package-finalization-title">Recipe file</h3><p>Includes questionnaires and settings. Keep videos in the project library.</p></div>
       <div class="button-row">
-        <button id="package-generate" type="button" class="primary-action">Save recipe</button>
         <button id="package-edit" type="button" disabled>Edit recipe</button>
       </div>
     </section>
@@ -521,14 +520,14 @@ function sectionConfirmationMarkup(section, index) {
   const isLast = index === SETUP_SECTIONS.length - 1;
   return `
     <div class="setup-section-confirmation">
-      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed</p>
+      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}" role="status">${isLast ? "Current Live Preview settings are included when you save." : "Not confirmed"}</p>
       <button
         class="setup-section-confirm-button"
         type="button"
-        data-confirm-section="${section.id}"
+        ${isLast ? 'id="package-generate"' : `data-confirm-section="${section.id}"`}
         data-review-state="pending"
         aria-describedby="setup-confirmation-status-${section.id}"
-      >${isLast ? "Confirm review" : "Confirm section"}</button>
+      >${isLast ? "Save final JSON…" : "Confirm section"}</button>
     </div>`;
 }
 
@@ -536,8 +535,7 @@ function feedbackNavigationMarkup(section, index) {
   return `<div class="feedback-navigation">
     <button type="button" id="setup-trigger-feedback" data-open-section="feedback" aria-controls="preview-title">
       <span class="section-number">${index + 1}</span><span>${section.label}</span>
-      <span class="section-review-status" data-section-review-status="feedback"><span data-section-review-check="feedback" aria-hidden="true" hidden>✓</span></span>
-      <span class="sr-only" data-feedback-nav-status>Not reviewed</span>
+      <span class="sr-only" data-feedback-nav-status>Captured at final save</span>
     </button>
     <span class="field-help" data-section-summary="feedback">${SECTION_SUMMARIES.feedback}</span>
   </div>`;
@@ -559,7 +557,7 @@ function accordionMarkup(section, index) {
           <span class="section-number">${index + 1}</span>
           <span class="section-title">${section.label}</span>
           <span class="section-summary" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</span>
-          <span class="section-review-status" data-section-review-status="${section.id}"><span data-section-review-check="${section.id}" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="${section.id}">Not reviewed</span></span>
+          <span class="section-review-status" data-section-review-status="${section.id}"><span data-section-review-check="${section.id}" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="${section.id}">${section.id === "review" ? "Not saved" : "Not confirmed"}</span></span>
           <span class="section-chevron" aria-hidden="true">${expanded ? "−" : "+"}</span>
         </button>
       </h2>
@@ -590,7 +588,7 @@ export function renderResearchUiMarkup(surface = "browser") {
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
             <div class="setup-pane" id="setup-sections">
-              <div class="setup-intro"><p>Review the design before creating a session.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
+              <div class="setup-intro"><p>Confirm each section, then save the final JSON.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 2} sections confirmed · Live Preview captured at final save</output></div>
               ${SETUP_SECTIONS.map((section, index) => section.id === "feedback" ? feedbackNavigationMarkup(section, index) : accordionMarkup(section, index)).join("")}
             </div>
             <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"

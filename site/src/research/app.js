@@ -59,6 +59,7 @@ import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-reques
 import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
 import { createPlannerContributionRegistry, registerAvailablePlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
+import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
@@ -101,7 +102,6 @@ import {
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
   UI_PRESET_IDS,
-  applySetupSectionConfirmation,
   estimateResearchStorageUse,
   nextOpenSetupSection,
   normalizeAttemptDisposition,
@@ -124,7 +124,6 @@ export {
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
   UI_PRESET_IDS,
-  applySetupSectionConfirmation,
   estimateResearchStorageUse,
   nextOpenSetupSection,
   normalizeAttemptDisposition,
@@ -199,6 +198,7 @@ function bindResearchInteractions(root, { surface }) {
     },
   }) : null;
   let openSection = "workspace";
+  let setupNavigationRevision = 0;
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
   let mode = "setup";
@@ -240,8 +240,12 @@ function bindResearchInteractions(root, { surface }) {
   let observedPackageDraft = null;
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
-  const packageExport = createPackageExportController({ onChange: () => renderPackageExportReview() });
+  const packageExport = createPackageExportController({ onChange: () => {
+    renderPackageExportReview();
+    renderSetupReviewState();
+  } });
   const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
+    renderSetupReviewState();
     const next = plannerContributions.read().fingerprint;
     if (next === observedContributions) return;
     observedContributions = next;
@@ -253,6 +257,11 @@ function bindResearchInteractions(root, { surface }) {
     clearParticipantLanguageSelection();
     schedulePlanRefresh();
   } });
+  const setupConfirmationFlow = createSetupConfirmationFlow({
+    acceptContribution: (segment) => plannerContributions.accept(segment),
+    readAcceptance: () => plannerContributions.readAccepted(),
+    onChange: () => renderSetupReviewState(),
+  });
   let browserPackageRoot = null;
   let packageAssetClosureSha256 = null;
   let packageReproductionReceipt = null;
@@ -491,8 +500,16 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderSetupReviewState() {
+    const confirmations = setupConfirmationFlow.read();
+    const save = packageExport.snapshot();
+    reviewedSetupSections.clear();
     for (const { id } of SETUP_SECTIONS) {
-      const reviewed = reviewedSetupSections.has(id);
+      const state = confirmations.find((entry) => entry.id === id);
+      const reviewed = id === "review" ? save.phase === "saved" && !packageIsStale : Boolean(state?.confirmed);
+      if (reviewed) reviewedSetupSections.add(id);
+      const label = id === "review" ? reviewed ? "Saved" : "Not saved"
+        : state?.busy ? "Confirming…" : state?.status === "excluded" ? "Confirmed · not enabled"
+          : reviewed ? "Confirmed" : state?.status === "stale" ? "Changed · review again" : "Not confirmed";
       const section = query(`[data-setup-section="${id}"]`);
       const checkmark = query(`[data-section-review-check="${id}"]`);
       const reviewLabel = query(`[data-section-review-label="${id}"]`);
@@ -500,27 +517,34 @@ function bindResearchInteractions(root, { surface }) {
       const button = query(`[data-confirm-section="${id}"]`);
       if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
       if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
-      if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = label;
       if (id === "feedback") {
         const navigationStatus = query("[data-feedback-nav-status]");
-        if (navigationStatus) navigationStatus.textContent = reviewed ? "Reviewed" : "Not reviewed";
+        if (navigationStatus) navigationStatus.textContent = "Captured at final save";
       }
-      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      if (confirmation instanceof HTMLElement) {
+        confirmation.textContent = state?.error ?? (id === "review"
+          ? reviewed ? "Final JSON saved." : "Current Live Preview settings are included when you save."
+          : label);
+        confirmation.dataset.state = state?.error ? "error" : reviewed ? "ready" : "warning";
+      }
       if (button instanceof HTMLButtonElement) {
-        button.disabled = reviewed;
-        button.dataset.reviewState = reviewed ? "reviewed" : "pending";
-        button.textContent = reviewed
-          ? "Reviewed"
-          : id === SETUP_SECTIONS[SETUP_SECTIONS.length - 1].id ? "Confirm review" : "Confirm section";
+        button.disabled = reviewed || confirmations.some(({ busy }) => busy);
+        button.dataset.reviewState = reviewed ? "reviewed" : state?.busy ? "confirming" : "pending";
+        button.textContent = state?.busy ? "Confirming…" : reviewed ? "Confirmed" : "Confirm section";
+        button.setAttribute("aria-busy", String(Boolean(state?.busy)));
       }
     }
+    const saveButton = query("#package-generate");
+    if (saveButton) saveButton.dataset.reviewState = save.phase === "saved" && !packageIsStale ? "reviewed" : save.busy ? "confirming" : "pending";
     const progress = query("#setup-progress");
     if (progress) {
-      progress.textContent = `${reviewedSetupSections.size} of ${SETUP_SECTIONS.length} reviewed · ${readySetupSectionCount} ready`;
+      progress.textContent = `${confirmations.filter(({ confirmed }) => confirmed).length} of ${SETUP_CONFIRMATION_ORDER.length} sections confirmed · ${reviewedSetupSections.has("review") ? "Final JSON saved" : "Live Preview captured at final save"}`;
     }
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
+    setupNavigationRevision += 1;
     openSection = sectionId === "feedback" ? "feedback"
       : sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
     const panelChanges = [];
@@ -554,24 +578,20 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
-  function confirmSetupSection(sectionId) {
-    const transition = applySetupSectionConfirmation(reviewedSetupSections, sectionId);
-    reviewedSetupSections.clear();
-    transition.reviewedSectionIds.forEach((id) => reviewedSetupSections.add(id));
+  async function confirmSetupSection(sectionId) {
+    const navigationRevision = setupNavigationRevision;
+    const transition = await setupConfirmationFlow.confirm(sectionId);
+    if (transition.status === "error") { announce(transition.message); return; }
+    if (transition.status !== "confirmed") return;
     const current = SETUP_SECTIONS.find(({ id }) => id === sectionId);
-    if (transition.nextSectionId) {
-      const next = SETUP_SECTIONS.find(({ id }) => id === transition.nextSectionId);
-      openSetupSection(transition.nextSectionId, { focus: true });
-      renderSetupReviewState();
-      announce(`${current?.label ?? "Setup section"} reviewed. ${next?.label ?? "The next section"} opened.`);
+    // An asynchronous validator must not pull the user back after navigation.
+    if (setupNavigationRevision !== navigationRevision || openSection !== sectionId) {
+      announce(`${current?.label ?? "Setup section"} confirmed.`);
       return;
     }
-    query(`#setup-trigger-${sectionId}`)?.focus();
-    openSetupSection(null);
-    renderSetupReviewState();
-    announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
-      : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
+    const next = SETUP_SECTIONS.find(({ id }) => id === transition.nextSectionId);
+    openSetupSection(transition.nextSectionId, { focus: true });
+    announce(`${current?.label ?? "Setup section"} confirmed. ${next?.label ?? "Final save"} opened.`);
   }
 
   function colorValues() {
@@ -4462,7 +4482,7 @@ function bindResearchInteractions(root, { surface }) {
         : "Running mode becomes available only after an attempt starts.");
     }
     if (target.dataset.confirmSection) {
-      confirmSetupSection(target.dataset.confirmSection);
+      void confirmSetupSection(target.dataset.confirmSection);
       return;
     }
     if (target.dataset.openSection) openSetupSection(target.dataset.openSection);
@@ -5251,6 +5271,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      setupConfirmationFlow.destroy();
       previewLayout.destroy();
       previewInteraction?.destroy();
       previewInteraction = null;
