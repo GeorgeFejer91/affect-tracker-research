@@ -340,12 +340,12 @@ does not resolve widest/tallest aspect-ratio constraints. Check every fitted
 video and animation extent without silently using per-video bottom-edge alignment.
 
 - [x] **P4-01 — Implemented predecessor:** normalized feedback placement/size and Run locking exist; centre-offset/calibrated screen contracts do not.
-- [ ] **P4-02 — Missing:** whole-screen miniature using actual media geometry and shared Flubber configuration.
-- [ ] **P4-03 — Decision:** exact reference-video selection/extent, fit/crop, centre definition and axes (Q08); fixed-reference percentage basis is already confirmed.
-- [ ] **P4-04 — Missing:** physical/relative toggle, calibration and geometry-preserving conversion when measurements are available.
-- [ ] **P4-05 — Missing:** save/apply centre offsets through one layout owner shared by preview/export.
-- [ ] **P4-06 — Missing:** validate aspect ratios, animation bounds, overlap/clipping and incompatible runtime screens without silent repositioning.
-- [ ] **P4-07 — Missing:** deterministic export/reload geometry fixtures for each relevant video/screen profile.
+- [ ] **P4-02 — Component ready, integration pending:** whole-screen miniature consumes complete P1 v1/v2 geometry and P5 v1/v2 owned painted bounds. Invalid or unselected inputs withdraw geometry; inspection never changes saved placement.
+- [ ] **P4-03 — Component ready, integration pending:** required per-recipe choice between largest oriented video by pixel area and combined maximum-width/height envelope, with no default. Automatic analysis then defines one fixed reference; contain fitting, right/down axes and fixed design centre are explicit.
+- [ ] **P4-04 — Component ready, integration pending:** relative/mm authoring requires measured active dimensions and full-viewport mapping for uniform conversion; geometry and maximum painted bounds are preserved.
+- [ ] **P4-05 — Component ready, P7 integration pending:** strict `affect-research-desktop-layout-contribution` v1, live prepare and guarded ready/content-only reopen share the same centre/geometry owner. P7 owns final master persistence; Runner application remains deferred.
+- [ ] **P4-06 — Component ready, integration pending:** all unique P1 content assets are checked for aspect-preserving fit, full P5 animation bounds, overlap/gap/clipping; exact observed viewport mismatch rejects. No physical monitor attestation or runtime resizing is implied.
+- [ ] **P4-07 — Component ready, integration pending:** both explicit methods and relative/mm profiles pass canonical JS/Rust geometry fixtures, independent-process reproduction and actual-app accepted layout export/reload against the preview. Final combined master evidence remains P7/integration work.
 
 **Acceptance:** preview and saved geometry agree; units/reference are explicit;
 mixed videos retain the chosen relationship; missing calibration/impossible fit
@@ -371,6 +371,15 @@ Q08; neither candidate is silently chosen. Accepted P4 JSON and master recipe
 round-trip remain absent, so the capability boxes stay open. Final evidence is
 563 Node tests, 118 actual Chrome app checks/four inspected captures and both
 frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and-draft-restoration--2026-09-12).
+
+**2026-09-12 Planner completion:** coordinator `84300ed` clarifies both Q08
+methods as explicit recipe parameters, without choosing a global default. Pure
+accepted/native checkpoint `d0267fff` and the subsequent live preparation/reopen
+work implement this direction. See [the exact contract and API](../docs/planner-p4-layout-contract.md).
+Current internal draft v2 adds a nullable method; explicit restoration of frozen
+v1 drafts leaves that new choice unselected. Capability boxes remain open until
+collected on the combined source. Runner correspondence is the final separately
+allocated stage and does not block Planner authoring completion.
 
 ## P5 — Flubber & Controls
 
