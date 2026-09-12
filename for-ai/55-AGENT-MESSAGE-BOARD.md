@@ -19,8 +19,19 @@
 - Evidence: descriptor coverage/freshness and malformed input tests, Pages asset
   closure, background Chrome/Edge wide/narrow captures. Native import/export,
   UI parity and Runner execution retain their own separately bound receipts.
-- Baseline32 UI/branding tests and renderer syntax pass. Source/rendered checks
-  and the clean commit handoff follow; no public deployment claim yet.
+- Implementation `92a5d5dcf83cb04872963e4f302886fc6099e2a3`: 38/38 focused
+  reference/UI/branding checks and Pages build/253-file closure passed. Actual
+  native capture supplies155 settings/32 operations with104 source bindings.
+- Chrome152 and Edge153 passed six headless scenes each at1440/390px, relative
+  project URLs, reload and keyboard focus; no page errors or outer overflow.
+  Receipts: `D:/GitHub/.affect-preview-checks/about-cli-20260912/` under
+  `chrome-92a5d5d/receipt.json` and `edge-92a5d5d/receipt.json`. Paired PNGs are
+  byte-identical. Screenshot review prompted one final command-name wrapping
+  adjustment; fresh captures follow that CSS-only correction.
+- Main must recapture the catalogue from its next actual native candidate after
+  source integration; strict drift checks deliberately reject changed source.
+  Main owns About navigation, collection and final publication. No deployment
+  claim or native import/export/Runner qualification is made by this slice.
 
 ### 20260912-cli-integrated-owner-registration
 
