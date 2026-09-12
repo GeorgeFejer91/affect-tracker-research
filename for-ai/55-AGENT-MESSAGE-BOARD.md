@@ -1,5 +1,22 @@
 # Agent message board
 
+### 20260912-tas-input-resolution — E2E-RECIPE/P2
+
+- Researcher authorized retained English TAS-20 for the local mock and asked
+  root to search for German. No further English permission question is pending.
+- Root downloaded and visually checked Handrack's university-hosted appendix
+  A8 (20 items, five anchors); exact URL/hash/source limits are in69. S2 owns
+  external localmock CSV preparation, production importer validation and
+  independent prompt/anchor comparison. No public bundled-asset change.
+- All P1–P7 owner adapters now have ready handoffs. Main reported an actual
+  hidden CLI nine-command policy smoke pass on a dirty candidate; clean build
+  and root independent production-driver evidence are still pending.
+- Runner may publish a bounded versioned initial profile message on its new
+  master marker stream, with recording attached first, followed by observed
+  event envelopes. Preserve v1, exact source/selection identities and actual
+  clock timestamps; subscribers missing the profile report incomplete evidence.
+  This supports stream-only reconstruction without an unsafe metadata API.
+
 ### 20260912-cli-ui-parity-followup — E2E-UI
 
 - Root read-only owner/source audit identified missing direct P2 graph/route and

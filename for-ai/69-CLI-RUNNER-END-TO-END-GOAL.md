@@ -74,11 +74,25 @@ writer are in owner worktrees, not yet an integrated end-to-end CLI. Root's
 extension roadmap checkpoint is `80b5afa`. Exact implementation receipts belong
 to the subsequent candidate, not the baseline.
 
-The English TAS-20 retained source is marked as requiring an authorized copy,
-and the German TAS-20 source is absent. The source-path question is pending.
-Continue independent implementation/testing; leave the requested bilingual
-artifact incomplete until those inputs are resolved. No fabricated translation
-or blank template may stand in for the requested instrument.
+The researcher has now explicitly authorized the retained English TAS-20 for
+the local mock and requested an online German source. Root located and visually
+checked all 20 items and five anchors in Handrack's 2016 dissertation, appendix
+A8, PDF page 142. The university-hosted source is
+[Handrack dissertation](https://jlupub.ub.uni-giessen.de/bitstreams/0b9557df-78c8-4bab-96e5-d84f3b94f9a5/download).
+Its methods cite Bach et al. (1996); this identifies the appendix source, not
+independent verification against the original translation master. A
+[meta-analysis](https://pmc.ncbi.nlm.nih.gov/articles/PMC9597132/) reports several
+German translations, so preserve the exact source wording and provenance rather
+than mixing versions. The downloaded PDF SHA-256 is
+`d982b1953026f3f6246efc9a75fb97fc02abfbe3a7fe0f0b1ad2390fccc7cf3c`.
+Source and inspected rendering are in
+`D:/GitHub/.affect-checks/tas20-german-source-20260912/`.
+S2 owns local import-file preparation and independent item/anchor verification;
+production CLI import remains pending. Retain raw supplied response codes;
+instrument-scoring validation and public redistribution are not inferred from
+the researcher's local-use authorization. A second Greifswald download returned
+bot-challenge HTML, not a usable PDF, and must not become an input.
+No fabricated translation or blank template may stand in for the instrument.
 
 Runner current-master runtime consumption and native execution gates require
 fresh inspection by the Runner owner. Previous strict reader or legacy-package
