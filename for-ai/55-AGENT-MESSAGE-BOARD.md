@@ -62,6 +62,23 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p7-review-issue-presentation
+
+- Owner **S7**, P7-06 and visual V23/V25, Backend Verification follow-up
+  explicitly allocated by root after its actual `b9d520d` Review capture.
+  Isolated `codex/segment-p7-accepted-recipe`, combined base `c32f806`.
+- Current source renders eight bordered issue buttons for four affected sections,
+  repeats pending/format explanations and exposes `P1` in dependency text.
+  Deliverable: compact section rows plus accessible complete diagnostics, with
+  researcher-facing names and every existing owning-section action retained.
+- Scope: P7 issue presentation helper, Review renderer/markup/CSS and focused
+  fixture. Save/acceptance/load semantics are unchanged; integration owns the
+  parallel load-edit guard. No producer or accepted JSON contract changes.
+- Evidence to collect: distinct diagnostic preservation, stable focus/disclosure
+  during refresh, actual default-app missing-state actions and inspected desktop/
+  narrow Review captures. Q08/P4 accepted type and full master composition remain
+  open; native, Edge, hardware, Runner and canonical promotion are deferred.
+
 ### 20260912-integration-confirmation-shell
 
 - Owner: **Add segment confirmation flow**, bounded integration/accordion seam,

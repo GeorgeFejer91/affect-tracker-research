@@ -67,6 +67,7 @@ import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { openBrowserExperimentPackage } from "./package-file-picker.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
+import { renderPlannerContributionIssues } from "./planner-issue-view.js";
 import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
 import {
@@ -3497,22 +3498,7 @@ function bindResearchInteractions(root, { surface }) {
         || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0 || selectedTarget !== null))
         || (id === "package-edit" && !experimentPackageDocument);
     }
-    const list = query("#package-contribution-issues");
-    if (list) {
-      list.replaceChildren(...review.issues.map(({ segment, code, message }) => {
-        const item = document.createElement("li");
-        const button = document.createElement("button");
-        button.type = "button";
-        button.dataset.plannerSegment = segment;
-        const label = { P1: "Workspace", P2: "Questionnaires", P3: "Stimulus order", P4: "Screen layout", P5: "Flubber & controls", P6: "VR screen layout" }[segment];
-        button.textContent = code === "successor-required"
-          ? `${label}: these settings cannot be saved in the current recipe format.`
-          : message.replace(`${segment}:`, `${label}:`);
-        item.append(button);
-        return item;
-      }));
-      list.hidden = review.issues.length === 0;
-    }
+    renderPlannerContributionIssues(query("#package-contribution-issues"), review.issues);
   }
 
   const LANGUAGE_DEPENDENT_PREFLIGHT_IDS = new Set([
