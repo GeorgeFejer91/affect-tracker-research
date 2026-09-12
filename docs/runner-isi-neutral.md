@@ -144,3 +144,13 @@ stalled real requestAnimationFrame;01 retained a stale frame,02 waiting for nati
 RAF produced no receipt.03/04 explicitly substitute only frame scheduling in the
 esbuild test observer. No production code changes, physical-paint/timing, native
 video, CLI-authored JSON or XDF claim follows from these screenshots.
+
+### Nonblocking participant chrome finding
+
+The thin square around Flubber is inherited container chrome, not its authored
+P5 outline: `site/research.css` applies a1px border to `.run-feedback-stage`.
+Runner CSS removes the stimulus and inner-preview borders but omits the feedback
+container. The2px outer/inner geometry difference corroborates this. R1 presentation
+follow-up: remove unrequested container chrome using Runner-specific CSS while
+preserving the authored wavy Flubber outline. No shared P5 edit is needed; no fix
+is included in this evidence pass. Root notified separately.
