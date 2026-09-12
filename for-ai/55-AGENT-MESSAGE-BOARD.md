@@ -4996,3 +4996,11 @@ Verify first/consecutive/video-to-ISI and stale input ordering. Preserve current
 ISI input-disabled behavior; no animation freeze, playback strategy or marker
 schema change. XDF's existing markers do not independently attest reset values
 or physical paint; report that separate contract/evidence gap to root/Main.
+# Runner hidden ISI preview reset — 2026-09-12
+
+Root allocates R1/RR-10 Backend Verification continuation from `acac539` on
+isolated `codex/segment-runner-isi-preview`. Apply the native neutral status
+through the existing P5 preview mapping before hiding each interval, so cached
+geometry is reset before Presented. Preserve hidden/input-disabled ISIs and
+existing clocks/markers/sampling. Verify first/consecutive/video-following/next
+video presentation in the headless app harness. No physical paint/timing claim.
