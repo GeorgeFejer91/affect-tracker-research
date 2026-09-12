@@ -29,6 +29,13 @@ source searches and zero-overflow assertions alone do not satisfy that term.
 
 ## Review snapshot — 2026-09-12
 
+Continuation update at 09:34 UTC: the researcher explicitly instructed the
+paused tasks to continue. S1–S7 and integration are active on their remaining
+contribution/composition work, as allocated in message
+`20260912-roadmap-resumed-segment-completion`. The earlier stage pause is lifted
+for that requested work. Owner-level visual evidence below remains valid for
+its exact source; V28 still requires the eventual combined application.
+
 All seven owners have completed a bounded visual cleanup handoff. Actual
 rendered owner versions were inspected at desktop and constrained widths;
 the evidence and remaining limits are recorded below. Canonical source is
@@ -338,13 +345,13 @@ Subsequent owner handoffs, still requiring combined verification:
   with retained destinations; canonical was still `ba2110f` when reported.
   Do not present the isolated candidate as the current installed application.
 
-**Intentional integration pause:** the integration owner explicitly asked not
-to be repeatedly woken while awaiting the researcher's answer to its new
-confirmation-semantics pass check. Ready commits remain queued. Do not appoint
-another merger or treat a coordination message as that answer. The recurring
-monitor now respects this pause. Independently authorized owner fixes and
-visual review may finish in isolation. V28/final combined acceptance remain
-open until integration resumes and the exact combined source is rendered.
+**Earlier integration pause, superseded on 2026-09-12:** the integration owner
+had awaited the researcher's answer to its confirmation-semantics pass check.
+The researcher has now directly instructed the paused tasks to continue. Root
+relayed that instruction and resumed the monitor's active assignments; it is
+not an invented answer to other product decisions. Integration remains the
+sole merger. V28/final combined acceptance remain open until the exact combined
+source is rendered and inspected after collection and implementation.
 
 For each item, replace pending text with its exact integrated source commit,
 the inspected screenshot paths/state/viewport, and relevant focused regression

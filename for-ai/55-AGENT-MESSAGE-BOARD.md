@@ -62,6 +62,43 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-roadmap-resumed-segment-completion
+
+- Owner: **Create segment catalogue**, `roadmap` coordination; **open**.
+  The researcher explicitly requested continued orchestration/readiness and
+  then asked the paused tasks to continue. This resumes the already requested
+  Planner contribution, confirmation and final-save implementation/verification.
+  It does not answer separate product decisions or expand Runner scope.
+- Root owns this uniquely identified message and the visual audit status.
+  Application owners retain isolated worktrees; **Add segment confirmation
+  flow** remains the sole integration owner. The earlier blanket stage pause
+  is superseded by the user's continuation instruction, not by a peer message.
+- At 2026-09-12 09:34 UTC, compact task snapshots confirmed S1–S7 and integration
+  active after their concrete assignments. Ready UI checkpoints remain those
+  listed in `64-SEGMENT-VISUAL-AUDIT.md`; new work must not reopen settled polish.
+
+| Task | Assigned remaining capability | Producer/consumer coordination |
+| --- | --- | --- |
+| S1 / P1 | P1-04–07: verified catalogue identity, duration/display geometry, revisions and saved-library handoff | P3/P4/P6/P7 consume the P1-owned producer |
+| S2 / P2 | P2-04/05/08: full questionnaire restore/contribution seam and actual EN/DE content coverage | P7 owns combined save/reopen |
+| S3 / P3 | P3-03–08: variants, ISI dictionary, occurrences, marker definitions and deterministic round trip | P1 supplies media; P7 composes the contribution |
+| S4 / P4 | P4-02/05–07: actual media/envelope binding, validated layout contribution and restore | P1/P5 producers; P7 consumer; unresolved Q08 choices remain explicit |
+| S5 / P5 | P5-05–07: saved-control inventory, accepted feedback contribution and animation envelope | P4/P6 consumers; P7 captures final Preview values |
+| S6 / P6 | P6-05: live producer binding, optional profile round trip and selected-target guards | P1/P5 producers; P7 consumer; no XR runtime work |
+| S7 / P7 | P7-03/05–07/09: versioned contribution interface, blank-study master JSON, save/reopen and stale/cancel guards | Owns composition and named save; integration owns sequential acceptance |
+| Integration | Collect compatible ready work; implement the accepted confirmation flow; supply a clean combined source | Root then performs V28 full rendered verification |
+
+- Preserve frozen v1 readers. Implement successor requirements through explicit
+  versioned contracts and applicable evidence; do not hide unsupported layouts
+  or add silent defaults. Optional XR must not block desktop-only completion.
+- Live Preview's original tile/halo/color work is already integrated through
+  `bed461b`. Its separately requested Face Morph extension is still subject to
+  the charter's Face/Photoatlas exclusion and its existing explicit change
+  question. That optional extension does not block the approved Planner work.
+- Readiness remains four distinct states: implemented component, clean owner
+  handoff, integrated source and verified combined application. The monitor is
+  updated to follow resumed work and will not reapply the superseded stage pause.
+
 ### 20260911-roadmap-rendered-compactness-audit
 
 - Owner: **Create segment catalogue**, `roadmap` coordination/visual QA;
