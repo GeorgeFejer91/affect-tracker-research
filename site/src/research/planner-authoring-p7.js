@@ -1,6 +1,7 @@
 import { DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1 } from "./experiment-package.js";
 import { PLANNER_RECIPE_POLICY_SCHEMA, validatePlannerRecipePolicyV1 } from "./planner-recipe-policy.js";
 import { commandFailure, validateSettingValue } from "./planner-authoring-contract.js";
+import { PLANNER_TARGETS, parsePlannerTargetSelection } from "./planner-target.js";
 
 const FIELDS = Object.freeze([
   { id: "P7.participantCount", control: "participant-count", type: "integer", minimum: 1, maximum: 100000, label: "Participant count" },
@@ -12,6 +13,7 @@ const FIELDS = Object.freeze([
   { id: "P7.lsl.streamType", control: "lsl-stream-type", type: "string", maxLength: 80, label: "LSL stream type" },
   { id: "P7.lsl.markerStream", control: "lsl-marker-stream", type: "string", maxLength: 80, label: "LSL marker stream" },
   { id: "P7.lsl.sourceId", control: "lsl-source-id", type: "string", maxLength: 120, label: "LSL source ID" },
+  { id: "P7.presentationTarget", control: "planner-presentation-target", type: "string", enum: ["", ...PLANNER_TARGETS.map(target => target.id)], label: "Presentation target" },
 ]);
 
 /** Product-specific projection over the existing policy controls, not a second
@@ -38,6 +40,9 @@ export function createPlannerPolicyCommandOwner({ root, onCommit = () => {} }) {
         lsl: Object.fromEntries(["enabled", "stateStream", "streamType", "markerStream", "sourceId"].map(key => [key, values[`P7.lsl.${key}`]])),
         playback: structuredClone(DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1),
       });
+      if (parsePlannerTargetSelection(values["P7.presentationTarget"]) === null) {
+        return [{ owner: "P7", field: "P7.presentationTarget", code: "invalid_target", message: "Choose a presentation target in Review." }];
+      }
       return [];
     } catch (error) {
       return [{ owner: "P7", field: null, code: "invalid_policy", message: String(error.message).slice(0, 512) }];
