@@ -92,16 +92,18 @@ import { externalExperimentPlanToCsv } from "./tabular.js";
 import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity.js";
 import {
   browserDisplayGeometry,
-  createVideoCatalogueProducerV1,
-  validateVideoCatalogueContributionV1,
+  createVideoCatalogueProducer,
+  validateVideoCatalogueContribution,
+  videoAnnotationIdFromRelativePathV1,
+  workspaceStimuliToVideoCatalogueEntries,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
 import {
-  createWorkspaceContributionProducerV1,
-  projectWorkspaceVideoDisplayGeometryV1,
-  prepareWorkspaceContentRestoreV1,
-  validateWorkspaceContributionV1,
-  verifyWorkspaceRestoredVideoEntriesV1,
+  createWorkspaceContributionProducer,
+  projectWorkspaceVideoDisplayGeometry,
+  prepareWorkspaceContentRestore,
+  validateWorkspaceContribution,
+  verifyWorkspaceRestoredVideoEntries,
 } from "./workspace-contribution.js";
 import {
   BrowserResearchWorkspace,
@@ -380,10 +382,10 @@ function bindResearchInteractions(root, { surface }) {
   let activeWorkspaceRestoreGeneration = 0;
   let videoCatalogueRefreshGeneration = 0;
   let workspaceContributionProducer = null;
-  const videoCatalogueProducer = createVideoCatalogueProducerV1({
+  const videoCatalogueProducer = createVideoCatalogueProducer({
     onChange: () => workspaceContributionProducer?.changed(),
   });
-  workspaceContributionProducer = createWorkspaceContributionProducerV1({
+  workspaceContributionProducer = createWorkspaceContributionProducer({
     getStudyIdentity: () => getStudyIdentity(),
     getVideoCatalogueSnapshot: () => {
       const snapshot = videoCatalogueProducer.getSnapshot();
@@ -2581,7 +2583,9 @@ function bindResearchInteractions(root, { surface }) {
     table.replaceChildren(...stimuli.map((stimulus) => {
       const row = document.createElement("tr");
       const title = document.createElement("td");
+      title.className = "video-location-id";
       title.textContent = stimulus.title;
+      title.title = stimulus.title;
       const source = document.createElement("td");
       source.textContent = stimulus.source === "youtube" ? "Experimental YouTube" : stimulus.source === "repository" ? "Repository asset" : "Workspace file";
       const verification = document.createElement("td");
@@ -2637,7 +2641,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function addStimulus({ title, source, location, file = null }) {
-    const normalizedTitle = String(title || file?.name || "Untitled video").trim().slice(0, 120);
+    const normalizedTitle = source === "workspace" && String(location ?? "").startsWith("stimuli/")
+      ? videoAnnotationIdFromRelativePathV1(String(location))
+      : String(title || file?.name || "Untitled video").trim().slice(0, 120);
     const duplicate = stimuli.some((stimulus) => stimulus.source === source && stimulus.location === location);
     if (duplicate) {
       announce(`${normalizedTitle} is already in the stimulus library.`);
@@ -3262,9 +3268,11 @@ function bindResearchInteractions(root, { surface }) {
       && pendingWorkspaceRestore === pendingRestore
       && activeWorkspaceRestoreGeneration === pendingRestore?.generation;
     try {
-      const entries = workspaceStimuliToVideoCatalogueEntriesV1(stimuli);
+      const entries = pendingRestore?.contribution.videoCatalogue.version === 1
+        ? workspaceStimuliToVideoCatalogueEntriesV1(stimuli)
+        : workspaceStimuliToVideoCatalogueEntries(stimuli);
       if (pendingRestore) {
-        const expected = await verifyWorkspaceRestoredVideoEntriesV1(pendingRestore.contribution, entries);
+        const expected = await verifyWorkspaceRestoredVideoEntries(pendingRestore.contribution, entries);
         if (!restoreIsCurrent()) return videoCatalogueProducer.getSnapshot();
         const restoredSnapshot = await videoCatalogueProducer.restoreContribution(expected, {
           isCurrent: restoreIsCurrent,
@@ -3335,8 +3343,8 @@ function bindResearchInteractions(root, { surface }) {
     let restored;
     let restorePlan;
     try {
-      restored = await validateWorkspaceContributionV1(contribution);
-      restorePlan = await prepareWorkspaceContentRestoreV1(restored);
+      restored = await validateWorkspaceContribution(contribution);
+      restorePlan = await prepareWorkspaceContentRestore(restored);
     } catch (error) {
       if (activeWorkspaceRestoreGeneration === operation) {
         activeWorkspaceRestoreGeneration = previousRestoreGeneration;
@@ -4098,7 +4106,7 @@ function bindResearchInteractions(root, { surface }) {
         ));
         if (stimulus) stimulus.file = files[index];
         else stimulus = addStimulus({
-          title: files[index].name.replaceAll("\\", "/").split("/").at(-1),
+          title: videoAnnotationIdFromRelativePathV1(relativePath),
           source: "workspace",
           location: relativePath,
           file: files[index],
@@ -5200,6 +5208,12 @@ function bindResearchInteractions(root, { surface }) {
   root.addEventListener(RESEARCH_UI_EVENTS.stimuliCatalogued, (event) => {
     try {
       const entries = Array.isArray(event.detail?.items) ? event.detail.items : [];
+      const historicalAnnotationsByPath = new Map();
+      if (pendingWorkspaceRestore?.contribution.version === 1) {
+        for (const saved of pendingWorkspaceRestore.contribution.videoCatalogue.entries) {
+          historicalAnnotationsByPath.set(saved.sourceRelativePath, saved.annotationId);
+        }
+      }
       if (event.detail?.replace === true) {
         for (let index = stimuli.length - 1; index >= 0; index -= 1) {
           if (stimuli[index].source === "workspace") stimuli.splice(index, 1);
@@ -5209,9 +5223,13 @@ function bindResearchInteractions(root, { surface }) {
         const item = validateStimulusV1(entry.stimulus ?? entry);
         const existing = stimuli.find(({ id }) => id === item.stimulusId);
         const poolId = null;
+        const title = item.source.kind === "workspaceFile"
+          ? historicalAnnotationsByPath.get(item.source.relativePath)
+            ?? videoAnnotationIdFromRelativePathV1(item.source.relativePath)
+          : item.title;
         const next = {
           id: item.stimulusId,
-          title: item.title,
+          title,
           source: item.source.kind === "workspaceFile" ? "workspace" : item.source.kind === "repositoryAsset" ? "repository" : "youtube",
           location: item.source.relativePath ?? item.source.url,
           poolId,
@@ -5457,7 +5475,7 @@ function bindResearchInteractions(root, { surface }) {
       xrLayoutAuthoring = createXrLayoutAuthoring({ editor: xrLayoutEditor,
         getDependencies: () => ({ P1: workspaceContributionProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
         subscribe: [workspaceContributionProducer.subscribe, feedbackContribution.subscribe],
-        projectCatalogue: projectWorkspaceVideoDisplayGeometryV1,
+        projectCatalogue: projectWorkspaceVideoDisplayGeometry,
       });
     },
     waitForXrLayoutDependencies() { return xrLayoutAuthoring.refresh(); },
@@ -5527,14 +5545,14 @@ function bindResearchInteractions(root, { surface }) {
     subscribeWorkspaceContributionChanges(listener) {
       return workspaceContributionProducer.subscribe(listener);
     },
-    validateWorkspaceContribution: validateWorkspaceContributionV1,
+    validateWorkspaceContribution,
     getVideoCatalogueContributionSnapshot,
     subscribeVideoCatalogueChanges(listener) {
       if (typeof listener !== "function") throw new TypeError("Video catalogue listener must be a function.");
       const projected = () => listener(getVideoCatalogueContributionSnapshot());
       return workspaceContributionProducer.subscribe(projected);
     },
-    validateVideoCatalogueContribution: validateVideoCatalogueContributionV1,
+    validateVideoCatalogueContribution,
     validateStudyIdentity: validateStudyIdentityV1,
     getSelectedPlannerTarget,
     getQuestionnaireContributionSnapshot,

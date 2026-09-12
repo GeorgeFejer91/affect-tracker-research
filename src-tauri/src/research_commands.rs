@@ -767,7 +767,7 @@ pub async fn research_rescan_stimuli(
     workspace_id: String,
 ) -> ResearchResult<RescanResult> {
     authorize(&window)?;
-    workspace.rescan(&workspace_id)
+    workspace.rescan_planner_videos(&workspace_id)
 }
 
 #[tauri::command]

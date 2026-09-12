@@ -1494,6 +1494,12 @@ legend {
   border-radius: 6px;
 }
 
+.video-location-id {
+  white-space: nowrap;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  user-select: text;
+}
+
 .stimulus-actions {
   display: flex;
   flex-wrap: wrap;

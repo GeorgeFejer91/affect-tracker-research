@@ -43,6 +43,7 @@ import {
   validateResearchRunManifestV3,
   validateResearchRunManifestV4,
 } from "./protocol-records.js";
+import { videoAnnotationIdFromRelativePathV1 } from "./video-catalogue-contribution.js";
 
 export const RESEARCH_STORAGE_NAMESPACE = "affect-research/v1";
 export const RESEARCH_WORKSPACE_IDENTITY_FILE = "workspace.identity.json";
@@ -2044,6 +2045,14 @@ export class BrowserResearchWorkspace {
       }
       const suggested = file.webkitRelativePath || file.name;
       const relativePath = normalizeWorkspaceRelativePath(suggested, "import path");
+      try {
+        videoAnnotationIdFromRelativePathV1(`stimuli/${relativePath}`);
+      } catch {
+        fail(
+          "unsafe-video-location",
+          "Video folders and filenames must already use NFC Unicode and cannot begin or end with whitespace.",
+        );
+      }
       const parts = relativePath.split("/");
       const fileName = parts.pop();
       const directory = await getNestedDirectory(this.packageStimuliDirectory, parts, { create: true });
