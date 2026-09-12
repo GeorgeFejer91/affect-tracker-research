@@ -17,6 +17,7 @@ const entry = `
 import { bootResearchUi } from './site/src/research/app.js';
 import { NativeResearchRuntimeBridge } from './site/src/research/native-bridge.js';
 import { BrowserResearchRuntimeBridge } from './site/src/research/runtime-bridge.js';
+import { RESEARCH_UI_EVENTS } from './site/src/research/ui-contracts.js';
 import { bootRunner } from './runner/src/app.js';
 const errors=[]; addEventListener('error',e=>errors.push(e.message)); addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
 const program=new URL(location.href).searchParams.get('program'), calls=[];
@@ -32,10 +33,17 @@ try {
    case 'research_source_capabilities':return {repositoryAsset:{supported:true}};
    case 'research_input_capability':return {nativeAuthorityReady:false,supportedPresets:[]};
    case 'research_input_status':case 'research_input_cancel_setup':return {available:false,receipt:null,remainingDirections:[],capture:null};
+   case 'research_native_media_stop':return {};
+   case 'research_choose_workspace':throw new Error('Synthetic workspace rejection');
    case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'gstreamer-gstplay',api:'gstplay',pinnedRuntimeVersion:'1.28.6',bindingsVersion:'0.25',target:'msvc-x86_64',runtimeInstallerSha256:'059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5',runtimeTreeManifestSha256:'51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566',defaultPlaybackMode:'nativeGstPlay',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:true,rendererReceivesFilesystemPaths:false,reasonCode:'runtime-not-staged'};
    default:throw new Error('Planner requested a runtime command: '+command);
   }};
-  if(surface==='tauri') await new NativeResearchRuntimeBridge(root,{invoke}).initialize();
+  if(surface==='tauri') {
+   const bridge=await new NativeResearchRuntimeBridge(root,{invoke}).initialize();
+   root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.selectWorkspaceRequest,{cancelable:true}));await bridge.operation;
+   const status=root.querySelector('#planner-status');if(status.hidden||status.textContent!=='Synthetic workspace rejection'||root.querySelector('#research-announcer').textContent!=='Synthetic workspace rejection')throw new Error('Planner authoring error was not visibly announced');
+   status.hidden=true;bridge.destroy();await Promise.resolve();
+  }
   else {
    const forbidden=()=>{throw new Error('Planner invoked a participant runtime dependency');};
    const bridge=new BrowserResearchRuntimeBridge(root,{journal:new Proxy({},{get:()=>forbidden}),workerProbe:forbidden,leaseFactory:forbidden,storageProbe:forbidden,controllerFactory:forbidden});
