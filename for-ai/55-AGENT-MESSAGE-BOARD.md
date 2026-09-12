@@ -4655,3 +4655,12 @@ by this build-option change.
 - Editor plus P3 authoring suites: 61 passing checks, including exact GUI reset
   state parity, read-only preparation/state-only commit, one projection and
   stale/abort rejection. No build, GUI launch or native workflow claim.
+
+### 20260912-p2-import-cli-default-slot-fix
+
+- Main actual-app repro exposed dirty-default slots losing pristine eligibility
+  in prepareAuthoringEntries. Owner staging now carries internal pristine state
+  separately; explicit draft/per-questionnaire edits consume it. No overwrite
+  exception or public schema change. Same isolated import lane, parent e8d0384.
+- Actual P2 allocator -> prepared import -> exact saved bytes passes, while
+  add+edit same batch rejects import. Focused P2/import/save/restore39/39.

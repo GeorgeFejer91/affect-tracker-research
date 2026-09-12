@@ -29,3 +29,11 @@ byte and receipt parity through save, no preparation or commit projection,
 single-use commit, detached caller bytes, mismatched source/family/language,
 reset/cancel/lock/preset and invalidation during await. No broad suite, builds,
 foreground interaction, native persistence or Runner qualification was run.
+
+CLI allocation follow-up: untouched newly allocated defaults now carry internal
+pristine state through the owner staging boundary, independently of dirty/save
+status. Explicit draft replacement or per-questionnaire edit consumes pristine
+state, including add+edit in one batch. Existing GUI pristine state is retained
+on unrelated owner publication. The public command/recipe schema is unchanged.
+The actual createPlannerAuthoringP2 addQuestionnaire -> prepareAuthoringImport
+regression and same-batch edited rejection pass; the final focused gate is39/39.

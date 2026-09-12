@@ -719,7 +719,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     readAuthoringEntries() {
       return activeEntries().map(({ entry }) => ({ sheet: cloneQuestionnaireSheet(entry.sheet),
         invalid: [...entry.invalid], layout: entry.layout, repeatLabels: entry.repeatLabels,
-        dirty: entry.dirty, busy: entry.busy, error: entry.error, rawOptionCount: entry.rawOptionCount ?? null }));
+        dirty: entry.dirty, pristine: entry.pristine, busy: entry.busy, error: entry.error, rawOptionCount: entry.rawOptionCount ?? null }));
     },
     /** Owner adapter validates/prepares before the shared session's commit fence.
      * The returned projection has no async work, imports, native save or acceptance. */
@@ -740,7 +740,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         entry.error = record.error;
         entry.rawOptionCount = record.rawOptionCount;
         entry.selection = null;
-        if (record.dirty) { entry.pristine = false; entry.authoringResult = null; entry.sourceBytes = null; }
+        if (record.dirty) { entry.pristine = record.pristine === true; entry.authoringResult = null; entry.sourceBytes = null; }
         prepared.set(key, entry);
       }
       if (prepared.size !== next.families.length * next.languages.length) throw new TypeError("Missing questionnaire authoring slot.");

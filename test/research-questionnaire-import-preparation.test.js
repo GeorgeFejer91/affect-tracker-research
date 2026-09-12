@@ -57,3 +57,27 @@ for (const change of ["reset", "cancel", "lock", "preset", "duringAwait"]) test(
   const renders = f.renders;
   assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit()); assert.equal(f.renders, renders);
 });
+
+// Exercise the actual CLI owner allocator rather than constructing editor slots directly.
+const { createPlannerAuthoringP2 } = await import("../site/src/research/planner-authoring-p2.js");
+for (const editSameBatch of [false, true]) test(`CLI addQuestionnaire preserves import eligibility only without subsequent edits (${editSameBatch})`, async () => {
+  const f = await fixture();
+  const { familyForDefinition, ...dataContext } = f.context;
+  let context = { ...dataContext, families: [], modules: [], languageSelection: null };
+  f.editor.sync(context);
+  const owner = createPlannerAuthoringP2({ editor: f.editor, readContext: () => context, commitContext: next => { context = next; } });
+  const add = { kind: "operation", owner: "P2", operation: "addQuestionnaire", arguments: { familyId: f.options.familyId, title: "Import target", optionCount: 5, rowCount: 0 } };
+  const edits = [add];
+  if (editSameBatch) edits.push({ kind: "operation", owner: "P2", operation: "updateQuestionnaire", arguments: { questionnaireId: `${f.options.familyId}-en`, changes: { instructions: "Authored instructions" } } });
+  const staged = await owner.stage(edits, f.options); staged.commit(); staged.afterCommit();
+  assert.equal(f.editor.canLoadPreset(f.options.familyId, "en"), !editSameBatch);
+  if (editSameBatch) await assert.rejects(f.editor.prepareAuthoringImport(f.imported, f.options), /pristine/);
+  else {
+    const prepared = await f.editor.prepareAuthoringImport(f.imported, f.options); prepared.commit();
+    assert.equal(prepared.questionnaireId, f.imported.definition.questionnaireId);
+    const save = await f.editor.prepareAuthoringQuestionnaireSave(prepared.questionnaireId, f.options);
+    assert.deepEqual(save.payload.definition, f.imported.definition);
+    assert.deepEqual(save.payload.sourceBytes, f.bytes);
+  }
+});
+
