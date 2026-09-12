@@ -48,7 +48,7 @@ async function waitForCapture(name) {
   throw new Error("No completed HTTP receipt and PNG: " + name);
 }
 const fixture = scenario => `<!doctype html><html lang="en"><meta charset="utf-8"><link rel="stylesheet" href="/site/research.css">
-<div id="research-app" data-research-surface="browser"></div>
+<div id="research-app" data-research-surface="browser" data-research-program="planner"></div>
 <script id="p4-test-config" type="application/json">${JSON.stringify({ ...scenario, catalogue, requireIntegrated, receiptPath: `/receipt/${token}/${scenario.name}` })}</script>
 <script type="module" src="/p4-fixture.js"></script></html>`;
 const server = createServer(async (request, response) => {

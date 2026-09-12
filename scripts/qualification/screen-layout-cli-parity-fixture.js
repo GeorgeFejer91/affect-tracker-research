@@ -28,6 +28,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
 let integratedSession = false, app, ui, session, cliEditor, root, pane;
 try {
   app = bootResearchUi(); ui = app.researchUi;
+  check("actual separate Planner role is declared", app.dataset.researchProgram === "planner");
   ui.openSetupSection("layout");
   if (config.width < 1000) app.querySelector("[data-setup-resizer]").dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
   root = app.querySelector("[data-screen-layout-draft]"); pane = app.querySelector(".setup-pane");
