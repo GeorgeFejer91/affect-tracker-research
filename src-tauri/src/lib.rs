@@ -37,6 +37,7 @@ pub mod research_runner_master;
 mod research_runner_session;
 #[cfg(test)]
 mod research_runtime;
+mod research_shutdown;
 mod research_stimulus_order;
 mod research_timing;
 mod research_video_geometry;
@@ -108,8 +109,10 @@ fn launch(
         cli_enabled,
     ));
     let setup_authoring = Arc::clone(&authoring);
+    let shutdown = Arc::new(research_shutdown::ShutdownCoordinator::default());
     let builder = tauri::Builder::default()
         .manage(role)
+        .manage(Arc::clone(&shutdown))
         .register_uri_scheme_protocol("research-media", |context, request| {
             if let Some(workspace) = context.app_handle().try_state::<Arc<WorkspaceService>>() {
                 workspace.protocol_response(context.webview_label(), request)
@@ -147,12 +150,11 @@ fn launch(
                 .map_err(|error| std::io::Error::other(error.message))?,
             );
             let resource_dir = app.path().resource_dir()?;
-            let parent_window_handle = research_parent_window_handle(app);
-            let native_media = Arc::new(NativeMediaService::start(
-                &resource_dir,
-                app_data_dir.as_path(),
-                parent_window_handle,
-            ));
+            let parent = app
+                .get_webview_window("research")
+                .ok_or_else(|| std::io::Error::other("Native media parent window is absent."))?;
+            let native_media =
+                NativeMediaService::start_async(resource_dir, app_data_dir.clone(), parent);
             // Setup remains operable when the safe hook cannot start. Capability
             // reporting and every test/Start command then fail closed.
             let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));
@@ -198,26 +200,11 @@ fn launch(
         })
         .on_window_event(|window, event| {
             if window.label() == "research" {
-                if matches!(
-                    event,
-                    WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
-                ) {
-                    if let Some(runtime) = window.try_state::<Arc<PackageProtocolRuntime>>() {
-                        runtime.shutdown();
-                    }
-                    if let Some(recorder) =
-                        window.try_state::<Arc<research_recorder::RecorderService>>()
-                    {
-                        recorder.shutdown();
-                    }
-                }
-                if matches!(
-                    event,
-                    WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
-                ) {
-                    if let Some(native_media) = window.try_state::<Arc<NativeMediaService>>() {
-                        native_media.shutdown();
-                    }
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    // A strong Rust clone alone does not veto OS destruction.
+                    // Keep the parent/event loop alive through actual native join.
+                    api.prevent_close();
+                    request_companion_exit(window.app_handle(), 0);
                 }
                 if let Some(input) = window.try_state::<Arc<ResearchInputService>>() {
                     match event {
@@ -347,28 +334,18 @@ fn launch(
         .expect("failed to build the selected companion app");
 
     let on_event = |app: &tauri::AppHandle, event| {
-        if matches!(event, tauri::RunEvent::ExitRequested { .. }) {
-            if let Some(authoring) =
-                app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()
-            {
-                authoring.shutdown();
-            }
-            if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
-                runtime.shutdown();
-            }
-            if let Some(recorder) = app.try_state::<Arc<research_recorder::RecorderService>>() {
-                recorder.shutdown();
-            }
-            if let Some(input) = app.try_state::<Arc<ResearchInputService>>() {
-                input.shutdown();
-            }
-            if let Some(native_media) = app.try_state::<Arc<NativeMediaService>>() {
-                native_media.shutdown();
+        if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+            let coordinator = app.state::<Arc<research_shutdown::ShutdownCoordinator>>();
+            coordinator.join_finished();
+            if !coordinator.ready_to_exit() {
+                api.prevent_exit();
+                request_companion_exit(app, code.unwrap_or(0));
             }
         }
     };
     if cli_enabled {
         let runtime_code = app.run_return(on_event);
+        shutdown.join_finished();
         // Windows/WebView shutdown can return 0 despite app.exit(2). Preserve
         // the owned broker's terminal outcome independently of the event loop.
         if authoring.exit_code() == 0 {
@@ -382,16 +359,53 @@ fn launch(
     }
 }
 
-#[cfg(target_os = "windows")]
-fn research_parent_window_handle(app: &tauri::App) -> Option<isize> {
-    app.get_webview_window("research")
-        .and_then(|window| window.hwnd().ok())
-        .map(|handle| handle.0 as isize)
+fn request_companion_exit(app: &tauri::AppHandle, code: i32) {
+    let coordinator = Arc::clone(
+        app.state::<Arc<research_shutdown::ShutdownCoordinator>>()
+            .inner(),
+    );
+    let work_app = app.clone();
+    let exit_app = app.clone();
+    coordinator.request(
+        code,
+        move || {
+            shutdown_before_native(&work_app)?;
+            if let Some(media) = work_app.try_state::<Arc<NativeMediaService>>() {
+                media.request_shutdown();
+                while !media.is_stopped() {
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                media
+                    .finish_shutdown()
+                    .map_err(|_| "native-media-shutdown-failed")?;
+            }
+            Ok(())
+        },
+        move |code| exit_app.exit(code),
+    );
 }
 
-#[cfg(not(target_os = "windows"))]
-fn research_parent_window_handle(_: &tauri::App) -> Option<isize> {
-    None
+/// Main's named Runner collection seam. Runs only on the coordinator worker:
+/// authoring -> Master cancellation -> Package -> Master join -> recorder/input.
+/// Main adds Master calls here; the parent/native actor remain alive throughout.
+fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
+    if let Some(authoring) =
+        app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()
+    {
+        authoring.shutdown();
+    }
+    // Reserved Main seam: request Master shutdown before blocking Package cleanup.
+    if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
+        runtime.shutdown();
+    }
+    // Reserved Main seam: observe Master is_stopped and require join_stopped here.
+    if let Some(recorder) = app.try_state::<Arc<research_recorder::RecorderService>>() {
+        recorder.shutdown();
+    }
+    if let Some(input) = app.try_state::<Arc<ResearchInputService>>() {
+        input.shutdown();
+    }
+    Ok(())
 }
 
 fn input_service_for_platform(native_acquisition_supported: bool) -> ResearchInputService {

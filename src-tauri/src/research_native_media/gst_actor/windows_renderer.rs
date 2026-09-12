@@ -120,7 +120,12 @@ impl ChildVideoWindow {
         // to this child are drained; dispatch cannot enter project Rust
         // callbacks because the built-in STATIC class owns the WndProc.
         unsafe {
-            while PeekMessageW(&mut message, Some(self.hwnd), 0, 0, PM_REMOVE).as_bool() {
+            // Every removed message is dispatched. Remaining messages stay in
+            // the OS queue for the next turn, allowing cancellation to run.
+            for _ in 0..32 {
+                if !PeekMessageW(&mut message, Some(self.hwnd), 0, 0, PM_REMOVE).as_bool() {
+                    break;
+                }
                 let _ = TranslateMessage(&message);
                 DispatchMessageW(&message);
             }

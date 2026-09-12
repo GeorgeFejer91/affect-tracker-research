@@ -31,11 +31,6 @@ impl InspectedCapability {
         &self.runtime_root
     }
 
-    pub(crate) fn mark_actor_ready(&mut self) {
-        self.public.player_actor_ready = true;
-        self.public.reason_code = "native-qualification-evidence-incomplete".to_owned();
-    }
-
     pub(crate) fn mark_actor_failed(&mut self, reason_code: &str) {
         self.public.player_actor_ready = false;
         self.public.qualified_start_available = false;
@@ -44,6 +39,37 @@ impl InspectedCapability {
 
     pub(crate) fn into_public(self) -> NativeMediaCapability {
         self.public
+    }
+}
+
+/// Immediate fail-closed projection while the worker verifies the pinned tree.
+/// NotStaged here makes no positive claim about a not-yet-inspected bundle;
+/// the explicit pending reason distinguishes it from a completed absent check.
+pub(crate) fn pending_capability() -> NativeMediaCapability {
+    NativeMediaCapability {
+        schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
+        version: 2,
+        backend: "gstreamer-gstplay",
+        api: "gstplay",
+        pinned_runtime_version: PINNED_GSTREAMER_VERSION,
+        bindings_version: PINNED_BINDINGS_SERIES,
+        target: PINNED_TARGET,
+        runtime_installer_sha256: PINNED_INSTALLER_SHA256,
+        runtime_tree_manifest_sha256: PINNED_RUNTIME_MANIFEST_SHA256,
+        default_playback_mode: PlaybackMode::NativeGstPlay,
+        unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
+        runtime_bundle_state: RuntimeBundleState::NotStaged,
+        runtime_integrity_verified: false,
+        runtime_file_count: None,
+        runtime_byte_length: None,
+        player_actor_ready: false,
+        qualified_start_available: false,
+        qualified_format_matrix_ready: false,
+        redistribution_review_ready: false,
+        ambient_runtime_allowed: false,
+        required_for_qualified_run: true,
+        renderer_receives_filesystem_paths: false,
+        reason_code: "native-runtime-verification-pending".to_owned(),
     }
 }
 
@@ -83,29 +109,12 @@ pub(crate) fn inspect_capability(
 
     InspectedCapability {
         public: NativeMediaCapability {
-            schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
-            version: 2,
-            backend: "gstreamer-gstplay",
-            api: "gstplay",
-            pinned_runtime_version: PINNED_GSTREAMER_VERSION,
-            bindings_version: PINNED_BINDINGS_SERIES,
-            target: PINNED_TARGET,
-            runtime_installer_sha256: PINNED_INSTALLER_SHA256,
-            runtime_tree_manifest_sha256: PINNED_RUNTIME_MANIFEST_SHA256,
-            default_playback_mode: PlaybackMode::NativeGstPlay,
-            unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
             runtime_bundle_state,
             runtime_integrity_verified,
             runtime_file_count: file_count,
             runtime_byte_length: byte_length,
-            player_actor_ready: false,
-            qualified_start_available: false,
-            qualified_format_matrix_ready: false,
-            redistribution_review_ready: false,
-            ambient_runtime_allowed: false,
-            required_for_qualified_run: true,
-            renderer_receives_filesystem_paths: false,
             reason_code: reason,
+            ..pending_capability()
         },
         runtime_root,
     }

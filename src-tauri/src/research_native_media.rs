@@ -2,6 +2,8 @@
 mod capability;
 #[path = "research_native_media/contracts.rs"]
 mod contracts;
+#[path = "research_native_media/live_frame.rs"]
+pub mod live_frame;
 #[path = "research_native_media/state.rs"]
 mod state;
 
@@ -18,24 +20,69 @@ pub use contracts::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_platform::NATIVE_ACQUISITION_SUPPORTED;
 use crate::research_workspace::NativeMediaGrant;
-use capability::inspect_capability;
-use std::path::Path;
+use capability::{inspect_capability, pending_capability};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
 
 #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
 use gst_actor::{GstActorConfig, GstPlayActorHandle};
 
 #[derive(Debug)]
-pub struct NativeMediaService {
+struct ServiceState {
     capability: NativeMediaCapability,
-    native_acquisition_supported: bool,
     #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-    actor: Option<GstPlayActorHandle>,
+    actor: Option<Arc<GstPlayActorHandle>>,
+}
+
+/// Internal lifecycle projection, deliberately not an IPC or recipe contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeMediaShutdownStatus {
+    NotRequested,
+    Pending,
+    Stalled,
+    ReadyToJoin,
+    Completed,
+}
+
+#[derive(Debug, Default)]
+struct ServiceLifecycle {
+    requested: AtomicBool,
+    requested_at: Mutex<Option<Instant>>,
+    completed: AtomicBool,
+    initializer_failed: AtomicBool,
+}
+
+#[derive(Debug)]
+pub struct NativeMediaService {
+    state: Arc<Mutex<ServiceState>>,
+    native_acquisition_supported: bool,
+    lifecycle: Arc<ServiceLifecycle>,
+    initializer: Mutex<Option<JoinHandle<()>>>,
+    parent: Mutex<Option<tauri::WebviewWindow>>,
+    finish: Mutex<()>,
 }
 
 impl NativeMediaService {
-    /// Constructs the production service. The optional native parent handle is
-    /// obtained by the Tauri composition root and never crosses the command
-    /// boundary exposed to the WebView.
+    pub(crate) fn snapshot_live_frame(
+        &self,
+        fence: NativeMediaCommandFenceV1,
+    ) -> ResearchResult<live_frame::LiveFrame> {
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        {
+            self.with_actor(|actor| actor.snapshot_live_frame(fence))
+        }
+        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
+        {
+            let _ = fence;
+            self.actor_unavailable()
+        }
+    }
+    /// Legacy composition compatibility. A raw HWND cannot establish a parent
+    /// lifetime: this path reports unavailable and never starts a native actor.
+    /// Production composition must use start_async with a retained window.
     pub fn start(
         resource_dir: &Path,
         state_dir: &Path,
@@ -57,52 +104,120 @@ impl NativeMediaService {
     ) -> Self {
         let mut capability = inspect_capability(resource_dir, native_acquisition_supported);
 
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        let actor = if capability.runtime_integrity_verified() && native_acquisition_supported {
-            match parent_window_handle {
-                Some(parent_window_handle) => {
-                    let config = GstActorConfig::new(
-                        capability.runtime_root().to_owned(),
-                        state_dir
-                            .join("affect-research")
-                            .join("v1")
-                            .join("gstreamer"),
-                        parent_window_handle,
-                    );
-                    match GstPlayActorHandle::start(config) {
-                        Ok(actor) => {
-                            capability.mark_actor_ready();
-                            Some(actor)
-                        }
-                        Err(error) => {
-                            capability.mark_actor_failed(error.reason_code());
+        let _ = (state_dir, parent_window_handle);
+        if capability.runtime_integrity_verified() && native_acquisition_supported {
+            capability.mark_actor_failed("native-media-async-parent-required");
+        }
+        Self::from_capability(capability.into_public(), native_acquisition_supported, None)
+    }
+
+    fn from_capability(
+        capability: NativeMediaCapability,
+        native_acquisition_supported: bool,
+        parent: Option<tauri::WebviewWindow>,
+    ) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(ServiceState {
+                capability,
+                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+                actor: None,
+            })),
+            native_acquisition_supported,
+            lifecycle: Arc::new(ServiceLifecycle::default()),
+            initializer: Mutex::new(None),
+            parent: Mutex::new(parent),
+            finish: Mutex::new(()),
+        }
+    }
+
+    /// Returns before runtime verification or actor initialization. Main must
+    /// keep the parent event loop pumping and veto close/exit until successful
+    /// finish_shutdown; a Rust window clone does not veto OS destruction.
+    pub fn start_async(
+        resource_dir: PathBuf,
+        state_dir: PathBuf,
+        parent: tauri::WebviewWindow,
+    ) -> Arc<Self> {
+        let service = Arc::new(Self::from_capability(
+            pending_capability(),
+            NATIVE_ACQUISITION_SUPPORTED,
+            Some(parent.clone()),
+        ));
+        let state = Arc::clone(&service.state);
+        let lifecycle = Arc::clone(&service.lifecycle);
+        let started = thread::Builder::new()
+            .name("affect-native-media-startup".to_owned())
+            .spawn(move || {
+                let mut capability =
+                    inspect_capability(&resource_dir, NATIVE_ACQUISITION_SUPPORTED);
+                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+                let actor = if capability.runtime_integrity_verified()
+                    && !lifecycle.requested.load(Ordering::Acquire)
+                {
+                    match parent.hwnd() {
+                        Ok(hwnd) => match GstPlayActorHandle::spawn(GstActorConfig::new(
+                            capability.runtime_root().to_owned(),
+                            state_dir
+                                .join("affect-research")
+                                .join("v1")
+                                .join("gstreamer"),
+                            hwnd.0 as isize,
+                        )) {
+                            Ok(actor) => {
+                                capability.mark_actor_failed("native-gstplay-startup-pending");
+                                Some(Arc::new(actor))
+                            }
+                            Err(error) => {
+                                capability.mark_actor_failed(error.reason_code());
+                                None
+                            }
+                        },
+                        Err(_) => {
+                            capability.mark_actor_failed("native-parent-window-unavailable");
                             None
                         }
                     }
-                }
-                None => {
-                    capability.mark_actor_failed("native-parent-window-unavailable");
+                } else {
                     None
+                };
+                #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
+                {
+                    let _ = (&parent, &state_dir, &lifecycle);
+                    if capability.runtime_integrity_verified() {
+                        capability.mark_actor_failed("native-gstreamer-feature-disabled");
+                    }
                 }
+                let mut state = state.lock().unwrap_or_else(|p| p.into_inner());
+                state.capability = capability.into_public();
+                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+                {
+                    state.actor = actor;
+                    // Paired with request_shutdown's state lock: neither order
+                    // can miss a shutdown requested during runtime inspection.
+                    if lifecycle.requested.load(Ordering::Acquire) {
+                        if let Some(actor) = &state.actor {
+                            actor.request_shutdown();
+                        }
+                    }
+                }
+            });
+        match started {
+            Ok(join) => {
+                *service
+                    .initializer
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner()) = Some(join)
             }
-        } else {
-            None
-        };
-
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = (state_dir, parent_window_handle);
-            if capability.runtime_integrity_verified() && native_acquisition_supported {
-                capability.mark_actor_failed("native-gstreamer-feature-disabled");
+            Err(_) => {
+                service
+                    .state
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .capability
+                    .reason_code = "native-media-initializer-start-failed".to_owned()
             }
         }
-
-        Self {
-            capability: capability.into_public(),
-            native_acquisition_supported,
-            #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-            actor,
-        }
+        service
     }
 
     #[cfg(test)]
@@ -116,7 +231,41 @@ impl NativeMediaService {
     }
 
     pub fn capability(&self) -> NativeMediaCapability {
-        self.capability.clone()
+        let mut capability = self
+            .state
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .capability
+            .clone();
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        if let Some(actor) = self.actor() {
+            match actor.startup_result() {
+                Some(Ok(())) if !actor.is_stopped() => {
+                    capability.player_actor_ready = true;
+                    capability.reason_code = "native-qualification-evidence-incomplete".to_owned();
+                }
+                Some(Err(error)) => {
+                    actor.request_shutdown();
+                    capability.reason_code = error.reason_code().to_owned();
+                }
+                _ => {}
+            }
+            if let Some(reason) = actor.failure_reason() {
+                capability.player_actor_ready = false;
+                capability.reason_code = reason.to_owned();
+            }
+        }
+        if self.lifecycle.requested.load(Ordering::Acquire) {
+            capability.player_actor_ready = false;
+            capability.qualified_start_available = false;
+            capability.reason_code = match self.shutdown_status() {
+                NativeMediaShutdownStatus::Completed => "native-media-shutdown-completed",
+                NativeMediaShutdownStatus::Stalled => "native-media-shutdown-stalled",
+                _ => "native-media-shutdown-pending",
+            }
+            .to_owned();
+        }
+        capability
     }
 
     pub fn authorize_playback(
@@ -126,12 +275,13 @@ impl NativeMediaService {
         if !self.native_acquisition_supported {
             return Err(CommandError::native_acquisition_platform_unsupported());
         }
+        let capability = self.capability();
         match playback_mode {
-            PlaybackMode::NativeGstPlay if self.capability.qualified_start_available => {
+            PlaybackMode::NativeGstPlay if capability.qualified_start_available => {
                 Ok(PlaybackQualification::QualifiedNative)
             }
             PlaybackMode::NativeGstPlay => Err(CommandError::native_media_unavailable(
-                &self.capability.reason_code,
+                &capability.reason_code,
             )),
             PlaybackMode::NativeLibvlc => Err(CommandError::native_media_unavailable(
                 "native-libvlc-backend-retired",
@@ -245,10 +395,104 @@ impl NativeMediaService {
     }
 
     pub fn shutdown(&self) {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if let Some(actor) = &self.actor {
-            actor.shutdown();
+        self.request_shutdown();
+    }
+
+    pub fn request_shutdown(&self) {
+        if !self.lifecycle.requested.swap(true, Ordering::AcqRel) {
+            *self
+                .lifecycle
+                .requested_at
+                .lock()
+                .unwrap_or_else(|p| p.into_inner()) = Some(Instant::now());
         }
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        if let Some(actor) = self.actor() {
+            actor.request_shutdown();
+        }
+    }
+
+    /// Observation only; completion is not reported until finish_shutdown joins.
+    pub fn is_stopped(&self) -> bool {
+        if self
+            .initializer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .is_some_and(|join| !join.is_finished())
+        {
+            return false;
+        }
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        if self.actor().is_some_and(|actor| !actor.is_stopped()) {
+            return false;
+        }
+        true
+    }
+
+    pub fn shutdown_status(&self) -> NativeMediaShutdownStatus {
+        if self.lifecycle.completed.load(Ordering::Acquire) {
+            NativeMediaShutdownStatus::Completed
+        } else if !self.lifecycle.requested.load(Ordering::Acquire) {
+            NativeMediaShutdownStatus::NotRequested
+        } else if self.is_stopped() {
+            NativeMediaShutdownStatus::ReadyToJoin
+        } else if self
+            .lifecycle
+            .requested_at
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .is_some_and(|at| at.elapsed() >= Duration::from_secs(5))
+        {
+            NativeMediaShutdownStatus::Stalled
+        } else {
+            NativeMediaShutdownStatus::Pending
+        }
+    }
+
+    /// Never waits for a live worker. Main may release the parent only after
+    /// this succeeds, not after acknowledgement, a deadline or is_stopped alone.
+    pub fn finish_shutdown(&self) -> ResearchResult<()> {
+        self.request_shutdown();
+        let _finish = self.finish.lock().unwrap_or_else(|p| p.into_inner());
+        if !self.is_stopped() {
+            return Err(CommandError::native_media_unavailable(
+                "native-media-shutdown-pending",
+            ));
+        }
+        if let Some(join) = self
+            .initializer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take()
+        {
+            if join.join().is_err() {
+                self.lifecycle
+                    .initializer_failed
+                    .store(true, Ordering::Release);
+            }
+        }
+        if self.lifecycle.initializer_failed.load(Ordering::Acquire) {
+            return Err(CommandError::native_media_unavailable(
+                "native-media-initializer-panicked",
+            ));
+        }
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        if let Some(actor) = self.actor() {
+            actor.finish_shutdown()?;
+        }
+        self.parent.lock().unwrap_or_else(|p| p.into_inner()).take();
+        self.lifecycle.completed.store(true, Ordering::Release);
+        Ok(())
+    }
+
+    #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+    fn actor(&self) -> Option<Arc<GstPlayActorHandle>> {
+        self.state
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .actor
+            .clone()
     }
 
     #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
@@ -256,24 +500,52 @@ impl NativeMediaService {
         &self,
         action: impl FnOnce(&GstPlayActorHandle) -> ResearchResult<T>,
     ) -> ResearchResult<T> {
-        let actor = self
-            .actor
-            .as_ref()
-            .ok_or_else(|| CommandError::native_media_unavailable(&self.capability.reason_code))?;
-        action(actor)
+        if self.lifecycle.requested.load(Ordering::Acquire) {
+            return Err(CommandError::native_media_unavailable(
+                "native-media-shutdown-pending",
+            ));
+        }
+        let actor = self.actor().ok_or_else(|| {
+            CommandError::native_media_unavailable(&self.capability().reason_code)
+        })?;
+        match actor.startup_result() {
+            Some(Ok(())) if !actor.is_stopped() => action(&actor),
+            Some(Err(error)) => {
+                actor.request_shutdown();
+                Err(CommandError::native_media_unavailable(error.reason_code()))
+            }
+            _ => Err(CommandError::native_media_unavailable(
+                "native-gstplay-actor-unavailable",
+            )),
+        }
     }
 
     #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
     fn actor_unavailable<T>(&self) -> ResearchResult<T> {
         Err(CommandError::native_media_unavailable(
-            &self.capability.reason_code,
+            &self.capability().reason_code,
         ))
     }
 }
 
 impl Drop for NativeMediaService {
     fn drop(&mut self) {
-        self.shutdown();
+        self.request_shutdown();
+        // A violated composition contract must not detach an initializer/actor
+        // and release its parent. Normal close has already joined both via
+        // finish_shutdown; this blocking safety backstop is never the UI path.
+        if let Some(join) = self
+            .initializer
+            .get_mut()
+            .unwrap_or_else(|p| p.into_inner())
+            .take()
+        {
+            let _ = join.join();
+        }
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        if let Some(actor) = self.actor() {
+            actor.join_for_drop();
+        }
     }
 }
 
@@ -281,6 +553,64 @@ impl Drop for NativeMediaService {
 mod tests {
     use super::*;
     use contracts::RuntimeBundleState;
+
+    #[test]
+    fn pending_inspection_is_fail_closed_and_shutdown_does_not_wait() {
+        let media = NativeMediaService::from_capability(pending_capability(), true, None);
+        let (release, wait) = std::sync::mpsc::channel();
+        *media.initializer.lock().unwrap() = Some(thread::spawn(move || {
+            let _ = wait.recv();
+        }));
+        assert!(!media.capability().player_actor_ready);
+        assert!(!media.capability().runtime_integrity_verified);
+        assert!(!media.capability().qualified_start_available);
+        assert!(media.status_snapshot().is_err());
+        media.request_shutdown();
+        media.request_shutdown();
+        assert_eq!(media.shutdown_status(), NativeMediaShutdownStatus::Pending);
+        assert!(!media.is_stopped());
+        assert!(media.finish_shutdown().is_err());
+        assert!(media.initializer.lock().unwrap().is_some());
+        *media.lifecycle.requested_at.lock().unwrap() =
+            Some(Instant::now() - Duration::from_secs(6));
+        assert_eq!(media.shutdown_status(), NativeMediaShutdownStatus::Stalled);
+        release.send(()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !media.is_stopped() && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        assert!(media.is_stopped());
+        assert_eq!(
+            media.shutdown_status(),
+            NativeMediaShutdownStatus::ReadyToJoin
+        );
+        media.finish_shutdown().unwrap();
+        media.finish_shutdown().unwrap();
+        assert!(media.initializer.lock().unwrap().is_none());
+        assert_eq!(
+            media.shutdown_status(),
+            NativeMediaShutdownStatus::Completed
+        );
+        assert!(!media.capability().qualified_start_available);
+    }
+
+    #[test]
+    fn initializer_panic_is_not_hidden_by_repeated_finish() {
+        let media = NativeMediaService::from_capability(pending_capability(), true, None);
+        *media.initializer.lock().unwrap() =
+            Some(thread::spawn(|| panic!("synthetic initializer failure")));
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !media.is_stopped() && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        assert!(media.is_stopped());
+        assert!(media.finish_shutdown().is_err());
+        assert!(media.finish_shutdown().is_err());
+        assert_ne!(
+            media.shutdown_status(),
+            NativeMediaShutdownStatus::Completed
+        );
+    }
 
     #[test]
     fn absent_runtime_is_truthful_and_native_start_fails_closed() {
