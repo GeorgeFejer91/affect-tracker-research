@@ -21,7 +21,7 @@ const bundle = await build({ entryPoints: ["test/fixtures/planner-master-browser
 const sourceHashes = {};
 for (const file of [...Object.keys(bundle.metafile.inputs), "site/research.css"]) sourceHashes[file] = hash(await readFile(file));
 const source = resolve(), resourceFailures = [];
-const savedFile = join(output, "fresh-confirmed-recipe.json");
+const savedFiles = new Map();
 const harnessSha256 = hash(await readFile(new URL(import.meta.url)));
 let completedReceipt = null;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -59,9 +59,27 @@ const server = createServer(async (request, response) => {
       }
       completedReceipt = JSON.parse(Buffer.concat(chunks).toString("utf8"));
       response.writeHead(204); response.end();
-    } else if (request.url === "/saved-file") {
-      if (request.method === "POST") { const chunks = []; for await (const chunk of request) chunks.push(chunk); await writeFile(savedFile, Buffer.concat(chunks)); response.end("ok"); }
-      else response.end(await readFile(savedFile));
+    } else if (pathname === "/select-save-file" && request.method === "POST") {
+      assert.ok(savedFiles.size < 8, "Too many test file selections.");
+      for (const selected of savedFiles.values()) {
+        if (selected.sha256) assert.equal(hash(await readFile(selected.path)), selected.sha256, "A prior version changed.");
+      }
+      const id = savedFiles.size + 1;
+      const path = join(output, id === 1 ? "fresh-confirmed-recipe.json" : `fresh-confirmed-recipe-${id}.json`);
+      await writeFile(path, new Uint8Array(), { flag: "wx" });
+      savedFiles.set(id, { path, sha256: null });
+      response.setHeader("Content-Type", "application/json"); response.end(JSON.stringify({ id }));
+    } else if (pathname === "/saved-file") {
+      const id = Number(new URL(request.url, "http://127.0.0.1").searchParams.get("id") ?? savedFiles.size);
+      const selected = savedFiles.get(id); assert.ok(selected, "Select a new test destination first.");
+      if (request.method === "POST") {
+        assert.equal(selected.sha256, null, "Each save requires a new selected destination.");
+        assert.equal((await readFile(selected.path)).length, 0, "The selected destination must be empty.");
+        const chunks = []; let length = 0;
+        for await (const chunk of request) { length += chunk.length; assert.ok(length <= 16 * 1024 * 1024); chunks.push(chunk); }
+        const bytes = Buffer.concat(chunks); assert.ok(bytes.length > 0);
+        await writeFile(selected.path, bytes); selected.sha256 = hash(bytes); response.end("ok");
+      } else response.end(await readFile(selected.path));
     } else if (pathname.startsWith("/site/") && request.method === "GET") {
       const file = resolve(source, "." + decodeURIComponent(pathname));
       assert.ok(file.startsWith(join(source, "site") + sep), "Static resource escaped the site root.");
@@ -85,6 +103,12 @@ try {
   await writeFile(join(output, "browser.log"), stderr);
   await writeFile(join(output, "launcher.json"), JSON.stringify({ stdoutLength: stdout.length, stderrLength: stderr.length }));
   const receipt = await waitForCapture(screenshot);
+  receipt.savedFiles = [];
+  for (const selected of savedFiles.values()) {
+    const bytes = await readFile(selected.path);
+    assert.equal(hash(bytes), selected.sha256, "A saved version changed before the final receipt.");
+    receipt.savedFiles.push({ basename: relative(output, selected.path), sha256: selected.sha256, byteLength: bytes.length });
+  }
   assert.equal(await git(["rev-parse", "HEAD"]), commit);
   for (const [file, digest] of Object.entries(sourceHashes)) assert.equal(hash(await readFile(file)), digest, file);
   Object.assign(receipt, { commit, status, sourceHashes, resourceFailures, harnessSha256, fixtureHtmlSha256: hash(html), browser, browserSha256: hash(await readFile(browser)), screenshotSha256: hash(await readFile(screenshot)),

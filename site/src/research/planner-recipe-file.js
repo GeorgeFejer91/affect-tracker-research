@@ -1,5 +1,6 @@
 import { parsePlannerRecipeV1, parsePlannerRecipeFile } from "./planner-recipe.js";
 import { MAX_PLANNER_RECIPE_BYTES, exactRecipeObject } from "./planner-recipe-wire.js";
+import { plannerRecipeFilename } from "./planner-recipe-filename.js";
 
 const encoder = new TextEncoder();
 const TYPES = [{ description: "Experiment recipe JSON", accept: { "application/json": [".json"] } }];
@@ -72,11 +73,20 @@ export async function prepareBrowserPlannerRecipeSave(sourceText, {
       if (typeof pickSaveFile !== "function") return Promise.reject(new Error("This browser cannot save recipe files. Use desktop Chrome or Edge."));
       busy = true;
       let selection;
-      try { selection = pickSaveFile({ id: "affect-recipe", suggestedName: `${expected.recipe.recipeId}.json`, types: TYPES, excludeAcceptAllOption: true }); }
+      // A browser picker may return an existing handle. This suggestion is not
+      // an atomic create-new guarantee; native version creation owns that rule.
+      try { selection = pickSaveFile({ id: "affect-recipe", suggestedName: plannerRecipeFilename(expected.recipe.recipeId), types: TYPES, excludeAcceptAllOption: true }); }
       catch (error) { busy = false; return error?.name === "AbortError" ? Promise.resolve(null) : Promise.reject(error); }
       return Promise.resolve(selection).then(async handle => {
         requireCurrent();
-        if (handle?.kind !== "file" || typeof handle.createWritable !== "function") throw new TypeError("Select a writable recipe file.");
+        if (handle?.kind !== "file" || typeof handle.createWritable !== "function" || typeof handle.getFile !== "function") throw new TypeError("Select a writable recipe file.");
+        const selectedFile = await handle.getFile(); requireCurrent();
+        if (!Number.isSafeInteger(selectedFile.size) || selectedFile.size !== 0) {
+          throw new Error("A file already uses this name. Choose a new recipe filename.");
+        }
+        // This rejects ordinary existing recipes. An empty existing file is
+        // indistinguishable from a new picker file, and another client may write
+        // between this check and close; the browser cannot promise exclusivity.
         let writable, closed = false;
         try {
           writable = await handle.createWritable({ keepExistingData: false }); requireCurrent();

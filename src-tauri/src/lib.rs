@@ -17,6 +17,7 @@ mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
 pub mod research_planner_recipe;
+mod research_planner_recipe_file;
 pub mod research_planner_recipe_policy;
 mod research_platform;
 pub mod research_protocol;

@@ -7,14 +7,14 @@ import { preparePlannerRecipeReopenV1, PlannerRecipeRestoreError } from "../site
 const source = await readFile(new URL("./fixtures/planner-recipe-v1.canonical.json", import.meta.url), "utf8");
 const bytes = new TextEncoder().encode(source);
 const order = ["P1", "P2", "P5", "P3", "P4", "P6", "policy", "presentationTarget"];
-function disk({ after = () => {}, fail = null, readBack = null } = {}) {
+function disk({ after = () => {}, fail = null, readBack = null, initial = new Uint8Array() } = {}) {
   const calls = []; let written = null;
   const step = async name => { calls.push(name); if (fail === name) throw Error(`${name} failed`); await after(name); };
   const handle = { kind: "file", async createWritable() {
     await step("create"); return { async write(value) { written = value.slice(); await step("write"); },
       async close() { await step("close"); }, async abort() { await step("abort"); } };
   }, async getFile() {
-    await step("read"); const value = readBack ?? written;
+    await step(written === null ? "inspect" : "read"); const value = written === null ? initial : readBack ?? written;
     return { size: value.length, arrayBuffer: async () => value.slice().buffer };
   } };
   return { calls, handle, get written() { return written; } };
@@ -23,12 +23,12 @@ function disk({ after = () => {}, fail = null, readBack = null } = {}) {
 test("named save invokes picker in the click turn and acknowledges only exact closed readback", async () => {
   const file = disk(); let picks = 0;
   const prepared = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => true,
-    pickSaveFile(options) { picks++; assert.equal(options.suggestedName, "complete-master.json"); return file.handle; } });
+    pickSaveFile(options) { picks++; assert.match(options.suggestedName, /^complete-master_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/u); return file.handle; } });
   assert.equal(picks, 0);
   const saving = prepared.chooseAndSave(); assert.equal(picks, 1);
   await assert.rejects(prepared.chooseAndSave(), /already/u);
   const receipt = await saving;
-  assert.deepEqual(file.calls, ["create", "write", "close", "read"]);
+  assert.deepEqual(file.calls, ["inspect", "create", "write", "close", "read"]);
   assert.deepEqual(file.written, bytes);
   assert.equal(validatePlannerRecipeSaveReceipt(receipt, prepared.expected).byteLength, bytes.length);
   for (const key of Object.keys(receipt)) {
@@ -46,7 +46,7 @@ test("cancelled picker can retry; write/close/readback failures never acknowledg
     pickSaveFile() { if (++picks === 1) return Promise.reject(Object.assign(Error("cancelled"), { name: "AbortError" })); return file.handle; } });
   assert.equal(await prepared.chooseAndSave(), null);
   assert.ok(await prepared.chooseAndSave());
-  for (const fail of ["create", "write", "close", "read"]) {
+  for (const fail of ["inspect", "create", "write", "close", "read"]) {
     const failed = disk({ fail });
     const operation = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => true, pickSaveFile: () => failed.handle });
     await assert.rejects(operation.chooseAndSave(), new RegExp(`${fail} failed`, "u"));
@@ -58,7 +58,7 @@ test("cancelled picker can retry; write/close/readback failures never acknowledg
 });
 
 test("edit, replacement or disposal at every write boundary permanently denies acknowledgement", async () => {
-  for (const stop of ["create", "write", "close", "read"]) {
+  for (const stop of ["inspect", "create", "write", "close", "read"]) {
     let current = true;
     const file = disk({ after(name) { if (name === stop) current = false; } });
     const prepared = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => current, pickSaveFile: () => file.handle });
@@ -67,6 +67,26 @@ test("edit, replacement or disposal at every write boundary permanently denies a
     current = true;
     await assert.rejects(prepared.chooseAndSave(), /changed/u);
   }
+});
+
+test("a selected nonempty browser file is rejected before any writable stream", async () => {
+  const file = disk({ initial: bytes });
+  const prepared = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => true, pickSaveFile: () => file.handle });
+  await assert.rejects(prepared.chooseAndSave(), /Choose a new recipe filename/u);
+  assert.deepEqual(file.calls, ["inspect"]);
+  assert.equal(file.written, null);
+});
+
+test("an edit or disposal while the picker is pending prevents any browser write", async () => {
+  let current = true, select;
+  const file = disk();
+  const prepared = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => current,
+    pickSaveFile: () => new Promise(resolve => { select = resolve; }) });
+  const saving = prepared.chooseAndSave();
+  current = false;
+  select(file.handle);
+  await assert.rejects(saving, /changed/u);
+  assert.deepEqual(file.calls, []);
 });
 
 test("reopen validates first, then restores dependency order without inventing accepted snapshots", async () => {
