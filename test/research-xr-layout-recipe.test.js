@@ -8,6 +8,7 @@ import { canonicalJson } from "../site/src/research/canonical.js";
 import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout-recipe.js";
 import { serializeXrLayoutProfileV1, parseXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
+import { resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-layout-recipe-v1.json", import.meta.url)));
 const options = () => ({ workspaceContribution: structuredClone(fixture.workspace),
@@ -71,6 +72,16 @@ test("saved XR uses P5's complete successor renderer and halo envelope without t
   for (const field of ["presentation", "response"]) {
     const incomplete = structuredClone(fixture.feedbackV2); delete incomplete[field];
     await assert.rejects(resolveSavedXrLayoutContribution(fixture.profiles[0], { ...options(), feedbackContribution: incomplete }));
+  }
+});
+
+test("V2 P5 bounds and XR geometry match the shared Rust/JavaScript fixture", async () => {
+  const shared = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v2.json", import.meta.url)));
+  for (const item of shared.cases) {
+    const envelope = resolveFeedbackEnvelope(item.configuration, 1024);
+    assert.deepEqual(envelope, item.envelope);
+    assert.deepEqual(resolveXrFeedbackFootprintV1(item.profile, envelope), item.expected);
+    assert.throws(() => resolveXrFeedbackFootprintV1(item.profile, { ...envelope, algorithmVersion: "feedback-envelope-v3" }));
   }
 });
 
