@@ -92,6 +92,24 @@ binds P1 metadata. Planned offsets are estimates, never measured onset. See the
 
 ## Reproduction fixtures and limits
 
+- [`variant-reproduction-v1.json`](../test/fixtures/variant-reproduction-v1.json)
+  supplies full P1 declarations, editable P3 input and its accepted contribution
+  for P7 master tests. Authored variant order is 3, 1, 2; lengths are 8, 4, 3;
+  occurrence IDs are deliberately non-contiguous. Repeated/adjacent videos,
+  leading/consecutive/final/zero ISIs, distinct duplicate durations and an unused
+  dictionary definition all survive. Expected per-entry bounds are specified
+  independently; totals are 50646, 37801 and 48146 ms.
+  `scripts/emit-variant-reproduction-fixture.js` regenerates the payload without
+  deriving expected times from the timeline compiler.
+- P7 can reuse `assertVariantReproduction(workspace, contribution,
+  definitionSha256, expected)` from
+  [`assert-variant-reproduction.js`](../test/fixtures/assert-variant-reproduction.js)
+  after strict complete-master parsing. Pass actual `segments.P1`, `segments.P3`
+  and authored-core definition hash; do not replace full master validation with
+  this owner assertion. It checks every boundary, occurrence and embedded marker
+  source against the fixture. The standalone process fixture currently covers
+  P3 domain reproduction only; it does not claim complete-master acceptance.
+
 - [`research-video-catalogue-contribution-v1.json`](../test/fixtures/research-video-catalogue-contribution-v1.json)
   is the exact P1 shared fixture from `3d6a6b2bdf33cc685668e650ca163c39be75c491`.
 - [`variant-catalogue-binding-v1.json`](../test/fixtures/variant-catalogue-binding-v1.json)
