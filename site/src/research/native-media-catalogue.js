@@ -10,7 +10,12 @@ const CATALOGUE_PHASES = new Set(["prepare", "awaitPrepared", "attestDecode", "s
 const NATIVE_REASONS = ["native-gstplay-command-timeout", "native-gstplay-duration-unavailable",
   "native-gstplay-video-width-unavailable", "native-gstplay-video-height-unavailable",
   "native-gstplay-display-metadata-unavailable", "native-gstplay-display-metadata-stale",
-  "native-gstplay-seek-timeout", "native-gstplay-snapshot-unavailable"];
+  "native-gstplay-seek-timeout", "native-gstplay-snapshot-unavailable",
+  "native-display-snapshot-not-square-pixel", "native-display-orientation-missing",
+  "native-display-orientation-unsupported", "native-display-metadata-inconsistent",
+  "native-media-shutdown-pending", "native-gstplay-actor-unavailable",
+  "native-gstplay-command-overload", "native-gstplay-signal-overload",
+  "native-gstplay-channel-disconnected", "native-gstplay-actor-exited"];
 const ERROR_CODES = new Set(["native_media_unavailable", "invalid_research_contract", "forbidden_operation", "workspace_required"]);
 const MESSAGES = new Map([
   ["Native media host geometry is unavailable.", "viewport-unavailable"],

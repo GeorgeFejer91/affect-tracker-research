@@ -1,5 +1,19 @@
 # Agent message board
 
+### 20260912-main-attestation-reason-refinement
+
+- Main continues CLI-P1/P1 media catalogue Backend Verification, bounded to
+  diagnostics and a preserved-workspace rescan. Actual f81921d rescan completed
+  native effect but remained unpublished at attestDecode/native_media_unavailable.
+  Four driver steps and graceful exit0 are transport evidence only; no master.
+- The error code also originates in workspace display-geometry derivation, not
+  only service admission. Extend fixed reason vocabulary for its four metadata
+  failures and service/actor lifecycle failures; do not change their semantics.
+  Seven focused catalogue/core9 tests pass, including unknown/private-text rejection.
+- Frozen failed evidence is main-catalogue-rescan-f81921d-evidence-01 under
+  D:/GitHub/.affect-checks. Next diagnostic uses a fresh clone and binary. No
+  repeated import, canonical promotion, foreground launch or qualification claim.
+
 ### 20260912-main-first-native-mock-and-catalogue-diagnosis
 
 - Exact clean356cba7 native-enabled CLI build passes; frozen executable SHA
