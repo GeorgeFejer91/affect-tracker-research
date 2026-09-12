@@ -182,3 +182,28 @@ test("study and catalogue changes advance one coherent P1 revision for registry 
   assert.equal(producer.getVideoCatalogueSnapshot().revision, 3);
   assert.deepEqual(notifications, [2, 3]);
 });
+
+test("P1 change publication survives an intervening registry read", async () => {
+  let study = createStudyIdentityV1({ id: "study-a", title: "Study A" });
+  const videoCatalogue = JSON.parse(await readFile(fixtureV2Url, "utf8"));
+  const notifications = [];
+  const producer = createWorkspaceContributionProducer({
+    getStudyIdentity: () => study,
+    getVideoCatalogueSnapshot: () => ({
+      revision: 1, enabled: true, pending: false, contribution: videoCatalogue, dependencyRevisions: [],
+    }),
+    onChange: (snapshot) => {
+      assert.equal(producer.getSnapshot().revision, snapshot.revision, "notification reads are reentrant");
+      notifications.push(snapshot.revision);
+    },
+  });
+
+  assert.equal(producer.getSnapshot().revision, 1);
+  study = createStudyIdentityV1({ id: "study-a", title: "Edited Study" });
+  assert.equal(producer.getSnapshot().revision, 2, "registry read observes the new state first");
+  assert.deepEqual(notifications, []);
+  assert.equal(producer.changed().revision, 2);
+  assert.deepEqual(notifications, [2], "changed still publishes the unread event boundary");
+  assert.equal(producer.changed().revision, 2);
+  assert.deepEqual(notifications, [2], "unchanged state is not published twice");
+});
