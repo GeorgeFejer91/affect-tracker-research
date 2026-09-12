@@ -1251,7 +1251,7 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
     "research_open_workspace_location",
     "research_store_questionnaire_asset",
     "research_rescan_stimuli",
-    "research_import_library_videos",
+    "research_import_stimuli",
     "research_video_library",
     "research_save_stimulus_order",
     "research_export_video_library",
@@ -1274,6 +1274,8 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
     "research_finish_run",
     "research_report_media_failure",
   ]) assert.match(source, new RegExp(`"${command}"`, "u"));
+  assert.match(source, /async #importStimuli\(selectionKind, workspaceId\)[\s\S]*?research_import_stimuli[\s\S]*?if \(result\) await this\.#catalogue\(result\)/u);
+  assert.doesNotMatch(source, /this\.invoke\("research_import_library_videos"/u);
   assert.match(source, /const WORKSPACE_LOCATIONS = new Set\(\["workspaceRoot", "videoLibrary", "experimentPackage"\]\)/u);
   assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
   assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
