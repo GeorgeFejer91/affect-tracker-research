@@ -5314,3 +5314,22 @@ All 90 focused P1/P3 JavaScript tests pass, including actual editor restore and
 confirmation with workspace-v3. Main owns P7 app wiring and integration.
 Native attest-v2/cache/livebinding and native bridge are the next allocated
 seam; this checkpoint does not claim installed playback or release readiness.
+
+## P1 controlled geometry native composition — 2026-09-12
+
+Main explicitly allocated S1 the P1-06/P1-07 workspace attest-v2/cache,
+Planner/Runner exact v3 livebinding, additive command, and JS controller/bridge
+seams. Implemented on the isolated controlled-geometry worktree. Full outer
+receipt2 remains Rust-owned; portable geometry retains all nested provenance.
+Current files are rehashed and matched by location, identity, duration and full
+geometry. Historical readers and commands stay strict. Main owns lib.rs command
+registration; Runner owns per-entry historical1/controlled2 fresh qualification.
+Historical browser geometry does not silently acquire exact native provenance.
+
+139 focused JS checks pass. Native real-SDK lib compile passes with actor
+54d2521 first-freeze follow-up; all 32 workspace tests pass using a copied test
+executable with the diagnostic manifest. Evidence artifact receipt:
+D:/GitHub/.affect-checks/p1-controlled-workspace-tests-01/artifact-receipt.json.
+Runtime pin verifies 827 files / 340362958 bytes. Eight build warnings include
+unwired integration seams, not a launch/readiness claim. Mixed-native proof
+test extension remains next; Main retains integrated CLI/live/installed checks.

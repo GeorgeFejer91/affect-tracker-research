@@ -587,6 +587,35 @@ pub fn research_native_media_play(
 }
 
 #[tauri::command]
+pub fn research_native_media_attest_decode_v2(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    native_media: State<'_, Arc<NativeMediaService>>,
+    request: NativeMediaDecodeAttestationRequestV1,
+) -> ResearchResult<ScannedStimulusSummary<crate::research_video_geometry::NativeDisplayGeometryV2>>
+{
+    authorize(&window)?;
+    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
+    let expected_fence = request.fence.clone();
+    let receipt = native_media.attest_decode_v2(request.fence)?;
+    if receipt.workspace_file_id != request.workspace_file_id
+        || receipt.session_id != expected_fence.session_id
+        || receipt.generation != expected_fence.generation
+    {
+        return Err(CommandError::forbidden(
+            "Native controlled decode evidence returned a different workspace or generation identity.",
+        ));
+    }
+    workspace.attest_native_decode_v2(
+        &request.workspace_id,
+        &request.sha256,
+        request.byte_length,
+        &request.mime_type,
+        &receipt,
+    )
+}
+
+#[tauri::command]
 pub fn research_native_media_attest_decode(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,

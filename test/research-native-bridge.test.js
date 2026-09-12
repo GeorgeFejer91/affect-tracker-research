@@ -1426,8 +1426,8 @@ async function preparedBridgeFixture() {
   bridge.nativeMedia = {
     prepare: async ({ summary }) => { actorCalls.push(["prepare", summary.workspaceFileId]); },
     awaitPrepared: async () => { actorCalls.push(["await"]); },
-    attestDecode: async ({ summary }) => { actorCalls.push(["attest", summary.workspaceFileId]); return {
-      ...summary, decodeStatus: "attestedQualified", decodeBackend: "nativeGstPlay", decodeAttestation: "nativeDecodedSnapshotsV1",
+    attestDecodeV2: async ({ summary }) => { actorCalls.push(["attest", summary.workspaceFileId]); return {
+      ...summary, decodeStatus: "attestedQualified", decodeBackend: "nativeGstPlay", decodeAttestation: "nativeDecodedSnapshotsV2",
       displayGeometry: { synthetic: true }, source: { kind: "workspaceFile", relativePath: `stimuli/${summary.displayName}` },
     }; },
     stop: async () => { actorCalls.push(["stop"]); },
@@ -1523,8 +1523,8 @@ test("failed or duplicate catalogue preparation never partially accepts verified
   for (const failure of ["decode", "duplicate"]) {
     const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
     const original = f.bridge.catalog;
-    const decode = f.bridge.nativeMedia.attestDecode;
-    if (failure === "decode") f.bridge.nativeMedia.attestDecode = async args => {
+    const decode = f.bridge.nativeMedia.attestDecodeV2;
+    if (failure === "decode") f.bridge.nativeMedia.attestDecodeV2 = async args => {
       if (args.summary.workspaceFileId === "two") throw Error("Synthetic decode failure"); return decode(args);
     };
     await assert.rejects(f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId,
@@ -1540,7 +1540,7 @@ test("legacy GUI scan reuses preparation, projects after commit and withdraws on
   f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
   assert.equal(f.events.length, 1); assert.equal(f.events[0].detail.items.length, 1);
   assert.equal(f.bridge.catalog.size, 1); assert.match(f.progress.textContent, /complete/u);
-  f.bridge.nativeMedia.attestDecode = async () => { throw Error("Synthetic decode failure"); };
+  f.bridge.nativeMedia.attestDecodeV2 = async () => { throw Error("Synthetic decode failure"); };
   f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
   assert.equal(f.bridge.catalog.size, 0); assert.deepEqual(f.events.at(-1).detail, { items: [], replace: true });
   f.bridge.destroy();
