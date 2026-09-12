@@ -19,6 +19,7 @@ mod research_platform;
 pub mod research_protocol;
 mod research_recorder;
 mod research_run_storage;
+mod research_runner_session;
 #[cfg(test)]
 mod research_runtime;
 mod research_stimulus_order;
@@ -181,6 +182,7 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
             research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
+            research_runner_session::research_runner_selection,
             research_recorder::commands::research_recorder_discover,
             research_recorder::commands::research_recorder_start,
             research_recorder::commands::research_recorder_stop,

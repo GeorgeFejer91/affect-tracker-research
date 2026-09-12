@@ -382,9 +382,13 @@ impl PackageProtocolRuntime {
         let asset_bindings_sha256 = canonical_sha256(&selection.asset_bindings, &[])?;
         let package_receipt = package_receipt(&selection, asset_bindings_sha256);
         let run_id = Uuid::new_v4().to_string();
-        let lsl = if selection.settings.advanced.lsl.enabled {
+        let effective_lsl = crate::research_runner_session::participant_lsl(
+            &selection.settings.advanced.lsl,
+            &selection.participant_id,
+        )?;
+        let lsl = if effective_lsl.enabled {
             Some(LslService::start(
-                &selection.settings.advanced.lsl,
+                &effective_lsl,
                 selection.settings.experiment.sampling_frequency_hz,
                 &run_id,
             )?)
@@ -418,12 +422,24 @@ impl PackageProtocolRuntime {
         let (receipt, storage, participant) =
             self.workspace
                 .with_workspace(&request.workspace_id, |workspace_root, _| {
-                    let prepared = prepare_attempt(
+                    crate::research_runner_session::ensure_recipe_directory(
                         workspace_root,
-                        &selection.settings.experiment.id,
+                        &loaded,
+                    )?;
+                    let history = list_bound_recoveries(workspace_root, &loaded)?;
+                    let previous_attempt = history.participants.iter().find(|row| row.participant_id == participant.id).and_then(|row| row.latest_attempt_number).unwrap_or(0);
+                    if previous_attempt > 0 && !request.rerun_confirmed {
+                        return Err(CommandError::forbidden("This participant already has an attempt in this JSON; confirm a new attempt in Session settings."));
+                    }
+                    let mut prepared = prepare_attempt(
+                        workspace_root,
+                        &crate::research_runner_session::recipe_directory_name(
+                            &selection.package_source_byte_sha256,
+                        )?,
                         &participant.id,
                         request.rerun_confirmed,
                     )?;
+                    prepared.attempt_number = prepared.attempt_number.max(previous_attempt.checked_add(1).filter(|number| *number <= 999_999).ok_or_else(|| CommandError::forbidden("The participant attempt counter exceeds the supported range."))?);
                     let mut participant = participant.clone();
                     participant.attempt_number = prepared.attempt_number;
                     let session_stem = format!(
@@ -739,9 +755,10 @@ impl PackageProtocolRuntime {
                     tsv: selection.settings.output.tsv,
                 })
             })?;
-        let lsl = if selection.settings.advanced.lsl.enabled {
+        let effective_lsl = storage.effective_lsl(&selection.settings.advanced.lsl)?;
+        let lsl = if effective_lsl.enabled {
             Some(LslService::start(
-                &selection.settings.advanced.lsl,
+                &effective_lsl,
                 selection.settings.experiment.sampling_frequency_hz,
                 &journal.run_id,
             )?)
