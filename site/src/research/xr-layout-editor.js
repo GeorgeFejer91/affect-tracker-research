@@ -10,6 +10,7 @@ import { resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
 import { validateXrLayoutSelection } from "./xr-layout-recipe.js";
 
 const staleRestore = () => new XrLayoutError("profile", "stale", "The XR selection restore is no longer current.");
+const staleConfirmation = () => new XrLayoutError("profile", "stale", "The XR confirmation is no longer current.");
 
 function validateRevisions(value) {
   if (!value || Object.keys(value).sort().join(",") !== "catalogue,feedback"
@@ -39,10 +40,32 @@ export function createXrLayoutState() {
   let draft = createDefaultXrLayoutProfile();
   let dependencies = { catalogue: null, feedback: null };
   const validate = () => validateXrLayoutProfileV1(draft);
+  const getSnapshot = () => ({ enabled, revision, pending: enabled && accepted === null,
+    contribution: enabled && accepted !== null ? structuredClone(accepted) : null,
+    dependencyRevisions: Object.entries(dependencies).filter(([, value]) => value !== null)
+      .map(([key, value]) => ({ segment: key === "catalogue" ? "P1" : "P5", revision: value })) });
   return {
     setEnabled(value) { if (typeof value !== "boolean") throw new TypeError("XR enabled must be Boolean."); if (enabled !== value) { enabled = value; revision += 1; } },
     setDraft(value) { draft = structuredClone(value); accepted = null; revision += 1; },
     getDraft() { return structuredClone(draft); },
+    prepareConfirmation({ isCurrent, signal } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("XR confirmation requires a current-request guard.");
+      const baseRevision = revision, next = enabled ? validate() : null;
+      const future = getSnapshot();
+      if (enabled) { future.revision += 1; future.pending = false; future.contribution = structuredClone(next); }
+      let committed = false;
+      const current = () => !committed && !signal?.aborted && isCurrent() && revision === baseRevision;
+      if (!current()) throw staleConfirmation();
+      return Object.freeze({
+        get snapshot() { return structuredClone(future); },
+        isCurrent: current,
+        commit() {
+          if (!current()) throw staleConfirmation();
+          committed = true;
+          if (enabled) { accepted = next; revision = future.revision; }
+        },
+      });
+    },
     prepareRestoreSelection(selection, { isCurrent } = {}) {
       if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
       const captured = validateXrLayoutSelection(selection), baseRevision = revision;
@@ -97,12 +120,7 @@ export function createXrLayoutState() {
         dependencies = { catalogue: value.catalogue, feedback: value.feedback }; accepted = null; revision += 1;
       }
     },
-    getSnapshot() {
-      return { enabled, revision, pending: enabled && accepted === null,
-        contribution: enabled && accepted !== null ? structuredClone(accepted) : null,
-        dependencyRevisions: Object.entries(dependencies).filter(([, value]) => value !== null)
-          .map(([key, value]) => ({ segment: key === "catalogue" ? "P1" : "P5", revision: value })) };
-    },
+    getSnapshot,
     serialize() { if (!enabled || accepted === null) throw new Error("Validate the current authoring profile before downloading."); return serializeXrLayoutProfileV1(accepted); },
   };
 }
@@ -267,6 +285,36 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     state.accept(); render(); notify(); status("Authoring profile validated. Download is available.");
     return state.getSnapshot();
   }
+  function prepareConfirmation({ isCurrent, signal } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR confirmation requires a current-request guard.");
+    const generation = fileGeneration;
+    const dependencyKey = () => JSON.stringify({ media, feedbackEnvelope, catalogueGeometry });
+    const capturedDependencies = dependencyKey();
+    const current = () => !disposed && !signal?.aborted && isCurrent()
+      && fileGeneration === generation && dependencyKey() === capturedDependencies;
+    if (!current()) throw staleConfirmation();
+    if (state.getSnapshot().enabled) {
+      const draft = state.getDraft();
+      resolveXrLayoutProfileV1(draft, media);
+      if (catalogueGeometry !== null) resolveXrCatalogueV1(draft, catalogueGeometry);
+      if (feedbackEnvelope !== null) resolveXrFeedbackFootprintV1(draft, feedbackEnvelope);
+    }
+    const candidate = state.prepareConfirmation({ isCurrent: current, signal });
+    let committed = false, projected = false;
+    return Object.freeze({
+      get snapshot() { return candidate.snapshot; },
+      isCurrent: candidate.isCurrent,
+      commit() { candidate.commit(); committed = true; },
+      afterCommit() {
+        if (projected) return;
+        if (!committed || !current() || state.getSnapshot().revision !== candidate.snapshot.revision) throw staleConfirmation();
+        projected = true;
+        if (candidate.snapshot.enabled) {
+          render(); notify(); status("Authoring profile validated. Download is available.");
+        }
+      },
+    });
+  }
   function projectDependencies(next) {
     feedbackEnvelope = next.feedbackEnvelope;
     catalogueGeometry = next.catalogueGeometry;
@@ -335,6 +383,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       });
     },
     acceptLayout,
+    prepareConfirmation,
     prepareRestoreSelection,
     loadProfile(source) {
       fileGeneration += 1; state.load(source); setFields(); render(); notify();

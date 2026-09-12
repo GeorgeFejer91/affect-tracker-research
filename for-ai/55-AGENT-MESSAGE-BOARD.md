@@ -4606,3 +4606,13 @@ by this build-option change.
   future/live equality, GUI compiler equality, actual P1 rebind, cancellation,
   stale owner/dependency, competing candidates and single-use projection.
   No GUI launch, build, native write or end-to-end CLI qualification claimed.
+
+## P6-PREPARED-CONFIRMATION-20260912 — CLI publication boundary
+
+- Root/Main allocation: P6-04/P6-05 Backend Verification, prepared real-owner confirmation for CLI mock completion. Main and S7 received exact API early; S7 confirmed five-key snapshot compatibility.
+- Isolated branch `codex/segment-p6-prepared-confirmation`, worktree `D:/GitHub/affect-tracker-research-p6-prepared-confirmation`, base clean Main `2fe9da8`.
+- Scope: xr-layout-authoring.js, xr-layout-editor.js, focused confirmation tests and docs only. No app/native/registry or other segment edits.
+- API: `authoring.prepareConfirmation({isCurrent,signal})` resolves live P1/P5 without refreshing or mutating, delegates to synchronous editor seam, returns detached future snapshot getter plus guarded single-use commit and afterCommit. Included future has exact validated profile, revision+1 and pending=false; excluded preserves the existing disabled no-op snapshot. GUI prepare remains immediate.
+- Caller/abort, editor revision/file lifecycle and full dependency identities fence both preparation and commit. Postcommit projection is separate and once-only; owner state survives observer failure. Details: `docs/p6-prepared-confirmation.md`.
+- Baseline: 42 existing P6 tests passed. New actual-owner confirmation tests: 13/13 passed. Main owns integration/independent review; S7 owns registry preparedOwner composition. No runtime, native, foreground or research qualification claim.
+- Final combined P6 gate: 88/88 passed (confirmation, restoration, authoring, full-master roundtrip/reproduction, CLI P6 and geometry); git diff --check passed. Candidate ready for Main review; owner work stopped at clean commit.
