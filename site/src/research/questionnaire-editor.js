@@ -1,10 +1,15 @@
 import {
-  createQuestionnaireSheet, cloneQuestionnaireSheet, sheetFromDefinition, sheetToAuthoring,
+  createQuestionnaireSheet,
   applyQuestionnaireGridPaste, setQuestionnaireGridCell, setOptionCount,
   questionnaireGridColumns, questionnaireGridRows, serializeQuestionnaireGrid,
   appendSheetRows, removeSheetRow, reverseSheetRowCodes,
   replaceQuestionnaireSheetDraft,
 } from "./questionnaire-sheet.js";
+import { cloneQuestionnaireSheet, sheetFromDefinition, sheetToAuthoring, isFormSheet } from "./form-sheet.js";
+import { demographicsFormDraft } from "./form-assets.js";
+import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
+import { createQuestionnairePresentationV2, validateQuestionnairePresentationV2 } from "./questionnaire-recipe-v2.js";
+import { formEntryMarkup, editFormField, moveFormField, changeFormOption, formPreviewMarkup } from "./form-sheet-view.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
 import { createQuestionnairePresentationV1, validateQuestionnairePresentationV1,
   QUESTIONNAIRE_LABEL_REPETITIONS, questionnairePresentationGroups } from "./questionnaire-recipe.js";
@@ -25,7 +30,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   let fingerprint = "";
 
   function makeEntry(family, language) {
-    const sheet = createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
+    const sheet = family.id === "demographics" ? sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 });
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
@@ -103,6 +108,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   }
 
   function entryMarkup({ family, language, key, entry }, index) {
+    if (isFormSheet(entry.sheet)) return formEntryMarkup({ family, language, key, entry }, index, context, status(entry));
     const sheet = entry.sheet;
     return `<details class="questionnaire-sheet" data-sheet-key="${escape(key)}" ${entry.open ? "open" : ""}>
       <summary><span class="sheet-heading"><strong>${escape(sheet.title || family.label)}</strong><span>${escape(language.label)} · ${sheet.rows.filter((r) => r.prompt.trim()).length} items</span></span><span class="sheet-save-state">${status(entry)}</span><svg class="sheet-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary>
@@ -228,7 +234,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       sourceReceipt = await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
         definition: result.definition, sourceBytes: bytes,
         expectedPresetToken: entry.presetToken,
-        authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt },
+        authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt,
+        ...(result.sourceFormat ? { sourceFormat: result.sourceFormat } : {}) },
       operation ? { isCurrent: () => { try { checkCurrent(); return true; } catch { return false; } }, signal: operation.signal } : undefined);
       checkCurrent();
       entry.sourceDefinitionHash = result.definition.definitionSha256;
@@ -277,6 +284,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const { definition } = await sheetToAuthoring(entry.sheet);
     root.querySelector("#questionnaire-sheet-preview-title").textContent = `${definition.title} · ${definition.language}`;
     const body = root.querySelector("#questionnaire-sheet-preview-content");
+    if (definition.schema === FORM_DEFINITION_SCHEMA) { body.innerHTML = formPreviewMarkup(definition); dialog.showModal(); return; }
     const chunks = [];
     for (const { start, end } of questionnairePresentationGroups(definition, entry.repeatLabels)) {
       const items = definition.items.slice(start, end);
@@ -286,12 +294,25 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     dialog.showModal();
   }
 
+  function handleFormInput(target, entry) {
+    const key = target.dataset.formField;
+    if (!key || !isFormSheet(entry.sheet)) return false;
+    preserveUndo(entry);
+    try {
+      editFormField(entry, key, target.value); entry.invalid.delete(key); target.removeAttribute("aria-invalid");
+      entry.error = entry.invalid.size ? "Correct the highlighted form fields." : "";
+    } catch (error) { entry.invalid.set(key, target.value); entry.error = error.message; target.setAttribute("aria-invalid", "true"); }
+    markChanged(entry); refreshEntryState(target, entry);
+    if (key.endsWith(":kind")) render();
+    return true;
+  }
   container?.addEventListener("input", (event) => {
     event.stopPropagation();
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
     if (target.matches("select")) return;
+    if (handleFormInput(target, entry)) return;
     if (target.hasAttribute("data-sheet-option-count")) {
       preserveUndo(entry); entry.rawOptionCount = target.value;
       markChanged(entry); refreshEntryState(target, entry); return;
@@ -321,6 +342,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
+    if (target.matches("select") && handleFormInput(target, entry)) return;
     try {
       if (target.hasAttribute("data-sheet-metadata-item")) {
         entry.metadataItem = Number(target.value); render(); return;
@@ -455,6 +477,20 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   container?.addEventListener("click", async (event) => {
+    const mover = event.target.closest("button[data-form-move], button[data-form-option]");
+    if (mover) {
+      event.stopPropagation();
+      const entry = entries.get(mover.closest("[data-sheet-key]")?.dataset.sheetKey);
+      if (!entry || entry.busy || context.locked) return;
+      try {
+        if (entry.invalid.size) throw new TypeError("Correct invalid fields before reordering.");
+        preserveUndo(entry);
+        if (mover.dataset.formOption) changeFormOption(entry, Number(mover.dataset.row), mover.dataset.formOption, Number(mover.dataset.option));
+        else moveFormField(entry, Number(mover.dataset.formMove), Number(mover.dataset.direction));
+        markChanged(entry);
+      } catch (error) { entry.error = error.message; }
+      render(); return;
+    }
     const button = event.target.closest("button[data-sheet-action]");
     if (!button) return;
     event.stopPropagation();
@@ -603,20 +639,21 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       }, afterCommit: render };
     },
     getPresentation(definitions) {
-      return createQuestionnairePresentationV1(definitions, definitions.map((definition) => {
+      const create = definitions.some(d => d.schema === FORM_DEFINITION_SCHEMA) ? createQuestionnairePresentationV2 : createQuestionnairePresentationV1;
+      return create(definitions, definitions.map((definition) => {
         const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === definition.questionnaireId);
         if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
         return entry.repeatLabels;
       }));
     },
     restorePresentation(value, definitions) {
-      const presentation = validateQuestionnairePresentationV1(value, definitions);
+      const presentation = value.version === 2 ? validateQuestionnairePresentationV2(value, definitions) : validateQuestionnairePresentationV1(value, definitions);
       const targets = presentation.definitions.map((record) => {
         const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === record.questionnaireId);
         if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
         return { entry, record };
       });
-      targets.forEach(({ entry, record }) => { entry.repeatLabels = record.repeatLabelsEvery; });
+      targets.forEach(({ entry, record }) => { entry.repeatLabels = record.kind === "fields" ? 1 : record.repeatLabelsEvery; });
       render();
     },
     presetToken(familyId, language) { return entries.get(keyFor(familyId, language))?.presetToken ?? null; },

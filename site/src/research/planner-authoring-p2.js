@@ -3,8 +3,10 @@ import { commandFailure, PlannerCommandError } from "./planner-authoring-contrac
 import { createFlatLanguageSelectionV1, validateLanguageSelectionTreeV1 } from "./experiment-package.js";
 import { analyzeQuestionnaireLanguageCoverage } from "./questionnaire-assets.js";
 import { validateQuestionnaireModuleV2 } from "./questionnaires.js";
-import { createQuestionnaireSheet, cloneQuestionnaireSheet, replaceQuestionnaireSheetDraft,
-  questionnaireGridColumns, setQuestionnaireGridCell, setOptionCount, sheetToAuthoring } from "./questionnaire-sheet.js";
+import { createQuestionnaireSheet, replaceQuestionnaireSheetDraft,
+  questionnaireGridColumns, setQuestionnaireGridCell, setOptionCount } from "./questionnaire-sheet.js";
+import { cloneQuestionnaireSheet, sheetToAuthoring, sheetFromDefinition, isFormSheet, formDraft, formSheetFromDraft, replaceFormDraft } from "./form-sheet.js";
+import { demographicsFormDraft, loadDemographicsForm } from "./form-assets.js";
 
 const DRAFT_KEYS = ["familyId", "language", "questionnaireId", "questionnaireVersion", "title", "instructions", "attribution", "optionCount", "items"];
 const ITEM_KEYS = ["itemId", "prompt", "required", "subscale", "options"];
@@ -39,6 +41,7 @@ function rawCell(value) {
 }
 function draft(record) {
   const { sheet } = record;
+  if (isFormSheet(sheet)) return formDraft(sheet, record.invalid);
   const value = Object.fromEntries(DRAFT_KEYS.filter(key => key !== "items").map(key => [key, sheet[key]]));
   value.items = clone(sheet.rows);
   if (record.rawOptionCount !== null) value.optionCount = record.rawOptionCount;
@@ -55,6 +58,8 @@ function draft(record) {
   return value;
 }
 function makeRecord(family, language, optionCount = 5, rowCount = 0) {
+  if (family.id === "demographics") return { sheet: sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }),
+    invalid: [], layout: "fields", repeatLabels: 1, dirty: true, busy: false, error: "", rawOptionCount: null };
   return { sheet: createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
     title: family.label, optionCount, rowCount }), invalid: [], layout: "labels-and-codes", repeatLabels: 1,
     dirty: true, busy: false, error: "", rawOptionCount: null };
@@ -76,6 +81,10 @@ function ordered(values, ids, key) {
 // Preserve weak-map provenance by cloning the actual owner sheet, then invoking
 // its normal bounded mutation path. Raw invalid codes remain separate UI drafts.
 function replaceDraft(record, value) {
+  if (isFormSheet(record.sheet) || value?.kind === "form") {
+    if (!isFormSheet(record.sheet) || value?.kind !== "form") throw new TypeError("A questionnaire draft cannot silently change definition kind.");
+    replaceFormDraft(record, value); return;
+  }
   exact(value, DRAFT_KEYS); list(value.items, 1024, "Items");
   const original = value;
   value = clone(value);
@@ -126,15 +135,18 @@ function replaceDraft(record, value) {
 }
 
 const settings = Object.freeze([
-  ["questionnaires", "Questionnaire drafts", "Array of complete draft definitions with stable family/questionnaire/item/option IDs; numeric codes may retain invalid raw text."],
+  ["questionnaires", "Questionnaire drafts", "Array of legacy questionnaire drafts or explicit kind:form drafts with typed text/integer/singleChoice items and stable identities."],
   ["languages", "Selected languages", "Array of exact {languageId,languageTag,label}; each family gets one editable slot per language."],
   ["modules", "Ordered questionnaire modules", "Array of existing QuestionnaireModuleV2, in authored order; hashes reference accepted definitions."],
   ["languageSelection", "Language routing", "Exact LanguageSelectionTreeV1 or null for the owner's flat-language projection; no automatic participant selection."],
-  ["presentation", "Answer label repetition", "Array of exact {questionnaireId,repeatLabelsEvery:1|5|10}, one per draft in order. This is not pagination."],
+  ["presentation", "Answer presentation", "Ordered legacy {questionnaireId,repeatLabelsEvery:1|5|10} or typed {kind:fields,questionnaireId} entries. This is not pagination."],
 ].map(([id, label, description]) => Object.freeze({ id: `P2.${id}`, label, description, type: "json", classification: "authored", writable: true }))
   .concat(["acceptedDefinitions", "coverage"].map(id => Object.freeze({ id: `P2.${id}`, label: id,
     type: "json", classification: "derived", writable: false }))));
 const operationShapes = {
+  addDemographics: [],
+  updateForm: ["questionnaireId", "changes"],
+  setFormItem: ["questionnaireId", "itemId", "item"],
   addQuestionnaire: ["familyId", "title", "optionCount", "rowCount"],
   removeQuestionnaire: ["familyId"],
   updateQuestionnaire: ["questionnaireId", "changes"],
@@ -219,6 +231,11 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     } else if (field === "P2.presentation") {
       if (!Array.isArray(value) || value.length !== state.records.length) throw new TypeError("Presentation needs one entry per draft.");
       value.forEach((entry, index) => {
+        if (isFormSheet(state.records[index].sheet)) {
+          exact(entry, ["kind", "questionnaireId"]);
+          if (entry.kind !== "fields" || entry.questionnaireId !== state.records[index].sheet.questionnaireId) throw new TypeError("Invalid typed form presentation.");
+          return;
+        }
         exact(entry, ["questionnaireId", "repeatLabelsEvery"]);
         if (entry.questionnaireId !== state.records[index].sheet.questionnaireId || ![1, 5, 10].includes(entry.repeatLabelsEvery)) throw new TypeError("Invalid presentation identity/order/repetition.");
         state.records[index].repeatLabels = entry.repeatLabelsEvery;
@@ -228,7 +245,7 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
       const previous = state.records, ids = new Set(), slots = new Set();
       context.families = [];
       state.records = value.map(content => {
-        exact(content, DRAFT_KEYS);
+        if (content?.kind === "form") formSheetFromDraft(content); else exact(content, DRAFT_KEYS);
         const slot = `${content.familyId}/${content.language}`;
         if (ids.has(content.questionnaireId) || slots.has(slot)) throw new TypeError("Questionnaire identities and language slots must be unique.");
         ids.add(content.questionnaireId); slots.add(slot);
@@ -236,7 +253,8 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
         let family = context.families.find(entry => entry.id === content.familyId);
         if (!family) { family = { id: content.familyId, label: content.title }; context.families.push(family); }
         const existing = previous.find(record => record.sheet.familyId === content.familyId && record.sheet.language === content.language);
-        const record = existing ?? makeRecord(family, { languageTag: content.language }, content.optionCount);
+        const record = existing ?? (content.kind === "form" ? { sheet: formSheetFromDraft(content), invalid: [], layout: "fields", repeatLabels: 1, dirty: true, busy: false, error: "", rawOptionCount: null }
+          : makeRecord(family, { languageTag: content.language }, content.optionCount));
         replaceDraft(record, content); return record;
       });
       reconcile(state);
@@ -246,7 +264,12 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     const keys = operationShapes[name];
     if (!keys) throw new TypeError("Unknown questionnaire operation.");
     exact(args, keys);
+    if (name === "addDemographics") {
+      if (state.context.families.some(f => f.id === "demographics")) throw new TypeError("Demographics is already included.");
+      state.context.families.unshift({ id: "demographics", label: "Demographics" }); reconcile(state); return;
+    }
     if (name === "addQuestionnaire") {
+      if (args.familyId === "demographics") throw new TypeError("Use addDemographics for the shipped typed form.");
       if (state.context.families.some(family => family.id === args.familyId)) throw new TypeError("Questionnaire family already exists.");
       const family = { id: args.familyId, label: args.title };
       state.records.push(...state.context.languages.map(language => makeRecord(family, language, args.optionCount, args.rowCount)));
@@ -258,6 +281,20 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     }
     if (name === "reorderModules") { state.context.modules = ordered(state.context.modules, args.moduleIds, "moduleId"); return; }
     const record = findRecord(state.records, args.questionnaireId), content = draft(record);
+    if (isFormSheet(record.sheet)) {
+      if (name === "updateForm") {
+        if (!args.changes || !Object.keys(args.changes).length || Object.keys(args.changes).some(k => !["title", "questionnaireVersion", "provenance"].includes(k))) throw new TypeError("Invalid form metadata changes.");
+        Object.assign(content, args.changes);
+      } else if (name === "setFormItem") {
+        const i = content.items.findIndex(item => item.itemId === args.itemId);
+        if (i < 0 || args.item?.itemId !== args.itemId) throw new TypeError("Form item replacement must retain identity.");
+        content.items[i] = clone(args.item);
+      } else if (name === "reorderItems") {
+        content.items = ordered(content.items, args.itemIds, "itemId").map((item, i) => ({ ...item, order: i + 1 }));
+      } else throw new TypeError("Use typed form operations for this definition.");
+      replaceDraft(record, content); return;
+    }
+    if (["updateForm", "setFormItem"].includes(name)) throw new TypeError("Typed form operation requires a form definition.");
     if (name === "updateQuestionnaire") {
       const allowed = ["questionnaireVersion", "title", "instructions", "attribution", "optionCount"];
       if (!args.changes || typeof args.changes !== "object" || Array.isArray(args.changes)
@@ -295,14 +332,18 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
   return Object.freeze({ id: "P2", settings,
     operations: Object.freeze(Object.entries(operationShapes).map(([id, argumentsKeys]) => Object.freeze({ id,
       argumentsKeys, argumentsSchema: { type: "object", additionalProperties: false, required: argumentsKeys,
-        properties: Object.fromEntries(argumentsKeys.map(key => [key, { description: argumentTypes[key] }])) },
-      description: "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}." }))),
+        properties: Object.fromEntries(argumentsKeys.map(key => [key, { description: id === "setFormItem" && key === "item"
+          ? "FormDefinitionV1 item with exact itemId,order,prompt,required,response discriminated text/integer/singleChoice; retains item identity."
+          : id === "updateForm" && key === "changes" ? "Nonempty object: title?,questionnaireVersion?,provenance?; no other keys." : argumentTypes[key] }])) },
+      description: id === "addDemographics" ? "Add the project-authored EN/DE demographics drafts for every selected language; no save or acceptance."
+        : "Closed draft operation. Typed forms use updateForm/setFormItem/reorderItems; no source write or acceptance." }))),
     read() {
       const state = capture(); let currentCoverage = null;
       try { currentCoverage = coverage(state.context); } catch { /* Report issues, not a fabricated complete result. */ }
       return { values: { "P2.questionnaires": state.records.map(draft), "P2.languages": state.context.languages,
         "P2.modules": state.context.modules, "P2.languageSelection": state.context.languageSelection,
-        "P2.presentation": state.records.map(record => ({ questionnaireId: record.sheet.questionnaireId, repeatLabelsEvery: record.repeatLabels })),
+        "P2.presentation": state.records.map(record => isFormSheet(record.sheet) ? { kind: "fields", questionnaireId: record.sheet.questionnaireId }
+          : { questionnaireId: record.sheet.questionnaireId, repeatLabelsEvery: record.repeatLabels }),
         "P2.acceptedDefinitions": state.context.definitions, "P2.coverage": currentCoverage }, issues: issuesFor(state) };
     },
     validate() { return issuesFor(capture()); },
@@ -315,6 +356,10 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
       json(edits); list(edits, 256, "Edits");
       if (!edits.length || new TextEncoder().encode(canonicalJson(edits)).byteLength > 16 * 1024 * 1024) throw new TypeError("Questionnaire edit batch is empty or oversized.");
       const detached = clone(edits);
+      if (detached.some(edit => edit.operation === "addDemographics")) {
+        for (const language of state.context.languages) await loadDemographicsForm(language.languageTag);
+        if (!current()) commandFailure("stale_revision", "Demographics loading was superseded.", "P2.questionnaires");
+      }
       for (const edit of detached) {
         if (edit.kind === "set") { exact(edit, ["kind", "field", "value"]); set(state, edit.field, edit.value); }
         else if (edit.kind === "operation") {

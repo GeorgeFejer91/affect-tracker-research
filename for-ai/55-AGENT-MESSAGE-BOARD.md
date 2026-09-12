@@ -49,6 +49,27 @@
   native/master dispatch. Other frozen native/Runner/P7/About handoffs remain
   ready for the next named integration passes, not silently declared collected.
 
+### 20260912-p2-typed-demographics-authoring
+
+- Root allocated S3 P2 / E2E-DEMOGRAPHICS production JS/assets/editor/shared
+  owner authoring, Backend Verification, after frozen contract7da84a9. Isolated
+  D:/GitHub/affect-tracker-research-p2-typed, codex/segment-p2-typed-demographics,
+  Main-agreed base e439018; fixture collection5dcaf25 preserves both board entries.
+- Standalone form validator ffe11d8 is frozen for Runner consumption/independent
+  S1 review. Main approved new explicit P2 v2 dispatcher, preserving strict v1
+  generic APIs, and typed save sourceFormat:formDefinitionV1. Main retains
+  app/native source-save and Rust/master integration; Runner owns execution.
+- Actual editor shares typed sheet state with CLI. New addDemographics/updateForm/
+  setFormItem plus existing reorder/modules/routes; exact public EN/DE assets.
+  Main explicitly allocated only the two asset-copy/allowlist build hunks.
+  Scope, API, checks and limits: docs/p2-typed-demographics-authoring.md.
+- Pre-edit baseline15 passed; validator/fixture8 passed; Research regression915
+  passed before final raw-draft refinement. Desktop11/Pages256 closure passes.
+  Chrome and Edge HTTP component receipts use actual editor/shared JS session
+  and explicitly synthetic source-save callbacks. No native/whole-app/Runner
+  completion claim; final checkpoint receipts follow. The follow-up prepared
+  P2 save/publish seam is a separate Main allocation after this checkpoint.
+
 ### 20260912-cli-webview-profile-correction
 
 - Main, CLI-SHARED lifecycle seam, Backend Verification. Actual6098972 preset
