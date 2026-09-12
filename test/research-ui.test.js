@@ -778,3 +778,11 @@ test("Segment 3 prepares variants while Segment 1 owns verified media and the re
   assert.match(source, /await workspace\.importVideoFiles\(files\)/u);
   assert.match(source, /if \(target\.id === "workspace-rescan"\) void requestWorkspaceRescan\(\)/u);
 });
+
+test("every asynchronous video catalogue refresh owns a latest-media fence", async () => {
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /const refreshOperation = \+\+videoCatalogueRefreshGeneration;/u);
+  assert.match(source, /const refreshIsCurrent = \(\) => videoCatalogueRefreshGeneration === refreshOperation;/u);
+  assert.match(source, /const restoreIsCurrent = \(\) => refreshIsCurrent\(\)/u);
+  assert.match(source, /if \(!refreshIsCurrent\(\) \|\| \(pendingRestore && !restoreIsCurrent\(\)\)\)/u);
+});

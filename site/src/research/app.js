@@ -351,6 +351,9 @@ function bindResearchInteractions(root, { surface }) {
   const questionnaireModules = [];
   const studyIdentityListeners = new Set();
   let pendingWorkspaceRestore = null;
+  let workspaceRestoreGeneration = 0;
+  let activeWorkspaceRestoreGeneration = 0;
+  let videoCatalogueRefreshGeneration = 0;
   let workspaceContributionProducer = null;
   const videoCatalogueProducer = createVideoCatalogueProducerV1({
     onChange: () => workspaceContributionProducer?.changed(),
@@ -3219,15 +3222,35 @@ function bindResearchInteractions(root, { surface }) {
 
   /** P1 accepted-data handoff. One incomplete video invalidates the whole view. */
   async function refreshVideoCatalogueContribution() {
+    const refreshOperation = ++videoCatalogueRefreshGeneration;
+    const pendingRestore = pendingWorkspaceRestore;
+    if (!pendingRestore) activeWorkspaceRestoreGeneration = ++workspaceRestoreGeneration;
+    const refreshIsCurrent = () => videoCatalogueRefreshGeneration === refreshOperation;
+    const restoreIsCurrent = () => refreshIsCurrent()
+      && pendingWorkspaceRestore === pendingRestore
+      && activeWorkspaceRestoreGeneration === pendingRestore?.generation;
     try {
       const entries = workspaceStimuliToVideoCatalogueEntriesV1(stimuli);
-      if (pendingWorkspaceRestore) {
-        const expected = await verifyWorkspaceRestoredVideoEntriesV1(pendingWorkspaceRestore, entries);
+      if (pendingRestore) {
+        const expected = await verifyWorkspaceRestoredVideoEntriesV1(pendingRestore.contribution, entries);
+        if (!restoreIsCurrent()) return videoCatalogueProducer.getSnapshot();
+        const restoredSnapshot = await videoCatalogueProducer.restoreContribution(expected, {
+          isCurrent: restoreIsCurrent,
+        });
+        if (!restoreIsCurrent()
+          || restoredSnapshot.pending
+          || canonicalJson(restoredSnapshot.contribution) !== canonicalJson(expected)) {
+          return videoCatalogueProducer.getSnapshot();
+        }
         pendingWorkspaceRestore = null;
-        return await videoCatalogueProducer.restoreContribution(expected);
+        notifyWorkspaceContributionChanged();
+        return restoredSnapshot;
       }
       return await videoCatalogueProducer.replaceEntries(entries);
     } catch {
+      if (!refreshIsCurrent() || (pendingRestore && !restoreIsCurrent())) {
+        return videoCatalogueProducer.getSnapshot();
+      }
       videoCatalogueProducer.withdraw();
       return videoCatalogueProducer.getSnapshot();
     }
@@ -3242,6 +3265,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function notifyWorkspaceContributionChanged() {
+    if (!pendingWorkspaceRestore) activeWorkspaceRestoreGeneration = ++workspaceRestoreGeneration;
     return workspaceContributionProducer.changed();
   }
 
@@ -3273,10 +3297,25 @@ function bindResearchInteractions(root, { surface }) {
     if (typeof isCurrent !== "function" || !emptyDependencies) {
       throw new TypeError("Workspace restore options are malformed.");
     }
-    const restored = await validateWorkspaceContributionV1(contribution);
-    const restorePlan = await prepareWorkspaceContentRestoreV1(restored);
+    const previousRestoreGeneration = activeWorkspaceRestoreGeneration;
+    const operation = ++workspaceRestoreGeneration;
+    activeWorkspaceRestoreGeneration = operation;
+    let restored;
+    let restorePlan;
+    try {
+      restored = await validateWorkspaceContributionV1(contribution);
+      restorePlan = await prepareWorkspaceContentRestoreV1(restored);
+    } catch (error) {
+      if (activeWorkspaceRestoreGeneration === operation) {
+        activeWorkspaceRestoreGeneration = previousRestoreGeneration;
+      }
+      throw error;
+    }
+    if (activeWorkspaceRestoreGeneration !== operation) {
+      throw new Error("Workspace restoration was superseded; no declarations were replaced.");
+    }
     if (!isCurrent() || mode !== "setup") throw new Error("Workspace restoration was superseded; no declarations were replaced.");
-    pendingWorkspaceRestore = restored;
+    pendingWorkspaceRestore = Object.freeze({ generation: operation, contribution: restored });
     setInputValue("experiment-id", restorePlan.study.id);
     setInputValue("experiment-title", restorePlan.study.title);
     stimuli.splice(0, stimuli.length, ...restorePlan.videoDeclarations.map((entry) => ({
