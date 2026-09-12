@@ -307,6 +307,41 @@ research qualification or broader Backend Verification stage-completion claim.
 Clean-source receipts are supplied with the owner checkpoint; Vite's existing
 non-failing chunk-size warning remains.
 
+## P6 actual Planner master workflow — 2026-09-12
+
+Clean application checkpoint `51685b06a6ddc79e32c06afdc6446c9db5bc12f2` completes
+the allocated P6-01 through P6-05 owner handoff. It collects Main `adc34d2`'s
+edit-notification ordering repair and P7 `70b30a4`'s explicitly versioned
+portable layout identity. Authored profile bytes and P6 geometry are unchanged;
+historical `planner-xr-master-v1*` vectors retain their original semantics.
+
+The actual Planner-role browser fixture passes **60/60 assertions at each
+1440px and 820px**, with no browser errors or horizontal overflow. Both final
+PNGs were inspected: the XR panel is expanded, the tilted screen/feedback bound,
+angular readouts and confirmation/save instruction are visible and controls
+reflow at the narrow width. Receipts bind the clean commit, all bundled inputs,
+actual CSS/icon assets, harness and PNG hashes. They are stored under
+`D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+as `final-wide-51685b0` and `final-narrow-51685b0`.
+
+The complete shared master Save/reopen check preserves every authored spatial
+and feedback field, acknowledges exact closed-file/readback bytes, leaves media
+and confirmation pending after Open, rejects stale/cancelled requests, clears
+excluded XR state and prepares against the exact rebound P1/P5 owners. The
+immediate media-change withdrawal regression remains asserted. File-picker and
+catalogue adapters are synthetic; no OS-picker or decoded-media claim follows.
+
+Focused P6 checks pass **44 JavaScript tests and five Rust tests**. The merged
+`663cae9` checkpoint passes desktop **11-file** and Pages **234-file** boundary
+builds; its full suite is **761/763**, with two new-compile byte expectations
+still pointing at legacy reproduction-V1 fixtures in Main/P3 tests. Both were
+routed to their owners; Main reports its correction at `63fe416`. They are not
+counted as passing on this P6 branch. Logs share the evidence directory above.
+
+Main owns combined integration and root owns catalogue completion. This is
+Planner authoring/document evidence, not installed native, Edge, headset/WebXR,
+tracking, recording or final Planner–Runner correspondence qualification.
+
 ## P6 complete-master composition — 2026-09-12
 
 Owner checkpoint `188c08036a3afedcefb7d571fc9b2a63237fba2f` on isolated

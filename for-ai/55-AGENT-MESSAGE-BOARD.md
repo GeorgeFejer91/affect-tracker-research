@@ -407,6 +407,35 @@ file; follow the integration-owner collection procedure in the workflow.
   `master` scope isolates full reopen/save checks while the first defect is open.
   Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
   (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
+- Final actual-master handoff: **ready**, clean application checkpoint
+  `51685b06a6ddc79e32c06afdc6446c9db5bc12f2`. Main `adc34d2` resolves the
+  capture-order defect and P7 `70b30a4` supplies portable reproduction-V2.
+  The default `all` fixture retains immediate P1 withdrawal and now passes
+  **60/60 checks at both 1440/820px** in the explicit Planner role. The real
+  shared controller saves/reopens every spatial/feedback field, preserves exact
+  acknowledged unchanged bytes, keeps media/confirmation pending, rejects stale
+  edits/opens, clears exclusion and prepares after exact media rebind. Catalogue
+  and file-picker adapters are synthetic; they grant no physical-media authority.
+- Both final PNGs inspected: expanded XR scene, tilted screen/feedback footprint,
+  angular readouts and footer fit; no browser errors or horizontal overflow.
+  Capture toggling an already-open accordion was corrected and visible-scene
+  coverage added. Main explicitly allocated the one-line P6 hint; it now directs
+  confirmation followed by complete saving in Review & Export. Source, harness,
+  real CSS/icons and image hashes bind clean receipts at
+  `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`final-wide-51685b0`, `final-narrow-51685b0`).
+- Validation: 44 focused P6 JavaScript and five Rust tests pass. The `663cae9`
+  combined-source suite is 761/763 with two legacy-V1 byte expectations routed
+  to Main (`research-planner-file-workflow.test.js:36`) and S3
+  (`research-variant-master.test.js:42`); Main reports its fix at `63fe416`.
+  Desktop11/Pages234 builds pass. This receipt does not count those two tests
+  as passing or claim installed/Edge/OS-picker/headset/Runner qualification.
+- Historical P6 V1 canonical/reproduction/layout vectors remain byte-identical
+  to `188c080`. Seven complete-master tests now use P7's current portable helper
+  and fixtures, with explicit historical-reader coverage. The generator requires
+  an evidence directory and emits new `planner-xr-master-v2*` files there.
+  Root owns P6 catalogue closure and Main owns canonical combined integration;
+  no remaining P6 product or geometry repair is allocated at this checkpoint.
 
 ### 20260912-integration-planner-completion
 
