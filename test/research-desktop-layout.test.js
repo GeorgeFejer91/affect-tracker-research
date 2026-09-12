@@ -5,9 +5,9 @@ import { execFileSync } from "node:child_process";
 import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
 import { validateWorkspaceContributionV1 } from "../site/src/research/workspace-contribution.js";
-import { APPROVED_DESKTOP_REFERENCE_POLICY, validateDesktopLayoutProfileV1, selectDesktopReference,
+import { DEFAULT_DESKTOP_REFERENCE_POLICY, validateDesktopLayoutProfileV1, selectDesktopReference,
   resolveDesktopLayoutBase, resolveDesktopLayoutGeometry, convertDesktopLayoutUnits, assertDesktopLayoutViewport } from "../site/src/research/desktop-layout.js";
-import { validateDesktopLayoutContribution, parseDesktopLayoutContribution, desktopLayoutDraftFromProfile,
+import { validateDesktopLayoutContribution, resolveDesktopLayoutContribution, serializeDesktopLayoutContribution, parseDesktopLayoutContribution, desktopLayoutDraftFromProfile,
   desktopLayoutProfileFromDraft } from "../site/src/research/desktop-layout-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
@@ -23,16 +23,22 @@ function near(a, b) {
   else assert.equal(a, b);
 }
 
-test("both explicit Q08 calculations reproduce shared geometry; neither authorizes acceptance", async () => {
+test("both explicitly chosen methods validate full P1/P5 content and reproduce geometry and canonical bytes", async () => {
   await validateWorkspaceContributionV1(fixture.workspace);
   for (const c of fixture.cases) {
     const p = validateDesktopLayoutProfileV1(c.profile), result = resolve(p);
     assert.equal(await canonicalSha256(p), c.canonicalSha256);
     assert.deepEqual(result.geometry, c.geometry); assert.deepEqual(result.videos, c.videos); assert.deepEqual(result.issues, []);
     assert.equal(canonicalJson(desktopLayoutProfileFromDraft(desktopLayoutDraftFromProfile(p), fixture.media, p.reference.source.policy)), canonicalJson(p));
-    await assert.rejects(validateDesktopLayoutContribution(p, fixture), { code: "reference-policy-pending" });
+    assert.deepEqual(await validateDesktopLayoutContribution(p, fixture), p);
+    assert.deepEqual((await resolveDesktopLayoutContribution(p, fixture)).geometry, c.geometry);
+    const source = await serializeDesktopLayoutContribution(p, fixture);
+    assert.equal(source, `${canonicalJson(p)}\n`);
+    assert.equal(await serializeDesktopLayoutContribution(await parseDesktopLayoutContribution(source, fixture), fixture), source);
   }
-  assert.equal(APPROVED_DESKTOP_REFERENCE_POLICY, null);
+  assert.equal(DEFAULT_DESKTOP_REFERENCE_POLICY, null);
+  const draft = desktopLayoutDraftFromProfile(profile()); delete draft.referencePolicy;
+  assert.throws(() => desktopLayoutProfileFromDraft(draft, fixture.media), { code: "reference-policy-required" });
 });
 
 test("every authored field is required and closed at each object boundary", () => {
@@ -117,12 +123,25 @@ test("wrong P5 envelope or observed viewport fails explicitly without fallback",
   assert.throws(() => assertDesktopLayoutViewport(p, { widthCssPx: 1280, heightCssPx: 720 }), { code: "incompatible" });
 });
 
-test("canonical reader rejects duplicate/unknown/noncanonical data before the pending-policy gate", async () => {
+test("canonical reader rejects duplicate/unknown/noncanonical data without choosing a missing policy", async () => {
   const p = profile(), text = `${canonicalJson(p)}\n`;
   for (const source of [text.trim(), JSON.stringify(p, null, 2), text.replace('"version":1', '"version":1,"version":1'), "x".repeat(8193)]) {
     await assert.rejects(parseDesktopLayoutContribution(source, fixture));
   }
-  await assert.rejects(parseDesktopLayoutContribution(text, fixture), { code: "reference-policy-pending" });
+  assert.deepEqual(await parseDesktopLayoutContribution(text, fixture), p);
+  delete p.reference.source.policy;
+  await assert.rejects(validateDesktopLayoutContribution(p, fixture));
+});
+
+test("accepted composition rejects altered media, feedback and fit instead of trusting profile or claimed bounds", async () => {
+  const p = profile(), changed = structuredClone(fixture);
+  changed.workspace.videoCatalogue.entries[0].geometry.displayWidthPx += 1;
+  await assert.rejects(validateDesktopLayoutContribution(p, changed));
+  await assert.rejects(validateDesktopLayoutContribution(p, { ...fixture, feedback: { ...fixture.feedback, halfExtentCssPx: 0 } }));
+  const overlap = profile(); overlap.feedback.offset.y = 0;
+  await assert.rejects(validateDesktopLayoutContribution(overlap, fixture), { code: "video-overlap" });
+  const missing = profile(); missing.reference.source.assetId = `asset-${"d".repeat(64)}`;
+  await assert.rejects(validateDesktopLayoutContribution(missing, fixture), { code: "source-mismatch" });
 });
 
 test("two clean processes reproduce candidate bytes and geometry without app/default/storage imports", () => {
