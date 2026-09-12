@@ -1,8 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { waitForNativeMediaReadiness } from "../site/src/research/native-media-readiness.js";
+import { waitForNativeMediaReadiness, NATIVE_MEDIA_STARTUP_BUDGET_MS } from "../site/src/research/native-media-readiness.js";
 
 const ready = { runtimeIntegrityVerified: true, playerActorReady: true, qualifiedStartAvailable: false };
+test("cold startup can finish after one minute within the original command limit", async () => {
+  let clock = 0;
+  assert.equal(await waitForNativeMediaReadiness({ now: () => clock, deadline: NATIVE_MEDIA_STARTUP_BUDGET_MS,
+    readCapability: async () => { clock = 65_000; return ready; } }), ready);
+  assert.equal(NATIVE_MEDIA_STARTUP_BUDGET_MS, 90_000);
+  assert.ok(NATIVE_MEDIA_STARTUP_BUDGET_MS < 120_000);
+});
 test("startup observes both pending phases and returns exact unqualified ready capability", async () => {
   const values = [{ reasonCode: "native-runtime-verification-pending" },
     { reasonCode: "native-gstplay-startup-pending" }, ready];

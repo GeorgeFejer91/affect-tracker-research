@@ -5477,3 +5477,16 @@ unchanged clone for a supported, already-selected unit; real conversions retain
 all geometry/calibration checks. All 51 focused P4 authoring/layout tests pass.
 Evidence remains at root-release-fullmock-evidence-03 and
 root-release-p4-units-test-01.log. No master was saved in that failed attempt.
+
+The mock's 24% Flubber viewport failed the real maximum-animation fit check:
+its conservative maximum side was 531.3888 px. The mock now requests 12% through
+P4, retaining the same centre; this is a test experiment setting, not relaxed
+validation. Five driver comparison tests pass. The next cold run failed before
+any import effect: runtime verification took 43028 ms, the command ended at
+62393 ms, and owned cleanup required forced termination after its unchanged
+10-second grace. This is consistent with the 60-second startup sub-budget being
+exhausted; the exact GStreamer-internal delay is unmeasured. The startup allowance
+is now 90 seconds within the unchanged 120-second broker deadline, with absolute
+deadline/cancellation checks retained. Fourteen focused startup/transport checks
+pass. This allowance change does not resolve or qualify the stalled native
+shutdown; retain root-release-fullmock-evidence-05 as a release blocker.

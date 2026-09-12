@@ -1,4 +1,7 @@
-export const NATIVE_MEDIA_STARTUP_BUDGET_MS = 60_000;
+// Cold verification of the pinned runtime can consume over 40 seconds before
+// GStreamer starts. Reserve 30 seconds of the broker's 120-second command limit
+// for the actual import; keep this startup deadline absolute and cancellable.
+export const NATIVE_MEDIA_STARTUP_BUDGET_MS = 90_000;
 const PENDING = new Set(["native-runtime-verification-pending", "native-gstplay-startup-pending"]);
 
 /** Startup only: decode readiness does not imply qualified playback. Only the

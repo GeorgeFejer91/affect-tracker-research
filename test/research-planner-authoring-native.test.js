@@ -80,7 +80,7 @@ test("video effect readiness is between revision barriers and retains its reques
     if (command.endsWith("_complete")) finish();
   }, async guard => {
     calls.push("readiness");
-    assert.ok(guard.deadline > performance.now() && guard.deadline <= performance.now() + 60_000);
+    assert.ok(guard.deadline > performance.now() && guard.deadline <= performance.now() + 90_000);
     session.revision++; notify(session.revision);
   });
   await done;

@@ -137,7 +137,7 @@ export function assertMockRecipe(recipe, expected, participantCount) {
   assert.deepEqual(P4.reference.centre, { x: 50, y: 35 });
   assert.equal(P4.reference.source.policy, "largest-oriented-area");
   assert.equal(P4.reference.source.assetId, expected.video.assetId);
-  assert.deepEqual(P4.feedback, { minimumGap: 3, offset: { x: 0, y: 75 }, origin: "design-centre", overlayViewportSide: 24 });
+  assert.deepEqual(P4.feedback, { minimumGap: 3, offset: { x: 0, y: 75 }, origin: "design-centre", overlayViewportSide: 12 });
   assert.deepEqual(P5, expected.feedback);
   assert.deepEqual(P6, { status: "excluded" });
   assert.deepEqual(recipe.policy, { ...expected.policy, participantCount });
@@ -281,7 +281,7 @@ export async function authorMockExperiment(config) {
       op("P3", "isi.add", { durationMs: 1750 }), op("P3", "isi.add", { durationMs: 3213 }),
       set("P4.units", "relative"), set("P4.viewport.widthCssPx", 1920), set("P4.viewport.heightCssPx", 1080),
       set("P4.reference.method", "largest-oriented-area"), set("P4.reference.maximumWidth", 60), set("P4.reference.maximumHeight", 60),
-      set("P4.reference.centreX", 50), set("P4.reference.centreY", 35), set("P4.feedback.viewportSide", 24),
+      set("P4.reference.centreX", 50), set("P4.reference.centreY", 35), set("P4.feedback.viewportSide", 12),
       set("P4.feedback.offsetX", 0), set("P4.feedback.offsetY", 75), set("P4.feedback.minimumGap", 3), set("P6.enabled", false)];
     if (snapshot.owners.P5.values["P5.generation"] === 1) edits.push(op("P5", "initializeV2"));
     edits.push(op("P5", "inputPreset", { preset: "arrowKeys" }), set("P5.visual.hideFeedback", false), set("P5.presentation.renderer", "flubber"));

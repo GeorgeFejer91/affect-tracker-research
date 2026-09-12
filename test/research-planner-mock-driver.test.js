@@ -31,7 +31,7 @@ function comparison() {
       P4: { units: "relative", target: "desktop-screen", fit: "contain", calibration: null,
         viewport: { widthCssPx: 1920, heightCssPx: 1080, compatibility: "exact" },
         reference: { box: { width: 60, height: 60 }, centre: { x: 50, y: 35 }, source: { policy: "largest-oriented-area", assetId: "asset-clip" } },
-        feedback: { minimumGap: 3, offset: { x: 0, y: 75 }, origin: "design-centre", overlayViewportSide: 24 } },
+        feedback: { minimumGap: 3, offset: { x: 0, y: 75 }, origin: "design-centre", overlayViewportSide: 12 } },
       P5: structuredClone(expected.feedback), P6: { status: "excluded" },
     } };
   return { recipe, expected };
