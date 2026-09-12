@@ -67,3 +67,34 @@ The two library-test baseline warnings remain. Production compilation in the
 effect harness reports 14 unused-code warnings while dispatch is pending, plus
 one existing native-media re-export warning in the subset harness. None were
 suppressed. Main's shared Cargo-target hold was released after these checks.
+
+## Native GUI supported-version entrypoints
+
+Main allocated this follow-up at `9843efc` (S7/P7, Backend Verification).
+`read_supported_planner_recipe_path` dispatches one bounded byte snapshot to
+strict master-v1/master-v2 parsing or the existing legacy-package reader, with
+matching `planner-recipe-v1`, `planner-recipe-v2`, or `experiment-package-v1`
+tags. A malformed master never falls back to a legacy parser.
+
+`write_selected_supported_planner_recipe` validates supported canonical bytes
+and shares the selected-destination staging/publication/readback implementation
+with the strict v1 writer. Existing functions retain their original contracts.
+The existing `research_load_planner_recipe` and `research_save_planner_recipe`
+commands now call the supported helpers; save validates before opening its
+dialog and retains Planner-role authorization, cancellation, filename policy,
+no-clobber publication and published-unverified error handling. No registration
+or `lib.rs` change is needed.
+
+Two additional file-service tests cover tagged dispatch, legacy/v1 parity,
+exact v2 documents, unknown schemas/versions, exact selected-save bytes and
+receipts, existing destinations and invalid input. Existing Windows linked-path
+and locked-file tests also exercise the supported GUI entrypoints.
+
+Validation for this native GUI follow-up: all 16 native file-service tests pass
+with `cargo test --locked --no-default-features --lib research_planner_recipe_file`
+(the complete library and command module compile). The two pre-existing geometry
+dead-code warnings remain. All 22 focused browser file/adapter and modular
+architecture tests pass. Rustfmt and `git diff --check` pass. Native log:
+`D:/GitHub/.affect-checks/p7-native-gui-files.log`. The shared Cargo target was
+released after this finite check. Native picker interaction, installed-app
+qualification and Main's integrated app adapters remain integration gates.

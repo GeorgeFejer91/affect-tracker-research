@@ -5004,3 +5004,17 @@ through the existing P5 preview mapping before hiding each interval, so cached
 geometry is reset before Presented. Preserve hidden/input-disabled ISIs and
 existing clocks/markers/sampling. Verify first/consecutive/video-following/next
 video presentation in the headless app harness. No physical paint/timing claim.
+### 20260912-s7-native-gui-supported-files
+
+- Main allocated P7-03/P7-04/P7-05/CLI-P7 native GUI file seam at 9843efc;
+  isolated branch codex/segment-p7-native-gui. Backend Verification compares
+  old GUI v1-only routing with supported master-v1/v2 intake and exact save.
+- Added explicit supported path dispatcher and selected-destination writer;
+  old v1 functions remain strict. Existing load/save commands use supported
+  parsing, retain legacy-package Open, Planner save role and dialog cancellation.
+  Shared staging/atomic no-clobber/readback authority and receipt are unchanged.
+- 16 native file tests and 22 focused browser/architecture tests pass; rustfmt
+  and diff checks pass. Two existing geometry dead-code warnings remain.
+  Log D:/GitHub/.affect-checks/p7-native-gui-files.log. Cargo target released.
+- Main owns integration/app adapters and final picker/installed qualification;
+  no lib.rs, Runner, media or runtime authority changes. No release claim.

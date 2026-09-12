@@ -3,7 +3,7 @@
 //! The JS authoring compiler remains the only fresh recipe compiler.
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_planner_recipe::{
-    parse_planner_recipe_bytes, parse_planner_recipe_file, LoadedPlannerRecipe,
+    parse_planner_recipe_bytes, parse_planner_recipe_file, read_value, LoadedPlannerRecipe,
     SavedPlannerRecipeReceipt, MAX_BYTES,
 };
 use crate::research_planner_recipe_supported::{
@@ -166,6 +166,23 @@ pub(crate) fn read_planner_recipe_path(path: &Path) -> ResearchResult<serde_json
     parse_planner_recipe_file(&read_recipe_bytes(path)?)
 }
 
+/// Explicit supported master/legacy dispatch over the same bounded snapshot.
+pub(crate) fn read_supported_planner_recipe_path(path: &Path) -> ResearchResult<serde_json::Value> {
+    let bytes = read_recipe_bytes(path)?;
+    let value = read_value(&bytes)?;
+    if value.get("schema").and_then(serde_json::Value::as_str)
+        == Some("affect-research-planner-recipe")
+    {
+        let document = parse_supported_planner_recipe_bytes(&bytes)?;
+        Ok(serde_json::json!({
+            "kind": format!("planner-recipe-v{}", document.recipe.version()),
+            "document": document,
+        }))
+    } else {
+        parse_planner_recipe_file(&bytes)
+    }
+}
+
 /// Additive master-only intake. Legacy package dispatch remains unchanged above.
 pub(crate) fn read_supported_planner_recipe_file(
     path: &Path,
@@ -305,6 +322,21 @@ pub(crate) fn write_selected_planner_recipe(
     source_text: &str,
 ) -> Result<SavedPlannerRecipeReceipt, PlannerRecipeWriteError> {
     let expected = parse_planner_recipe_bytes(source_text.as_bytes())?;
+    write_selected_document(path, &expected)
+}
+
+pub(crate) fn write_selected_supported_planner_recipe(
+    path: &Path,
+    source_text: &str,
+) -> Result<SavedPlannerRecipeReceipt, PlannerRecipeWriteError> {
+    let expected = parse_supported_planner_recipe_bytes(source_text.as_bytes())?;
+    write_selected_document(path, &expected)
+}
+
+fn write_selected_document(
+    path: &Path,
+    expected: &impl FileRecipeDocument,
+) -> Result<SavedPlannerRecipeReceipt, PlannerRecipeWriteError> {
     let basename = path
         .file_name()
         .ok_or_else(|| CommandError::forbidden("Select a recipe filename."))?
@@ -318,14 +350,14 @@ pub(crate) fn write_selected_planner_recipe(
     if destination_exists(path)? {
         return Err(already_exists().into());
     }
-    let staged = stage_recipe(directory, &expected)?;
+    let staged = stage_recipe(directory, expected)?;
     require_directory(directory)?;
     if !publish_new(&staged, path)? {
         return Err(already_exists().into());
     }
     // A final readback failure does not remove a possibly externally changed
     // destination. No receipt is returned; callers must not mark it saved.
-    verify_published(path, &expected, basename)
+    verify_published(path, expected, basename)
 }
 
 pub(crate) fn write_new_planner_recipe(
@@ -426,6 +458,64 @@ mod tests {
     }
 
     #[test]
+    fn supported_gui_dispatch_preserves_exact_documents_and_legacy_intake() {
+        let root = TestDirectory::new();
+        let path = root.0.join("selected.json");
+        for (source, kind) in [
+            (SOURCE, "planner-recipe-v1"),
+            (V2_SOURCE, "planner-recipe-v2"),
+            (
+                include_str!("../../test/fixtures/experiment-package-v1.canonical.json"),
+                "experiment-package-v1",
+            ),
+        ] {
+            fs::write(&path, source).unwrap();
+            let loaded = read_supported_planner_recipe_path(&path).unwrap();
+            assert_eq!(loaded["kind"], kind);
+            if kind == "planner-recipe-v2" {
+                assert_eq!(
+                    loaded["document"],
+                    serde_json::to_value(
+                        parse_supported_planner_recipe_bytes(source.as_bytes()).unwrap()
+                    )
+                    .unwrap()
+                );
+                assert!(read_planner_recipe_path(&path).is_err());
+            } else {
+                assert_eq!(loaded, read_planner_recipe_path(&path).unwrap());
+            }
+        }
+        for source in [
+            "{}",
+            "{\"schema\":\"unknown\"}",
+            "{\"schema\":\"affect-research-planner-recipe\",\"version\":99}",
+        ] {
+            fs::write(&path, source).unwrap();
+            assert!(read_supported_planner_recipe_path(&path).is_err());
+        }
+    }
+
+    #[test]
+    fn supported_selected_destination_preserves_bytes_receipt_and_no_clobber() {
+        let root = TestDirectory::new();
+        for (index, source) in [SOURCE, V2_SOURCE].iter().enumerate() {
+            let path = root.0.join(format!("selected-{index}.json"));
+            let receipt = write_selected_supported_planner_recipe(&path, source).unwrap();
+            let expected = parse_supported_planner_recipe_bytes(source.as_bytes()).unwrap();
+            assert_eq!(receipt, expected.save_receipt());
+            assert_eq!(fs::read(&path).unwrap(), source.as_bytes());
+            let error = write_selected_supported_planner_recipe(&path, source).unwrap_err();
+            assert_eq!(error.error.code, "recipe_destination_exists");
+            assert!(error.published_basename.is_none());
+            assert_eq!(fs::read(&path).unwrap(), source.as_bytes());
+        }
+        let invalid_path = root.0.join("invalid.json");
+        assert!(write_selected_supported_planner_recipe(&invalid_path, "{}").is_err());
+        assert!(!invalid_path.exists());
+        root.assert_no_staging();
+    }
+
+    #[test]
     fn supported_files_preserve_v1_and_all_v2_fixture_bytes_and_receipt_shape() {
         use sha2::{Digest, Sha256};
         let root = TestDirectory::new();
@@ -509,6 +599,12 @@ mod tests {
             assert!(read_supported_planner_recipe_file(&path).is_err());
             let error = write_new_supported_planner_recipe(&root.0, &source).unwrap_err();
             assert!(error.published_basename.is_none());
+            let selected = root.0.join("invalid-selected.json");
+            assert!(write_selected_supported_planner_recipe(&selected, &source).is_err());
+            assert!(!selected.exists());
+            if !source.contains("affect-research-experiment-package") {
+                assert!(read_supported_planner_recipe_path(&path).is_err());
+            }
             assert_eq!(fs::read_dir(&root.0).unwrap().count(), 1);
         }
         assert!(read_supported_planner_recipe_file(&root.0).is_err());
@@ -846,6 +942,10 @@ mod tests {
         assert!(is_link(&fs::symlink_metadata(&junction).unwrap()));
         assert!(read_planner_recipe_path(&junction.join("source.json")).is_err());
         assert!(read_supported_planner_recipe_file(&junction.join("source.json")).is_err());
+        assert!(read_supported_planner_recipe_path(&junction.join("source.json")).is_err());
+        assert!(
+            write_selected_supported_planner_recipe(&junction.join("new.json"), V2_SOURCE).is_err()
+        );
         assert!(write_new_supported_planner_recipe(&junction, V2_SOURCE).is_err());
         assert!(write_new_planner_recipe(&junction, SOURCE).is_err());
         assert!(write_selected_planner_recipe(&junction.join("new.json"), SOURCE).is_err());
@@ -880,6 +980,8 @@ mod tests {
         assert!(write_selected_planner_recipe(&target, SOURCE).is_err());
         assert!(read_planner_recipe_path(&target).is_err());
         assert!(read_supported_planner_recipe_file(&target).is_err());
+        assert!(read_supported_planner_recipe_path(&target).is_err());
+        assert!(write_selected_supported_planner_recipe(&target, V2_SOURCE).is_err());
         drop(locked);
         assert_eq!(fs::read(&target).unwrap(), SOURCE.as_bytes());
         root.assert_no_staging();
