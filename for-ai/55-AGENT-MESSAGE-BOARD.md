@@ -276,6 +276,25 @@ file; follow the integration-owner collection procedure in the workflow.
   harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
   warning-list fix is verified in combined source. See 64 for paths and limits;
   this is not G09 populated/full-master evidence for the new completion goal.
+- Root diagnosed and repaired the Edge capture helper lifecycle: the launcher
+  exits before its browser requests the page. Actual HTTP receipt plus complete
+  fresh PNG now controls server lifetime. Final helper passes two XR captures per
+  Chrome/Edge at clean `7946bc6`; four PNG/harness bindings checked, all images
+  inspected or byte-identical to inspected images. Reused output refuses without
+  overwriting evidence. Details in64; full Edge/master qualification stays open.
+- Completion refinement: root allocated both Q08 reference-analysis methods as
+  an explicit required per-recipe choice, no default. S4 should implement/validate
+  both and block only a recipe with no selection; an unanswered global preference
+  need not block building the Planner. S1 confirms Q05 relative declarations and
+  fresh authorized rebind suffice for master authoring; absolute provenance and
+  remembered custom native shell root are optional separate limitations.
+- Independent root QA found c9562fd capture freshness omitted caller epochs and
+  could resurrect after clear/reaccept; S7 fixed this at a66c168 with required
+  caller lifetime and irreversible acceptance generation. Integration composes
+  current app guards. Root also inspected the restored-V2 narrow Preview corner
+  labels wrapping one character per line; Live Preview owns a bounded label-layout
+  fix while S5 owns saved-state copy. Neither finding is treated as completed full
+  master evidence; final combined verification follows collection.
 
 ### 20260912-runner-companion-separation
 
