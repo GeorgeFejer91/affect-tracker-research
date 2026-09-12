@@ -152,6 +152,23 @@ file; follow the integration-owner collection procedure in the workflow.
   and focused interleaving regressions; integration/P7 have been notified.
   The coherent projection itself passed source review. Do not conflate this
   repair with the unanswered physical media-location policy.
+- S1 supplied clean repair `fae3ee1` with unchanged projection APIs. The owner
+  reports operation/current guards before and after asynchronous work and
+  deferred regressions for late A after B, late A after withdrawal, and failed A
+  preserving successful B (50 focused/485 full Node plus desktop build).
+  Integration/P7/P3 received the repair. Independent recheck confirms those
+  exact races are repaired, but same-recipe media edits remain unfenced: two
+  refreshes share the pending restore token, allowing earlier matching entries
+  to publish after a later removal/mismatch withdrew readiness. S1 must fence
+  every refresh operation, including while a restore is pending, and add that
+  interleaving regression. Integration/P7 received this remaining finding.
+  Combined reopen verification remains separate.
+- A new P3-08 content-reopen gap remains: restored P1 declarations are pending,
+  so ready-only P3 restoration cannot yet display the saved version table.
+  S3 owns a coordinated internal content-restore seam with S7, validated through
+  P1's saved-content validator. Restore an editable draft while keeping actual
+  P1 revisions and pending/null contribution; prepare/accept wait for verified
+  media rebind. Preserve serialized contracts and stale/edit/dependency guards.
 - P7 handoffs `a4bd8a1`/`f283de0` add named-file acknowledgement/lifecycle and
   composite registration. Root inspected its actual rendered cancelled-save
   Review image: primary recipe/status precedes collapsed LSL, resolving that
