@@ -245,6 +245,27 @@
 - Final focused native gate passes71/71; rustfmt/diff checks pass. Initial
   test-only numeric equality and XR projection failures are retained; exact
   identities/limits and handoff are in `docs/native-planner-recipe-v2.md`.
+### 20260912-runner-typed-form-component
+
+- Root allocated RR-06/RR-10 typed answer validation/presentation after stopped
+  information commit `388399e`. Isolated `codex/segment-runner-typed-forms`;
+  complete dependency chain includes frozen `7da84a9`, S3 `ffe11d8`/`b5e93dc`/
+  `aa8717b`, and S4 `c4237b2`/`2deaf4a`/`5f786f0`. Main retains production
+  lib/P2/master-v2 composition. Runner did not add a duplicate definition reader.
+- Native closed typed values, atomic draft/submit replacement, every-field
+  completion, exact text/whole-number/choice checks, native latency retention
+  and definition-derived response rows are verified independently. Three focused
+  native tests and twelve focused Node tests pass. Native EN/DE output matches
+  the JS row reader with exact values, labels and calculated latencies.
+- Actual headless EN/DE forms each pass 22 controls/layout checks at 1920×1080;
+  source-derived prompts/options, no default answers, whitespace/missing/invalid
+  rejection and explicit Prefer not to say are covered. Evidence and exact API
+  handoff: `docs/runner-typed-form-component.md`.
+- This is a component checkpoint with fictitious values/synthetic elapsed times.
+  Production master-v2 Start/worker/stream integration, actual CLI-created EN/DE
+  execution and final saved-XDF acceptance remain open. The presenter is not
+  mounted and the native component is included only through its standalone test
+  harness until Main's master reader APIs are ready. User-opened apps are intact.
 
 ### 20260912-p2-native-form-validator
 

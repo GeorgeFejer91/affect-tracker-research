@@ -21,6 +21,40 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Typed participant form component — 2026-09-12
+
+RR-06/RR-10 with named RR-02/RR-03/RR-07 consumer seams, Backend Verification.
+Root explicitly allocated this follow-up after information commit `388399e`
+was stopped. Isolated `codex/segment-runner-typed-forms`, worktree
+`D:/GitHub/affect-tracker-research-runner-typed`, base `388399e` plus exact
+S3 contract/fixtures `7da84a9` (local cherry-pick `00249d0`).
+Deliverable now: required EN/DE typed participant field controls and native
+typed answer validation/projection against that contract. Evidence: exact
+fixture-derived wording, every-field completion, byte/Unicode/integer/option
+bounds, preserved draft values and native latencies. Use S3's agreed
+`form-definition.js` APIs rather than a second JS definition validator.
+Main owns Rust P2/master v2 parsing and composition; versioned Start/plan/stream
+consumer integration waits its agreed owner APIs. No v1 source rewrite, no
+age eligibility gate, no scores for demographics, no full name in folders or
+participant allocation, and no actual CLI/native EN/DE execution claim yet.
+
+The standalone EN/DE presenter now consumes S3's frozen `ffe11d8` validator
+(local `1c847e5`), preserves exact text including Unicode/newlines, accepts whole
+years without eligibility rules and requires all four fields. Each language
+passes 22 headless desktop checks at 1920×1080, including missing/whitespace,
+fractional/unsafe integer and UTF-8 byte-limit rejection. Captures/receipts are
+under `D:/GitHub/.affect-runner-master-build/typed-form-ui-01`. Typed response-row
+validation and the owner fixtures/validators pass twelve focused Node checks.
+The native answer module targets Main's agreed `FormDefinitionV1` /
+`FormResponseV1` API; S4 owns its whole-definition/hash validator. Three focused
+native answer checks now pass through the standalone exact-source harness.
+Both native form outputs match the JS recorded-row consumer without changed
+values, labels or calculated latencies. Current dependencies include S3's
+`b5e93dc` / `aa8717b` and S4's `2deaf4a` / `5f786f0` corrections. The Runner
+module is not registered in the production worker and the presenter is not
+mounted into a master-v2 run. See `docs/runner-typed-form-component.md` for exact
+APIs, evidence and remaining integration; none of this is an execution claim.
+
 ## Mandatory questionnaire completion — 2026-09-12
 
 Direct user requirement: every displayed questionnaire item must be answered
@@ -32,7 +66,7 @@ Incomplete drafts may be saved after interruption but never count as submitted
 forms or a completed experiment. The typed demographics successor follows the
 same rule. Planner/P2 owners must reflect this requirement in authoring.
 
-## Active self-contained information pass — 2026-09-12
+## Self-contained information checkpoint — 2026-09-12
 
 RR-07/RR-08/RR-10, Backend Verification, explicitly approved by the user through
 Chat Orchestrator and root amendment `f877b8a` (goal ledger 69 read in full).
@@ -137,7 +171,7 @@ desktop layout and complete successor master dispatch are still producer work.
 | RR-03 Session selection | Valid recipe, explicit participant/language and attempt | Frozen participant/route/version receipt | Preserve v1 explicit schedules; successor allocation policy remains unselected. Open |
 | RR-04 Playback/protocol | Bound complete media, ordered video/ISI/form steps | Observed player transitions and protocol events | Native package adapter wired; qualified player Start remains closed pending installed/physical gates |
 | RR-05 Feedback/layout | Recipe input/style/mappings and supported layout | Participant feedback from native acquired state | Saved v1 style/mappings/placement parity implemented; successor desktop layout correspondence open |
-| RR-06 Questionnaires | Full chosen route and ordered definitions | Durable draft/submitted responses | Separate one-item presenter implemented with frozen labels/codes/required checks; installed participant workflow open |
+| RR-06 Questionnaires | Full chosen route and ordered definitions | Durable draft/submitted responses | Legacy one-item presenter and full master Likert table; every new submission requires all items. Typed EN/DE controls verified separately; native typed integration and installed workflow open |
 | RR-07 Acquisition/LSL output | Native input, recipe sampling/emission config | Existing samples and markers on actual LSL clock | Existing Rust authority composed; recorder tap preserves emitted values/timestamps; physical qualification open |
 | RR-08 XDF recording | Runner-selected own/external streams, destination | XDF plus selected identities/status/failure receipt | Implemented; unit/worker, selected synthetic transport and independent pyxdf evidence below; device/long-run qualification open |
 | RR-09 Records/recovery | Frozen recipe/session/recording identities and journals | Attempts, final receipts and explicit recovery | Existing attempt recovery wired; immutable recording receipts, fail/flush/drain/no-overwrite tested; automatic XDF repair is not offered |
