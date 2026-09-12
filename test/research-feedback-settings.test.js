@@ -44,6 +44,7 @@ test("every required nested member rejects omission, additions, coercion and uns
     [["presentation", "renderer"], "photoatlas"], [["presentation", "colorAnchors"], "automatic"],
     [["presentation", "labels", "axes", "up"], ""], [["presentation", "labels", "axes", "up"], "x".repeat(49)],
     [["presentation", "labels", "axes", "up"], " x "], [["presentation", "labels", "corners", "left"], "x\ny"],
+    [["presentation", "labels", "axes", "up"], "\ud800"],
     [["presentation", "halo", "widthPercent"], 10001], [["presentation", "halo", "widthPercent"], NaN],
     [["presentation", "halo", "widthPercent"], "150"], [["presentation", "halo", "gradient"], 1],
     [["presentation", "halo", "steepness"], 0], [["response", "grid", "columns"], 20],

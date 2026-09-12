@@ -345,22 +345,24 @@ frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and
 **Purpose:** one persistent editor for Flubber appearance/control, with Advanced
 animation settings at the bottom.
 **User input:** device/bindings, response behavior, colors/style/visibility and
-explicit animation/mapping edits. Which drafts become runnable remains Q10.
+explicit animation/mapping edits. Q10's current configured choices are now
+allocated for complete Planner serialization; execution remains downstream work.
 **Receives:** P4/P6 layout and explicit preview-test input.
-**Produces:** one input configuration, visual style and affect-mapping set;
+**Produces:** one versioned input, response, presentation and affect-mapping set;
 live preview projects these values.
 **Consumers:** P4/P6 composition, P7 recipe and R1 adapters.
-**JSON:** existing input/visual/mapping objects; newly saved behavior needs
-explicit versioned fields.
+**JSON:** `affect-research-feedback` version 2, embedding the retained strict
+input/visual/mapping objects plus explicit presentation and response. The exact
+old three-key reader remains available; loading it does not invent V2 fields.
 
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
 - [x] **P5-03 — Implemented component:** live preview and input-test surfaces; not all simulator controls are saved settings.
 - [ ] **P5-04 — Pending integration:** isolated `8d3d256` consolidates old Input/Visual/Advanced with one value owner and bottom Advanced; canonical verification remains required.
-- [ ] **P5-05 — Decision:** saved/temporary controls and units are inventoried in the P5 roadmap receipt. Owner checkpoint `ccc53a7` exposes only validated saved input/visual/mappings with revision and pending state; Q10 promotion decisions remain open.
-- [ ] **P5-06 — Missing:** serialize newly approved controls with explicit units/ranges and no silent Run defaults.
-- [ ] **P5-07 — Partial:** `ccc53a7` adds a live saved-configuration/revision, invalidation subscription and atomic restore to the conservative `8d3d256` envelope. Chrome boot round trips pass; owner delta and P4/P6/P7 consumers await integration. Normalized geometry stays explicitly legacy; accepted successor layout/export consistency remains open.
-- [ ] **P5-08 — Pending integration/qualification:** real headless UI checks cover unique controls, reflow, confirmation and invalid-field disclosure/focus after consolidation; physical input and installed accessibility qualification remain separate.
+- [ ] **P5-05 — Owner implementation ready:** complete active-control inventory and explicit units/authority are in `docs/planner-p5-feedback-v2.md`. Q10 now promotes the current renderer, response grid/timing/hold, halo, palette placement and applied labels. Test position, captures, un-applied dialogs and inspection framing remain transient.
+- [ ] **P5-06 — Owner implementation ready:** `95b2e9`/`781886c` add complete strict V2 JS/Rust readers, shared fixtures, explicit authoring initialization and exact V1 compatibility. Controller wiring captures every active field, with unavailable legacy scalar/geometry/visibility controls clearly disabled in V2; no silent legacy export. Combined P7 master verification remains pending.
+- [ ] **P5-07 — Owner implementation ready:** full saved V2 renderer/halo bounds and live revisions, atomic restore and transient reset at `5c9d3df`; 13 shared JS/Rust bound cases cover all three renderers, gradient/response modes and hidden output. P4/P6 consume the dispatch helper; combined accepted master round-trip remains the integration gate.
+- [ ] **P5-08 — Verification in progress:** 656 Node checks and both frontend closures pass on `5c9d3df`. Actual complete V2 restore/control/render checks are allocated to the Preview owner; old helper drag expectation is being corrected for explicitly locked V2 inspection. Physical input and installed accessibility/Runner correspondence are deferred, not Planner completion gates.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
@@ -372,7 +374,8 @@ distinct from the acquisition sample rate in recording policy.
 
 **Candidate receipt:** [2026-09-11 P5 consolidation and control inventory](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
 Unchecked items remain unchecked until integration and the applicable gates;
-the candidate does not implement Q10 saved additions or P4/P6 geometry policy.
+the successor implements the newly allocated Q10 saved additions and preserves
+P4/P6 geometry ownership. See the [complete P5 contract](../docs/planner-p5-feedback-v2.md).
 
 ## P6 — Optional XR Spatial Layout
 
@@ -496,7 +499,7 @@ An open decision blocks only its dependent capability.
 | Q07 | Owner answered; details deferred / R1 | Runner owns recording; implementation is outside current Planner scope. Format, receiver/start gate, failure handling and visible-onset evidence remain open. | Planner specifies required event fields/semantics now; no recording implementation. |
 | Q08 | Percentage basis answered; details open / P4 | Use one fixed reference area across all videos. Exact reference extent/selection, physical calibration, axes and stable Flubber centre remain open. | Centre-to-centre anchoring and fixed-reference percentages are accepted; fixed design centre remains recommended. |
 | Q09 | Open / P2 | Required questionnaire placements, computed scoring and missing-answer semantics beyond option codes? | Preserve explicit existing definitions/placements until answered. |
-| Q10 | Open / P5 | Which simulator/draft controls must become saved experiment controls, including hold, halo, tiles and alternate renderer choices? | Enumerate saved controls/units; do not assume every draft is approved. |
+| Q10 | Answered for current Planner controls / P5 | The 2026-09-12 complete-Planner goal requires all current experiment-defining Flubber/live settings. Coordinator explicitly includes Flubber, Grid and the existing project-authored procedural Face, response grid/timing/hold, halo, Axes/Corners and applied labels. | Versioned complete contribution; no historical Face/Photoatlas restoration. Transient x/y, input capture, unapplied dialogs and inspection framing remain omitted. Runner correspondence/execution is deferred. |
 | Q11 | Answered / P6 | Direct S6 answer on 2026-09-11: “Yes, use these alignment rules.” Head-forward with no eye tracking, world anchor throughout each attempt, stop on tracking loss, recenter only before the next attempt. | Profile encodes requirements; physical enforcement is later Runner work. |
 | Q12 | Open / P1/P7 | Accept proposed homes/exposure for study identity, any retained participant-count metadata, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values; participant allocation is Runner-owned under updated Q06. |
 | Q13 | Open / P7 | Does final JSON restore only accepted runnable design or also drafts/provenance; how are edits to used recipes versioned? | Separate editable drafts from immutable run evidence. |

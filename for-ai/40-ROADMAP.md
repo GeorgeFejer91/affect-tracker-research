@@ -1,5 +1,51 @@
 # Research v1 roadmap
 
+## P5 complete Planner feedback settings — 2026-09-12
+
+New Planner completion allocation, P5-05 through P5-08. Pure contract `95b2e9`,
+editor/native wiring `781886c`, and ready Preview dependency `d996ddd` composed
+through `fa1f5d5`; current clean application checkpoint `5c9d3df` on isolated
+`codex/segment-p5-master-settings`. The sole integration owner collects source.
+
+`affect-research-feedback` version 2 preserves all active configured input,
+Flubber/Grid/procedural-Face selection, appearance/mappings, Axes/Corners/applied
+labels, halo width/gradient/steepness and response grid/timing/hold values. The
+coordinator explicitly resolved current procedural Face under the new all-settings
+goal; no excluded historical Face/Photoatlas capability is restored. Complete
+field, unit, precedence, interface and conversion rules are in
+[`docs/planner-p5-feedback-v2.md`](../docs/planner-p5-feedback-v2.md).
+
+The exact old three-key P5 reader remains. Legacy restore stays V1 with explicit
+conversion offered; V2 restore defaults nothing. All fields are written before
+notification; invalid/stale/disposed restores cannot replace current settings.
+Preview's helper clears transient test/capture/dialog state without changing
+saved colors. Native and JS validators preserve the complete canonical fixture.
+The full envelope dispatch includes the finite halo filter region and all three
+selected renderers; no caller-supplied or current-phase footprint is trusted.
+
+Current source-bound evidence:
+
+- **656/656 Node checks** at clean application `5c9d3df`, including strict nested
+  field rejection, revisions/pending, every input preset, independent-process
+  reproduction and full bounds. Log: sibling feedback-checks `master-final-node.log`.
+- **3/3 native P5 tests**, with 199 unrelated tests filtered: canonical full
+  configuration, missing/unknown/range rejection and thirteen complete JS/Rust
+  envelope/key comparisons. `master-rust.log` records the own crate invocation.
+- Desktop **11-file** and Pages **216-file** closures at `5c9d3df`; existing
+  non-failing bundle-size warning remains. `master-desktop.log`, `master-pages.log`.
+- Actual V2 restored-configuration checks are allocated to Preview against the
+  real new controller. Its preceding helper-only fixture assumed an unlocked
+  renderer drag, which correctly no longer applies to locked V2 inspection;
+  that failed obsolete assertion is not a completed V2 receipt.
+
+Evidence root:
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/`.
+P7 owns complete master assembly/save/reopen; P4/P6 own placement and consume
+the new P5 dispatch. No Runner adapter/execution/correspondence, physical input,
+installed platform, Edge, research release or publication is claimed. Runner
+correspondence is explicitly the last later development stage, not a prerequisite
+for this Planner authoring/schema completion pass.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated
