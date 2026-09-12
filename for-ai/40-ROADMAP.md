@@ -1,5 +1,37 @@
 # Research v1 roadmap
 
+## P4 CLI authoring and UI mapping — 2026-09-12
+
+Owner-ready **CLI-P4** Backend Verification and owned **E2E-UI** mapping are at
+`2a99ce8221b339e49b70b5c7d3b231ac62cf3256` on
+`codex/segment-p4-authoring-cli`, based on the completed Planner `460f516` and
+Main's frozen shared command foundation `2310efc` plus `0138516` afterCommit hook.
+Main owns registration with `createPlannerAuthoringP4({editor: screenLayoutEditor})`.
+
+The existing P4 editor/state owns all 15 writable settings and both ordered
+operations, unit conversion and calibration clearing. Five geometry/source/
+convention projections remain read-only. Staging uses detached candidates and
+pure revision/dependency guards; the shared session preflights every candidate,
+installs all owner states, then safely publishes notifications and UI updates.
+No batch manufactures preparation/acceptance. The complete
+[CLI → UI → JSON mapping and integration contract](../docs/planner-authoring-p4.md)
+preserves existing schema, fixed reference geometry and P1/P5 authority.
+
+Final checks pass **795/795 Node tests**, including **13 P4 CLI** cases and
+**13 shared session** cases, plus desktop **11-file** and Pages **239-file**
+boundary checks. Every writable setting has paired actual UI event-handler and
+CLI readback/accepted-profile evidence, including complete authoring from a
+fresh editor, both methods and units, ordered operations, atomic staging,
+stale/cancelled rejection and truthful observer failure after publication.
+Logs/source/hash receipt:
+`D:/GitHub/.affect-preview-checks/p4-cli-20260912/2a99ce8/receipt.json`.
+
+These are component/controller checks using minimal DOM doubles, not rendered
+UI, production hidden native CLI, real-media import or Runner execution evidence.
+Main/root own the combined transport/full-recipe proof; the Runner owner retains
+the active E2E correspondence allocation. Existing Vite chunk-size advisory
+remains; this slice changes no Rust and makes no new native qualification claim.
+
 ## P3 native catalogue download command — 2026-09-12
 
 Explicitly delegated P3-08 shared seam on isolated `codex/segment-p3-native-export`
