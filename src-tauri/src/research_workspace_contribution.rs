@@ -343,6 +343,41 @@ fn validate_entry(value: &VideoCatalogueEntry, version: u32) -> ResearchResult<(
 pub fn validate_video_catalogue_contribution(
     value: &Value,
 ) -> ResearchResult<VideoCatalogueContribution> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| invalid("Video catalogue contribution shape is invalid."))?;
+    let version = object.get("version").and_then(Value::as_u64);
+    let expected_keys = match version {
+        Some(1) => [
+            "entries",
+            "integritySha256",
+            "revision",
+            "schema",
+            "version",
+        ]
+        .as_slice(),
+        Some(2) => [
+            "annotationPolicy",
+            "entries",
+            "integritySha256",
+            "revision",
+            "schema",
+            "version",
+        ]
+        .as_slice(),
+        _ => {
+            return Err(invalid(
+                "Video catalogue contribution version is unsupported.",
+            ))
+        }
+    };
+    if object.len() != expected_keys.len()
+        || !expected_keys.iter().all(|key| object.contains_key(*key))
+    {
+        return Err(invalid(
+            "Video catalogue contribution has unexpected or missing fields.",
+        ));
+    }
     let document: VideoCatalogueContribution = serde_json::from_value(value.clone())
         .map_err(|_| invalid("Video catalogue contribution shape is invalid."))?;
     if document.schema != VIDEO_CATALOGUE_SCHEMA
@@ -372,7 +407,8 @@ pub fn validate_video_catalogue_contribution(
     } else {
         ordered.sort_by(|left, right| {
             left.annotation_id
-                .cmp(&right.annotation_id)
+                .encode_utf16()
+                .cmp(right.annotation_id.encode_utf16())
                 .then_with(|| left.asset_id.cmp(&right.asset_id))
         });
     }
@@ -473,6 +509,9 @@ mod tests {
             "v2" => {
                 include_str!("../../test/fixtures/research-video-catalogue-contribution-v2.json")
             }
+            "utf16-v2" => {
+                include_str!("../../test/fixtures/research-video-catalogue-utf16-order-v2.json")
+            }
             _ => unreachable!(),
         };
         serde_json::from_str(source).unwrap()
@@ -496,6 +535,13 @@ mod tests {
         assert_eq!(v2.version, 2);
         assert_eq!(v2.entries[0].asset_id, v2.entries[1].asset_id);
         assert_ne!(v2.entries[0].annotation_id, v2.entries[1].annotation_id);
+        let utf16 = validate_video_catalogue_contribution(&fixture("utf16-v2")).unwrap();
+        assert_eq!(utf16.entries[0].annotation_id, "😀_clip.mp4");
+        assert_eq!(utf16.entries[1].annotation_id, "Ａ_clip.mp4");
+
+        let mut explicit_null_v1 = fixture("v1");
+        explicit_null_v1["annotationPolicy"] = Value::Null;
+        assert!(validate_video_catalogue_contribution(&explicit_null_v1).is_err());
     }
 
     #[test]
