@@ -57,7 +57,7 @@ export function validateFormDefinitionV1(value) {
   identifier(p.sourceId); text(p.sourceVersion, 120, "Source version");
   ordered(value.items, 1, 256, "itemId", validateFormItemV1);
   if (typeof value.definitionSha256 !== "string" || !HASH.test(value.definitionSha256)) throw new TypeError("Form requires a lowercase definition SHA-256.");
-  if (encoder.encode(canonicalJson(value)).length > 4 * 1024 * 1024) throw new TypeError("Form exceeds 4 MiB.");
+  if (encoder.encode(canonicalJson(value)).length > 16 * 1024 * 1024) throw new TypeError("Form exceeds 16 MiB.");
   return structuredClone(value);
 }
 export async function verifyFormDefinitionV1(value) {
