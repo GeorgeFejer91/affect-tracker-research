@@ -1,6 +1,6 @@
 use super::runtime::{
-    MasterAction, MasterActionV2, MasterRuntime, MasterStartRequest, MasterStartRequestV2,
-    MasterStatus,
+    MasterAction, MasterActionRequestV3, MasterActionV2, MasterRuntime, MasterStartRequest,
+    MasterStartRequestV2, MasterStartRequestV3, MasterStatus,
 };
 use super::{MasterPlan, MasterSelector, PreparedMaster};
 use crate::research_desktop::DesktopRole;
@@ -86,7 +86,7 @@ pub async fn research_runner_master_preflight(
     let media = Arc::clone(&media);
     tauri::async_runtime::spawn_blocking(move || runtime.while_idle(|| {
         let prepared = PreparedMaster::read(&request.source_text, &request.participant_id, request.selector)?;
-        let bindings = workspace.validate_runner_video_catalogue(&request.workspace_id, &prepared.loaded.recipe.segment("P1")?["videoCatalogue"])?;
+        let bindings = super::bindings::bind_master_media(&workspace, &request.workspace_id, &prepared)?;
         let viewport = &prepared.layout.viewport;
         let viewport_matches = f64::from(physical.width) / scale == viewport.width_css_px && f64::from(physical.height) / scale == viewport.height_css_px;
         let capability = media.capability();
@@ -142,6 +142,25 @@ pub async fn research_runner_master_start_v2(
     .map_err(|_| CommandError::forbidden("Master Start worker did not finish."))?
 }
 #[tauri::command]
+pub async fn research_runner_master_start_v3(
+    window: WebviewWindow,
+    runtime: State<'_, Arc<MasterRuntime>>,
+    request: MasterStartRequestV3,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if !window.is_fullscreen().map_err(CommandError::io)? {
+        return Err(CommandError::forbidden("Enter fullscreen before starting."));
+    }
+    let physical = window.inner_size().map_err(CommandError::io)?;
+    let scale = window.scale_factor().map_err(CommandError::io)?;
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.start_v3(request, (physical.width, physical.height, scale))
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("Master Start worker did not finish."))?
+}
+#[tauri::command]
 pub fn research_runner_master_status(
     window: WebviewWindow,
     runtime: State<'_, Arc<MasterRuntime>>,
@@ -184,6 +203,33 @@ pub async fn research_runner_master_action_v2(
 ) -> ResearchResult<MasterStatus> {
     authorize(&window)?;
     runtime.require_version(&run_id, 2)?;
+    if !matches!(action, MasterActionV2::Stop | MasterActionV2::Pause) {
+        let physical = window.inner_size().map_err(CommandError::io)?;
+        runtime.validate_window(
+            &run_id,
+            (
+                physical.width,
+                physical.height,
+                window.scale_factor().map_err(CommandError::io)?,
+            ),
+            window.is_fullscreen().map_err(CommandError::io)?,
+        )?;
+    }
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || runtime.action(&run_id, action.into()))
+        .await
+        .map_err(|_| CommandError::forbidden("Master action worker did not finish."))?
+}
+#[tauri::command]
+pub async fn research_runner_master_action_v3(
+    window: WebviewWindow,
+    runtime: State<'_, Arc<MasterRuntime>>,
+    request: MasterActionRequestV3,
+) -> ResearchResult<MasterStatus> {
+    authorize(&window)?;
+    request.validate()?;
+    let MasterActionRequestV3 { run_id, action, .. } = request;
+    runtime.require_version(&run_id, 3)?;
     if !matches!(action, MasterActionV2::Stop | MasterActionV2::Pause) {
         let physical = window.inner_size().map_err(CommandError::io)?;
         runtime.validate_window(

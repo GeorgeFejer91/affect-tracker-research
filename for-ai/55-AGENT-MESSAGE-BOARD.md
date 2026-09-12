@@ -5251,3 +5251,28 @@ Four representative headless cases pass 348 checks: neutral, strong, hidden ISI,
 next neutral. Visible outer/inner/SVG dimensions now agree at 87.46875 px.
 All four screenshots inspected. Synthetic native/frame-scheduler evidence only;
 Main retains full native mock and collection. See docs/runner-feedback-border.md.
+
+# Runner master3 intake allocation — 2026-09-12
+
+Root/Main allocate R1 RR-02/RR-03/RR-04/RR-07/RR-10 on isolated
+`codex/segment-runner-v3-intake`, base53d818a. Main owns master3 readers and
+lib registration; S1/native own controlled geometry9, metadata2 and live binding.
+Runner owns plan/session/runtime/protocol/presenter and exact startup3 dispatch.
+Root freezes explicit Start3 request3 and action3 request3, with strict old1/2
+entrypoints; plan/selection/preflight/attempt/status/startup3, typed responses/file2,
+other profile/sample/event/outcome/information1. No timing/reset fields.
+Collect owner dependencies separately from final Runner delta. Verify exact
+native/JS plans, typed mandatory forms, startup/response version hostility and
+per-source history; fresh native attest2 plus exact proof correspondence remain
+required before Start. Synthetic component evidence is not actual execution.
+
+
+Runner master3 component complete: explicit Start3/action3, exact version matrix,
+full owner native proof binding, mandatory typed2 answers for plan2/3 and separate
+source history. 22 Node,350 synthetic actual-app checks,26 native master,
+6 session,37 workspace/contribution checks and six exact native/JS plans pass.
+Runner build/boundary passes. No actual video/XDF/timing qualification claimed.
+Dependencies separately staged through e6f9aa2. Main owns lib registrations and
+integration. Root rejects opaque-ID duplication: mixed native proof routing is
+blocked pending S1 native map; wholly controlled3 uses explicit attest2. See
+[handoff](../docs/runner-master-v3-intake.md). No Cargo target currently held.

@@ -49,6 +49,32 @@ pub struct MasterStartRequestV2 {
     pub input_test_receipt_id: String,
 }
 
+/// Separate wire entrypoint; the typed participant/answer meaning remains v2.
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+pub struct MasterStartRequestV3(pub MasterStartRequestV2);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterActionRequestV3 {
+    pub version: u32,
+    pub run_id: String,
+    pub action: MasterActionV2,
+}
+impl MasterActionRequestV3 {
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
+        require_wire_version(self.version, 3)
+    }
+}
+fn require_wire_version(actual: u32, expected: u32) -> ResearchResult<()> {
+    if actual != expected {
+        return Err(CommandError::invalid_contract(
+            "Master command wire version does not match its entrypoint.",
+        ));
+    }
+    Ok(())
+}
+
 struct StartInput {
     version: u32,
     workspace_id: String,
@@ -242,15 +268,26 @@ impl MasterRuntime {
         request: MasterStartRequestV2,
         window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
-        if request.version != 2 {
-            return Err(CommandError::invalid_contract(
-                "Master v2 Start requires version 2.",
-            ));
-        }
+        require_wire_version(request.version, 2)?;
+        self.start_typed(request, window)
+    }
+    pub fn start_v3(
+        &self,
+        request: MasterStartRequestV3,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.0.version, 3)?;
+        self.start_typed(request.0, window)
+    }
+    fn start_typed(
+        &self,
+        request: MasterStartRequestV2,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
         super::validate_master_participant(&request.participant_id)?;
         self.start_input(
             StartInput {
-                version: 2,
+                version: request.version,
                 workspace_id: request.workspace_id,
                 source_text: request.source_text,
                 participant_id: request.participant_id,
@@ -292,9 +329,10 @@ impl MasterRuntime {
                 ));
             }
             let viewport = native_viewport(&prepared, window)?;
-            let bindings = self.workspace.validate_runner_video_catalogue(
+            let bindings = super::bindings::bind_master_media(
+                &self.workspace,
                 &request.workspace_id,
-                &prepared.loaded.recipe.segment("P1")?["videoCatalogue"],
+                &prepared,
             )?;
             let recording = self.recorder.status();
             if recording.active
@@ -506,5 +544,36 @@ mod versioned_ingress_tests {
             wrong["answers"][0]["value"] = value;
             assert!(serde_json::from_value::<MasterActionV2>(wrong).is_err());
         }
+    }
+}
+
+#[cfg(test)]
+mod v3_ingress_tests {
+    use super::*;
+    #[test]
+    fn v3_wire_versions_are_not_v2_aliases() {
+        for expected in [2, 3] {
+            for actual in [0, 1, 2, 3, 4] {
+                assert_eq!(
+                    require_wire_version(actual, expected).is_ok(),
+                    actual == expected
+                );
+            }
+        }
+        let value = json!({"version":3,"runId":"run-test","action":{"type":"submit","position":1,"answers":[{"itemId":"name","value":{"kind":"text","text":"Fictitious"}}]}});
+        let request: MasterActionRequestV3 = serde_json::from_value(value.clone()).unwrap();
+        request.validate().unwrap();
+        assert!(serde_json::from_value::<MasterActionV2>(value.clone()).is_err());
+        for key in ["unexpected", "participant"] {
+            let mut wrong = value.clone();
+            wrong[key] = json!({});
+            assert!(serde_json::from_value::<MasterActionRequestV3>(wrong).is_err());
+        }
+        let mut wrong = value;
+        wrong["version"] = json!(2);
+        assert!(serde_json::from_value::<MasterActionRequestV3>(wrong)
+            .unwrap()
+            .validate()
+            .is_err());
     }
 }

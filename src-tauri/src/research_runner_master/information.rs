@@ -249,7 +249,64 @@ pub(crate) fn startup_bundle(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{json, Value};
+    #[test]
+    fn startup3_embeds_exact_controlled_recipe_and_keeps_information1() {
+        let source = include_str!("../../../test/fixtures/runner-master-v3-owner.canonical.json");
+        let prepared = crate::research_runner_master::PreparedMaster::read(
+            source,
+            "P001",
+            crate::research_runner_master::MasterSelector {
+                variant_id: "variant-1".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let markers = crate::research_runner_master::markers::MasterMarkers::new(
+            &prepared.plan,
+            "run-test",
+            "attempt-test",
+        )
+        .unwrap();
+        let startup = startup_bundle(
+            &prepared,
+            &markers,
+            &prepared.loaded.recipe.policy().lsl,
+            Value::Null,
+        );
+        assert_eq!(startup["version"], 3);
+        assert_eq!(startup["recipeSourceText"], source);
+        assert!(startup.get("legacyCodedParticipant").is_none());
+        assert_eq!(startup["markerProfile"]["version"], 1);
+        assert_eq!(prepared.plan.selected["version"], 3);
+        assert_eq!(
+            prepared.plan.selected["assets"][0]["geometry"]["nativeDisplayMetadata"]["version"],
+            2
+        );
+        let mut writer = InformationWriter::new(
+            "run-test",
+            "attempt-test",
+            &prepared.plan.recipe_source_byte_sha256,
+        )
+        .unwrap();
+        let mut frames = Vec::new();
+        writer
+            .send(
+                ContentKind::Startup,
+                PreparedTransfer::new(&startup).unwrap(),
+                |frame| {
+                    frames.push(frame.to_owned());
+                    Ok(frames.len() as f64)
+                },
+            )
+            .unwrap();
+        for frame in frames {
+            let value: Value = serde_json::from_str(&frame).unwrap();
+            assert_eq!(value["version"], 1);
+        }
+    }
     #[test]
     fn bounded_multi_chunk_transfer_is_exact_and_context_sequenced() {
         let value = json!({"text":"ü test ".repeat(20000)});

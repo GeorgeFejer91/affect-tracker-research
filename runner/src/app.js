@@ -3,6 +3,7 @@ import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTrave
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
 import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
 import { attestNativeGstCatalogue } from "../../site/src/research/native-media-catalogue.js";
+import { attestMasterMedia } from "./master-media.js";
 import { nativeInputRegionRequest } from "../../site/src/research/input-region.js";
 import { createResearchPreview } from "../../site/src/research/preview.js";
 import { deriveParticipantRecord } from "../../site/src/research/identity.js";
@@ -101,7 +102,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       current.answers = Object.fromEntries(result.answers.map(row => [row.itemId, row.value]));
       text("runner-questionnaire-progress", current.presenter.progress().text);
     } else {
-      const choices = current.version === 2 ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
+      const choices = [2, 3].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
         if (answer?.kind !== "singleChoice") throw new Error("This questionnaire requires a declared choice.");
         return [id, answer.optionId];
       })) : current.answers;
@@ -137,7 +138,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-stop").disabled = busy || !protocol.active;
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
-    query("runner-demographics").hidden = recipe?.recipe?.version === 2 || value("runner-attempt") !== "new-attempt";
+    query("runner-demographics").hidden = [2, 3].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
       const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
       questionnaire.presenter?.setDisabled(disabled);
@@ -169,7 +170,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     try {
       const timeline = await participantTimeline(recipe, participantId(), path, value("runner-variant"));
       if (destroyed || generation !== revision || !query("runner-sequence-dialog").open) return;
-      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${recipe.recipe?.version === 2 ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
+      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${[2, 3].includes(recipe.recipe?.version) ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
       for (const event of timeline.events) {
         const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
         row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition;
@@ -231,7 +232,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelector(".stimulus-stage").hidden=false;root.querySelector(".run-feedback-stage").hidden=false;
     query("runner-questionnaire-submit").disabled=false;
     text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
-    text("runner-preparation-title", master?.version === 2 ? "Experiment language" : "Participant details");
+    text("runner-preparation-title", [2, 3].includes(master?.version) ? "Experiment language" : "Participant details");
     query("runner-variant-field").hidden = !master;
     query("runner-variant").replaceChildren();
     const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = "Choose variant…"; query("runner-variant").append(prompt);
@@ -272,7 +273,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (destroyed || generation !== revision) return;
       if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Master media scan belongs to another workspace.");
       if (!mediaCapability?.playerActorReady) throw new Error("Master interpreted. Native video inspection is unavailable in this build.");
-      const attested = await attestNativeGstCatalogue({ controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
+      const attested = await attestMasterMedia({ recipe: currentRecipe.recipe, controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
         viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
       if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
       const checked = await invoke("research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText,
@@ -415,7 +416,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   listen(query("runner-prepare"), "click", () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
-    if (recipe.recipe?.version !== 2 && value("runner-attempt") === "new-attempt") participantRecord();
+    if (![2, 3].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
   }));
@@ -458,12 +459,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
-    const participant = recipe.recipe?.version !== 2 && disposition === "new-attempt" ? participantRecord() : null;
+    const participant = ![2, 3].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
       const request = {workspaceId:workspace.workspaceId,sourceText:recipe.canonicalSourceText,selector:selection.selector,
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
-      if (selection.version === 2) Object.assign(request, {version:2,participantId:participantId()});
+      if ([2, 3].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
       else request.participant = {participantId:participantId(),...participant};
       await masterProtocol.start(selection, request);
       inputReceipt=null; renderControls(); return;
@@ -478,7 +479,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-questionnaire-form"), "change", (event) => {
     const current = questionnaire;
     if (!current || busy || (!event.target.dataset.answerItem && !event.target.dataset.formItem)) return;
-    if (!current.presenter) current.answers[event.target.dataset.answerItem] = current.version === 2
+    if (!current.presenter) current.answers[event.target.dataset.answerItem] = [2, 3].includes(current.version)
       ? {kind:"singleChoice",optionId:event.target.value} : event.target.value;
     action(async () => {
       if (questionnaire !== current) return;
