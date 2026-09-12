@@ -84,12 +84,12 @@ import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity
 import {
   browserDisplayGeometry,
   createVideoCatalogueProducerV1,
-  projectVideoDisplayGeometryV1,
   validateVideoCatalogueContributionV1,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
 import {
   createWorkspaceContributionProducerV1,
+  projectWorkspaceVideoDisplayGeometryV1,
   prepareWorkspaceContentRestoreV1,
   validateWorkspaceContributionV1,
   verifyWorkspaceRestoredVideoEntriesV1,
@@ -5353,9 +5353,9 @@ function bindResearchInteractions(root, { surface }) {
     initializeXrLayoutAuthoring() {
       if (xrLayoutAuthoring || !xrLayoutEditor) return;
       xrLayoutAuthoring = createXrLayoutAuthoring({ editor: xrLayoutEditor,
-        getDependencies: () => ({ P1: videoCatalogueProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
-        subscribe: [videoCatalogueProducer.subscribe, feedbackContribution.subscribe],
-        projectCatalogue: projectVideoDisplayGeometryV1,
+        getDependencies: () => ({ P1: workspaceContributionProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
+        subscribe: [workspaceContributionProducer.subscribe, feedbackContribution.subscribe],
+        projectCatalogue: projectWorkspaceVideoDisplayGeometryV1,
       });
     },
     waitForXrLayoutDependencies() { return xrLayoutAuthoring.refresh(); },

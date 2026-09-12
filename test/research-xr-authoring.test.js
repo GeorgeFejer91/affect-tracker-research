@@ -9,7 +9,9 @@ import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
 import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
 import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
 import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createVideoCatalogueProducerV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createWorkspaceContributionProducerV1, projectWorkspaceVideoDisplayGeometryV1 } from "../site/src/research/workspace-contribution.js";
+import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url)));
@@ -21,7 +23,7 @@ const dependencies = () => ({
     { assetId: "portrait", displayWidth: 1080, displayHeight: 1920 }] }, 10),
   P5: snapshot({ input: DEFAULT_SETTINGS.input, ...fixture.cases[0].configuration }, 20),
 });
-const projector = async (value) => ({ catalogueRevision: value.revision, videos: value.videos });
+const projector = async (value) => ({ revision: value.revision, pending: false, videos: value.contribution.videos });
 const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; };
 
 function harness(project = projector) {
@@ -82,7 +84,7 @@ test("P6 refuses missing/pending inputs, incomplete media and absent or incompat
 
 test("live producer invalidation is immediate; an older async scan cannot restore its bounds", async () => {
   const old = deferred(); let delay = false;
-  const h = harness(async (value) => { if (delay && value.revision === 3) await old.promise; return projector(value); });
+  const h = harness(async (value) => { if (delay && value.contribution.revision === 3) await old.promise; return projector(value); });
   await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.accept();
   const before = h.state.getSnapshot();
   h.publish(structuredClone(h.get())); await h.authoring.refresh();
@@ -183,23 +185,36 @@ test("footer preparation validates a dirty draft without P7 acceptance and obeys
 
 test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {
   const catalogue = JSON.parse(await readFile(new URL("fixtures/research-video-catalogue-contribution-v1.json", import.meta.url)));
-  const p1 = createVideoCatalogueProducerV1();
+  const videos = createVideoCatalogueProducerV1();
+  let study = createStudyIdentityV1({ id: "xr-study", title: "XR study" });
+  const p1 = createWorkspaceContributionProducerV1({ getStudyIdentity: () => study, getVideoCatalogueSnapshot: videos.getSnapshot });
   let feedback = { input: DEFAULT_SETTINGS.input, ...fixture.cases[0].configuration };
   const p5 = createFeedbackContributionSource(() => feedback);
-  await p1.replaceEntries(catalogue.entries);
+  await videos.replaceEntries(catalogue.entries);
   const current = () => ({ P1: p1.getSnapshot(), P5: p5.getSnapshot() });
-  const resolved = await resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1);
+  const resolved = await resolveXrLayoutDependencies(current(), projectWorkspaceVideoDisplayGeometryV1);
   const ready = resolveXrLayoutContribution(profile, resolved, profile.target);
   assert.deepEqual(ready.videos.map(({ assetId }) => assetId), catalogue.entries.map(({ assetId }) => assetId));
   assert.deepEqual(ready.videos[0].geometry.videoCentre, ready.videos[1].geometry.videoCentre);
-  const tampered = structuredClone(current()); tampered.P1.contribution.entries[0].geometry.displayWidthPx += 1;
-  await assert.rejects(resolveXrLayoutDependencies(tampered, projectVideoDisplayGeometryV1));
+  const tampered = structuredClone(current()); tampered.P1.contribution.videoCatalogue.entries[0].geometry.displayWidthPx += 1;
+  await assert.rejects(resolveXrLayoutDependencies(tampered, projectWorkspaceVideoDisplayGeometryV1));
+  const h = harness(projectWorkspaceVideoDisplayGeometryV1); h.publish(current()); await h.authoring.refresh();
+  h.state.setEnabled(true); await h.authoring.prepare();
+  const unsubscribe = p1.subscribe(() => h.publish(current()));
+  const embeddedRevision = current().P1.contribution.videoCatalogue.revision;
+  study = createStudyIdentityV1({ id: "xr-study", title: "Updated XR study" }); p1.changed();
+  assert.equal(h.state.getSnapshot().pending, true, "study-only change withdraws P6 immediately");
+  await h.authoring.refresh(); await h.authoring.prepare();
+  assert.notEqual(h.state.getSnapshot().dependencyRevisions[0].revision, resolved.catalogueRevision);
+  assert.equal(current().P1.contribution.videoCatalogue.revision, embeddedRevision);
+  assert.equal(h.state.getSnapshot().dependencyRevisions[0].revision, current().P1.revision);
+  unsubscribe(); h.authoring.destroy();
   feedback = { ...feedback, visual: { ...feedback.visual, grid: { ...feedback.visual.grid, cursorSize: 99 } } };
-  const changed = await resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1);
+  const changed = await resolveXrLayoutDependencies(current(), projectWorkspaceVideoDisplayGeometryV1);
   assert.notEqual(changed.feedbackRevision, resolved.feedbackRevision);
   assert.notEqual(changed.feedbackEnvelope.configurationKey, resolved.feedbackEnvelope.configurationKey);
-  p1.withdraw();
-  await assert.rejects(resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1));
+  videos.withdraw();
+  await assert.rejects(resolveXrLayoutDependencies(current(), projectWorkspaceVideoDisplayGeometryV1));
   p5.destroy();
 });
 

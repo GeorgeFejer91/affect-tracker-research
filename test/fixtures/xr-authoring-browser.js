@@ -34,7 +34,7 @@ const rejected = async (action) => { try { await action(); return false; } catch
       } }, verified: true, displayGeometry: missingGeometry && index === 1 ? null : entry.geometry,
     })),
   } }));
-  const dependencies = () => ({ P1: ui.getVideoCatalogueContributionSnapshot(), P5: ui.getFeedbackContributionSnapshot() });
+  const dependencies = () => ({ P1: ui.getWorkspaceContributionSnapshot(), P5: ui.getFeedbackContributionSnapshot() });
   await ui.waitForXrLayoutDependencies();
   check("disabled XR survives unavailable catalogue", !ui.getXrLayoutContribution().enabled && ui.getXrLayoutDependencyStatus().pending);
   publish(); await waitFor(() => !ui.getVideoCatalogueContributionSnapshot().pending); await ui.waitForXrLayoutDependencies();
@@ -48,6 +48,14 @@ const rejected = async (action) => { try { await action(); return false; } catch
   await ui.acceptPlannerContribution("P1"); await ui.acceptPlannerContribution("P5");
   await ui.acceptPlannerContribution("P6", { selectedTarget: "webxr-immersive-vr" });
   check("P7 accepts validated live P6", ui.getPlannerAcceptanceReview({ required: ["P1", "P5", "P6"] }).entries.find((item) => item.segment === "P6").status === "accepted");
+  const catalogueRevision = dependencies().P1.contribution.videoCatalogue.revision;
+  change("#experiment-title", "XR geometry study");
+  check("study-only edit withdraws P6 and P7 acceptance", ui.getXrLayoutContribution().pending
+    && ui.getPlannerAcceptanceReview().entries.find((item) => item.segment === "P6").status !== "accepted");
+  await ui.waitForXrLayoutDependencies(); accepted = await ui.prepareXrLayoutContribution();
+  check("P6 binds registered workspace revision without revising nested catalogue", accepted.dependencyRevisions[0].revision === dependencies().P1.revision
+    && dependencies().P1.contribution.videoCatalogue.revision === catalogueRevision);
+  await ui.acceptPlannerContribution("P1"); await ui.acceptPlannerContribution("P6", { selectedTarget: "webxr-immersive-vr" });
   q("[data-xr-media]").value = catalogue.entries[1].assetId; q("[data-xr-media]").dispatchEvent(new Event("change", { bubbles: true }));
   check("portrait fit uses P1 geometry", q("[data-xr-readout]").textContent.includes("0.380"));
   q('[data-xr-view="side"]').click();

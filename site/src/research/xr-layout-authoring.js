@@ -30,8 +30,9 @@ export async function resolveXrLayoutDependencies(dependencies, projectCatalogue
   const p1 = readySnapshot(dependencies.P1, "P1"), p5 = readySnapshot(dependencies.P5, "P5");
   const feedback = validateFeedbackContributionV1(p5.contribution);
   const feedbackEnvelope = resolveFeedbackEnvelopeV1(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
-  const projection = await projectCatalogue(p1.contribution);
-  if (!projection || !Array.isArray(projection.videos) || projection.videos.length === 0) {
+  const projection = await projectCatalogue(p1);
+  if (!projection || projection.revision !== p1.revision || projection.pending !== false
+    || !Array.isArray(projection.videos) || projection.videos.length === 0) {
     throw new XrLayoutError("dependencies", "media-missing", "Add and verify at least one video before accepting the XR experiment layout.");
   }
   return { catalogueRevision: p1.revision, feedbackRevision: p5.revision,
