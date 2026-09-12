@@ -346,3 +346,31 @@ test("a newer content reopen supersedes an older preparation or save before it c
     assert.equal(writes, 0);
   }
 });
+
+test("a library download cannot start a stale export after replacement, reset or teardown", async () => {
+  for (const action of [ui => ui.editor.reset(), ui => ui.editor.destroy(),
+    ui => ui.editor.setCatalogueSource(unresolvedP1(42)),
+    ui => ui.editor.restoreContent(contentFixture.contribution, contentOptions())]) {
+    let writes = 0;
+    const ui = fixture(async () => { writes++; });
+    await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+    const downloading = ui.editor.download("csv");
+    await action(ui);
+    await downloading;
+    assert.equal(writes, 0, "a newer catalogue/editor lifetime fences the export before dispatch");
+  }
+});
+
+test("an in-flight library export cannot announce success over a newer reopened design", async () => {
+  let release, started;
+  const entered = new Promise(resolve => { started = resolve; });
+  const ui = fixture(async () => { started(); await new Promise(resolve => { release = resolve; }); });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  const downloading = ui.editor.download("xlsx");
+  await entered;
+  await ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+  const status = ui.status.textContent;
+  release(); await downloading;
+  assert.equal(ui.status.textContent, status);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+});

@@ -309,13 +309,16 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     get pending() { return snapshot().pending; },
     async download(format) {
       if (busy) return;
-      busy = true; render();
+      busy = true; const token = generation, restoreToken = restoreOperation; render();
+      const isCurrent = () => token === generation && restoreToken === restoreOperation;
       try {
         if (!library || !["csv", "xlsx"].includes(format)) throw new Error("Confirm the video library before downloading.");
         const verified = await validateVideoLibrary(library);
+        if (!isCurrent()) return;
         const bytes = format === "csv" ? new TextEncoder().encode(videoLibraryCsv(verified)) : videoLibraryWorkbook(verified);
-        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256 }); report(`Video library ${format.toUpperCase()} export ready.`);
-      } catch (error) { report(error.message, true); }
+        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256 });
+        if (isCurrent()) report(`Video library ${format.toUpperCase()} export ready.`);
+      } catch (error) { if (isCurrent()) report(error.message, true); }
       finally { busy = false; render(); notify(); }
     },
     destroy() { generation++; catalogueOperation++; host?.removeEventListener("input", onInput); host?.removeEventListener("change", onEdit); host?.removeEventListener("paste", onPaste); host?.removeEventListener("click", onClick); versions?.removeEventListener?.("click", onClick); },

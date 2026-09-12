@@ -337,6 +337,16 @@ file; follow the integration-owner collection procedure in the workflow.
   content restore, current-revision media rebind and zero sidecar writes.
   This is a reusable P3 component fixture, not yet a complete master receipt.
   No application/Rust wire or build input changes; no unchanged broad build run.
+- Follow-up found a demonstrated P3 download lifetime defect: delayed library
+  validation dispatched old CSV/XLSX after reset/replacement/teardown; an in-flight
+  export then overwrote the newer recipe's status. Two actual-editor regressions
+  failed first. Download now checks the existing edit/restore epochs before
+  dispatch and before reporting completion/failure. No shared app change.
+- Follow-up evidence: 56 focused P3 and 39 UI/modularity Node checks, syntax and
+  whitespace pass; desktop 9-file and Pages 212-file closure builds pass after
+  the repair. Existing desktop chunk-size warning remains. Rust/wire contracts
+  are unchanged; installed spreadsheet/picker and full-master evidence remain
+  separate. Integration was notified before the P3-only repair.
 
 ### 20260912-integration-contribution-cycle — combined candidate
 
