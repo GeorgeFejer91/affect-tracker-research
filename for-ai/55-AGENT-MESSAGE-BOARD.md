@@ -288,6 +288,25 @@
   No P5 production change in this follow-up; the 798-test receipt retains its
   earlier exact source binding. Native/real editor evidence remains Main's work.
 
+### 20260912-p3-cli-authoring
+
+- Owner S3, CLI-P3 Backend Verification, explicitly allocated by Chat Orchestrator
+  and main. Branch `codex/segment-p3-cli-authoring`, isolated C: P3 CLI worktree,
+  base `460f516`. Required baseline Planner work is already delivered.
+- Existing editor owns named ISIs, variant columns, occurrence IDs and exact raw
+  cells. Existing P3 compiler owns contribution/version hashes, timelines and
+  marker contracts; Runner owns allocation. No new saved schema or compiler.
+- Deliverable: new `planner-authoring-p3.js`, minimal editor capture/stage/publish
+  methods and focused tests. Stable ISI/variant/occurrence IDs address typed list
+  operations; raw draft read/restore retains padding and identity cursor.
+- Read frozen shared command API and root `80b5afa` CLI amendment/68. Baseline
+  46 focused editor/model/catalogue/location checks pass. Collect all writable
+  groups, ordered/invalid/stale staging, exact incomplete readback and unchanged
+  scientific reproduction. Shared contract/session dependency remains main-owned.
+- Main receives exact registration/publication hooks and owns app/native wiring,
+  combined atomicity and real hidden-native CLI evidence. No app.js, bridge,
+  shared gateway, native or Runner edits; no network, foreground or release claim.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this
