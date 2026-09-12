@@ -6,7 +6,13 @@ import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS,
 /** Session receipt -> detached authored payloads. Domain validation still occurs
  * in the compiler. Session revisions and explicit acceptance never become file
  * permissions or persisted readiness. P5 must be accepted by final capture. */
-export function capturePlannerRecipeInputV1(registry, { recipeId, presentationTarget, policy, isCurrent }) {
+export function capturePlannerRecipeInputV1(registry, options) {
+  return capturePlannerRecipeInputVersion(registry, { ...options, version: PLANNER_RECIPE_VERSION });
+}
+
+/** Explicit version from the accepted owner's contract, never ambient state. */
+export function capturePlannerRecipeInputVersion(registry, { version, recipeId, presentationTarget, policy, isCurrent }) {
+  if (![1, 2].includes(version)) throw new TypeError("Capture requires an explicit supported Planner recipe version.");
   if (typeof isCurrent !== "function" || typeof registry.getAcceptanceGeneration !== "function") {
     throw new TypeError("Recipe capture requires a caller edit/operation/disposal guard and an acceptance generation.");
   }
@@ -27,7 +33,8 @@ export function capturePlannerRecipeInputV1(registry, { recipeId, presentationTa
     segments[segment] = segment === "P6" ? { status: "included", profile: structuredClone(snapshot.contribution) }
       : structuredClone(snapshot.contribution);
   }
-  const core = validatePlannerRecipeStructureV1({ schema: PLANNER_RECIPE_SCHEMA, version: PLANNER_RECIPE_VERSION,
+  const validate = version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
+  const core = validate({ schema: PLANNER_RECIPE_SCHEMA, version,
     recipeId, presentationTarget, policy: structuredClone(policy), segments }, { integrity: false });
   // Canonical cloning rejects non-JSON values before a delayed compiler can see
   // caller mutation. The guard binds acceptance and the caller's edit lifetime.
