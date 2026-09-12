@@ -1,5 +1,30 @@
 # Agent message board
 
+### 20260912-local-preset-native-composition
+
+- Main, P2 named native/picker seams, Backend Verification. Collected the
+  isolated fixed-source store/helper as `79e073b`. Native Planner now owns one
+  optional real app-data preset store (including private CLI sessions), two
+  fixed-ID read/install commands, and the existing picker's local choices.
+  Source installation accepts bounded bytes, not renderer-selected paths.
+- Adding the local preset uses the existing pristine table loader and guarded
+  source-save flow. A work-folder receipt precedes accepted definition adoption;
+  missing workspace leaves an explicitly unsaved draft. No automatic Section 2
+  confirmation, public item text, scoring or redistribution claim is added.
+- The first full combined Node run passed 913/914: the prior CLI native adapter
+  was missing from the explicit native-adapter architecture allow-list. Added
+  that one named adapter, not a general invocation exception; the platform
+  bridge remains the owning mirror-map row. Failure log is retained in
+  `D:/GitHub/.affect-checks/local-preset-main-20260912/node-regression.log`.
+- Native command checks, corrected full regression and actual preset picker /
+  workspace-save evidence remain in progress. S2 owns the explicitly authorized
+  one-root private installation receipt; Main owns native IPC verification.
+- Composition validation now passes 914/914 Node tests and 7 focused native
+  tests (one explicitly external-source test ignored). C: was full: preserve
+  the ENOSPC/linker failures, use only process-scoped D: scratch, and retain the
+  real user app-data root for the preset. Exact receipt paths and limitations
+  are recorded in `docs/questionnaire-local-presets.md`.
+
 ### 20260912-cli-integrated-owner-registration
 
 - Main, CLI-SHARED named composition seam, Backend Verification. All seven

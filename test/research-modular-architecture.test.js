@@ -80,6 +80,7 @@ test("raw Tauri invocation remains confined to explicit native adapter modules",
     "site/src/research/native-bridge.js",
     "site/src/research/native-media-controller.js",
     "site/src/research/native-package-protocol.js",
+    "site/src/research/planner-authoring-native.js",
   ]);
   const offenders = [];
   for (const relativePath of await javascriptFiles("site/src/research/")) {

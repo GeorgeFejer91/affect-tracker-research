@@ -339,6 +339,11 @@ function questionnairesSection() {
       <div class="dialog-heading"><h2 id="questionnaire-prebuilt-title">Prebuilt questionnaire assets</h2><button id="questionnaire-prebuilt-close" type="button">Back to questionnaires</button></div>
       <p>Choose each language version separately. Ready-to-use assets fill the item, answer-label and coding cells. Other selected study languages still need their matching version.</p>
       <div id="questionnaire-prebuilt-list"></div>
+      <div data-local-questionnaire-install hidden>
+        <button id="questionnaire-local-preset-install" type="button">Install authorized German TAS source…</button>
+        <p class="field-help">Saved on this computer only; not included in public downloads. Each experiment receives its own source copy.</p>
+        <input id="questionnaire-local-preset-file" type="file" accept=".csv" hidden>
+      </div>
       <p id="questionnaire-prebuilt-status" role="status" aria-live="polite"></p>
     </dialog>
     <dialog id="questionnaire-sheet-copy" class="research-dialog questionnaire-sheet-copy" aria-labelledby="questionnaire-sheet-copy-title">

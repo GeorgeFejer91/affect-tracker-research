@@ -1212,6 +1212,10 @@ export class NativeResearchRuntimeBridge {
       manifestReason: "Participant execution and recording belong to Experiment Runner.",
     });
     this.#startInputPolling();
+    await this.root.researchUi?.connectResearcherLocalPresets?.({
+      readSource: request => this.invoke("research_read_local_questionnaire_preset", { request }),
+      installSource: request => this.invoke("research_install_local_questionnaire_preset", { request }),
+    });
     if (workspace?.selected) await this.#adoptWorkspace(workspace, { rescan: true });
     return this;
   }

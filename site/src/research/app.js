@@ -63,6 +63,8 @@ import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } f
 import { QUESTIONNAIRE_RECIPE_SCHEMA, validateQuestionnaireRecipeContributionV1,
   validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
+import { createResearcherLocalQuestionnairePresets, RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS,
+  mergeQuestionnairePresetChoices, researcherLocalQuestionnaireAvailability } from "./questionnaire-local-presets.js";
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
 import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
@@ -260,6 +262,12 @@ function bindResearchInteractions(root, { surface }) {
   const reviewedSetupSections = new Set();
   let plannerAuthoringSession = null;
   let questionnaireRoutingEditor = null;
+  let researcherLocalPresets = null;
+  let installLocalPresetSource = null;
+  let localPresetChoices = [];
+  let localPresetInspection = 0;
+  let localPresetLoad = 0;
+  const localPresetLifetime = new AbortController();
   let mode = "setup";
   let selectedParticipant = "P001";
   let inputPoint = { x: 0, y: 0 };
@@ -2557,11 +2565,12 @@ function bindResearchInteractions(root, { surface }) {
   function renderPrebuiltQuestionnaires() {
     const list = query("#questionnaire-prebuilt-list");
     if (!list) return;
-    list.replaceChildren(...PREBUILT_QUESTIONNAIRE_ASSETS.map((asset) => {
+    list.replaceChildren(...mergeQuestionnairePresetChoices(PREBUILT_QUESTIONNAIRE_ASSETS, localPresetChoices).map((asset) => {
       const row = document.createElement("section"); row.className = "questionnaire-prebuilt-row";
       const heading = document.createElement("h3"); heading.textContent = `${asset.title} · ${asset.languageLabel}`;
       const description = document.createElement("p"); description.textContent = asset.description;
-      const state = prebuiltQuestionnaireAvailability(asset, {
+      const availability = asset.usageScope === "researcherLocal" ? researcherLocalQuestionnaireAvailability : prebuiltQuestionnaireAvailability;
+      const state = availability(asset, {
         languages: studyLanguages.map((l) => l.languageTag), locked: languageEditorLocked,
         occupied: familyIsIncluded(asset.familyId) && !questionnaireEditor.canLoadPreset(asset.familyId, asset.language),
       });
@@ -2572,6 +2581,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function addPrebuiltQuestionnaire(assetId) {
+    if (localPresetChoices.some(asset => asset.id === assetId)) return addLocalQuestionnairePreset(assetId);
     const asset = PREBUILT_QUESTIONNAIRE_ASSETS.find((a) => a.id === assetId);
     if (!asset || !asset.ready || languageEditorLocked || !studyLanguages.some((l) => l.languageTag === asset.language)) return;
     const status = query("#questionnaire-prebuilt-status");
@@ -2580,6 +2590,76 @@ function bindResearchInteractions(root, { surface }) {
     await prepareQuestionnairePreset(asset.familyId, asset.language);
     status.textContent = query("#questionnaire-import-status").textContent;
     renderPrebuiltQuestionnaires();
+  }
+
+  async function refreshLocalQuestionnairePresets() {
+    if (!researcherLocalPresets) return;
+    const generation = ++localPresetInspection;
+    const guard = { signal: localPresetLifetime.signal,
+      isCurrent: () => !researchUiDisposed && generation === localPresetInspection };
+    try {
+      const choices = await researcherLocalPresets.inspect(guard);
+      if (!guard.isCurrent()) return;
+      localPresetChoices = choices;
+      renderPrebuiltQuestionnaires();
+    } catch (error) {
+      if (guard.isCurrent()) query("#questionnaire-prebuilt-status").textContent = error.message;
+    }
+  }
+
+  async function addLocalQuestionnairePreset(presetId) {
+    const asset = localPresetChoices.find(choice => choice.id === presetId);
+    if (!researcherLocalPresets || !asset?.ready || languageEditorLocked || mode !== "setup"
+      || !studyLanguages.some(language => language.languageTag === asset.language)) return;
+    requestQuestionnaireFamily(asset.familyId);
+    renderQuestionnaires();
+    const generation = ++localPresetLoad, revision = plannerAuthoringSession.revision;
+    const workspaceKey = authoringWorkspaceKey;
+    const guard = { signal: localPresetLifetime.signal, isCurrent: () => !researchUiDisposed
+      && mode === "setup" && generation === localPresetLoad && plannerAuthoringSession.revision === revision
+      && authoringWorkspaceKey === workspaceKey };
+    const status = query("#questionnaire-prebuilt-status");
+    status.textContent = `Opening local ${asset.title} · ${asset.languageLabel}…`;
+    root.querySelectorAll("[data-questionnaire-prebuilt-asset]").forEach(button => { button.disabled = true; });
+    try {
+      const loaded = await researcherLocalPresets.loadIntoEditor(presetId, {
+        editor: questionnaireEditor,
+        readContext: () => ({ languages: studyLanguages.map(language => language.languageTag),
+          families: [...requestedQuestionnaireFamilies], locked: languageEditorLocked }),
+      }, guard);
+      if (capabilities.directoryPermission) {
+        const saved = await questionnaireEditor.saveAuthoringQuestionnaire(loaded.questionnaireId, guard);
+        if (!saved.sourceReceipt) throw new Error("The local questionnaire loaded, but its work-folder source copy was not acknowledged.");
+        status.textContent = `${asset.title} loaded and copied into this work folder. Review the table and confirm Section 2 when finished.`;
+      } else {
+        status.textContent = `${asset.title} loaded as a draft. Select a work directory, then save its table before confirming Section 2.`;
+      }
+      questionnaireImportStatus(status.textContent);
+    } catch (error) {
+      status.textContent = error.message;
+      questionnaireImportStatus(error.message, "error");
+    } finally { if (!researchUiDisposed) { renderPrebuiltQuestionnaires(); schedulePlanRefresh(); } }
+  }
+
+  async function installLocalQuestionnairePreset(file) {
+    if (!installLocalPresetSource || !file) return;
+    const asset = RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS[0];
+    const status = query("#questionnaire-prebuilt-status");
+    try {
+      if (file.size !== asset.byteLength) throw new Error("Choose the verified German TAS local CSV source; its file size must match exactly.");
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (researchUiDisposed) return;
+      status.textContent = "Installing the authorized source on this computer…";
+      // Native authority accepts only the fixed source hash; no path crosses IPC.
+      await installLocalPresetSource({ presetId: asset.id, bytes: [...bytes] });
+      if (researchUiDisposed) return;
+      await refreshLocalQuestionnairePresets();
+      const installed = localPresetChoices.find(choice => choice.id === asset.id && choice.ready);
+      if (!installed) throw new Error("The installation was not verified. Reopen the preset picker to check its current state.");
+      status.textContent = "German TAS is installed locally and reusable in new work folders. Add its German version above to include it in this experiment.";
+    } catch (error) {
+      if (!researchUiDisposed) status.textContent = `${error.message} No experiment table was replaced. Reopen this picker to check the local installation.`;
+    }
   }
 
   async function prepareQuestionnairePreset(familyId, selectedLanguage = null) {
@@ -5066,7 +5146,7 @@ function bindResearchInteractions(root, { surface }) {
   // later reverted. Disclosure, confirmation and preview inspection are not edits.
   for (const type of ["input", "change", "paste"]) root.addEventListener(type, event => {
     const target = event.target;
-    if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label")) return;
+    if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label, #questionnaire-local-preset-file")) return;
     markPlannerEdit();
   }, { capture: true, signal: authoringIntents.signal });
   root.addEventListener("click", event => {
@@ -5214,6 +5294,10 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
     if (target.id === "questionnaire-prebuilt-open") {
       renderPrebuiltQuestionnaires(); query("#questionnaire-prebuilt-dialog").showModal();
+      void refreshLocalQuestionnairePresets();
+    }
+    if (target.id === "questionnaire-local-preset-install") {
+      const file = query("#questionnaire-local-preset-file"); file.value = ""; file.click();
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
@@ -5867,6 +5951,17 @@ function bindResearchInteractions(root, { surface }) {
       languageSelection: loadedLanguageSelection, locked: languageEditorLocked,
     });
   }
+  function withLocalPresetReadback(owner) {
+    // Optional authoring-library metadata only; no source bytes or runtime input.
+    return Object.freeze({ ...owner,
+      settings: [...owner.settings, { id: "P2.localPresets", type: "json", classification: "derived", writable: false,
+        label: "Researcher-local questionnaire presets", uiControl: "#questionnaire-prebuilt-list", recipePath: null }],
+      read() {
+        const current = owner.read();
+        return { ...current, values: { ...current.values, "P2.localPresets": structuredClone(localPresetChoices) } };
+      },
+    });
+  }
   const feedbackAuthoringControls = createPlannerAuthoringP5Controls({
     root, isCurrent: () => !researchUiDisposed && mode === "setup",
     getModel: () => ({ feedbackSettingsVersion, inputBinding, feedbackPreviewMode, responsePreviewMode,
@@ -5908,7 +6003,7 @@ function bindResearchInteractions(root, { surface }) {
         getWorkspaceContributionSnapshot,
         performWorkspaceOperation: () => commandFailure("operation_unavailable", "Native workspace commands are not connected yet.", "P1"),
       }),
-      createPlannerAuthoringP2({ editor: questionnaireEditor, readContext: readQuestionnaireAuthoringContext,
+      withLocalPresetReadback(createPlannerAuthoringP2({ editor: questionnaireEditor, readContext: readQuestionnaireAuthoringContext,
         commitContext(context) {
           requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length, ...context.families.map(family => family.id));
           studyLanguages = context.languages;
@@ -5921,7 +6016,7 @@ function bindResearchInteractions(root, { surface }) {
           }
         },
         onCommit() { clearParticipantLanguageSelection(); renderQuestionnaires(); },
-      }),
+      })),
       createPlannerVariantCommandOwner({ editor: stimulusOrderEditor }),
       createPlannerAuthoringP4({ editor: layoutDraftEditor }),
       createPlannerAuthoringP5(feedbackAuthoringControls),
@@ -5944,9 +6039,22 @@ function bindResearchInteractions(root, { surface }) {
       action: { kind: "apply", edits },
     }, guard),
   });
+  query("#questionnaire-local-preset-file")?.addEventListener("change", event => {
+    void installLocalQuestionnairePreset(event.target.files?.[0]);
+  }, { signal: localPresetLifetime.signal });
 
   return Object.freeze({
     plannerAuthoringSession,
+    async connectResearcherLocalPresets({ readSource, installSource }) {
+      if (surface !== "tauri" || researcherLocalPresets || typeof installSource !== "function") {
+        throw new TypeError("Researcher-local presets require one native Planner connection.");
+      }
+      researcherLocalPresets = createResearcherLocalQuestionnairePresets({ surface, readSource });
+      installLocalPresetSource = installSource;
+      query("[data-local-questionnaire-install]").hidden = false;
+      await refreshLocalQuestionnairePresets();
+    },
+    getResearcherLocalPresetChoices: () => structuredClone(localPresetChoices),
     get mode() { return mode; },
     connectScreenLayoutProducers() { disconnectScreenLayout(); disconnectScreenLayout = connectScreenLayoutProducers(root.researchUi); },
     connectScreenLayoutDependencies(owners) { return layoutDraftEditor.connectDependencies(owners); },
@@ -6114,6 +6222,8 @@ function bindResearchInteractions(root, { surface }) {
     },
     destroy() {
       researchUiDisposed = true;
+      localPresetLifetime.abort();
+      researcherLocalPresets?.destroy();
       plannerAuthoringSession.destroy();
       questionnaireRoutingEditor?.destroy();
       packageLoadGeneration += 1;

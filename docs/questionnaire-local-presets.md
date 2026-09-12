@@ -124,3 +124,33 @@ commands, install the private source, integrate the picker, verify a new study's
 source copy/save, and collect native UI/CLI correspondence evidence before an
 installed-app or full Section 2 completion claim. No app reload was performed by
 this owner pass. Runner execution remains outside P2 scope.
+
+## Main composition checkpoint
+
+The shared integration now registers `LocalPresetService` for Planner only,
+using the actual `app.path().app_data_dir()` for GUI and hidden CLI. Optional
+store initialization failure is exposed as unavailable, not an app-start failure.
+`research_read_local_questionnaire_preset` accepts `{request:{presetId}}`;
+`research_install_local_questionnaire_preset` accepts
+`{request:{presetId,bytes}}`, with an exact bounded byte-array deserializer.
+Both enforce the native Planner role and `research` window. No path-valued
+argument, Runner binding, new dependency or unsafe boundary is added.
+
+The actual native bridge connects the helper to the existing prebuilt picker.
+Opening it freshly verifies the private source; adding it fills only a pristine
+selected-language table, then saves through the existing guarded work-folder
+source store if one is selected. Without a work folder it remains an unsaved
+draft. The UI offers a fixed-source local installation file input; source/hash
+errors do not replace a study table. Section confirmation remains explicit.
+`P2.localPresets` is a read-only metadata projection in the same CLI session,
+never source bytes or a scientific recipe contribution. Its ready state means
+the native source was freshly read and production-imported, not study acceptance.
+
+Main's focused native check passed **7 tests with 1 external-source test ignored**.
+The corrected full combined Node gate passed **914/914** with process-scoped D:
+temporary storage. A first run retained a missing explicit CLI native-adapter
+allow-list entry (913/914); a subsequent C:-full run failed eight filesystem
+tests with ENOSPC. The linker likewise failed in C: scratch before the unchanged
+native test passed with D: scratch. No acceptance/storage gate was relaxed.
+Exact actual installation, native IPC readback and rendered picker evidence
+remain distinct follow-up gates at this composition checkpoint.

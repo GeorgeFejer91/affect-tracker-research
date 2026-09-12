@@ -13,6 +13,8 @@ pub mod research_feedback;
 mod research_gamepad;
 mod research_input;
 mod research_lsl;
+mod research_local_questionnaire_presets;
+mod research_local_questionnaire_preset_commands;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
@@ -142,6 +144,11 @@ fn launch(
             app.manage(native_media);
             app.manage(input);
             if role == DesktopRole::Planner {
+                // Reusable local presets use the real app user-data namespace,
+                // even when the CLI's authoring/WebView profile is isolated.
+                app.manage(research_local_questionnaire_preset_commands::LocalPresetService::new(
+                    app.path().app_data_dir()?,
+                ));
                 app.manage(Arc::clone(&setup_authoring));
                 setup_authoring
                     .start(app.handle().clone())
@@ -196,6 +203,8 @@ fn launch(
         });
     let builder = match role {
         DesktopRole::Planner => builder.invoke_handler(tauri::generate_handler![
+            research_local_questionnaire_preset_commands::research_read_local_questionnaire_preset,
+            research_local_questionnaire_preset_commands::research_install_local_questionnaire_preset,
             research_planner_authoring::research_planner_authoring_status,
             research_planner_authoring::research_planner_authoring_ready,
             research_planner_authoring::research_planner_authoring_next,
