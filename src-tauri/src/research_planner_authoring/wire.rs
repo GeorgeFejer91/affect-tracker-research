@@ -1,4 +1,5 @@
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_planner_cli_io::CliIoSelection;
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
@@ -37,10 +38,162 @@ pub enum PlannerAction {
     Apply {
         edits: Vec<PlannerEdit>,
     },
+    Perform {
+        operation: String,
+        arguments: Value,
+    },
     Cancel {
         #[serde(rename = "requestId")]
         request_id: String,
     },
+}
+
+/// Native-only interpretation of the full external operation. Paths are held
+/// only long enough to issue the existing purpose-bound selection grant.
+#[derive(Clone, Deserialize)]
+#[serde(
+    tag = "operation",
+    content = "arguments",
+    rename_all = "camelCase",
+    deny_unknown_fields
+)]
+pub(super) enum Consequence {
+    SelectWorkspace {
+        directory: String,
+    },
+    ImportVideos {
+        paths: Vec<String>,
+    },
+    ImportVideoFolder {
+        directory: String,
+    },
+    RescanVideoLibrary {},
+    ImportQuestionnaire {
+        path: String,
+        #[serde(rename = "familyId")]
+        family_id: String,
+        language: String,
+    },
+    SaveQuestionnaire {
+        #[serde(rename = "questionnaireId")]
+        questionnaire_id: String,
+    },
+    ConfirmSegment {
+        segment: String,
+    },
+    SaveRecipe {
+        directory: String,
+    },
+    OpenRecipe {
+        path: String,
+    },
+}
+
+impl Consequence {
+    pub(super) fn parse(operation: &str, arguments: &Value) -> ResearchResult<Self> {
+        let value: Self = serde_json::from_value(
+            serde_json::json!({"operation":operation,"arguments":arguments}),
+        )
+        .map_err(|_| {
+            CommandError::new(
+                "malformed_command",
+                "Unknown consequential operation or invalid argument fields.",
+            )
+        })?;
+        let text = |value: &str, maximum: usize| {
+            !value.is_empty() && value.len() <= maximum && !value.chars().any(char::is_control)
+        };
+        let valid = match &value {
+            Self::SelectWorkspace { directory }
+            | Self::ImportVideoFolder { directory }
+            | Self::SaveRecipe { directory } => text(directory, 4096),
+            Self::ImportVideos { paths } => {
+                !paths.is_empty() && paths.len() <= 256 && paths.iter().all(|p| text(p, 4096))
+            }
+            Self::ImportQuestionnaire {
+                path,
+                family_id,
+                language,
+            } => text(path, 4096) && text(family_id, 128) && text(language, 80),
+            Self::SaveQuestionnaire { questionnaire_id } => text(questionnaire_id, 128),
+            Self::OpenRecipe { path } => text(path, 4096),
+            Self::ConfirmSegment { segment } => {
+                matches!(segment.as_str(), "P1" | "P2" | "P3" | "P4" | "P5" | "P6")
+            }
+            Self::RescanVideoLibrary {} => true,
+        };
+        if !valid {
+            return Err(CommandError::new(
+                "malformed_command",
+                "Consequential arguments exceed their declared bounds.",
+            ));
+        }
+        Ok(value)
+    }
+    pub(super) fn name(&self) -> &'static str {
+        match self {
+            Self::SelectWorkspace { .. } => "selectWorkspace",
+            Self::ImportVideos { .. } => "importVideos",
+            Self::ImportVideoFolder { .. } => "importVideoFolder",
+            Self::RescanVideoLibrary {} => "rescanVideoLibrary",
+            Self::ImportQuestionnaire { .. } => "importQuestionnaire",
+            Self::SaveQuestionnaire { .. } => "saveQuestionnaire",
+            Self::ConfirmSegment { .. } => "confirmSegment",
+            Self::SaveRecipe { .. } => "saveRecipe",
+            Self::OpenRecipe { .. } => "openRecipe",
+        }
+    }
+    pub(super) fn selection(&self) -> Option<CliIoSelection> {
+        Some(match self {
+            Self::SelectWorkspace { directory } => CliIoSelection::SelectWorkspace {
+                directory: directory.clone(),
+            },
+            Self::ImportVideos { paths } => CliIoSelection::ImportVideos {
+                paths: paths.clone(),
+            },
+            Self::ImportVideoFolder { directory } => CliIoSelection::ImportVideoFolder {
+                directory: directory.clone(),
+            },
+            Self::ImportQuestionnaire { path, .. } => {
+                CliIoSelection::ImportQuestionnaire { path: path.clone() }
+            }
+            Self::SaveRecipe { directory } => CliIoSelection::SaveRecipe {
+                directory: directory.clone(),
+            },
+            Self::OpenRecipe { path } => CliIoSelection::OpenRecipe { path: path.clone() },
+            Self::RescanVideoLibrary {}
+            | Self::SaveQuestionnaire { .. }
+            | Self::ConfirmSegment { .. } => return None,
+        })
+    }
+    pub(super) fn forward(
+        &self,
+        request: &PlannerCommand,
+        grant: Option<Uuid>,
+    ) -> ResearchResult<PlannerCommand> {
+        if self.selection().is_some() != grant.is_some() {
+            return Err(CommandError::new(
+                "missing_grant",
+                "A path-bearing command requires its native selection grant.",
+            ));
+        }
+        let mut forwarded = request.clone();
+        if let PlannerAction::Perform { arguments, .. } = &mut forwarded.action {
+            if let Some(grant) = grant {
+                match self {
+                    Self::SelectWorkspace { .. }
+                    | Self::ImportVideoFolder { .. }
+                    | Self::SaveRecipe { .. } => arguments["directory"] = grant.to_string().into(),
+                    Self::ImportVideos { .. } => arguments["paths"] = serde_json::json!([grant]),
+                    Self::ImportQuestionnaire { .. } | Self::OpenRecipe { .. } => {
+                        arguments["path"] = grant.to_string().into()
+                    }
+                    _ => {}
+                }
+            }
+        }
+        Ok(forwarded)
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -135,6 +288,13 @@ impl PlannerCommand {
                         && !edits.is_empty()
                         && edits.len() <= 256
                         && edits.iter().all(edit_valid)
+                }
+                PlannerAction::Perform {
+                    operation,
+                    arguments,
+                } => {
+                    self.expected_revision.is_some()
+                        && Consequence::parse(operation, arguments).is_ok()
                 }
                 PlannerAction::Cancel { request_id } => is_uuid(request_id),
             };
@@ -242,7 +402,7 @@ pub fn parse_command(bytes: &[u8]) -> ResearchResult<PlannerCommand> {
     Ok(command)
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PlannerResponse {
     pub schema: String,
