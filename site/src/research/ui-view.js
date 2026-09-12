@@ -302,9 +302,9 @@ function workspaceSection() {
       </table>
     </div>
     <div class="field-grid">
-      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
-      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
-      <p id="workspace-experiment-identity-help" class="field-help is-wide">Identity is read from the loaded project JSON or compatibility experiment file.</p>
+      <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="video-affect-study" aria-describedby="workspace-experiment-identity-help"></label>
+      <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="Video Affect Study" aria-describedby="workspace-experiment-identity-help"></label>
+      <p id="workspace-experiment-identity-help" class="field-help is-wide">Name this study here. Loading a project JSON replaces these values.</p>
     </div>
     <p id="workspace-status" class="status-text" role="status" aria-live="polite"></p>`;
 }
