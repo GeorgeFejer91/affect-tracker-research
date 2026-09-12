@@ -870,7 +870,7 @@ impl LanguageSelectionTreeV1 {
 }
 
 impl CompleteVideoPlaybackPolicyV1 {
-    fn validate(&self) -> ResearchResult<()> {
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
         if self.algorithm_version != COMPLETE_VIDEO_PLAYBACK_ALGORITHM
             || self.start_at_ms != 0
             || self.end_condition != PlaybackEndConditionV1::DecodedEnd
@@ -1296,7 +1296,7 @@ fn validate_questionnaire_language_routes(
     Ok(())
 }
 
-fn deserialize_u32_integer<'de, D>(deserializer: D) -> Result<u32, D::Error>
+pub(crate) fn deserialize_u32_integer<'de, D>(deserializer: D) -> Result<u32, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

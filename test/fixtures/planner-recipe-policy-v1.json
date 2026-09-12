@@ -1,0 +1,26 @@
+{
+  "schema": "affect-research-planner-recipe-policy",
+  "version": 1,
+  "participantCount": 2,
+  "samplingFrequencyHz": 137,
+  "output": { "csv": true, "tsv": true },
+  "lsl": {
+    "enabled": false,
+    "stateStream": "AffectResearch",
+    "streamType": "Affect",
+    "markerStream": "AffectResearchMarkers",
+    "sourceId": "affect-research"
+  },
+  "playback": {
+    "algorithmVersion": "complete-video-v1",
+    "startAtMs": 0,
+    "endCondition": "decodedEnd",
+    "playbackRate": 1,
+    "loop": false,
+    "seekingAllowed": false,
+    "pauseAllowed": true,
+    "audio": { "muted": false, "volume": 1 },
+    "feedbackPlacement": "adjacent",
+    "recoveryRestart": "fromBeginning"
+  }
+}
