@@ -35,6 +35,8 @@ const after = (await run("git", ["rev-parse", "HEAD"], { windowsHide: true })).s
 assert.equal(before, after, "Source commit changed during verification.");
 for (const [path, hash] of Object.entries(hashes)) assert.equal(createHash("sha256").update(await readFile(path)).digest("hex"), hash, path);
 Object.assign(receipt, { commit: before, width, inputSha256: hashes,
+  harnessSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
+  imageSha256: createHash("sha256").update(await readFile(join(output, "xr-authoring.png"))).digest("hex"),
   workingTreeStatus: (await run("git", ["status", "--short"], { windowsHide: true })).stdout });
 await writeFile(join(output, "receipt.json"), JSON.stringify(receipt, null, 2));
 assert.equal(receipt.passed, true, JSON.stringify({ error: receipt.error, checks: receipt.checks, errors: receipt.errors }));
