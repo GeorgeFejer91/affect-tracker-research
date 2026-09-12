@@ -4260,3 +4260,16 @@ Native and full composition evidence deferred to Main. Validator correction
   `D:/GitHub/.affect-checks/root-recipe-restoration-20260912/planner-focused.log`.
   Main's deferred acceptance notification dependency is `f933037` (local
   cherry-pick `7894025`). No actual native invocation or final mock claim.
+
+### 20260912-p3-prepared-content-restoration
+
+- Owner S3, root-allocated Backend Verification follow-up, P3-08/P3-03.
+  Branch codex/segment-p3-restore, D:/GitHub/affect-tracker-research-p3-restore,
+  clean Main base 928b395. Prior P2 source remains frozen.
+- Added read-only prepareRestoreContent with synchronous state-only commit and
+  separate projection. Saved content remains unconfirmed pending real media.
+  Existing GUI restore reuses the seam while preserving immediate supersession;
+  existing CLI draft staging is unchanged. Main owns app/native Open integration.
+- Pre-edit baseline 41/41; focused completion 49/49. See
+  docs/planner-p3-prepared-restoration.md for API, current P1 requirements,
+  lifetime guards and evidence limits. No schema, allocation or Runner changes.
