@@ -43,10 +43,10 @@ export function feedbackInputMarkup() {
   return `
     <section id="feedback-input-settings" class="feedback-input-settings" aria-labelledby="feedback-input-title">
     <h3 id="feedback-input-title">Controls</h3>
-    <p class="field-help">Saved device and bindings. Digital input moves once per physical press and ignores operating-system repeat.</p>
+    <p class="field-help">Saved device and bindings. Response control sets movement and hold behavior; operating-system repeat is ignored.</p>
     <div class="field-grid">
       <label class="field"><span>Input device</span><select id="input-preset">${options}</select></label>
-      <label class="field"><span>Saved input step size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
+      <label class="field"><span>Legacy input step size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Compatibility value for existing packages.</output></label>
     </div>
     <details class="inner-disclosure" open>
       <summary>Custom bindings</summary>
@@ -107,14 +107,12 @@ export function feedbackAppearanceMarkup() {
   return `
       <section id="preview-quick-appearance" class="preview-quick-appearance" aria-labelledby="preview-appearance-title">
         <div class="preview-subsection-heading"><h3 id="preview-appearance-title">Appearance</h3></div>
-        <p class="field-help">Visibility and transparency are saved. Halo width and fade are preview-only.</p>
+        <p class="field-help">Feedback type, visibility, transparency and halo appearance are saved.</p>
         <div class="field-grid">
-          <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span><strong>Grid</strong><br><span class="field-help">Show the valence–arousal field.</span></span></label>
-          <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span><strong>Flubber</strong><br><span class="field-help">Show the procedural affect form.</span></span></label>
           <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
           <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
           <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</output></label>
+          <label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" max="10000" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Saved width relative to the base halo stroke; 0 hides it.</output></label>
           <label class="check-field"><input id="preview-halo-gradient" type="checkbox" checked><span>Fade halo outward</span></label>
           <label class="field"><span>Gradient steepness</span><input id="preview-halo-steepness" data-preview-appearance-input type="number" min="0.1" max="10" step="0.1" value="1" aria-describedby="preview-halo-steepness-help"><output id="preview-halo-steepness-help" class="field-help">1 = normal; higher values fade faster. Does not change halo width.</output></label>
         </div>
@@ -131,8 +129,10 @@ export function feedbackAdvancedMarkup() {
           <p class="field-help">Saved rendering details and animation mappings. Animation frequency is separate from the acquisition sampling rate.</p>
           <section aria-labelledby="preview-visibility-title">
             <h3 id="preview-visibility-title">Legacy package layout</h3>
-            <p class="field-help">Legacy normalized layout for existing packages.</p>
+            <p class="field-help">Retained for existing packages. Current recipes use Screen Layout or XR Layout for position and size, and the feedback type selected above.</p>
             <div class="field-grid">
+              <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span>Legacy Grid visibility</span></label>
+              <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span>Legacy Flubber visibility</span></label>
               <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
               <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>
               <label class="field"><span>Normalized horizontal position</span><input id="visual-position-x" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.x}" required></label>

@@ -145,7 +145,7 @@ test("the affect map has four exact directional anchors and one complete color d
     placeholder: "High arousal",
     autocomplete: "off",
   });
-  assert.match(dialog, /Display alias for this setup session only/u);
+  assert.match(dialog, /Applied display labels are saved/u);
   assert.match(appSource, /function schedulePreviewColorPaint\(\)[\s\S]*requestAnimationFrame/u);
   assert.match(appSource, /setupPreview\.update\(\{ colors, colorAnchorMode: previewColorMode\(\) \}\)/u);
   assert.match(appSource, /hex\.setAttribute\("aria-invalid", "true"\)/u);
@@ -200,7 +200,7 @@ test("continuous and stepwise response controls retain their exact timing contra
   ]);
 });
 
-test("Stepwise owns a draft tile spinner and the saved step size stays with device Controls", () => {
+test("Stepwise owns grid dimensions and retains the legacy step field for compatibility", () => {
   assert.equal(countId(markup, "input-step-size"), 1);
   const stepwisePanel = between(
     studioMarkup,
@@ -237,7 +237,7 @@ test("halo and transparency controls expose their bounded appearance contract", 
     step: "any",
     value: "150",
   });
-  assert.doesNotMatch(inputTag(studioMarkup, "preview-halo-size"), /\smax=/u);
+  assert.equal(attribute(inputTag(studioMarkup, "preview-halo-size"), "max"), "10000");
   assertAttributes(inputTag(studioMarkup, "preview-halo-gradient"), { type: "checkbox" });
   assertAttributes(inputTag(studioMarkup, "preview-halo-steepness"), { type: "number", min: "0.1", max: "10", value: "1" });
   assertAttributes(inputTag(studioMarkup, "visual-transparency"), {
@@ -265,7 +265,7 @@ test("only the Setup halo fades behind the exact fill and outline", () => {
   assert.equal(count(markup, /id="preview-studio-halo-fade"/gu), 1);
   assert.match(studioMarkup, /<feGaussianBlur data-preview-halo-blur/u);
   assert.match(studioMarkup, /Halo width/u);
-  assert.match(studioMarkup, /fades to transparent outward/u);
+  assert.match(studioMarkup, /Fade halo outward/u);
   const halo = studioMarkup.indexOf('<path data-preview-flubber-halo');
   assert.ok(halo < studioMarkup.indexOf('<path data-preview-flubber-base'));
   assert.ok(halo < studioMarkup.indexOf('<path data-preview-flubber-outline'));
@@ -424,11 +424,11 @@ test("advanced preview settings retain every detailed visual control and six uni
   assert.equal(new Set(advancedIds).size, advancedIds.length);
 });
 
-test("the application projects design state only to Setup and bypasses planning for preview-only inputs", () => {
+test("the application projects successor settings to Setup and invalidates saved contributions on edits", () => {
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackPreviewMode,\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? feedbackPreviewMode : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
   );
   assert.match(
     previewStateSource,
@@ -438,7 +438,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.doesNotMatch(
     previewStateSource,
     /displayMode:\s*design \?|responseMode:\s*design \?|haloSizePercent:\s*design \?/u,
-    "draft design keys must be absent, not defaulted, at the Start and Run boundary",
+    "successor keys cannot be silently projected into the historical Run boundary",
   );
 
   const designProjectionSource = between(appSource, "function projectDesignPreview(", "function refreshDesignPreview(");
@@ -451,7 +451,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.match(projectionSource, /designAlreadyProjected/gu);
   assert.match(appSource, /refreshProjection\(\{ designAlreadyProjected: simulatorOwnsDesignProjection \}\)/u);
 
-  const previewOnlySource = between(appSource, "function isPreviewOnlyControl(", "function driverValue(");
+  const previewOnlySource = between(appSource, "function isFeedbackBehaviorControl(", "function driverValue(");
   for (const id of ["preview-halo-size", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"]) {
     assert.match(previewOnlySource, new RegExp(`"${id}"`, "u"));
   }
@@ -460,7 +460,7 @@ test("the application projects design state only to Setup and bypasses planning 
   assert.doesNotMatch(previewOnlySource, /schedulePlanRefresh/u);
   assert.equal(count(
     appSource,
-    /if \(isPreviewOnlyControl\(target\)\) \{\s*refreshProjection\(\);\s*return;\s*\}/gu,
+    /if \(isFeedbackBehaviorControl\(target\)\) \{\s*refreshProjection\(\);\s*schedulePlanRefresh\(\);\s*return;\s*\}/gu,
   ), 2);
   assert.match(appSource, /createPreviewResponseSimulator\(\{[\s\S]*?previewDesignPoint = \{ x: point\.x, y: point\.y \};[\s\S]*?projectDesignPreview\(\)/u);
   assert.match(

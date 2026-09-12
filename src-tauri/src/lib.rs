@@ -7,6 +7,7 @@ mod research_contracts;
 mod research_error;
 mod research_experiment_package;
 mod research_external_protocol;
+pub mod research_feedback;
 mod research_gamepad;
 mod research_input;
 mod research_lsl;

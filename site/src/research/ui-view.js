@@ -161,16 +161,16 @@ function previewMarkup(label, { studio = false } = {}) {
       ${feedbackInputMarkup()}
 
       <details class="preview-response-settings inner-disclosure">
-        <summary>Try response ideas · preview only</summary>
+        <summary>Response control</summary>
         <div class="disclosure-content">
         <div class="preview-subsection-heading"><h3 id="preview-response-title">Response control</h3></div>
-        <div class="preview-segmented-control" role="group" aria-label="Response preview mode">
+        <div class="preview-segmented-control" role="group" aria-label="Saved response mode">
           <button type="button" data-response-preview-mode="continuous" aria-pressed="false">Continuous</button>
           <button type="button" data-response-preview-mode="stepwise" aria-pressed="true">Stepwise</button>
         </div>
         <div data-response-preview-panel="continuous" hidden>
           <label class="field"><span>Full-span duration</span><div class="range-field"><input id="preview-full-span-duration" type="range" min="250" max="15000" step="250" value="2000"><output for="preview-full-span-duration">2,000 ms</output></div></label>
-          <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
+          <p class="field-help">Saved time for a held direction to travel from −1 to +1. Absolute inputs supply their own position.</p>
         </div>
         <div data-response-preview-panel="stepwise">
           <fieldset class="check-group">
@@ -189,8 +189,8 @@ function previewMarkup(label, { studio = false } = {}) {
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
           </fieldset>
-          <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
-          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Controls.</p>
+          <label class="field" data-preview-repeat-settings><span>Repeat interval</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
+          <p class="field-help">Saved grid dimensions determine each directional step. A held control repeats at the selected interval; separate presses move once per press.</p>
         </div>
         </div>
       </details>
@@ -597,8 +597,8 @@ export function renderResearchUiMarkup(surface = "browser") {
             </div>
             <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
               <header class="preview-header">
-                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p>Mode selection is preview-only.</p><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
-                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode; selection is not saved">
+                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p id="feedback-settings-version">Feedback settings are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
+                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
                   <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
                   <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
                   <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
@@ -684,7 +684,7 @@ export function renderResearchUiMarkup(surface = "browser") {
           <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
           <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
         </div>
-        <p id="preview-color-label-help" class="field-help">Display alias for this setup session only. The saved valence/arousal axis identity does not change.</p>
+        <p id="preview-color-label-help" class="field-help">Applied display labels are saved for axis and corner placement. The valence/arousal coordinate identity does not change.</p>
         <p id="preview-color-status" class="status-text" role="status" aria-live="polite">Editing the selected directional anchor.</p>
         <p id="preview-color-error" class="field-error" role="alert" hidden>Enter a six-digit hexadecimal color.</p>
       </div>
