@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="input-info-dark-title input-info-dark-desc">
+  <title id="input-info-dark-title">Flubber input selector — Rounded infographic, dark mode</title>
+  <desc id="input-info-dark-desc">A flat ivory keyboard, gamepad and mouse surrounded by four amber direction arrows. Simple solid colors, clear outlines and a transparent background.</desc>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 14l8-8 8 8M114 56l8 8-8 8M56 114l8 8 8-8M14 56l-8 8 8 8" fill="none" stroke="#d4a94f" stroke-width="5"/>
+    <g transform="translate(-6 0)">
+      <g id="keyboard-dark">
+        <rect x="35" y="29" width="54" height="35" rx="8" fill="#a9b19f"/>
+        <rect x="35" y="27" width="54" height="34" rx="8" fill="#f0eee8"/>
+        <rect x="40" y="32" width="44" height="25" rx="3" fill="#343e2f"/>
+        <g fill="#f0eee8">
+          <rect x="44" y="36" width="6" height="5" rx="1.2"/>
+          <rect x="54" y="36" width="6" height="5" rx="1.2"/>
+          <rect x="64" y="36" width="6" height="5" rx="1.2"/>
+          <rect x="74" y="36" width="6" height="5" rx="1.2"/>
+          <rect x="44" y="44" width="6" height="5" rx="1.2"/>
+          <rect x="54" y="44" width="6" height="5" rx="1.2"/>
+          <rect x="64" y="44" width="6" height="5" rx="1.2"/>
+          <rect x="74" y="44" width="6" height="5" rx="1.2"/>
+          <rect x="53" y="52" width="18" height="2.5" rx="1.2"/>
+        </g>
+      </g>
+      <g id="gamepad-dark">
+        <path d="M46 76h24c8 0 12 6 14 14l2 12c2 8-4 12-10 6l-10-8H50l-10 8c-6 6-12 2-10-6l2-12c2-8 6-14 14-14Z" fill="#a9b19f"/>
+        <path d="M46 73h24c8 0 12 6 14 14l2 12c2 8-4 12-10 6l-10-8H50l-10 8c-6 6-12 2-10-6l2-12c2-8 6-14 14-14Z" fill="#f0eee8"/>
+        <path d="M43 79h6v5h5v6h-5v5h-6v-5h-5v-6h5Z" fill="#343e2f"/>
+        <rect x="44" y="85" width="4" height="4" rx=".8" fill="#d4a94f"/>
+        <g fill="#343e2f">
+          <circle cx="71" cy="80" r="2.7"/>
+          <circle cx="77" cy="86" r="2.7"/>
+          <circle cx="65" cy="86" r="2.7"/>
+          <circle cx="71" cy="92" r="2.7"/>
+          <rect x="55" y="79.5" width="6" height="2.5" rx="1.25"/>
+          <circle cx="58" cy="92" r="3.5"/>
+        </g>
+      </g>
+      <g id="mouse-dark">
+        <rect x="94" y="60" width="20" height="36" rx="10" fill="#a9b19f"/>
+        <rect x="94" y="57" width="20" height="36" rx="10" fill="#f0eee8"/>
+        <path d="M104 57c6 0 10 4 10 10v8h-10Z" fill="#d3d8ca"/>
+        <path d="M104 58v16M95 75h18" fill="none" stroke="#343e2f" stroke-width="1.8"/>
+        <rect x="101.6" y="63" width="4.8" height="8" rx="2.4" fill="#d4a94f" stroke="#343e2f" stroke-width="1.3"/>
+      </g>
+    </g>
+  </g>
+</svg>

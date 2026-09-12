@@ -10,9 +10,12 @@ html, body { min-width: 0; margin: 0; }
 .runner-header h1 { margin: 0; font-size: 22px; font-weight: 600; }
 #runner-open { align-self: flex-start; }
 #runner-recipe-status { margin: 12px 0 24px; font-size: 14px; color: #bbbdb4; overflow-wrap: anywhere; }
-.runner-shell .runner-launch-action { min-height: 120px; width: 100%; font-size: 24px; font-weight: 600; margin-bottom: 16px; }
+.runner-shell .runner-launch-action { min-height: 120px; width: 100%; font-size: 24px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 20px; }
+.runner-launch-action img { width: 64px; height: 64px; object-fit: contain; flex: none; }
 .runner-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.runner-tools button { padding: 12px 8px; font-size: 13px; line-height: 1.4; min-height: 72px; }
+.runner-tools button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px 8px; font-size: 13px; line-height: 1.4; min-height: 136px; }
+.runner-tools img { display: block; width: 64px; height: 64px; object-fit: contain; flex: none; }
+.runner-tools span { min-height: 2.8em; display: flex; align-items: center; justify-content: center; }
 .runner-shell .runner-text-button { border: 0; background: transparent; color: #c5c8ba; text-decoration: underline; text-underline-offset: 3px; padding: 8px 0; }
 #runner-settings { align-self: center; margin-top: 16px; font-size: 13px; }
 #runner-launch-status { text-align: center; color: #afb2a4; font-size: 12px; margin: 8px 0 0; }

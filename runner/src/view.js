@@ -1,6 +1,9 @@
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
 const professorQr = new URL("../assets/professor-qr.svg", import.meta.url).href;
 const controllerQr = new URL("../assets/controller-qr.svg", import.meta.url).href;
+const professorWidget = new URL("../assets/professor-widget.svg", import.meta.url).href;
+const inputWidget = new URL("../assets/input-widget.svg", import.meta.url).href;
+const remoteWidget = new URL("../assets/remote-widget.svg", import.meta.url).href;
 const symbol = new URL("../assets/runner-symbol.svg", import.meta.url).href;
 
 export function runnerMarkup() {
@@ -9,11 +12,11 @@ export function runnerMarkup() {
       <header class="runner-header"><img src="${symbol}" width="36" height="36" alt=""><h1>Experiment Runner</h1></header>
       <button id="runner-open">Load experiment file</button>
       <p id="runner-recipe-status" role="status">No experiment loaded</p>
-      <button id="runner-launch" class="primary-action runner-launch-action" disabled>Start experiment</button>
+      <button id="runner-launch" class="primary-action runner-launch-action" disabled><img src="${symbol}" width="64" height="64" alt=""><span>Start experiment</span></button>
       <div class="runner-tools">
-        <button id="runner-professor" aria-haspopup="dialog">Absent-minded professor</button>
-        <button id="runner-controller" aria-haspopup="dialog">Set controller</button>
-        <button id="runner-remote" aria-haspopup="dialog">Remote controller connection</button>
+        <button id="runner-professor" aria-haspopup="dialog"><img src="${professorWidget}" width="64" height="64" alt=""><span>Absent-minded professor</span></button>
+        <button id="runner-controller" aria-haspopup="dialog"><img src="${inputWidget}" width="64" height="64" alt=""><span>Set controller</span></button>
+        <button id="runner-remote" aria-haspopup="dialog"><img src="${remoteWidget}" width="64" height="64" alt=""><span>Remote controller connection</span></button>
       </div>
       <button id="runner-settings" class="runner-text-button" aria-haspopup="dialog">Session &amp; recording settings</button>
       <p id="runner-launch-status" role="status"></p>
