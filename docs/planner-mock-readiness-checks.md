@@ -56,3 +56,30 @@ Eighteen focused checks pass, including a termination-request error that cannot
 replace the original failure or prevent its receipt from being written. S5's
 independent source review found no remaining issues. These remain synthetic
 subprocess checks; actual native cleanup requires its own execution receipt.
+
+## Actual early-EOF observations — 2026-09-12
+
+Root repeated the same deliberate external assertion immediately after a real
+read-only snapshot with immutable native-enabled CLI builds `356cba7` and
+`1ccd756`. Both preserved the assertion and revision zero, then exceeded the
+unchanged ten-second EOF grace. The driver terminated only its own hidden child.
+Neither result is an orderly-shutdown pass or evidence of an indefinite hang.
+
+The phase-enabled `1ccd756ef4318a8b46e43ac12d64da885e7bd43b` executable has
+SHA-256 `c341b79a3d83e164a757e55f209bc0190a0c610ca05b88f3025ee2e925248a4d`.
+For owned PID 33296, EOF and cleanup began at 1000 ms, input cleanup completed
+and native shutdown was requested at 1009 ms, and NativeStalled was observed at
+6028 ms. Neither verification completion nor actor retention was observed before
+termination. Source review shows runtime verification runs before the initializer
+checks cancellation; the native owner has the bounded cancellation repair.
+
+Evidence is retained in
+`D:/GitHub/.affect-checks/root-native-cli-failure-cleanup-1ccd756-01/`, including
+`cleanup-review.json`, the process receipt and phase log. Transcript SHA-256:
+`c8223d542cdd361ade8b44cee526716f2509251398df11dea8b63a568d03da16`.
+The external script is
+`D:/GitHub/.affect-checks/root-native-cli-failure-cleanup-1ccd756-20260912.mjs`.
+The earlier `356cba7` failure remains in its separate evidence directory.
+No authoring mutation, import, video Prepare/Play, master export or Runner run
+was performed in these root checks. A fresh immutable build must repeat this
+case after the lifecycle repair; increasing the grace is not a repair.

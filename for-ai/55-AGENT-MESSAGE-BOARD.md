@@ -97,6 +97,20 @@
   Runner owns remaining typed app mounting. Main retains full production mock
   and final integration. Cargo hold released. No actual playback, physical
   timing, final XDF/viewport, canonical promotion or release claim.
+
+### 20260912-root-cli-early-eof-observed
+
+- Root external CLI driver continuation, Backend Verification. Actual immutable
+  native CLI `356cba7` and phase-enabled `1ccd756` both exceeded the unchanged
+  ten-second cleanup grace after a read-only snapshot and deliberate driver
+  assertion; the original failures remain retained, not promoted to passes.
+- `1ccd756` reaches native shutdown at 1009 ms and NativeStalled at 6028 ms,
+  before any observed verification completion or actor retention. Native owner
+  owns cancellation-aware runtime verification from agreed Main `0ccc7ec`.
+- Exact artifact, transcript and phase evidence are documented in
+  `docs/planner-mock-readiness-checks.md`. No runtime setting, qualification flag,
+  master JSON, participant presentation or timing claim changed in this pass.
+
 ### 20260912-root-cli-driver-failure-cleanup
 
 - Root, CLI-P7/RR-10 external diagnostic driver, Backend Verification; isolated
