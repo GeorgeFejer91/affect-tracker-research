@@ -1,5 +1,14 @@
 # Mandatory agent workflow and skill routing
 
+## Planner CLI amendment — 2026-09-12
+
+The direct request for Planner setting CLI access, saved-JSON load/edit and
+timestamped new-file export authorizes [68](68-PLANNER-CLI.md). Older no-CLI
+text applies outside that scope. Reuse existing owner logic and native services;
+do not infer network, script execution, live-window control, Runner execution or
+a second compiler authority. Isolation, background verification, unsafe-boundary
+and qualification rules remain applicable.
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and
