@@ -293,6 +293,16 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260912-integration-planner-completion
 
+- Shared composition follow-up: full P7 compiler/file/reopen `828fff7` and live
+  P4 prepare/content restore `2499517` are collected. Main now wires footer P4
+  preparation, final P5 capture, full-master compile/acknowledgement, one named
+  dialog and dependency-ordered editable Open. One immutable document store is
+  retained; unchanged-source eligibility uses monotonic authored-edit identity,
+  separate from media readiness. Save never reapplies owner settings. Seven new
+  coordinator tests and five owner file tests pass; actual combined UI, native
+  adapters and successor deterministic identity intake remain underway. This is
+  a component checkpoint, not canonical promotion or completed qualification.
+
 - Owner: **Add segment confirmation flow**, sole shared integration owner for
   the new user-authorized **Planner completion** goal; Backend Verification.
   Branch `codex/segment-planner-completion`, base `7946bc6`, existing isolated
