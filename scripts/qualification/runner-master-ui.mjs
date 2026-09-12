@@ -17,7 +17,7 @@ const mode=new URL(location.href).searchParams.get('case'),checks=[],calls=[],er
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
 const tick=()=>new Promise(r=>setTimeout(r,120));
 addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
-let app,plan,status,fullscreen=false,receipt,strongSeen=false;
+let app,plan,status,fullscreen=false,receipt,strongSeen=false,renderGeometry;
 document.body.innerHTML='<div id="experiment-runner"></div>';const root=document.querySelector('#experiment-runner'),q=id=>root.querySelector('#'+id);
 const click=async id=>{q(id).click();await tick();};
 const selected=()=>resolveRunnerSelection(app.recipe,'P001',['both','en'],'variant-3');
@@ -93,6 +93,11 @@ try{
    const box=plan.selected.layout.geometry.feedback,observed=root.querySelector('.run-feedback-stage').getBoundingClientRect();
    for(const key of ['x','y','width','height'])check(Math.abs(box[key]-observed[key])<0.1,'saved feedback geometry '+key);
    check(root.querySelector('.research-preview-stage').dataset.previewVariant==='studio','complete P5 renderer active');
+   const selectors=['.run-feedback-stage','.research-preview-stage','[data-preview-overlay]','[data-preview-grid]','[data-preview-grid-canvas]','[data-preview-flubber]','[data-preview-flubber-base]'];
+   renderGeometry={authoredRenderer:plan.selected.feedback.presentation.renderer,expectedFeedback:box,elements:selectors.map(selector=>{const el=root.querySelector(selector),r=el?.getBoundingClientRect();return{selector,tag:el?.tagName,hidden:el?.hidden,display:el?getComputedStyle(el).display:null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null,widthAttribute:el?.getAttribute('width'),heightAttribute:el?.getAttribute('height'),viewBox:el?.getAttribute('viewBox'),pathLength:el?.getAttribute('d')?.length};})};
+   check(renderGeometry.authoredRenderer==='grid','adversarial fixture explicitly authors grid rather than Flubber');
+   check(getComputedStyle(root.querySelector('[data-preview-flubber]')).display==='none','authored grid keeps Flubber hidden');
+
   }else if(mode==='isi-neutral'){
    for(const row of q('runner-questionnaire-items').querySelectorAll('tbody tr'))row.querySelector('input').click();
    await tick();await click('runner-questionnaire-submit');await tick();await tick();
@@ -118,7 +123,7 @@ try{
  check(q('runner-error').hidden,'no unexpected app error');check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');
  const ids=[...root.querySelectorAll('[id]')].map(e=>e.id);check(new Set(ids).size===ids.length,'unique DOM identifiers');app.destroy();
 }catch(e){errors.push(String(e));}
-const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({mode,checks,errors,viewport:[innerWidth,innerHeight],calls,scope:'Synthetic frontend projections only; no real run or native qualification'});document.body.append(result);
+const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({mode,checks,errors,renderGeometry,viewport:[innerWidth,innerHeight],calls,scope:'Synthetic frontend projections only; no real run or native qualification'});document.body.append(result);
 `;
 // Test-only observation of the actual preview closure; no production API or
 // renderer behavior change. Static DOM geometry is checked independently above.

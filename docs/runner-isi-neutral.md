@@ -95,3 +95,23 @@ measured failure/gap, never a shortened or falsely qualified interval. That pass
 must settle actor preparation, frame visibility and notification semantics before
 implementation. FFmpeg pre-rendered continuous blocks remain a separate research
 option; no playback strategy change is authorized by this proposal.
+
+## Authored tiny-grid screenshot audit
+
+The locations fixture selects P5 `presentation.renderer: grid`, not Flubber.
+Its P4 projection requests a 10.935 × 10.935 px feedback box at
+(954.5325, 755.9325) on the 1920 × 1080 viewport. The actual app DOM measured
+10.921875 × 10.921875 px at (954.53125, 755.921875), within CSS rounding.
+The 1 px border leaves an 8.921875 px grid, matching the tiny square screenshot.
+The grid SVG uses `0 0 100 100`; the canvas backing store is 72 × 72.
+The Flubber SVG has computed `display: none`, zero visible bounds and a populated
+2880-character path. This is the authored grid layout, not a Flubber geometry
+regression. Preserve the adversarial fixture and do not force another renderer.
+
+Evidence: `D:/GitHub/.affect-runner-master-build/runner-render-geometry-02/receipt.json`
+records actual DOM/SVG/canvas measurements. All six headless app cases pass
+(130 checks). These synthetic projections establish geometry correspondence only;
+they do not qualify native playback or provide a representative visible-Flubber
+capture. The initial audit assertion incorrectly read an HTML `hidden` property
+from an SVG; the corrected assertion checks computed display. The failed receipt
+is retained in `runner-render-geometry-01`.

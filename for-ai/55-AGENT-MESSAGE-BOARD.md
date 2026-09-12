@@ -3518,3 +3518,11 @@ through the existing P5 preview mapping before hiding each interval, so cached
 geometry is reset before Presented. Preserve hidden/input-disabled ISIs and
 existing clocks/markers/sampling. Verify first/consecutive/video-following/next
 video presentation in the headless app harness. No physical paint/timing claim.
+
+# Runner authored renderer discrepancy audit — 2026-09-12
+
+Root allocates R1/RR-10 Backend Verification on isolated
+`codex/segment-runner-render-audit` from `bfc3746`. Compare the tiny-square
+headless screenshot with exact P4/P5 settings and DOM/SVG geometry; preserve
+the adversarial fixture. Collect geometry in the actual app harness. No
+production renderer redesign or native presentation qualification is allocated.
