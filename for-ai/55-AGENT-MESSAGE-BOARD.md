@@ -73,6 +73,24 @@ owns full source-bound combined builds and actual native/application execution.
   geometry and error tests). Tagged absence is an empty struct variant so extra
   keys reject. No actor wiring/native build or actual playback claim yet.
   Cancellation and lifecycle handoffs remain unchanged.
+- Actor continuation: safe explicit d3d11 sink installed before Play creation;
+  per-generation policy freezes selected stream ID, metadata revision and typed
+  rotation readback. Later drift fails closed and hides/pauses the child, never
+  reconfigures a frozen policy. Raw tag cardinality is checked before parsing;
+  absent/explicit provenance remains separate. Attestation2 requires paused
+  media and validates raw snapshot aspect before the single geometry transform.
+- Native lib compile passes with the real SDK and verified 827-file pinned
+  runtime. 51 native-media, 9 geometry and 5 shutdown tests pass; one foreground
+  diagnostic remains ignored. Five dead-code warnings include the not-yet-wired
+  additive service and retained legacy types. Evidence: D:/GitHub/.affect-checks/
+  native-controlled-orientation-build-04.log and native-controlled-orientation-tests-01/.
+  Shared Cargo hold released; no production build or foreground launch performed.
+- GStreamer 1.28.6 source basis: gstd3d11videosink.cpp rotate-method getter reads
+  configured method; GstPlay video_snapshot uses playsink convert-sample from
+  pre-sink buffers. This proves configuration, not independently observed pixels.
+  RR11 snapshots remain pre-sink and are not claimed to match rotated display.
+  S1 owns workspace attest/cache/binding, commands and JS bridge; Main registers
+  and composes. Root retains actual rescan and rotated-fixture qualification.
 
 ### 20260912-main-bounded-sink-diagnostic
 

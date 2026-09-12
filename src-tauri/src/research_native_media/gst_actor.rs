@@ -1,5 +1,7 @@
 #[path = "gst_actor/flow.rs"]
 mod flow;
+#[path = "gst_actor/orientation.rs"]
+mod orientation;
 #[path = "gst_actor/runtime_environment.rs"]
 mod runtime_environment;
 #[path = "gst_actor/windows_renderer.rs"]
@@ -10,18 +12,20 @@ mod windows_renderer;
 mod diagnostic;
 
 use super::contracts::{
-    NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1, NativeMediaPrepareReceiptV1,
-    NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportPxV1, NATIVE_MEDIA_DECODE_SCHEMA,
-    NATIVE_MEDIA_PREPARE_SCHEMA,
+    NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1, NativeMediaDecodeReceiptV2,
+    NativeMediaPrepareReceiptV1, NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportPxV1,
+    NATIVE_MEDIA_DECODE_SCHEMA, NATIVE_MEDIA_PREPARE_SCHEMA,
 };
 use super::state::{apply_generation_fenced_signal, BackendPlaybackState, MediaSignal};
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_video_geometry::{
-    NativeDisplayMetadataReceiptV1, NativeDisplaySourceMetadataV1, NativeVideoOrientationV1,
-    VideoRatioV1, NATIVE_DISPLAY_METADATA_SCHEMA,
+    derive_native_display_geometry_v2, ControlledRendererV2, NativeDisplayMetadataReceiptV1,
+    NativeDisplayMetadataReceiptV2, NativeVideoOrientationV1, SourceOrientationTagV2,
+    SourceOrientationV2, VideoRatioV1, NATIVE_DISPLAY_METADATA_SCHEMA,
 };
 use crate::research_workspace::NativeMediaGrant;
 use flow::{Control, Fault, SignalSender};
+use gst::prelude::*;
 use gst_play::prelude::PlayStreamInfoExt;
 use gstreamer as gst;
 use gstreamer_play as gst_play;
@@ -259,6 +263,16 @@ impl GstPlayActorHandle {
         )
     }
 
+    pub(super) fn attest_decode_v2(
+        &self,
+        fence: NativeMediaCommandFenceV1,
+    ) -> ResearchResult<NativeMediaDecodeReceiptV2> {
+        self.request_with_timeout(
+            move |response| ActorCommand::AttestDecodeV2 { fence, response },
+            DECODE_PROBE_TIMEOUT,
+        )
+    }
+
     pub(super) fn pause(
         &self,
         fence: NativeMediaCommandFenceV1,
@@ -387,6 +401,10 @@ impl Drop for GstPlayActorHandle {
 }
 
 enum ActorCommand {
+    AttestDecodeV2 {
+        fence: NativeMediaCommandFenceV1,
+        response: mpsc::SyncSender<ResearchResult<NativeMediaDecodeReceiptV2>>,
+    },
     SnapshotLiveFrame {
         fence: NativeMediaCommandFenceV1,
         response: mpsc::SyncSender<ResearchResult<super::live_frame::LiveFrame>>,
@@ -461,12 +479,104 @@ struct ActivePlayer {
     play: gst_play::Play,
     _renderer: gst_play::PlayVideoOverlayVideoRenderer,
     _grant: NativeMediaGrant,
-    display_source_metadata: Arc<Mutex<Option<NativeDisplaySourceMetadataV1>>>,
+    sink: gst::Element,
+    display_source_metadata: Arc<Mutex<VersionedMetadata>>,
+    controlled_policy: Mutex<Option<(u64, SourceMetadata)>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct SourceMetadata {
+    stream_id: String,
+    encoded_width_px: u32,
+    encoded_height_px: u32,
+    pixel_aspect_ratio: VideoRatioV1,
+    orientation: NativeVideoOrientationV1,
+    source_orientation: SourceOrientationV2,
+}
+
+struct VersionedMetadata {
+    revision: u64,
+    value: Result<SourceMetadata, &'static str>,
+}
+
+impl VersionedMetadata {
+    fn update(&mut self, value: Result<SourceMetadata, &'static str>) {
+        if self.value != value {
+            match self.revision.checked_add(1) {
+                Some(next) => {
+                    self.revision = next;
+                    self.value = value;
+                }
+                None => self.value = Err("native-display-metadata-revision-exhausted"),
+            }
+        }
+    }
 }
 
 impl ActivePlayer {
     fn stop(&self) {
         self.play.stop();
+    }
+
+    fn metadata(&self) -> ResearchResult<(u64, SourceMetadata)> {
+        let metadata = self
+            .display_source_metadata
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        Ok((
+            metadata.revision,
+            metadata.value.clone().map_err(actor_unavailable)?,
+        ))
+    }
+
+    fn ensure_policy_current(&self) -> ResearchResult<()> {
+        let frozen = self
+            .controlled_policy
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone();
+        if let Some(expected) = frozen {
+            if self.metadata()? != expected
+                || self
+                    .play
+                    .current_video_track()
+                    .map(|track| track.stream_id().to_string())
+                    != Some(expected.1.stream_id.clone())
+                || sink_rotation(&self.sink)?
+                    != expected.1.source_orientation.controlled_rotation()?
+            {
+                return Err(actor_unavailable("native-display-renderer-policy-stale"));
+            }
+        }
+        Ok(())
+    }
+
+    fn configure_policy(
+        &self,
+        status: &NativeMediaStatusV1,
+    ) -> ResearchResult<(u64, SourceMetadata)> {
+        let metadata = self.metadata()?;
+        if status.video_width != Some(metadata.1.encoded_width_px)
+            || status.video_height != Some(metadata.1.encoded_height_px)
+        {
+            return Err(actor_unavailable("native-gstplay-display-metadata-stale"));
+        }
+        self.ensure_policy_current()?;
+        let mut policy = self
+            .controlled_policy
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        if policy.is_none() {
+            let method = orientation_method(metadata.1.source_orientation.controlled_rotation()?)?;
+            self.sink.set_property("rotate-method", method);
+            if sink_rotation(&self.sink)? != metadata.1.source_orientation.controlled_rotation()?
+                || self.metadata()? != metadata
+            {
+                return Err(actor_unavailable("native-display-renderer-policy-mismatch"));
+            }
+            *policy = Some(metadata.clone());
+        }
+        Ok(metadata)
     }
 }
 
@@ -543,6 +653,20 @@ fn initialize_and_run(
                     flow::SIGNAL_BUDGET,
                     control,
                 );
+                if let Some(player) = &active {
+                    if player.ensure_policy_current().is_err()
+                        && !matches!(
+                            status.state,
+                            NativeMediaStateV1::Failed | NativeMediaStateV1::Idle
+                        )
+                    {
+                        player.play.pause();
+                        let _ = child.hide();
+                        status.state = NativeMediaStateV1::Failed;
+                        status.reason_code = Some("native-display-renderer-policy-stale".into());
+                        status.advance();
+                    }
+                }
                 project_fault(control, &mut status);
                 publish_status_snapshot(&shared_status, &status);
                 if control.cancelled() {
@@ -685,6 +809,7 @@ fn handle_command(
                 let player = active
                     .as_ref()
                     .ok_or_else(|| actor_unavailable("native-gstplay-player-missing"))?;
+                player.configure_policy(status)?;
                 child.show().map_err(actor_unavailable)?;
                 player.play.play();
                 Ok(status.clone())
@@ -704,6 +829,67 @@ fn handle_command(
             });
             let _ = response.send(result);
             drop(admission);
+        }
+        ActorCommand::AttestDecodeV2 { fence, response } => {
+            let result = ensure_fence(status, &fence).and_then(|_| {
+                if status.state != NativeMediaStateV1::Paused {
+                    return Err(CommandError::invalid_contract(
+                        "Native decode attestation requires prepared, paused media.",
+                    ));
+                }
+                let player = active
+                    .as_ref()
+                    .ok_or_else(|| actor_unavailable("native-gstplay-player-missing"))?;
+                let metadata = player.configure_policy(status)?;
+                let legacy = run_decode_probe(
+                    context,
+                    child,
+                    signal_receiver,
+                    player,
+                    status,
+                    &signals.control,
+                )?;
+                player.ensure_policy_current()?;
+                let receipt = NativeDisplayMetadataReceiptV2 {
+                    schema: NATIVE_DISPLAY_METADATA_SCHEMA.into(),
+                    version: 2,
+                    encoded_width_px: metadata.1.encoded_width_px,
+                    encoded_height_px: metadata.1.encoded_height_px,
+                    pixel_aspect_ratio: metadata.1.pixel_aspect_ratio,
+                    source_orientation: metadata.1.source_orientation,
+                    snapshot_width_px: legacy.display_metadata.snapshot_width_px,
+                    snapshot_height_px: legacy.display_metadata.snapshot_height_px,
+                    snapshot_pixel_aspect_ratio: legacy
+                        .display_metadata
+                        .snapshot_pixel_aspect_ratio,
+                    snapshot_interpretation: "pre-renderer-square-pixel".into(),
+                    renderer: ControlledRendererV2 {
+                        sink_factory: "d3d11videosink".into(),
+                        configured_rotation_degrees: metadata
+                            .1
+                            .source_orientation
+                            .controlled_rotation()?,
+                        readback_rotation_degrees: sink_rotation(&player.sink)?,
+                    },
+                };
+                derive_native_display_geometry_v2(&receipt)?;
+                Ok(NativeMediaDecodeReceiptV2 {
+                    schema: NATIVE_MEDIA_DECODE_SCHEMA,
+                    version: 2,
+                    session_id: legacy.session_id,
+                    generation: legacy.generation,
+                    media_grant_id: legacy.media_grant_id,
+                    workspace_file_id: legacy.workspace_file_id,
+                    duration_ms: legacy.duration_ms,
+                    video_width: legacy.video_width,
+                    video_height: legacy.video_height,
+                    audio_stream_count: legacy.audio_stream_count,
+                    decoded_snapshot_count: legacy.decoded_snapshot_count,
+                    decoded_positions_ms: legacy.decoded_positions_ms,
+                    display_metadata: receipt,
+                })
+            });
+            let _ = response.send(result);
         }
         ActorCommand::AttestDecode { fence, response } => {
             let result = ensure_fence(status, &fence).and_then(|_| {
@@ -781,16 +967,48 @@ fn prepare_player(
     let media_grant_id = grant.media_grant_id.clone();
     let workspace_file_id = grant.workspace_file_id.clone();
     let renderer = child.create_renderer().map_err(actor_unavailable)?;
+    let sink = gst::ElementFactory::make("d3d11videosink")
+        .build()
+        .map_err(|_| actor_unavailable("native-display-controlled-sink-unavailable"))?;
+    let property = sink
+        .find_property("rotate-method")
+        .ok_or_else(|| actor_unavailable("native-display-renderer-property-unavailable"))?;
+    if property.value_type() != gst_play::gst_video::VideoOrientationMethod::static_type()
+        || !property
+            .flags()
+            .contains(gst::glib::ParamFlags::READABLE | gst::glib::ParamFlags::WRITABLE)
+    {
+        return Err(actor_unavailable(
+            "native-display-renderer-property-unavailable",
+        ));
+    }
+    sink.set_property(
+        "rotate-method",
+        gst_play::gst_video::VideoOrientationMethod::Identity,
+    );
+    if sink_rotation(&sink)? != 0 {
+        return Err(actor_unavailable("native-display-renderer-policy-mismatch"));
+    }
+    renderer.set_video_sink(Some(&sink));
+    if renderer.video_sink().as_ref() != Some(&sink) {
+        return Err(actor_unavailable(
+            "native-display-controlled-sink-unavailable",
+        ));
+    }
     let play = gst_play::Play::new(Some(renderer.clone()));
     #[cfg(test)]
     diagnostic::mute_if_opted_in(&play);
     let signal_adapter = gst_play::PlaySignalAdapter::with_main_context(&play, context);
-    let display_source_metadata = Arc::new(Mutex::new(None));
+    let display_source_metadata = Arc::new(Mutex::new(VersionedMetadata {
+        revision: 0,
+        value: Err("native-gstplay-display-metadata-unavailable"),
+    }));
     signals
         .control
         .generation
         .store(generation, Ordering::Release);
     connect_signals(
+        &play,
         &signal_adapter,
         generation,
         signals.clone(),
@@ -812,6 +1030,8 @@ fn prepare_player(
         _signal_adapter: signal_adapter,
         play,
         _renderer: renderer,
+        sink,
+        controlled_policy: Mutex::new(None),
         _grant: grant,
         display_source_metadata,
     });
@@ -828,10 +1048,11 @@ fn prepare_player(
 }
 
 fn connect_signals(
+    play: &gst_play::Play,
     adapter: &gst_play::PlaySignalAdapter,
     generation: u64,
     sender: SignalSender,
-    display_source_metadata: Arc<Mutex<Option<NativeDisplaySourceMetadataV1>>>,
+    display_source_metadata: Arc<Mutex<VersionedMetadata>>,
 ) {
     let next = sender.clone();
     adapter.connect_state_changed(move |_, state| {
@@ -891,29 +1112,53 @@ fn connect_signals(
             signal: MediaSignal::SeekDoneMs(clock_time_ms(position)),
         });
     });
+    let weak_play = play.downgrade();
     adapter.connect_media_info_updated(move |_, info| {
-        let video = info.video_streams().into_iter().next();
-        let source_metadata = video.as_ref().and_then(|stream| {
-            let pixel_aspect_ratio = ratio_from_fraction(stream.pixel_aspect_ratio())?;
-            let stream_orientation = stream
-                .tags()
+        let video = weak_play
+            .upgrade()
+            .and_then(|play| play.current_video_track());
+        let source_metadata = (|| {
+            let stream = video
                 .as_ref()
-                .and_then(|tags| gst_play::gst_video::VideoOrientationMethod::from_tag(tags));
-            let media_orientation = info
-                .tags()
-                .as_ref()
-                .and_then(|tags| gst_play::gst_video::VideoOrientationMethod::from_tag(tags));
-            let orientation = reconcile_orientation(stream_orientation, media_orientation);
-            Some(NativeDisplaySourceMetadataV1 {
-                encoded_width_px: u32::try_from(stream.width()).ok()?,
-                encoded_height_px: u32::try_from(stream.height()).ok()?,
+                .ok_or("native-gstplay-display-metadata-unavailable")?;
+            let pixel_aspect_ratio = ratio_from_fraction(stream.pixel_aspect_ratio())
+                .ok_or("native-gstplay-display-metadata-unavailable")?;
+            let stream_tag = parse_source_tag(stream.tags().as_deref());
+            let media_tag = parse_source_tag(info.tags().as_deref());
+            let resolved = orientation::reconcile(stream_tag, media_tag)?;
+            let source_orientation = SourceOrientationV2 {
+                stream: wire_source_tag(stream_tag?),
+                media: wire_source_tag(media_tag?),
+            };
+            let orientation = match resolved {
+                orientation::SourceOrientation::Absent => NativeVideoOrientationV1::Missing,
+                orientation::SourceOrientation::Explicit(0) => NativeVideoOrientationV1::Identity,
+                orientation::SourceOrientation::Explicit(90) => {
+                    NativeVideoOrientationV1::Rotate90Clockwise
+                }
+                orientation::SourceOrientation::Explicit(180) => {
+                    NativeVideoOrientationV1::Rotate180
+                }
+                orientation::SourceOrientation::Explicit(270) => {
+                    NativeVideoOrientationV1::Rotate90Counterclockwise
+                }
+                _ => return Err("native-display-orientation-unsupported"),
+            };
+            Ok(SourceMetadata {
+                stream_id: stream.stream_id().to_string(),
+                encoded_width_px: u32::try_from(stream.width())
+                    .map_err(|_| "native-gstplay-display-metadata-unavailable")?,
+                encoded_height_px: u32::try_from(stream.height())
+                    .map_err(|_| "native-gstplay-display-metadata-unavailable")?,
                 pixel_aspect_ratio,
                 orientation,
+                source_orientation,
             })
-        });
-        *display_source_metadata
+        })();
+        display_source_metadata
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = source_metadata;
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .update(source_metadata);
         let _ = sender.send(GenerationSignal {
             generation,
             signal: MediaSignal::MediaInfo {
@@ -968,11 +1213,7 @@ fn run_decode_probe(
     let generation = status.generation;
     let expected_positions = representative_positions_ms(duration_ms)?;
     let mut decoded_positions_ms = Vec::with_capacity(expected_positions.len());
-    let source_metadata = player
-        .display_source_metadata
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .ok_or_else(|| actor_unavailable("native-gstplay-display-metadata-unavailable"))?;
+    let (_, source_metadata) = player.configure_policy(status)?;
     if source_metadata.encoded_width_px != video_width
         || source_metadata.encoded_height_px != video_height
     {
@@ -981,10 +1222,12 @@ fn run_decode_probe(
     let mut snapshot_geometry = None;
 
     for target_ms in expected_positions {
+        player.ensure_policy_current()?;
         player.play.seek(clock_time_from_ms(target_ms));
         let observed_ms = wait_for_seek(
             context, child, signals, status, generation, target_ms, control,
         )?;
+        player.ensure_policy_current()?;
         let snapshot = player
             .play
             .video_snapshot(gst_play::PlaySnapshotFormat::RawBgrx, None)
@@ -1019,6 +1262,7 @@ fn run_decode_probe(
 
     player.play.seek(gst::ClockTime::ZERO);
     let _ = wait_for_seek(context, child, signals, status, generation, 0.0, control)?;
+    player.ensure_policy_current()?;
     status.position_ms = Some(0.0);
     status.state = NativeMediaStateV1::Paused;
     status.advance();
@@ -1057,42 +1301,47 @@ fn ratio_from_fraction(value: gst::Fraction) -> Option<VideoRatioV1> {
     })
 }
 
-fn reconcile_orientation(
-    stream: Option<gst_play::gst_video::VideoOrientationMethod>,
-    media: Option<gst_play::gst_video::VideoOrientationMethod>,
-) -> NativeVideoOrientationV1 {
-    match (stream.map(map_orientation), media.map(map_orientation)) {
-        (Some(left), Some(right)) if left != right => NativeVideoOrientationV1::Unknown,
-        (Some(value), _) | (_, Some(value)) => value,
-        (None, None) => NativeVideoOrientationV1::Missing,
+fn orientation_method(degrees: u16) -> ResearchResult<gst_play::gst_video::VideoOrientationMethod> {
+    use gst_play::gst_video::VideoOrientationMethod as Method;
+    match degrees {
+        0 => Ok(Method::Identity),
+        90 => Ok(Method::_90r),
+        180 => Ok(Method::_180),
+        270 => Ok(Method::_90l),
+        _ => Err(actor_unavailable("native-display-orientation-unsupported")),
     }
 }
 
-fn map_orientation(value: gst_play::gst_video::VideoOrientationMethod) -> NativeVideoOrientationV1 {
+fn sink_rotation(sink: &gst::Element) -> ResearchResult<u16> {
+    use gst_play::gst_video::VideoOrientationMethod as Method;
+    match sink.property::<Method>("rotate-method") {
+        Method::Identity => Ok(0),
+        Method::_90r => Ok(90),
+        Method::_180 => Ok(180),
+        Method::_90l => Ok(270),
+        _ => Err(actor_unavailable("native-display-renderer-policy-mismatch")),
+    }
+}
+
+fn parse_source_tag(
+    tags: Option<&gst::TagListRef>,
+) -> Result<orientation::SourceOrientation, &'static str> {
+    let Some(tags) = tags else {
+        return orientation::parse_tag(0, None);
+    };
+    let count = tags.size_by_name("image-orientation");
+    let value = tags
+        .index_generic("image-orientation", 0)
+        .and_then(|value| value.get::<&str>().ok());
+    orientation::parse_tag(count, value)
+}
+
+fn wire_source_tag(value: orientation::SourceOrientation) -> SourceOrientationTagV2 {
     match value {
-        gst_play::gst_video::VideoOrientationMethod::Identity => NativeVideoOrientationV1::Identity,
-        gst_play::gst_video::VideoOrientationMethod::_90r => {
-            NativeVideoOrientationV1::Rotate90Clockwise
+        orientation::SourceOrientation::Absent => SourceOrientationTagV2::Absent {},
+        orientation::SourceOrientation::Explicit(rotation_degrees) => {
+            SourceOrientationTagV2::Explicit { rotation_degrees }
         }
-        gst_play::gst_video::VideoOrientationMethod::_180 => NativeVideoOrientationV1::Rotate180,
-        gst_play::gst_video::VideoOrientationMethod::_90l => {
-            NativeVideoOrientationV1::Rotate90Counterclockwise
-        }
-        gst_play::gst_video::VideoOrientationMethod::Horiz => {
-            NativeVideoOrientationV1::ReflectHorizontal
-        }
-        gst_play::gst_video::VideoOrientationMethod::Vert => {
-            NativeVideoOrientationV1::ReflectVertical
-        }
-        gst_play::gst_video::VideoOrientationMethod::UlLr => {
-            NativeVideoOrientationV1::ReflectUpperLeftLowerRight
-        }
-        gst_play::gst_video::VideoOrientationMethod::UrLl => {
-            NativeVideoOrientationV1::ReflectUpperRightLowerLeft
-        }
-        gst_play::gst_video::VideoOrientationMethod::Auto => NativeVideoOrientationV1::Auto,
-        gst_play::gst_video::VideoOrientationMethod::Custom => NativeVideoOrientationV1::Custom,
-        _ => NativeVideoOrientationV1::Unknown,
     }
 }
 
@@ -1228,6 +1477,62 @@ fn actor_unavailable(reason_code: &'static str) -> CommandError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn metadata_revision_changes_only_when_evidence_changes() {
+        let mut metadata = VersionedMetadata {
+            revision: 0,
+            value: Err("unavailable"),
+        };
+        metadata.update(Err("unavailable"));
+        assert_eq!(metadata.revision, 0);
+        let source = SourceMetadata {
+            stream_id: "video-0".into(),
+            encoded_width_px: 1920,
+            encoded_height_px: 1080,
+            pixel_aspect_ratio: VideoRatioV1 {
+                numerator: 1,
+                denominator: 1,
+            },
+            orientation: NativeVideoOrientationV1::Missing,
+            source_orientation: SourceOrientationV2 {
+                stream: SourceOrientationTagV2::Absent {},
+                media: SourceOrientationTagV2::Absent {},
+            },
+        };
+        metadata.update(Ok(source.clone()));
+        assert_eq!(metadata.revision, 1);
+        metadata.update(Ok(source.clone()));
+        assert_eq!(metadata.revision, 1);
+        metadata.update(Ok(SourceMetadata {
+            stream_id: "video-1".into(),
+            ..source.clone()
+        }));
+        assert_eq!(metadata.revision, 2);
+        metadata.update(Err("malformed"));
+        assert_eq!(metadata.revision, 3);
+        metadata.update(Ok(source));
+        assert_eq!(metadata.revision, 4);
+    }
+
+    #[test]
+    fn metadata_revision_exhaustion_never_restores_success() {
+        let mut metadata = VersionedMetadata {
+            revision: u64::MAX,
+            value: Err("unavailable"),
+        };
+        metadata.update(Err("changed"));
+        assert_eq!(metadata.revision, u64::MAX);
+        assert_eq!(
+            metadata.value,
+            Err("native-display-metadata-revision-exhausted")
+        );
+        metadata.update(Err("changed-again"));
+        assert_eq!(
+            metadata.value,
+            Err("native-display-metadata-revision-exhausted")
+        );
+    }
 
     struct HeldActor {
         actor: GstPlayActorHandle,
