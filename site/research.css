@@ -1151,9 +1151,12 @@ legend {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.9rem;
-  border-left: 3px solid var(--accent);
+  margin-bottom: 0.5rem;
+  padding: 0 0 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
 }
 
 .package-finalization > div {
@@ -1169,6 +1172,34 @@ legend {
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+#review-legacy-files .authoring-tools {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#review-legacy-files .authoring-tools > section {
+  min-width: 0;
+}
+
+#review-legacy-files p,
+#review-legacy-files output {
+  overflow-wrap: anywhere;
+}
+
+[data-setup-section="review"] .participant-language-readiness {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+[data-setup-section="review"] .participant-language-readiness > div {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+[data-setup-section="review"] .participant-language-readiness > button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .package-finalization h3,
@@ -1813,18 +1844,53 @@ tbody tr:last-child td {
 
 .preflight-list {
   display: grid;
-  gap: 0.45rem;
+  gap: 0;
   margin-bottom: 1rem;
 }
 
 .preflight-list li {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: center;
   gap: 0.6rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-quiet);
+  min-height: 2.5rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.preflight-list button {
+  min-height: 2.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.preflight-list button:hover {
+  text-decoration: underline;
+}
+
+.review-checks-title {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+#output-format-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0;
+}
+
+#output-format-group p {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .preflight-result {

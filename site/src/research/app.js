@@ -12,6 +12,7 @@ import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
   resolveExternalExperimentPlanV1,
+  serializeExperimentDefinitionV1,
   validateExperimentDefinitionV1,
 } from "./external-experiment.js";
 import {
@@ -1361,7 +1362,9 @@ function bindResearchInteractions(root, { surface }) {
       : null;
     experimentDocument = Object.freeze({
       definition: structuredClone(normalized.externalProtocol.definition),
-      sourceText: preservedSourceText,
+      sourceText: packageProjection
+        ? serializeExperimentDefinitionV1(normalized.externalProtocol.definition)
+        : preservedSourceText,
       sourceByteSha256: normalized.externalProtocol.sourceByteSha256,
       definitionSha256: normalized.externalProtocol.definitionSha256,
     });
@@ -1602,12 +1605,13 @@ function bindResearchInteractions(root, { surface }) {
       {
         id: "package",
         result: packageReady ? "pass" : "block",
-        label: "Portable package",
+        label: "Recipe",
         message: packageReady
           ? `${packageReproductionReceipt.caseCount} deterministic cases verified; fixed assets match ${experimentPackageDocument.package.integrity.assetManifestSha256}`
-          : experimentPackageDocument
-            ? "Rescan assets/stimuli/ and resolve any package/settings drift"
-            : "Generate or load experiment.package.json before Start",
+          : packageIsStale ? "Design changed. Edit and save the recipe again."
+            : packageExport.snapshot().busy ? "Wait for the recipe save to finish."
+              : plannerContributions.read().issues[0]?.message
+                ?? (experimentPackageDocument ? "Rescan the project videos before starting." : "Save or load a recipe before starting."),
       },
       {
         id: "language",
@@ -1616,8 +1620,8 @@ function bindResearchInteractions(root, { surface }) {
         message: languageReady
           ? `${compiledPackageSelection.languageTag} · ${selectedPackageRoute().labels.join(" › ")}`
           : selectedAttemptDisposition() === "resume-compatible"
-            ? "Restore the exact terminal route from the recoverable attempt"
-            : "The participant must traverse the package-owned tree to a terminal language",
+            ? "Restore the saved language for this attempt"
+            : "Choose a language for this participant",
       },
       {
         id: "stimuli",
@@ -1726,13 +1730,43 @@ function bindResearchInteractions(root, { surface }) {
     const list = query("#preflight-list");
     if (!(list instanceof HTMLElement)) return;
     const items = preflightItems();
-    list.replaceChildren(...items.map((item) => {
+    // Group only the repeated missing-document explanation. Underlying gates,
+    // their count, and Start/recovery decisions remain independent and intact.
+    const awaitingExperiment = !experimentDocument ? items.filter((item) =>
+      ["stimuli", "plan", "questionnaires"].includes(item.id) && item.result === "block" && /experiment\.json/u.test(item.message)) : [];
+    const displayItems = awaitingExperiment.length > 1 ? items.flatMap((item) => {
+      if (!awaitingExperiment.includes(item)) return [item];
+      return item !== awaitingExperiment[0] ? [] : [{ ...item,
+        id: awaitingExperiment.map(({ id }) => id).join(" "),
+        label: awaitingExperiment.map(({ id }) => ({ stimuli: "Videos", plan: "Schedule", questionnaires: "Questionnaires" })[id]).join(" / "),
+        message: "Load an experiment in Legacy compatibility.", reveal: "review-legacy-files" }];
+    }) : items;
+    const repeatedMessages = new Map();
+    for (const item of displayItems) {
+      const key = `${item.result}:${item.message}`;
+      if (!repeatedMessages.has(key)) repeatedMessages.set(key, []);
+      repeatedMessages.get(key).push(item);
+    }
+    const compactItems = [...repeatedMessages.values()].map((group) => group.length === 1 ? group[0] : ({
+      ...group[0], id: group.map(({ id }) => id).join(" "), label: group.map(({ label }) => label).join(" / "),
+      ...(/terminal language route/u.test(group[0].message)
+        ? { message: "Choose the participant's language to prepare the schedule.", reveal: "choose-participant-language" } : {}),
+    }));
+    const revealTargets = { experiment: "sampling-frequency", package: "package-finalization-title",
+      language: "choose-participant-language", participant: selectedParticipantState() === "available" ? "review-participant-details" : "review-participant-chooser",
+      storage: "review-provenance", timing: "review-provenance", playback: "review-provenance", output: "output-format-group" };
+    list.replaceChildren(...compactItems.map((item) => {
       const row = document.createElement("li");
       row.dataset.result = item.result;
+      row.dataset.preflightIds = item.id;
       const result = document.createElement("span");
       result.className = "preflight-result";
-      result.textContent = item.result === "pass" ? "Pass" : item.result === "warning" ? "Review" : "Blocking";
-      const message = document.createElement("span");
+      result.setAttribute("role", "img");
+      result.textContent = item.result === "pass" ? "✓" : "!";
+      result.setAttribute("aria-label", item.result === "pass" ? "Pass" : item.result === "warning" ? "Review" : "Blocking");
+      const reveal = item.reveal ?? (item.result === "block" ? revealTargets[item.id] : null);
+      const message = document.createElement(reveal ? "button" : "span");
+      if (reveal) { message.type = "button"; message.dataset.reviewReveal = reveal; }
       message.textContent = `${item.label}: ${item.message}`;
       row.append(result, message);
       return row;
@@ -3150,22 +3184,24 @@ function bindResearchInteractions(root, { surface }) {
       output.textContent = messages[state.phase];
       output.dataset.state = state.phase === "saved" && !packageIsStale ? "ready" : "warning";
     }
-    for (const id of ["package-generate", "package-reexport", "package-edit", "package-load"]) {
+    for (const id of ["package-generate", "package-edit", "package-load"]) {
       const button = query(`#${id}`);
       if (!button) continue;
       button.disabled = mode !== "setup" || state.busy
-        || (id === "package-generate" && (languageEditorLocked || review.issues.length > 0))
-        || (id === "package-reexport" && (!experimentPackageDocument || packageIsStale || review.issues.length > 0))
+        || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0))
         || (id === "package-edit" && !experimentPackageDocument);
     }
     const list = query("#package-contribution-issues");
     if (list) {
-      list.replaceChildren(...review.issues.map(({ segment, message }) => {
+      list.replaceChildren(...review.issues.map(({ segment, code, message }) => {
         const item = document.createElement("li");
         const button = document.createElement("button");
         button.type = "button";
         button.dataset.plannerSegment = segment;
-        button.textContent = message;
+        const label = { P1: "Workspace", P2: "Questionnaires", P3: "Stimulus order", P4: "Screen layout", P5: "Flubber & controls", P6: "VR screen layout" }[segment];
+        button.textContent = code === "successor-required"
+          ? `${label}: these settings cannot be saved in the current recipe format.`
+          : message.replace(`${segment}:`, `${label}:`);
         item.append(button);
         return item;
       }));
@@ -4426,8 +4462,20 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "video-import") requestVideoImport();
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
     if (target.id === "package-load") requestExperimentPackageLoad();
-    if (target.id === "package-generate") void generateExperimentPackage();
-    if (target.id === "package-reexport") void generateExperimentPackage({ reexport: true });
+    if (target.dataset.reviewReveal) {
+      const destination = query(`#${target.dataset.reviewReveal}`);
+      if (destination) {
+        const disclosure = destination instanceof HTMLDetailsElement ? destination : destination.closest("details");
+        if (disclosure) disclosure.open = true;
+        let focusTarget = destination.matches("button,input,select") ? destination
+          : destination.querySelector("button:not([disabled]),input:not([disabled]),select:not([disabled])") ?? destination;
+        if (focusTarget.matches(":disabled")) focusTarget = destination.closest("section") ?? destination.parentElement;
+        if (!focusTarget.matches("button,input,select")) focusTarget.tabIndex = -1;
+        focusTarget.focus();
+        destination.scrollIntoView({ block: "nearest" });
+      }
+    }
+    if (target.id === "package-generate") void generateExperimentPackage({ reexport: languageEditorLocked });
     if (target.id === "package-edit") void editExperimentPackage();
     if (target.dataset.plannerSegment) {
       const section = PLANNER_SEGMENT_SECTIONS[target.dataset.plannerSegment];
