@@ -8,10 +8,12 @@
 - Deliverable: audit every active feedback control; strict versioned complete
   contribution, atomic editable restore and complete conservative layout bounds.
   Preserve the exact existing v1 reader and document downstream interpretation.
-- Current source exports input/visual/six mappings but omits response grid,
+- At pass start source exported input/visual/six mappings but omitted response grid,
   duration/hold, halo width/gradient/falloff, palette placement and applied labels.
   Test position, held input, capture state and unapplied dialog edits are transient.
-  Renderer and legacy-step precedence are coordinated explicitly with P7/Preview.
+  Coordinator explicitly approved saving the current Flubber/Grid/procedural-Face
+  renderer. V2 response and P4/P6 geometry have sole authority; retained legacy
+  scalar/visibility/normalized placement controls are disabled in V2.
 - P5 owns pure validators/envelope and its app reader/writer/notification seams.
   Preview owns transient reset/render adapter; P7 owns master codec/save/reopen;
   P4/P6 consume P5 bounds. Integration alone collects shared source.
@@ -20,6 +22,18 @@
   and source-bound build/test receipts. The already-collected harness fix is reused.
   Runner execution/correspondence, physical input and installed qualification are
   explicitly deferred and do not block this Planner completion pass.
+- Implementation ready: pure `95b2e9`, controller/native `781886c`, Preview
+  `d996ddd` collected through `fa1f5d5`, and direct reset/disposal/Unicode guard
+  `5c9d3df`. Complete type/interfaces/inventory are in
+  `docs/planner-p5-feedback-v2.md`. P7/P4/P6 received exact producer checkpoints.
+- Evidence at `5c9d3df`: 656 Node tests, desktop11/Pages216 closures. Native
+  P5 three tests include thirteen JS/Rust complete-envelope comparisons; locked
+  no-default all-target Clippy with warnings denied passes. Formatting only
+  reorders adjacent native module declarations; validator visibility is crate-local.
+- Preview reports 129 real-controller V2 checks at each of 1280/800, including
+  exact precision, all renderers, response behavior, invalid/stale/legacy/closed
+  restore and transient-state erasure. Its final clean fixture receipt is being
+  collected. No P5 application writer remains active unless evidence finds a defect.
 
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,
