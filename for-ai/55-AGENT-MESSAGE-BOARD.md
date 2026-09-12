@@ -1096,6 +1096,50 @@
   receipt; existing editor.save alone is not a CLI result. TAS translations and
   permissions remain independently source-gated. Runner is allocated separately,
   not a P2 mutation target. No scientific schema/scoring or runtime policy change.
+### 20260912-runner-master-core-handoff
+
+- Core master consumer is being frozen independently of the newly allocated
+  self-contained information stream/typed-demographics follow-up. See RR ledger
+  65 and `docs/runner-master-execution-v1.md` for implementation and evidence.
+- Main owns shared startup/close orchestration. New `MasterRuntime` exposes
+  nonblocking `shutdown()`, actual thread `is_stopped()`, and `join_stopped()`;
+  the native input fence precedes worker/recorder completion, then actor teardown
+  and parent release. Pending foreign calls retain the parent; no force-exit or
+  qualification bypass is introduced. Runner lib edits are additive modules,
+  state construction and handlers only.
+- RR-11 owner reserves the v1 adapter optional start/finish executor seam and
+  native sample monitor publication after successful storage. Master uses its
+  separate adapter and will publish through the agreed typed monitor projection.
+- Root's new information protocol direction and demographic fields are explicit
+  user allocations. Await S2/main's versioned field contract before consumer
+  changes; preserve every old reader. New work proceeds in a separate follow-up
+  worktree so main can collect the stopped core commit.
+
+### 20260912-runner-master-consumer
+
+- Owner **Experiment Runner**, RR-02/RR-10 and named RR-03–07 consumer seams.
+  Backend Verification, explicitly allocated by Chat Orchestrator for the user's
+  production Planner CLI → exact saved master → desktop Runner test. This bounded
+  allocation supersedes the earlier Runner correspondence deferral.
+- Isolated `codex/segment-runner-master-consumer`, worktree
+  `D:/GitHub/affect-tracker-research-runner-master`, clean baseline `3301440`
+  explicitly merges canonical `460f516` with stopped Runner candidate `f0eab61`.
+- Deliverable: strict complete master intake, explicit variant/language selection,
+  native reconstruction and supported desktop consumer mappings, exact artifact
+  correspondence evidence. Preserve frozen v1 and every complete P1–P6 field.
+  No allocator, questionnaire translation, recording policy in Planner, new unsafe
+  adapter or qualification bypass. TAS-DE source remains producer/coordinator work.
+- Main owns Planner CLI, shared integration and its Planner-only lib.rs changes;
+  S7 owns Planner file extraction. Runner may add its module declarations and
+  Runner-only handlers/state. Workspace/command shared symbols require agreement.
+- Baseline inspection: Runner still dispatches v1 only. Native master reader and
+  complete owner projections exist. Gst capability deliberately reports Start,
+  format qualification and redistribution review false even when actor is ready.
+  Linked builds, previews and parser tests cannot establish actual execution.
+- Evidence now: strict source/hash/selection and per-field projection tests;
+  real supported desktop path against the producer's eventual exact artifact.
+  Preserve open app processes and their binaries; use a new candidate/output root.
+  Installed/physical qualification remains its own evidence gate.
 
 ### 20260912-p3-native-catalogue-export-command
 

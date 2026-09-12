@@ -1,4 +1,5 @@
 import { resolveRunnerSelection } from "./recipe.js";
+import { masterTimeline } from "./master-recipe.js";
 
 export function participantNumber(value) {
   const match = /^(?:P)?([0-9]{1,6})$/iu.exec(String(value).trim());
@@ -11,6 +12,11 @@ export function participantLabel(value) {
   return `P${String(number).padStart(2, "0")}`;
 }
 export function participantCatalogue(recipe) {
+  if (recipe.recipe) {
+    // Participant count is study metadata, never a variant allocator or history.
+    const ids = Array.from({ length: 100000 }, (_, i) => `P${String(i + 1).padStart(3, "0")}`);
+    return { ids, resolve: value => { const number = participantNumber(value); return number === null ? null : ids[number - 1]; } };
+  }
   const ids = recipe.package.settings.externalProtocol.definition.schedules.map(s => s.participantId);
   const lookup = new Map();
   for (const id of ids) {
@@ -22,8 +28,9 @@ export function participantCatalogue(recipe) {
 }
 
 /** Resolve the actual run selection; no allocation, media, recording or file writes. */
-export async function participantTimeline(recipe, participantId, path) {
-  const selection = await resolveRunnerSelection(recipe, participantId, path);
+export async function participantTimeline(recipe, participantId, path, variantId) {
+  const selection = await resolveRunnerSelection(recipe, participantId, path, variantId);
+  if (recipe.recipe) return { selection, events: masterTimeline(selection) };
   const stimuli = new Map(recipe.package.assets.stimuli.map(s => [s.stimulusId, s]));
   const forms = new Map(selection.compiled.settings.questionnaires.definitions.map(q => [q.questionnaireId, q]));
   return { selection, events: selection.compiled.protocolPlan.steps.map(step => {

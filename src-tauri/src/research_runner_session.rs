@@ -16,6 +16,64 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::Path, sync::Arc};
 use tauri::{Manager, State, WebviewWindow};
 
+pub(crate) enum RunnerDocument {
+    Package(Box<LoadedExperimentPackageReceipt>),
+    Master(Box<crate::research_planner_recipe::LoadedPlannerRecipe>),
+}
+impl RunnerDocument {
+    pub(crate) fn read(source: &str) -> ResearchResult<Self> {
+        // Dispatch through P7's complete bounded reader, then retain typed owners.
+        let value = crate::research_planner_recipe::parse_planner_recipe_file(source.as_bytes())?;
+        if value["kind"] == "planner-recipe-v1" {
+            Ok(Self::Master(Box::new(
+                crate::research_planner_recipe::parse_planner_recipe_bytes(source.as_bytes())?,
+            )))
+        } else {
+            Ok(Self::Package(Box::new(
+                parse_canonical_experiment_package_text(source)?,
+            )))
+        }
+    }
+    pub(crate) fn source_hash(&self) -> &str {
+        match self {
+            Self::Package(p) => &p.canonical_source_byte_sha256,
+            Self::Master(p) => &p.canonical_source_byte_sha256,
+        }
+    }
+    pub(crate) fn lsl_enabled(&self) -> bool {
+        match self {
+            Self::Package(p) => p.package.settings.advanced.lsl.enabled,
+            Self::Master(p) => p.recipe.policy.lsl.enabled,
+        }
+    }
+    fn valid_participant(&self, id: &str) -> bool {
+        match self {
+            Self::Package(p) => p
+                .package
+                .settings
+                .external_protocol
+                .definition
+                .schedules
+                .iter()
+                .any(|s| s.participant_id == id),
+            Self::Master(_) => {
+                crate::research_runner_master::validate_master_participant(id).is_ok()
+            }
+        }
+    }
+    pub(crate) fn ensure_directory(&self, root: &Path) -> ResearchResult<CheckedRunDirectory> {
+        match self {
+            Self::Package(p) => ensure_recipe_directory(root, p),
+            Self::Master(p) => ensure_source_directory(
+                root,
+                &p.canonical_source_byte_sha256,
+                &p.canonical_source_text,
+                "experiment.master.json",
+            ),
+        }
+    }
+}
+
 pub(crate) const SESSION_FILE: &str = "runner-session.v1.json";
 
 pub(crate) fn recipe_directory_name(hash: &str) -> ResearchResult<String> {
@@ -115,26 +173,35 @@ pub(crate) fn ensure_recipe_directory(
     root: &Path,
     loaded: &LoadedExperimentPackageReceipt,
 ) -> ResearchResult<CheckedRunDirectory> {
+    ensure_source_directory(
+        root,
+        &loaded.canonical_source_byte_sha256,
+        &loaded.canonical_source_text,
+        "experiment.package.json",
+    )
+}
+
+fn ensure_source_directory(
+    root: &Path,
+    hash: &str,
+    source: &str,
+    snapshot_name: &str,
+) -> ResearchResult<CheckedRunDirectory> {
     let outputs = checked_run_child(&checked_run_root(root)?, "outputs")?;
-    let directory = ensure_checked_run_child(
-        &outputs,
-        &recipe_directory_name(&loaded.canonical_source_byte_sha256)?,
-    )?;
+    let directory = ensure_checked_run_child(&outputs, &recipe_directory_name(hash)?)?;
     let _lock = acquire_attempt_lock(&directory.path)?;
-    let path = directory.path.join("experiment.package.json");
+    let path = directory.path.join(snapshot_name);
     if !path.try_exists().map_err(CommandError::io)? {
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&path)
             .map_err(CommandError::io)?;
-        file.write_all(loaded.canonical_source_text.as_bytes())
+        file.write_all(source.as_bytes())
             .map_err(CommandError::io)?;
         file.sync_all().map_err(CommandError::io)?;
     }
-    if read_ordinary(&path, &directory.path, 64 * 1024 * 1024)?
-        != loaded.canonical_source_text.as_bytes()
-    {
+    if read_ordinary(&path, &directory.path, 64 * 1024 * 1024)? != source.as_bytes() {
         return Err(CommandError::forbidden(
             "The recipe output folder contains different experiment bytes.",
         ));
@@ -157,23 +224,14 @@ fn selection(
     source: &str,
     participant_id: Option<String>,
 ) -> ResearchResult<SelectionReceipt> {
-    let loaded = parse_canonical_experiment_package_text(source)?;
-    let valid = |id: &str| {
-        loaded
-            .package
-            .settings
-            .external_protocol
-            .definition
-            .schedules
-            .iter()
-            .any(|s| s.participant_id == id)
-    };
+    let loaded = RunnerDocument::read(source)?;
+    let valid = |id: &str| loaded.valid_participant(id);
     if participant_id.as_deref().is_some_and(|id| !valid(id)) {
         return Err(CommandError::invalid_contract(
             "This JSON has no schedule for that participant number.",
         ));
     }
-    let directory = ensure_recipe_directory(root, &loaded)?;
+    let directory = loaded.ensure_directory(root)?;
     let _lock = acquire_attempt_lock(&directory.path)?;
     let path = directory.path.join("participant.selection.json");
     let participant_id = if let Some(id) = participant_id {
@@ -219,12 +277,9 @@ fn selection(
     Ok(SelectionReceipt {
         schema: "affect-runner-selection",
         version: 1,
-        package_source_byte_sha256: loaded.canonical_source_byte_sha256.clone(),
+        package_source_byte_sha256: loaded.source_hash().into(),
         participant_id,
-        output_directory: format!(
-            "outputs/{}",
-            recipe_directory_name(&loaded.canonical_source_byte_sha256)?
-        ),
+        output_directory: format!("outputs/{}", recipe_directory_name(loaded.source_hash())?),
     })
 }
 
@@ -260,6 +315,41 @@ pub async fn research_runner_selection(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn complete_master_selection_retains_exact_source_in_its_own_folder() {
+        let root =
+            std::env::temp_dir().join(format!("runner-master-output-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        let master =
+            include_str!("../../test/fixtures/planner-recipe-locations-current-v1.canonical.json");
+        let legacy = include_str!("../../test/fixtures/experiment-package-v1.canonical.json");
+        let a = selection(&root, master, Some("P100000".into())).unwrap();
+        let b = selection(&root, legacy, Some("P001".into())).unwrap();
+        assert_ne!(a.output_directory, b.output_directory);
+        assert_eq!(
+            selection(&root, master, None)
+                .unwrap()
+                .participant_id
+                .as_deref(),
+            Some("P100000")
+        );
+        assert_eq!(
+            selection(&root, legacy, None)
+                .unwrap()
+                .participant_id
+                .as_deref(),
+            Some("P001")
+        );
+        assert_eq!(
+            fs::read(
+                root.join(&a.output_directory)
+                    .join("experiment.master.json")
+            )
+            .unwrap(),
+            master.as_bytes()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn selection_is_retained_and_outputs_are_isolated_by_exact_json() {
         let root_path =

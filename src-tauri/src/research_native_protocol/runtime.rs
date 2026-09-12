@@ -50,6 +50,7 @@ use crate::research_workspace::WorkspaceService;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{self, JoinHandle};
@@ -267,6 +268,7 @@ impl PackageRunStatus {
 }
 
 pub struct PackageProtocolRuntime {
+    companion_reserved: Arc<AtomicBool>,
     recorder: Option<Arc<crate::research_recorder::RecorderService>>,
     workspace: Arc<WorkspaceService>,
     native_media: Arc<NativeMediaService>,
@@ -281,6 +283,13 @@ struct ActivePackageRun {
     status: Arc<Mutex<PackageRunStatus>>,
     worker: Option<JoinHandle<()>>,
     input_authority_id: String,
+}
+
+pub(crate) struct CompanionLease(Arc<AtomicBool>);
+impl Drop for CompanionLease {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 
 enum WorkerMessage {
@@ -318,6 +327,7 @@ impl PackageProtocolRuntime {
         input: Arc<ResearchInputService>,
     ) -> Self {
         Self {
+            companion_reserved: Arc::new(AtomicBool::new(false)),
             recorder: None,
             workspace,
             native_media,
@@ -341,16 +351,29 @@ impl PackageProtocolRuntime {
         operation: impl FnOnce() -> ResearchResult<T>,
     ) -> ResearchResult<T> {
         let active = self.lock_active();
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         operation()
     }
 
+    /// A complete-master worker shares the same native input/media/recorder.
+    /// Reserve those services under the legacy Start mutex until worker teardown.
+    pub(crate) fn begin_companion<T>(
+        &self,
+        operation: impl FnOnce(CompanionLease) -> ResearchResult<T>,
+    ) -> ResearchResult<T> {
+        let active = self.lock_active();
+        if active.is_some() || self.companion_reserved.swap(true, Ordering::AcqRel) {
+            return Err(CommandError::run_active());
+        }
+        operation(CompanionLease(Arc::clone(&self.companion_reserved)))
+    }
+
     pub fn start(&self, request: StartPackageRunRequest) -> ResearchResult<PackageStartRunReceipt> {
         require_native_acquisition(self.native_acquisition_supported)?;
         let mut active = lock(&self.active);
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {
@@ -661,7 +684,7 @@ impl PackageProtocolRuntime {
     ) -> ResearchResult<PackageStartRunReceipt> {
         require_native_acquisition(self.native_acquisition_supported)?;
         let mut active = lock(&self.active);
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {

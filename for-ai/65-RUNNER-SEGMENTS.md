@@ -21,6 +21,49 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Core master consumer checkpoint — 2026-09-12
+
+The allocated RR-02/RR-10 and RR-03–07 seams now include complete native/JS master
+plans, explicit variant/route/participant selection, P4 exact desktop geometry,
+P5 native response behavior, complete P2 Likert table presentation, a separate
+native master worker, and dedicated per-source attempts/history/records. Frozen
+v1 dispatch remains intact. Master recovery is explicitly unavailable. Main owns
+the shared asynchronous startup/close integration and native qualification; no
+new Runner binary has replaced either preserved user-opened application.
+
+Software evidence in `D:/GitHub/.affect-runner-master-build/`: 776 Node tests pass
+with bounded test concurrency; ten focused native master checks pass; 17 legacy
+and five master headless presentation cases pass. Production master outlets and
+the recorder produced `master-synthetic-stream-01.xdf`; independent pyxdf 1.17.0
+plus the P3 reader reconstructed all ten synthetic occurrences and rejected
+missing-profile/event and reversed-clock cases. This is synthetic engineering
+evidence, not actual experiment execution. Strict all-target default Clippy has
+only inherited P1/native-geometry dead-code findings at this baseline, routed to
+main; do not mask them here. The initial full native run had 257 passes, two
+ignored and one storage-readiness failure on the full C: drive; a D: temporary
+directory rerun passes all 258 tests with two explicitly ignored, recorded in
+`master-all-native-d-temp.log`. No machine-wide temp or runtime default changed.
+
+The later user expansion (root amendment `f877b8a`, full goal ledger 69) allocates
+a self-contained primary XDF information stream and shipped typed EN/DE
+demographics. It is a subsequent checkpoint: ≤128 KiB indexed wire frames,
+≤64 MiB committed startup bundle, exact source/selection/definitions/answers,
+observed lifecycle/outcome and strict independent reconstruction. S2/main own the
+new P2/master dispatch; Runner must not invent text/age-as-Likert data or claim
+the first-generation dictionary-only marker receipt satisfies the expansion.
+
+## Current correspondence allocation — 2026-09-12
+
+Chat Orchestrator has explicitly allocated the user's production Planner CLI →
+saved master → desktop Runner test to RR-02/RR-10, with named RR-03–07 consumer
+seams. Backend Verification starts at isolated merge `3301440` on
+`codex/segment-runner-master-consumer`. Preserve all complete master fields and
+the frozen v1 reader. Explicit variant selection is allowed; an allocation
+algorithm is not inferred. Native playback/input/recording qualification is not
+waived. Actual execution, observed events and timings must be distinguished from
+strict reconstruction, preview, linked builds and synthetic fixtures. The exact
+producer artifact and TAS-DE source are coordinated separately. See the matching
+message-board entry for scope, shared-file ownership and evidence plan.
 
 This ledger applies to agents implementing the **Runner companion only**.
 Read [the two-program boundary](16-COMPANION-APP-BOUNDARY.md), the charter and

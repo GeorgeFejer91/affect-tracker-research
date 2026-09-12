@@ -27,6 +27,13 @@ from production CLI, verify UI parity, load the exact exported master and observ
 Runner actions. See [69](69-CLI-RUNNER-END-TO-END-GOAL.md) for allocation,
 evidence and remaining inputs. Earlier deferral text below does not block this
 newly authorized work, and completed Planner authoring remains independently true.
+The 2026-09-12 correspondence pass now consumes P7's complete
+`affect-research-planner-recipe` v1 with `planner-recipe-reproduction-v2` identity.
+This is a separately allocated desktop test, superseding the earlier blanket
+deferral. The existing strict native/browser master readers and owner projections
+are the authority; no conversion to a reduced v1 package is permitted. Validity,
+selected-content interpretation and actual execution remain separate claims.
+The source at pass start is `3301440`; implementation/evidence follows below.
 
 This is the producer/consumer inventory, not another recipe schema. P7 owns
 complete canonical recipe formats. Runner derives requirements after strict

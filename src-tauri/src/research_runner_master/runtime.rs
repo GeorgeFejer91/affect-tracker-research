@@ -1,0 +1,290 @@
+//! Native master session authority, separate from the frozen package worker.
+use super::{
+    markers::MasterMarkers, storage::MasterStorage, worker::MasterWorker, MasterSelector,
+    PreparedMaster,
+};
+use crate::research_error::{CommandError, ResearchResult};
+use crate::research_input::ResearchInputService;
+use crate::research_native_media::{
+    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
+    PlaybackQualification,
+};
+use crate::research_native_protocol::{
+    input_mailbox::ProtocolInputMailbox, runtime::PackageProtocolRuntime,
+};
+use crate::research_participant::{validate_participant_code, TransientParticipant};
+use crate::research_recorder::RecorderService;
+use crate::research_workspace::WorkspaceService;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    sync::{
+        mpsc::{self, SyncSender},
+        Arc, Mutex, MutexGuard,
+    },
+    thread::{self, JoinHandle},
+    time::Duration,
+};
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterStartRequest {
+    pub workspace_id: String,
+    pub source_text: String,
+    pub participant: TransientParticipant,
+    pub selector: MasterSelector,
+    pub rerun_confirmed: bool,
+    pub input_test_receipt_id: String,
+}
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum MasterPhase {
+    AwaitingPresentation,
+    Questionnaire,
+    Interval,
+    Preparing,
+    Playing,
+    Pausing,
+    Paused,
+    Resuming,
+    Finished,
+    Failed,
+}
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasterStatus {
+    pub schema: &'static str,
+    pub version: u32,
+    pub active: bool,
+    pub run_id: String,
+    pub attempt_id: String,
+    pub participant_id: String,
+    pub recipe_source_byte_sha256: String,
+    pub plan_identity_sha256: String,
+    pub phase: MasterPhase,
+    pub position: u32,
+    pub step_count: u32,
+    pub completed_step_count: u32,
+    pub answers: std::collections::BTreeMap<String, String>,
+    pub sample_count: u64,
+    pub event_count: u64,
+    pub missed_slot_count: u64,
+    pub current_valence: f64,
+    pub current_arousal: f64,
+    pub input_active: bool,
+    pub interval_remaining_ms: Option<f64>,
+    pub media_time_ms: Option<f64>,
+    pub failure_code: Option<String>,
+    pub result: Option<Value>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterChoice {
+    pub item_id: String,
+    pub option_id: String,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
+pub enum MasterAction {
+    Presented {
+        position: u32,
+    },
+    Draft {
+        position: u32,
+        answers: Vec<MasterChoice>,
+    },
+    Submit {
+        position: u32,
+        answers: Vec<MasterChoice>,
+    },
+    Pause,
+    Resume,
+    Stop,
+}
+pub(crate) type Message = (MasterAction, mpsc::Sender<ResearchResult<MasterStatus>>);
+struct Active {
+    run_id: String,
+    sender: SyncSender<Message>,
+    status: Arc<Mutex<MasterStatus>>,
+    worker: JoinHandle<()>,
+    authority: InputAuthority,
+    cancellation: Arc<AtomicBool>,
+    window: (u32, u32, f64),
+}
+#[derive(Clone)]
+pub(crate) struct InputAuthority {
+    pub service: Arc<ResearchInputService>,
+    pub id: String,
+}
+impl Drop for InputAuthority {
+    fn drop(&mut self) {
+        self.service.end_run(&self.id);
+    }
+}
+
+pub struct MasterRuntime {
+    pub(crate) workspace: Arc<WorkspaceService>,
+    pub(crate) media: Arc<NativeMediaService>,
+    pub(crate) input: Arc<ResearchInputService>,
+    pub(crate) recorder: Arc<RecorderService>,
+    legacy: Arc<PackageProtocolRuntime>,
+    active: Mutex<Option<Active>>,
+}
+impl MasterRuntime {
+    pub(crate) fn new(
+        workspace: Arc<WorkspaceService>,
+        media: Arc<NativeMediaService>,
+        input: Arc<ResearchInputService>,
+        recorder: Arc<RecorderService>,
+        legacy: Arc<PackageProtocolRuntime>,
+    ) -> Self {
+        Self {
+            workspace,
+            media,
+            input,
+            recorder,
+            legacy,
+            active: Mutex::new(None),
+        }
+    }
+    pub fn start(
+        &self,
+        request: MasterStartRequest,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        let mut active = lock(&self.active);
+        if active.as_ref().is_some_and(|a| !a.worker.is_finished()) {
+            return Err(CommandError::run_active());
+        }
+        if let Some(previous) = active.take() {
+            let _ = previous.worker.join();
+        }
+        self.legacy.begin_companion(|lease| {
+            crate::research_platform::require_native_acquisition(crate::research_platform::NATIVE_ACQUISITION_SUPPORTED)?;
+            if self.media.authorize_playback(PlaybackMode::NativeGstPlay)? != PlaybackQualification::QualifiedNative { return Err(CommandError::native_media_unavailable("native-gstplay-qualification-required")); }
+            let prepared = PreparedMaster::read(&request.source_text, &request.participant.participant_id, request.selector)?;
+            let viewport = native_viewport(&prepared, window)?;
+            let bindings = self.workspace.validate_runner_video_catalogue(&request.workspace_id, &prepared.loaded.recipe.segments.p1["videoCatalogue"])?;
+            let code = validate_participant_code(&request.participant.participant_code)?;
+            if !(1..=120).contains(&request.participant.age) { return Err(CommandError::invalid_contract("Participant age must be within 1–120.")); }
+            let recording = self.recorder.status();
+            if recording.active && recording.recipe_sha256.as_deref() != Some(&prepared.plan.recipe_source_byte_sha256) { return Err(CommandError::forbidden("The recorder belongs to a different experiment JSON.")); }
+            let run_id = format!("run-{}", uuid::Uuid::new_v4());
+            // Validate stream limits before consuming the native input-test receipt.
+            MasterMarkers::new(&prepared.plan, &run_id, "attempt-preflight")?;
+            let mailbox = Arc::new(ProtocolInputMailbox::new(prepared.loaded.recipe.segments.p5.input.kind));
+            let sink = Arc::clone(&mailbox);
+            let authority = InputAuthority { service: Arc::clone(&self.input), id: self.input.prepare_run_full(prepared.loaded.recipe.segments.p5.input.clone(), &request.input_test_receipt_id, move |update| sink.push(update))? };
+            let participant = json!({"participantId":request.participant.participant_id,"participantCode":code,"age":request.participant.age,"gender":request.participant.gender,"handedness":request.participant.handedness});
+            let storage = self.workspace.with_workspace(&request.workspace_id, |root,_| MasterStorage::create(root, &prepared, &run_id, participant, request.rerun_confirmed))?;
+            let receipt = storage.receipt.clone();
+            let (sender, receiver) = mpsc::sync_channel(32);
+            let mut worker = MasterWorker::new(prepared, request.workspace_id, bindings, viewport, storage, authority.clone(), mailbox, Arc::clone(&self.workspace), Arc::clone(&self.media), Arc::clone(&self.recorder), lease)?;
+            let status = Arc::clone(&worker.public);
+            let cancellation = Arc::clone(&worker.cancellation);
+            let handle = thread::Builder::new().name("runner-master".into()).spawn(move || {
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| worker.run(receiver)));
+                if outcome.is_err() { worker.fail("master-worker-panicked"); }
+            }).map_err(CommandError::io)?;
+            *active = Some(Active {run_id,sender,status,worker:handle,authority,cancellation,window});
+            Ok(receipt)
+        })
+    }
+    pub fn status(&self) -> Option<MasterStatus> {
+        lock(&self.active).as_ref().map(|a| lock(&a.status).clone())
+    }
+    pub(crate) fn validate_window(
+        &self,
+        run_id: &str,
+        window: (u32, u32, f64),
+        fullscreen: bool,
+    ) -> ResearchResult<()> {
+        let active = lock(&self.active);
+        let a = active
+            .as_ref()
+            .filter(|a| a.run_id == run_id)
+            .ok_or_else(CommandError::no_active_run)?;
+        if !fullscreen || a.window != window {
+            a.authority.service.end_run(&a.authority.id);
+            a.cancellation.store(true, Ordering::Release);
+            return Err(CommandError::forbidden(
+                "The native fullscreen viewport no longer matches this attempt.",
+            ));
+        }
+        Ok(())
+    }
+    pub fn action(&self, run_id: &str, action: MasterAction) -> ResearchResult<MasterStatus> {
+        let (sender, receiver) = mpsc::channel();
+        {
+            let active = lock(&self.active);
+            let a = active
+                .as_ref()
+                .filter(|a| a.run_id == run_id && !a.worker.is_finished())
+                .ok_or_else(CommandError::no_active_run)?;
+            a.sender.try_send((action, sender)).map_err(|_| {
+                CommandError::forbidden("Master command queue is unavailable or full.")
+            })?;
+        }
+        receiver.recv_timeout(Duration::from_secs(30)).map_err(|_| CommandError::forbidden("Master command acknowledgement is unavailable; check native session status before retrying."))?
+    }
+    pub fn shutdown(&self) {
+        if let Some(a) = lock(&self.active).as_ref() {
+            // Withdraw acquisition immediately; never wait on the UI/window thread.
+            a.authority.service.end_run(&a.authority.id);
+            a.cancellation.store(true, Ordering::Release);
+        }
+    }
+    /// Used by the composition shutdown coordinator before releasing the native
+    /// player/parent. This is a thread-completion observation, not an early ack.
+    pub fn is_stopped(&self) -> bool {
+        lock(&self.active)
+            .as_ref()
+            .is_none_or(|a| a.worker.is_finished())
+    }
+    pub fn join_stopped(&self) -> ResearchResult<()> {
+        let mut active = lock(&self.active);
+        if active.as_ref().is_some_and(|a| !a.worker.is_finished()) {
+            return Err(CommandError::forbidden(
+                "Master worker teardown is still pending.",
+            ));
+        }
+        if let Some(a) = active.take() {
+            a.worker
+                .join()
+                .map_err(|_| CommandError::forbidden("Master worker teardown panicked."))?;
+        }
+        Ok(())
+    }
+}
+pub(crate) fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|e| e.into_inner())
+}
+pub(crate) fn native_viewport(
+    prepared: &PreparedMaster,
+    (width, height, scale): (u32, u32, f64),
+) -> ResearchResult<NativeMediaViewportPxV1> {
+    let authored = &prepared.loaded.recipe.segments.p4.viewport;
+    if !scale.is_finite()
+        || f64::from(width) / scale != authored.width_css_px
+        || f64::from(height) / scale != authored.height_css_px
+    {
+        return Err(CommandError::forbidden(
+            "The fullscreen viewport must exactly match the saved desktop layout.",
+        ));
+    }
+    let reference = &prepared.plan.selected["layout"]["geometry"]["reference"];
+    let number = |key| {
+        reference[key]
+            .as_f64()
+            .ok_or_else(|| CommandError::invalid_contract("Missing native layout geometry."))
+    };
+    NativeMediaViewportCssV1 {
+        left_css_px: number("x")?,
+        top_css_px: number("y")?,
+        width_css_px: number("width")?,
+        height_css_px: number("height")?,
+        layout_revision: 1,
+    }
+    .to_physical(scale, width, height)
+}

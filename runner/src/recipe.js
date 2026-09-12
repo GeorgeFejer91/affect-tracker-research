@@ -1,17 +1,23 @@
 import {
-  parseExperimentPackageV1, compileExperimentPackageSelectionV1,
+  compileExperimentPackageSelectionV1,
   resolveLanguageSelectionTraversalStepV1,
 } from "../../site/src/research/experiment-package.js";
 import { evaluateFlubberMappings } from "../../site/src/research/mappings.js";
+import { parsePlannerRecipeFile } from "../../site/src/research/planner-recipe.js";
+import { resolveMasterPlan } from "./master-recipe.js";
 
 export { resolveLanguageSelectionTraversalStepV1 };
 
-/** Complete readers only. Successor master dispatch belongs to the P7 handoff. */
+/** P7's complete dispatch preserves both independent strict readers. */
 export async function readRunnerRecipe(bytes) {
-  return parseExperimentPackageV1(bytes);
+  return (await parsePlannerRecipeFile(bytes)).document;
 }
 
-export async function resolveRunnerSelection(receipt, participantId, languageSelectionPath) {
+export const runnerLanguageTree = receipt => receipt.recipe?.segments.P2.languageSelection ?? receipt.package.languageSelection;
+export const runnerInput = receipt => receipt.recipe?.segments.P5.input ?? receipt.package.settings.input;
+
+export async function resolveRunnerSelection(receipt, participantId, languageSelectionPath, variantId) {
+  if (receipt.recipe) return resolveMasterPlan(receipt, participantId, languageSelectionPath, variantId);
   const route = resolveLanguageSelectionTraversalStepV1(receipt.package.languageSelection, languageSelectionPath);
   if (route.kind !== "terminal") throw new Error("Complete the participant's language choices first.");
   const compiled = await compileExperimentPackageSelectionV1(receipt.package, {
@@ -37,6 +43,25 @@ export async function resolveRunnerSelection(receipt, participantId, languageSel
     resolvedPlan: compiled.experimentPlan,
     resolvedProtocolPlan: compiled.protocolPlan,
   }) });
+}
+
+/** Complete P5 renderer projection. P4 supplies the overlay box independently. */
+export function runnerMasterFeedbackState(feedback, x = 0, y = 0) {
+  const mapped = evaluateFlubberMappings(feedback.mappings, { x, y });
+  return {
+    x, y, gridVisible: false, flubberVisible: false, hideFeedback: feedback.visual.hideFeedback,
+    sizePercent: 100, position: { x: 0.5, y: 0.5 }, lockPosition: true,
+    transparencyPercent: feedback.visual.transparency * 100,
+    displayMode: feedback.presentation.renderer === "procedural-face" ? "face" : feedback.presentation.renderer,
+    responseMode: feedback.response.mode, tileCount: feedback.response.grid.columns, tileRows: feedback.response.grid.rows,
+    colorAnchorMode: feedback.presentation.colorAnchors,
+    colors: { ...feedback.visual.colors }, grid: { ...feedback.visual.grid },
+    flubber: { ...feedback.visual.flubber, haloSizePercent: feedback.presentation.halo.widthPercent,
+      haloGradient: feedback.presentation.halo.gradient, haloSteepness: feedback.presentation.halo.steepness },
+    frequency: mapped.oscillationFrequency, edgeSmoothness: mapped.edgeSmoothness,
+    amplitude: mapped.projectionAmplitude, pulseSynchrony: mapped.pulseSynchrony,
+    waveVariation: mapped.waveSizeVariation, saturation: mapped.saturation,
+  };
 }
 
 /** Only a fully parsed recipe reaches this projection. No editor defaults. */
