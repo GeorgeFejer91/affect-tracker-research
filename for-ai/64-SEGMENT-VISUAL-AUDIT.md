@@ -8,6 +8,50 @@ and the implementation sequence in [`62-PLANNER-CLOSURE-PLAN.md`](./62-PLANNER-C
 The charter remains the product authority. A cleaner screen is not proof that
 its recipe contribution or Runner implementation is complete.
 
+## Final combined visual verification — 2026-09-12
+
+Application `875efae0a852bdcea978e8a12b74c0e81288d51c` combines every required
+Planner handoff, delivered in canonical `1218c9e`. Root and two independent reviewers inspected **106 PNGs** at
+1280×900 and 800×700: all seven sections in Chrome and Edge (28 each), plus
+all expanded Flubber Response/Advanced/mapping disclosures (25 each). Every
+image hash matches its receipt; source stayed clean and fixed. All rows report
+zero browser errors, duplicate IDs, horizontal overflow or participant controls.
+No material readability, clipping, overlap or redundant-control defect remains
+in these captured states. The duplicate preview badge is gone and controls,
+required choices, errors and confirmation footers are reachable.
+
+Evidence roots under `D:/GitHub/.affect-preview-checks/`:
+
+- `planner-final-{chrome,edge}-875efae-20260912/`: default actual Planner, no
+  injected media, bridge or contributions. Both complete receipts bind source,
+  harness and 28 PNGs. P4's missing reference method is visibly unselected.
+- `planner-final-expanded-{chrome,edge}-875efae-20260912/`: explicit
+  `expand-details` helper mode opens actual details without changing product
+  code. All default Flubber/stepwise Response, Advanced and six mapping groups
+  are visible through overlapping scroll pages. Conditional alternate-mode
+  fields are covered by separate P5 owner fixtures, not these images.
+- `planner-final-workflow-{chrome,edge}-875efae-20260912/`: root independently
+  inspected both populated saved Review PNGs. Each actual-controller workflow
+  passes 65 checks; header, completion mark, acknowledged save and footer agree.
+  Real CSS/icons are loaded and source/HTML/browser/PNG hashes are bound.
+- `planner-completion-20260912/clean-visible-error-e00cb35/`: independent review
+  inspected the visible Planner workspace failure. Its alert and announcement
+  agree; 108 tracked source hashes, two dependency hashes and three role PNGs
+  match. Product source remains875efae; e00cb35 changes checks/docs only.
+
+Separately inspected populated/error owner evidence remains state-specific:
+P2 full table/language/settings captures, P3 populated/invalid/long-ID chronology,
+P4 six accepted/invalid scenes, P5 full restore/alternate renderer/label/dialog
+scenes and P6 final included-XR wide/narrow scenes. P6 final `51685b0` receipts
+bind all 98 sources and both images, with 60 checks each; the full tilted diagram,
+readouts and footer fit. These receipts retain their own exact source identities.
+
+Default captures do not show all conditional fields or manufacture a populated
+catalogue. No image or automated focus check claims screen-reader, physical input,
+OS-picker, installed/native, headset or Runner correspondence qualification.
+The earlier dated findings below are historical; use this final evidence with
+the catalogue's current delivered/candidate status, not a stale missing-editor claim.
+
 ## Scope and ownership
 
 Stage: **UI Finalization**. Inspect every actual rendered Planner segment for
@@ -372,19 +416,24 @@ This restores a working Edge capture method and one-section evidence. It is not
 an all-section Edge pass, complete Planner master workflow, installed/native or
 physical qualification. Use the repaired helper for the later final candidate.
 
-## Segment checklist
+## Delivered visual checklist
+
+V01–V28 are closed for the implemented Planner UI by the final combined and
+state-specific owner evidence above. Their original problem statements remain
+below for traceability; dated pending/draft wording is historical, not current
+status. Physical/accessibility/runtime qualification remains separate.
 
 ### P1 — Workspace and video library
 
-- [ ] **V01** Finish the single import/catalogue home in P1 and remove the
+- [x] **V01** Finish the single import/catalogue home in P1 and remove the
   “Manage videos” detour after relocation. Keep choose-workspace and open-folder
   actions distinct, and preserve historical recipe loading until the P7 path
   replaces it. Coordinate the existing P3 importer handlers; do not duplicate them.
-- [ ] **V02** Retain one short directory explanation and one live status/error
+- [x] **V02** Retain one short directory explanation and one live status/error
   region. Remove the repeated initial “Set a work directory to begin” sentence.
   Owner handoff `9d4b663` implements this visual change; integrated reinspection
   is pending.
-- [ ] **V03** Verify empty, ready, populated-library and error states through
+- [x] **V03** Verify empty, ready, populated-library and error states through
   actual application events. The initial P1 populated-text fixture directly
   edited DOM labels; it did not prove readiness transitions and left the root
   amber. Disabled Explorer buttons are expected on the browser surface, so do
@@ -398,12 +447,12 @@ compress them by making actions difficult to hit or removing path/error text.
 
 ### P2 — Questionnaires and languages
 
-- [ ] **V04** Remove obsolete parallel questionnaire dialogs/import chains and
+- [x] **V04** Remove obsolete parallel questionnaire dialogs/import chains and
   styles while retaining the active sheet editor, full-definition import,
   canonical validation, language/family identity and scientific provenance.
   Owner cleanup `a7bda6a`, followed by import-adoption repair `ae47df6`, was
   collected into canonical `ba2110f`. Inspect that actual rendered result.
-- [ ] **V05** Audit the active editor's empty, populated and invalid-cell states
+- [x] **V05** Audit the active editor's empty, populated and invalid-cell states
   at desktop and narrow pane widths. Consolidate repeated import instructions,
   toolbars and status copy. Keep language labels and option-label/score
   distinctions explicit. P2's real bootstrap captures are ready at `714b22d`;
@@ -415,16 +464,16 @@ independent validators must survive layout cleanup.
 
 ### P3 — Versions, named ISIs and event markers
 
-- [ ] **V06** Keep one version table with one column per version and chronological
+- [x] **V06** Keep one version table with one column per version and chronological
   video-ID/ISI-name rows. Place its ISI dictionary and relevant validation beside
   it. Remove inert pool/stimulus-dialog handlers and stale import entry points
   through the P3 owner; retain active library rendering until P1 relocation.
-- [ ] **V07** Inspect a populated named-ISI table, an invalid reference and long
+- [x] **V07** Inspect a populated named-ISI table, an invalid reference and long
   IDs at desktop/narrow widths. Contain intentional table scrolling within the
   table, keep row/column error context visible, and retain text identities as
   well as video/ISI colors. Avoid repeated marker/JSON descriptions around the
   same table.
-- [ ] **V08** Reinspect P3's final handoff after its accepted edge rules land.
+- [x] **V08** Reinspect P3's final handoff after its accepted edge rules land.
   The S3 task reports the user's explicit approval of repeated videos/ISIs,
   leading/consecutive/final ISIs, exact order, unequal column lengths with
   trailing padding, interior-blank rejection, stable ISI names, duplicate
@@ -441,46 +490,46 @@ Independent review inspected all four owner images at clean `3094bb8` and
 matched all 13 source hashes and six artifact hashes in the owner's receipt:
 `D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
 
-- [ ] **V09** Pair width/height and centre X/Y in two-column groups. The current
+- [x] **V09** Pair width/height and centre X/Y in two-column groups. The current
   wide 3+1 arrangement separates related fields and leaves empty cells. Keep
   the narrow single-column fallback and explicit units.
-- [ ] **V10** Put missing actual-video/envelope information next to the
+- [x] **V10** Put missing actual-video/envelope information next to the
   miniature. Keep one persistent draft notice and a concise current status;
   move conventions into a disclosure. Remove internal “Q08” and “producer
   interfaces” terms from researcher-facing copy.
-- [ ] **V11** Identify the video and maximum-animation shapes in the diagram
+- [x] **V11** Identify the video and maximum-animation shapes in the diagram
   legend; preserve the dashed reference when boundaries coincide, including
   forced colors. Do not let the video outline obscure its reference.
-- [ ] **V12** Capture the full real application at ordinary desktop height and
+- [x] **V12** Capture the full real application at ordinary desktop height and
   narrow pane width, including bottom status/reset, physical mode, portrait
   video and invalid geometry. The initial 1800px images omit lower controls;
   the 360px image is a standalone fixture.
-- [ ] **V13** Make the transition from legacy size/position to P4 geometry
+- [x] **V13** Make the transition from legacy size/position to P4 geometry
   explicit. P4 reference-relative diameter/offset and the old P5 “Size (% of
   stage)” cannot appear to be two equivalent geometry authorities.
 
-P4 remains a non-exportable draft until its conventions and real dependency
-contracts are accepted. Compact warnings must still communicate that limit.
+The historical P4 draft-only warning was replaced by the accepted profile and
+truthful current dependency state. Both required reference methods are implemented.
 
 ### P5 — Flubber, input and live preview
 
-- [ ] **V14** Remove old Input, Visual and Advanced wrappers once all retained
+- [x] **V14** Remove old Input, Visual and Advanced wrappers once all retained
   settings have their tested destination beside Preview or in Review. Ready
   consolidation handoff `87c3d6d` is awaiting integration at this record's
   baseline. Preserve the real input-test receipt separately from the simulator.
-- [ ] **V15** Remove the redundant absolute “Selected feedback · design preview”
+- [x] **V15** Remove the redundant absolute “Selected feedback · design preview”
   caption, which overlaps the Flubber at enlarged text and constrained width.
   Consolidate repeated renderer/draft captions and map explanations. Keep one
   clear distinction between saved settings and preview-only behavior.
-- [ ] **V16** Preserve useful controls space below the pinned preview. The
+- [x] **V16** Preserve useful controls space below the pinned preview. The
   inspected 320px capture leaves only 149px for a 1,339px settings document.
   Reduce repeated copy/nesting first, then use the existing whole-pane scroll
   fallback when meaningful settings space cannot fit. Preserve pinning where
   it remains usable, as the user requested.
-- [ ] **V17** Flatten extra grid-dimension boxes and repeated labels; retain the
+- [x] **V17** Flatten extra grid-dimension boxes and repeated labels; retain the
   semantic fieldset and clear square/custom dimensions. Keep task labels legible
   rather than shrinking them to make verbose instructions fit.
-- [ ] **V18** Reinspect actual Controls, Appearance, expanded Advanced, the
+- [x] **V18** Reinspect actual Controls, Appearance, expanded Advanced, the
   color dialog and long custom anchor labels at desktop and 320px preview
   widths. P5's own later render found binding/reset and color-row collisions
   despite zero pane overflow; its separate polish pass owns those fixes.
@@ -492,13 +541,13 @@ placement, not the Flubber outline or halo.
 
 ### P6 — Optional XR layout
 
-- [ ] **V19** Mount a distinct optional XR segment and remove dependence on the
+- [x] **V19** Mount a distinct optional XR segment and remove dependence on the
   deleted Visual wrapper. Align P7 routing and contribution guards atomically.
-- [ ] **V20** Inspect actual bootstrapped disabled, populated and error states
+- [x] **V20** Inspect actual bootstrapped disabled, populated and error states
   at desktop/narrow width. Keep enablement, essential distance/size/angle inputs
   and the spatial preview together; disclose advanced conventions rather than
   repeating implementation prose around the diagram.
-- [ ] **V21** Verify that inspection-camera rotation remains visually distinct
+- [x] **V21** Verify that inspection-camera rotation remains visually distinct
   from authored geometry, and pending envelope/fit limitations stay next to the
   preview. No screenshot can claim headset tracking, runtime or APK qualification.
 
@@ -510,21 +559,21 @@ combined verification remains pending.
 
 ### P7 — Review and recipe export
 
-- [ ] **V22** Present one actionable recipe/export path, with retained sampling,
+- [x] **V22** Present one actionable recipe/export path, with retained sampling,
   output and LSL settings in their agreed home. Keep save/acceptance failures
   and stale revisions explicit. Collect P1 identity and P7 legacy destinations
   before deleting old Experiment.
-- [ ] **V23** Compact the preflight presentation without merging distinct
+- [x] **V23** Compact the preflight presentation without merging distinct
   checks. The baseline repeats the same missing `experiment.json` explanation
   across three rows, and every row has its own border and “Blocking” label.
   Group repeated prerequisites and use a compact status list/table while
   preserving each issue and focus destination.
-- [ ] **V24** Reduce default disclosure height for detailed provenance and
+- [x] **V24** Reduce default disclosure height for detailed provenance and
   legacy Runner preparation when no package exists. The default baseline is
   2,352px tall at desktop and 2,894px at 800×700. Hashes, participant selection,
   transient details and language recovery are retained capabilities, not safe
   deletions. Preserve all Start gates and visible actionable errors.
-- [ ] **V25** Replace implementation prose such as “fail-closed” and
+- [x] **V25** Replace implementation prose such as “fail-closed” and
   “package-owned tree” with concise researcher-facing actions. Inspect the
   final integrated Review through its confirmation footer, plus valid, stale,
   cancelled-save and failed-save states. P7's feature handoff and independent
@@ -532,14 +581,14 @@ combined verification remains pending.
 
 ### Shared navigation and final integration
 
-- [ ] **V26** Reflow section titles/summaries according to the actual Setup
+- [x] **V26** Reflow section titles/summaries according to the actual Setup
   pane width. At 432px inside a wide viewport, same-row summaries squeeze the
   title. Reuse the existing two-row pattern through a pane container query;
   do not hide labels or shrink typography to solve it.
-- [ ] **V27** Remove the old fixed “Eight decisions” slogan. Keep the dynamic
+- [x] **V27** Remove the old fixed “Eight decisions” slogan. Keep the dynamic
   progress count and shorten repeated footer instructions while preserving
   reviewed/dirty/ready distinctions, descriptions, focus and confirmation motion.
-- [ ] **V28** Audit the combined clean commit, not only independent branches:
+- [x] **V28** Audit the combined clean commit, not only independent branches:
   expected registry, unique retained fields, valid labels/ARIA references,
   navigation/error focus, P4/P6 mounts, saved values and invalidation behavior.
   Capture all final registered sections at both viewports and inspect their

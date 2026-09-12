@@ -1,10 +1,11 @@
 # Central segment roadmap and capability checklist
 
-**Active goal — 2026-09-12:** finish the Planner as a comprehensive JSON authoring
-interface. Every P1–P6 segment, including experiment-defining Flubber/live
-configuration, must contribute to one validated, saveable and editable master.
+**Planner authoring goal completed — 2026-09-12:** every required P1–P6 segment,
+including experiment-defining Flubber/live configuration, contributes to one
+validated, saveable and editable master. Canonical source, local build and
+combined verification are recorded in 67; checked capabilities below are delivered.
 See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for current
-assignments, concrete source gaps and evidence. Final Planner–Runner correspondence
+assignments, exact source/artifact identities and evidence. Final Planner–Runner correspondence
 is explicitly deferred to the last development stage. The separate-program and
 Runner-owned recording amendment in [16](16-COMPANION-APP-BOUNDARY.md) supersedes
 older one-program/two-mode wording below.
@@ -15,7 +16,7 @@ agent must answer: **What is my segment supposed to do? What does it already
 do? Which of its capability items remain?** Read the whole map for context,
 then work only on the assigned segment and explicitly named shared seams.
 
-**Current priority: finish the experiment Planner.** Runner responsibilities
+**Current status: required Planner authoring is complete.** Runner responsibilities
 are downstream contracts; Runner implementation, recording and runtime
 qualification are deferred unless separately allocated by the researcher.
 
@@ -30,18 +31,20 @@ qualification are deferred unless separately allocated by the researcher.
   [61-IMPLEMENTATION-AUDIT.md](61-IMPLEMENTATION-AUDIT.md) is the detailed dated
   source audit; [30-TESTING-AND-RELEASE.md](30-TESTING-AND-RELEASE.md) owns claim
   gates. Requirement approval is not implementation evidence.
-- [62-PLANNER-CLOSURE-PLAN.md](62-PLANNER-CLOSURE-PLAN.md) ranks remaining gaps and
-  supplies concrete proposed editor/contribution designs and single-owner passes.
-  Its new recommendations remain proposals; this file owns capability status
-  and accepted decisions. Complete-component handoffs are now recorded in
-  [67](67-PLANNER-COMPLETION-GOAL.md); final shared authoring/save/Open validation
-  and canonical delivery remain incomplete. Older baseline rows below must not
-  be read as an assertion that those newer components are still absent.
+- [62-PLANNER-CLOSURE-PLAN.md](62-PLANNER-CLOSURE-PLAN.md) summarizes current
+  input/output contracts, optional extensions and bounded future passes.
+  This file owns capability status and accepted decisions. Current combined application source is
+  `875efae0a852bdcea978e8a12b74c0e81288d51c`; detailed final component and shared
+  authoring/save/Open evidence is in [67](67-PLANNER-COMPLETION-GOAL.md).
+  Canonical `codex/research-unified` received this product as
+  `1218c9ebef87111109d784bc2a9bf5827767917f`. The checked Planner items below
+  are delivered software capabilities; optional content and runtime gates are explicit.
 - Initial status baseline: integrated source
   `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, audited 2026-09-11. Unmerged branches
   and private/installed runtime state are excluded from completion claims.
 - `[x] Implemented component` means the narrowly stated behavior is present at
-  that baseline, with the linked source/test evidence. It does not mean the
+  its stated source, with the linked source/test evidence. Current Planner rows
+  bind the delivered `1218c9e` product and final evidence in 67. This does not mean the
   whole segment, every platform or research qualification is complete.
 - `[ ] Partial` means incomplete capability; `[ ] Missing` means absent from
   integrated source; `[ ] Decision` means unresolved researcher/contract input;
@@ -49,6 +52,7 @@ qualification are deferred unless separately allocated by the researcher.
 - Do not invent percentage completion. A segment is complete only when its
   required items, JSON round trip and applicable gates close. A worktree result
   remains **pending integration** until collected and verified in canonical source.
+  That convergence is complete for the current required Planner rows.
 
 ## Accepted final-state decisions
 
@@ -89,7 +93,7 @@ qualification are deferred unless separately allocated by the researcher.
 7. Remove the standalone old Experiment, Visual and Advanced UI sections.
    Consolidate input/controller, Flubber appearance and advanced animation
    controls beside the live preview. Necessary retained values still have one
-   owner; their proposed homes below are recommendations awaiting confirmation.
+   owner; their current homes are implemented under the all-settings goal.
 8. Add Screen & Layout with whole-screen/video/Flubber miniature preview,
    physical or relative sizing, reference-video analysis, and placement defined
    by **Flubber centre relative to each displayed video's centre**. Percentage
@@ -123,15 +127,15 @@ qualification are deferred unless separately allocated by the researcher.
 
 ## Segment map and single owners
 
-| ID / owner | Final responsibility | Main JSON contribution | Baseline state |
+| ID / owner | Final responsibility | Main JSON contribution | Verified combined state at 875efae |
 | --- | --- | --- | --- |
-| P1 `workspace` | Workspace, study identity, video catalogue | Workspace reference, metadata, assets and media geometry | Partial |
-| P2 `questionnaires` | Items, scoring and languages | Definitions, variants, modules and coverage | Partial |
-| P3 `variants` | Event columns, ISIs and markers | Ordered variants and event definitions; Runner owns allocation | Missing target workflow; explicit-plan predecessor exists |
-| P4 `layout` | Video fitting and centre-relative Flubber layout | Units, reference geometry, offsets, size and fit policy | Missing target workflow; normalized placement exists |
-| P5 `feedback` | Flubber/input/Advanced editor and live preview | Input configuration, visual style and mappings | Partial; old controls distributed across sections |
-| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Owner-ready authoring and live P1/P5 binding; integration/master round trip pending |
-| P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
+| P1 `workspace` | Workspace, study identity, video catalogue | `segments.P1`: workspace, catalogue and oriented geometry | Implemented; exact current-directory verification and rebind |
+| P2 `questionnaires` | Items, scoring and languages | `segments.P2`: definitions, languages, modules, presentation | Implemented; optional instrument content/advanced scoring remain separate |
+| P3 `variants` | Event columns, ISIs and markers | `segments.P3`: ordered variants, named ISIs and planned markers | Implemented; Runner owns allocation and actual timestamps |
+| P4 `layout` | Video fitting and centre-relative Flubber layout | `segments.P4`: complete accepted desktop profile | Implemented; two required explicit reference choices, relative/mm modes |
+| P5 `feedback` | Flubber/input/Advanced editor and live preview | `segments.P5`: input, visual, mappings, presentation, response | Implemented; one editor, complete v2 settings and final Save capture |
+| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | `segments.P6`: included profile or explicit exclusion | Implemented authoring and master round trip; headset execution deferred |
+| P7 `package` | Recipe validation, save/reopen and export | Master envelope, target, policy and integrity | Implemented; strict JS/native readers and actual browser save/Open proof |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 
 Homes for retained settings: P1 study name/ID; P7 retained study/count metadata,
@@ -174,22 +178,24 @@ turn into Runner, device or recording work.
 ## P1 — Workspace & Video Library
 
 **Purpose:** establish the study workspace and one reusable video catalogue.
-**User input:** working directory, study name/ID, imported folders/files, review
-of annotations and explicit corrections. Naming and relocation are Q04/Q05.
+**User input:** working directory, study name/ID and imported folders/files.
+Location-derived annotations are automatic; no manual collision-repair step.
 **Receives:** user-selected files/directory through the owning platform adapter.
 **Produces:** catalogue with stable ID, display name, file reference, hash,
 length, duration and display geometry.
 **Consumers:** P2 source storage; P3 video IDs; P4/P6 geometry; P7 assets.
-**JSON:** current `assetRoot`, `assets.stimuli[]` and matching logical registry;
-directory representation and saved geometry need the successor recipe contract.
+**JSON:** `segments.P1` embeds the complete workspace/catalogue contribution,
+logical root and exact relative declarations, content/location pairs, hashes,
+byte lengths, durations and oriented/display geometry. Handles and permissions
+are never serialized.
 
 - [x] **P1-01 — Implemented component:** browser/native workspace selection and authorization (`workspace.js`, `research_workspace.rs`).
 - [x] **P1-02 — Implemented component:** declared-asset verification binds safe paths, hashes, byte lengths and duration. Decode qualification remains separate.
-- [ ] **P1-03 — Partial:** active package-root import/rescan; fix browser `stimuli/` versus `assets/stimuli/` handoff (audit F02).
-- [ ] **P1-04 — Missing:** reviewed folder_filename annotations with explicit collision, nesting, rename and rescan rules (Q04).
-- [ ] **P1-05 — Decision:** directory JSON representation and authorized relocation (Q05); recording a path grants no filesystem permission.
-- [ ] **P1-06 — Missing:** preserve oriented/display dimensions and aspect ratios in the contribution. Existing probes observe dimensions but package assets omit them.
-- [ ] **P1-07 — Partial:** editable library save/reopen and dependency invalidation without silently changing accepted identities.
+- [x] **P1-03 — Implemented Planner:** Correct assets/stimuli import/rescan on browser and native; current-directory enumeration rejects new/missing files and link replacement before accepting cached metadata.
+- [x] **P1-04 — Implemented Planner:** Reversible full-relative-location v2 IDs retain filename/extension, punctuation and nesting distinctions; asset SHA identity stays separate. Moves invalidate dependent acceptance.
+- [x] **P1-05 — Implemented Planner:** Logical root and exact relative declarations are embedded; Open restores content pending fresh authorization and exact rehash/reprobe/rebind. Absolute-root provenance is optional Q05.
+- [x] **P1-06 — Implemented Planner:** Complete oriented/display dimensions, aspect and duration travel through P1 into P4/P6 and the master; native and browser validators preserve v1/v2 semantics.
+- [x] **P1-07 — Implemented Planner:** Content restore, exact media rebind, revision publication and dependent invalidation are wired and regression tested, including reads before change publication. Final owner aee980d.
 
 **Acceptance:** collisions, rescans and moves have explicit outcomes; each ID
 resolves to declared bytes after export/reload. No second catalogue or directory-
@@ -208,17 +214,18 @@ option labels/codes, imports/paste and intended administration placement.
 **Produces:** per-language definitions, item/option IDs, scoring annotations,
 modules and exact coverage.
 **Consumers:** P3 placements; P7 compilation; R1 language/form rendering.
-**JSON:** existing `settings.questionnaires` and `languageSelection`; added
-presentation/scoring semantics need explicit ownership/versioning.
+**JSON:** `segments.P2` embeds complete selected-language definitions, module
+and language graph, source scoring/provenance and a hash-bound label-repetition
+presentation companion. See [P2 contract](../docs/planner-p2-questionnaire-recipe.md).
 
 - [x] **P2-01 — Implemented component:** single-choice definitions, distinct labels/nullable numeric codes, hashes and module references.
 - [x] **P2-02 — Implemented component:** family×language coverage and terminal-language references; picker already supports more than EN/DE.
 - [x] **P2-03 — Implemented component:** bounded sheet editing/paste, file normalization and dirty/invalid compilation gates.
-- [ ] **P2-04 — Partial:** full-content restore/snapshot from `74e879b`/`ae47df6` is in canonical `ba2110f`; P7's owner branch `6bac40f` consumes it for package load/Edit recipe and acknowledged save (27-case Chrome check on 2026-09-12). Combined canonical integration remains open. Invalid draft durability remains Q13. Historical language-neutral or colliding slots reject editable restoration explicitly; nested language roster editing remains unsupported.
-- [ ] **P2-05 — Partial:** MAIA-2 EN/DE each supply 37 items and six labelled/coded options. Preserve source-specific annotations: supplied EN uses forward codes without subscales; DE includes supplied reverse codes and eight subscales. This is not proof of equivalent computed scoring. TAS EN remains rights-gated, DE is absent; neither catalogue entry is ready. Further-language authoring is verified using a synthetic EN/DE/FR round-trip and missing-FR rejection, not an invented instrument translation.
-- [ ] **P2-06 — Decision:** placement, computed totals/subscale scoring beyond explicit option codes, and missing-answer behavior (Q09). Explicit reverse-coded option values already work.
-- [ ] **P2-07 — Partial:** save approved presentation choices; label repetition5/10 is currently preview-only and blocks Build until reset.
-- [ ] **P2-08 — Partial:** EN/DE code edits and synthetic EN/DE/FR contributions survive independent-process byte-identical re-export. P7 `6bac40f` passes 27 Chrome cases including wording edit, delayed acknowledgement, exact German definition/nested routes and explicit reopen draft reset. P7 is extending the combined fixture for code-only edits and acceptance metadata; canonical integration and Runner proof are not implied.
+- [x] **P2-04 — Implemented Planner:** Full accepted definitions, language graph, modules, scoring/provenance and editable content restore through the master. Missing media keeps readiness pending. Optional invalid-draft retention and nested roster editing are separate.
+- [ ] **P2-05 — Optional instrument-content gap:** MAIA-2 EN/DE each supply 37 items and six labelled/coded options. Preserve source-specific annotations: supplied EN uses forward codes without subscales; DE includes supplied reverse codes and eight subscales. This is not proof of equivalent computed scoring. TAS EN remains rights-gated, DE is absent; neither catalogue entry is ready. Further-language authoring is verified using a synthetic EN/DE/FR round-trip and missing-FR rejection, not an invented instrument translation.
+- [ ] **P2-06 — Optional extension decision:** computed totals/subscales, new questionnaire placements and missing-answer rules beyond explicit option codes remain Q09. Current before/after-session modules and reverse-coded options work; unsupported historical block/after-stimulus hooks reject explicitly. These extensions are not missing master fields.
+- [x] **P2-07 — Implemented Planner:** The versioned presentation companion saves label repetition (every item/5/10) with its definition hash and restores exactly. It is not pagination or a new Runner default.
+- [x] **P2-08 — Implemented Planner:** Full P2 content and presentation survive independent JS/native and actual UI master save/Open. Owner b08ceb0 preserves EN/DE edits and synthetic extra-language coverage; native 48318a9 also preserves the complete bounded language graph.
 
 **Acceptance:** each selected language has exact required definitions; labels
 and codes remain distinct; missing variants reject; imports preserve declared
@@ -243,8 +250,9 @@ with trailing padding; interior blanks reject. Questionnaire placement remains Q
 **Produces:** embedded ISI dictionary, ordered variants with named references,
 occurrence IDs, timing requirements and semantic marker definitions.
 **Consumers:** P7 embeds; R1 resolves participants and timestamps actual events.
-**JSON:** explicit v1 participant schedules are a predecessor; ordered variants
-and their Runner-selection boundary require a successor recipe contract.
+**JSON:** `segments.P3` embeds the complete v1/v2 design contribution, including
+dictionary, ordered variants, occurrence references, planned timelines and marker
+profiles. See [P3 contract](../docs/planner-p3-contribution-api.md).
 
 **Columns = versions; rows = chronological video/ISI references.** With ISI
 input `1000, 1500, 2700`, the dictionary is `ISI1=1000ms`, `ISI2=1500ms`,
@@ -285,20 +293,19 @@ policy in Planner. The successor contract must explicitly identify this boundary
 its exact wire representation is owned by P3/P7, not fixed by this document.
 
 - [x] **P3-01 — Implemented predecessor:** strict imported block/video schedules, per-video ISIs and deterministic protocol resolution exist; no variant allocation is implied.
-- [ ] **P3-02 — Component ready, integration pending:** named-ISI/video-column editor and atomic paste with precise errors; compact actual-boot empty/populated/error renders. Planned offsets wait for P1 verified durations.
-- [ ] **P3-03 — Component ready, integration pending:** pure paired-boundary derivation and accepted Q02 validation exist; the P1-owned workspace projection now binds identity/duration and the registered workspace revision, with study-only/video-change fixtures. Missing durations reject rather than invent timing; combined live subscription remains the composition owner's handoff.
-- [ ] **P3-04 — Component ready, P7 integration pending:** typed contribution embeds versioned ordered variants and `runnerAssigned` ownership; no participant controls or allocation algorithm.
-- [ ] **P3-05 — Component ready, integration pending:** unique entry IDs preserve repeated occurrences; marker execution IDs distinguish restarts.
-- [ ] **P3-06 — Specification ready, integration pending:** versioned marker envelope defines recipe/run/attempt/variant/version/entry/execution identities, sequence and observed monotonic time. Runner emission is deferred.
-- [ ] **P3-07 — Specification ready, integration pending:** synthetic reconstruction fixtures cover video/ISI/forms, pauses, interruptions/restarts and incomplete streams; no recorded-stream qualification claim.
-- [ ] **P3-08 — Component ready, integration pending:** JS/Rust canonical fixtures, native/browser save/reopen and standalone contribution validation preserve exact order without randomization or cell repair. Async ready-media restore binds registered P1; content-only restore renders editable saved fields pending on actual P1 until media rebind. Latest-request/edit/withdrawal/teardown guards prevent stale mutation. Preparation requires no authoring sidecar write; P7 registry acceptance and final persistence remain separate. See `docs/planner-p3-contribution-api.md` and the workspace-binding fixture.
-- [ ] **P3-09 — Component ready, integration pending:** distinct consistent video colors, red ISIs and textual type/ID/duration cues; actual narrow-pane rendering inspected.
-- [ ] **P3-10 — Component ready, integration pending:** comma-separated whole milliseconds create stable names; duplicate values allowed, referenced deletion blocked, edits invalidate acceptance. Q14 lifecycle rules accepted.
+- [x] **P3-02 — Implemented Planner:** One column per version, named-ISI/video chronology, atomic Excel paste and cell-specific errors are integrated. Actual shared UI paste and ISI edits enter the saved master.
+- [x] **P3-03 — Implemented Planner:** Exact P1 identity/duration and registered owner revision drive paired planned boundaries; missing or changed dependencies withdraw acceptance instead of inventing durations.
+- [x] **P3-04 — Implemented Planner:** Ordered variants and explicit runnerAssigned ownership are embedded. Planner contains no participant allocator or participant selection controls.
+- [x] **P3-05 — Implemented Planner:** Retained occurrence identities distinguish repeated media and survive unequal version lengths; marker execution identities distinguish repeated attempts.
+- [x] **P3-06 — Implemented Planner:** Versioned planned marker envelope defines recipe/run/attempt/variant/entry/execution identities and actual-event fields. This closes Planner specification only; Runner emission is later.
+- [x] **P3-07 — Implemented Planner:** Synthetic reconstruction fixtures cover ordered video/ISI/form events, pauses/restarts and incomplete traces. Recorded-stream-only and physical onset proof stay R1 work.
+- [x] **P3-08 — Implemented Planner:** Strict JS/Rust v1/v2 contribution/master reproduction, exact editable reopen and rebind are integrated; current-media CSV/XLSX export revalidates before and after native save selection. No required authoring sidecar.
+- [x] **P3-09 — Implemented Planner:** Stable distinct video coloring, red ISIs and explicit ID/type/duration cues; long IDs remain horizontally contained without truncating stored values.
+- [x] **P3-10 — Implemented Planner:** Researcher-defined comma-separated milliseconds create stable named ISIs; duplicate durations remain distinct, used deletion rejects and edits invalidate dependent acceptance.
 
-Component checkpoint `ae5cecd`, reconciled with canonical base in `bc8921d`.
-Keep these unchecked until collected and verified on the integration branch.
-Current implementation consumes the v1 hash-bound video library; P1's future
-immutable assetId/readable-name schema is not silently inferred. See
+Current P3 handoff `2f862b9`, native catalogue export `ea3c788` and reproduction
+expectation `c7afb28` are collected in `875efae`. V1 hash references and V2 exact
+asset/location pairs retain their separate semantics. See
 [variant model](../site/src/research/variant-design.js),
 [native mirror](../src-tauri/src/research_stimulus_order/variants.rs), and
 [marker contract](../docs/planner-marker-contract-v1.md).
@@ -326,24 +333,26 @@ Flubber size, centre offsets and required calibration/reference choices (Q08).
 **Produces:** screen profile, units/reference, video fit, Flubber footprint and
 centre-relative arrangement with whole-screen miniature preview.
 **Consumers:** shared P5 preview, P7 serialization and R1 rendering.
-**JSON:** new layout contract; normalized v1 `overlayPosition` is insufficient.
+**JSON:** `segments.P4` contains the accepted profile and its dependency-bound
+geometry. [P4 contract](../docs/planner-p4-layout-contract.md) owns units,
+reference methods, fit, centre conventions and all validation.
 
 Accepted relationship after video fitting:
 `flubberCentre = videoCentre + (offsetX, offsetY)`.
 `offsetX=0` places centres on the same vertical line. Right-positive x/down-
-positive y and a fixed animated Flubber design centre are recommendations (Q08).
+positive y and a fixed animated Flubber design centre are explicit P4 conventions.
 The researcher confirmed fixed-reference percentages across all videos; save
 that reference explicitly rather than scaling offsets per video. Largest pixel resolution alone
 does not resolve widest/tallest aspect-ratio constraints. Check every fitted
 video and animation extent without silently using per-video bottom-edge alignment.
 
-- [x] **P4-01 — Implemented predecessor:** normalized feedback placement/size and Run locking exist; centre-offset/calibrated screen contracts do not.
-- [ ] **P4-02 — Missing:** whole-screen miniature using actual media geometry and shared Flubber configuration.
-- [ ] **P4-03 — Decision:** exact reference-video selection/extent, fit/crop, centre definition and axes (Q08); fixed-reference percentage basis is already confirmed.
-- [ ] **P4-04 — Missing:** physical/relative toggle, calibration and geometry-preserving conversion when measurements are available.
-- [ ] **P4-05 — Missing:** save/apply centre offsets through one layout owner shared by preview/export.
-- [ ] **P4-06 — Missing:** validate aspect ratios, animation bounds, overlap/clipping and incompatible runtime screens without silent repositioning.
-- [ ] **P4-07 — Missing:** deterministic export/reload geometry fixtures for each relevant video/screen profile.
+- [x] **P4-01 — Preserved compatibility:** historical normalized feedback placement/size retains its meaning; current accepted centre/calibration geometry belongs to P4-02–07.
+- [x] **P4-02 — Implemented Planner:** Whole-screen miniature uses complete actual P1 geometry and P5 maximum painted bounds; no synthetic geometry enters product state.
+- [x] **P4-03 — Implemented Planner:** Explicit required choice of largest oriented video area or maximum oriented width/height envelope; no default. One fixed reference, contain fit and defined centre/axes are saved.
+- [x] **P4-04 — Implemented Planner:** Relative percentages and calibrated millimetres convert while preserving the same reference, centres and drawing geometry; missing required measurements reject.
+- [x] **P4-05 — Implemented Planner:** Accepted P4 profile owns all desktop centre offsets, fitted video and feedback geometry across preview/export/reopen.
+- [x] **P4-06 — Implemented Planner:** Every video and full animation/halo envelope is checked for clipping, overlap, separation and compatible viewport; no silent repositioning.
+- [x] **P4-07 — Implemented Planner:** Independent JS/Rust geometry, both reference methods, relative/physical examples, pending/ready restore and full master round trip pass. Owner fa64e8d and shared875 evidence.
 
 **Acceptance:** preview and saved geometry agree; units/reference are explicit;
 mixed videos retain the chosen relationship; missing calibration/impossible fit
@@ -352,45 +361,34 @@ has an explicit outcome.
 [preview](../site/src/research/preview.js), [UI](../site/src/research/app.js).
 **Boundary:** P4 owns geometry, not colors, input or animation parameters.
 
-**Pending P4 branch evidence, 2026-09-11:** `codex/segment-p4-screen-layout`
-contains a non-exportable UI draft for P4-02/P4-04/P4-06: numeric screen/reference/
-offset controls, a whole-screen miniature, proposed measured unit conversion and
-pure fit/overlap/clipping fixtures. Q08 choices remain proposals. The application
-does not yet consume P1 geometry or P5 bounds; synthetic inputs are confined to
-non-shipping verification fixtures. No accepted JSON contribution, persistence,
-runtime application or export/reload is implemented, so completion boxes above
-remain unchanged. See the [P4 evidence ledger](./40-ROADMAP.md#p4-screen--layout--non-exportable-design-draft).
-
-**2026-09-12 owner-ready follow-up:** `f8654bf` in the isolated live-geometry
-branch now binds actual P1/P5 producers, preserves the registered P1 workspace
-revision, validates whole-library fit, and supplies atomic internal draft
-restoration/P7 pending snapshots. Automatic largest-reference metric remains
-Q08; neither candidate is silently chosen. Accepted P4 JSON and master recipe
-round-trip remain absent, so the capability boxes stay open. Final evidence is
-563 Node tests, 118 actual Chrome app checks/four inspected captures and both
-frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and-draft-restoration--2026-09-12).
+**Current evidence:** accepted/live P4 application `77e4752`, handoff `fa64e8d`,
+is collected in `875efae`. Six owner scenes/231 checks, canonical JS/Rust geometry
+fixtures, final combined default/error captures and the actual master workflow
+replace the former draft-only status. Historical draft receipts remain dated in 40.
 
 ## P5 — Flubber & Controls
 
 **Purpose:** one persistent editor for Flubber appearance/control, with Advanced
 animation settings at the bottom.
 **User input:** device/bindings, response behavior, colors/style/visibility and
-explicit animation/mapping edits. Which drafts become runnable remains Q10.
+explicit animation/mapping edits. The current saved inventory is resolved by
+the all-settings goal and the versioned P5 contract; temporary test motion stays transient.
 **Receives:** P4/P6 layout and explicit preview-test input.
-**Produces:** one input configuration, visual style and affect-mapping set;
-live preview projects these values.
+**Produces:** one complete configuration for input, visual style, affect mappings,
+renderer/labels/halo presentation and response grid/timing/hold behavior.
 **Consumers:** P4/P6 composition, P7 recipe and R1 adapters.
-**JSON:** existing input/visual/mapping objects; newly saved behavior needs
-explicit versioned fields.
+**JSON:** `segments.P5` is `affect-research-feedback` v2 with exact
+`input`, `visual`, `mappings`, `presentation`, `response` groups.
+[P5 contract](../docs/planner-p5-feedback-v2.md) owns the field inventory and units.
 
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
 - [x] **P5-03 — Implemented component:** live preview and input-test surfaces; not all simulator controls are saved settings.
-- [ ] **P5-04 — Pending integration:** isolated `8d3d256` consolidates old Input/Visual/Advanced with one value owner and bottom Advanced; canonical verification remains required.
-- [ ] **P5-05 — Decision:** saved/temporary controls and units are inventoried in the P5 roadmap receipt. Owner checkpoint `ccc53a7` exposes only validated saved input/visual/mappings with revision and pending state; Q10 promotion decisions remain open.
-- [ ] **P5-06 — Missing:** serialize newly approved controls with explicit units/ranges and no silent Run defaults.
-- [ ] **P5-07 — Partial:** `ccc53a7` adds a live saved-configuration/revision, invalidation subscription and atomic restore to the conservative `8d3d256` envelope. Chrome boot round trips pass; owner delta and P4/P6/P7 consumers await integration. Normalized geometry stays explicitly legacy; accepted successor layout/export consistency remains open.
-- [ ] **P5-08 — Pending integration/qualification:** real headless UI checks cover unique controls, reflow, confirmation and invalid-field disclosure/focus after consolidation; physical input and installed accessibility qualification remain separate.
+- [x] **P5-04 — Implemented Planner:** Old Input/Visual/Advanced sections are removed; one persistent Flubber & Controls editor owns their retained values, with Advanced at the bottom.
+- [x] **P5-05 — Implemented Planner:** Complete saved/temporary inventory and explicit units are documented in planner-p5-feedback-v2.md. Saved configuration includes all currently active Flubber/Grid/procedural Face settings; test motion is transient.
+- [x] **P5-06 — Implemented Planner:** Version2 serializes input, visual, mappings, presentation and response, including renderer/labels, halo width/gradient/steepness, grid dimensions, full-span timing and hold/repeat behavior.
+- [x] **P5-07 — Implemented Planner:** P4/P6 consume complete P5 bounds; accepted contributions invalidate on edits, including color Reset. V2 atomic restoration and explicit historical conversion preserve configured values.
+- [x] **P5-08 — Implemented Planner:** Consolidated UI, expanded Advanced/Response, labels/dialogs, invalid focus and full configuration restore have source-bound rendered/software evidence. Physical input and installed accessibility qualification remain later gates.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
@@ -400,9 +398,9 @@ distinct from the acquisition sample rate in recording policy.
 [preview](../site/src/research/preview.js), [mappings](../site/src/research/mappings.js).
 **Boundary:** no allocation, sampling clock, LSL transport or screen calibration.
 
-**Candidate receipt:** [2026-09-11 P5 consolidation and control inventory](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
-Unchecked items remain unchecked until integration and the applicable gates;
-the candidate does not implement Q10 saved additions or P4/P6 geometry policy.
+**Current evidence:** complete P5 `5c0ad7a` / `495ee13` and Preview badge repair
+`6d9cc35` are collected in `875efae`. P4/P6 own placement; P5 supplies complete
+animated/painted bounds. The historical v1 reader and explicit conversion remain.
 
 ## P6 — Optional XR Spatial Layout
 
@@ -417,20 +415,21 @@ retain one anchor per attempt, recenter between attempts, stop on tracking loss.
 **Produces:** world-fixed spatial profile, alignment/target requirements and
 rotatable 3D preview. **Consumers:** P7 and later R1 XR adapters.
 
-- [ ] **P6-01 — Pending integration:** strict separate `XrLayoutProfileV1` authoring contribution and explicit WebXR target; P7 successor master embedding remains open.
-- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; actual P1 workspace geometry/subscription is connected and validated in the owner candidate.
-- [ ] **P6-03 — Pending integration:** declared right/up/back metre frame, world-fixed initial-head-forward policy and rotated local feedback centre; pure JS/Rust transform fixtures pass.
-- [ ] **P6-04 — Answered, pending integration:** Q11 confirmed policies are explicit in the strict profile. Actual alignment/tracking enforcement remains deferred P6-06.
-- [ ] **P6-05 — Pending integration:** live P1/P5 dependency binding, atomic canonical profile reopen, invalid/stale/target rejection, full P5 envelope conversion and pure independent-process geometry reproduction pass. Footer preparation is separate from P7 acceptance/save; finished master recipe round trip remains P7 work.
+- [x] **P6-01 — Implemented Planner:** Strict optional spatial contribution is embedded in the master; desktop uses exact explicit exclusion and XR requires its selected compatible target.
+- [x] **P6-02 — Implemented Planner:** Metres/angles, distance, centre, plane tilt and rotatable inspection are implemented against P1 oriented media; inspection camera is transient.
+- [x] **P6-03 — Implemented Planner:** Right/up/back metre frame, world-fixed initial-head-forward policy and local feedback centre transforms have independent JS/Rust geometry fixtures.
+- [x] **P6-04 — Implemented Planner:** Confirmed per-attempt anchor, head-forward setup without eye tracking, stop-on-tracking-loss and between-attempt recenter requirements are saved. Actual enforcement is P6-06.
+- [x] **P6-05 — Implemented Planner:** Live P1/P5 binding, withdrawal, atomic pending/ready Open, included/excluded full master Save/readback and independent reproduction pass; actual owner UI has 60 checks at 1440/820.
 - [ ] **P6-06 — Deferred:** headset/APK/WebXR execution, LSL recording and physical qualification belong to a separate Runner pass.
 
 **Planner acceptance:** spatial profile round-trips with reproducible transform/
 angle fixtures; the preview does not claim headset accuracy. World-fixed is not
-a measured-eye-tracking requirement. No active XR implementation exists at baseline.
+a measured-eye-tracking requirement. Authoring is implemented; XR execution is later.
 P6 worktree source/contract and exact limits are in
 [63-P6-XR-LAYOUT.md](63-P6-XR-LAYOUT.md), with receipts in
 [40-ROADMAP.md](40-ROADMAP.md#p6-virtual-screen-authoring--2026-09-11).
-These component results do not close canonical capabilities before integration.
+Final P6 `7fd56d5` (application `51685b0`) is collected in `875efae`; two actual
+master save/Open scenes pass 60 checks each and preserve included/excluded profiles.
 **Boundary:** no unrelated Playground restoration or device work merely to finish authoring.
 
 ## P7 — Review, Recipe & Export
@@ -447,20 +446,20 @@ separately changes it; removing old UI sections must not orphan playback semanti
 
 - [x] **P7-01 — Implemented component:** strict canonical v1 construction/readers and independent-process reproduction fixtures.
 - [x] **P7-02 — Implemented component:** embedded questionnaire content, media declarations and integrity form one v1 JSON.
-- [ ] **P7-03 — Partial:** full UI create→save→reopen→revise→export without required imported `experiment.json`; plan authoring and language locks remain gaps.
-- [ ] **P7-04 — Partial:** await actual native save success before completion/locking; handle cancellation/failure/retry (audit F03).
-- [ ] **P7-05 — Missing:** successor contracts for variants/Runner-selection boundary, directory representation, geometry, saved feedback additions and optional XR; preserve v1 readers.
-- [ ] **P7-06 — Missing:** cross-reference/language/geometry/marker/target validation with errors routed to owning segments.
-- [ ] **P7-07 — Missing:** invalidate stale compiled output after contribution edits; recompute derived data without overwriting unrelated choices.
-- [ ] **P7-08 — Decision:** retained metadata/acquisition/recording fields and export/reopen policy (Q12/Q13); recording implementation stays deferred.
-- [ ] **P7-09 — Missing:** independent recipe reproduction for variants×languages×presentation profiles, including invalid/missing-media cases.
+- [x] **P7-03 — Implemented Planner:** Fresh UI authoring, contribution confirmation, named master Save, editable Open and revision/re-export work without importing experiment.json; final shared fixture passes 65 checks in each browser.
+- [x] **P7-04 — Implemented Planner:** Saved requires exact acknowledged write/close/readback bytes; cancel, failure, retry, stale edits, competing opens and disposal preserve newer state. Native Planner role is enforced.
+- [x] **P7-05 — Implemented Planner:** Complete versioned master contains ordered P1-P6 segments, explicit target/policy and integrity. Historical package/master readers are preserved; unsupported content cannot be dropped into v1.
+- [x] **P7-06 — Implemented Planner:** Strict closed-field, cross-reference, language, planned-marker, geometry and target validation routes actionable errors to the owning segment.
+- [x] **P7-07 — Implemented Planner:** Contribution/edit/operation generations prevent stale compiled output, including edit/revert, P4 Reset and P5 color Reset. Shared reopen restores all owners before adoption.
+- [x] **P7-08 — Implemented Planner:** Final JSON contains accepted design and authored metadata/sampling/output/LSL policy; it excludes drafts, live permissions, allocator and recording-session state. Optional draft/provenance storage stays separate.
+- [x] **P7-09 — Implemented Planner:** Canonical independent-process and native/browser reproduction cover current desktop/XR and historical readers. Final11-case native parity,79 codec checks per browser and actual UI-generated files agree; Runner correspondence remains later.
 
 **Acceptance:** no raw JSON authoring prerequisite; every required value explicit;
 embedded forms need no reopened source document; assets resolve; exact saved
 bytes/hash are confirmed. An old reader cannot silently discard target fields.
-**Source:** [JS package](../site/src/research/experiment-package.js),
-[Rust mirror](../src-tauri/src/research_experiment_package.rs),
-[fixture](../test/fixtures/experiment-package-v1.canonical.json).
+**Source:** [complete master contract](../docs/planner-master-recipe-v1.md),
+[assembly/lifecycle contract](../docs/planner-p7-recipe-assembly.md).
+Historical experiment-package-v1 readers remain a separate compatibility path.
 **Boundary:** P7 compiles/saves; it does not acquire responses or implement recording.
 
 ## R1 — Runner downstream contract, implementation deferred
@@ -500,15 +499,19 @@ The recipe must cover study/workspace reference, assets, questionnaires/language
 scoring, ISI dictionary/references, variants with a Runner-selection boundary,
 events/timing/markers, input/visual/mappings, screen
 layout, optional XR, playback/acquisition/output policy, schema identity and
-integrity. These are logical categories, not finalized JSON root keys. P7 owns
+integrity. P1–P6 have named members under `segments`; P7 owns
 composition; each segment owns its contribution's meaning. Actual answers,
 ratings and event timestamps are generated later.
 
-Current v1 has nine root members: `schema`, `version`, `packageId`, `assetRoot`,
+Historical experiment-package v1 has nine root members: `schema`, `version`, `packageId`, `assetRoot`,
 `assets`, `languageSelection`, `playback`, `settings`, `integrity`. Closed nested
 contracts cannot take new keys under the old version. Create explicit successor
 schemas/migration fixtures, preserving historical meaning. Actual current field
-shapes are in the [implementation audit](61-IMPLEMENTATION-AUDIT.md).
+shapes are in the dated [implementation audit](61-IMPLEMENTATION-AUDIT.md).
+The current `affect-research-planner-recipe` v1 has exactly `schema`, `version`,
+`recipeId`, `presentationTarget`, `policy`, `segments`, `integrity`; its portable
+reproduction identity is explicitly tagged v2. Full profile inputs and named
+algorithms are exact; independently derived geometry is compared separately.
 
 ## Decision register and researcher questions
 
@@ -525,31 +528,22 @@ An open decision blocks only its dependent capability.
 | Q06 | Answered: owner changed / P3/R1 | Latest direct answer in S3 on 2026-09-11: “Leave allocation policy to Runner.” P3 preserves ordered variants; no participant-assignment UI or Planner allocation algorithm. | Supersedes earlier cyclic/fixed-ordinal Planner proposal. Runner algorithm/retry/skip policy is deferred, not a Planner blocker. |
 | Q07 | Owner answered; details deferred / R1 | Runner owns recording; implementation is outside current Planner scope. Format, receiver/start gate, failure handling and visible-onset evidence remain open. | Planner specifies required event fields/semantics now; no recording implementation. |
 | Q08 | Fixed basis answered; per-recipe choice allocated / P4 | Fixed-reference percentages/centre relationship remain accepted. Root allocated both proposed analysis methods as an explicit required Planner choice: largest oriented video by area, or combined maximum-width/height envelope. No silent default. | Missing selection blocks that recipe, not the software's accepted contract. Save the method/reference, preview it and reproduce both choices. A global default preference remains unanswered; it is not needed to build a configurable Planner. Calibration/axes/design-centre semantics remain explicit in the owned profile. |
-| Q09 | Open / P2 | Required questionnaire placements, computed scoring and missing-answer semantics beyond option codes? | Preserve explicit existing definitions/placements until answered. |
-| Q10 | Open / P5 | Which simulator/draft controls must become saved experiment controls, including hold, halo, tiles and alternate renderer choices? | Enumerate saved controls/units; do not assume every draft is approved. |
+| Q09 | Optional extension open / P2 | Further placement, computed scoring and missing-answer semantics beyond supplied option codes are unallocated. | Current before/after-session modules and source codes work. Unsupported block/after-stimulus hooks reject explicitly; no invented scoring or translations. |
+| Q10 | Resolved for current goal / P5 | The all-settings objective includes all active experiment configuration; P5 v2 inventories input/visual/mappings/presentation/response. | Temporary test movement, focus, unapplied dialogs and inspection camera are excluded. Current procedural Face is retained; historical Photoatlas is not restored. |
 | Q11 | Answered / P6 | Direct S6 answer on 2026-09-11: “Yes, use these alignment rules.” Head-forward with no eye tracking, world anchor throughout each attempt, stop on tracking loss, recenter only before the next attempt. | Profile encodes requirements; physical enforcement is later Runner work. |
-| Q12 | Open / P1/P7 | Accept proposed homes/exposure for study identity, any retained participant-count metadata, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values; participant allocation is Runner-owned under updated Q06. |
-| Q13 | Open / P7 | Does final JSON restore only accepted runnable design or also drafts/provenance; how are edits to used recipes versioned? | Separate editable drafts from immutable run evidence. |
-| Q15 | Initial screen scope clarified; master selection open / P6/P7 | Researcher described a video screen inside a future WebXR headset with precise distance, size and viewing angles. P6 implements a flat monoscopic screen with yaw/pitch/roll, coplanar local feedback and explicit WebXR requirement. Combining desktop/XR alternatives in one master recipe remains P7 work. | No silent desktop fallback. Rotatable inspection remains separate from saved screen rotation. |
+| Q12 | Current homes implemented / P1/P7 | P1 owns study identity; P7 owns retained count metadata, sampling, authored emission and output policy. | Allocation and recording selection/destination are Runner-owned session state under16; no duplicated settings. |
+| Q13 | Accepted-design boundary implemented; optional draft persistence open / P7 | Final JSON contains a validated accepted design. Open restores editable content pending fresh media authority; edits produce newly compiled immutable bytes. | No invalid drafts, transient acceptance receipts or permissions in the master. Additional authoring-only recovery/provenance remains optional and must not alter frozen run evidence. |
+| Q15 | Implemented authoring / P6/P7 | A flat monoscopic screen with yaw/pitch/roll, local feedback and explicit XR target is saved. Master always retains complete P4 and explicitly includes/excludes P6. | No silent target fallback. Inspection rotation is transient; runtime/headset correspondence is later. |
 | Q14 | Answered / P3 | User replied “Yes, use these rules”: stable ISI names, duplicate durations allowed, deletion blocked while used, edits invalidate acceptance. User-supplied times/count remain illustrative. | Embed dictionary/references; named-only version cells. No renumbering existing definitions or silent conversion of numeric cells. |
 
-## Recommended order and completion criteria
+## Future-pass order and completion criteria
 
-Use the [closure plan](62-PLANNER-CLOSURE-PLAN.md#delivery-order-and-bounded-passes)
-for detailed slices, designs and acceptance. This is dependency order, not a
-whole-project implementation allocation:
-
-1. Allocate the successor contribution/schema seam and fixtures first. Close only
-   the P1/P3 decisions needed for their next slice; preserve frozen v1 semantics.
-2. Finish P1's import/catalogue/geometry handoff and adapt pending P3 work to the
-   named dictionary, event sequence, variant identities and marker definitions. P2's
-   accepted-definition/editable-save work can progress in its own lane.
-3. Complete P4 geometry and P5 consolidated saved controls through one layout
-   owner. Connect accepted contributions to P7 incrementally.
-4. Close desktop P7 composition, acknowledged save/reopen and independent recipe
-   reproduction. Optional XR does not block a desktop-only recipe.
-5. Add P6 spatial authoring and P7's spatial-profile round trip once their contract
-   is explicit. R1 execution, recording and qualification remain separate work.
+Use the [bounded future-pass checklist](62-PLANNER-CLOSURE-PLAN.md#bounded-future-pass-checklist)
+for new requested work. Required P1–P7 implementation is complete. Start from the
+delivered source, allocate one concrete remaining defect or extension, preserve
+owner contracts and route dependencies to their existing owners. Do not restart
+the historical missing-editor passes or treat optional content as a universal
+Planner blocker. R1 execution and qualification use their separate ledger65/66.
 
 Desktop Planner completion requires applicable P1–P5/P7 items closed, decisions
 answered or explicitly deferred, one valid recipe created through UI,
@@ -558,7 +552,7 @@ spatial authoring also requires P6-01 through P6-05 and corresponding P7 checks;
 P6-06 remains deferred Runner/device work. Runner readiness is a separate claim;
 a recipe does not prove qualified execution or recording.
 
-## Initial evidence and pending integration
+## Historical initial evidence and pending integration
 
 The initial source audit executed 59 focused existing Node tests successfully
 and inventoried every Research module. This roadmap pass is documentation-only;
