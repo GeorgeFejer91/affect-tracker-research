@@ -59,10 +59,40 @@ async function verifySelectedLogo(root, files, buildTarget) {
   }
 }
 
+async function verifyPagesEntrypoints(root, files) {
+  const entries = ["index.html", "planner/index.html", "runner/index.html", "research.html"];
+  const build = JSON.parse(await readFile(resolve(root, "build-info.json"), "utf8"));
+  if (build.schema !== "affect-tracker-pages-build-v1" || !/^[0-9a-f]{40}$/u.test(build.revision)) {
+    throw new Error("Pages build identity is missing or invalid.");
+  }
+  // Resolve links under a project prefix, just as GitHub project Pages does.
+  const origin = "https://pages.invalid/affect-tracker-research/";
+  for (const entry of entries) {
+    if (!files.includes(entry)) throw new Error(`Pages entrypoint is missing: ${entry}`);
+    const html = await readFile(resolve(root, entry), "utf8");
+    if (!html.includes(`<meta name="build-revision" content="${build.revision}">`)) {
+      throw new Error(`Pages revision differs in ${entry}.`);
+    }
+    for (const [, reference] of html.matchAll(/\b(?:href|src)="([^"]+)"/gu)) {
+      if (/^(?:https?:|#)/u.test(reference)) continue;
+      const url = new URL(reference, new URL(entry, origin));
+      if (!url.href.startsWith(origin)) throw new Error(`Pages link escapes project: ${entry} → ${reference}`);
+      let path = url.pathname.slice(new URL(origin).pathname.length);
+      if (path === "" || path.endsWith("/")) path += "index.html";
+      if (!files.includes(path)) throw new Error(`Broken Pages link: ${entry} → ${reference}`);
+    }
+  }
+}
+
 const rules = {
   pages: {
     root: resolve(repositoryRoot, "dist-pages"),
     allowed: (path) => path === "index.html"
+      || path === "research.html"
+      || path === "launcher.css"
+      || path === "planner/index.html"
+      || path === "runner/index.html"
+      || path === "build-info.json"
       || path === "research.css"
       || path === "experiment-template.json"
       || path === "src/math.js"
@@ -100,4 +130,5 @@ if (unexpected.length > 0) {
 if (!files.includes("index.html")) throw new Error(`${target} build is missing index.html.`);
 await verifyRelativeModuleClosure(rule.root, files);
 await verifySelectedLogo(rule.root, files, target);
+if (target === "pages") await verifyPagesEntrypoints(rule.root, files);
 console.log(`${target} Research-only boundary verified (${files.length} files).`);

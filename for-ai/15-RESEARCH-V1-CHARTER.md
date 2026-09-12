@@ -1,5 +1,18 @@
 # Affect Tracker Research v1 charter
 
+## Web entrypoint amendment — 2026-09-12
+
+The user authorizes an Affect Tracker public landing page with two icon-button
+links for separate online Experiment Planner and Experiment Runner apps.
+The initial infrastructure reserves `planner/` and `runner/` with explicit
+development-status pages; it does not claim to port the companion desktop
+programs or qualify any browser runtime. The earlier combined Research
+instrument moves from the public root to `research.html` without changing its
+runtime contracts. The landing page is navigation, not a third experiment mode.
+See [web delivery](../docs/WEB-DELIVERY.md) for the source/build/route boundary.
+Later companion-app browser integration requires its own bounded implementation
+and must preserve the current desktop owners and recipe authority.
+
 ## Status and precedence
 
 This file is the sole active product and architecture authority for Affect

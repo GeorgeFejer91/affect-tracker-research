@@ -5,35 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#121311">
-    <meta name="application-name" content="Affect Research">
-    <meta name="description" content="Configure and run a local continuous video affect study.">
+    <meta name="application-name" content="Affect Tracker">
+    <meta name="description" content="Affect Tracker online: the home of Experiment Planner and Experiment Runner.">
     <link rel="canonical" href="https://georgefejer91.github.io/affect-tracker-research/">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Affect Research">
-    <meta property="og:description" content="A local-first instrument for continuous valence-arousal video research.">
+    <meta property="og:title" content="Affect Tracker">
+    <meta property="og:description" content="The home of Experiment Planner and Experiment Runner online.">
     <meta property="og:url" content="https://georgefejer91.github.io/affect-tracker-research/">
     <meta property="og:image" content="https://georgefejer91.github.io/affect-tracker-research/assets/app-icons/512x512.png">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
     <meta property="og:image:alt" content="Aurora Axis, the Affect Research app logo">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Affect Research">
-    <meta name="twitter:description" content="A local-first instrument for continuous valence-arousal video research.">
+    <meta name="twitter:title" content="Affect Tracker">
+    <meta name="twitter:description" content="The home of Experiment Planner and Experiment Runner online.">
     <meta name="twitter:image" content="https://georgefejer91.github.io/affect-tracker-research/assets/app-icons/512x512.png">
-    <title>Affect Research</title>
+    <title>Affect Tracker</title>
     <link rel="icon" type="image/svg+xml" href="./assets/app-logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/app-icons/32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/app-icons/180x180.png">
-    <link rel="stylesheet" href="./research.css?v=0.4.0-alpha.1">
+    <link rel="stylesheet" href="./launcher.css">
   </head>
   <body>
-    <div id="research-app" data-research-surface="browser" aria-busy="true">
-      <main class="research-loading">
-        <h1>Affect Research</h1>
-        <p>Loading the experiment instrument…</p>
+    <a class="skip-link" href="#apps">Skip to apps</a>
+    <div class="launcher">
+      <header class="masthead">
+        <img src="./assets/app-logo.svg" alt="" width="64" height="64">
+        <div>
+          <h1>Affect Tracker</h1>
+          <p>Experiment Planner &amp; Experiment Runner</p>
+        </div>
+      </header>
+      <main id="apps" tabindex="-1">
+        <p class="intro">Choose an app. The online versions are in development.</p>
+        <nav class="app-grid" aria-label="Affect Tracker apps">
+          <a class="app-button" href="./planner/" aria-labelledby="planner-title" aria-describedby="planner-description planner-status">
+            <svg class="app-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="10" y="12" width="44" height="44" rx="4"/>
+              <path d="M10 25h44M22 8v10M42 8v10M20 35h4m8 0h12M20 45h4m8 0h8"/>
+            </svg>
+            <h2 id="planner-title">Experiment Planner</h2>
+            <p id="planner-description">Prepare your study, arrange stimuli and questionnaires, and save an experiment recipe.</p>
+            <span class="app-status" id="planner-status">Web app in development</span>
+            <span class="app-action">Open Planner <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="app-button" href="./runner/" aria-labelledby="runner-title" aria-describedby="runner-description runner-status">
+            <svg class="app-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="6" y="10" width="52" height="36" rx="4"/>
+              <path d="m27 20 14 8-14 8V20ZM24 55h16M32 46v9"/>
+            </svg>
+            <h2 id="runner-title">Experiment Runner</h2>
+            <p id="runner-description">Open a saved recipe, prepare a participant session, and follow the experiment sequence.</p>
+            <span class="app-status" id="runner-status">Web app in development</span>
+            <span class="app-action">Open Runner <span aria-hidden="true">→</span></span>
+          </a>
+        </nav>
       </main>
+      <footer>
+        <a href="./research.html">Earlier research prototype</a>
+        <a href="https://github.com/GeorgeFejer91/affect-tracker-research">Source on GitHub</a>
+      </footer>
     </div>
-    <noscript>Affect Research requires JavaScript to validate settings, prepare assignments, and run an experiment.</noscript>
-    <script type="module" src="./src/research/browser-entry.js"></script>
   </body>
 </html>

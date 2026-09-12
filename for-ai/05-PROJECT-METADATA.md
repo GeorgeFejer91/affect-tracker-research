@@ -106,7 +106,13 @@ sensor acquisition, and face/touch experiments remain outside active v1.
 
 ## Active source map
 
-- `site/index.html`, `site/experiment-template.json`, `site/research.css`, and
+- `site/index.html`, `site/launcher.css`, `site/planner/index.html`, and
+  `site/runner/index.html`: public Affect Tracker navigation and explicit
+  companion web-app development-status routes. `site/research.html` retains
+  the earlier combined browser instrument; it is not the new companion Planner
+  or Runner. `docs/WEB-DELIVERY.md` owns deployment and future integration notes.
+
+- `site/research.html`, `site/experiment-template.json`, `site/research.css`, and
   `site/src/research/`: current static UI, transitional external-experiment
   authoring/import reader, browser adapter, shared contracts, protocol planner,
   renderer, and browser recovery. The template and V3 reader are not yet the

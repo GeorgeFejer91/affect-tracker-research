@@ -483,9 +483,9 @@ test("programmatic binding, color, and overlay changes invalidate the frozen pro
   assert.match(source, /function schedulePlanRefresh\(\)[\s\S]*?settingsSnapshot = null;[\s\S]*?plan = null;[\s\S]*?capabilities\.manifestReady = false;/u);
 });
 
-test("the active entrypoints load only the shared Research instrument", async () => {
+test("the prototype and desktop entrypoints load only the shared Research instrument", async () => {
   const [siteIndex, desktopIndex, browserEntry, nativeEntry, bootstrap] = await Promise.all([
-    read("site/index.html"),
+    read("site/research.html"),
     read("desktop/index.html"),
     read("site/src/research/browser-entry.js"),
     read("site/src/research/native-entry.js"),
