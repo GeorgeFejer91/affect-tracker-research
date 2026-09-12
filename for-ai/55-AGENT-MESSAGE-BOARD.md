@@ -120,6 +120,22 @@ file; follow the integration-owner collection procedure in the workflow.
   as two concise researcher questions in the coordinator task. Automatic
   largest-video reference selection itself is already required by the original
   request; P4's manual-only proposal was corrected. Other work continues.
+- Subsequent clean handoffs: P3 `dcaa60c` repairs the three routed catalogue,
+  identity and atomic-restore issues (owner reports 84 focused checks); P5
+  `c143398`, application `1a238a5`, supplies strict saved feedback, revision/
+  bounds subscriptions, guarded restore and its public validator (65 focused
+  checks; seven Chrome scenarios with 50 assertions each). These checkpoints
+  were sent to their consumers and integration without repeating owner tests.
+- P1 follow-up `a2f4491` adds study identity and a workspace composite, while
+  retaining its video-only projection. Root and integration independently
+  identified different revision domains/payloads across that projection and
+  P7 registration. S1 owns a coherent registered-owner revision/projection;
+  S3/P4/P6 must consume it and S7 restore it consistently. Integration holds
+  this follow-up until the interface agrees; it is not a reason to stop other
+  ready collection. Q05-dependent restoration remains a separate decision.
+- Integration reports candidate `549874e` includes its confirmation shell,
+  P7 `cc5cc83`, P1 `3d6a6b2` and P5 `c143398`. Root's 33 inspected captures
+  still name earlier `64da370`; they do not verify the new acceptance UI.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
