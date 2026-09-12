@@ -3,15 +3,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { validateQuestionnaireContribution, restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "../site/src/research/questionnaire-contribution.js";
+import { validateQuestionnaireContribution, validateQuestionnairePlannerContribution, restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "../site/src/research/questionnaire-contribution.js";
 import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring, sheetFromDefinition } from "../site/src/research/questionnaire-sheet.js";
 import { updateQuestionnaireDefinitionReferences } from "../site/src/research/questionnaire-assets.js";
 import { parseExperimentPackageV1, createExperimentPackageV1, serializeExperimentPackageV1 } from "../site/src/research/experiment-package.js";
 
-async function fixture() {
+async function fixture(languages = ["en", "de"]) {
   const { package: base } = await parseExperimentPackageV1(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url)));
   const definitions = [];
-  for (const language of ["en", "de"]) {
+  for (const language of languages) {
     const sheet = createQuestionnaireSheet({ familyId:"study", language, optionCount:2, rowCount:1 });
     setQuestionnaireGridCell(sheet, 0, 0, language === "de" ? "Wie fühlen Sie sich?" : "How do you feel?");
     setQuestionnaireGridCell(sheet, 0, 1, language === "de" ? "Nie" : "Never");
@@ -26,9 +26,9 @@ async function fixture() {
     { schema:"affect-research-questionnaire-module", version:2, moduleId:`${d.language}-after`, questionnaireId:d.questionnaireId, definitionSha256:d.definitionSha256, placement:{kind:"afterStimulus",blockId:null,stimulusId:base.settings.stimuli.items[0].stimulusId,relativeToIsi:"after"} },
   ]);
   const contribution = { questionnaires:{algorithmVersion:base.settings.questionnaires.algorithmVersion, definitions, modules},
-    languageSelection:{algorithmVersion:"language-tree-v1",rootNodeId:"root",languages:["en","de"].map(language => ({languageId:language,languageTag:language,label:language,questionnaireModuleIds:[`${language}-after`,`${language}-before`]})),nodes:[
+    languageSelection:{algorithmVersion:"language-tree-v1",rootNodeId:"root",languages:languages.map(language => ({languageId:language,languageTag:language,label:language,questionnaireModuleIds:[`${language}-after`,`${language}-before`]})),nodes:[
       {nodeId:"root",prompt:"Choose group",options:[{optionId:"group",label:"Languages",target:{kind:"node",nodeId:"languages"}}]},
-      {nodeId:"languages",prompt:"Choose language",options:["en","de"].map(language=>({optionId:language,label:language,target:{kind:"language",languageId:language}}))},
+      {nodeId:"languages",prompt:"Choose language",options:languages.map(language=>({optionId:language,label:language,target:{kind:"language",languageId:language}}))},
     ]} };
   return { base, contribution };
 }
@@ -37,6 +37,7 @@ test("full restoration retains scientific identities, source receipts, hooks and
   const { contribution } = await fixture();
   const restored = await restoreQuestionnaireAuthoring(contribution);
   assert.deepEqual(restored.contribution, contribution);
+  assert.equal(await validateQuestionnairePlannerContribution(contribution), true);
   assert.equal(restored.coverage.complete, true);
   assert.deepEqual(restored.families.map(f=>f.id), ["study"]);
   for (const d of restored.contribution.questionnaires.definitions) {
@@ -69,6 +70,7 @@ test("missing selected-language assets stay incomplete rather than acquiring an 
   const restored=await restoreQuestionnaireAuthoring(contribution);
   assert.equal(restored.coverage.complete,false);
   assert.equal(restored.coverage.missing[0].languageTag,"de");
+  await assert.rejects(validateQuestionnairePlannerContribution(contribution), /every questionnaire in every selected language/);
 });
 
 test("mapping reconciliation preserves imported routes and module order while removing retired modules", async () => {
@@ -77,6 +79,37 @@ test("mapping reconciliation preserves imported routes and module order while re
   assert.deepEqual(tree.nodes,c.languageSelection.nodes);
   assert.deepEqual(tree.languages[0].questionnaireModuleIds,["en-after"]);
   assert.deepEqual(tree.languages[1],c.languageSelection.languages[1]);
+});
+
+test("a third researcher-authored language retains its own codes and requires its own asset", async () => {
+  // Synthetic authoring data only: this is not a validated instrument translation.
+  const { base, contribution } = await fixture(["en", "de", "fr"]);
+  const sheet = sheetFromDefinition(contribution.questionnaires.definitions[2], { familyId: "study" });
+  setQuestionnaireGridCell(sheet, 0, 0, "Synthetic French-language study item");
+  setQuestionnaireGridCell(sheet, 0, 2, -2.5);
+  const revised = (await sheetToAuthoring(sheet)).definition;
+  contribution.questionnaires.definitions[2] = revised;
+  contribution.questionnaires.modules = updateQuestionnaireDefinitionReferences(contribution.questionnaires.modules, revised);
+  const restored = await restoreQuestionnaireAuthoring(contribution);
+  assert.equal(restored.coverage.complete, true);
+  assert.equal(await validateQuestionnairePlannerContribution(contribution), true);
+  assert.deepEqual(restored.languages.map(({ languageTag }) => languageTag), ["en", "de", "fr"]);
+  assert.equal(revised.items[0].options[0].scoreValue, -2.5);
+  assert.deepEqual(restored.contribution, contribution);
+  const recipe = await createExperimentPackageV1({ ...base,
+    settings: { ...base.settings, questionnaires: contribution.questionnaires },
+    languageSelection: contribution.languageSelection });
+  const source = await serializeExperimentPackageV1(recipe);
+  assert.equal(await independentReopen(source), source);
+
+  contribution.questionnaires.definitions.pop();
+  contribution.questionnaires.modules = contribution.questionnaires.modules.filter(({ questionnaireId }) => questionnaireId !== revised.questionnaireId);
+  contribution.languageSelection.languages[2].questionnaireModuleIds = [];
+  const incomplete = await restoreQuestionnaireAuthoring(contribution);
+  assert.equal(incomplete.coverage.complete, false);
+  assert.deepEqual(incomplete.coverage.missing.map(({ languageTag }) => languageTag), ["fr"]);
+  assert.equal(incomplete.contribution.questionnaires.definitions.length, 2);
+  await assert.rejects(validateQuestionnairePlannerContribution(contribution), /every questionnaire in every selected language/);
 });
 
 function independentReopen(source) {

@@ -428,6 +428,53 @@ file; follow the integration-owner collection procedure in the workflow.
   interfaces do not depend on choosing those policies. No Runner, publication,
   GUI qualification, canonical integration merge, or unrelated UI cleanup is
   included in this pass.
+### 20260912-p2-producer-consumer-closure
+
+- Owner **S2**, P2-04/P2-08 and bounded P2-05 inventory audit; status **ready**.
+  Resumed Backend Verification under the existing Planner allocation, branch
+  `codex/segment-questionnaires-table-catalogue`, isolated worktree
+  `D:\GitHub\affect-tracker-research-questionnaires-table`, base `714b22d`.
+  Canonical observed clean at `ba2110f`; P7 consumer observed at `6bac40f`.
+- Deliverable: focused producer/restore regressions, approved local EN/DE
+  inventory and further-language coverage evidence, then an exact P2 handoff.
+  Allowed seams: questionnaire contribution validator/editor tests and P2 documentation;
+  P7 owns compiler/save call sites and its combined browser fixture. Existing
+  visual handoff and six accepted scrolled captures will not be repeated.
+- Compare actual full-definition snapshot/restore contracts with P7 Edit recipe,
+  persistence acknowledgement and re-export, including numeric codes, module
+  references, language routes and dirty/revision state. No unsupported scoring,
+  placement, missing-answer or presentation semantics will be inferred (Q09).
+  Invalid-draft durability remains Q13; Runner/native acquisition is deferred.
+- User explicitly saved their work and authorized the integration task to merge
+  and reload when ready. Authorization was forwarded to **Add segment
+  confirmation flow**, which remains sole integrator; no local reload claimed.
+- Added `validateQuestionnairePlannerContribution(value)` in
+  `questionnaire-contribution.js`: async `true`/throw callback for P7 acceptance.
+  It validates exact content, editable identity and complete language coverage
+  without mutating state. Existing incomplete-import restoration remains intact.
+  Getter stays five-key `{revision,enabled,pending,contribution,dependencyRevisions}`;
+  P2 dependencies are `[]`. `restoreQuestionnaireContribution(value,{isCurrent})`
+  throws before mutation if stale; successful restore returns the new snapshot.
+- Evidence: 28/28 focused Node tests across contribution, prebuilt, grid,
+  integration and supplied-questionnaire suites; `git diff --check` clean.
+  New synthetic third-language independent-process round-trip preserves codes
+  and requires its own asset. Local preset audit preserves every ready MAIA
+  item's prompt, label, code, identity and source provenance; no assets changed.
+- Independently ran P7's unchanged `package-export.mjs` on clean `6bac40f`
+  (clean before/after): Chrome passed 27/27 at
+  `D:\GitHub\.affect-checks\s2-p7-consumer-chrome-20260912`. Exact wording edit,
+  pending state, full German source, nested route, delayed acknowledged save,
+  and explicit reopen draft reset pass. Edge returned empty stdout/stderr
+  before any fixture result (`s2-p7-consumer-edge-20260912`); not a pass and not
+  evidence of a product assertion failure. The fixture uses a synthetic writer,
+  not actual native persistence or a user window.
+- **Implemented:** coverage-aware acceptance callback and focused regressions.
+  **Owner-ready:** full-content P2 producer/restore plus prior UI at `714b22d`.
+  **Integrated:** prior P2 core through `ae47df6` in canonical `ba2110f`;
+  this callback, accepted UI polish and P7 consumer are not yet canonical.
+  **Missing/deferred:** TAS authorized assets, equivalent computed scoring,
+  Q09/Q13, presentation contract and Runner. S7 owns the additional combined
+  code-only edit/acceptance fixture and master-envelope integration.
 
 ### 20260911-p2-table-first-visual-follow-up
 
