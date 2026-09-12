@@ -3526,3 +3526,13 @@ Root allocates R1/RR-10 Backend Verification on isolated
 headless screenshot with exact P4/P5 settings and DOM/SVG geometry; preserve
 the adversarial fixture. Collect geometry in the actual app harness. No
 production renderer redesign or native presentation qualification is allocated.
+
+# Runner representative Flubber projection — 2026-09-12
+
+Root explicitly allocated R1/RR-10 frontend evidence continuation on
+`codex/segment-runner-flubber-audit`, base3e2b588. Preserve gridfixture; derive
+labelled synthetic P4 mock layout and visible P5 Flubber via strict owner compiler.
+Four headless cases324checks attest mapped state/path/colour/bounds through
+neutral/strong/hiddenISI/nextneutral; original grid cases130checks remain passing.
+Test-only frame timer substitution is declared in receipts/docs because headless
+RAF stalls. No production renderer edit or native/physical/CLI/XDF claim.

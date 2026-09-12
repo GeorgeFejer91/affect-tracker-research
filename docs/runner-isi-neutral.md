@@ -115,3 +115,32 @@ they do not qualify native playback or provide a representative visible-Flubber
 capture. The initial audit assertion incorrectly read an HTML `hidden` property
 from an SVG; the corrected assertion checks computed display. The failed receipt
 is retained in `runner-render-geometry-01`.
+
+## Representative synthetic Flubber projection
+
+Run the same harness with trailing `1938,1176 flubber`. It preserves the grid
+fixture on disk and derives a separately labelled synthetic recipe with the
+existing strict Planner compiler/serializer. Explicit changes: reference box
+60 by 60 percent, centre 50/35, feedback offset 0/75, side24, minimumgap3;
+1920 by1080 viewport remains exact. P5 selects visible Flubber. All other fixture
+values, including portrait reference source, mappings, halo and colours remain
+explicitly inherited, not replaced with new defaults. Therefore this is not the
+CLI-authored real-video mock.
+
+Four cases (324 checks) record neutral, strong(.9,-.8), hidden-neutral ISI and
+next-video-neutral DOM/SVG geometry and screenshots. P4 resolves to87.48px at
+916.26/820.26; actual stage87.46875px at916.25/820.25; visibleSVG85.46875px.
+Each state's eight mapped values match the production mapping; strong changes
+actual SVG path and colour. Neutral animation phase may differ across captures.
+The original six grid cases still pass130checks.
+
+Evidence directory: `D:/GitHub/.affect-runner-master-build/runner-flubber-visible-04`.
+Images: `flubber-neutral.png`, `flubber-strong.png`, `flubber-isi.png`,
+`flubber-next.png`; measurements and SVG paths are in `receipt.json`.
+
+Qualification limit: synthetic native responses and test-only16ms timer scheduling
+of the unchanged production renderFrame function. Chrome headless virtual time
+stalled real requestAnimationFrame;01 retained a stale frame,02 waiting for native
+RAF produced no receipt.03/04 explicitly substitute only frame scheduling in the
+esbuild test observer. No production code changes, physical-paint/timing, native
+video, CLI-authored JSON or XDF claim follows from these screenshots.
