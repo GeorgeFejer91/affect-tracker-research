@@ -13,6 +13,7 @@ import { createPlannedMarkerProfile } from "../site/src/research/planned-marker-
 import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
 import { videoLibraryCsv, validateVideoLibrary } from "../site/src/research/stimulus-order.js";
 import { validateVariantLibrary } from "../site/src/research/variant-library.js";
+import { createLocationLibraryExport } from "../site/src/research/variant-library-export.js";
 import { videoLibraryWorkbook } from "../site/src/research/stimulus-workbook.js";
 import { parseSheetTable } from "../site/src/research/questionnaire-sheet.js";
 import { assertVariantReproduction } from "./fixtures/assert-variant-reproduction.js";
@@ -74,6 +75,14 @@ test("moving a location invalidates its old references and requires explicit tab
   assert.notEqual(accepted.integritySha256, contribution.integritySha256);
 });
 
+test("unequal variants reopen when an authored occurrence already uses the maximum ordinal", async () => {
+  const maximum = structuredClone(draft);
+  maximum.entryIds[0][2] = "variant-2-entry-999999";
+  const saved = await createVariantDesign(maximum, library);
+  assert.deepEqual(await validateVariantDesign(saved, library), saved);
+  assert.deepEqual(await createVariantDesign(variantDesignToDraft(saved), library), saved);
+});
+
 test("long, escaped and formula-leading location IDs survive CSV, XLSX and rectangular paste exactly", async () => {
   const paths = ["stimuli/=clip.mp4", "stimuli/+clip.mp4", "stimuli/@clip.mp4", "stimuli/-clip.mp4",
     "stimuli/a_b/a%b,clip.mp4", `stimuli/${Array.from({ length: 8 }, (_, i) => `${"_".repeat(200)}${i}`).join("/")}/clip.mp4`];
@@ -114,6 +123,17 @@ test("location paste keeps bounded parser options and enforces its own UTF-8 byt
   assert.deepEqual(unchanged, createVariantDraft());
   assert.throws(() => pasteVariantTable(unchanged, 0, 0, "x".repeat(4001),
     { version: 1, videos: [] }), /4000 characters/);
+});
+
+test("location exports regenerate bytes from the validated catalogue and reject stale identity or format", async () => {
+  assert.deepEqual(await createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "csv"),
+    new TextEncoder().encode(videoLibraryCsv(library)));
+  assert.deepEqual(await createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "xlsx"),
+    videoLibraryWorkbook(library));
+  await assert.rejects(createLocationLibraryExport(workspace.videoCatalogue, "e".repeat(64), "csv"), /changed/);
+  await assert.rejects(createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "xls"), /CSV or Excel/);
+  const forged = structuredClone(workspace.videoCatalogue); forged.entries[0].annotationId = "wrong.mp4";
+  await assert.rejects(createLocationLibraryExport(forged, library.integritySha256, "xlsx"));
 });
 
 test("v2 pending editable reopen, actual revision binding, and both download payloads retain P1 authority", async () => {

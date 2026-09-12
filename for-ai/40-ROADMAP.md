@@ -14,6 +14,57 @@ producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-
 Planner completion is independent; actual execution correspondence is the final
 development stage. Existing frozen contracts and qualification gates remain.
 
+## P3 native and complete-master reproduction handoff — 2026-09-12
+
+Application checkpoint `4b20254` passes 672 Node tests and 204 native Rust
+`--no-default-features --lib` tests. Desktop (9 files) and Pages (224 files)
+build closures pass; the existing 797 kB desktop chunk warning remains.
+Pure dependencies are P1 through `ea7cf7d` and P7 `828fff7`'s compiler closure.
+The native P3 generic workspace/contribution helper validates and reproduces
+both historical and location references. Checked-in JS/Rust parity fixtures bind
+all variant timelines, marker profiles and deterministic CSV/XLSX byte hashes.
+
+The actual complete location master fixture is written to a named JSON file,
+read and strictly reopened; all saved variant/language selections match the
+independent P3 expected sequences. P3 content-only reopen stays pending under
+the real P1 producer until its verified catalogue snapshot changes revision;
+preparing and recompiling then returns identical complete master bytes. Two
+fresh processes with ambient clock/RNG/storage/navigation prohibited match.
+Other owners' reopen effects remain fixture adapters in this owner test.
+
+Clean-source background P3 rendering at `4b20254` retains 4824-character values
+inside a 432px section, at both 1600/800 viewports, with no page errors or
+overflow. Receipt is under `src-tauri/target/segment3-verification/4b202545681f-1789214485721`.
+The subsequent focused repair allows shorter v2 variants retaining occurrence
+ordinal 999999 to reopen: editor-only blank padding uses unused IDs. Authored
+IDs, hashes and v1 behavior are unchanged. Its 25 focused Node and 4 Rust checks
+pass after a reproducing failure; existing golden fixtures stay unchanged.
+
+Integration owns the current-media export adapters and named picker command,
+complete combined UI restore, and final shared-source verification. P1's native
+media verifier must run before P3's pure workbook encoder; the browser adapter
+must likewise compare current verified P1 declarations and freshly read media.
+No Runner execution, recording, measured onset, native installed qualification,
+user-window interaction, publication or canonical promotion is claimed here.
+
+## P3 Q04 location-pair software checkpoint — 2026-09-12
+
+`2a16397` consumes P1 catalogue v2 through an explicit derived library and P3
+design v2. Each video occurrence binds both exact annotation and immutable asset
+identity; markers distinguish equal bytes at distinct paths. 93 focused Node
+checks pass, including P1/P2 parser compatibility, long IDs and all variant/ISI
+reconstruction edges. Historical fixtures/readers retain their meaning.
+
+The 4824-character nested-path case exposed expanded planned-event text escaping
+the pane. P3's event lists now scroll horizontally. The headless section fixture
+passes empty/location states at 1600/800 viewports within a 432px host; full input
+and catalogue-option values match and cells stay below 230px. Screenshots were
+inspected. This is a scoped section rendering receipt with source hashes, not
+combined-shell qualification: the old full-shell harness on base `7946bc6` fails
+the empty 800px viewport assertion before the new case. Integration owns that
+shell and the final combined audit. Native P3 parity, verified download adapters
+and actual complete-master parsing/reopen remain open at this checkpoint.
+
 ## P3 master-reproduction fixture and download lifecycle — 2026-09-12
 
 The isolated `codex/segment-p3-master-variants` pass starts from combined

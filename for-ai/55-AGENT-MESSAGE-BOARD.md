@@ -221,6 +221,20 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ### 20260912-p3-location-master-reproduction
 
+- Status: **ready for integration**, application `4b20254` plus the focused
+  maximum-occurrence padding repair on this branch. 672 full Node / 204 Rust
+  no-default checks and both build closures pass at `4b20254`; 25 Node / 4 Rust
+  focused checks pass after the padding repair. Owned source writers stop after
+  this receipt for collection by **Add segment confirmation flow**.
+- P7 received the generic native `validate_and_reproduce_saved_variants` API
+  with both v1/v2 golden timelines and profiles. Complete P7 master file export,
+  strict parse, content-only P3 restore/rebind, canonical reexport and all
+  variant/language selections are now demonstrated with independent processes.
+- Integration received pure browser/native catalogue encoders and exact command
+  signatures. Remaining shared adapters must verify current P1 media before
+  generating CSV/XLSX and must fence concurrent workspace/producer changes.
+  Master runtime execution remains Runner work; no allocation policy was added.
+
 - Owner: **S3**, P3-04 through P3-08; Backend Verification continuation of the
   allocated comprehensive Planner master pass, branch `codex/segment-p3-master-variants`,
   isolated C: worktree, reviewed base `7946bc6`. Runner execution is deferred.
