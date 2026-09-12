@@ -2713,6 +2713,14 @@ tbody tr:last-child td {
   .preview-affect-map:not([data-color-anchor-mode="corners"]) .preview-affect-map-layout {
     grid-template-columns: minmax(3rem, 1fr) minmax(5rem, 1.6fr) minmax(3rem, 1fr);
   }
+  .preview-affect-map[data-color-anchor-mode="axes"] :is(.anchor-left, .anchor-right) [data-color-anchor-label] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    max-height: 3.45em;
+    overflow: hidden;
+    line-height: 1.15;
+  }
   .feedback-input-settings .input-test {
     grid-template-columns: minmax(0, 1fr);
   }
