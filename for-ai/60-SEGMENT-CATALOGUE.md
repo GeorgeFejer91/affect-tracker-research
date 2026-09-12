@@ -1,5 +1,14 @@
 # Central segment roadmap and capability checklist
 
+**Active goal — 2026-09-12:** finish the Planner as a comprehensive JSON authoring
+interface. Every P1–P6 segment, including experiment-defining Flubber/live
+configuration, must contribute to one validated, saveable and editable master.
+See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for current
+assignments, concrete source gaps and evidence. Final Planner–Runner correspondence
+is explicitly deferred to the last development stage. The separate-program and
+Runner-owned recording amendment in [16](16-COMPANION-APP-BOUNDARY.md) supersedes
+older one-program/two-mode wording below.
+
 This is the central **final-state Planner roadmap**, segment contract map and
 capability checklist requested by the researcher on 2026-09-11. Every future
 agent must answer: **What is my segment supposed to do? What does it already
@@ -93,6 +102,15 @@ qualification are deferred unless separately allocated by the researcher.
     acceptance. This records product intent, not an implemented workflow or
     approval to bypass the stage/contract gates. Integration owns confirmation
     orchestration and P7 owns final naming/save semantics.
+12. The 2026-09-12 goal requires complete modular P1–P6 authoring, including active
+    experiment-defining Flubber/live settings, strict JSON export and editable
+    reopen. Temporary test movement/inspection is distinct from configuration.
+    P7 owns the successor wire shape; historical v1 readers remain supported.
+13. Planner completion is the current goal; final correspondence with the
+    still-developing Runner is a later final-stage check. Stream recording policy
+    belongs to Runner sessions under the direct correction adopted in `16`;
+    recorder selection/destination are not missing Planner fields. Authored
+    emission configuration and experiment event/marker meaning remain Planner-owned.
 
 ## Segment map and single owners
 

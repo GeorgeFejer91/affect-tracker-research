@@ -41,9 +41,10 @@ rendered owner versions were inspected at desktop and constrained widths;
 the evidence and remaining limits are recorded below. Canonical source remains
 clean `ba2110f`. Integration has advanced beyond its initial `c7ba103` UI
 candidate; the exact interim capture below is `64da370`, and later owner-reported
-checks name `4f505c3`. A later 30-image combined capture at `b9d520d` is reviewed
-below; its Review warning-list follow-up remains open. None is the final verified
-combined application. The open
+checks name `4f505c3`. The later 30-image `b9d520d` capture is reviewed below;
+its Review warning-list follow-up is resolved in the subsequent exact-source
+`7946bc6` default-state review. This closes the bounded cleanup handoff, not the
+new complete Planner JSON goal. The open
 checkboxes retain that distinction; they do not mean the owner fixes are absent.
 
 | Segment | Cleanup verified in the owner handoff | Ready checkpoint |
@@ -230,6 +231,47 @@ to protect pending file loads, including blank/incomplete drafts and edit-revert
 the owner reports 31 actual-controller checks and 646 Node checks passing.
 It changes no markup/style. The Review presentation follow-up remains open;
 keep V28 and canonical promotion open.
+
+## Final bounded cleanup review at 7946bc6 — 2026-09-12
+
+The detached visual worktree was clean at
+`7946bc6b319ddf689bdaa81c07ec8aa6a4b3869d`, application `d6acfd1`, site tree
+`e84b6c91fa59ae21748847fc1ea5883287011b62`. All **29 actual Chrome images** in
+`D:/GitHub/.affect-preview-checks/combined-7946bc6-chrome-20260912` were visually
+inspected: P1–P4 twelve, P5 ten, P6 two, P7 five. All seven sections and supplied
+scroll pages are covered at 1280×900/800×700 (795px/472px Setup panes). Source
+remained stable; all 29 PNG hashes and the harness hash match. Receipt reports
+zero runtime errors, duplicate-ID rows or horizontal pane overflow.
+
+No new material clipping, overlap or redundancy was found in these default
+states. The P7 warning-list defect is resolved: four compact unboxed section rows
+replace eight warning boxes, with full diagnostics behind one disclosure.
+Recipe/target remain first; LSL is collapsed; the final Save footer is reachable
+at both widths. Narrow Review now takes three captures instead of four.
+P5 retains one persistent settings owner and no duplicate confirmation. P6's
+disabled state retains one explicit choice and footer action.
+
+Separate owner repair receipts under
+`D:/GitHub/affect-tracker-research-p7-evidence/review-issues-896f677` and
+`review-default-896f677` were also inspected (four compact/expanded plus five
+default/full-scroll images). All nine PNG hashes, both harness bindings and
+the issue fixture's 71 source hashes match clean handoff `86ce56b` / application
+`896f677`. The narrow expanded capture exposes only the upper diagnostics before
+scrolling; lower expanded-list coverage is not inferred from that image.
+
+The exact combined source includes later load/edit/disposal guards and the
+helper-only P5 task-yield correction. Integration separately reports 648 Node,
+32 actual-controller, 124 issue/focus, 31 retained-control and six footer/glow
+checks, both frontend builds and 204 affected P5 modal checks. These are distinct
+from visual inspection and remain bound to their own receipts in the board.
+
+This resolves the prior bounded default-state cleanup review. It does not close
+V28's complete final-application scope or G09 in the new Planner goal: populated
+tables, expanded/invalid states, accepted layout, comprehensive JSON and named
+save/reopen remain separate work. The visible historical Start/participant area
+belongs to the newly allocated companion-app separation; its removal must be
+checked in the new candidate. No canonical promotion, Edge, installed/native,
+physical input, execution/recording or final Planner–Runner correspondence claim.
 
 ## Segment checklist
 
