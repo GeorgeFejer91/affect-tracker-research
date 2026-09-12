@@ -179,6 +179,7 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_export_video_library,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
             research_recorder::commands::research_recorder_discover,
             research_recorder::commands::research_recorder_start,

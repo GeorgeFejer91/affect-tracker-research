@@ -72,7 +72,7 @@ try {
   reviewTitle:root.querySelector('[data-setup-section="review"] .section-title')?.textContent,
   previewCount:root.querySelectorAll('.research-preview-stage').length,
   sections:root.querySelectorAll('[data-setup-section]').length,
-  startDisabled:root.querySelector('#runner-start')?.disabled,
+  startDisabled:root.querySelector('#runner-launch')?.disabled,
   recipeLoaded:!!root.runner?.recipe,
   plannerEditors:root.querySelectorAll('[data-setup-section],#settings-form').length};
  const pre=document.createElement('pre'); pre.id='receipt'; pre.hidden=true; pre.textContent=JSON.stringify(receipt);document.body.append(pre);
@@ -97,6 +97,6 @@ try {for(const program of ['planner','browser-planner','runner']){
  const row=JSON.parse(raw.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>'));rows.push(row);
  assert.deepEqual(row.errors,[]);assert.equal(row.appError,'');assert.deepEqual(row.duplicateIds,[]);assert.ok(row.pageOverflow<=1);
  if(program.endsWith('planner')){assert.equal(row.runButtons,0);assert.equal(row.reviewTitle,'Review & Export');assert.ok(row.previewCount>=1);assert.ok(row.sections>=7);}
- else{assert.equal(row.startDisabled,true);assert.equal(row.recipeLoaded,true);assert.equal(row.plannerEditors,0);}
+ else{assert.equal(row.startDisabled,false);assert.equal(row.recipeLoaded,true);assert.equal(row.plannerEditors,0);}
  console.log(JSON.stringify(row));
 }}finally{server.close();await writeFile(join(output,'receipt.json'),JSON.stringify({source,scope:'Headless frontend; synthetic native replies; no physical/native run',inputs,rows},null,2));}
