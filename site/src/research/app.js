@@ -5635,6 +5635,8 @@ function bindResearchInteractions(root, { surface }) {
     },
     plannerContributionChanged(segment) { plannerContributions.changed(segment); },
     getPlannerContributionReview() { return plannerContributions.read(); },
+    acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
+    getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },

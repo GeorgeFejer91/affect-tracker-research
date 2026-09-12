@@ -37,6 +37,32 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p7-accepted-master-recipe
+
+- Owner: **S7**, P7; **open**, resumed by researcher via roadmap/integration.
+  Backend Verification, P7-03/P7-05/P7-06/P7-07/P7-09 and existing P7-04.
+  Branch `codex/segment-p7-accepted-recipe`, isolated worktree
+  `D:/GitHub/affect-tracker-research-p7-recipe-export`, base `6bac40f`.
+- Goal: accepted owner contributions to one canonical recipe, acknowledged
+  named save, editable reopen and independent reproduction. Existing clean
+  handoff implements v1 acknowledgement/stale/cancel/edit; active successor
+  contributions still reject rather than being omitted. Baseline 20 focused
+  registry/export tests pass. Canonical integration remains separately owned.
+- Inputs: P1 catalogue/study; P2 full definitions/language tree; P3 variants,
+  named ISIs and marker contract; P4 supported layout; P5 saved input/visual/
+  mappings; explicitly optional P6. New envelope preserves frozen v1 readers.
+- Allowed seams: P7 registry/export/codec modules, P7 app bootstrap/API and
+  save/load/edit handlers, named file adapters and their focused tests. Main owns
+  shared accordion Confirm/advance and UIstate projection. Domain owners retain
+  payload validation/restoration; P7 awaits actual owner revisions on restore.
+- Evidence: accepted/stale/dependency-withdrawal guards, async cancellation and
+  write acknowledgement, canonical reopen/re-export, multilingual code/label
+  preservation, variant/occurrence reproduction, mirrored strict contracts and
+  bounded headless composition. No unchanged broad gate repetitions.
+- Q08 layout, Q10 additional feedback and Q15 optional profile choices remain
+  unapproved until answered. Existing serialized feedback only; no Runner,
+  hardware, foreground interaction, deployment or research-ready claim.
+
 ### 20260911-p7-lower-review-visual-closeout
 
 - Completed root-requested lower Review/footer and expanded legacy/provenance

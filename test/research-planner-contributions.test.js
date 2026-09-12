@@ -5,6 +5,104 @@ import { createPlannerContributionRegistry, registerAvailablePlannerContribution
 const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: false,
   contribution: { accepted: "design" }, dependencyRevisions: [], ...overrides });
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
+const validated = { validateContribution: async () => true };
+
+test("confirmation requires owner validation and freezes a detached snapshot", async () => {
+  const registry = createPlannerContributionRegistry();
+  const value = snapshot();
+  registry.register("P2", () => value, validated);
+  assert.equal(registry.readAccepted({ requiredSegments: ["P2"] }).entries[0].status, "missing");
+  const receipt = await registry.accept("P2");
+  receipt.contribution.accepted = "caller edit";
+  assert.equal(registry.assertAccepted({ requiredSegments: ["P2"] }).snapshots[0].contribution.accepted, "design");
+  assert.throws(() => registry.assertAccepted(), /P1/);
+  const unvalidated = createPlannerContributionRegistry();
+  unvalidated.register("P2", () => value);
+  await assert.rejects(unvalidated.accept("P2"), /validator is unavailable/);
+});
+
+test("an observed pending edit permanently expires acceptance until reconfirmed", async () => {
+  const registry = createPlannerContributionRegistry();
+  let value = snapshot();
+  registry.register("P2", () => value, validated);
+  await registry.accept("P2");
+  value = snapshot({ pending: true });
+  registry.changed("P2");
+  value = snapshot();
+  assert.equal(registry.readAccepted({ requiredSegments: ["P2"] }).entries[0].status, "stale");
+  await registry.accept("P2");
+  assert.equal(registry.readAccepted({ requiredSegments: ["P2"] }).entries[0].status, "accepted");
+  registry.clearAcceptance();
+  assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }), /confirm/);
+});
+
+test("dependency withdrawal, same-revision replacement and transitive invalidity expire accepted consumers", async () => {
+  const registry = createPlannerContributionRegistry();
+  let p1 = snapshot({ revision: 7 });
+  let p3 = snapshot({ dependencyRevisions: [{ segment: "P1", revision: 7 }] });
+  registry.register("P1", () => p1, validated);
+  registry.register("P3", () => p3, validated);
+  registry.register("P4", () => snapshot({ dependencyRevisions: [{ segment: "P3", revision: 0 }] }), validated);
+  await registry.accept("P3");
+  await registry.accept("P4");
+  p1 = snapshot({ revision: 7, contribution: { accepted: "replacement" } });
+  const invalid = registry.read({ format: "contributions" });
+  assert.ok(invalid.issues.some(({ segment, code }) => segment === "P4" && code === "dependency-stale"));
+  p1 = snapshot({ revision: 7 });
+  assert.equal(registry.readAccepted({ requiredSegments: ["P3"] }).entries.find(({ segment }) => segment === "P3").status, "stale");
+  await registry.accept("P3");
+  p1 = snapshot({ revision: 8, enabled: false, contribution: null });
+  registry.changed("P1");
+  await assert.rejects(registry.accept("P3"), /dependency/);
+  p3 = snapshot({ revision: 1, dependencyRevisions: [{ segment: "P1", revision: 8 }] });
+  await assert.rejects(registry.accept("P3"), /dependency/);
+});
+
+test("optional exclusion is explicit and cannot hide a required or re-enabled owner", async () => {
+  const registry = createPlannerContributionRegistry();
+  let value = snapshot({ enabled: false, contribution: null });
+  registry.register("P6", () => value, validated);
+  assert.throws(() => registry.assertAccepted({ requiredSegments: [] }), /confirm/);
+  await registry.accept("P6");
+  assert.equal(registry.assertAccepted({ requiredSegments: [] }).entries[0].status, "excluded");
+  value = snapshot({ revision: 1, enabled: false, pending: true, contribution: { preview: "unsaved" } });
+  assert.equal(registry.assertAccepted({ requiredSegments: [] }).entries[0].status, "excluded");
+  assert.throws(() => registry.assertAccepted({ requiredSegments: ["P6"] }), /current contribution/);
+  value = snapshot({ revision: 2 });
+  assert.throws(() => registry.assertAccepted({ requiredSegments: [] }), /current contribution/);
+});
+
+test("asynchronous confirmation rejects intervening edits, clears and replaced owners", async () => {
+  for (const action of ["edit-revert", "clear", "unregister"]) {
+    const registry = createPlannerContributionRegistry();
+    let value = snapshot();
+    let finish;
+    const unregister = registry.register("P2", () => value, { validateContribution: () => new Promise((resolve) => { finish = resolve; }) });
+    const pending = registry.accept("P2");
+    if (action === "edit-revert") { value = snapshot({ pending: true }); registry.changed("P2"); value = snapshot(); }
+    if (action === "clear") registry.clearAcceptance();
+    if (action === "unregister") { unregister(); registry.register("P2", () => value, validated); }
+    finish(true);
+    await assert.rejects(pending, /changed during confirmation/);
+    assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }), /confirm/);
+  }
+});
+
+test("owner validation receives actual detached dependency snapshots and target", async () => {
+  const registry = createPlannerContributionRegistry();
+  const p1 = snapshot({ revision: 3 });
+  registry.register("P1", () => p1, validated);
+  registry.register("P6", () => snapshot({ dependencyRevisions: [{ segment: "P1", revision: 3 }] }), {
+    validateContribution: async (value, context) => {
+      assert.equal(context.selectedTarget, "webxr-immersive-vr");
+      assert.equal(context.dependencies.P1.revision, 3);
+      context.dependencies.P1.contribution.accepted = "must not change producer";
+      return true;
+    },
+  });
+  await registry.accept("P6", { selectedTarget: "webxr-immersive-vr" });
+  assert.equal(p1.contribution.accepted, "design");
+});
 
 test("handoff metadata is closed, bounded, plain JSON with exact unique dependencies", () => {
   const original = snapshot();
