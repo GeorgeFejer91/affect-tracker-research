@@ -185,3 +185,64 @@ Attempt02 prepared executableSHA:
 `6a6ec53bf5da70aba680bef7736fc54d0efd9cf3754d20af90a4217ec1f14904`.
 It identifies pre-checkpoint code (`460f516-dirty`), not a clean release.
 A clean checkpoint rebuild/rerun is required for final handoff evidence.
+
+### Clean corrected-state reruns and lifetime candidate
+
+Corrected state-owner commits `9a68e7c` plus `5e0b88c` were collected together;
+the first must never be used alone. Clean combined `5c66ce6` passed25 focused
+native tests (one explicitly ignored diagnostic). Strict `-D warnings` remained
+blocked by three existing unused workspace functions; the Clippy-specific
+error gate passed. Actual attempts03/04 both failed at startup, before the
+state reducer could be exercised, so there is no corrected real-media pass.
+
+The test-only phase checkpoint `19b9f7dbffc3cdf400dc3ab8b8a5f6452f92a3f6`
+compiled with the pinned SDK. Attempt05 prepared executable SHA:
+`20c8447c276095ab4fe69154e88a1bc5d53d4ec0c2d6313f1da5d15c0d83e9cf`.
+Observed monotonic phases: runtime verification52973ms; hidden parent55958ms;
+event loop ready55963ms; fixture verification67872ms; GStreamer initialization
+start67930ms; startup timeout112924ms. Process30544 exited2 after115.06s,
+without supervisor termination, with the four pinned core DLLs observed.
+No initialization completion, child creation, actor readiness or MediaInfo was
+observed. This localizes that failure inside `initialize_gstreamer`, not to
+cross-thread child creation; slow versus hung initialization is unresolved.
+All independent attempt receipts remain in the isolated diagnostic build root.
+
+Each diagnostic has a fresh private registry. Current configuration performs
+plugin discovery in-process (`GST_REGISTRY_FORK=no`) and explicitly scans the
+pinned plugin directory after `gst::init`. No registry file was observed in
+attempt05. C: subsequently reported zero free bytes; another owner recovered
+its own build space. These are possible contributing conditions, not proved
+causes. The next opt-in trace subdivides `gst::init`, explicit registry scan
+and required-plugin checks; neither deadline nor runtime policy is changed.
+
+Root allocated NM01-03 production service/actor repair separately after that
+evidence. The candidate returns an immediate fail-closed service, verifies the
+runtime on its own worker, and spawns an actor without waiting on the UI thread.
+Startup timeout fences admission but retains its join. Shutdown request only
+fences/enqueues; ReadyToJoin observes actual thread exit, and Completed requires
+joining initializer and actor before releasing the retained parent. Main owns
+the mandatory close/exit veto and event-loop pumping until finish succeeds.
+Legacy raw-HWND startup now fails closed and does not launch an actor.
+
+Normal shutdown must use the explicit nonblocking coordinator. Drop retains
+and joins as a safety backstop rather than detaching: dropping a pending
+service on the UI thread violates that contract and can block. This is not a
+new forced-exit policy or an implemented lib.rs coordinator. Stalled foreign
+calls still require retaining the parent; no successful teardown is inferred
+from an acknowledgement or deadline. Synthetic regressions cover pending,
+stalled, repeated request/finish, timeout retention and late-ready fencing;
+their actual test result and combined composition evidence remain to collect.
+
+Pre-checkpoint native compile passed with the pinned SDK;29 focused native
+tests passed, one diagnostic ignored;9 Node media checks passed. The first
+Clippy-specific rerun found a test-fixture type-complexity error, fixed by a
+named fixture without suppression. Main's still-unconnected async composition
+causes temporary dead-code reachability warnings, not an integration pass.
+
+Root approved a failed-start-only observation grace: after the unchanged45s
+admission failure, the disposable diagnostic requests shutdown and retains the
+actor/parent for at most30s more, within the unchanged150s process supervisor.
+It separately records a late actor join or unconfirmed shutdown and still
+exits2. It never prepares media, reopens readiness, or turns timeout into a
+successful lifecycle receipt. This is test evidence, not a production timeout
+extension, cancellation guarantee or forced-exit policy.

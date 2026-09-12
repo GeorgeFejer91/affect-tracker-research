@@ -139,8 +139,42 @@ fn exercise(
         serde_json::json!({"sha256": CLIP_SHA256, "bytes": CLIP_BYTES}),
     );
     let handle = parent.hwnd().map_err(|_| "hidden-parent-hwnd")?.0 as isize;
-    let actor = GstPlayActorHandle::start(GstActorConfig::new(runtime, state, handle))
+    let actor = GstPlayActorHandle::spawn(GstActorConfig::new(runtime, state, handle))
         .map_err(|e| e.reason_code().to_owned())?;
+    loop {
+        match actor.startup_result() {
+            Some(Ok(())) => break,
+            Some(Err(error)) => {
+                trace("failed", serde_json::json!({"reason": error.reason_code()}));
+                actor.request_shutdown();
+                // The startup admission failure is permanent. This separate
+                // observation grace measures late teardown, never media readiness.
+                let deadline = Instant::now() + Duration::from_secs(30);
+                while !actor.is_stopped() && Instant::now() < deadline {
+                    thread::sleep(Duration::from_millis(10));
+                }
+                if actor.is_stopped() && actor.finish_shutdown().is_ok() {
+                    trace(
+                        "failed-start-actor-joined",
+                        serde_json::json!({
+                            "startupStillFailed": true, "observedBeforeParentExit": true
+                        }),
+                    );
+                } else {
+                    trace(
+                        "failed-start-shutdown-unconfirmed",
+                        serde_json::json!({
+                            "startupStillFailed": true, "parentRetained": true
+                        }),
+                    );
+                }
+                // Only this explicitly opted-in disposable diagnostic process.
+                // Do not drop the parent or call a blocking Drop on timeout.
+                std::process::exit(2);
+            }
+            None => thread::sleep(Duration::from_millis(10)),
+        }
+    }
     trace(
         "actor-started",
         serde_json::json!({"parentHidden": !parent.is_visible().unwrap_or(true)}),
@@ -226,8 +260,8 @@ fn exercise(
         "actor-thread-exited",
         serde_json::json!({"observedBeforeParentExit": true}),
     );
-    actor.shutdown();
-    actor.shutdown();
+    actor.finish_shutdown().map_err(|e| e.message)?;
+    actor.finish_shutdown().map_err(|e| e.message)?;
     if actor.join.lock().map_err(|_| "join-lock")?.is_some() {
         return Err("actor-join-retained".into());
     }

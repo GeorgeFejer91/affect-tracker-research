@@ -88,6 +88,8 @@ try {
         durationSeconds = ([DateTime]::UtcNow - $started).TotalSeconds
         completionObserved = ($stdout -match '"stage":"complete"')
         actorThreadExitObserved = ($stdout -match '"stage":"actor-thread-exited"')
+        failedStartActorJoinedObserved = ($stdout -match '"stage":"failed-start-actor-joined"')
+        failedStartShutdownUnconfirmed = ($stdout -match '"stage":"failed-start-shutdown-unconfirmed"')
         coreModuleClosureObserved = $moduleClosureObserved
         coreModuleObservationFailed = $moduleObservationFailed
         coreModules = $moduleReceipts

@@ -3344,3 +3344,33 @@ remain under `D:/GitHub/.affect-native-diagnostic-build/attempt-03` and
 phase traces around GStreamer initialization, child-window creation, hidden
 parent creation and event-loop readiness. No production behavior, unsafe
 boundary or qualification flag changes in this checkpoint.
+
+### RR-04 NM01-03 lifetime pass (Live Preview, 2026-09-12)
+
+- Backend Verification; branch `codex/rr04-native-media-lifetime`, isolated
+  diagnostic worktree, base `19b9f7d`. Root released implementation after
+  attempt05 localized the timeout inside GStreamer initialization, before
+  child creation; parent event-loop readiness was observed. No reducer result.
+- Own service/actor lifetime only: asynchronous runtime inspection/startup,
+  nonblocking shutdown request/status, retained actor join and parent lease,
+  joining only after observed exit in normal coordinator flow. No new user
+  inputs or JSON contribution; existing unavailable/reason projections remain
+  fail-closed, and qualification flags remain false.
+- Main owns `lib.rs` setup and close/exit veto. Runner owns worker/recorder
+  fencing. RR11 owns separately agreed live-snapshot actor hooks. No edits to
+  those owners' policy, `state.rs`, either FFI adapter, or runtime pin.
+- Evidence now: focused synthetic lifetime regressions, native compile and
+  offscreen diagnostic where available. Installed playback, packaging,
+  forced-exit policy, full callback/panic audit and qualification are deferred.
+- Candidate implementation: immediate `start_async`, retained startup/actor
+  joins and parent, nonblocking request/status/finish, permanent startup
+  deadline fencing (including completion before the first poll), serialized
+  command admission, and fail-closed legacy raw-HWND startup. Main must collect
+  its composition change together; this is not yet a wired application.
+- Pre-checkpoint evidence: native build passed;29 native tests passed with one
+  ignored diagnostic;9 Node media tests passed. Clippy-specific gate passed
+  after naming the test fixture. A fifth regression and startup completion
+  timestamp fence were then added; clean candidate checks remain pending.
+- Root approved diagnostic-only30s failed-start teardown observation within
+  the unchanged150s supervisor and45s production admission cutoff. Late join
+  never changes a failed start into readiness or successful playback.

@@ -77,6 +77,29 @@ pub(super) struct GstPlayActorHandle {
     status_snapshot: Arc<Mutex<NativeMediaStatusV1>>,
     join: Mutex<Option<JoinHandle<()>>>,
     shutdown_started: AtomicBool,
+    startup: Mutex<ActorStartup>,
+    join_failed: AtomicBool,
+    admission: Mutex<()>,
+}
+
+struct ActorStartup {
+    receiver: mpsc::Receiver<StartupSignal>,
+    result: Option<Result<(), ActorInitError>>,
+    started: Instant,
+}
+
+struct StartupSignal {
+    result: Result<(), ActorInitError>,
+    finished: Instant,
+}
+
+impl StartupSignal {
+    fn new(result: Result<(), ActorInitError>) -> Self {
+        Self {
+            result,
+            finished: Instant::now(),
+        }
+    }
 }
 
 impl std::fmt::Debug for GstPlayActorHandle {
@@ -92,7 +115,10 @@ impl std::fmt::Debug for GstPlayActorHandle {
 }
 
 impl GstPlayActorHandle {
-    pub(super) fn start(config: GstActorConfig) -> Result<Self, ActorInitError> {
+    /// Spawn without waiting for DLL/plugin initialization or cross-thread HWND
+    /// messages. The composition owner must keep the parent event loop alive.
+    pub(super) fn spawn(config: GstActorConfig) -> Result<Self, ActorInitError> {
+        let started = Instant::now();
         let (command_sender, command_receiver) = mpsc::channel();
         let (startup_sender, startup_receiver) = mpsc::sync_channel(1);
         let status_snapshot = Arc::new(Mutex::new(NativeMediaStatusV1::ready()));
@@ -108,23 +134,45 @@ impl GstPlayActorHandle {
                 )
             })
             .map_err(|_| ActorInitError::new("native-gstplay-thread-start-failed"))?;
-        match startup_receiver.recv_timeout(STARTUP_TIMEOUT) {
-            Ok(Ok(())) => Ok(Self {
-                commands: command_sender,
-                status_snapshot,
-                join: Mutex::new(Some(join)),
-                shutdown_started: AtomicBool::new(false),
+        Ok(Self {
+            commands: command_sender,
+            status_snapshot,
+            join: Mutex::new(Some(join)),
+            shutdown_started: AtomicBool::new(false),
+            startup: Mutex::new(ActorStartup {
+                receiver: startup_receiver,
+                result: None,
+                started,
             }),
-            Ok(Err(error)) => {
-                let _ = join.join();
-                Err(error)
-            }
-            Err(_) => {
-                drop(command_sender);
-                drop(join);
-                Err(ActorInitError::new("native-gstplay-startup-timeout"))
-            }
+            join_failed: AtomicBool::new(false),
+            admission: Mutex::new(()),
+        })
+    }
+
+    /// A startup deadline fences admission, never detaches the actor. Even if
+    /// foreign initialization stalls, its join and the parent's lease survive.
+    pub(super) fn startup_result(&self) -> Option<Result<(), ActorInitError>> {
+        let mut startup = self.startup.lock().unwrap_or_else(|p| p.into_inner());
+        if startup.result.is_none() {
+            startup.result = match startup.receiver.try_recv() {
+                Ok(signal)
+                    if signal.result.is_ok()
+                        && signal.finished.saturating_duration_since(startup.started)
+                            >= STARTUP_TIMEOUT =>
+                {
+                    Some(Err(ActorInitError::new("native-gstplay-startup-timeout")))
+                }
+                Ok(signal) => Some(signal.result),
+                Err(mpsc::TryRecvError::Disconnected) => Some(Err(ActorInitError::new(
+                    "native-gstplay-startup-disconnected",
+                ))),
+                Err(mpsc::TryRecvError::Empty) if startup.started.elapsed() >= STARTUP_TIMEOUT => {
+                    Some(Err(ActorInitError::new("native-gstplay-startup-timeout")))
+                }
+                Err(mpsc::TryRecvError::Empty) => None,
+            };
         }
+        startup.result
     }
 
     pub(super) fn status(&self) -> ResearchResult<NativeMediaStatusV1> {
@@ -195,31 +243,49 @@ impl GstPlayActorHandle {
         self.request(move |response| ActorCommand::Stop { fence, response })
     }
 
-    pub(super) fn shutdown(&self) {
+    pub(super) fn request_shutdown(&self) {
+        let _admission = self.admission.lock().unwrap_or_else(|p| p.into_inner());
         if self.shutdown_started.swap(true, Ordering::AcqRel) {
             return;
         }
-        let (response_sender, response_receiver) = mpsc::sync_channel(1);
-        let sent = self
-            .commands
-            .send(ActorCommand::Shutdown {
-                response: response_sender,
-            })
-            .is_ok();
-        let acknowledged = sent && response_receiver.recv_timeout(COMMAND_TIMEOUT).is_ok();
+        let (response, _) = mpsc::sync_channel(1);
+        let _ = self.commands.send(ActorCommand::Shutdown { response });
+    }
+
+    pub(super) fn is_stopped(&self) -> bool {
+        self.join
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .is_none_or(JoinHandle::is_finished)
+    }
+
+    pub(super) fn finish_shutdown(&self) -> ResearchResult<()> {
+        self.request_shutdown();
         let mut join = self
             .join
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if acknowledged {
-            if let Some(thread) = join.take() {
-                let _ = thread.join();
+        if join.as_ref().is_some_and(|thread| !thread.is_finished()) {
+            return Err(actor_unavailable("native-gstplay-shutdown-pending"));
+        }
+        if let Some(thread) = join.take() {
+            if thread.join().is_err() {
+                self.join_failed.store(true, Ordering::Release);
             }
-        } else {
-            // Dropping a still-running JoinHandle detaches rather than blocking
-            // application shutdown indefinitely. The actor still observes the
-            // disconnected command channel and performs its own teardown.
-            let _ = join.take();
+        }
+        if self.join_failed.load(Ordering::Acquire) {
+            return Err(actor_unavailable("native-gstplay-actor-panicked"));
+        }
+        Ok(())
+    }
+
+    pub(super) fn join_for_drop(&self) {
+        self.request_shutdown();
+        if let Some(thread) = self.join.lock().unwrap_or_else(|p| p.into_inner()).take() {
+            if thread.join().is_err() {
+                self.join_failed.store(true, Ordering::Release);
+            }
         }
     }
 
@@ -236,13 +302,20 @@ impl GstPlayActorHandle {
         T: Send + 'static,
         F: FnOnce(mpsc::SyncSender<ResearchResult<T>>) -> ActorCommand,
     {
+        let admission = self.admission.lock().unwrap_or_else(|p| p.into_inner());
         if self.shutdown_started.load(Ordering::Acquire) {
             return Err(actor_unavailable("native-gstplay-actor-shutting-down"));
+        }
+        match self.startup_result() {
+            Some(Ok(())) => {}
+            Some(Err(error)) => return Err(actor_unavailable(error.reason_code())),
+            None => return Err(actor_unavailable("native-gstplay-startup-pending")),
         }
         let (response_sender, response_receiver) = mpsc::sync_channel(1);
         self.commands
             .send(build(response_sender))
             .map_err(|_| actor_unavailable("native-gstplay-actor-disconnected"))?;
+        drop(admission);
         response_receiver
             .recv_timeout(timeout)
             .map_err(|_| actor_unavailable("native-gstplay-command-timeout"))?
@@ -251,7 +324,10 @@ impl GstPlayActorHandle {
 
 impl Drop for GstPlayActorHandle {
     fn drop(&mut self) {
-        self.shutdown();
+        // Safety backstop for an owner violating the explicit finish contract:
+        // never detach a thread which may still use the parent HWND. Normal
+        // composition calls finish_shutdown after is_stopped, off this path.
+        self.join_for_drop();
     }
 }
 
@@ -312,19 +388,19 @@ impl ActivePlayer {
 fn actor_entry(
     config: GstActorConfig,
     commands: mpsc::Receiver<ActorCommand>,
-    startup: mpsc::SyncSender<Result<(), ActorInitError>>,
+    startup: mpsc::SyncSender<StartupSignal>,
     shared_status: Arc<Mutex<NativeMediaStatusV1>>,
 ) {
     let result = initialize_and_run(config, commands, &startup, shared_status);
     if let Err(reason_code) = result {
-        let _ = startup.send(Err(ActorInitError::new(reason_code)));
+        let _ = startup.send(StartupSignal::new(Err(ActorInitError::new(reason_code))));
     }
 }
 
 fn initialize_and_run(
     config: GstActorConfig,
     commands: mpsc::Receiver<ActorCommand>,
-    startup: &mpsc::SyncSender<Result<(), ActorInitError>>,
+    startup: &mpsc::SyncSender<StartupSignal>,
     shared_status: Arc<Mutex<NativeMediaStatusV1>>,
 ) -> Result<(), &'static str> {
     let runtime = PrivateRuntimeEnvironment::activate(&config.runtime_root, &config.state_root)?;
@@ -347,7 +423,7 @@ fn initialize_and_run(
             publish_status_snapshot(&shared_status, &status);
             let mut active: Option<ActivePlayer> = None;
             startup
-                .send(Ok(()))
+                .send(StartupSignal::new(Ok(())))
                 .map_err(|_| "native-gstplay-startup-receiver-gone")?;
 
             let mut running = true;
@@ -963,6 +1039,117 @@ fn actor_unavailable(reason_code: &'static str) -> CommandError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct HeldActor {
+        actor: GstPlayActorHandle,
+        release: mpsc::Sender<()>,
+        startup: mpsc::SyncSender<StartupSignal>,
+        commands: mpsc::Receiver<ActorCommand>,
+    }
+
+    fn held_actor() -> HeldActor {
+        let (commands, receiver) = mpsc::channel();
+        let (startup_sender, startup_receiver) = mpsc::sync_channel(1);
+        let (release, wait) = mpsc::channel();
+        let join = thread::spawn(move || {
+            let _ = wait.recv();
+        });
+        HeldActor {
+            actor: GstPlayActorHandle {
+                commands,
+                status_snapshot: Arc::new(Mutex::new(NativeMediaStatusV1::ready())),
+                join: Mutex::new(Some(join)),
+                shutdown_started: AtomicBool::new(false),
+                startup: Mutex::new(ActorStartup {
+                    receiver: startup_receiver,
+                    result: None,
+                    started: Instant::now(),
+                }),
+                join_failed: AtomicBool::new(false),
+                admission: Mutex::new(()),
+            },
+            release,
+            startup: startup_sender,
+            commands: receiver,
+        }
+    }
+
+    fn release_actor(actor: &GstPlayActorHandle, release: mpsc::Sender<()>) {
+        release.send(()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !actor.is_stopped() && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        assert!(actor.is_stopped());
+        actor.finish_shutdown().unwrap();
+        actor.finish_shutdown().unwrap();
+        assert!(actor.join.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn startup_timeout_retains_join_and_late_ready_cannot_reopen_admission() {
+        let HeldActor {
+            actor,
+            release,
+            startup,
+            commands: _commands,
+        } = held_actor();
+        actor.startup.lock().unwrap().started = Instant::now() - STARTUP_TIMEOUT;
+        assert_eq!(
+            actor.startup_result().unwrap().unwrap_err().reason_code(),
+            "native-gstplay-startup-timeout"
+        );
+        startup.send(StartupSignal::new(Ok(()))).unwrap();
+        assert!(actor.startup_result().unwrap().is_err());
+        assert!(actor.status().is_err());
+        assert!(!actor.is_stopped());
+        actor.request_shutdown();
+        assert!(actor.finish_shutdown().is_err());
+        assert!(actor.join.lock().unwrap().is_some());
+        release_actor(&actor, release);
+    }
+
+    #[test]
+    fn repeated_shutdown_fences_commands_without_waiting_for_thread_exit() {
+        let HeldActor {
+            actor,
+            release,
+            startup,
+            commands,
+        } = held_actor();
+        startup.send(StartupSignal::new(Ok(()))).unwrap();
+        actor.request_shutdown();
+        actor.request_shutdown();
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(ActorCommand::Shutdown { .. })
+        ));
+        assert!(matches!(
+            commands.try_recv(),
+            Err(mpsc::TryRecvError::Empty)
+        ));
+        assert!(actor.status().is_err());
+        assert!(!actor.is_stopped());
+        assert!(actor.finish_shutdown().is_err());
+        release_actor(&actor, release);
+    }
+
+    #[test]
+    fn late_completion_is_rejected_even_before_first_status_poll() {
+        let HeldActor {
+            actor,
+            release,
+            startup,
+            commands: _commands,
+        } = held_actor();
+        actor.startup.lock().unwrap().started = Instant::now() - STARTUP_TIMEOUT;
+        startup.send(StartupSignal::new(Ok(()))).unwrap();
+        assert_eq!(
+            actor.startup_result().unwrap().unwrap_err().reason_code(),
+            "native-gstplay-startup-timeout"
+        );
+        release_actor(&actor, release);
+    }
 
     #[test]
     fn clock_time_conversion_preserves_submillisecond_precision() {
