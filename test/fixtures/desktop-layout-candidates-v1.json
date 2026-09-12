@@ -1,0 +1,686 @@
+{
+  "status": "Q08 calculation candidates; not accepted policy",
+  "workspace": {
+    "schema": "affect-research-workspace-contribution",
+    "version": 1,
+    "study": {
+      "schema": "affect-research-study-identity",
+      "version": 1,
+      "id": "study-one",
+      "title": "Study one"
+    },
+    "workspaceLayout": {
+      "assetRoot": "assets",
+      "videoLibrary": "assets/stimuli",
+      "projectFile": "experiment.package.json"
+    },
+    "videoCatalogue": {
+      "schema": "affect-research-video-catalogue-contribution",
+      "version": 1,
+      "revision": 1,
+      "entries": [
+        {
+          "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "annotationId": "session1_landscape",
+          "sourceRelativePath": "stimuli/session1/landscape.mp4",
+          "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "byteLength": 1024,
+          "durationMs": 12345,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080,
+            "displayAspect": {
+              "numerator": 16,
+              "denominator": 9
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        },
+        {
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "annotationId": "session2_portrait",
+          "sourceRelativePath": "stimuli/session2/portrait.mp4",
+          "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "byteLength": 2048,
+          "durationMs": 23456,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1080,
+            "displayHeightPx": 1920,
+            "displayAspect": {
+              "numerator": 9,
+              "denominator": 16
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        }
+      ],
+      "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+    }
+  },
+  "feedback": {
+    "schema": "affect-research-feedback",
+    "version": 2,
+    "input": {
+      "schema": "affect-research-input-binding",
+      "version": 1,
+      "preset": "arrowKeys",
+      "kind": "digital",
+      "stepSize": 0.1,
+      "directions": {
+        "up": {
+          "kind": "keyboard",
+          "code": "ArrowUp"
+        },
+        "down": {
+          "kind": "keyboard",
+          "code": "ArrowDown"
+        },
+        "left": {
+          "kind": "keyboard",
+          "code": "ArrowLeft"
+        },
+        "right": {
+          "kind": "keyboard",
+          "code": "ArrowRight"
+        }
+      },
+      "axes": null
+    },
+    "visual": {
+      "gridEnabled": true,
+      "flubberEnabled": true,
+      "sizePercent": 32,
+      "transparency": 0.05,
+      "hideFeedback": false,
+      "overlayPosition": {
+        "x": 0.72,
+        "y": 0.5
+      },
+      "lockPosition": false,
+      "flubber": {
+        "showOutline": true,
+        "outlineThickness": 2,
+        "showHalo": true
+      },
+      "grid": {
+        "lineThickness": 1,
+        "showOutline": true,
+        "outlineThickness": 2,
+        "cursorSize": 14
+      },
+      "colors": {
+        "up": "#f2c94c",
+        "down": "#2f80ed",
+        "left": "#eb5757",
+        "right": "#27ae60",
+        "idle": "#9ca3af",
+        "outline": "#f8fafc",
+        "halo": "#93c5fd",
+        "cursor": "#ffffff"
+      }
+    },
+    "mappings": {
+      "oscillationFrequency": {
+        "min": 0.5,
+        "max": 2.5,
+        "drivenBy": "y-axis",
+        "reverse": false
+      },
+      "edgeSmoothness": {
+        "min": 0,
+        "max": 1,
+        "drivenBy": "x-axis",
+        "reverse": false
+      },
+      "projectionAmplitude": {
+        "min": 0.2,
+        "max": 0.4,
+        "drivenBy": "y-axis",
+        "reverse": false
+      },
+      "pulseSynchrony": {
+        "min": 0.2,
+        "max": 1,
+        "drivenBy": "x-axis",
+        "reverse": false
+      },
+      "waveSizeVariation": {
+        "min": 0,
+        "max": 0.8,
+        "drivenBy": "x-axis",
+        "reverse": true
+      },
+      "saturation": {
+        "min": 0,
+        "max": 1,
+        "drivenBy": "radius",
+        "reverse": false
+      }
+    },
+    "presentation": {
+      "renderer": "grid",
+      "colorAnchors": "corners",
+      "labels": {
+        "axes": {
+          "up": "Alert / wach",
+          "right": "Positive valence",
+          "down": "Low arousal",
+          "left": "Negative valence"
+        },
+        "corners": {
+          "up": "Upper left",
+          "right": "Upper right",
+          "down": "Lower right",
+          "left": "Calm corner"
+        }
+      },
+      "halo": {
+        "widthPercent": 275.5,
+        "gradient": false,
+        "steepness": 2.5
+      }
+    },
+    "response": {
+      "mode": "stepwise",
+      "grid": {
+        "columns": 31,
+        "rows": 15
+      },
+      "fullSpanDurationMs": 4250,
+      "holdRule": "repeatWhileHeld",
+      "repeatDelayMs": 900
+    }
+  },
+  "media": [
+    {
+      "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "displayWidth": 1920,
+      "displayHeight": 1080
+    },
+    {
+      "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "displayWidth": 1080,
+      "displayHeight": 1920
+    }
+  ],
+  "cases": [
+    {
+      "name": "largest-oriented-area-relative",
+      "profile": {
+        "schema": "affect-research-desktop-layout-contribution",
+        "version": 1,
+        "target": "desktop-screen",
+        "coordinateSystem": "viewport-right-down",
+        "viewport": {
+          "widthCssPx": 1920,
+          "heightCssPx": 1080,
+          "compatibility": "exact"
+        },
+        "calibration": {
+          "activeWidthMm": 480,
+          "activeHeightMm": 270,
+          "mapping": "full-viewport"
+        },
+        "units": "relative",
+        "reference": {
+          "source": {
+            "policy": "largest-oriented-area",
+            "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080
+          },
+          "box": {
+            "width": 60,
+            "height": 45
+          },
+          "centre": {
+            "x": 50,
+            "y": 30
+          }
+        },
+        "feedback": {
+          "origin": "design-centre",
+          "overlayViewportSide": 4,
+          "offset": {
+            "x": 0,
+            "y": 90
+          },
+          "minimumGap": 1
+        },
+        "fit": "contain"
+      },
+      "canonicalSha256": "04920aaace817d7b73c95efc78418f37da2115ced6c0fb9ba918dfb93c371549",
+      "geometry": {
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "reference": {
+          "x": 528,
+          "y": 80.99999999999997,
+          "width": 864.0000000000001,
+          "height": 486.00000000000006,
+          "cx": 960,
+          "cy": 324
+        },
+        "feedback": {
+          "x": 950.28,
+          "y": 751.6800000000001,
+          "width": 19.44,
+          "height": 19.44,
+          "cx": 960,
+          "cy": 761.4000000000001
+        },
+        "offset": {
+          "x": 0,
+          "y": 437.40000000000003
+        },
+        "gap": 4.86,
+        "maximumFeedback": {
+          "x": 946.28,
+          "y": 747.6800000000001,
+          "width": 27.44,
+          "height": 27.44,
+          "cx": 960,
+          "cy": 761.4000000000001
+        }
+      },
+      "videos": [
+        {
+          "id": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "label": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "displayWidth": 1920,
+          "displayHeight": 1080,
+          "bounds": {
+            "x": 528,
+            "y": 80.99999999999997,
+            "width": 864.0000000000001,
+            "height": 486.00000000000006,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        },
+        {
+          "id": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "label": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "displayWidth": 1080,
+          "displayHeight": 1920,
+          "bounds": {
+            "x": 823.3125,
+            "y": 80.99999999999994,
+            "width": 273.37500000000006,
+            "height": 486.0000000000001,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "largest-oriented-area-mm",
+      "profile": {
+        "schema": "affect-research-desktop-layout-contribution",
+        "version": 1,
+        "target": "desktop-screen",
+        "coordinateSystem": "viewport-right-down",
+        "viewport": {
+          "widthCssPx": 1920,
+          "heightCssPx": 1080,
+          "compatibility": "exact"
+        },
+        "calibration": {
+          "activeWidthMm": 480,
+          "activeHeightMm": 270,
+          "mapping": "full-viewport"
+        },
+        "units": "mm",
+        "reference": {
+          "source": {
+            "policy": "largest-oriented-area",
+            "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080
+          },
+          "box": {
+            "width": 288,
+            "height": 121.50000000000001
+          },
+          "centre": {
+            "x": 240,
+            "y": 81
+          }
+        },
+        "feedback": {
+          "origin": "design-centre",
+          "overlayViewportSide": 4.86,
+          "offset": {
+            "x": 0,
+            "y": 109.35000000000001
+          },
+          "minimumGap": 1.215
+        },
+        "fit": "contain"
+      },
+      "canonicalSha256": "65fde304a3b3b18489c1a55ec7a72ec42f175380a196912fe2b567274e75587c",
+      "geometry": {
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "reference": {
+          "x": 528,
+          "y": 80.99999999999997,
+          "width": 864.0000000000001,
+          "height": 486.00000000000006,
+          "cx": 960,
+          "cy": 324
+        },
+        "feedback": {
+          "x": 950.28,
+          "y": 751.6800000000001,
+          "width": 19.44,
+          "height": 19.44,
+          "cx": 960,
+          "cy": 761.4000000000001
+        },
+        "offset": {
+          "x": 0,
+          "y": 437.40000000000003
+        },
+        "gap": 4.86,
+        "maximumFeedback": {
+          "x": 946.28,
+          "y": 747.6800000000001,
+          "width": 27.44,
+          "height": 27.44,
+          "cx": 960,
+          "cy": 761.4000000000001
+        }
+      },
+      "videos": [
+        {
+          "id": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "label": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "displayWidth": 1920,
+          "displayHeight": 1080,
+          "bounds": {
+            "x": 528,
+            "y": 80.99999999999997,
+            "width": 864.0000000000001,
+            "height": 486.00000000000006,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        },
+        {
+          "id": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "label": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "displayWidth": 1080,
+          "displayHeight": 1920,
+          "bounds": {
+            "x": 823.3125,
+            "y": 80.99999999999994,
+            "width": 273.37500000000006,
+            "height": 486.0000000000001,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "maximum-oriented-dimensions-relative",
+      "profile": {
+        "schema": "affect-research-desktop-layout-contribution",
+        "version": 1,
+        "target": "desktop-screen",
+        "coordinateSystem": "viewport-right-down",
+        "viewport": {
+          "widthCssPx": 1920,
+          "heightCssPx": 1080,
+          "compatibility": "exact"
+        },
+        "calibration": {
+          "activeWidthMm": 480,
+          "activeHeightMm": 270,
+          "mapping": "full-viewport"
+        },
+        "units": "relative",
+        "reference": {
+          "source": {
+            "policy": "maximum-oriented-dimensions",
+            "assetId": null,
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1920
+          },
+          "box": {
+            "width": 60,
+            "height": 45
+          },
+          "centre": {
+            "x": 50,
+            "y": 30
+          }
+        },
+        "feedback": {
+          "origin": "design-centre",
+          "overlayViewportSide": 4,
+          "offset": {
+            "x": 0,
+            "y": 90
+          },
+          "minimumGap": 1
+        },
+        "fit": "contain"
+      },
+      "canonicalSha256": "c84bb366c493af86c8f1bc1b21f5ca953f85d2a473b660b705a56140c0f1853f",
+      "geometry": {
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "reference": {
+          "x": 717,
+          "y": 80.99999999999994,
+          "width": 486.0000000000001,
+          "height": 486.0000000000001,
+          "cx": 960,
+          "cy": 324
+        },
+        "feedback": {
+          "x": 950.28,
+          "y": 751.6800000000001,
+          "width": 19.440000000000005,
+          "height": 19.440000000000005,
+          "cx": 960,
+          "cy": 761.4000000000001
+        },
+        "offset": {
+          "x": 0,
+          "y": 437.4000000000001
+        },
+        "gap": 4.860000000000001,
+        "maximumFeedback": {
+          "x": 946.28,
+          "y": 747.6800000000001,
+          "width": 27.440000000000005,
+          "height": 27.440000000000005,
+          "cx": 960,
+          "cy": 761.4000000000001
+        }
+      },
+      "videos": [
+        {
+          "id": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "label": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "displayWidth": 1920,
+          "displayHeight": 1080,
+          "bounds": {
+            "x": 717,
+            "y": 187.31249999999997,
+            "width": 486.0000000000001,
+            "height": 273.37500000000006,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 286.99250000000006,
+          "boundKind": "saved-maximum"
+        },
+        {
+          "id": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "label": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "displayWidth": 1080,
+          "displayHeight": 1920,
+          "bounds": {
+            "x": 823.3125,
+            "y": 80.99999999999994,
+            "width": 273.37500000000006,
+            "height": 486.0000000000001,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "maximum-oriented-dimensions-mm",
+      "profile": {
+        "schema": "affect-research-desktop-layout-contribution",
+        "version": 1,
+        "target": "desktop-screen",
+        "coordinateSystem": "viewport-right-down",
+        "viewport": {
+          "widthCssPx": 1920,
+          "heightCssPx": 1080,
+          "compatibility": "exact"
+        },
+        "calibration": {
+          "activeWidthMm": 480,
+          "activeHeightMm": 270,
+          "mapping": "full-viewport"
+        },
+        "units": "mm",
+        "reference": {
+          "source": {
+            "policy": "maximum-oriented-dimensions",
+            "assetId": null,
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1920
+          },
+          "box": {
+            "width": 288,
+            "height": 121.50000000000001
+          },
+          "centre": {
+            "x": 240,
+            "y": 81
+          }
+        },
+        "feedback": {
+          "origin": "design-centre",
+          "overlayViewportSide": 4.860000000000001,
+          "offset": {
+            "x": 0,
+            "y": 109.35000000000002
+          },
+          "minimumGap": 1.2150000000000003
+        },
+        "fit": "contain"
+      },
+      "canonicalSha256": "1d1177996710c2629da0be26fe73efa888a73ab38fe78a8e340cb1b3adf087d6",
+      "geometry": {
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "reference": {
+          "x": 717,
+          "y": 80.99999999999994,
+          "width": 486.0000000000001,
+          "height": 486.0000000000001,
+          "cx": 960,
+          "cy": 324
+        },
+        "feedback": {
+          "x": 950.28,
+          "y": 751.6800000000001,
+          "width": 19.440000000000005,
+          "height": 19.440000000000005,
+          "cx": 960,
+          "cy": 761.4000000000001
+        },
+        "offset": {
+          "x": 0,
+          "y": 437.4000000000001
+        },
+        "gap": 4.860000000000001,
+        "maximumFeedback": {
+          "x": 946.28,
+          "y": 747.6800000000001,
+          "width": 27.440000000000005,
+          "height": 27.440000000000005,
+          "cx": 960,
+          "cy": 761.4000000000001
+        }
+      },
+      "videos": [
+        {
+          "id": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "label": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "displayWidth": 1920,
+          "displayHeight": 1080,
+          "bounds": {
+            "x": 717,
+            "y": 187.31249999999997,
+            "width": 486.0000000000001,
+            "height": 273.37500000000006,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 286.99250000000006,
+          "boundKind": "saved-maximum"
+        },
+        {
+          "id": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "label": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "displayWidth": 1080,
+          "displayHeight": 1920,
+          "bounds": {
+            "x": 823.3125,
+            "y": 80.99999999999994,
+            "width": 273.37500000000006,
+            "height": 486.0000000000001,
+            "cx": 960,
+            "cy": 324
+          },
+          "gap": 180.68000000000006,
+          "boundKind": "saved-maximum"
+        }
+      ],
+      "issues": []
+    }
+  ]
+}
