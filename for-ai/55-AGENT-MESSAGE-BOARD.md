@@ -1554,3 +1554,47 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   browser/computer-control tooling require explicit opt-in for a named check.
 - Evidence: documentation diff inspected locally; no application, user window,
   or experiment was launched or interacted with during this documentation pass.
+
+### 20260912-p5-live-contribution
+
+- Owner: **Implement segment 5**, P5 `feedback`; **open**, bounded Backend
+  Verification continuation for P5-05/P5-07 and existing saved-control round trips.
+  Isolated branch `codex/segment-p5-contribution`, existing C: feedback worktree,
+  base `64da370` explicitly approved by integration as a reviewed candidate.
+- Inputs: current saved bindings, appearance and six mappings. Contribution:
+  strict `{input,visual,mappings}` preserving existing v1 semantics, one owner
+  revision and deterministic CSS-pixel envelope. P4/P6 consume bounds; P7 owns
+  registration, final capture/acceptance, naming, compilation and save.
+- Shared seams: P5 field extraction/restoration, refresh and controller getters
+  in `app.js`; new bounded `feedback-contribution.js`, focused tests/fixture.
+  No P7 registry edits, geometry policy, UI polish or other-owner handlers.
+- Baseline: 61 focused existing Node tests pass on the reviewed base. Collect
+  invalid/saved/draft revision checks, exact restoration and envelope agreement,
+  actual bootstrapped headless checks and frontend build closure.
+- Q10 has no new answer; simulator response/halo/tile/alternate-renderer drafts
+  remain excluded. Existing color Recolor/Reset still writes saved literal colors.
+  No Runner, native authority, physical qualification or publication claim.
+- Status: **ready** at application `ccc53a7`; 65 focused/526 full Node checks,
+  clean-source Chrome seven scenarios × 49 assertions, desktop nine-file and
+  Pages 190-file closures pass. Edge currently exits without a receipt and is
+  explicitly unverified. Detailed identities and limits are in the P5 ledger.
+- P4/P6/S7 received exact getter, validator, restore and subscription signatures
+  and the delta checkpoint. P7 owns registry wiring/final capture; P4/P6 own
+  consumers. The module has no second acceptance, geometry or save authority.
+  Current source fixes blank-number/invalid-color fallback in saved projection;
+  invalid restoration is atomic and stale restoration leaves current values.
+- Integration should collect this delta after `64da370` and retain its newer
+  confirmation semantics. No independent P5 confirmation was added or modified.
+  This closes the owned producer seam, not every Q10 or successor capability.
+- S7 requested a generic controller validator alias; source `1a238a5` provides
+  `validateFeedbackContribution(value)`. Latest source passes 65 focused checks,
+  clean Chrome seven × 50 assertions and both frontend closures. Detailed hashes
+  are in the ledger. The P5 branch is clean and its source writers are stopped
+  for integration-owner collection; no other owner's registration was changed.
+
+### 20260912-integration-confirmation-layout — shared shell
+
+- Assigned seam: P7 final-save/acceptance presentation with P1–P6 owned producer inputs; Backend Verification continuation, not Runner allocation.
+- Fixed the progress label overflowing a 432px setup pane after the contribution-cycle wording was introduced. The intro now wraps without squeezing its instruction into a narrow column. The eight-case headless Chrome layout harness also asserts intro-child containment and passes with zero horizontal overflow; the 432px-pane capture was inspected.
+- Current preceding evidence: 545 Node tests at `dc69e72`, 350 P5 Chrome assertions, 31 retained-settings/confirmation assertions, and both frontend builds at `4f505c3`. These are scoped evidence, not final master-JSON or installed/native qualification.
+- Intake continues for the single registered workspace revision, pure P3/P6 preparation and named-file save. P1 async restore fencing needs the owner repair. Q05 relocation policy and Q08 automatic reference metric remain unanswered; no complete master-save/reopen claim or canonical promotion is made.
