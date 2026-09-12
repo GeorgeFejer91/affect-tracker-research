@@ -1,5 +1,18 @@
 # Agent message board
 
+### 20260912-main-native-v2-registration
+
+- Main collected S4 form/corrections/master2 as 197b91c/2856785/a071506/d60ce66
+  and registered the four native typed-form/P2/master/support modules in lib.rs.
+  Combined cargo check --no-default-features --lib passes (20.96 seconds,
+  ten existing unused-code warnings retained). No native features or runtime
+  command qualification follows from this compilation check.
+- P4 e13643f and P6 daf4fd9 collected as 5b6a8f2/c6e3505; Main's 19 P4 owner
+  plus 21 P4-state/P6-restore checks pass. P3 collection df8cdc4 passed 49.
+  Additive board histories retained; conflict-marker/whitespace checks pass.
+- Actual core9/native file dispatch, real owner registration, unified executable
+  and final mock/Runner/XDF remain open. Shared build-target hold is released.
+
 ### 20260912-main-prepared-confirmation
 
 - Main split registry acceptance into async prepareAcceptance and synchronous
