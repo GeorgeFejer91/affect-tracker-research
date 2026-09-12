@@ -8,6 +8,34 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260912-preview-input-menu
+
+- Owner: Live Preview; P5-01/P5-03/P5-08 dependency. Backend Verification
+  pass for the explicitly authorized four-direction assignment popup.
+- Isolated branch `codex/segment-preview-input-menu`, base `5a247bb`, worktree
+  `D:/GitHub/affect-tracker-research-preview-input-menu`; integration accepted
+  this base and P5 released the existing capture presentation/lifecycle seams.
+- Deliverable: approved exact light/dark SVG opener, directional menu, capture
+  states, cancellation and existing saved-binding owner notifications. Verified
+  current input JSON accepts four digital directions, not a fifth Center action
+  or arbitrary custom analog-axis directions. Those expansions are deferred.
+- Evidence to collect: input regressions, isolated headless actual-app capture
+  and preview movement, responsive light/dark rendering, build asset closure.
+  No foreground automation, physical device qualification, Runner expansion,
+  P7/confirmation/producer-schema changes, publication or canonical edits.
+- Integration released the native-bridge request/cancel/status generation fence
+  and its generation-checked existing input-test transition. No Rust/DTO change.
+- Implemented: menu stays open after success; conflicts stay armed; focus loss,
+  Tab, Escape, cancellation and close stop capture. Menu clicks cannot become
+  mouse bindings. A delayed old close cannot cancel a reopened menu. Browser
+  gamepad capture requires release/new press, including after disconnect.
+- Native capture activates after current begin acknowledgement; cancelled or
+  rearmed request generations reject old poll success/failure. UI rejection
+  cannot reconfigure native testing; existing focus/capability checks remain.
+- Status: ready for owner handoff, outside frozen convergence intake. Evidence
+  and limits are recorded in the roadmap. Center remains disabled pending the
+  user's semantic decision; arbitrary custom analog axes remain unsupported.
+
 ### 20260911-preview-palette-halo
 
 - Owner: Live Preview. Stage: UI implementation, allocated by integration.
