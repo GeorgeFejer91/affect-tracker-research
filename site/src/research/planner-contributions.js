@@ -175,7 +175,8 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
         if (Object.hasOwn(dependencies, segment)) continue;
         const dependency = current.snapshots.find((value) => value.segment === segment);
         if (!dependency) throw new TypeError(`${snapshot.segment}: a dependency is unavailable.`);
-        dependencies[segment] = structuredClone(dependency);
+        const { segment: ownerId, ...value } = dependency;
+        dependencies[ownerId] = structuredClone(value);
         collect(dependency);
       }
     };
@@ -208,7 +209,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       const snapshot = before.snapshots.find((entry) => entry.segment === segment);
       const context = validationContext(before, snapshot, selectedTarget);
       const identity = identityOf(snapshot);
-      const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf(value)]);
+      const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf({ segment: id, ...value })]);
       const epochs = [[segment, owner.epoch], ...dependencies.map(([id]) => [id, owners.get(id).epoch])];
       const sequence = ++acceptanceSequence;
       accepting.set(segment, sequence);
