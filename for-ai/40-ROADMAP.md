@@ -37,10 +37,18 @@ adaptation remains an explicit versioned follow-up, preserving this v1 fixture.
 
 ## P5 complete Planner feedback settings — 2026-09-12
 
+P5 **Flubber & Controls** owns the persistent feedback editor: input bindings,
+response behavior, selected feedback renderer, colors/style and affect mappings.
+It contributes those settings to P7's master JSON and supplies complete feedback
+bounds to the P4/P6 layout owners. Preview test movement remains transient.
+
 New Planner completion allocation, P5-05 through P5-08. Pure contract `95b2e9`,
-editor/native wiring `781886c`, and ready Preview dependency `d996ddd` composed
-through `fa1f5d5`; current clean application checkpoint `5c9d3df` on isolated
-`codex/segment-p5-master-settings`. The sole integration owner collects source.
+editor/native wiring `781886c`, and Preview dependencies `d996ddd`, `13e9551`
+and `d711fb4` are composed in clean application checkpoint
+`38684c37a639cb67528a4199b3da3ebbaffa9cc8` on isolated
+`codex/segment-p5-master-settings`, application tree
+`1d798b8a41d19a4d8c5027de97a213a999d7d749`. The sole integration owner collects
+source; this is a verified owner candidate, not canonical Planner completion.
 
 `affect-research-feedback` version 2 preserves all active configured input,
 Flubber/Grid/procedural-Face selection, appearance/mappings, Axes/Corners/applied
@@ -60,18 +68,36 @@ selected renderers; no caller-supplied or current-phase footprint is trusted.
 
 Current source-bound evidence:
 
-- **656/656 Node checks** at clean application `5c9d3df`, including strict nested
+- **668/668 Node checks** at clean application `38684c3`, including strict nested
   field rejection, revisions/pending, every input preset, independent-process
-  reproduction and full bounds. Log: sibling feedback-checks `master-final-node.log`.
+  reproduction and full bounds. Log: `master-v2-final-node.log`.
 - **3/3 native P5 tests**, with 199 unrelated tests filtered: canonical full
   configuration, missing/unknown/range rejection and thirteen complete JS/Rust
-  envelope/key comparisons. `master-rust.log` records the own crate invocation.
-- Desktop **11-file** and Pages **216-file** closures at `5c9d3df`; existing
-  non-failing bundle-size warning remains. `master-desktop.log`, `master-pages.log`.
-- Actual V2 restored-configuration checks are allocated to Preview against the
-  real new controller. Its preceding helper-only fixture assumed an unlocked
-  renderer drag, which correctly no longer applies to locked V2 inspection;
-  that failed obsolete assertion is not a completed V2 receipt.
+  envelope/key comparisons. `master-rust.log` records the own crate invocation
+  at `5c9d3df`; the native implementation is unchanged since that receipt.
+  Locked no-default all-target Clippy with warnings denied passes at the same
+  source (`master-clippy.log`); the later native delta only sorts adjacent module
+  declarations and passes formatting.
+- Desktop **11-file** and Pages **219-file** closures at `38684c3`; existing
+  non-failing bundle-size warning remains. `master-v2-final-desktop.log`,
+  `master-v2-final-pages.log`.
+- **129 actual-controller V2 checks at each of 1280/800 CSS px**: exact all-field
+  restoration and precision, three renderers, configured digital response under
+  a controlled clock, invalid/stale/disposed rejection, explicit legacy conversion,
+  pending revisions and transient cleanup. `master-v2-final-chrome/{1280,800}.json`.
+- **15 reset checks at each width**: `master-v2-final-reset/{1280,800}.json`.
+  V2 inspection is explicitly locked; only V1 exercises legacy renderer dragging.
+- **84 long-label layout checks**: both Axes and Corners at both widths, with a
+  deliberately 280px Preview pane in the narrow fixture. All four accepted
+  48-unit labels remain contained and do not cover the map. Ordinary narrow
+  restored labels and all four long-label PNGs were inspected. Receipts/images:
+  `master-v2-final-{axes,corners}/{1280,800}.{json,png}`. Preview's bounded CSS fix
+  resolves the observed one-character corner-label columns; it does not qualify
+  the entire application split layout. V2 placement/label help now says saved.
+
+All final browser receipts bind the clean application commit/tree above and
+include browser, fixture and screenshot hashes. These use fresh-profile headless
+Chrome with synthetic input; they are not physical input or timing measurements.
 
 Evidence root:
 `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/`.

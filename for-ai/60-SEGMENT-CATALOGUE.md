@@ -373,8 +373,8 @@ frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and
 
 ## P5 — Flubber & Controls
 
-**Purpose:** one persistent editor for Flubber appearance/control, with Advanced
-animation settings at the bottom.
+**Purpose:** one persistent editor for configured Flubber/Grid/procedural-Face
+feedback and input/response behavior, with Advanced animation settings at the bottom.
 **User input:** device/bindings, response behavior, colors/style/visibility and
 explicit animation/mapping edits. Q10's current configured choices are now
 allocated for complete Planner serialization; execution remains downstream work.
@@ -388,12 +388,12 @@ old three-key reader remains available; loading it does not invent V2 fields.
 
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
-- [x] **P5-03 — Implemented component:** live preview and input-test surfaces; not all simulator controls are saved settings.
+- [x] **P5-03 — Implemented component:** live preview and input-test surfaces; configured response is saved in V2 while test movement, holds and capture state stay transient.
 - [ ] **P5-04 — Pending integration:** isolated `8d3d256` consolidates old Input/Visual/Advanced with one value owner and bottom Advanced; canonical verification remains required.
 - [ ] **P5-05 — Owner implementation ready:** complete active-control inventory and explicit units/authority are in `docs/planner-p5-feedback-v2.md`. Q10 now promotes the current renderer, response grid/timing/hold, halo, palette placement and applied labels. Test position, captures, un-applied dialogs and inspection framing remain transient.
 - [ ] **P5-06 — Owner implementation ready:** `95b2e9`/`781886c` add complete strict V2 JS/Rust readers, shared fixtures, explicit authoring initialization and exact V1 compatibility. Controller wiring captures every active field, with unavailable legacy scalar/geometry/visibility controls clearly disabled in V2; no silent legacy export. Combined P7 master verification remains pending.
 - [ ] **P5-07 — Owner implementation ready:** full saved V2 renderer/halo bounds and live revisions, atomic restore and transient reset at `5c9d3df`; 13 shared JS/Rust bound cases cover all three renderers, gradient/response modes and hidden output. P4/P6 consume the dispatch helper; combined accepted master round-trip remains the integration gate.
-- [ ] **P5-08 — Verification in progress:** 656 Node checks and both frontend closures pass on `5c9d3df`. Actual complete V2 restore/control/render checks are allocated to the Preview owner; old helper drag expectation is being corrected for explicitly locked V2 inspection. Physical input and installed accessibility/Runner correspondence are deferred, not Planner completion gates.
+- [ ] **P5-08 — Owner verified, pending integration:** clean combined `38684c3` passes 668 Node checks and desktop11/Pages219 closures; actual-controller V2 restoration passes 129 checks at each of 1280/800, plus 15 reset checks per width and 84 long-label layout checks. Narrow restored and all four long-label captures were inspected after Preview's bounded repair. Native P5 tests/Clippy remain bound to unchanged implementation at `5c9d3df`. Physical input and installed accessibility/Runner correspondence are deferred, not Planner completion gates.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
@@ -403,7 +403,7 @@ distinct from the acquisition sample rate in recording policy.
 [preview](../site/src/research/preview.js), [mappings](../site/src/research/mappings.js).
 **Boundary:** no allocation, sampling clock, LSL transport or screen calibration.
 
-**Candidate receipt:** [2026-09-11 P5 consolidation and control inventory](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
+**Current candidate receipt:** [2026-09-12 complete Planner feedback settings](./40-ROADMAP.md#p5-complete-planner-feedback-settings--2026-09-12).
 Unchecked items remain unchecked until integration and the applicable gates;
 the successor implements the newly allocated Q10 saved additions and preserves
 P4/P6 geometry ownership. See the [complete P5 contract](../docs/planner-p5-feedback-v2.md).

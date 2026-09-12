@@ -30,10 +30,21 @@
   P5 three tests include thirteen JS/Rust complete-envelope comparisons; locked
   no-default all-target Clippy with warnings denied passes. Formatting only
   reorders adjacent native module declarations; validator visibility is crate-local.
-- Preview reports 129 real-controller V2 checks at each of 1280/800, including
-  exact precision, all renderers, response behavior, invalid/stale/legacy/closed
-  restore and transient-state erasure. Its final clean fixture receipt is being
-  collected. No P5 application writer remains active unless evidence finds a defect.
+- Final owner candidate: clean application `38684c37a639cb67528a4199b3da3ebbaffa9cc8`,
+  site tree `1d798b8a41d19a4d8c5027de97a213a999d7d749`. Normal collection includes
+  Preview's real restore fixture `13e9551` and narrow-label CSS/fixture `d711fb4`;
+  P5's version-aware saved placement/label copy is `4b7ff6f`.
+- Final combined checks: **668/668 Node**, desktop **11** / Pages **219** files;
+  **129 real-controller restore + 15 reset checks at each 1280/800 width**;
+  **84 long-label checks** across both placements and widths. Inspected ordinary
+  narrow restored labels and all four long-label PNGs. The former narrow corner
+  label defect is resolved by the allocated Preview owner, without a split redesign.
+- Clean source-bound receipts are under sibling
+  `affect-tracker-research-feedback-checks/master-v2-final-*`; the roadmap has
+  exact paths, source hashes and retained native evidence. P5-05–08 owner work
+  is verified and ready; source writers are stopped. P7 master save/reopen and
+  P4/P6 combined acceptance remain integration gates. No Runner, installed,
+  physical, Edge or complete-Planner qualification is claimed.
 
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,
