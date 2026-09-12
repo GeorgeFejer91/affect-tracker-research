@@ -89,6 +89,9 @@ const wait=()=>new Promise(resolve=>setTimeout(resolve,150));
      === ['accepted','excluded'].includes(accepted?.status));
   }
   check(surface+' unverified media cannot acquire a workspace confirmation',!app.reviewedSetupSections.includes('workspace'));
+  check(surface+' optional VR exclusion requires and receives an explicit confirmation',
+   app.getPlannerAcceptanceReview().entries.find(entry=>entry.segment==='P6')?.status==='excluded'
+   && app.reviewedSetupSections.includes('xr') && app.openSection==='review');
   check(surface+' Preview and final save are not standalone confirmations',
    !root.querySelector('[data-confirm-section="feedback"]') && !root.querySelector('[data-confirm-section="review"]')
    && !app.reviewedSetupSections.includes('review'));
