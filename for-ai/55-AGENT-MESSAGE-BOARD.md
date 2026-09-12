@@ -98,6 +98,15 @@ file; follow the integration-owner collection procedure in the workflow.
 - Readiness remains four distinct states: implemented component, clean owner
   handoff, integrated source and verified combined application. The monitor is
   updated to follow resumed work and will not reapply the superseded stage pause.
+- Independent source review at P3 `4a2389c` against P7 `6bac40f` found three
+  concrete P3-03/P3-08/P7-07 risks, routed to S3 with S1/S7 coordination:
+  `stimulus-order-editor.js` retains acceptance after catalogue withdrawal or
+  changed content under the same revision; `variant-design.js` and
+  `planned-marker-contract.js` prefer different video identity fields; and
+  editor restoration invents a P1 revision increment while retaining old
+  catalogue data. S3 owns the corrections, S1 the canonical identity/snapshot,
+  and S7 the restoration dependency sequencing. Require focused regression
+  receipts before closing these issues; root performed source review only.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
