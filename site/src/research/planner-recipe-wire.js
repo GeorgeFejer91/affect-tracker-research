@@ -83,8 +83,16 @@ export function readPlannerRecipeJsonBytes(input) {
 /** Validate the complete root and inclusion choices before any domain work.
  * Segment payload validation remains exclusively with its domain owner. */
 export function validatePlannerRecipeStructureV1(value, { integrity = true } = {}) {
+  return validateStructure(value, integrity, 1, PLANNER_RECIPE_INTEGRITY_ALGORITHMS);
+}
+
+export function validatePlannerRecipeStructureV2(value, { integrity = true } = {}) {
+  return validateStructure(value, integrity, 2, ["planner-recipe-reproduction-v3"]);
+}
+
+function validateStructure(value, integrity, version, algorithms) {
   exactRecipeObject(value, integrity ? [...CORE_KEYS, "integrity"] : CORE_KEYS, "Planner recipe");
-  if (value.schema !== PLANNER_RECIPE_SCHEMA || value.version !== PLANNER_RECIPE_VERSION) {
+  if (value.schema !== PLANNER_RECIPE_SCHEMA || value.version !== version) {
     throw new TypeError("Unsupported Planner recipe schema or version.");
   }
   if (typeof value.recipeId !== "string" || !/^[a-z0-9][a-z0-9_-]{0,127}$/u.test(value.recipeId)) {
@@ -114,7 +122,7 @@ export function validatePlannerRecipeStructureV1(value, { integrity = true } = {
   }
   if (integrity) {
     exactRecipeObject(value.integrity, ["algorithmVersion", "definitionSha256", "segmentSha256", "reproductionSha256"], "Planner recipe integrity");
-    if (!PLANNER_RECIPE_INTEGRITY_ALGORITHMS.includes(value.integrity.algorithmVersion)) throw new TypeError("Unsupported Planner recipe integrity algorithm.");
+    if (!algorithms.includes(value.integrity.algorithmVersion)) throw new TypeError("Unsupported Planner recipe integrity algorithm.");
     exactRecipeObject(value.integrity.segmentSha256, PLANNER_RECIPE_SEGMENTS, "Planner segment hashes");
     for (const digest of [value.integrity.definitionSha256, value.integrity.reproductionSha256, ...Object.values(value.integrity.segmentSha256)]) {
       if (typeof digest !== "string" || !HASH.test(digest)) throw new TypeError("Planner recipe integrity requires complete lowercase SHA-256 values.");

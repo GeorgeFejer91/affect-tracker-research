@@ -2,15 +2,16 @@ import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { parseExperimentPackageV1, EXPERIMENT_PACKAGE_SCHEMA } from "./experiment-package.js";
 import { validateWorkspaceContribution } from "./workspace-contribution.js";
 import { validateQuestionnaireRecipeContributionV1, validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
+import { validateQuestionnaireRecipeContributionV2, compilePlannerQuestionnaireRoutesV2 } from "./questionnaire-recipe-v2.js";
 import { validateVariantDesign } from "./variant-design.js";
 import { projectSavedVariantCatalogue } from "./variant-catalogue-adapter.js";
 import { validateFeedbackContributionV2 } from "./feedback-settings.js";
 import { resolveDesktopLayoutContribution } from "./desktop-layout-contribution.js";
 import { validateXrLayoutSelection, resolveSavedXrLayoutContribution } from "./xr-layout-recipe.js";
 import { compilePlannerQuestionnaireRoutesV1, PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
-import { reproducePreparedPlannerRecipeV1, reconstructPreparedPlannerRecipeSelectionV1 } from "./planner-recipe-reproduction.js";
+import { reproducePreparedPlannerRecipeV1, reconstructPreparedPlannerRecipeSelectionV1, reconstructPreparedPlannerRecipeSelectionV2 } from "./planner-recipe-reproduction.js";
 import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS, PLANNER_RECIPE_INTEGRITY_ALGORITHM,
-  MAX_PLANNER_RECIPE_BYTES, readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1,
+  MAX_PLANNER_RECIPE_BYTES, readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2,
   boundPlannerRecipeMatrix, freezeRecipeValue, exactRecipeObject, assertPlannerRecipeJsonValue } from "./planner-recipe-wire.js";
 
 const encoder = new TextEncoder();
@@ -32,18 +33,20 @@ function captureJson(value) {
 
 /** Every owner validates complete saved content, independently of live media
  * readiness. A rejected/incomplete owner never becomes an omitted segment. */
-async function prepareCore(input) {
-  const core = validatePlannerRecipeStructureV1(captureJson(input), { integrity: false });
+async function prepareCore(input, version = 1) {
+  const structure = version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
+  const core = structure(captureJson(input), { integrity: false });
   const source = core.segments;
   boundPlannerRecipeMatrix(source.P2.languageSelection, source.P3.variants?.length,
     source.P6.status === "included" ? 2 : 1);
   const workspace = await owned("P1", () => validateWorkspaceContribution(source.P1));
   const questionnaires = await owned("P2", async () => {
+    if (version === 2) return validateQuestionnaireRecipeContributionV2(source.P2);
     const result = await validateQuestionnaireRecipeContributionV1(source.P2);
     await validateQuestionnaireRecipeContribution(result);
     return result;
   });
-  const compiledForms = await owned("P2", () => compilePlannerQuestionnaireRoutesV1({
+  const compiledForms = await owned("P2", () => version === 2 ? compilePlannerQuestionnaireRoutesV2(questionnaires) : compilePlannerQuestionnaireRoutesV1({
     questionnaires: questionnaires.questionnaires, languageSelection: questionnaires.languageSelection,
   }));
   const presentationByDefinition = new Map(questionnaires.presentation.definitions.map(value => [value.questionnaireId, value]));
@@ -92,10 +95,10 @@ export async function createPlannerRecipeV1(options) {
   return compilePlannerRecipeV1({ schema: PLANNER_RECIPE_SCHEMA, version: PLANNER_RECIPE_VERSION, ...options });
 }
 
-async function verifyRecipe(value) {
-  const saved = validatePlannerRecipeStructureV1(captureJson(value));
+async function verifyRecipe(value, version = 1) {
+  const saved = (version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1)(captureJson(value));
   const { integrity, ...core } = saved;
-  const verified = await compilePrepared(await prepareCore(core), integrity.algorithmVersion);
+  const verified = await compilePrepared(await prepareCore(core, version), integrity.algorithmVersion);
   if (canonicalJson(integrity) !== canonicalJson(verified.recipe.integrity)) {
     throw new PlannerRecipeIssue("P7", "integrity", "integrity-mismatch", "Recipe content, owner hashes or independent reconstruction do not match its saved integrity.");
   }
@@ -137,4 +140,33 @@ export async function reconstructPlannerRecipeSelectionV1(value, selector) {
   const verified = await verifyRecipe(value);
   return reconstructPreparedPlannerRecipeSelectionV1(verified.prepared, verified.reproduction,
     verified.recipe.integrity.definitionSha256, selector);
+}
+
+/** Explicit typed-form master entrypoints. Legacy readers stay strictly v1. */
+export async function compilePlannerRecipeV2(core) {
+  return (await compilePrepared(await prepareCore(core, 2), "planner-recipe-reproduction-v3")).recipe;
+}
+export async function createPlannerRecipeV2(options) {
+  exactRecipeObject(options, ["recipeId", "presentationTarget", "policy", "segments"], "Planner recipe creation input");
+  return compilePlannerRecipeV2({ schema: PLANNER_RECIPE_SCHEMA, version: 2, ...options });
+}
+export async function validatePlannerRecipeV2(value) { return (await verifyRecipe(value, 2)).recipe; }
+export async function serializePlannerRecipeV2(value) { return `${canonicalJson(await validatePlannerRecipeV2(value))}\n`; }
+export async function parsePlannerRecipeV2(bytes) {
+  const source = readPlannerRecipeJsonBytes(bytes);
+  return freezeRecipeValue({ recipe: await validatePlannerRecipeV2(source.value), canonicalSourceText: source.canonicalSourceText,
+    canonicalSourceByteSha256: await sha256Hex(encoder.encode(source.canonicalSourceText)) });
+}
+export async function reproducePlannerRecipeV2(value) { return (await verifyRecipe(value, 2)).reproduction.matrix; }
+export async function reconstructPlannerRecipeSelectionV2(value, selector) {
+  const verified = await verifyRecipe(value, 2);
+  return reconstructPreparedPlannerRecipeSelectionV2(verified.prepared, verified.reproduction,
+    verified.recipe.integrity.definitionSha256, selector);
+}
+export async function parseSupportedPlannerRecipe(bytes) {
+  const { value } = readPlannerRecipeJsonBytes(bytes);
+  if (value?.schema !== PLANNER_RECIPE_SCHEMA) throw new TypeError("Expected a Planner recipe.");
+  if (value.version === 1) return parsePlannerRecipeV1(bytes);
+  if (value.version === 2) return parsePlannerRecipeV2(bytes);
+  throw new TypeError("Unsupported Planner recipe version.");
 }
