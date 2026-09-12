@@ -802,6 +802,9 @@ export class NativePackageProtocolAdapter {
     if (!positiveInteger(position) || run.preparedPosition === position) return;
     run.preparedPosition = position;
     try {
+      // The participant may have resized while a questionnaire hid feedback.
+      // Re-establish the visible region before native playback accepts input.
+      await this.prepareRunInput();
       await this.invoke("research_package_prepare_media", {
         request: { runId: run.receipt.runId, viewport: this.#viewport() },
       });

@@ -82,3 +82,25 @@ interfaces and evidence. Planner P1–P7 retain their owners and catalogue. Shar
 changes name exact seams in the message board; consult the **Chat Orchestrator**
 task when ownership or a product decision is uncertain. Neither ledger overrides
 the researcher. No independent agent may silently merge the integration checkout.
+
+
+### User follow-up: Runner controller and browser companions — 2026-09-12
+
+- RR-07 controller override: the researcher may override the Planner's input
+  settings for a Runner session. Preserve the original JSON, show original versus
+  effective bindings, validate and retest the actual device, freeze/hash the
+  override and bind it to attempt/recovery evidence. A changed binding must not
+  silently run under the old recipe hash. This pass supplies the override editor;
+  native override execution/evidence is a pending Backend Verification item.
+- RR-11 Absent-minded professor (future browser app): a QR code opens a GitHub
+  Pages companion with one-to-one mirrored control of the entire Runner.
+  For now implement only the popup and a clearly labelled preview QR address.
+- RR-12 Remote controller (future browser app): a separate QR code opens a
+  smartphone/tablet fullscreen 2D affect grid; touch coordinates control Runner
+  Flubber. For now implement only its popup and preview QR address.
+- Both future connections need explicit target-owned pairing, scoped authority,
+  revocation/disconnection behavior, timestamp/input provenance and applicable
+  remote skill/charter contracts. The two scopes must not be conflated. No
+  listener, live pairing token, remote WebView or hosted page is implemented by
+  displaying these static QRs. Reserved /runner/professor/ and /runner/controller/
+  Pages destinations are not deployed or claimed to be live.

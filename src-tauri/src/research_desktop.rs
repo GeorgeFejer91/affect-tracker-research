@@ -10,6 +10,24 @@ pub enum DesktopRole {
     Runner,
 }
 
+/// Presentation only: no protocol, input, persistence or network authority.
+#[tauri::command]
+pub fn research_runner_fullscreen(
+    window: WebviewWindow,
+    role: State<'_, DesktopRole>,
+    fullscreen: bool,
+) -> ResearchResult<()> {
+    if window.label() != "research" || *role != DesktopRole::Runner {
+        return Err(CommandError::forbidden("Runner window required."));
+    }
+    window.set_fullscreen(fullscreen).map_err(|_| {
+        CommandError::new(
+            "runner_fullscreen_failed",
+            "Could not change the experiment window's fullscreen state.",
+        )
+    })
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DesktopIdentity {

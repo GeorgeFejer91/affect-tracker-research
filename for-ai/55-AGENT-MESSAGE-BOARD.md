@@ -4714,3 +4714,36 @@ by this build-option change.
   exception or public schema change. Same isolated import lane, parent e8d0384.
 - Actual P2 allocator -> prepared import -> exact saved bytes passes, while
   add+edit same batch rejects import. Focused P2/import/save/restore39/39.
+
+### 20260912-runner-minimal-launcher — R1/RR-01, RR-03/06 presentation seams
+
+User requests UI Finalization: minimal first window with Load experiment file,
+a large Start experiment control, Absent-minded professor, Set controller and
+Remote controller connection. Start enters fullscreen on solid black before
+demographics and recipe-ordered questionnaires. Preparation is not acquisition;
+all native Start/input/media gates remain. Recording policy remains Runner-owned.
+Owner: Experiment Runner; isolated Runner worktree, branch
+`codex/segment-runner-minimal-launcher`, base `6377df4`. Current source exposes
+a permanent sidebar/video preview with demographics in the sidebar. This pass
+moves operator details into secondary panels and participant details into the
+fullscreen presentation; adds only a role-gated native fullscreen window command.
+No recipe/record/schema semantics change. Professor/controller meanings are
+pending user clarification; Orchestrator confirms no earlier accepted semantics
+or competing Runner owner. Remote transport is not inferred from a button.
+Baseline: 10 focused Node checks pass. Collect focused UI/lifecycle/error checks,
+black participant captures and frontend/native builds. New-master correspondence,
+physical native execution, device/recording qualification and remote transport
+remain deferred; Planner completion is independent.
+
+
+#### 20260912-runner-minimal-launcher handoff clarification
+
+User clarified future RR-11 full-app professor control versus RR-12 smartphone
+2D affect pad; only preview QR popups are allocated now. RR-07 allows future
+Runner controller overrides; this UI drafts presets/step size and blocks changed
+binding execution pending a native override receipt. User explicitly requires
+large Start -> demographics/questionnaires -> video, without a second start
+screen. Native gates remain. A named RR-04/07 shared adapter seam awaits visible
+input-region preparation before each stimulus after hidden questionnaire layout;
+no Planner authority is changed. Ledger65 records 13 synthetic UI scenarios,
+small-width captures, QR decoding and build/check evidence.

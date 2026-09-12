@@ -25,17 +25,32 @@ experiment. The pinned GStreamer runtime/SDK, redistribution review, installed
 player/input/timing tests and complete Planner–Runner option correspondence have
 their own outstanding gates in `for-ai/30` and `for-ai/40`.
 
-## Preparing an experiment
+## Launcher and participant flow
 
-1. Open a supported complete Planner recipe and choose its video project folder.
-2. Enter its participant ID, explicitly traverse the language choices and choose
-   a new attempt, compatible recovery or pending-output finalization.
-3. Check the recipe, files and native decoder. Test the recipe's configured input
-   in the focused test region. Changing participant, route or test geometry
-   invalidates the relevant readiness.
-4. Optionally configure recording, then start when the native capability permits.
-   The Rust protocol owns timing, video transitions, ISIs, neutral resets,
-   questionnaire drafts/submissions, sampling, LSL timestamps and attempt files.
+The opening window has Load experiment file, a large Start experiment control,
+Absent-minded professor, Set controller and Remote controller connection.
+Session, media/recovery and XDF controls are in Session & recording settings.
+
+Start enters native fullscreen with a solid black background, then presents
+participant identity, language and demographics. Continue automatically verifies
+the selection and proceeds into the recipe's questionnaire/video protocol; there
+is no second Begin experiment screen. Existing native media/input readiness still
+must pass. Operator checks and the configured-input test are available in session
+settings. Escape before acquisition returns to the launcher; during an attempt it
+opens session controls without stopping silently. Completing or explicitly stopping
+the attempt returns to the windowed launcher. Questionnaire labels, codes and
+hook order continue to come from the frozen recipe.
+
+The two QR popups are previews. Their distinct reserved GitHub Pages destinations
+are not deployed and do not create a connection. The professor companion will
+mirror the whole Runner; the phone/tablet companion will expose a fullscreen 2D
+affect pad. Both are future browser work recorded in `for-ai/65`.
+
+Set controller currently edits an in-memory override draft (preset and digital
+step size). Restoring the file settings discards it. Applying an override to actual
+acquisition requires a native override/attempt-evidence contract and is not yet
+connected: a changed draft blocks execution explicitly, and never rewrites the
+loaded JSON or runs under its old input hash. No custom-key capture is added here.
 
 The current executable accepts canonical `affect-research-experiment-package`
 version 1 without changing its bytes, hashes or frozen readers. It consumes the

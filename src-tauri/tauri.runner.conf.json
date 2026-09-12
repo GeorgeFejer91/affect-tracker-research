@@ -15,10 +15,10 @@
         "label": "research",
         "title": "Experiment Runner",
         "url": "index.html",
-        "width": 1280,
-        "height": 860,
-        "minWidth": 900,
-        "minHeight": 640,
+        "width": 800,
+        "height": 680,
+        "minWidth": 600,
+        "minHeight": 540,
         "center": true,
         "visible": true
       }

@@ -284,6 +284,7 @@ fn launch(
             research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
             research_recorder::commands::research_recorder_discover,
             research_recorder::commands::research_recorder_start,

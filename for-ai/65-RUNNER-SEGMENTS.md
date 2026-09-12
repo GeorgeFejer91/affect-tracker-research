@@ -180,3 +180,97 @@ its own embedded resources/product identity. All-feature compilation is blocked
 in this environment by missing pkg-config/GStreamer SDK; this is not a recorder
 test failure or permission to weaken native player qualification. Integration
 owns merging these checkpoints into its newer P1–P7 master candidate.
+
+
+### 20260912-runner-minimal-launcher — R1/RR-01, RR-03/06 presentation seams
+
+User requests UI Finalization: minimal first window with Load experiment file,
+a large Start experiment control, Absent-minded professor, Set controller and
+Remote controller connection. Start enters fullscreen on solid black before
+demographics and recipe-ordered questionnaires. Preparation is not acquisition;
+all native Start/input/media gates remain. Recording policy remains Runner-owned.
+Owner: Experiment Runner; isolated Runner worktree, branch
+`codex/segment-runner-minimal-launcher`, base `6377df4`. Current source exposes
+a permanent sidebar/video preview with demographics in the sidebar. This pass
+moves operator details into secondary panels and participant details into the
+fullscreen presentation; adds only a role-gated native fullscreen window command.
+No recipe/record/schema semantics change. Professor/controller meanings are
+pending user clarification; Orchestrator confirms no earlier accepted semantics
+or competing Runner owner. Remote transport is not inferred from a button.
+Baseline: 10 focused Node checks pass. Collect focused UI/lifecycle/error checks,
+black participant captures and frontend/native builds. New-master correspondence,
+physical native execution, device/recording qualification and remote transport
+remain deferred; Planner completion is independent.
+
+
+### User follow-up: Runner controller and browser companions — 2026-09-12
+
+- RR-07 controller override: the researcher may override the Planner's input
+  settings for a Runner session. Preserve the original JSON, show original versus
+  effective bindings, validate and retest the actual device, freeze/hash the
+  override and bind it to attempt/recovery evidence. A changed binding must not
+  silently run under the old recipe hash. This pass supplies the override editor;
+  native override execution/evidence is a pending Backend Verification item.
+- RR-11 Absent-minded professor (future browser app): a QR code opens a GitHub
+  Pages companion with one-to-one mirrored control of the entire Runner.
+  For now implement only the popup and a clearly labelled preview QR address.
+- RR-12 Remote controller (future browser app): a separate QR code opens a
+  smartphone/tablet fullscreen 2D affect grid; touch coordinates control Runner
+  Flubber. For now implement only its popup and preview QR address.
+- Both future connections need explicit target-owned pairing, scoped authority,
+  revocation/disconnection behavior, timestamp/input provenance and applicable
+  remote skill/charter contracts. The two scopes must not be conflated. No
+  listener, live pairing token, remote WebView or hosted page is implemented by
+  displaying these static QRs. Reserved /runner/professor/ and /runner/controller/
+  Pages destinations are not deployed or claimed to be live.
+
+
+### Launcher handoff checklist — 2026-09-12
+
+Latest user clarification: pressing the large Start experiment control begins
+participant questionnaires, then the video sequence. Demographics remain the
+first participant form for a new attempt. No separate Before we begin/Begin
+experiment screen is permitted. Technical readiness remains in operator controls;
+it never bypasses native gates or silently reorders recipe hooks.
+
+- [x] RR-01 minimal launcher; secondary session/recording controls; native Runner-only
+  fullscreen window command; black transition before participant forms.
+- [x] RR-06 UI flow automatically continues from demographics into native
+  questionnaire/video protocol, with no second Start control. Native capability,
+  strict selection, current input receipt and recipe order remain required.
+- [x] RR-11/RR-12 preview QR popups with separately reserved Pages destinations;
+  no deployed page, pairing token, listener or live connection claim.
+- [ ] RR-07 execute Runner-side controller overrides: add strict native session
+  override contract, original/effective hashes, retest, immutable attempt receipt
+  and recovery matching. UI preset/step draft exists but cannot execute yet.
+- [ ] RR-11 implement whole-Runner mirrored browser access after protocol/pairing
+  allocation. Current popup is not permission to broaden native command authority.
+- [ ] RR-12 implement smartphone/tablet fullscreen 2D touch pad, scoped to affect
+  input, with explicit timestamps, disconnect behavior and acquisition evidence.
+- [ ] RR-01/RR-06 verify native fullscreen, real participant/device flow and actual
+  media on the qualified installed candidate. Headless fixtures do not close it.
+
+Evidence: focused recipe/native adapter checks (10 pass); 13 isolated headless
+Chrome launcher/dialog/override/form/escape/stop/fullscreen-rejection scenarios.
+The browser harness substitutes native services and window acknowledgements;
+it proves UI sequencing, not OS fullscreen, physical input or acquisition.
+Both QR payloads independently decoded using zxing-cpp 3.1.1; generator qrcode8.2,
+4-module quiet zone and M correction, checked-in SVGs with no runtime dependency.
+Captures and receipts: `D:/GitHub/.affect-runner-build/launcher-verified/`.
+The native build uses a separate `.affect-runner-ui-build` target directory to
+preserve the already-open prior Runner executable/window.
+
+
+Final UI correction: resize while a questionnaire hides feedback must not
+register an invisible input region. The native adapter now awaits the existing
+prepareRunInput callback again immediately before each new stimulus's media
+prepare/play. This named RR-04/RR-07 geometry seam preserves native input authority;
+a focused adapter assertion checks the order. Fullscreen/layout changes retain
+the existing native fresh-input-test gate. An armed recorder freezes the recipe,
+but does not lock the participant/language fields needed after pressing Start.
+Chrome additionally passes the 600px-wide fixture matrix; both popup screenshot
+QRs independently decode to their reserved addresses. Edge's headless invocation
+produced no DOM receipt in this environment and supplies no verification claim.
+Native default all-target Clippy with -D warnings and the standalone debug build
+pass. Full regression: 653 Node checks. No foreground input or physical native
+experiment was used for these UI receipts.
