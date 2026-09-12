@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 import { createXrLayoutAuthoring, resolveXrLayoutContribution, resolveXrLayoutDependencies } from "../site/src/research/xr-layout-authoring.js";
 import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
 import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
@@ -179,4 +182,19 @@ test("P6 composes the committed P1/P5 producers and rejects a tampered or withdr
   p1.withdraw();
   await assert.rejects(resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1));
   p5.destroy();
+});
+
+test("independent P1/P5/P6 processes reproduce every profile's exact bytes and geometry without ambient inputs", async () => {
+  const run = promisify(execFile), entry = fileURLToPath(new URL("fixtures/xr-authoring-instance.js", import.meta.url));
+  const results = await Promise.all(["de-DE", "en-US"].map((locale) => run(process.execPath, [entry], {
+    windowsHide: true, env: { ...process.env, LANG: locale, TZ: locale === "de-DE" ? "Europe/Berlin" : "UTC" },
+  })));
+  assert.equal(results[0].stdout, results[1].stdout);
+  const receipts = JSON.parse(results[0].stdout);
+  assert.equal(receipts.length, fixture.cases.length);
+  for (const receipt of receipts) {
+    assert.equal(receipt.catalogueRevision, 17);
+    assert.equal(receipt.feedbackRevision, 29);
+    assert.equal(receipt.resolved.videos.length, 2);
+  }
 });
