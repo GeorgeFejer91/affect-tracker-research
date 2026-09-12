@@ -28,7 +28,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 });
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
-      repeatLabels: 1, optionsOpen: false, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
+      repeatLabels: 1, rawOptionCount: null, optionsOpen: false, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
       sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
   }
 
@@ -67,6 +67,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           entry.pristine = false;
           entry.error = "";
           entry.invalid.clear();
+          entry.rawOptionCount = null;
         }
       }
     }
@@ -107,7 +108,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       <fieldset class="sheet-body" ${context.locked || entry.busy ? "disabled" : ""}>
         <legend class="sr-only">Edit ${escape(family.label)} in ${escape(language.label)}</legend>
         <div class="sheet-settings">
-          <label class="field"><span>Answer options</span><input type="number" min="2" max="64" step="1" data-sheet-option-count value="${sheet.optionCount}"></label>
+          <label class="field"><span>Answer options</span><input type="number" min="2" max="64" step="1" data-sheet-option-count value="${escape(entry.rawOptionCount ?? sheet.optionCount)}"></label>
           <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only</option></select></label>
         </div>
         <p class="sheet-paste-help">Paste cells from Excel. Answers are participant labels; codes are recorded values. One answer per item.</p>
@@ -168,7 +169,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     entry.undo = { sheet: cloneQuestionnaireSheet(entry.sheet), dirty: entry.dirty,
       sourceBytes: entry.sourceBytes, authoringResult: entry.authoringResult,
       sourceDefinitionHash: entry.sourceDefinitionHash, layout: entry.layout, pristine: entry.pristine,
-      repeatLabels: entry.repeatLabels };
+      repeatLabels: entry.repeatLabels, rawOptionCount: entry.rawOptionCount };
   }
 
   async function save(key) {
@@ -176,6 +177,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     if (!entry || context.locked || entry.busy) return;
     try {
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values before saving.");
+      if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before saving.");
       entry.busy = true;
       entry.error = "";
       render();
@@ -210,6 +212,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     entry.sourceBytes = sourceBytes;
     entry.authoringResult = authoringResult;
     entry.invalid.clear();
+    entry.rawOptionCount = null;
     entry.error = "";
     entry.dirty = true;
     entry.pristine = false;
@@ -221,6 +224,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
 
   async function preview(entry) {
     if (entry.invalid.size) throw new TypeError("Correct the recorded values before previewing.");
+    if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before previewing.");
     const { definition } = await sheetToAuthoring(entry.sheet);
     root.querySelector("#questionnaire-sheet-preview-title").textContent = `${definition.title} · ${definition.language}`;
     const body = root.querySelector("#questionnaire-sheet-preview-content");
@@ -238,7 +242,11 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
-    if (target.matches("[data-sheet-option-count], select")) return;
+    if (target.matches("select")) return;
+    if (target.hasAttribute("data-sheet-option-count")) {
+      preserveUndo(entry); entry.rawOptionCount = target.value;
+      markChanged(entry); refreshEntryState(target, entry); return;
+    }
     preserveUndo(entry);
     try {
       if (target.dataset.sheetCell) {
@@ -284,7 +292,10 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       if (!target.matches("[data-sheet-option-count], [data-sheet-required-all]")) return;
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values first.");
       preserveUndo(entry);
-      if (target.hasAttribute("data-sheet-option-count")) setOptionCount(entry.sheet, Number(target.value));
+      if (target.hasAttribute("data-sheet-option-count")) {
+        entry.rawOptionCount = target.value;
+        setOptionCount(entry.sheet, Number(target.value)); entry.rawOptionCount = null;
+      }
       if (target.hasAttribute("data-sheet-required-all") && target.value) entry.sheet.rows.forEach((row) => { row.required = target.value === "required"; });
       entry.error = "";
       markChanged(entry);
@@ -466,6 +477,43 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+    /** Detached typed snapshots retain sheet-owner provenance, not a second store. */
+    readAuthoringEntries() {
+      return activeEntries().map(({ entry }) => ({ sheet: cloneQuestionnaireSheet(entry.sheet),
+        invalid: [...entry.invalid], layout: entry.layout, repeatLabels: entry.repeatLabels,
+        dirty: entry.dirty, busy: entry.busy, error: entry.error, rawOptionCount: entry.rawOptionCount ?? null }));
+    },
+    /** Owner adapter validates/prepares before the shared session's commit fence.
+     * The returned projection has no async work, imports, native save or acceptance. */
+    prepareAuthoringEntries(records, next) {
+      const prepared = new Map();
+      for (const record of records) {
+        const key = keyFor(record.sheet.familyId, record.sheet.language);
+        const previous = entries.get(key);
+        const family = next.families.find(item => item.id === record.sheet.familyId);
+        const language = next.languages.find(item => item.languageTag === record.sheet.language);
+        if (!family || !language || prepared.has(key) || record.busy) throw new TypeError("Invalid questionnaire authoring slot.");
+        const entry = previous ? { ...previous } : makeEntry(family, language);
+        entry.sheet = cloneQuestionnaireSheet(record.sheet);
+        entry.invalid = new Map(record.invalid);
+        entry.repeatLabels = record.repeatLabels;
+        entry.layout = record.layout;
+        entry.dirty = record.dirty;
+        entry.error = record.error;
+        entry.rawOptionCount = record.rawOptionCount;
+        entry.selection = null;
+        if (record.dirty) { entry.pristine = false; entry.authoringResult = null; entry.sourceBytes = null; }
+        prepared.set(key, entry);
+      }
+      if (prepared.size !== next.families.length * next.languages.length) throw new TypeError("Missing questionnaire authoring slot.");
+      const projection = { ...context, families: structuredClone(next.families), languages: structuredClone(next.languages),
+        definitions: structuredClone(next.definitions), locked: next.locked };
+      return () => {
+        entries.clear(); prepared.forEach((entry, key) => entries.set(key, entry));
+        context = projection; fingerprint = ""; uploadKey = null;
+        render();
+      };
+    },
     getPresentation(definitions) {
       return createQuestionnairePresentationV1(definitions, definitions.map((definition) => {
         const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === definition.questionnaireId);
