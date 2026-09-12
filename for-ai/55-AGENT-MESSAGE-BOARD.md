@@ -79,6 +79,22 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   columns. Integration/root received the exact PNG. S5 received stale
   "Placement is preview-only" copy despite saved V2 placement. Functional checks
   are not G09 layout closure; shared CSS remains integration-coordinated.
+- Integration/root explicitly allocated the narrow color-anchor CSS seam next.
+  On `13e9551`, the real 800px fixture reproduced insufficient up/down text
+  columns and overflowing long side labels. Bounded repair: corner anchors use
+  two equal columns above/below a centered map; at narrow pane widths swatches
+  sit above labels; axis placement is preserved with bounded smaller columns.
+  All accepted label text wraps without the later media rule disabling it.
+- New `preview-label-layout-fixture.js` exercises both placements with four
+  48-character labels including an unbroken string. Harness modes `labels-axes`
+  and `labels-corners` check text width, full text retention, button containment,
+  panel containment and non-overlap with the map. At outer 800px the fixture
+  explicitly sizes only the Preview pane to 280px; this does not modify the
+  product split owner. Desktop uses its actual default pane. Before/after PNGs
+  and checks live under `D:/GitHub/.affect-preview-checks/planner-feedback-labels-20260912/`.
+  Ordinary restored-label images and both long-label placements were inspected.
+  Full 668 tests and both 219/11-file closures pass. S5 owns the separate saved
+  placement copy correction `4b7ff6f`; it is not duplicated in this CSS pass.
 
 ### 20260912-preview-input-menu
 

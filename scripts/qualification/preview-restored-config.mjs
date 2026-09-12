@@ -11,7 +11,7 @@ import { build } from "esbuild";
 
 const [browser,destination,mode="reset"]=process.argv.slice(2);
 assert.ok(browser&&destination);
-assert.ok(["reset","restore"].includes(mode),"Expected reset or restore fixture mode");
+assert.ok(["reset","restore","labels-axes","labels-corners"].includes(mode),"Unknown preview fixture mode");
 const output=resolve(destination);await mkdir(output,{recursive:true});
 const repository=resolve(fileURLToPath(new URL("../..",import.meta.url)));
 const run=promisify(execFile);
@@ -19,9 +19,11 @@ const git=async(...args)=>(await run("git",args,{cwd:repository,windowsHide:true
 const provenance={commit:await git("rev-parse","HEAD"),applicationTree:await git("rev-parse","HEAD:site"),applicationDirty:Boolean(await git("diff","HEAD","--name-only","--","site")),browserSha256:createHash("sha256").update(await readFile(browser)).digest("hex")};
 const css=(await readFile(new URL("../../site/research.css",import.meta.url),"utf8"))
   .replaceAll('./assets/',pathToFileURL(fileURLToPath(new URL('../../site/assets/',import.meta.url))).href);
-const fixture = mode === "restore" ? ["checkPreviewFeedbackRestore", "preview-feedback-restore-fixture.js"]
+const fixture = mode.startsWith("labels-") ? ["checkPreviewLabelLayout", "preview-label-layout-fixture.js"]
+  : mode === "restore" ? ["checkPreviewFeedbackRestore", "preview-feedback-restore-fixture.js"]
   : ["checkPreviewInspectionReset", "preview-inspection-reset-fixture.js"];
-const bundle=await build({write:false,bundle:true,format:"esm",stdin:{resolveDir:fileURLToPath(new URL(".",import.meta.url)),contents:`import {${fixture[0]}} from './${fixture[1]}';${fixture[0]}().then(receipt=>parent.document.querySelector('#receipt').textContent=JSON.stringify(receipt)).catch(error=>parent.document.querySelector('#receipt').textContent=JSON.stringify({pass:false,error:error.stack}));`}});
+const fixtureArgument = mode.startsWith("labels-") ? JSON.stringify(mode.slice(7)) : "";
+const bundle=await build({write:false,bundle:true,format:"esm",stdin:{resolveDir:fileURLToPath(new URL(".",import.meta.url)),contents:`import {${fixture[0]}} from './${fixture[1]}';${fixture[0]}(${fixtureArgument}).then(receipt=>parent.document.querySelector('#receipt').textContent=JSON.stringify(receipt)).catch(error=>parent.document.querySelector('#receipt').textContent=JSON.stringify({pass:false,error:error.stack}));`}});
 for(const width of [1280,800]){
  const profile=await mkdtemp(join(output,`profile-${width}-`)),file=join(output,`${width}.html`),png=join(output,`${width}.png`);
  const frame=`<!doctype html><meta charset="utf-8"><style>${css}</style><div id="research-app" data-research-surface="browser"></div><script type="module">${bundle.outputFiles[0].text.replaceAll("</script","<\\/script")}</script>`;
