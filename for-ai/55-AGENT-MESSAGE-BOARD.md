@@ -150,6 +150,49 @@ file; follow the integration-owner collection procedure in the workflow.
 - Typed successor master composition remains open, including P4 accepted geometry
   contract/Q08 and the P1-owned coherent workspace dependency projection. This
   checkpoint does not mark all P7 or integrated Planner complete.
+### 20260912-p4-live-geometry
+
+- Owner: **S4**, P4 `layout`; **ready**, Backend Verification, P4-02/P4-05/
+  P4-06/P4-07. Researcher explicitly resumed paused contribution work through
+  root coordination; unchanged stage confirmation is not requested again.
+- Isolated `codex/segment-p4-live-geometry` at
+  `D:/GitHub/affect-tracker-research-screen-layout-live`; accepted baseline
+  `ba2110f`, reviewed combined integration candidate `64da370` merged normally
+  at `f328bef`. Canonical integration remains the integration owner's work.
+- Current versus intended: the reviewed P4 editor resolves synthetic fixture
+  inputs only and has no owner revision/restore interface. This pass adds
+  actual P1 oriented catalogue and P5 saved-envelope binding, dependency/edit
+  invalidation, deterministic whole-library fit and an atomic internal draft
+  restoration API for P7. Producer validation and animation math remain owned.
+- Shared seams are app initialization/getters/subscriptions/teardown; P7 owns
+  registration/acceptance/save. No new media verification, P5 size authority,
+  native boundary, Runner, deployment or physical qualification is allocated.
+- Root clarified the mandatory automatic largest-video reference. Area versus
+  componentwise maximum remains an explicit Q08 question. Both candidate
+  extents may be calculated for inspection; neither is silently selected.
+  Current manual proposed geometry remains draft-only until that contract is
+  settled. A draft document is not an accepted or runnable recipe contribution.
+- Evidence planned: actual producer interop; mixed ratios/fixed centres/units;
+  missing, pending, changed and malformed dependencies; atomic/stale restore;
+  actual boot UI invalidation/selection/reflow; proportional frontend checks.
+- Implemented at clean app source `f8654bf`: live workspace-owned P1 revision
+  projection (producer `5988ce0`), P5 `c143398` bounds/subscriptions, P7 `cc5cc83`
+  registration, deterministic fit/candidates, invalidation and atomic draft API.
+  The study-only/video-change fixture confirms one registered revision domain.
+- Exact API: `getScreenLayoutContributionSnapshot`, `getScreenLayoutProjection`,
+  `getScreenLayoutDraftDocument`, async `restoreScreenLayoutDraft(document,
+  {isCurrent})`, `validateScreenLayoutContribution`. The latter rejects Q08;
+  the internal draft document is never accepted master-recipe data. P7 owns
+  final accepted composition; no consumer invents a producer revision.
+- Evidence: 563 Node / 25 P4 tests, desktop9/Pages196, clean Chrome118 checks in
+  four inspected actual-app images. Receipt and source/image hashes:
+  `D:/GitHub/.affect-preview-checks/p4-live-20260912/final-chrome/receipt.json`.
+  Edge yielded no receipt. No native/physical/runtime/publication qualification.
+- **Owner-ready:** this bounded live draft/validation/restore slice.
+  **Integrated:** only in the isolated branch; canonical collection is pending.
+  **Missing:** Q08 reference metric and final geometry contract, accepted P4
+  JSON, P7 master round trip, native oriented geometry and applicable gates.
+  Source writers stop at the final handoff; integration remains sole merger.
 
 ### 20260912-p7-accepted-master-recipe
 

@@ -30,7 +30,7 @@ export function screenLayoutDraftMarkup() {
       ${field("offsetX", "(% reference width)")}${field("offsetY", "(% reference height)")}
     </div></fieldset>
     <details class="layout-conventions"><summary>Proposed layout conventions</summary><p class="field-help">Contain full videos without cropping; +X right, +Y down; use a stable Flubber design centre. These choices await confirmation. Percentage offsets always use the same reference frame.</p></details>
-    <div data-layout-fixture-controls hidden><label for="layout-video">Synthetic display-geometry fixture<select id="layout-video" data-layout-video></select></label></div>
+    <div data-layout-fixture-controls hidden><label for="layout-video"><span data-layout-video-label>Inspect video fit</span><select id="layout-video" data-layout-video></select></label></div>
     <output data-layout-status role="status" aria-live="polite" class="layout-status"></output>
     <ul id="layout-field-errors" data-layout-errors class="layout-errors"></ul>
     <button type="button" data-layout-reset>Reset layout draft</button>
@@ -47,7 +47,7 @@ export function screenLayoutSceneMarkup(projection, selectedVideoId = null) {
   const marker = (x, y) => `<path d="M ${x - 12} ${y} h 24 M ${x} ${y - 12} v 24" class="layout-centre"/>`;
   return `<svg viewBox="0 0 ${g.screen.width} ${g.screen.height}" role="img" aria-labelledby="layout-scene-title layout-scene-desc" preserveAspectRatio="xMidYMid meet">
     <title id="layout-scene-title">Whole-screen layout draft</title>
-    <desc id="layout-scene-desc">Proposed layout in a ${g.screen.width} by ${g.screen.height} design viewport. Video centre ${rounded(g.reference.cx)}, ${rounded(g.reference.cy)}. Flubber centre ${rounded(g.feedback.cx)}, ${rounded(g.feedback.cy)}. ${video ? "Synthetic video geometry is shown." : "Actual video geometry and maximum animation bounds are not verified."}</desc>
+    <desc id="layout-scene-desc">Proposed layout in a ${g.screen.width} by ${g.screen.height} design viewport. Video centre ${rounded(g.reference.cx)}, ${rounded(g.reference.cy)}. Flubber centre ${rounded(g.feedback.cx)}, ${rounded(g.feedback.cy)}. ${video ? projection.inputKind === "live" ? "Verified video display geometry is shown in the proposed frame." : "Synthetic video geometry is shown." : "Actual video geometry and maximum animation bounds are not verified."}</desc>
     <rect x="0" y="0" width="${g.screen.width}" height="${g.screen.height}" class="layout-screen"/>
     ${video ? `<rect ${rectAttributes(video.bounds)} class="layout-video"/>` : ""}
     <rect ${rectAttributes(g.reference)} class="layout-reference"/>

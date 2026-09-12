@@ -43,6 +43,66 @@ qualify decoding, filesystem permissions, physical display geometry, installed
 Tauri, native playback, timing, LSL or XR execution. No Rust source changed in
 this continuation. Footer composition and master save/reopen remain P7/integration
 work; no completed master recipe or P6-06 headset claim follows from this receipt.
+## P4 live geometry and draft restoration — 2026-09-12
+
+Owner-ready Backend Verification slice, P4-02/P4-05/P4-06/P4-07, application
+source `f8654bf9b8a9f563de0eab2da6ef4f8140aeba48` on
+`codex/segment-p4-live-geometry`. It composes reviewed integration `64da370`,
+P1 `5988ce0`, P5 `c143398` and P7 `cc5cc83` through normal merges. This is an
+isolated handoff, not a canonical integration or complete P4 capability claim.
+
+The actual editor now subscribes to P1 workspace and P5 saved-feedback owners.
+P1's `projectWorkspaceVideoCatalogueSnapshotV1` validates the complete workspace
+contribution and preserves its outer revision before oriented display geometry
+is projected. Study-only edits therefore invalidate the same P1 dependency as
+catalogue edits while preserving the nested catalogue's own hash/revision.
+P5 recomputes its full saved animation envelope at the explicit draft CSS-pixel
+viewport side. P4 does not copy animation math or derive native media geometry.
+
+Every available video is contain-fitted at the fixed reference centre. Numeric
+edits, producer revisions and pending/withdrawn data invalidate the P4 projection;
+missing or malformed inputs clear affected bounds. Asynchronous stale catalogue
+reads cannot reinstall old geometry. The existing draft limits remain explicit:
+500 videos and oriented dimensions at most 32768; unsupported input rejects the
+whole geometry projection. Hidden feedback has no painted overlap. Inspection
+selection does not change saved settings, geometry or owner revision.
+
+P7 receives `getScreenLayoutContributionSnapshot()` with exactly revision,
+enabled, pending, contribution and dependencyRevisions. Q08 is still unanswered:
+automatic largest-video identification is required, but the metric (largest
+actual oriented-area video versus combined maximum width/height) is pending.
+Both candidates are calculated without silently selecting one or moving the
+draft. P4 stays enabled/pending with null contribution, and its accepted-domain
+validator rejects. No accepted desktop JSON type or Runner contract is invented.
+
+`getScreenLayoutDraftDocument()` and async
+`restoreScreenLayoutDraft(document,{isCurrent})` provide internal authoring
+round-trip only: exact schema `affect-research-screen-layout-draft`, version 1,
+and the complete existing draft fields. Unknown fields, unsupported versions,
+nonfinite numbers and oversized raw strings reject before mutation. Invalid
+numeric edits may be retained for repair. Restoration uses current connected
+dependencies, never imported receipts, and cancels after intervening edits or
+teardown. No file save/export UI, native write or accepted recipe is added.
+
+Final clean-source checks: **563/563 Node tests**, including **25 P4 tests**;
+desktop frontend **9-file** and Pages **196-file** closures. Existing bundle-size
+warning remains. The actual `bootResearchUi` Chrome fixture passes **118 checks
+across four captures** with synthetic catalogue events, real owner validators,
+saved-control edits, study-only revision changes, portrait geometry, physical
+conversion, missing inputs, stale restore, P7 rejection, focus and reflow. All
+four final screenshots were inspected; pane widths are 780/417 CSS px.
+
+Source/image hashes and the clean source commit are in
+`D:/GitHub/.affect-preview-checks/p4-live-20260912/final-chrome/receipt.json`.
+Reproduce using `scripts/qualification/screen-layout-live.mjs`. Node/build logs
+are `final-node.log`, `final-desktop.log`, `final-pages.log` in the parent.
+The preceding compactness check also passed 164 checks/12 captures after its
+synthetic case moved from source replacement to the public P1 event; that
+supplement predates the final P1 revision-domain merge. Initial live captures
+that tore down the pane before screenshot are superseded by `final-chrome`.
+Edge returned no receipt and remains unverified. No installed Tauri, actual
+video decoding, physical calibration/accessibility, Runner or publication claim.
+
 ## P2 producer/consumer closure receipt — 2026-09-12
 
 On the isolated P2 branch based at `714b22d`, added a coverage-aware, non-mutating

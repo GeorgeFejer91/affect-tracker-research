@@ -48,6 +48,28 @@ function separation(a, b) {
   return { overlaps: a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height, gap: Math.hypot(dx, dy) };
 }
 
+/** Geometry only: callers validate their owned media/envelope inputs first. */
+export function applyScreenLayoutFit(result, media, maximumFeedback, boundKind) {
+  if (!result.geometry) return result;
+  const { reference, feedback, screen, gap } = result.geometry;
+  result.geometry.maximumFeedback = maximumFeedback;
+  if (maximumFeedback && outside(maximumFeedback, screen)) {
+    result.issues.push(issue("diameter", "envelope-clips", "The maximum feedback bounds extend beyond the design viewport."));
+  }
+  for (const item of media) {
+    const fit = Math.min(reference.width / item.width, reference.height / item.height);
+    const bounds = rect(reference.cx, reference.cy, item.width * fit, item.height * fit);
+    const painted = maximumFeedback ?? feedback;
+    const check = painted.width === 0 && painted.height === 0
+      ? { overlaps: false, gap: null } : separation(bounds, painted);
+    result.videos.push({ id: item.id, label: item.label ?? item.id, displayWidth: item.width, displayHeight: item.height,
+      bounds, gap: check.gap, boundKind });
+    if (check.overlaps) result.issues.push(issue("offsetY", "video-overlap", `${item.label ?? item.id}: feedback bounds overlap the fitted video.`, item.id));
+    else if (check.gap !== null && check.gap + 1e-7 < gap) result.issues.push(issue("gap", "gap-too-small", `${item.label ?? item.id}: separation is below the requested minimum.`, item.id));
+  }
+  return result;
+}
+
 /** Fixture dependencies are deliberately synthetic until P1/P5 contracts are accepted. */
 export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } = {}) {
   const issues = [];
@@ -84,6 +106,7 @@ export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } 
   if (outside(reference, screen)) issues.push(issue("referenceWidth", "reference-clips", "The fixed reference extends beyond the design viewport. Edit its size or centre."));
   if (outside(feedback, screen)) issues.push(issue("offsetY", "footprint-clips", "The nominal Flubber footprint extends beyond the design viewport."));
 
+  let maximumFeedback = null;
   if (envelope !== null) {
     const valid = envelope.source === "synthetic" && typeof envelope.revision === "string" && envelope.revision.length > 0
       && ["left", "right", "top", "bottom", "paddingCssPx"].every(key => Number.isFinite(envelope[key]) && envelope[key] >= 0 && envelope[key] <= 100)
@@ -91,10 +114,8 @@ export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } 
     if (!valid) issues.push(issue("envelope", "invalid-envelope", "The synthetic envelope fixture is invalid; no maximum animation bound was applied."));
     else {
       const padding = envelope.paddingCssPx;
-      const maximum = { x: feedback.cx - diameter * envelope.left - padding, y: feedback.cy - diameter * envelope.top - padding,
+      maximumFeedback = { x: feedback.cx - diameter * envelope.left - padding, y: feedback.cy - diameter * envelope.top - padding,
         width: diameter * (envelope.left + envelope.right) + padding * 2, height: diameter * (envelope.top + envelope.bottom) + padding * 2 };
-      result.geometry.maximumFeedback = maximum;
-      if (outside(maximum, screen)) issues.push(issue("diameter", "envelope-clips", "The synthetic maximum feedback bounds extend beyond the design viewport."));
     }
   }
   if (!Array.isArray(media) || media.length > 500) {
@@ -102,6 +123,7 @@ export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } 
     return result;
   }
   const ids = new Set();
+  const validatedMedia = [];
   for (const item of media) {
     if (item?.source !== "synthetic" || typeof item.id !== "string" || !/^[a-z0-9-]{1,64}$/u.test(item.id) || ids.has(item.id)
       || ![item.width, item.height].every(value => Number.isFinite(value) && value > 0 && value <= 32768)) {
@@ -109,14 +131,9 @@ export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } 
       continue;
     }
     ids.add(item.id);
-    const fit = Math.min(rw / item.width, rh / item.height);
-    const bounds = rect(cx, cy, item.width * fit, item.height * fit);
-    const check = separation(bounds, result.geometry.maximumFeedback ?? feedback);
-    result.videos.push({ id: item.id, bounds, gap: check.gap, boundKind: envelope && result.geometry.maximumFeedback ? "synthetic-maximum" : "nominal-only" });
-    if (check.overlaps) issues.push(issue("offsetY", "video-overlap", `${item.id}: feedback bounds overlap the fitted video.`, item.id));
-    else if (check.gap + 1e-7 < gap) issues.push(issue("gap", "gap-too-small", `${item.id}: separation is below the requested minimum.`, item.id));
+    validatedMedia.push(item);
   }
-  return result;
+  return applyScreenLayoutFit(result, validatedMedia, maximumFeedback, maximumFeedback ? "synthetic-maximum" : "nominal-only");
 }
 
 /** Switching units changes only representation; rejected conversion retains the original draft. */
