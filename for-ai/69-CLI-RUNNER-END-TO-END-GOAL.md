@@ -87,12 +87,28 @@ than mixing versions. The downloaded PDF SHA-256 is
 `d982b1953026f3f6246efc9a75fb97fc02abfbe3a7fe0f0b1ad2390fccc7cf3c`.
 Source and inspected rendering are in
 `D:/GitHub/.affect-checks/tas20-german-source-20260912/`.
-S2 owns local import-file preparation and independent item/anchor verification;
-production CLI import remains pending. Retain raw supplied response codes;
+S2 prepared `tas-20-de-handrack-2016-local.csv` in that evidence directory:
+124978 bytes, SHA-256
+`7b32c878cf83d2b0348498355402f1a8d1db5853aeffeaf2f74863ea701eef92`.
+All 20 items and five anchors were independently compared with the original
+page. Root reproduced production CSV import using `sourceKind:researcherCsv`
+and the exact logical filename, giving definition SHA-256
+`c8a6c8c8609caa590124144ce03dd9fb12570edcd15fb556a4b4c32dbb3eb60d`.
+The external `tas20-de-import-receipt.json` and `root-import-review.json` retain
+input options and evidence limits. All four questionnaire inputs are now
+available for the local mock; production CLI import remains pending.
+Retain raw supplied response codes;
 instrument-scoring validation and public redistribution are not inferred from
 the researcher's local-use authorization. A second Greifswald download returned
 bot-challenge HTML, not a usable PDF, and must not become an input.
 No fabricated translation or blank template may stand in for the instrument.
+
+The researcher subsequently requested German TAS as a preconfigured Planner
+asset in the integration task. The dated amendment in
+[70](70-RESEARCH-PROVENANCE.md) allocates a local researcher-installed preset
+to S2/main without granting public reusable-preload eligibility. This added
+convenience does not replace the required production CLI authoring transcript
+or change the requested experiment. Local source preparation remains complete.
 
 Runner current-master runtime consumption and native execution gates require
 fresh inspection by the Runner owner. Previous strict reader or legacy-package
@@ -174,3 +190,26 @@ EOF, wrong session, duplicate output, rejection, invalid UTF-8 and timeout.
 Those tests validate the driver itself, not a production Planner run. The initial
 5-second fixture startup allowance expired under concurrent build load; the
 successful checks use 30 seconds and assert each distinct expected failure.
+
+### First independently verified production CLI milestone
+
+Main's clean source `680842aee1e01e0c75500c64250dba10130e0663` produced CLI
+executable SHA-256
+`0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
+Root's external driver launched it, verified the exact clean ready identity,
+ran eight commands and exited successfully. The batch set nine P7 policy fields;
+root independently compared every readback value, confirmed unchanged read-only
+playback, and checked that invalid numeric text and read-only edits rejected
+without advancing revision. Final authored revision was1; owned PID26704 exited.
+Evidence: `D:/GitHub/.affect-checks/root-cli-policy-680842a/` contains the driver
+receipt, synced transcript and independent `readback-review.json`. Transcript
+SHA-256:
+`2b3f0ff9ccac74c6582a1c97fc91c72bae63b1ee0a655b8dc67b2e01c564f72a`.
+
+Main separately verified empty EOF, malformed-input recovery and fatal oversized
+frame exit2 after fixing a Windows/Tauri error-exit bug. Its receipts are under
+`D:/GitHub/.affect-preview-checks/planner-cli-{680842a,lifecycle-680842a}/`.
+This establishes actual native hidden Planner policy command execution. It does
+not establish all-segment integration, real media import, final recipe export,
+visible UI parity or Runner execution. Main may now rebuild the candidate to
+integrate the ready owner handoffs and consequential file/media operations.

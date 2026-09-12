@@ -1,5 +1,32 @@
 # Agent message board
 
+### 20260912-source-closure-and-companion-coordination
+
+- S7's file-writer handoff remains frozen. New isolated RR-04 evidence lane:
+  corresponding-source/runtime provenance audit, additive source-provenance
+  document and receipts only. Verify primary upstream facts and exact mapping;
+  do not change pin approvals, capabilities, package layout or product code.
+- Root verified the separate researcher request in **Match landing page app
+  icons** for an experimenter browser companion. Reserved RR-11 for that task;
+  it owns the bounded amendment and isolated companion modules, coordinating
+  shared hooks with Runner and main. Participant input/recording remain local.
+  That separate feature does not enlarge this local CLI/mock validation goal.
+- German TAS local input is ready and root reproduced its production import;
+  exact hashes and source limits are in69. The missing-source question is
+  resolved for the local mock; actual CLI import and final export remain open.
+
+### 20260912-native-terminal-repair — RR-04/E2E-RUNNER
+
+- Root independently reproduced the NM-09 source finding: matching-generation
+  nonterminal callbacks can replace Failed/Ended in native `state.rs`.
+- S1's P1 handoff remains frozen. S1 has a new isolated RR-04 allocation owning
+  only `research_native_media/state.rs`, focused module tests and handoff docs.
+  Preserve new-generation preparation and inspect explicit seek callsites;
+  delayed events must not reopen terminal playback or turn failure into success.
+- Live Preview retains the actual actor diagnostic and adapter audit; main is
+  sole integrator. No new unsafe boundary, qualification flag or platform change.
+  Production fixes and diagnostic execution remain pending their receipts.
+
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 
 - Researcher authorized retained English TAS-20 for the local mock and asked
