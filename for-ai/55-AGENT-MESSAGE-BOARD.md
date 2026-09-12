@@ -194,6 +194,14 @@ file; follow the integration-owner collection procedure in the workflow.
   for domain preparation, separately from P7 confirmation/save.
 - Complete master codec/save/reopen evidence remains in progress with S7. This
   is not a proposal-only stop or a dependency on actual Runner implementation.
+- Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
+  master XR tests now pass: both P1/P3 versions, complete profiles/feedback,
+  all variants/language paths, exact canonical/disk readback, explicit exclusion,
+  target/integrity rejection, pending editable restore and independent processes.
+  Three shared `planner-xr-master-v1*` fixtures provide native consumers the
+  complete current-location master, reproduction matrix and resolved XR layout.
+  Shared root-app master restoration remains integration-owned; its actual UI
+  receipt is still pending. Disk adapter evidence is not an OS-picker check.
 - Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
   resolver now uses P1's generic validator/projection. Actual owner V2 fixture
   proves two locations sharing content retain both declarations while live and
