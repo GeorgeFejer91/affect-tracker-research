@@ -150,7 +150,11 @@ fn launch(
                 (if cli_enabled {
                     WorkspaceService::new(app_data_dir.clone())
                 } else {
-                    WorkspaceService::with_default_workspace(app_data_dir.clone())
+                    // Companion programs share the Planner's default project,
+                    // while their WebViews, preferences and sessions stay separate.
+                    WorkspaceService::with_default_workspace(
+                        app.path().data_dir()?.join("io.github.georgefejer91.affecttracker"),
+                    )
                 })
                 .map_err(|error| std::io::Error::other(error.message))?,
             );

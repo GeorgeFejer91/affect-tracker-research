@@ -435,3 +435,7 @@ other tasks stay idle. Planner validation is passed for this scenario. Actual
 Runner playback, native combined screenshots and XDF remain open, with qualified
 Start still disabled. Continue at the native Runner gate; do not repeat the
 passed Planner scenario unless a relevant change invalidates it.
+
+## Current user amendment — 2026-09-13
+
+The active goal now includes fully keyboard-operable installed Runner, a PyAutoGUI test sequence exclusively under for-ai, and segment-by-segment metadata completeness. No delegation. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for the current primary checklist; full actual execution remains unverified.

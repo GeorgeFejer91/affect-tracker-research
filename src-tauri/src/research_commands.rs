@@ -969,10 +969,11 @@ pub async fn research_load_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe file."))?;
-        let document = read_supported_planner_recipe_path(&path)?;
+        let mut document = read_supported_planner_recipe_path(&path)?;
         if remember_candidate {
             app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
                 .selected(&path, &document)?;
+            attach_runner_project(&app, &mut document)?;
         }
         Ok(Some(document))
     })
@@ -998,7 +999,11 @@ pub async fn research_runner_previous_experiment(
         let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
         match (action.as_str(), source_sha256.as_deref()) {
             ("status", None) => Ok(recent.status()),
-            ("load", None) => recent.load(),
+            ("load", None) => {
+                let mut document = recent.load()?;
+                attach_runner_project(&app, &mut document)?;
+                Ok(document)
+            }
             ("confirm", Some(hash)) => recent.confirm(hash),
             _ => Err(CommandError::invalid_contract(
                 "Unknown previous experiment action.",
@@ -1007,6 +1012,16 @@ pub async fn research_runner_previous_experiment(
     })
     .await
     .map_err(CommandError::io)?
+}
+
+fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {
+    let directory = app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
+        .selected_directory()?;
+    let workspace = app.state::<Arc<WorkspaceService>>();
+    let runtime = app.state::<Arc<crate::research_native_protocol::runtime::PackageProtocolRuntime>>();
+    let status = runtime.while_idle(|| workspace.select(directory))?;
+    document["workspace"] = serde_json::to_value(status).map_err(CommandError::io)?;
+    Ok(())
 }
 
 #[tauri::command]

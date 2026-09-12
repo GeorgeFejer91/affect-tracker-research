@@ -134,3 +134,29 @@ pending at boot and ready on the next request. Runner build/boundary checks pass
 Evidence: `D:/GitHub/.affect-checks/runner-readiness-refresh-ui-01/receipt.json`.
 This fixes stale frontend state; actual native startup success remains a separate
 claim and is not inferred from the synthetic transport test.
+
+## Keyboard, recipe-root loading and current roadmap — 2026-09-13
+
+Added production questionnaire keyboard handling: choices use arrows/Home/End,
+Enter commits and advances after native acknowledgement, typed fields retain
+normal typing and Shift+Enter newlines, and final Submit remains explicit.
+EN/DE production-frontend scenarios each pass 85 assertions with synthetic native
+transport; a retained mouse-flow regression also passes. Native-enabled Windows
+build succeeds, as do three native bookmark/root tests. These are separate from
+full installed keyboard and XDF qualification.
+
+Picker/previous-file loading now selects the loaded JSON parent as the project
+root under native idle authority and returns its workspace receipt. GUI default
+projects share the Planner's root for convenience; exact JSON loading does not
+depend on it. The portable copy in `D:/Downloads/Mock Dictator Experiment/` has
+the unchanged JSON and exact declared video in `assets/stimuli/`.
+
+The agent-only `for-ai/runner_keyboard_smoke.py` uses real PyAutoGUI keys and
+read-only UI Automation checks; it is absent from app dependency/package inputs.
+Live attempts proved loading/observability but stopped on a test participant
+selection gap (corrected) and foreground changes. No complete questionnaire run,
+actual playback or XDF claim. The active owner/metadata/checklist authority is
+`for-ai/72-RUNNER-FINAL-VALIDATION.md`. Production Start qualification and the
+requested separation of questionnaire presentation from video preparation are
+still open. Do not label the current native-enabled development build a final
+research-qualified release.

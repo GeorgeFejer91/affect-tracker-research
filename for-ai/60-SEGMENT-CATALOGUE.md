@@ -661,3 +661,7 @@ Pending branches observed 2026-09-11 are not integrated completion evidence:
 Refresh HEAD/status and the integration board before each pass. Re-audit pending
 work on collection rather than reimplementing it. Update only affected rows with
 exact evidence; this 2026-09-11 baseline is not a perpetual live audit.
+
+## Current user amendment — 2026-09-13
+
+The latest user requires the canonical JSON to contain every segment's experiment-defining metadata and explicit asset identities/locations; Runner must reconstruct without a shared default-folder dependency. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for the current owner-by-owner contract inventory and evidence checklist. Existing Planner authoring completion does not prove complete Runner execution.

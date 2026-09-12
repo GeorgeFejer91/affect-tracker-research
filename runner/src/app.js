@@ -9,6 +9,7 @@ import { createResearchPreview } from "../../site/src/research/preview.js";
 import { deriveParticipantRecord } from "../../site/src/research/identity.js";
 import { validateQuestionnaireAnswers } from "../../site/src/research/questionnaires.js";
 import { createRunnerPresentation } from "./presentation.js";
+import { createQuestionnaireKeyboard } from "./questionnaire-keyboard.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
 import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
@@ -31,6 +32,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
   let previousExperiment = null;
+  let focusAfterAction = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -63,6 +65,11 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await presentation.leave(); await refreshParticipantHistory(); renderControls();
   } });
   const presentation = createRunnerPresentation(root, { invoke, windowObject, isActive: () => protocol.active });
+  const questionnaireKeyboard = createQuestionnaireKeyboard(query("runner-questionnaire-form"), {
+    items: query("runner-questionnaire-items"), next: query("runner-questionnaire-next"), submit: query("runner-questionnaire-submit"),
+    ready: () => !destroyed && !busy && !!questionnaire && (!questionnaire.master || masterProtocol.status?.phase === "questionnaire"),
+    commit: commitQuestionnaireDraft,
+  });
   const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
   const participantPicker = createParticipantPicker(root, { onChange: commit => {
     invalidate(); refreshTimeline();
@@ -85,7 +92,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (destroyed) return;
       busy = true; query("runner-error").hidden = true; renderControls();
       try { await operation(); } catch (error) { if (!destroyed) fail(error); }
-      finally { busy = false; if (!destroyed) renderControls(); }
+      finally { busy = false; if (!destroyed) { renderControls(); focusAfterAction?.focus(); focusAfterAction = null; } }
     });
     return queue;
   }
@@ -94,6 +101,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
   }
   function clearQuestionnaire() {
+    questionnaireKeyboard.reset();
     questionnaire?.presenter?.destroy();
     questionnaire = null;
   }
@@ -115,6 +123,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function destroy() {
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
     clearQuestionnaire();
+    questionnaireKeyboard.destroy();
     listeners.forEach((remove) => remove()); participantPicker.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
@@ -149,9 +158,11 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       query("runner-questionnaire-submit").disabled = disabled;
       query("runner-questionnaire-next").disabled = disabled;
       query("runner-questionnaire-previous").disabled = disabled || questionnaire.itemIndex === 0;
+      if (!disabled) questionnaireKeyboard.focusInitial();
     }
   }
   function renderLanguage() {
+    const choosingInPreparation = query("runner-language").contains(document.activeElement);
     for (const id of ["runner-language", "runner-preview-language"]) {
     const host = query(id); host.replaceChildren();
     if (!recipe) return;
@@ -163,6 +174,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     }
     }
     renderControls();
+    if (choosingInPreparation) (query("runner-language").querySelector("button") ?? query("runner-prepare")).focus();
   }
   async function refreshTimeline() {
     const host = query("runner-sequence-timeline"); host.replaceChildren();
@@ -356,6 +368,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         questionnaire = {definition:step.payload.definition,position:status.position,answers:structuredClone(status.answers),master:true,version:plan.version};
         text("runner-questionnaire-title", questionnaire.definition.title);
         query("runner-questionnaire").lang = questionnaire.definition.language;
+        text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de")
+          ? "Pfeiltasten: Antwort wählen · Enter: weiter · Tab: navigieren · Umschalt+Enter: Zeilenumbruch im Textfeld"
+          : "Arrow keys: choose · Enter: next · Tab: navigate · Shift+Enter: newline in text fields");
         text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items · Answer every item to continue`);
         questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
         text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
@@ -453,11 +468,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       : await invoke("research_load_planner_recipe");
     if (!loaded) return;
     const receipt = loaded.document;
+    workspace = loaded.workspace ?? await invoke("research_workspace_status");
+    text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
     const adopted = await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
     if (destroyed || adopted === false) return;
     if (recipe?.canonicalSourceByteSha256 !== receipt.canonicalSourceByteSha256) { invalidate(); recipe = null; throw new Error("Native and frontend package bytes disagree."); }
     try { previousExperiment = await invoke("research_runner_previous_experiment", { action: "confirm", sourceSha256: receipt.canonicalSourceByteSha256 }); }
     catch { throw new Error("Experiment loaded, but its previous-file shortcut could not be saved."); }
+    focusAfterAction = query("runner-variant-field").hidden ? query("runner-participant") : query("runner-variant");
   }
   listen(query("runner-open"), "click", () => action(() => loadExperiment()));
   listen(query("runner-load-previous"), "click", () => action(() => loadExperiment(true)));
@@ -500,17 +518,21 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-stop"), "click", () => query("runner-stop-dialog").showModal());
   listen(query("runner-stop-cancel"), "click", () => query("runner-stop-dialog").close());
   listen(query("runner-stop-confirm"), "click", () => { query("runner-stop-dialog").close(); action(() => protocol.finish("stopEarly")); });
-  listen(query("runner-questionnaire-form"), "change", (event) => {
+  async function commitQuestionnaireDraft(target) {
     const current = questionnaire;
-    if (!current || busy || (!event.target.dataset.answerItem && !event.target.dataset.formItem)) return;
-    if (!current.presenter) current.answers[event.target.dataset.answerItem] = [2, 3].includes(current.version)
-      ? {kind:"singleChoice",optionId:event.target.value} : event.target.value;
-    action(async () => {
+    if (!current || busy || (!target.dataset.answerItem && !target.dataset.formItem)) return false;
+    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3].includes(current.version)
+      ? {kind:"singleChoice",optionId:target.value} : target.value;
+    let accepted = false;
+    await action(async () => {
       if (questionnaire !== current) return;
       const detail = questionnaireDetail(current, true);
       await protocol.questionnaireDraft(detail);
+      accepted = questionnaire === current;
     });
-  });
+    return accepted;
+  }
+  listen(query("runner-questionnaire-form"), "change", event => { void commitQuestionnaireDraft(event.target); });
   listen(query("runner-questionnaire-form"), "input", () => {
     if (questionnaire?.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
   });
@@ -585,5 +607,5 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const controller = Object.freeze({ adoptRecipe, get recipe() { return recipe; }, get selection() { return selection; },
     destroy,
   });
-  root.runner = controller; return controller;
+  root.runner = controller; query("runner-open").focus(); return controller;
 }

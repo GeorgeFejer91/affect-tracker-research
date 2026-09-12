@@ -88,6 +88,14 @@ impl RunnerRecentExperiment {
         Ok(document)
     }
 
+    pub fn selected_directory(&self) -> ResearchResult<PathBuf> {
+        let pending = self.pending.lock().map_err(|_| {
+            CommandError::forbidden("Previous experiment state is unavailable.")
+        })?;
+        pending.as_ref().and_then(|(path, _)| path.parent()).map(Path::to_owned)
+            .ok_or_else(|| CommandError::forbidden("Load an experiment file first."))
+    }
+
     /// Persist only after the frontend has accepted the exact native source.
     pub fn confirm(&self, source_sha256: &str) -> ResearchResult<Value> {
         let mut pending = self
@@ -165,8 +173,10 @@ mod tests {
         fs::write(&path, FIRST).unwrap();
         let recent = RunnerRecentExperiment::new(root.0.clone());
         assert_eq!(recent.status()["available"], false);
+        assert!(recent.selected_directory().is_err());
         let first = read_supported_planner_recipe_path(&path).unwrap();
         recent.selected(&path, &first).unwrap();
+        assert_eq!(recent.selected_directory().unwrap(), root.0);
         assert_eq!(recent.status()["available"], false);
         assert!(recent.confirm("wrong-source").is_err());
         assert_eq!(
@@ -175,6 +185,7 @@ mod tests {
         );
         let restarted = RunnerRecentExperiment::new(root.0.clone());
         assert_eq!(restarted.load().unwrap(), first);
+        assert_eq!(restarted.selected_directory().unwrap(), root.0);
         fs::write(&path, SECOND).unwrap();
         let changed = restarted.load().unwrap();
         assert_ne!(hash(&changed), hash(&first));

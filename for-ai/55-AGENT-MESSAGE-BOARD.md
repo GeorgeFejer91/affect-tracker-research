@@ -5545,3 +5545,7 @@ pending at boot and ready on the next request. Runner build/boundary checks pass
 Evidence: `D:/GitHub/.affect-checks/runner-readiness-refresh-ui-01/receipt.json`.
 This fixes stale frontend state; actual native startup success remains a separate
 claim and is not inferred from the synthetic transport test.
+
+## Current user amendment — 2026-09-13
+
+Root continues R1/RR-01/02/06 plus named P1/shared native loading seams: keyboard navigation, loaded-JSON project root and standardized metadata completeness. User clarified that PyAutoGUI belongs only in for-ai as a test utility. [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) records requirements and checked versus pending evidence. No other task is being delegated work.

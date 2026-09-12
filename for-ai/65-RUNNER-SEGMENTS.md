@@ -570,3 +570,7 @@ with synthetic native transport across two viewport widths, visually inspected
 screenshots, and Runner production build/boundary checks. See
 [release validation](../docs/release-validation.md). Installed native UI validation
 and the existing playback/XDF release gates remain open.
+
+## Current user amendment — 2026-09-13
+
+Root alone owns current Runner closure. Actual keyboard operation and a test-only PyAutoGUI sequence are required, alongside JSON-relative project resolution and complete real XDF verification. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md). The questionnaire definitions are embedded; initial-form execution gating remains open.

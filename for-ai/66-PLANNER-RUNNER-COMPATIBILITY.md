@@ -155,3 +155,7 @@ an immutable naming receipt; Planner emission base names and original JSON remai
 intact. XDF policy/destination belong to Runner. Ledger65 binds software evidence
 and remaining native/master qualification. Frozen legacy recoveries preserve names
 and paths; nothing is silently migrated or overwritten.
+
+## Current user amendment — 2026-09-13
+
+The JSON is the complete experiment authority; a common default folder must not be required. Use declared IDs, relative asset locations, hashes and owner metadata, with explicit versioned rules for any new locator semantics. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for current portable-path rules and consumer verification gaps.
