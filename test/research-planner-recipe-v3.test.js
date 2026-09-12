@@ -11,40 +11,14 @@ import { createPackageExportController } from "../site/src/research/package-expo
 import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
 import { prepareSupportedBrowserPlannerRecipeSave } from "../site/src/research/planner-recipe-file.js";
 
-// Synthetic contract fixture, not a native renderer receipt or qualification.
-async function controlledCore(name = "locations", explicit = false) {
-  const legacy = JSON.parse(await readFile(new URL(`./fixtures/planner-recipe-v2-${name}.canonical.json`, import.meta.url), "utf8"));
-  const { integrity, ...core } = structuredClone(legacy);
-  core.version = 3;
-  core.recipeId = `controlled-master-${name}`;
-  core.segments.P1.version = 3;
-  const catalogue = core.segments.P1.videoCatalogue;
-  catalogue.version = 3;
-  for (const entry of catalogue.entries) {
-    const width = entry.geometry.displayWidthPx, height = entry.geometry.displayHeightPx;
-    const metadata = {
-      schema: "affect-research-native-display-metadata-receipt", version: 2,
-      encodedWidthPx: width, encodedHeightPx: height, pixelAspectRatio: { numerator: 1, denominator: 1 },
-      sourceOrientation: { stream: explicit ? { status: "explicit", rotationDegrees: 0 } : { status: "absent" }, media: { status: "absent" } },
-      snapshotWidthPx: width, snapshotHeightPx: height, snapshotPixelAspectRatio: { numerator: 1, denominator: 1 },
-      snapshotInterpretation: "pre-renderer-square-pixel",
-      renderer: { sinkFactory: "d3d11videosink", configuredRotationDegrees: 0, readbackRotationDegrees: 0 },
-    };
-    entry.geometry = { status: "verified", source: "native-gstplay-controlled-renderer",
-      displayWidthPx: width, displayHeightPx: height, displayAspect: entry.geometry.displayAspect,
-      rotationDegrees: 0, pixelAspectRatio: { numerator: 1, denominator: 1 },
-      metadataInterpretation: "controlled-renderer-and-pre-sink-square-pixel-snapshot", nativeDisplayMetadata: metadata };
-  }
-  const { integritySha256, ...catalogueCore } = catalogue;
-  catalogue.integritySha256 = await canonicalSha256(catalogueCore);
-  return { core, legacy };
-}
+import { controlledCore } from "./fixtures/planner-recipe-v3-fixture.js";
 
 test("master3 preserves controlled provenance across canonical bytes, selection and both layout targets", async () => {
   for (const name of ["locations", "xr"]) {
     const { core, legacy } = await controlledCore(name);
     const recipe = await compilePlannerRecipeV3(core);
     const source = await serializePlannerRecipeV3(recipe), bytes = new TextEncoder().encode(source);
+    assert.equal(source, await readFile(new URL(`./fixtures/planner-recipe-v3-${name}.canonical.json`, import.meta.url), "utf8"));
     assert.equal(recipe.integrity.algorithmVersion, "planner-recipe-reproduction-v4");
     assert.equal((await parsePlannerRecipeV3(bytes)).canonicalSourceText, source);
     assert.equal((await parseSupportedPlannerRecipe(bytes)).recipe.version, 3);
@@ -52,13 +26,17 @@ test("master3 preserves controlled provenance across canonical bytes, selection 
     await assert.rejects(parsePlannerRecipeV2(bytes));
     for (const id of ["P2", "P3", "P4", "P5", "P6"]) assert.deepEqual(recipe.segments[id], legacy.segments[id]);
     const matrix = await reproducePlannerRecipeV3(recipe);
+    assert.equal(`${canonicalJson(matrix)}\n`, await readFile(new URL(`./fixtures/planner-recipe-v3-${name}-reproduction.json`, import.meta.url), "utf8"));
+    const selectionHashes = [];
     for (const { selectionSha256, ...selector } of matrix.cases) {
       if (selector.presentationTarget !== recipe.presentationTarget) continue;
       const selected = await reconstructPlannerRecipeSelectionV3(recipe, selector);
       assert.equal(selected.version, 3);
       assert.deepEqual(selected.assets, recipe.segments.P1.videoCatalogue.entries);
       assert.equal(selected.assets[0].geometry.nativeDisplayMetadata.sourceOrientation.stream.status, "absent");
+      selectionHashes.push({ selector, sha256: await canonicalSha256(selected) });
     }
+    assert.equal(`${canonicalJson(selectionHashes)}\n`, await readFile(new URL(`./fixtures/planner-recipe-v3-${name}-selection-hashes.json`, import.meta.url), "utf8"));
   }
 });
 

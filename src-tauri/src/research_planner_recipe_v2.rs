@@ -8,8 +8,12 @@ use crate::research_planner_recipe::{
 };
 use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_questionnaire_recipe_v2::QuestionnaireRecipeContributionV2;
-use crate::research_workspace_contribution::{validate_workspace_contribution, WorkspaceContribution};
-use crate::research_workspace_contribution::v3::{validate_workspace_contribution_v3, WorkspaceContributionV3};
+use crate::research_workspace_contribution::v3::{
+    validate_workspace_contribution_v3, WorkspaceContributionV3,
+};
+use crate::research_workspace_contribution::{
+    validate_workspace_contribution, WorkspaceContribution,
+};
 use owners::hash;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -63,13 +67,17 @@ impl PreparedWorkspace {
             Self::Legacy(value) => owners::media(value),
             Self::Controlled(value) => {
                 let mut seen = std::collections::BTreeSet::new();
-                value.video_catalogue.entries.iter()
+                value
+                    .video_catalogue
+                    .entries
+                    .iter()
                     .filter(|entry| seen.insert(&entry.asset_id))
                     .map(|entry| crate::research_desktop_layout::MediaGeometry {
                         asset_id: entry.asset_id.clone(),
                         display_width: entry.geometry.display_width_px() as f64,
                         display_height: entry.geometry.display_height_px() as f64,
-                    }).collect()
+                    })
+                    .collect()
             }
         }
     }
@@ -266,7 +274,11 @@ impl PlannerRecipeV2 {
         Ok(self.prepare_version(version)?.matrix)
     }
 
-    pub(crate) fn reconstruct_selection_version(&self, selector: &Value, version: u32) -> ResearchResult<Value> {
+    pub(crate) fn reconstruct_selection_version(
+        &self,
+        selector: &Value,
+        version: u32,
+    ) -> ResearchResult<Value> {
         let prepared = self.prepare_version(version)?;
         let keys = selector
             .as_object()
