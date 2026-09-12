@@ -22,10 +22,12 @@ use crate::research_native_media::{
 };
 #[cfg(test)]
 use crate::research_participant::TransientParticipant;
-use crate::research_planner_recipe::{parse_planner_recipe_bytes, SavedPlannerRecipeReceipt};
+use crate::research_planner_recipe::SavedPlannerRecipeReceipt;
 use crate::research_planner_recipe_file::{
-    planner_recipe_filename, read_planner_recipe_path, write_selected_planner_recipe,
+    planner_recipe_filename, read_supported_planner_recipe_path,
+    write_selected_supported_planner_recipe,
 };
+use crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes;
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 #[cfg(test)]
 use crate::research_protocol::{
@@ -936,7 +938,7 @@ pub async fn research_load_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe file."))?;
-        Ok(Some(read_planner_recipe_path(&path)?))
+        Ok(Some(read_supported_planner_recipe_path(&path)?))
     })
     .await
     .map_err(CommandError::io)?
@@ -956,13 +958,13 @@ pub async fn research_save_planner_recipe(
         ));
     }
     tauri::async_runtime::spawn_blocking(move || {
-        let document = parse_planner_recipe_bytes(source_text.as_bytes())?;
+        let document = parse_supported_planner_recipe_bytes(source_text.as_bytes())?;
         let Some(selection) = app
             .dialog()
             .file()
             .add_filter("Experiment recipe", &["json"])
             .set_file_name(planner_recipe_filename(
-                &document.recipe.recipe_id,
+                document.recipe.recipe_id(),
                 time::OffsetDateTime::now_utc(),
             )?)
             .blocking_save_file()
@@ -973,7 +975,7 @@ pub async fn research_save_planner_recipe(
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe destination."))?;
         Ok(Some(
-            write_selected_planner_recipe(&path, &source_text)
+            write_selected_supported_planner_recipe(&path, &source_text)
                 .map_err(|error| error.into_command_error())?,
         ))
     })

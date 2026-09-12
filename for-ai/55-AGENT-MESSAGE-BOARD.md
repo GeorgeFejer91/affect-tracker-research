@@ -4701,3 +4701,18 @@ by this build-option change.
   exception or public schema change. Same isolated import lane, parent e8d0384.
 - Actual P2 allocator -> prepared import -> exact saved bytes passes, while
   add+edit same batch rejects import. Focused P2/import/save/restore39/39.
+
+### 20260912-s7-native-gui-supported-files
+
+- Main allocated P7-03/P7-04/P7-05/CLI-P7 native GUI file seam at 9843efc;
+  isolated branch codex/segment-p7-native-gui. Backend Verification compares
+  old GUI v1-only routing with supported master-v1/v2 intake and exact save.
+- Added explicit supported path dispatcher and selected-destination writer;
+  old v1 functions remain strict. Existing load/save commands use supported
+  parsing, retain legacy-package Open, Planner save role and dialog cancellation.
+  Shared staging/atomic no-clobber/readback authority and receipt are unchanged.
+- 16 native file tests and 22 focused browser/architecture tests pass; rustfmt
+  and diff checks pass. Two existing geometry dead-code warnings remain.
+  Log D:/GitHub/.affect-checks/p7-native-gui-files.log. Cargo target released.
+- Main owns integration/app adapters and final picker/installed qualification;
+  no lib.rs, Runner, media or runtime authority changes. No release claim.
