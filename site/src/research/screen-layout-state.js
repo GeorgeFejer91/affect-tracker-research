@@ -92,13 +92,17 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
     },
     async prepareContribution({ isCurrent = () => true } = {}) {
       const expectedRevision = revision, expectedOperation = ++operation;
-      const value = await prepareDraft(structuredClone(draft));
+      let value;
+      try { value = await prepareDraft(structuredClone(draft)); }
+      catch (error) { current(expectedRevision, expectedOperation, isCurrent); throw error; }
       current(expectedRevision, expectedOperation, isCurrent);
       return prepared(value);
     },
     async restoreContribution(value, { isCurrent = () => true, contentOnly = false, ...dependencies } = {}) {
       const expectedRevision = revision, expectedOperation = ++operation;
-      const validated = await validateContribution(structuredClone(value), dependencies);
+      let validated;
+      try { validated = await validateContribution(structuredClone(value), dependencies); }
+      catch (error) { current(expectedRevision, expectedOperation, isCurrent); throw error; }
       const next = desktopLayoutDraftFromProfile(validated);
       const nextProjection = resolve(next);
       current(expectedRevision, expectedOperation, isCurrent);

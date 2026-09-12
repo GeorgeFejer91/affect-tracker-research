@@ -112,3 +112,14 @@ test("historical internal draft reader preserves v1 and restores the new policy 
   assert.equal(h.state.getSnapshot().pending, true);
   await assert.rejects(h.state.restoreDraft({ ...old, draft: { ...old.draft, referencePolicy: "largest-oriented-area" } }));
 });
+
+test("late validation failure cannot report an old field after a newer edit", async () => {
+  let reject;
+  const delayed = new Promise((_resolve, fail) => { reject = fail; });
+  const h = harness(); h.delay(delayed);
+  const preparing = h.state.prepareContribution();
+  h.state.replaceDraft({ ...h.state.draft, offsetX: 21 });
+  reject(Object.assign(new TypeError("old field failure"), { field: "diameter", code: "range" }));
+  await assert.rejects(preparing, error => /stale/u.test(error.message) && error.field === undefined);
+  assert.equal(h.state.draft.offsetX, 21);
+});
