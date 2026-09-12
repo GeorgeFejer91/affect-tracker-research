@@ -34,7 +34,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
   }
   const validateOwned = (value, options = {}) => validateScreenLayoutContribution(value, contentDependencies(options));
   state = createScreenLayoutState({
-    resolve: next => binding ? binding.resolve(next) : resolveScreenLayoutDraft(next, fixtureInputs),
+    resolve: (next, options) => binding ? binding.resolve(next, options) : resolveScreenLayoutDraft(next, fixtureInputs),
     onChange,
     prepareDraft: next => {
       if (!binding) throw new TypeError("Connect the verified video library and saved feedback before preparing layout.");
@@ -157,6 +157,24 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     get draft() { return { ...draft }; },
     getSnapshot: state.getSnapshot,
     getDraftDocument: state.getDraftDocument,
+    async stageAuthoringDraft(transform, options) {
+      let nextDraft;
+      const staged = await state.stageDraft(next => {
+        const result = transform(next, (candidate, units) => {
+          if (!binding) throw new TypeError("Verified live video geometry is required to convert CLI layout units.");
+          return binding.convertUnits(candidate, units);
+        });
+        nextDraft = structuredClone(result);
+        return result;
+      }, options);
+      return Object.freeze({ isCurrent: staged.isCurrent,
+        commit() { staged.commit(); draft = nextDraft; conversionIssues = []; },
+        afterCommit() {
+          try { staged.afterCommit(); }
+          finally { draft = state.draft; syncFields(); render(); }
+        },
+      });
+    },
     validateContribution: validateOwned,
     async prepareContribution(options) {
       try {

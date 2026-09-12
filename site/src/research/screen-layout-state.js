@@ -76,6 +76,45 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
       next = validateScreenLayoutDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: 2, draft: next }).draft;
       return commit(next, resolve(next));
     },
+    async stageDraft(transform, { isCurrent, signal } = {}) {
+      if (typeof transform !== "function" || typeof isCurrent !== "function" || !signal) throw new TypeError("Layout staging requires its session lifetime.");
+      const expectedRevision = revision, expectedOperation = operation;
+      const expectedIdentity = dependencyIdentity;
+      const check = () => {
+        const identity = alive ? canonicalJson(resolve(draft, { observe: false }).dependencyIdentity ?? null) : null;
+        if (!alive || signal.aborted || !isCurrent() || revision !== expectedRevision
+          || operation !== expectedOperation || identity !== expectedIdentity) throw new Error("Screen layout staging became stale.");
+      };
+      check();
+      const next = validateScreenLayoutDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: 2,
+        draft: transform(structuredClone(draft)) }).draft;
+      const nextProjection = structuredClone(resolve(next, { observe: false }));
+      const nextIdentity = canonicalJson(nextProjection.dependencyIdentity ?? null);
+      const changed = canonicalJson(next) !== canonicalJson(draft) || nextIdentity !== expectedIdentity;
+      if (changed && revision === Number.MAX_SAFE_INTEGER) throw new RangeError("Screen layout revision limit reached.");
+      await Promise.resolve();
+      check();
+      let consumed = false, published = false;
+      return Object.freeze({
+        isCurrent() { try { check(); return !consumed; } catch { return false; } },
+        commit() {
+          // Shared publication preflights every guard before committing any
+          // owner. All validation, cloning and geometry work is already done.
+          consumed = true;
+          if (changed) {
+            draft = next; projection = nextProjection; dependencyIdentity = nextIdentity;
+            revision += 1; operation += 1; contribution = null;
+          }
+        },
+        afterCommit() {
+          if (!consumed || published || !alive) return;
+          published = true;
+          // Another owner's post-commit publication may already have refreshed
+          // dependencies. Never notify consumers with the older staged receipt.
+          if (changed) onChange(snapshot());
+        },
+      });
+    },
     refreshDependencies() { return commit(draft, resolve(draft)); },
     async restoreDraft(document, { isCurrent = () => true } = {}) {
       const validated = validateScreenLayoutDraftDocument(document);

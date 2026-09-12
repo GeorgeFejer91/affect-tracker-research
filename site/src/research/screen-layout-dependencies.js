@@ -118,7 +118,7 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
       return media.map(v => ({ assetId: v.id, displayWidth: v.width, displayHeight: v.height }));
     },
     refreshFeedback() { if (alive) onChange(); },
-    resolve(draft) {
+    resolve(draft, { observe = true } = {}) {
       let result = resolveScreenLayoutDraft(draft);
       result.inputKind = "live";
       result.dependencyRevisions = [];
@@ -166,7 +166,8 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
             || typeof e.configurationKey !== "string" || !e.configurationKey.length
             || !Number.isFinite(e.halfExtentCssPx * 2) || e.halfExtentCssPx < 0) throw new TypeError("Unsupported or inconsistent feedback envelope.");
           // Size belongs to P4, so a size edit may change resolved extent without revising P5.
-          previousFeedback = checkRevision(source, previousFeedback, e.configurationKey);
+          const checkedFeedback = checkRevision(source, previousFeedback, e.configurationKey);
+          if (observe) previousFeedback = checkedFeedback;
           ownedEnvelope = e;
           if (result.geometry) {
             const { cx, cy } = result.geometry.feedback;
