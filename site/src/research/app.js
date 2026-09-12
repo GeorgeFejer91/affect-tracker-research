@@ -1616,6 +1616,13 @@ function bindResearchInteractions(root, { surface }) {
     return parsePlannerTargetSelection(value("planner-presentation-target"));
   }
 
+  function plannerPresentationTargetChanged() {
+    plannerContributions.invalidateAcceptance("P6");
+    packageExport.invalidate();
+    observePackageDraft();
+    renderPackageExportReview();
+  }
+
   function restorePlannerPresentationTarget(target, { isCurrent } = {}) {
     if (typeof isCurrent !== "function") throw new TypeError("Target restoration requires a current operation guard.");
     if (parsePlannerTargetSelection(target) === null) throw new TypeError("A saved recipe needs an explicit target.");
@@ -5488,10 +5495,7 @@ function bindResearchInteractions(root, { surface }) {
       inputController.resetNeutral("preset-change");
     }
     if (target instanceof HTMLSelectElement && target.id === "planner-presentation-target") {
-      plannerContributions.invalidateAcceptance("P6");
-      packageExport.invalidate();
-      observePackageDraft();
-      renderPackageExportReview();
+      plannerPresentationTargetChanged();
     }
     if (target instanceof HTMLInputElement && target.name === "attemptDisposition") {
       clearParticipantLanguageSelection();
@@ -5962,6 +5966,18 @@ function bindResearchInteractions(root, { surface }) {
       },
     });
   }
+  function withPlannerTargetInvalidation(owner) {
+    return Object.freeze({ ...owner,
+      async stage(edits, context) {
+        const previous = getSelectedPlannerTarget();
+        const prepared = await owner.stage(edits, context);
+        return { ...prepared, afterCommit() {
+          prepared.afterCommit?.();
+          if (getSelectedPlannerTarget() !== previous) plannerPresentationTargetChanged();
+        } };
+      },
+    });
+  }
   const feedbackAuthoringControls = createPlannerAuthoringP5Controls({
     root, isCurrent: () => !researchUiDisposed && mode === "setup",
     getModel: () => ({ feedbackSettingsVersion, inputBinding, feedbackPreviewMode, responsePreviewMode,
@@ -6021,7 +6037,7 @@ function bindResearchInteractions(root, { surface }) {
       createPlannerAuthoringP4({ editor: layoutDraftEditor }),
       createPlannerAuthoringP5(feedbackAuthoringControls),
       ...(xrLayoutEditor ? [createPlannerAuthoringP6({ editor: xrLayoutEditor })] : []),
-      createPlannerPolicyCommandOwner({ root }),
+      withPlannerTargetInvalidation(createPlannerPolicyCommandOwner({ root })),
     ],
     onBeforeCommit: () => markPlannerEdit({ notifyAuthoring: false }),
     onCommit({ owners }) {
