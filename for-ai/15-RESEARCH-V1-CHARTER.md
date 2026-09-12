@@ -1,5 +1,24 @@
 # Affect Tracker Research v1 charter
 
+## Companion-program amendment — 2026-09-12
+
+The latest user decision requires separate **Experiment Planner** and
+**Experiment Runner** programs. Planner retains Flubber previews and generates
+one comprehensive JSON; Runner owns execution, video playback, LSL transport
+and recording of own plus selected external streams to XDF. Stream recording
+policy is Runner-owned session state, not a Planner recipe field.
+[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
+single-executable wording and blanket Runner deferral in this historical text.
+Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
+producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
+Planner completion is independent; actual execution correspondence is the final
+development stage. Existing frozen contracts and qualification gates remain.
+
+This charter adopts the complete boundary in `16`, the Runner-only allocation
+ledger in `65` and compatibility inventory in `66` as final-state authority for
+the newly allocated desktop Runner. Historical Setup/Run labels describe the
+two companion purposes; they no longer require one program or a mode switch.
+
 ## Status and precedence
 
 This file, including the final-state amendment below, is the product and

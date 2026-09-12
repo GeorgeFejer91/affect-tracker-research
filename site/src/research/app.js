@@ -1112,7 +1112,7 @@ function bindResearchInteractions(root, { surface }) {
       const suffix = inputBinding.kind === "digital" ? "" : direction === "up" || direction === "right" ? " +" : " −";
       output.textContent = `${describeInputToken(directionTokens[direction])}${suffix}`;
     });
-    root.querySelectorAll("[data-binding-direction]").forEach((button) => {
+    root.querySelectorAll("[data-binding-direction], [data-binding-capture-target]").forEach((button) => {
       if (button instanceof HTMLButtonElement) button.disabled = inputBinding.kind !== "digital";
     });
   }
@@ -4145,6 +4145,11 @@ function bindResearchInteractions(root, { surface }) {
 
   function applyNativeInputStatus(status) {
     if (surface !== "tauri" || !status) return;
+    if (nativeCaptureDirection && query("#binding-capture-dialog")?.open && status.captureError) {
+      const receipt = query("#binding-capture-receipt");
+      receipt.textContent = status.captureError;
+      receipt.dataset.state = "error";
+    }
     const observation = status.lastInput;
     if (mode === "setup" && Number.isInteger(observation?.sequence)
       && observation.sequence > nativeInputLastSequence) {
@@ -4188,7 +4193,37 @@ function bindResearchInteractions(root, { surface }) {
     renderReview();
   }
 
+  function renderCaptureState(direction = null) {
+    root.querySelectorAll("[data-binding-capture-target]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.bindingCaptureTarget === direction));
+    });
+    const stop = query("#binding-capture-stop");
+    if (stop) stop.disabled = !direction;
+    const area = query(".binding-capture-area");
+    if (area) area.dataset.listening = String(Boolean(direction));
+    const instruction = query("#binding-capture-instruction");
+    if (instruction) instruction.textContent = direction
+      ? `Listening for ${direction}. Press a key or gamepad button; click or scroll here. Tab cancels capture; Escape closes.`
+      : inputBinding.kind === "digital" ? "Choose a direction to start listening."
+        : "This analog preset cannot be rebound here. Choose a digital preset in Input controls first.";
+  }
+
+  function openBindingMenu(direction = null) {
+    cancelBindingCapture();
+    const dialog = query("#binding-capture-dialog");
+    if (!dialog?.open) dialog?.showModal();
+    renderBindings();
+    const receipt = query("#binding-capture-receipt");
+    receipt.textContent = direction ? `Listening for ${direction}…` : "Not listening.";
+    receipt.dataset.state = direction ? "listening" : "idle";
+    if (direction) beginBindingCapture(direction);
+    else renderCaptureState();
+  }
+
   function beginBindingCapture(direction) {
+    if (inputBinding.kind !== "digital") return;
+    renderCaptureState(direction);
+    query(".binding-capture-area")?.focus();
     const receipt = query("#binding-capture-receipt");
     if (surface === "tauri") {
       nativeCaptureDirection = direction;
@@ -4200,6 +4235,7 @@ function bindResearchInteractions(root, { surface }) {
       return;
     }
     const complete = (result) => {
+      if (!query("#binding-capture-dialog")?.open || inputController.captureDirection !== direction) return;
       if (!result.ok) {
         if (receipt) {
           receipt.textContent = result.error instanceof Error ? result.error.message : "That action cannot be assigned.";
@@ -4213,6 +4249,7 @@ function bindResearchInteractions(root, { surface }) {
       inputController.cancelCapture();
       if (gamepadCaptureFrame !== null) cancelAnimationFrame(gamepadCaptureFrame);
       gamepadCaptureFrame = null;
+      renderCaptureState();
       setInputValue("input-preset", "custom");
       renderBindings();
       schedulePlanRefresh();
@@ -4220,21 +4257,21 @@ function bindResearchInteractions(root, { surface }) {
         receipt.textContent = `${describeInputToken(result.action)} assigned to ${result.direction}.`;
         receipt.dataset.state = "ready";
       }
-      setTimeout(() => {
-        closeDialog("binding-capture-dialog");
-        refreshProjection();
-      }, 180);
+      refreshProjection();
     };
     inputController.beginCapture(direction, complete);
     const previous = new Map();
-    for (const pad of navigator.getGamepads?.() ?? []) {
+    for (const pad of captureGamepads()) {
       if (!pad) continue;
       pad.buttons.forEach((button, index) => previous.set(`${pad.index}:${index}`, button.pressed));
     }
     const pollGamepadCapture = () => {
       gamepadCaptureFrame = null;
       if (inputController.captureDirection !== direction) return;
-      for (const pad of navigator.getGamepads?.() ?? []) {
+      const pads = captureGamepads();
+      const connected = new Set(pads.filter(Boolean).map(pad => pad.index));
+      for (const key of previous.keys()) if (!connected.has(Number(key.split(":")[0]))) previous.delete(key);
+      for (const pad of pads) {
         if (!pad) continue;
         for (let index = 0; index < pad.buttons.length; index += 1) {
           const key = `${pad.index}:${index}`;
@@ -4266,7 +4303,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function cancelBindingCapture() {
-    inputController.cancelCapture();
+    inputController?.cancelCapture();
+    renderCaptureState();
     if (gamepadCaptureFrame !== null) cancelAnimationFrame(gamepadCaptureFrame);
     gamepadCaptureFrame = null;
     if (surface === "tauri" && nativeCaptureDirection) {
@@ -4276,10 +4314,12 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function applyNativeCapture(result) {
-    if (surface !== "tauri" || !result?.binding || !result?.action) return false;
+    if (surface !== "tauri" || !result?.binding || !result?.action
+      || !query("#binding-capture-dialog")?.open || nativeCaptureDirection !== result.direction) return false;
     inputBinding = structuredClone(validateInputBindingV1(result.binding));
     resetInputTest({ notify: false });
     nativeCaptureDirection = null;
+    renderCaptureState();
     inputController.setBinding(inputBinding);
     setInputValue("input-preset", "custom");
     renderBindings();
@@ -4289,7 +4329,6 @@ function bindResearchInteractions(root, { surface }) {
       receipt.textContent = `${describeInputToken(result.action)} assigned to ${result.direction} by native capture.`;
       receipt.dataset.state = "ready";
     }
-    closeDialog("binding-capture-dialog");
     refreshProjection();
     return true;
   }
@@ -4298,6 +4337,27 @@ function bindResearchInteractions(root, { surface }) {
     const dialog = query(`#${id}`);
     if (dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
   }
+
+  function captureGamepads() {
+    try { return [...(navigator.getGamepads?.() ?? [])]; }
+    catch { return []; }
+  }
+
+  const bindingDialog = query("#binding-capture-dialog");
+  const stopCapture = () => {
+    const wasListening = Boolean(inputController?.captureDirection || nativeCaptureDirection);
+    cancelBindingCapture();
+    const receipt = query("#binding-capture-receipt");
+    if (receipt && wasListening) { receipt.textContent = "Capture cancelled. Assignments unchanged."; receipt.dataset.state = "idle"; }
+  };
+  bindingDialog?.addEventListener("close", () => { if (!bindingDialog.open) stopCapture(); });
+  bindingDialog?.addEventListener("cancel", stopCapture);
+  bindingDialog?.addEventListener("focusout", event => {
+    if (event.target === query(".binding-capture-area") && !event.relatedTarget?.closest(".binding-capture-area")) stopCapture();
+  });
+  window.addEventListener("blur", stopCapture);
+  const cancelHiddenCapture = () => { if (document.hidden) stopCapture(); };
+  document.addEventListener("visibilitychange", cancelHiddenCapture);
 
   const previewColorDialog = query("#preview-color-dialog");
   const inlineColorPicker = createInlineColorPicker(query("#preview-color-picker"), {
@@ -4804,18 +4864,11 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
-    if (target.dataset.bindingDirection) {
-      const direction = target.dataset.bindingDirection;
-      const title = query("#binding-capture-title");
-      const receipt = query("#binding-capture-receipt");
-      if (title) title.textContent = `Capture ${target.querySelector("span")?.textContent ?? direction}`;
-      if (receipt) {
-        receipt.textContent = "Waiting for an input edge…";
-        delete receipt.dataset.state;
-      }
-      query("#binding-capture-dialog")?.showModal();
-      beginBindingCapture(direction);
+    if (target.id === "preview-input-menu") openBindingMenu();
+    if (target.dataset.bindingDirection || target.dataset.bindingCaptureTarget) {
+      openBindingMenu(target.dataset.bindingDirection ?? target.dataset.bindingCaptureTarget);
     }
+    if (target.id === "binding-capture-stop") stopCapture();
     if (target.id === "binding-reset") resetBindingsToPreset();
     if (target.id === "binding-capture-cancel") {
       cancelBindingCapture();
@@ -5021,9 +5074,11 @@ function bindResearchInteractions(root, { surface }) {
   root.addEventListener("keydown", (event) => {
     if (inputController.captureDirection || nativeCaptureDirection) {
       if (event.key === "Escape") {
+        event.preventDefault();
         cancelBindingCapture();
         closeDialog("binding-capture-dialog");
-      } else if (surface !== "tauri") routeCaptureEvent(event);
+      } else if (event.key === "Tab") stopCapture();
+      else if (surface !== "tauri") routeCaptureEvent(event);
       return;
     }
     const tile = event.target instanceof Element ? event.target.closest("[data-participant-id]") : null;
@@ -5045,10 +5100,10 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener("mousedown", (event) => {
-    if (inputController.captureDirection && !event.target.closest("#binding-capture-cancel")) routeCaptureEvent(event);
+    if (inputController.captureDirection && event.target.closest(".binding-capture-area")) routeCaptureEvent(event);
   });
   root.addEventListener("wheel", (event) => {
-    if (inputController.captureDirection) routeCaptureEvent(event);
+    if (inputController.captureDirection && event.target.closest(".binding-capture-area")) routeCaptureEvent(event);
   }, { passive: false });
 
   const dropZone = query("#video-drop-zone");
@@ -5571,6 +5626,13 @@ function bindResearchInteractions(root, { surface }) {
     setAffect(x, y, receipt = "Authoritative input received.") { updateInputPoint(x, y, receipt); },
     applyNativeInputStatus,
     applyNativeCapture,
+    failNativeCapture(message) {
+      if (surface !== "tauri" || !nativeCaptureDirection) return;
+      cancelBindingCapture();
+      const receipt = query("#binding-capture-receipt");
+      receipt.textContent = message;
+      receipt.dataset.state = "error";
+    },
     resetAffect(reason = "safe-boundary") {
       inputController.resetNeutral(reason);
       return Object.freeze({ x: inputController.state.x, y: inputController.state.y, inputActive: inputController.state.inputActive });
@@ -5606,6 +5668,8 @@ function bindResearchInteractions(root, { surface }) {
       previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
+      window.removeEventListener("blur", stopCapture);
+      document.removeEventListener("visibilitychange", cancelHiddenCapture);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);

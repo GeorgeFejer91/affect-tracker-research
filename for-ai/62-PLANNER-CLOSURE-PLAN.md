@@ -1,5 +1,12 @@
 # Planner gap-closure plan and missing-segment designs
 
+**2026-09-12 completion goal:** follow
+[67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for current task
+allocations, source gaps and Planner-only completion evidence. The user requires
+the comprehensive modular JSON and lossless export/reopen now. Final correspondence
+with the Runner is deferred to the last development stage. Historical designs
+below remain context, not evidence that the complete master is implemented.
+
 Prepared 2026-09-11 for the researcher's request to identify incomplete segments,
 prioritize their remaining work and design the missing sections.
 

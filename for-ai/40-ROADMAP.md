@@ -1,5 +1,19 @@
 # Research v1 roadmap
 
+## Companion-program amendment — 2026-09-12
+
+The latest user decision requires separate **Experiment Planner** and
+**Experiment Runner** programs. Planner retains Flubber previews and generates
+one comprehensive JSON; Runner owns execution, video playback, LSL transport
+and recording of own plus selected external streams to XDF. Stream recording
+policy is Runner-owned session state, not a Planner recipe field.
+[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
+single-executable wording and blanket Runner deferral in this historical text.
+Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
+producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
+Planner completion is independent; actual execution correspondence is the final
+development stage. Existing frozen contracts and qualification gates remain.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated
@@ -35,6 +49,40 @@ the standard P5 350-check receipt remains separately bound to `77b5840`.
 See the board's final supplement for exact hashes and receipt locations.
 Canonical `ba2110f`, foreground applications and remote state are unchanged;
 no complete master, Runner, Edge or installed/native qualification claim is made.
+
+## Live Preview input assignment popup — 2026-09-12
+
+Separate P5-01/P5-03/P5-08 dependency pass, accepted base `5a247bb`, branch
+`codex/segment-preview-input-menu`. The approved input SVG opens the existing
+four-direction binding owner in a directional dialog. Keyboard, separate wheel
+directions, supported mouse buttons and fresh gamepad-button edges update the
+existing saved binding and Live Preview. Analog presets remain read-only here.
+Center is disabled pending the user's decision; this is not a fifth input action.
+
+Capture is armed explicitly and scoped to the dialog (mouse/wheel to its native
+allow-region). Success remains visible. Conflicts, rebinding, focus return,
+close/cancel, repeated input, disconnect and delayed callback cases are covered.
+The native adapter fences request/cancel/poll generations, activates only after
+begin acknowledgement, rejects stale results after same-direction rearming and
+honors UI rejection before its existing focus-gated native-test transition.
+Native errors are displayed in the popup. Rust, DTOs, P5 contribution contracts,
+P7, confirmation and Runner semantics are unchanged.
+
+Evidence: full JavaScript suite and Pages/desktop closure; new exact-asset and
+markup tests; actual bridge delayed-capture regression; background actual-app
+Chrome fixture `scripts/qualification/preview-input-menu.mjs` covering wide and
+320px-dialog layouts plus the Tauri UI projection through mocked native results.
+The light icon's source media rule is explicitly forced in its component fixture;
+this is not OS-theme integration qualification. Approved light/dark SVG bytes
+match SHA-256 `3629f6cbc973aaa28dbadf6510d150c6afc761c65f46ef8c7f6492d15df843f1`
+and `0e8651e3d8e319d100429766dcae65dec31c75501f772b22b64ce2b88838dc46` respectively.
+
+Limits: isolated owner candidate, not canonical integration or publication.
+Edge headless returned empty output/no receipt and remains unverified. No user
+window control, installed Tauri/hardware capture qualification, native build,
+research qualification or broader Backend Verification stage-completion claim.
+Clean-source receipts are supplied with the owner checkpoint; Vite's existing
+non-failing chunk-size warning remains.
 
 ## P6 live authoring and editable reopen — 2026-09-12
 
