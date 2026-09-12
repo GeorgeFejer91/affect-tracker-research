@@ -81,6 +81,10 @@ fn launch(
     cli_profile: Option<PathBuf>,
 ) -> i32 {
     let cli_enabled = cli_profile.is_some();
+    let authoring = Arc::new(research_planner_authoring::PlannerAuthoringBroker::new(
+        cli_enabled,
+    ));
+    let setup_authoring = Arc::clone(&authoring);
     let builder = tauri::Builder::default()
         .manage(role)
         .register_uri_scheme_protocol("research-media", |context, request| {
@@ -137,11 +141,8 @@ fn launch(
             app.manage(native_media);
             app.manage(input);
             if role == DesktopRole::Planner {
-                let authoring = Arc::new(research_planner_authoring::PlannerAuthoringBroker::new(
-                    cli_enabled,
-                ));
-                app.manage(Arc::clone(&authoring));
-                authoring
+                app.manage(Arc::clone(&setup_authoring));
+                setup_authoring
                     .start(app.handle().clone())
                     .map_err(|error| std::io::Error::other(error.message))?;
             }
@@ -306,7 +307,14 @@ fn launch(
         }
     };
     if cli_enabled {
-        app.run_return(on_event)
+        let runtime_code = app.run_return(on_event);
+        // Windows/WebView shutdown can return 0 despite app.exit(2). Preserve
+        // the owned broker's terminal outcome independently of the event loop.
+        if authoring.exit_code() == 0 {
+            runtime_code
+        } else {
+            2
+        }
     } else {
         app.run(on_event);
         0

@@ -5,6 +5,7 @@ use crate::research_error::{CommandError, ResearchResult};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, Read, Write};
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State, WebviewWindow};
@@ -37,6 +38,7 @@ pub(crate) struct PlannerAuthoringBroker {
     wake: Condvar,
     output: mpsc::SyncSender<Value>,
     receiver: Mutex<Option<mpsc::Receiver<Value>>>,
+    exit_status: AtomicI32,
 }
 
 impl PlannerAuthoringBroker {
@@ -59,6 +61,8 @@ impl PlannerAuthoringBroker {
             wake: Condvar::new(),
             output,
             receiver: Mutex::new(Some(receiver)),
+            // Fail closed until accepted EOF work and replies fully drain.
+            exit_status: AtomicI32::new(2),
         }
     }
 
@@ -69,6 +73,10 @@ impl PlannerAuthoringBroker {
                 "The authoring session state is unavailable.",
             )
         })
+    }
+
+    pub fn exit_code(&self) -> i32 {
+        self.exit_status.load(Ordering::Acquire)
     }
 
     fn send_output(&self, value: Value) -> ResearchResult<()> {
@@ -131,6 +139,7 @@ impl PlannerAuthoringBroker {
                 && !state.closed
             {
                 state.closed = true;
+                self.exit_status.store(state.exit_code, Ordering::Release);
                 Some(state.exit_code)
             } else {
                 None
@@ -146,6 +155,7 @@ impl PlannerAuthoringBroker {
     }
 
     fn fail(&self, app: &AppHandle, code: &str) {
+        self.exit_status.store(2, Ordering::Release);
         self.shutdown();
         // Fixed codes only; never log command bodies, source files or paths.
         eprintln!("Planner CLI stopped: {code}");
@@ -563,6 +573,7 @@ mod tests {
         assert_eq!(broker.drained_exit_code(), None);
         broker.lock().unwrap().output_pending -= 1;
         assert_eq!(broker.drained_exit_code(), Some(0));
+        assert_eq!(broker.exit_code(), 0);
         assert_eq!(broker.drained_exit_code(), None);
         assert!(broker.next().unwrap().is_none());
         assert_eq!(
@@ -580,6 +591,7 @@ mod tests {
             state.exit_code = 2;
         }
         assert_eq!(broker.drained_exit_code(), Some(2));
+        assert_eq!(broker.exit_code(), 2);
     }
 
     #[test]
@@ -604,6 +616,7 @@ mod tests {
         let waiting = Arc::clone(&broker);
         let next = std::thread::spawn(move || waiting.next().unwrap().is_none());
         broker.shutdown();
+        assert_eq!(broker.exit_code(), 2);
         assert!(next.join().unwrap());
         assert_eq!(
             broker
