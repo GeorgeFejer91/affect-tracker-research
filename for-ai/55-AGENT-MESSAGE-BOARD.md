@@ -587,6 +587,85 @@ file; follow the integration-owner collection procedure in the workflow.
 - Integration reports candidate `549874e` includes its confirmation shell,
   P7 `cc5cc83`, P1 `3d6a6b2` and P5 `c143398`. Root's 33 inspected captures
   still name earlier `64da370`; they do not verify the new acceptance UI.
+- Later resumed-pass handoffs: P1 `5988ce0` provides validated workspace-to-video
+  and display-geometry projections with one registered owner revision. P3's
+  clean `ffe7e62` adopts that interface and adds guarded, sidecar-free
+  `prepareStimulusVariantContribution`; preparation returns a snapshot, and P7
+  alone accepts it before shared navigation advances. S3 reports 96 focused
+  checks and both builds. S2/P5 remain ready; their idle state is not a stall.
+- Independent review confirmed a new P1 async restoration defect at `5988ce0`:
+  producer `restoreContribution` acquires its generation after validation, so
+  `restoreContribution(valid); withdraw(); await restore` can publish obsolete
+  readiness. The app's refresh path can also clear a newer pending recipe after
+  awaiting an older recipe's verification. S1 owns generation/identity guards
+  and focused interleaving regressions; integration/P7 have been notified.
+  The coherent projection itself passed source review. Do not conflate this
+  repair with the unanswered physical media-location policy.
+- S1 supplied clean repair `fae3ee1` with unchanged projection APIs. The owner
+  reports operation/current guards before and after asynchronous work and
+  deferred regressions for late A after B, late A after withdrawal, and failed A
+  preserving successful B (50 focused/485 full Node plus desktop build).
+  Integration/P7/P3 received the repair. Independent recheck confirms those
+  exact races are repaired, but same-recipe media edits remain unfenced: two
+  refreshes share the pending restore token, allowing earlier matching entries
+  to publish after a later removal/mismatch withdrew readiness. S1 must fence
+  every refresh operation, including while a restore is pending, and add that
+  interleaving regression. Integration/P7 received this remaining finding.
+  Combined reopen verification remains separate.
+- S1 follow-up `e4562d9` fences every media refresh, including pending restores,
+  with a separate operation token. Independent recheck confirms the remaining
+  same-recipe race is resolved in source. Owner reports 52 focused/487 full Node
+  checks and desktop build. The new behavioral test uses a modeled refresh helper
+  with the real producer; the UI check pins source patterns. Actual-controller
+  interleaving remains part of combined reopen verification, not proof supplied
+  by those owner test counts. Integration/P7 received this exact distinction.
+- A new P3-08 content-reopen gap remains: restored P1 declarations are pending,
+  so ready-only P3 restoration cannot yet display the saved version table.
+  S3 owns a coordinated internal content-restore seam with S7, validated through
+  P1's saved-content validator. Restore an editable draft while keeping actual
+  P1 revisions and pending/null contribution; prepare/accept wait for verified
+  media rebind. Preserve serialized contracts and stale/edit/dependency guards.
+- P3 subsequently delivered clean `3413865` above `ffe7e62`: the agreed
+  content-only restore populates editable sequences/ISIs, returns pending/null
+  with the actual P1 revision and permits preparation only after verified
+  rebind. Owner reports 102 targeted checks and both builds. P7/integration
+  received the handoff. Independent source review found no new material defect;
+  tests exercise the actual editor using a lightweight DOM, including no writes
+  and edits surviving rebind. Root ran no tests or rendered-browser check for
+  this repair; actual master reopen remains a combined check.
+- P7 handoffs `a4bd8a1`/`f283de0` add named-file acknowledgement/lifecycle and
+  composite registration. Root inspected its actual rendered cancelled-save
+  Review image: primary recipe/status precedes collapsed LSL, resolving that
+  concrete owner-state finding. Full narrow/footer/combined verification stays
+  open. Pure content reopen can proceed without restoring filesystem authority;
+  the final typed desktop master still needs P4's accepted geometry contract.
+- S4 final clean handoff `1c70f2e` (app `f8654bf`) reports 118 actual Chrome
+  checks/four source-bound images and 563 Node checks for live binding,
+  invalidation, unit conversion and guarded draft restore. The study-only and
+  video-change fixtures use P1's registered revision; accepted contribution
+  remains pending Q08. Integration reports clean `4f505c3`
+  passes 545 Node checks, Chrome retained-UI/P5 checks and both builds. These
+  owner reports do not promote canonical `ba2110f` or qualify Edge/Runner.
+- S6 final clean handoff `82c8f0f` (tested app `b54e403`) is ready, including
+  P1/P5 live binding, registered revision invalidation, guarded preparation,
+  content-only draft reopen and strict ready-dependency restore. P7/integration
+  received the distinct APIs. Owner evidence: 572 Node checks, both builds and
+  28 actual Chrome assertions at each of 1440px/820px. Independent visual review
+  finds no new material regression; all 60 source hashes match. The existing
+  internal Accept layout plus footer Confirm duplication remains assigned to
+  integration's single prepare/accept action. Exact coverage limits are in `64`.
+  This handoff still includes P1 `5988ce0`; the S1
+  refresh-race repair remains a separate required integration dependency.
+- P7 clean foundation handoff `929a257` includes named-file acknowledgement,
+  subscription lifecycle, composite registration, strict retained-policy
+  JS/Rust validation and complete P2 route compilation. Owner checks cover
+  canonical policy agreement and independent-process reproduction; exact
+  interfaces/gates are in `docs/planner-p7-recipe-assembly.md` on that branch.
+  The final master envelope, native dispatch and combined reopen remain open
+  until P4 has an accepted desktop contract. Historical block/after-stimulus
+  questionnaire hooks have no approved correspondence to the new variant
+  structure and return explicit field errors; no questionnaire content is
+  dropped or silently reassigned. S7 has stopped source writers for collection.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
