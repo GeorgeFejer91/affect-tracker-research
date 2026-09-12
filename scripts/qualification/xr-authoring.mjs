@@ -10,12 +10,13 @@ import { build } from "esbuild";
 
 const [browser, destination, width = "1440", scope = "all"] = process.argv.slice(2);
 assert.ok(browser && destination && /^\d{3,4}$/u.test(width));
-assert.ok(["all", "master"].includes(scope));
+assert.ok(["all", "master", "cli"].includes(scope));
 const output = resolve(destination); await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
 const run = promisify(execFile);
 const before = (await run("git", ["rev-parse", "HEAD"], { windowsHide: true })).stdout.trim();
-const bundle = await build({ entryPoints: ["test/fixtures/xr-authoring-browser.js"], bundle: true,
+const entry = scope === "cli" ? "test/fixtures/planner-authoring-p6-browser.js" : "test/fixtures/xr-authoring-browser.js";
+const bundle = await build({ entryPoints: [entry], bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent", metafile: true,
   define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
 const hashes = {};

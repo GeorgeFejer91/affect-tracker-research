@@ -1,5 +1,14 @@
 # Experiment Runner agent ledger
 
+## Active end-to-end allocation — 2026-09-12
+
+The researcher now explicitly requests CLI-authored master intake and an actual
+Runner correspondence test. [69](69-CLI-RUNNER-END-TO-END-GOAL.md) allocates
+RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
+coordinated with main integration. This supersedes later-stage deferral for
+this bounded test. Existing parser, native authority and qualification gates
+remain; no execution success is inferred from a valid recipe or mocked run.
+
 This ledger applies to agents implementing the **Runner companion only**.
 Read [the two-program boundary](16-COMPANION-APP-BOUNDARY.md), the charter and
 testing/workflow requirements first. R1 in the wider catalogue names the whole

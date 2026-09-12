@@ -1,5 +1,12 @@
 # Planner and Runner companion programs
 
+## Planner CLI extension — 2026-09-12
+
+The subsequent user request authorizes CLI access to Planner settings, saved-JSON
+load/edit and timestamped new-file export, bounded by
+[68-PLANNER-CLI.md](68-PLANNER-CLI.md). This supersedes older blanket CLI
+prohibitions only for that scope; it adds no Runner execution or network service.
+
 ## User amendment — 2026-09-12
 
 The researcher explicitly requires **two separate programs**. This supersedes
