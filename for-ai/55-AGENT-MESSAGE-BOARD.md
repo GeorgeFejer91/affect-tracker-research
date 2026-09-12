@@ -4640,3 +4640,18 @@ by this build-option change.
 - Caller/abort, editor revision/file lifecycle and full dependency identities fence both preparation and commit. Postcommit projection is separate and once-only; owner state survives observer failure. Details: `docs/p6-prepared-confirmation.md`.
 - Baseline: 42 existing P6 tests passed. New actual-owner confirmation tests: 13/13 passed. Main owns integration/independent review; S7 owns registry preparedOwner composition. No runtime, native, foreground or research qualification claim.
 - Final combined P6 gate: 88/88 passed (confirmation, restoration, authoring, full-master roundtrip/reproduction, CLI P6 and geometry); git diff --check passed. Candidate ready for Main review; owner work stopped at clean commit.
+
+### S1 / P3 prepared workspace reset — 2026-09-12
+
+- Main follow-up on `aa43e9e`: `prepareReset({isCurrent,signal})` returns guarded
+  single-use `isCurrent/commit/afterCommit`. Preparation changes no editor state
+  or projection. Both this commit and existing GUI reset use one `installReset`
+  authority; it clears P3's old workspace bindings/design only, not P1 declarations.
+  Pending authoring projection is cleared so it cannot reannounce the old draft.
+- Main composes commit after its bridge/app workspace switch, then invokes
+  projection. Caller/abort, editor/catalogue/restore generations and disposal
+  fence stale commits; delayed projection does not overwrite newer state.
+  Existing reset can still supersede busy old work. No shared/app/native edits.
+- Editor plus P3 authoring suites: 61 passing checks, including exact GUI reset
+  state parity, read-only preparation/state-only commit, one projection and
+  stale/abort rejection. No build, GUI launch or native workflow claim.
