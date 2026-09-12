@@ -154,3 +154,18 @@ integration-owned. The new goal69 explicitly allocates actual Runner corresponde
 to the Runner owner; those checks are now required for that wider goal. They are
 not claimed by this adapter's software tests. No changed DOM/layout or native
 implementation is claimed here.
+
+## Owner software receipt
+
+Clean `c6b9912a1f23c6ccc70fb511cad10d4e1d149928` passes 798/798 full Node tests
+and the preceding 42 focused checks. Its site tree is
+`c9c66b8fa17d3c7451474d3a332eafa75bf6f7df`. The catalogue contains 70 entries:
+61 active writable settings, seven compatibility read-only values and two
+derived read-only values. Sixteen P5 tests include all 61 entries through the
+actual shared session, while editor preparation/projection remains a test hook.
+Thus this verifies the adapter and gateway contract, not the yet-unconnected
+production UI/native CLI. Final application parity must use Main's real hooks.
+
+Owner commits are `88a5df2` and `c6b9912`; shared foundation `2310efc` is the
+unchanged dependency. Log:
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/cli-p5/full-node-c6b9912.log`.
