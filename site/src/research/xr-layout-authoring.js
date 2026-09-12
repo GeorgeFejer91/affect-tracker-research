@@ -114,22 +114,43 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
     return commit(profile, { selectedTarget: profile.target, isCurrent }, false);
   }
 
+  function prepareRestoreSelection(selection, { isCurrent } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
+    const captured = validateXrLayoutSelection(selection);
+    if (disposed || !isCurrent()) throw stale();
+    const dependencyKey = key(read()), capturedGeneration = generation;
+    const current = () => !disposed && isCurrent() && generation === capturedGeneration && key(read()) === dependencyKey;
+    // Reopening authored content needs no ready media. Do not refresh here:
+    // refresh mutates dependency state and publishes projections.
+    const candidate = editor.prepareRestoreSelection(captured, { isCurrent: current });
+    return Object.freeze({
+      isCurrent: () => current() && candidate.isCurrent(),
+      commit() {
+        if (!current() || !candidate.isCurrent()) throw stale();
+        return candidate.commit();
+      },
+      afterCommit() {
+        if (!current()) throw stale();
+        return candidate.afterCommit();
+      },
+    });
+  }
+
   return Object.freeze({
     refresh,
     getStatus: () => structuredClone(status),
     validate,
     prepare,
     accept: prepare,
+    prepareRestoreSelection,
     restoreDraft(profile, { isCurrent = () => true } = {}) {
       const capturedProfile = validateXrLayoutProfileV1(profile);
       if (disposed || !isCurrent()) throw stale();
       return editor.restoreDraft(capturedProfile);
     },
     restoreSelection(selection, { isCurrent } = {}) {
-      if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
-      const captured = validateXrLayoutSelection(selection);
-      if (disposed || !isCurrent()) throw stale();
-      return captured.status === "included" ? editor.restoreDraft(captured.profile) : editor.restoreExcluded();
+      const candidate = prepareRestoreSelection(selection, { isCurrent });
+      const snapshot = candidate.commit(); candidate.afterCommit(); return snapshot;
     },
     restore(profile, options = {}) { return commit(profile, options, true); },
     destroy() {

@@ -43,6 +43,10 @@ function harness(project = projector) {
     },
     restoreDraft(value) { state.loadDraft(serializeXrLayoutProfileV1(value)); return state.getSnapshot(); },
     restoreExcluded() { state.resetExcluded(); return state.getSnapshot(); },
+    prepareRestoreSelection(selection, options) {
+      const candidate = state.prepareRestoreSelection(selection, options);
+      return { ...candidate, commit() { candidate.commit(); return state.getSnapshot(); }, afterCommit() {} };
+    },
   };
   const authoring = createXrLayoutAuthoring({ editor, projectCatalogue: project,
     getDependencies: () => current,
