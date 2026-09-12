@@ -1,17 +1,30 @@
 import { createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "./screen-layout-draft.js";
 import { screenLayoutSceneMarkup } from "./screen-layout-view.js";
+import { createScreenLayoutState, validateScreenLayoutContribution } from "./screen-layout-state.js";
+import { createScreenLayoutDependencyBinding } from "./screen-layout-dependencies.js";
 
 /** Local UI owner only. Fixture injection is used by non-shipping qualification pages. */
-export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
+export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencies = null, onChange = () => {} } = {}) {
   if (!root?.matches?.("[data-screen-layout-draft]")) throw new TypeError("Screen layout draft root is missing.");
   let draft = createScreenLayoutDraft();
   let selectedVideoId = null;
   let conversionIssues = [];
-  const dependencies = structuredClone(fixtures);
+  const fixtureInputs = structuredClone(fixtures);
   const controls = [...root.querySelectorAll("[data-layout-field]")];
   const query = selector => root.querySelector(selector);
   const document = root.ownerDocument;
   let projection;
+  let state;
+  const dependencyChanged = () => {
+    if (!state) return;
+    state.refreshDependencies();
+    render();
+  };
+  let binding = dependencies ? createScreenLayoutDependencyBinding({ ...dependencies, onChange: dependencyChanged }) : null;
+  state = createScreenLayoutState({
+    resolve: next => binding ? binding.resolve(next) : resolveScreenLayoutDraft(next, fixtureInputs),
+    onChange,
+  });
 
   function syncFields() {
     for (const control of controls) {
@@ -22,7 +35,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
   }
 
   function render() {
-    projection = resolveScreenLayoutDraft(draft, dependencies);
+    projection = state.projection;
     query("[data-layout-scene]").innerHTML = screenLayoutSceneMarkup(projection, selectedVideoId);
     const geometry = projection.geometry;
     const number = value => Number(value.toFixed(2));
@@ -49,7 +62,25 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
           : field === "offsetX" ? "reference width" : field === "offsetY" ? "reference height" : "shorter reference side";
       unit.textContent = draft.units === "mm" ? "(mm)" : `(% ${basis})`;
     }
-    if (dependencies.media?.length || dependencies.envelope) query("[data-layout-dependencies]").textContent = "Synthetic verification samples only. These video and animation bounds are illustrative; actual media fit remains unverified.";
+    const notice = query("[data-layout-dependencies]");
+    if (binding) {
+      const hasVideos = projection.videos.length > 0;
+      const hasEnvelope = geometry?.maximumFeedback !== null && geometry !== null;
+      notice.textContent = hasVideos && hasEnvelope
+        ? `${projection.videos.length} verified video display ${projection.videos.length === 1 ? "geometry" : "geometries"} and saved animation bounds are shown. Fit checks use the proposed fixed frame; the largest-video reference rule is pending.`
+        : "Complete video geometry and saved animation bounds are required to check every video. Missing or changed inputs clear the affected bounds.";
+    } else if (fixtureInputs.media?.length || fixtureInputs.envelope) notice.textContent = "Synthetic verification samples only. These video and animation bounds are illustrative; actual media fit remains unverified.";
+    const select = query("[data-layout-video]");
+    query("[data-layout-fixture-controls]").hidden = !projection.videos.length;
+    query("[data-layout-video-label]").textContent = binding ? "Inspect video fit" : "Synthetic display-geometry fixture";
+    select.replaceChildren(...projection.videos.map(item => {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = `${item.label} · ${item.displayWidth} × ${item.displayHeight}`;
+      return option;
+    }));
+    if (projection.videos.some(item => item.id === selectedVideoId)) select.value = selectedVideoId;
+    selectedVideoId = select.value || null;
   }
 
   function edit(event) {
@@ -67,6 +98,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
       draft = { ...draft, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value };
       conversionIssues = [];
     }
+    state.replaceDraft(draft);
     render();
   }
 
@@ -76,6 +108,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
     draft = createScreenLayoutDraft();
     conversionIssues = [];
     syncFields();
+    state.replaceDraft(draft);
     render();
   }
 
@@ -86,17 +119,6 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
     render();
   }
 
-  if (dependencies.media?.length) {
-    query("[data-layout-fixture-controls]").hidden = false;
-    const select = query("[data-layout-video]");
-    select.replaceChildren(...dependencies.media.map(item => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = `${item.id} · ${item.width} × ${item.height}`;
-      return option;
-    }));
-    selectedVideoId = select.value;
-  }
   syncFields();
   render();
   root.addEventListener("input", edit);
@@ -106,7 +128,27 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {} } = {}) {
   return Object.freeze({
     get projection() { return structuredClone(projection); },
     get draft() { return { ...draft }; },
+    getSnapshot: state.getSnapshot,
+    getDraftDocument: state.getDraftDocument,
+    validateContribution: validateScreenLayoutContribution,
+    connectDependencies(owners) {
+      binding?.destroy();
+      binding = createScreenLayoutDependencyBinding({ ...owners, onChange: dependencyChanged });
+      return binding.refreshCatalogue();
+    },
+    async restoreDraft(document, options) {
+      const snapshot = await state.restoreDraft(document, options);
+      draft = state.draft;
+      conversionIssues = [];
+      syncFields();
+      render();
+      return snapshot;
+    },
+    refreshCatalogue() { return binding?.refreshCatalogue(); },
+    refreshFeedback() { binding?.refreshFeedback(); },
     destroy() {
+      binding?.destroy();
+      state.destroy();
       root.removeEventListener("input", edit);
       root.removeEventListener("change", edit);
       root.removeEventListener("change", selectVideo);

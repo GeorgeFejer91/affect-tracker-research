@@ -62,6 +62,33 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p4-live-geometry
+
+- Owner: **S4**, P4 `layout`; **open**, Backend Verification, P4-02/P4-05/
+  P4-06/P4-07. Researcher explicitly resumed paused contribution work through
+  root coordination; unchanged stage confirmation is not requested again.
+- Isolated `codex/segment-p4-live-geometry` at
+  `D:/GitHub/affect-tracker-research-screen-layout-live`; accepted baseline
+  `ba2110f`, reviewed combined integration candidate `64da370` merged normally
+  at `f328bef`. Canonical integration remains the integration owner's work.
+- Current versus intended: the reviewed P4 editor resolves synthetic fixture
+  inputs only and has no owner revision/restore interface. This pass adds
+  actual P1 oriented catalogue and P5 saved-envelope binding, dependency/edit
+  invalidation, deterministic whole-library fit and an atomic internal draft
+  restoration API for P7. Producer validation and animation math remain owned.
+- Shared seams are app initialization/getters/subscriptions/teardown; P7 owns
+  registration/acceptance/save. No new media verification, P5 size authority,
+  native boundary, Runner, deployment or physical qualification is allocated.
+- Root clarified the mandatory automatic largest-video reference. Area versus
+  componentwise maximum remains an explicit Q08 question. Both candidate
+  extents may be calculated for inspection; neither is silently selected.
+  Current manual proposed geometry remains draft-only until that contract is
+  settled. A draft document is not an accepted or runnable recipe contribution.
+- Evidence planned: actual producer interop; mixed ratios/fixed centres/units;
+  missing, pending, changed and malformed dependencies; atomic/stale restore;
+  actual boot UI invalidation/selection/reflow; proportional frontend checks.
+
+
 ### 20260912-integration-resume-and-acceptance
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
