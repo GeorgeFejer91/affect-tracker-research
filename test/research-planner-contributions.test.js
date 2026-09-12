@@ -7,6 +7,21 @@ const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: fal
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
 const validated = { validateContribution: async () => true };
 
+test("acceptance clear can defer projection until the host publication completes", async () => {
+  let notifications = 0;
+  const registry = createPlannerContributionRegistry({ onChange: () => notifications++ });
+  registry.register("P2", () => snapshot(), validated);
+  await registry.accept("P2");
+  const before = notifications;
+  registry.clearAcceptance({ notify: false });
+  assert.equal(notifications, before);
+  assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }));
+  registry.notifyAcceptanceChange();
+  assert.equal(notifications, before + 1);
+  registry.clearAcceptance();
+  assert.equal(notifications, before + 2);
+});
+
 test("complete P2 recipe getter takes precedence and cannot be reduced to legacy export", async () => {
   const registry = createPlannerContributionRegistry(); let validatedFull = false;
   const full = { ...snapshot(), contribution: { schema: "complete-p2", presentation: { repeatLabelsEvery: 5 } } };

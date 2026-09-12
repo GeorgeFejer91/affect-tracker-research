@@ -303,7 +303,11 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
         return structuredClone(snapshot);
       } finally { if (accepting.get(segment) === sequence) accepting.delete(segment); }
     },
-    clearAcceptance() { advanceAcceptance(); accepted.clear(); accepting.clear(); notify(); },
+    clearAcceptance({ notify: shouldNotify = true } = {}) {
+      advanceAcceptance(); accepted.clear(); accepting.clear();
+      if (shouldNotify) notify();
+    },
+    notifyAcceptanceChange() { notify(); },
     invalidateAcceptance(segment) {
       segmentId(segment);
       const receipt = accepted.get(segment);
