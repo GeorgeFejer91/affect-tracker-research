@@ -273,6 +273,34 @@ belongs to the newly allocated companion-app separation; its removal must be
 checked in the new candidate. No canonical promotion, Edge, installed/native,
 physical input, execution/recording or final Planner–Runner correspondence claim.
 
+## Edge capture lifecycle repair — 2026-09-12
+
+The excluded Edge connection-refused attempt was a helper lifecycle failure.
+A bounded local probe found the launcher exiting at 116ms while the headless
+browser requested the still-open server at 819ms. Closing the server on launcher
+exit made the later browser fail. Diagnosis and a temporary verified helper are
+in `D:/GitHub/.affect-preview-checks/edge-launch-diagnostic-20260912/README.md`.
+
+Root's `segment-visual-audit.mjs` now receives the actual page receipt by local
+HTTP and waits for a complete fresh PNG independently of launcher stdout. It
+retains source/settled-state assertions and image/harness hashes, and refuses a
+nonempty output directory before starting capture or overwriting older evidence.
+
+The final helper passes two actual XR captures each in Chrome and Edge at clean
+`7946bc6` (1280×900/800×700), under
+`D:/GitHub/.affect-preview-checks/capture-http-v2-chrome-7946bc6-20260912` and
+`capture-http-v2-edge-7946bc6-20260912`. All four PNG/harness hashes match their
+receipts; source is stable, with zero page errors/pane overflow. Chrome's final
+images were inspected; both final Edge PNGs are byte-identical to the already
+inspected preceding Edge images. Reusing the destination rejects before capture
+and leaves the previous receipt bytes unchanged. An intermediate duplicate local
+declaration caused a syntax failure before capture; it was corrected before
+these final checks and is not counted as a passing run.
+
+This restores a working Edge capture method and one-section evidence. It is not
+an all-section Edge pass, complete Planner master workflow, installed/native or
+physical qualification. Use the repaired helper for the later final candidate.
+
 ## Segment checklist
 
 ### P1 — Workspace and video library

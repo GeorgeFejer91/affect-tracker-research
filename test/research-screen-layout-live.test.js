@@ -17,14 +17,14 @@ const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 const config = () => ({ visual: clone(DEFAULT_SETTINGS.visual), mappings: clone(DEFAULT_SETTINGS.advanced.mappings) });
-const draft = () => ({ ...createScreenLayoutDraft(), referenceWidth: 1280 / 1920 * 100, referenceHeight: 720 / 1080 * 100,
+const draft = () => ({ ...createScreenLayoutDraft(), referencePolicy: "largest-oriented-area", referenceWidth: 1280 / 1920 * 100, referenceHeight: 720 / 1080 * 100,
   referenceX: 50, referenceY: 400 / 1080 * 100, diameter: 20, offsetY: 500 / 720 * 100, gap: 0 });
 // Explicit synthetic P1 API fixture. Actual producer conformance is checked separately.
 function catalogue(revision = 7) {
   return { revision, enabled: true, pending: false, dependencyRevisions: [], contribution: { revision: 2, entries: [
-    { assetId: "landscape", annotationId: "Landscape", width: 1920, height: 1080 },
-    { assetId: "portrait", annotationId: "Portrait", width: 1080, height: 1920 },
-    { assetId: "wide", annotationId: "Wide", width: 2560, height: 720 },
+    { assetId: `asset-${"a".repeat(64)}`, annotationId: "Landscape", width: 1920, height: 1080 },
+    { assetId: `asset-${"b".repeat(64)}`, annotationId: "Portrait", width: 1080, height: 1920 },
+    { assetId: `asset-${"c".repeat(64)}`, annotationId: "Wide", width: 2560, height: 720 },
   ] } };
 }
 const project = async value => ({ catalogueRevision: value.revision,
@@ -56,18 +56,21 @@ test("live P4 fit consumes owner geometry and actual P5 bounds with outer depend
   for (const v of p.videos) { near(v.bounds.cx, 960); near(v.bounds.cy, 400); assert.equal(v.boundKind, "saved-maximum"); }
   assert.equal(p.exportable, false);
   assert.equal(h.owner.getSnapshot().contribution, null);
-  assert.throws(validateScreenLayoutContribution, /largest-video/u);
+  await assert.rejects(validateScreenLayoutContribution(), /missing or unexpected/u);
 });
 
-test("largest-video candidates are deterministic and do not silently move the fixed frame", async () => {
+test("chosen automatic reference is deterministic across catalogue traversal order", async () => {
   const h = harness();
+  assert.equal(h.owner.projection.geometry, null);
+  await h.binding.refreshCatalogue();
   const before = h.owner.projection.geometry;
+  h.p1 = { ...h.p1, revision: 8, contribution: { ...h.p1.contribution, entries: [...h.p1.contribution.entries].reverse() } };
   await h.binding.refreshCatalogue();
   assert.deepEqual(h.owner.projection.geometry, before);
   const media = h.p1.contribution.entries.map(e => ({ id: e.assetId, width: e.width, height: e.height }));
   const result = screenLayoutReferenceCandidates(media);
   assert.deepEqual(result, screenLayoutReferenceCandidates([...media].reverse()));
-  assert.equal(result.largestVideo.assetId, "landscape");
+  assert.equal(result.largestVideo.assetId, `asset-${"a".repeat(64)}`);
   assert.deepEqual(result.maximumDimensions, { width: 2560, height: 1920 });
 });
 
@@ -81,9 +84,11 @@ test("catalogue withdrawal and saved feedback edits invalidate immediately and c
   await refresh;
   const r = h.owner.getSnapshot().revision;
   h.changeFeedback(null, false);
-  assert.equal(h.owner.projection.geometry.maximumFeedback, null);
+  assert.equal(h.owner.projection.geometry, null);
   assert.ok(h.owner.getSnapshot().revision > r);
   h.changeFeedback(c => { c.visual.flubber.outlineThickness = 20; }, true);
+  assert.equal(h.owner.projection.geometry, null);
+  h.p1 = catalogue(9); await h.binding.refreshCatalogue();
   assert.ok(h.owner.projection.geometry.maximumFeedback.width > 0);
 });
 
@@ -151,7 +156,7 @@ test("draft restoration is closed, recoverable, and independent of imported depe
   assert.equal(h.owner.draft.diameter, ""); assert.equal(h.owner.projection.geometry, null);
   const before = h.owner.getSnapshot();
   for (const malformed of [
-    { ...saved, version: 2 }, { ...saved, dependencyRevisions: [{ segment: "P1", revision: 7 }] },
+    { ...saved, version: 99 }, { ...saved, dependencyRevisions: [{ segment: "P1", revision: 7 }] },
     { ...saved, draft: { ...saved.draft, diameter: Infinity } }, { ...saved, draft: { ...saved.draft, unknown: 1 } },
     { ...saved, draft: { ...saved.draft, offsetX: "x".repeat(129) } },
   ]) await assert.rejects(h.owner.restoreDraft(malformed), /draft/u);
@@ -176,6 +181,7 @@ test("snapshots and projection copies cannot mutate owner state; no-op refresh d
   const h = harness(); await h.binding.refreshCatalogue();
   const before = h.owner.getSnapshot();
   h.owner.refreshDependencies(); h.owner.replaceDraft(h.owner.draft);
+  await h.binding.refreshCatalogue();
   assert.deepEqual(h.owner.getSnapshot(), before);
   const copy = h.owner.projection; copy.geometry.feedback.cx = 0;
   assert.notEqual(h.owner.projection.geometry.feedback.cx, 0);
@@ -191,6 +197,7 @@ test("actual P1 shared conformance fixture and P5 source compose through one sub
   const p5 = createFeedbackContributionSource(() => configuration);
   let binding, state, pending;
   state = createScreenLayoutState({ resolve: d => binding ? binding.resolve(d) : resolveScreenLayoutDraft(d) });
+  state.replaceDraft({ ...state.draft, referencePolicy: "largest-oriented-area" });
   const controller = {
     getWorkspaceContributionSnapshot() {
       const snapshot = p1.getSnapshot();
@@ -237,7 +244,7 @@ test("wrong algorithm, centre, viewport and nonfinite P5 extents never become fi
       return { revision: 1, pending: false, envelope };
     } });
     const p = binding.resolve(draft());
-    assert.equal(p.geometry.maximumFeedback, null);
+    assert.equal(p.geometry, null);
     assert.ok(p.issues.some(i => i.code === "feedback-unavailable"));
   }
 });

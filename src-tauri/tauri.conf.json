@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Affect Research",
+  "productName": "Experiment Planner",
   "version": "0.4.0-alpha.1",
   "identifier": "io.github.georgefejer91.affecttracker",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "research",
-        "title": "Affect Research",
+        "title": "Experiment Planner",
         "url": "index.html",
         "width": 1280,
         "height": 860,
@@ -31,8 +31,8 @@
     "active": true,
     "targets": "all",
     "category": "Education",
-    "shortDescription": "Local-first continuous video affect research instrument",
-    "longDescription": "A focused Windows research application for configuring and running continuous valence-arousal video studies with durable local records and optional outbound Lab Streaming Layer streams.",
+    "shortDescription": "Experiment recipe authoring with live Flubber previews",
+    "longDescription": "Authors comprehensive experiment recipes and previews feedback and layout for the separate Experiment Runner companion.",
     "copyright": "Copyright 2026 George Fejer",
     "icon": [
       "icons/32x32.png",

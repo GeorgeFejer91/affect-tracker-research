@@ -2,9 +2,9 @@
 export const SCREEN_LAYOUT_DRAFT_FIELDS = Object.freeze({
   screenWidth: "Design viewport width", screenHeight: "Design viewport height",
   physicalWidth: "Measured active width", physicalHeight: "Measured active height",
-  referenceWidth: "Reference width", referenceHeight: "Reference height",
+  referenceWidth: "Maximum reference width", referenceHeight: "Maximum reference height",
   referenceX: "Reference centre X", referenceY: "Reference centre Y",
-  diameter: "Flubber diameter", offsetX: "Centre offset X", offsetY: "Centre offset Y",
+  diameter: "Feedback viewport side", offsetX: "Centre offset X", offsetY: "Centre offset Y",
   gap: "Minimum separation",
 });
 const LAYOUT_FIELDS = ["referenceWidth", "referenceHeight", "referenceX", "referenceY", "diameter", "offsetX", "offsetY", "gap"];
@@ -13,7 +13,7 @@ const issue = (field, code, message, videoId = null) => ({ field, code, message,
 export function createScreenLayoutDraft() {
   return {
     screenWidth: 1920, screenHeight: 1080, physicalWidth: "", physicalHeight: "",
-    fullViewportMapping: false, units: "relative",
+    fullViewportMapping: false, units: "relative", referencePolicy: null,
     referenceWidth: 60, referenceHeight: 60, referenceX: 50, referenceY: 35,
     diameter: 24, offsetX: 0, offsetY: 75, gap: 3,
   };

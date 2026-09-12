@@ -25,7 +25,11 @@
     "desktop:logos:axis:build": "node scripts/build-axis-bloom-variants.mjs",
     "desktop:logos:axis:check": "node scripts/build-axis-bloom-variants.mjs --check",
     "desktop:logo:select": "node scripts/select-app-logo.mjs",
-    "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64"
+    "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64",
+    "runner:dev": "vite --config runner/vite.config.js",
+    "runner:build": "vite build --config runner/vite.config.js && node scripts/verify-runner-build.js",
+    "runner:check": "cargo check --manifest-path src-tauri/Cargo.toml --locked --bin affect-runner",
+    "runner:desktop": "cargo run --manifest-path src-tauri/Cargo.toml --locked --bin affect-runner"
   },
   "engines": {
     "node": ">=22.12.0"

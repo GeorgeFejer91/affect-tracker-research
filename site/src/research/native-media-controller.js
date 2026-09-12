@@ -1,3 +1,5 @@
+import { validateVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const WORKSPACE_FILE_PATTERN = /^(?:wf-[0-9a-f]{24}|pa-[0-9a-f]{64})$/u;
@@ -13,7 +15,7 @@ const PREPARE_KEYS = Object.freeze([
 ]);
 const SCANNED_SUMMARY_KEYS = Object.freeze([
   "byteLength", "decodeAttestation", "decodeBackend", "decodeStatus", "decodedPositionsMs",
-  "displayName", "durationMs", "mimeType", "sha256", "source", "workspaceFileId",
+  "displayGeometry", "displayName", "durationMs", "mimeType", "sha256", "source", "workspaceFileId",
 ]);
 const SOURCE_KEYS = Object.freeze([
   "byteLength", "durationMs", "kind", "mimeType", "relativePath", "sha256",
@@ -98,6 +100,12 @@ export function validateNativeMediaPrepareReceiptV1(value) {
 }
 
 export function validateNativeDecodedStimulusSummaryV1(value) {
+  let displayGeometry;
+  try {
+    displayGeometry = validateVideoDisplayGeometry(value?.displayGeometry);
+  } catch {
+    throw new TypeError("Native decoded stimulus summary is malformed.");
+  }
   if (!exactKeys(value, SCANNED_SUMMARY_KEYS)
     || typeof value.workspaceFileId !== "string" || !WORKSPACE_FILE_PATTERN.test(value.workspaceFileId)
     || typeof value.displayName !== "string" || value.displayName.length < 1 || value.displayName.length > 512
@@ -119,12 +127,14 @@ export function validateNativeDecodedStimulusSummaryV1(value) {
     || value.source.mimeType !== value.mimeType
     || value.source.sha256 !== value.sha256
     || value.source.byteLength !== value.byteLength
-    || value.source.durationMs !== value.durationMs) {
+    || value.source.durationMs !== value.durationMs
+    || displayGeometry.source !== "native-gstplay-metadata") {
     throw new TypeError("Native decoded stimulus summary is malformed.");
   }
   return Object.freeze({
     ...value,
     decodedPositionsMs: Object.freeze([...value.decodedPositionsMs]),
+    displayGeometry,
     source: Object.freeze({ ...value.source }),
   });
 }

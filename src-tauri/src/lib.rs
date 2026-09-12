@@ -4,6 +4,7 @@
 mod research_clock;
 mod research_commands;
 mod research_contracts;
+mod research_desktop;
 pub mod research_desktop_layout;
 mod research_error;
 mod research_experiment_package;
@@ -15,17 +16,20 @@ mod research_lsl;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
-mod research_platform;
 pub mod research_planner_recipe_policy;
+mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
 mod research_run_storage;
 mod research_runtime;
 mod research_stimulus_order;
 mod research_timing;
+mod research_video_geometry;
 mod research_workspace;
+pub mod research_workspace_contribution;
 pub mod research_xr_layout;
 
+use research_desktop::DesktopRole;
 use research_input::ResearchInputService;
 use research_native_media::NativeMediaService;
 use research_native_protocol::runtime::PackageProtocolRuntime;
@@ -37,7 +41,17 @@ use tauri::{Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    launch(DesktopRole::Planner, tauri::generate_context!());
+}
+
+/// Independent Runner binary supplies its own embedded assets and identity.
+pub fn run_runner(context: tauri::Context<tauri::Wry>) {
+    launch(DesktopRole::Runner, context);
+}
+
+fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
+    let builder = tauri::Builder::default()
+        .manage(role)
         .register_uri_scheme_protocol("research-media", |context, request| {
             if let Some(workspace) = context.app_handle().try_state::<Arc<WorkspaceService>>() {
                 workspace.protocol_response(context.webview_label(), request)
@@ -48,7 +62,7 @@ pub fn run() {
             }
         })
         .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
+        .setup(move |app| {
             let app_data_dir = app.path().app_data_dir()?;
             let workspace = Arc::new(
                 WorkspaceService::with_default_workspace(app_data_dir.clone())
@@ -69,21 +83,16 @@ pub fn run() {
                 .and_then(|window| window.is_focused().ok())
                 .unwrap_or(false);
             input.set_window_focused(focused);
-            let runtime = Arc::new(ResearchRuntime::with_services(
-                Arc::clone(&workspace),
-                Arc::clone(&native_media),
-                Arc::clone(&input),
-            ));
-            let package_runtime = Arc::new(PackageProtocolRuntime::with_services(
-                Arc::clone(&workspace),
-                Arc::clone(&native_media),
-                Arc::clone(&input),
-            ));
+            if role == DesktopRole::Runner {
+                app.manage(Arc::new(PackageProtocolRuntime::with_services(
+                    Arc::clone(&workspace),
+                    Arc::clone(&native_media),
+                    Arc::clone(&input),
+                )));
+            }
             app.manage(workspace);
             app.manage(native_media);
             app.manage(input);
-            app.manage(runtime);
-            app.manage(package_runtime);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -127,33 +136,17 @@ pub fn run() {
                     }
                 }
             }
-        })
-        .invoke_handler(tauri::generate_handler![
+        });
+    let builder = match role {
+        DesktopRole::Planner => builder.invoke_handler(tauri::generate_handler![
+            research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
             research_commands::research_native_media_status,
             research_commands::research_native_media_prepare,
             research_commands::research_native_media_set_viewport,
-            research_commands::research_native_media_play,
             research_commands::research_native_media_attest_decode,
-            research_commands::research_native_media_pause,
             research_commands::research_native_media_stop,
-            research_commands::research_native_protocol_capability,
-            research_native_protocol::commands::research_package_protocol_capability,
-            research_native_protocol::commands::research_package_preflight,
-            research_native_protocol::commands::research_start_package_run,
-            research_native_protocol::commands::research_resume_package_run,
-            research_native_protocol::commands::research_package_recoveries,
-            research_native_protocol::commands::research_finalize_package_recovery,
-            research_native_protocol::commands::research_package_run_status,
-            research_native_protocol::commands::research_package_prepare_media,
-            research_native_protocol::commands::research_package_set_media_viewport,
-            research_native_protocol::commands::research_package_play,
-            research_native_protocol::commands::research_package_pause,
-            research_native_protocol::commands::research_package_questionnaire_draft,
-            research_native_protocol::commands::research_package_questionnaire_submit,
-            research_native_protocol::commands::research_finish_package_run,
-            research_commands::research_protocol_preflight,
             research_commands::research_input_capability,
             research_commands::research_input_set_region,
             research_commands::research_input_begin_test,
@@ -168,10 +161,6 @@ pub fn run() {
             research_commands::research_load_experiment_package,
             research_commands::research_save_experiment_package,
             research_commands::research_rescan_stimuli,
-            research_commands::research_video_library,
-            research_commands::research_save_stimulus_order,
-            research_commands::research_import_library_videos,
-            research_commands::research_export_video_library,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
             research_commands::research_workspace_media_url,
@@ -180,22 +169,52 @@ pub fn run() {
             research_commands::research_store_questionnaire_asset,
             research_commands::research_storage_readiness,
             research_commands::research_export_assignment_plan,
+            research_commands::research_save_stimulus_order,
+            research_commands::research_video_library,
+            research_commands::research_import_library_videos,
+            research_commands::research_export_video_library,
+        ]),
+        DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_desktop::research_desktop_identity,
+            research_commands::research_source_capabilities,
+            research_commands::research_native_media_capability,
+            research_commands::research_native_media_status,
+            research_commands::research_native_media_prepare,
+            research_commands::research_native_media_set_viewport,
+            research_commands::research_native_media_attest_decode,
+            research_commands::research_native_media_stop,
+            research_native_protocol::commands::research_package_protocol_capability,
+            research_native_protocol::commands::research_package_preflight,
+            research_native_protocol::commands::research_start_package_run,
+            research_native_protocol::commands::research_resume_package_run,
+            research_native_protocol::commands::research_package_recoveries,
+            research_native_protocol::commands::research_finalize_package_recovery,
+            research_native_protocol::commands::research_package_run_status,
+            research_native_protocol::commands::research_package_prepare_media,
+            research_native_protocol::commands::research_package_set_media_viewport,
+            research_native_protocol::commands::research_package_play,
+            research_native_protocol::commands::research_package_pause,
+            research_native_protocol::commands::research_package_questionnaire_draft,
+            research_native_protocol::commands::research_package_questionnaire_submit,
+            research_native_protocol::commands::research_finish_package_run,
+            research_commands::research_input_capability,
+            research_commands::research_input_set_region,
+            research_commands::research_input_begin_test,
+            research_commands::research_input_status,
+            research_commands::research_input_cancel_setup,
+            research_commands::research_choose_workspace,
+            research_commands::research_open_workspace_location,
+            research_commands::research_workspace_status,
+            research_commands::research_load_experiment_package,
+            research_commands::research_rescan_package_stimuli,
+            research_commands::research_workspace_media_url,
+            research_commands::research_storage_readiness,
             research_commands::research_lsl_readiness,
-            research_commands::research_start_protocol_run,
-            research_commands::research_resume_protocol_run,
-            research_commands::research_finalize_protocol_recovery,
-            research_commands::research_start_run,
-            research_commands::research_resume_run,
-            research_commands::research_finalize_recovery,
-            research_commands::research_run_status,
-            research_commands::research_set_stimulus_state,
-            research_commands::research_finish_run,
-            research_commands::research_report_media_failure,
-            research_commands::research_recoveries,
-            research_commands::research_participant_states,
-        ])
-        .build(tauri::generate_context!())
-        .expect("failed to build Affect Research");
+        ]),
+    };
+    let app = builder
+        .build(context)
+        .expect("failed to build the selected companion app");
 
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::ExitRequested { .. }) {

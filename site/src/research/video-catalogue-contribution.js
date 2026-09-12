@@ -30,10 +30,10 @@ function safeText(value, label, maximumBytes = 200) {
   return value;
 }
 
-function portablePath(value, label, prefix) {
+function portablePath(value, label, prefix, { trimmedComponents = false } = {}) {
   safeText(value, label, 2_048);
   if (!value.startsWith(prefix) || value.split("/").some((part) => (
-    !part || part === "." || part === ".." || part !== part.trim()
+    !part || part === "." || part === ".." || (trimmedComponents && part !== part.trim())
       || /[<>:"\\|?*]/u.test(part) || /[. ]$/u.test(part)
   ))) throw new TypeError(`${label} must remain beneath ${prefix}.`);
   return value;
@@ -135,7 +135,7 @@ export function validateVideoDisplayGeometry(value) {
  * are escaped before components are joined, so the mapping is injective.
  */
 export function videoAnnotationIdFromRelativePathV1(value) {
-  const path = portablePath(value, "Video source relative path", "stimuli/");
+  const path = portablePath(value, "Video source relative path", "stimuli/", { trimmedComponents: true });
   const annotationId = path.slice("stimuli/".length).split("/")
     .map((part, index) => {
       let encoded = part.replaceAll("%", "%25").replaceAll("_", "%5F");
@@ -187,8 +187,9 @@ function normalizeEntry(value, index, { version = 1 } = {}) {
     || value.assetId !== assetIdFromSha256(value.sha256)) {
     throw new TypeError(`${label}.assetId must bind the complete SHA-256 identity.`);
   }
-  const sourceRelativePath = portablePath(value.sourceRelativePath, `${label}.sourceRelativePath`, "stimuli/");
-  const packageRelativePath = portablePath(value.packageRelativePath, `${label}.packageRelativePath`, "assets/stimuli/");
+  const pathOptions = { trimmedComponents: version >= 2 };
+  const sourceRelativePath = portablePath(value.sourceRelativePath, `${label}.sourceRelativePath`, "stimuli/", pathOptions);
+  const packageRelativePath = portablePath(value.packageRelativePath, `${label}.packageRelativePath`, "assets/stimuli/", pathOptions);
   if (packageRelativePath !== `assets/${sourceRelativePath}`) {
     throw new TypeError(`${label} package and logical paths do not describe the same portable asset.`);
   }
@@ -249,8 +250,8 @@ function normalizeCoreV2(value) {
     throw new TypeError("Video catalogue contribution schema/version/policy is unsupported.");
   }
   const revision = positiveInteger(value.revision, "Video catalogue revision");
-  if (!Array.isArray(value.entries) || value.entries.length > 10_000) {
-    throw new TypeError("Video catalogue entries must be a bounded array.");
+  if (!Array.isArray(value.entries) || value.entries.length < 1 || value.entries.length > 10_000) {
+    throw new TypeError("Current video catalogue entries must be a bounded non-empty array.");
   }
   const entries = value.entries.map(normalizeEntryV2).sort(compareLocationIdentity);
   const locationIds = new Set();

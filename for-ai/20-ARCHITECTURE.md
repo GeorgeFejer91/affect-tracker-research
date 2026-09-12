@@ -128,6 +128,7 @@ not be merged into a catch-all controller or runtime module:
 | Participant and attempt | Transient form state and status tiles | Code derivation verification, locks, create-new attempt allocation and reconstruction |
 | Input | Binding editor and live-test presentation | Device capture, conflict/edge policy, authoritative state and sampling feed |
 | Visual feedback | Preview and Run rendering only | Frozen contract validation and evidence binding; no DOM or renderer ownership |
+| Desktop layout authoring (P4 successor) | `screen-layout-*` editor/lifecycle; `desktop-layout*` strict profile and full P1/P5 geometry composition | `research_desktop_layout` canonical typed reader and matching geometry; P7 owns full master composition, no Runner authority added |
 | Native media | Geometry/status projection through one adapter | GstPlay actor, private file grant, lifecycle, timestamps and child-window adapter |
 | Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
 | Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |

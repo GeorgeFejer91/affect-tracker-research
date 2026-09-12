@@ -122,10 +122,10 @@ test("the provisional fixture adapter rejects unowned real geometry and duplicat
   assert.equal(resolveScreenLayoutDraft(fixture(), { media: null }).issues.at(-1).code, "invalid-media");
 });
 
-test("draft markup provides numeric alternatives and explicitly excludes export and Run", () => {
+test("layout markup provides numeric alternatives and a required explicit reference choice", () => {
   const markup = screenLayoutDraftMarkup();
-  assert.match(markup, /not saved in the experiment package or applied during Run/u);
-  assert.match(markup, /These choices await confirmation/u);
+  assert.match(markup, /Choose a reference method/u);
+  assert.match(markup, /may not match any single video/u);
   assert.match(markup, /aria-live="polite"/u);
   assert.match(markup, /for="layout-offsetX"/u);
   assert.match(markup, /for="layout-offsetY"/u);

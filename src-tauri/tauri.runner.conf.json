@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Experiment Runner",
+  "version": "0.4.0-alpha.1",
+  "identifier": "io.github.georgefejer91.affecttracker.runner",
+  "build": {
+    "beforeDevCommand": "pnpm runner:dev",
+    "devUrl": "http://localhost:1421",
+    "beforeBuildCommand": "pnpm runner:build",
+    "frontendDist": "../runner/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "research",
+        "title": "Experiment Runner",
+        "url": "index.html",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 900,
+        "minHeight": 640,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data: blob:; media-src 'self' blob: http://research-media.localhost research-media:; object-src 'none'; frame-src 'none'; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "Desktop experiment execution and LSL recording",
+    "longDescription": "Consumes Experiment Planner recipes, runs the native protocol and records selected LSL streams to XDF. Runtime qualification remains separately gated.",
+    "copyright": "Copyright 2026 George Fejer",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "native-media/gstreamer-runtime-v1.json",
+      "native-media/GSTREAMER-RUNTIME-NOTICE.txt"
+    ]
+  },
+  "mainBinaryName": "affect-runner"
+}

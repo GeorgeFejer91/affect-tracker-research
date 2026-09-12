@@ -35,6 +35,90 @@ Runner, timestamp, recording or research qualification is claimed. The new Q04
 location-derived annotation implementation belongs to P1; its P3 consumer
 adaptation remains an explicit versioned follow-up, preserving this v1 fixture.
 
+## P5 complete Planner feedback settings — 2026-09-12
+
+P5 **Flubber & Controls** owns the persistent feedback editor: input bindings,
+response behavior, selected feedback renderer, colors/style and affect mappings.
+It contributes those settings to P7's master JSON and supplies complete feedback
+bounds to the P4/P6 layout owners. Preview test movement remains transient.
+
+New Planner completion allocation, P5-05 through P5-08. Pure contract `95b2e9`,
+editor/native wiring `781886c`, and Preview dependencies `d996ddd`, `13e9551`
+and `d711fb4` are composed in the full-suite verified application checkpoint
+`38684c37a639cb67528a4199b3da3ebbaffa9cc8` on isolated
+`codex/segment-p5-master-settings`, application tree
+`1d798b8a41d19a4d8c5027de97a213a999d7d749`. The sole integration owner collects
+source; this is a verified owner candidate, not canonical Planner completion.
+
+`affect-research-feedback` version 2 preserves all active configured input,
+Flubber/Grid/procedural-Face selection, appearance/mappings, Axes/Corners/applied
+labels, halo width/gradient/steepness and response grid/timing/hold values. The
+coordinator explicitly resolved current procedural Face under the new all-settings
+goal; no excluded historical Face/Photoatlas capability is restored. Complete
+field, unit, precedence, interface and conversion rules are in
+[`docs/planner-p5-feedback-v2.md`](../docs/planner-p5-feedback-v2.md).
+
+The exact old three-key P5 reader remains. Legacy restore stays V1 with explicit
+conversion offered; V2 restore defaults nothing. All fields are written before
+notification; invalid/stale/disposed restores cannot replace current settings.
+Preview's helper clears transient test/capture/dialog state without changing
+saved colors. Native and JS validators preserve the complete canonical fixture.
+The full envelope dispatch includes the finite halo filter region and all three
+selected renderers; no caller-supplied or current-phase footprint is trusted.
+
+Full-suite candidate evidence:
+
+- **668/668 Node checks** at clean application `38684c3`, including strict nested
+  field rejection, revisions/pending, every input preset, independent-process
+  reproduction and full bounds. Log: `master-v2-final-node.log`.
+- **3/3 native P5 tests**, with 199 unrelated tests filtered: canonical full
+  configuration, missing/unknown/range rejection and thirteen complete JS/Rust
+  envelope/key comparisons. `master-rust.log` records the own crate invocation
+  at `5c9d3df`; the native implementation is unchanged since that receipt.
+  Locked no-default all-target Clippy with warnings denied passes at the same
+  source (`master-clippy.log`); the later native delta only sorts adjacent module
+  declarations and passes formatting.
+- Desktop **11-file** and Pages **219-file** closures at `38684c3`; existing
+  non-failing bundle-size warning remains. `master-v2-final-desktop.log`,
+  `master-v2-final-pages.log`.
+- **129 actual-controller V2 checks at each of 1280/800 CSS px**: exact all-field
+  restoration and precision, three renderers, configured digital response under
+  a controlled clock, invalid/stale/disposed rejection, explicit legacy conversion,
+  pending revisions and transient cleanup. `master-v2-final-chrome/{1280,800}.json`.
+- **15 reset checks at each width**: `master-v2-final-reset/{1280,800}.json`.
+  V2 inspection is explicitly locked; only V1 exercises legacy renderer dragging.
+- **84 long-label layout checks**: both Axes and Corners at both widths, with a
+  deliberately 280px Preview pane in the narrow fixture. All four accepted
+  48-unit labels remain contained and do not cover the map. Ordinary narrow
+  restored labels and all four long-label PNGs were inspected. Receipts/images:
+  `master-v2-final-{axes,corners}/{1280,800}.{json,png}`. Preview's bounded CSS fix
+  resolves the observed one-character corner-label columns; it does not qualify
+  the entire application split layout. V2 placement/label help now says saved.
+
+These browser receipts bind the clean application commit/tree above and
+include browser, fixture and screenshot hashes. These use fresh-profile headless
+Chrome with synthetic input; they are not physical input or timing measurements.
+
+Final bounded Preview follow-up `9237279` is collected in clean application
+`5c0ad7a55e8ffd28ca999524b62b7297070a5fbd`, site tree
+`ad2fbacdce30eada866609d6b3cbb21155bf856f`. Only narrow axis-editor left/right
+captions are capped at three lines; full DOM/accessibility text, hover titles,
+dialog editing and saved labels remain intact. Participant labels are unchanged.
+This follow-up passes **38 focused P5/Preview tests**, **258 actual restore checks**,
+**122 expanded label checks**, and desktop11/Pages219 closures. Both axis PNGs
+were inspected; the 280px side captions now stay compact beside the map.
+Receipts/logs: `master-v2-capped-{axes,corners,restore}/{1280,800}.{json,png}` and
+`master-v2-capped-{focused,desktop,pages}.log`. The 668-test and native receipts
+above remain bound to their stated source; they are not relabelled as new runs.
+
+Evidence root:
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/`.
+P7 owns complete master assembly/save/reopen; P4/P6 own placement and consume
+the new P5 dispatch. No Runner adapter/execution/correspondence, physical input,
+installed platform, Edge, research release or publication is claimed. Runner
+correspondence is explicitly the last later development stage, not a prerequisite
+for this Planner authoring/schema completion pass.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated

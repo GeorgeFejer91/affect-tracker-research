@@ -4,8 +4,13 @@ version = "0.4.0-alpha.1"
 description = "Local-first video affect research instrument"
 authors = ["George Fejer"]
 edition = "2021"
+default-run = "affect-research"
 license = "BSD-3-Clause"
 repository = "https://github.com/GeorgeFejer91/affect-tracker-research"
+
+[[bin]]
+name = "affect-runner"
+path = "src/bin/runner.rs"
 
 [lib]
 name = "affect_research"

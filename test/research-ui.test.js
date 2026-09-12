@@ -270,7 +270,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /openBrowserExperimentPackage\(\)/u);
+  assert.match(source, /openBrowserPlannerRecipeFile\(options\)/u);
+  assert.match(source, /openLegacy: applyExperimentPackageReceipt/u);
   assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
   assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);
@@ -712,6 +713,11 @@ test("Setup remains scrollable and narrow pane headers own intrinsic height", as
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
   assert.match(css, /@container setup-pane \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
+  assert.match(css, /\.table-scroll\s*\{[\s\S]*?max-width:\s*100%;[\s\S]*?overflow:\s*auto;/u);
+  assert.match(css, /\.video-location-id\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?user-select:\s*text;/u);
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /title\.className = "video-location-id";[\s\S]*?title\.textContent = stimulus\.title;[\s\S]*?title\.title = stimulus\.title;/u);
+  assert.match(source, /source === "workspace"[\s\S]*?videoAnnotationIdFromRelativePathV1\(String\(location\)\)/u);
 });
 
 test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {

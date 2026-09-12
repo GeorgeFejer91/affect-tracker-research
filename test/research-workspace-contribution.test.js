@@ -5,17 +5,60 @@ import test from "node:test";
 import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
 import {
+  createWorkspaceContribution,
   createWorkspaceContributionV1,
+  createWorkspaceContributionProducer,
   createWorkspaceContributionProducerV1,
+  prepareWorkspaceContentRestore,
   prepareWorkspaceContentRestoreV1,
   projectVideoCatalogueSnapshotV1,
+  projectWorkspaceVideoCatalogueSnapshot,
   projectWorkspaceVideoCatalogueSnapshotV1,
+  projectWorkspaceVideoDisplayGeometry,
   projectWorkspaceVideoDisplayGeometryV1,
+  validateWorkspaceContribution,
   validateWorkspaceContributionV1,
+  verifyWorkspaceRestoredVideoEntries,
   verifyWorkspaceRestoredVideoEntriesV1,
 } from "../site/src/research/workspace-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url);
+const fixtureV2Url = new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url);
+
+test("P1 workspace v2 keeps duplicate-content locations and composes the current producer", async () => {
+  const videoCatalogue = JSON.parse(await readFile(fixtureV2Url, "utf8"));
+  const study = createStudyIdentityV1({ id: "video-affect-study", title: "Video Affect Study" });
+  const contribution = createWorkspaceContribution({ study, videoCatalogue });
+  assert.equal(contribution.version, 2);
+  assert.deepEqual(await validateWorkspaceContribution(contribution), contribution);
+  const plan = await prepareWorkspaceContentRestore(contribution);
+  assert.equal(plan.requiresVideoLibraryRebind, true);
+  assert.deepEqual(plan.videoDeclarations.map(({ annotationId }) => annotationId), [
+    "session%5Fa_clip.mp4", "session-a_clip.mp4",
+  ]);
+  assert.deepEqual(
+    await verifyWorkspaceRestoredVideoEntries(contribution, videoCatalogue.entries),
+    videoCatalogue,
+  );
+
+  let source = { revision: 4, enabled: true, pending: false, contribution: videoCatalogue, dependencyRevisions: [] };
+  const producer = createWorkspaceContributionProducer({
+    getStudyIdentity: () => study,
+    getVideoCatalogueSnapshot: () => source,
+  });
+  const snapshot = producer.getSnapshot();
+  assert.equal(snapshot.contribution.version, 2);
+  assert.equal((await projectWorkspaceVideoCatalogueSnapshot(snapshot)).contribution.version, 2);
+  assert.deepEqual(await projectWorkspaceVideoDisplayGeometry(snapshot), {
+    revision: 1,
+    pending: false,
+    videos: [{
+      assetId: `asset-${"d".repeat(64)}`, displayWidth: 1_920, displayHeight: 1_080,
+    }],
+  });
+  source = { ...source, pending: true, contribution: null };
+  assert.equal(producer.changed().pending, true);
+});
 
 test("P1 workspace contribution combines editable study content and fixed relative layout without filesystem authority", async () => {
   const videoCatalogue = JSON.parse(await readFile(fixtureUrl, "utf8"));
