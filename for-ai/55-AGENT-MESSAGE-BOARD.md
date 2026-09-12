@@ -4583,3 +4583,26 @@ by this build-option change.
   render/notify. Existing loadDefinition shares the private state authority.
 - Baseline13/13; focused completion29/29 including9 new import cases. Exact
   API/limits: docs/planner-p2-prepared-import.md. No broad/native/build claim.
+
+### S1 / P3 prepared confirmation owner seam — 2026-09-12
+
+- Root/Main allocation: P3-03/P3-08 and CLI-P3 confirmation publication only,
+  Backend Verification. Base `2fe9da8`, isolated branch
+  `codex/p3-prepared-confirmation`. Existing `prepareContribution` compiled and
+  installed confirmation/rendered before coordinator publication. It remains
+  unchanged for GUI callers; the new `prepareConfirmation({isCurrent,signal})`
+  uses the same document/timeline validators without changing state or views.
+- Candidate: detached `snapshot` getter in exact `getSnapshot()` shape
+  `{revision,enabled,pending,contribution,dependencyRevisions}` (no segment key),
+  representing generation+1, enabled/nonpending compiled contribution and the
+  actual P1 revision. `isCurrent` fences owner/catalogue/restore generations,
+  busy/disposed state, caller and abort. Guarded synchronous `commit` installs
+  only once; `afterCommit` renders/notifies once and suppresses stale projection.
+- Main and S7 received the shape before implementation. S7 owns prepared-owner
+  registry composition; Main owns actual app/CLI registration. No app, native,
+  shared registry, P6, persistence or scientific wire changes are included.
+- Evidence: 31 existing editor baseline tests passed. Final focused editor and
+  P3 authoring suites pass 59 checks, including read-only preparation, detached
+  future/live equality, GUI compiler equality, actual P1 rebind, cancellation,
+  stale owner/dependency, competing candidates and single-use projection.
+  No GUI launch, build, native write or end-to-end CLI qualification claimed.

@@ -11,7 +11,7 @@ const { library, document: design, videos } = JSON.parse(await readFile(new URL(
 const contentFixture = JSON.parse(await readFile(new URL("./fixtures/variant-workspace-binding-v1.json", import.meta.url), "utf8"));
 function fixture(operate) {
   const handlers = new Map();
-  let renders = 0, markup = "";
+  let renders = 0, markup = "", notifications = 0, announcements = 0;
   const host = {
     set innerHTML(value) { renders++; markup = value; },
     querySelector() { return null; },
@@ -23,12 +23,102 @@ function fixture(operate) {
     querySelector(selector) { return selector === "#stimulus-order-editor" ? host : selector === "#stimulus-order-status" ? status : versions; },
     querySelectorAll() { return []; },
   };
-  const editor = createStimulusOrderEditor({ root, operate });
-  return { editor, handlers, status, versions, get renders() { return renders; }, get markup() { return markup; } };
+  const editor = createStimulusOrderEditor({ root, operate, onChange() { notifications++; }, announce() { announcements++; } });
+  return { editor, handlers, status, versions, get renders() { return renders; }, get markup() { return markup; },
+    get notifications() { return notifications; }, get announcements() { return announcements; } };
 }
 function cell(value) {
   return { dataset: { orderRow: "1", orderColumn: "0" }, value, removeAttribute() {}, setAttribute() {} };
 }
+
+async function confirmationFixture() {
+  const ui = fixture(async () => { throw Error("Prepared confirmation must not write."); });
+  await ui.editor.adopt({ library, design }, { loadSaved: true });
+  ui.editor.setCatalogue({ revision: 7, videos });
+  return ui;
+}
+const projection = ui => ({ renders: ui.renders, notifications: ui.notifications,
+  announcements: ui.announcements, status: ui.status.textContent, versions: ui.versions.innerHTML });
+
+test("prepared confirmation is read-only and its detached future snapshot equals the committed real owner", async () => {
+  const ui = await confirmationFixture(), before = ui.editor.getSnapshot(), view = projection(ui);
+  const candidate = await ui.editor.prepareConfirmation();
+  assert.deepEqual(ui.editor.getSnapshot(), before);
+  assert.deepEqual(projection(ui), view);
+  assert.equal(candidate.isCurrent(), true);
+  const future = candidate.snapshot;
+  assert.deepEqual(Object.keys(future), Object.keys(before));
+  assert.equal(future.revision, before.revision + 1);
+  assert.equal(future.enabled, true); assert.equal(future.pending, false);
+  assert.deepEqual(future.dependencyRevisions, [{ segment: "P1", revision: 7 }]);
+  const detached = candidate.snapshot; detached.contribution.variants[0].title = "caller mutation";
+  assert.deepEqual(candidate.snapshot, future);
+  assert.throws(() => candidate.afterCommit(), /Commit/);
+  candidate.commit();
+  assert.deepEqual(ui.editor.getSnapshot(), future);
+  assert.deepEqual(projection(ui), view, "Commit does not render or notify");
+  assert.equal(candidate.isCurrent(), false);
+  assert.throws(() => candidate.commit(), /changed/);
+  candidate.afterCommit();
+  assert.equal(ui.renders, view.renders + 1);
+  assert.equal(ui.notifications, view.notifications + 1);
+  assert.equal(ui.announcements, view.announcements + 1);
+  const projected = projection(ui); candidate.afterCommit(); assert.deepEqual(projection(ui), projected);
+});
+
+for (const mode of ["edit", "reset", "withdraw", "destroy", "abort", "caller"]) {
+  test(`prepared confirmation rejects ${mode} without altering newer state or projection`, async () => {
+    const ui = await confirmationFixture(), controller = new AbortController();
+    let current = true;
+    const candidate = await ui.editor.prepareConfirmation({ isCurrent: () => current, signal: controller.signal });
+    if (mode === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (mode === "reset") ui.editor.reset();
+    if (mode === "withdraw") ui.editor.setCatalogue(null);
+    if (mode === "destroy") ui.editor.destroy();
+    if (mode === "abort") controller.abort();
+    if (mode === "caller") current = false;
+    const before = ui.editor.getSnapshot(), view = projection(ui);
+    assert.equal(candidate.isCurrent(), false);
+    if (mode === "caller") current = true;
+    assert.throws(() => candidate.commit(), /changed/);
+    assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+  });
+}
+
+test("confirmation rejects invalid input or cancellation during compilation without presentation effects", async () => {
+  for (const mode of ["invalid", "abort", "withdraw"]) {
+    const ui = await confirmationFixture(), controller = new AbortController();
+    if (mode === "invalid") ui.handlers.get("input")({ target: cell("unknown") });
+    const pending = ui.editor.prepareConfirmation({ signal: controller.signal });
+    if (mode === "abort") controller.abort();
+    if (mode === "withdraw") ui.editor.setCatalogue(null);
+    const before = ui.editor.getSnapshot(), view = projection(ui);
+    await assert.rejects(pending);
+    assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+  }
+});
+
+test("competing confirmations reserve no state and a delayed projection cannot overwrite newer edits", async () => {
+  const ui = await confirmationFixture();
+  const [a, b] = await Promise.all([ui.editor.prepareConfirmation(), ui.editor.prepareConfirmation()]);
+  assert.deepEqual(a.snapshot, b.snapshot);
+  a.commit(); assert.throws(() => b.commit(), /changed/);
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  const before = ui.editor.getSnapshot(), view = projection(ui);
+  a.afterCommit(); assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+});
+
+test("prepared confirmation preserves the existing GUI compiler and real P1 source binding", async () => {
+  const ui = await confirmationFixture(), gui = await confirmationFixture();
+  const candidate = await ui.editor.prepareConfirmation();
+  assert.deepEqual(candidate.snapshot, await gui.editor.prepareContribution());
+  await ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 42 });
+  const rebound = await ui.editor.prepareConfirmation();
+  assert.deepEqual(rebound.snapshot.contribution, contentFixture.contribution);
+  assert.deepEqual(rebound.snapshot.dependencyRevisions, [{ segment: "P1", revision: 42 }]);
+  rebound.commit(); assert.deepEqual(ui.editor.getSnapshot(), rebound.snapshot);
+});
 
 test("typing invalidates the saved version immediately and cannot save stale cell values", async () => {
   let writes = 0;
