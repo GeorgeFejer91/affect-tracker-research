@@ -103,7 +103,7 @@ qualification are deferred unless separately allocated by the researcher.
 | P3 `variants` | Event columns, ISIs and markers | Ordered variants and event definitions; Runner owns allocation | Missing target workflow; explicit-plan predecessor exists |
 | P4 `layout` | Video fitting and centre-relative Flubber layout | Units, reference geometry, offsets, size and fit policy | Missing target workflow; normalized placement exists |
 | P5 `feedback` | Flubber/input/Advanced editor and live preview | Input configuration, visual style and mappings | Partial; old controls distributed across sections |
-| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Missing; authoring target accepted |
+| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Owner-ready authoring and live P1/P5 binding; integration/master round trip pending |
 | P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 

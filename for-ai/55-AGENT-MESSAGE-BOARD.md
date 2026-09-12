@@ -84,6 +84,27 @@ file; follow the integration-owner collection procedure in the workflow.
   pending/reused revisions, asynchronous replacement/teardown, dependency-bound
   reopen and explicit selected-target rejection. Disabled XR must not block
   desktop. Background app/build checks only; no hardware or runtime claims.
+- Final status: **ready for integration**, clean application `b54e403`; P6
+  implementation `53f3537`/`1f76fb9`/`817d52a`/`8e05273`/`298d5f4`/`f51263a`
+  with reviewed P1 `5988ce0`, P5 `ccc53a7`/`1a238a5`, P7 `f283de0` and the
+  integration-owned progress-wrap fix `ec4bb04` collected as `b54e403`.
+- Actual P1 composite/projector and subscription now share one outer revision.
+  Study-only changes and incomplete media invalidate P6 and its P7 acceptance;
+  P5 edits withdraw stale bounds before async projection. Content-only reopen
+  uses `restoreXrLayoutDraft(profile,{isCurrent})`, leaving the draft pending
+  while P1 media is unresolved. Full restore/prepare still requires ready live
+  dependencies. No media authority is synthesized by the restore path.
+- P7/integration APIs and pure parser sequence are documented in
+  `63-P6-XR-LAYOUT.md`. `prepareXrLayoutContribution({isCurrent})` supports one
+  footer action, followed by P7 acceptance with explicit selected target; the
+  integration owner retains the actual footer composition hunk. The P6 helper
+  cannot mark P7 accepted or saved. Master representation/reopen/save remains P7.
+- Final evidence: **572 Node checks**, desktop **9-file** / Pages **197-file**
+  closures; actual Chrome **28 assertions each at 1440/820px**, inspected
+  screenshots and zero horizontal overflow. Full receipts/limits in the P6
+  roadmap entry. Edge produced no receipt and remains unverified. No runtime,
+  installed/native/hardware qualification, canonical merge, push or deployment.
+- Source writers stop at handoff; integration may collect the clean branch.
 
 ### 20260912-p7-named-file-and-owner-lifecycle
 
