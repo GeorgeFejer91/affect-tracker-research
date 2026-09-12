@@ -103,6 +103,8 @@ const rules = {
       || path === "questionnaires/tas-20-en.csv"
       || path === "questionnaires/vr-exp-en.csv"
       || path === "assets/app-logo.svg"
+      || path === "assets/app-symbol.svg"
+      || path === "assets/runner-symbol.svg"
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")
       || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),

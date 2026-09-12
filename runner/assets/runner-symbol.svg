@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="flubber-vial-title flubber-vial-description" shape-rendering="geometricPrecision">
+  <title id="flubber-vial-title">Experiment Runner — Flubber vial</title>
+  <desc id="flubber-vial-description">A wobbly green Flubber mass floats inside an ivory-outlined laboratory vial. Two smaller blobs rise above its amber rim. A small play symbol identifies the Experiment Runner.</desc>
+  <defs>
+    <path id="flubber-vial-glass" d="M218 161H294V231C353 253 401 302 401 362C401 432 344 478 256 478C168 478 111 432 111 362C111 302 159 253 218 231Z"/>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <use href="#flubber-vial-glass" fill="#191b18" stroke="#f0eee8" stroke-width="30"/>
+    <use href="#flubber-vial-glass" fill="none" stroke="#121311" stroke-width="12"/>
+    <path d="M168 416C141 407 132 387 140 368C145 354 165 351 174 337C184 323 174 306 185 291C197 273 220 274 233 288C245 302 241 320 254 326C270 333 279 308 299 307C320 305 333 319 331 336C329 354 356 352 366 369C380 392 361 410 343 413C326 416 333 436 311 443C286 451 276 432 253 438C231 445 219 452 201 442C187 433 190 424 168 416Z" fill="#75bd8f"/>
+    <path d="M195 308C196 298 206 293 214 297" fill="none" stroke="#c6ead0" stroke-width="11"/>
+    <path d="M240 342C236 340 232 343 232 348V400C232 405 236 408 241 405L283 379C288 376 288 372 283 369Z" fill="#f0eee8" stroke="#121311" stroke-width="7"/>
+    <path d="M238 237C228 230 229 214 239 207C246 202 247 192 258 193C269 194 270 205 277 211C289 222 277 240 261 239C253 239 246 242 238 237Z" fill="#75bd8f"/>
+    <rect x="198" y="128" width="116" height="39" rx="12" fill="#d4a94f" stroke="#f0eee8" stroke-width="27"/>
+    <rect x="198" y="128" width="116" height="39" rx="12" fill="#d4a94f" stroke="#121311" stroke-width="13"/>
+    <path d="M243 96C226 94 222 78 231 67C238 59 235 46 247 43C262 38 268 50 275 57C287 71 278 91 264 94C256 96 250 100 243 96Z" fill="#75bd8f" stroke="#f0eee8" stroke-width="9"/>
+    <path d="M317 52C308 51 303 44 306 36C310 28 321 28 326 33C333 39 328 51 317 52Z" fill="#75bd8f" stroke="#f0eee8" stroke-width="7"/>
+  </g>
+</svg>

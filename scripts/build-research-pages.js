@@ -22,6 +22,8 @@ await Promise.all([
   cp(resolve(sourceRoot, "src", "research"), resolve(outputRoot, "src", "research"), { recursive: true }),
   cp(resolve(sourceRoot, "questionnaires"), resolve(outputRoot, "questionnaires"), { recursive: true }),
   cp(resolve(sourceRoot, "assets", "app-logo.svg"), resolve(outputRoot, "assets", "app-logo.svg")),
+  cp(resolve(sourceRoot, "assets", "app-symbol.svg"), resolve(outputRoot, "assets", "app-symbol.svg")),
+  cp(resolve(repositoryRoot, "runner", "assets", "runner-symbol.svg"), resolve(outputRoot, "assets", "runner-symbol.svg")),
   cp(resolve(sourceRoot, "assets", "app-icons"), resolve(outputRoot, "assets", "app-icons"), { recursive: true }),
   cp(
     resolve(sourceRoot, "assets", "research-stimuli"),
