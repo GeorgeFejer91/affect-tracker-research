@@ -254,6 +254,69 @@ file; follow the integration-owner collection procedure in the workflow.
   checking capabilities. The isolated C: worktree is a real directory, not a D:
   junction; its location has been reported to integration, not silently moved.
 
+### 20260912-roadmap-resumed-segment-completion
+
+- Owner: **Create segment catalogue**, `roadmap` coordination; **open**.
+  The researcher explicitly requested continued orchestration/readiness and
+  then asked the paused tasks to continue. This resumes the already requested
+  Planner contribution, confirmation and final-save implementation/verification.
+  It does not answer separate product decisions or expand Runner scope.
+- Root owns this uniquely identified message and the visual audit status.
+  Application owners retain isolated worktrees; **Add segment confirmation
+  flow** remains the sole integration owner. The earlier blanket stage pause
+  is superseded by the user's continuation instruction, not by a peer message.
+- At 2026-09-12 09:34 UTC, compact task snapshots confirmed S1–S7 and integration
+  active after their concrete assignments. Ready UI checkpoints remain those
+  listed in `64-SEGMENT-VISUAL-AUDIT.md`; new work must not reopen settled polish.
+
+| Task | Assigned remaining capability | Producer/consumer coordination |
+| --- | --- | --- |
+| S1 / P1 | P1-04–07: verified catalogue identity, duration/display geometry, revisions and saved-library handoff | P3/P4/P6/P7 consume the P1-owned producer |
+| S2 / P2 | P2-04/05/08: full questionnaire restore/contribution seam and actual EN/DE content coverage | P7 owns combined save/reopen |
+| S3 / P3 | P3-03–08: variants, ISI dictionary, occurrences, marker definitions and deterministic round trip | P1 supplies media; P7 composes the contribution |
+| S4 / P4 | P4-02/05–07: actual media/envelope binding, validated layout contribution and restore | P1/P5 producers; P7 consumer; unresolved Q08 choices remain explicit |
+| S5 / P5 | P5-05–07: saved-control inventory, accepted feedback contribution and animation envelope | P4/P6 consumers; P7 captures final Preview values |
+| S6 / P6 | P6-05: live producer binding, optional profile round trip and selected-target guards | P1/P5 producers; P7 consumer; no XR runtime work |
+| S7 / P7 | P7-03/05–07/09: versioned contribution interface, blank-study master JSON, save/reopen and stale/cancel guards | Owns composition and named save; integration owns sequential acceptance |
+| Integration | Collect compatible ready work; implement the accepted confirmation flow; supply a clean combined source | Root then performs V28 full rendered verification |
+
+- Preserve frozen v1 readers. Implement successor requirements through explicit
+  versioned contracts and applicable evidence; do not hide unsupported layouts
+  or add silent defaults. Optional XR must not block desktop-only completion.
+- Live Preview's original tile/halo/color work is already integrated through
+  `bed461b`. Its separately requested Face Morph extension is still subject to
+  the charter's Face/Photoatlas exclusion and its existing explicit change
+  question. That optional extension does not block the approved Planner work.
+- Readiness remains four distinct states: implemented component, clean owner
+  handoff, integrated source and verified combined application. The monitor is
+  updated to follow resumed work and will not reapply the superseded stage pause.
+
+### 20260911-roadmap-rendered-compactness-audit
+
+- Owner: **Create segment catalogue**, `roadmap` coordination/visual QA;
+  **open**, user explicitly requested all-segment Uncodixfy cleanup and actual
+  rendered verification. Stage: UI Finalization.
+- Owns only `64-SEGMENT-VISUAL-AUDIT.md`, the new background
+  `scripts/qualification/segment-visual-audit.mjs` and this unique board entry.
+  Existing segment owners retain app edits; integration retains shared merging.
+- Isolated `codex/segment-catalogue-current-state`, app base `bed461b`. Collected
+  28 settled actual-app baseline screenshots across all eight historical
+  sections at 1280×900/800×700; stable source and no runtime/pane-overflow errors.
+  Earlier transition-time capture is superseded. New P4/P6/P5/P7 need final
+  combined reinspection. Visual agents independently inspected Preview/P4/P1.
+- Concrete findings and owned follow-ups are V01–V28 in the new audit record.
+  No app capability box is closed by delegation, source inspection or a clean
+  screenshot alone. Background monitor now tracks rendered compactness too.
+- 2026-09-12 handoff: all seven owners have bounded cleanup checkpoints with
+  inspected rendered evidence. `64-SEGMENT-VISUAL-AUDIT.md` now lists the exact
+  ready source and remaining combined check, including P2 `714b22d`, P3
+  `4a2389c` and P6 documentation `e43f018`. Canonical remains `ba2110f` and
+  integration candidate `c7ba103`; respect the integration owner's existing
+  confirmation-semantics pass check. This handoff does not answer it or claim
+  the final combined seven-segment UI has been verified.
+- Deferred claims: current installed app, physical/native input, backend
+  qualification, Runner, publishing and whole-Planner completion.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.

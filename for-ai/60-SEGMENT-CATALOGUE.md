@@ -84,6 +84,15 @@ qualification are deferred unless separately allocated by the researcher.
 10. Preserve exactly two modes: **Setting Up the Experiment** and **Running the
     Experiment**. P1–P7 are responsibility IDs, not extra modes or necessarily
     seven identical accordions.
+11. The later 2026-09-11 requirement relayed by **Add segment confirmation flow**
+    makes segment confirmations accept the current segment's contribution in
+    sequence, rather than only recording that its screen was reviewed. Live
+    Preview is the exception: P7 captures its final settings, then offers a
+    popup to name and save the final JSON. Review, accepted contribution and
+    acknowledged persistence remain separate states; edits invalidate affected
+    acceptance. This records product intent, not an implemented workflow or
+    approval to bypass the stage/contract gates. Integration owns confirmation
+    orchestration and P7 owns final naming/save semantics.
 
 ## Segment map and single owners
 
