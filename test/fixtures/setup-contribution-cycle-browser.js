@@ -20,6 +20,22 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
 (async () => {
   const root = document.querySelector("main"); root.id = "research-app"; root.dataset.researchSurface = "browser";
   bootResearchUi(); const ui = root.researchUi, q = selector => root.querySelector(selector);
+  const initialPolicy = ui.getPlannerRecipePolicy();
+  const authoredPolicy = { ...initialPolicy, participantCount: 42, samplingFrequencyHz: 100,
+    output: { csv: false, tsv: true }, lsl: { enabled: true, stateStream: "AuthoredState",
+      streamType: "AuthoredAffect", markerStream: "AuthoredMarkers", sourceId: "authored-source" } };
+  ui.restorePlannerRecipePolicy(authoredPolicy, { isCurrent: () => true });
+  check("fresh policy restores every authored field without importing an experiment",
+    ui.experimentPackage === null && canonicalJson(ui.getPlannerRecipePolicy()) === canonicalJson(authoredPolicy));
+  const stalePolicy = ui.restorePlannerRecipePolicy(initialPolicy, { isCurrent: () => false });
+  check("stale policy restore preserves all current controls", stalePolicy === false
+    && canonicalJson(ui.getPlannerRecipePolicy()) === canonicalJson(authoredPolicy));
+  let invalidPolicyRejected = false;
+  try { ui.restorePlannerRecipePolicy({ ...initialPolicy, samplingFrequencyHz: -1 }, { isCurrent: () => true }); }
+  catch { invalidPolicyRejected = true; }
+  check("invalid policy cannot partially restore controls", invalidPolicyRejected
+    && canonicalJson(ui.getPlannerRecipePolicy()) === canonicalJson(authoredPolicy));
+  ui.restorePlannerRecipePolicy(initialPolicy, { isCurrent: () => true });
   const source = `${canonicalJson(legacyRecipe)}\n`, bytes = new TextEncoder().encode(source);
   const handle = { kind: "file", getFile: async () => ({ size: bytes.byteLength, arrayBuffer: async () => bytes.slice().buffer }) };
   // No legacy experiment document exists yet, so draft fingerprints are null.

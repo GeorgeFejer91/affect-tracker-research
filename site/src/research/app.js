@@ -67,6 +67,7 @@ import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { openBrowserExperimentPackage } from "./package-file-picker.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
+import { readPlannerPolicyControls, restorePlannerPolicyControls } from "./planner-policy-controls.js";
 import { renderPlannerContributionIssues } from "./planner-issue-view.js";
 import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
@@ -5585,6 +5586,17 @@ function bindResearchInteractions(root, { surface }) {
       return plannerContributions.register(segment, getSnapshot, options);
     },
     plannerContributionChanged(segment) { plannerContributions.changed(segment); },
+    getPlannerRecipePolicy() { return readPlannerPolicyControls(root); },
+    restorePlannerRecipePolicy(policy, options) {
+      if (researchUiDisposed) return false;
+      const restored = restorePlannerPolicyControls(root, policy, options);
+      if (restored === false) return false;
+      outputFormatsTouched = true;
+      syncOutputFormatValidation();
+      packageExport.invalidate();
+      schedulePlanRefresh();
+      return restored;
+    },
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },

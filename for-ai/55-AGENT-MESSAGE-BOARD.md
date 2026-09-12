@@ -178,6 +178,18 @@ file; follow the integration-owner collection procedure in the workflow.
   goal alone. Root coordination records the updated charter/decision authority;
   independent owner work continues. No foreground launch, canonical promotion,
   remote push, deployment, or qualification is authorized by this pass label.
+- Integrated early checkpoints through `451c19a`: Preview popup/reset, complete
+  P5 pure contract, P6 V2-bound saved geometry/explicit exclusion, P7 strict root
+  and accepted capture, Runner boundary docs and root goal/Q04 decision. Combined
+  668 Node checks and 14+14 actual Preview reset checks pass. Full owner UI wiring,
+  master codec, final naming/save/reopen and Planner-only app extraction remain
+  in progress; these component checks do not close the full Planner goal.
+- Shared policy-control seam: `planner-policy-controls.js` delegates all domain
+  validation to P7. `getPlannerRecipePolicy()` reads current controls without a
+  legacy import; `restorePlannerRecipePolicy(policy,{isCurrent})` validates and
+  locates the complete control set before synchronous projection. No inferred
+  allocation/recording policy, manufactured acceptance or input/change events.
+  Two focused strict read/restore checks pass; actual controller coverage added.
 
 ### 20260912-root-planner-completion-goal
 
