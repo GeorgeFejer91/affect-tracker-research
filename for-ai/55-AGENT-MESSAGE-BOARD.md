@@ -126,6 +126,30 @@ file; follow the integration-owner collection procedure in the workflow.
   independent owner work continues. No foreground launch, canonical promotion,
   remote push, deployment, or qualification is authorized by this pass label.
 
+### 20260912-runner-companion-separation
+
+- Owner: Experiment Runner; R1 / RR-01–RR-09, Backend Verification. Explicit user
+  allocation: two independent apps, Planner previews/JSON retained; Runner reads
+  that JSON and owns playback/acquisition/LSL and own+selected external XDF.
+  User clarified recording policy belongs solely to Runner.
+- Worktree: `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-runner`;
+  branch `codex/segment-runner-desktop-app`, reviewed base `7946bc6`. Main stays
+  integration-owned. Baseline 53 focused Node checks passed before mutation.
+- Deliverable: docs16/65/66 and charter/routers first; separate desktop entry,
+  native services/command registries, strict recipe intake, existing package
+  execution composition and bounded recorder implementation/evidence.
+- Named shared seams: lib.rs/main/bootstrap, desktop config/build scripts,
+  Planner composition Run extraction only. Retain all P1–P7 producers,
+  confirmation, async load/edit/save guards and persistent P5 preview. P7 owns
+  successor schema; no competing format. Root owns new67 and60/62/64.
+- Evidence: app/command boundary checks, strict intake/canonical rejection,
+  XDF typed/clock/failure fixtures, native software checks and separate frontend
+  closures. Installed playback/native physical/LSL qualification remains open.
+  Actual Planner–Runner correspondence is the last development stage, not a
+  blocker on independently completing the Planner.
+- Status: documentation amendment written before source implementation. No
+  capability completion or successful recording is claimed by this entry.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion
