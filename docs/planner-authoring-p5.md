@@ -169,3 +169,12 @@ production UI/native CLI. Final application parity must use Main's real hooks.
 Owner commits are `88a5df2` and `c6b9912`; shared foundation `2310efc` is the
 unchanged dependency. Log:
 `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/cli-p5/full-node-c6b9912.log`.
+
+The subsequent shared dependency `0138516` adds actual session `afterCommit`
+dispatch. With that unchanged dependency, 43 focused tests pass, including a
+P5/P7 observer-order and deliberate P5 projection-failure regression. All owner
+states install before any notification, nested reads report busy, failure keeps
+the applied revision/state, and retry does not repeat publication. No P5 adapter
+production source changes in this follow-up; the 798-test receipt above retains
+its original binding. Reproduce with the P5 adapter, shared session and three
+existing feedback contract/settings/envelope test files.
