@@ -274,3 +274,26 @@ produced no DOM receipt in this environment and supplies no verification claim.
 Native default all-target Clippy with -D warnings and the standalone debug build
 pass. Full regression: 653 Node checks. No foreground input or physical native
 experiment was used for these UI receipts.
+
+
+### 20260912-runner-launcher-artwork — RR-01 UI Finalization
+
+Direct user follow-up allocates integration of the existing professor, input
+selector and remote SVG widgets from Create professor SVG icon. Continue the
+isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
+approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
+artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+Only launcher image/layout and asset-closure seams change; button labels and
+popups remain. Check SVG external-resource/script absence, actual headless image
+loading/containment at desktop widths, existing popup behavior, frontend closure
+and native rebuild. No new remote, controller override or execution authority.
+
+
+Artwork verification: the researcher additionally requested the Runner flask on
+Start. All four controls now render labelled, decorative SVGs; the three imported
+widgets preserve exact source bytes. Assets stay external local files in the
+10-file Runner production closure. The 13-scenario headless launcher matrix passes
+at 800px and 600px; the latter explicitly decodes all four SVG images and checks
+containment and decorative accessibility. Launcher screenshot was inspected.
+Receipts: D:/GitHub/.affect-runner-build/widget-audit and widget-small-audit.
+Native rebuild/open is the same UI-only handoff, not a remote or research-run claim.

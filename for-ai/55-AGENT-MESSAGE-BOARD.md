@@ -4747,3 +4747,16 @@ screen. Native gates remain. A named RR-04/07 shared adapter seam awaits visible
 input-region preparation before each stimulus after hidden questionnaire layout;
 no Planner authority is changed. Ledger65 records 13 synthetic UI scenarios,
 small-width captures, QR decoding and build/check evidence.
+
+
+### 20260912-runner-launcher-artwork — RR-01 UI Finalization
+
+Direct user follow-up allocates integration of the existing professor, input
+selector and remote SVG widgets from Create professor SVG icon. Continue the
+isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
+approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
+artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+Only launcher image/layout and asset-closure seams change; button labels and
+popups remain. Check SVG external-resource/script absence, actual headless image
+loading/containment at desktop widths, existing popup behavior, frontend closure
+and native rebuild. No new remote, controller override or execution authority.

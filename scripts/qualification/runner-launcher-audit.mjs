@@ -58,6 +58,12 @@ try{
  // Virtual-time Chrome does not advance compositor frames like wall-clock timers.
  const auditWindow=new Proxy(window,{get(target,key){if(key==='requestAnimationFrame')return callback=>setTimeout(()=>callback(performance.now()),16);const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
  const app=await bootRunner(root,{invoke,pollMs:50,windowObject:auditWindow});
+ for(const id of ['runner-launch','runner-professor','runner-controller','runner-remote']){
+  const img=q(id).querySelector('img');await img.decode();
+  const art=img.getBoundingClientRect(),button=q(id).getBoundingClientRect();
+  check(img.naturalWidth>0&&img.alt==='','loaded decorative SVG '+id);
+  check(art.left>=button.left&&art.right<=button.right&&art.top>=button.top&&art.bottom<=button.bottom,'contained SVG '+id);
+ }
  check(!q('runner-launcher').hidden && q('runner-participant-view').hidden,'minimal initial window');
  check(q('runner-launch').disabled,'cannot launch without file');
  if(mode!=='empty')await app.adoptRecipe(new Uint8Array(await(await fetch('/test/fixtures/experiment-package-v1.canonical.json')).arrayBuffer()));
