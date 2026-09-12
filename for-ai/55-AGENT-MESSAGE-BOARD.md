@@ -61,6 +61,64 @@
   its CLI worktree at `docs/planner-authoring-command-api-v1.md`; all owner tasks
   receive exact interface/file boundaries before implementation.
 
+### 20260912-p7-cli-file-versions
+
+- Owner S7, P7-03/P7-04 shared file adapter; Backend Verification continuation
+  explicitly allocated by integration after the user's local CLI/version naming
+  request. Branch `codex/segment-p7-cli-files`, isolated existing P7 worktree,
+  base `460f51600298db910a52b25f25e8268dd722569b`.
+- Deliverable: strict bounded native recipe intake, native new-file saves with
+  UTC timestamp names and collision handling, matching browser name suggestions.
+  Extract only the Planner file helpers/command adapters; preserve the legacy
+  experiment-package writer. No authoring/compiler, session, bootstrap or Runner
+  changes. Integration subsequently allocated the one module-registration line
+  in `lib.rs` to this branch; integration retains all CLI routing/lifecycle.
+- Existing source has strict parse/readback but replaces a selected native file
+  and suggests only recipe ID. New native saves must refuse existing targets;
+  filenames never change scientific JSON or hashes. Evidence covers canonical
+  bytes, malformed/oversized input, collisions, regular-file/link policy,
+  cancellation/staleness and shared native/browser filename fixtures.
+- Browser selected handles cannot establish atomic create-new exclusivity.
+  The adapter now rejects nonempty files before opening a writable stream.
+  Existing empty files and concurrent browser writers cannot be distinguished
+  atomically; timestamp suggestions do not close that parity limitation.
+- Native filenames are `<recipeId>_YYYY-MM-DD_HH-mm-ss-SSSZ.json` in UTC, with
+  `_001` through `_999` for collisions. The native writer creates a random
+  sibling staging file with `create_new`, flushes and strictly reads it, then
+  publishes a hard link without replacing any destination and verifies final
+  bytes. A destination filesystem must support hard links (exFAT cannot use
+  this writer); there is no weaker replacement fallback. Existing selected
+  files, directories, dangling links and linked/reparse parent paths are denied.
+  Ancestor checks do not claim handle-pinned protection against an adversary
+  concurrently replacing the directory namespace. No unsafe boundary is added.
+- Every returned save receipt binds exact canonical bytes/hashes. If final
+  verification fails after publication, the file may already exist and must
+  be reported as written but unverified, never acknowledged Saved or treated
+  as a no-write rejection. Integration approved `PlannerRecipeWriteError`
+  `{error: CommandError, publishedBasename: string|null}`; both native writers
+  return this error, while the GUI adapter preserves its stable error envelope
+  with `recipe_file_written_unverified` and only the safe basename.
+- Integration additionally allocated existing XR/full-Planner file test fixtures
+  to model a newly selected empty file on each Save. The full-Planner HTTP
+  helper creates each file with `wx`, bounds incoming bytes and verifies all
+  previous saved versions remain unchanged. No recipe/geometry behavior changes.
+- Status: **ready for integration**. `npm test`: **773 pass**. Native
+  `cargo test --locked --no-default-features --lib`: **244 pass**, including
+  **10** focused file tests. Clippy `--no-default-features --all-targets --
+  -D warnings -A dead_code`, formatting and diff checks pass.
+- Background Chrome/Edge actual Planner Save/Open/rebind cycles each pass
+  **65 checks**, with three separate disk files per browser, all exact SHA-256
+  `09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+  Both final Review PNGs were inspected. The amended XR master fixture passes
+  **19** Chrome checks. Its older Edge `--dump-dom` harness returns empty stdout
+  despite a PNG; no completed Edge XR receipt is claimed. Both XR PNGs were
+  inspected, but images do not substitute for that missing receipt.
+- Evidence is under `D:/GitHub/.affect-checks/p7-cli-file-versions-{chrome,edge}`,
+  `p7-cli-file-xr-chrome` and `p7-cli-files-{js-suite,native-suite,clippy}.log`.
+  Receipts bind base `460f516` plus exact changed source hashes/working-tree
+  status. Final integration identity, CLI lifecycle/coverage and installed/OS
+  picker qualification remain integration-owned; no foreground app was opened.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this

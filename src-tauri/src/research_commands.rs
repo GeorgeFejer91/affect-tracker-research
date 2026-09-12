@@ -22,9 +22,9 @@ use crate::research_native_media::{
 };
 #[cfg(test)]
 use crate::research_participant::TransientParticipant;
-use crate::research_planner_recipe::{
-    parse_planner_recipe_bytes, parse_planner_recipe_file, SavedPlannerRecipeReceipt,
-    MAX_BYTES as MAX_PLANNER_RECIPE_BYTES,
+use crate::research_planner_recipe::{parse_planner_recipe_bytes, SavedPlannerRecipeReceipt};
+use crate::research_planner_recipe_file::{
+    planner_recipe_filename, read_planner_recipe_path, write_selected_planner_recipe,
 };
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 #[cfg(test)]
@@ -936,9 +936,7 @@ pub async fn research_load_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe file."))?;
-        Ok(Some(parse_planner_recipe_file(&read_selected_recipe(
-            &path,
-        )?)?))
+        Ok(Some(read_planner_recipe_path(&path)?))
     })
     .await
     .map_err(CommandError::io)?
@@ -963,7 +961,10 @@ pub async fn research_save_planner_recipe(
             .dialog()
             .file()
             .add_filter("Experiment recipe", &["json"])
-            .set_file_name(format!("{}.json", document.recipe.recipe_id))
+            .set_file_name(planner_recipe_filename(
+                &document.recipe.recipe_id,
+                time::OffsetDateTime::now_utc(),
+            )?)
             .blocking_save_file()
         else {
             return Ok(None);
@@ -971,50 +972,13 @@ pub async fn research_save_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe destination."))?;
-        Ok(Some(write_selected_planner_recipe(&path, &source_text)?))
+        Ok(Some(
+            write_selected_planner_recipe(&path, &source_text)
+                .map_err(|error| error.into_command_error())?,
+        ))
     })
     .await
     .map_err(CommandError::io)?
-}
-
-fn read_selected_recipe(path: &Path) -> ResearchResult<Vec<u8>> {
-    let file = File::open(path).map_err(CommandError::io)?;
-    let metadata = file.metadata().map_err(CommandError::io)?;
-    if !metadata.is_file()
-        || metadata.len() == 0
-        || metadata.len() > MAX_PLANNER_RECIPE_BYTES as u64
-    {
-        return Err(CommandError::invalid_contract(
-            "Recipe must be a regular file containing 1 byte to 16 MiB.",
-        ));
-    }
-    let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    file.take((MAX_PLANNER_RECIPE_BYTES + 1) as u64)
-        .read_to_end(&mut bytes)
-        .map_err(CommandError::io)?;
-    if bytes.len() as u64 != metadata.len() {
-        return Err(CommandError::invalid_contract(
-            "Recipe changed while reading its bytes.",
-        ));
-    }
-    Ok(bytes)
-}
-
-fn write_selected_planner_recipe(
-    path: &Path,
-    source_text: &str,
-) -> ResearchResult<SavedPlannerRecipeReceipt> {
-    let expected = parse_planner_recipe_bytes(source_text.as_bytes())?;
-    write_selected_package(path, expected.canonical_source_text.as_bytes())?;
-    let observed = parse_planner_recipe_bytes(&read_selected_recipe(path)?)?;
-    if observed.canonical_source_text != expected.canonical_source_text
-        || observed.canonical_source_byte_sha256 != expected.canonical_source_byte_sha256
-    {
-        return Err(CommandError::invalid_contract(
-            "Saved bytes do not match the prepared recipe.",
-        ));
-    }
-    Ok(SavedPlannerRecipeReceipt::from_loaded(&observed))
 }
 
 fn write_selected_package(path: &Path, bytes: &[u8]) -> ResearchResult<()> {
@@ -1837,53 +1801,6 @@ mod tests {
         assert!(decode_settings_bytes(malformed_research).is_err());
         assert!(decode_settings_bytes(&[]).is_err());
         assert!(decode_settings_bytes(&vec![b' '; MAX_SETTINGS_DOCUMENT_BYTES + 1]).is_err());
-    }
-
-    #[test]
-    fn selected_planner_writer_validates_before_replace_and_acknowledges_readback() {
-        let root = std::env::temp_dir().join(format!("affect-planner-writer-{}", Uuid::new_v4()));
-        fs::create_dir(&root).unwrap();
-        let target = root.join("chosen-recipe.json");
-        let source =
-            include_str!("../../test/fixtures/planner-recipe-xr-current-v1.canonical.json");
-        let receipt = write_selected_planner_recipe(&target, source).unwrap();
-        let reopened = parse_planner_recipe_bytes(&read_selected_recipe(&target).unwrap()).unwrap();
-        assert_eq!(receipt, SavedPlannerRecipeReceipt::from_loaded(&reopened));
-        assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-        assert!(write_selected_planner_recipe(&target, "{}\n").is_err());
-        assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-        assert!(
-            write_selected_planner_recipe(&root.join("missing").join("recipe.json"), source)
-                .is_err()
-        );
-        let directory = root.join("folder.json");
-        fs::create_dir(&directory).unwrap();
-        assert!(write_selected_planner_recipe(&directory, source).is_err());
-        assert!(read_selected_recipe(&directory).is_err());
-        let oversized = root.join("large.json");
-        File::create(&oversized)
-            .unwrap()
-            .set_len(MAX_PLANNER_RECIPE_BYTES as u64 + 1)
-            .unwrap();
-        assert!(read_selected_recipe(&oversized).is_err());
-        #[cfg(target_os = "windows")]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            let locked = OpenOptions::new()
-                .read(true)
-                .share_mode(0)
-                .open(&target)
-                .unwrap();
-            assert!(write_selected_planner_recipe(&target, source).is_err());
-            drop(locked);
-            assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-            assert!(fs::read_dir(&root).unwrap().all(|e| !e
-                .unwrap()
-                .file_name()
-                .to_string_lossy()
-                .ends_with(".staging")));
-        }
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

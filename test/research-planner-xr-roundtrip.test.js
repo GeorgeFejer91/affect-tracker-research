@@ -83,11 +83,11 @@ test("full master rejects missing XR configuration, incompatible targets and sta
 });
 
 test("P7 writer persists and rereads the complete XR master through a disk-backed file adapter", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "affect-p6-master-")), path = join(directory, "experiment.json");
-  let exists = false;
+  const directory = await mkdtemp(join(tmpdir(), "affect-p6-master-")), paths = [];
+  let path;
   const handle = { kind: "file",
     async createWritable() {
-      const file = await open(path, "w"); exists = true;
+      const file = await open(path, "w");
       return { write: bytes => file.writeFile(bytes), close: () => file.close(), abort: () => file.close() };
     },
     async getFile() {
@@ -97,6 +97,8 @@ test("P7 writer persists and rereads the complete XR master through a disk-backe
   };
   try {
     for (const profile of spatial.profiles) {
+      path = join(directory, `experiment-${paths.length + 1}.json`);
+      const selected = await open(path, "wx"); await selected.close(); paths.push(path);
       const source = await serializePlannerRecipeV1(await compilePlannerRecipeV1(core(profile)));
       const writer = await prepareBrowserPlannerRecipeSave(source, { isCurrent: () => true, pickSaveFile: () => handle });
       const receipt = await writer.chooseAndSave();
@@ -107,7 +109,7 @@ test("P7 writer persists and rereads the complete XR master through a disk-backe
       assert.deepEqual(reopened.document.recipe.segments.P6, { status: "included", profile });
     }
   } finally {
-    if (exists) await unlink(path);
+    for (const saved of paths) await unlink(saved);
     await rmdir(directory);
   }
 });
