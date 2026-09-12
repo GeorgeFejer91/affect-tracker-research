@@ -162,6 +162,25 @@ test("explicitly disabled XR needs no producers and remains absent from desktop 
   h.authoring.destroy();
 });
 
+test("footer preparation validates a dirty draft without P7 acceptance and obeys cancellation", async () => {
+  const held = deferred(); let delay = false, current = true;
+  const h = harness(async (value) => { if (delay) await held.promise; return projector(value); });
+  await h.authoring.refresh(); h.state.setEnabled(true);
+  const registry = createPlannerContributionRegistry(); registry.register("P6", h.state.getSnapshot);
+  assert.equal(h.state.getSnapshot().pending, true);
+  const prepared = await h.authoring.prepare({ isCurrent: () => current });
+  assert.equal(prepared.pending, false);
+  assert.equal(registry.readAccepted().entries.some((entry) => entry.segment === "P6" && entry.status === "accepted"), false);
+  h.state.setDraft({ ...profile, video: { ...profile.video, distanceMetres: 4 } });
+  const before = h.state.getSnapshot(); delay = true;
+  const preparing = h.authoring.prepare({ isCurrent: () => current });
+  await Promise.resolve(); await Promise.resolve(); current = false; held.resolve();
+  await assert.rejects(preparing, /changed/);
+  assert.deepEqual(h.state.getSnapshot(), before);
+  await assert.rejects(h.authoring.prepare({ isCurrent: () => false }), /changed/);
+  h.authoring.destroy();
+});
+
 test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {
   const catalogue = JSON.parse(await readFile(new URL("fixtures/research-video-catalogue-contribution-v1.json", import.meta.url)));
   const p1 = createVideoCatalogueProducerV1();

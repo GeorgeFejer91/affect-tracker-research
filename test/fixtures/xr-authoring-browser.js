@@ -39,7 +39,7 @@ const rejected = async (action) => { try { await action(); return false; } catch
   check("disabled XR survives unavailable catalogue", !ui.getXrLayoutContribution().enabled && ui.getXrLayoutDependencyStatus().pending);
   publish(); await waitFor(() => !ui.getVideoCatalogueContributionSnapshot().pending); await ui.waitForXrLayoutDependencies();
   check("actual P1 and P5 connect automatically", !ui.getXrLayoutDependencyStatus().pending);
-  enable(true); ui.openSetupSection("xr"); await ui.acceptXrLayoutContribution();
+  enable(true); ui.openSetupSection("xr"); await ui.prepareXrLayoutContribution({ isCurrent: () => true });
   let accepted = ui.getXrLayoutContribution();
   check("accepted profile binds actual owner revisions", accepted.dependencyRevisions[0].revision === dependencies().P1.revision
     && accepted.dependencyRevisions[1].revision === dependencies().P5.revision && !accepted.pending);

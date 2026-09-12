@@ -112,18 +112,21 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
     return restore ? editor.restoreContribution(capturedProfile, resolved) : editor.acceptLayout();
   }
 
+  async function prepare({ isCurrent = () => true } = {}) {
+    if (disposed || !isCurrent()) throw stale();
+    if (!editor.getSnapshot().enabled) return editor.getSnapshot();
+    // Domain preparation is separate from P7 session acceptance and file save.
+    // The master target is independently required by the P7 validator.
+    const profile = editor.getDraft();
+    return commit(profile, { selectedTarget: profile.target, isCurrent }, false);
+  }
+
   return Object.freeze({
     refresh,
     getStatus: () => structuredClone(status),
     validate,
-    async accept() {
-      if (disposed) throw stale();
-      if (!editor.getSnapshot().enabled) return editor.getSnapshot();
-      // Enabling the explicitly labelled WebXR profile selects its local target;
-      // P7 separately validates the master recipe's selected target.
-      const profile = editor.getDraft();
-      return commit(profile, { selectedTarget: profile.target }, false);
-    },
+    prepare,
+    accept: prepare,
     restore(profile, options = {}) { return commit(profile, options, true); },
     destroy() {
       disposed = true; generation += 1;
