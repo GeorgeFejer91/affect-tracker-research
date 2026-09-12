@@ -18,6 +18,19 @@ are the next evidence, not yet claimed by this first checkpoint. Native helper
 57b9a4 is collected as d014a6d; it remains separately owned and tested. No native
 build or installed/runtime qualification is included in this receipt.
 
+Rust reader/P3 follow-up: shared native proof recomputation and exact outer
+geometry equality are enforced through the native owner's derive helper.
+Explicit `research_workspace_contribution::v3` types/readers preserve historical
+dispatch; P3's `validate_and_reproduce_saved_variants_v3` projects immutable
+geometry-free location data through the existing v2 compiler/timeline code.
+Shared canonical JS fixtures reproduce all controlled rotations, absence and
+anamorphic source geometry, workspace bytes and P3 timeline/marker output.
+28 focused JS and 31 standalone Rust checks pass, including historical fixtures.
+The first harness incorrectly selected a cached serde_json without float_roundtrip;
+corrected to the repository-required feature plus matching serde, then all checks
+passed. No product parser relaxation or Cargo/native build was used. Main still
+owns full source-bound combined builds and actual native/application execution.
+
 ### 20260912-native-controlled-orientation
 
 - Root allocated P1-06/Runner native media, Backend Verification; isolated
