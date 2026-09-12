@@ -76,6 +76,30 @@
   real user app-data root for the preset. Exact receipt paths and limitations
   are recorded in `docs/questionnaire-local-presets.md`.
 
+### 20260912-p7-native-effects
+
+- S7, CLI-P7 / CLI-SHARED named native seam, Backend Verification, allocated by
+  Main. Branch `codex/segment-p7-native-effects`, base `23e8f3a`, isolated worktree
+  `D:/GitHub/affect-tracker-research-p7-native-effects`.
+- New native helper consumes owned typed effects, checks current before entry,
+  and preserves the actual owner receipt/failure alongside late supersession.
+  Existing workspace and create-new recipe writer retain filesystem authority.
+- Only helper, tests and handoff documentation; Main owns lib registration,
+  broker/grants, wire receipts, app/compiler/adoption. No new unsafe boundary,
+  media attestation, questionnaire source substitution or runtime qualification.
+- Evidence: focused real temporary workspace/source/recipe operations, early
+  guard no-effect, late guard receipt retention and truthful error categories.
+- Ready for Main collection: eight focused native-effect tests pass using actual
+  owner modules. Rustfmt and diff checks pass. Log:
+  `D:/GitHub/.affect-checks/p7-native-effects-test.log`. Existing library has ten
+  dead-code warnings; the subset harness has one unused-import warning from
+  existing native-media exports. No production warnings were suppressed.
+- Planner/Runner prerequisite asset builds and their boundary checks pass.
+  The first harness compile failed on module resolution, corrected in the test
+  harness only. Production registration, broker integration, native stdin,
+  physical media and runtime qualification remain Main/Runner-owned.
+
+
 ### 20260912-cli-integrated-owner-registration
 
 - Main, CLI-SHARED named composition seam, Backend Verification. All seven
