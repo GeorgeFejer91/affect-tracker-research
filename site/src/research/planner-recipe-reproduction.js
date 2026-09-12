@@ -3,11 +3,22 @@ import { compileVariantTimeline } from "./variant-design.js";
 import { createPlannedMarkerProfile } from "./planned-marker-contract.js";
 import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 import { boundPlannerRecipeMatrix, freezeRecipeValue } from "./planner-recipe-wire.js";
+import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+
+/** A versioned identity of every validated input to the layout algorithms.
+ * Raw derived trigonometric floats cannot be hashed portably. Geometry itself
+ * is still resolved/validated and independently compared at owner tolerance. */
+export function plannerLayoutIdentityV1(presentationTarget, profile, media, feedback) {
+  return { schema: "affect-research-planner-layout-identity", version: 1, presentationTarget,
+    algorithms: { layout: presentationTarget === "desktop-screen" ? "desktop-layout-resolution-v1" : "xr-layout-resolution-v1",
+      feedbackEnvelope: "feedback-envelope-v2", feedbackFootprint: presentationTarget === "desktop-screen" ? null : "xr-feedback-footprint-v1" },
+    profile: structuredClone(profile), media: structuredClone(media), feedback: structuredClone(feedback) };
+}
 
 /** Internal compiler input: every owner payload and saved-content projection
  * has already passed its domain validator. Public readers must prepare it first.
  * No live snapshot, random selection, participant allocation or clock is used. */
-export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha256) {
+export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha256, algorithmVersion) {
   const { core, questionnaireRoutes, variantCatalogue, desktopLayout, xrLayout } = prepared;
   const profileValues = [{ presentationTarget: "desktop-screen", layout: desktopLayout }];
   if (xrLayout) profileValues.push({ presentationTarget: "webxr-immersive-vr", layout: xrLayout });
@@ -28,8 +39,11 @@ export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha25
   for (const route of questionnaireRoutes) languages.push({ languageId: route.languageId,
     languageSelectionPath: [...route.optionIds], questionnaireSha256: await canonicalSha256(route) });
   const presentations = [];
-  for (const value of profileValues) presentations.push({ presentationTarget: value.presentationTarget,
-    layoutSha256: await canonicalSha256(value.layout) });
+  const media = (await projectVideoDisplayGeometry(core.segments.P1.videoCatalogue)).videos;
+  for (const value of profileValues) presentations.push(algorithmVersion === "planner-recipe-reproduction-v1"
+    ? { presentationTarget: value.presentationTarget, layoutSha256: await canonicalSha256(value.layout) }
+    : { presentationTarget: value.presentationTarget, layoutIdentitySha256: await canonicalSha256(plannerLayoutIdentityV1(
+      value.presentationTarget, value.layout.profile, media, core.segments.P5)) });
   const policySha256 = await canonicalSha256(core.policy), feedbackSha256 = await canonicalSha256(core.segments.P5);
   const cases = [];
   for (const variant of variants) {
@@ -44,7 +58,7 @@ export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha25
       }
     }
   }
-  const matrix = { algorithmVersion: "planner-recipe-reproduction-v1", definitionSha256,
+  const matrix = { algorithmVersion, definitionSha256,
     policySha256, feedbackSha256, ...dimensions, variants, languages, presentations, cases };
   return { matrix: freezeRecipeValue(matrix), variantValues, profileValues };
 }

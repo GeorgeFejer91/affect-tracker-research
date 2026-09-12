@@ -46,7 +46,6 @@ media verifier must run before P3's pure workbook encoder; the browser adapter
 must likewise compare current verified P1 declarations and freshly read media.
 No Runner execution, recording, measured onset, native installed qualification,
 user-window interaction, publication or canonical promotion is claimed here.
-
 ## P3 Q04 location-pair software checkpoint — 2026-09-12
 
 `2a16397` consumes P1 catalogue v2 through an explicit derived library and P3

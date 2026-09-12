@@ -6,7 +6,8 @@ import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 
 export const PLANNER_RECIPE_SCHEMA = "affect-research-planner-recipe";
 export const PLANNER_RECIPE_VERSION = 1;
-export const PLANNER_RECIPE_INTEGRITY_ALGORITHM = "planner-recipe-reproduction-v1";
+export const PLANNER_RECIPE_INTEGRITY_ALGORITHM = "planner-recipe-reproduction-v2";
+export const PLANNER_RECIPE_INTEGRITY_ALGORITHMS = Object.freeze(["planner-recipe-reproduction-v1", PLANNER_RECIPE_INTEGRITY_ALGORITHM]);
 export const PLANNER_RECIPE_SEGMENTS = Object.freeze(["P1", "P2", "P3", "P4", "P5", "P6"]);
 export const MAX_PLANNER_RECIPE_BYTES = 16 * 1024 * 1024;
 export const MAX_PLANNER_RECIPE_CASES = 25_000;
@@ -113,7 +114,7 @@ export function validatePlannerRecipeStructureV1(value, { integrity = true } = {
   }
   if (integrity) {
     exactRecipeObject(value.integrity, ["algorithmVersion", "definitionSha256", "segmentSha256", "reproductionSha256"], "Planner recipe integrity");
-    if (value.integrity.algorithmVersion !== PLANNER_RECIPE_INTEGRITY_ALGORITHM) throw new TypeError("Unsupported Planner recipe integrity algorithm.");
+    if (!PLANNER_RECIPE_INTEGRITY_ALGORITHMS.includes(value.integrity.algorithmVersion)) throw new TypeError("Unsupported Planner recipe integrity algorithm.");
     exactRecipeObject(value.integrity.segmentSha256, PLANNER_RECIPE_SEGMENTS, "Planner segment hashes");
     for (const digest of [value.integrity.definitionSha256, value.integrity.reproductionSha256, ...Object.values(value.integrity.segmentSha256)]) {
       if (typeof digest !== "string" || !HASH.test(digest)) throw new TypeError("Planner recipe integrity requires complete lowercase SHA-256 values.");
