@@ -1,6 +1,7 @@
 //! One native owner of master lifecycle observations, sampling and persistence.
 use super::{
     forms::FormAnswers,
+    information::{ContentKind, PreparedTransfer},
     lsl::MasterLslService,
     markers::{MarkerEvent, MasterMarkers},
     response::ResponseState,
@@ -90,6 +91,13 @@ impl MasterWorker {
             &prepared.loaded.recipe.policy.lsl,
             &prepared.plan.participant_id,
         )?;
+        let startup = super::information::startup_bundle(
+            &prepared,
+            &markers,
+            &settings,
+            storage.receipt["participant"].clone(),
+        );
+        let startup = PreparedTransfer::new(&startup)?;
         let lsl = if settings.enabled {
             Some(MasterLslService::start(
                 &settings,
@@ -97,7 +105,8 @@ impl MasterWorker {
                 &run_id,
                 &prepared.plan.recipe_source_byte_sha256,
                 &recorder,
-                &markers,
+                &attempt_id,
+                startup,
             )?)
         } else {
             None
@@ -300,6 +309,9 @@ impl MasterWorker {
         record["planIdentitySha256"] = json!(self.state.plan_identity_sha256);
         record["monotonicMs"] = json!(self.elapsed());
         self.storage.responses(&record)?;
+        if let Some(lsl) = &mut self.lsl {
+            lsl.record(ContentKind::Responses, &record)?;
+        }
         self.state.answers = self.answers.projection();
         if submitted {
             self.observe(MarkerEvent::FormEnd, true)?;
@@ -544,7 +556,7 @@ impl MasterWorker {
             .observe(event, id.as_deref(), execution, self.elapsed())?;
         let lsl = self
             .lsl
-            .as_ref()
+            .as_mut()
             .map(|s| s.observe(&observation))
             .transpose()?;
         self.storage.event(&json!({"schema":"affect-runner-master-event-record","version":1,"observation":observation,"lslTimeSeconds":lsl}))?;
@@ -616,6 +628,11 @@ impl MasterWorker {
             },
             false,
         )?;
+        self.storage.checkpoint()?;
+        let outcome = serde_json::json!({"schema":"affect-runner-outcome","version":1,"protocolOutcome":if complete{"completed"}else{"partial"},"completedStepCount":self.state.completed_step_count,"failureCode":failure,"monotonicMs":self.elapsed(),"localCheckpoint":"durable","recordingFinalization":"pending"});
+        if let Some(lsl) = &mut self.lsl {
+            lsl.record(ContentKind::Outcome, &outcome)?;
+        }
         self.lsl = None;
         if self.recorder.status().active {
             self.recorder.stop()?;
@@ -757,11 +774,15 @@ mod tests {
                 answers: vec![]
             })
             .is_err());
-        let item = &worker.current().unwrap().payload["definition"]["items"][0];
-        let choices = vec![MasterChoice {
-            item_id: item["itemId"].as_str().unwrap().into(),
-            option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
-        }];
+        let choices = worker.current().unwrap().payload["definition"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| MasterChoice {
+                item_id: item["itemId"].as_str().unwrap().into(),
+                option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
+            })
+            .collect::<Vec<_>>();
         worker
             .action(MasterAction::Draft {
                 position: 1,

@@ -1,7 +1,8 @@
 //! Master-only outbound adapter. Frozen legacy marker APIs are unchanged.
-use super::markers::{MasterMarkers, MasterObservation};
 #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
-use super::markers::{MAX_OBSERVATION_BYTES, MAX_PROFILE_BYTES};
+use super::information::InformationWriter;
+use super::information::{ContentKind, PreparedTransfer};
+use super::markers::MasterObservation;
 use crate::research_contracts::ResearchLslSettingsV1;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_lsl::LslState;
@@ -12,6 +13,7 @@ pub(crate) struct MasterLslService {
     state: labstream::Outlet,
     markers: labstream::Outlet,
     recording: Option<crate::research_recorder::OwnRecording>,
+    information: InformationWriter,
 }
 
 #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
@@ -22,38 +24,59 @@ impl MasterLslService {
         run_id: &str,
         source_hash: &str,
         recorder: &RecorderService,
-        profile: &MasterMarkers,
+        attempt_id: &str,
+        startup: PreparedTransfer,
     ) -> ResearchResult<Self> {
         // Validate the entire profile before any publication or authority starts.
-        let profile_text = bounded_text(&profile.profile_message, MAX_PROFILE_BYTES)?;
+        let information = InformationWriter::new(run_id, attempt_id, source_hash)?;
         let (state_info, marker_info) =
             crate::research_lsl::build_stream_descriptions(settings, rate, run_id)?;
         let state = labstream::Outlet::new(state_info).map_err(CommandError::io)?;
         let markers = labstream::Outlet::new(marker_info).map_err(CommandError::io)?;
         let recording = recorder.attach_own(state.info(), markers.info(), source_hash, run_id)?;
-        let service = Self {
+        let mut service = Self {
             state,
             markers,
             recording,
+            information,
         };
         // Attach acknowledgement precedes this first stream sample.
-        service.push_text(&profile_text)?;
+        if let Err(error) = service.send(ContentKind::Startup, startup) {
+            // No worker owns cleanup until this constructor succeeds. Close the
+            // attached attempt recording and retain any partial startup frames.
+            drop(service);
+            let _ = recorder.stop();
+            return Err(error);
+        }
         Ok(service)
     }
-    fn push_text(&self, text: &str) -> ResearchResult<f64> {
-        let timestamp = labstream::clock();
-        self.markers
-            .push_text_at(text, timestamp)
-            .map_err(CommandError::io)?;
-        if let Some(recording) = &self.recording {
-            recording.marker(timestamp, text)?;
-        }
-        Ok(timestamp)
+    fn send(&mut self, kind: ContentKind, value: PreparedTransfer) -> ResearchResult<f64> {
+        let outlet = &self.markers;
+        let recording = &self.recording;
+        let receipt = self.information.send(kind, value, |text| {
+            let timestamp = labstream::clock();
+            outlet
+                .push_text_at(text, timestamp)
+                .map_err(CommandError::io)?;
+            if let Some(recording) = recording {
+                recording.marker(timestamp, text)?;
+            }
+            Ok(timestamp)
+        })?;
+        Ok(receipt.first_lsl_time_seconds)
     }
-    pub(crate) fn observe(&self, observation: &MasterObservation) -> ResearchResult<f64> {
-        self.push_text(&bounded_text(observation, MAX_OBSERVATION_BYTES)?)
+    pub(crate) fn record(
+        &mut self,
+        kind: ContentKind,
+        value: &impl serde::Serialize,
+    ) -> ResearchResult<f64> {
+        self.send(kind, PreparedTransfer::new(value)?)
+    }
+    pub(crate) fn observe(&mut self, observation: &MasterObservation) -> ResearchResult<f64> {
+        self.record(ContentKind::Observation, observation)
     }
     pub(crate) fn state(&self, state: LslState) -> ResearchResult<f64> {
+        self.information.require_ready()?;
         let timestamp = labstream::clock();
         let values = crate::research_lsl::state_values(state);
         self.state
@@ -76,14 +99,22 @@ impl MasterLslService {
         _: &str,
         _: &str,
         _: &RecorderService,
-        _: &MasterMarkers,
+        _: &str,
+        _: PreparedTransfer,
     ) -> ResearchResult<Self> {
         Err(unavailable())
     }
-    pub(crate) fn observe(&self, _: &MasterObservation) -> ResearchResult<f64> {
+    pub(crate) fn observe(&mut self, _: &MasterObservation) -> ResearchResult<f64> {
         Err(unavailable())
     }
     pub(crate) fn state(&self, _: LslState) -> ResearchResult<f64> {
+        Err(unavailable())
+    }
+    pub(crate) fn record(
+        &mut self,
+        _: ContentKind,
+        _: &impl serde::Serialize,
+    ) -> ResearchResult<f64> {
         Err(unavailable())
     }
 }
@@ -95,26 +126,18 @@ fn unavailable() -> CommandError {
     )
 }
 
-#[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
-fn bounded_text(value: &impl serde::Serialize, limit: usize) -> ResearchResult<String> {
-    let bytes = crate::research_contracts::canonical_json(value, &[])?;
-    if bytes.len() > limit {
-        return Err(CommandError::invalid_contract(
-            "Master stream payload exceeds its execution bound.",
-        ));
-    }
-    String::from_utf8(bytes)
-        .map_err(|_| CommandError::invalid_contract("Master stream payload is not UTF-8."))
-}
-
 #[cfg(all(test, feature = "lsl-streaming", target_os = "windows"))]
 mod tests {
     use super::*;
     use crate::research_runner_master::{
-        markers::MarkerEvent, MasterSelector, MasterStepKind, PreparedMaster,
+        forms::FormAnswers,
+        information::startup_bundle,
+        markers::{MarkerEvent, MasterMarkers},
+        runtime::MasterChoice,
+        MasterSelector, MasterStepKind, PreparedMaster,
     };
     #[test]
-    fn actual_master_outlets_record_profile_before_synthetic_occurrences() {
+    fn actual_outlets_record_self_contained_information_and_synthetic_answers() {
         let source =
             include_str!("../../../test/fixtures/runner-master-lsl-synthetic-v1.canonical.json");
         let prepared = PreparedMaster::read(
@@ -128,11 +151,11 @@ mod tests {
             },
         )
         .unwrap();
-        let path = std::env::var_os("AFFECT_RUNNER_MASTER_XDF_FIXTURE")
+        let path = std::env::var_os("AFFECT_RUNNER_INFORMATION_XDF_FIXTURE")
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|| {
                 std::env::temp_dir().join(format!(
-                    "affect-master-synthetic-{}.xdf",
+                    "affect-information-synthetic-{}.xdf",
                     uuid::Uuid::new_v4()
                 ))
             });
@@ -159,17 +182,27 @@ mod tests {
             "P001",
         )
         .unwrap();
-        let service = MasterLslService::start(
+        let startup = startup_bundle(
+            &prepared,
+            &markers,
+            &settings,
+            serde_json::json!({"participantId":"P001","participantCode":"TP","age":30,"gender":"X","handedness":"R"}),
+        );
+        let mut count = 2 + crate::research_contracts::canonical_json(&startup, &[])
+            .unwrap()
+            .len()
+            .div_ceil(super::super::information::CHUNK_BYTES) as u64;
+        let mut service = MasterLslService::start(
             &settings,
             130,
             "run-synthetic-stream",
             &prepared.plan.recipe_source_byte_sha256,
             &recorder,
-            &markers,
+            "attempt-synthetic-stream",
+            PreparedTransfer::new(&startup).unwrap(),
         )
         .unwrap();
         let mut time = 0.;
-        let mut count = 1;
         service
             .observe(
                 &markers
@@ -177,7 +210,7 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        count += 1;
+        count += 3;
         for step in &prepared.plan.steps {
             let execution = format!("execution-synthetic-{}", step.position);
             let (start, end) = match step.kind {
@@ -194,6 +227,51 @@ mod tests {
                 )
                 .unwrap();
             time += step.duration_ms.unwrap_or(250) as f64;
+            if step.kind == MasterStepKind::Questionnaire {
+                let now = std::time::Instant::now();
+                let choices = step.payload["definition"]["items"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|item| MasterChoice {
+                        item_id: item["itemId"].as_str().unwrap().into(),
+                        option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
+                    })
+                    .collect();
+                let mut record = FormAnswers::default()
+                    .replace(
+                        step,
+                        choices,
+                        true,
+                        now,
+                        now + std::time::Duration::from_millis(125),
+                    )
+                    .unwrap();
+                record["runId"] = serde_json::json!("run-synthetic-stream");
+                record["attemptId"] = serde_json::json!("attempt-synthetic-stream");
+                record["participantId"] = serde_json::json!("P001");
+                record["recipeSourceByteSha256"] =
+                    serde_json::json!(prepared.plan.recipe_source_byte_sha256);
+                record["planIdentitySha256"] =
+                    serde_json::json!(prepared.plan.plan_identity_sha256);
+                record["monotonicMs"] = serde_json::json!(time);
+                service.record(ContentKind::Responses, &record).unwrap();
+                count += 3;
+            } else if step.kind == MasterStepKind::Video {
+                service
+                    .state(LslState {
+                        current_valence: 0.25,
+                        current_arousal: -0.5,
+                        target_valence: 0.25,
+                        target_arousal: -0.5,
+                        radius: 0.5590169943749475,
+                        angle_degrees: 296.565051177078,
+                        animation_active: true,
+                        input_active: true,
+                    })
+                    .unwrap();
+                count += 1;
+            }
             service
                 .observe(
                     &markers
@@ -201,7 +279,7 @@ mod tests {
                         .unwrap(),
                 )
                 .unwrap();
-            count += 2;
+            count += 6;
         }
         service
             .observe(
@@ -210,7 +288,9 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        count += 1;
+        count += 3;
+        service.record(ContentKind::Outcome,&serde_json::json!({"schema":"affect-runner-outcome","version":1,"protocolOutcome":"completed","completedStepCount":prepared.plan.steps.len(),"failureCode":null,"monotonicMs":time+2.,"localCheckpoint":"durable","recordingFinalization":"pending"})).unwrap();
+        count += 3;
         drop(service);
         let status = recorder.stop().unwrap();
         assert_eq!(status.phase, "complete", "{:?}", status.error);
