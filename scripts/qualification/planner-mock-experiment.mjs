@@ -107,10 +107,16 @@ function savedFile(result, directory) {
  * Native save/Runner readers separately validate schemas and derived integrity. */
 export function assertMockRecipe(recipe, expected, participantCount) {
   assert.equal(recipe.recipeId, "mock-dictator-recipe");
-  assert.equal(recipe.version, 2, "Mixed typed demographics require master v2");
+  assert.equal(recipe.version, expected.masterVersion ?? 2, "Master version must match the expected authoring chain");
   assert.equal(recipe.presentationTarget, "desktop-screen");
   assert.deepEqual(Object.keys(recipe.segments).sort(), ["P1", "P2", "P3", "P4", "P5", "P6"]);
   const { P1, P2, P3, P4, P5, P6 } = recipe.segments;
+  if (expected.masterVersion === 3) {
+    assert.equal(P1.version, 3);
+    assert.equal(P1.videoCatalogue.version, 3);
+    assert.equal(P2.version, 2);
+    assert.equal(recipe.integrity.algorithmVersion, "planner-recipe-reproduction-v4");
+  }
   assert.equal(P1.study.id, "mock-dictator");
   assert.equal(P1.study.title, "Bilingual MAIA-2 / TAS-20 and Great Dictator mock");
   assert.deepEqual(P1.workspaceLayout, expected.workspaceLayout);
@@ -211,8 +217,12 @@ export async function authorMockExperiment(config) {
   step(get("P1.media.catalogue"), "ok");
   step(({ lastResponse }) => {
     const library = lastResponse.result.value;
+    assert.equal(library.version, 3, "Current native authoring must retain controlled proof in catalogue3");
     assert.equal(library.entries.length, 1);
     const video = library.entries[0];
+    assert.equal(video.geometry?.source, "native-gstplay-controlled-renderer");
+    assert.equal(video.geometry?.nativeDisplayMetadata?.version, 2);
+    expected.masterVersion = 3;
     expected.video = structuredClone(video);
     // Identity comes from the real import; never encode a guessed video ID.
     annotationId = video.annotationId;

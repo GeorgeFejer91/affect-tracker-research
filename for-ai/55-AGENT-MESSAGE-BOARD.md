@@ -41,6 +41,12 @@ build or installed/runtime qualification is included in this receipt.
   All 16 file tests pass on D: TEMP/TMP; initial C: StorageFull failures retained.
   C: has zero free bytes; no cleanup authorized/performed. Native/Runner/S1/root
   notified to retain new scratch on D: and preserve the foreground app.
+- Follow-up 078a89d native compilation and all 24 Planner tests pass, including
+  six desktop exact selection hashes and six XR geometry/remaining-payload
+  comparisons. Native fba218b and first-freeze fence 54d2521 collected. S1 9f2dc75
+  composition collected next; Main registers additive attest_decode_v2 in both
+  handlers and requires the exact new chain in the actual-mock driver. 58 focused
+  JS checks pass. Actual native rescan/master export and Runner/XDF still pending.
 
 ### S1 Rust reader and P3 follow-up
 

@@ -50,6 +50,23 @@ function acknowledged(operation, issues=[]) {
     result:{operation,published:true,effect:{operation,requestId:request.requestId,stage:"completed",outcome:"acknowledged",possiblyChanged:true,receipt:{saved:true}}}};
   return {request,response};
 }
+
+test("controlled mock comparison requires the exact master3 chain and rejects downgrades", () => {
+  const { recipe, expected } = comparison();
+  expected.masterVersion = 3;
+  recipe.version = 3;
+  recipe.segments.P1.version = 3;
+  recipe.segments.P1.videoCatalogue.version = 3;
+  recipe.segments.P2.version = 2;
+  recipe.integrity = { algorithmVersion: "planner-recipe-reproduction-v4" };
+  assert.doesNotThrow(() => assertMockRecipe(recipe, expected, 1));
+  for (const mutate of [r => r.version = 2, r => r.segments.P1.version = 2,
+    r => r.segments.P1.videoCatalogue.version = 2, r => r.segments.P2.version = 1,
+    r => r.integrity.algorithmVersion = "planner-recipe-reproduction-v3"]) {
+    const changed = structuredClone(recipe); mutate(changed);
+    assert.throws(() => assertMockRecipe(changed, expected, 1), assert.AssertionError);
+  }
+});
 test("mock accepts only named partial-readiness issues after actual native acknowledgement",()=>{
   const cases=[acknowledged("selectWorkspace",[{owner:"P1",field:"P1.media.catalogue",code:"media_pending"}]),
     acknowledged("importQuestionnaire",[{owner:"P2",field:"P2.questionnaires",code:"unsaved_draft"}]),

@@ -32,9 +32,18 @@ the newly added exact XR selection hash assertion. P6 already specifies an
 absolute 1e-10 derived-geometry tolerance because cross-language trigonometric
 floats are not byte identities. A JS-locked XR layout fixture now checks that
 existing tolerance separately, then verifies the exact remaining selection hash
-using the expected layout in a test-only copy. This test adjustment awaits native
-rerun; no product geometry, hashing or reader rules are changed.
+using the expected layout in a test-only copy. At 078a89d all 24 native Planner
+tests pass, including all six desktop and six XR selections. No product geometry,
+hashing or reader rules are changed. Native actor fba218b and its first-freeze
+race fence 54d2521 are included in that build.
 All 16 native file tests pass with D: TEMP/TMP. The initial default-C: invocation
 failed with StorageFull and is retained in main-master3-f44170b-tests-01 evidence.
-Native producer/actor integration and actual CLI rebind/master
+S1 native composition 9f2dc75 is collected, and both Planner and Runner handler
+tables explicitly register attest_decode_v2 alongside the historical command.
+The actual-mock driver now requires catalogue3/metadata2/master3 with P2v2;
+its legacy comparison checks remain available. 58 focused JS tests pass after
+linking the isolated worktree to the identical-lockfile integration dependencies.
+The initial missing-dependency invocation passed 20 tests but could not load the
+native bridge; it is not counted as a product failure or complete test run.
+Actual CLI rebind/master
 export remain separate gates. No foreground executable was replaced or opened.
