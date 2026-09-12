@@ -17,7 +17,7 @@ const pane = renderResearchUiMarkup("browser").match(/<aside class="preview-pane
 assert.ok(pane);
 const bundle = await build({ write: false, bundle: true, format: "iife", stdin: {
   resolveDir: fileURLToPath(new URL("../../", import.meta.url)), contents: `
-import {createPreviewLayout} from './site/src/research/preview-layout.js';
+import {createPreviewLayout,MINIMUM_PREVIEW_CONTROLS_REM} from './site/src/research/preview-layout.js';
 import {createPreviewInteraction} from './site/src/research/preview-interaction.js';
 import {createPreviewResponseSimulator} from './site/src/research/preview-response-simulator.js';
 import {createResearchPreview} from './site/src/research/preview.js';
@@ -50,11 +50,11 @@ window.checkPreview=async()=>{
  const height=controls.getBoundingClientRect().height;
  scroller.scrollTop=0;
  const flubber=!!pane.querySelector('[data-preview-flubber-base]')?.getAttribute('d');
- const receipt={fallback,pinned,lowerMoved,fit,key,flubber,controlsHeight:height,scrollHeight:scroller.scrollHeight,clientHeight:scroller.clientHeight};
+ const receipt={fallback,pinned,lowerMoved,fit,key,flubber,controlsHeight:height,minimumControls:MINIMUM_PREVIEW_CONTROLS_REM*parseFloat(getComputedStyle(document.documentElement).fontSize),scrollHeight:scroller.scrollHeight,clientHeight:scroller.clientHeight};
  adapter.destroy();simulator.destroy();layout.destroy();renderer.destroy();
  document.getElementById('receipt').textContent=JSON.stringify(receipt);
 };` } });
-const cases = [{ name: "wide", width: 680, height: 1000 }, { name: "resized", width: 320, height: 1000 }, { name: "short", width: 520, height: 520 }, { name: "text-scale", width: 680, height: 800, font: 30 }];
+const cases = [{ name: "ample", width: 680, height: 1300 }, { name: "standard", width: 680, height: 1000 }, { name: "resized", width: 320, height: 1000 }, { name: "short", width: 520, height: 520 }, { name: "text-scale", width: 680, height: 800, font: 30 }];
 const receipts = [];
 for (const sample of cases) {
   const profile = await mkdtemp(join(output, "isolated-profile-"));
@@ -64,8 +64,8 @@ for (const sample of cases) {
   const receipt = JSON.parse(stdout.match(/<pre id="receipt">([^<]+)<\/pre>/u)?.[1] ?? "null");
   receipts.push({ ...sample, ...receipt });
   assert.ok(receipt?.key && receipt.fit && receipt.flubber && receipt.lowerMoved && receipt.scrollHeight>receipt.clientHeight, JSON.stringify(receipts.at(-1)));
-  assert.equal(receipt.fallback, ["short", "text-scale"].includes(sample.name), JSON.stringify(receipts.at(-1)));
-  if (!receipt.fallback) assert.ok(receipt.pinned && receipt.controlsHeight >= 120, JSON.stringify(receipt));
+  assert.equal(receipt.fallback, sample.name !== "ample", JSON.stringify(receipts.at(-1)));
+  if (!receipt.fallback) assert.ok(receipt.pinned && receipt.controlsHeight >= receipt.minimumControls, JSON.stringify(receipt));
 }
 await writeFile(join(output, "receipt.json"), JSON.stringify(receipts, null, 2));
 console.log(JSON.stringify({ pass: true, cases: receipts.length, output }));

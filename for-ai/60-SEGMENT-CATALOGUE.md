@@ -319,11 +319,11 @@ explicit versioned fields.
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
 - [x] **P5-03 — Implemented component:** live preview and input-test surfaces; not all simulator controls are saved settings.
-- [ ] **P5-04 — Partial:** consolidate old Input/Visual/Advanced with one value owner and bottom Advanced disclosure.
-- [ ] **P5-05 — Decision:** enumerate saved controls versus temporary preview/simulator state (Q10).
+- [ ] **P5-04 — Pending integration:** isolated `8d3d256` consolidates old Input/Visual/Advanced with one value owner and bottom Advanced; canonical verification remains required.
+- [ ] **P5-05 — Decision:** saved/temporary controls and units are inventoried in the P5 roadmap receipt; Q10 promotion decisions remain open.
 - [ ] **P5-06 — Missing:** serialize newly approved controls with explicit units/ranges and no silent Run defaults.
-- [ ] **P5-07 — Missing:** share P4/P6 geometry without another position/size authority; preserve preview/export/reload consistency.
-- [ ] **P5-08 — Partial:** retain accessible physical input testing/focus and understandable basic controls after consolidation.
+- [ ] **P5-07 — Partial:** `8d3d256` supplies a tested conservative saved-v1 envelope and labels retained normalized geometry as legacy; P4/P6 composition and accepted export/reload consistency remain open.
+- [ ] **P5-08 — Pending integration/qualification:** real headless UI checks cover unique controls, reflow, confirmation and invalid-field disclosure/focus after consolidation; physical input and installed accessibility qualification remain separate.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
@@ -332,6 +332,10 @@ distinct from the acquisition sample rate in recording policy.
 [contracts](../site/src/research/contracts.js),
 [preview](../site/src/research/preview.js), [mappings](../site/src/research/mappings.js).
 **Boundary:** no allocation, sampling clock, LSL transport or screen calibration.
+
+**Candidate receipt:** [2026-09-11 P5 consolidation and control inventory](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
+Unchecked items remain unchecked until integration and the applicable gates;
+the candidate does not implement Q10 saved additions or P4/P6 geometry policy.
 
 ## P6 — Optional XR Spatial Layout
 

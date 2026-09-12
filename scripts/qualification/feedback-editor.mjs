@@ -1,5 +1,5 @@
 // Background-only presentation checks; no user browser profile, desktop input or app launch.
-// Usage: node scripts/qualification/feedback-editor.mjs <chrome-or-edge.exe> <output-dir>
+// Usage: node scripts/qualification/feedback-editor.mjs <browser.exe> <output-dir> [snapshots] [state,...]
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -12,10 +12,20 @@ import { createDefaultResearchSettings } from "../../site/src/research/contracts
 import { parseExperimentDefinitionV1, EXTERNAL_ORDER_ALGORITHM_VERSION } from "../../site/src/research/external-experiment.js";
 import { validateResearchSettingsV3, QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from "../../site/src/research/external-protocol.js";
 
-const [browser, destination, purpose] = process.argv.slice(2);
+const [browser, destination, purpose, selectedStates] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const gitRead = async (...args) => (await promisify(execFile)("git", args, {
+  cwd: repositoryRoot, windowsHide: true, maxBuffer: 1_000_000,
+})).stdout.trim();
+const provenance = {
+  repositoryCommit: await gitRead("rev-parse", "HEAD"),
+  applicationTreeSha1: await gitRead("rev-parse", "HEAD:site"),
+  applicationHasUncommittedChanges: Boolean(await gitRead("diff", "HEAD", "--name-only", "--", "site")),
+  browserExecutableSha256: createHash("sha256").update(await readFile(browser)).digest("hex"),
+};
 const defaults = createDefaultResearchSettings();
 const parsed = await parseExperimentDefinitionV1(await readFile(new URL("../../site/experiment-template.json", import.meta.url)));
 const settings = await validateResearchSettingsV3({
@@ -36,9 +46,9 @@ const settings = await validateResearchSettingsV3({
 const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
 const results = [];
 const cases = purpose === "snapshots"
-  ? ["empty", "controls", "error"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])
+  ? ["empty", "controls", "error", "advanced", "color", "long-label"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])
   : [["browser", 1280, 1], ["browser", 900, 1], ["browser", 640, 1], ["browser", 500, 1.5625], ["tauri", 1280, 1], ["tauri", 900, 1], ["browser", 1280, 2]];
-for (const [surface, width, zoom, screenshotState = "default"] of cases) {
+for (const [surface, width, zoom, screenshotState = "default"] of cases.filter((entry) => !selectedStates || selectedStates.split(",").includes(entry[3] ?? "default"))) {
   const name = `${surface}-${width}-${zoom}${screenshotState === "default" ? "" : `-${screenshotState}`}`;
   const profile = await mkdtemp(join(output, `${name}-profile-`));
   const fixture = { settings, experimentReceipt: parsed, surface, zoom, screenshotState };
@@ -67,9 +77,13 @@ for (const [surface, width, zoom, screenshotState = "default"] of cases) {
   const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];
   assert.ok(raw, `No background receipt: ${name}`);
   const receipt = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&"));
+  receipt.provenance = { ...provenance,
+    fixtureSha256: createHash("sha256").update(await readFile(html)).digest("hex"),
+    screenshotSha256: createHash("sha256").update(await readFile(join(output, `${name}.png`))).digest("hex"),
+  };
   await writeFile(join(output, `${name}.json`), JSON.stringify(receipt, null, 2));
   assert.ok(receipt.pass, `${name}: ${receipt.error}`);
   results.push({ name, checks: receipt.rows.length, viewport: receipt.viewport });
   console.log(JSON.stringify(results.at(-1)));
 }
-await writeFile(join(output, "receipt.json"), JSON.stringify({ pass: true, results }, null, 2));
+await writeFile(join(output, "receipt.json"), JSON.stringify({ pass: true, provenance, results }, null, 2));
