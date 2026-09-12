@@ -290,6 +290,22 @@
 
 ### 20260912-p3-cli-authoring
 
+- Implementation checkpoint: all 14 closed operations, all nine readback groups,
+  internal exact draft recovery and minimal matching GUI reorder/reset controls
+  are implemented. Public raw draft and all generated identities are read-only.
+  Shared `2310efc` / `0138516` dependencies collected unchanged as `8639b10` /
+  `d47a2b2`; pure `isCurrent`, notification-free `commit`, then `afterCommit`.
+- Root `2e6c460` explicitly adds P3's E2E-UI mapping and comparison; Runner
+  correspondence is now allocated to its separate owner. No P3 Runner edits.
+  Exact hooks, operation/UI/JSON mapping and evidence method:
+  `docs/planner-p3-cli-authoring.md`.
+- Checks before final clean captures: 797 full Node tests at the initial shared
+  foundation; 54 focused P3/editor/shared tests after the observer-phase update
+  and three added regressions. Desktop11/Pages239 closures pass (existing Vite
+  chunk-size warning). Actual Chrome UI/shared-session parity passes all 14
+  operations, 128 assertions at each 1280/800; both development PNGs inspected.
+  Final clean-source browser receipts follow; no native CLI/media/Runner claim.
+
 - Owner S3, CLI-P3 Backend Verification, explicitly allocated by Chat Orchestrator
   and main. Branch `codex/segment-p3-cli-authoring`, isolated C: P3 CLI worktree,
   base `460f516`. Required baseline Planner work is already delivered.
