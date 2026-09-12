@@ -5,8 +5,13 @@ import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS,
 /** Session receipt -> detached authored payloads. Domain validation still occurs
  * in the compiler. Session revisions and explicit acceptance never become file
  * permissions or persisted readiness. P5 must be accepted by final capture. */
-export function capturePlannerRecipeInputV1(registry, { recipeId, presentationTarget, policy }) {
+export function capturePlannerRecipeInputV1(registry, { recipeId, presentationTarget, policy, isCurrent }) {
+  if (typeof isCurrent !== "function" || typeof registry.getAcceptanceGeneration !== "function") {
+    throw new TypeError("Recipe capture requires a caller edit/operation/disposal guard and an acceptance generation.");
+  }
+  if (isCurrent() !== true) throw new TypeError("The recipe capture operation is no longer current.");
   const review = registry.assertAccepted();
+  const generation = registry.getAcceptanceGeneration();
   const segments = {};
   for (const segment of PLANNER_RECIPE_SEGMENTS) {
     const entry = review.entries.find(item => item.segment === segment);
@@ -26,8 +31,16 @@ export function capturePlannerRecipeInputV1(registry, { recipeId, presentationTa
   // Canonical cloning rejects non-JSON values before a delayed compiler can see
   // caller mutation. The guard binds acceptance and the caller's edit lifetime.
   const input = freezeRecipeValue(JSON.parse(canonicalJson(core)));
-  return Object.freeze({ input, isCurrent() {
-    try { return registry.assertAccepted().fingerprint === review.fingerprint; }
-    catch { return false; }
-  } });
+  let stale = false;
+  const current = () => {
+    if (stale) return false;
+    try {
+      stale = isCurrent() !== true || registry.getAcceptanceGeneration() !== generation
+        || registry.assertAccepted().fingerprint !== review.fingerprint
+        || registry.getAcceptanceGeneration() !== generation;
+    } catch { stale = true; }
+    return !stale;
+  };
+  if (!current()) throw new TypeError("The design changed during recipe capture.");
+  return Object.freeze({ input, isCurrent: current });
 }

@@ -85,6 +85,12 @@ Capture freezes one accepted revision set and all explicit policy/target values.
 Any owner, policy, target, edit/revert, newer operation or teardown invalidates a
 delayed compile/save. P5's entire current saved configuration is accepted at final
 capture; it has no separate confirmation action.
+`capturePlannerRecipeInputV1(registry,{recipeId,presentationTarget,policy,isCurrent})`
+requires a caller guard bound to monotonic researcher-edit, operation and disposal
+epochs. Its returned guard composes that lifetime with an irreversible registry
+acceptance generation and accepted fingerprint. Clear/reaccept of identical values
+cannot revive an old capture, even without an intermediate guard call. An observed
+false result remains false. No caller may substitute a constant guard in the app.
 
 Open strictly validates every segment, reference and hash before owner mutation.
 Prepared restoration uses each owner's guarded content-only API in dependency

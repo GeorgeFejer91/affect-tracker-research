@@ -120,6 +120,14 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
   const accepted = new Map();
   const accepting = new Map();
   let acceptanceSequence = 0;
+  let acceptanceGeneration = 0;
+  const advanceAcceptance = () => {
+    if (acceptanceGeneration === Number.MAX_SAFE_INTEGER) throw new RangeError("Planner acceptance generation exhausted.");
+    acceptanceGeneration += 1;
+  };
+  const expireAcceptance = (receipt) => {
+    if (receipt && !receipt.stale) { receipt.stale = true; advanceAcceptance(); }
+  };
   const notify = () => onChange();
   // Exclusions bind the explicit disabled choice, not an optional preview's
   // unsaved camera/draft revisions. Enabled contributions bind every field.
@@ -192,7 +200,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
         || receipt.dependencies.some(([dependency, identity]) => {
           const current = snapshots.find((entry) => entry.segment === dependency);
           return !current || identityOf(current) !== identity;
-        })) receipt.stale = true;
+        })) expireAcceptance(receipt);
     }
     return Object.freeze({ snapshots, issues: Object.freeze(issues), fingerprint: canonicalJson({ snapshots: active, issues }) });
   }
@@ -244,11 +252,12 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       const owner = { getSnapshot, validatePackageV1, validateContribution, previous: null, observation: null, epoch: 0 };
       owners.set(segment, owner);
       notify();
-      return () => { if (owners.get(segment) === owner) { owners.delete(segment); if (accepted.has(segment)) accepted.get(segment).stale = true; accepting.delete(segment); notify(); } };
+      return () => { if (owners.get(segment) === owner) { owners.delete(segment); expireAcceptance(accepted.get(segment)); accepting.delete(segment); notify(); } };
     },
     changed(segment) { segmentId(segment); if (!owners.has(segment)) throw new TypeError("Planner owner is not registered."); read({ format: "contributions" }); notify(); },
     read,
     readAccepted,
+    getAcceptanceGeneration() { return acceptanceGeneration; },
     async accept(segment, { selectedTarget = null } = {}) {
       segmentId(segment);
       const owner = owners.get(segment);
@@ -277,16 +286,17 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
             const dependency = after.snapshots.find((entry) => entry.segment === id);
             return !dependency || identityOf(dependency) !== value;
           })) throw new TypeError(`${segment}: its contribution changed during confirmation.`);
+        advanceAcceptance();
         accepted.set(segment, { owner, snapshot: structuredClone(snapshot), identity, dependencies, stale: false });
         notify();
         return structuredClone(snapshot);
       } finally { if (accepting.get(segment) === sequence) accepting.delete(segment); }
     },
-    clearAcceptance() { accepted.clear(); accepting.clear(); notify(); },
+    clearAcceptance() { advanceAcceptance(); accepted.clear(); accepting.clear(); notify(); },
     invalidateAcceptance(segment) {
       segmentId(segment);
       const receipt = accepted.get(segment);
-      if (receipt?.snapshot.enabled) receipt.stale = true;
+      if (receipt?.snapshot.enabled) expireAcceptance(receipt);
       accepting.delete(segment);
       notify();
     },

@@ -73,7 +73,7 @@ test("accepted capture is detached, omits session receipts and expires on actual
     registry.register(segment, () => live[segment], { validateContribution: async () => true });
     await registry.accept(segment);
   }
-  const options = { recipeId: "snapshot-test", presentationTarget: "desktop-screen", policy: structuredClone(policy) };
+  const options = { recipeId: "snapshot-test", presentationTarget: "desktop-screen", policy: structuredClone(policy), isCurrent: () => true };
   const captured = capturePlannerRecipeInputV1(registry, options);
   assert.deepEqual(captured.input.segments.P6, { status: "excluded" });
   assert.deepEqual(captured.input.segments.P1, { ownerField: "P1" });
@@ -92,5 +92,30 @@ test("capture cannot infer an optional exclusion when the XR owner was never acc
     registry.register(segment, () => ({ revision: 1, enabled: true, pending: false, contribution: {}, dependencyRevisions: [] }), { validateContribution: async () => true });
     await registry.accept(segment);
   }
-  assert.throws(() => capturePlannerRecipeInputV1(registry, { recipeId: "test", presentationTarget: "desktop-screen", policy }), /Confirm/u);
+  assert.throws(() => capturePlannerRecipeInputV1(registry, { recipeId: "test", presentationTarget: "desktop-screen", policy, isCurrent: () => true }), /Confirm/u);
+});
+
+test("capture lifetime requires caller epochs and cannot resurrect after clear/reaccept between probes", async () => {
+  const registry = createPlannerContributionRegistry();
+  for (const segment of PLANNER_RECIPE_SEGMENTS) registry.register(segment,
+    () => ({ revision: 1, enabled: segment !== "P6", pending: false, contribution: segment === "P6" ? null : {}, dependencyRevisions: [] }),
+    { validateContribution: async () => true });
+  const acceptAll = async () => { for (const segment of PLANNER_RECIPE_SEGMENTS) await registry.accept(segment); };
+  await acceptAll();
+  const options = { recipeId: "lifetime-test", presentationTarget: "desktop-screen", policy };
+  assert.throws(() => capturePlannerRecipeInputV1(registry, options), /guard/u);
+  for (const action of ["recipeId", "policy", "target", "edit-revert", "new-operation", "teardown"]) {
+    let epoch = 1;
+    const initial = epoch;
+    const capture = capturePlannerRecipeInputV1(registry, { ...options, isCurrent: () => epoch === initial });
+    assert.equal(capture.isCurrent(), true);
+    epoch += 1; // The caller increments for each listed event, including reverts.
+    assert.equal(capture.isCurrent(), false, action);
+    epoch = initial; // Even a broken caller cannot revive an observed stale capture.
+    assert.equal(capture.isCurrent(), false, action);
+  }
+  const unobserved = capturePlannerRecipeInputV1(registry, { ...options, isCurrent: () => true });
+  registry.clearAcceptance();
+  await acceptAll();
+  assert.equal(unobserved.isCurrent(), false, "same values reaccepted without probing the cleared state must still expire the old capture");
 });
