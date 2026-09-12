@@ -338,9 +338,9 @@ explicit versioned fields.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
 - [x] **P5-03 — Implemented component:** live preview and input-test surfaces; not all simulator controls are saved settings.
 - [ ] **P5-04 — Pending integration:** isolated `8d3d256` consolidates old Input/Visual/Advanced with one value owner and bottom Advanced; canonical verification remains required.
-- [ ] **P5-05 — Decision:** saved/temporary controls and units are inventoried in the P5 roadmap receipt; Q10 promotion decisions remain open.
+- [ ] **P5-05 — Decision:** saved/temporary controls and units are inventoried in the P5 roadmap receipt. Owner checkpoint `ccc53a7` exposes only validated saved input/visual/mappings with revision and pending state; Q10 promotion decisions remain open.
 - [ ] **P5-06 — Missing:** serialize newly approved controls with explicit units/ranges and no silent Run defaults.
-- [ ] **P5-07 — Partial:** `8d3d256` supplies a tested conservative saved-v1 envelope and labels retained normalized geometry as legacy; P4/P6 composition and accepted export/reload consistency remain open.
+- [ ] **P5-07 — Partial:** `ccc53a7` adds a live saved-configuration/revision, invalidation subscription and atomic restore to the conservative `8d3d256` envelope. Chrome boot round trips pass; owner delta and P4/P6/P7 consumers await integration. Normalized geometry stays explicitly legacy; accepted successor layout/export consistency remains open.
 - [ ] **P5-08 — Pending integration/qualification:** real headless UI checks cover unique controls, reflow, confirmation and invalid-field disclosure/focus after consolidation; physical input and installed accessibility qualification remain separate.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
