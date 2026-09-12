@@ -230,6 +230,34 @@ file; follow the integration-owner collection procedure in the workflow.
   correspondence, execution, tracking and recording are deferred and do not
   block this Planner allocation. No new UI or runtime mode is introduced.
 
+### 20260912-p7-complete-planner-master
+
+- Owner **S7**, P7-03 through P7-09; Backend Verification. Root explicitly
+  allocated full Planner completion after the bounded UI intake, then clarified
+  that actual Planner–Runner correspondence is the final deferred development
+  stage. Isolated `codex/segment-p7-accepted-recipe`, base `7946bc6`.
+- Goal/deliverable: one complete, strict versioned master JSON with ordered P1–P6
+  contributions, explicit retained policy/target, integrity, acknowledged named
+  saving and editable reopening. Every run-defining owner field is preserved;
+  frozen v1 readers remain unchanged. No alternative draft-as-accepted format.
+- Current source has accepted-snapshot capture, v1 file adapters and standalone
+  policy/language components; complete successor serialization and native read
+  dispatch are missing. This pass owns those contract/persistence modules.
+  Integration owns shared app wiring/confirmation; domain owners retain their
+  validators, complete field capture, projections and mutation APIs.
+- P1 confirms its complete saved workspace content is valid without restoring
+  permissions; Q05-dependent physical-path fields remain absent. P2/P5 own new
+  complete authoring wrappers where existing preview controls need promotion.
+  P6 agrees a strict included/excluded full-profile union. Accepted P4 layout
+  remains required and is never replaced by the internal draft while Q08 is open.
+- Evidence now: canonical strict round trips, tamper/unknown/missing rejection,
+  independent-process reconstruction from only saved data, exact-byte save
+  acknowledgements and asynchronous edit/reopen fencing. Final Planner evidence
+  adds integrated authoring→save→fresh editable reopen→reexport at desktop/narrow
+  widths. Runtime correspondence, recording, media timing and installed Runner
+  qualification are deferred. XDF stream selection is Runner-session policy;
+  authored LSL output and planned markers remain experiment definitions.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion
