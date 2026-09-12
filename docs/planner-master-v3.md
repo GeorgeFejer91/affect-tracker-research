@@ -47,3 +47,33 @@ The initial missing-dependency invocation passed 20 tests but could not load the
 native bridge; it is not counted as a product failure or complete test run.
 Actual CLI rebind/master
 export remain separate gates. No foreground executable was replaced or opened.
+
+## Actual native authoring attempt at 148a806
+
+The frozen production CLI built with default/custom-protocol/native-gstreamer
+features in 2m09s. Its executable SHA256 is
+a35418b14fa2fe53a289ba43ed46830ab0c6c8b5929c8c22ba50fe28f5eb09a1
+(32911872 bytes); the adjacent pinned runtime verified 827 files/340362958 bytes.
+Broader Planner JS tests pass 354 checks. Native media tests from the preceding
+078a89d copied harness pass 52 checks, with one explicit offscreen test ignored.
+
+The fresh 148a806 mock imported the exact 86870779-byte original video, but P1
+did not publish its catalogue: attestDecode returned decoded-summary-invalid.
+The native import receipt is acknowledged; revision stays2, four of55 driver
+steps complete and no master is saved. EOF cleanup exits0 within the unchanged
+10-second grace period without forced termination. Transcript SHA256:
+a2bf9b9c70d7f987fda0deb0d1fc16da787ba00232db50a95d3a423086ac5c0c.
+Evidence and source inputs are preserved in
+D:/GitHub/.affect-checks/main-fullmock-148a806-evidence-01.
+
+S1 confirmed a deterministic producer/validator path mismatch: native summary2
+returns the real declared stimuli-relative location, while the shared JS check
+still requires the old wf- placeholder locator. S1 owns an explicit summary2
+path fix and native-serialization regression, preserving strict summary1.
+This source finding is not evidence of successful native catalogue publication.
+Do not blindly repeat the import. Next native check must use a preserved clone
+and rescan; the subsequent complete authoring attempt needs a new empty workspace.
+
+Runner12c0395 is collected as17629d8, retaining full versioned media binding and
+rejecting mixed proof routing pending a native-owned location map. Main adds
+Start3/action3 registrations; final integrated native compilation remains pending.

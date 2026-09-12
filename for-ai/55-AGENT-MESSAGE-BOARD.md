@@ -47,6 +47,14 @@ build or installed/runtime qualification is included in this receipt.
   composition collected next; Main registers additive attest_decode_v2 in both
   handlers and requires the exact new chain in the actual-mock driver. 58 focused
   JS checks pass. Actual native rescan/master export and Runner/XDF still pending.
+- Actual native148a806 from-scratch mock failed at attestDecode with
+  decoded-summary-invalid after acknowledged import; unpublished revision2,
+  no master. Graceful EOF exit0/no force. S1 confirms summary2 real logical path
+  versus inherited summary1 wf-placeholder check and owns strict versioned fix.
+  Preserve attempt evidence; no blind reimport. See docs/planner-master-v3.md.
+  Runner12c0395 collected as17629d8; Main registers Start3/action3, compilation
+  pending Root's safe SDK relocation. No opaque-ID recreation or mixed runtime
+  support claim; all-controlled3 remains the next actual integration gate.
 
 ### S1 Rust reader and P3 follow-up
 
