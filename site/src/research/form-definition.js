@@ -20,11 +20,13 @@ function integer(value, min, max) {
 function ordered(values, min, max, idKey, validate) {
   if (!Array.isArray(values) || values.length < min || values.length > max) throw new TypeError("Form list exceeds its bounds.");
   const seen = new Set();
-  values.forEach((value, index) => {
+  for (let index = 0; index < values.length; index++) {
+    if (!Object.hasOwn(values, index)) throw new TypeError("Form lists must not contain missing entries.");
+    const value = values[index];
     validate(value); identifier(value[idKey]);
     if (seen.has(value[idKey]) || value.order !== index + 1) throw new TypeError("Form identities must be unique and orders must match their array positions.");
     seen.add(value[idKey]);
-  });
+  }
 }
 export function validateFormItemV1(item) {
   exactFormObject(item, ["itemId", "order", "prompt", "required", "response"], "Form item");
@@ -50,7 +52,8 @@ export function validateFormDefinitionV1(value) {
   exactFormObject(value, ["schema", "version", "questionnaireId", "questionnaireVersion", "title", "language", "provenance", "items", "definitionSha256"]);
   if (value.schema !== FORM_DEFINITION_SCHEMA || value.version !== 1) throw new TypeError("Unsupported form definition schema/version.");
   identifier(value.questionnaireId); text(value.questionnaireVersion, 120, "Form version"); text(value.title, 500, "Form title");
-  if (typeof value.language !== "string" || !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u.test(value.language) || value.language === "und") throw new TypeError("Form needs an explicit language tag.");
+  if (typeof value.language !== "string" || value.language.length > 80 || !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u.test(value.language)
+    || value.language.toLowerCase() === "und") throw new TypeError("Form needs an explicit language tag of at most 80 characters.");
   const p = value.provenance;
   exactFormObject(p, ["kind", "sourceId", "sourceVersion", "validationStatus"], "Form provenance");
   if (p.kind !== "projectAuthored" || p.validationStatus !== "notValidated") throw new TypeError("Unsupported form provenance.");
