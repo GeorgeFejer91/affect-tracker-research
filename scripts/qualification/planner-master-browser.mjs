@@ -10,9 +10,12 @@ import { build } from "esbuild";
 
 const [browser, folder] = process.argv.slice(2);
 assert.ok(browser && folder, "Provide a browser executable and isolated evidence directory.");
+const git = args => execFileSync("git", args, { encoding: "utf8" }).trim();
+const commit = git(["rev-parse", "HEAD"]), dirty = git(["status", "--porcelain"]) !== "";
+const hash = value => createHash("sha256").update(value).digest("hex");
 const output = resolve(folder); await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "profile-"));
-const fixtures = await Promise.all(["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-xr-current-v1"].map(async name => ({
+const fixtures = await Promise.all(["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-xr-current-v1", "planner-recipe-deep-language-v1"].map(async name => ({
   name, source: await readFile(`test/fixtures/${name}.canonical.json`, "utf8"),
   matrix: JSON.parse(await readFile(`test/fixtures/${name}-reproduction.json`, "utf8")),
 })));
@@ -32,6 +35,7 @@ document.getElementById('receipt').textContent=JSON.stringify({passed:true,userA
 }catch(error){document.getElementById('receipt').textContent=JSON.stringify({passed:false,checks,error:error.message,stack:error.stack});}})();`;
 const bundle = await build({ stdin: { contents: program, resolveDir: process.cwd() }, bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent", metafile: true });
+const sourceHashes = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs).filter(p => p !== "<stdin>").map(async path => [path, hash(await readFile(path))])));
 const html = `<!doctype html><meta charset="utf-8"><title>Planner codec verification</title><pre id="receipt">pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`;
 const file = join(output, "fixture.html"); await writeFile(file, html);
 const { stdout, stderr } = await promisify(execFile)(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
@@ -40,11 +44,12 @@ const { stdout, stderr } = await promisify(execFile)(browser, ["--headless=new",
 await writeFile(join(output, "browser.log"), stderr);
 const raw = stdout.match(/<pre id="receipt">([^<]+)<\/pre>/u)?.[1]; assert.ok(raw && raw !== "pending", "Browser codec did not complete.");
 const receipt = JSON.parse(raw.replaceAll("&amp;", "&").replaceAll("&quot;", '"').replaceAll("&gt;", ">").replaceAll("&lt;", "<"));
-const hash = value => createHash("sha256").update(value).digest("hex");
-receipt.commit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-receipt.dirty = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim() !== "";
+assert.equal(git(["rev-parse", "HEAD"]), commit, "Commit changed during browser verification.");
+for (const [path, digest] of Object.entries(sourceHashes)) assert.equal(hash(await readFile(path)), digest, `${path} changed during verification`);
+receipt.commit = commit;
+receipt.dirty = dirty;
 receipt.htmlSha256 = hash(html);
-receipt.sourceSha256 = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs).filter(p => p !== "<stdin>").map(async path => [path, hash(await readFile(path))])));
+receipt.sourceSha256 = sourceHashes;
 await writeFile(join(output, "receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`);
 assert.equal(receipt.passed, true, receipt.error);
 console.log(`${receipt.checks} codec assertions passed in ${receipt.userAgent}.`);

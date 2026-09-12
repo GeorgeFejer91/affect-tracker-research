@@ -118,8 +118,12 @@ pub(super) fn xr(
 /// has already rejected cycles, duplicate leaves and unreachable definitions.
 pub(super) fn route_count(tree: &LanguageSelectionTreeV1) -> ResearchResult<usize> {
     fn count(tree: &LanguageSelectionTreeV1, id: &str, depth: usize) -> ResearchResult<usize> {
-        if depth > 64 {
-            return Err(invalid("Language tree depth exceeds recipe bounds."));
+        // Graph edges are flat JSON references. P2's established 256-node
+        // acyclic-tree contract is separate from the wire nesting limit.
+        if depth >= tree.nodes.len() {
+            return Err(invalid(
+                "Language graph traversal exceeds its validated node count.",
+            ));
         }
         let node = tree
             .nodes

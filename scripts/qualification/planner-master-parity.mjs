@@ -17,7 +17,7 @@ const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const git = args => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 await mkdir(output, { recursive: true });
 const cases = [];
-for (const name of ["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-xr-current-v1"])
+for (const name of ["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-xr-current-v1", "planner-recipe-deep-language-v1"])
   cases.push({ name, source: await source(name) });
 const layout = await load("desktop-layout-candidates-v1");
 const { integrity: _integrity, ...base } = JSON.parse(cases[0].source);
