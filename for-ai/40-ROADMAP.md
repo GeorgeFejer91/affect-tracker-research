@@ -1,5 +1,23 @@
 # Research v1 roadmap
 
+## P3 Q04 location-pair software checkpoint — 2026-09-12
+
+`2a16397` consumes P1 catalogue v2 through an explicit derived library and P3
+design v2. Each video occurrence binds both exact annotation and immutable asset
+identity; markers distinguish equal bytes at distinct paths. 93 focused Node
+checks pass, including P1/P2 parser compatibility, long IDs and all variant/ISI
+reconstruction edges. Historical fixtures/readers retain their meaning.
+
+The 4824-character nested-path case exposed expanded planned-event text escaping
+the pane. P3's event lists now scroll horizontally. The headless section fixture
+passes empty/location states at 1600/800 viewports within a 432px host; full input
+and catalogue-option values match and cells stay below 230px. Screenshots were
+inspected. This is a scoped section rendering receipt with source hashes, not
+combined-shell qualification: the old full-shell harness on base `7946bc6` fails
+the empty 800px viewport assertion before the new case. Integration owns that
+shell and the final combined audit. Native P3 parity, verified download adapters
+and actual complete-master parsing/reopen remain open at this checkpoint.
+
 ## P3 master-reproduction fixture and download lifecycle — 2026-09-12
 
 The isolated `codex/segment-p3-master-variants` pass starts from combined
