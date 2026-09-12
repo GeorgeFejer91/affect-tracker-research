@@ -11,6 +11,8 @@ watchdog, force exit, timeout extension, unsafe call or cancellation behavior.
 Lines contain only fixed enum names and monotonic milliseconds since CLI launch.
 No paths, identifiers, raw errors, source, stack or participant values are added.
 The 20-phase vocabulary bounds the whole process to 20 additional stderr lines.
+Writes are best-effort: stderr I/O failure is ignored, never promoted to a
+lifecycle panic. Main identified and corrected the initial eprintln! risk.
 Concurrent writes may be printed in a different order; elapsed values refer to
 observation time, not event delivery or physical timing.
 
@@ -24,10 +26,10 @@ no worker was created. ActorRetained distinguishes that case. A missing phase
 alone cannot prove a hang; abort, stderr failure and forced termination remain
 possible. Existing error output and public command schemas are unchanged.
 
-Evidence: standalone std-only research_shutdown Rust harness passes four tests:
+Evidence: standalone std-only research_shutdown Rust harness passes five tests:
 default-disabled/safe line format, per-phase duplicate bound, concurrent once-only
 observation, and existing successful/failing cleanup semantics (the latter share
-two tests). Direct rustc emits two unused-code warnings because other modules are
+two tests), plus a failing-writer regression. Direct rustc emits two unused-code warnings because other modules are
 not part of this harness. No Cargo/production build or process/window launched.
 Main must compile the assembled app and bind its immutable artifact before the
 external driver repeats the original read-only assertion/EOF case. Keep the
