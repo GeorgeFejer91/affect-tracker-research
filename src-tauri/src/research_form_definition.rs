@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 pub const FORM_DEFINITION_SCHEMA: &str = "affect-research-form-definition";
-const MAX_DEFINITION_BYTES: usize = 4 * 1024 * 1024;
+const MAX_DEFINITION_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -236,7 +236,7 @@ pub fn validate_form_definition_v1(definition: &FormDefinitionV1) -> ResearchRes
     )?;
     require(
         canonical_json(definition, &[])?.len() <= MAX_DEFINITION_BYTES,
-        "Typed form exceeds 4 MiB.",
+        "Typed form exceeds 16 MiB.",
     )?;
     require(
         canonical_sha256(definition, &["definitionSha256"])? == definition.definition_sha256,
