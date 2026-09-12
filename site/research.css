@@ -941,7 +941,7 @@ legend {
 .sheet-chevron { flex-shrink: 0; }
 .questionnaire-sheet[open] > summary .sheet-chevron { rotate: 180deg; }
 .sheet-body { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 12px; border: 0; border-top: 1px solid var(--border); }
-.sheet-settings { display: grid; grid-template-columns: minmax(130px, 2fr) minmax(100px, 1fr) minmax(120px, 1fr); align-items: start; gap: 10px; }
+.sheet-settings { display: grid; grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr); align-items: start; gap: 10px; }
 .sheet-labels-heading, .sheet-footer { justify-content: space-between; }
 .sheet-labels { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
 .sheet-labels .field > span { font-size: 12px; }
@@ -988,8 +988,7 @@ legend {
 .sheet-preview-table td { text-align: center; }
 .questionnaire-sheet-preview .sheet-table-scroll { max-height: none; margin-bottom: 16px; }
 @media (max-width: 600px) {
-  .sheet-settings { grid-template-columns: 1fr 1fr; }
-  .sheet-title-field { grid-column: 1 / -1; }
+  .sheet-settings { grid-template-columns: 1fr; }
   .sheet-body { padding: 8px; }
   .sheet-save-state { max-width: 75px; }
 }

@@ -42,6 +42,10 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   check('full Excel table fills prompts, labels, codes, required and option count',
     cell(0,1).value === 'Never' && cell(0,2).value === '4' && cell(1,5).value === 'false' && !cell(2,0));
   check('other language remains an independent empty table', cell(0,0,'custom/de').value === '');
+  const settings = root.querySelector('[data-sheet-key="custom/en"] .sheet-options');
+  check('secondary settings are collapsed with labelled controls retained', !settings.open && Boolean(settings.querySelector('[data-sheet-meta="title"]')) && Boolean(settings.querySelector('[data-sheet-required-all]')));
+  settings.open = true;
+  await new Promise(resolve => setTimeout(resolve, 0));
   click(cell(0,1)); click(cell(1,2), true);
   cell(1,2).setSelectionRange(0,1);
   check('multi-cell copy wins over stale textarea text selection', copy(cell(1,2)) === 'Never\t4\r\nNo\t0\r\n');
@@ -52,6 +56,7 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   const tableCopy = copy(cell(0,0));
   check('select-all copy includes all visible columns and rows', tableCopy.split('\r\n').filter(Boolean).length === 2 && tableCopy.includes('Always\t1\ttrue'));
   action('add-row').click();
+  check('open secondary settings survive table rerender', root.querySelector('[data-sheet-key="custom/en"] .sheet-options').open);
   check('rerender discards invisible cell selections', root.querySelectorAll('.sheet-cell-selected').length === 0);
   paste(cell(1,4), '8');
   check('paste after rerender edits only the chosen cell', cell(1,4).value === '8' && cell(0,0).value === 'First');
@@ -60,6 +65,8 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   const before = [...root.querySelectorAll('[data-sheet-key="custom/en"] [data-sheet-cell]')].map(c=>c.value).join('|');
   paste(cell(0,0), full.replace('\t4\t', '\t=2+2\t'));
   check('malformed paste rejects without partial DOM/data mutation', before === [...root.querySelectorAll('[data-sheet-key="custom/en"] [data-sheet-cell]')].map(c=>c.value).join('|'));
+  const error = root.querySelector('[data-sheet-key="custom/en"] .sheet-error');
+  check('validation message precedes the table and remains a live status', Boolean(error.textContent.trim()) && error.getAttribute('aria-live') === 'polite' && Boolean(error.compareDocumentPosition(cell(0,0)) & Node.DOCUMENT_POSITION_FOLLOWING));
   paste(cell(0,0), full);
   const layout = root.querySelector('[data-sheet-key="custom/en"] [data-sheet-layout]');
   layout.value = 'codes-only'; layout.dispatchEvent(new Event('change',{bubbles:true}));

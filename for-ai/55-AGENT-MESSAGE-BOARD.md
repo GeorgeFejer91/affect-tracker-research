@@ -232,6 +232,49 @@ file; follow the integration-owner collection procedure in the workflow.
   GUI qualification, canonical integration merge, or unrelated UI cleanup is
   included in this pass.
 
+### 20260911-p2-table-first-visual-follow-up
+
+- Final bounded coverage follow-up: coordinator accepted the six initial-state
+  captures at `9ff3d5f` and requested scrolled German/settings/footer views.
+  Six additional Edge captures at 1600x1100 and 1000x1000 were inspected in
+  `D:\GitHub\.affect-checks\s2-visual-details-settled-20260911`.
+  Expanded settings labels and Save/Preview/confirmation controls do not
+  collide; actions wrap in the narrow pane. Long item/source text retains
+  native field scrolling and the wide questionnaire retains table scrolling.
+  All application input hashes match `s2-visual-final-20260911`; only the
+  fixture and capture script changed. Receipt includes exact hashes, dirty
+  fixture status, German language identity, control rectangles and nonzero
+  pane scroll positions. Earlier `details`, `details-scrolled` and
+  `details-diagnostic` directories are unsuccessful scroll-capture attempts,
+  not accepted visual evidence. No application fix or unchanged full-suite
+  rerun was needed. No integrator wake, merge, reload or foreground input.
+
+- Owner S2/P2; target integration and catalogue coordinator; **ready**. Separate
+  layout follow-up on `codex/segment-questionnaires-table-catalogue`, base
+  `ae47df6`; the functional Section 2 handoff is not blocked by this polish.
+- Per the coordinator's rendered-UI request, applied uncodixfy to actual
+  `bootResearchUi` empty, populated MAIA EN/DE and invalid-code states, at
+  1600x1100 and 1000x1000 in isolated headless Edge profiles. The table was
+  below the initial narrow viewport and secondary form controls dominated it.
+- Moved title/instructions/bulk-required and detailed paste help into the
+  existing settings disclosure, preserving its open state across rerenders.
+  Kept option count/layout above the grid; moved live validation above it;
+  hid duplicate coverage output only for zero questionnaire families. No
+  controls, keyboard targets, labels, scientific contracts or source assets
+  removed; other segments and Runner untouched.
+- Evidence: 445/445 Node tests, 27/27 DOM cases each in headless Edge/Chrome,
+  Pages171 and desktop8 closure checks. All six compact screenshots reviewed;
+  table starts around y738 instead of y1020 on desktop and is visible on the
+  narrow capture. Error text precedes the invalid cell without clipping.
+  Receipts: `D:\GitHub\.affect-checks\s2-compact-table-edge-20260911` and
+  `s2-compact-table-chrome-20260911`; visual baseline `s2-visual-20260911`,
+  candidate `s2-visual-compact-20260911`, source-bound final capture
+  `s2-visual-final-20260911`. These are off-screen source fixtures, not user
+  clipboard/native runtime/accessibility qualification or observed app reload.
+- Residuals unchanged: TAS authorized content/rights, versioned label-display
+  contract, optional-response semantics and draft durability; see P2-04–P2-08
+  and Q09/Q13. Integration owns combined recheck and any approved reload.
+
 ### 20260911-p2-full-import-slot-adoption
 
 - Owner S2/P2, follow-up to finishing Section 2. A complete definition file used

@@ -1909,6 +1909,7 @@ function bindResearchInteractions(root, { surface }) {
     const coverage = questionnaireLanguageCoverage();
     const status = query("#questionnaire-coverage-status");
     if (status) {
+      status.hidden = coverage.familyRows.length === 0;
       status.dataset.state = coverage.complete ? "ready" : "error";
       status.textContent = coverage.familyRows.length === 0
         ? "No questionnaire modules included."
