@@ -62,6 +62,29 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-integration-resume-and-acceptance
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **open**.
+  Branch `codex/segment-integration-preview-cleanup`, isolated D: integration
+  worktree, clean starting checkpoint `c7ba103`; canonical remains `ba2110f`.
+- Resume existing local source convergence and combined UI verification after
+  the coordinator relayed the researcher's explicit continuation instructions.
+  Collect reviewed ready P1/P2/P5/P7 cleanup first, then P4/P6 and P3 only after
+  their distinct contract/producer guards and combined gates are reviewed.
+- New bounded **Backend Verification** pass: Confirm accepts the current
+  segment contribution and advances; navigation alone retains acceptance,
+  changed content/dependencies invalidate it. Live Preview is captured only
+  at P7 finalization; P7 owns actual acknowledged named save and cancellation.
+  The earlier stage hold is lifted by the renewed continuation request, not
+  by a board message inventing a product decision.
+- Integration owns shared accordion orchestration/projection. P7 owns the
+  acceptance registry/save lifecycle; each producer retains domain validation.
+  Do not invent successor fields or persist Q10 preview drafts silently.
+  Required evidence: exact retained values, acceptance/edit/dependency cases,
+  save cancellation/failure/stale completion, canonical reproduction, and
+  rendered combined section layout. No Runner, hardware, foreground control,
+  native privilege expansion, publication or research qualification claim.
+
 ### 20260911-integration-authoring-cleanup-receipt
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
