@@ -62,6 +62,42 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-integration-planner-completion
+
+- Owner: **Add segment confirmation flow**, sole shared integration owner for
+  the new user-authorized **Planner completion** goal; Backend Verification.
+  Branch `codex/segment-planner-completion`, base `7946bc6`, existing isolated
+  worktree `D:/GitHub/affect-tracker-research-integration-preview`. The previous
+  `codex/segment-integration-preview-cleanup` handoff remains preserved.
+- Allocation: shared P1–P7 composition, confirmation/final capture, named-file
+  load/save/adoption wiring and representative end-to-end evidence. Dependencies:
+  P1-05–07, P2-04/07/08, P3-02–10, P4-02–07, P5-05–08, P6-01–05 and P7-03–09.
+  Each existing segment owner retains its domain/schema implementation. S7 owns
+  the sole successor compiler/parser/reproduction/restore and file adapters;
+  integration does not implement an alternative master or owner payload.
+- Intended delivery: actual representative UI authoring, full current P1–P6
+  payload capture (P5 at final save), named file acknowledgement, strict recipe
+  validation, fresh editable reopening and exact re-export. All experiment-
+  defining settings must be preserved; transient inspection/input/clock state
+  is not experiment data. Strict v1 readers remain available unchanged.
+- Baseline: final predecessor application `d6acfd1`, 648 Node checks, actual
+  controller 32, current P7 124 and retained controls 31; desktop 9-file / Pages
+  212-file closures. Rust 199 previously passed with unchanged Rust source.
+  Source-bound checks and limits remain in the preceding integration receipt.
+- First collection: ready Preview input menu `8dde23f`, followed by explicitly
+  handed-off owner contributions and S7 composition. Coordinate shared app,
+  native adapter, bootstrap and build hunks with S7 and Experiment Runner;
+  never merge an actively written owner checkout.
+- Scope clarification: finish **Planner only**. Runner correspondence/execution,
+  recording and physical qualification are a later development stage and do
+  not block Planner-owned schema/authoring/save/reopen completion. Preserve a
+  clear downstream contract without waiting for a Runner implementation.
+- Open decisions remain explicit until answered or amended by the user: Q05,
+  Q08 and newly promoted feedback semantics cannot be invented from the broader
+  goal alone. Root coordination records the updated charter/decision authority;
+  independent owner work continues. No foreground launch, canonical promotion,
+  remote push, deployment, or qualification is authorized by this pass label.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion
