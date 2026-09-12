@@ -72,7 +72,7 @@ import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from
 import { createResearcherLocalQuestionnairePresets, RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS,
   mergeQuestionnairePresetChoices, researcherLocalQuestionnaireAvailability } from "./questionnaire-local-presets.js";
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
-import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
+import { validateSupportedStimulusVariantContribution as validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { prepareVerifiedCatalogueExport } from "./planner-catalogue-export.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
@@ -122,18 +122,18 @@ import { externalExperimentPlanToCsv } from "./tabular.js";
 import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity.js";
 import {
   browserDisplayGeometry,
-  createVideoCatalogueProducer,
-  validateVideoCatalogueContribution,
+  createSupportedVideoCatalogueProducer as createVideoCatalogueProducer,
+  validateSupportedVideoCatalogueContribution as validateVideoCatalogueContribution,
   videoAnnotationIdFromRelativePathV1,
-  workspaceStimuliToVideoCatalogueEntries,
+  workspaceStimuliToSupportedVideoCatalogueEntries as workspaceStimuliToVideoCatalogueEntries,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
 import {
-  createWorkspaceContributionProducer,
-  projectWorkspaceVideoDisplayGeometry,
-  prepareWorkspaceContentRestore,
-  validateWorkspaceContribution,
-  verifyWorkspaceRestoredVideoEntries,
+  createSupportedWorkspaceContributionProducer as createWorkspaceContributionProducer,
+  projectSupportedWorkspaceVideoDisplayGeometry as projectWorkspaceVideoDisplayGeometry,
+  prepareSupportedWorkspaceContentRestore as prepareWorkspaceContentRestore,
+  validateSupportedWorkspaceContribution as validateWorkspaceContribution,
+  verifySupportedWorkspaceRestoredVideoEntries as verifyWorkspaceRestoredVideoEntries,
 } from "./workspace-contribution.js";
 import {
   BrowserResearchWorkspace,

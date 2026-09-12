@@ -8,6 +8,8 @@ import {
   validateVideoCatalogueContribution,
   validateVideoCatalogueContributionV1,
   validateVideoCatalogueContributionV3,
+  createVideoCatalogueContributionV3,
+  projectSupportedVideoDisplayGeometry,
 } from "./video-catalogue-contribution.js";
 
 export const WORKSPACE_CONTRIBUTION_SCHEMA = "affect-research-workspace-contribution";
@@ -156,6 +158,12 @@ export async function prepareWorkspaceContentRestoreV1(value) {
 
 export async function prepareWorkspaceContentRestore(value) {
   const contribution = await validateWorkspaceContribution(value);
+  return projectRestoreContent(contribution);
+}
+export async function prepareSupportedWorkspaceContentRestore(value) {
+  return projectRestoreContent(await validateSupportedWorkspaceContribution(value));
+}
+function projectRestoreContent(contribution) {
   return deepFreeze({
     study: structuredClone(contribution.study),
     workspaceLayout: structuredClone(contribution.workspaceLayout),
@@ -198,6 +206,13 @@ export async function verifyWorkspaceRestoredVideoEntries(value, entries) {
   if (canonicalJson(observed) !== canonicalJson(contribution.videoCatalogue)) {
     throw new TypeError("Selected workspace videos do not match the restored catalogue declarations.");
   }
+  return contribution.videoCatalogue;
+}
+export async function verifySupportedWorkspaceRestoredVideoEntries(value, entries) {
+  if (value?.version !== 3) return verifyWorkspaceRestoredVideoEntries(value, entries);
+  const contribution = await validateWorkspaceContributionV3(value);
+  const observed = await createVideoCatalogueContributionV3({ revision: contribution.videoCatalogue.revision, entries });
+  if (canonicalJson(observed) !== canonicalJson(contribution.videoCatalogue)) throw new TypeError("Selected videos do not match the complete saved catalogue v3 declarations.");
   return contribution.videoCatalogue;
 }
 
@@ -250,6 +265,12 @@ export async function projectWorkspaceVideoDisplayGeometryV1(workspaceSnapshot) 
 }
 
 export async function projectWorkspaceVideoCatalogueSnapshot(workspaceSnapshot) {
+  return projectWorkspaceCatalogue(workspaceSnapshot, validateWorkspaceContribution);
+}
+export async function projectSupportedWorkspaceVideoCatalogueSnapshot(workspaceSnapshot) {
+  return projectWorkspaceCatalogue(workspaceSnapshot, validateSupportedWorkspaceContribution);
+}
+async function projectWorkspaceCatalogue(workspaceSnapshot, validate) {
   validateSnapshotShape(workspaceSnapshot, "Workspace");
   if (!workspaceSnapshot.enabled || workspaceSnapshot.pending || workspaceSnapshot.contribution === null) {
     return Object.freeze({
@@ -260,7 +281,7 @@ export async function projectWorkspaceVideoCatalogueSnapshot(workspaceSnapshot) 
       dependencyRevisions: [],
     });
   }
-  const contribution = await validateWorkspaceContribution(workspaceSnapshot.contribution);
+  const contribution = await validate(workspaceSnapshot.contribution);
   return Object.freeze({
     revision: workspaceSnapshot.revision,
     enabled: true,
@@ -276,6 +297,12 @@ export async function projectWorkspaceVideoDisplayGeometry(workspaceSnapshot) {
     return Object.freeze({ revision: projected.revision, pending: true, videos: Object.freeze([]) });
   }
   const geometry = await projectVideoDisplayGeometry(projected.contribution);
+  return Object.freeze({ revision: projected.revision, pending: false, videos: geometry.videos });
+}
+export async function projectSupportedWorkspaceVideoDisplayGeometry(workspaceSnapshot) {
+  const projected = await projectSupportedWorkspaceVideoCatalogueSnapshot(workspaceSnapshot);
+  if (!projected.enabled || projected.pending || !projected.contribution) return Object.freeze({ revision: projected.revision, pending: true, videos: Object.freeze([]) });
+  const geometry = await projectSupportedVideoDisplayGeometry(projected.contribution);
   return Object.freeze({ revision: projected.revision, pending: false, videos: geometry.videos });
 }
 

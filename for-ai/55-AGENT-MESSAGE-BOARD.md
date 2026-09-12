@@ -5269,3 +5269,14 @@ Four representative headless cases pass 348 checks: neutral, strong, hidden ISI,
 next neutral. Visible outer/inner/SVG dimensions now agree at 87.46875 px.
 All four screenshots inspected. Synthetic native/frame-scheduler evidence only;
 Main retains full native mock and collection. See docs/runner-feedback-border.md.
+
+## P1 controlled geometry app wiring — 2026-09-12
+
+S1 continues P1-06/P1-07 Backend Verification on the allocated P1/P3 shared
+seams. App producers, restore/rebinding, geometry projection, and P3 editor
+intake now explicitly select supported-version helpers. Historical public
+readers remain strict; P3 keeps its unchanged geometry-free contribution.
+All 90 focused P1/P3 JavaScript tests pass, including actual editor restore and
+confirmation with workspace-v3. Main owns P7 app wiring and integration.
+Native attest-v2/cache/livebinding and native bridge are the next allocated
+seam; this checkpoint does not claim installed playback or release readiness.
