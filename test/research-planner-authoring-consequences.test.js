@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
+import { createPlannerAuthoringSession, PLANNER_REOPEN_STEPS } from "../site/src/research/planner-authoring-session.js";
 import { PLANNER_COMMAND_SCHEMA, commandFailure } from "../site/src/research/planner-authoring-contract.js";
 
 // Owner doubles exercise the production coordinator; these are not file/media
@@ -37,6 +37,81 @@ function harness({ prepare, validate = () => [], onBeforeCommit, onCommit, descr
   return { owner, session, request, get value() { return value; }, get preparations() { return preparations; }, get dispatches() { return dispatches; } };
 }
 const firstIssue = result => result.issues[0]?.code;
+
+function reopenHarness(dispatch) {
+  return harness({ descriptors: [{ ...descriptor("openRecipe", ["path"]), publication: "sequence" }],
+    prepare({ set }) { return { dispatch: context => dispatch(context, set) }; } });
+}
+const reopen = h => h.request({ kind: "perform", operation: "openRecipe", arguments: { path: "grant" } });
+
+test("open sequence tracks fixed synchronous steps and exact retry without redispatch", async () => {
+  const h = reopenHarness(({ publishStep, finish }, set) => {
+    PLANNER_REOPEN_STEPS.forEach((step, index) => publishStep(step, () => set(index + 1)));
+    finish({ opened: true });
+  });
+  const request = reopen(h), result = await h.session.execute(request);
+  assert.equal(result.status, "applied"); assert.equal(result.revision, 10);
+  assert.deepEqual(result.result.progress, { attempted: [...PLANNER_REOPEN_STEPS], completed: [...PLANNER_REOPEN_STEPS], finished: true });
+  assert.deepEqual(await h.session.execute(request), result); assert.equal(h.dispatches, 1);
+});
+
+test("sequence failure retains attempted step and advances before partially throwing install", async () => {
+  for (const failed of ["P2", "adoptDocument"]) {
+    const h = reopenHarness(({ publishStep, recordEffect }, set) => {
+      recordEffect({ sourceRead: "verified" });
+      for (const step of PLANNER_REOPEN_STEPS) publishStep(step, () => { set(1); if (step === failed) throw Error("partial"); });
+    });
+    const result = await h.session.execute(reopen(h)), count = PLANNER_REOPEN_STEPS.indexOf(failed) + 1;
+    assert.equal(result.status, "incomplete"); assert.equal(result.revision, count);
+    assert.equal(h.value, 1); assert.equal(result.result.progress.attempted.length, count);
+    assert.equal(result.result.progress.completed.length, count - 1);
+    assert.deepEqual(result.result.effect, { sourceRead: "verified" });
+    assert.equal(result.result.progress.finished, false);
+  }
+});
+
+test("sequence fences drift or cancel between awaits and blocks partial reads", async () => {
+  for (const cancel of [false, true]) {
+    const waiting = gate(), entered = gate();
+    const h = reopenHarness(async ({ publishStep }, set) => {
+      publishStep("begin", () => set(1)); entered.resolve(); await waiting.promise;
+      publishStep("P1", () => set(2));
+    });
+    const request = reopen(h), pending = h.session.execute(request); await entered.promise;
+    for (const action of [{ kind: "snapshot" }, { kind: "get", field: "P7.value" }, { kind: "validate", owner: null }]) {
+      assert.equal(firstIssue(await h.session.execute(h.request(action))), "busy");
+    }
+    if (cancel) await h.session.execute(h.request({ kind: "cancel", requestId: request.requestId }, null));
+    else h.session.edited();
+    waiting.resolve(); const result = await pending;
+    assert.equal(result.status, "incomplete"); assert.equal(h.value, 1);
+    assert.deepEqual(result.result.progress.completed, ["begin"]);
+    assert.equal(firstIssue(result), cancel ? "canceled" : "stale_revision");
+  }
+});
+
+test("sequence rejects skipped, duplicate steps and missing finish; projection failure retains completion", async () => {
+  for (const mode of ["skip", "duplicate", "unfinished", "projection"]) {
+    const h = reopenHarness(({ publishStep, finish }, set) => {
+      if (mode === "skip") return publishStep("P1", () => set(1));
+      for (const step of PLANNER_REOPEN_STEPS) {
+        publishStep(step, () => set(1), mode === "projection" ? () => { throw Error("projection"); } : undefined);
+        if (mode === "duplicate") return publishStep(step, () => set(2));
+      }
+      if (mode !== "unfinished") finish({ opened: true });
+    });
+    const result = await h.session.execute(reopen(h));
+    assert.equal(result.status, mode === "skip" ? "rejected" : "incomplete");
+    if (mode === "projection") {
+      assert.equal(result.result.progress.finished, true);
+      assert.deepEqual(result.result.progress.completed, [...PLANNER_REOPEN_STEPS]);
+    }
+  }
+});
+
+test("only openRecipe can opt into sequence publication", () => {
+  assert.throws(() => harness({ descriptors: [{ ...descriptor(), publication: "sequence" }] }), /reserved/);
+});
 
 test("native request identity is detached and frozen without changing retry identity", async () => {
   let observed;

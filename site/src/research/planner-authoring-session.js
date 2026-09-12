@@ -7,6 +7,9 @@ const RETRY_BYTES = 8 * 1024 * 1024;
 const MAX_ISSUES = 64;
 const RESULT_RESERVATION = 512 * 1024;
 const COMPACT_BYTES = 64 * 1024;
+export const PLANNER_REOPEN_STEPS = Object.freeze([
+  "begin", "P1", "P2", "P5", "P3", "P4", "P6", "policy", "presentationTarget", "adoptDocument",
+]);
 
 function compact(value) {
   validateCommandJson(value);
@@ -74,6 +77,10 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     const consequenceNames = new Set();
     for (const descriptor of descriptors) {
       validateCommandJson(descriptor); commandConsequence(descriptor.id);
+      if (descriptor.publication !== undefined && (descriptor.publication !== "sequence"
+        || descriptor.id !== "openRecipe" || owner.id !== "P7")) {
+        throw new TypeError("Sequence publication is reserved for P7 openRecipe.");
+      }
       const shape = descriptor.arguments;
       if (consequences.has(descriptor.id) || consequenceNames.has(descriptor.id)
         || !shape || shape.type !== "object" || shape.additionalProperties !== false
@@ -184,6 +191,9 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
         active = operationState; ownsActive = true;
         consequence = { operation: action.operation, owner: owner.id, published: false,
           effect: null, result: null, issues: [], closed: false };
+        const sequence = registered.descriptor.publication === "sequence";
+        if (sequence) consequence.progress = { attempted: [], completed: [], finished: false };
+        let sequenceFailed = false;
         const isCurrent = () => !consequence.closed && !destroyed && !controller.signal.aborted
           && !lifetime.signal?.aborted && (lifetime.isCurrent === undefined || lifetime.isCurrent() === true)
           && active === operationState && revision === currentRevision && generation === currentGeneration;
@@ -214,10 +224,15 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
           const detached = compact(receipt); // Never erase the old receipt on failure.
           consequence.effect = detached;
         };
-        const publish = (install, afterCommit) => {
-          if (consequence.published) commandFailure("already_published", "A consequential command can publish only once.", owner.id);
+        const publish = (install, afterCommit, step = null) => {
+          if (sequence) {
+            if (sequenceFailed || consequence.progress.finished || step !== PLANNER_REOPEN_STEPS[consequence.progress.completed.length]) {
+              sequenceFailed = true;
+              commandFailure("invalid_publication_step", "Recipe restore requires the fixed ordered publication steps.", owner.id);
+            }
+          } else if (consequence.published) commandFailure("already_published", "A consequential command can publish only once.", owner.id);
           assertCurrent();
-          if (!candidateCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
+          if (!dispatchCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
           if (typeof install !== "function" || Object.prototype.toString.call(install) === "[object AsyncFunction]"
             || (afterCommit !== undefined && (typeof afterCommit !== "function" || Object.prototype.toString.call(afterCommit) === "[object AsyncFunction]"))) {
             commandFailure("invalid_publication", "Publication hooks must be synchronous functions.", owner.id);
@@ -226,9 +241,11 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
           try {
             onBeforeCommit({ owners: [owner.id], revision, operation: action.operation });
             assertCurrent();
-            if (!candidateCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
+            if (!dispatchCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
             advance(); currentRevision = revision; currentGeneration = generation;
-            publicationStarted = true; consequence.published = true; updatedOwners.push(owner.id);
+            publicationStarted = true; consequence.published = true;
+            if (!updatedOwners.includes(owner.id)) updatedOwners.push(owner.id);
+            if (sequence) consequence.progress.attempted.push(step);
             const installed = install();
             if (installed && typeof installed.then === "function") {
               // A broken owner may return a rejecting Promise. Preserve the
@@ -236,6 +253,7 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
               Promise.resolve(installed).catch(() => {});
               commandFailure("invalid_publication", "Publication returned asynchronous work; inspect the applied state.", owner.id);
             }
+            if (sequence) consequence.progress.completed.push(step);
             try {
               const projected = afterCommit?.();
               if (projected && typeof projected.then === "function") {
@@ -247,16 +265,28 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
             catch { consequence.issues.push({ owner: owner.id, field: null, code: "projection_failed", message: "The result was adopted, but a shared projection failed." }); }
             try { consequence.issues.push(...validateOwner(owner)); }
             catch { consequence.issues.push({ owner: owner.id, field: null, code: "validation_unavailable", message: "The result was adopted; owner validation is unavailable." }); }
-          } finally { publishing = false; }
+          } catch (error) { if (sequence) sequenceFailed = true; throw error; }
+          finally { publishing = false; }
           consequence.issues.push(...notify());
         };
-        const returned = await candidate.dispatch({ isCurrent: dispatchCurrent, signal: controller.signal, recordEffect, publish });
-        consequence.result = compact(returned === undefined ? null : returned);
+        const finish = result => {
+          assertCurrent();
+          if (sequenceFailed || consequence.progress.finished || consequence.progress.completed.length !== PLANNER_REOPEN_STEPS.length) {
+            sequenceFailed = true;
+            commandFailure("missing_publication", "Recipe restore must complete every step before finishing.", owner.id);
+          }
+          consequence.result = compact(result === undefined ? null : result);
+          consequence.progress.finished = true;
+        };
+        const returned = await candidate.dispatch({ isCurrent: dispatchCurrent, signal: controller.signal, recordEffect,
+          ...(sequence ? { publishStep: (step, install, afterCommit) => publish(install, afterCommit, step), finish } : { publish }) });
+        if (!sequence) consequence.result = compact(returned === undefined ? null : returned);
         assertCurrent();
-        if (!consequence.published) commandFailure("missing_publication", "Consequential dispatch finished without adopting its result.", owner.id);
+        if (!consequence.published || (sequence && (!consequence.progress.finished || sequenceFailed))) commandFailure("missing_publication", "Consequential dispatch finished without adopting its result.", owner.id);
         const result = envelope(requestId, consequence.issues.length ? "incomplete" : "applied", {
           operation: consequence.operation, owner: consequence.owner, published: true,
           effect: consequence.effect, result: consequence.result, updatedOwners,
+          ...(sequence ? { progress: structuredClone(consequence.progress) } : {}),
         }, consequence.issues);
         remember(requestId, fingerprint, result);
         return result;
@@ -321,7 +351,8 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
         ? envelope(request?.requestId ?? null,
           consequence.effect !== null || publicationStarted || error?.code === "missing_publication" ? "incomplete" : error?.code === "canceled" ? "canceled" : "rejected",
           { operation: consequence.operation, owner: consequence.owner, published: consequence.published,
-            effect: consequence.effect, result: consequence.result, updatedOwners },
+            effect: consequence.effect, result: consequence.result, updatedOwners,
+            ...(consequence.progress ? { progress: structuredClone(consequence.progress) } : {}) },
           [...consequence.issues, issue(error)])
         : publicationStarted
         ? envelope(request?.requestId ?? null, "incomplete", { updatedOwners }, [{ owner: null, field: null, code: "publication_failed", message: "Publication began but an owner failed. Inspect the current settings; do not blindly retry." }, ...notify()])

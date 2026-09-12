@@ -95,6 +95,37 @@ issues cannot erase adoption. Identical completed retries return the retained
 result without redispatch; changed content with the same ID rejects, including
 while the original request is in flight. Unknown outcomes require reconciliation.
 
+## Explicit recipe reopen sequence
+
+Only P7's `openRecipe` descriptor may opt into `publication: "sequence"`.
+Its dispatch receives `publishStep(label, install, afterCommit?)` and
+`finish(result)` instead of `publish`. The host exports the frozen order as
+`PLANNER_REOPEN_STEPS`: begin, P1, P2, P5, P3, P4, P6, policy,
+presentationTarget, adoptDocument. No step may be repeated, omitted or reordered.
+The complete source must be validated before beginning. Async owner preparation
+must precede each actual synchronous install; an async restore cannot be hidden
+inside a publication hook. Begin invalidates prior acceptance/source association;
+the final step adopts the immutable opened source only after every owner restores.
+
+Each attempted install advances the revision before invocation and records its
+label before it can mutate. Successful synchronous return records completion
+before projection. A partial throw therefore retains an attempted but incomplete
+step at a new revision. Projection failures retain completed steps. Only these
+coordinator-authorized transitions update its current revision; independent
+edits, cancellation or dependency changes between awaits still stop further work.
+After initial adoption, the preparation guard is superseded by this coordinator
+guard; each owner must also preflight its prepared candidate immediately before
+its own install. A failed sequence cannot resume by catching a step failure.
+
+Sequence results add only `progress: {attempted, completed, finished}` to the
+ordinary result object. `finish` requires all ten successful installs, including
+immutable document adoption, and retains a compact result. Dispatch settling
+without finish is incomplete. Fixed ten-label progress stays within the existing
+reserved result bound. Busy reads and exact retry behavior cover the whole
+sequence. This reports partial restoration honestly; it does not promise rollback
+or imply media readiness. Ordinary consequences keep their existing result shape
+and one-publication contract.
+
 ## Concurrency and limits
 
 Preparation permits queries of current drafts. During dispatch, `get`,
