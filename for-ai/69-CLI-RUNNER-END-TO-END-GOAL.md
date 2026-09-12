@@ -183,3 +183,26 @@ EOF, wrong session, duplicate output, rejection, invalid UTF-8 and timeout.
 Those tests validate the driver itself, not a production Planner run. The initial
 5-second fixture startup allowance expired under concurrent build load; the
 successful checks use 30 seconds and assert each distinct expected failure.
+
+### First independently verified production CLI milestone
+
+Main's clean source `680842aee1e01e0c75500c64250dba10130e0663` produced CLI
+executable SHA-256
+`0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
+Root's external driver launched it, verified the exact clean ready identity,
+ran eight commands and exited successfully. The batch set nine P7 policy fields;
+root independently compared every readback value, confirmed unchanged read-only
+playback, and checked that invalid numeric text and read-only edits rejected
+without advancing revision. Final authored revision was1; owned PID26704 exited.
+Evidence: `D:/GitHub/.affect-checks/root-cli-policy-680842a/` contains the driver
+receipt, synced transcript and independent `readback-review.json`. Transcript
+SHA-256:
+`2b3f0ff9ccac74c6582a1c97fc91c72bae63b1ee0a655b8dc67b2e01c564f72a`.
+
+Main separately verified empty EOF, malformed-input recovery and fatal oversized
+frame exit2 after fixing a Windows/Tauri error-exit bug. Its receipts are under
+`D:/GitHub/.affect-preview-checks/planner-cli-{680842a,lifecycle-680842a}/`.
+This establishes actual native hidden Planner policy command execution. It does
+not establish all-segment integration, real media import, final recipe export,
+visible UI parity or Runner execution. Main may now rebuild the candidate to
+integrate the ready owner handoffs and consequential file/media operations.
