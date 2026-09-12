@@ -10,7 +10,7 @@ const CHILD = `
 import { createInterface } from 'node:readline';
 const mode = process.argv[2];
 const sessionId = 'b5b47dd1-45b4-4b69-b992-6ec777cfaf11';
-let revision = 0;
+let revision = 0, queries = 0;
 const output = value => console.log(JSON.stringify(value));
 if (mode === 'timeout') setInterval(() => {}, 1000);
 else if (mode === 'invalid-utf8') process.stdout.write(Buffer.from([255,10]));
@@ -18,11 +18,12 @@ else {
   output({schema:'affect-research-planner-cli-ready',version:1,sessionId,revision,processId:process.pid,buildCommit:'a'.repeat(40),transport:'stdio',hidden:true});
   createInterface({input:process.stdin}).on('line', line => {
     const r=JSON.parse(line), mutation=r.expectedRevision!==null;
+    if (!mutation && mode === 'queries') { queries++; revision++; }
     if (mutation) {
       if (r.expectedRevision!==revision) throw Error('wrong driver revision');
       revision++;
     }
-    const response={schema:'affect-research-planner-command-result',version:1,sessionId:mode==='wrong-session'?'a5b47dd1-45b4-4b69-b992-6ec777cfaf11':sessionId,requestId:r.requestId,status:mode==='rejected'?'rejected':mutation?'applied':'ok',revision,result:mode==='generated-id'?{generatedId:'authority-row-7',receivedAction:r.action}:null,issues:[]};
+    const response={schema:'affect-research-planner-command-result',version:1,sessionId:mode==='wrong-session'?'a5b47dd1-45b4-4b69-b992-6ec777cfaf11':sessionId,requestId:r.requestId,status:mode==='rejected'?'rejected':mutation?'applied':'ok',revision,result:mode==='generated-id'?{generatedId:'authority-row-7',receivedAction:r.action}:mode==='queries'?{ready:queries>=3}:null,issues:[]};
     output(response);
     if(mode==='duplicate')output(response);
   });
@@ -113,3 +114,46 @@ for (const mode of ["wrong-session","duplicate","rejected","invalid-utf8","timeo
     assert.deepEqual(JSON.parse(await readFile(join(outputDirectory,"receipt.json"),"utf8")),receipt);
   });
 }
+
+test("bounded readiness queries observe changing revisions and never replay a mutation", async t => {
+  const {directory,script}=await fixture(t), outputDirectory=join(directory,"evidence");
+  const receipt=await runPlannerCli({executable:process.execPath,args:[script,"queries"],outputDirectory,
+    steps:[{action:{kind:"snapshot"},until:r=>r.result.ready,maxQueries:4,queryIntervalMs:10},
+      {action:{kind:"set",field:"P7.participantCount",value:3},checkResponse:({request,response})=>{
+        assert.equal(request.expectedRevision,3);assert.equal(response.revision,4);
+        request.expectedRevision=999;response.revision=999;
+      }}],timeoutMs:30000});
+  assert.equal(receipt.passed,true,receipt.failure);assert.equal(receipt.completedSteps,2);assert.equal(receipt.finalRevision,4);
+  const lines=(await readFile(join(outputDirectory,"transcript.jsonl"),"utf8")).trim().split("\n").map(JSON.parse);
+  const requests=lines.filter(l=>l.direction==="request").map(l=>l.value);
+  assert.deepEqual(requests.map(r=>r.expectedRevision),[null,null,null,3]);
+  assert.equal(new Set(requests.map(r=>r.requestId)).size,4);
+});
+
+test("failed readiness or acknowledgement checks retain responses and prevent the next write", async t => {
+  const {directory,script}=await fixture(t);
+  for(const kind of ["bounded","acknowledgement"]) {
+    const outputDirectory=join(directory,kind);
+    const first=kind==="bounded"?{until:()=>false,maxQueries:2,queryIntervalMs:10}
+      :{checkResponse:()=>{throw Error("missing actual acknowledgement");}};
+    const receipt=await runPlannerCli({executable:process.execPath,args:[script,"queries"],outputDirectory,
+      steps:[{action:{kind:"snapshot"},...first},{action:{kind:"set",field:"P7.participantCount",value:3}}],timeoutMs:30000});
+    assert.equal(receipt.passed,false);assert.equal(receipt.completedSteps,0);
+    assert.equal(receipt.finalRevision,kind==="bounded"?2:1,"Keep the last valid observed revision even when its review fails");
+    assert.match(receipt.failure,kind==="bounded"?/query bound/u:/actual acknowledgement/u);
+    const lines=(await readFile(join(outputDirectory,"transcript.jsonl"),"utf8")).trim().split("\n").map(JSON.parse);
+    assert.equal(lines.filter(l=>l.direction==="response").length,kind==="bounded"?2:1);
+    assert.ok(lines.filter(l=>l.direction==="request").every(l=>l.value.expectedRevision===null));
+  }
+});
+
+test("readiness cannot wrap mutations, dynamic actions, async predicates or unbounded loops", async t => {
+  const {directory,script}=await fixture(t);
+  const base={action:{kind:"snapshot"},until:()=>true,maxQueries:3,queryIntervalMs:10};
+  for(const override of [{action:{kind:"set",field:"P7.participantCount",value:3}},
+    {action:()=>({kind:"snapshot"})},{mutation:true},{until:async()=>true},{maxQueries:101},{queryIntervalMs:0},
+    {checkResponse:async()=>{}}]) {
+    await assert.rejects(runPlannerCli({executable:process.execPath,args:[script,"ok"],outputDirectory:join(directory,"never-created"),
+      steps:[{...base,...override}]}));
+  }
+});
