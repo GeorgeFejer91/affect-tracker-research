@@ -111,7 +111,7 @@ function previewMarkup(label, { studio = false } = {}) {
     <div class="research-preview-stage research-preview-studio" data-preview-variant="studio" role="group" aria-label="${escapedLabel}">
       <div class="preview-primary-stage" tabindex="0" role="group" aria-label="Selected feedback rendering and configured input preview" aria-describedby="preview-response-simulator-help">
         ${previewOverlayMarkup({ includeFace: true })}
-        <p class="preview-mode-label">Previewing <span data-preview-mode-label>Flubber</span></p>
+        <p class="sr-only">Previewing <span data-preview-mode-label>Flubber</span></p>
       </div>
 
       <section class="preview-affect-map" aria-labelledby="preview-affect-map-title">

@@ -82,6 +82,8 @@ test("Setup offers exactly three ordered feedback modes with one selected", () =
 });
 
 test("the Setup studio nests its output stage before the affect map", () => {
+  assert.doesNotMatch(studioMarkup, /class="preview-mode-label"/u);
+  assert.match(studioMarkup, /<p class="sr-only">Previewing <span data-preview-mode-label>/u);
   const primaryIndex = studioMarkup.indexOf('<div class="preview-primary-stage"');
   const affectMapIndex = studioMarkup.indexOf('<section class="preview-affect-map"');
   assert.ok(primaryIndex > 0);

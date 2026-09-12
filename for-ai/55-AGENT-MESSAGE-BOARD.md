@@ -105,6 +105,19 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   30 desktop-axis, 32 narrow-axis, and 30 per corner viewport checks pass.
   Before/after axis images were inspected; the side buttons now remain compact
   beside the usable map. P5 acknowledged the exact title-only helper seam.
+- Root subsequently allocated the concrete drawing-badge overlap seen in
+  combined `0e492ff`. Bounded fix on owner `9237279`: retain the existing mode
+  text with `sr-only` and remove the absolute visual badge CSS. The selected
+  renderer buttons retain unique `aria-pressed` state. No app controller,
+  animation size, halo, saved settings or pane-split changes.
+  New actual-app `stage-default` / `stage-restored` harness modes verify no
+  visible badge, retained nonvisual text, all three accessible/saved selections,
+  unchanged framing/halo configuration, identical animated outline/halo paths
+  and visible output. Each mode passes 11 checks at 1280 and at outer 800 with
+  an explicitly fixture-sized 280px pane. Both narrow images were inspected.
+  Evidence: `D:/GitHub/.affect-preview-checks/planner-feedback-badge-20260912/`.
+  The final combined source remains integration-owned; older owner screenshot
+  shell/copy is not evidence against separately collected companion/copy fixes.
 
 ### 20260912-preview-input-menu
 
