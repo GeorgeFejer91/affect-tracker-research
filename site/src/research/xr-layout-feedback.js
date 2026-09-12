@@ -1,4 +1,6 @@
 import { XrLayoutError, resolveXrLayoutProfileV1 } from "./xr-layout.js";
+import { FEEDBACK_ENVELOPE_ALGORITHM } from "./feedback-envelope.js";
+import { FEEDBACK_ENVELOPE_V2_ALGORITHM } from "./feedback-layout.js";
 
 // Versioned rendering reference, not observed device pixels or calibration.
 // P5 derives the full bound at this explicit square SVG viewport size. P6 maps
@@ -7,7 +9,7 @@ export const XR_FEEDBACK_VIEWPORT_CSS_PX = 1024;
 
 export function resolveXrFeedbackFootprintV1(profile, envelope) {
   const geometry = resolveXrLayoutProfileV1(profile);
-  if (!envelope || envelope.algorithmVersion !== "feedback-envelope-v1"
+  if (!envelope || ![FEEDBACK_ENVELOPE_ALGORITHM, FEEDBACK_ENVELOPE_V2_ALGORITHM].includes(envelope.algorithmVersion)
       || envelope.origin !== "design-centre"
       || envelope.overlaySideCssPx !== XR_FEEDBACK_VIEWPORT_CSS_PX
       || typeof envelope.configurationKey !== "string" || envelope.configurationKey.length === 0
