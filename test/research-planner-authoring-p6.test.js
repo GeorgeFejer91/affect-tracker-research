@@ -8,6 +8,7 @@ import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1, withXrAngular
   resolveXrCatalogueV1, resolveXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
 import { xrLayoutEditorMarkup } from "../site/src/research/xr-layout-view.js";
 import { resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
+import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
 
 const feedback = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url))).cases[0].envelope;
 const media = [{ assetId: "landscape", displayWidth: 1920, displayHeight: 1080 },
@@ -221,4 +222,22 @@ test("shared session preflights P6 drift before publishing any owner in an atomi
   assert.equal(f.publishes, 0); assert.equal(otherCommits, 0);
   assert.equal(session.revision, 0);
   session.destroy();
+});
+
+test("every P6 command field retains its exact complete-master JSON contribution", async () => {
+  const { integrity, ...core } = JSON.parse(await readFile(new URL("fixtures/planner-recipe-xr-current-v1.canonical.json", import.meta.url)));
+  for (const [field, value] of Object.entries(changedValues)) {
+    const f = fixture();
+    (await f.adapter.stage([set(field, value)], guard())).commit();
+    const included = f.state.getSnapshot().enabled;
+    const selection = included ? { status: "included", profile: f.state.getDraft() } : { status: "excluded" };
+    const recipe = await compilePlannerRecipeV1({ ...core, presentationTarget: included ? "webxr-immersive-vr" : "desktop-screen",
+      segments: { ...core.segments, P6: selection } });
+    const source = await serializePlannerRecipeV1(recipe);
+    const parsed = await parsePlannerRecipeV1(new TextEncoder().encode(source));
+    assert.deepEqual(parsed.recipe.segments.P6, selection, field);
+    assert.deepEqual(parsed.recipe.segments.P4, core.segments.P4);
+    assert.equal(await serializePlannerRecipeV1(parsed.recipe), source);
+    assert.equal(f.state.getSnapshot().contribution, null, "pure compiler test grants no live acceptance");
+  }
 });
