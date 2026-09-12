@@ -154,3 +154,40 @@ tests with ENOSPC. The linker likewise failed in C: scratch before the unchanged
 native test passed with D: scratch. No acceptance/storage gate was relaxed.
 Exact actual installation, native IPC readback and rendered picker evidence
 remain distinct follow-up gates at this composition checkpoint.
+
+## Windows namespace correction and actual local installation
+
+The first real user-data installation stopped in store initialization, before
+source publication: Windows packaged-process virtualization resolved the ordinary
+`questionnaire-presets` child into the host package's LocalCache while the parent
+still resolved to Roaming. The old exact-path check rejected that OS-managed
+redirection. Initialization now resolves only this fixed namespace once, checking
+ordinary/non-reparse parent and child identities before and after, then pins the
+resolved directory. All subsequent preset-subdirectory and source exact-path,
+identity, bounded-read, hash and no-clobber checks remain unchanged. A new test
+explicitly rejects a namespace junction instead of treating it as virtualization.
+
+The corrected native harness passes **9 tests**, with two explicit external
+maintenance tests ignored by default. The separately authorized installation
+and fresh-store reopening passed **1/1**, retaining exact 124978 bytes and the
+fixed source hash. Evidence is external under
+`D:/GitHub/.affect-checks/local-preset-main-20260912/`:
+`native-namespace-tests.log`, `native-install-resolved-namespace.log`, and the
+read-only `path-diagnostic.rs`/executable. The earlier initialization failure
+remains in `native-install.log`.
+
+This is installation into the current host's OS-resolved Planner namespace,
+not proof that a separately launched unpackaged application shares that physical
+location. No app-data setting or personal files were moved. Native CLI readback
+is the next separate check; ordinary GUI file-input installation and real study
+workspace-copy persistence remain distinct from this maintenance-store receipt.
+
+Actual full-Planner visual/behavioral checks at source `90e69d2` pass eight cases:
+Chrome/Edge × 1280/800 × source-save/draft. Each checks the exact 20 prompts and
+100 labels/codes, unchanged source hash, Saved only after delayed acknowledgement,
+unsaved state without workspace, occupied-slot refusal and no auto-confirmation.
+All eight screenshots were reviewed, with zero browser errors. Reader and source
+writer acknowledgements were injected, so these are not native IPC or disk-write
+receipts. The private `p2-preset-ui-90e69/REPORT.md` and summary retain these limits;
+summary SHA-256 is
+`9899f71f23622257a5ea3ffa6272db1092c963028d4261abba444c3d13cc0d30`.

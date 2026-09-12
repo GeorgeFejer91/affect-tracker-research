@@ -117,6 +117,37 @@ fn directory(path: &Path) -> ResearchResult<Identity> {
     Ok(identity(&metadata))
 }
 
+/// Resolve the host-selected namespace once, including Windows packaged-app
+/// AppData virtualization. This is not a reparse-point allowance: both the
+/// logical child and resolved directory must be ordinary and retain identity.
+/// Every subsequent operation uses only the pinned, exact resolved namespace.
+fn initialize_namespace(parent: &Path) -> ResearchResult<PathBuf> {
+    let parent_before = directory(parent)?;
+    let logical = parent.join(DIRECTORY);
+    match fs::create_dir(&logical) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+        Err(error) => return Err(CommandError::io(error)),
+    }
+    let before = fs::symlink_metadata(&logical).map_err(CommandError::io)?;
+    if !before.is_dir() || is_link(&before) {
+        return Err(forbidden());
+    }
+    let resolved = logical.canonicalize().map_err(CommandError::io)?;
+    let resolved_identity = directory(&resolved)?;
+    let after = fs::symlink_metadata(&logical).map_err(CommandError::io)?;
+    if !after.is_dir()
+        || is_link(&after)
+        || identity(&before) != resolved_identity
+        || identity(&after) != resolved_identity
+        || logical.canonicalize().map_err(CommandError::io)? != resolved
+        || directory(parent)? != parent_before
+    {
+        return Err(forbidden());
+    }
+    Ok(resolved)
+}
+
 fn create_child(parent: &Path, name: &str) -> ResearchResult<PathBuf> {
     let before = directory(parent)?;
     let child = parent.join(name);
@@ -251,7 +282,7 @@ impl LocalQuestionnairePresetStore {
     pub fn new(app_data_root: PathBuf) -> ResearchResult<Self> {
         let base = app_data_root.canonicalize().map_err(CommandError::io)?;
         directory(&base)?;
-        let root = create_child(&base, DIRECTORY)?;
+        let root = initialize_namespace(&base)?;
         let identity = directory(&root)?;
         Ok(Self {
             root,
@@ -451,6 +482,26 @@ mod tests {
             assert_eq!(a.join().unwrap().unwrap(), b.join().unwrap().unwrap());
         });
         assert_eq!(fs::read_dir(first.root.join(spec.id)).unwrap().count(), 1);
+    }
+    #[cfg(windows)]
+    #[test]
+    fn initial_namespace_junction_is_not_treated_as_os_redirection() {
+        use std::os::windows::process::CommandExt;
+        let fixture = Fixture::new();
+        let other = fixture.0.join("other");
+        fs::create_dir(&other).unwrap();
+        let link = fixture.0.join(DIRECTORY);
+        let output = std::process::Command::new("cmd.exe")
+            .args(["/c", "mklink", "/J"])
+            .arg(&link)
+            .arg(&other)
+            .creation_flags(0x0800_0000)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert!(LocalQuestionnairePresetStore::new(fixture.0.clone()).is_err());
+        assert_eq!(fs::read_dir(&other).unwrap().count(), 0);
+        fs::remove_dir(&link).unwrap();
     }
     #[cfg(windows)]
     #[test]
