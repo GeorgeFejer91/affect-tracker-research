@@ -256,6 +256,22 @@ pub(crate) struct NativeMediaGrant {
     pub(crate) byte_length: u64,
 }
 
+/// Exact native binding for one already-authored portable catalogue location.
+/// This remains Rust-internal: the path and file handle never enter the recipe
+/// or WebView, while Runner can address the currently verified opaque file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RunnerVideoBinding {
+    pub(crate) asset_id: String,
+    pub(crate) annotation_id: String,
+    pub(crate) source_relative_path: String,
+    pub(crate) workspace_file_id: String,
+    pub(crate) sha256: String,
+    pub(crate) byte_length: u64,
+    pub(crate) mime_type: String,
+    pub(crate) duration_ms: u64,
+    pub(crate) display_geometry: NativeDisplayGeometryV1,
+}
+
 #[derive(Debug)]
 struct SelectedWorkspace {
     id: String,
@@ -544,6 +560,106 @@ impl WorkspaceService {
             }
         }
         Ok(catalogue)
+    }
+
+    /// Rebinds one saved, strictly validated video catalogue to the exact
+    /// currently selected and natively qualified Planner media closure.
+    /// Portable browser/native provenance may differ, so only the reproducible
+    /// oriented dimensions and reduced display aspect are compared. The actual
+    /// native evidence and opaque file identifier are returned to Runner.
+    pub(crate) fn validate_runner_video_catalogue(
+        &self,
+        workspace_id: &str,
+        value: &serde_json::Value,
+    ) -> ResearchResult<Vec<RunnerVideoBinding>> {
+        let catalogue = validate_video_catalogue_contribution(value)?;
+        let guard = self.lock_selected();
+        let workspace = selected_ref(&guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        let current = scan_planner_videos(&libraries.package_assets)?;
+        if catalogue.entries.len() != workspace.scanned.len()
+            || catalogue.entries.len() != current.len()
+        {
+            return Err(CommandError::forbidden(
+                "The current Runner video library does not match the saved catalogue.",
+            ));
+        }
+
+        let mut bindings = Vec::with_capacity(catalogue.entries.len());
+        for entry in catalogue.entries {
+            let stored_matches = workspace
+                .scanned
+                .iter()
+                .filter(|candidate| candidate.logical_relative_path == entry.source_relative_path)
+                .collect::<Vec<_>>();
+            let [candidate] = stored_matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "A saved catalogue location does not resolve to one natively qualified video.",
+                ));
+            };
+            let current_matches = current
+                .iter()
+                .filter(|observed| observed.logical_relative_path == entry.source_relative_path)
+                .collect::<Vec<_>>();
+            let [observed] = current_matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "A saved catalogue location does not resolve to one current ordinary video.",
+                ));
+            };
+            let duration_ms = candidate.duration_ms.filter(|duration| {
+                duration.is_finite()
+                    && *duration >= 1.0
+                    && duration.fract() == 0.0
+                    && *duration <= crate::research_contracts::MAX_SAFE_INTEGER as f64
+            });
+            let Some(duration_ms) = duration_ms.map(|duration| duration as u64) else {
+                return Err(CommandError::forbidden(
+                    "A saved catalogue video has no exact native duration.",
+                ));
+            };
+            let geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
+                CommandError::forbidden(
+                    "A saved catalogue video has no verified native oriented geometry.",
+                )
+            })?;
+            let geometry_matches = entry.geometry.display_width_px
+                == u64::from(geometry.display_width_px)
+                && entry.geometry.display_height_px == u64::from(geometry.display_height_px)
+                && entry.geometry.display_aspect.numerator
+                    == u64::from(geometry.display_aspect.numerator)
+                && entry.geometry.display_aspect.denominator
+                    == u64::from(geometry.display_aspect.denominator);
+            if candidate.decode_status != DecodeStatus::AttestedQualified
+                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
+                || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+                || observed.id != candidate.id
+                || observed.path != candidate.path
+                || observed.sha256 != candidate.sha256
+                || observed.byte_length != candidate.byte_length
+                || observed.mime_type != candidate.mime_type
+                || entry.asset_id != format!("asset-{}", observed.sha256)
+                || entry.sha256 != observed.sha256
+                || entry.byte_length != observed.byte_length
+                || entry.duration_ms != duration_ms
+                || !geometry_matches
+            {
+                return Err(CommandError::forbidden(
+                    "A current native Runner video no longer matches the saved catalogue.",
+                ));
+            }
+            bindings.push(RunnerVideoBinding {
+                asset_id: entry.asset_id,
+                annotation_id: entry.annotation_id,
+                source_relative_path: entry.source_relative_path,
+                workspace_file_id: candidate.id.clone(),
+                sha256: candidate.sha256.clone(),
+                byte_length: candidate.byte_length,
+                mime_type: candidate.mime_type.clone(),
+                duration_ms,
+                display_geometry: geometry.clone(),
+            });
+        }
+        Ok(bindings)
     }
 
     /// Resolves the complete, declared package media closure beneath the fixed
@@ -2851,6 +2967,63 @@ mod tests {
                 .annotation_id,
             "session%5Fa_clip.mp4"
         );
+
+        let runner = service
+            .validate_runner_video_catalogue(&workspace_id, &catalogue)
+            .unwrap();
+        assert_eq!(runner.len(), 1);
+        assert_eq!(runner[0].workspace_file_id, item.workspace_file_id);
+        assert_eq!(runner[0].asset_id, format!("asset-{}", item.sha256));
+        assert_eq!(runner[0].annotation_id, "session%5Fa_clip.mp4");
+        assert_eq!(runner[0].source_relative_path, source.relative_path);
+        assert_eq!(runner[0].sha256, item.sha256);
+        assert_eq!(runner[0].byte_length, item.byte_length);
+        assert_eq!(runner[0].mime_type, item.mime_type);
+        assert_eq!(runner[0].duration_ms, 1_000);
+        assert_eq!(
+            (
+                runner[0].display_geometry.display_width_px,
+                runner[0].display_geometry.display_height_px,
+            ),
+            (1_920, 1_080)
+        );
+
+        let mut browser_core = core.clone();
+        browser_core["entries"][0]["geometry"]["source"] = serde_json::json!("browser-decoder");
+        browser_core["entries"][0]["geometry"]["rotationDegrees"] = serde_json::Value::Null;
+        browser_core["entries"][0]["geometry"]["pixelAspectRatio"] = serde_json::Value::Null;
+        browser_core["entries"][0]["geometry"]["metadataInterpretation"] =
+            serde_json::json!("decoder-oriented-display");
+        let mut browser_catalogue = browser_core.clone();
+        browser_catalogue.as_object_mut().unwrap().insert(
+            "integritySha256".to_owned(),
+            serde_json::json!(
+                crate::research_contracts::canonical_sha256(&browser_core, &[]).unwrap()
+            ),
+        );
+        let browser_runner = service
+            .validate_runner_video_catalogue(&workspace_id, &browser_catalogue)
+            .unwrap();
+        assert_eq!(
+            browser_runner[0].display_geometry.source,
+            "native-gstplay-metadata"
+        );
+
+        let mut wrong_geometry_core = browser_core.clone();
+        wrong_geometry_core["entries"][0]["geometry"]["displayWidthPx"] = serde_json::json!(1_280);
+        wrong_geometry_core["entries"][0]["geometry"]["displayHeightPx"] = serde_json::json!(720);
+        let mut wrong_geometry = wrong_geometry_core.clone();
+        wrong_geometry.as_object_mut().unwrap().insert(
+            "integritySha256".to_owned(),
+            serde_json::json!(crate::research_contracts::canonical_sha256(
+                &wrong_geometry_core,
+                &[]
+            )
+            .unwrap()),
+        );
+        assert!(service
+            .validate_runner_video_catalogue(&workspace_id, &wrong_geometry)
+            .is_err());
 
         let extra = workspace
             .join("assets")
