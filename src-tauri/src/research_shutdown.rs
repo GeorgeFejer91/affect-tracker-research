@@ -1,4 +1,5 @@
 //! One off-UI cleanup transaction. A failed transaction never grants window exit.
+use std::io::Write;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::{self, JoinHandle};
@@ -61,8 +62,13 @@ pub(crate) fn enable_cli_observations() {
 
 pub(crate) fn observe(phase: Phase) {
     if let Some(line) = OBSERVATIONS.record(phase) {
-        eprintln!("{line}");
+        write_observation(&mut std::io::stderr().lock(), &line);
     }
+}
+
+fn write_observation(writer: &mut impl Write, line: &str) {
+    // A closed diagnostic pipe must not turn observation into lifecycle failure.
+    let _ = writeln!(writer, "{line}");
 }
 
 #[derive(Default)]
@@ -174,6 +180,32 @@ mod tests {
                 .filter(|emitted| *emitted)
                 .count(),
             1
+        );
+    }
+
+    #[test]
+    fn failed_diagnostic_writer_does_not_interrupt_cleanup() {
+        struct BrokenWriter;
+        impl Write for BrokenWriter {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::ErrorKind::BrokenPipe.into())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        write_observation(
+            &mut BrokenWriter,
+            "Planner lifecycle phase=CleanupStarted elapsed_ms=0",
+        );
+        let mut bytes = Vec::new();
+        write_observation(
+            &mut bytes,
+            "Planner lifecycle phase=CleanupCompleted elapsed_ms=1",
+        );
+        assert_eq!(
+            bytes,
+            b"Planner lifecycle phase=CleanupCompleted elapsed_ms=1\n"
         );
     }
 

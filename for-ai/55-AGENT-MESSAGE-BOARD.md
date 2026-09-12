@@ -24,7 +24,8 @@
   elapsed monotonic milliseconds only; one stalled summary. EOF/drain, exit,
   cleanup boundaries, verification/initializer and retained actor shutdown are
   distinguished. Existing Main Master hooks preserved, no actor/input edits.
-- Four standalone std-only Rust tests pass; no Cargo hold/build or actual process
+- Five standalone std-only Rust tests pass, including best-effort broken-stderr
+  regression requested by Main review; no Cargo hold/build or actual process
   launch. Main's attestDecode diagnosis has priority; Main owns assembled build
   and root's improved external driver owns exact hidden repro. Original10s
   receipt and immutable binaries remain untouched. Details:
