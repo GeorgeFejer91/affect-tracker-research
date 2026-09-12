@@ -120,6 +120,16 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   Ordinary restored-label images and both long-label placements were inspected.
   Full 668 tests and both 219/11-file closures pass. S5 owns the separate saved
   placement copy correction `4b7ff6f`; it is not duplicated in this CSS pass.
+- Root's final bounded review follow-up caps only the narrow axis editor's
+  left/right captions at three lines with CSS ellipsis. Full DOM text and
+  existing accessible names are unchanged; `renderPreviewAxisLabel` additionally
+  sets the full hover title. Existing dialog input and saved labels retain all
+  48 characters. Participant renderer text and corner captions are not clamped.
+  Expanded actual-label fixture checks full accessible names, hover titles,
+  every dialog readback, unchanged saved labels and the narrow three-line bound:
+  30 desktop-axis, 32 narrow-axis, and 30 per corner viewport checks pass.
+  Before/after axis images were inspected; the side buttons now remain compact
+  beside the usable map. P5 acknowledged the exact title-only helper seam.
 
 ### 20260912-preview-input-menu
 
