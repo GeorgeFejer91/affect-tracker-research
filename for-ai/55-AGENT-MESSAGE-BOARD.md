@@ -3332,8 +3332,17 @@ agreed read-only SnapshotLiveFrame actor arm/handle/service wrapper; main owns
 canonical lib/Cargo integration. Existing sampler gains a nonblocking 4Hz mailbox
 publication only after successful sample write. Input, questions, files and
 recording remain native/local; no Planner fields or v1 recipe changes.
-Implementation in progress: native HMAC/grants/revision/dedupe; bundled BRSP and
-VDO SDK1.5.5; inert-before-enable transport; command/state and separate lossy JPEG
-lane; browser popup timeline. Qualification still open: physical phone/Internet
-route and packaged native run, JPEG Playing timing/teardown impact, and unchanged
-native readiness gates. No completion or platform qualification is claimed.
+Stopped source f418f3e54fe4d7c2ac0e58ac859fb0b5dcb8d305: native HMAC/grants/
+revision/dedupe; bundled BRSP and VDO SDK1.5.5; inert-before-enable transport;
+command/state and separate lossy JPEG lane; browser popup timeline and semantic
+CLI. 779 Node and 255 Rust lib tests passed (2 existing ignored); native feature
+build/Clippy, production artifacts and Chrome/Edge wide/narrow fixtures passed.
+Public VDO two-browser fixture passed proof/Pause/synthetic JPEG with direct
+route observed at both endpoints; actual CLI status/Pause subprocess checks
+passed against a synthetic target. These are not native/device qualification.
+See companion/QUALIFICATION-2026-09-12.md for exact evidence and limits. Root
+review and Live Preview's allocated two-capture native diagnostic are pending.
+Main owns canonical integration/Pages publication. Master remote Start waits
+for S2/Main's versioned Start freeze; monitor publish_projection seam supplied.
+Physical phone, off-host/forced-TURN, packaged native run, JPEG Playing timing/
+teardown impact and existing native readiness gates remain open.

@@ -67,4 +67,5 @@ the same BRSP profile and native authority as the visual companion.
   Native video also requires the pinned GStreamer feature/runtime.
 
 See [the allocated amendment](../for-ai/68-EXPERIMENTER-COMPANION.md) and the
-dated qualification receipt for current measured results and open gates.
+[dated verification receipt](QUALIFICATION-2026-09-12.md) for current measured
+results and open gates.
