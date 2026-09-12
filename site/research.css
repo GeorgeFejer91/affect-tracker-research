@@ -673,6 +673,10 @@ legend {
   border-top: 1px solid var(--border);
 }
 
+#workspace-status:empty {
+  display: none;
+}
+
 .workspace-location-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3139,14 +3143,6 @@ dialog::backdrop {
     overscroll-behavior: auto;
   }
 
-  .workspace-location-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .workspace-location-actions {
-    justify-content: flex-start;
-  }
-
   .directory-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3172,6 +3168,17 @@ dialog::backdrop {
   .stimulus-inspiration-group > header {
     min-height: 0;
   }
+}
+
+@media (max-width: 479px) {
+  .workspace-location-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-location-actions {
+    justify-content: flex-start;
+  }
+
 }
 
 @container setup-pane (max-width: 479px) {

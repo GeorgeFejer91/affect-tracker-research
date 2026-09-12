@@ -286,7 +286,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
 
   assert.match(workspacePanel, /<code>assets\/stimuli\/<\/code>/u);
   assert.match(workspacePanel, /<code>experiment\.package\.json<\/code>/u);
-  assert.match(workspacePanel, /outputs and recovery are managed automatically/u);
+  assert.match(workspacePanel, /Videos, project JSON, outputs, and recovery stay inside it/u);
+  assert.match(workspacePanel, /id="workspace-status"[^>]*><\/p>/u);
   for (const id of ["experiment-id", "experiment-title"]) {
     assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
     assert.match(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));
@@ -324,6 +325,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
+  assert.match(source, /directoryPermission \? "ready" : "warning"/u);
+  assert.match(source, /Work directory access is unavailable\. Restore access or select it again\./u);
   assert.match(markup, /Package reproduction matrix/u);
   assert.match(source, /loadedLanguageSelection = structuredClone\(parsed\.package\.languageSelection\)/u);
   assert.match(source, /const flat = createCoveredFlatLanguageSelectionV1/u);
@@ -745,6 +748,7 @@ test("Setup remains scrollable and narrow pane headers own intrinsic height", as
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
   assert.match(css, /@container setup-pane \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
+  assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
 });
 
 test("authored ISI deadlines use a monotonic clock while wall time remains metadata-only", async () => {

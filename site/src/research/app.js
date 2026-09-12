@@ -5072,16 +5072,19 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
     root.dataset.nativeWorkspaceReady = "true";
-    capabilities.directoryPermission = event.detail?.directoryPermission !== false;
+    const directoryPermission = event.detail?.directoryPermission !== false;
+    capabilities.directoryPermission = directoryPermission;
     const output = query("#workspace-root");
     if (output) {
       output.textContent = event.detail?.label ?? (event.detail?.surface === "browser" ? "Browser workspace ready" : "Windows workspace ready");
-      output.dataset.state = "ready";
+      output.dataset.state = directoryPermission ? "ready" : "warning";
     }
     const status = query("#workspace-status");
     if (status) {
-      status.dataset.state = "ready";
-      status.textContent = "Work directory ready. Project locations are available.";
+      status.dataset.state = directoryPermission ? "ready" : "error";
+      status.textContent = directoryPermission
+        ? "Work directory ready. Project locations are available."
+        : "Work directory access is unavailable. Restore access or select it again.";
     }
     for (const id of ["workspace-rescan", "settings-save", "stimulus-add-workspace", "video-import", "video-folder-import"]) {
       const button = query(`#${id}`);
