@@ -1,3 +1,5 @@
+#[path = "gst_actor/flow.rs"]
+mod flow;
 #[path = "gst_actor/runtime_environment.rs"]
 mod runtime_environment;
 #[path = "gst_actor/windows_renderer.rs"]
@@ -19,6 +21,7 @@ use crate::research_video_geometry::{
     VideoRatioV1, NATIVE_DISPLAY_METADATA_SCHEMA,
 };
 use crate::research_workspace::NativeMediaGrant;
+use flow::{Control, Fault, SignalSender};
 use gst_play::prelude::PlayStreamInfoExt;
 use gstreamer as gst;
 use gstreamer_play as gst_play;
@@ -73,10 +76,10 @@ impl ActorInitError {
 }
 
 pub(super) struct GstPlayActorHandle {
-    commands: mpsc::Sender<ActorCommand>,
+    commands: mpsc::SyncSender<QueuedCommand>,
     status_snapshot: Arc<Mutex<NativeMediaStatusV1>>,
     join: Mutex<Option<JoinHandle<()>>>,
-    shutdown_started: AtomicBool,
+    control: Arc<Control>,
     startup: Mutex<ActorStartup>,
     join_failed: AtomicBool,
     admission: Mutex<()>,
@@ -108,7 +111,7 @@ impl std::fmt::Debug for GstPlayActorHandle {
             .debug_struct("GstPlayActorHandle")
             .field(
                 "shutdown_started",
-                &self.shutdown_started.load(Ordering::Acquire),
+                &self.control.shutdown.load(Ordering::Acquire),
             )
             .finish_non_exhaustive()
     }
@@ -133,10 +136,12 @@ impl GstPlayActorHandle {
     /// messages. The composition owner must keep the parent event loop alive.
     pub(super) fn spawn(config: GstActorConfig) -> Result<Self, ActorInitError> {
         let started = Instant::now();
-        let (command_sender, command_receiver) = mpsc::channel();
+        let (command_sender, command_receiver) = mpsc::sync_channel(flow::COMMAND_CAPACITY);
         let (startup_sender, startup_receiver) = mpsc::sync_channel(1);
         let status_snapshot = Arc::new(Mutex::new(NativeMediaStatusV1::ready()));
         let actor_status_snapshot = Arc::clone(&status_snapshot);
+        let control = Arc::new(Control::default());
+        let actor_control = Arc::clone(&control);
         let join = thread::Builder::new()
             .name("affect-research-gstplay".to_owned())
             .spawn(move || {
@@ -145,6 +150,7 @@ impl GstPlayActorHandle {
                     command_receiver,
                     startup_sender,
                     actor_status_snapshot,
+                    actor_control,
                 )
             })
             .map_err(|_| ActorInitError::new("native-gstplay-thread-start-failed"))?;
@@ -152,7 +158,7 @@ impl GstPlayActorHandle {
             commands: command_sender,
             status_snapshot,
             join: Mutex::new(Some(join)),
-            shutdown_started: AtomicBool::new(false),
+            control,
             startup: Mutex::new(ActorStartup {
                 receiver: startup_receiver,
                 result: None,
@@ -196,10 +202,20 @@ impl GstPlayActorHandle {
     /// Read-only in-process projection for Rust-owned acquisition workers. It
     /// never crosses IPC and cannot mutate or control the player actor.
     pub(super) fn status_snapshot(&self) -> NativeMediaStatusV1 {
-        self.status_snapshot
+        let _ = self.failure_reason();
+        let mut status = self
+            .status_snapshot
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        project_fault(&self.control, &mut status);
+        status.clone()
+    }
+
+    pub(super) fn failure_reason(&self) -> Option<&'static str> {
+        if self.is_stopped() && !self.control.shutdown.load(Ordering::Acquire) {
+            self.control.fail(Fault::ActorExited);
+        }
+        self.control.reason()
     }
 
     pub(super) fn prepare(
@@ -259,11 +275,9 @@ impl GstPlayActorHandle {
 
     pub(super) fn request_shutdown(&self) {
         let _admission = self.admission.lock().unwrap_or_else(|p| p.into_inner());
-        if self.shutdown_started.swap(true, Ordering::AcqRel) {
-            return;
-        }
-        let (response, _) = mpsc::sync_channel(1);
-        let _ = self.commands.send(ActorCommand::Shutdown { response });
+        // Independent of queue capacity. The actor cancels queued operations
+        // at the next cooperative boundary; no successful command is invented.
+        self.control.shutdown.store(true, Ordering::Release);
     }
 
     pub(super) fn is_stopped(&self) -> bool {
@@ -317,8 +331,11 @@ impl GstPlayActorHandle {
         F: FnOnce(mpsc::SyncSender<ResearchResult<T>>) -> ActorCommand,
     {
         let admission = self.admission.lock().unwrap_or_else(|p| p.into_inner());
-        if self.shutdown_started.load(Ordering::Acquire) {
+        if self.control.shutdown.load(Ordering::Acquire) {
             return Err(actor_unavailable("native-gstplay-actor-shutting-down"));
+        }
+        if let Some(reason) = self.control.reason() {
+            return Err(actor_unavailable(reason));
         }
         match self.startup_result() {
             Some(Ok(())) => {}
@@ -326,13 +343,37 @@ impl GstPlayActorHandle {
             None => return Err(actor_unavailable("native-gstplay-startup-pending")),
         }
         let (response_sender, response_receiver) = mpsc::sync_channel(1);
-        self.commands
-            .send(build(response_sender))
-            .map_err(|_| actor_unavailable("native-gstplay-actor-disconnected"))?;
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let _wait = ReplyWait(Arc::clone(&cancelled));
+        if let Err(error) = self.commands.try_send(QueuedCommand {
+            command: build(response_sender),
+            deadline: Instant::now() + timeout,
+            cancelled,
+        }) {
+            self.control.fail(match error {
+                mpsc::TrySendError::Full(_) => Fault::CommandsFull,
+                mpsc::TrySendError::Disconnected(_) => Fault::Disconnected,
+            });
+            return Err(actor_unavailable(
+                self.control
+                    .reason()
+                    .unwrap_or("native-gstplay-admission-failed"),
+            ));
+        }
         drop(admission);
-        response_receiver
-            .recv_timeout(timeout)
-            .map_err(|_| actor_unavailable("native-gstplay-command-timeout"))?
+        let result = response_receiver.recv_timeout(timeout).map_err(|error| {
+            actor_unavailable(self.control.reason().unwrap_or(match error {
+                mpsc::RecvTimeoutError::Timeout => "native-gstplay-command-timeout",
+                mpsc::RecvTimeoutError::Disconnected => "native-gstplay-command-cancelled",
+            }))
+        })?;
+        if let Some(reason) = self.control.reason() {
+            return Err(actor_unavailable(reason));
+        }
+        if self.control.shutdown.load(Ordering::Acquire) {
+            return Err(actor_unavailable("native-gstplay-command-cancelled"));
+        }
+        result
     }
 }
 
@@ -380,9 +421,34 @@ enum ActorCommand {
         fence: NativeMediaCommandFenceV1,
         response: mpsc::SyncSender<ResearchResult<NativeMediaStatusV1>>,
     },
-    Shutdown {
-        response: mpsc::SyncSender<()>,
-    },
+}
+
+struct QueuedCommand {
+    command: ActorCommand,
+    deadline: Instant,
+    cancelled: Arc<AtomicBool>,
+}
+
+impl QueuedCommand {
+    fn into_live(self, control: &Control) -> Option<ActorCommand> {
+        if control.cancelled()
+            || self.cancelled.load(Ordering::Acquire)
+            || Instant::now() >= self.deadline
+        {
+            None
+        } else {
+            Some(self.command)
+        }
+    }
+}
+
+/// A timed-out/dropped waiter cannot start a queued mutation later. An already
+/// executing foreign call cannot be revoked; its result remains unacknowledged.
+struct ReplyWait(Arc<AtomicBool>);
+impl Drop for ReplyWait {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Release);
+    }
 }
 
 struct GenerationSignal {
@@ -404,23 +470,40 @@ impl ActivePlayer {
     }
 }
 
+// This guard also runs during Rust unwinding. It does not catch a panic
+// across foreign callbacks; process-abort/foreign hangs remain unqualified.
+struct ActorExitGuard(Arc<Control>, Arc<Mutex<NativeMediaStatusV1>>);
+impl Drop for ActorExitGuard {
+    fn drop(&mut self) {
+        self.0.generation.store(0, Ordering::Release);
+        if thread::panicking() || !self.0.shutdown.load(Ordering::Acquire) {
+            self.0.fail(Fault::ActorExited);
+        }
+        let mut status = self.1.lock().unwrap_or_else(|p| p.into_inner());
+        project_fault(&self.0, &mut status);
+    }
+}
+
 fn actor_entry(
     config: GstActorConfig,
-    commands: mpsc::Receiver<ActorCommand>,
+    commands: mpsc::Receiver<QueuedCommand>,
     startup: mpsc::SyncSender<StartupSignal>,
     shared_status: Arc<Mutex<NativeMediaStatusV1>>,
+    control: Arc<Control>,
 ) {
-    let result = initialize_and_run(config, commands, &startup, shared_status);
+    let _exit = ActorExitGuard(Arc::clone(&control), Arc::clone(&shared_status));
+    let result = initialize_and_run(config, commands, &startup, shared_status, &control);
     if let Err(reason_code) = result {
-        let _ = startup.send(StartupSignal::new(Err(ActorInitError::new(reason_code))));
+        let _ = startup.try_send(StartupSignal::new(Err(ActorInitError::new(reason_code))));
     }
 }
 
 fn initialize_and_run(
     config: GstActorConfig,
-    commands: mpsc::Receiver<ActorCommand>,
+    commands: mpsc::Receiver<QueuedCommand>,
     startup: &mpsc::SyncSender<StartupSignal>,
     shared_status: Arc<Mutex<NativeMediaStatusV1>>,
+    control: &Arc<Control>,
 ) -> Result<(), &'static str> {
     let runtime = PrivateRuntimeEnvironment::activate(&config.runtime_root, &config.state_root)?;
     #[cfg(test)]
@@ -437,7 +520,7 @@ fn initialize_and_run(
             #[cfg(test)]
             diagnostic::actor_phase("child-create-done");
             let _ = child.hide();
-            let (signals_sender, signals_receiver) = mpsc::channel::<GenerationSignal>();
+            let (signals_sender, signals_receiver) = SignalSender::channel(Arc::clone(control));
             let mut status = NativeMediaStatusV1::ready();
             publish_status_snapshot(&shared_status, &status);
             let mut active: Option<ActivePlayer> = None;
@@ -446,22 +529,35 @@ fn initialize_and_run(
                 .map_err(|_| "native-gstplay-startup-receiver-gone")?;
 
             let mut running = true;
-            while running {
-                while context.pending() {
-                    let _ = context.iteration(false);
-                }
-                while let Ok(signal) = signals_receiver.try_recv() {
-                    let _ = apply_generation_fenced_signal(
-                        &mut status,
-                        signal.generation,
-                        signal.signal,
-                    );
-                    publish_status_snapshot(&shared_status, &status);
+            while running && !control.cancelled() {
+                pump_context(&context, control);
+                flow::budgeted(
+                    || {
+                        if let Ok(signal) = signals_receiver.try_recv() {
+                            apply_admitted_signal(control, &mut status, signal);
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    flow::SIGNAL_BUDGET,
+                    control,
+                );
+                project_fault(control, &mut status);
+                publish_status_snapshot(&shared_status, &status);
+                if control.cancelled() {
+                    break;
                 }
                 child.pump_messages()?;
 
                 match commands.recv_timeout(ACTOR_TICK) {
                     Ok(command) => {
+                        if control.cancelled() {
+                            break;
+                        }
+                        let Some(command) = command.into_live(control) else {
+                            continue;
+                        };
                         running = handle_command(
                             command,
                             &context,
@@ -471,15 +567,21 @@ fn initialize_and_run(
                             &mut active,
                             &mut status,
                         );
+                        project_fault(control, &mut status);
                         publish_status_snapshot(&shared_status, &status);
                     }
                     Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(mpsc::RecvTimeoutError::Disconnected) => running = false,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        control.fail(Fault::Disconnected);
+                        running = false;
+                    }
                 }
             }
 
+            control.generation.store(0, Ordering::Release);
             status.state = NativeMediaStateV1::ShuttingDown;
             status.advance();
+            project_fault(control, &mut status);
             publish_status_snapshot(&shared_status, &status);
             teardown_active(&mut active);
             let _ = child.hide();
@@ -488,6 +590,46 @@ fn initialize_and_run(
         .map_err(|_| "gstreamer-main-context-unavailable")??;
     drop(runtime);
     Ok(())
+}
+
+fn project_fault(control: &Control, status: &mut NativeMediaStatusV1) {
+    if let Some(reason) = control.reason() {
+        if status.state != NativeMediaStateV1::Failed
+            || status.reason_code.as_deref() != Some(reason)
+        {
+            status.state = NativeMediaStateV1::Failed;
+            status.actor_ready = false;
+            status.reason_code = Some(reason.to_owned());
+            status.advance();
+        }
+    }
+}
+
+fn apply_admitted_signal(
+    control: &Control,
+    status: &mut NativeMediaStatusV1,
+    signal: GenerationSignal,
+) {
+    if !control.cancelled()
+        && signal.generation != 0
+        && signal.generation == control.generation.load(Ordering::Acquire)
+    {
+        let _ = apply_generation_fenced_signal(status, signal.generation, signal.signal);
+    }
+}
+
+fn pump_context(context: &gst::glib::MainContext, control: &Control) {
+    flow::budgeted(
+        || {
+            if !context.pending() {
+                return false;
+            }
+            let _ = context.iteration(false);
+            true
+        },
+        flow::CONTEXT_BUDGET,
+        control,
+    );
 }
 
 fn publish_status_snapshot(
@@ -503,7 +645,7 @@ fn handle_command(
     command: ActorCommand,
     context: &gst::glib::MainContext,
     child: &ChildVideoWindow,
-    signals: &mpsc::Sender<GenerationSignal>,
+    signals: &SignalSender,
     signal_receiver: &mpsc::Receiver<GenerationSignal>,
     active: &mut Option<ActivePlayer>,
     status: &mut NativeMediaStatusV1,
@@ -568,7 +710,14 @@ fn handle_command(
                 let player = active
                     .as_ref()
                     .ok_or_else(|| actor_unavailable("native-gstplay-player-missing"))?;
-                run_decode_probe(context, child, signal_receiver, player, status)
+                run_decode_probe(
+                    context,
+                    child,
+                    signal_receiver,
+                    player,
+                    status,
+                    &signals.control,
+                )
             });
             let _ = response.send(result);
         }
@@ -592,6 +741,7 @@ fn handle_command(
         }
         ActorCommand::Stop { fence, response } => {
             let result = ensure_fence(status, &fence).and_then(|_| {
+                signals.control.generation.store(0, Ordering::Release);
                 teardown_active(active);
                 child.hide().map_err(actor_unavailable)?;
                 status.clear_media();
@@ -601,14 +751,6 @@ fn handle_command(
             });
             let _ = response.send(result);
         }
-        ActorCommand::Shutdown { response } => {
-            status.state = NativeMediaStateV1::ShuttingDown;
-            status.advance();
-            teardown_active(active);
-            let _ = child.hide();
-            let _ = response.send(());
-            return false;
-        }
     }
     true
 }
@@ -616,7 +758,7 @@ fn handle_command(
 fn prepare_player(
     context: &gst::glib::MainContext,
     child: &ChildVideoWindow,
-    signals: &mpsc::Sender<GenerationSignal>,
+    signals: &SignalSender,
     active: &mut Option<ActivePlayer>,
     status: &mut NativeMediaStatusV1,
     grant: NativeMediaGrant,
@@ -626,6 +768,7 @@ fn prepare_player(
     let uri = url::Url::from_file_path(&grant.path).map_err(|_| {
         CommandError::forbidden("The native media grant cannot be represented as a local URI.")
     })?;
+    signals.control.generation.store(0, Ordering::Release);
     teardown_active(active);
     child.hide().map_err(actor_unavailable)?;
     child.set_viewport(viewport).map_err(actor_unavailable)?;
@@ -643,6 +786,10 @@ fn prepare_player(
     diagnostic::mute_if_opted_in(&play);
     let signal_adapter = gst_play::PlaySignalAdapter::with_main_context(&play, context);
     let display_source_metadata = Arc::new(Mutex::new(None));
+    signals
+        .control
+        .generation
+        .store(generation, Ordering::Release);
     connect_signals(
         &signal_adapter,
         generation,
@@ -683,7 +830,7 @@ fn prepare_player(
 fn connect_signals(
     adapter: &gst_play::PlaySignalAdapter,
     generation: u64,
-    sender: mpsc::Sender<GenerationSignal>,
+    sender: SignalSender,
     display_source_metadata: Arc<Mutex<Option<NativeDisplaySourceMetadataV1>>>,
 ) {
     let next = sender.clone();
@@ -789,6 +936,7 @@ fn run_decode_probe(
     signals: &mpsc::Receiver<GenerationSignal>,
     player: &ActivePlayer,
     status: &mut NativeMediaStatusV1,
+    control: &Control,
 ) -> ResearchResult<NativeMediaDecodeReceiptV1> {
     if status.state != NativeMediaStateV1::Paused {
         return Err(CommandError::invalid_contract(
@@ -834,7 +982,9 @@ fn run_decode_probe(
 
     for target_ms in expected_positions {
         player.play.seek(clock_time_from_ms(target_ms));
-        let observed_ms = wait_for_seek(context, child, signals, status, generation, target_ms)?;
+        let observed_ms = wait_for_seek(
+            context, child, signals, status, generation, target_ms, control,
+        )?;
         let snapshot = player
             .play
             .video_snapshot(gst_play::PlaySnapshotFormat::RawBgrx, None)
@@ -868,7 +1018,7 @@ fn run_decode_probe(
         .ok_or_else(|| actor_unavailable("native-gstplay-snapshot-geometry-unavailable"))?;
 
     player.play.seek(gst::ClockTime::ZERO);
-    let _ = wait_for_seek(context, child, signals, status, generation, 0.0)?;
+    let _ = wait_for_seek(context, child, signals, status, generation, 0.0, control)?;
     status.position_ms = Some(0.0);
     status.state = NativeMediaStateV1::Paused;
     status.advance();
@@ -953,12 +1103,18 @@ fn wait_for_seek(
     status: &mut NativeMediaStatusV1,
     generation: u64,
     target_ms: f64,
+    control: &Control,
 ) -> ResearchResult<f64> {
     let deadline = Instant::now() + EACH_SEEK_TIMEOUT;
     while Instant::now() < deadline {
-        while context.pending() {
-            let _ = context.iteration(false);
+        if control.cancelled() {
+            return Err(actor_unavailable(
+                control
+                    .reason()
+                    .unwrap_or("native-gstplay-actor-shutting-down"),
+            ));
         }
+        pump_context(context, control);
         child.pump_messages().map_err(actor_unavailable)?;
         match signals.recv_timeout(Duration::from_millis(2)) {
             Ok(next) => {
@@ -1077,11 +1233,11 @@ mod tests {
         actor: GstPlayActorHandle,
         release: mpsc::Sender<()>,
         startup: mpsc::SyncSender<StartupSignal>,
-        commands: mpsc::Receiver<ActorCommand>,
+        commands: mpsc::Receiver<QueuedCommand>,
     }
 
     fn held_actor() -> HeldActor {
-        let (commands, receiver) = mpsc::channel();
+        let (commands, receiver) = mpsc::sync_channel(flow::COMMAND_CAPACITY);
         let (startup_sender, startup_receiver) = mpsc::sync_channel(1);
         let (release, wait) = mpsc::channel();
         let join = thread::spawn(move || {
@@ -1092,7 +1248,7 @@ mod tests {
                 commands,
                 status_snapshot: Arc::new(Mutex::new(NativeMediaStatusV1::ready())),
                 join: Mutex::new(Some(join)),
-                shutdown_started: AtomicBool::new(false),
+                control: Arc::new(Control::default()),
                 startup: Mutex::new(ActorStartup {
                     receiver: startup_receiver,
                     result: None,
@@ -1153,10 +1309,7 @@ mod tests {
         startup.send(StartupSignal::new(Ok(()))).unwrap();
         actor.request_shutdown();
         actor.request_shutdown();
-        assert!(matches!(
-            commands.try_recv(),
-            Ok(ActorCommand::Shutdown { .. })
-        ));
+        assert!(actor.control.shutdown.load(Ordering::Acquire));
         assert!(matches!(
             commands.try_recv(),
             Err(mpsc::TryRecvError::Empty)
@@ -1182,6 +1335,198 @@ mod tests {
             "native-gstplay-startup-timeout"
         );
         release_actor(&actor, release);
+    }
+
+    #[test]
+    fn saturated_commands_fail_stop_without_blocking_shutdown() {
+        let HeldActor {
+            actor,
+            release,
+            startup,
+            commands,
+        } = held_actor();
+        startup.send(StartupSignal::new(Ok(()))).unwrap();
+        for _ in 0..flow::COMMAND_CAPACITY {
+            let (response, _) = mpsc::sync_channel(1);
+            assert!(actor
+                .commands
+                .try_send(QueuedCommand {
+                    command: ActorCommand::Status { response },
+                    deadline: Instant::now() + COMMAND_TIMEOUT,
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                })
+                .is_ok());
+        }
+        let stop = actor.stop(NativeMediaCommandFenceV1 {
+            session_id: "00000000-0000-4000-8000-000000000000".to_owned(),
+            generation: 1,
+        });
+        actor.request_shutdown();
+        let snapshot = actor.status_snapshot();
+        let reason = actor.control.reason();
+        let shutdown = actor.control.shutdown.load(Ordering::Acquire);
+        release_actor(&actor, release);
+        assert!(stop.unwrap_err().message.contains("command-overload"));
+        assert!(shutdown);
+        assert_eq!(reason, Some("native-gstplay-command-overload"));
+        assert_eq!(snapshot.state, NativeMediaStateV1::Failed);
+        assert!(!snapshot.actor_ready);
+        assert_eq!(commands.try_iter().count(), flow::COMMAND_CAPACITY);
+    }
+
+    #[test]
+    fn disconnected_command_receiver_is_terminal_and_join_is_retained() {
+        let HeldActor {
+            actor,
+            release,
+            startup,
+            commands,
+        } = held_actor();
+        startup.send(StartupSignal::new(Ok(()))).unwrap();
+        drop(commands);
+        let result = actor.status();
+        let snapshot = actor.status_snapshot();
+        release_actor(&actor, release);
+        assert!(result.unwrap_err().message.contains("channel-disconnected"));
+        assert_eq!(snapshot.state, NativeMediaStateV1::Failed);
+    }
+
+    #[test]
+    fn dropped_or_expired_waiter_cannot_execute_queued_work() {
+        let (response, _receiver) = mpsc::sync_channel(1);
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let waiter = ReplyWait(Arc::clone(&cancelled));
+        let queued = QueuedCommand {
+            command: ActorCommand::Status { response },
+            deadline: Instant::now() + COMMAND_TIMEOUT,
+            cancelled,
+        };
+        drop(waiter);
+        assert!(queued.into_live(&Control::default()).is_none());
+        let (response, _receiver) = mpsc::sync_channel(1);
+        let queued = QueuedCommand {
+            command: ActorCommand::Status { response },
+            deadline: Instant::now(),
+            cancelled: Arc::new(AtomicBool::new(false)),
+        };
+        assert!(queued.into_live(&Control::default()).is_none());
+    }
+
+    #[test]
+    fn live_queued_work_retains_fifo_order() {
+        let (sender, receiver) = mpsc::sync_channel(2);
+        let (first, first_reply) = mpsc::sync_channel(1);
+        let (second, second_reply) = mpsc::sync_channel(1);
+        for response in [first, second] {
+            sender
+                .try_send(QueuedCommand {
+                    command: ActorCommand::Status { response },
+                    deadline: Instant::now() + COMMAND_TIMEOUT,
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                })
+                .ok()
+                .unwrap();
+        }
+        let mut status = NativeMediaStatusV1::ready();
+        for sequence in [10, 11] {
+            let ActorCommand::Status { response } = receiver
+                .try_recv()
+                .unwrap()
+                .into_live(&Control::default())
+                .unwrap()
+            else {
+                panic!("wrong command");
+            };
+            status.sequence = sequence;
+            response.send(Ok(status.clone())).unwrap();
+        }
+        assert_eq!(first_reply.recv().unwrap().unwrap().sequence, 10);
+        assert_eq!(second_reply.recv().unwrap().unwrap().sequence, 11);
+    }
+
+    #[test]
+    fn shutdown_cancels_every_queued_waiter_without_executing_work() {
+        let control = Control::default();
+        let (sender, receiver) = mpsc::sync_channel(flow::COMMAND_CAPACITY);
+        let mut replies = Vec::new();
+        for _ in 0..flow::COMMAND_CAPACITY {
+            let (response, reply) = mpsc::sync_channel(1);
+            replies.push(reply);
+            sender
+                .try_send(QueuedCommand {
+                    command: ActorCommand::Status { response },
+                    deadline: Instant::now() + COMMAND_TIMEOUT,
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                })
+                .ok()
+                .unwrap();
+        }
+        control.shutdown.store(true, Ordering::Release);
+        for command in receiver.try_iter() {
+            assert!(command.into_live(&control).is_none());
+        }
+        for reply in replies {
+            assert!(matches!(
+                reply.try_recv(),
+                Err(mpsc::TryRecvError::Disconnected)
+            ));
+        }
+    }
+
+    #[test]
+    fn already_queued_callback_cannot_revive_stopped_generation() {
+        let control = Control::default();
+        let mut status = NativeMediaStatusV1::ready();
+        status.generation = 1;
+        let before = status.clone();
+        apply_admitted_signal(
+            &control,
+            &mut status,
+            GenerationSignal {
+                generation: 1,
+                signal: MediaSignal::BackendState(BackendPlaybackState::Playing),
+            },
+        );
+        assert_eq!(status, before);
+    }
+
+    #[test]
+    fn unwind_during_requested_shutdown_still_projects_terminal_failure() {
+        let control = Arc::new(Control::default());
+        control.shutdown.store(true, Ordering::Release);
+        let status = Arc::new(Mutex::new(NativeMediaStatusV1::ready()));
+        let guard = ActorExitGuard(Arc::clone(&control), Arc::clone(&status));
+        let join = thread::spawn(move || {
+            let _guard = guard;
+            panic!("synthetic actor failure");
+        });
+        assert!(join.join().is_err());
+        assert_eq!(control.reason(), Some("native-gstplay-actor-exited"));
+        assert_eq!(status.lock().unwrap().state, NativeMediaStateV1::Failed);
+    }
+
+    #[test]
+    fn unexpected_actor_exit_cannot_leave_playing_snapshot() {
+        let HeldActor {
+            actor,
+            release,
+            startup: _startup,
+            commands: _commands,
+        } = held_actor();
+        actor.status_snapshot.lock().unwrap().state = NativeMediaStateV1::Playing;
+        release.send(()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !actor.is_stopped() && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        let snapshot = actor.status_snapshot();
+        actor.finish_shutdown().unwrap();
+        assert_eq!(snapshot.state, NativeMediaStateV1::Failed);
+        assert_eq!(
+            snapshot.reason_code.as_deref(),
+            Some("native-gstplay-actor-exited")
+        );
+        assert_eq!(actor.status_snapshot(), snapshot);
     }
 
     #[test]

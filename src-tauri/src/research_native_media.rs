@@ -250,6 +250,10 @@ impl NativeMediaService {
                 }
                 _ => {}
             }
+            if let Some(reason) = actor.failure_reason() {
+                capability.player_actor_ready = false;
+                capability.reason_code = reason.to_owned();
+            }
         }
         if self.lifecycle.requested.load(Ordering::Acquire) {
             capability.player_actor_ready = false;

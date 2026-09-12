@@ -283,18 +283,9 @@ fn exercise(
             generation: next.generation,
         })
         .map_err(|e| e.message)?;
-    // Observe thread completion before interpreting shutdown as successful:
-    // production shutdown may otherwise drop its JoinHandle after a timeout.
-    let (closed_sender, closed_receiver) = mpsc::sync_channel(1);
-    actor
-        .commands
-        .send(ActorCommand::Shutdown {
-            response: closed_sender,
-        })
-        .map_err(|_| "shutdown-send")?;
-    closed_receiver
-        .recv_timeout(Duration::from_secs(5))
-        .map_err(|_| "shutdown-ack-timeout")?;
+    // Cancellation is independent of ordinary queue admission. Only actual
+    // thread completion and the retained join below establish shutdown.
+    actor.request_shutdown();
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         let finished = actor
