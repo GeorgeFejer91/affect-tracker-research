@@ -1,6 +1,105 @@
 # Research v1 roadmap
 
+## P2 spreadsheet and contribution receipts — 2026-09-11
+
+Pending owner branch `codex/segment-questionnaires-table-catalogue`:
+`74e879b` adds the whole labelled/coded spreadsheet, separate EN/DE prebuilt
+catalogue, metadata-safe row replacement, stale-slot protection and complete
+questionnaire contribution/restoration APIs. `a7bda6a` removes superseded
+questionnaire dialogs/renderers/import handlers/styles; scientific contracts,
+active sheet import/preview and all source assets remain.
+
+After synchronizing canonical `6be0a7`, 445/445 Node checks and 20 off-screen
+Edge app/grid checks pass; Pages171 and desktop8 artifact closures pass. The
+two-process multilingual authoring fixture reopens and re-exports edited recipe
+bytes identically. No user browser, OS clipboard, foreground input, native build,
+hardware, acquisition or Runner qualification was performed. The Vite bundle
+size warning remains informational. P7 owns package load/Edit recipe call sites
+and final save acknowledgement; owner-level restoration is not proof of the
+fully integrated final-step workflow. Capability limits remain in P2-04–P2-08.
+
+The subsequent pristine-family full-import adoption repair retains exact uploaded
+identities and protects existing/edited slots. The final candidate passes all
+445 Node checks and 24 isolated headless Edge cases (including file-import
+adoption, wrong-language rejection and draft protection); both build closures
+remain Pages171/desktop8. Receipts are owner-level, pending canonical integration.
+
 ## Central capability checklist and this evidence ledger
+
+The separate table-first compactness follow-up on `ae47df6` preserves all
+controls inside a secondary disclosure, retains live errors above the grid,
+and removes duplicate empty coverage output. 445 Node tests, 27 isolated DOM
+cases each in Edge/Chrome and both build closures pass. Six actual
+`bootResearchUi` screenshots cover empty/populated/error at desktop and narrow
+widths. The source-bound visual receipt records input hashes and working-tree
+status; see `20260911-p2-table-first-visual-follow-up` on the message board.
+This does not close any scientific-contract or installed-qualification gate.
+
+## P6 virtual-screen authoring — 2026-09-11
+
+Backend Verification in `codex/segment-p6-virtual-screen`, isolated at
+`D:/GitHub/affect-tracker-research-p6-virtual-screen`; source base `305d3ac`,
+canonical documentation `6be0a79`. **Pending combined integration.** P6 owns
+checklist P6-01/02/03/05; Q11/P6-04 policies explicitly confirmed by the user.
+[The P6 contract](63-P6-XR-LAYOUT.md) records exact fields, units, algorithms,
+producer seams and downstream limits. No frozen v1 schema changes.
+
+Implemented: optional virtual-screen authoring in its own Setup section;
+metre/angle size, distance, centre direction, yaw/pitch/roll and local feedback
+offsets; rotatable 3D inspection; strict versioned canonical authoring profile;
+JS/Rust validation, transforms and P5 full-envelope conversion; atomic import,
+dirty/dependency invalidation and editable reopen. Geometry uses one fixed
+contain-fit rectangle for all P1 assets. Camera/media selection is inspection only.
+
+Checks executed on Windows, Node 24.19.0, repository lockfiles unchanged:
+
+- `node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js`: **443 passed**, including **17 P6** tests.
+- `cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features`: **191 passed**; focused `research_xr_layout` has **5 passed**. No optional native player/device/LSL qualification implied.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --all-targets -- -D warnings` and `cargo fmt --manifest-path src-tauri/Cargo.toml --check`: passed.
+- `pnpm desktop:build` and `pnpm build:pages`: passed, **8 desktop / 173 Pages files**. Existing Vite >500 kB chunk warning remains; no new dependency/runtime assets.
+- `node scripts/qualification/xr-layout-background.mjs <browser.exe> <output>`: **18 checks each** in separate Chrome/Edge headless processes, isolated profiles. Reflow, native form focus, invalid/stale state, editable reopen, delayed reads, teardown, camera/asset isolation and full envelope rendering passed.
+- `node scripts/qualification/xr-feedback-interop.mjs <P5 feedback-envelope.js>`: **2 actual producer fixtures** passed, source SHA-256 `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`. Full animation mathematics remains P5-owned.
+
+Receipts/screenshots are local under
+`D:/GitHub/.affect-preview-checks/p6-{chrome,edge}-final-20260911/`;
+Node/Rust logs are `p6-{node,rust}-final.log` in that parent. This is offscreen
+component evidence, not visible/full-app/native/headset qualification.
+
+Integrate with P7 `e524b9f` automatic registry and active-XR v1 export/Start
+exclusion, plus its issue route correction to `xr`. P1 geometry producer and
+P5 live envelope binding remain named producer/convergence dependencies.
+The typed interfaces and actual P5 adapter have been checked; automatic cross-
+segment wiring and master XR recipe reproduction remain open. P6-06 actual
+WebXR/headset alignment/tracking, playback, recording and physical qualification
+are deferred. The profile records policies; it does not enforce sensor behavior.
+
+P5 dependency finalized after the P6 source handoff: clean checkpoint
+`597a612bbb8ad30d44ed4cb872df026034ee1935`, application source
+`8d3d256a67e01d9df0cef3717a58d559eb032a4a`. Re-ran the two producer interop
+fixtures at that checked-out checkpoint: both pass, producer SHA-256 unchanged
+from the receipt above. This closes the pending producer-checkpoint reference;
+automatic live binding and combined master export remain integration/P7 work.
+
+## Central capability checklist and this evidence ledger
+
+P6 UI followup after feature checkpoint `adc9494`: applied Uncodixfy to actual
+`bootResearchUi` captures. Removed the duplicate heading and nested fieldset
+boxes, grouped tilt and profile interchange tools in disclosures, moved readable
+field errors next to inputs with `aria-describedby`, added an external axes/shape
+legend and corrected the XR section summary/reopen status. Shared confirmation
+effects and all profile controls remain present. No spatial contract changed.
+
+Final followup checks: **47 focused UI/P6 tests**, both **8/173 build closures**,
+and **74 assertions across 8 actual-boot captures** passed. The offscreen fixture
+uses settled accordions, reduced motion and pane-only scrolling. Final inspected
+PNGs and JSON receipts are under
+`D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911/`, with `1440` and
+`820` prefixes and `empty-controls`, `populated-controls`, `populated-scene`,
+`error-controls` suffixes. Observed P6 panes are 800/815 px and 383/398 px.
+Earlier `760` breakpoint-adjacent and `420` captures had blank/clipped compositor
+results and are **excluded from visual acceptance**; metrics alone were inadequate.
+The final desktop/narrow PNGs were inspected. Combined P5/P7 integration still
+needs the integration owner's captures and applicable routing/guard checks.
 
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
 Planner roadmap and segment capability checklist adopted by the charter's
@@ -19,6 +118,155 @@ integrated and verified before checking canonical capability items.
 [`15-RESEARCH-V1-CHARTER.md`](./15-RESEARCH-V1-CHARTER.md) defines the target.
 This file records implementation and qualification truth. The first internal
 candidate is `0.4.0-alpha.1`; it is neither stable nor research-ready.
+
+## P5 consolidation candidate — 2026-09-11, pending integration
+
+Segment P5 `feedback`, UI Finalization, P5-04/P5-05/P5-07/P5-08. Source candidate
+`8d3d256a67e01d9df0cef3717a58d559eb032a4a` on
+`codex/segment-p5-feedback-editor`; base `305d3ac`, accepted documentation
+`6be0a79` and Preview/divider `bed461b` incorporated normally. Functional
+consolidation is `87c3d6d`; the subsequent commits correct narrow-field layout.
+This receipt describes the isolated candidate, not the canonical application.
+
+The old Input/Visual/Advanced builders, navigation entries and obsolete section
+routes are removed. P5 is one persistent editor with pinned output/map and a
+scrolling settings region; the measured whole-pane fallback now reserves at
+least 18rem for a usable control group before allowing pinning.
+The bottom Advanced disclosure retains every saved mapping/style field. Existing
+LSL markup moves unchanged into Review. No package writer, native adapter,
+sampling, physical input or Runner behavior is added.
+
+### P5 control inventory and ownership
+
+| Controls | Destination and saved contribution | Units / boundary |
+| --- | --- | --- |
+| Device preset, custom binding capture/restore, digital step | Controls; existing `input` object | Nine existing presets and strict binding contract; digital step 0.001–1 normalized units per physical edge. Continuous bindings retain their existing semantics. |
+| Grid, Flubber and Hide Visual Feedback; transparency; Show Halo | Appearance; existing `visual` visibility/transparency and `visual.flubber.showHalo` | Booleans; transparency displays 0–100%, serializes 0–1. |
+| Size, normalized x/y, lock | Advanced → Legacy package layout; existing `visual.sizePercent`, `overlayPosition`, `lockPosition` | Size 5–100% of stage, positions 0–1. Legacy compatibility only; no new P4/P6 placement authority or conversion. |
+| Flubber outline visibility/thickness | Advanced; existing `visual.flubber` | Boolean; 0–20 non-scaling CSS pixels. |
+| Grid line/outline visibility/thickness and cursor size | Advanced; existing `visual.grid` | Lines 0.25–20 CSS px; outline 0–20 CSS px; cursor radius 2–100 in the 0–100 SVG viewBox. |
+| Four map anchor colors; idle, outline, halo and cursor colors | Map → shared picker for anchors; Advanced → Other colors for the remaining four; existing `visual.colors` | Eight six-digit RGB hex values. The second visible anchor list is removed; existing canonical anchor IDs/values remain as hidden fields updated through the existing picker/saved-settings path. No field is dropped or default substituted. |
+| Six mappings, each Min/Max/Driven By/Reverse | Advanced; existing `advanced.mappings` | Frequency 0–10 Hz; other outputs 0–1; Min ≤ Max; existing four normalized drivers and Boolean reverse. Animation Hz is separate from acquisition sampling Hz. |
+| Existing LSL fields | Review; existing `advanced.lsl` | IDs, values and metadata validation unchanged; P7 retains composition, R1 transport ownership. |
+
+Temporary controls remain explicit: Flubber/Grid/Face comparison; Axes/Corners
+placement and custom axis labels; halo width (finite nonnegative %, renderer
+cap 10000%), fade and steepness (0.1–10); Continuous/Stepwise, full-span duration
+(250–15000 ms), steps each side of zero (1–1000), odd columns/rows (3–2001),
+hold rule and repeat delay (500–5000 ms). Preview movement, live-test state,
+focus, disclosure state and confirmation state are not recipe data. Q10 remains
+open; this pass adds no saved behavior, wire field, schema version or Run default.
+The existing Recolor and preview Reset to neutral actions **do** intentionally
+write literal colors through the saved color owners; they are not temporary
+color changes. Input-test reset remains local test state. These distinct actions
+are retained.
+
+### P5 geometry seam
+
+[`feedback-envelope.js`](../site/src/research/feedback-envelope.js) exports
+`deriveFeedbackEnvelopeV1({visual, mappings})` and
+`resolveFeedbackEnvelopeV1(configuration, overlaySideCssPx)`. Both require valid
+complete saved v1 configuration. The result identifies algorithm
+`feedback-envelope-v1`, fixed `design-centre` origin, canonical `configurationKey`,
+and separate Flubber/Grid component half extents per unit square viewport width
+plus non-scaling `paddingCssPx`. The resolver echoes `overlaySideCssPx` and returns
+the enclosing square's `halfExtentCssPx`. Recompute from owned configuration;
+the API does not accept caller-asserted fit evidence.
+
+The bound includes all mapped amplitude/variation extrema, phases, input drivers,
+both motion settings, four-decimal path rounding, visible outline/halo strokes
+with conservative miter allowance, and the Grid cursor at its outermost edge.
+Visibility hides components; transparency does not shrink the bound. The key
+invalidates for saved style/mapping changes and intentionally excludes size,
+position, lock, colors and transparency. Consumers bind the explicit viewport
+side as well as the key. CSS pixels are not device pixels, metres or a monitor
+calibration. A circle enclosing this square needs radius at least
+`sqrt(2) * halfExtentCssPx`. Preview-only Face, halo blur/width and tile drafts are
+outside this saved-v1 bound. P4/P6 integration and P7 accepted geometry remain
+open; this helper alone is not a layout fit or playback qualification.
+
+### Candidate verification
+
+- `pnpm test`: 452/452. Four new envelope tests cover validation, invalidation,
+  paint padding/visibility and 4608 actual renderer paths across mapping extrema,
+  shapes, phases and motion settings. Source-derived conservative reasoning is
+  documented in the helper; sampled paths are regression evidence.
+- `pnpm desktop:build`: 8-file frontend closure; `pnpm build:pages`: 176-file
+  closure. Native executable/installer was not built or launched. The existing
+  large frontend chunk warning remains; this is not a new build failure.
+- Desktop JS `research-QkwBzK1H.js`, SHA-256
+  `b27bd0771696448aea1e349d0871351748003cafdb30b30599cf909ea3204831`;
+  CSS `research-CVhIp6Wo.css`, SHA-256
+  `42baa114dd4df72befc1bdfc19f96a590d49f40fa1f6a03f284d5ade2d512038`.
+- [`feedback-editor.mjs`](../scripts/qualification/feedback-editor.mjs) boots the
+  real UI in an isolated headless frame with clearly synthetic catalogue data
+  and no platform adapter. Seven cases each in current local Chrome and Edge
+  verify unique controls, all moved saved-field serialization/reload, draft
+  exclusion, persistent navigation, invalid-field focus/disclosure, confirmation,
+  control separation and reflow down to an actual 320 CSS-pixel viewport. The
+  scaled frame illustrates reflow; it is not a browser-zoom qualification.
+- Supplementary real-boot screenshots cover empty, populated Controls, invalid
+  color, expanded Advanced, color dialog and a long custom label at desktop and
+  320px. Visual inspection caught and corrected overlapping bindings/reset
+  controls and an obsolete overlaid preview caption. Existing appearance,
+  pinned-input, confirmation and divider fixtures remain applicable.
+- Local artifacts are under
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/`:
+  final `single-flow-edge`, `single-flow-chrome`, `single-flow-appearance`,
+  `single-flow-states` and `final-pinned`; the earlier confirmation/divider checks
+  are `qualified-confirmation`/`qualified-layout`. New real-boot receipts bind the
+  repository commit, application tree, dirty-source flag, browser executable,
+  HTML fixture and PNG hashes. Earlier `polish-states` captures precede final
+  anchor-list removal and legacy wording; use the final source-bound captures.
+  Directory names do not imply runtime qualification. No foreground/desktop
+  input, acquisition, remote write or native hardware claim was made.
+
+Subsequent explicit user direction sends final settings capture/confirmation to
+Section 7. The integration owner is changing that shared orchestration and
+removing P5's independent confirmation/navigation review mark. Preserve that
+newer behavior while collecting this branch; its older confirmation fixture is
+historical compatibility evidence, not a demand for separate P5 acceptance.
+
+## P4 Screen & Layout — non-exportable design draft
+
+The 2026-09-11 P4 UI Finalization slice adds an editable whole-screen miniature,
+fixed-reference percentages, centre offsets, nominal Flubber diameter, separation
+diagnostics and measured millimetre conversion. Contain fitting, positive axes,
+the design centre and calibration mapping remain visibly proposed Q08 choices.
+Invalid inputs clear stale geometry; conversion preserves geometry or rejects the
+change without clamping. This is draft evidence for P4-02/P4-04/P4-06 only.
+
+The actual application has no media/envelope producer connected and explicitly
+reports that fit is unverified. Mixed-aspect video and maximum-animation examples
+exist only in non-shipping synthetic fixtures. No draft values enter settings,
+package bytes, Start/Run authority or a P7 accepted contribution. Persisted layout,
+actual P1/P5 composition and export/reload remain unimplemented.
+
+Evidence on `codex/segment-p4-screen-layout`, based on `6be0a79`: 437/437 JavaScript
+tests; 91/91 headless Edge assertions across actual application, wide, 360-CSS-px
+and forced-colors fixtures; inspected application/narrow screenshots; desktop
+frontend build and Research-only eight-file closure. The browser checks use an
+isolated background profile and a reduced-motion preference. Reproduction lives
+in `scripts/qualification/screen-layout-draft.mjs`; local receipts are under
+`D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+This is not installed Tauri, Chrome, physical calibration, interactive assistive-
+technology, runtime-screen compatibility, playback or research qualification.
+Integration must collect this branch before claiming canonical availability.
+
+The separate P4 compactness follow-up (`codex/segment-p4-layout-compact`) composes
+that feature with accepted preview/divider base `bed461b`. It groups dimensions
+and offsets in paired rows, removes nested form borders/repeated copy, places
+missing-media limits beside the miniature and preserves visible validation.
+The default editor is approximately 19% shorter at desktop width and 26% shorter
+in the 432px Setup pane. Actual `bootResearchUi` screenshots at 1280×900 include
+top/middle/footer positions, physical-unit fields, missing inputs, invalid fields
+and a synthetic portrait/envelope injected only by the non-shipping harness.
+Final evidence: 459/459 JavaScript tests, 164/164 headless Edge assertions across
+12 captures and desktop 8-file closure. Receipts and inspected screenshots are
+under `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`; reproduce with
+`scripts/qualification/screen-layout-compact.mjs`. Scroll remains necessary,
+with all controls and confirmation reachable. No geometry semantics, accepted
+contribution, runtime authority or qualification status changed.
 
 ## Repository transition — verified
 
@@ -114,6 +362,21 @@ The current `research/video-protocol-v1` working candidate contains:
 
 ## Bounded Setup feedback-design preview — non-authoritative working slice
 
+The isolated 2026-09-11 `setup-layout` UI Finalization pass adds a draggable
+divider between Setup sections and Live Preview. A bounded presentation
+controller owns pointer capture/cancellation, keyboard sizing, reset, and
+window-resize clamping. Its session-local proportion never enters settings,
+package bytes, Run geometry, storage, or evidence. The divider is hidden in
+the existing narrow stacked layout. The pass has 434/434 JavaScript checks,
+a rebuilt desktop frontend closure, and eight offscreen real-UI bootstrap/
+mode/geometry checks each in Chrome and Edge. These receipts cover pane
+geometry and isolation, not physical interaction or installed qualification.
+On the integration base, narrowing Preview to 320px in a wide viewport exposes
+36px of pre-existing internal overflow; the ready Preview owner's container
+reflow in `7c908949` must be composed before minimum-width content fit is
+accepted. Integration and any reload of the existing application remain with
+the designated integration owner.
+
 The 2026-09-11 `accordion` UI follow-up gives every panel the same final
 confirmation footer, including Review below its Start controls, and strengthens
 the warm breathing edge with outward-fading layers. Review state and Start
@@ -147,6 +410,49 @@ visual observation remains pending; source integration completed locally at
 `2be0242` with 423/423 combined JavaScript checks and both frontend closures.
 These checks do not qualify
 Run, sampling, playback, accessibility, deployment or experiment use.
+
+The researcher's 2026-09-11 follow-up replaces the square-only count field
+with steps each side of zero (1–1000), and adds independent odd columns/rows
+(3–2001). The isolated Preview branch provides centered rectangular outlines,
+axis-specific stepping/snap and atomic invalid-draft retention. The candidate
+passes 431/431 JavaScript tests, the desktop frontend 8-file closure and ten
+off-screen Edge tile-paint fixtures (including 3×5 and 5×3 at 180/360px).
+This is isolated source/component evidence, not current installed-app behavior;
+integration/reload is deferred to the integration owner pending user safety.
+No package, Run, native input or saved stepSize contract changes are included.
+
+The next isolated Preview follow-up pins the header/output/map above a lower
+settings scroller, reflows within a 320px preview pane, and falls back to one
+whole-pane scroller when short height or enlarged text cannot fit the pinned
+area plus usable controls. Direct map clicks select actual rectangular cells;
+focused map/output input uses configured WebView-visible bindings and arrow
+fallback. No native device service, acquisition receipt or Run path is added.
+Candidate checks: 436/436 JavaScript tests, desktop 8-file frontend closure,
+four offscreen layout/input fixtures (wide, 320px pane, short, 2× text scale).
+The fixtures step the animation clock explicitly and use isolated DOM input,
+not the user's desktop. Native/physical behavior and integration remain pending.
+
+The isolated palette/halo follow-up implements explicit grey reset (four
+anchors plus idle), Recolor through the existing color controls, transient
+Axes/Corners bilinear placement and independent display labels, numeric halo
+width (finite input, reported 10000% rendering cap), fade on/off and gamma
+steepness. No schema or Run renderer is changed. Evidence: 440/440 JavaScript
+tests; 21 actual-app isolated headless Edge UI/pixel/reflow checks; four pinned
+layout/input fixtures; desktop frontend 8-file closure. The layout fixture now
+zeros its own scroll position after focus before measuring scroll movement.
+The existing >500 kB bundle warning remains. Artifacts are local under
+`D:/GitHub/.affect-preview-checks/palette-halo-20260911`, in `preview-appearance`
+and `preview-appearance-layout`; they are not installed-app or native qualification.
+
+The floating-window audit found a sole configured `research` window, a
+sole-window capability, and app-level commands that need a caller-boundary
+audit before adding a second webview. No floating checkbox/window is shipped
+by this checkpoint. The proposed separate backend pass must own a fixed local
+overlay URL/label, transparent always-on-top lifecycle, bounded projection,
+drag/focus behavior, close/reopen and main-window shutdown, command isolation,
+and Windows evidence. Static Chrome/Edge cannot be claimed to provide the
+same OS overlay. Preview persistence/Runner adoption likewise remains a
+separate versioned-contract decision; the checklist item remains open.
 
 The responsive Face in this slice is procedural presentation only. Camera,
 microphone, participant images, Face/Photoatlas source or assets, tracking,

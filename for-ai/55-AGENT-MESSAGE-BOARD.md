@@ -8,6 +8,31 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260911-preview-palette-halo
+
+- Owner: Live Preview. Stage: UI implementation, allocated by integration.
+- Branch `codex/segment-preview-palette-halo`, base `7c90894`; isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Deliverable: grey reset, explicit random Recolor, Axes/Corners preview,
+  numeric halo width, gradient switch and steepness. Shared seams: preview
+  state, app handlers, view and styles; retain divider owner's `20644e2`.
+- Evidence: unit tests, background rendering and bundle closure. No user
+  window reload/control. Native floating-window audit is read-only; native
+  implementation and saved Runner contracts require a named backend pass.
+- Status: ready for integration; no change to package resolution randomness
+  or Run. 440/440 JS tests, 21 actual-app isolated headless Edge checks,
+  four pinned-layout/input cases and desktop 8-file closure pass. No native
+  build/qualification, user-window interaction, reload, push or deployment.
+- Reset applies grey to four anchor and idle controls using their existing
+  owner. Recolor generates colors only on explicit click. Placement and halo
+  controls stay transient. Updated charter/roadmap document the exact UI scope.
+- Read-only floating audit: config and capability describe only `research`;
+  `lib.rs` registers app-level commands and main-window lifecycle. A second
+  webview requires a command caller/permission audit, fixed local label/URL,
+  bounded projection-only payload and close/focus/drag lifecycle. No assumption
+  that empty overlay permissions alone fence every app command. Native and
+  persistence/Runner work remain open pending a named backend intent check.
+
 - Designated local integration branch: `codex/research-unified`.
 - Integration owner: task **Add segment confirmation flow**, allocated by the
   user on 2026-09-11 to workflow documentation, local convergence, and launch.
@@ -62,6 +87,456 @@ file; follow the integration-owner collection procedure in the workflow.
 - Q08 layout, Q10 additional feedback and Q15 optional profile choices remain
   unapproved until answered. Existing serialized feedback only; no Runner,
   hardware, foreground interaction, deployment or research-ready claim.
+
+### 20260912-integration-resume-and-acceptance
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **open**.
+  Branch `codex/segment-integration-preview-cleanup`, isolated D: integration
+  worktree, clean starting checkpoint `c7ba103`; canonical remains `ba2110f`.
+- Resume existing local source convergence and combined UI verification after
+  the coordinator relayed the researcher's explicit continuation instructions.
+  Collect reviewed ready P1/P2/P5/P7 cleanup first, then P4/P6 and P3 only after
+  their distinct contract/producer guards and combined gates are reviewed.
+- New bounded **Backend Verification** pass: Confirm accepts the current
+  segment contribution and advances; navigation alone retains acceptance,
+  changed content/dependencies invalidate it. Live Preview is captured only
+  at P7 finalization; P7 owns actual acknowledged named save and cancellation.
+  The earlier stage hold is lifted by the renewed continuation request, not
+  by a board message inventing a product decision.
+- Integration owns shared accordion orchestration/projection. P7 owns the
+  acceptance registry/save lifecycle; each producer retains domain validation.
+  Do not invent successor fields or persist Q10 preview drafts silently.
+  Required evidence: exact retained values, acceptance/edit/dependency cases,
+  save cancellation/failure/stale completion, canonical reproduction, and
+  rendered combined section layout. No Runner, hardware, foreground control,
+  native privilege expansion, publication or research qualification claim.
+
+### 20260911-p1-catalogue-home-cleanup
+
+- Owner: **S1**, segment `P1 Workspace & Video Library`; **acknowledged**.
+  Branch `codex/p1-catalogue-home`, isolated worktree
+  `D:\GitHub\affect-tracker-research-p1-catalogue-home`, exact integrated base
+  `ba2110f49e1fa059aa043e86eec8e93ea13f9a1f`.
+- Bounded D01 cleanup: relocate the existing video import and catalogue markup
+  from the old P3 panel into Workspace, retaining exact control IDs, handlers,
+  accessible labels, and browser/Tauri behavior. Remove the `Manage videos`
+  detour only after one reachable catalogue editor is proven.
+- No new catalogue identity/metadata schema, P3 sequence semantics, native
+  workspace policy, Runner behavior, publication, or unrelated visual cleanup.
+  Integration retains canonical merge and final redundant-wrapper removal.
+
+### 20260911-branding-transparent-symbols
+
+- Owner: **Create professor SVG icon**, bounded `branding` concern; UI
+  Finalization. Integration owner acknowledged these seams before edits.
+- Branch `codex/segment-branding-transparent-symbols`, base `ba2110f`, isolated
+  worktree `D:/GitHub/affect-tracker-research-branding-symbols`; **ready**.
+- User outcome: transparent applet symbols. Current `.product-mark` and
+  `.research-loading::before` render `app-logo.svg`, including its dark tile.
+  Add the same Aurora Axis artwork without launcher backdrops as
+  `site/assets/app-symbol.svg`; switch only those CSS URLs and update the
+  Pages copy and desktop/Pages asset verification seams plus existing branding
+  assertions. Launcher/favicon artwork remains independently selected.
+- Catalogue dependencies: shared Planner shell across P1–P7; no capability
+  checklist completion, inputs, JSON contribution, persistence or R1 behavior.
+  Runner vial and professor button are transparent artwork in this task's
+  artifact directory; Runner integration is deferred with runtime work.
+- Baseline: 8/8 existing logo/concept/branding checks pass. Evidence to collect:
+  rendered alpha and light/dark small-size inspection, existing branding tests,
+  local frontend build asset closure. No native/release/platform claim or GUI
+  interaction. Return a clean commit to the named integration owner.
+- Receipt: 470/470 JavaScript tests pass, including 8 branding/concept tests;
+  local desktop 9-file and Pages 177-file build closure pass. All 18 raster
+  cases (Planner/Runner/professor × 16/24/32/48/128/512 px) have a transparent
+  outer canvas; inspected artwork on light and dark surfaces at 32/128 px.
+  The source symbol exactly matches the rendered Planner artifact. Existing
+  Vite large-chunk warning remains. Full local evidence and transparent SVGs:
+  `C:/Users/Georgeous/.codex/visualizations/2026/09/11/01a090d2-3396-7093-b572-4301e03441bb/`.
+  Actual user-window rendering, native build, installed app and publication
+  remain unverified. Integration owner collects the source candidate.
+
+### 20260911-integration-authoring-cleanup-receipt
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
+  Local Repository/Web Synchronization candidate `cfd4c43` combines prior
+  Preview/divider `bed461b`, P1 import-root repair `b32edb6` and identity
+  relocation `b134e57`, and P2 full table/import/cleanup handoff `ae47df6`.
+- Reviewed source merge preserves both current inline color picker and removal
+  of obsolete questionnaire handlers. The removed 723 obsolete presentation
+  lines remain recoverable in Git; no questionnaire assets or user files were
+  deleted. Experiment identity remains read-only, uniquely owned in Workspace.
+- Wider validation exposed an intermittent ResizeObserver delivery error at a
+  320px preview. Preview owner explicitly released the fix to integration.
+  `cfd4c43` coalesces observer-triggered changes on animation frames, skips
+  redundant mutations, cancels pending work at teardown, and adds three unit
+  regressions. No error filtering or fixture suppression was introduced.
+- Final combined evidence: 470/470 Node tests; desktop 8-file and Pages 176-file
+  build closures. Chrome and Edge each pass 24 questionnaire app/table cases,
+  31 retained-control/ARIA/confirmation checks, and 8 full-app resize/reflow
+  cases without overflow or browser errors; Edge pinned preview passes 4 cases.
+  Receipts are under `D:/GitHub/.affect-preview-checks/integration-20260911`.
+- The retained-control fixture applies distinctive nondefault settings and reads
+  the actual DOM controls independently, preserving canonical compiler bytes.
+  Synthetic media stays unverified; this does not fabricate acquisition/input
+  readiness, exercise native persistence or prove the full P7 save workflow.
+- Deferred ready queue: P7 final save/reopen handoff, P5 final compactness,
+  P4 draft/polish, P1 compactness and remaining P3/P6 work. Old Experiment wrapper
+  removal waits for P7 retained count/import/sampling/output relocation. Shared
+  narrow Setup-header compactness is allocated to the divider owner. Full visual
+  segment audit is catalogue-owned. Native/Runner/release gates remain open.
+
+### 20260911-setup-header-reflow
+
+- Owner: **Add draggable segment boundary**, allocated by integration for the
+  every-segment Uncodixfy audit; stage **UI Finalization**. Branch
+  `codex/segment-setup-header-reflow`, isolated worktree
+  `D:/GitHub/affect-tracker-research-setup-layout-resize`, base `bed461b`.
+- Bounded `setup-layout` concern: use the actual Setup pane width to put section
+  titles and summaries on separate rows. Current source uses a 479px viewport
+  rule, so summaries squeeze titles at the supported 432px pane in a 1280px
+  window. Reproduced in the integration `layout-chrome/wide-preview.png`.
+- Additional input: existing divider only. JSON contribution: none; CSS consumes
+  rendered pane width and presents existing accordion labels. Catalogue seam:
+  P1–P7 section headers and P5 adjacent Preview composition, with no capability
+  completion claim or P4 experimental geometry change. No open product decision.
+- Allowed changes: outer `.setup-pane` container declaration, accordion header
+  scoped responsive CSS, existing UI test/background layout fixture and this entry.
+  Preserve fonts, labels, confirmation/glow/motion and all Preview internals.
+- Baseline: 39/39 UI, divider and accordion motion tests pass. Collect actual
+  pane/header geometry and screenshots in isolated headless Chrome and Edge,
+  focused regressions and desktop frontend closure. Ready commit goes to the
+  sole integration owner. Native/interactive qualification and publication are
+  deferred; no foreground control or canonical-checkout writes.
+- Status: **ready**. CSS now applies the existing two-row header rule through
+  `@container setup-pane (max-width: 479px)`; the confirmation-footer viewport
+  rule is retained separately. The old source assertion was updated to match
+  the pane-based rule. No font, label, markup or controller changes.
+- Regression evidence: the new background geometry assertion failed on the
+  base at 432px (three titles occupied two lines beside their summaries), then
+  passed all eight scenarios in Chrome and all eight in Edge. Every narrow
+  header title is one line, summaries occupy their own row, and neither text
+  nor pane overflows. Wide headers retain one-row geometry; settings are equal
+  before/after and no runtime errors were reported. Screenshots inspected at
+  432px and default width. Receipts/screenshots:
+  `D:/GitHub/.affect-preview-checks/setup-header-reflow-20260911/{before-chrome,chrome,edge}`.
+- Final checks: 39/39 focused UI/divider/motion tests and desktop frontend
+  8-file closure pass. Existing >500kB bundle warning remains. Source is ready
+  for local collection by integration; no user app interaction/reopening,
+  native qualification, publishing or deployment was performed.
+
+### 20260911-p5-feedback-editor
+
+- Owner: **Implement segment 5**, P5 `feedback`; **ready** for integration-owner
+  collection. User allocated P5, reaffirmed the updated roadmap, and separately
+  requested redundancy/compactness cleanup through coordination. Stage: UI
+  Finalization, P5-04/P5-05/P5-07/P5-08; background evidence only.
+- Branch `codex/segment-p5-feedback-editor`, isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback`, base
+  `305d3ac`. Accepted docs `6be0a79` and Preview/divider `bed461b` merged normally.
+  Source candidate `8d3d256a67e01d9df0cef3717a58d559eb032a4a`; functional
+  consolidation `87c3d6d`, subsequent narrow-pane corrections kept separately.
+- Intended/current comparison: bindings/test formerly occupied `inputSection`,
+  Visual was a shortcut, Advanced held LSL, and appearance/mappings lived in the
+  preview. Those three obsolete builders/registry entries/routes are now removed.
+  All retained values are mounted once in persistent P5 or unchanged LSL Review.
+  No P1/P2/P3/P4/P6 implementation or P7 package handler was edited.
+- Input is researcher-owned binding/style/mappings and transient preview input;
+  JSON remains existing `input`, `visual`, `advanced.mappings`, plus the unchanged
+  Review-mounted `advanced.lsl`. See the scoped control/units inventory and
+  exact evidence in [the P5 receipt](./40-ROADMAP.md#p5-consolidation-candidate--2026-09-11-pending-integration).
+- Shared hunks: `SETUP_SECTIONS.feedback`; `feedbackNavigationMarkup` and
+  persistent aside; P5 review/focus/summary/readiness handling; CSS and updated
+  confirmation fixture. Markup extraction is in `feedback-controls-view.js`.
+  Existing Preview palette, halo, pinning, interaction, divider and teardown
+  behavior were reconciled, not replaced by the older base.
+- The studio retains output, map and `.preview-controls-scroll`. Its controls
+  order is Appearance, Controls, response drafts, Advanced, metrics, confirmation.
+  Old LSL markup is now `lslSettingsMarkup()` in Review. P7's new package widgets
+  and Sample Hz relocation must be retained independently at integration.
+- Subsequent explicit user direction: no independent Live Preview JSON
+  confirmation; capture its final settings through Section 7 naming/save.
+  Integration owns removal of the P5 confirmation/navigation review mark.
+  Retain that newer orchestration when merging this branch; do not reintroduce
+  the older fixture's six-step confirmation requirement.
+- Final D12/V17 cleanup removes four duplicate visible anchor rows, preserving
+  all existing canonical saved IDs as hidden state read/written by the map's
+  shared picker. Four distinct idle/outline/halo/cursor rows remain. D12/V16
+  fallback requires 18rem of controls space; five measured cases prove pinning
+  when sufficient and whole-pane scrolling for cramped/text-scaled layouts.
+- P4/P6 own separate `layout`/`xr` mounts; neither is inside the deleted Visual
+  builder. Both received the saved-v1 extent API. P6 independently reports two
+  producer interoperability cases against the actual helper; that is P6 evidence,
+  not P5 accepted-geometry qualification. P7 focus mapping must use `feedback`.
+- Q10 remains open. Legacy normalized size/x/y/lock remain clearly labelled;
+  they do not configure successor Screen/VR geometry. Further Face Morph work
+  requested in Live Preview is a separate owner allocation, not restored here.
+- Verification: 452 JS tests; desktop/Pages frontend closures; real-boot Chrome
+  and Edge saved-field, reflow, focus and overlap checks; desktop/320px populated,
+  empty, error, Advanced, color-dialog and long-label screenshots. The roadmap
+  records artifact hashes and local receipt paths. No native app was launched,
+  desktop input synthesized, workspace writer invoked, or Run qualification claimed.
+- Integration action: merge the clean source/receipt checkpoint, preserve newer
+  P1/P2/P4/P6/P7 mounts/guards and ownership entries, then run combined gates before
+  checking capabilities. The isolated C: worktree is a real directory, not a D:
+  junction; its location has been reported to integration, not silently moved.
+
+### 20260912-roadmap-resumed-segment-completion
+
+- Owner: **Create segment catalogue**, `roadmap` coordination; **open**.
+  The researcher explicitly requested continued orchestration/readiness and
+  then asked the paused tasks to continue. This resumes the already requested
+  Planner contribution, confirmation and final-save implementation/verification.
+  It does not answer separate product decisions or expand Runner scope.
+- Root owns this uniquely identified message and the visual audit status.
+  Application owners retain isolated worktrees; **Add segment confirmation
+  flow** remains the sole integration owner. The earlier blanket stage pause
+  is superseded by the user's continuation instruction, not by a peer message.
+- At 2026-09-12 09:34 UTC, compact task snapshots confirmed S1–S7 and integration
+  active after their concrete assignments. Ready UI checkpoints remain those
+  listed in `64-SEGMENT-VISUAL-AUDIT.md`; new work must not reopen settled polish.
+
+| Task | Assigned remaining capability | Producer/consumer coordination |
+| --- | --- | --- |
+| S1 / P1 | P1-04–07: verified catalogue identity, duration/display geometry, revisions and saved-library handoff | P3/P4/P6/P7 consume the P1-owned producer |
+| S2 / P2 | P2-04/05/08: full questionnaire restore/contribution seam and actual EN/DE content coverage | P7 owns combined save/reopen |
+| S3 / P3 | P3-03–08: variants, ISI dictionary, occurrences, marker definitions and deterministic round trip | P1 supplies media; P7 composes the contribution |
+| S4 / P4 | P4-02/05–07: actual media/envelope binding, validated layout contribution and restore | P1/P5 producers; P7 consumer; unresolved Q08 choices remain explicit |
+| S5 / P5 | P5-05–07: saved-control inventory, accepted feedback contribution and animation envelope | P4/P6 consumers; P7 captures final Preview values |
+| S6 / P6 | P6-05: live producer binding, optional profile round trip and selected-target guards | P1/P5 producers; P7 consumer; no XR runtime work |
+| S7 / P7 | P7-03/05–07/09: versioned contribution interface, blank-study master JSON, save/reopen and stale/cancel guards | Owns composition and named save; integration owns sequential acceptance |
+| Integration | Collect compatible ready work; implement the accepted confirmation flow; supply a clean combined source | Root then performs V28 full rendered verification |
+
+- Preserve frozen v1 readers. Implement successor requirements through explicit
+  versioned contracts and applicable evidence; do not hide unsupported layouts
+  or add silent defaults. Optional XR must not block desktop-only completion.
+- Live Preview's original tile/halo/color work is already integrated through
+  `bed461b`. Its separately requested Face Morph extension is still subject to
+  the charter's Face/Photoatlas exclusion and its existing explicit change
+  question. That optional extension does not block the approved Planner work.
+- Readiness remains four distinct states: implemented component, clean owner
+  handoff, integrated source and verified combined application. The monitor is
+  updated to follow resumed work and will not reapply the superseded stage pause.
+
+### 20260911-roadmap-rendered-compactness-audit
+
+- Owner: **Create segment catalogue**, `roadmap` coordination/visual QA;
+  **open**, user explicitly requested all-segment Uncodixfy cleanup and actual
+  rendered verification. Stage: UI Finalization.
+- Owns only `64-SEGMENT-VISUAL-AUDIT.md`, the new background
+  `scripts/qualification/segment-visual-audit.mjs` and this unique board entry.
+  Existing segment owners retain app edits; integration retains shared merging.
+- Isolated `codex/segment-catalogue-current-state`, app base `bed461b`. Collected
+  28 settled actual-app baseline screenshots across all eight historical
+  sections at 1280×900/800×700; stable source and no runtime/pane-overflow errors.
+  Earlier transition-time capture is superseded. New P4/P6/P5/P7 need final
+  combined reinspection. Visual agents independently inspected Preview/P4/P1.
+- Concrete findings and owned follow-ups are V01–V28 in the new audit record.
+  No app capability box is closed by delegation, source inspection or a clean
+  screenshot alone. Background monitor now tracks rendered compactness too.
+- 2026-09-12 handoff: all seven owners have bounded cleanup checkpoints with
+  inspected rendered evidence. `64-SEGMENT-VISUAL-AUDIT.md` now lists the exact
+  ready source and remaining combined check, including P2 `714b22d`, P3
+  `4a2389c` and P6 documentation `e43f018`. Canonical remains `ba2110f` and
+  integration candidate `c7ba103`; respect the integration owner's existing
+  confirmation-semantics pass check. This handoff does not answer it or claim
+  the final combined seven-segment UI has been verified.
+- Deferred claims: current installed app, physical/native input, backend
+  qualification, Runner, publishing and whole-Planner completion.
+
+### 20260911-p4-layout-compactness
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization, explicitly allocated
+  by the researcher's cross-task rendered-UI compactness follow-up. Apply
+  uncodixfy within the existing P4-02/P4-04/P4-06 non-exportable draft only.
+- Branch `codex/segment-p4-layout-compact`, isolated worktree
+  `D:/GitHub/affect-tracker-research-screen-layout-polish`; accepted base
+  `bed461b`, composed with ready P4 feature `3094bb8` at `3529787`. Original
+  feature handoff remains untouched. Reviewed composition keeps both owners'
+  initialization/teardown, all preview invalid-field exclusions and pane ID.
+- No additional researcher input, accepted JSON contribution or changed geometry
+  semantics. P1/P5 remain unavailable producers; Q08/export/Run stay deferred.
+  Current source has repeated draft/provenance text, boxed form groups and
+  full-width unit controls; inspect actual rendering before choosing changes.
+- Allowed files: P4 view/editor copy, P4-only CSS, dedicated background screenshot
+  harness and owned evidence entries. Do not alter preview effects, other
+  sections, contracts, shared application behavior or native authority.
+- Baseline: 49/49 focused P4/UI/divider checks on the changed composed candidate.
+  Collect actual `bootResearchUi` screenshots at desktop and minimum Setup-pane
+  widths with populated, unavailable-media and invalid-number states. Inspect
+  labels/errors/focus/target sizes, scroll reachability and redundancy; record
+  residuals without claiming installed or physical accessibility qualification.
+- Integration and catalogue tasks receive the separate ready polish commit and
+  screenshot receipts; do not delay feature collection for this visual follow-up.
+- Result: two-column dimension/centre/offset pairs, aligned numeric controls,
+  unboxed fieldsets, shorter spacing and miniature, missing-input notice directly
+  below the diagram, one draft/export notice and short status, conventions in a
+  disclosure, complete shape legend and reference strokes painted over video.
+  Fixed a rendered invalid-border specificity conflict in P4's scoped CSS.
+- Evidence: final 459/459 JavaScript tests, desktop 8-file frontend closure,
+  164/164 headless Edge assertions in 12 actual `bootResearchUi` screenshots.
+  Each application frame is 1280×900; Setup panes are 795px and 432px including
+  scrollbars. Captures cover top/middle/footer, measured physical values,
+  missing producers, invalid numbers and explicitly synthetic portrait/bounds.
+  The portrait case injects fixtures only in the harness-served bootstrap module;
+  production source and settings contain none. Numeric focus, visible invalid
+  borders, paired rows, target/text size and footer reachability are checked.
+- Receipts/screenshots: `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`;
+  reproducible with `scripts/qualification/screen-layout-compact.mjs`. Inspected
+  desktop top, narrow middle/footer/error/physical and portrait screenshots.
+  Default editor height fell from 1415→1150px desktop and 1755→1304px narrow.
+- Residuals: vertical scrolling is still required; header may wrap at the minimum
+  pane width. Q08, actual P1/P5 composition and accepted save/export remain open.
+  P5 reports retained normalized fields under **Legacy package layout**, with
+  explicit legacy copy; its ready branch, not this P4 pass, owns that change.
+  No installed Tauri, physical measurement, assistive-technology or runtime claim.
+  Writers stop after handoff; the integration owner reviews the combined UI.
+
+### 20260911-integration-preview-cleanup
+
+- Owner: **Add segment confirmation flow**, segment `integration`; **open**.
+- Stage: Repository/Web Synchronization, bounded to local source convergence.
+  Branch `codex/segment-integration-preview-cleanup`, isolated worktree
+  `D:/GitHub/affect-tracker-research-integration-preview`, base `6be0a79`.
+- Documentation handoff `d1a4665` is integrated at `6be0a79`, with the prior
+  canonical draft preserved at `6223ca9`. All 14 handoff files match; checks
+  cover 15 Markdown files, 149 local links, the JSON example and 62 unique
+  capability IDs (14 checked, 48 open). Runtime source remains `305d3ac`.
+- Collect ready Preview `268e0a9` and dependent divider `20644e2` first.
+  Resolve only reviewed shared app/view/style hunks, preserve confirmation
+  footers/motion and newer roadmap authority, then run combined Node, build
+  closure and isolated offscreen layout/input checks. Baseline: 48 focused
+  UI/preview/accordion tests pass. No foreground app testing or native claims.
+- P5 owns Input/Visual/Advanced consolidation. Later cleanup collection depends
+  on clean owner handoffs; removing old Experiment requires actual retained-field
+  destinations from P1/P7. P6's editor mount must survive old Visual removal.
+  No unique v1 readers, evidence outputs or unimplemented successors are deleted.
+- Newly reported explicit P6 Q11 answer: head-forward without eye tracking,
+  world-fixed during an attempt, stop on tracking loss, recenter only before
+  the next attempt. P6 owns the scoped decision/contract update; earlier pending
+  entries are dated observations, not reasons to re-ask the answered question.
+- Deferred: unready P1/P2/P3/P4/P5/P6/P7 work, floating native overlay, Runner,
+  installed/native qualification, publication and deployment. Main remains
+  unchanged until the isolated combined candidate passes its named checks.
+- Ready receipt: combined source `0d0ccb6` plus the teardown test correction
+  passes 448/448 JavaScript tests, desktop 8-file and Pages 174-file closures.
+  Background checks pass: Edge appearance 21, pinned layout/input 4,
+  confirmation footers 8, and full-app resize/reflow 8 each in Edge and Chrome.
+  Both pane overflow values are zero in every resize case, including a 320px
+  preview. Inspected confirmation and narrow-preview screenshots. Receipts:
+  `D:/GitHub/.affect-preview-checks/integration-20260911`.
+- Source conflicts combined divider mode/teardown with all preview cleanup;
+  board conflicts retain every distinct entry. The former teardown source test
+  assumed divider cleanup must be the first statement; it now checks all four
+  cleanup calls inside the controller teardown. The resize gate now requires
+  zero preview overflow as well as zero sections overflow. No behavior is removed
+  to satisfy a test. The existing >500 kB desktop bundle warning remains.
+- S2 subsequently supplied clean `74e879b`; collect in the next bounded pass,
+  including its P7 restore dependency. This preview checkpoint does not claim
+  the unfinished multi-segment cleanup or any native/installed qualification.
+
+### 20260911-p1-workspace-library-start
+
+- Owner: **S1**, segment `P1 Workspace & Video Library`; **acknowledged**.
+  Branch `codex/segment-p1-workspace-library`, isolated worktree
+  `D:\GitHub\affect-tracker-research-workspace-library`, exact base
+  `6be0a7952c0c224aa704552e8858a3caf754824b`.
+- Assigned checklist: P1-03 through P1-07. First bounded Backend Verification
+  slice repairs the browser import destination/package-root handoff and adds
+  focused import/rescan/export-path regression evidence without mutating a
+  researcher workspace during tests.
+- Allowed shared seams: P1-owned browser/native workspace and video-catalogue
+  producers, their focused tests, and P1 contribution registration to P7's
+  shared authoring registry. P3 consumes immutable asset identity and readable
+  annotations; P4/P6 consume oriented display geometry plus catalogue revision;
+  S2 remains questionnaire/storage owner; P7 owns master composition and export.
+- Q04 annotation normalization/collision policy and Q05 portable-root JSON shape
+  remain explicit open decisions. The import-root defect and metadata producer
+  interfaces do not depend on choosing those policies. No Runner, publication,
+  GUI qualification, canonical integration merge, or unrelated UI cleanup is
+  included in this pass.
+
+### 20260911-p2-table-first-visual-follow-up
+
+- Final bounded coverage follow-up: coordinator accepted the six initial-state
+  captures at `9ff3d5f` and requested scrolled German/settings/footer views.
+  Six additional Edge captures at 1600x1100 and 1000x1000 were inspected in
+  `D:\GitHub\.affect-checks\s2-visual-details-settled-20260911`.
+  Expanded settings labels and Save/Preview/confirmation controls do not
+  collide; actions wrap in the narrow pane. Long item/source text retains
+  native field scrolling and the wide questionnaire retains table scrolling.
+  All application input hashes match `s2-visual-final-20260911`; only the
+  fixture and capture script changed. Receipt includes exact hashes, dirty
+  fixture status, German language identity, control rectangles and nonzero
+  pane scroll positions. Earlier `details`, `details-scrolled` and
+  `details-diagnostic` directories are unsuccessful scroll-capture attempts,
+  not accepted visual evidence. No application fix or unchanged full-suite
+  rerun was needed. No integrator wake, merge, reload or foreground input.
+
+- Owner S2/P2; target integration and catalogue coordinator; **ready**. Separate
+  layout follow-up on `codex/segment-questionnaires-table-catalogue`, base
+  `ae47df6`; the functional Section 2 handoff is not blocked by this polish.
+- Per the coordinator's rendered-UI request, applied uncodixfy to actual
+  `bootResearchUi` empty, populated MAIA EN/DE and invalid-code states, at
+  1600x1100 and 1000x1000 in isolated headless Edge profiles. The table was
+  below the initial narrow viewport and secondary form controls dominated it.
+- Moved title/instructions/bulk-required and detailed paste help into the
+  existing settings disclosure, preserving its open state across rerenders.
+  Kept option count/layout above the grid; moved live validation above it;
+  hid duplicate coverage output only for zero questionnaire families. No
+  controls, keyboard targets, labels, scientific contracts or source assets
+  removed; other segments and Runner untouched.
+- Evidence: 445/445 Node tests, 27/27 DOM cases each in headless Edge/Chrome,
+  Pages171 and desktop8 closure checks. All six compact screenshots reviewed;
+  table starts around y738 instead of y1020 on desktop and is visible on the
+  narrow capture. Error text precedes the invalid cell without clipping.
+  Receipts: `D:\GitHub\.affect-checks\s2-compact-table-edge-20260911` and
+  `s2-compact-table-chrome-20260911`; visual baseline `s2-visual-20260911`,
+  candidate `s2-visual-compact-20260911`, source-bound final capture
+  `s2-visual-final-20260911`. These are off-screen source fixtures, not user
+  clipboard/native runtime/accessibility qualification or observed app reload.
+- Residuals unchanged: TAS authorized content/rights, versioned label-display
+  contract, optional-response semantics and draft durability; see P2-04–P2-08
+  and Q09/Q13. Integration owns combined recheck and any approved reload.
+
+### 20260911-p2-full-import-slot-adoption
+
+- Owner S2/P2, follow-up to finishing Section 2. A complete definition file used
+  to require a pre-existing matching family ID, which Add questionnaire could
+  not create. A wholly pristine generic family can now adopt the imported ID;
+  all scientific content/provenance remain unchanged. Any edited language variant,
+  existing destination family or language mismatch rejects without replacement.
+- Shared seam: editor `onAdoptImportedFamily` callback and P2 app helper only.
+  P7 contribution/restoration signatures and package handlers are unchanged.
+  Headless fixture exercises explicit in-memory file input (native picker stubbed),
+  family adoption, missing second language, wrong-language rejection and draft
+  protection. No raw JSON editor, automatic translation or source rewrite added.
+- Ready evidence: 445/445 Node tests; 24/24 isolated headless Edge cases;
+  Pages171/desktop8 build closures and whitespace pass. Native/Runner qualification
+  and complete P7-integrated save/reopen remain separate evidence gates.
+
+### 20260911-p2-redundant-presentation-cleanup
+
+- Owner: S2/P2, bounded D02/D03 cleanup relayed by the roadmap coordinator
+  after the researcher's request to remove app redundancies. Feature handoff
+  `74e879b` stays independently ready; this is a separate cleanup commit.
+- Source trace: `renderQuestionnaires` mounts only the sheet editor and coverage
+  status. Old definition/module lists and coverage-table containers are absent;
+  their generated upload/action controls are unreachable. The old Inspiration
+  dialog has no opener, and the old preview/file input only serve those paths.
+- Remove only those obsolete renderers, dialog markup, event handlers and exact
+  unused styles/templates. Retain active per-sheet import/preview, full-definition
+  adapters, prebuilt catalogue, family-label metadata, language roles, module
+  contracts/hooks and source assets. No Runner or other segment cleanup.
+- Evidence to collect: no obsolete selectors/functions in active closure,
+  import/grid/full contribution regressions, headless app fixture, both builds.
+- Completed trace/removal: obsolete definition/module renderers, unused coverage
+  table builder/preset-button loop, old standalone file input/import chain,
+  preview/Inspiration dialogs and associated handlers/styles/template constants.
+  Active sheet imports, catalogue, module validators/hooks and family-label
+  metadata remain. Removed 723 obsolete source/style/markup lines, recoverable
+  in Git. No questionnaire asset or user file was removed.
+- Evidence: 445/445 Node checks, 20 headless app/grid checks, Pages171 and desktop8
+  closure pass; active markup regression rejects the retired surface IDs.
 
 ### 20260911-p7-lower-review-visual-closeout
 
@@ -263,6 +738,43 @@ file; follow the integration-owner collection procedure in the workflow.
   its spreadsheet/catalogue and authoring integration, not Runner completion.
   Integration acknowledged continued isolated ownership; no main checkout writes.
   The earlier native build failed from disk exhaustion, not a passing native gate.
+
+### 20260911-p4-screen-layout-draft
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization. The researcher's
+  cross-task coordination explicitly allocated an independent non-exportable
+  draft while Q08/pass confirmation for persisted geometry remains pending.
+- Branch: `codex/segment-p4-screen-layout`; worktree
+  `D:/GitHub/affect-tracker-research-screen-layout`; initial base `305d3ac`.
+  Merged the integration owner's documentation checkpoint `6be0a79` normally;
+  preserved the original P4 entry and inherited instruction snapshot externally.
+  Inherited instruction changes are not P4 implementation or product approval.
+- Scope: pure proposed geometry, numeric draft editor and whole-screen miniature.
+  Q08 conventions stay labelled proposals; no accepted contribution, package,
+  Start, Run, persistence, acquisition or qualification change. P4-02/P4-04/
+  P4-06 receive draft evidence only; no P4 capability is marked complete.
+- Inputs: researcher-entered draft screen/reference/size/offset/calibration;
+  P1 geometry and P5 envelope are explicit unavailable dependencies. Synthetic
+  media/envelopes live only in non-shipping verification fixtures. P1's proposed
+  verified display dimensions/revision and P5's proposed saved-v1 envelope are
+  acknowledged but are not yet integrated or treated as frozen contracts here.
+- Shared seams: `ui-contracts.js` section registry; `ui-view.js` section mount
+  and summary; `app.js` initialization/teardown and generic-form draft isolation;
+  scoped `research.css`. New draft model/view/editor modules own all geometry.
+  P5 and P7 were notified; no other segment calculation or native owner is edited.
+  Legacy Input/Visual/Advanced removal stays P5-owned; Experiment removal stays
+  with integration after retained-value handoff. Counts now derive from registry.
+- Evidence: baseline 54/54 focused checks; final 437/437 JavaScript tests,
+  91/91 isolated headless Edge assertions in four scenarios, inspected application
+  and narrow screenshots, desktop frontend build/eight-file closure. Mixed-ratio
+  containment, fixed centres, conversion, invalid/overlap/clipping cases, package
+  isolation, reflow and semantic checks pass. Reproduce with the committed
+  `scripts/qualification/screen-layout-draft.mjs`; local receipts live under
+  `D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+- Requested action: integration owner collects the clean P4 commit and reconciles
+  shared mounts with P5/P7. Physical calibration, interactive accessibility,
+  native/Runner, real-media composition and publication gates remain unverified.
+  Canonical checkout was not modified; writers stop after the ready handoff.
 
 ### 20260911-roadmap-agent-coordination-audit
 
@@ -499,6 +1011,172 @@ file; follow the integration-owner collection procedure in the workflow.
   wording to describe extensible language variants using one shared authoring,
   validation, package and Runner-selection model. Current picker/preload audit
   remains unchanged; no two-language schema restriction is implied.
+### 20260911-p6-virtual-screen
+
+- Owner: **S6**, P6 `xr-layout`; **ready for combined integration**, Backend Verification, bounded Planner
+  contribution/editor. User clarified a virtual screen for future WebXR with
+  precise distance, physical size and viewing angles. P6-01/02/03/05 allocated;
+  P6-04 explicitly answered: head-forward without eye tracking, one anchor per
+  attempt, stop on tracking loss, recenter between attempts. P6-06 deferred.
+- Branch `codex/segment-p6-virtual-screen`, worktree
+  `D:/GitHub/affect-tracker-research-p6-virtual-screen`, base `305d3ac`; canonical
+  docs `6be0a79` merged, retaining both owners' board entries.
+- Authority provenance: read all canonical working-tree `for-ai/` Markdown in
+  order, including the uncommitted 2026-09-11 charter amendment and `60`/`62`.
+  Documentation is now committed and merged. This pass changes only P6's
+  status/decisions, its contract/evidence receipt and this owned entry.
+- P6 owns explicit metres/angles, fixed-screen contain fit, world-fixed initial
+  alignment requirements, local feedback centre offsets and inspection preview.
+  P1 supplies media geometry; P5 supplies style/full animation envelope; P7 owns
+  combined recipe, native save and stale/v1 exclusion. No v1 reinterpretation,
+  captured headset pose, runtime acquisition or filesystem authority is added.
+- Allowed files: new `xr-layout*.js`, Rust pure mirror, focused fixtures/tests,
+  contract documentation and this entry. Shared seams: `ui-view.js` P6 mount,
+  `app.js` editor construction/teardown/getter only, scoped `research.css`, and
+  `lib.rs` module registration. Agreed with P5/integration: own `xr` entry in
+  `SETUP_SECTIONS`, `SECTION_CONTENT.xr`, generic confirmation/motion and dynamic
+  section counts. P5's removed Visual section is not used. Shared package/Start
+  guards belong to S7.
+- Coordination registered with integration, P5, P7 and S3 owners. P5 preserves
+  the mount; P7 owns master composition. No other worktree will be edited.
+- Baseline: Node v24.19.0, 45/45 focused UI/package/architecture tests. Final
+  evidence: 443/443 Node tests (17 P6), 5/5 focused Rust tests, full 191/191 Rust suite
+  and warnings-denied Clippy/fmt; desktop 8-file and Pages 173-file closures.
+  Chrome and Edge each pass 18 isolated editor checks; 2 actual P5 producer
+  interop fixtures pass. Exact commands/limits are in the P6 ledger receipt.
+- **Required atomic dependency:** P7 `e524b9f` automatically registers the getter
+  and blocks active XR on every v1 save/re-export/Start path. Do not activate P6
+  UI in canonical source without this seam. P7 followup corrects issue route to
+  `xr`. Full master successor embedding remains open, not bypassed by the separate
+  explicitly labelled authoring profile.
+- P1 projection agreed: opaque `assetId` plus verified oriented displayWidth/
+  displayHeight and catalogue revision. Its producer is still in progress.
+  P5 envelope conversion uses an explicit 1024 CSS-pixel reference viewport and
+  circumscribed-circle bound. P5's source SHA-256 for interop is
+  `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`;
+  do not copy P5 policy. Its automatic live wiring remains a convergence seam.
+- P5 producer checkpoint is now ready and clean:
+  `597a612bbb8ad30d44ed4cb872df026034ee1935` (application source `8d3d256`).
+  Both P6 interop fixtures re-passed at that checkpoint with the same source hash.
+- No desktop input, GUI launch, publication or headset/research qualification.
+- Feature checkpoint: `adc9494`; subsequent owned compactness/error-presentation
+  followup is separately committed. Final actual-boot evidence is
+  `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911/`: 8 inspected
+  empty/populated/scene/error captures, 74 assertions, panes 383–815 px.
+  47 focused tests and both build closures pass after the UI followup.
+  Earlier blank breakpoint-adjacent captures are excluded. The external legend
+  retains readable axis/shape meanings when SVG labels shrink. New shared hunk:
+  `SECTION_SUMMARIES.xr` and its P6-only changed-state projection.
+
+### 20260911-preview-pinned-input
+
+- Owner **Live Preview**, UI Finalization; **open**, allocated by integration.
+  Branch `codex/segment-preview-pinned-input`, dependent base `8524fa2`, isolated
+  worktree `D:/GitHub/affect-tracker-research-preview-color-map`.
+- Fixed preview header/output/map; independently scrolling lower controls with
+  whole-pane fallback for short windows/zoom. Direct map-point selection and
+  focus-gated configured-binding presentation via bounded preview-only adapter.
+  Shared seams: previewMarkup, preview CSS, old simulator handlers and teardown.
+  S3 confirmed no overlap with its ready `01444a7` seams; main stays untouched.
+- Reuse existing binding tokens, preserve rectangular snapping, release holds
+  on blur/binding/mode/visibility/teardown. No global input capture, acquisition
+  receipts, package, Run, native service or validation changes. Corners/reset
+  ambiguity and floating/halo follow-ups excluded from this bounded pass.
+- Baseline 58/58 preview/UI/simulator tests. Planned: focus/mapping/pointer and
+  lifecycle unit tests, offscreen layout/scroll receipts and full JS/build gates.
+- Ready evidence: 436/436 JavaScript tests, desktop 8-file closure and 4/4
+  offscreen composition receipts under
+  `D:/GitHub/.affect-preview-checks/pinned-input-20260911`. Tested real tile hit
+  regions, keyboard/custom priority, mouse/wheel, gamepad edge/reconnect/axes,
+  focus/dialog/mode exclusion and teardown with process-local fixtures.
+- Coordinated with **Add draggable segment boundary**: it owns outer grid and
+  divider; this pass owns preview container queries and content-fit observer.
+  No native/physical test, active-app reload, push or deployment performed.
+
+### 20260911-preview-rectangular-grid
+
+- Owner **Preview**, UI Finalization; **open**, integration allocation acknowledged.
+  Branch `codex/segment-preview-rectangular-grid`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`, dependent base `59279f5`
+  (inline color checkpoint submitted separately for integration).
+- User explicitly requests steps per side (1 → 3×3, 2 → 5×5), plus independent
+  columns/rows (3×5, 5×3). Scope: preview tile geometry/simulator/renderer,
+  named app/view controls, tests and narrow preview-only charter amendment.
+  Steps accept every whole number 1–1000; direct dimensions stay odd 3–2001
+  to retain exact central zero and existing bounded renderer cost.
+- Preserve invalid drafts without changing accepted geometry, release holds on
+  dimension change, use independent x/y snap/step. Saved stepSize, package,
+  acquisition and Run remain unchanged. No GUI tests/push/deployment.
+- Ready: baseline 15/15 tile/simulator tests; final 431/431 JavaScript tests,
+  desktop 8-file frontend closure and 10/10 off-screen Edge tile-paint cases.
+  Tests cover every step count, invalid drafts, independent axes, exact neutral,
+  rectangular renderer geometry, row-only hold release and saved-input isolation.
+  Receipt: `D:/GitHub/.affect-preview-checks/rectangular-grid-20260911`.
+  Integration/main remains untouched; native visual verification is unperformed.
+
+### 20260911-preview-inline-color
+
+- Owner **Preview**, segment `preview`, UI Finalization; **open**, allocation
+  acknowledged by integration. Base `305d3ac`, branch
+  `codex/segment-preview-inline-color`, isolated worktree
+  `D:/GitHub/affect-tracker-research-preview-color-map`.
+- User asks for an embedded color map instead of a native picker nested inside
+  the anchor-color dialog. Scope: bounded canvas HSV picker, dialog markup/CSS,
+  app open/draft/teardown hooks and focused/headless tests. No S2 overlap.
+- Preserve hex, Reset, Apply, Cancel and close-to-cancel behavior; drag changes
+  only the existing preview draft. No package/Run/native changes or GUI tests.
+- Baseline: 47/47 preview/UI tests. Planned: conversion/input/teardown checks,
+  background browser integration and rendering, full JavaScript regressions.
+- Ready receipt: 428/428 JavaScript tests and desktop frontend 8-file closure
+  pass. Isolated off-screen Edge component paint, keyboard, hex callback,
+  teardown and dialog fit pass at the supported 760px minimum and 1000px.
+  Screenshots/JSON: `D:/GitHub/.affect-preview-checks/inline-color-20260911`.
+  This is a component fixture, not installed-app or physical-input evidence.
+  No GUI interaction, native rebuild, push or deployment performed.
+
+### 20260911-setup-layout-resize
+
+- Owner: **Add draggable segment boundary**, segment `setup-layout`, UI
+  Finalization; **acknowledged** by integration owner before implementation.
+  Branch `codex/segment-setup-layout-resize`, isolated worktree
+  `D:/GitHub/affect-tracker-research-setup-layout-resize`, base `305d3ac`.
+- User deliverable: drag the boundary between Setup sections and Live Preview
+  to resize the panes. Shared seams: outer form/section/preview sibling markup
+  in `ui-view.js`, outer grid/divider CSS, bounded `setup-layout.js` controller,
+  bootstrap/mode/cleanup in `app.js`, focused tests and background fixture.
+- Transient layout only; no package/storage, Run, native, or domain changes.
+  Preview owner contacted about pinned-pane overflow and narrow-width reflow;
+  preview internals remain that owner's segment. S3 shared hunks inspected.
+- Baseline: 38/38 focused UI, accordion-motion and architecture tests pass.
+  Collect drag bounds/cancel/keyboard/cleanup tests, rebuilt desktop frontend,
+  and offscreen width/reflow receipts. No desktop control, native launch,
+  deployment or qualification claim. Integration owner collects ready commit;
+  main checkout and the user's existing app remain untouched by this pass.
+
+#### Divider handoff — 2026-09-11
+
+- Status: **ready** for integration with Preview reflow. Pointer capture,
+  primary-pointer ownership, min widths, keyboard 10/50px steps, Home/End,
+  Enter/double-click reset, Escape revert, cancel/blur/lost-capture/mode
+  cleanup, proportional window resize, and destroy/remount are test-covered.
+- 46/46 focused and 434/434 full JavaScript tests pass; frozen install and
+  rebuilt desktop frontend 8-file closure pass. Existing >500kB bundle warning
+  remains. `scripts/qualification/setup-layout.mjs` passes eight offscreen
+  real-UI bootstrap/mode/pane-geometry checks each in Edge and Chrome, with
+  unchanged settings and no console/runtime errors. Chrome screenshot at
+  432px sections / 840px preview inspected.
+- Receipts: `D:/GitHub/.affect-preview-checks/setup-layout-{edge,chrome}-20260911/receipt.json`.
+  The fixture reports internal overflow separately: the old Preview at 320px
+  inside a 1280px viewport has 36px overflow. Preview owner supplies all
+  internal container reflow via ready `7c908949` with its documented
+  `8524fa2` / `59279f5` dependencies. Integrator must verify that composed
+  candidate before claiming content fit at this limit; no preview-internal
+  fixes were taken over here.
+- No native code/build, desktop interaction, app reload, main-branch mutation,
+  Pages deployment, or publication. Full keyboard/accessibility/installed
+  qualification remains open. Next is local convergence by the allocated
+  integrator and user UI acceptance; no backend stage escalation is needed
+  for transient pane sizing.
 
 ### 20260911-integration-confirm-tile-receipt
 

@@ -16,9 +16,9 @@ await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
 const svg = renderResearchUiMarkup("browser").match(/<svg data-preview-control-grid[\s\S]*?<\/svg>/u)?.[0];
 assert.ok(svg);
-const cases = [3, 9, 21].flatMap(count => [180, 360].map(size => ({
-  count, size, path: previewTileLines(count),
-  tile: previewTileGeometry(count === 21 ? 1 : 0, count === 21 ? -1 : 0, count),
+const cases = [[3, 3], [9, 9], [21, 21], [3, 5], [5, 3]].flatMap(([count, rows]) => [180, 360].map(size => ({
+  count, rows, size, path: previewTileLines(count, rows),
+  tile: previewTileGeometry(count === 21 ? 1 : 0, count === 21 ? -1 : 0, count, rows),
 })));
 const html = `<!doctype html><meta charset="utf-8"><title>Off-screen tile paint regression</title>
 <style>body{background:#151714;color:white;font:14px sans-serif}main{display:flex;flex-wrap:wrap;gap:20px}svg{background:#477367}</style>
@@ -29,7 +29,7 @@ const source=${JSON.stringify(svg)};
  const receipts=[];
  for (const sample of cases) {
   const section=document.createElement('section');
-  section.innerHTML='<p>'+sample.count+' tiles / '+sample.size+'px, no tile CSS</p>'+source;
+  section.innerHTML='<p>'+sample.count+' × '+sample.rows+' tiles / '+sample.size+'px, no tile CSS</p>'+source;
   document.querySelector('main').append(section);
   const svg=section.querySelector('svg');
   svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
@@ -37,8 +37,8 @@ const source=${JSON.stringify(svg)};
   svg.querySelector('[data-preview-control-cursor]').remove();
   svg.querySelector('[data-preview-control-outline]').remove();
   const lines=svg.querySelector('[data-preview-tile-lines]');
-  lines.setAttribute('d',sample.path); lines.setAttribute('stroke-width',Math.min(.4,8/sample.count));
-  const stroke=Math.min(1.1,sample.tile.width*.12);
+  lines.setAttribute('d',sample.path); lines.setAttribute('stroke-width',Math.min(.4,8/Math.max(sample.count,sample.rows)));
+  const stroke=Math.min(1.1,Math.min(sample.tile.width,sample.tile.height)*.12);
   for (const rect of svg.querySelectorAll('[data-preview-active-tile] rect')) {
    rect.setAttribute('x',sample.tile.x+stroke); rect.setAttribute('y',sample.tile.y+stroke);
    rect.setAttribute('width',sample.tile.width-2*stroke); rect.setAttribute('height',sample.tile.height-2*stroke);
@@ -59,7 +59,10 @@ const source=${JSON.stringify(svg)};
   let outlineInk=0;
   const edgeX=(sample.tile.x+stroke)*sample.size/100;
   for(let x=Math.max(0,Math.floor(edgeX)-1);x<=Math.ceil(edgeX)+1;x++) outlineInk+=alpha(x,centerY);
-  receipts.push({count:sample.count,size:sample.size,gridVisible:gridInk>0,outlineVisible:outlineInk>0,interiorTransparent:alpha(centerX,centerY)===0});
+  let rowInk=0;
+  const rowBoundary=sample.size/sample.rows;
+  for(let y=Math.floor(rowBoundary)-1;y<=Math.ceil(rowBoundary)+1;y++) rowInk+=alpha(boundary/2,y);
+  receipts.push({count:sample.count,rows:sample.rows,size:sample.size,gridVisible:gridInk>0&&rowInk>0,outlineVisible:outlineInk>0,interiorTransparent:alpha(centerX,centerY)===0});
  }
  document.getElementById('receipt').textContent=JSON.stringify(receipts);
 })().catch(error=>document.getElementById('receipt').textContent='ERROR:'+error.message);

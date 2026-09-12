@@ -1,0 +1,311 @@
+{
+  "producer": "P5 feedback-envelope-v1",
+  "cases": [
+    {
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 35,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "configuration": {
+        "visual": {
+          "gridEnabled": true,
+          "flubberEnabled": true,
+          "sizePercent": 32,
+          "transparency": 0.05,
+          "hideFeedback": false,
+          "overlayPosition": {
+            "x": 0.72,
+            "y": 0.5
+          },
+          "lockPosition": false,
+          "flubber": {
+            "showOutline": true,
+            "outlineThickness": 0,
+            "showHalo": true
+          },
+          "grid": {
+            "lineThickness": 1,
+            "showOutline": true,
+            "outlineThickness": 2,
+            "cursorSize": 14
+          },
+          "colors": {
+            "up": "#f2c94c",
+            "down": "#2f80ed",
+            "left": "#eb5757",
+            "right": "#27ae60",
+            "idle": "#9ca3af",
+            "outline": "#f8fafc",
+            "halo": "#93c5fd",
+            "cursor": "#ffffff"
+          }
+        },
+        "mappings": {
+          "oscillationFrequency": {
+            "min": 0.5,
+            "max": 2.5,
+            "drivenBy": "y-axis",
+            "reverse": false
+          },
+          "edgeSmoothness": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": false
+          },
+          "projectionAmplitude": {
+            "min": 0.2,
+            "max": 1,
+            "drivenBy": "y-axis",
+            "reverse": false
+          },
+          "pulseSynchrony": {
+            "min": 0.2,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": false
+          },
+          "waveSizeVariation": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": true
+          },
+          "saturation": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "radius",
+            "reverse": false
+          }
+        }
+      },
+      "envelope": {
+        "algorithmVersion": "feedback-envelope-v1",
+        "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v1\",\"flubber\":{\"outlineThickness\":0,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":true}}}",
+        "origin": "design-centre",
+        "flubber": {
+          "halfExtentAtUnitWidth": 0.9259567901234568,
+          "paddingCssPx": 2
+        },
+        "grid": {
+          "halfExtentAtUnitWidth": 0.64,
+          "paddingCssPx": 4
+        },
+        "overlaySideCssPx": 1024,
+        "halfExtentCssPx": 950.1797530864197
+      },
+      "expected": {
+        "algorithmVersion": "xr-feedback-footprint-v1",
+        "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v1\",\"flubber\":{\"outlineThickness\":0,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":true}}}",
+        "referenceViewportCssPx": 1024,
+        "metresPerCssPx": 0.0000930227647571011,
+        "viewportSideMetres": 0.09525531111127153,
+        "halfExtentMetres": 0.08838834764831843,
+        "visible": true,
+        "bounds": [
+          [
+            0.3511186614198136,
+            -0.6555497979143707,
+            -2
+          ],
+          [
+            0.4959256527547059,
+            -0.554154850996211,
+            -2
+          ],
+          [
+            0.39453070583654626,
+            -0.4093478596613187,
+            -2
+          ],
+          [
+            0.24972371450165395,
+            -0.5107428065794785,
+            -2
+          ]
+        ]
+      }
+    },
+    {
+      "profile": {
+        "schema": "affect-research-xr-layout",
+        "version": 1,
+        "target": "webxr-immersive-vr",
+        "projection": "flat-monoscopic",
+        "coordinateSystem": "right-up-back-metres",
+        "alignment": {
+          "kind": "world-fixed-initial-forward",
+          "forwardReference": "head-forward",
+          "upReference": "gravity-up",
+          "recenterPolicy": "between-attempts-only",
+          "trackingLossPolicy": "stop-attempt"
+        },
+        "video": {
+          "distanceMetres": 2,
+          "azimuthDegrees": 0,
+          "elevationDegrees": 0,
+          "yawDegrees": 0,
+          "pitchDegrees": 0,
+          "rollDegrees": 35,
+          "widthMetres": 1.2,
+          "heightMetres": 0.675,
+          "fit": "contain"
+        },
+        "feedback": {
+          "enabled": true,
+          "offsetXMetres": 0,
+          "offsetYMetres": -0.65,
+          "diameterMetres": 0.25,
+          "minimumGapMetres": 0.02
+        }
+      },
+      "configuration": {
+        "visual": {
+          "gridEnabled": true,
+          "flubberEnabled": true,
+          "sizePercent": 32,
+          "transparency": 0.05,
+          "hideFeedback": false,
+          "overlayPosition": {
+            "x": 0.72,
+            "y": 0.5
+          },
+          "lockPosition": false,
+          "flubber": {
+            "showOutline": true,
+            "outlineThickness": 20,
+            "showHalo": true
+          },
+          "grid": {
+            "lineThickness": 1,
+            "showOutline": true,
+            "outlineThickness": 2,
+            "cursorSize": 14
+          },
+          "colors": {
+            "up": "#f2c94c",
+            "down": "#2f80ed",
+            "left": "#eb5757",
+            "right": "#27ae60",
+            "idle": "#9ca3af",
+            "outline": "#f8fafc",
+            "halo": "#93c5fd",
+            "cursor": "#ffffff"
+          }
+        },
+        "mappings": {
+          "oscillationFrequency": {
+            "min": 0.5,
+            "max": 2.5,
+            "drivenBy": "y-axis",
+            "reverse": false
+          },
+          "edgeSmoothness": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": false
+          },
+          "projectionAmplitude": {
+            "min": 0.2,
+            "max": 1,
+            "drivenBy": "y-axis",
+            "reverse": false
+          },
+          "pulseSynchrony": {
+            "min": 0.2,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": false
+          },
+          "waveSizeVariation": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "x-axis",
+            "reverse": true
+          },
+          "saturation": {
+            "min": 0,
+            "max": 1,
+            "drivenBy": "radius",
+            "reverse": false
+          }
+        }
+      },
+      "envelope": {
+        "algorithmVersion": "feedback-envelope-v1",
+        "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v1\",\"flubber\":{\"outlineThickness\":20,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":true}}}",
+        "origin": "design-centre",
+        "flubber": {
+          "halfExtentAtUnitWidth": 0.9259567901234568,
+          "paddingCssPx": 120
+        },
+        "grid": {
+          "halfExtentAtUnitWidth": 0.64,
+          "paddingCssPx": 4
+        },
+        "overlaySideCssPx": 1024,
+        "halfExtentCssPx": 1068.1797530864196
+      },
+      "expected": {
+        "algorithmVersion": "xr-feedback-footprint-v1",
+        "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v1\",\"flubber\":{\"outlineThickness\":20,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":true}}}",
+        "referenceViewportCssPx": 1024,
+        "metresPerCssPx": 0.00008274669819656046,
+        "viewportSideMetres": 0.08473261895327791,
+        "halfExtentMetres": 0.08838834764831843,
+        "visible": true,
+        "bounds": [
+          [
+            0.3511186614198136,
+            -0.6555497979143707,
+            -2
+          ],
+          [
+            0.4959256527547059,
+            -0.554154850996211,
+            -2
+          ],
+          [
+            0.39453070583654626,
+            -0.4093478596613187,
+            -2
+          ],
+          [
+            0.24972371450165395,
+            -0.5107428065794785,
+            -2
+          ]
+        ]
+      }
+    }
+  ]
+}

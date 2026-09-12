@@ -1,7 +1,65 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parsePreviewTileCount, previewTileGeometry, previewTileLines, snapPreviewCoordinate } from "../site/src/research/preview-tiles.js";
+import { parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid, previewTileGeometry, previewTileLines, snapPreviewCoordinate } from "../site/src/research/preview-tiles.js";
 import { createPreviewResponseSimulator } from "../site/src/research/preview-response-simulator.js";
+
+test("steps per side accept every bounded integer and custom dimensions validate atomically", () => {
+  for (let steps = 1; steps <= 1000; steps++) {
+    assert.equal(parsePreviewSteps(String(steps)), steps);
+    assert.deepEqual(parsePreviewGrid({ mode: "square", steps }), { tileCount: 2 * steps + 1, tileRows: 2 * steps + 1 });
+  }
+  for (const value of ["", " ", null, false, [], {}, Symbol(), -1, 0, 1.5, 1001, Infinity, NaN]) {
+    assert.equal(parsePreviewSteps(value), null);
+    assert.equal(parsePreviewGrid({ mode: "square", steps: value }), null);
+  }
+  for (const [columns, rows] of [[3, 5], [5, 3], [3, 2001], [2001, 3]]) {
+    assert.deepEqual(parsePreviewGrid({ mode: "custom", columns, rows }), { tileCount: columns, tileRows: rows });
+  }
+  for (const rows of ["", 4, 2, 3.5, 2003]) assert.equal(parsePreviewGrid({ mode: "custom", columns: 5, rows }), null);
+});
+
+test("rectangular grids preserve exact neutral, independent steps and every outlined cell", () => {
+  for (const [tileCount, tileRows] of [[3, 5], [5, 3], [3, 2001], [2001, 3]]) {
+    const center = previewTileGeometry(0, 0, tileCount, tileRows);
+    assert.equal(center.column, (tileCount - 1) / 2);
+    assert.equal(center.row, (tileRows - 1) / 2);
+    assert.ok(Math.abs(center.x + center.width / 2 - 50) < 1e-10);
+    assert.ok(Math.abs(center.y + center.height / 2 - 50) < 1e-10);
+    assert.equal((previewTileLines(tileCount, tileRows).match(/M/g) ?? []).length, tileCount + tileRows - 2);
+    const simulator = createPreviewResponseSimulator();
+    simulator.configure({ tileCount, tileRows });
+    simulator.press("right"); simulator.release("right");
+    simulator.press("up"); simulator.release("up");
+    assert.equal(simulator.snapshot().x, 2 / (tileCount - 1));
+    assert.equal(simulator.snapshot().y, 2 / (tileRows - 1));
+    const tile = previewTileGeometry(simulator.snapshot().x, simulator.snapshot().y, tileCount, tileRows);
+    assert.equal(tile.column, center.column + 1); assert.equal(tile.row, center.row - 1);
+    simulator.press("left"); simulator.release("left"); simulator.press("down"); simulator.release("down");
+    assert.equal(simulator.snapshot().x, 0); assert.equal(simulator.snapshot().y, 0);
+    simulator.setPoint({ x: 1, y: -1 });
+    const corner = previewTileGeometry(simulator.snapshot().x, simulator.snapshot().y, tileCount, tileRows);
+    assert.equal(corner.column, tileCount - 1); assert.equal(corner.row, tileRows - 1);
+    simulator.destroy();
+  }
+});
+
+test("changing only rows releases repeat input; malformed dimensions keep the accepted rectangle", () => {
+  const simulator = createPreviewResponseSimulator({ requestFrame: () => 1, cancelFrame() {} });
+  simulator.configure({ tileCount: 3, tileRows: 5, holdRule: "repeatWhileHeld" });
+  simulator.press("up");
+  simulator.configure({ tileCount: 3, tileRows: 7 });
+  assert.deepEqual(simulator.snapshot().heldDirections, []);
+  assert.equal(simulator.snapshot().y, 2 / 3);
+  for (const tileRows of ["", 4, 2003]) {
+    simulator.configure({ tileCount: 5, tileRows });
+    assert.equal(simulator.snapshot().tileCount, 3); assert.equal(simulator.snapshot().tileRows, 7);
+  }
+  simulator.configure({ mode: "continuous" }); simulator.setPoint({ x: .44, y: .44 });
+  assert.equal(simulator.snapshot().x, .44); assert.equal(simulator.snapshot().y, .44);
+  simulator.configure({ mode: "stepwise", tileCount: 3, tileRows: 5 });
+  assert.equal(simulator.snapshot().x, 0); assert.equal(simulator.snapshot().y, .5);
+  simulator.destroy();
+});
 
 test("tile count accepts custom odd integers and rejects invalid intermediate input", () => {
   for (const count of [3, 5, 7, 21, 101, 2001]) assert.equal(parsePreviewTileCount(String(count)), count);

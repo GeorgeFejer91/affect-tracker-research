@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -25,9 +26,15 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
+import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
+import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
-import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount } from "./preview-tiles.js";
+import { createInlineColorPicker } from "./inline-color-picker.js";
+import { createPreviewInteraction } from "./preview-interaction.js";
+import { createPreviewLayout } from "./preview-layout.js";
+import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
+import { createSetupLayout } from "./setup-layout.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
   validateQuestionnaireAnswers,
@@ -180,7 +187,17 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
+  const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
+  const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
+    onChange: (snapshot) => {
+      const summary = root.querySelector('[data-section-summary="xr"]');
+      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Layout accepted";
+      root.researchUi?.plannerContributionChanged?.("P6");
+    },
+  }) : null;
   let openSection = "workspace";
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
@@ -189,12 +206,15 @@ function bindResearchInteractions(root, { surface }) {
   let inputPoint = { x: 0, y: 0 };
   let previewDesignPoint = { x: 0, y: 0 };
   let previewResponseSimulator = null;
+  let previewInteraction = null;
   let feedbackPreviewMode = "flubber";
   let responsePreviewMode = "stepwise";
   let previewColorAnchor = null;
   let previewColorDraft = null;
   let previewColorLabelDraft = null;
   let previewColorRefreshFrame = null;
+  const previewHaloDraft = { width: 150, steepness: 1 };
+  const previewCornerLabels = new Map(Object.entries(CORNER_LABELS));
   const previewAxisLabels = new Map(COLOR_FIELDS
     .filter(({ axisLabel }) => typeof axisLabel === "string")
     .map(({ id, axisLabel }) => [id, axisLabel]));
@@ -246,7 +266,6 @@ function bindResearchInteractions(root, { surface }) {
   let studyLanguages = DEFAULT_STUDY_LANGUAGES.map((language) => ({ ...language }));
   let languageEditorLocked = false;
   let loadedLanguageSelection = null;
-  let pendingQuestionnaireUpload = null;
   const requestedQuestionnaireFamilies = [];
   const questionnaireAuthoringReceipts = new Map();
   let plan = null;
@@ -304,6 +323,7 @@ function bindResearchInteractions(root, { surface }) {
     onSave: saveEditedQuestionnaire,
     onRemove: removeQuestionnaireFamily,
     onMove: moveQuestionnaireFamily,
+    onAdoptImportedFamily: adoptImportedQuestionnaireFamily,
   });
   const participantStates = new Map();
   const participantRecoverability = new Map();
@@ -371,6 +391,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function isValidationControl(element) {
+    if (element?.closest?.("[data-screen-layout-draft]")) return false;
     return element instanceof HTMLInputElement
       || element instanceof HTMLSelectElement
       || element instanceof HTMLTextAreaElement;
@@ -398,7 +419,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function syncControlValidation(control, { force = false } = {}) {
     // This draft has its own inline feedback and cannot block experiment Start.
-    if (control?.id === "preview-tile-count") return true;
+    if (control?.hasAttribute("data-preview-grid-input") || control?.hasAttribute("data-preview-appearance-input")) return true;
     if (!isValidationControl(control) || !control.id || !control.willValidate || control.disabled) return true;
     const inactive = control.closest("#fixed-duration-field[hidden], #jitter-durations-field[hidden]") !== null;
     const invalid = !inactive && !control.checkValidity();
@@ -452,7 +473,11 @@ function bindResearchInteractions(root, { surface }) {
 
   function setMode(nextMode) {
     mode = normalizeResearchMode(nextMode);
-    if (mode !== "setup") previewResponseSimulator?.releaseAll();
+    setupLayout.setEnabled(mode === "setup");
+    if (mode !== "setup") {
+      previewInteraction?.releaseAll();
+      previewResponseSimulator?.releaseAll();
+    }
     shell.dataset.researchMode = mode;
     root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
       panel.hidden = panel.getAttribute("data-mode-panel") !== mode;
@@ -476,9 +501,11 @@ function bindResearchInteractions(root, { surface }) {
       if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
       if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
       if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = reviewed ? "Reviewed" : "Not reviewed";
-      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed
-        ? "Reviewed for this setup session. Use the section header to open or close it."
-        : "Not reviewed yet. Confirm once to mark this section reviewed.";
+      if (id === "feedback") {
+        const navigationStatus = query("[data-feedback-nav-status]");
+        if (navigationStatus) navigationStatus.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      }
+      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed ? "Reviewed" : "Not reviewed";
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed;
         button.dataset.reviewState = reviewed ? "reviewed" : "pending";
@@ -494,7 +521,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
-    openSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    openSection = sectionId === "feedback" ? "feedback"
+      : sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
     const panelChanges = [];
     let focusTarget = null;
     root.querySelectorAll("[data-setup-section]").forEach((section) => {
@@ -514,9 +542,11 @@ function bindResearchInteractions(root, { surface }) {
         panelChanges.push([panel, isOpen]);
       }
     });
+    if (openSection === "feedback") focusTarget = query("#preview-title");
     focusTarget?.focus();
+    if (openSection === "feedback") focusTarget?.scrollIntoView({ block: "start", behavior: "auto" });
     panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
-    if (surface === "tauri" && openSection === "input") {
+    if (surface === "tauri" && openSection === "feedback") {
       queueMicrotask(() => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputBindingChanged, {
         bubbles: true,
         detail: Object.freeze({ binding: structuredClone(inputBinding) }),
@@ -540,7 +570,7 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection(null);
     renderSetupReviewState();
     announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
       : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
   }
 
@@ -551,21 +581,45 @@ function bindResearchInteractions(root, { surface }) {
     }));
   }
 
-  function openPreviewColorDialog(anchorId) {
+  function previewColorMode() {
+    return query('input[name="previewColorAnchors"]:checked')?.value === "corners" ? "corners" : "axes";
+  }
+
+  function previewLabels() {
+    return previewColorMode() === "corners" ? previewCornerLabels : previewAxisLabels;
+  }
+
+  function previewColorDefinition(anchorId) {
     const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+    return definition && previewColorMode() === "corners" && CORNER_LABELS[anchorId]
+      ? { ...definition, label: CORNER_LABELS[anchorId], axisLabel: CORNER_LABELS[anchorId] }
+      : definition;
+  }
+
+  function applyPreviewPalette(colors) {
+    for (const [id, color] of Object.entries(colors)) {
+      setInputValue(`color-${id}`, color);
+      setInputValue(`color-${id}-hex`, color);
+    }
+    schedulePlanRefresh();
+    refreshProjection();
+  }
+
+  function openPreviewColorDialog(anchorId) {
+    const definition = previewColorDefinition(anchorId);
     const dialog = query("#preview-color-dialog");
     const picker = query("#preview-color-picker");
     const hex = query("#preview-color-hex");
     const label = query("#preview-color-label");
     const title = query("#preview-color-dialog-title");
     if (!definition || !(dialog instanceof HTMLDialogElement)
-      || !(picker instanceof HTMLInputElement) || !(hex instanceof HTMLInputElement)
+      || !(picker instanceof HTMLElement) || !(hex instanceof HTMLInputElement)
       || !(label instanceof HTMLInputElement) || !definition.axisLabel) return;
     previewColorAnchor = definition.id;
     previewColorDraft = colorValues()[definition.id];
-    const currentLabel = previewAxisLabels.get(definition.id) ?? definition.axisLabel;
+    const currentLabel = previewLabels().get(definition.id) ?? definition.axisLabel;
     previewColorLabelDraft = currentLabel;
-    picker.value = previewColorDraft;
+    inlineColorPicker.setColor(previewColorDraft);
     hex.value = previewColorDraft;
     label.value = currentLabel === definition.axisLabel ? "" : currentLabel;
     label.placeholder = definition.axisLabel;
@@ -589,13 +643,13 @@ function bindResearchInteractions(root, { surface }) {
   function paintPreviewColorDraft() {
     const colors = colorValues();
     if (previewColorAnchor && previewColorDraft) colors[previewColorAnchor] = previewColorDraft;
-    const nextGradientFingerprint = [colors.up, colors.down, colors.left, colors.right].join(":");
+    const nextGradientFingerprint = [previewColorMode(), colors.up, colors.down, colors.left, colors.right].join(":");
     if (nextGradientFingerprint !== gradientFingerprint) {
       gradientFingerprint = nextGradientFingerprint;
       const canvas = query("#main-gradient-canvas");
-      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, colors);
+      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, colors, previewColorMode());
     }
-    setupPreview.update({ colors });
+    setupPreview.update({ colors, colorAnchorMode: previewColorMode() });
   }
 
   function schedulePreviewColorPaint() {
@@ -613,7 +667,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function setPreviewColorLabelDraft(nextValue) {
-    const definition = COLOR_FIELDS.find(({ id }) => id === previewColorAnchor);
+    const definition = previewColorDefinition(previewColorAnchor);
     if (!definition?.axisLabel) return;
     const normalized = String(nextValue ?? "").trim().replace(/\s+/gu, " ");
     previewColorLabelDraft = normalized || definition.axisLabel;
@@ -630,13 +684,12 @@ function bindResearchInteractions(root, { surface }) {
   function setPreviewColorDraft(nextValue, { synchronizeHex = false } = {}) {
     const normalized = String(nextValue ?? "").trim().toLowerCase();
     const valid = /^#[0-9a-f]{6}$/u.test(normalized);
-    const picker = query("#preview-color-picker");
     const hex = query("#preview-color-hex");
     const status = query("#preview-color-status");
     const error = query("#preview-color-error");
     const apply = query("#preview-color-apply");
     previewColorDraft = valid ? normalized : null;
-    if (valid && picker instanceof HTMLInputElement) picker.value = normalized;
+    if (valid) inlineColorPicker.setColor(normalized);
     if (synchronizeHex && hex instanceof HTMLInputElement) hex.value = normalized;
     if (status) {
       status.textContent = valid
@@ -669,12 +722,12 @@ function bindResearchInteractions(root, { surface }) {
     previewColorDraft = null;
     previewColorLabelDraft = null;
     if (apply && anchorId && draft) {
-      const definition = COLOR_FIELDS.find(({ id }) => id === anchorId);
+      const definition = previewColorDefinition(anchorId);
       const axisLabel = labelDraft || definition?.axisLabel;
       setInputValue(`color-${anchorId}`, draft);
       setInputValue(`color-${anchorId}-hex`, draft);
       if (axisLabel) {
-        previewAxisLabels.set(anchorId, axisLabel);
+        previewLabels().set(anchorId, axisLabel);
         renderPreviewAxisLabel(anchorId, axisLabel);
       }
       schedulePlanRefresh();
@@ -686,23 +739,27 @@ function bindResearchInteractions(root, { surface }) {
 
   function isPreviewOnlyControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-halo-size", "preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-halo-size", "preview-halo-gradient", "preview-halo-steepness", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing" || target.name === "previewColorAnchors"
     );
   }
 
   function isPreviewResponseControl(target) {
     return target instanceof HTMLInputElement && (
-      ["preview-tile-count", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
-      || target.name === "previewHoldRule"
+      ["preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
+      || target.name === "previewHoldRule" || target.name === "previewGridSizing"
     );
   }
 
   function configurePreviewResponseSimulator() {
+    const dimensions = parsePreviewGrid({
+      mode: query('input[name="previewGridSizing"]:checked')?.value,
+      steps: value("preview-tile-count"), columns: value("preview-tile-columns"), rows: value("preview-tile-rows"),
+    });
     previewResponseSimulator?.configure({
       mode: responsePreviewMode,
       fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
-      tileCount: value("preview-tile-count"),
+      ...(dimensions ?? {}),
       holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
       repeatDelayMs: numberValue("preview-repeat-delay", 500),
     });
@@ -773,13 +830,16 @@ function bindResearchInteractions(root, { surface }) {
         displayMode: feedbackPreviewMode,
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
+        tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
+        colorAnchorMode: previewColorMode(),
       } : {}),
       colors,
       flubber: {
         showOutline: checked("flubber-outline-visible"),
         outlineThickness: numberValue("flubber-outline-thickness", 2),
         showHalo: checked("flubber-halo-visible"),
-        ...(design ? { haloSizePercent: numberValue("preview-halo-size", 150) } : {}),
+        ...(design ? { haloSizePercent: previewHaloDraft.width,
+          haloGradient: checked("preview-halo-gradient"), haloSteepness: previewHaloDraft.steepness } : {}),
       },
       grid: {
         lineThickness: numberValue("grid-line-thickness", 1),
@@ -808,7 +868,6 @@ function bindResearchInteractions(root, { surface }) {
       ["grid-line-thickness", (v) => v.toFixed(2)],
       ["grid-outline-thickness", (v) => v.toFixed(2)],
       ["grid-cursor-size", (v) => v.toFixed(1)],
-      ["preview-halo-size", (v) => `${Math.round(v)}%`],
       ["preview-full-span-duration", formatDuration],
       ["preview-repeat-delay", formatDuration],
     ];
@@ -822,14 +881,53 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderPreviewDesignControls() {
-    const tileInput = query("#preview-tile-count");
+    previewInteraction?.sync();
+    const map = query(".preview-affect-map");
+    if (map) map.dataset.colorAnchorMode = previewColorMode();
+    for (const [id, label] of previewLabels()) renderPreviewAxisLabel(id, label);
+    for (const [id, key, minimum, maximum] of [
+      ["preview-halo-size", "width", 0, Infinity],
+      ["preview-halo-steepness", "steepness", 0.1, 10],
+    ]) {
+      const input = query(`#${id}`);
+      if (!(input instanceof HTMLInputElement)) continue;
+      const parsed = parsePreviewNumber(input.value, minimum);
+      const valid = parsed !== null && parsed <= maximum;
+      input.setAttribute("aria-invalid", String(!valid));
+      if (valid) previewHaloDraft[key] = parsed;
+      if (key === "steepness") input.disabled = !checked("preview-halo-gradient");
+    }
+    const haloHelp = query("#preview-halo-help");
+    if (haloHelp) haloHelp.textContent = query("#preview-halo-size")?.getAttribute("aria-invalid") === "true"
+      ? `Enter a finite number at least 0. Keeping ${previewHaloDraft.width}%.`
+      : previewHaloDraft.width > MAX_RENDERED_HALO_PERCENT
+        ? `Requested ${previewHaloDraft.width}%; rendered at ${MAX_RENDERED_HALO_PERCENT}% for bounded drawing.`
+        : "Preview-only width. Follows the outline; 0 hides the halo.";
+    const steepnessHelp = query("#preview-halo-steepness-help");
+    if (steepnessHelp) steepnessHelp.textContent = query("#preview-halo-steepness")?.getAttribute("aria-invalid") === "true"
+      ? `Enter 0.1–10. Keeping ${previewHaloDraft.steepness}.`
+      : "1 = normal; higher values fade faster. Does not change halo width.";
+    const custom = query('input[name="previewGridSizing"]:checked')?.value === "custom";
     const tileHelp = query("#preview-tile-count-help");
     const tileCount = previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT;
-    const validTileCount = parsePreviewTileCount(tileInput?.value) !== null;
-    tileInput?.setAttribute("aria-invalid", String(!validTileCount));
-    if (tileHelp) tileHelp.textContent = validTileCount
-      ? `Odd number, 3–2001. ${tileCount} × ${tileCount} tiles: ${(tileCount - 1) / 2} steps each side of zero.`
-      : `Enter an odd whole number from 3 to 2001. Preview remains at ${tileCount} × ${tileCount}.`;
+    const tileRows = previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT;
+    let valid = true;
+    for (const id of ["preview-tile-count", "preview-tile-columns", "preview-tile-rows"]) {
+      const input = query(`#${id}`);
+      if (!(input instanceof HTMLInputElement)) continue;
+      const active = id === "preview-tile-count" ? !custom : custom;
+      const parsed = id === "preview-tile-count" ? parsePreviewSteps(input.value) : parsePreviewTileCount(input.value);
+      input.disabled = !active;
+      input.setAttribute("aria-invalid", String(active && parsed === null));
+      if (active && parsed === null) valid = false;
+    }
+    const squareFields = query("[data-preview-grid-square]");
+    const customFields = query("[data-preview-grid-custom]");
+    if (squareFields) squareFields.hidden = custom;
+    if (customFields) customFields.hidden = !custom;
+    if (tileHelp) tileHelp.textContent = valid
+      ? `${tileCount} × ${tileRows} tiles. ${(tileCount - 1) / 2} steps left/right, ${(tileRows - 1) / 2} up/down, plus the central zero tile. ${custom ? "Odd dimensions, 3–2001." : "1 creates 3 × 3; 2 creates 5 × 5. Whole numbers, 1–1000."}`
+      : `Enter ${custom ? "odd whole dimensions from 3 to 2001" : "a whole step count from 1 to 1000"}. Preview remains at ${tileCount} × ${tileRows}.`;
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
@@ -853,18 +951,18 @@ function bindResearchInteractions(root, { surface }) {
     const simulatorHelp = query("#preview-response-simulator-help");
     if (simulatorHelp) {
       simulatorHelp.textContent = responsePreviewMode === "continuous"
-        ? "Focus the map and hold the arrow keys to preview full-span travel time. Opposing directions cancel."
-        : "Focus the map and use the arrow keys to move one outlined tile at a time.";
+        ? "Click the map to set a point. Focus the map or Flubber to use your configured controls or arrow keys; hold to preview travel time."
+        : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
   }
 
   function projectDesignPreview() {
     const projected = previewState({ design: true });
-    const nextGradientFingerprint = [projected.colors.up, projected.colors.down, projected.colors.left, projected.colors.right].join(":");
+    const nextGradientFingerprint = [projected.colorAnchorMode, projected.colors.up, projected.colors.down, projected.colors.left, projected.colors.right].join(":");
     if (nextGradientFingerprint !== gradientFingerprint) {
       gradientFingerprint = nextGradientFingerprint;
       const canvas = query("#main-gradient-canvas");
-      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors);
+      if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors, projected.colorAnchorMode);
     }
     setupPreview.update(projected);
   }
@@ -927,7 +1025,7 @@ function bindResearchInteractions(root, { surface }) {
       : "N/A for this continuous / absolute input.";
     const previewInput = query("#preview-input-source");
     if (previewInput) previewInput.textContent = preset.label;
-    const summary = query('[data-section-summary="input"]');
+    const summary = query('[data-section-summary="feedback"]');
     if (summary) summary.textContent = preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
   }
 
@@ -1701,16 +1799,14 @@ function bindResearchInteractions(root, { surface }) {
         : "All blocking checks pass. Start will freeze this attempt."
       : `${blocking.length} blocking preflight item${blocking.length === 1 ? "" : "s"} remain.`;
     const pass = (id) => items.some((item) => item.id === id && item.result !== "block");
-    const readySections = [
-      pass("workspace"),
-      pass("questionnaires") || selectedPendingFinalization(),
-      pass("stimuli") && pass("plan"),
-      pass("experiment"),
-      pass("input"),
-      Boolean(protocolSettingsSnapshot) || selectedPendingFinalization(),
-      pass("timing") && pass("lsl") && (surface !== "tauri" || pass("playback")),
-      items.every(({ result }) => result !== "block"),
-    ].filter(Boolean).length;
+    const readinessBySection = {
+      workspace: pass("workspace") && pass("experiment"),
+      questionnaires: pass("questionnaires") || selectedPendingFinalization(),
+      stimuli: pass("stimuli") && pass("plan"),
+      feedback: pass("input") && (Boolean(protocolSettingsSnapshot) || selectedPendingFinalization()),
+      review: items.every(({ result }) => result !== "block"),
+    };
+    const readySections = SETUP_SECTIONS.filter(({ id }) => readinessBySection[id] === true).length;
     readySetupSectionCount = readySections;
     renderSetupReviewState();
   }
@@ -1806,22 +1902,6 @@ function bindResearchInteractions(root, { surface }) {
       });
   }
 
-  function questionnaireModuleGroups() {
-    const groups = [];
-    const byFamily = new Map();
-    for (const module of questionnaireModules) {
-      const definition = questionnaireDefinition(module.questionnaireId);
-      const familyId = definition ? familyIdForDefinition(definition) : module.questionnaireId;
-      let group = byFamily.get(familyId);
-      if (!group) {
-        group = { familyId, modules: [] };
-        byFamily.set(familyId, group);
-        groups.push(group);
-      }
-      group.modules.push(module);
-    }
-    return groups;
-  }
 
   function renderStudyLanguages() {
     const list = query("#study-language-list");
@@ -1873,70 +1953,9 @@ function bindResearchInteractions(root, { surface }) {
 
   function renderQuestionnaireCoverage() {
     const coverage = questionnaireLanguageCoverage();
-    const head = query("#questionnaire-coverage-head");
-    const body = query("#questionnaire-coverage-body");
     const status = query("#questionnaire-coverage-status");
-    if (head instanceof HTMLElement) {
-      const row = document.createElement("tr");
-      for (const label of ["Module", ...studyLanguages.map(({ label }) => label), "Actions"]) {
-        const cell = document.createElement("th");
-        cell.textContent = label;
-        row.append(cell);
-      }
-      head.replaceChildren(row);
-    }
-    if (body instanceof HTMLElement) {
-      if (coverage.familyRows.length === 0) {
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-        cell.colSpan = studyLanguages.length + 2;
-        cell.className = "empty-state";
-        cell.textContent = "Include a module to check its language assets.";
-        row.append(cell);
-        body.replaceChildren(row);
-      } else {
-        body.replaceChildren(...coverage.familyRows.map((family) => {
-          const row = document.createElement("tr");
-          row.dataset.questionnaireCoverageFamily = family.familyId;
-          const identity = document.createElement("th");
-          identity.scope = "row";
-          const title = document.createElement("strong");
-          title.textContent = questionnaireFamilyLabel(family.familyId);
-          const detail = document.createElement("small");
-          detail.textContent = family.complete ? "All selected languages ready" : "Translation required";
-          identity.append(title, detail);
-          row.append(identity);
-          for (const language of family.languages) {
-            const cell = document.createElement("td");
-            const state = document.createElement("span");
-            state.className = "asset-state";
-            state.dataset.state = language.covered ? "ready" : "missing";
-            state.textContent = language.covered ? "Ready" : "Missing";
-            cell.append(state);
-            if (!language.covered && !languageEditorLocked) {
-              const upload = document.createElement("button");
-              upload.type = "button";
-              upload.textContent = "Upload file";
-              upload.dataset.questionnaireUploadFamily = family.familyId;
-              upload.dataset.questionnaireUploadLanguage = language.languageTag;
-              upload.setAttribute("aria-label", `Upload ${questionnaireFamilyLabel(family.familyId)} in ${language.label}`);
-              cell.append(upload);
-            }
-            row.append(cell);
-          }
-          const actions = document.createElement("td");
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.textContent = "Remove module";
-          remove.dataset.questionnaireRemoveFamily = family.familyId;
-          remove.disabled = languageEditorLocked;
-          actions.append(remove);
-          row.append(actions);
-          return row;
-        }));
-      }
-    }
     if (status) {
+      status.hidden = coverage.familyRows.length === 0;
       status.dataset.state = coverage.complete ? "ready" : "error";
       status.textContent = coverage.familyRows.length === 0
         ? "No questionnaire modules included."
@@ -1944,183 +1963,8 @@ function bindResearchInteractions(root, { surface }) {
           ? `${coverage.familyRows.length} module${coverage.familyRows.length === 1 ? "" : "s"} complete in every selected language.`
           : `${coverage.missing.length} required language asset${coverage.missing.length === 1 ? " is" : "s are"} missing.`;
     }
-    root.querySelectorAll("[data-questionnaire-preset]").forEach((button) => {
-      if (!(button instanceof HTMLButtonElement)) return;
-      const included = familyIsIncluded(button.dataset.questionnairePreset);
-      button.textContent = `${included ? "Added" : "Add"} ${questionnaireFamilyLabel(button.dataset.questionnairePreset)}`;
-      button.disabled = languageEditorLocked || included;
-    });
   }
 
-  function renderQuestionnaireDefinitions() {
-    const container = query("#questionnaire-definition-list");
-    if (!(container instanceof HTMLElement)) return;
-    if (questionnaireDefinitions.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "empty-state";
-      empty.textContent = "No questionnaire definitions added.";
-      container.replaceChildren(empty);
-      return;
-    }
-    container.replaceChildren(...questionnaireDefinitions.map((definition) => {
-      const article = document.createElement("article");
-      article.className = "questionnaire-definition";
-      article.dataset.questionnaireId = definition.questionnaireId;
-      const heading = document.createElement("div");
-      heading.className = "questionnaire-definition-heading";
-      const identity = document.createElement("div");
-      const title = document.createElement("strong");
-      title.textContent = definition.title;
-      const metadata = document.createElement("p");
-      const language = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === definition.language);
-      const receipt = questionnaireAuthoringReceipts.get(definition.questionnaireId);
-      const format = receipt?.original?.formatVersion
-        ?.replace("questionnaire-", "")
-        .replace("-v1", "")
-        .toUpperCase();
-      metadata.textContent = `${definition.items.length} items · ${language?.label ?? definition.language}${format ? ` · ${format} upload` : ""}`;
-      identity.append(title, metadata);
-      const actions = document.createElement("div");
-      actions.className = "button-row";
-      for (const [label, action] of [["Preview", "preview"], ["Add to sequence", "add-module"], ["Remove", "remove-definition"]]) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = label;
-        button.dataset.questionnaireAction = action;
-        button.dataset.questionnaireId = definition.questionnaireId;
-        if (action === "remove-definition") {
-          button.disabled = questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
-          button.title = button.disabled ? "Remove its protocol modules first." : "Remove this unused definition.";
-        }
-        actions.append(button);
-      }
-      heading.append(identity, actions);
-      const readiness = document.createElement("p");
-      readiness.className = "questionnaire-metadata";
-      readiness.textContent = "Validated and ready for language coverage.";
-      article.append(heading, readiness);
-      return article;
-    }));
-  }
-
-  function renderQuestionnaireModules() {
-    const list = query("#questionnaire-module-list");
-    if (!(list instanceof HTMLElement)) return;
-    if (questionnaireModules.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "empty-state";
-      empty.textContent = "Add a validated definition to place it in the protocol.";
-      list.replaceChildren(empty);
-      return;
-    }
-    const groups = questionnaireModuleGroups();
-    list.replaceChildren(...groups.map((group, index) => {
-      const module = group.modules[0];
-      const definition = questionnaireDefinition(module.questionnaireId);
-      const item = document.createElement("li");
-      item.className = "questionnaire-module";
-      item.dataset.moduleId = module.moduleId;
-      item.dataset.questionnaireFamily = group.familyId;
-      const heading = document.createElement("div");
-      heading.className = "questionnaire-module-heading";
-      const identity = document.createElement("div");
-      const title = document.createElement("strong");
-      title.textContent = questionnaireFamilyLabel(group.familyId);
-      const metadata = document.createElement("p");
-      const languages = group.modules.map((candidate) => questionnaireDefinition(candidate.questionnaireId)?.language)
-        .filter(Boolean)
-        .map((tag) => STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === tag)?.label ?? tag);
-      metadata.textContent = `Sequence ${index + 1} · ${languages.join(" + ")} asset${languages.length === 1 ? "" : "s"}`;
-      identity.append(title, metadata);
-      const order = document.createElement("div");
-      order.className = "button-row";
-      for (const [label, direction] of [["Move up", "up"], ["Move down", "down"]]) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = label;
-        button.dataset.questionnaireMoveFamily = direction;
-        button.dataset.questionnaireFamily = group.familyId;
-        button.disabled = direction === "up" ? index === 0 : index === groups.length - 1;
-        order.append(button);
-      }
-      heading.append(identity, order);
-
-      const controls = document.createElement("div");
-      controls.className = "questionnaire-module-controls";
-      const placementLabel = document.createElement("label");
-      placementLabel.className = "field";
-      const placementText = document.createElement("span");
-      placementText.textContent = "Placement";
-      const placementSelect = document.createElement("select");
-      placementSelect.dataset.questionnairePlacement = module.moduleId;
-      for (const [value, label] of [["beforeSession", "Before session"], ["afterSession", "After session"], ["beforeBlock", "Before block"], ["afterBlock", "After block"], ["afterStimulus", "After a video"]]) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
-        option.selected = module.placement.kind === value;
-        placementSelect.append(option);
-      }
-      placementLabel.append(placementText, placementSelect);
-
-      const poolLabel = document.createElement("label");
-      poolLabel.className = "field";
-      const poolText = document.createElement("span");
-      poolText.textContent = "Block";
-      const poolSelect = document.createElement("select");
-      poolSelect.dataset.questionnaireBlock = module.moduleId;
-      const usesBlock = module.placement.kind === "beforeBlock" || module.placement.kind === "afterBlock";
-      poolSelect.disabled = !usesBlock;
-      for (const block of experimentDocument?.definition.blocks ?? []) {
-        const option = document.createElement("option");
-        option.value = block.blockId;
-        option.textContent = block.label;
-        option.selected = module.placement.blockId === block.blockId;
-        poolSelect.append(option);
-      }
-      poolLabel.append(poolText, poolSelect);
-
-      const stimulusLabel = document.createElement("label");
-      stimulusLabel.className = "field";
-      const stimulusText = document.createElement("span");
-      stimulusText.textContent = "Video";
-      const stimulusSelect = document.createElement("select");
-      stimulusSelect.dataset.questionnaireStimulus = module.moduleId;
-      const usesStimulus = module.placement.kind === "afterStimulus";
-      stimulusSelect.disabled = !usesStimulus;
-      for (const stimulus of experimentDocument?.definition.stimuli ?? []) {
-        const option = document.createElement("option");
-        option.value = stimulus.stimulusId;
-        option.textContent = stimulus.title;
-        option.selected = module.placement.stimulusId === stimulus.stimulusId;
-        stimulusSelect.append(option);
-      }
-      stimulusLabel.append(stimulusText, stimulusSelect);
-
-      const isiLabel = document.createElement("label");
-      isiLabel.className = "field";
-      const isiText = document.createElement("span");
-      isiText.textContent = "Relative to ISI";
-      const isiSelect = document.createElement("select");
-      isiSelect.dataset.questionnaireIsi = module.moduleId;
-      isiSelect.disabled = !usesStimulus;
-      for (const [value, label] of [["before", "Before ISI"], ["after", "After ISI"]]) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
-        option.selected = module.placement.relativeToIsi === value;
-        isiSelect.append(option);
-      }
-      isiLabel.append(isiText, isiSelect);
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "Remove module";
-      remove.dataset.questionnaireRemoveFamily = group.familyId;
-      controls.append(placementLabel, poolLabel, stimulusLabel, isiLabel, remove);
-      item.append(heading, controls);
-      return item;
-    }));
-  }
 
   function renderProtocolPreview() {
     const hash = query("#protocol-plan-hash");
@@ -2318,6 +2162,19 @@ function bindResearchInteractions(root, { surface }) {
     schedulePlanRefresh();
   }
 
+  function adoptImportedQuestionnaireFamily(previousId, familyId) {
+    if (languageEditorLocked || mode !== "setup" || !/^questionnaire-\d+$/u.test(previousId)
+      || requestedQuestionnaireFamilies.includes(familyId)
+      || questionnaireDefinitions.some(d => familyIdForDefinition(d) === previousId)) return false;
+    const index = requestedQuestionnaireFamilies.indexOf(previousId);
+    if (index < 0) return false;
+    // The editor verifies every variant is still pristine before this rename.
+    // Preserve imported scientific identities rather than rewriting the source.
+    requestedQuestionnaireFamilies[index] = familyId;
+    renderQuestionnaires();
+    return true;
+  }
+
   function moveQuestionnaireFamily(familyId, direction) {
     if (languageEditorLocked) return;
     const index = requestedQuestionnaireFamilies.indexOf(familyId);
@@ -2337,80 +2194,6 @@ function bindResearchInteractions(root, { surface }) {
     schedulePlanRefresh();
   }
 
-  async function importQuestionnaireBytes(input, {
-    sourceKind = "researcherCsv",
-    logicalName = "questionnaire.csv",
-    sourceDocumentSha256 = null,
-    addModule = true,
-    expectedFamilyId = null,
-    expectedLanguageTag = null,
-  } = {}) {
-    questionnaireImportStatus(`Validating ${logicalName}…`);
-    const imported = await importQuestionnaireAuthoring(input, {
-      sourceKind,
-      logicalName,
-      sourceDocumentSha256,
-    });
-    const familyId = familyIdForDefinition(imported.definition);
-    if (expectedFamilyId && familyId !== expectedFamilyId) {
-      throw new TypeError(
-        `This slot expects ${questionnaireFamilyLabel(expectedFamilyId)}, but the file identifies the ${questionnaireFamilyLabel(familyId)} module.`,
-      );
-    }
-    if (expectedLanguageTag && imported.definition.language !== expectedLanguageTag) {
-      const expectedLanguage = STUDY_LANGUAGE_OPTIONS.find(({ languageTag }) => languageTag === expectedLanguageTag)?.label
-        ?? expectedLanguageTag;
-      throw new TypeError(
-        `This slot expects ${expectedLanguage} (${expectedLanguageTag}), but the file declares ${imported.definition.language}.`,
-      );
-    }
-    if (imported.definition.language === "und") {
-      throw new TypeError("Questionnaire assets must declare the exact participant language; und cannot satisfy language coverage.");
-    }
-    if (!studyLanguages.some(({ languageTag }) => languageTag === imported.definition.language)) {
-      throw new TypeError(
-        `Add ${imported.definition.language} to Study languages before uploading this questionnaire asset.`,
-      );
-    }
-    const existing = questionnaireDefinition(imported.definition.questionnaireId);
-    if (existing && existing.definitionSha256 !== imported.definition.definitionSha256) {
-      throw new TypeError(
-        `${imported.definition.questionnaireId} is already loaded with a different definition hash. Remove its modules and definition before replacing it.`,
-      );
-    }
-    await storeQuestionnaireSource(input, imported.definition, imported.authoringReceipt);
-    if (!existing) questionnaireDefinitions.push(structuredClone(imported.definition));
-    const definition = existing ?? imported.definition;
-    questionnaireAuthoringReceipts.set(definition.questionnaireId, imported.authoringReceipt);
-    requestQuestionnaireFamily(familyId);
-    if (addModule && !questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
-      addQuestionnaireModule(definition);
-    }
-    else {
-      renderQuestionnaires();
-      schedulePlanRefresh();
-    }
-    questionnaireImportStatus(
-      `${definition.title} · ${definition.language} is ready in its module asset folder.`,
-      "ready",
-    );
-    if (existing) announce(`${definition.title} was already validated; its source asset was verified without creating a duplicate.`);
-    return definition;
-  }
-
-  async function importBundledQuestionnaire(assetId, { familyId = null, languageTag = null } = {}) {
-    const bundled = BUNDLED_QUESTIONNAIRES[assetId];
-    if (!bundled) throw new TypeError(`Bundled questionnaire asset ${assetId} is unavailable.`);
-    const response = await fetch(bundled.url);
-    if (!response.ok) throw new Error(`Bundled questionnaire could not be read (${response.status}).`);
-    return importQuestionnaireBytes(await response.arrayBuffer(), {
-      sourceKind: "bundled",
-      logicalName: bundled.logicalName,
-      sourceDocumentSha256: assetId === "maia-2-de" ? SPECIFICATION_SOURCE_SHA256 : null,
-      expectedFamilyId: familyId,
-      expectedLanguageTag: languageTag,
-    });
-  }
 
   function renderPrebuiltQuestionnaires() {
     const list = query("#questionnaire-prebuilt-list");
@@ -2544,84 +2327,6 @@ function bindResearchInteractions(root, { surface }) {
     announce(`${removed.label} and its questionnaire variants removed from this setup. Stored source files were retained in the workspace.`);
   }
 
-  function requestQuestionnaireUpload({ familyId = null, languageTag = null } = {}) {
-    if (languageEditorLocked) {
-      announce("Questionnaire assets are frozen by the loaded project package.");
-      return;
-    }
-    pendingQuestionnaireUpload = familyId ? { familyId, languageTag } : null;
-    query("#questionnaire-file-input")?.click();
-  }
-
-  function filterQuestionnaireInspiration() {
-    const search = value("questionnaire-inspiration-search").trim().toLowerCase();
-    const domain = value("questionnaire-inspiration-domain", "all");
-    let visible = 0;
-    root.querySelectorAll("[data-inspiration-entry]").forEach((entry) => {
-      if (!(entry instanceof HTMLElement)) return;
-      const matches = (domain === "all" || entry.dataset.inspirationDomain === domain)
-        && (!search || entry.dataset.inspirationSearch?.includes(search));
-      entry.hidden = !matches;
-      if (matches) visible += 1;
-    });
-    const empty = query("#questionnaire-inspiration-empty");
-    if (empty instanceof HTMLElement) empty.hidden = visible > 0;
-  }
-
-  function openQuestionnaireInspiration() {
-    filterQuestionnaireInspiration();
-    const dialog = query("#questionnaire-inspiration-dialog");
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
-  }
-
-  function showQuestionnairePreview(definition) {
-    const title = query("#questionnaire-preview-title");
-    const instructions = query("#questionnaire-preview-instructions");
-    const attribution = query("#questionnaire-preview-attribution");
-    const items = query("#questionnaire-preview-items");
-    if (title) title.textContent = definition.title;
-    if (instructions) instructions.textContent = definition.instructions;
-    if (attribution) attribution.textContent = definition.attribution;
-    if (items instanceof HTMLElement) {
-      items.replaceChildren(...definition.items.map((item) => {
-        const article = document.createElement("article");
-        article.className = "questionnaire-preview-item";
-        const heading = document.createElement("h3");
-        heading.textContent = `${item.order}. ${item.prompt}`;
-        const options = document.createElement("p");
-        options.className = "questionnaire-preview-options";
-        options.textContent = item.options.map(({ label }) => label).join(" · ");
-        article.append(heading, options);
-        return article;
-      }));
-    }
-    const dialog = query("#questionnaire-preview-dialog");
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
-  }
-
-  function updateQuestionnaireModule(moduleId, placement) {
-    const index = questionnaireModules.findIndex((module) => module.moduleId === moduleId);
-    if (index < 0) return;
-    const current = questionnaireModules[index];
-    const definition = questionnaireDefinition(current.questionnaireId);
-    if (!definition) throw new TypeError(`Questionnaire module ${moduleId} has no definition.`);
-    const familyId = familyIdForDefinition(definition);
-    for (let candidateIndex = 0; candidateIndex < questionnaireModules.length; candidateIndex += 1) {
-      const candidate = questionnaireModules[candidateIndex];
-      const candidateDefinition = questionnaireDefinition(candidate.questionnaireId);
-      if (!candidateDefinition || familyIdForDefinition(candidateDefinition) !== familyId) continue;
-      questionnaireModules[candidateIndex] = structuredClone(validateQuestionnaireModuleV2({
-        ...candidate,
-        placement,
-      }, {
-        definition: candidateDefinition,
-        blockIds: protocolBlockIds(),
-        stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
-      }));
-    }
-    renderQuestionnaires();
-    schedulePlanRefresh();
-  }
 
   function renderReview() {
     renderNameCode();
@@ -3261,8 +2966,8 @@ function bindResearchInteractions(root, { surface }) {
         announce("Fixed package asset rescan complete.");
         return;
       }
-      if (status) status.textContent = "Scanning stimuli/ recursively…";
-      const catalogue = await workspace.rescanVideos();
+      if (status) status.textContent = "Scanning fixed assets/stimuli/ video library recursively…";
+      const catalogue = await workspace.rescanPackageVideos();
       const seenLocations = new Set();
       for (const entry of catalogue) {
         const location = `stimuli/${entry.relativePath}`;
@@ -3282,7 +2987,7 @@ function bindResearchInteractions(root, { surface }) {
       schedulePlanRefresh();
       if (status) {
         status.dataset.state = "ready";
-        status.textContent = `Rescan complete. ${catalogue.length} complete video file${catalogue.length === 1 ? "" : "s"} found.`;
+        status.textContent = `Rescan complete. ${catalogue.length} complete video file${catalogue.length === 1 ? "" : "s"} found under assets/stimuli/.`;
       }
       announce("Workspace rescan complete.");
     } catch (error) {
@@ -4313,6 +4018,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   const previewColorDialog = query("#preview-color-dialog");
+  const inlineColorPicker = createInlineColorPicker(query("#preview-color-picker"), {
+    onChange: hex => setPreviewColorDraft(hex, { synchronizeHex: true }),
+  });
   if (previewColorDialog instanceof HTMLDialogElement) {
     previewColorDialog.addEventListener("close", () => {
       if (!previewColorAnchor) return;
@@ -4478,36 +4186,16 @@ function bindResearchInteractions(root, { surface }) {
   if (inputTestGrid instanceof HTMLElement) inputController.attach(inputTestGrid);
 
   const previewControlSurface = query(".preview-control-surface");
-  const previewDirectionByKey = Object.freeze({
-    ArrowLeft: "left",
-    ArrowRight: "right",
-    ArrowUp: "up",
-    ArrowDown: "down",
+  previewInteraction = createPreviewInteraction({
+    map: previewControlSurface, stage: query(".preview-primary-stage"),
+    simulator: previewResponseSimulator, getBinding: () => inputBinding,
+    isEnabled: () => mode === "setup",
+    onAvailability: message => {
+      const output = query("[data-preview-input-availability]");
+      if (output && output.textContent !== message) output.textContent = message;
+    },
   });
-  const previewSimulatorHandlers = {
-    keydown(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
-      previewResponseSimulator?.press(direction);
-      event.preventDefault();
-    },
-    keyup(event) {
-      const direction = previewDirectionByKey[event.key];
-      if (!direction) return;
-      previewResponseSimulator?.release(direction);
-      event.preventDefault();
-    },
-    blur() {
-      previewResponseSimulator?.releaseAll();
-    },
-  };
-  if (previewControlSurface instanceof HTMLElement) {
-    for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-      previewControlSurface.addEventListener(type, handler);
-    }
-  }
-  const releasePreviewResponse = () => previewResponseSimulator?.releaseAll();
-  window.addEventListener("blur", releasePreviewResponse);
+  const previewLayout = createPreviewLayout(query(".preview-pane"));
 
   const runInputHandlers = {
     keydown(event) {
@@ -4594,9 +4282,14 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]:not(#preview-tile-count)');
+      const invalid = [...root.querySelectorAll('[aria-invalid="true"]:not([data-preview-grid-input]):not([data-preview-appearance-input])')]
+        .find(control => !control.closest("[data-screen-layout-draft]"));
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
+      // P5 is persistent; reveal nested disclosures before focusing a saved field.
+      for (let parent = invalid?.parentElement; parent && parent !== root; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+      }
       const focusTarget = isValidationControl(invalid)
         ? invalid
         : invalid?.querySelector?.("input, select, textarea, button");
@@ -4753,8 +4446,14 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target.id === "preview-response-reset") {
       previewResponseSimulator?.reset();
-      announce("The response design preview returned to neutral.");
+      applyPreviewPalette(Object.fromEntries([...PREVIEW_ANCHORS, "idle"].map((id) => [id, PREVIEW_GREY])));
+      announce("All color anchors reset to grey and the preview returned to neutral.");
       query(".preview-control-surface")?.focus();
+      return;
+    }
+    if (target.id === "preview-recolor") {
+      applyPreviewPalette(randomPreviewAnchors());
+      announce("Each color anchor was assigned a random color.");
       return;
     }
     if (target.dataset.modeButton && target.dataset.modeButton !== mode) {
@@ -4819,55 +4518,11 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "study-language-add-button") addStudyLanguage();
     if (target.dataset.studyLanguageRemove) removeStudyLanguage(target.dataset.studyLanguageRemove);
     if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
-    if (target.id === "questionnaire-import") requestQuestionnaireUpload();
-    if (target.dataset.questionnaireUploadFamily) {
-      requestQuestionnaireUpload({
-        familyId: target.dataset.questionnaireUploadFamily,
-        languageTag: target.dataset.questionnaireUploadLanguage,
-      });
-    }
     if (target.id === "questionnaire-prebuilt-open") {
       renderPrebuiltQuestionnaires(); query("#questionnaire-prebuilt-dialog").showModal();
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
-    if (target.id === "questionnaire-inspiration") openQuestionnaireInspiration();
-    if (target.id === "questionnaire-inspiration-close") closeDialog("questionnaire-inspiration-dialog");
-    if (target.dataset.questionnaireInspirationPrepare) {
-      closeDialog("questionnaire-inspiration-dialog");
-      void prepareQuestionnairePreset(target.dataset.questionnaireInspirationPrepare);
-    }
-    if (target.dataset.questionnaireRemoveFamily) removeQuestionnaireFamily(target.dataset.questionnaireRemoveFamily);
-    if (target.dataset.bundledQuestionnaire) {
-      void importBundledQuestionnaire(target.dataset.bundledQuestionnaire)
-        .catch((error) => announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`));
-    }
-    if (target.dataset.questionnaireAction) {
-      const definition = questionnaireDefinition(target.dataset.questionnaireId);
-      if (definition && target.dataset.questionnaireAction === "preview") showQuestionnairePreview(definition);
-      if (definition && target.dataset.questionnaireAction === "add-module") addQuestionnaireModule(definition);
-      if (definition && target.dataset.questionnaireAction === "remove-definition") {
-        const index = questionnaireDefinitions.findIndex(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
-        if (index >= 0 && !questionnaireModules.some(({ questionnaireId }) => questionnaireId === definition.questionnaireId)) {
-          questionnaireDefinitions.splice(index, 1);
-          renderQuestionnaires();
-          schedulePlanRefresh();
-          announce(`${definition.title} removed from the validated definition library.`);
-        }
-      }
-    }
-    if (target.dataset.questionnaireMoveFamily) {
-      const groups = questionnaireModuleGroups();
-      const index = groups.findIndex(({ familyId }) => familyId === target.dataset.questionnaireFamily);
-      const nextIndex = target.dataset.questionnaireMoveFamily === "up" ? index - 1 : index + 1;
-      if (index >= 0 && nextIndex >= 0 && nextIndex < groups.length) {
-        [groups[index], groups[nextIndex]] = [groups[nextIndex], groups[index]];
-        questionnaireModules.splice(0, questionnaireModules.length, ...groups.flatMap(({ modules }) => modules));
-        renderQuestionnaires();
-        schedulePlanRefresh();
-      }
-    }
-    if (target.id === "questionnaire-preview-close") closeDialog("questionnaire-preview-dialog");
     if (target.id === "condition-add") {
       const index = pools.length + 1;
       pools.push({ id: `condition-${index}-${Date.now()}`, label: `Condition ${index}`, videosPerParticipant: 1 });
@@ -5026,14 +4681,6 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("input", (event) => {
     const target = event.target;
-    if (target instanceof HTMLInputElement && target.id === "questionnaire-inspiration-search") {
-      filterQuestionnaireInspiration();
-      return;
-    }
-    if (target instanceof HTMLInputElement && target.id === "preview-color-picker") {
-      setPreviewColorDraft(target.value, { synchronizeHex: true });
-      return;
-    }
     if (target instanceof HTMLInputElement && target.id === "preview-color-hex") {
       setPreviewColorDraft(target.value);
       return;
@@ -5048,12 +4695,6 @@ function bindResearchInteractions(root, { surface }) {
       renderRunQuestionnaire();
       return;
     }
-    // Selects dispatch `input` before `change`. These controls are rendered
-    // from questionnaireModules, so refreshing here would replace the select
-    // before the change handler can commit its new value. The change handler
-    // updates the module and schedules the single required refresh.
-    if (target instanceof HTMLSelectElement
-      && (target.dataset.questionnairePlacement || target.dataset.questionnaireBlock)) return;
     if (target instanceof HTMLInputElement && target.type === "color") {
       setInputValue(`${target.id}-hex`, target.value.toLowerCase());
     } else if (target instanceof HTMLInputElement && target.id.endsWith("-hex")) {
@@ -5086,10 +4727,6 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener("change", (event) => {
     const target = event.target;
-    if (target instanceof HTMLSelectElement && target.id === "questionnaire-inspiration-domain") {
-      filterQuestionnaireInspiration();
-      return;
-    }
     if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
     if (isPreviewOnlyControl(target)) {
       refreshProjection();
@@ -5107,47 +4744,6 @@ function bindResearchInteractions(root, { surface }) {
       clearParticipantLanguageSelection();
     }
     if (target instanceof HTMLSelectElement && target.id === "stimulus-source") updateStimulusDialogSource();
-    if (target instanceof HTMLSelectElement && target.dataset.questionnairePlacement) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnairePlacement);
-      if (current) {
-        const usesBlock = target.value === "beforeBlock" || target.value === "afterBlock";
-        const usesStimulus = target.value === "afterStimulus";
-        updateQuestionnaireModule(current.moduleId, usesStimulus ? {
-          kind: "afterStimulus",
-          blockId: null,
-          stimulusId: current.placement.stimulusId
-            ?? experimentDocument?.definition.stimuli[0]?.stimulusId,
-          relativeToIsi: current.placement.relativeToIsi ?? "before",
-        } : {
-          kind: target.value,
-          blockId: usesBlock ? (current.placement.blockId ?? protocolBlockIds()[0]) : null,
-        });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireBlock) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireBlock);
-      if (current && (current.placement.kind === "beforeBlock" || current.placement.kind === "afterBlock")) {
-        updateQuestionnaireModule(current.moduleId, { kind: current.placement.kind, blockId: target.value });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireStimulus) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireStimulus);
-      if (current?.placement.kind === "afterStimulus") {
-        updateQuestionnaireModule(current.moduleId, {
-          ...current.placement,
-          stimulusId: target.value,
-        });
-      }
-    }
-    if (target instanceof HTMLSelectElement && target.dataset.questionnaireIsi) {
-      const current = questionnaireModules.find(({ moduleId }) => moduleId === target.dataset.questionnaireIsi);
-      if (current?.placement.kind === "afterStimulus") {
-        updateQuestionnaireModule(current.moduleId, {
-          ...current.placement,
-          relativeToIsi: target.value,
-        });
-      }
-    }
     if (target instanceof HTMLSelectElement && target.dataset.stimulusPool) {
       const stimulus = stimuli.find(({ id }) => id === target.dataset.stimulusPool);
       if (stimulus) stimulus.poolId = target.value;
@@ -5263,30 +4859,6 @@ function bindResearchInteractions(root, { surface }) {
     event.target.value = "";
   });
 
-  query("#questionnaire-file-input")?.addEventListener("change", async (event) => {
-    const [file] = [...(event.target.files ?? [])];
-    event.target.value = "";
-    if (!file) return;
-    const expected = pendingQuestionnaireUpload;
-    pendingQuestionnaireUpload = null;
-    try {
-      const bytes = await file.arrayBuffer();
-      await importQuestionnaireBytes(bytes, {
-        sourceKind: "researcherCsv",
-        logicalName: file.name,
-        expectedFamilyId: expected?.familyId ?? null,
-        expectedLanguageTag: expected?.languageTag ?? null,
-      });
-    } catch (error) {
-      questionnaireImportStatus(error instanceof Error ? error.message : String(error), "error");
-      announce(`Questionnaire import failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
-  query("#questionnaire-inspiration-dialog")?.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    closeDialog("questionnaire-inspiration-dialog");
-  });
 
   query("#participant-language-dialog")?.addEventListener("cancel", (event) => {
     event.preventDefault();
@@ -5562,16 +5134,19 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
     root.dataset.nativeWorkspaceReady = "true";
-    capabilities.directoryPermission = event.detail?.directoryPermission !== false;
+    const directoryPermission = event.detail?.directoryPermission !== false;
+    capabilities.directoryPermission = directoryPermission;
     const output = query("#workspace-root");
     if (output) {
       output.textContent = event.detail?.label ?? (event.detail?.surface === "browser" ? "Browser workspace ready" : "Windows workspace ready");
-      output.dataset.state = "ready";
+      output.dataset.state = directoryPermission ? "ready" : "warning";
     }
     const status = query("#workspace-status");
     if (status) {
-      status.dataset.state = "ready";
-      status.textContent = "Work directory ready. Project locations are available.";
+      status.dataset.state = directoryPermission ? "ready" : "error";
+      status.textContent = directoryPermission
+        ? "Work directory ready. Project locations are available."
+        : "Work directory access is unavailable. Restore access or select it again.";
     }
     for (const id of ["workspace-rescan", "settings-save", "stimulus-add-workspace", "video-import", "video-folder-import"]) {
       const button = query(`#${id}`);
@@ -5600,6 +5175,9 @@ function bindResearchInteractions(root, { surface }) {
 
   return Object.freeze({
     get mode() { return mode; },
+    getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
+    setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
@@ -5673,7 +5251,15 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      previewLayout.destroy();
+      previewInteraction?.destroy();
+      previewInteraction = null;
+      inlineColorPicker.destroy();
+      setupLayout.destroy();
       packageExport.destroy();
+      layoutDraftEditor.destroy();
+
+      xrLayoutEditor?.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();
@@ -5682,12 +5268,6 @@ function bindResearchInteractions(root, { surface }) {
       previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
-      if (previewControlSurface instanceof HTMLElement) {
-        for (const [type, handler] of Object.entries(previewSimulatorHandlers)) {
-          previewControlSurface.removeEventListener(type, handler);
-        }
-      }
-      window.removeEventListener("blur", releasePreviewResponse);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);

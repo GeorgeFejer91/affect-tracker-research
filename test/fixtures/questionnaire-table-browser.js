@@ -42,6 +42,10 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   check('full Excel table fills prompts, labels, codes, required and option count',
     cell(0,1).value === 'Never' && cell(0,2).value === '4' && cell(1,5).value === 'false' && !cell(2,0));
   check('other language remains an independent empty table', cell(0,0,'custom/de').value === '');
+  const settings = root.querySelector('[data-sheet-key="custom/en"] .sheet-options');
+  check('secondary settings are collapsed with labelled controls retained', !settings.open && Boolean(settings.querySelector('[data-sheet-meta="title"]')) && Boolean(settings.querySelector('[data-sheet-required-all]')));
+  settings.open = true;
+  await new Promise(resolve => setTimeout(resolve, 0));
   click(cell(0,1)); click(cell(1,2), true);
   cell(1,2).setSelectionRange(0,1);
   check('multi-cell copy wins over stale textarea text selection', copy(cell(1,2)) === 'Never\t4\r\nNo\t0\r\n');
@@ -52,6 +56,7 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   const tableCopy = copy(cell(0,0));
   check('select-all copy includes all visible columns and rows', tableCopy.split('\r\n').filter(Boolean).length === 2 && tableCopy.includes('Always\t1\ttrue'));
   action('add-row').click();
+  check('open secondary settings survive table rerender', root.querySelector('[data-sheet-key="custom/en"] .sheet-options').open);
   check('rerender discards invisible cell selections', root.querySelectorAll('.sheet-cell-selected').length === 0);
   paste(cell(1,4), '8');
   check('paste after rerender edits only the chosen cell', cell(1,4).value === '8' && cell(0,0).value === 'First');
@@ -60,6 +65,8 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   const before = [...root.querySelectorAll('[data-sheet-key="custom/en"] [data-sheet-cell]')].map(c=>c.value).join('|');
   paste(cell(0,0), full.replace('\t4\t', '\t=2+2\t'));
   check('malformed paste rejects without partial DOM/data mutation', before === [...root.querySelectorAll('[data-sheet-key="custom/en"] [data-sheet-cell]')].map(c=>c.value).join('|'));
+  const error = root.querySelector('[data-sheet-key="custom/en"] .sheet-error');
+  check('validation message precedes the table and remains a live status', Boolean(error.textContent.trim()) && error.getAttribute('aria-live') === 'polite' && Boolean(error.compareDocumentPosition(cell(0,0)) & Node.DOCUMENT_POSITION_FOLLOWING));
   paste(cell(0,0), full);
   const layout = root.querySelector('[data-sheet-key="custom/en"] [data-sheet-layout]');
   layout.value = 'codes-only'; layout.dispatchEvent(new Event('change',{bubbles:true}));
@@ -98,6 +105,28 @@ const full = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\nFirst\tNever
   appRoot.querySelector('[data-study-language-remove="de"]').click();
   const removedLanguage = app.getQuestionnaireContributionSnapshot();
   check('removing a language removes only its accepted variants and prevents orphaned export references', !removedLanguage.pending && removedLanguage.contribution.questionnaires.definitions.length === 1 && removedLanguage.contribution.questionnaires.definitions[0].language === 'en' && removedLanguage.contribution.languageSelection.languages.length === 1);
+  await app.restoreQuestionnaireContribution({questionnaires:{algorithmVersion:QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,definitions:[],modules:[]},
+    languageSelection:createCoveredFlatLanguageSelectionV1({definitions:[],modules:[],languages,requestedFamilyIds:[]})});
+  appRoot.querySelector('#questionnaire-add-blank').click();
+  const input = appRoot.querySelector('#questionnaire-sheet-file');
+  input.click = () => {}; // No native picker: this is an explicit fixture file.
+  appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-action="upload"]').click();
+  Object.defineProperty(input,'files',{configurable:true,value:[new File([english],'maia-2-en.csv',{type:'text/csv'})]});
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="maia-2/en"]');attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('full-definition file import adopts its identity into a pristine generic family', Boolean(appRoot.querySelector('[data-sheet-key="maia-2/en"] [data-sheet-cell="36:0"]')) && !appRoot.querySelector('[data-sheet-key="questionnaire-1/en"]'));
+  check('adopted family still requires an independently supplied second language', app.getQuestionnaireContributionSnapshot().pending && appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-cell="0:0"]').value === '');
+  appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-action="upload"]').click();
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="maia-2/de"] .sheet-error').textContent;attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('a wrong-language file cannot fill another language table', appRoot.querySelector('[data-sheet-key="maia-2/de"] .sheet-error').textContent.includes('requires de') && appRoot.querySelector('[data-sheet-key="maia-2/de"] [data-sheet-cell="0:0"]').value === '');
+  appRoot.querySelector('#questionnaire-add-blank').click();
+  const customPrompt = appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-cell="0:0"]');
+  customPrompt.value = 'Keep this draft'; customPrompt.dispatchEvent(new Event('input',{bubbles:true}));
+  appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-action="upload"]').click();
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  for (let attempt=0;attempt<500 && !appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] .sheet-error').textContent;attempt+=1) await new Promise(resolve=>setTimeout(resolve,10));
+  check('full-definition family adoption cannot overwrite an edited generic questionnaire', appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] [data-sheet-cell="0:0"]').value === 'Keep this draft' && appRoot.querySelector('[data-sheet-key="questionnaire-1/en"] .sheet-error').textContent.includes('different questionnaire'));
   app.destroy();
   document.querySelector('#receipt').textContent = JSON.stringify({passed:true, cases:results.length, results});
 })().catch(error => { document.querySelector('#receipt').textContent = JSON.stringify({passed:false, error:error.stack, results}); });

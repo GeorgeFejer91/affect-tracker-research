@@ -12,7 +12,7 @@ const escape = (value) => String(value ?? "").replace(/[&<>"']/gu, (char) => ({
 const keyFor = (familyId, language) => `${familyId}/${language}`;
 
 /** Section 2 presentation owner. Drafts never become run authority until saved. */
-export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove }) {
+export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove, onAdoptImportedFamily }) {
   const container = root.querySelector("#questionnaire-sheet-list");
   const fileInput = root.querySelector("#questionnaire-sheet-file");
   const dialog = root.querySelector("#questionnaire-sheet-preview");
@@ -26,7 +26,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 });
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
-      repeatLabels: 1, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
+      repeatLabels: 1, optionsOpen: false, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
       sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
   }
 
@@ -104,24 +104,27 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       <summary><span class="sheet-heading"><strong>${escape(sheet.title || family.label)}</strong><span>${escape(language.label)} · ${sheet.rows.filter((r) => r.prompt.trim()).length} items</span></span><span class="sheet-save-state">${status(entry)}</span><svg class="sheet-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></summary>
       <fieldset class="sheet-body" ${context.locked || entry.busy ? "disabled" : ""}>
         <legend class="sr-only">Edit ${escape(family.label)} in ${escape(language.label)}</legend>
-        <div class="sheet-settings"><label class="field sheet-title-field"><span>Questionnaire title</span><input type="text" data-sheet-meta="title" value="${escape(sheet.title)}" maxlength="500"></label>
+        <div class="sheet-settings">
           <label class="field"><span>Answer options</span><input type="number" min="2" max="64" step="1" data-sheet-option-count value="${sheet.optionCount}"></label>
-          <label class="field"><span>Answers</span><select data-sheet-required-all><option value="" selected>Set for all items…</option><option value="required">Required</option><option value="optional">Optional</option></select></label></div>
-        <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
-        <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only (keep answer labels)</option></select></label>
-        <p class="sheet-paste-help">Paste Excel cells anywhere in the table. Answer columns are what participants see; Code columns are recorded values. Required accepts true or false. One answer per item.</p>
-        <p class="sheet-paste-help">Include the template headers in the first cell to replace the whole table and set its option count. Without headers, paste changes only that range. Shift-click or Shift+arrow selects a range; Ctrl+C copies it. Ctrl+A selects all cells. A replacement table retains item identity/subscale only for unambiguously matched items; new items receive new identities. The final recipe retains full metadata.</p>
+          <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only</option></select></label>
+        </div>
+        <p class="sheet-paste-help">Paste cells from Excel. Answers are participant labels; codes are recorded values. One answer per item.</p>
+        <p class="sheet-error" role="status" aria-live="polite">${escape(entry.error)}</p>
         <div class="sheet-table-scroll" tabindex="0" role="region" aria-label="${escape(family.label)} ${escape(language.label)} questionnaire table">
           <table class="sheet-table"><thead><tr><th scope="col">#</th>${questionnaireGridColumns(sheet, entry.layout).map((label) => `<th scope="col">${escape(label)}</th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${sheet.rows.map((row, i) => rowMarkup(entry, row, i)).join("")}</tbody></table>
         </div>
         <div class="sheet-actions"><button type="button" data-sheet-action="add-row">Add row</button><button type="button" data-sheet-action="copy-table">Copy whole table</button><button type="button" data-sheet-action="upload">Import file</button><button type="button" data-sheet-action="template">Download table template</button><button type="button" data-sheet-action="undo" ${entry.undo ? "" : "disabled"}>Undo edit</button></div>
-        <details class="sheet-options"><summary>Display and source details</summary><div class="sheet-options-content">
+        <details class="sheet-options" ${entry.optionsOpen ? "open" : ""}><summary>Questionnaire settings &amp; paste help</summary><div class="sheet-options-content">
+          <label class="field"><span>Questionnaire title</span><input type="text" data-sheet-meta="title" value="${escape(sheet.title)}" maxlength="500"></label>
+          <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
+          <label class="field"><span>Answers for all items</span><select data-sheet-required-all><option value="" selected>No bulk change</option><option value="required">Required</option><option value="optional">Optional</option></select></label>
           <label class="field"><span>Repeat answer labels in preview</span><select data-sheet-repeat><option value="1" ${entry.repeatLabels === 1 ? "selected" : ""}>Above every item</option><option value="5" ${entry.repeatLabels === 5 ? "selected" : ""}>Every 5 items</option><option value="10" ${entry.repeatLabels === 10 ? "selected" : ""}>Every 10 items</option></select></label>
           <p class="field-help">Label spacing previews the questionnaire design here. Saving this setting into the finished experiment is planned with the runner work.</p>
           <label class="field"><span>Source / attribution</span><textarea data-sheet-meta="attribution" rows="3" maxlength="12000">${escape(sheet.attribution)}</textarea></label>
           <p class="field-help">Files are kept in this questionnaire’s language folder inside the project’s assets folder.</p>
+          <p class="sheet-paste-help">Paste headers into the first cell to replace the whole table and set its option count; without headers, only the pasted range changes. Required accepts true or false. Codes-only leaves answer labels unchanged. Shift-click or Shift+arrow selects a range; Ctrl+C copies it; Ctrl+A selects all cells.</p>
+          <p class="sheet-paste-help">Replacement tables retain item identity and subscale only for unambiguous matches. New items receive new identities. The final recipe retains full metadata.</p>
         </div></details>
-        <p class="sheet-error" role="status" aria-live="polite">${escape(entry.error)}</p>
         <div class="sheet-footer"><span>Before the video task</span><div class="sheet-actions"><button type="button" data-sheet-action="preview">Preview</button><button type="button" data-sheet-action="save" class="primary-action" ${!entry.dirty ? "disabled" : ""}>Save questionnaire</button></div></div>
         <div class="sheet-family-actions"><button type="button" data-sheet-action="move-up" ${index < context.languages.length ? "disabled" : ""}>Move questionnaire up</button><button type="button" data-sheet-action="move-down" ${index >= (context.families.length - 1) * context.languages.length ? "disabled" : ""}>Move questionnaire down</button><button type="button" data-sheet-action="remove">Remove questionnaire${context.languages.length > 1 ? " (all languages)" : ""}</button></div>
       </fieldset>
@@ -137,6 +140,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       : '<p class="empty-state">No questionnaires yet. Add a blank table or start with MAIA-2.</p>';
     container.querySelectorAll("details[data-sheet-key]").forEach((details) => {
       details.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.open = details.open; });
+      const options = details.querySelector(".sheet-options");
+      options.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.optionsOpen = options.open; });
     });
   }
 
@@ -427,9 +432,16 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         const imported = await importQuestionnaireAuthoring(bytes, { logicalName: file.name });
         if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while importing. Import it again into the intended table.");
         if (imported.definition.language !== entry.sheet.language) throw new TypeError(`This table requires ${entry.sheet.language}; the file declares ${imported.definition.language}.`);
-        if (context.familyForDefinition(imported.definition) !== entry.sheet.familyId) throw new TypeError("This file belongs to a different questionnaire. Add its questionnaire first.");
+        const familyId = context.familyForDefinition(imported.definition);
+        if (familyId !== entry.sheet.familyId) {
+          const pristineFamily = [...entries.values()].filter(e => e.sheet.familyId === entry.sheet.familyId)
+            .every(e => e.pristine && (!e.busy || e === entry));
+          if (!pristineFamily || !onAdoptImportedFamily?.(entry.sheet.familyId, familyId)) {
+            throw new TypeError("This file belongs to a different questionnaire. Import it into a new, empty questionnaire or its existing matching language table.");
+          }
+        }
         entry.busy = false;
-        loadDefinition(imported.definition, { familyId: entry.sheet.familyId, sourceBytes: bytes, authoringResult: imported });
+        loadDefinition(imported.definition, { familyId, sourceBytes: bytes, authoringResult: imported });
       } else {
         const delimiter = file.name.toLowerCase().endsWith(".csv") ? "," : "\t";
         preserveUndo(entry);

@@ -24,10 +24,9 @@ export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "workspace", label: "Workspace & Libraries" }),
   Object.freeze({ id: "questionnaires", label: "Languages & Study Assets" }),
   Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
-  Object.freeze({ id: "experiment", label: "Experiment" }),
-  Object.freeze({ id: "input", label: "Controller / Input Device" }),
-  Object.freeze({ id: "visual", label: "Visual Feedback" }),
-  Object.freeze({ id: "advanced", label: "Advanced" }),
+  Object.freeze({ id: "layout", label: "Screen & Layout" }),
+  Object.freeze({ id: "feedback", label: "Flubber & Controls" }),
+  Object.freeze({ id: "xr", label: "VR screen layout" }),
   Object.freeze({ id: "review", label: "Review & Start" }),
 ]);
 
