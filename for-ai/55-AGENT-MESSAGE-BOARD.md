@@ -4693,6 +4693,19 @@ by this build-option change.
   state parity, read-only preparation/state-only commit, one projection and
   stale/abort rejection. No build, GUI launch or native workflow claim.
 
+### 20260912-main-supported-gui-and-native-io
+
+- Main shared P1–P7 composition: actual embedded CLI05b8c18 selects workspace,
+  saves demographics EN/DE and imports/saves all 124,978 local German TAS bytes
+  unchanged. Nine external steps, actual effect/publication receipts, exit zero.
+  Evidence: `D:/GitHub/.affect-checks/main-core9-native-io-run-05b8c18`.
+- Supported GUI helper9843efc is wired into app Open/Save and actual P2 restore;
+  actual-app synthetic-boundary core9 plus GUI typed-copy checks44 PASS.
+  P7 owns additive native GUI reader/selected-writer follow-up; old V1 helpers
+  remain strict. Main retains app integration and Runner collection.
+- Native owner holds shared D Cargo target for pinned runtime composition/build.
+  No native playback, physical ISI, complete mock, Runner/XDF or viewport claim.
+
 ### 20260912-p2-import-cli-default-slot-fix
 
 - Main actual-app repro exposed dirty-default slots losing pristine eligibility

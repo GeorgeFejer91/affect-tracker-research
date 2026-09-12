@@ -2,6 +2,7 @@ import { bootResearchUi } from "../../site/src/research/app.js";
 import { canonicalJson, sha256Hex } from "../../site/src/research/canonical.js";
 import recipe from "./planner-recipe-current-v1.canonical.json";
 import template from "../../site/questionnaires/questionnaire-template.json";
+import { PLANNER_SAVE_REQUEST, completePlannerFileRequest } from "../../site/src/research/planner-file-request.js";
 
 // Actual app/session/owners; injected native boundary, never a filesystem claim.
 const checks = [], errors = [];
@@ -107,6 +108,24 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   check(`actual imported-source save: ${JSON.stringify(savedImport)}`, savedImport.result?.published);
   const denied = await perform("confirmSegment", { segment: "P5" });
   check("live preview cannot be separately confirmed", denied.status === "rejected");
+  const typedSource = written[1];
+  check("GUI opens the actual typed master", await ui.restorePlannerRecipe(typedSource) === true);
+  check("GUI typed restoration preserves exact source", ui.plannerRecipeSourceText === typedSource);
+  let guiWritten = null;
+  root.addEventListener(PLANNER_SAVE_REQUEST, event => {
+    event.preventDefault();
+    void completePlannerFileRequest(event.detail, async () => {
+      guiWritten = event.detail.sourceText;
+      const document = JSON.parse(guiWritten);
+      return { schema: "affect-research-planner-recipe-save-receipt", version: 1,
+        recipeId: document.recipeId, definitionSha256: document.integrity.definitionSha256,
+        canonicalSourceByteSha256: await sha256Hex(new TextEncoder().encode(guiWritten)),
+        byteLength: new TextEncoder().encode(guiWritten).byteLength };
+    });
+  });
+  const guiSave = await ui.savePlannerRecipe();
+  check(`GUI typed exact-copy save: ${JSON.stringify(guiSave)}`, guiSave.status === "saved");
+  check("GUI saved all typed source bytes unchanged", guiWritten === typedSource);
   check("no uncaught errors", errors.length === 0);
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, checks, errors });
 })().catch(error => { document.querySelector("#receipt").textContent = JSON.stringify({ passed: false, checks, errors, error: String(error), stack: error.stack }); });
