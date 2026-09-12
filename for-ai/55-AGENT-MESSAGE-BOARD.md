@@ -3264,10 +3264,11 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   diff checks; broad native builds, installed/physical playback and foreground
   app launch remain deferred. Report ignored-signal boolean/revision semantics
   in the ready handoff.
-- Status: **ready for integration**. `Failed` is absorbing for same-generation
-  callbacks; `Ended` is absorbing except that a later explicit error or unknown
-  backend state upgrades it to `Failed`. Ignored terminal callbacks return
-  `false`, leave the complete status unchanged and do not advance `sequence`.
+- Status: **code-review ready; native promotion held**. `Failed` is absorbing
+  for same-generation callbacks; `Ended` is absorbing except that a later
+  explicit error or unknown backend state upgrades it to `Failed`. Ignored
+  terminal callbacks return `false`, leave the complete status unchanged and
+  do not advance `sequence`.
   A new Prepare generation clears the terminal observation and accepts media,
   seek-done and playback callbacks normally.
 - Focused command
@@ -3290,3 +3291,12 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   observed partial-to-complete order and no-video readiness case. Main retains
   collection and broader native/installed verification; Live Preview owns the
   actual diagnostic rerun against the corrected branch tip.
+- Corrected native diagnostic attempts 03 and 04 are inconclusive for this
+  reducer: both timed out before `actor-started` or any MediaInfo callback, so
+  neither exercised the changed state machine. Attempt 04 reproduced
+  `native-gstplay-startup-timeout` with the same binary as attempt 03 (SHA-256
+  `8aa7a5e2d3b154ea90b48ff36760ee6525b6df57b64487f162e3a022a47ce79e`),
+  combined source `5c66ce6`, and exited 2 at 124.85 seconds without a supervisor
+  timeout. Hold NM-09 promotion until the separately owned startup diagnostic
+  reaches actor/MediaInfo callbacks; test-only startup phase tracing is in
+  progress to localize initialization versus child-HWND creation.
