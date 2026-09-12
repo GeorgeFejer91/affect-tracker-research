@@ -77,3 +77,24 @@ Runner tests, not a requirement that Planner serialize recording policy.
 
 Do not mark native playback, hardware LSL, physiological data quality, installed
 accessibility or research readiness as verified by parser/UI/build fixtures.
+
+
+## Complete successor producer handoff — 2026-09-12
+
+P7 delivered JS master `828fff77f7bce764d01538f523831f7886a152ef`, then independent
+native full reader `70b30a441cb6bdb49f0b642ba8be1ea185f27750`. The latter owns
+`research_planner_recipe::parse_planner_recipe_bytes/file`, `PlannerRecipeV1`
+validation/reproduction/selection reconstruction/canonical bytes and the typed
+`research_load_planner_recipe` new/legacy dispatcher. Save remains Planner-only.
+Its current portable identity algorithm is `planner-recipe-reproduction-v2`;
+old algorithm semantics remain independently validated. See that checkpoint's
+`docs/planner-master-recipe-v1.md` and current desktop/XR fixtures for exact APIs.
+
+This is a completed producer handoff, not evidence that Runner has integrated
+its execution semantics. The delivered Runner backend checkpoint `b11565c`
+accepts the frozen complete package-v1 contract. Chat Orchestrator explicitly
+placed current-master intake/execution correspondence in the later RR-02/RR-10
+stage and confirmed it must not delay Planner completion or this backend handoff.
+Do not convert the master into an older package by dropping P1–P6 options, infer
+an allocator, reinterpret questionnaire label repetition as pagination, or claim
+XR/native player qualification from successful document reconstruction.

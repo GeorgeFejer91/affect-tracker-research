@@ -2365,8 +2365,8 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   headless Planner/Runner startup, synthetic selected LSL transport and independent
   pyxdf format/timestamp/footer/Int64/marker checks passed. See ledger 65 and
   `runner/README.md` for limits, receipts and build commands.
-- P7 supplied JS master `828fff7`; its complete native reader/load dispatch is
-  still an owner handoff. This Runner currently executes only the existing strict
+- P7 supplied JS master `828fff7` and native reader/load dispatch `70b30a4`.
+  Intake/execution correspondence is a later allocated stage. This Runner currently executes only the existing strict
   complete package-v1 contract. Successor option/layout correspondence is RR-10,
   the final development stage; it does not block Planner authoring completion.
 - All-feature native-media compilation is unavailable here because pkg-config/
