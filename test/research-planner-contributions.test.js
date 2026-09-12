@@ -13,6 +13,9 @@ test("prepared confirmation validates without accepting and separates state from
   registry.register("P2", () => snapshot(), validated);
   const generation = registry.getAcceptanceGeneration(), before = notifications;
   const prepared = await registry.prepareAcceptance("P2");
+  const detached = prepared.snapshot;
+  detached.contribution.accepted = "caller change";
+  assert.equal(prepared.snapshot.contribution.accepted, "design");
   assert.equal(registry.getAcceptanceGeneration(), generation);
   assert.equal(notifications, before);
   assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }));

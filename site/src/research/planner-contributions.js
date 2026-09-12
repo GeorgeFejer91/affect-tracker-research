@@ -286,6 +286,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
     }
     check();
     return Object.freeze({
+      get snapshot() { return structuredClone(snapshot); },
       isCurrent() { try { return current(); } catch { return false; } },
       commit() {
         if (committed) return structuredClone(snapshot);
