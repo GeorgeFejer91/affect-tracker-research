@@ -109,3 +109,40 @@ traps proving browser Planner startup/refresh/destruction invokes no run service
 Receipt: `D:/GitHub/.affect-runner-build/static-boundary-audit/`. This supersedes
 the earlier desktop-only qualification of the entry boundary; historical combined
 modules remain testable but are no longer the active Planner entry programs.
+
+### RR-08/09 native recorder implementation — 2026-09-12
+
+Implemented `research_recorder` as a Runner-only Rust service and four commands:
+status, explicit discovery, native destination/start and stop. Runner selects
+own streams and/or at most 16 cached external stream identities; no Planner
+recording field, manifest-v4 extension, source substitution or reconnect policy
+was added. Start/stop share the native protocol's idle mutex so IPC races cannot
+change recording during Start/resume/active execution.
+
+Own outlets attach before the protocol worker emits initial markers, after
+input/storage preparation, and mirror successfully emitted f32/string samples
+with exactly the same LSL timestamp through a bounded nonblocking queue. The
+external recorder opens selected metadata-bound inlets with recovery and
+postprocessing disabled, preserves each numeric wire type and records source
+clock offsets. Samples, headers, boundaries and footers use the XDF 1 format.
+Numeric Int64 stays integer throughout. No new unsafe boundary was introduced.
+
+XDF and start/attempt/final JSON receipts use exclusive file creation. Every
+receipt binds the recipe hash and recording identity; own binding additionally
+freezes run ID. Shutdown interrupts the native run before draining/finalizing
+the recorder. Buffer loss, disconnection, queue overflow and disk/receipt failures
+are explicit incomplete recordings. A start receipt without a final receipt is
+an interrupted file; automatic XDF repair/append/restart recovery is not offered.
+External arbitrary invalid UTF-8 byte-string fidelity is unqualified because the
+pinned safe LSL library decodes strings. See `runner/README.md` for limits and
+local build/use commands; physical/long-run recording remains an open gate.
+
+Evidence collected during implementation: nine initial recorder unit/worker
+checks plus a selected synthetic local LSL Int64 outlet recorded alongside own
+affect/initial/final markers. Independent pyxdf 1.17.0 reads the seven-format
+fixture, exact raw timestamps, +0.125 clock correction, Int64 maximum, UTF-8
+markers, sample-count footers and both complete worker recordings. The synthetic
+fixtures reside in `D:/GitHub/.affect-runner-build/`, with a reproducible verifier
+at `scripts/qualification/verify-runner-xdf.py`. Additional final compile/lint and
+regression results are recorded in the final checkpoint handoff; these receipts
+do not close RR-10 or native playback/device/long-run qualification.

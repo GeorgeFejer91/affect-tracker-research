@@ -35,11 +35,11 @@
     "longDescription": "Consumes Experiment Planner recipes, runs the native protocol and records selected LSL streams to XDF. Runtime qualification remains separately gated.",
     "copyright": "Copyright 2026 George Fejer",
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "runner-icons/32x32.png",
+      "runner-icons/128x128.png",
+      "runner-icons/128x128@2x.png",
+      "runner-icons/icon.icns",
+      "runner-icons/icon.ico"
     ],
     "resources": [
       "native-media/gstreamer-runtime-v1.json",

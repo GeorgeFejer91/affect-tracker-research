@@ -267,6 +267,7 @@ impl PackageRunStatus {
 }
 
 pub struct PackageProtocolRuntime {
+    recorder: Option<Arc<crate::research_recorder::RecorderService>>,
     workspace: Arc<WorkspaceService>,
     native_media: Arc<NativeMediaService>,
     input: Arc<ResearchInputService>,
@@ -317,12 +318,33 @@ impl PackageProtocolRuntime {
         input: Arc<ResearchInputService>,
     ) -> Self {
         Self {
+            recorder: None,
             workspace,
             native_media,
             input,
             native_acquisition_supported: NATIVE_ACQUISITION_SUPPORTED,
             active: Mutex::new(None),
         }
+    }
+
+    pub fn with_recorder(
+        mut self,
+        recorder: Arc<crate::research_recorder::RecorderService>,
+    ) -> Self {
+        self.recorder = Some(recorder);
+        self
+    }
+
+    /// Serialize recorder mutations with Start/resume. UI state is not authority.
+    pub fn while_idle<T>(
+        &self,
+        operation: impl FnOnce() -> ResearchResult<T>,
+    ) -> ResearchResult<T> {
+        let active = self.lock_active();
+        if active.is_some() {
+            return Err(CommandError::run_active());
+        }
+        operation()
     }
 
     pub fn start(&self, request: StartPackageRunRequest) -> ResearchResult<PackageStartRunReceipt> {
@@ -496,6 +518,15 @@ impl PackageProtocolRuntime {
                     Ok((receipt, storage, participant))
                 })?;
 
+        let lsl = lsl
+            .map(|lsl| {
+                lsl.with_recorder(
+                    self.recorder.as_deref(),
+                    &selection.package_source_byte_sha256,
+                    &receipt.run_id,
+                )
+            })
+            .transpose()?;
         let status = Arc::new(Mutex::new(initial_status(
             &receipt,
             &selection,
@@ -741,6 +772,15 @@ impl PackageProtocolRuntime {
             playback_mode: request.playback_mode,
             playback_qualification,
         };
+        let lsl = lsl
+            .map(|lsl| {
+                lsl.with_recorder(
+                    self.recorder.as_deref(),
+                    &selection.package_source_byte_sha256,
+                    &receipt.run_id,
+                )
+            })
+            .transpose()?;
         let status = Arc::new(Mutex::new(initial_status(
             &receipt,
             &selection,

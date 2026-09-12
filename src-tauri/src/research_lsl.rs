@@ -152,6 +152,7 @@ mod implementation {
     pub struct LslService {
         state_outlet: Outlet,
         marker_outlet: Outlet,
+        recording: Option<crate::research_recorder::OwnRecording>,
     }
 
     impl LslService {
@@ -169,14 +170,36 @@ mod implementation {
             Ok(Self {
                 state_outlet,
                 marker_outlet,
+                recording: None,
             })
+        }
+
+        pub fn with_recorder(
+            mut self,
+            recorder: Option<&crate::research_recorder::RecorderService>,
+            recipe_hash: &str,
+            run_id: &str,
+        ) -> ResearchResult<Self> {
+            if let Some(recorder) = recorder {
+                self.recording = recorder.attach_own(
+                    self.state_outlet.info(),
+                    self.marker_outlet.info(),
+                    recipe_hash,
+                    run_id,
+                )?;
+            }
+            Ok(self)
         }
 
         pub fn push_state(&self, state: LslState) -> ResearchResult<f64> {
             let timestamp = labstream::clock();
+            let values = state_values(state);
             self.state_outlet
-                .push_at(&state_values(state), timestamp)
+                .push_at(&values, timestamp)
                 .map_err(|_| CommandError::io("LSL rejected an affect state sample."))?;
+            if let Some(recording) = &self.recording {
+                recording.state(timestamp, &values)?;
+            }
             Ok(timestamp)
         }
 
@@ -186,6 +209,9 @@ mod implementation {
             self.marker_outlet
                 .push_text_at(marker, timestamp)
                 .map_err(|_| CommandError::io("LSL rejected a lifecycle marker."))?;
+            if let Some(recording) = &self.recording {
+                recording.marker(timestamp, marker)?;
+            }
             Ok(timestamp)
         }
 
@@ -204,6 +230,14 @@ mod implementation {
     pub struct LslService;
 
     impl LslService {
+        pub fn with_recorder(
+            self,
+            _: Option<&crate::research_recorder::RecorderService>,
+            _: &str,
+            _: &str,
+        ) -> ResearchResult<Self> {
+            Ok(self)
+        }
         pub fn start(_: &ResearchLslSettingsV1, _: u16, _: &str) -> ResearchResult<Self> {
             Err(CommandError::forbidden(
                 "This Affect Research build does not include LSL support.",
