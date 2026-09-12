@@ -83,6 +83,90 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
         },
       });
     },
+    /** Compile before native effects. The caller injects the existing supported
+     * compiler/reader and explicit prepared-feedback capture; no second recipe
+     * authority lives in the workflow. Native writes/effect receipts stay with
+     * write, and only the session's publish hook installs acceptance/metadata. */
+    async prepareSave({ isCurrent, signal, parseDocument, compileDocument, captureInput,
+      adoptDocument: adoptPreparedDocument, afterAdoptDocument } = {}) {
+      if (disposed || opening || exporter.snapshot().busy || !canOperate()) throw new Error("Recipe saving is currently unavailable.");
+      if (typeof isCurrent !== "function" || typeof signal?.aborted !== "boolean"
+        || [parseDocument, compileDocument, captureInput].some(fn => typeof fn !== "function")) {
+        throw new TypeError("Prepared Save requires explicit capture/compiler/reader and command lifetime adapters.");
+      }
+      assertSync(adoptPreparedDocument, "adoptDocument");
+      if (afterAdoptDocument !== undefined) assertSync(afterAdoptDocument, "afterAdoptDocument");
+      const current = guard(() => !signal.aborted && isCurrent());
+      const check = () => { if (!current()) throw new Error("The design changed while preparing its saved recipe."); };
+      check();
+      const copy = canCopy() ? getDocument() : null;
+      let feedback = null, capture = null, document;
+      if (copy) {
+        document = await parseDocument(new TextEncoder().encode(copy.canonicalSourceText));
+        if (document.canonicalSourceText !== copy.canonicalSourceText
+          || document.canonicalSourceByteSha256 !== copy.canonicalSourceByteSha256) {
+          throw new TypeError("Unchanged recipe validation did not preserve the exact source.");
+        }
+      } else {
+        const options = structuredClone(getRecipeOptions());
+        feedback = await registry.prepareAcceptance("P5", { selectedTarget: options.presentationTarget, isCurrent: current, signal });
+        check();
+        capture = captureInput(registry, { ...options, preparedFeedback: feedback, isCurrent: current });
+        document = await compileDocument(capture.input);
+      }
+      let invalidated = false, dispatched = false, adopted = false;
+      const preparedCurrent = () => {
+        if (invalidated) return false;
+        try {
+          invalidated = !current() || (copy ? !canCopy() || getDocument() !== copy
+            : !feedback.isCurrent() || !capture.isCurrent());
+        } catch { invalidated = true; }
+        return !invalidated;
+      };
+      if (!preparedCurrent()) throw new Error("The design changed before its saved recipe was ready.");
+      return Object.freeze({ document, isCurrent: preparedCurrent,
+        async dispatch({ write: writePrepared, publish, isCurrent: dispatchCurrent, signal: dispatchSignal } = {}) {
+          if (dispatched) throw new Error("Prepare a new Save before dispatching it again.");
+          if (typeof writePrepared !== "function" || typeof dispatchCurrent !== "function") throw new TypeError("Prepared Save requires native write and publication lifetime adapters.");
+          assertSync(publish, "publish");
+          dispatched = true;
+          const valid = () => {
+            try { return current() && !dispatchSignal?.aborted && dispatchCurrent()
+              && (adopted ? canCopy() && getDocument() === document : preparedCurrent()); }
+            catch { return false; }
+          };
+          if (!valid()) throw new Error("The design changed before native Save dispatch.");
+          const result = await exporter.save({ isCurrent: valid,
+            compile: async () => document,
+            async write(value) {
+              if (!valid()) throw new Error("The design changed before its native file write.");
+              const receipt = await writePrepared(value, { isCurrent: valid, signal: dispatchSignal ?? signal });
+              // Late acknowledgement remains useful evidence even after the
+              // current editor changes. The exporter denies stale adoption.
+              return receipt === null ? null : validatePlannerRecipeSaveReceipt(receipt, value);
+            },
+            adopt(value, exporterCurrent) {
+              if (!exporterCurrent() || !valid()) return false;
+              publish(() => {
+                if (!valid()) throw new Error("The design changed before saved-source adoption.");
+                feedback?.commit();
+                invokeSync(() => adoptPreparedDocument(value));
+                source = { edit, hash: value.canonicalSourceByteSha256 };
+                adopted = true;
+              }, () => {
+                feedback?.afterCommit();
+                if (afterAdoptDocument) invokeSync(afterAdoptDocument);
+                onChange();
+              });
+              return adopted;
+            },
+          });
+          // Complete source is read from its immutable owner, not copied into
+          // the session's bounded retained command receipt.
+          return { status: result.status, receipt: result.saved?.receipt ?? null };
+        },
+      });
+    },
     /** select is invoked synchronously to preserve the Open button gesture.
      * It returns a strictly dispatched {kind, document}, or null on cancel. */
     async open(select, { openLegacy, isCurrent = () => true } = {}) {
