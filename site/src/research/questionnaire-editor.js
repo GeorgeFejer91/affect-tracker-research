@@ -1,3 +1,5 @@
+import { restoreQuestionnaireRecipeContent } from "./questionnaire-recipe-restoration.js";
+import { questionnaireFamilyId } from "./questionnaire-assets.js";
 import {
   createQuestionnaireSheet,
   applyQuestionnaireGridPaste, setQuestionnaireGridCell, setOptionCount,
@@ -29,11 +31,12 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   let context = { families: [], languages: [], definitions: [], locked: false };
   let uploadKey = null;
   let fingerprint = "";
+  let restoreGeneration = 0;
 
-  function makeEntry(family, language) {
-    const sheet = family.id === "demographics" ? sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
+  function makeEntry(family, language, restoredSheet = null) {
+    const sheet = restoredSheet ?? (family.id === "demographics" ? sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
-      rowCount: family.id === "tas-20" ? 20 : 5 });
+      rowCount: family.id === "tas-20" ? 20 : 5 }));
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
       repeatLabels: 1, rawOptionCount: null, optionsOpen: false, metadataOpen: false, metadataItem: 0, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
       sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
@@ -47,6 +50,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   }
 
   function sync(next) {
+    restoreGeneration++;
     context = next;
     const activeKeys = new Set(next.families.flatMap((family) => next.languages
       .map((language) => keyFor(family.id, language.languageTag))));
@@ -195,6 +199,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   }
 
   function markChanged(entry) {
+    restoreGeneration++;
     entry.dirty = true;
     entry.pristine = false;
     entry.sheet.modified = true;
@@ -218,6 +223,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     try {
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values before saving.");
       if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before saving.");
+      restoreGeneration++;
       entry.busy = true;
       entry.error = "";
       render();
@@ -243,6 +249,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const entry = entries.get(key);
     if (!entry || context.locked || entry.busy || (onlyIfPristine && !entry.pristine)
       || (expectedPresetToken !== null && expectedPresetToken !== entry.presetToken)) return false;
+    restoreGeneration++;
     preserveUndo(entry);
     entry.sheet = sheetFromDefinition(definition, { familyId, authoringResult });
     entry.sourceBytes = sourceBytes;
@@ -287,6 +294,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     return true;
   }
   container?.addEventListener("input", (event) => {
+    restoreGeneration++;
     event.stopPropagation();
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
@@ -318,6 +326,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   container?.addEventListener("change", (event) => {
+    restoreGeneration++;
     event.stopPropagation();
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
@@ -366,6 +375,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   container?.addEventListener("paste", (event) => {
+    restoreGeneration++;
     const target = event.target;
     if (!target.closest(".sheet-table-scroll") || target.closest("[data-sheet-metadata]")) return;
     event.preventDefault();
@@ -457,6 +467,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   container?.addEventListener("click", async (event) => {
+    restoreGeneration++;
     const mover = event.target.closest("button[data-form-move], button[data-form-option]");
     if (mover) {
       event.stopPropagation();
@@ -573,7 +584,64 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-preview-close]")?.addEventListener("click", () => dialog.close());
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
-  return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+  return Object.freeze({ sync, loadDefinition, save, reset() { restoreGeneration++; entries.clear(); fingerprint = ""; },
+    async prepareRestoreRecipe(contribution, { isCurrent, signal }) {
+      if (typeof isCurrent !== "function" || !signal) throw new TypeError("Questionnaire restore needs current-operation and cancellation guards.");
+      const generation = restoreGeneration, oldContext = context, slots = [...entries];
+      const state = () => JSON.stringify({ context, entries: [...entries].map(([key, entry]) =>
+        [key, { ...entry, invalid: [...entry.invalid] }]) });
+      const before = state();
+      let committed = false, projected = false;
+      const current = () => {
+        try { return !committed && !signal.aborted && isCurrent() && !context.locked
+          && generation === restoreGeneration && context === oldContext
+          && slots.every(([key, entry]) => entries.get(key) === entry && !entry.busy)
+          && state() === before; }
+        catch { return false; }
+      };
+      const check = () => { if (!current()) {
+        const error = new Error("The questionnaire editor changed while reopening.");
+        error.code = signal.aborted ? "canceled" : "stale_revision"; throw error;
+      } };
+      check();
+      const restored = await restoreQuestionnaireRecipeContent(contribution);
+      check();
+      const { definitions, modules } = restored.contribution.questionnaires;
+      const next = new Map();
+      for (const family of restored.families) for (const language of restored.languages) {
+        const definition = definitions.find(d => d.language === language.languageTag && questionnaireFamilyId(d) === family.id);
+        if (!definition) throw new TypeError("Missing questionnaire family/language slot.");
+        const sheet = sheetFromDefinition(definition, { familyId: family.id });
+        const entry = makeEntry(family, language, sheet);
+        const presentation = restored.presentation.definitions.find(p => p.questionnaireId === definition.questionnaireId);
+        entry.repeatLabels = presentation.kind === "fields" ? 1 : presentation.repeatLabelsEvery;
+        entry.sourceDefinitionHash = definition.definitionSha256;
+        entry.dirty = false; entry.pristine = false; entry.open = next.size === 0;
+        next.set(keyFor(family.id, language.languageTag), entry);
+      }
+      const nextContext = { ...context, families: restored.families, languages: restored.languages,
+        definitions, modules, languageSelection: restored.contribution.languageSelection,
+        familyForDefinition: questionnaireFamilyId, locked: false };
+      check();
+      let committedGeneration;
+      return {
+        get restored() { return structuredClone(restored); },
+        isCurrent: current,
+        commit() {
+          check();
+          entries.clear(); next.forEach((entry, key) => entries.set(key, entry));
+          context = nextContext; fingerprint = ""; uploadKey = null;
+          committedGeneration = ++restoreGeneration; committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new TypeError("Commit questionnaire restoration before its projection.");
+          if (projected) return;
+          projected = true;
+          if (restoreGeneration !== committedGeneration) return;
+          render(); onChange?.();
+        },
+      };
+    },
     prepareAuthoringQuestionnaireSave(questionnaireId, operation) {
       const slot = activeEntries().find(({ entry }) => entry.sheet.questionnaireId === questionnaireId);
       if (!slot) throw new TypeError("Unknown questionnaire identity.");
@@ -620,6 +688,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       const projection = { ...context, families: structuredClone(next.families), languages: structuredClone(next.languages),
         definitions: structuredClone(next.definitions), locked: next.locked };
       return { commit() {
+        restoreGeneration++;
         entries.clear(); prepared.forEach((entry, key) => entries.set(key, entry));
         context = projection; fingerprint = ""; uploadKey = null;
       }, afterCommit: render };
@@ -639,6 +708,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
         return { entry, record };
       });
+      restoreGeneration++;
       targets.forEach(({ entry, record }) => { entry.repeatLabels = record.kind === "fields" ? 1 : record.repeatLabelsEvery; });
       render();
     },
