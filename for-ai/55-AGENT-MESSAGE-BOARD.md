@@ -179,6 +179,33 @@
   receipts. Runner correspondence/execution/recording is explicitly deferred to
   the final Runner stage and does not block Planner completion.
 
+### 20260912-root-planner-final-verification
+
+- Root roadmap/verification continuation, dependencies P1–P7 and G01–G11.
+  Product source `875efae` is delivered by the sole integration owner into
+  canonical `codex/research-unified` as `1218c9e`; only later tests/helpers/docs
+  differ. Root owns 60/62/64/67 and the visual helper, with no producer app edits.
+- Final root checks: 65 actual master-workflow assertions each Chrome/Edge,
+  exact equal JSON files and independent native document/matrix/12-selection
+  reproduction; all source/file/verifier/executable hashes checked. Final 106
+  default and expanded section PNGs plus both Save states were inspected with
+  no material visual defect. Independent visible/announced workspace error and
+  complete native parity receipts also pass. Precise limits and paths are in 67/64.
+- Central catalogue now records 40 delivered Planner capability items, retained
+  predecessor capabilities and explicitly optional instrument/scoring/preferences.
+  It retains P6 runtime/R1 work separately. The obsolete gap-design plan 62 is
+  replaced by current input/output contracts and bounded future-pass routing.
+  Visual items V01–V28 are reconciled with final combined/owner evidence.
+- Root helper adds only an explicit expand-details capture mode; 50 fresh images
+  prove complete default Response/Advanced/mapping layout at both widths/browser.
+  It leaves product source and ordinary capture behavior unchanged.
+- G01–G11 are complete for Planner authoring. Canonical `1218c9e` and its normal
+  local native/frontend builds are delivered; root verified the 28,512,256-byte
+  Planner EXE hash 71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca.
+  Exact build/test limits and paths are in 67. No push, foreground launch,
+  OS-picker/device proof or Runner correspondence claim. Required Planner work
+  is finished; close its monitor without waiting for the separately allocated Runner.
+
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,
 permission to expand scope, or verification evidence by itself. The charter
@@ -624,7 +651,7 @@ file; follow the integration-owner collection procedure in the workflow.
   freeze does not prohibit newly authorized Planner completion.
 - Independent root source review found v1-only generation/import prerequisite,
   null accepted P4, configured P5 state outside its historical payload and
-  v1-only file adapters. Reuse current lifecycle fixes. G01–G11 in67 require
+  v1-only file adapters. Reuse current lifecycle fixes. G01–G11 in 67 require
   complete Planner authoring/validation/save/reopen and exact-source evidence.
 - Experiment Runner owns16/65/66 and charter/router amendments; root owns
   60/62/64/67 and this entry. S7 owns successor contracts; integration owns shared
@@ -664,7 +691,7 @@ file; follow the integration-owner collection procedure in the workflow.
   labels wrapping one character per line; Live Preview owns a bounded label-layout
   fix while S5 owns saved-state copy. Neither finding is treated as completed full
   master evidence; final combined verification follows collection.
-- Latest component ledger in67 records S7 full JS master `828fff7`, live P4
+- Latest component ledger in 67 records S7 full JS master `828fff7`, live P4
   `2499517`, full-master XR `188c080`/`485c2da` and current producer handoffs.
   Root independently recomputed canonical definition/reproduction and all six
   segment hashes for both master fixtures. Shared UI wiring is still active at
@@ -688,7 +715,7 @@ file; follow the integration-owner collection procedure in the workflow.
   Chrome/Edge at clean63fe416, including real UI edits, disk save, reopen, pending
   copy, media rebind and reset stale-source regressions. Both output files match;
   source-bound native732bf88 independently reproduces document/matrix/all six
-  selections exactly. Scope and artifact paths in67; no physical/OS-picker claim.
+  selections exactly. Scope and artifact paths in 67; no physical/OS-picker claim.
 - Root takes the isolated scripts/qualification/planner-master.mjs helper seam
   from main's adc34d2 baseline: actual HTTP completion/PNG lifetime fixes Edge,
   correct CSS/assets fix blank fixture icons, and expanded receipt hash bindings.

@@ -1,5 +1,5 @@
 // Actual app screenshots in fresh headless browser profiles; no desktop input.
-// Usage: node scripts/qualification/segment-visual-audit.mjs <browser.exe> <output-dir> [source-root] [section-ids]
+// Usage: node scripts/qualification/segment-visual-audit.mjs <browser.exe> <output-dir> [source-root] [section-ids] [expand-details]
 // This is an observation harness, not a backend or visual-quality certification.
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
@@ -10,8 +10,9 @@ import { extname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
-const [browser, destination, sourceArgument, selectedArgument] = process.argv.slice(2);
+const [browser, destination, sourceArgument, selectedArgument, disclosureArgument] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and output directory.");
+assert.ok(!disclosureArgument || disclosureArgument === "expand-details", "Only the explicit expand-details capture mode is supported.");
 const execute = promisify(execFile);
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 const harnessSha256 = sha256(await readFile(new URL(import.meta.url)));
@@ -56,6 +57,7 @@ try {
  if(ui.openSection!==scenario.section) ui.openSetupSection(scenario.section);
  await wait();
  const section=root.querySelector('[data-setup-section="'+scenario.section+'"]');
+ if(scenario.expandDetails){for(const detail of section.querySelectorAll('details'))detail.open=true;await wait();}
  const persistent=section.matches('.preview-pane');
  const settings=section.querySelector('.preview-controls-scroll');
  const settingsScrolls=settings&&['auto','scroll'].includes(getComputedStyle(settings).overflowY)&&settings.scrollHeight>settings.clientHeight+1;
@@ -122,7 +124,7 @@ try {
     for (const section of sections) {
       let pages = 1;
       for (let page = 0; page < pages; page += 1) {
-        const scenario = { name: viewport.name, section: section.id, label: section.label, page };
+        const scenario = { name: viewport.name, section: section.id, label: section.label, page, expandDetails: disclosureArgument === "expand-details" };
         const name = `${viewport.name}-${section.id}-${page + 1}`;
         const screenshot = join(output, name + ".png");
         const previous = await stat(screenshot).catch(error => {
