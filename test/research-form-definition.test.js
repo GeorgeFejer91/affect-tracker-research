@@ -55,6 +55,17 @@ test("typed answers retain exact text, canonical item order and all-displayed co
     assert.equal(partial.answers[0].value.text, text); assert.throws(() => validateFormAnswers(d, values));
   }
 });
+test("language grammar and dense arrays preserve creator/JSON roundtrip parity", async () => {
+  for (const language of ["en" + "-abcdefgh".repeat(9), "UND", "Und"]) {
+    const { definitionSha256, ...core } = structuredClone(fixtures[0]); core.language = language;
+    await assert.rejects(createFormDefinitionV1(core), /language/);
+  }
+  for (const field of ["items", "options"]) {
+    const { definitionSha256, ...core } = structuredClone(fixtures[0]);
+    if (field === "items") core.items = new Array(1); else core.items[2].response.options = new Array(1);
+    await assert.rejects(createFormDefinitionV1(core), /missing entries/);
+  }
+});
 test("invalid values never become valid partial answers and UTF-8 limit counts bytes", () => {
   for (const value of [{ kind: "integer", integer: "1" }, { kind: "integer", integer: null },
     { kind: "integer", integer: 1.5 }, { kind: "integer", integer: -1 }, { kind: "integer", integer: 9007199254740992 },
