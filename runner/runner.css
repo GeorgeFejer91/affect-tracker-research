@@ -46,7 +46,7 @@ html, body { min-width: 0; margin: 0; }
 .runner-presentation .run-stage { height: 100dvh; min-height: 0; display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 0; }
 .runner-presentation .stimulus-stage { min-width: 0; min-height: 0; position: relative; background: #000; border: 0; }
 #run-native-video-host { width: 100%; height: 100%; position: absolute; inset: 0; }
-.runner-presentation .run-feedback-stage { min-width: 0; min-height: 0; position: relative; background: #000; }
+.runner-presentation .run-feedback-stage { min-width: 0; min-height: 0; position: relative; background: #000; border: 0; }
 .runner-presentation .research-preview-stage { min-height: 0; height: 100%; background: #000; border: 0; border-radius: 0; }
 .runner-presentation .run-stage.runner-master-layout { display: block; position: relative; }
 .runner-master-layout > .stimulus-stage, .runner-master-layout > .run-feedback-stage { position: absolute; }
