@@ -92,6 +92,35 @@ reset, grey-palette Reset, RNG action or color-dialog interaction is an edit.
 
 ## Exact field to current owner mapping
 
+### Fixed-control projection helper
+
+`createPlannerAuthoringP5Controls({ root, getModel, commitModel, onProjection,
+isCurrent })` in `planner-authoring-p5-controls.js` implements these three hooks
+without storing another draft. `isCurrent` is an optional pure owner lifetime
+guard. Main owns app closure wiring. The two model hooks use exactly:
+
+```js
+{
+  feedbackSettingsVersion, inputBinding, feedbackPreviewMode, responsePreviewMode,
+  previewAxisLabels, previewCornerLabels, restoredTransparency
+}
+```
+
+The reader immediately detaches bindings, Maps and the `{raw,value}` transparency
+cache. `commitModel` installs the supplied scalar/binding/cache values and copies
+the supplied preallocated Maps into the existing const Maps. It must be synchronous,
+nonthrowing and callback-free. `onProjection({contribution,issues})` is synchronous
+and runs after all owner commits. It updates valid preview caches/rendering and
+may configure valid input/response only; it must not reset inspection/RNG, notify
+native IPC or use an invalid contribution as valid configuration. No callback
+runs during preparation. All controls are prelocated, detached control clones
+preflight browser value preservation, and the freshness guard detects replacement
+or removal before commit. Invalid color text retains authority over the color
+widget; an inconsistent preset is exposed as `mismatched-ui-preset:<UI value>` and
+preserved until a complete input/preset edit repairs it. The marker is an invalid
+raw draft value, never a saved preset. Seven focused tests use a minimal control
+interface double and explicitly do not claim browser or app wiring evidence.
+
 These are integration notes for the fixed P5 owner, not public selectors.
 The external IDs are `P5.` followed by the saved field in the first column.
 
