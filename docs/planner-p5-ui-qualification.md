@@ -60,3 +60,38 @@ registration freeze `23e8f3a3671f87e7e73dbfd422847479fd5e5fa7`, on isolated
 the application tree is unchanged. The initial actual-session probe passes all
 61 fields at both widths, with zero unresolved or mode-specific N/A fields.
 Final source-bound browser and image receipts are recorded in the P5 board entry.
+
+## Completed owner receipt
+
+All 61 settings are **verified individually** in Chrome and Edge at both widths:
+zero unresolved fields and zero mode-specific N/A fields. Each of the four runs
+contains 74 paired edit/transition rows, 20 additional checks and 232 actual
+production-session commands. All 24 selected screenshots were inspected; controls,
+mapping inputs, applied/draft labels and binding dialogs remain readable and
+contained. No application defect or P5 production follow-up was found.
+
+Application tree `0c7ed15c9a33f94562dd929df19e0e7e7538fbb8` is unchanged from Main's
+`23e8f3a` registration freeze. Harness `4321e24` supplies all six scenes. The
+single-line `cd1ccb1` follow-up frames only the overview at the actual preview
+pane's top; the four overview receipts were rerun at that exact checkpoint.
+Other scene receipts retain their original `4321e24` binding.
+
+Evidence root:
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/cli-p5/`.
+`p5-ui-final-review.md` lists every field across all four runs and links every
+inspected PNG. `p5-ui-final-review.json` binds all 24 receipt/image hashes, and
+`p5-ui-final-review.mjs` verifies the source tree, exact field coverage, complete
+contribution/projection equality, command revision increments and output hashes.
+It passes 244 field results, 24 images and 928 command exchanges.
+
+Detailed scene directories are `ui-integrated-{chrome,edge}-4321e24`; final
+overview directories are `ui-integrated-overview-chrome-cd1ccb1` and
+`ui-integrated-overview-edge-retry-cd1ccb1`. The first Edge overview refresh
+returned empty launcher streams and no HTTP page receipt before timeout despite
+a final PNG. That failed output is retained and excluded. An unchanged sequential
+fresh-profile retry passed both widths; no assertion or timeout was weakened.
+
+The fixed-control helper was handed off as `2174311` with 50 focused software
+checks; Main collected it before this real application comparison. Native stdin,
+complete recipe/file/media mock and Runner correspondence retain their separate
+owners and gates. P5 source writers are stopped for integration collection.

@@ -278,6 +278,22 @@
   writers are stopped pending integration; no shared app or Runner files changed.
 ### 20260912-e2e-ui-p5-controls
 
+- **Owner handoff ready, writers stopped:** 61/61 writable fields verified
+  individually in actual integrated Chrome/Edge at 1280/800; zero unresolved/N/A.
+  Each run passes 74 paired edit/transition rows, 20 further checks and 232
+  production-session commands. All 24 selected wide/narrow PNGs were inspected.
+- Exact app tree remains Main's `0c7ed15c9a33f94562dd929df19e0e7e7538fbb8` at
+  `23e8f3a`. Harness handoffs: `45d9d51` (unchanged local cherry `4edc6c4`),
+  `4321e24` actual session comparisons and `cd1ccb1` overview-only framing.
+  Collect one copy of the first commit, then the two follow-ups. Main already
+  collected the new production helper `2174311`; there are no later app edits.
+- Evidence root is the C: sibling feedback-checks `cli-p5/`. Aggregate
+  `p5-ui-final-review.json`/`.md` contain every field and all 24 image/receipt
+  hashes; its independent review script passes 244 field results and 928 command
+  exchanges against exact source identities. Detailed binding and retained Edge
+  launcher failure plus successful unchanged retry are documented in
+  `docs/planner-p5-ui-qualification.md`. No false native transport, media/file,
+  physical input or Runner claim is made from this completed browser owner gate.
 - Integrated follow-up uses an independent clean materialization of Main's
   `23e8f3a3671f87e7e73dbfd422847479fd5e5fa7`, branch
   `codex/segment-p5-ui-integrated`, C: sibling P5 UI worktree. No app or shared
