@@ -18,6 +18,12 @@
 - Evidence and proposal: `docs/runner-playback-timing-assessment.md`.
   Combined native-video/Flubber screenshots, actual pipeline/XDF smoke and
   physical timing qualification remain open. No foreground interaction occurred.
+- Follow-up source review identified cached non-neutral preview state while
+  hidden in an ISI. Runner `bfc3746` now projects native neutral state before
+  hiding; root inspected the one-line production change and retained headless
+  receipt. Sixty neutral-state checks pass; actual assembled native execution,
+  physical paint and XDF-only reset attestation remain open. Main collected
+  preceding native worker reset `acac539` in `4818856`.
 
 ### 20260912-main-app-p1-prepared-restore
 

@@ -45,8 +45,21 @@ Runner checkpoint `893f320e31a849ecef609aa89d647f261977c649`:
 Subsequent Runner handoff `acac5396ebf1f7660d18e34b12e6984b30632ba8`
 synchronizes those coordinates and completes the input dispatch barrier before
 every ISI admission. Six focused worker checks pass; root inspected the diff.
-This is a ready component awaiting Main collection and actual rendered/XDF
-validation, not a completed on-screen reset or timing measurement.
+Main collected that worker component in `4818856`. Actual assembled execution
+and XDF validation remain open; this is not an on-screen timing measurement.
+
+The Runner owner's independent source review then found that the interval
+renderer sent only `hideFeedback: true`, leaving its hidden preview's previous
+non-neutral mapping cached. Follow-up `bfc3746e19921982cf5e9c7eab492d6378659e4f`
+also projects the native coordinates through the existing feedback mapper before
+hiding the interval display. It does not substitute frontend zeros for native
+authority. Root inspected the one-line production delta. Sixty focused neutral
+checks pass within the headless browser harness, observing real preview cache
+and DOM state before its synthetic Presented call, including first, consecutive,
+video-following ISIs and the next video's neutral start. The existing hidden
+interval policy remains unchanged. This renderer component still requires
+integration and actual native execution; hidden state is not a visible paint.
+Receipt: `D:/GitHub/.affect-runner-master-build/runner-isi-preview-ui-03/receipt.json`.
 
 The measured-interval claim must distinguish the authored ISI timer from the
 visible gap between video offset and subsequent video onset. The current path
@@ -168,8 +181,8 @@ photodiode or equivalent independently timestamped display measurement.
 
 ## Next slice and evidence limits
 
-Finish neutral-reset synchronization and the native lifecycle/qualification
-prerequisites. Instrument actual transition milestones and compare prepared
+Integrate and exercise both neutral-reset components and finish the native
+lifecycle/qualification prerequisites. Instrument actual transition milestones and compare prepared
 native playback with a compiled fixed block on the same candidate, sources,
 viewport and display. Report actual boundary errors and tails under load, stalls,
 pause/resume and recovery; retain failures instead of repairing their timestamps.
