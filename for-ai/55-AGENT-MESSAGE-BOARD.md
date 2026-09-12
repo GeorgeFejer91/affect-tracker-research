@@ -273,6 +273,13 @@
   combined UI parity/native CLI/file execution remains Main's shared seam. The
   user's new goal69 activates Runner correspondence under its own owner; this
   adapter receipt does not claim that wider goal complete or defer its allocation.
+- Final clean software checkpoint `c6b9912a1f23c6ccc70fb511cad10d4e1d149928`,
+  site tree `c9c66b8fa17d3c7451474d3a332eafa75bf6f7df`, passes **798/798 full Node
+  tests**. Log: sibling feedback-checks
+  `cli-p5/full-node-c6b9912.log`. Collect owner `88a5df2` and `c6b9912` onto shared
+  `2310efc`; the intervening `dddd646` is its unchanged dependency cherry-pick.
+  Source writers are stopped. Entry/build/native/UI-parity and real media/file
+  checks follow Main's actual hook installation, not this unregistered adapter.
 
 ### 20260912-p3-native-catalogue-export-command
 
