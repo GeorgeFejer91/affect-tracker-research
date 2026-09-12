@@ -1,4 +1,5 @@
 import { commandFailure } from "./planner-authoring-contract.js";
+import { NativeCatalogueFailure } from "./native-media-catalogue.js";
 
 /** Compose existing owners, the native receipt transport and session publication.
  * No editor state, filesystem implementation or recipe compiler lives here. */
@@ -72,8 +73,15 @@ export function createPlannerCore9Composition(host) {
         else if (operation === "importVideoFolder") action.grantId = args.directory;
         else if (operation !== "rescanVideoLibrary") commandFailure("unknown_operation", "Unregistered Planner operation.");
         const receipt = await effect(action, publication);
-        prepared = await bridge.prepareCatalogue(receipt, publication);
-        app = await host.prepareCatalogue(prepared.projection, publication);
+        let phase = "bridgePreparation";
+        try {
+          prepared = await bridge.prepareCatalogue(receipt, publication);
+          phase = "appProjection";
+          app = await host.prepareCatalogue(prepared.projection, publication);
+        } catch (error) {
+          const diagnostic = error instanceof NativeCatalogueFailure ? error : new NativeCatalogueFailure(phase, error);
+          commandFailure("native_failed", diagnostic.message, "P1.media.catalogue");
+        }
       }
       if (!prepared.isCurrent() || !app.isCurrent()) commandFailure("stale_revision", "Workspace preparation changed.");
       publication.publish(() => { prepared.commit(); app.commit(); }, app.afterCommit);

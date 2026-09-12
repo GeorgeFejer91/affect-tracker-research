@@ -3,6 +3,32 @@ import assert from "node:assert/strict";
 import { withPlannerCore9 } from "../site/src/research/planner-authoring-core9.js";
 import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
 import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
+import { createPlannerCore9Composition } from "../site/src/research/planner-core9-composition.js";
+import { NativeCatalogueFailure } from "../site/src/research/native-media-catalogue.js";
+
+test("post-effect catalogue diagnosis retains acknowledgement without publication or private text", async () => {
+  for (const error of [new Error("C:/private/source.csv secret"), new NativeCatalogueFailure("prepare", {
+    code: "native_media_unavailable", message: "Unavailable (native-gstplay-command-timeout)." })]) {
+    let effects = 0;
+    const acknowledgement = { operation: "rescanVideoLibrary", stage: "completed", outcome: "acknowledged", receipt: { stimuliCount: 1 } };
+    const prepare = createPlannerCore9Composition({
+      nativeEffects: () => ({ async execute(_context, _action, publication) {
+        effects++; publication.recordEffect(acknowledgement); return {};
+      } }),
+      nativeWorkspace: () => ({ getWorkspaceId: () => "workspace", async prepareCatalogue() { throw error; } }),
+      prepareCatalogue() { throw Error("must not publish app state"); },
+    });
+    const owner = withPlannerCore9({ id: "P1", settings: [], operations: [],
+      read: () => ({ values: {}, issues: [] }), validate: () => [], stage() {} }, prepare);
+    const session = createPlannerAuthoringSession({ owners: [owner] });
+    const result = await session.execute({ schema: PLANNER_COMMAND_SCHEMA, version: 1, sessionId: session.sessionId,
+      requestId: crypto.randomUUID(), expectedRevision: 0, action: { kind: "perform", operation: "rescanVideoLibrary", arguments: {} } });
+    assert.equal(effects, 1); assert.equal(result.status, "incomplete"); assert.equal(result.result.published, false);
+    assert.deepEqual(result.result.effect, acknowledgement); assert.equal(result.revision, 0);
+    assert.equal(result.issues[0].code, "native_failed");
+    assert.doesNotMatch(JSON.stringify(result), /private|secret|csv/u);
+  }
+});
 
 test("core9 catalogue has exact closed public arguments and only Open uses sequence", async () => {
   const owners = ["P1", "P2", "P7"].map(id => withPlannerCore9({ id, settings: [], operations: [], read: () => ({ values: {}, issues: [] }),

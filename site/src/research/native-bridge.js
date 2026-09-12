@@ -7,7 +7,7 @@ import {
   estimateResearchStorageUse,
 } from "./ui-contracts.js";
 import { probeVideoElement } from "./workspace.js";
-import { attestNativeGstCatalogue } from "./native-media-catalogue.js";
+import { attestNativeGstCatalogue, NativeCatalogueFailure } from "./native-media-catalogue.js";
 import { NativeMediaController } from "./native-media-controller.js";
 import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
 import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
@@ -1872,8 +1872,8 @@ export class NativeResearchRuntimeBridge {
       scannedStimuli = result.qualified;
       decodeQualification = "attestedQualified";
       if (result.failures.length > 0) {
-        const details = result.failures.map(({ scanned, error }) => `${scanned?.displayName ?? "Video"}: ${messageOf(error)}`);
-        throw new Error(`Native GstPlay decode verification failed for ${details.join("; ")}`);
+        const failure = result.failures[0];
+        throw new NativeCatalogueFailure(failure.phase, failure.error);
       }
     } else if (playbackMode !== "unqualifiedWebview") {
       throw new Error("The retired native LibVLC playback mode is unavailable.");

@@ -1,5 +1,22 @@
 # Agent message board
 
+### 20260912-main-first-native-mock-and-catalogue-diagnosis
+
+- Exact clean356cba7 native-enabled CLI build passes; frozen executable SHA
+  673ea9b7acce68e9c8073359d603a31de596c26c87bd1608660f7a9f35125c5e.
+  First full mock imports the real clip natively but app adoption fails with
+  owner_failed. Effect acknowledged1stimulus, publishedfalse, revision2. No
+  master generated. Evidence/workspace preserved under main-fullmock-356cba7
+  in D:/GitHub/.affect-checks. Driver failure teardown SIGTERM is not clean exit.
+- Root/Main allocate fixed phase/reason diagnostics within existing native_failed
+  issue shape. No raw exception text, paths, stacks or source content forwarded;
+  native receipt and no-publication state remain.44 focused tests pass, including
+  unknown/private-text rejection and actual session effect retention.
+- Next diagnostic selects a copy of failed workspace and rescans existing media;
+  no repeated import/copy mutation and no attribution to incidental plugin warning.
+  This is diagnosis, separate from a new final from-scratch mock. Root owns
+  bounded graceful driver failure cleanup. Native/Runner qualification stays open.
+
 ### 20260912-main-unified-consumer-checkpoint
 
 - Main collected Runner baseline and owner chain through acac539, hidden ISI
