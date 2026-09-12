@@ -290,6 +290,29 @@
 
 ### 20260912-p3-cli-authoring
 
+- **Ready for sole-owner collection:** application `7851424`, fixture-only
+  framing refinement `cc56fc6`; source writers stopped. Final **800/800 Node**
+  tests pass, including 18 P3 command-owner checks. Desktop11/Pages239 builds
+  pass; no Rust/native source changed. The earlier counts below are checkpoints.
+- Final six inspected browser scenes: Chrome wide/narrow populated and narrow
+  row actions, Edge wide populated (**128 checks each**) at clean `7851424`;
+  Chrome/Edge narrow invalid duration (**133 each**) at clean `cc56fc6`. The
+  final invalid images show both the existing error text and focused field.
+  All 14 operations compare real UI fields and compiled values; all applicable
+  canonical contributions and retained occurrence IDs agree. No browser errors
+  or outer horizontal overflow; intentional table scrolling remains usable.
+- Receipts/logs: `D:/GitHub/.affect-preview-checks/p3-cli-20260912/`.
+  Use `final-{chrome-wide,chrome-narrow,chrome-actions,edge-wide}-7851424` and
+  `final-{chrome,edge}-invalid-cc56fc6`; each receipt binds all 100 served inputs,
+  exact source, browser executable, harness, HTML and inspected PNG hashes.
+  Browser reported versions: Chrome152 and Edge153. Final full-suite log is
+  `node-all-cc56fc6.log`; frontend logs are `desktop-build.log`/`pages-build.log`.
+- Registration is `createPlannerVariantCommandOwner({editor: stimulusOrderEditor})`.
+  No extra shared publish hook: staged `afterCommit()` handles it. Integration
+  owns shared GUI-intent/file invalidation wiring and actual native CLI E2E;
+  root owns CLI-P3/E2E checklist closure. These synthetic P1 boundary/browser
+  receipts do not claim actual media, OS picker, Runner or installed qualification.
+
 - Implementation checkpoint: all 14 closed operations, all nine readback groups,
   internal exact draft recovery and minimal matching GUI reorder/reset controls
   are implemented. Public raw draft and all generated identities are read-only.
