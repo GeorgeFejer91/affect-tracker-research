@@ -45,6 +45,49 @@ test("CLI explicitly builds one hidden native WebView with its owned profile", a
   assert.match(source, /if let Some\(profile\) = &cli_profile[\s\S]*?WebviewWindowBuilder::from_config\(app, config\)\?[\s\S]*?\.data_directory\(profile\.join\("webview"\)\)[\s\S]*?\.visible\(false\)[\s\S]*?\.focused\(false\)/u);
 });
 
+test("fallible setup finishes before starting the UI-dependent native actor", async () => {
+  const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const setup = source.slice(source.indexOf(".setup("), source.indexOf(".on_window_event("));
+  const start = setup.indexOf("NativeMediaService::start_async(");
+  assert.ok(start > 0);
+  assert.ok(setup.indexOf(".start(app.handle().clone())") < start);
+  assert.ok(setup.lastIndexOf("app.path().app_data_dir()?") < start);
+  assert.doesNotMatch(setup.slice(start), /\?/u);
+});
+
+test("video effect readiness is between revision barriers and retains its request budget", async () => {
+  const request = { requestId: crypto.randomUUID() }, calls = [];
+  let effects, notify, supplied = false, finish;
+  const done = new Promise(resolve => { finish = resolve; });
+  const session = { sessionId: crypto.randomUUID(), revision: 0,
+    subscribe(listener) { notify = listener; return () => {}; }, destroy() {},
+    async execute() {
+      return effects.execute({ sessionId: this.sessionId, requestId: request.requestId, expectedRevision: 0 },
+        { type: "importVideos", grantId: crypto.randomUUID(), workspaceId: "workspace" },
+        { isCurrent: () => true, recordEffect() {} });
+    },
+  };
+  const bridge = await bootPlannerAuthoringNative({ researchUi: { plannerAuthoringSession: session,
+    connectPlannerNativeEffects(value) { effects = value; } } }, async command => {
+    if (command.endsWith("_status")) return { enabled: true, transport: "stdio" };
+    if (command.endsWith("_next")) { if (supplied) return null; supplied = true; return request; }
+    if (command.endsWith("_revision")) { calls.push("revision"); return; }
+    if (command.endsWith("_effect")) {
+      calls.push("import");
+      return { schema: "affect-research-planner-native-result", version: 1, operation: "importVideos",
+        effect: null, payload: {}, error: null, superseded: null };
+    }
+    if (command.endsWith("_complete")) finish();
+  }, async guard => {
+    calls.push("readiness");
+    assert.ok(guard.deadline > performance.now() && guard.deadline <= performance.now() + 60_000);
+    session.revision++; notify(session.revision);
+  });
+  await done;
+  assert.deepEqual(calls, ["readiness", "revision", "import"]);
+  bridge.destroy();
+});
+
 test("normal native Planner startup never requests an authoring session", async () => {
   const calls = [];
   const bridge = await bootPlannerAuthoringNative({}, async command => {

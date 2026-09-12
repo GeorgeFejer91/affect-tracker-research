@@ -15,6 +15,7 @@ import { completeQuestionnaireAssetStorageRequest } from "./questionnaire-storag
 import { completeExperimentPackageSaveRequest } from "./package-save-request.js";
 import { completePlannerFileRequest, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { bootPlannerAuthoringNative } from "./planner-authoring-native.js";
+import { waitForNativeMediaReadiness } from "./native-media-readiness.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -1769,6 +1770,7 @@ export class NativeResearchRuntimeBridge {
 
   async #rescanWorkspace() {
     this.#requireWorkspace();
+    await this.ensureMediaReady();
     const current = this.#catalogueCurrent();
     const result = await this.invoke("research_rescan_stimuli", { workspaceId: this.workspace.workspaceId });
     if (!current()) throw new Error("The workspace or catalogue changed during the native scan.");
@@ -1778,6 +1780,7 @@ export class NativeResearchRuntimeBridge {
   async #importStimuli(selectionKind, workspaceId) {
     this.#requireWorkspace();
     if (!workspaceId || workspaceId !== this.workspace.workspaceId) throw new Error("The workspace changed before video import began.");
+    await this.ensureMediaReady();
     const current = this.#catalogueCurrent();
     const result = await this.invoke("research_import_stimuli", {
       workspaceId,
@@ -1786,6 +1789,20 @@ export class NativeResearchRuntimeBridge {
     if (workspaceId !== this.workspace?.workspaceId) throw new Error("The workspace changed during video import.");
     if (!current()) throw new Error("The workspace or catalogue changed during video import.");
     if (result) await this.#catalogue(result);
+  }
+
+  async ensureMediaReady({ isCurrent = () => true, signal, deadline } = {}) {
+    if (this.#selectedPlaybackMode() !== "nativeGstPlay") return;
+    const baseCurrent = this.#catalogueCurrent();
+    const current = () => isCurrent() && baseCurrent();
+    const capability = await waitForNativeMediaReadiness({
+      readCapability: async () => validateNativeMediaCapabilityV2(await this.invoke("research_native_media_capability")),
+      isCurrent: current, signal, deadline,
+    });
+    if (signal?.aborted || !current()) throw new Error("Native media startup was superseded.");
+    // Refresh before callers capture their publication guard. No qualification
+    // flag is manufactured here; retain the exact validated native capability.
+    this.nativeMediaCapability = capability;
   }
 
   #catalogueCurrent() {
@@ -3143,6 +3160,6 @@ export async function bootNativeBridge(root) {
   const bridge = new NativeResearchRuntimeBridge(root);
   root.researchRuntime = bridge;
   await bridge.initialize();
-  if (bridge.plannerOnly) bridge.authoringNative = await bootPlannerAuthoringNative(root);
+  if (bridge.plannerOnly) bridge.authoringNative = await bootPlannerAuthoringNative(root, tauriInvoke, guard => bridge.ensureMediaReady(guard));
   return bridge;
 }

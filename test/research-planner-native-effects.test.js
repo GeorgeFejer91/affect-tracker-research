@@ -5,6 +5,20 @@ const context = () => ({ sessionId: crypto.randomUUID(), requestId: crypto.rando
 const ack = (extra = {}) => ({ schema: "affect-research-planner-native-result", version: 1, operation: "saveRecipe",
   effect: { written: true, basename: "recipe.json" }, payload: { saved: true }, error: null, superseded: null, ...extra });
 
+test("readiness failure dispatches no import and retains no unknown write receipt", async () => {
+  const c = context(), receipts = [];
+  const adapter = createPlannerNativeEffects({ sessionId: c.sessionId,
+    beforeDispatch: async guard => {
+      assert.equal(guard.action.type, "importVideos");
+      assert.deepEqual(guard.context, c);
+      assert.equal(guard.isCurrent(), true);
+      throw new Error("startup unavailable");
+    }, invoke: () => assert.fail("import must not dispatch") });
+  await assert.rejects(adapter.execute(c, { type: "importVideos", grantId: crypto.randomUUID(), workspaceId: "workspace" },
+    { isCurrent: () => true, recordEffect: receipt => receipts.push(receipt) }), /startup unavailable/u);
+  assert.deepEqual(receipts, []);
+});
+
 test("revision barrier completes before dispatch and cancellation is rechecked", async () => {
   const c = context(), receipts = []; let release, current = true, calls = 0;
   const gate = new Promise(resolve => { release = resolve; });
