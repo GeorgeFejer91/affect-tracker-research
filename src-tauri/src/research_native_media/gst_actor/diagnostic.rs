@@ -125,6 +125,57 @@ fn observed(
     Err(format!("observed-state-timeout-{state:?}"))
 }
 
+fn observe_live_frame(
+    actor: &GstPlayActorHandle,
+    fence: &NativeMediaCommandFenceV1,
+    state: NativeMediaStateV1,
+) -> bool {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    let started = Instant::now();
+    let result = actor.snapshot_live_frame(fence.clone());
+    let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
+    match result {
+        Ok(frame) => {
+            let bytes = (frame.jpeg_base64.len() <= 128 * 1024)
+                .then(|| STANDARD.decode(&frame.jpeg_base64).ok())
+                .flatten();
+            let bounded = bytes.as_ref().is_some_and(|bytes| {
+                !bytes.is_empty()
+                    && bytes.len() <= 96 * 1024
+                    && bytes.starts_with(&[0xff, 0xd8])
+                    && bytes.ends_with(&[0xff, 0xd9])
+            });
+            let identity_matches = frame.session_id == fence.session_id
+                && frame.generation == fence.generation.to_string();
+            let success = bounded && identity_matches && frame.width == 640 && frame.height == 360;
+            trace(
+                "live-frame-capture",
+                serde_json::json!({
+                    "state": state, "success": success,
+                    "width": frame.width, "height": frame.height,
+                    "encodedBytes": bytes.as_ref().map(Vec::len),
+                    "requestElapsedMs": elapsed_ms,
+                    "latencyScope": "queue-capture-validation-base64-round-trip",
+                    "identityMatches": identity_matches, "boundedJpeg": bounded,
+                    "positionEstimateMs": frame.position_estimate_ms,
+                }),
+            );
+            success
+        }
+        Err(error) => {
+            trace(
+                "live-frame-capture",
+                serde_json::json!({
+                    "state": state, "success": false, "errorCode": error.code,
+                    "requestElapsedMs": elapsed_ms,
+                    "latencyScope": "queue-capture-validation-base64-round-trip",
+                }),
+            );
+            false
+        }
+    }
+}
+
 fn exercise(
     parent: tauri::WebviewWindow,
     runtime: PathBuf,
@@ -200,7 +251,11 @@ fn exercise(
         "decode-observed",
         serde_json::to_value(decode).map_err(|_| "decode-json")?,
     );
+    let paused_capture = observe_live_frame(&actor, &fence, NativeMediaStateV1::Paused);
+    observed(&actor, NativeMediaStateV1::Paused)?;
     actor.play(fence.clone()).map_err(|e| e.message)?;
+    observed(&actor, NativeMediaStateV1::Playing)?;
+    let playing_capture = observe_live_frame(&actor, &fence, NativeMediaStateV1::Playing);
     observed(&actor, NativeMediaStateV1::Playing)?;
     actor.pause(fence.clone()).map_err(|e| e.message)?;
     observed(&actor, NativeMediaStateV1::Paused)?;
@@ -278,6 +333,9 @@ fn exercise(
         "shutdown-returned",
         serde_json::json!({"repeated": true, "parentHidden": true}),
     );
+    if !paused_capture || !playing_capture {
+        return Err("live-frame-capture-check-failed-after-confirmed-shutdown".into());
+    }
     Ok(())
 }
 

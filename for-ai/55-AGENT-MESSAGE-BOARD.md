@@ -3393,3 +3393,19 @@ boundary or qualification flag changes in this checkpoint.
   unused code; no suppression and no strict warning-clean claim. Formatting,
   PowerShell syntax and diff checks passed. Final handoff is documentation-only
   over tested native source `c87bd95`; Main retains combined integration gates.
+
+### 20260912-RR11-native-snapshot-diagnostic (Live Preview)
+
+Root allocated Backend Verification on isolated branch
+`codex/rr11-native-snapshot-diagnostic`, base `41d21a8`, same owned diagnostic
+worktree. Collect only `live_frame.rs`, SnapshotLiveFrame actor/service seams
+and exact base64 dependency from stopped RR11 `f418f3e`; preserve `c87bd95`
+lifetime. No companion/lib/runtime/frontend or hmac collection. New API is
+read-only current-video JPEG; no recipe, qualification or unsafe change.
+Extend the hidden actual-clip test with one Paused and one Playing capture:
+640x360 bounds, <=96KiB JPEG, fence identity, request round-trip latency and
+subsequent Pause/Stop/actual join. Capture failure remains failure while the
+test continues safe teardown; no retry, threshold increase or seek by capture.
+Attempt06 is immutable prior evidence. Focused native build/test and one new
+bounded process receipt are the evidence target, not recorder or installed
+qualification. Main/RR11 received build and ownership coordination.
