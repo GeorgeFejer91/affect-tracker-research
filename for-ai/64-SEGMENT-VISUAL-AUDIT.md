@@ -38,9 +38,10 @@ its exact source; V28 still requires the eventual combined application.
 
 All seven owners have completed a bounded visual cleanup handoff. Actual
 rendered owner versions were inspected at desktop and constrained widths;
-the evidence and remaining limits are recorded below. Canonical source is
-still clean `ba2110f`, and the isolated integration candidate is still clean
-`c7ba103`. Neither is the final combined seven-segment application. The open
+the evidence and remaining limits are recorded below. Canonical source remains
+clean `ba2110f`. Integration has advanced beyond its initial `c7ba103` UI
+candidate; the exact interim capture below is `64da370`, and later owner-reported
+checks name `4f505c3`. None is the final verified combined application. The open
 checkboxes retain that distinction; they do not mean the owner fixes are absent.
 
 | Segment | Cleanup verified in the owner handoff | Ready checkpoint |
@@ -55,8 +56,8 @@ checkboxes retain that distinction; they do not mean the owner fixes are absent.
 
 The shared header reflow is ready at `82c7d6c`; removal of the old Experiment
 shell is in integration candidate `c7ba103`. The required next visual step is
-V28: render and inspect the exact combined source after the integration owner
-resumes. Do not substitute an older installed application or aggregate test
+V28: render and inspect the final combined source after ready handoffs are
+collected. Do not substitute an older installed application or aggregate test
 counts from separate branches for that check.
 
 ## Capture method and baseline
@@ -135,6 +136,18 @@ expanded Advanced, dialogs, final P3, successor JSON or accepted-contribution
 semantics. Earlier owner receipts retain their narrower source-specific value.
 V28 remains open until the final combined functionality and rendered states
 are verified; do not close all visual items from this interim inspection.
+
+Later P7 follow-up: owner source `f283de0` includes the recipe-first/default-
+collapsed LSL fix from `62248cb`, named-file handoff `a4bd8a1`, and the shared
+confirmation shell. Root visually inspected
+`D:/GitHub/affect-tracker-research-p7-evidence/named-save-native-regression/review.png`.
+In this 1366×1000 actual-app cancelled-save state, recipe identity and the
+readable cancellation notice precede the collapsed LSL disclosure. This
+resolves the specific ordering/default-disclosure finding in the owner state.
+The screenshot is not a full footer or narrow-layout receipt, and does not
+prove the eventual master JSON or combined app. P7 reports 32 actual Chrome
+regression assertions for this fixture; these are separate from root's visual
+inspection. Retain V22–V25/V28 until final integrated coverage is collected.
 
 ## Segment checklist
 
@@ -314,9 +327,9 @@ combined verification remains pending.
 The later confirmation requirement is recorded in catalogue decision 11:
 sequential contribution acceptance, with final Live Preview capture and named
 JSON save in P7. The existing review-only buttons do not satisfy it. A new
-backend acceptance/save pass is separate from the already-authorized UI cleanup;
-its pending stage confirmation must not prevent independent visual inspection
-or collection of ready UI fixes. Keep acceptance and persisted state distinct.
+backend acceptance/save pass is separate from the UI cleanup and has now been
+explicitly resumed by the researcher. Continue both within their assigned
+ownership, keeping acceptance and persisted state distinct.
 
 Subsequent owner handoffs, still requiring combined verification:
 

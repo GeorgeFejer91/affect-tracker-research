@@ -138,6 +138,31 @@ file; follow the integration-owner collection procedure in the workflow.
 - Integration reports candidate `549874e` includes its confirmation shell,
   P7 `cc5cc83`, P1 `3d6a6b2` and P5 `c143398`. Root's 33 inspected captures
   still name earlier `64da370`; they do not verify the new acceptance UI.
+- Later resumed-pass handoffs: P1 `5988ce0` provides validated workspace-to-video
+  and display-geometry projections with one registered owner revision. P3's
+  clean `ffe7e62` adopts that interface and adds guarded, sidecar-free
+  `prepareStimulusVariantContribution`; preparation returns a snapshot, and P7
+  alone accepts it before shared navigation advances. S3 reports 96 focused
+  checks and both builds. S2/P5 remain ready; their idle state is not a stall.
+- Independent review confirmed a new P1 async restoration defect at `5988ce0`:
+  producer `restoreContribution` acquires its generation after validation, so
+  `restoreContribution(valid); withdraw(); await restore` can publish obsolete
+  readiness. The app's refresh path can also clear a newer pending recipe after
+  awaiting an older recipe's verification. S1 owns generation/identity guards
+  and focused interleaving regressions; integration/P7 have been notified.
+  The coherent projection itself passed source review. Do not conflate this
+  repair with the unanswered physical media-location policy.
+- P7 handoffs `a4bd8a1`/`f283de0` add named-file acknowledgement/lifecycle and
+  composite registration. Root inspected its actual rendered cancelled-save
+  Review image: primary recipe/status precedes collapsed LSL, resolving that
+  concrete owner-state finding. Full narrow/footer/combined verification stays
+  open. Pure content reopen can proceed without restoring filesystem authority;
+  the final typed desktop master still needs P4's accepted geometry contract.
+- S4 reports 110 actual Chrome composition checks and four images for live
+  binding, invalidation, unit conversion and guarded draft restore; its final
+  P1 revision fixture/handoff is pending. Integration reports clean `4f505c3`
+  passes 545 Node checks, Chrome retained-UI/P5 checks and both builds. These
+  owner reports do not promote canonical `ba2110f` or qualify Edge/Runner.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
