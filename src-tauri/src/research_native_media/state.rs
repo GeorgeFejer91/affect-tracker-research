@@ -101,13 +101,6 @@ pub(crate) fn apply_generation_fenced_signal(
             status.video_width = video_width.filter(|value| *value > 0);
             status.video_height = video_height.filter(|value| *value > 0);
             status.audio_stream_count = Some(audio_stream_count);
-            if status.duration_ms.is_none()
-                || status.video_width.is_none()
-                || status.video_height.is_none()
-            {
-                status.state = NativeMediaStateV1::Failed;
-                status.reason_code = Some("gstreamer-media-info-incomplete".to_owned());
-            }
         }
     }
     status.advance();
@@ -180,6 +173,87 @@ mod tests {
             status.reason_code.as_deref(),
             Some("gstreamer-playback-error")
         );
+    }
+
+    #[test]
+    fn partial_media_info_remains_pending_until_complete_metadata_and_playback_state() {
+        let mut status = NativeMediaStatusV1::ready();
+        status.generation = 2;
+        status.state = NativeMediaStateV1::Preparing;
+
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            2,
+            MediaSignal::MediaInfo {
+                duration_ms: Some(254_406.0),
+                video_width: None,
+                video_height: None,
+                audio_stream_count: 1,
+            },
+        ));
+        assert_eq!(status.state, NativeMediaStateV1::Preparing);
+        assert_eq!(status.duration_ms, Some(254_406.0));
+        assert_eq!(status.video_width, None);
+        assert_eq!(status.video_height, None);
+        assert_eq!(status.reason_code, None);
+
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            2,
+            MediaSignal::MediaInfo {
+                duration_ms: Some(254_406.0),
+                video_width: Some(1920),
+                video_height: Some(1080),
+                audio_stream_count: 1,
+            },
+        ));
+        assert_eq!(status.state, NativeMediaStateV1::Preparing);
+        assert_eq!(status.video_width, Some(1920));
+        assert_eq!(status.video_height, Some(1080));
+        assert_eq!(status.reason_code, None);
+
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            2,
+            MediaSignal::BackendState(BackendPlaybackState::Paused),
+        ));
+        assert_eq!(status.state, NativeMediaStateV1::Paused);
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            2,
+            MediaSignal::BackendState(BackendPlaybackState::Playing),
+        ));
+        assert_eq!(status.state, NativeMediaStateV1::Playing);
+        assert_eq!(status.reason_code, None);
+    }
+
+    #[test]
+    fn no_video_media_info_remains_incomplete_for_the_bounded_readiness_wait() {
+        let mut status = NativeMediaStatusV1::ready();
+        status.generation = 5;
+        status.state = NativeMediaStateV1::Preparing;
+
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            5,
+            MediaSignal::MediaInfo {
+                duration_ms: Some(10_000.0),
+                video_width: None,
+                video_height: None,
+                audio_stream_count: 1,
+            },
+        ));
+        assert!(apply_generation_fenced_signal(
+            &mut status,
+            5,
+            MediaSignal::BackendState(BackendPlaybackState::Paused),
+        ));
+
+        assert_eq!(status.state, NativeMediaStateV1::Paused);
+        assert_eq!(status.duration_ms, Some(10_000.0));
+        assert_eq!(status.video_width, None);
+        assert_eq!(status.video_height, None);
+        assert_eq!(status.reason_code, None);
     }
 
     #[test]

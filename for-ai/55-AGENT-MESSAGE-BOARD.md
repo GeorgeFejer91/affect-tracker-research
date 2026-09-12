@@ -3272,7 +3272,21 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   seek-done and playback callbacks normally.
 - Focused command
   `cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features research_native_media::state::tests --lib`
-  passes 6/6 with 232 filtered out. `cargo fmt --check` and `git diff --check`
-  pass. Two existing no-default test-build dead-code warnings in
-  `research_video_geometry.rs` remain unchanged. Main retains collection and
-  broader native/installed verification.
+  initially passed 6/6 with 232 filtered out. `cargo fmt --check` and
+  `git diff --check` passed. Two existing no-default test-build dead-code
+  warnings in `research_video_geometry.rs` remain unchanged.
+- Actual Gst diagnostic attempt 02 then supplied critical counterevidence:
+  the real 254406ms, 1920x1080 clip emitted partial MediaInfo before complete
+  metadata, decoded three frames and reached Paused/Playing, but the baseline
+  retained `gstreamer-media-info-incomplete`. The first terminal-latch candidate
+  `9a68e7c` must not be integrated by itself.
+- Corrective behavior keeps incomplete MediaInfo nonterminal with missing fields
+  explicit and no failure reason. Later complete metadata followed by Paused/
+  Playing succeeds. Unsupported/no-video metadata cannot satisfy the existing
+  bounded `awaitPrepared` requirement for positive duration, width and height,
+  so it times out and is stopped by the caller without weakening genuine Error/
+  Unknown terminal latching. No caller or actor source change is required.
+- Corrected focused state tests pass 8/8 with 232 filtered out, including the
+  observed partial-to-complete order and no-video readiness case. Main retains
+  collection and broader native/installed verification; Live Preview owns the
+  actual diagnostic rerun against the corrected branch tip.
