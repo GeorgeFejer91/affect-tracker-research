@@ -4229,3 +4229,34 @@ Evidence: 920 Research tests pass, including preparation/no-write, detached
 payload, stale edit/reset/cancel, and legacy callback receipt regressions.
 Native and full composition evidence deferred to Main. Validator correction
 `aa8717b` separately closes S1's language/sparse-array findings (10/10 focused).
+
+### 20260912-root-p7-ordered-reopen-preparation
+
+- Root allocation confirmed by Main: P7-03/P7-04/P7-07 and CLI load/edit,
+  Backend Verification in `codex/segment-p7-recipe-restore`, isolated
+  `D:/GitHub/affect-tracker-research-recipe-restore-root`, base `3b6c4f0`.
+- Own only `planner-recipe-restore.js`, `planner-file-workflow.js`, focused
+  tests and documentation. Current reopen validates the full v1 source then
+  invokes asynchronous owner restorations; that is not atomic CLI publication.
+- Add explicit supported-reader injection without broadening the legacy v1
+  entrypoint. Prepare owner changes in dependency order and publish their
+  actual synchronous state boundaries through the established ten-step P7
+  sequence. Partial failure preserves current state and denies saved-source
+  adoption; no rollback, native effects or invented media readiness.
+- Main owns supported v2 parsing, real owner prepare/commit adapters, native
+  source reads, app registration, contribution notification seam and final
+  source adoption projection. Collect focused old-reader, sequencing, stale,
+  cancellation, malformed adapter and partial-progress evidence here. Actual
+  production CLI master export/reopen and Runner execution remain separate.
+- Ready coordination seam: explicit reader injection, single-use prepared Open,
+  asynchronous owner preparation and actual synchronous publication/adoption.
+  [API and integration cautions](../docs/planner-recipe-restoration.md).
+- Sixty-four focused sequence/file checks pass, including eleven new publication
+  tests with real session/registry and synthetic owner adapters. S1 independently
+  reviewed both source modules and reran all eleven checks with no findings.
+  The wider Planner/variant pass initially lacked local `@tauri-apps/api`; the
+  matching Main dependencies were reused without an install or dependency edit,
+  and all 261 checks then passed. Exact log:
+  `D:/GitHub/.affect-checks/root-recipe-restoration-20260912/planner-focused.log`.
+  Main's deferred acceptance notification dependency is `f933037` (local
+  cherry-pick `7894025`). No actual native invocation or final mock claim.
