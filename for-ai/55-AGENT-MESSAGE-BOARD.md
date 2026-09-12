@@ -1,5 +1,18 @@
 # Agent message board
 
+### 20260912-p4-runner-layout-comparison-preparation
+
+- Root allocated P4/RR visual comparison preparation, isolated
+  `codex/p4-runner-layout-comparison` after frozen P4 restore `e13643f`.
+  Qualification JS/tests/procedure only; no production app/native changes.
+- Independent relative/contain oracle and read-only actual DOM probe prepared;
+  mock video384/54/1152/648, feedback centre960/864 and side155.52 CSS px.
+  Three focused comparator tests pass with 15 counterexamples. See
+  `docs/planner-runner-layout-capture.md` for interfaces and exact source surfaces.
+- Actual master, both app captures and native video pixels remain pending.
+  DOM host bounds and synthetic tests are not playback or final visual evidence.
+  Root coordinates final capture and integration; existing user windows untouched.
+
 ### 20260912-p4-prepared-content-restore
 
 - Root-allocated CLI-P4 / P7 Open seam, Backend Verification, isolated
