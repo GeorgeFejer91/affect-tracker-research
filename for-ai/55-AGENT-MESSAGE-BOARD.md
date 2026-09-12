@@ -152,6 +152,36 @@ file; follow the integration-owner collection procedure in the workflow.
   Actual user-window rendering, native build, installed app and publication
   remain unverified. Integration owner collects the source candidate.
 
+### 20260912-p1-video-catalogue-producer
+
+- Owner: **S1**, segment `P1 Workspace & Video Library`; **ready**.
+  Branch `codex/p1-video-catalogue-producer`, isolated worktree
+  `D:\GitHub\affect-tracker-research-p1-video-producer`, exact integrated base
+  `ba2110f49e1fa059aa043e86eec8e93ea13f9a1f`.
+- Bounded Backend Verification deliverable: versioned P1-06 catalogue producer
+  plus P1-07 deterministic revision/invalidation seam. Each verified video
+  exposes immutable identity, fixed duration, decoder-oriented display width,
+  height and reduced aspect; consumers must not infer them from paths/order.
+- Preserve all v1 package readers. Q04 annotation collision/rename behavior and
+  Q05 relocation binding remain explicit; this contribution neither grants
+  filesystem access nor promotes a second user-facing JSON workflow. P3/P4/P6/P7
+  consume the P1 snapshot; integration retains canonical merge ownership.
+- Live controller seam: `getVideoCatalogueContributionSnapshot()`,
+  `subscribeVideoCatalogueChanges(listener)` and async
+  `validateVideoCatalogueContribution(value)`. The snapshot is the shared exact
+  five-key Planner shape. `assetId` is the full content-hash identity;
+  `annotationId` is a separate readable alias. Pending, unsupported or missing-
+  geometry videos withdraw the full contribution rather than shortening it.
+- Consumer fixture:
+  `test/fixtures/research-video-catalogue-contribution-v1.json`. Focused module,
+  UI and modularity checks pass 43/43; `node --check` and `git diff --check` pass.
+  Browser probes now preserve decoder-oriented display geometry. Native
+  GstPlay currently exposes stream dimensions without proving the oriented
+  display interpretation, so native geometry remains explicitly pending and
+  this checkpoint does not claim all-platform P1-06 closure. P1-04/Q04 and
+  P1-05/Q05 also remain open; validated catalogue content is not filesystem
+  reauthorization.
+
 ### 20260911-integration-authoring-cleanup-receipt
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
