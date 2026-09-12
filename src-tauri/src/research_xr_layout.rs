@@ -444,6 +444,14 @@ mod tests {
             let profile: XrLayoutProfileV1 =
                 serde_json::from_value(case["profile"].clone()).unwrap();
             let e = &case["envelope"];
+            if case["configuration"]["version"] == 2 {
+                let saved: crate::research_feedback::FeedbackContributionV2 =
+                    serde_json::from_value(case["configuration"].clone()).unwrap();
+                saved.validate().unwrap();
+                let owned =
+                    crate::research_feedback::resolve_feedback_envelope_v2(&saved, 1024.).unwrap();
+                close(&serde_json::to_value(owned).unwrap(), e);
+            }
             let actual = profile
                 .resolve_feedback_footprint(
                     e["algorithmVersion"].as_str().unwrap(),

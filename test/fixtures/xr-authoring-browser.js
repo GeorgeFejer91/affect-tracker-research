@@ -1,6 +1,8 @@
 import { bootResearchUi } from "../../site/src/research/app.js";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 import { serializeXrLayoutProfileV1 } from "../../site/src/research/xr-layout.js";
+import { canonicalJson } from "../../site/src/research/canonical.js";
+import { resolveSavedXrLayoutContribution } from "../../site/src/research/xr-layout-recipe.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import savedXr from "./xr-layout-recipe-v1.json";
 
@@ -77,7 +79,27 @@ const rejected = async (action) => { try { await action(); return false; } catch
   await ui.restoreFeedbackContribution(savedFeedback.contribution); await ui.waitForXrLayoutDependencies(); await ui.acceptXrLayoutContribution();
   const feedbackRevision = dependencies().P5.revision, xrRevision = ui.getXrLayoutContribution().revision;
   change("#preview-halo-size", "250");
-  check("preview-only halo leaves saved P5 and P6 unchanged", dependencies().P5.revision === feedbackRevision && ui.getXrLayoutContribution().revision === xrRevision);
+  check("saved V2 halo invalidates P5 and XR", dependencies().P5.revision > feedbackRevision
+    && ui.getXrLayoutContribution().revision > xrRevision && ui.getXrLayoutContribution().pending);
+  await ui.waitForXrLayoutDependencies(); await ui.prepareXrLayoutContribution();
+  const beforeFullRestore = ui.getXrLayoutContribution().contribution;
+  for (const renderer of ["flubber", "grid", "procedural-face"]) {
+    const desired = structuredClone(savedXr.feedbackV2); desired.presentation.renderer = renderer;
+    desired.presentation.halo.gradient = true;
+    await ui.restoreFeedbackContribution(desired, { isCurrent: () => true });
+    check(`${renderer} complete saved feedback restores without losing fields`, canonicalJson(dependencies().P5.contribution) === canonicalJson(desired));
+    check(`${renderer} restore withdraws XR preparation`, ui.getXrLayoutContribution().pending);
+    await ui.waitForXrLayoutDependencies(); const prepared = await ui.prepareXrLayoutContribution();
+    const current = dependencies();
+    const resolved = await resolveSavedXrLayoutContribution(prepared.contribution, {
+      workspaceContribution: current.P1.contribution, feedbackContribution: current.P5.contribution,
+      selectedTarget: "webxr-immersive-vr",
+    });
+    check(`${renderer} XR binds the complete live P5 envelope`, prepared.dependencyRevisions[1].revision === current.P5.revision
+      && resolved.feedback.configurationKey === ui.getFeedbackLayoutSnapshot(1024).envelope.configurationKey
+      && canonicalJson(prepared.contribution) === canonicalJson(beforeFullRestore));
+  }
+  await ui.restoreFeedbackContribution(savedFeedback.contribution); await ui.waitForXrLayoutDependencies(); await ui.prepareXrLayoutContribution();
   publish(true); await waitFor(() => dependencies().P1.pending); await ui.waitForXrLayoutDependencies();
   check("one unsupported video withdraws all geometry", ui.getXrLayoutDependencyStatus().pending && q("[data-xr-media]").options.length === 1);
   check("missing geometry cannot be accepted", await rejected(() => ui.acceptXrLayoutContribution()));
