@@ -3,6 +3,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { projectSavedVariantCatalogue } from "../site/src/research/variant-catalogue-adapter.js";
 import { addIsiDurations, createVariantDraft, createVariantDesign, pasteVariantTable } from "../site/src/research/variant-design.js";
+import { createVideoCatalogueContribution } from "../site/src/research/video-catalogue-contribution.js";
+import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
 
 const workspace = JSON.parse(await readFile(new URL("../test/fixtures/variant-workspace-binding-v1.json", import.meta.url))).initialSnapshot.contribution;
 const { library } = await projectSavedVariantCatalogue(workspace);
@@ -32,3 +34,24 @@ const expected = cases.map(item => ({
 }));
 await writeFile(new URL("../test/fixtures/variant-reproduction-v1.json", import.meta.url),
   `${JSON.stringify({ workspace, draft, contribution, expected }, null, 2)}\n`);
+
+const locations = JSON.parse(await readFile(new URL("../test/fixtures/research-video-catalogue-contribution-v2.json", import.meta.url)));
+const portrait = structuredClone(workspace.videoCatalogue.entries[1]);
+portrait.annotationId = "session2_portrait.mp4";
+const locationCatalogue = await createVideoCatalogueContribution({ revision: 4, entries: [...locations.entries, portrait] });
+const locationWorkspace = createWorkspaceContribution({ study: workspace.study, videoCatalogue: locationCatalogue });
+const { library: locationLibrary } = await projectSavedVariantCatalogue(locationWorkspace);
+const locationDraft = structuredClone(draft), locationExpected = structuredClone(expected);
+const replacements = new Map([[a, "session%5Fa_clip.mp4"], [b, "session2_portrait.mp4"]]);
+locationDraft.rows = locationDraft.rows.map(row => row.map(cell => replacements.get(cell) ?? cell));
+locationDraft.rows[1][2] = "session-a_clip.mp4";
+for (const variant of locationExpected) for (const entry of variant.entries) {
+  entry.referenceId = replacements.get(entry.referenceId) ?? entry.referenceId;
+  if (entry.kind === "video") entry.assetId = locationLibrary.videos.find(video => video.annotationId === entry.referenceId).assetId;
+}
+locationExpected[2].entries[1].referenceId = "session-a_clip.mp4";
+locationExpected[2].entries[1].assetId = locations.entries[1].assetId;
+[[0, 12345], [12345, 24690], [24690, 37035]].forEach(([startMs, endMs], i) => Object.assign(locationExpected[2].entries[i], { startMs, endMs }));
+const locationContribution = await createVariantDesign(locationDraft, locationLibrary);
+await writeFile(new URL("../test/fixtures/variant-reproduction-v2.json", import.meta.url),
+  `${JSON.stringify({ workspace: locationWorkspace, draft: locationDraft, contribution: locationContribution, expected: locationExpected }, null, 2)}\n`);

@@ -15,7 +15,7 @@ export async function assertVariantReproduction(workspace, contribution, recipeS
   for (const [i, variant] of contribution.variants.entries()) {
     const planned = expected[i];
     assert.equal(variant.title, planned.title);
-    assert.deepEqual(variant.entries, planned.entries.map(({ entryId, kind, referenceId }) => ({ entryId, kind, referenceId })));
+    assert.deepEqual(variant.entries, planned.entries.map(({ startMs: _start, endMs: _end, ...entry }) => entry));
     const timeline = compileVariantTimeline(contribution, variant.variantId, videos);
     assert.equal(timeline.plannedDurationMs, planned.entries.at(-1).endMs);
     assert.equal(timeline.versionSha256, variant.versionSha256);
@@ -45,7 +45,9 @@ export async function assertVariantReproduction(workspace, contribution, recipeS
         references.set(reference, sourceCode);
       }
       const identity = entry.kind === "video"
-        ? library.videos.find(video => video.annotationId === entry.referenceId).sha256
+        ? contribution.version === 2
+          ? createHash("sha256").update(JSON.stringify({ annotationId: entry.referenceId, assetId: entry.assetId })).digest("hex")
+          : library.videos.find(video => video.annotationId === entry.referenceId).sha256
         : createHash("sha256").update(JSON.stringify({
           durationMs: entry.endMs - entry.startMs, isiId: entry.referenceId,
         })).digest("hex");
