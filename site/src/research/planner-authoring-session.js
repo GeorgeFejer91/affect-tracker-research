@@ -86,7 +86,7 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     // Reserve bounded admission before staging; no retry record is evicted.
     retries.set(id, { fingerprint, result: structuredClone(result) }); retryBytes += bytes;
   }
-  async function execute(input) {
+  async function execute(input, lifetime = {}) {
     let request, fingerprint, mutation = false, ownsActive = false, publicationStarted = false;
     const updatedOwners = [];
     try {
@@ -137,7 +137,10 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       }
       const base = revision, operation = ++generation, controller = new AbortController();
       active = { requestId, controller }; ownsActive = true;
-      const isCurrent = () => !destroyed && !controller.signal.aborted && revision === base && generation === operation;
+      const isCurrent = () => !destroyed && !controller.signal.aborted && !lifetime.signal?.aborted
+        && (lifetime.isCurrent === undefined || lifetime.isCurrent() === true)
+        && revision === base && generation === operation;
+      if (!isCurrent()) commandFailure("canceled", "The authoring gesture is no longer current.");
       const staged = [];
       for (const [id, ownerEdits] of grouped) {
         const candidate = await ownerFor(id).stage(structuredClone(ownerEdits), { isCurrent, signal: controller.signal });

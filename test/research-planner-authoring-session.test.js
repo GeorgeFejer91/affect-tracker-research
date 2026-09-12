@@ -22,6 +22,21 @@ function harness() {
   return { fields, root, owner, session, request, get commits() { return commits; } };
 }
 
+test("a disposed UI gesture cannot publish through the shared command session", async () => {
+  for (const timing of ["before", "during"]) {
+    const h = harness(), controller = new AbortController();
+    let current = timing !== "before";
+    const request = h.request({ kind: "set", field: "P7.participantCount", value: 42 }, 0);
+    const pending = h.session.execute(request, { signal: controller.signal, isCurrent: () => current });
+    current = false; controller.abort();
+    const result = await pending;
+    assert.ok(["canceled", "rejected"].includes(result.status));
+    assert.equal(h.fields.get("participant-count").value, "24");
+    assert.equal(h.session.revision, 0);
+    assert.equal(h.commits, 0);
+  }
+});
+
 test("CLI policy catalogue and get use the exact existing UI-owned controls", async () => {
   const h = harness();
   const catalogue = await h.session.execute(h.request({ kind: "catalogue" }));

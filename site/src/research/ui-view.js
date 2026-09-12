@@ -330,6 +330,7 @@ function questionnairesSection() {
       <button id="questionnaire-prebuilt-open" type="button" aria-haspopup="dialog">Add prebuilt questionnaire asset</button>
     </div>
     <div id="questionnaire-sheet-list" class="questionnaire-sheet-list"></div>
+    <div id="questionnaire-routing-editor"></div>
     <output id="questionnaire-coverage-status" class="field-output" aria-live="polite">No questionnaires added.</output>
     <output id="questionnaire-import-status" class="field-help" aria-live="polite"></output>
     <p class="field-help">Participant details (age, gender and handedness) remain included before the task.</p>
