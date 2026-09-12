@@ -270,7 +270,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /openBrowserExperimentPackage\(\)/u);
+  assert.match(source, /openBrowserPlannerRecipeFile\(options\)/u);
+  assert.match(source, /openLegacy: applyExperimentPackageReceipt/u);
   assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
   assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);

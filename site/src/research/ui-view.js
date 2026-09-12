@@ -37,7 +37,7 @@ const SECTION_SUMMARIES = Object.freeze({
   xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
   stimuli: "Variants, video order, intervals",
-  layout: "Proposed layout · not exportable",
+  layout: "Video fit and feedback placement",
   questionnaires: "Languages, demographics, questionnaires",
   feedback: "Appearance, input and animation",
   review: "Resolve blocking checks",
@@ -65,7 +65,7 @@ function previewMarkup(label, { studio = false } = {}) {
     <div class="research-preview-stage research-preview-studio" data-preview-variant="studio" role="group" aria-label="${escapedLabel}">
       <div class="preview-primary-stage" tabindex="0" role="group" aria-label="Selected feedback rendering and configured input preview" aria-describedby="preview-response-simulator-help">
         ${previewOverlayMarkup({ includeFace: true })}
-        <p class="preview-mode-label">Previewing <span data-preview-mode-label>Flubber</span></p>
+        <p class="sr-only">Previewing <span data-preview-mode-label>Flubber</span></p>
       </div>
 
       <section class="preview-affect-map" aria-labelledby="preview-affect-map-title">
@@ -76,7 +76,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-anchor-modes" role="group" aria-label="Color anchor placement">
           <label class="radio-field"><input type="radio" name="previewColorAnchors" value="axes" checked><span>Axes</span></label>
           <label class="radio-field"><input type="radio" name="previewColorAnchors" value="corners"><span>Corners</span></label>
-          <span class="field-help">Placement is preview-only.</span>
+          <span id="preview-color-placement-help" class="field-help">Color anchor placement is saved.</span>
         </div>
         <div class="preview-affect-map-layout">
           <button type="button" class="preview-color-anchor anchor-up" data-color-anchor="up" aria-haspopup="dialog" aria-controls="preview-color-dialog">

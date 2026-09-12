@@ -477,8 +477,11 @@ impl WorkspaceService {
         }
         let guard = self.lock_selected();
         let workspace = selected_ref(&guard, workspace_id)?;
-        validate_selected_workspace(workspace)?;
-        if catalogue.entries.len() != workspace.scanned.len() {
+        let libraries = validate_selected_workspace(workspace)?;
+        let current = scan_planner_videos(&libraries.package_assets)?;
+        if catalogue.entries.len() != workspace.scanned.len()
+            || catalogue.entries.len() != current.len()
+        {
             return Err(CommandError::forbidden(
                 "The current Planner video library does not match the accepted catalogue.",
             ));
@@ -494,6 +497,15 @@ impl WorkspaceService {
                     "A catalogue location does not resolve to one current Planner video.",
                 ));
             };
+            let current_matches = current
+                .iter()
+                .filter(|observed| observed.logical_relative_path == entry.source_relative_path)
+                .collect::<Vec<_>>();
+            let [observed] = current_matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "A catalogue location does not resolve to one current ordinary Planner video.",
+                ));
+            };
             let observed_duration_ms = candidate.duration_ms.filter(|value| {
                 value.is_finite()
                     && *value >= 1.0
@@ -505,15 +517,15 @@ impl WorkspaceService {
                     "A current Planner video has no verified oriented display geometry.",
                 )
             })?;
-            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
             if candidate.decode_status != DecodeStatus::AttestedQualified
                 || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
                 || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
-                || observed_hash != entry.sha256
-                || observed_hash != candidate.sha256
-                || observed_bytes != entry.byte_length
-                || observed_bytes != candidate.byte_length
-                || entry.asset_id != format!("asset-{observed_hash}")
+                || observed.path != candidate.path
+                || observed.sha256 != entry.sha256
+                || observed.sha256 != candidate.sha256
+                || observed.byte_length != entry.byte_length
+                || observed.byte_length != candidate.byte_length
+                || entry.asset_id != format!("asset-{}", observed.sha256)
                 || entry.package_relative_path != format!("assets/{}", entry.source_relative_path)
                 || observed_duration_ms.map(|value| value as u64) != Some(entry.duration_ms)
                 || serde_json::to_value(observed_geometry).map_err(|_| {
@@ -1089,6 +1101,7 @@ impl WorkspaceService {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
     pub(crate) fn verify_workspace_file(
         &self,
         workspace_id: &str,
@@ -1120,6 +1133,7 @@ impl WorkspaceService {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
     pub(crate) fn verify_native_workspace_file(
         &self,
         workspace_id: &str,
@@ -1813,6 +1827,7 @@ fn scanned_candidate<'a>(
         })
 }
 
+#[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
 fn webview_attested_candidate<'a>(
     scanned: &'a [ScannedStimulus],
     workspace_file_id: &str,
@@ -2162,7 +2177,7 @@ fn portable_import_relative_path(path: &Path) -> ResearchResult<String> {
         ));
     }
     let relative = parts.join("/");
-    if relative.as_bytes().len() > 2_048 {
+    if relative.len() > 2_048 {
         return Err(CommandError::forbidden(
             "An imported video path exceeds 2048 UTF-8 bytes.",
         ));
@@ -2837,10 +2852,39 @@ mod tests {
             "session%5Fa_clip.mp4"
         );
 
+        let extra = workspace
+            .join("assets")
+            .join("stimuli")
+            .join("new-after-attestation.mp4");
+        fs::write(&extra, b"new-video-outside-the-accepted-catalogue").unwrap();
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue)
+            .is_err());
+        fs::remove_file(&extra).unwrap();
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue)
+            .is_ok());
+
         fs::write(&video, b"changed-planner-video").unwrap();
         assert!(service
             .validate_planner_video_catalogue(&workspace_id, &catalogue)
             .is_err());
+        fs::write(&video, b"planner-video-bytes").unwrap();
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue)
+            .is_ok());
+
+        let linked_parent = video.parent().unwrap().to_owned();
+        let external_parent = base.join("replacement-session");
+        fs::create_dir(&external_parent).unwrap();
+        fs::write(external_parent.join("clip.mp4"), b"planner-video-bytes").unwrap();
+        fs::remove_dir_all(&linked_parent).unwrap();
+        create_directory_link(&external_parent, &linked_parent);
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue)
+            .is_err());
+        remove_directory_link(&linked_parent);
+        fs::remove_dir_all(&external_parent).unwrap();
         fs::remove_dir_all(base).unwrap();
     }
 

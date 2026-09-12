@@ -7,8 +7,13 @@ const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "runner/dist");
 const files = (await readdir(dist, { recursive: true, withFileTypes: true })).filter((item) => item.isFile())
   .map((item) => relative(dist, resolve(item.parentPath, item.name)).replaceAll("\\", "/"));
-assert.equal(files.length, 5, "Runner must have an explicit five-file frontend closure.");
-for (const file of files) assert.match(file, /^(?:index\.html|assets\/(?:runner|runner-symbol|app-symbol)-[\w-]+\.(?:js|css|svg))$/u);
+const expectedKinds = ["index.html", "runner.js", "runner.css", "runner-symbol.svg", "app-symbol.svg"];
+const sharedCss = await readFile(resolve(root, "site/research.css"), "utf8");
+for (const theme of ["dark", "light"]) {
+  if (sharedCss.includes(`flubber-input-${theme}.svg`)) expectedKinds.push(`flubber-input-${theme}.svg`);
+}
+const actualKinds = files.map(file => file === "index.html" ? file : file.replace(/^assets\/(runner-symbol|app-symbol|flubber-input-dark|flubber-input-light|runner)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
+assert.deepEqual(actualKinds.sort(), expectedKinds.sort(), "Runner build must contain exactly the declared entry and referenced shared CSS assets.");
 const graph = await build({ entryPoints: [resolve(root, "runner/src/entry.js")], bundle: true, write: false, metafile: true, format: "esm", loader: { ".svg": "dataurl" }, logLevel: "silent" });
 for (const input of Object.keys(graph.metafile.inputs)) {
   assert.doesNotMatch(input.replaceAll("\\", "/"), /site\/src\/research\/(?:app|ui-view|native-bridge|runtime-bridge|planner-.+|.+-editor)\.js$/u, "Runner must not import Planner composition or editors.");

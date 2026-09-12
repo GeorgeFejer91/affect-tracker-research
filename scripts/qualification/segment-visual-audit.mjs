@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -19,6 +19,7 @@ const source = resolve(sourceArgument ?? join(import.meta.dirname, "../.."));
 const output = resolve(destination);
 const site = join(source, "site");
 await mkdir(output, { recursive: true });
+assert.equal((await readdir(output)).length, 0, "Use a fresh empty output directory; preserve earlier receipts.");
 const git = async (...args) => (await execute("git", ["-C", source, ...args], { windowsHide: true })).stdout.trim();
 const sourceCommit = await git("rev-parse", "HEAD");
 const sourceChanges = await git("status", "--porcelain", "--", "site");
@@ -27,10 +28,24 @@ const { SETUP_SECTIONS } = await import(pathToFileURL(join(site, "src/research/u
 const sections = SETUP_SECTIONS.filter(({ id }) => !selectedArgument || selectedArgument.split(",").includes(id));
 assert.ok(sections.length, "No requested sections exist in this source.");
 const viewports = [{ name: "desktop", width: 1280, height: 900 }, { name: "narrow-pane", width: 800, height: 700 }];
+const captureReceipts = new Map();
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function waitForCapture(name, screenshot) {
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    const capture = captureReceipts.get(name);
+    const png = await readFile(screenshot).catch(() => null);
+    // The launcher can exit before the browser; require a complete fresh PNG.
+    if (capture && png?.subarray(0, 8).toString("hex") === "89504e470d0a1a0a"
+      && png.subarray(-12).toString("hex") === "0000000049454e44ae426082") return capture;
+    await delay(100);
+  }
+  throw new Error(`No page receipt and complete PNG within 30 seconds: ${name}`);
+}
 
 function fixture(scenario) {
   return `<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/site/research.css">
-<div id="research-app" data-research-surface="browser"></div><pre id="receipt" hidden></pre>
+<div id="research-app" data-research-surface="browser" data-research-program="planner"></div><pre id="receipt" hidden></pre>
 <script>const errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));console.error=(...a)=>errors.push(a.join(' '));</script>
 <script type="module">
 import { bootResearchUi } from '/site/src/research/app.js';
@@ -60,7 +75,8 @@ try {
  const overflowing=Array.from(section.querySelectorAll('*')).filter(shown).filter(e=>{
   const r=e.getBoundingClientRect();return r.width>0&&(r.left<bounds.left-1||r.right>bounds.right+1);
  }).slice(0,30).map(e=>({tag:e.tagName,id:e.id,className:String(e.className),rect:rect(e)}));
- const receipt={...scenario,sourceCommit:${JSON.stringify(sourceCommit)},dataState:'Actual app default state; no synthetic media or accepted contributions injected',
+ const receipt={...scenario,sourceCommit:${JSON.stringify(sourceCommit)},dataState:'Actual Planner UI default state; no bridge, synthetic media or accepted contributions injected',
+  program:root.dataset.researchProgram,participantControls:root.querySelectorAll('[data-mode-button="run"],[data-mode-panel="run"],#start-experiment,#review-participant-chooser,#preflight-list').length,
   openSection:ui.openSection,panelMotion:persistent?'persistent':section.querySelector('.setup-accordion-panel').dataset.motionState,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
   viewport:{width:innerWidth,height:innerHeight},pane:rect(pane),sectionRect:rect(section),
   sectionHeight:persistent?pane.scrollHeight:section.getBoundingClientRect().height,pageStride:Math.max(200,pane.clientHeight-80),scrollTop:pane.scrollTop,scrollSurface:persistent?(settingsScrolls?'preview-settings':'preview-pane'):'setup-pane',
@@ -74,13 +90,20 @@ try {
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, "http://127.0.0.1");
-    if (url.pathname === "/") {
+    if (url.pathname === "/capture-receipt" && request.method === "POST") {
+      const chunks = []; let bytes = 0;
+      for await (const chunk of request) { bytes += chunk.length; assert.ok(bytes <= 3000000); chunks.push(chunk); }
+      const capture = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const name = `${capture.receipt.name}-${capture.receipt.section}-${capture.receipt.page + 1}`;
+      captureReceipts.set(name, capture);
+      response.writeHead(204); response.end();
+    } else if (url.pathname === "/") {
       response.setHeader("Content-Type", "text/html");
       const scenario = JSON.parse(url.searchParams.get("case"));
       const viewport = viewports.find(entry => entry.name === scenario.name);
       response.end(`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#121311}iframe{border:0;width:${viewport.width}px;height:${viewport.height}px}pre{display:none}</style>
 <iframe src="/fixture?case=${encodeURIComponent(JSON.stringify(scenario))}" title="Actual app visual audit"></iframe><pre id="receipt" hidden></pre>
-<script>addEventListener('message',e=>{if(e.origin===location.origin)document.querySelector('#receipt').textContent=JSON.stringify(e.data)});</script>`);
+<script>addEventListener('message',e=>{if(e.origin!==location.origin)return;document.querySelector('#receipt').textContent=JSON.stringify(e.data);fetch('/capture-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({receipt:e.data,html:document.documentElement.outerHTML})});});</script>`);
     } else if (url.pathname === "/fixture") {
       response.setHeader("Content-Type", "text/html");
       response.end(fixture(JSON.parse(url.searchParams.get("case"))));
@@ -101,21 +124,29 @@ try {
       for (let page = 0; page < pages; page += 1) {
         const scenario = { name: viewport.name, section: section.id, label: section.label, page };
         const name = `${viewport.name}-${section.id}-${page + 1}`;
+        const screenshot = join(output, name + ".png");
+        const previous = await stat(screenshot).catch(error => {
+          if (error.code === "ENOENT") return null;
+          throw error;
+        });
+        assert.equal(previous, null, `Use a fresh output directory; screenshot already exists: ${name}`);
         const profile = await mkdtemp(join(output, "isolated-profile-"));
-        const { stdout } = await execute(browser, [
+        const { stdout, stderr } = await execute(browser, [
           "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
           `--user-data-dir=${profile}`, "--window-size=1280,1000", "--force-prefers-reduced-motion",
           "--force-device-scale-factor=1", "--virtual-time-budget=4000", `--screenshot=${join(output, name + ".png")}`,
           "--dump-dom", `http://127.0.0.1:${server.address().port}/?case=${encodeURIComponent(JSON.stringify(scenario))}`,
         ], { windowsHide: true, timeout: 30000, maxBuffer: 3_000_000 });
-        await writeFile(join(output, name + ".html"), stdout);
-        const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];
-        assert.ok(raw, `No rendered receipt: ${name}`);
-        const row = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&gt;", ">").replaceAll("&lt;", "<"));
+        const captured = await waitForCapture(name, screenshot);
+        await writeFile(join(output, name + ".html"), captured.html);
+        await writeFile(join(output, name + ".launcher.json"), JSON.stringify({stdoutLength:stdout.length,stderrLength:stderr.length}));
+        const row = captured.receipt;
+        assert.equal(row.sourceCommit, sourceCommit, `Wrong source receipt: ${name}`);
+        assert.equal(row.program, "planner", `Wrong application program: ${name}`);
+        assert.equal(row.participantControls, 0, `Planner still contains participant execution controls: ${name}`);
         assert.equal(row.openSection, section.id, `Wrong active section: ${name}`);
         assert.equal(row.panelMotion, section.id === "feedback" && row.scrollSurface?.startsWith("preview-") ? "persistent" : "open", `Unsettled panel: ${name}`);
         assert.equal(row.reducedMotion, true, "Static capture requires the actual reduced-motion app path.");
-        const screenshot = join(output, name + ".png");
         rows.push({ screenshot, screenshotSha256: sha256(await readFile(screenshot)), ...row });
         if (page === 0 && row.sectionHeight) pages = Math.max(1, Math.ceil((row.sectionHeight - 80) / row.pageStride));
         console.log(JSON.stringify({ name, pages, errors: row.errors, overflow: [row.sectionsOverflow, row.previewOverflow] }));

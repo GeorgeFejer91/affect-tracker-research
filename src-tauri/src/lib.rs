@@ -21,7 +21,9 @@ pub mod research_planner_recipe_policy;
 mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
+mod research_recorder;
 mod research_run_storage;
+#[cfg(test)]
 mod research_runtime;
 mod research_stimulus_order;
 mod research_timing;
@@ -35,7 +37,6 @@ use research_input::ResearchInputService;
 use research_native_media::NativeMediaService;
 use research_native_protocol::runtime::PackageProtocolRuntime;
 use research_platform::NATIVE_ACQUISITION_SUPPORTED;
-use research_runtime::ResearchRuntime;
 use research_workspace::WorkspaceService;
 use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
@@ -85,11 +86,16 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
                 .unwrap_or(false);
             input.set_window_focused(focused);
             if role == DesktopRole::Runner {
-                app.manage(Arc::new(PackageProtocolRuntime::with_services(
-                    Arc::clone(&workspace),
-                    Arc::clone(&native_media),
-                    Arc::clone(&input),
-                )));
+                let recorder = Arc::new(research_recorder::RecorderService::default());
+                app.manage(Arc::new(
+                    PackageProtocolRuntime::with_services(
+                        Arc::clone(&workspace),
+                        Arc::clone(&native_media),
+                        Arc::clone(&input),
+                    )
+                    .with_recorder(Arc::clone(&recorder)),
+                ));
+                app.manage(recorder);
             }
             app.manage(workspace);
             app.manage(native_media);
@@ -98,14 +104,17 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         })
         .on_window_event(|window, event| {
             if window.label() == "research" {
-                if matches!(event, WindowEvent::Destroyed) {
+                if matches!(
+                    event,
+                    WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
+                ) {
                     if let Some(runtime) = window.try_state::<Arc<PackageProtocolRuntime>>() {
                         runtime.shutdown();
                     }
-                    if let Some(runtime) = window.try_state::<Arc<ResearchRuntime>>() {
-                        // The runtime must close its input-acceptance barrier and
-                        // checkpoint recovery before native input authority stops.
-                        runtime.shutdown();
+                    if let Some(recorder) =
+                        window.try_state::<Arc<research_recorder::RecorderService>>()
+                    {
+                        recorder.shutdown();
                     }
                 }
                 if matches!(
@@ -176,8 +185,13 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_video_library,
             research_commands::research_import_library_videos,
             research_commands::research_export_video_library,
+            research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_recorder::commands::research_recorder_status,
+            research_recorder::commands::research_recorder_discover,
+            research_recorder::commands::research_recorder_start,
+            research_recorder::commands::research_recorder_stop,
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
@@ -225,8 +239,8 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
                 runtime.shutdown();
             }
-            if let Some(runtime) = app.try_state::<Arc<ResearchRuntime>>() {
-                runtime.shutdown();
+            if let Some(recorder) = app.try_state::<Arc<research_recorder::RecorderService>>() {
+                recorder.shutdown();
             }
             if let Some(input) = app.try_state::<Arc<ResearchInputService>>() {
                 input.shutdown();

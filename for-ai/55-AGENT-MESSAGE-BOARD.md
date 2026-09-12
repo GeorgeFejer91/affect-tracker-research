@@ -1,5 +1,54 @@
 # Agent message board
 
+### 20260912-p3-native-catalogue-export-command
+
+- Status: **ready**, new command and four focused workflow tests pass; only this
+  command/test hunk changes Rust. Four existing command tests passed baseline.
+  Cargo formatting and diff checks pass. The one new unused-command warning
+  awaits main's registration; 24 pre-existing warnings remain on this base.
+  Cancellation writes nothing; wrong role/catalogue/hash/workspace rejects before
+  picker; exact CSV/XLSX bytes are written to the selected name with create-new
+  semantics; stale media/workspace after picker rejects without destination write.
+- Main receives `research_export_video_catalogue` with IPC arguments
+  `{workspaceId,catalogue,librarySha256,format}` and boolean success/cancel result.
+  Native window, immutable DesktopRole and workspace are injected Tauri state.
+  No UI-supplied bytes or destination path is accepted. S1 owns the separately
+  reported fresh enumeration/link check in its current-catalogue verifier.
+
+- Owner **S3**, explicitly delegated P3-08 shared export seam by integration;
+  Backend Verification continuation. Isolated `codex/segment-p3-native-export`,
+  C: worktree, combined base `47a87ae`; existing P3 source remains collected.
+- Bounded deliverable: only the new `research_export_video_catalogue` command,
+  its private picker-flow helper and focused tests in `research_commands.rs`.
+  Use native Planner role, existing window authorization, P1 current catalogue
+  verification, P3 byte regeneration and existing named picker/export writer.
+  Recheck media/workspace after the dialog before writing. Preserve v1 command.
+- Baseline: four existing command tests pass (24 existing dead-code warnings).
+  Evidence now: role/invalid/stale requests reject before picker, cancellation,
+  exact CSV/XLSX bytes, preserved existing files and changes during picker.
+  Tests use the real workspace/file owner with synthetic decode attestations.
+- S7 confirmed separate package load/save hunks. Main keeps command registration,
+  native bridge routing and browser verification; no root controller, runtime,
+  arbitrary path argument, new unsafe boundary or foreground dialog test.
+
+### 20260912-p3-reproduction-v2-expectation
+
+- Status: **ready**, 27 focused P3/master tests pass after the reproducing
+  failure. Both historical and current vectors are checked in independent
+  ambient-free processes. Recompilation retains every owner payload and its
+  definition/segment hashes while adopting explicit reproduction v2. Existing
+  fixture bytes and all production source are unchanged; diff check passes.
+
+- Owner **S3**, P3-08 Backend Verification follow-up explicitly allocated by
+  root/integration. Isolated `codex/segment-p3-reproduction-v2-test` at P7 `70b30a4`.
+- Baseline reproduces one failure: content-only P3 reopen correctly recompiles
+  the master using current reproduction v2, while the test expects old v1 bytes.
+  Historical read/re-export and independent process checks still pass.
+- Deliverable: only align the P3 test with the existing current P7 vector, retain
+  frozen v1 vectors/read semantics, and cover both algorithms in fresh processes.
+  No production code, math, identity, allocation, schema or fixture-byte edits.
+  Main owns its analogous workflow assertion and final combined UI checks.
+
 ### 20260912-p5-master-settings — Planner completion
 
 - Owner **Implement segment 5**, P5-05 through P5-08; Backend Verification.
@@ -8,10 +57,12 @@
 - Deliverable: audit every active feedback control; strict versioned complete
   contribution, atomic editable restore and complete conservative layout bounds.
   Preserve the exact existing v1 reader and document downstream interpretation.
-- Current source exports input/visual/six mappings but omits response grid,
+- At pass start source exported input/visual/six mappings but omitted response grid,
   duration/hold, halo width/gradient/falloff, palette placement and applied labels.
   Test position, held input, capture state and unapplied dialog edits are transient.
-  Renderer and legacy-step precedence are coordinated explicitly with P7/Preview.
+  Coordinator explicitly approved saving the current Flubber/Grid/procedural-Face
+  renderer. V2 response and P4/P6 geometry have sole authority; retained legacy
+  scalar/visibility/normalized placement controls are disabled in V2.
 - P5 owns pure validators/envelope and its app reader/writer/notification seams.
   Preview owns transient reset/render adapter; P7 owns master codec/save/reopen;
   P4/P6 consume P5 bounds. Integration alone collects shared source.
@@ -20,6 +71,113 @@
   and source-bound build/test receipts. The already-collected harness fix is reused.
   Runner execution/correspondence, physical input and installed qualification are
   explicitly deferred and do not block this Planner completion pass.
+- Implementation ready: pure `95b2e9`, controller/native `781886c`, Preview
+  `d996ddd` collected through `fa1f5d5`, and direct reset/disposal/Unicode guard
+  `5c9d3df`. Complete type/interfaces/inventory are in
+  `docs/planner-p5-feedback-v2.md`. P7/P4/P6 received exact producer checkpoints.
+- Evidence at `5c9d3df`: 656 Node tests, desktop11/Pages216 closures. Native
+  P5 three tests include thirteen JS/Rust complete-envelope comparisons; locked
+  no-default all-target Clippy with warnings denied passes. Formatting only
+  reorders adjacent native module declarations; validator visibility is crate-local.
+- Full-suite owner candidate: clean application `38684c37a639cb67528a4199b3da3ebbaffa9cc8`,
+  site tree `1d798b8a41d19a4d8c5027de97a213a999d7d749`. Normal collection includes
+  Preview's real restore fixture `13e9551` and narrow-label CSS/fixture `d711fb4`;
+  P5's version-aware saved placement/label copy is `4b7ff6f`.
+- Final combined checks: **668/668 Node**, desktop **11** / Pages **219** files;
+  **129 real-controller restore + 15 reset checks at each 1280/800 width**;
+  **84 long-label checks** across both placements and widths. Inspected ordinary
+  narrow restored labels and all four long-label PNGs. The former narrow corner
+  label defect is resolved by the allocated Preview owner, without a split redesign.
+- Clean source-bound receipts are under sibling
+  `affect-tracker-research-feedback-checks/master-v2-final-*`; the roadmap has
+  exact paths, source hashes and retained native evidence. P5-05–08 owner work
+  is verified and ready; source writers are stopped. P7 master save/reopen and
+  P4/P6 combined acceptance remain integration gates. No Runner, installed,
+  physical, Edge or complete-Planner qualification is claimed.
+- Final root-allocated Preview follow-up `9237279` is normally collected in
+  clean `5c0ad7a55e8ffd28ca999524b62b7297070a5fbd`, site tree
+  `ad2fbacdce30eada866609d6b3cbb21155bf856f`. The three-line narrow side-caption
+  cap preserves full accessible/hover/editor/saved labels. Combined 38 focused,
+  258 actual restore and 122 expanded label checks pass; desktop11/Pages219 pass.
+  Both axis captures inspected. Evidence uses sibling `master-v2-capped-*` paths;
+  full-suite/native receipts retain their earlier exact bindings. Writers stopped.
+
+### 20260912-p4-accepted-layout-contract
+
+#### Final owner receipt — 2026-09-12
+
+- Status: **ready**, owned P4 Planner implementation complete; P4-02 through
+  P4-07 await combined integration evidence. Application checkpoint
+  `77e4752efbfb9bc4567781e0f27f830b978b6b14`; documentation-only receipt follows.
+  Source writers are stopped for integration-owner collection.
+- Main live handoff `24995177c10363fdeaddbb52ae043719c8087df2` is followed by
+  formatter-only `cca37e4`, exact P1 pure compatibility/order collection
+  `9083558`, and P4 error-focus/stale-failure/narrow-label follow-up `77e4752`.
+  The last follow-up changes only the P4 editor/state/view, its preparation test
+  and actual-app harness. Public API signatures remain frozen.
+- Final checks: 680 Node, desktop 9-file/Pages 216-file closures, 203 no-default
+  Rust tests and no-default all-target clippy/format; clean Chrome six scenes,
+  231 assertions and six inspected captures. Source hashes, PNG hashes, exact
+  browser version, receipt SHA-256 and scoped limits are in the
+  [accepted P4 evidence ledger](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+- P1 final pure files are byte-for-byte owner `ea7cf7d`; P5 pure files include
+  owner `5c9d3df`. No P1/P5 app/native files were opportunistically copied. P4
+  keeps the generic two-stage P1 binding agreed with integration.
+- Integration alone merges and wires shared footer prepare then P7 acceptance.
+  P7 owns final master save/reopen. Runner remains deferred; Edge and installed/
+  physical qualification remain unverified. No question or Q08 implementation
+  blocker remains: both methods are supported required recipe choices.
+
+#### Scope clarification and accepted type — 2026-09-12
+
+- Coordinator `84300ed` clarifies both methods as explicit per-recipe Planner
+  choices, with neither preselected. This supersedes the initial global Q08 gate
+  below. A missing choice blocks only that recipe. The combined maximum-width/
+  height envelope is labelled separately from an actual largest-area video.
+- Pure checkpoints `0b8e7d7` / `d0267fff839db78c497ae9b87b610bba630988f2`
+  implement both accepted methods and the native strict geometry mirror.
+  P1 generic v1/v2 and P5 full v1/v2 dispatch are consumed. Repeated P1 locations
+  remain in its full declarations; P4 validates every unique content geometry.
+  The media bound follows P1's 10000-entry limit. Strict historical readers and
+  the successor layout contract are separate.
+- Live API is frozen with integration/P7; see
+  [the owned contract/API document](../docs/planner-p4-layout-contract.md).
+  P4 owns the no-default selector, preparation, ready/content-only restoration,
+  actual dependency revisions and lifecycle guards. Main owns the footer's
+  prepare-then-P7-accept step and final master persistence. Its generic P6
+  projector injection does not replace P4's two-stage owned P1 projection.
+- Named shared UI correction: only `ui-view.js`'s P4 default summary changes
+  from the obsolete non-exportable label to Video fit and feedback placement.
+  Other shared UI stays with its owners. Initial live Chrome checks pass both
+  choices and real acceptance/reopen; final source-bound receipts follow.
+
+- Owner S4, P4-03 through P4-07, Backend Verification; new Planner-completion
+  allocation through Create segment catalogue. Branch
+  `codex/segment-p4-accepted-layout`, isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-screen-layout-contract`,
+  base `7946bc6b319ddf689bdaa81c07ec8aa6a4b3869d`.
+- Intended function: compile authored viewport, units/calibration, automatic
+  fixed reference, centre offsets and fit constraints into one strict desktop
+  contribution. Current source has real P1/P5 draft geometry and guarded draft
+  restore, but always pending/null accepted output. Internal draft documents
+  cannot substitute for the accepted domain payload.
+- Q08's automatic largest-reference metric is already pending with the user
+  through the coordinator. No duplicated question or implicit answer. Independent
+  strict shape, unit/axis/centre/fit and content-restore work proceeds; approval
+  of the reference metric remains necessary for preparation. P4's existing
+  nominal diameter is precisely the P5 square SVG viewport side, distinct from
+  P5's maximum painted animation extent.
+- P1 owns complete workspace/media validation; P5 owns full saved settings and
+  the versioned envelope dispatcher. P7 owns master composition, registry
+  acceptance and final persistence. Owned files: screen-layout modules, new
+  desktop layout pure contract/native mirror, focused tests and documentation;
+  only narrow P4 API wrappers in app.js. Integration owns footer composition
+  and is the sole merger. Shared seams registered directly before edits.
+- Evidence now: strict malformed/unknown/bounds rejection, all-video geometry,
+  conversion and deterministic independent Planner round trip, stale owner/
+  dependency/restoration checks, applicable native mirror and background UI
+  receipts. Runner correspondence/execution/recording is explicitly deferred to
+  the final Runner stage and does not block Planner completion.
 
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,
@@ -60,6 +218,64 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   This is helper evidence, not yet V2 restore wiring; S5 owns that invocation.
   Fixture: `scripts/qualification/preview-restored-config.mjs`; local receipts
   `D:/GitHub/.affect-preview-checks/planner-inspection-reset-20260912/`.
+- Real restore dependency composed with integration approval: accepted `451c19a`
+  plus stopped S5 `5c9d3df`, local combined application `c3e7db9`. No owner app
+  edits in this follow-up; fixture/harness only. V2 actual-app checks pass 129
+  at each of 1280/800: all-field exact round trip, three renderer projections,
+  fractional styles, whole-ms timing, configured keyboard/repeat/continuous
+  behavior under a declared controlled clock, neutral/capture/draft cleanup,
+  invalid/stale/closed restore, explicit V1 conversion, pending/revisions and
+  reset/recolor persistence. Reset-helper checks pass 15 per viewport; V2
+  framing stays locked and only explicit V1 restore tests the legacy drag seam.
+- Full suite 668/668 and Pages 219-file / desktop 11-file closures pass. Receipts
+  under `D:/GitHub/.affect-preview-checks/planner-feedback-restore-20260912/`.
+  The `restore` argument to `preview-restored-config.mjs` selects the real V2
+  fixture; no argument retains the reset helper. No replacement restore/mock
+  validator, physical timing or Runner evidence is claimed.
+- Rendered follow-up remains open: narrow 800px outer viewport produces a
+  roughly 280px Preview pane; corner labels can wrap into single-character
+  columns. Integration/root received the exact PNG. S5 received stale
+  "Placement is preview-only" copy despite saved V2 placement. Functional checks
+  are not G09 layout closure; shared CSS remains integration-coordinated.
+- Integration/root explicitly allocated the narrow color-anchor CSS seam next.
+  On `13e9551`, the real 800px fixture reproduced insufficient up/down text
+  columns and overflowing long side labels. Bounded repair: corner anchors use
+  two equal columns above/below a centered map; at narrow pane widths swatches
+  sit above labels; axis placement is preserved with bounded smaller columns.
+  All accepted label text wraps without the later media rule disabling it.
+- New `preview-label-layout-fixture.js` exercises both placements with four
+  48-character labels including an unbroken string. Harness modes `labels-axes`
+  and `labels-corners` check text width, full text retention, button containment,
+  panel containment and non-overlap with the map. At outer 800px the fixture
+  explicitly sizes only the Preview pane to 280px; this does not modify the
+  product split owner. Desktop uses its actual default pane. Before/after PNGs
+  and checks live under `D:/GitHub/.affect-preview-checks/planner-feedback-labels-20260912/`.
+  Ordinary restored-label images and both long-label placements were inspected.
+  Full 668 tests and both 219/11-file closures pass. S5 owns the separate saved
+  placement copy correction `4b7ff6f`; it is not duplicated in this CSS pass.
+- Root's final bounded review follow-up caps only the narrow axis editor's
+  left/right captions at three lines with CSS ellipsis. Full DOM text and
+  existing accessible names are unchanged; `renderPreviewAxisLabel` additionally
+  sets the full hover title. Existing dialog input and saved labels retain all
+  48 characters. Participant renderer text and corner captions are not clamped.
+  Expanded actual-label fixture checks full accessible names, hover titles,
+  every dialog readback, unchanged saved labels and the narrow three-line bound:
+  30 desktop-axis, 32 narrow-axis, and 30 per corner viewport checks pass.
+  Before/after axis images were inspected; the side buttons now remain compact
+  beside the usable map. P5 acknowledged the exact title-only helper seam.
+- Root subsequently allocated the concrete drawing-badge overlap seen in
+  combined `0e492ff`. Bounded fix on owner `9237279`: retain the existing mode
+  text with `sr-only` and remove the absolute visual badge CSS. The selected
+  renderer buttons retain unique `aria-pressed` state. No app controller,
+  animation size, halo, saved settings or pane-split changes.
+  New actual-app `stage-default` / `stage-restored` harness modes verify no
+  visible badge, retained nonvisual text, all three accessible/saved selections,
+  unchanged framing/halo configuration, identical animated outline/halo paths
+  and visible output. Each mode passes 11 checks at 1280 and at outer 800 with
+  an explicitly fixture-sized 280px pane. Both narrow images were inspected.
+  Evidence: `D:/GitHub/.affect-preview-checks/planner-feedback-badge-20260912/`.
+  The final combined source remains integration-owned; older owner screenshot
+  shell/copy is not evidence against separately collected companion/copy fixes.
 
 ### 20260912-preview-input-menu
 
@@ -88,7 +304,22 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 - Status: ready for owner handoff, outside frozen convergence intake. Evidence
   and limits are recorded in the roadmap. Center remains disabled pending the
   user's semantic decision; arbitrary custom analog axes remain unsupported.
+
 ### 20260912-p3-location-master-reproduction
+
+- Status: **ready for integration**, application `4b20254` plus the focused
+  maximum-occurrence padding repair on this branch. 672 full Node / 204 Rust
+  no-default checks and both build closures pass at `4b20254`; 25 Node / 4 Rust
+  focused checks pass after the padding repair. Owned source writers stop after
+  this receipt for collection by **Add segment confirmation flow**.
+- P7 received the generic native `validate_and_reproduce_saved_variants` API
+  with both v1/v2 golden timelines and profiles. Complete P7 master file export,
+  strict parse, content-only P3 restore/rebind, canonical reexport and all
+  variant/language selections are now demonstrated with independent processes.
+- Integration received pure browser/native catalogue encoders and exact command
+  signatures. Remaining shared adapters must verify current P1 media before
+  generating CSV/XLSX and must fence concurrent workspace/producer changes.
+  Master runtime execution remains Runner work; no allocation policy was added.
 
 - Owner: **S3**, P3-04 through P3-08; Backend Verification continuation of the
   allocated comprehensive Planner master pass, branch `codex/segment-p3-master-variants`,
@@ -192,8 +423,10 @@ file; follow the integration-owner collection procedure in the workflow.
   tolerance. Profile bytes/schema and native authority are unchanged.
   Integration reserved the P6 summary hunk; it now says `Geometry validated`
   for domain preparation, separately from P7 confirmation/save.
-- Complete master codec/save/reopen evidence remains in progress with S7. This
-  is not a proposal-only stop or a dependency on actual Runner implementation.
+- Complete master codec/save/readback/reproduction evidence is ready at
+  `188c080`: 731/731 JavaScript tests and desktop/Pages boundary builds pass
+  (11/228 files). Shared application composition remains integration work;
+  this is not a dependency on actual Runner implementation.
 - Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
   master XR tests now pass: both P1/P3 versions, complete profiles/feedback,
   all variants/language paths, exact canonical/disk readback, explicit exclusion,
@@ -202,6 +435,13 @@ file; follow the integration-owner collection procedure in the workflow.
   complete current-location master, reproduction matrix and resolved XR layout.
   Shared root-app master restoration remains integration-owned; its actual UI
   receipt is still pending. Disk adapter evidence is not an OS-picker check.
+- S7's independent native full reader identified final-digit differences in raw
+  calculated XR geometry that prevent exact reproduction SHA agreement. Existing
+  P6 `1e-10` absolute leaf tolerance applies only to geometry fixtures; authored
+  canonical profile bytes/hashes remain exact. P7 owns an explicitly versioned
+  layout identity representation and native parity correction. P6 will adapt its
+  complete-master fixtures to that owner contract after handoff, without changing
+  domain math or using rounded authored fields to conceal the discrepancy.
 - Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
   resolver now uses P1's generic validator/projection. Actual owner V2 fixture
   proves two locations sharing content retain both declarations while live and
@@ -219,8 +459,57 @@ file; follow the integration-owner collection procedure in the workflow.
   a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
   Rust now derives V2 envelopes through P5's actual native validator/projector
   before comparing them with the shared P6 geometry fixture.
+- Shared actual-master UI follow-up collected `219cf31` in `d34951d`. The
+  expanded owned fixture currently exposes two unresolved integration defects:
+  the capture-phase edit read consumes P1's new snapshot before its change
+  notification, leaving prepared XR geometry attached to the old revision;
+  and the raw-geometry V1 master hash passes Node but fails Chrome validation.
+  Main/S1 own the notification repair; S7 owns versioned cross-runtime identity.
+  The default `all` fixture retains the immediate-withdraw assertion. Explicit
+  `master` scope isolates full reopen/save checks while the first defect is open.
+  Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
+- Final actual-master handoff: **ready**, clean application checkpoint
+  `51685b06a6ddc79e32c06afdc6446c9db5bc12f2`. Main `adc34d2` resolves the
+  capture-order defect and P7 `70b30a4` supplies portable reproduction-V2.
+  The default `all` fixture retains immediate P1 withdrawal and now passes
+  **60/60 checks at both 1440/820px** in the explicit Planner role. The real
+  shared controller saves/reopens every spatial/feedback field, preserves exact
+  acknowledged unchanged bytes, keeps media/confirmation pending, rejects stale
+  edits/opens, clears exclusion and prepares after exact media rebind. Catalogue
+  and file-picker adapters are synthetic; they grant no physical-media authority.
+- Both final PNGs inspected: expanded XR scene, tilted screen/feedback footprint,
+  angular readouts and footer fit; no browser errors or horizontal overflow.
+  Capture toggling an already-open accordion was corrected and visible-scene
+  coverage added. Main explicitly allocated the one-line P6 hint; it now directs
+  confirmation followed by complete saving in Review & Export. Source, harness,
+  real CSS/icons and image hashes bind clean receipts at
+  `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`final-wide-51685b0`, `final-narrow-51685b0`).
+- Validation: 44 focused P6 JavaScript and five Rust tests pass. The `663cae9`
+  combined-source suite is 761/763 with two legacy-V1 byte expectations routed
+  to Main (`research-planner-file-workflow.test.js:36`) and S3
+  (`research-variant-master.test.js:42`); Main reports its fix at `63fe416`.
+  Desktop11/Pages234 builds pass. This receipt does not count those two tests
+  as passing or claim installed/Edge/OS-picker/headset/Runner qualification.
+- Historical P6 V1 canonical/reproduction/layout vectors remain byte-identical
+  to `188c080`. Seven complete-master tests now use P7's current portable helper
+  and fixtures, with explicit historical-reader coverage. The generator requires
+  an evidence directory and emits new `planner-xr-master-v2*` files there.
+  Root owns P6 catalogue closure and Main owns canonical combined integration;
+  no remaining P6 product or geometry repair is allocated at this checkpoint.
 
 ### 20260912-integration-planner-completion
+
+- Shared composition follow-up: full P7 compiler/file/reopen `828fff7` and live
+  P4 prepare/content restore `2499517` are collected. Main now wires footer P4
+  preparation, final P5 capture, full-master compile/acknowledgement, one named
+  dialog and dependency-ordered editable Open. One immutable document store is
+  retained; unchanged-source eligibility uses monotonic authored-edit identity,
+  separate from media readiness. Save never reapplies owner settings. Seven new
+  coordinator tests and five owner file tests pass; actual combined UI, native
+  adapters and successor deterministic identity intake remain underway. This is
+  a component checkpoint, not canonical promotion or completed qualification.
 
 - Owner: **Add segment confirmation flow**, sole shared integration owner for
   the new user-authorized **Planner completion** goal; Backend Verification.
@@ -304,6 +593,60 @@ file; follow the integration-owner collection procedure in the workflow.
   harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
   warning-list fix is verified in combined source. See 64 for paths and limits;
   this is not G09 populated/full-master evidence for the new completion goal.
+- Root diagnosed and repaired the Edge capture helper lifecycle: the launcher
+  exits before its browser requests the page. Actual HTTP receipt plus complete
+  fresh PNG now controls server lifetime. Final helper passes two XR captures per
+  Chrome/Edge at clean `7946bc6`; four PNG/harness bindings checked, all images
+  inspected or byte-identical to inspected images. Reused output refuses without
+  overwriting evidence. Details in64; full Edge/master qualification stays open.
+- Completion refinement: root allocated both Q08 reference-analysis methods as
+  an explicit required per-recipe choice, no default. S4 should implement/validate
+  both and block only a recipe with no selection; an unanswered global preference
+  need not block building the Planner. S1 confirms Q05 relative declarations and
+  fresh authorized rebind suffice for master authoring; absolute provenance and
+  remembered custom native shell root are optional separate limitations.
+- Independent root QA found c9562fd capture freshness omitted caller epochs and
+  could resurrect after clear/reaccept; S7 fixed this at a66c168 with required
+  caller lifetime and irreversible acceptance generation. Integration composes
+  current app guards. Root also inspected the restored-V2 narrow Preview corner
+  labels wrapping one character per line; Live Preview owns a bounded label-layout
+  fix while S5 owns saved-state copy. Neither finding is treated as completed full
+  master evidence; final combined verification follows collection.
+- Latest component ledger in67 records S7 full JS master `828fff7`, live P4
+  `2499517`, full-master XR `188c080`/`485c2da` and current producer handoffs.
+  Root independently recomputed canonical definition/reproduction and all six
+  segment hashes for both master fixtures. Shared UI wiring is still active at
+  integration `4091c71`; no canonical promotion or completed-app claim.
+- Preview `9237279` resolves the narrow caption finding. Root inspected final
+  narrow axes and checked all four axes/corners HTML/PNG receipt bindings at
+  1280/800. G11 review found teardown and silent-workspace-error regressions in
+  `a0283d9`; owner fix `17b2d24` resolves both by independent source review.
+  Final rendered error layout and integrated lifecycle checks remain required.
+- Native prerequisite audit found the old temporary GStreamer devel SDK gone,
+  while Rust/MSVC and the pinned canonical runtime remain intact. S1 received
+  the bounded existing-script prerequisite/normal-native-check followup. No
+  global PATH edit, new unsafe adapter or runtime redistribution is allocated.
+  DOCS_RS source checks remain distinct from a linked Planner artifact.
+- Capture helper now explicitly selects Planner role and rejects retained
+  participant controls. Chrome/Edge each captured four Review pages at exact
+  clean17b2d24; all eight images inspected, hashes matched and zero errors,
+  duplicate IDs or overflow. This is bounded helper/default-UI evidence only;
+  current full-master source still needs final populated/Save/error captures.
+- Root independently ran full actual-controller master workflow64 checks each
+  Chrome/Edge at clean63fe416, including real UI edits, disk save, reopen, pending
+  copy, media rebind and reset stale-source regressions. Both output files match;
+  source-bound native732bf88 independently reproduces document/matrix/all six
+  selections exactly. Scope and artifact paths in67; no physical/OS-picker claim.
+- Root takes the isolated scripts/qualification/planner-master.mjs helper seam
+  from main's adc34d2 baseline: actual HTTP completion/PNG lifetime fixes Edge,
+  correct CSS/assets fix blank fixture icons, and expanded receipt hash bindings.
+  Main owns the fixture and all app/native changes and acknowledged this split.
+- Root inspected all18 combined default Layout/Review images at0e492ff and both
+  saved-state images at63fe416. Narrow badge overlap is assigned/resolved in
+  owner6d9cc35 pending collection. Misleading saved Review header text is assigned
+  to integration. Native graph-depth parity mismatch is fixed in owner48318a9;
+  current-directory/link closure remains S1-owned. Final unified checks/delivery
+  stay open while those ready handoffs and remaining fixes are collected.
 
 ### 20260912-runner-companion-separation
 
@@ -2777,3 +3120,26 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Fixed the progress label overflowing a 432px setup pane after the contribution-cycle wording was introduced. The intro now wraps without squeezing its instruction into a narrow column. The eight-case headless Chrome layout harness also asserts intro-child containment and passes with zero horizontal overflow; the 432px-pane capture was inspected.
 - Current preceding evidence: 545 Node tests at `dc69e72`, 350 P5 Chrome assertions, 31 retained-settings/confirmation assertions, and both frontend builds at `4f505c3`. These are scoped evidence, not final master-JSON or installed/native qualification.
 - Intake continues for the single registered workspace revision, pure P3/P6 preparation and named-file save. P1 async restore fencing needs the owner repair. Q05 relocation policy and Q08 automatic reference metric remain unanswered; no complete master-save/reopen claim or canonical promotion is made.
+
+
+### 20260912-runner-desktop-xdf-handoff — RR-01–RR-09/shared G11
+
+- Owner: Experiment Runner, `codex/segment-runner-desktop-app`. Desktop Runner
+  source `b7d3356`, separate legacy compilation cleanup `8ed7abd`; previous
+  desktop/static Planner boundary and visible-error/cleanup fixes were handed to
+  integration independently (`a0283d9`, `7e4b719`, `17b2d24`, `f48e654`).
+- Runner owns recorder policy and own plus explicitly selected external LSL XDF.
+  Canonical Planner recipe bytes remain unchanged. Native protocol input/timing
+  and qualified-player gates retain authority. No new unsafe boundary.
+- 653 Node/210 Rust tests, default/no-default strict Clippy, frontend closures,
+  headless Planner/Runner startup, synthetic selected LSL transport and independent
+  pyxdf format/timestamp/footer/Int64/marker checks passed. See ledger 65 and
+  `runner/README.md` for limits, receipts and build commands.
+- P7 supplied JS master `828fff7` and native reader/load dispatch `70b30a4`.
+  Intake/execution correspondence is a later allocated stage. This Runner currently executes only the existing strict
+  complete package-v1 contract. Successor option/layout correspondence is RR-10,
+  the final development stage; it does not block Planner authoring completion.
+- All-feature native-media compilation is unavailable here because pkg-config/
+  the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
+  accessibility and full correspondence qualification remain open. No publication
+  or foreground native application interaction was performed.

@@ -13,6 +13,8 @@ const messageOf = (error) => error?.message ?? String(error);
 export async function bootRunner(root, { invoke, windowObject = window, pollMs = 250 } = {}) {
   if (!(root instanceof HTMLElement) || typeof invoke !== "function") throw new TypeError("Runner needs its root and native adapter.");
   root.innerHTML = runnerMarkup(); root.setAttribute("aria-busy", "false");
+  const identity = await invoke("research_desktop_identity");
+  if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
@@ -21,7 +23,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
-  let queue = Promise.resolve(), polling = false;
+  let queue = Promise.resolve(), polling = false, timer = null;
   const preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
@@ -54,6 +56,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function invalidate() {
     revision += 1; preflight = null; selection = null; inputReceipt = null;
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
+  }
+  function destroy() {
+    destroyed = true; revision += 1; windowObject.clearInterval(timer);
+    listeners.forEach((remove) => remove()); protocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
@@ -242,13 +248,18 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (protocol.active) { await setRegion(root.querySelector(".run-feedback-stage"), "runFeedback"); await protocol.resize(); }
     else { inputReceipt = null; await invoke("research_input_cancel_setup"); }
   }));
-  const identity = await invoke("research_desktop_identity");
-  if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
-  [capability, mediaCapability, workspace] = await Promise.all([protocol.initialize(), invoke("research_native_media_capability"), invoke("research_workspace_status")]);
+  listen(root.querySelector(".runner-sidebar"), "scroll", () => {
+    if (busy || protocol.active || !selection || query("runner-test-region").hidden) return;
+    revision += 1; inputReceipt = null;
+    action(async () => { await invoke("research_input_cancel_setup"); text("runner-input-status", "The test region moved. Test the configured input again."); });
+  });
+  try {
+    [capability, mediaCapability, workspace] = await Promise.all([protocol.initialize(), invoke("research_native_media_capability"), invoke("research_workspace_status")]);
+  } catch (error) { destroy(); throw error; }
   text("runner-capability", capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
-  const timer = windowObject.setInterval(async () => {
+  timer = windowObject.setInterval(async () => {
     if (destroyed || polling || busy) return; polling = true;
     try {
       if (!protocol.active && selection && !query("runner-test-region").hidden) {
@@ -263,7 +274,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }, pollMs);
   renderControls();
   const controller = Object.freeze({ adoptRecipe, get recipe() { return recipe; }, get selection() { return selection; },
-    destroy() { destroyed = true; revision += 1; windowObject.clearInterval(timer); listeners.forEach((remove) => remove()); protocol.destroy(); preview.destroy(); delete root.researchUi; },
+    destroy,
   });
   root.runner = controller; return controller;
 }

@@ -2309,25 +2309,6 @@ tbody tr:last-child td {
 }
 
 
-.preview-mode-label {
-  position: absolute;
-  top: 0.55rem;
-  left: 0.55rem;
-  z-index: 2;
-  margin: 0;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: #151714;
-  color: var(--muted);
-  font-size: 0.72rem;
-  pointer-events: none;
-}
-
-.preview-mode-label span {
-  color: var(--text);
-}
-
 .preview-overlay {
   position: absolute;
   top: var(--overlay-top, 50%);
@@ -2476,7 +2457,19 @@ tbody tr:last-child td {
 }
 
 .preview-affect-map[data-color-anchor-mode="corners"] .preview-affect-map-layout {
-  grid-template-areas: "up . right" ". map ." "left . down";
+  grid-template-areas: "up right" "map map" "left down";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preview-affect-map[data-color-anchor-mode="corners"] .preview-control-surface {
+  max-width: 12rem;
+  justify-self: center;
+}
+
+.preview-affect-map[data-color-anchor-mode="corners"] .preview-color-anchor[data-color-anchor] {
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  justify-items: start;
+  text-align: left;
 }
 
 .preview-color-anchor {
@@ -2493,7 +2486,7 @@ tbody tr:last-child td {
   text-align: left;
 }
 
-.preview-color-anchor span:last-child {
+.preview-affect-map .preview-color-anchor[data-color-anchor] [data-color-anchor-label] {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -2699,6 +2692,22 @@ tbody tr:last-child td {
 }
 
 @container preview-pane (max-width: 24rem) {
+  .preview-affect-map[data-color-anchor-mode] .preview-color-anchor[data-color-anchor] {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+  .preview-affect-map:not([data-color-anchor-mode="corners"]) .preview-affect-map-layout {
+    grid-template-columns: minmax(3rem, 1fr) minmax(5rem, 1.6fr) minmax(3rem, 1fr);
+  }
+  .preview-affect-map[data-color-anchor-mode="axes"] :is(.anchor-left, .anchor-right) [data-color-anchor-label] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    max-height: 3.45em;
+    overflow: hidden;
+    line-height: 1.15;
+  }
   .feedback-input-settings .input-test {
     grid-template-columns: minmax(0, 1fr);
   }

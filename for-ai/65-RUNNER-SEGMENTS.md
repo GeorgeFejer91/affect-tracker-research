@@ -24,15 +24,15 @@ desktop layout and complete successor master dispatch are still producer work.
 
 | ID / owner lane | Function and inputs | Output / consumer | Required evidence and initial status |
 | --- | --- | --- | --- |
-| RR-01 Desktop composition | Independent Runner bootstrap/config; narrow commands | Separate program, capability/status UI | Build both closures; deny cross-app run/write commands. Allocated, open |
-| RR-02 Recipe intake | Exact Planner bytes and known schema/version | Immutable validated recipe, requirements, rejection reasons | Corrupt/unknown/incomplete/stale inputs reject; canonical parity. Allocated, open |
+| RR-01 Desktop composition | Independent Runner bootstrap/config; narrow commands | Separate program, capability/status UI | Implemented: separate native identity/build and both Planner entry guards; headless boundary/production build evidence below |
+| RR-02 Recipe intake | Exact Planner bytes and known schema/version | Immutable validated recipe, requirements, rejection reasons | V1 strict intake/parity/rejection implemented; comprehensive successor reader handoff remains open |
 | RR-03 Session selection | Valid recipe, explicit participant/language and attempt | Frozen participant/route/version receipt | Preserve v1 explicit schedules; successor allocation policy remains unselected. Open |
-| RR-04 Playback/protocol | Bound complete media, ordered video/ISI/form steps | Observed player transitions and protocol events | Exact ordering; pause/interval/restart/failure; native qualification stays open |
-| RR-05 Feedback/layout | Recipe input/style/mappings and supported layout | Participant feedback from native acquired state | Saved settings parity, hide/size/position, no preview draft fallback. Open |
-| RR-06 Questionnaires | Full chosen route and ordered definitions | Durable draft/submitted responses | Labels/codes/required answers and safe boundary recovery. Existing engine, separate UI open |
-| RR-07 Acquisition/LSL output | Native input, recipe sampling/emission config | Existing samples and markers on actual LSL clock | No WebView clock authority; preserve frozen outbound schema. Existing engine, composition open |
-| RR-08 XDF recording | Runner-selected own/external streams, destination | XDF plus selected identities/status/failure receipt | Native typed samples, source clock offsets, no invented samples, independent XDF read. Allocated, open |
-| RR-09 Records/recovery | Frozen recipe/session/recording identities and journals | Attempts, final receipts and explicit recovery | Exclusive paths, no overwrite, flush/failure/shutdown/restart checks. Existing engine, recorder binding open |
+| RR-04 Playback/protocol | Bound complete media, ordered video/ISI/form steps | Observed player transitions and protocol events | Native package adapter wired; qualified player Start remains closed pending installed/physical gates |
+| RR-05 Feedback/layout | Recipe input/style/mappings and supported layout | Participant feedback from native acquired state | Saved v1 style/mappings/placement parity implemented; successor desktop layout correspondence open |
+| RR-06 Questionnaires | Full chosen route and ordered definitions | Durable draft/submitted responses | Separate one-item presenter implemented with frozen labels/codes/required checks; installed participant workflow open |
+| RR-07 Acquisition/LSL output | Native input, recipe sampling/emission config | Existing samples and markers on actual LSL clock | Existing Rust authority composed; recorder tap preserves emitted values/timestamps; physical qualification open |
+| RR-08 XDF recording | Runner-selected own/external streams, destination | XDF plus selected identities/status/failure receipt | Implemented; unit/worker, selected synthetic transport and independent pyxdf evidence below; device/long-run qualification open |
+| RR-09 Records/recovery | Frozen recipe/session/recording identities and journals | Attempts, final receipts and explicit recovery | Existing attempt recovery wired; immutable recording receipts, fail/flush/drain/no-overwrite tested; automatic XDF repair is not offered |
 | RR-10 Correspondence/qualification | Exact exported Planner recipe and Runner build | Per-option execution evidence | Last development stage; not a Planner authoring completion prerequisite. Open |
 
 ## Runner-only working rules
@@ -97,3 +97,64 @@ unqualified Start disabled. Both have zero runtime errors, duplicate IDs and pag
 overflow at 1280 pixels. Native replies in that harness are synthetic. Receipt and
 screenshots: `D:/GitHub/.affect-runner-build/boundary-audit/`. No physical input,
 foreground application control, native experiment or real stream recording ran.
+
+Static G11 follow-up: Chat Orchestrator allocated the browser entry boundary to
+this lane. Static `site/index.html` now explicitly identifies Planner and uses
+the same seven-section/preview/Review & Export surface. Its browser bridge skips
+participant journal creation/audit/reconciliation, runtime lease, sampling worker,
+output-manifest and acquisition storage probes, and refuses a synthetic Start
+event. Browser authoring remains in its existing workspace/UI controllers. The
+headless harness now checks both Planner surfaces plus Runner, with dependency
+traps proving browser Planner startup/refresh/destruction invokes no run service.
+Receipt: `D:/GitHub/.affect-runner-build/static-boundary-audit/`. This supersedes
+the earlier desktop-only qualification of the entry boundary; historical combined
+modules remain testable but are no longer the active Planner entry programs.
+
+### RR-08/09 native recorder implementation — 2026-09-12
+
+Implemented `research_recorder` as a Runner-only Rust service and four commands:
+status, explicit discovery, native destination/start and stop. Runner selects
+own streams and/or at most 16 cached external stream identities; no Planner
+recording field, manifest-v4 extension, source substitution or reconnect policy
+was added. Start/stop share the native protocol's idle mutex so IPC races cannot
+change recording during Start/resume/active execution.
+
+Own outlets attach before the protocol worker emits initial markers, after
+input/storage preparation, and mirror successfully emitted f32/string samples
+with exactly the same LSL timestamp through a bounded nonblocking queue. The
+external recorder opens selected metadata-bound inlets with recovery and
+postprocessing disabled, preserves each numeric wire type and records source
+clock offsets. Samples, headers, boundaries and footers use the XDF 1 format.
+Numeric Int64 stays integer throughout. No new unsafe boundary was introduced.
+
+XDF and start/attempt/final JSON receipts use exclusive file creation. Every
+receipt binds the recipe hash and recording identity; own binding additionally
+freezes run ID. Shutdown interrupts the native run before draining/finalizing
+the recorder. Buffer loss, disconnection, queue overflow and disk/receipt failures
+are explicit incomplete recordings. A start receipt without a final receipt is
+an interrupted file; automatic XDF repair/append/restart recovery is not offered.
+External arbitrary invalid UTF-8 byte-string fidelity is unqualified because the
+pinned safe LSL library decodes strings. See `runner/README.md` for limits and
+local build/use commands; physical/long-run recording remains an open gate.
+
+Evidence collected during implementation: nine initial recorder unit/worker
+checks plus a selected synthetic local LSL Int64 outlet recorded alongside own
+affect/initial/final markers. Independent pyxdf 1.17.0 reads the seven-format
+fixture, exact raw timestamps, +0.125 clock correction, Int64 maximum, UTF-8
+markers, sample-count footers and both complete worker recordings. The synthetic
+fixtures reside in `D:/GitHub/.affect-runner-build/`, with a reproducible verifier
+at `scripts/qualification/verify-runner-xdf.py`. Additional final compile/lint and
+regression results are recorded in the final checkpoint handoff; these receipts
+do not close RR-10 or native playback/device/long-run qualification.
+
+Source checkpoints: `b7d3356` recorder/executable and `8ed7abd` separable legacy
+production cleanup, after G11 `a0283d9`, `7e4b719`, `17b2d24` and closure fix
+`f48e654`. Final regression count: 653 Node tests and 210 default-feature Rust
+library tests pass (two opt-in transport tests excluded from that normal suite;
+the new selected-external fixture was separately exercised). Default and
+no-default all-target Clippy pass with `-D warnings`. Planner/Runner frontend
+builds and Pages closure pass. A standalone Windows Runner executable built with
+its own embedded resources/product identity. All-feature compilation is blocked
+in this environment by missing pkg-config/GStreamer SDK; this is not a recorder
+test failure or permission to weaken native player qualification. Integration
+owns merging these checkpoints into its newer P1–P7 master candidate.

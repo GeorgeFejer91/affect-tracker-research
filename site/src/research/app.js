@@ -66,11 +66,16 @@ import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
 import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
+import { prepareVerifiedCatalogueExport } from "./planner-catalogue-export.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
-import { openBrowserExperimentPackage } from "./package-file-picker.js";
+import { prepareBrowserPackageSave } from "./package-file-picker.js";
+import { openBrowserPlannerRecipeFile, prepareBrowserPlannerRecipeSave } from "./planner-recipe-file.js";
+import { parsePlannerRecipeFile } from "./planner-recipe.js";
+import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
+import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
 import { readPlannerPolicyControls, restorePlannerPolicyControls } from "./planner-policy-controls.js";
 import { renderPlannerContributionIssues } from "./planner-issue-view.js";
@@ -291,7 +296,14 @@ function bindResearchInteractions(root, { surface }) {
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
   let observedSuccessfulSave = null;
-  const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root) : null;
+  let plannerFileWorkflow = null;
+  const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root, {
+    prepareSave: async (sourceText, options) => {
+      const parsed = await parsePlannerRecipeFile(new TextEncoder().encode(sourceText));
+      return parsed.kind === "planner-recipe-v1" ? prepareBrowserPlannerRecipeSave(sourceText, options)
+        : prepareBrowserPackageSave(sourceText, options);
+    },
+  }) : null;
   const packageExport = createPackageExportController({ onChange: () => {
     renderPackageExportReview();
     renderSetupReviewState();
@@ -307,12 +319,13 @@ function bindResearchInteractions(root, { surface }) {
   } });
   const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
     renderSetupReviewState();
-    const next = plannerContributions.read().fingerprint;
+    renderPackageExportReview();
+    const next = plannerContributions.read({ format: "contributions" }).fingerprint;
     if (next === observedContributions) return;
     observedContributions = next;
     packageEditRevision += 1;
-    packageExport.invalidate();
-    if (experimentPackageDocument) {
+    if (!plannerFileWorkflow?.canCopy()) packageExport.invalidate();
+    if (experimentPackageDocument && !plannerFileWorkflow?.canCopy()) {
       packageIsStale = true;
       packageReproductionReceipt = null;
     }
@@ -323,6 +336,7 @@ function bindResearchInteractions(root, { surface }) {
     acceptContribution: async (segment, { isCurrent }) => {
       const current = () => isCurrent() && mode === "setup";
       if (segment === "P3") await stimulusOrderEditor.prepareContribution({ isCurrent: current });
+      if (segment === "P4") await layoutDraftEditor.prepareContribution({ isCurrent: current });
       if (segment === "P6") await xrLayoutAuthoring.prepare({ isCurrent: current });
       if (!current()) throw new Error("Confirmation was cancelled. Review the current section again.");
       return plannerContributions.accept(segment, {
@@ -331,6 +345,55 @@ function bindResearchInteractions(root, { surface }) {
     },
     readAcceptance: () => plannerContributions.readAccepted(),
     onChange: () => renderSetupReviewState(),
+  });
+  plannerFileWorkflow = createPlannerFileWorkflow({
+    registry: plannerContributions, exporter: packageExport,
+    getDocument: () => experimentPackageDocument,
+    canOperate: () => !researchUiDisposed && mode === "setup",
+    getRecipeOptions: () => ({
+      recipeId: `${getStudyIdentity().id.slice(0, 121)}-recipe`,
+      presentationTarget: getSelectedPlannerTarget(), policy: readPlannerPolicyControls(root),
+    }),
+    adoptDocument(document) {
+      experimentPackageDocument = document;
+      packageIsStale = false;
+      packageReproductionReceipt = null;
+      languageEditorLocked = false;
+      observedPackageDraft = packageDraftFingerprint();
+      packageContributionFingerprint = plannerContributions.read({ format: "contributions" }).fingerprint;
+      observedContributions = packageContributionFingerprint;
+      renderPackageReceipt();
+    },
+    restoreOwners: {
+      begin() {
+        experimentPackageDocument = null;
+        editablePackageDefaults = null;
+        browserPackageRoot = null;
+        packageAssetClosureSha256 = null;
+        packageReproductionReceipt = null;
+        packageIsStale = true;
+        languageEditorLocked = false;
+        clearParticipantLanguageSelection();
+      },
+      P1: (value, context) => restoreWorkspaceContribution(value, { isCurrent: context.isCurrent }),
+      P2: (value, context) => restoreQuestionnaireRecipeContribution(value, { isCurrent: context.isCurrent }),
+      P5: (value, context) => restoreFeedbackContribution(value, { isCurrent: context.isCurrent }),
+      P3: (value, context) => stimulusOrderEditor.restoreContent(value, {
+        savedWorkspaceContribution: context.workspace,
+        dependencies: { P1: getWorkspaceContributionSnapshot() }, isCurrent: context.isCurrent,
+      }),
+      P4: (value, context) => layoutDraftEditor.restoreContent(value, {
+        savedWorkspaceContribution: context.workspace, savedFeedbackContribution: context.feedback,
+        isCurrent: context.isCurrent,
+      }),
+      P6: (value, context) => xrLayoutAuthoring.restoreSelection(value, { isCurrent: context.isCurrent }),
+      policy: (value, context) => restorePlannerRecipePolicy(value, { isCurrent: context.isCurrent }),
+      presentationTarget: (value, context) => restorePlannerPresentationTarget(value, { isCurrent: context.isCurrent }),
+    },
+    write: (document, options) => surface === "tauri"
+      ? requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: document.canonicalSourceText })
+      : packageSaveDialog.request(document.canonicalSourceText, options),
+    onChange: () => renderPackageReceipt(),
   });
   let browserPackageRoot = null;
   let packageAssetClosureSha256 = null;
@@ -688,7 +751,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     const next = SETUP_SECTIONS.find(({ id }) => id === transition.nextSectionId);
     openSetupSection(transition.nextSectionId, { focus: true });
-    announce(`${current?.label ?? "Setup section"} confirmed. ${next?.label ?? "Final save"} opened.`);
+    const nextLabel = root.dataset.researchProgram === "planner" && next?.id === "review" ? "Review & Export" : next?.label ?? "Final save";
+    announce(`${current?.label ?? "Setup section"} confirmed. ${nextLabel} opened.`);
   }
 
   function colorValues() {
@@ -795,6 +859,7 @@ function bindResearchInteractions(root, { surface }) {
       const output = anchor.querySelector("[data-color-anchor-label]");
       if (output) output.textContent = label;
       anchor.setAttribute("aria-label", `${label}. Edit anchor color.`);
+      anchor.title = label;
     });
   }
 
@@ -1071,6 +1136,14 @@ function bindResearchInteractions(root, { surface }) {
         : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
     const legacy = feedbackSettingsVersion === 1;
+    const placementHelp = query("#preview-color-placement-help");
+    if (placementHelp) placementHelp.textContent = legacy
+      ? "Legacy packages retain axis colors. Convert to configure saved anchor placement."
+      : "Color anchor placement is saved.";
+    const labelHelp = query("#preview-color-label-help");
+    if (labelHelp) labelHelp.textContent = legacy
+      ? "Legacy packages do not store display labels. Convert to configure saved labels."
+      : "Applied display labels are saved for axis and corner placement. Valence/arousal identity stays unchanged.";
     const versionStatus = query("#feedback-settings-version");
     if (versionStatus) versionStatus.textContent = legacy
       ? "Legacy feedback loaded unchanged. New response and appearance choices require explicit conversion."
@@ -1200,7 +1273,7 @@ function bindResearchInteractions(root, { surface }) {
       || participantFinalizationPending.get(selectedParticipant) !== true) return null;
     const binding = participantFinalizationBindings.get(selectedParticipant);
     const playbackMode = value("native-playback-mode", "nativeGstPlay");
-    const protocolContract = experimentPackageDocument
+    const protocolContract = experimentPackageDocument?.package
       ? "manifestV4"
       : protocolSettingsSnapshot?.version === 3
         || (protocolSettingsSnapshot?.questionnaires?.modules?.length ?? 0) > 0
@@ -1521,12 +1594,34 @@ function bindResearchInteractions(root, { surface }) {
     return parsePlannerTargetSelection(value("planner-presentation-target"));
   }
 
+  function restorePlannerPresentationTarget(target, { isCurrent } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("Target restoration requires a current operation guard.");
+    if (parsePlannerTargetSelection(target) === null) throw new TypeError("A saved recipe needs an explicit target.");
+    if (researchUiDisposed || mode !== "setup" || !isCurrent()) return false;
+    setInputValue("planner-presentation-target", target);
+    plannerContributions.invalidateAcceptance("P6");
+    renderPackageExportReview();
+    return true;
+  }
+
+  function restorePlannerRecipePolicy(policy, options) {
+    if (researchUiDisposed) return false;
+    const restored = restorePlannerPolicyControls(root, policy, options);
+    if (restored === false) return false;
+    outputFormatsTouched = true;
+    syncOutputFormatValidation();
+    packageExport.invalidate();
+    schedulePlanRefresh();
+    return restored;
+  }
+
   function observePackageDraft() {
     const current = packageDraftFingerprint();
     if (current === observedPackageDraft) return;
     observedPackageDraft = current;
+    if (plannerFileWorkflow?.canCopy()) return;
     packageExport.invalidate();
-    if (experimentPackageDocument) {
+    if (experimentPackageDocument?.package) {
       packageIsStale = true;
       packageReproductionReceipt = null;
       clearParticipantLanguageSelection();
@@ -1728,7 +1823,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function packageAssetsVerified() {
-    if (!experimentPackageDocument) return false;
+    if (!experimentPackageDocument?.package) return false;
     if (surface === "browser" && (
       browserPackageRoot !== workspace
       || packageAssetClosureSha256
@@ -2916,7 +3011,7 @@ function bindResearchInteractions(root, { surface }) {
           selectedParticipant,
         );
         let packageSelection = null;
-        if (experimentPackageDocument) {
+        if (experimentPackageDocument?.package) {
           const route = selectedPackageRoute();
           if (!route) throw new TypeError("Select one terminal language route from the package tree.");
           packageSelection = await compileExperimentPackageSelectionV1(
@@ -3168,11 +3263,21 @@ function bindResearchInteractions(root, { surface }) {
     } else if (operation === "save-order") {
       receipt = await selected.saveStimulusOrder(payload.document);
     } else if (operation === "export-library") {
-      const current = await selected.videoLibrary();
-      if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+      if (!["csv", "xlsx"].includes(payload.format)) throw new TypeError("Choose CSV or Excel.");
+      let bytes;
+      if (Object.hasOwn(payload, "catalogue")) {
+        bytes = await prepareVerifiedCatalogueExport(payload, {
+          getSnapshot: getWorkspaceContributionSnapshot, readMedia: () => selected.videoLibrary(),
+          isCurrent: () => !researchUiDisposed && mode === "setup" && selected === workspace,
+        });
+      } else {
+        const current = await selected.videoLibrary();
+        if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+        bytes = payload.bytes;
+      }
       if (selected !== workspace) throw new Error("The workspace changed during export.");
       const mime = payload.format === "csv" ? "text/csv;charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      const url = URL.createObjectURL(new Blob([payload.bytes], { type: mime }));
+      const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
       const link = document.createElement("a");
       link.href = url; link.download = `video-library.${payload.format}`;
       root.append(link); link.click(); link.remove();
@@ -3199,7 +3304,7 @@ function bindResearchInteractions(root, { surface }) {
     if (!workspace) return;
     const status = query("#workspace-status");
     try {
-      if (experimentPackageDocument) {
+      if (experimentPackageDocument?.package) {
         if (status) status.textContent = "Scanning fixed assets/stimuli/ package media recursively…";
         const rootAttestation = await workspace.attestExperimentPackageRoot(
           experimentPackageDocument.canonicalSourceText,
@@ -3537,13 +3642,13 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function packageRoutes() {
-    return experimentPackageDocument
+    return experimentPackageDocument?.package
       ? enumerateLanguageRoutesV1(experimentPackageDocument.package.languageSelection)
       : [];
   }
 
   function participantLanguageContextKey() {
-    if (!experimentPackageDocument) return null;
+    if (!experimentPackageDocument?.package) return null;
     const disposition = selectedAttemptDisposition();
     const recoveryBinding = participantRecoveryBindings.get(selectedParticipant);
     return canonicalJson({
@@ -3572,7 +3677,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function synchronizeParticipantLanguageContext() {
     const contextKey = participantLanguageContextKey();
-    if (!experimentPackageDocument) {
+    if (!experimentPackageDocument?.package) {
       if (selectedLanguageId || selectedLanguageContextKey) clearParticipantLanguageSelection();
       return null;
     }
@@ -3598,6 +3703,19 @@ function bindResearchInteractions(root, { surface }) {
     renderPackageLanguageRoutes();
     const status = query("#package-file-status");
     const reproduction = query("#package-reproduction-status");
+    if (experimentPackageDocument?.recipe) {
+      const recipe = experimentPackageDocument.recipe;
+      if (status) {
+        status.dataset.state = packageIsStale ? "warning" : "ready";
+        status.textContent = `${recipe.recipeId} · ${packageIsStale ? "edited; save the current design" : recipe.integrity.definitionSha256}`;
+      }
+      if (reproduction) {
+        reproduction.dataset.state = "ready";
+        reproduction.textContent = "Complete section, cross-reference and deterministic reproduction checks passed for the opened or saved file. Media authorization is separate.";
+      }
+      renderPackageExportReview();
+      return;
+    }
     if (status) {
       if (experimentPackageDocument && packageReproductionReceipt && !packageIsStale) {
         status.dataset.state = "ready";
@@ -3621,17 +3739,27 @@ function bindResearchInteractions(root, { surface }) {
 
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
-    const review = plannerContributions.read();
+    const review = plannerContributions.readAccepted();
+    // P5 is deliberately accepted by final capture, not by a separate footer.
+    const reviewIssues = review.issues.filter(issue => !(issue.segment === "P5" && issue.code === "acceptance-missing"));
     const selectedTarget = getSelectedPlannerTarget();
+    const header = query('[data-section-summary="review"]');
+    if (header) header.textContent = state.phase === "saved" && !packageIsStale ? "Final JSON saved"
+      : state.busy ? "Saving final JSON…"
+      : plannerFileWorkflow?.canCopy() ? "Recipe open · unchanged copy available"
+      : selectedTarget === null && !languageEditorLocked ? "Choose presentation target"
+      : reviewIssues.length ? "Review and confirm sections"
+      : packageIsStale ? "Changed design · ready to save" : "Ready to save final JSON";
     const targetStatus = query("#planner-target-status");
     if (targetStatus) targetStatus.textContent = selectedTarget
-      ? "This presentation choice needs the new recipe format. Final export is awaiting the remaining layout definition."
+      ? "The chosen presentation and all confirmed sections are included in the final JSON. Live Preview is captured when you save."
       : "Choose the intended presentation. XR execution requires a compatible future Runner.";
     const lslDetails = query("#review-lsl");
     if (lslDetails && (checked("lsl-enabled") || lslDetails.querySelector(':invalid, [aria-invalid="true"]'))) lslDetails.open = true;
     const output = query("#package-save-status");
     const messages = {
-      editing: packageIsStale ? "The current design has changes to save." : "Review the design, then save its recipe.",
+      editing: plannerFileWorkflow?.canCopy() ? "This file is open for editing. Save an unchanged copy, or review changed sections before saving a new snapshot."
+        : packageIsStale ? "The current design has changes to save." : "Review each section, then save the final JSON with the current Live Preview settings.",
       compiling: "Validating the current design…",
       saving: "Waiting for the file writer. Finish or cancel the save dialog.",
       saved: "Recipe saved. The writer confirmed its exact bytes and hash.",
@@ -3646,11 +3774,13 @@ function bindResearchInteractions(root, { surface }) {
     for (const id of ["package-generate", "package-edit", "package-load"]) {
       const button = query(`#${id}`);
       if (!button) continue;
-      button.disabled = mode !== "setup" || state.busy
-        || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0 || selectedTarget !== null))
+      button.disabled = mode !== "setup" || state.busy || Boolean(plannerFileWorkflow?.opening)
+        || (id === "package-generate" && !plannerFileWorkflow?.canCopy()
+          && ((languageEditorLocked && packageIsStale) || reviewIssues.length > 0 || (!languageEditorLocked && selectedTarget === null)))
         || (id === "package-edit" && !experimentPackageDocument);
+      if (id === "package-edit") button.hidden = Boolean(experimentPackageDocument?.recipe);
     }
-    renderPlannerContributionIssues(query("#package-contribution-issues"), review.issues);
+    renderPlannerContributionIssues(query("#package-contribution-issues"), reviewIssues);
   }
 
   const LANGUAGE_DEPENDENT_PREFLIGHT_IDS = new Set([
@@ -3672,7 +3802,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function renderParticipantLanguageDialog({ focus = false } = {}) {
-    if (!experimentPackageDocument) return;
+    if (!experimentPackageDocument?.package) return;
     const step = resolveLanguageSelectionTraversalStepV1(
       experimentPackageDocument.package.languageSelection,
       languageTraversalPath,
@@ -3712,7 +3842,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function openParticipantLanguageDialog() {
     const contextKey = synchronizeParticipantLanguageContext();
-    if (!experimentPackageDocument || contextKey === null || languageSelectionBusy) return;
+    if (!experimentPackageDocument?.package || contextKey === null || languageSelectionBusy) return;
     if (selectedAttemptDisposition() === "resume-compatible") {
       announce("A compatible recovery restores its frozen package language and cannot be rerouted.");
       return;
@@ -3733,7 +3863,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function chooseParticipantLanguageOption(optionId) {
-    if (!experimentPackageDocument || languageSelectionBusy) return;
+    if (!experimentPackageDocument?.package || languageSelectionBusy) return;
     try {
       const nextPath = [...languageTraversalPath, optionId];
       const step = resolveLanguageSelectionTraversalStepV1(
@@ -3791,7 +3921,7 @@ function bindResearchInteractions(root, { surface }) {
     const route = selectedPackageRoute();
     const disposition = selectedAttemptDisposition();
     choose.textContent = route ? "Change participant language" : "Choose participant language";
-    if (!experimentPackageDocument || contextKey === null) {
+    if (!experimentPackageDocument?.package || contextKey === null) {
       choose.disabled = true;
       status.dataset.state = "warning";
       status.textContent = `Load or generate ${EXPERIMENT_PACKAGE_FILE_NAME} first.`;
@@ -3842,7 +3972,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function validateRecoveryLanguageBinding(binding) {
     const normalized = validateExperimentPackageRecoveryBindingV1(binding);
-    if (!experimentPackageDocument
+    if (!experimentPackageDocument?.package
       || normalized.participantId !== selectedParticipant
       || normalized.disposition !== "resume-compatible"
       || normalized.packageId !== experimentPackageDocument.package.packageId
@@ -3868,7 +3998,7 @@ function bindResearchInteractions(root, { surface }) {
     contextKey = participantLanguageContextKey(),
     expectedRecoveryBinding = null,
   } = {}) {
-    if (!experimentPackageDocument || !route) {
+    if (!experimentPackageDocument?.package || !route) {
       throw new TypeError("Choose a terminal language route from a validated package.");
     }
     const terminal = resolveLanguageSelectionTraversalStepV1(
@@ -3981,37 +4111,31 @@ function bindResearchInteractions(root, { surface }) {
 
   function requestExperimentPackageLoad() {
     if (researchUiDisposed || packageExport.snapshot().busy || mode !== "setup") return;
-    if (surface === "tauri") {
-      const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentPackageRequest, {
-        bubbles: true,
-        cancelable: true,
-      });
-      root.dispatchEvent(event);
-      if (!event.defaultPrevented) announce("The native experiment package adapter is not connected.");
-      return;
-    }
-    const generation = ++packageLoadGeneration;
-    const editRevision = packageEditRevision;
-    const draft = packageDraftFingerprint();
-    const current = () => !researchUiDisposed && mode === "setup" && !packageExport.snapshot().busy
-      && packageEditRevision === editRevision && packageDraftFingerprint() === draft;
     // Call the picker directly from the Open action. A selected recipe file
-    // carries no authorization for its declared media or fixed package root.
-    void openBrowserExperimentPackage()
-      .then((receipt) => {
-        if (!receipt) { announce("Open cancelled. The current design is preserved."); return; }
-        if (generation !== packageLoadGeneration || !current()) {
-          announce("The design changed while opening the file. Newer edits were preserved."); return;
-        }
-        packageExport.invalidate();
-        return applyExperimentPackageReceipt(receipt, { guard: current });
-      })
-      .catch((error) => {
-        announce(`Experiment package load failed: ${error instanceof Error ? error.message : String(error)}`);
-      });
+    // carries no authorization for its declared media or local root.
+    void plannerFileWorkflow.open(options => surface === "tauri"
+      ? requestPlannerFile(root, PLANNER_LOAD_REQUEST)
+      : openBrowserPlannerRecipeFile(options), { openLegacy: applyExperimentPackageReceipt })
+      .then(result => {
+        if (result === null) announce("Open cancelled. The current design is preserved.");
+        else if (result && experimentPackageDocument?.recipe) announce("Recipe opened for editing. Rebind and verify its video folder before changing and confirming media-dependent sections. An unchanged copy can be saved without granting media access.");
+      }).catch(error => announce(`Recipe open failed: ${error instanceof Error ? error.message : String(error)}`));
   }
 
   async function generateExperimentPackage({ reexport = false } = {}) {
+    if (!languageEditorLocked || experimentPackageDocument?.recipe) {
+      try {
+        const result = await plannerFileWorkflow.save();
+        if (result.status === "saved") announce("Final recipe saved. Every section and the current Live Preview were validated; the writer acknowledged the exact bytes.");
+        else if (result.status === "cancelled") announce("Save cancelled. Your design is still available.");
+        else if (result.status !== "busy") announce("The design changed during saving. Newer edits remain here and are not marked saved.");
+      } catch (error) {
+        announce(`Recipe export failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      renderPackageReceipt();
+      renderReview();
+      return;
+    }
     observePackageDraft();
     const draft = observedPackageDraft;
     const contributionFingerprint = plannerContributions.read().fingerprint;
@@ -4026,7 +4150,7 @@ function bindResearchInteractions(root, { surface }) {
           if (getSelectedPlannerTarget() !== null) throw new Error("The selected presentation needs the new recipe format; it cannot be omitted from a v1 save.");
           await plannerContributions.assertPackageV1();
           if (reexport) {
-            if (!experimentPackageDocument || packageIsStale) throw new Error("Open an unchanged recipe before re-exporting.");
+            if (!experimentPackageDocument?.package || packageIsStale) throw new Error("Open an unchanged recipe before re-exporting.");
             await plannerContributions.assertPackageV1(experimentPackageDocument.package);
             return experimentPackageDocument;
           }
@@ -4062,7 +4186,11 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function editExperimentPackage() {
-    if (!experimentPackageDocument || packageExport.snapshot().busy || mode !== "setup") return;
+    if (experimentPackageDocument?.recipe) {
+      announce("This recipe is already editable. Changed sections must be reviewed again before saving a new snapshot.");
+      return;
+    }
+    if (!experimentPackageDocument?.package || packageExport.snapshot().busy || mode !== "setup") return;
     const restore = root.researchUi?.restoreQuestionnaireContribution;
     if (typeof restore !== "function") {
       announce("Editable recipe restoration requires the questionnaire contribution adapter. The loaded recipe is preserved.");
@@ -4774,8 +4902,8 @@ function bindResearchInteractions(root, { surface }) {
           resolvedProtocolPlan: protocolPlan,
           experimentPackageSourceText: experimentPackageDocument?.canonicalSourceText ?? null,
           experimentPackageSourceByteSha256: experimentPackageDocument?.canonicalSourceByteSha256 ?? null,
-          experimentPackageDefinitionSha256: experimentPackageDocument?.package.integrity.packageDefinitionSha256 ?? null,
-          experimentPackageId: experimentPackageDocument?.package.packageId ?? null,
+          experimentPackageDefinitionSha256: experimentPackageDocument?.package?.integrity.packageDefinitionSha256 ?? null,
+          experimentPackageId: experimentPackageDocument?.package?.packageId ?? null,
           selectedLanguageId,
           languageSelectionPath: selectedLanguageSelectionPath
             ? Object.freeze([...selectedLanguageSelectionPath])
@@ -4868,8 +4996,8 @@ function bindResearchInteractions(root, { surface }) {
       experimentSourceText: experimentDocument?.sourceText ?? null,
       experimentPackageSourceText: experimentPackageDocument?.canonicalSourceText ?? null,
       experimentPackageSourceByteSha256: experimentPackageDocument?.canonicalSourceByteSha256 ?? null,
-      experimentPackageDefinitionSha256: experimentPackageDocument?.package.integrity.packageDefinitionSha256 ?? null,
-      experimentPackageId: experimentPackageDocument?.package.packageId ?? null,
+      experimentPackageDefinitionSha256: experimentPackageDocument?.package?.integrity.packageDefinitionSha256 ?? null,
+      experimentPackageId: experimentPackageDocument?.package?.packageId ?? null,
       selectedLanguageId,
       languageSelectionPath: selectedLanguageSelectionPath
         ? Object.freeze([...selectedLanguageSelectionPath])
@@ -4905,6 +5033,29 @@ function bindResearchInteractions(root, { surface }) {
       if (status) status.textContent = "Authoritative run adapter is not connected; no session was started.";
     }
   }
+
+  function markPlannerEdit() {
+    if (experimentPackageDocument?.recipe) packageIsStale = true;
+    plannerFileWorkflow.edited({ deferNotification: true });
+  }
+  const authoringIntents = new AbortController();
+  // Capture before child editor handlers, including edits which are invalid or
+  // later reverted. Disclosure, confirmation and preview inspection are not edits.
+  for (const type of ["input", "change", "paste"]) root.addEventListener(type, event => {
+    const target = event.target;
+    if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label")) return;
+    markPlannerEdit();
+  }, { capture: true, signal: authoringIntents.signal });
+  root.addEventListener("click", event => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (!button || button.disabled) return;
+    const sheetMutation = ["reverse", "delete-row", "add-row", "upload", "undo", "move-up", "move-down", "remove"].includes(button.dataset.sheetAction);
+    const xrMutation = ["angles", "import"].includes(button.dataset.xrAction);
+    if (sheetMutation || xrMutation || button.closest("#stimulus-order-editor")
+      || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert], [data-layout-reset], [data-color-reset]")
+      || ["feedback-upgrade-v2", "preview-color-apply", "preview-response-reset", "preview-recolor", "binding-reset", "workspace-choose", "video-import", "video-folder-import", "study-language-add-button", "questionnaire-add-blank"].includes(button.id)) markPlannerEdit();
+  }, { capture: true, signal: authoringIntents.signal });
+  const authoredMutation = operation => (...args) => { markPlannerEdit(); return operation(...args); };
 
   root.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target.closest("button") : null;
@@ -5695,7 +5846,10 @@ function bindResearchInteractions(root, { surface }) {
     getScreenLayoutContributionSnapshot: layoutDraftEditor.getSnapshot,
     getScreenLayoutDraftDocument: layoutDraftEditor.getDraftDocument,
     getScreenLayoutProjection() { return layoutDraftEditor.projection; },
-    restoreScreenLayoutDraft: layoutDraftEditor.restoreDraft,
+    restoreScreenLayoutDraft: authoredMutation(layoutDraftEditor.restoreDraft),
+    prepareScreenLayoutContribution: layoutDraftEditor.prepareContribution,
+    restoreScreenLayoutContribution: authoredMutation(layoutDraftEditor.restoreContribution),
+    restoreScreenLayoutContent: authoredMutation(layoutDraftEditor.restoreContent),
     validateScreenLayoutContribution: layoutDraftEditor.validateContribution,
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
     initializeXrLayoutAuthoring() {
@@ -5713,7 +5867,7 @@ function bindResearchInteractions(root, { surface }) {
     validateXrLayoutContribution(profile, options) { return xrLayoutAuthoring.validate(profile, options); },
     restoreXrLayoutContribution(profile, options) { return xrLayoutAuthoring.restore(profile, options); },
     restoreXrLayoutDraft(profile, options) { return xrLayoutAuthoring.restoreDraft(profile, options); },
-    restoreXrLayoutSelection(selection, options) { return xrLayoutAuthoring.restoreSelection(selection, options); },
+    restoreXrLayoutSelection: authoredMutation((selection, options) => xrLayoutAuthoring.restoreSelection(selection, options)),
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
@@ -5727,13 +5881,20 @@ function bindResearchInteractions(root, { surface }) {
     confirmStimulusOrder: () => stimulusOrderEditor.confirm(),
     restoreStimulusOrder: (document, receipt) => stimulusOrderEditor.restore(document, receipt),
     restoreStimulusVariantContribution: (contribution, receipt) => stimulusOrderEditor.restoreContribution(contribution, receipt),
-    restoreStimulusVariantContent: (contribution, options) => stimulusOrderEditor.restoreContent(contribution, options),
+    restoreStimulusVariantContent: authoredMutation((contribution, options) => stimulusOrderEditor.restoreContent(contribution, options)),
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
     get experimentPackage() { return experimentPackageDocument?.package ?? null; },
-    get experimentPackageSourceText() { return experimentPackageDocument?.canonicalSourceText ?? null; },
+    get experimentPackageSourceText() { return experimentPackageDocument?.package ? experimentPackageDocument.canonicalSourceText : null; },
+    get plannerRecipe() { return experimentPackageDocument?.recipe ?? null; },
+    get plannerRecipeSourceText() { return experimentPackageDocument?.recipe ? experimentPackageDocument.canonicalSourceText : null; },
+    get canSaveUnchangedPlannerRecipe() { return Boolean(plannerFileWorkflow.canCopy()); },
+    async restorePlannerRecipe(sourceText, options = {}) {
+      return plannerFileWorkflow.open(async () => ({ kind: "planner-recipe-v1", document: { canonicalSourceText: sourceText } }), options);
+    },
+    savePlannerRecipe() { return plannerFileWorkflow.save(); },
     get experimentPackageSelection() {
-      if (!experimentPackageDocument || !compiledPackageSelection
+      if (!experimentPackageDocument?.package || !compiledPackageSelection
         || compiledPackageSelection.assignment?.participantId !== selectedParticipant
         || !selectedLanguageId || !selectedLanguageSelectionPath) return null;
       const steps = compiledPackageSelection.protocolPlan.steps;
@@ -5760,16 +5921,8 @@ function bindResearchInteractions(root, { surface }) {
     },
     plannerContributionChanged(segment) { plannerContributions.changed(segment); },
     getPlannerRecipePolicy() { return readPlannerPolicyControls(root); },
-    restorePlannerRecipePolicy(policy, options) {
-      if (researchUiDisposed) return false;
-      const restored = restorePlannerPolicyControls(root, policy, options);
-      if (restored === false) return false;
-      outputFormatsTouched = true;
-      syncOutputFormatValidation();
-      packageExport.invalidate();
-      schedulePlanRefresh();
-      return restored;
-    },
+    restorePlannerRecipePolicy: authoredMutation(restorePlannerRecipePolicy),
+    restorePlannerPresentationTarget: authoredMutation(restorePlannerPresentationTarget),
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
@@ -5781,7 +5934,7 @@ function bindResearchInteractions(root, { surface }) {
       return () => studyIdentityListeners.delete(listener);
     },
     getWorkspaceContributionSnapshot,
-    restoreWorkspaceContribution,
+    restoreWorkspaceContribution: authoredMutation(restoreWorkspaceContribution),
     subscribeWorkspaceContributionChanges(listener) {
       return workspaceContributionProducer.subscribe(listener);
     },
@@ -5798,7 +5951,7 @@ function bindResearchInteractions(root, { surface }) {
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     getQuestionnaireRecipeContributionSnapshot,
-    restoreQuestionnaireRecipeContribution,
+    restoreQuestionnaireRecipeContribution: authoredMutation(restoreQuestionnaireRecipeContribution),
     validateQuestionnaireRecipeContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
     get inputController() { return inputController; },
@@ -5809,7 +5962,7 @@ function bindResearchInteractions(root, { surface }) {
     getFeedbackContributionSnapshot: feedbackContribution.getSnapshot,
     getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
     subscribeFeedbackChanges: feedbackContribution.subscribe,
-    restoreFeedbackContribution,
+    restoreFeedbackContribution: authoredMutation(restoreFeedbackContribution),
     getYouTubePreflight(stimulusId) {
       const record = stimuli.find(({ id }) => id === stimulusId)?.youtubePreflight;
       return record ? structuredClone(record) : null;
@@ -5864,6 +6017,8 @@ function bindResearchInteractions(root, { surface }) {
       inlineColorPicker.destroy();
       setupLayout.destroy();
       packageExport.destroy();
+      plannerFileWorkflow.destroy();
+      authoringIntents.abort();
       packageSaveDialog?.destroy();
       disconnectScreenLayout();
       layoutDraftEditor.destroy();

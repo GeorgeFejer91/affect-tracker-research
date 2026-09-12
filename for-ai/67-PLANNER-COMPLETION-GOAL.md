@@ -62,7 +62,7 @@ Independent root source review at `7946bc6` found:
    from accepted producer contributions.
 2. `screen-layout-state.js` remains pending/null with a throwing accepted
    validator. Real P1/P5 geometry and internal draft restore already exist;
-   accepted layout and the remaining Q08 reference policy are missing.
+   accepted layout and explicit per-recipe reference selection are missing.
 3. P5's payload contains historical `input`, `visual`, `mappings`. Configured
    halo parameters, response/grid modes/dimensions, hold/timing behavior and
    edited anchor labels remain separate Preview state. S5 owns closing this
@@ -76,6 +76,105 @@ Independent root source review at `7946bc6` found:
 
 These are source findings, not new tests or Runner failures. Reuse the repaired
 contribution lifecycle, media-refresh fencing and P3 content-only restoration.
+
+## Component checkpoint — 2026-09-12, integration still active
+
+These are exact owner handoffs, not a completed application or canonical release.
+The earlier source findings above describe the starting point, not the latest
+producer code. Integration reported clean `4091c71` with the full JS compiler
+and live P4 editor collected; shared master confirmation/save/Open wiring is
+the active critical path. Owner native readers and final combined checks remain
+separate evidence.
+
+| Owner | Ready component and evidence boundary |
+| --- | --- |
+| P1 | `0b7f793` / native `0e9b28b` / parity `ea7cf7d`: reversible relative-location v2 IDs, exact content/location pairs, complete oriented geometry and guarded restore/rebind. Native source checks with `DOCS_RS=1` are not linked-build evidence. S1 is restoring the missing pinned development SDK for normal native checks. |
+| P2 | `b08ceb0` (app `6654bc2`): complete definitions, languages, score annotations and hash-bound label-repetition presentation companion; full-master UI restoration remains an integration check. |
+| P3 | `2a16397`: location/content v2 variant contribution and independent timeline/marker fixtures; `11670a7` closes the stale CSV/XLSX save race. Native export adoption and long-ID combined UI checks remain with S3/integration. |
+| P4 | `d0267ff` accepted pure/native contract; live `2499517`: both explicit reference methods, no default, fixed-reference fit, full P1/P5 dependency validation and guarded content restoration. Final shared-controller acceptance remains integration work. |
+| P5 | `495ee13` (app `5c0ad7a`): complete v2 appearance/input/mappings, renderer, labels, halo and response/Advanced configuration. Preview `9237279` fixes bounded narrow editor captions while preserving full saved/accessibility text. |
+| P6 | `485c2da` (application `188c080`): actual full-master included-XR and excluded-profile fixtures, both P1/P3 generations, complete P5, strict readback and independent-process reproduction. Owner reports 731 JS checks; this is component evidence, not the new combined controller. |
+| P7 | `828fff7`: complete JS master compiler, strict reader, canonical integrity, named save/readback and one-use coordinated restore. Owner reports 725 JS checks at this checkpoint. Independent native master reader/persistence and actual app wiring are still active. |
+| App boundary | `a0283d9`, static followup `7e4b719`, defect fix `17b2d24`: separate Planner surface/authority. Root source review confirms the fix avoids removed Run-media teardown and preserves visible/announced workspace errors. Integrated reproduction and rendered error layout remain checks. |
+
+Root independently read the two canonical master fixtures at exact `828fff7`.
+They contain ordered P1–P6 keys, 3 unequal variants × 2 language routes, full
+questionnaire definitions/options with positive, negative/fractional and null
+score annotations, the presentation companion, all P5 v2 field groups, accepted
+P4 and explicit P6 exclusion. Independent Node crypto/canonicalization reproduced
+both definition and reproduction hashes and every segment hash. The location
+fixture keeps `session_a/clip.mp4` and `session-a/clip.mp4` distinct while allowing
+shared content identity. This verifies those saved samples; it does not establish
+fresh UI authoring or final native/browser parity.
+
+The independent Windows prerequisite audit found the pinned runtime intact but
+the former temporary development SDK removed. Rust/MSVC are installed. Use the
+existing verified 1.28.6 preparation script and process-scoped build paths; never
+count dependency-discovery bypasses as a linked artifact. Existing safe pre-main
+DLL loading and runtime redistribution/resource packaging gates remain distinct
+release limits. This goal does not approve a new unsafe adapter or runtime bundle.
+
+## Integrated workflow proof — `63fe416`, 2026-09-12
+
+Root independently ran the actual combined controller fixture at clean
+`63fe4169548ae609382421108992874bafad69bf` in Chrome and Edge: **64 checks per
+browser passed**, producing byte-identical master JSON. It exercises real P3
+TSV paste and named-ISI edits, P4 method/geometry changes, P5 color/response
+changes, study/policy edits, sequential confirmation, final P5 capture, named
+save, exact disk readback, fresh editable Open, unresolved-media copy, exact
+media rebind, edit/revert, reconfirmation and byte-identical re-export. P4 layout
+Reset and P5 color Reset now revoke old-source eligibility. Those two real
+integration defects were independently found and routed before this checkpoint.
+
+The fixture seeds P2 content through its owner restore API; its complete table
+editing evidence remains separately owned by S2. Media and file-picker boundaries
+are synthetic; bytes are written to a real isolated test file. This is not OS
+picker interaction, physical decoding or installed-app qualification. Canonical
+delivery and the final all-section visual check remain open.
+
+Root then passed each actual browser-generated file to the independently built,
+source-bound native reader from clean `732bf88`. Both canonical documents,
+reproduction matrices and all six selected variant/language projections agree;
+derived desktop geometry difference is zero. Both browser files have SHA-256
+`09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+Evidence directories:
+
+- `D:/GitHub/.affect-preview-checks/master-workflow-assets-chrome-63fe416-20260912`
+- `D:/GitHub/.affect-preview-checks/master-workflow-assets-edge-63fe416-20260912`
+- `D:/GitHub/.affect-preview-checks/master-workflow-native-63fe416-20260912`
+
+The browser harness now keeps its server alive until the page's actual HTTP
+receipt and complete PNG arrive, independently of early Edge launcher exit.
+It serves real CSS/assets and binds source, harness, HTML, browser executable
+and screenshot hashes. Earlier missing-icon harness images are superseded for
+visual inspection; the underlying 64 workflow checks also passed there.
+
+P7's native cross-check found small raw XR floating-point differences. Successor
+`70b30a4` introduces explicitly tagged `planner-recipe-reproduction-v2`: exact
+full layout inputs/dependencies and named algorithms determine portable layout
+identity, while both implementations still resolve/validate the geometry.
+Authored values and root/segment hashes remain exact; geometry-only comparison
+uses the existing strict absolute error below 1e-10. Frozen experiment-package
+v1 and earlier master reproduction-v1 semantics remain unchanged. Independent
+review found this identity design sound and verified all 159 source hashes,
+ten generated file hashes and the executable hash in clean `732bf88` evidence
+(eight distinct recipes, 60 selections, maximum difference about 3.55e-15).
+The review additionally caught a native-only 64-edge language-tree cap, distinct
+from JSON nesting depth. Owner fix `48318a9` restores the existing 256-node owner
+contract with a real 66-node vector; final combined collection/parity is required.
+
+Normal native build prerequisites are now restored. S1 reports **212 passing,
+one ignored** linked native-feature tests with `DOCS_RS` absent, required pinned
+runtime verification enabled, and process-scoped SDK paths. This removes the
+missing-development-SDK blocker, not installed DLL/redistribution qualification.
+S1 is closing the separate current-directory/link verification finding from P3.
+
+Latest remaining handoffs include P3 native export `ea3c788` and test-only v2
+expectation `c7afb28`, P4 final `fa64e8d` (app `77e4752`), P6 full-master UI
+`7fd56d5` (app `51685b0`, 60 assertions at each width), and Preview badge removal
+`6d9cc35`. Integration remains the sole merger. Final saved Review header text
+must agree with the actual master state; root routed the residual misleading
+"Resolve blocking checks" caption observed at `63fe416`.
 
 ## Existing-task assignments
 
@@ -109,13 +208,21 @@ coordinate shared application hunks through integration. No competing formats.
 Pending choices block only their dependent behavior. Continue independent schema,
 editor, validation and persistence work; do not invent policy for a passing test.
 
-- **Q08:** fixed-reference percentages and automatic reference analysis are
-  accepted. The already-pending question distinguishes the largest oriented
-  width×height video from a rectangle combining maximum width and height. S4
-  identifies any additional exact required choice without reopening principles.
-- **Q05:** the already-pending question distinguishes portable references with
-  explicit folder reselection from requiring the original location. Pure content
-  restore is independent of authorization; P1/P7 can implement it now.
+- **Q08 implementation refinement:** implement both proposed analysis methods as
+  an explicit required per-recipe UI choice, with no silently selected default:
+  the largest oriented width×height video or the combined maximum-width/height
+  envelope. After selection, automatically derive one fixed reference, preview
+  it and save the method/result. Missing selection blocks the current recipe,
+  not the application's accepted-type implementation. This parameterizes the
+  Planner rather than inventing a global answer; the global default preference
+  is optional and still unanswered. S4 owns the exact versioned semantics.
+- **Q05:** original absolute-directory provenance remains optional/unanswered.
+  P1 confirms existing logical roots and exact relative source/package paths
+  fully represent authored media declarations. Reopening requires fresh explicit
+  root authorization, rehash/reprobe and exact comparison. Neither live permission
+  nor Runner relocation policy is inferred. A custom native shell root currently
+  resets to the app-data default on restart; that local preference gap is separate
+  from master JSON generation and is not a universal compilation blocker.
 - **Q04 answered:** the user requires location-derived IDs such as
   `FOLDERNAME_video.mp4` and rejected the artificial collision premise. Preserve
   the complete relative path, filename and extension in an unambiguous reversible
@@ -131,8 +238,10 @@ editor, validation and persistence work; do not invent policy for a passing test
   behavior. S5 records the exact inventory and any remaining semantic decision,
   separating temporary inspection/test state.
 
-Q05/Q08 remain pending at this checkpoint. Do not duplicate their questions or
-treat the general completion request, elapsed time or continuation as answers.
+Do not duplicate the outstanding preference questions or treat the general
+completion request, elapsed time or continuation as answers. Parameterized
+authoring with an explicit researcher selection does not require choosing that
+researcher's actual experiment configuration in this development task.
 
 ## Planner completion evidence
 

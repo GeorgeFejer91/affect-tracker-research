@@ -16,7 +16,7 @@ const catalogue = JSON.parse(await readFile(resolve(import.meta.dirname, "../../
 catalogue.entries.push({ ...catalogue.entries[0], sha256: "c".repeat(64), assetId: assetIdFromSha256("c".repeat(64)),
   annotationId: "Portrait fixture", sourceRelativePath: "stimuli/portrait.mp4", packageRelativePath: "assets/stimuli/portrait.mp4",
   geometry: browserDisplayGeometry({ videoWidth: 1080, videoHeight: 1920 }) });
-const cases = ["desktop-populated", "narrow-populated", "narrow-invalid", "desktop-unavailable"];
+const cases = ["desktop-populated", "narrow-populated", "narrow-invalid", "desktop-unavailable", "desktop-controls", "narrow-controls"];
 const served = new Map();
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const run = promisify(execFile);
@@ -44,6 +44,11 @@ try {
    verified:true,displayGeometry:missing?null:e.geometry}))}}));
  check('P4 is registered once',ui.getPlannerContributionReview().snapshots.filter(s=>s.segment==='P4').length===1);
  check('empty library shows no invented video',p().videos.length===0);
+ check('reference method has no selected default',field('referencePolicy').value===''&&ui.getScreenLayoutDraftDocument().draft.referencePolicy===null);
+ let unselectedRejected=false;try{await ui.prepareScreenLayoutContribution();}catch{unselectedRejected=true;}
+ check('unselected layout cannot prepare',unselectedRejected&&snap().pending);
+ const policy=name.startsWith('narrow')?'maximum-oriented-dimensions':'largest-oriented-area';
+ edit(field('referencePolicy'),policy,'change');
  const packageBefore=ui.experimentPackageSourceText;
  send();await until(()=>p().videos.length===fixture.entries.length);
  check('all verified P1 identities are rendered',p().videos.every(v=>fixture.entries.some(e=>e.assetId===v.id)));
@@ -85,8 +90,28 @@ try {
  send(true);await until(()=>p().videos.length===0);
  check('missing geometry withdraws whole catalogue',ui.getVideoCatalogueContributionSnapshot().pending&&p().videos.length===0);
  send();await until(()=>p().videos.length===fixture.entries.length);
- let refused=false;try{await ui.acceptPlannerContribution('P4');}catch{refused=true;}
- check('Q08 draft cannot become accepted contribution',refused&&snap().pending&&snap().contribution===null);
+ const ready=ui.getScreenLayoutDraftDocument();Object.assign(ready.draft,{referenceWidth:60,referenceHeight:45,referenceY:30,diameter:4,offsetX:0,offsetY:90,gap:1});
+ await ui.restoreScreenLayoutDraft(ready);
+ const prepared=await ui.prepareScreenLayoutContribution();
+ check('real preparation returns explicit chosen policy',!prepared.pending&&prepared.contribution.reference.source.policy===policy);
+ check('prepared dependency revisions match current registered owners',prepared.dependencyRevisions.every(d=>d.revision===ui.getPlannerContributionReview().snapshots.find(s=>s.segment===d.segment).revision));
+ await ui.acceptPlannerContribution('P4');
+ check('P7 accepts real validated P4 contribution',ui.getPlannerAcceptanceReview().entries.find(e=>e.segment==='P4').status==='accepted');
+ const content=prepared.contribution,workspace=ui.getWorkspaceContributionSnapshot().contribution,feedback=ui.getFeedbackContributionSnapshot().contribution;
+ const pure=await import('/site/src/research/desktop-layout-contribution.js');
+ const bytes=await pure.serializeDesktopLayoutContribution(content,{workspace,feedback});
+ const reread=await pure.parseDesktopLayoutContribution(bytes,{workspace,feedback});
+ check('strict accepted layout roundtrip reproduces preview geometry',JSON.stringify((await pure.resolveDesktopLayoutContribution(reread,{workspace,feedback})).geometry)===JSON.stringify(p().geometry));
+ edit(field('offsetX'),3);check('edit withdraws prepared contribution',snap().pending&&snap().contribution===null);
+ await ui.restoreScreenLayoutContent(content,{savedWorkspaceContribution:workspace,savedFeedbackContribution:feedback});
+ check('content restore is editable and pending',snap().pending&&field('referencePolicy').value===policy&&field('offsetX').value==='0');
+ await ui.prepareScreenLayoutContribution();
+ const restoreReady=await ui.restoreScreenLayoutContribution(content);
+ check('ready restore returns exact accepted domain',!restoreReady.pending&&JSON.stringify(restoreReady.contribution)===JSON.stringify(content));
+ edit(field('referencePolicy'),'','change');
+ let refused=false;try{await ui.prepareScreenLayoutContribution();}catch{refused=true;}
+ check('clearing method withdraws old geometry and acceptance',refused&&snap().pending&&p().geometry===null);
+ await ui.restoreScreenLayoutDraft(ready);
  check('draft edits do not write package bytes',ui.experimentPackageSourceText===packageBefore);
  check('reference candidates use full oriented geometry',Boolean(p().referenceCandidates?.largestVideo));
  if(name.endsWith('invalid'))edit(field('diameter'),-1);
@@ -105,12 +130,17 @@ try {
  check('no pane horizontal overflow',pane.scrollWidth<=pane.clientWidth);
  check('invalid field border is visible',!name.endsWith('invalid')||getComputedStyle(field('diameter')).borderTopColor===getComputedStyle(root.querySelector('[data-layout-errors]')).color);
  field('offsetX').focus({preventScroll:true});check('numeric keyboard focus',document.activeElement===field('offsetX'));
+ if(name.endsWith('invalid')){
+   let invalidRejected=false;try{await ui.prepareScreenLayoutContribution();}catch{invalidRejected=true;}
+   check('failed preparation focuses its invalid numeric field',invalidRejected&&document.activeElement===field('diameter'));
+ }
  const section=root.closest('[data-setup-section]'),footer=section.querySelector('[data-confirm-section]');
  pane.scrollTop+=footer.getBoundingClientRect().bottom-pane.getBoundingClientRect().bottom+16;
  check('footer reachable',footer.getBoundingClientRect().bottom<=pane.getBoundingClientRect().bottom+1);
  if(!name.endsWith('invalid'))pane.scrollTop+=section.getBoundingClientRect().top-pane.getBoundingClientRect().top;
+ if(name.endsWith('controls'))pane.scrollTop+=field('referencePolicy').labels[0].getBoundingClientRect().top-pane.getBoundingClientRect().top-16;
  await wait();check('no runtime errors',errors.length===0);
- const receipt={name,checks,errors,boot:'bootResearchUi',syntheticCatalogue:true,nativePlayback:false,exportable:false,paneWidth:pane.clientWidth,editorHeight:root.getBoundingClientRect().height,projection:p(),snapshot:snap()};
+ const receipt={name,checks,errors,boot:'bootResearchUi',syntheticCatalogue:true,nativePlayback:false,acceptedLayoutVerified:true,paneWidth:pane.clientWidth,editorHeight:root.getBoundingClientRect().height,projection:p(),snapshot:snap()};
  parent.postMessage(receipt,location.origin);
 }catch(error){parent.postMessage({name,checks,errors:[...errors,String(error.stack)]},location.origin);}
 </script></html>`;

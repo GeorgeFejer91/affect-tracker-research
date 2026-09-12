@@ -76,3 +76,14 @@ export function desktopLayoutDraftFromProfile(value) {
     referenceX: p.reference.centre.x, referenceY: p.reference.centre.y,
     diameter: p.feedback.overlayViewportSide, offsetX: p.feedback.offset.x, offsetY: p.feedback.offset.y, gap: p.feedback.minimumGap };
 }
+
+/** Keep domain paths precise while associating editor errors with their control. */
+export function desktopLayoutDraftField(field) {
+  return ({ "viewport.widthCssPx": "screenWidth", "viewport.heightCssPx": "screenHeight",
+    "calibration.activeWidthMm": "physicalWidth", "calibration.activeHeightMm": "physicalHeight", calibration: "physicalHeight",
+    "reference.policy": "referencePolicy", "reference.source": "referencePolicy",
+    "reference.box.width": "referenceWidth", "reference.box.height": "referenceHeight",
+    "reference.centre.x": "referenceX", "reference.centre.y": "referenceY",
+    "feedback.overlayViewportSide": "diameter", "feedback.offset.x": "offsetX", "feedback.offset.y": "offsetY",
+    "feedback.minimumGap": "gap" })[field] ?? field;
+}

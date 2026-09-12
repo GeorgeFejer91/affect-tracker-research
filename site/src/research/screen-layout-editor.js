@@ -1,7 +1,10 @@
-import { createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "./screen-layout-draft.js";
+import { SCREEN_LAYOUT_DRAFT_FIELDS, createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "./screen-layout-draft.js";
 import { screenLayoutSceneMarkup } from "./screen-layout-view.js";
 import { createScreenLayoutState, validateScreenLayoutContribution } from "./screen-layout-state.js";
 import { createScreenLayoutDependencyBinding } from "./screen-layout-dependencies.js";
+import { canonicalJson } from "./canonical.js";
+import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
+import { desktopLayoutProfileFromDraft, desktopLayoutDraftField } from "./desktop-layout-contribution.js";
 
 /** Local UI owner only. Fixture injection is used by non-shipping qualification pages. */
 export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencies = null, onChange = () => {} } = {}) {
@@ -21,16 +24,32 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     render();
   };
   let binding = dependencies ? createScreenLayoutDependencyBinding({ ...dependencies, onChange: dependencyChanged }) : null;
+  function contentDependencies(options = {}) {
+    if (!options.dependencies) return binding?.getContentDependencies();
+    const supplied = options.dependencies;
+    if (!supplied || Object.keys(supplied).sort().join(",") !== "P1,P5") throw new TypeError("Layout requires exactly Workspace and Feedback dependencies.");
+    const p1 = validatePlannerContributionSnapshot(supplied.P1), p5 = validatePlannerContributionSnapshot(supplied.P5);
+    if (!p1.enabled || p1.pending || !p1.contribution || !p5.enabled || p5.pending || !p5.contribution) throw new TypeError("Layout dependencies are still pending.");
+    return { workspace: p1.contribution, feedback: p5.contribution };
+  }
+  const validateOwned = (value, options = {}) => validateScreenLayoutContribution(value, contentDependencies(options));
   state = createScreenLayoutState({
     resolve: next => binding ? binding.resolve(next) : resolveScreenLayoutDraft(next, fixtureInputs),
     onChange,
+    prepareDraft: next => {
+      if (!binding) throw new TypeError("Connect the verified video library and saved feedback before preparing layout.");
+      const profile = desktopLayoutProfileFromDraft(next, binding.getMediaGeometry());
+      return validateScreenLayoutContribution(profile, binding.getContentDependencies());
+    },
+    validateContribution: (value, options) => options.contentDependencies
+      ? validateScreenLayoutContribution(value, options.contentDependencies) : validateOwned(value, options),
   });
 
   function syncFields() {
     for (const control of controls) {
       const field = control.dataset.layoutField;
       if (control.type === "checkbox") control.checked = draft[field];
-      else control.value = typeof draft[field] === "number" ? Number(draft[field].toPrecision(12)) : draft[field];
+      else control.value = typeof draft[field] === "number" ? Number(draft[field].toPrecision(12)) : draft[field] ?? "";
     }
   }
 
@@ -40,9 +59,12 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     const geometry = projection.geometry;
     const number = value => Number(value.toFixed(2));
     query("[data-layout-readout]").textContent = geometry
-      ? `Reference ${number(geometry.reference.width)} × ${number(geometry.reference.height)} CSS px · Flubber centre (${number(geometry.feedback.cx)}, ${number(geometry.feedback.cy)}) · offsets (${number(geometry.offset.x)}, ${number(geometry.offset.y)})`
-      : "Geometry unavailable while fields are invalid.";
-    const issues = [...projection.issues, ...conversionIssues];
+      ? `Reference ${number(geometry.reference.width)} × ${number(geometry.reference.height)} CSS px · Feedback centre (${number(geometry.feedback.cx)}, ${number(geometry.feedback.cy)}) · offsets (${number(geometry.offset.x)}, ${number(geometry.offset.y)})`
+      : "Geometry unavailable until all layout inputs are ready.";
+    const issues = [...projection.issues, ...conversionIssues].map(item => {
+      const field = desktopLayoutDraftField(item.field), label = SCREEN_LAYOUT_DRAFT_FIELDS[field];
+      return { ...item, field, message: label ? item.message.replace(item.field, label) : item.message };
+    });
     const errors = query("[data-layout-errors]");
     errors.replaceChildren(...issues.map(item => {
       const li = document.createElement("li");
@@ -52,8 +74,8 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     errors.hidden = !issues.length;
     for (const control of controls) control.setAttribute("aria-invalid", String(issues.some(item => item.field === control.dataset.layoutField)));
     query("[data-layout-status]").textContent = issues.length
-      ? `${issues.length} draft ${issues.length === 1 ? "issue" : "issues"} to resolve.`
-      : "Draft geometry calculated.";
+      ? `${issues.length} layout ${issues.length === 1 ? "issue" : "issues"} to resolve.`
+      : "Geometry checks passed.";
     for (const unit of root.querySelectorAll("[data-layout-unit]")) {
       const field = unit.dataset.layoutUnit;
       if (field.startsWith("screen") || field.startsWith("physical")) continue;
@@ -67,7 +89,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
       const hasVideos = projection.videos.length > 0;
       const hasEnvelope = geometry?.maximumFeedback !== null && geometry !== null;
       notice.textContent = hasVideos && hasEnvelope
-        ? `${projection.videos.length} verified video display ${projection.videos.length === 1 ? "geometry" : "geometries"} and saved animation bounds are shown. Fit checks use the proposed fixed frame; the largest-video reference rule is pending.`
+        ? `${projection.videos.length} verified video display ${projection.videos.length === 1 ? "geometry" : "geometries"} and saved animation bounds are shown. The selected method defines one fixed reference for every video.`
         : "Complete video geometry and saved animation bounds are required to check every video. Missing or changed inputs clear the affected bounds.";
     } else if (fixtureInputs.media?.length || fixtureInputs.envelope) notice.textContent = "Synthetic verification samples only. These video and animation bounds are illustrative; actual media fit remains unverified.";
     const select = query("[data-layout-video]");
@@ -87,15 +109,20 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     const field = event.target?.dataset?.layoutField;
     if (!field) return;
     event.stopPropagation();
-    if (field === "units" && event.type !== "change") return;
+    if (["units", "referencePolicy"].includes(field) && event.type !== "change") return;
     if (field === "units") {
-      const converted = convertScreenLayoutDraftUnits(draft, event.target.value);
+      let converted;
+      try {
+        const next = binding?.convertUnits(draft, event.target.value);
+        converted = next ? { ok: true, draft: next, issues: [] } : convertScreenLayoutDraftUnits(draft, event.target.value);
+      } catch (error) { converted = { ok: false, draft, issues: [{ field: error.field ?? "units", code: error.code ?? "conversion", message: error.message }] }; }
       conversionIssues = converted.issues;
       if (converted.ok) draft = converted.draft;
       syncFields();
       if (!converted.ok) query(".layout-calibration").open = true;
     } else {
-      draft = { ...draft, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value };
+      draft = { ...draft, [field]: event.target.type === "checkbox" ? event.target.checked
+        : field === "referencePolicy" ? event.target.value || null : event.target.value };
       conversionIssues = [];
     }
     state.replaceDraft(draft);
@@ -130,7 +157,36 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     get draft() { return { ...draft }; },
     getSnapshot: state.getSnapshot,
     getDraftDocument: state.getDraftDocument,
-    validateContribution: validateScreenLayoutContribution,
+    validateContribution: validateOwned,
+    async prepareContribution(options) {
+      try {
+        const snapshot = await state.prepareContribution(options);
+        render();
+        return snapshot;
+      } catch (error) {
+        const field = desktopLayoutDraftField(error.field);
+        const control = controls.find(item => item.dataset.layoutField === field);
+        if (control) {
+          render();
+          const disclosure = control.closest("details");
+          if (disclosure) disclosure.open = true;
+          control.focus(); control.scrollIntoView({ block: "nearest" });
+        }
+        throw error;
+      }
+    },
+    async restoreContribution(value, options = {}) {
+      const dependencies = binding?.getDependencySnapshots();
+      if (!dependencies || (options.dependencies && canonicalJson(options.dependencies) !== canonicalJson(dependencies))) throw new Error("Layout restore dependencies are stale.");
+      const snapshot = await state.restoreContribution(value, { dependencies, isCurrent: options.isCurrent });
+      draft = state.draft; conversionIssues = []; syncFields(); render(); return snapshot;
+    },
+    async restoreContent(value, { savedWorkspaceContribution, savedFeedbackContribution, isCurrent } = {}) {
+      if (!savedWorkspaceContribution || !savedFeedbackContribution) throw new TypeError("Reopening layout content requires its complete saved workspace and feedback settings.");
+      const snapshot = await state.restoreContribution(value, { contentDependencies: { workspace: savedWorkspaceContribution,
+        feedback: savedFeedbackContribution }, isCurrent, contentOnly: true });
+      draft = state.draft; conversionIssues = []; syncFields(); render(); return snapshot;
+    },
     connectDependencies(owners) {
       binding?.destroy();
       binding = createScreenLayoutDependencyBinding({ ...owners, onChange: dependencyChanged });

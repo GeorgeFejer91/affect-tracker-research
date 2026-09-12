@@ -63,6 +63,77 @@ V28: render and inspect the final combined source after ready handoffs are
 collected. Do not substitute an older installed application or aggregate test
 counts from separate branches for that check.
 
+## Complete-settings followup — 2026-09-12
+
+The new P5 v2 restored labels exposed a real narrow-pane defect after the earlier
+default-state cleanup: corner captions could break one character per line.
+Preview `d711fb4` rearranges corner anchors; final `9237279` bounds only narrow
+left/right editor captions to three lines while preserving the full DOM text,
+accessible name, hover text, dialog editor and saved label. Root inspected the
+final narrow axes image and previously reviewed the corner arrangement. This is
+editor compactness, not truncation of participant labels or experiment content.
+
+Final evidence lives under
+`D:/GitHub/.affect-preview-checks/planner-feedback-labels-20260912/` in
+`clean-capped-axes` and `clean-capped-corners`. Root verified all four 1280/800
+HTML and PNG hashes against their JSON receipts; all bind clean application
+`92372794f5fa151448abf287797b67c109337fc5`. The receipts contain 122 passing label
+checks. Full restored-controller checks and the eventual combined app retain
+their own source binding; these owner images do not close G09 for master Save.
+
+The companion-boundary review also found and routed a missing retained Planner
+error surface. Fix `17b2d24` creates visible/announced `#planner-status` and covers
+a rejected workspace command. Root source review confirms the fix; that fixture
+hides the error before its screenshot, so final combined error-layout rendering
+must still include the visible failure state.
+
+The capture helper now explicitly boots `data-research-program="planner"` and
+asserts that participant Run/Start surfaces are absent. This prevents future
+captures from accidentally exercising preserved compatibility markup. Exact
+clean `17b2d24` was captured in Chrome and Edge, four Review PNGs per browser at
+1280/800 with full scroll. Root/independent review inspected all eight images;
+every PNG and harness binding matches, with zero participant controls, errors,
+duplicate IDs or pane overflow. The footer is reachable. Receipt directories:
+`D:/GitHub/.affect-preview-checks/planner-role-chrome-17b2d24-20260912` and
+`D:/GitHub/.affect-preview-checks/planner-role-edge-17b2d24-20260912`.
+The residual heading "Before starting" was routed to integration for Planner
+review wording. This smoke proves the changed helper/default Planner surface,
+not populated master export or a native/runtime bridge.
+
+## Combined master UI checkpoint — `0e492ff` / `63fe416`
+
+Root and independent review inspected all 18 Chrome/Edge default Layout/Review
+PNGs at exact clean `0e492ff8a27873f97d81180fa98544b08554096b`. All image/harness
+hashes match; no participant controls, runtime errors or pane overflow appear.
+P4's unselected required reference method, missing-media errors, paired numeric
+fields and confirmation footer are readable at 1280/800. P7's grouped issues
+and Save footer fit. Full evidence is under
+`D:/GitHub/.affect-preview-checks/master-ui-{chrome,edge}-0e492ff-20260912`.
+
+One real new P5 finding: the duplicate "Previewing Classic Flubber" badge covers
+the upper edge of Flubber/halo in the narrow pane. Live Preview handoff `6d9cc35`
+removes the visual badge while retaining its accessible state and selected-mode
+controls; it changes no animation size or halo. Final combined recapture remains
+required. The orphan "Before starting" heading is corrected in later `63fe416`.
+
+The 64-check full master workflow at clean `63fe416` passed independently in both
+Chrome and Edge. Root inspected both final saved-state screenshots after fixing
+the harness to serve actual CSS/assets. Its new source/HTML/browser/PNG bindings
+are recorded under `master-workflow-assets-{chrome,edge}-63fe416-20260912`.
+The images exposed a truthful-state issue: a saved file and completed checkmark
+still show "Resolve blocking checks" in the Review header. This is routed to
+integration. The fixture uses synthetic media/picker boundaries and seeds P2 via
+its owner API; see67 for exact workflow/native-reader evidence and limits.
+
+Independent final P4 owner review also verified six `77e4752` images, all 75
+served source hashes and receipt hash at
+`D:/GitHub/.affect-preview-checks/p4-contract-20260912/final-authoring-chrome`.
+The six scenes contain 231 passing checks, with no material layout defect at
+780/417 px pane widths. Invalid input, focus, error and footer appear together.
+The unselected-method state is asserted but absent from those owner PNGs; the
+combined default images above provide that visual coverage. The owner receipt
+does not bind a capture-time browser version/hash.
+
 ## Capture method and baseline
 
 The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
@@ -272,6 +343,34 @@ save/reopen remain separate work. The visible historical Start/participant area
 belongs to the newly allocated companion-app separation; its removal must be
 checked in the new candidate. No canonical promotion, Edge, installed/native,
 physical input, execution/recording or final Planner–Runner correspondence claim.
+
+## Edge capture lifecycle repair — 2026-09-12
+
+The excluded Edge connection-refused attempt was a helper lifecycle failure.
+A bounded local probe found the launcher exiting at 116ms while the headless
+browser requested the still-open server at 819ms. Closing the server on launcher
+exit made the later browser fail. Diagnosis and a temporary verified helper are
+in `D:/GitHub/.affect-preview-checks/edge-launch-diagnostic-20260912/README.md`.
+
+Root's `segment-visual-audit.mjs` now receives the actual page receipt by local
+HTTP and waits for a complete fresh PNG independently of launcher stdout. It
+retains source/settled-state assertions and image/harness hashes, and refuses a
+nonempty output directory before starting capture or overwriting older evidence.
+
+The final helper passes two actual XR captures each in Chrome and Edge at clean
+`7946bc6` (1280×900/800×700), under
+`D:/GitHub/.affect-preview-checks/capture-http-v2-chrome-7946bc6-20260912` and
+`capture-http-v2-edge-7946bc6-20260912`. All four PNG/harness hashes match their
+receipts; source is stable, with zero page errors/pane overflow. Chrome's final
+images were inspected; both final Edge PNGs are byte-identical to the already
+inspected preceding Edge images. Reusing the destination rejects before capture
+and leaves the previous receipt bytes unchanged. An intermediate duplicate local
+declaration caused a syntax failure before capture; it was corrected before
+these final checks and is not counted as a passing run.
+
+This restores a working Edge capture method and one-section evidence. It is not
+an all-section Edge pass, complete Planner master workflow, installed/native or
+physical qualification. Use the repaired helper for the later final candidate.
 
 ## Segment checklist
 

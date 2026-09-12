@@ -1,6 +1,8 @@
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
 import { applyScreenLayoutFit, resolveScreenLayoutDraft } from "./screen-layout-draft.js";
+import { DESKTOP_LAYOUT_MAX_MEDIA, convertDesktopLayoutUnits, resolveDesktopLayoutBase, resolveDesktopLayoutGeometry } from "./desktop-layout.js";
+import { desktopLayoutProfileFromDraft, desktopLayoutDraftFromProfile } from "./desktop-layout-contribution.js";
 
 const issue = (field, code, message) => ({ field, code, message, videoId: null });
 const revision = value => Number.isSafeInteger(value) && value >= 0;
@@ -18,7 +20,7 @@ export function screenLayoutReferenceCandidates(videos) {
 /** Connect owner APIs. P1 validates its catalogue asynchronously; P5 alone
  * resolves animation bounds at P4's explicit draft viewport side. No DOM reads. */
 export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, projectCatalogue, projectSnapshot = value => value,
-  getFeedbackLayoutSnapshot, onChange = () => {} } = {}) {
+  getFeedbackLayoutSnapshot, getFeedbackSnapshot, onChange = () => {} } = {}) {
   let alive = true;
   let generation = 0;
   let catalogue = null;
@@ -41,6 +43,10 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
   }
   async function refreshCatalogue() {
     if (!alive) return;
+    // An identical producer notification is not an edit and must not withdraw
+    // prepared state merely to rerun an already completed validation.
+    try { if (!catalogueIssue && catalogueKey !== null && canonicalJson(readCatalogue()) === catalogueKey) return; }
+    catch { /* Changed or malformed input is withdrawn below. */ }
     const operation = ++generation;
     media = [];
     catalogueKey = null;
@@ -66,7 +72,7 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
       if (!alive || operation !== generation) return;
       if (canonicalJson(readCatalogue()) !== key) throw new TypeError("The video library changed during geometry validation.");
       if (!projected || projected.catalogueRevision !== extracted.contribution.revision
-        || !Array.isArray(projected.videos) || !projected.videos.length || projected.videos.length > 500) {
+        || !Array.isArray(projected.videos) || !projected.videos.length || projected.videos.length > DESKTOP_LAYOUT_MAX_MEDIA) {
         throw new TypeError("The verified display geometry projection is missing or inconsistent.");
       }
       const ids = new Set();
@@ -80,7 +86,8 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
         if (!entry) throw new TypeError("Display geometry does not match its catalogue identity.");
         return { id: video.assetId, label: entry.annotationId, width: video.displayWidth, height: video.displayHeight };
       });
-      if (ids.size !== extracted.contribution.entries.length) throw new TypeError("Display geometry must cover the complete catalogue.");
+      const expectedIds = new Set(extracted.contribution.entries.map(entry => entry.assetId));
+      if (ids.size !== expectedIds.size || [...expectedIds].some(id => !ids.has(id))) throw new TypeError("Display geometry must cover every unique asset in the complete catalogue.");
       previousCatalogue = checkedRevision;
       catalogue = source;
       catalogueKey = key;
@@ -95,9 +102,24 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
 
   return Object.freeze({
     refreshCatalogue,
+    getDependencySnapshots() { return { P1: readCatalogue(), P5: validatePlannerContributionSnapshot(getFeedbackSnapshot?.()) }; },
+    convertUnits(draft, units) {
+      const profile = desktopLayoutProfileFromDraft(draft, this.getMediaGeometry());
+      return desktopLayoutDraftFromProfile(convertDesktopLayoutUnits(profile, units));
+    },
+    getContentDependencies() {
+      const p1 = readCatalogue(), p5 = validatePlannerContributionSnapshot(getFeedbackSnapshot?.());
+      if (!p1?.enabled || p1.pending || !p1.contribution || !p5.enabled || p5.pending || !p5.contribution
+        || catalogueIssue || canonicalJson(p1) !== catalogueKey) throw new TypeError("Verify the complete video library and saved feedback before preparing layout.");
+      return { workspace: structuredClone(p1.contribution), feedback: structuredClone(p5.contribution) };
+    },
+    getMediaGeometry() {
+      if (catalogueIssue || canonicalJson(readCatalogue()) !== catalogueKey) throw new TypeError("Verified complete video geometry is required.");
+      return media.map(v => ({ assetId: v.id, displayWidth: v.width, displayHeight: v.height }));
+    },
     refreshFeedback() { if (alive) onChange(); },
     resolve(draft) {
-      const result = resolveScreenLayoutDraft(draft);
+      let result = resolveScreenLayoutDraft(draft);
       result.inputKind = "live";
       result.dependencyRevisions = [];
       result.dependencyIdentity = { catalogue: null, catalogueValidation: catalogueIssue?.code ?? "checked", feedback: null };
@@ -105,15 +127,30 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
       try {
         const current = readCatalogue();
         result.dependencyIdentity.catalogue = current;
+        if (current) result.dependencyRevisions.push({ segment: "P1", revision: current.revision });
         if (!catalogueIssue && catalogueKey !== null && canonicalJson(current) === catalogueKey) {
           availableMedia = media;
-          result.dependencyRevisions.push({ segment: "P1", revision: catalogue.revision });
         } else result.issues.push(catalogueIssue ?? issue("media", "catalogue-stale", "Video library changed; its display geometry must be checked again."));
       } catch {
         result.issues.push(issue("media", "catalogue-invalid", "Video catalogue revision or contents are invalid."));
       }
       result.referenceCandidates = screenLayoutReferenceCandidates(availableMedia);
+      let profile = null;
+      if (draft.referencePolicy === null || draft.referencePolicy === undefined) {
+        result.geometry = null;
+        result.issues.unshift(issue("referencePolicy", "reference-policy-required", "Choose how to determine the fixed reference for all videos."));
+      } else if (availableMedia.length) {
+        try {
+          profile = desktopLayoutProfileFromDraft(draft, availableMedia.map(v => ({ assetId: v.id, displayWidth: v.width, displayHeight: v.height })));
+          const base = resolveDesktopLayoutBase(profile);
+          result = { ...result, geometry: base.geometry, issues: base.issues };
+        } catch (error) {
+          result.geometry = null;
+          result.issues = [issue(error.field ?? "reference", error.code ?? "invalid-layout", error.message)];
+        }
+      } else result.geometry = null;
       let maximum = null;
+      let ownedEnvelope = null;
       if (typeof getFeedbackLayoutSnapshot === "function") {
         try {
           // A unit-side query binds the owner revision even while P4 fields are
@@ -122,14 +159,15 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
           const source = getFeedbackLayoutSnapshot(side);
           if (!source || !revision(source.revision) || typeof source.pending !== "boolean") throw new TypeError("Invalid feedback revision.");
           result.dependencyIdentity.feedback = structuredClone(source);
+          result.dependencyRevisions.push({ segment: "P5", revision: source.revision });
           if (source.pending || !source.envelope) throw new TypeError("Correct the saved feedback settings to calculate animation bounds.");
           const e = source.envelope;
-          if (e.algorithmVersion !== "feedback-envelope-v1" || e.origin !== "design-centre" || e.overlaySideCssPx !== side
+          if (!["feedback-envelope-v1", "feedback-envelope-v2"].includes(e.algorithmVersion) || e.origin !== "design-centre" || e.overlaySideCssPx !== side
             || typeof e.configurationKey !== "string" || !e.configurationKey.length
             || !Number.isFinite(e.halfExtentCssPx * 2) || e.halfExtentCssPx < 0) throw new TypeError("Unsupported or inconsistent feedback envelope.");
           // Size belongs to P4, so a size edit may change resolved extent without revising P5.
           previousFeedback = checkRevision(source, previousFeedback, e.configurationKey);
-          result.dependencyRevisions.push({ segment: "P5", revision: source.revision });
+          ownedEnvelope = e;
           if (result.geometry) {
             const { cx, cy } = result.geometry.feedback;
             maximum = { x: cx - e.halfExtentCssPx, y: cy - e.halfExtentCssPx,
@@ -139,9 +177,16 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
           result.issues.push(issue("envelope", "feedback-unavailable", `Maximum animation bounds unavailable: ${error.message}`));
         }
       } else if (result.geometry) result.issues.push(issue("envelope", "feedback-unavailable", "Saved feedback animation bounds are unavailable."));
-      result.dependencies = ["Largest-video reference rule (Q08)", "P7 successor recipe"];
+      result.dependencies = [];
+      if (!draft.referencePolicy) result.dependencies.push("Reference method");
       if (!availableMedia.length) result.dependencies.push("P1 display geometry");
       if (!maximum) result.dependencies.push("P5 animation envelope");
+      if (profile && ownedEnvelope) {
+        const resolved = resolveDesktopLayoutGeometry(profile, availableMedia.map(v => ({ assetId: v.id, displayWidth: v.width, displayHeight: v.height })), ownedEnvelope);
+        const labels = new Map(availableMedia.map(v => [v.id, v.label]));
+        return { ...result, ...resolved, videos: resolved.videos.map(v => ({ ...v, label: labels.get(v.id) })),
+          dependencies: [], status: "authored", exportable: false };
+      }
       return applyScreenLayoutFit(result, availableMedia, maximum, maximum ? "saved-maximum" : "nominal-only");
     },
     destroy() { alive = false; generation += 1; media = []; },

@@ -99,7 +99,7 @@ pub struct WorkspaceContribution {
 fn safe_text(value: &str, maximum_bytes: usize, label: &str) -> ResearchResult<()> {
     let normalized: String = value.nfc().collect();
     if value.is_empty()
-        || value.as_bytes().len() > maximum_bytes
+        || value.len() > maximum_bytes
         || value != value.trim_matches(is_ecmascript_trim_character)
         || value != normalized
         || value.chars().any(is_control_or_format)
@@ -439,7 +439,7 @@ pub fn validate_video_catalogue_contribution(
                 &entry.geometry,
             );
             if content_by_asset
-                .insert(entry.asset_id.as_str(), content.clone())
+                .insert(entry.asset_id.as_str(), content)
                 .is_some_and(|previous| previous != content)
             {
                 return Err(invalid(
