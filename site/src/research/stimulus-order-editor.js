@@ -317,18 +317,55 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       if (token !== generation || operation !== restoreOperation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
       return commitRestore(document, next, binding, receipt);
     },
-    async restoreContent(contribution, { savedWorkspaceContribution, dependencies, isCurrent = () => true }) {
-      const token = generation, operation = beginRestore(), source = normalizeVariantCatalogueSource(dependencies?.P1);
+    async prepareRestoreContent(contribution, { savedWorkspaceContribution, dependencies, isCurrent = () => true }) {
+      const token = generation, operation = restoreOperation, scan = catalogueOperation;
+      const source = normalizeVariantCatalogueSource(dependencies?.P1), identity = canonicalJson(source);
+      const nextGeneration = generation + 1;
+      let committed = false, projected = false;
+      const current = () => {
+        try { return !committed && !destroyed && token === generation && operation === restoreOperation
+          && scan === catalogueOperation && isCurrent()
+          && canonicalJson(normalizeVariantCatalogueSource(dependencies?.P1)) === identity; }
+        catch { return false; }
+      };
+      const check = () => { if (!current()) throw new Error("The design changed while reopening."); };
+      check();
+      if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
       if (producerRevision !== null && source.revision < producerRevision) throw new TypeError("The Segment 1 catalogue revision is stale.");
-      const declared = await projectSavedVariantCatalogue(savedWorkspaceContribution);
-      const accepted = await validateVariantDesign(contribution, declared.library);
-      const restoredDraft = variantDesignToDraft(accepted);
-      if (token !== generation || operation !== restoreOperation || !isCurrent()) throw new Error("The design changed while reopening.");
-      catalogueOperation++; producerIdentity = canonicalJson(source); producerRevision = source.revision;
-      unresolvedP1Revision = source.revision; catalogueExpected = true; catalogue = null;
-      library = declared.library; colors = videoColorMap(library); draft = structuredClone(restoredDraft);
-      confirmed = null; legacy = null; edited = true; generation++; render(); notify();
-      report("Variant table reopened. Confirm the video library in Segment 1 before confirming this table.");
+      // Snapshot caller content before the first await; the live dependency is
+      // intentionally reread by the guard, never replaced by saved readiness.
+      const saved = structuredClone(savedWorkspaceContribution), content = structuredClone(contribution);
+      const declared = await projectSavedVariantCatalogue(saved);
+      const accepted = await validateVariantDesign(content, declared.library);
+      const restoredDraft = variantDesignToDraft(accepted), restoredColors = videoColorMap(declared.library);
+      check();
+      return {
+        isCurrent: current,
+        commit() {
+          check();
+          catalogueOperation++; restoreOperation++;
+          producerIdentity = identity; producerRevision = source.revision;
+          unresolvedP1Revision = source.revision; catalogueExpected = true; catalogue = null;
+          library = declared.library; colors = restoredColors; draft = restoredDraft;
+          confirmed = null; legacy = null; edited = true; generation = nextGeneration;
+          authoringPublicationPending = false; committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new Error("Commit the reopened design before publishing its projection.");
+          if (projected) return;
+          projected = true;
+          if (destroyed || generation !== nextGeneration) return;
+          render(); notify();
+          report("Variant table reopened. Confirm the video library in Segment 1 before confirming this table.");
+        },
+      };
+    },
+    async restoreContent(contribution, options) {
+      // GUI reopen retains immediate supersession of earlier saves/restores.
+      // The separately exposed preparation method itself makes no reservation.
+      beginRestore();
+      const prepared = await this.prepareRestoreContent(contribution, options);
+      prepared.commit(); prepared.afterCommit();
       return snapshot();
     },
     setCatalogue(snapshot) {

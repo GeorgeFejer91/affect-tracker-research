@@ -374,3 +374,63 @@ test("an in-flight library export cannot announce success over a newer reopened 
   assert.equal(ui.status.textContent, status);
   assert.equal(ui.editor.getSnapshot().contribution, null);
 });
+
+test("prepared content reopen leaves state and projections untouched until separate synchronous publication", async () => {
+  let writes = 0;
+  const ui = fixture(async () => { writes++; });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot();
+  const renders = ui.renders, message = ui.status.textContent;
+  const content = structuredClone(contentFixture.contribution), options = contentOptions();
+  const pending = ui.editor.prepareRestoreContent(content, options);
+  content.variants[0].title = "Caller mutation after dispatch";
+  const prepared = await pending;
+  assert.deepEqual(ui.editor.captureAuthoringDraft(), before);
+  assert.deepEqual(ui.editor.getSnapshot(), snapshot);
+  assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
+  assert.throws(() => prepared.afterCommit());
+  assert.equal(prepared.commit(), undefined);
+  assert.equal(prepared.isCurrent(), false);
+  assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  assert.equal(ui.editor.getSnapshot().pending, true);
+  assert.deepEqual(ui.editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 41 }]);
+  assert.throws(() => prepared.commit());
+  prepared.afterCommit(); const published = ui.renders;
+  prepared.afterCommit(); assert.equal(ui.renders, published);
+  assert.ok(published > renders); assert.equal(writes, 0);
+  await assert.rejects(ui.editor.prepareContribution(), /Segment 1/);
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 42 });
+  const restored = await ui.editor.prepareContribution();
+  assert.deepEqual(restored.contribution, contentFixture.contribution);
+});
+
+for (const change of ["edit", "reset", "destroy", "dependency", "callerDependency", "cancel"]) {
+  test(`prepared content commit rejects ${change} without replacing newer owner state`, async () => {
+    const ui = fixture(async () => {}), options = contentOptions();
+    let current = true; options.isCurrent = () => current;
+    await ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+    const prepared = await ui.editor.prepareRestoreContent(contentFixture.contribution, options);
+    if (change === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (change === "reset") ui.editor.reset();
+    if (change === "destroy") ui.editor.destroy();
+    if (change === "dependency") await ui.editor.setCatalogueSource(unresolvedP1(42));
+    if (change === "callerDependency") options.dependencies.P1 = unresolvedP1(42);
+    if (change === "cancel") current = false;
+    const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot(), renders = ui.renders;
+    assert.equal(prepared.isCurrent(), false);
+    assert.throws(() => prepared.commit(), /changed while reopening/);
+    assert.deepEqual(ui.editor.captureAuthoringDraft(), before);
+    assert.deepEqual(ui.editor.getSnapshot(), snapshot); assert.equal(ui.renders, renders);
+  });
+}
+
+test("two read-only preparations do not reserve state and only the first committed candidate can publish", async () => {
+  const ui = fixture(async () => {});
+  const a = await ui.editor.prepareRestoreContent(contentFixture.contribution, contentOptions());
+  const b = await ui.editor.prepareRestoreContent(contentFixture.contribution, contentOptions());
+  assert.equal(a.isCurrent(), true); assert.equal(b.isCurrent(), true);
+  a.commit(); assert.equal(b.isCurrent(), false); assert.throws(() => b.commit());
+  ui.editor.reset(); const renders = ui.renders, message = ui.status.textContent;
+  a.afterCommit(); assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
+});
