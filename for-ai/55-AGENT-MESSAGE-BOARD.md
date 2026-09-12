@@ -52,6 +52,27 @@
   build helper explicitly enables embedded assets. Audit earlier receipts using
   their exact commands. Profile proof now inspects only the owned child's browser.
 
+### 20260912-p2-demographics-contract-fixtures
+
+- Root allocated S3 a bounded P2 / E2E-DEMOGRAPHICS fixture/contract pass after
+  Main and Runner agreement. Backend Verification, new isolated
+  `D:/GitHub/affect-tracker-research-demographics-contract`, branch
+  `codex/segment-p2-demographics-contract`, Main-agreed base `6098972`.
+- Scope: new contract doc, two small canonical public EN/DE project-authored
+  form definitions, hash manifest and focused fixture assertions. No production
+  editor/master/Runner implementation or capability closure. Exact schema,
+  provenance, presentation and typed-answer handoff is in
+  `docs/demographics-form-contract-v1.md`.
+- All new Runner submissions require every displayed item, including new
+  execution of old packages; original required metadata and historical readers
+  remain preserved. The exact user quotation/date/Runner task reference is in
+  the contract. V2 Start uses participantId; demographics answers never allocate
+  participants/variants. Main owns collection and future implementation scope.
+- Fixture handoff ready: existing canonical P2 baseline 1/1, new fixture checks
+  4/4 and diff check pass. Manifest binds exact 1329-byte EN and 1359-byte DE
+  files and definition hashes. Native canonical parity, actual UI/CLI authoring,
+  Runner controls and XDF reconstruction remain explicitly unimplemented here.
+
 ### 20260912-local-preset-installation-namespace
 
 - Main now owns S2's released actual installation. Windows packaged-process
