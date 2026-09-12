@@ -164,6 +164,19 @@ prerequisite sequence. Source receipts record 28 passing assertions each but
 no PNG digest, so cryptographic image-file binding is unrecorded. These two
 states do not close V19–V21/V28 or final master/target wiring.
 
+P6 follow-up `3bedea1` resolves that owner-state action duplication. Root
+inspected the actual 820px capture at
+`D:/GitHub/.affect-preview-checks/p6-profile-tools-20260912/app-narrow/xr-authoring.png`:
+Profile tools is collapsed and Confirm section is the sole main action; diagram,
+measurements, status and footer remain readable. The optional action is now
+Validate for download inside the disclosure. Its receipt names base `82c8f0f`
+and a then-uncommitted diff; root matched all 60 recorded source hashes against
+the final clean `3bedea1` with zero mismatches. It is a source-hash-verified owner
+capture, not a capture made after that commit or final combined integration.
+The owner reports 28 focused Node, 20 standalone visibility/keyboard Chrome,
+28 actual-app Chrome checks and both builds. Combined footer preparation and
+P7 acceptance/save semantics remain separately assigned; V28 stays open.
+
 ## Segment checklist
 
 ### P1 — Workspace and video library

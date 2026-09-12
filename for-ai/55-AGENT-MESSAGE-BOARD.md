@@ -207,6 +207,11 @@ file; follow the integration-owner collection procedure in the workflow.
   integration's single prepare/accept action. Exact coverage limits are in `64`.
   This handoff still includes P1 `5988ce0`; the S1
   refresh-race repair remains a separate required integration dependency.
+- S6's requested follow-up `3bedea1` moves the internal profile action into
+  collapsed Profile tools as Validate for download, leaving Confirm section
+  as the main action. Root inspected the final 820px image and matched all 60
+  receipt source hashes against the clean handoff. The owner-state duplication
+  is resolved; final combined footer/acceptance wiring remains integration work.
 - P7 clean foundation handoff `929a257` includes named-file acknowledgement,
   subscription lifecycle, composite registration, strict retained-policy
   JS/Rust validation and complete P2 route compilation. Owner checks cover
