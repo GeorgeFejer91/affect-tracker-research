@@ -25,4 +25,22 @@ confirmation cycle and delayed media rebind/withdrawal races. Receipt and exact
 input hashes: `D:/GitHub/.affect-checks/main-workspace-prepared-restore-20260912/`.
 The harness uses synthetic media inputs and an isolated browser profile. This
 does not establish native Open or real media qualification. Other app-local
-P2/P5/policy/target preparations and final command registration remain pending.
+P2 preparation and final command registration remain pending.
+
+`prepareFeedbackRestoration` now reuses P5's existing prepared control/model
+writer and separate projection, after exact contribution validation. It binds
+the current raw draft and caller lifetime; commit does not accept Live Preview.
+`preparePlannerPolicyRestoration` uses the existing policy validator/control
+writer with detached preparation and control-identity/value checks.
+`preparePlannerTargetRestoration` prepares the explicit target and defers P6
+invalidation notification until projection. Default invalidation still notifies.
+
+Twenty-six registry/policy checks pass. The expanded actual Planner Chrome
+harness passes 44 checks, including exact feedback, policy and target restoration
+without automatic confirmation. The first expanded run attempted to read the
+invalid sampling draft deliberately retained by an earlier negative test; the
+strict reader correctly rejected. The fixture now restores the known validated
+policy instead, with no production validator change. Both outcomes remain under
+`D:/GitHub/.affect-checks/main-policy-feedback-prepared-restore-20260912/` and
+`D:/GitHub/.affect-checks/main-policy-feedback-prepared-restore-corrected-20260912/`.
+These receipts bind actual working-tree inputs, not a native executable.

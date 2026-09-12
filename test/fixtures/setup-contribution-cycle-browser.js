@@ -160,6 +160,31 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
     return { get intercepted() { return intercepted; }, release: fail => release(fail) };
   };
   const workspaceBeforePreparation = JSON.stringify(ui.getWorkspaceContributionSnapshot());
+  const feedbackBeforePreparation = structuredClone(ui.getFeedbackContributionSnapshot().contribution);
+  const feedbackRestored = structuredClone(feedbackBeforePreparation);
+  feedbackRestored.visual.transparency = 0.123;
+  const feedbackControlsBefore = q("#visual-transparency").value;
+  const preparedFeedback = ui.prepareFeedbackRestoration(feedbackRestored, { isCurrent: () => true });
+  check("feedback preparation preserves actual controls", q("#visual-transparency").value === feedbackControlsBefore);
+  preparedFeedback.commit();
+  check("feedback prepared commit installs exact contribution without confirmation", ui.getFeedbackContributionSnapshot().contribution.visual.transparency === 0.123 && !accepted("feedback"));
+  preparedFeedback.afterCommit();
+  const restoreFeedbackAgain = ui.prepareFeedbackRestoration(feedbackBeforePreparation, { isCurrent: () => true });
+  restoreFeedbackAgain.commit(); restoreFeedbackAgain.afterCommit();
+  // Earlier stale-open cases intentionally leave an invalid sampling draft.
+  // Restore the known validated fixture; do not pretend that draft is readable.
+  const policyBefore = initialPolicy, priorCount = q("#participant-count").value;
+  const preparedPolicy = ui.preparePlannerPolicyRestoration({ ...policyBefore, participantCount: 2 }, { isCurrent: () => true });
+  check("policy preparation keeps current count", q("#participant-count").value === priorCount);
+  preparedPolicy.commit(); preparedPolicy.afterCommit();
+  check("prepared policy installs the exact saved count", ui.getPlannerRecipePolicy().participantCount === 2);
+  const policyAgain = ui.preparePlannerPolicyRestoration(policyBefore, { isCurrent: () => true });
+  policyAgain.commit(); policyAgain.afterCommit();
+  const priorTarget = q("#planner-presentation-target").value;
+  const preparedTarget = ui.preparePlannerTargetRestoration("desktop-screen", { isCurrent: () => true });
+  check("target preparation keeps the previous selection", q("#planner-presentation-target").value === priorTarget);
+  preparedTarget.commit(); preparedTarget.afterCommit();
+  check("target commit selects desktop without confirming any segment", ui.getSelectedPlannerTarget() === "desktop-screen" && !accepted("feedback"));
   let restoreNotifications = 0;
   const unsubscribeRestore = ui.subscribeWorkspaceContributionChanges(() => restoreNotifications++);
   const preparedWorkspace = await ui.prepareWorkspaceRestoration(savedWorkspace, { isCurrent: () => true });

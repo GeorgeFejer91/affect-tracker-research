@@ -2,6 +2,12 @@
 
 ### 20260912-main-app-p1-prepared-restore
 
+- App P5/policy/target prepared hooks now reuse existing control authorities
+  with separate projection; P5 remains unaccepted until final Save. Twenty-six
+  registry/policy checks and 44 actual Planner Chrome checks pass. A prior
+  harness attempt correctly rejected its intentionally invalid sampling draft;
+  fixture setup was corrected and both receipts retained. P2 owner preparation
+  is separately allocated; Main retains app/core9 composition.
 - Main split actual app workspace restoration into read-only preparation,
   synchronous unverified state install and deferred producer/UI notification.
   Current producer default behavior and immediate GUI restore reservation remain.

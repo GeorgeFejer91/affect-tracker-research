@@ -81,7 +81,7 @@ import { parsePlannerRecipeFile } from "./planner-recipe.js";
 import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
 import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
-import { readPlannerPolicyControls, restorePlannerPolicyControls } from "./planner-policy-controls.js";
+import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "./planner-policy-controls.js";
 import { createPlannerAuthoringSession } from "./planner-authoring-session.js";
 import { PLANNER_COMMAND_SCHEMA, commandFailure } from "./planner-authoring-contract.js";
 import { createPlannerWorkspaceCommandOwner } from "./planner-authoring-p1.js";
@@ -1646,6 +1646,42 @@ function bindResearchInteractions(root, { surface }) {
     return restored;
   }
 
+  function preparePlannerPolicyRestoration(policy, { isCurrent, signal } = {}) {
+    const guard = () => !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent();
+    const prepared = preparePlannerPolicyControls(root, policy, { isCurrent: guard, signal });
+    let committed = false, projected = false;
+    return Object.freeze({ isCurrent: prepared.isCurrent,
+      commit() { prepared.commit(); outputFormatsTouched = true; committed = true; },
+      afterCommit() {
+        if (!committed || !guard()) throw new Error("Policy projection is no longer current.");
+        if (projected) return; projected = true;
+        syncOutputFormatValidation(); packageExport.invalidate(); schedulePlanRefresh();
+      },
+    });
+  }
+
+  function preparePlannerTargetRestoration(target, { isCurrent, signal } = {}) {
+    if (parsePlannerTargetSelection(target) === null) throw new TypeError("A saved recipe needs an explicit target.");
+    const control = query("#planner-presentation-target"), before = control.value;
+    let committed = false, projected = false;
+    const guard = () => !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent();
+    const current = () => !committed && guard() && query("#planner-presentation-target") === control && control.value === before;
+    if (!current()) throw new Error("Target preparation is no longer current.");
+    return Object.freeze({ isCurrent: current,
+      commit() {
+        if (!current()) throw new Error("Target restoration was superseded.");
+        control.value = target;
+        plannerContributions.invalidateAcceptance("P6", { notify: false });
+        committed = true;
+      },
+      afterCommit() {
+        if (!committed || !guard()) throw new Error("Target projection is no longer current.");
+        if (projected) return; projected = true;
+        plannerContributions.notifyAcceptanceChange(); renderPackageExportReview();
+      },
+    });
+  }
+
   function observePackageDraft() {
     const current = packageDraftFingerprint();
     if (current === observedPackageDraft) return;
@@ -1742,6 +1778,30 @@ function bindResearchInteractions(root, { surface }) {
     refreshProjection();
     schedulePlanRefresh();
     return feedbackContribution.getSnapshot();
+  }
+
+  function prepareFeedbackRestoration(contribution, { isCurrent = () => true, signal } = {}) {
+    const normalized = validateFeedbackContribution(structuredClone(contribution));
+    const initial = canonicalJson(feedbackAuthoringControls.readDraft());
+    let committed = false, projected = false;
+    const current = () => !committed && !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent()
+      && canonicalJson(feedbackAuthoringControls.readDraft()) === initial;
+    if (!current()) throw new Error("Feedback restoration is no longer current.");
+    const prepared = feedbackAuthoringControls.prepareCommit(normalized, {
+      contribution: normalized, issues: [], isCurrent: current, signal,
+    });
+    return Object.freeze({ isCurrent: () => current() && prepared.isCurrent(),
+      commit() {
+        if (!current() || !prepared.isCurrent()) throw new Error("Feedback restoration was superseded.");
+        prepared.commit(); committed = true;
+      },
+      afterCommit() {
+        if (!committed || researchUiDisposed || signal?.aborted || !isCurrent()) throw new Error("Feedback restore projection is no longer current.");
+        if (projected) return;
+        projected = true;
+        prepared.afterCommit(); resetPreviewInspection(); schedulePlanRefresh();
+      },
+    });
   }
 
   async function initializeFeedbackAuthoringV2(options) {
@@ -6189,6 +6249,8 @@ function bindResearchInteractions(root, { surface }) {
     getPlannerRecipePolicy() { return readPlannerPolicyControls(root); },
     restorePlannerRecipePolicy: authoredMutation(restorePlannerRecipePolicy),
     restorePlannerPresentationTarget: authoredMutation(restorePlannerPresentationTarget),
+    preparePlannerTargetRestoration,
+    preparePlannerPolicyRestoration,
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
@@ -6230,6 +6292,7 @@ function bindResearchInteractions(root, { surface }) {
     getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
     subscribeFeedbackChanges: feedbackContribution.subscribe,
     restoreFeedbackContribution: authoredMutation(restoreFeedbackContribution),
+    prepareFeedbackRestoration,
     getYouTubePreflight(stimulusId) {
       const record = stimuli.find(({ id }) => id === stimulusId)?.youtubePreflight;
       return record ? structuredClone(record) : null;

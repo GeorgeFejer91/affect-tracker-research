@@ -333,12 +333,12 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       if (shouldNotify) notify();
     },
     notifyAcceptanceChange() { notify(); },
-    invalidateAcceptance(segment) {
+    invalidateAcceptance(segment, { notify: shouldNotify = true } = {}) {
       segmentId(segment);
       const receipt = accepted.get(segment);
       if (receipt?.snapshot.enabled) expireAcceptance(receipt);
       accepting.delete(segment);
-      notify();
+      if (shouldNotify) notify();
     },
     assertAccepted(options) {
       const review = readAccepted(options);
