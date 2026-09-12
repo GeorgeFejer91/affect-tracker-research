@@ -21,6 +21,39 @@
   changes can occur independently of authored edits. This seam was sent to Main.
   Transport, native files/media, process lifecycle and full example verification
   remain with their allocated owners; no foreground or Runner work here.
+- CLI-P6 / E2E-UI owner handoff **ready**, clean application checkpoint
+  `28c5d6ce2f781eef6e37f20ccd762beabf86cb4d`. Collected shared foundation
+  `2310efc`, approved postcommit hook `0138516`, and root CLI/E2E amendments
+  through `2e6c460`. Existing baseline Planner completion remains intact.
+- Injection: `createPlannerAuthoringP6({editor: xrLayoutEditor})`; register this
+  owner in Main's existing session. Editor methods are `getAuthoringSnapshot()`
+  and `stageAuthoringDraft({enabled,profile},{isCurrent,signal})`, returning pure
+  `isCurrent`, state-only `commit`, then `afterCommit` for DOM/notifications.
+  Shared guard preflight and publication locking remain Main's responsibility.
+- All 14 writable fields and `setAngularSize` map to actual existing UI controls
+  and exact P6 JSON paths in `docs/planner-authoring-p6.md`. Fixed policies and
+  derived geometry are read-only; camera/media inspection are transient. No
+  second draft, compiler, saved schema or native/Runner authority is introduced.
+- Checks: 26 focused owner plus 13 shared tests pass. The complete unchanged
+  suite passes **808/808** with `--test-concurrency=2`. An earlier concurrent
+  test/build run hit one P2 20-second subprocess timeout (807/808); that failure
+  log is retained and no timeout/assertion was changed. Desktop11/Pages239
+  boundary builds pass, with the existing desktop chunk-size warning.
+- Clean Chrome receipts pass **84 checks each at 1440/820**, including actual UI
+  reachability, every field's command/UI normalized value and complete profile/
+  selection equality, the actual angular button, invalid numeric repair,
+  nonmutating staging and state-only commit followed by one UI publication.
+  Both PNGs were inspected; receipts contain all 15 correspondence rows and
+  source/harness/image hashes. The existing full-app master workflow also passes
+  60 checks at 1440 on the same source. Evidence root:
+  `D:/GitHub/.affect-preview-checks/p6-cli-20260912/`; final directories are
+  `final-wide-28c5d6c`, `final-narrow-28c5d6c`, `final-app-28c5d6c` and the
+  `final-node-bounded-28c5d6c.log` / desktop / Pages logs.
+- This is actual owner-editor/shared-JS-session evidence with typed synthetic
+  geometry, not native stdin transport or real media attestation. Main owns
+  registration/native wiring and final combined CLI checks; Runner owns the
+  actively allocated execution correspondence under69. Root owns global
+  CLI-P6/E2E capability collection. No source writers remain active after handoff.
 
 ### 20260912-cli-runner-goal — E2E-UI/E2E-RECIPE/E2E-RUNNER
 

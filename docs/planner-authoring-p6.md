@@ -101,3 +101,18 @@ staging nonmutation and GUI/cancellation guards. Media geometry is an explicit
 synthetic fixture. This owner evidence does not claim the native CLI transport,
 real media verification or Runner execution; Main/Runner own those active steps
 under [69](../for-ai/69-CLI-RUNNER-END-TO-END-GOAL.md).
+
+Final owner application checkpoint `28c5d6ce2f781eef6e37f20ccd762beabf86cb4d`
+collects shared `2310efc` and `0138516`. All 26 owner tests and 13 shared tests
+pass; the complete suite passes 808 checks with test concurrency two. The prior
+concurrent test/build run's one P2 subprocess timeout remains in the evidence;
+no timeout or assertion was changed. Desktop11/Pages239 builds pass.
+
+Clean Chrome captures pass 84 checks at each 1440/820px and retain all 15
+field/operation correspondence rows. Both PNGs were inspected. The existing
+full-application master fixture passes 60 checks on this same code. Receipts,
+exact source/harness/image hashes and logs are under
+`D:/GitHub/.affect-preview-checks/p6-cli-20260912/`, in `final-wide-28c5d6c`,
+`final-narrow-28c5d6c`, `final-app-28c5d6c` and the `final-*-28c5d6c.log` files.
+These checks precede Main's combined native CLI installation; root owns the
+overall E2E-UI/E2E-RECIPE/E2E-RUNNER checklist.
