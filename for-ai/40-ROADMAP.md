@@ -55,6 +55,18 @@ Edge attempts exited zero with no stdout/stderr or test receipt, including fresh
 profiles and a diagnostic retry; that application check is unverified. Earlier
 P5 Edge receipts remain historical and do not qualify this change.
 
+P7 requested a public validator callback after the core handoff. Follow-up
+`1a238a51f77607f90f666b0d73097ee305718a18` exposes
+`researchUi.validateFeedbackContribution(value)` as the same domain validator,
+without changing its contract or adding registration policy. All 65 focused
+checks and seven clean Chrome scenarios × 50 assertions pass, including that
+callback. The rebuilt closures remain desktop nine / Pages 190 files. Receipts
+are in the sibling `contribution-validator-chrome` directory; application tree
+is `670785703feb349a5302fb63eb3b32659f2eaa7f` and desktop JS SHA-256 is
+`1018984218cf5b181759ee289ce9d050423e9a2d08872e8b5eeff32db6f1d012`.
+CSS is unchanged. The full 526-test receipt above belongs to the core checkpoint;
+the follow-up repeated the focused checks and actual application coverage.
+
 ## P2 spreadsheet and contribution receipts — 2026-09-11
 
 Pending owner branch `codex/segment-questionnaires-table-catalogue`:

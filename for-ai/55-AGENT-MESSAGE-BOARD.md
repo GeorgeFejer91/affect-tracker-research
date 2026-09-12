@@ -1443,3 +1443,8 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Integration should collect this delta after `64da370` and retain its newer
   confirmation semantics. No independent P5 confirmation was added or modified.
   This closes the owned producer seam, not every Q10 or successor capability.
+- S7 requested a generic controller validator alias; source `1a238a5` provides
+  `validateFeedbackContribution(value)`. Latest source passes 65 focused checks,
+  clean Chrome seven × 50 assertions and both frontend closures. Detailed hashes
+  are in the ledger. The P5 branch is clean and its source writers are stopped
+  for integration-owner collection; no other owner's registration was changed.
