@@ -423,3 +423,15 @@ checks passed, including thirteen corruption/reordering counterexamples.
 Syntax and diff checks passed. These checks do not author a real recipe. The
 script awaits the combined native core9/typed-P2/master-v2 executable; all
 actual CLI import/export, editable reopen and Runner/XDF goal gates remain open.
+
+### R1 timing observation design — 2026-09-12
+
+Root allocated a documentation-only R1/RR-04/RR-05/RR-10 timing pass. The
+[observation and benchmark design](../docs/runner-timing-observation-design.md)
+identifies existing safe observation seams, exactly one authoritative native
+timeline, and unimplemented prepared-native versus fixed-block candidates.
+It preserves requested 1750/3213 ms, original identities, participant-paced
+questionnaires and neutral-before-ISI. Software observations and encoding results
+are not physical timing proof; eventual XDF-only reset evidence remains an open
+versioned-contract requirement. No probe, logging, benchmark or master3 code is
+implemented. Root assessment 767cd7c/e701b078 remains separately owned provenance.
