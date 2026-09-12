@@ -104,7 +104,7 @@ import {
 } from "./video-catalogue-contribution.js";
 import {
   createWorkspaceContributionProducerV1,
-  projectWorkspaceVideoDisplayGeometryV1,
+  projectWorkspaceVideoDisplayGeometry,
   prepareWorkspaceContentRestoreV1,
   validateWorkspaceContributionV1,
   verifyWorkspaceRestoredVideoEntriesV1,
@@ -5694,7 +5694,7 @@ function bindResearchInteractions(root, { surface }) {
       xrLayoutAuthoring = createXrLayoutAuthoring({ editor: xrLayoutEditor,
         getDependencies: () => ({ P1: workspaceContributionProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
         subscribe: [workspaceContributionProducer.subscribe, feedbackContribution.subscribe],
-        projectCatalogue: projectWorkspaceVideoDisplayGeometryV1,
+        projectCatalogue: projectWorkspaceVideoDisplayGeometry,
       });
     },
     waitForXrLayoutDependencies() { return xrLayoutAuthoring.refresh(); },
