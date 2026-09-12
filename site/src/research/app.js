@@ -319,6 +319,7 @@ function bindResearchInteractions(root, { surface }) {
   } });
   const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
     renderSetupReviewState();
+    renderPackageExportReview();
     const next = plannerContributions.read({ format: "contributions" }).fingerprint;
     if (next === observedContributions) return;
     observedContributions = next;
@@ -750,7 +751,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     const next = SETUP_SECTIONS.find(({ id }) => id === transition.nextSectionId);
     openSetupSection(transition.nextSectionId, { focus: true });
-    announce(`${current?.label ?? "Setup section"} confirmed. ${next?.label ?? "Final save"} opened.`);
+    const nextLabel = root.dataset.researchProgram === "planner" && next?.id === "review" ? "Review & Export" : next?.label ?? "Final save";
+    announce(`${current?.label ?? "Setup section"} confirmed. ${nextLabel} opened.`);
   }
 
   function colorValues() {
@@ -3737,8 +3739,17 @@ function bindResearchInteractions(root, { surface }) {
 
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
-    const review = plannerContributions.read({ format: "contributions" });
+    const review = plannerContributions.readAccepted();
+    // P5 is deliberately accepted by final capture, not by a separate footer.
+    const reviewIssues = review.issues.filter(issue => !(issue.segment === "P5" && issue.code === "acceptance-missing"));
     const selectedTarget = getSelectedPlannerTarget();
+    const header = query('[data-section-summary="review"]');
+    if (header) header.textContent = state.phase === "saved" && !packageIsStale ? "Final JSON saved"
+      : state.busy ? "Saving final JSON…"
+      : plannerFileWorkflow?.canCopy() ? "Recipe open · unchanged copy available"
+      : selectedTarget === null && !languageEditorLocked ? "Choose presentation target"
+      : reviewIssues.length ? "Review and confirm sections"
+      : packageIsStale ? "Changed design · ready to save" : "Ready to save final JSON";
     const targetStatus = query("#planner-target-status");
     if (targetStatus) targetStatus.textContent = selectedTarget
       ? "The chosen presentation and all confirmed sections are included in the final JSON. Live Preview is captured when you save."
@@ -3765,11 +3776,11 @@ function bindResearchInteractions(root, { surface }) {
       if (!button) continue;
       button.disabled = mode !== "setup" || state.busy || Boolean(plannerFileWorkflow?.opening)
         || (id === "package-generate" && !plannerFileWorkflow?.canCopy()
-          && ((languageEditorLocked && packageIsStale) || review.issues.length > 0 || (!languageEditorLocked && selectedTarget === null)))
+          && ((languageEditorLocked && packageIsStale) || reviewIssues.length > 0 || (!languageEditorLocked && selectedTarget === null)))
         || (id === "package-edit" && !experimentPackageDocument);
       if (id === "package-edit") button.hidden = Boolean(experimentPackageDocument?.recipe);
     }
-    renderPlannerContributionIssues(query("#package-contribution-issues"), review.issues);
+    renderPlannerContributionIssues(query("#package-contribution-issues"), reviewIssues);
   }
 
   const LANGUAGE_DEPENDENT_PREFLIGHT_IDS = new Set([

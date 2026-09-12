@@ -93,6 +93,7 @@ try {
   q("#package-save-choose").click(); check("picker opens in direct click", picks === 1);
   await until(() => ui.packageExportStatus.phase === "saved", "acknowledged final save");
   check("acknowledged save collapses final section and marks it complete", ui.openSection === null && ui.reviewedSetupSections.includes("review"));
+  check("Review header reflects the acknowledged master, not legacy Run readiness", q('[data-section-summary="review"]').textContent === "Final JSON saved");
   const firstBytes = new Uint8Array(await (await fetch("/saved-file")).arrayBuffer());
   const document = await parsePlannerRecipeV1(firstBytes);
   check("saved bytes are sole adopted document", document.canonicalSourceText === ui.plannerRecipeSourceText);
