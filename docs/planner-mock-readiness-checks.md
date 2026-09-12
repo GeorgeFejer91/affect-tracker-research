@@ -44,3 +44,15 @@ confirmed that the unfilled English TAS slot reports `invalid_draft` while the
 German source import is successfully acknowledged and published. That observed
 intermediate result motivated the import-only exception above; it is not
 evidence of a complete mock or permission to accept invalid final content.
+
+On failure the driver closes stdin and waits up to ten seconds (or its shorter
+configured timeout) for orderly EOF shutdown. The original failure, observed
+revision and transcript remain authoritative even if the child exits with code
+zero. No later command is sent. If the grace period expires, only the exact
+spawned child is terminated. `failureCleanup` records EOF, the grace period and
+any forced-termination request separately from the observed exit. A forced exit
+does not establish native cleanup. Successful runs have `failureCleanup: null`.
+Eighteen focused checks pass, including a termination-request error that cannot
+replace the original failure or prevent its receipt from being written. S5's
+independent source review found no remaining issues. These remain synthetic
+subprocess checks; actual native cleanup requires its own execution receipt.
