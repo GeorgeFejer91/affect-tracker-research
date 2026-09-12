@@ -77,3 +77,19 @@ and rescan; the subsequent complete authoring attempt needs a new empty workspac
 Runner12c0395 is collected as17629d8, retaining full versioned media binding and
 rejecting mixed proof routing pending a native-owned location map. Main adds
 Start3/action3 registrations; final integrated native compilation remains pending.
+
+## Assembled source checks at d5693b0
+
+The S1 path fix de5be0a is collected as d5693b0. All 1178 JavaScript tests pass
+with D: temporary storage (main-master3-d5693b0-all-js.log). The shared summary2
+fixture is accepted with the canonical declared location; unsafe paths and
+cross-version inputs remain rejected. The new native serialization assertion
+still requires execution after the SDK relocation pause.
+
+Main independently repeated all eight Runner3 frontend cases at 51d7233:
+350 checks pass using synthetic native replies, with all eight screenshots
+inspected under main-master3-51d7233-runner-ui-01. English and German form
+labels/controls fit, flow and Stop return to preparation, and disposal removes
+the form controls. These are synthetic frontend checks, not the requested
+actual master/video/XDF correspondence. No native process or SDK use remains
+active during Root's storage relocation.
