@@ -1,0 +1,1949 @@
+[
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "flubber",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"flubber\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 576.6965432098766,
+      "flubber": {
+        "halfExtentAtUnitWidth": 0.5308950617283951,
+        "paddingCssPx": 33.06
+      },
+      "grid": null,
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "flubber",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"flubber\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 576.6965432098766,
+      "flubber": {
+        "halfExtentAtUnitWidth": 0.5308950617283951,
+        "paddingCssPx": 33.06
+      },
+      "grid": null,
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "flubber",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"flubber\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 1663.9696296296297,
+      "flubber": {
+        "halfExtentAtUnitWidth": 1.5926851851851853,
+        "paddingCssPx": 33.06
+      },
+      "grid": null,
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "flubber",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"flubber\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":true,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 1663.9696296296297,
+      "flubber": {
+        "halfExtentAtUnitWidth": 1.5926851851851853,
+        "paddingCssPx": 33.06
+      },
+      "grid": null,
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "grid",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"grid\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 659.36,
+      "flubber": null,
+      "grid": {
+        "halfExtentAtUnitWidth": 0.64,
+        "paddingCssPx": 4
+      },
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "grid",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"grid\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 516,
+      "flubber": null,
+      "grid": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 4
+      },
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "grid",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"grid\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 659.36,
+      "flubber": null,
+      "grid": {
+        "halfExtentAtUnitWidth": 0.64,
+        "paddingCssPx": 4
+      },
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "grid",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"grid\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 516,
+      "flubber": null,
+      "grid": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 4
+      },
+      "face": null
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "procedural-face",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"procedural-face\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 512,
+      "flubber": null,
+      "grid": null,
+      "face": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 0
+      }
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "procedural-face",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"procedural-face\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 512,
+      "flubber": null,
+      "grid": null,
+      "face": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 0
+      }
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "procedural-face",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "continuous",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"procedural-face\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"continuous\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 512,
+      "flubber": null,
+      "grid": null,
+      "face": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 0
+      }
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": false,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "procedural-face",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": true,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 1024,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":true,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"procedural-face\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":false,\"hideFeedback\":false,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 1024,
+      "halfExtentCssPx": 512,
+      "flubber": null,
+      "grid": null,
+      "face": {
+        "halfExtentAtUnitWidth": 0.5,
+        "paddingCssPx": 0
+      }
+    }
+  },
+  {
+    "configuration": {
+      "schema": "affect-research-feedback",
+      "version": 2,
+      "input": {
+        "schema": "affect-research-input-binding",
+        "version": 1,
+        "preset": "arrowKeys",
+        "kind": "digital",
+        "stepSize": 0.1,
+        "directions": {
+          "up": {
+            "kind": "keyboard",
+            "code": "ArrowUp"
+          },
+          "down": {
+            "kind": "keyboard",
+            "code": "ArrowDown"
+          },
+          "left": {
+            "kind": "keyboard",
+            "code": "ArrowLeft"
+          },
+          "right": {
+            "kind": "keyboard",
+            "code": "ArrowRight"
+          }
+        },
+        "axes": null
+      },
+      "visual": {
+        "gridEnabled": true,
+        "flubberEnabled": true,
+        "sizePercent": 32,
+        "transparency": 0.05,
+        "hideFeedback": true,
+        "overlayPosition": {
+          "x": 0.72,
+          "y": 0.5
+        },
+        "lockPosition": false,
+        "flubber": {
+          "showOutline": true,
+          "outlineThickness": 2,
+          "showHalo": true
+        },
+        "grid": {
+          "lineThickness": 1,
+          "showOutline": true,
+          "outlineThickness": 2,
+          "cursorSize": 14
+        },
+        "colors": {
+          "up": "#f2c94c",
+          "down": "#2f80ed",
+          "left": "#eb5757",
+          "right": "#27ae60",
+          "idle": "#9ca3af",
+          "outline": "#f8fafc",
+          "halo": "#93c5fd",
+          "cursor": "#ffffff"
+        }
+      },
+      "mappings": {
+        "oscillationFrequency": {
+          "min": 0.5,
+          "max": 2.5,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "edgeSmoothness": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "projectionAmplitude": {
+          "min": 0.2,
+          "max": 0.4,
+          "drivenBy": "y-axis",
+          "reverse": false
+        },
+        "pulseSynchrony": {
+          "min": 0.2,
+          "max": 1,
+          "drivenBy": "x-axis",
+          "reverse": false
+        },
+        "waveSizeVariation": {
+          "min": 0,
+          "max": 0.8,
+          "drivenBy": "x-axis",
+          "reverse": true
+        },
+        "saturation": {
+          "min": 0,
+          "max": 1,
+          "drivenBy": "radius",
+          "reverse": false
+        }
+      },
+      "presentation": {
+        "renderer": "grid",
+        "colorAnchors": "corners",
+        "labels": {
+          "axes": {
+            "up": "Alert / wach",
+            "right": "Positive valence",
+            "down": "Low arousal",
+            "left": "Negative valence"
+          },
+          "corners": {
+            "up": "Upper left",
+            "right": "Upper right",
+            "down": "Lower right",
+            "left": "Calm corner"
+          }
+        },
+        "halo": {
+          "widthPercent": 275.5,
+          "gradient": false,
+          "steepness": 2.5
+        }
+      },
+      "response": {
+        "mode": "stepwise",
+        "grid": {
+          "columns": 31,
+          "rows": 15
+        },
+        "fullSpanDurationMs": 4250,
+        "holdRule": "repeatWhileHeld",
+        "repeatDelayMs": 900
+      }
+    },
+    "viewportCssPx": 324,
+    "envelope": {
+      "algorithmVersion": "feedback-envelope-v2",
+      "origin": "design-centre",
+      "configurationKey": "{\"algorithmVersion\":\"feedback-envelope-v2\",\"mappings\":{\"edgeSmoothness\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0,\"reverse\":false},\"oscillationFrequency\":{\"drivenBy\":\"y-axis\",\"max\":2.5,\"min\":0.5,\"reverse\":false},\"projectionAmplitude\":{\"drivenBy\":\"y-axis\",\"max\":0.4,\"min\":0.2,\"reverse\":false},\"pulseSynchrony\":{\"drivenBy\":\"x-axis\",\"max\":1,\"min\":0.2,\"reverse\":false},\"saturation\":{\"drivenBy\":\"radius\",\"max\":1,\"min\":0,\"reverse\":false},\"waveSizeVariation\":{\"drivenBy\":\"x-axis\",\"max\":0.8,\"min\":0,\"reverse\":true}},\"presentation\":{\"colorAnchors\":\"corners\",\"halo\":{\"gradient\":false,\"steepness\":2.5,\"widthPercent\":275.5},\"labels\":{\"axes\":{\"down\":\"Low arousal\",\"left\":\"Negative valence\",\"right\":\"Positive valence\",\"up\":\"Alert / wach\"},\"corners\":{\"down\":\"Lower right\",\"left\":\"Calm corner\",\"right\":\"Upper right\",\"up\":\"Upper left\"}},\"renderer\":\"grid\"},\"response\":{\"fullSpanDurationMs\":4250,\"grid\":{\"columns\":31,\"rows\":15},\"holdRule\":\"repeatWhileHeld\",\"mode\":\"stepwise\",\"repeatDelayMs\":900},\"visual\":{\"colors\":{\"cursor\":\"#ffffff\",\"down\":\"#2f80ed\",\"halo\":\"#93c5fd\",\"idle\":\"#9ca3af\",\"left\":\"#eb5757\",\"outline\":\"#f8fafc\",\"right\":\"#27ae60\",\"up\":\"#f2c94c\"},\"flubber\":{\"outlineThickness\":2,\"showHalo\":true,\"showOutline\":true},\"flubberEnabled\":false,\"grid\":{\"cursorSize\":14,\"lineThickness\":1,\"outlineThickness\":2,\"showOutline\":true},\"gridEnabled\":true,\"hideFeedback\":true,\"lockPosition\":false,\"overlayPosition\":{\"x\":0.72,\"y\":0.5},\"sizePercent\":32,\"transparency\":0.05}}",
+      "overlaySideCssPx": 324,
+      "halfExtentCssPx": 0,
+      "flubber": null,
+      "grid": null,
+      "face": null
+    }
+  }
+]
