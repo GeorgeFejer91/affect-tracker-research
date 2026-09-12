@@ -26,6 +26,72 @@ The new acceptance callback and P7's next code-edit/acceptance fixture still
 need combined integration; no canonical merge, actual native save, app reload
 or deployment is claimed here. User-authorized merge/reload remains with the
 sole integration owner. Prior visual evidence is unchanged and not repeated.
+## P5 saved contribution and live bounds — 2026-09-12
+
+Bounded Backend Verification continuation, P5-05/P5-07, application checkpoint
+`ccc53a7aaaa4e53c6d1f8b0611da32c8d429b178` on
+`codex/segment-p5-contribution`, based on the integration-reviewed `64da370`.
+The previously accepted P5 editor is preserved. This is an owner handoff,
+pending integration and P4/P6/P7 consumer composition.
+
+`feedback-contribution.js` validates exactly `{input,visual,mappings}` through
+the existing v1 validators, with no new recipe fields. The UI's saved settings
+and contribution now use one strict reader. Empty numeric fields and invalid
+color text reject instead of becoming zero or an authoring fallback. Display
+fallbacks remain confined to the non-authoritative preview renderer.
+
+The application exposes these P5-owned interfaces:
+
+- `getFeedbackContributionSnapshot()` returns the shared five-key snapshot:
+  revision, enabled, pending, contribution and dependencyRevisions. Invalid
+  saved controls return pending/null; valid changes and recovery advance the
+  actual owner revision. Temporary simulator choices do not advance it.
+- `getFeedbackLayoutSnapshot(overlaySideCssPx)` returns revision, pending and
+  the envelope resolved from current saved values. A positive explicit CSS-pixel
+  viewport is required; invalid configuration returns a null envelope. The
+  existing algorithm, fixed design centre, viewport side and square half extent
+  retain their meanings. This is not physical calibration or a circular radius.
+- `subscribeFeedbackChanges(listener)` returns an unsubscribe function. Saved
+  edits, invalidation and restoration notify immutable complete snapshots.
+- `restoreFeedbackContribution(value,{isCurrent})` validates before mutation,
+  returns false for a stale request, and otherwise restores every P5 field
+  before publishing a new snapshot. Package apply uses the same field writer.
+
+P7 owns registration, final capture/acceptance, master serialization and named
+save; P4/P6 own geometry consumers. The saved/temporary inventory below remains
+unchanged. Q10 has no new answer, so P5-06 remains open and no simulator, Face,
+halo-width, tile, label-placement or hold rule is added to saved contracts.
+
+Evidence: 65 focused and 526 full JavaScript checks pass; the clean application
+checkpoint passes seven isolated Chrome boot scenarios with 49 assertions each,
+including all saved fields, invalid values, revision/envelope agreement and
+atomic/stale restoration. Actual CSS widths include 320px; Tauri-marked cases
+are browser fixtures, not native execution. Desktop frontend closure is nine
+files and Pages closure is 190 files. The existing large-chunk warning remains.
+No Rust/runtime schema, native authority, physical input or publication changed.
+
+Clean Chrome receipts and hashes are under
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/contribution-final-chrome`.
+Application tree is `810cc4b0fe2f03d02d433cb8c4cc12f787a439eb`.
+Desktop JS SHA-256 is
+`40841515e85bb7beced0e526b1c0c8953e5bbba99753b183b1cec86ec0e8504e`;
+CSS SHA-256 is
+`be7cf790a5db18b4a156809a01beed6b5680e30119bdfc1d389c9398831552ec`.
+Edge attempts exited zero with no stdout/stderr or test receipt, including fresh
+profiles and a diagnostic retry; that application check is unverified. Earlier
+P5 Edge receipts remain historical and do not qualify this change.
+
+P7 requested a public validator callback after the core handoff. Follow-up
+`1a238a51f77607f90f666b0d73097ee305718a18` exposes
+`researchUi.validateFeedbackContribution(value)` as the same domain validator,
+without changing its contract or adding registration policy. All 65 focused
+checks and seven clean Chrome scenarios × 50 assertions pass, including that
+callback. The rebuilt closures remain desktop nine / Pages 190 files. Receipts
+are in the sibling `contribution-validator-chrome` directory; application tree
+is `670785703feb349a5302fb63eb3b32659f2eaa7f` and desktop JS SHA-256 is
+`1018984218cf5b181759ee289ce9d050423e9a2d08872e8b5eeff32db6f1d012`.
+CSS is unchanged. The full 526-test receipt above belongs to the core checkpoint;
+the follow-up repeated the focused checks and actual application coverage.
 
 ## P2 spreadsheet and contribution receipts — 2026-09-11
 
