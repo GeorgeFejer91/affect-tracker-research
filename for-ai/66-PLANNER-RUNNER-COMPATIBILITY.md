@@ -1,5 +1,25 @@
 # Planner JSON and Runner compatibility contract
 
+## Typed demographics and independent XDF reconstruction — 2026-09-12
+
+The researcher now explicitly requests a shipped EN/DE demographic form and a
+full actual Runner smoke whose saved XDF alone reconstructs participant metadata,
+questionnaires/answers and every identified video/ISI transition. See [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+S2 owns bilingual text/integer/single-choice definitions, main the explicit
+versioned producer/native reader seam, and Runner presentation/typed answers and
+the new versioned primary information stream. Existing Likert/master/legacy LSL
+contracts retain exact dispatch and must not silently accept a new payload.
+
+The XDF must retain exact canonical Planner content and immutable session
+selection, complete definitions and typed answers, and observed occurrence
+markers with actual clock timestamps. This is additional run evidence; Planner
+still does not own XDF stream selection or capture policy. Reconstruction uses
+the saved stream alone before comparison with original JSON/UI/native evidence.
+Media bytes remain external hash-bound assets. Startup bundle fragmentation is
+explicit, bounded and integrity checked, and missing chunks/events are reported
+instead of repaired from expected timings. Current synthetic streams are not
+evidence that the full requested real playback run has succeeded.
+
 ## Correspondence goal activated — 2026-09-12
 
 The direct request now activates the formerly deferred end-to-end test: author

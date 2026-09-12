@@ -121,12 +121,14 @@ identity. The shared API defines retained-request reconciliation and shutdown.
 
 Root independently ran eight commands against native CLI source `680842a` and
 verified all nine P7 policy readbacks, invalid/read-only rejection and clean EOF.
-The exact executable/transcript identities are recorded in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
-This is a verified policy slice. P1–P6 adapter/component and rendered evidence
-have separate receipts. Actual shared P1–P7 app registration is frozen at
-`23e8f3a`; integrated browser parity and a rebuilt native executable still need
-their own receipts. Consequential operations are being integrated. The full
-bilingual mock export and actual Runner correspondence
+A later actual native `23e8f3a` run captured 155 settings/32 owner operations and
+verified one seven-owner draft batch with readback and rejection/EOF checks.
+The exact executable/transcript identities and captured catalogue are recorded
+in [69](69-CLI-RUNNER-END-TO-END-GOAL.md). This establishes a seven-owner native
+smoke, not every field or native import/file action. Browser parity has separate
+source-bound receipts. Consequential operations are being integrated. The full
+bilingual mock export, new typed demographics asset and XDF reconstruction
+requirement, and actual Runner correspondence
 remain open. Never infer their completion from the documentation or catalogue.
 
 The external driver also supports a synchronous programmatic action resolver,

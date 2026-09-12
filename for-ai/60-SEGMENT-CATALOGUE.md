@@ -63,6 +63,14 @@ rows; they do not reopen the completed baseline authoring goal.
 - [ ] **E2E-RUNNER:** RR-02/RR-10 load that exact artifact, bind actual media and
   verify observed behavior for both routes, video/ISIs, feedback/layout/input and
   authored outputs. Parsing or synthetic execution alone does not close this row.
+- [ ] **E2E-DEMOGRAPHICS:** shipped project-authored English/German form for full
+  name, whole-year age, gender and handedness, typed UI/CLI authoring and Runner
+  answers with explicit versioned compatibility; synthetic smoke responses only.
+- [ ] **E2E-XDF:** the actual smoke's saved XDF independently reconstructs the
+  complete canonical recipe/selection, demographics, questionnaire definitions
+  and typed answers, plus observed identified video/ISI/form events and outcomes
+  from its single primary information stream. Missing/corrupt/duplicate/out-of-order
+  data fails explicitly. Scope and evidence requirements are in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
 
 ### Baseline evidence rules
 
