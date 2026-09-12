@@ -366,8 +366,8 @@ test("all nine input presets, custom capture, conflict guidance, and live test a
     assert.match(markup, new RegExp(`<option value="${id}">${label.replace("/", "\\/")}</option>`, "u"));
   }
   assert.match(markup, /id="input-step-size"[^>]*value="0\.1"/u);
-  assert.match(markup, /Digital input moves once per physical press/u);
-  assert.match(markup, /ignores operating-system repeat/u);
+  assert.match(markup, /Response control sets movement and hold behavior/u);
+  assert.match(markup, /operating-system repeat is ignored/u);
   assert.match(markup, /captured action cannot be assigned twice/u);
   assert.match(markup, /id="binding-capture-dialog"/u);
   assert.match(markup, /id="input-test"/u);

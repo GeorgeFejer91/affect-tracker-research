@@ -1038,7 +1038,7 @@ impl InputAxesV1 {
 }
 
 impl VisualSettingsV1 {
-    fn normalize_and_validate(&mut self) -> ResearchResult<()> {
+    pub(crate) fn normalize_and_validate(&mut self) -> ResearchResult<()> {
         self.size_percent = validated_number(self.size_percent, 5.0, 100.0, "visual.sizePercent")?;
         self.transparency = validated_number(self.transparency, 0.0, 1.0, "visual.transparency")?;
         self.overlay_position.x =
@@ -1117,7 +1117,7 @@ impl AdvancedSettingsV1 {
 }
 
 impl FlubberMappingV1 {
-    fn normalize_and_validate(
+    pub(crate) fn normalize_and_validate(
         &mut self,
         allowed_min: f64,
         allowed_max: f64,
