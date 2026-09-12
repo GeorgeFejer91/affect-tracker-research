@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import {
+  NativeResearchRuntimeBridge,
   authorizeDesktopPlaybackMode,
   closeMalformedNativeStartBoundary,
   closeNativeRendererFailureBoundary,
@@ -28,6 +29,56 @@ import {
   validateNativeProtocolCapabilityV1,
   validateNativeProtocolPreflightV1,
 } from "../site/src/research/native-bridge.js";
+import { createInputBindingPreset } from "../site/src/research/contracts.js";
+import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+
+test("native capture fences cancelled, rearmed, rejected and delayed results", async () => {
+  const root = new EventTarget(), win = new EventTarget(), projected = [], captures = [], calls = [], polls = [];
+  const binding = createInputBindingPreset("arrowKeys");
+  const grid = { getBoundingClientRect: () => ({left:0,top:0,right:100,bottom:100,width:100,height:100}), getClientRects: () => [1] };
+  root.ownerDocument = {activeElement:grid};
+  const video = {pause(){},removeAttribute(){},load(){}};
+  root.querySelector = selector => selector === "#run-video" ? video : selector === ".input-test-grid" || selector.includes(".dialog-content") ? grid : null;
+  root.researchUi = { inputBinding:binding, applyNativeInputStatus: s => projected.push(s), applyNativeCapture: c => { captures.push(c); return c.captureId !== "rejected"; } };
+  win.innerWidth = 800; win.innerHeight = 600;
+  let deferredStatus = null, deferredBegin = null;
+  const bridge = new NativeResearchRuntimeBridge(root, {windowObject:win,setIntervalObject:fn=>{polls.push(fn);return polls.length;},clearIntervalObject:()=>{},invoke:async(command, payload)=>{
+    calls.push([command,payload]);
+    if(command === "research_native_media_capability") return nativeMediaCapability();
+    if(command === "research_native_protocol_capability") return nativeProtocolCapability();
+    if(command === "research_input_capability") return {nativeAuthorityReady:true,supportsCustomKeyboard:true,supportedPresets:["arrowKeys","custom"]};
+    if(command === "research_input_status") return deferredStatus ? deferredStatus.promise : {};
+    if(command === "research_input_begin_capture") return deferredBegin ? deferredBegin.promise : {};
+    return {};
+  }});
+  bridge.packageProtocol.initialize = async()=>({nativeStartReady:false,manifestV4Ready:false});
+  await bridge.initialize();
+  const arm=()=>root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputCaptureRequest,{detail:{binding,direction:"left"}}));
+  const cancel=()=>root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputCaptureCancel));
+  const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
+  const flush=async()=>{await new Promise(resolve=>setImmediate(resolve));await bridge.operation;};
+  const poll=()=>polls.at(-1)();
+  arm();await bridge.operation;
+  assert.equal(bridge.activeInputCaptureGeneration,bridge.inputCaptureGeneration);
+  deferredStatus=deferred();poll();
+  cancel();arm();await bridge.operation;
+  const before=projected.length;
+  deferredStatus.resolve({capture:{captureId:"old",direction:"left",binding}});await flush();
+  assert.equal(projected.length,before);assert.equal(captures.length,0);assert.equal(calls.filter(([c])=>c==="research_input_begin_test").length,0);
+  deferredStatus=deferred();poll();deferredStatus.resolve({capture:{captureId:"current",direction:"left",binding}});await flush();
+  assert.deepEqual(captures.map(c=>c.captureId),["current"]);
+  assert.equal(calls.filter(([c])=>c==="research_input_begin_test").length,1);
+  arm();await bridge.operation;deferredStatus=deferred();poll();deferredStatus.resolve({capture:{captureId:"rejected",direction:"left",binding}});await flush();
+  assert.equal(calls.filter(([c])=>c==="research_input_begin_test").length,1,"UI rejection must not reconfigure native test");
+  deferredBegin=deferred();arm();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(bridge.activeInputCaptureGeneration,null,"not active before begin acknowledgment");
+  cancel();arm();const oldBegin=deferredBegin;deferredBegin=null;oldBegin.reject(new Error("stale begin failure"));await flush();
+  assert.equal(bridge.activeInputCaptureGeneration,bridge.inputCaptureGeneration,"old failure cannot clear rearmed capture");
+  deferredStatus=deferred();poll();cancel();await bridge.operation;const finalCount=projected.length;
+  deferredStatus.resolve({capture:{captureId:"cancelled",direction:"left",binding}});await flush();
+  assert.equal(projected.length,finalCount);assert.equal(captures.length,2);
+  bridge.destroy();
+});
 
 function nativeStatus(overrides = {}) {
   return {
