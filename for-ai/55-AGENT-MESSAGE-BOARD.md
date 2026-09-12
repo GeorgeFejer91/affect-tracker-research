@@ -177,6 +177,17 @@ file; follow the integration-owner collection procedure in the workflow.
   for domain preparation, separately from P7 confirmation/save.
 - Complete master codec/save/reopen evidence remains in progress with S7. This
   is not a proposal-only stop or a dependency on actual Runner implementation.
+- Collected P5 live/native checkpoint `5c9d3df` through `3d9297f`. The actual
+  controller now passes 43 XR/feedback assertions at each width, including full
+  non-default V2 restore for all three renderers, saved halo invalidation and
+  exact P5 envelope identity. The prior `preview-only halo` fixture expectation
+  was explicitly superseded by the new saved V2 field. The narrow fixture now
+  resolves/hashes its real input-icon assets as well as app source and PNG.
+  Receipts: `D:/GitHub/.affect-preview-checks/p6-v2-live-20260912/` (`app-wide`,
+  `app-narrow`, `app-narrow-assets`). This validates owner integration, not yet
+  a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
+  Rust now derives V2 envelopes through P5's actual native validator/projector
+  before comparing them with the shared P6 geometry fixture.
 
 ### 20260912-integration-planner-completion
 
