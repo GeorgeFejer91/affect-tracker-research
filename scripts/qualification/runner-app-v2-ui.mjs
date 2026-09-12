@@ -41,7 +41,7 @@ const invoke=async(command,args)=>{
  switch(command){
   case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
   case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
-  case 'research_native_media_capability':return{playerActorReady:true};
+  case 'research_native_media_capability':return{playerActorReady:calls.filter(call=>call.command==='research_native_media_capability').length>1,reasonCode:'native-runtime-verification-pending'};
   case 'research_workspace_status':return{selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic app verification'};
   case 'research_runner_selection':return{schema:'affect-runner-selection',version:1,packageSourceByteSha256:app.recipe.canonicalSourceByteSha256,participantId:args.participantId??'P001',outputDirectory:'outputs/recipe-synthetic'};
   case 'research_runner_master_history':return{schema:'affect-runner-master-history',version:1,recipeSourceByteSha256:app.recipe.canonicalSourceByteSha256,participants:[]};

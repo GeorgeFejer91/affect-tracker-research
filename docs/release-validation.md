@@ -119,3 +119,18 @@ under the same checks root. Includes typed demographics, Likert presentation,
 answer validation/drafts/submission, transitions and disposal; does not prove
 actual video or real XDF execution. Current build includes the previous-file
 button and questionnaire module.
+
+## Runner readiness refresh — 2026-09-13
+
+R1/RR-01/RR-02: Continue previously reused the launch-time native media
+capability. Because native initialization is asynchronous, a pending snapshot
+could falsely report that video support was absent indefinitely. Both master
+and legacy checks now request current native capability after their media scan,
+reject stale/disposed UI revisions, distinguish startup pending from failure,
+and retain the native failure reason. No Start qualification gate was relaxed.
+
+The production-app en-flow scenario passes 77 assertions with native capability
+pending at boot and ready on the next request. Runner build/boundary checks pass.
+Evidence: `D:/GitHub/.affect-checks/runner-readiness-refresh-ui-01/receipt.json`.
+This fixes stale frontend state; actual native startup success remains a separate
+claim and is not inferred from the synthetic transport test.

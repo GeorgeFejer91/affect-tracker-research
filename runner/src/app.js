@@ -259,6 +259,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     try { await refreshParticipantHistory(true); } catch (error) { fail(error); }
     return true;
   }
+  async function requireNativeMediaReady(generation) {
+    const current = await invoke("research_native_media_capability");
+    if (destroyed || generation !== revision) return false;
+    mediaCapability = current;
+    if (!current?.playerActorReady) {
+      const reason = current?.reasonCode ?? "native-capability-unavailable";
+      if (["native-runtime-verification-pending", "native-gstplay-startup-pending"].includes(reason)) {
+        throw new Error("Native video support is still starting. Wait a moment, then press Continue again.");
+      }
+      throw new Error(`Native video inspection is not ready (${reason}). The experiment remains loaded.`);
+    }
+    return true;
+  }
   async function checkSession() {
     if (controllerSettings.overridden) throw new Error("Controller override execution is not connected yet. Restore the file settings in Set controller to run this recipe.");
     if (!recipe || !workspace?.selected) throw new Error("Open a recipe and select its project folder.");
@@ -275,7 +288,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const scan = await invoke("research_runner_master_rescan", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText });
       if (destroyed || generation !== revision) return;
       if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Master media scan belongs to another workspace.");
-      if (!mediaCapability?.playerActorReady) throw new Error("Master interpreted. Native video inspection is unavailable in this build.");
+      if (!await requireNativeMediaReady(generation)) return;
       const attested = await attestMasterMedia({ recipe: currentRecipe.recipe, controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
         viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
       if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
@@ -300,7 +313,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const scan = await invoke("research_rescan_package_stimuli", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText });
     if (destroyed || generation !== revision) return;
     if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Media scan belongs to a different project folder.");
-    if (!mediaCapability?.playerActorReady) throw new Error("Native video inspection is unavailable in this build. The recipe remains loaded.");
+    if (!await requireNativeMediaReady(generation)) return;
     const attested = await attestNativeGstCatalogue({ controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
       viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
     if (attested.failures.length) throw new Error(`${attested.failures.length} video files could not be verified by the native decoder.`);
