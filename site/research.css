@@ -1260,10 +1260,56 @@ legend {
   margin: 0;
 }
 
-#package-contribution-issues button {
+#package-contribution-issues {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.package-issue-sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.package-issue-sections > li {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.75rem;
+}
+
+.package-issue-sections > li > span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+#package-contribution-issues .package-issue-link {
+  justify-self: start;
+  min-height: 2.25rem;
+  padding: 0.35rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+#package-contribution-issues .package-issue-link:hover {
+  color: var(--accent);
+}
+
+#package-contribution-issues summary {
+  min-height: 2.25rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+.package-issue-diagnostics {
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
 #review-legacy-files .authoring-tools {

@@ -425,7 +425,13 @@ function reviewSection() {
     <p id="package-save-status" role="status" aria-live="polite">Review the design, then save its recipe.</p>
     <label class="field"><span>Presentation target</span><select id="planner-presentation-target" aria-describedby="planner-target-status"><option value="">Choose presentation…</option>${PLANNER_TARGETS.map(({ id, label }) => `<option value="${id}">${label}</option>`).join("")}</select></label>
     <p id="planner-target-status" class="field-help" role="status">Choose the intended presentation. XR execution requires a compatible future Runner.</p>
-    <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
+    <section id="package-contribution-issues" aria-label="Recipe issues by section" hidden>
+      <ul class="package-issue-sections" aria-label="Sections to review"></ul>
+      <details>
+        <summary>Issue details</summary>
+        <ul class="package-issue-diagnostics" aria-label="All recipe issues"></ul>
+      </details>
+    </section>
     ${lslSettingsMarkup()}
     <div class="field-grid spaced-field-grid">
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>

@@ -103,6 +103,43 @@ file; follow the integration-owner collection procedure in the workflow.
   input/playback, Runner, and complete master reproduction remain unqualified.
   No canonical promotion, foreground launch, push or deployment is claimed.
 
+### 20260912-p7-review-issue-presentation
+
+- Owner **S7**, P7-06 and visual V23/V25, Backend Verification follow-up
+  explicitly allocated by root after its actual `b9d520d` Review capture.
+  Isolated `codex/segment-p7-accepted-recipe`, combined base `c32f806`.
+- Current source renders eight bordered issue buttons for four affected sections,
+  repeats pending/format explanations and exposes `P1` in dependency text.
+  Deliverable: compact section rows plus accessible complete diagnostics, with
+  researcher-facing names and every existing owning-section action retained.
+- Scope: P7 issue presentation helper, Review renderer/markup/CSS and focused
+  fixture. Save/acceptance/load semantics are unchanged; integration owns the
+  parallel load-edit guard. No producer or accepted JSON contract changes.
+- Evidence to collect: distinct diagnostic preservation, stable focus/disclosure
+  during refresh, actual default-app missing-state actions and inspected desktop/
+  narrow Review captures. Q08/P4 accepted type and full master composition remain
+  open; native, Edge, hardware, Runner and canonical promotion are deferred.
+- **Ready for integration**, application `896f67731a9f54e5ad34514f8a48d82c9ce8a0f9`.
+  Four unboxed section rows replace the eight default issue boxes. One collapsed
+  disclosure retains all eight complete diagnostics and their navigation actions;
+  dependency messages use section names. Exact duplicates alone are deduplicated.
+  Unchanged refreshes retain the active DOM node; changed issue sets preserve the
+  focused diagnostic where available and keep the disclosure open.
+- Checks: **53 focused Node tests**, desktop **9-file** and Pages **212-file**
+  closures. Existing non-failing desktop chunk warning remains. No Rust changes.
+- Actual-app Chrome fixture passes **31 assertions per capture** at 1280/800,
+  compact and expanded (**124 assertions / four inspected images**). Real XR
+  edits test changed-set focus preservation; every section and detailed issue
+  opens/focuses its existing owner. No injected issue, media or acceptance data.
+  Summary rows measure 135/146.2 px, with zero pane overflow and save still blocked.
+  Receipt/hashes: `D:/GitHub/affect-tracker-research-p7-evidence/review-issues-896f677/`.
+- Separate clean default-app capture uses the existing segment visual audit at
+  1280x900 and 800x700: **five inspected images**, initial Review through final
+  save footer, no runtime errors or horizontal overflow. Receipt/hashes:
+  `D:/GitHub/affect-tracker-research-p7-evidence/review-default-896f677/`.
+  These resolve the assigned owner-state warning-list defect, not every V23/V25
+  state or the missing full master contract. Integration retains final collection.
+
 ### 20260912-integration-confirmation-shell
 
 - Owner: **Add segment confirmation flow**, bounded integration/accordion seam,
