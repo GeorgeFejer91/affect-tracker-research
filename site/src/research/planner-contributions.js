@@ -1,5 +1,5 @@
 import { canonicalJson } from "./canonical.js";
-import { validateQuestionnaireContribution } from "./questionnaire-contribution.js";
+import { validateQuestionnairePlannerContribution } from "./questionnaire-contribution.js";
 
 export const PLANNER_SEGMENTS = Object.freeze(["P1", "P2", "P3", "P4", "P5", "P6"]);
 export const PLANNER_SEGMENT_SECTIONS = Object.freeze({
@@ -17,18 +17,33 @@ export function registerAvailablePlannerContributions(controller) {
   if (typeof controller.getQuestionnaireContributionSnapshot === "function") {
     unregister.push(controller.registerPlannerContribution("P2",
       () => controller.getQuestionnaireContributionSnapshot(), {
-        validateContribution: async (value) => { await validateQuestionnaireContribution(value); return true; },
+        validateContribution: validateQuestionnairePlannerContribution,
         validatePackageV1: (pkg, contribution) => canonicalJson(contribution) === canonicalJson({
           questionnaires: pkg.settings.questionnaires, languageSelection: pkg.languageSelection,
         }),
       }));
   }
-  for (const [segment, getter] of [["P3", "getStimulusOrderSnapshot"], ["P6", "getXrLayoutContribution"]]) {
+  for (const [segment, getter, validator, subscription] of [
+    ["P1", "getVideoCatalogueContributionSnapshot", "validateVideoCatalogueContribution", "subscribeVideoCatalogueChanges"],
+    ["P3", "getStimulusOrderSnapshot", "validateStimulusVariantContribution"],
+    ["P4", "getScreenLayoutContributionSnapshot", "validateScreenLayoutContribution"],
+    ["P5", "getFeedbackContributionSnapshot", "validateFeedbackContribution", "subscribeFeedbackChanges"],
+    ["P6", "getXrLayoutContribution", "validateXrLayoutContribution"],
+  ]) {
     if (typeof controller[getter] === "function") {
-      unregister.push(controller.registerPlannerContribution(segment, () => controller[getter]()));
+      unregister.push(controller.registerPlannerContribution(segment, () => controller[getter](), {
+        validateContribution: typeof controller[validator] === "function" ? async (value, context) => {
+          const result = await controller[validator](value, context);
+          if (result !== true && (!result || typeof result !== "object")) throw new TypeError(`${segment}: contribution validation failed.`);
+          return true;
+        } : null,
+      }));
+      if (subscription && typeof controller[subscription] === "function") {
+        unregister.push(controller[subscription](() => controller.plannerContributionChanged(segment)));
+      }
     }
   }
-  return () => { for (const remove of unregister) remove(); };
+  return () => { for (const remove of unregister.reverse()) remove(); };
 }
 
 function segmentId(segment) {
@@ -175,7 +190,8 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
         if (Object.hasOwn(dependencies, segment)) continue;
         const dependency = current.snapshots.find((value) => value.segment === segment);
         if (!dependency) throw new TypeError(`${snapshot.segment}: a dependency is unavailable.`);
-        dependencies[segment] = structuredClone(dependency);
+        const { segment: ownerId, ...value } = dependency;
+        dependencies[ownerId] = structuredClone(value);
         collect(dependency);
       }
     };
@@ -208,7 +224,7 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       const snapshot = before.snapshots.find((entry) => entry.segment === segment);
       const context = validationContext(before, snapshot, selectedTarget);
       const identity = identityOf(snapshot);
-      const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf(value)]);
+      const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf({ segment: id, ...value })]);
       const epochs = [[segment, owner.epoch], ...dependencies.map(([id]) => [id, owners.get(id).epoch])];
       const sequence = ++acceptanceSequence;
       accepting.set(segment, sequence);

@@ -410,7 +410,7 @@ function questionnairesSection() {
 
 function lslSettingsMarkup() {
   return `
-    <details class="inner-disclosure" open>
+    <details id="review-lsl" class="inner-disclosure">
       <summary>LSL</summary>
       <div class="disclosure-content">
         <label class="check-field"><input id="lsl-enabled" type="checkbox"><span><strong>Enable LSL</strong><br><span class="field-help">Publishes the regular eight-channel state stream and irregular semantic marker stream in Windows Tauri.</span></span></label>
@@ -427,7 +427,6 @@ function lslSettingsMarkup() {
 
 function reviewSection() {
   return `
-    ${lslSettingsMarkup()}
     <section class="package-finalization" aria-labelledby="package-finalization-title">
       <div><h3 id="package-finalization-title">Recipe file</h3><p>Includes questionnaires and settings. Keep videos in the project library.</p></div>
       <div class="button-row">
@@ -436,6 +435,7 @@ function reviewSection() {
     </section>
     <p id="package-save-status" role="status" aria-live="polite">Review the design, then save its recipe.</p>
     <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
+    ${lslSettingsMarkup()}
     <div class="field-grid spaced-field-grid">
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
       <p class="field-help">Continuous rating is always enabled during video playback.</p>

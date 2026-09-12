@@ -3202,6 +3202,8 @@ function bindResearchInteractions(root, { surface }) {
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
     const review = plannerContributions.read();
+    const lslDetails = query("#review-lsl");
+    if (lslDetails && (checked("lsl-enabled") || lslDetails.querySelector(':invalid, [aria-invalid="true"]'))) lslDetails.open = true;
     const output = query("#package-save-status");
     const messages = {
       editing: packageIsStale ? "The current design has changes to save." : "Review the design, then save its recipe.",
