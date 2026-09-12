@@ -149,6 +149,21 @@ prove the eventual master JSON or combined app. P7 reports 32 actual Chrome
 regression assertions for this fixture; these are separate from root's visual
 inspection. Retain V22–V25/V28 until final integrated coverage is collected.
 
+Later P6 follow-up: both actual Chrome captures under
+`D:/GitHub/.affect-preview-checks/p6-final-app-20260912/` were independently
+inspected (`chrome-wide/xr-authoring.png`, `chrome-narrow/xr-authoring.png`).
+Receipts name clean application `b54e403`; all 60 source hashes in each match
+owner handoff `82c8f0f`, whose subsequent delta is documentation. The captures
+show the oblique Authored screen, connected geometry, accepted profile and
+collapsed Profile tools. Labels, measurements and separate legend remain
+readable at 1440px/820px, with no new material visual regression. Narrow footer
+is fully visible; the wide footer extends below the capture. The still-visible
+Accept layout plus Confirm section duplication belongs to the already-assigned
+integration prepare/accept composition; one final action must replace that
+prerequisite sequence. Source receipts record 28 passing assertions each but
+no PNG digest, so cryptographic image-file binding is unrecorded. These two
+states do not close V19–V21/V28 or final master/target wiring.
+
 ## Segment checklist
 
 ### P1 — Workspace and video library

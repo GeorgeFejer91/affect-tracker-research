@@ -163,6 +163,13 @@ file; follow the integration-owner collection procedure in the workflow.
   every refresh operation, including while a restore is pending, and add that
   interleaving regression. Integration/P7 received this remaining finding.
   Combined reopen verification remains separate.
+- S1 follow-up `e4562d9` fences every media refresh, including pending restores,
+  with a separate operation token. Independent recheck confirms the remaining
+  same-recipe race is resolved in source. Owner reports 52 focused/487 full Node
+  checks and desktop build. The new behavioral test uses a modeled refresh helper
+  with the real producer; the UI check pins source patterns. Actual-controller
+  interleaving remains part of combined reopen verification, not proof supplied
+  by those owner test counts. Integration/P7 received this exact distinction.
 - A new P3-08 content-reopen gap remains: restored P1 declarations are pending,
   so ready-only P3 restoration cannot yet display the saved version table.
   S3 owns a coordinated internal content-restore seam with S7, validated through
@@ -182,6 +189,16 @@ file; follow the integration-owner collection procedure in the workflow.
   remains pending Q08. Integration reports clean `4f505c3`
   passes 545 Node checks, Chrome retained-UI/P5 checks and both builds. These
   owner reports do not promote canonical `ba2110f` or qualify Edge/Runner.
+- S6 final clean handoff `82c8f0f` (tested app `b54e403`) is ready, including
+  P1/P5 live binding, registered revision invalidation, guarded preparation,
+  content-only draft reopen and strict ready-dependency restore. P7/integration
+  received the distinct APIs. Owner evidence: 572 Node checks, both builds and
+  28 actual Chrome assertions at each of 1440px/820px. Independent visual review
+  finds no new material regression; all 60 source hashes match. The existing
+  internal Accept layout plus footer Confirm duplication remains assigned to
+  integration's single prepare/accept action. Exact coverage limits are in `64`.
+  This handoff still includes P1 `5988ce0`; the S1
+  refresh-race repair remains a separate required integration dependency.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
