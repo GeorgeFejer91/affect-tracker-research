@@ -14,6 +14,16 @@ import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 
 const clone = value => structuredClone(value);
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
+test("reselecting current units preserves an unfinished layout without requiring a conversion", () => {
+  const binding = createScreenLayoutDependencyBinding();
+  try {
+    const draft = createScreenLayoutDraft();
+    const unchanged = binding.convertUnits(draft, draft.units);
+    assert.deepEqual(unchanged, draft);
+    assert.notEqual(unchanged, draft);
+    assert.throws(() => binding.convertUnits(draft, "mm"), /geometry|reference/i);
+  } finally { binding.destroy(); }
+});
 test("production P4 connection accepts controlled workspace3 and retains owner identity", async () => {
   const { workspace } = JSON.parse(await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"));
   const settings = createDefaultResearchSettings();

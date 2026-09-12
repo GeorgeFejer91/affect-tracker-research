@@ -5468,3 +5468,12 @@ from its actual catalogue. No layout arithmetic or saved schema changed.
 Planner JSON export, actual Runner execution/XDF, installed distribution and
 physical display timing remain unclosed. Do not enable qualified Start flags
 from component checks. No FFmpeg rendering capability was selected or added.
+
+Root continuation: the 7e5752e production run reached 31/55 steps, saved all six
+EN/DE questionnaire assets, and rejected the ordered layout edit because setting
+already-selected relative units attempted an unnecessary conversion before a
+reference method was chosen. The shared UI/CLI conversion seam now returns an
+unchanged clone for a supported, already-selected unit; real conversions retain
+all geometry/calibration checks. All 51 focused P4 authoring/layout tests pass.
+Evidence remains at root-release-fullmock-evidence-03 and
+root-release-p4-units-test-01.log. No master was saved in that failed attempt.

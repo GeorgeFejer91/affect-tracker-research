@@ -104,6 +104,7 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
     refreshCatalogue,
     getDependencySnapshots() { return { P1: readCatalogue(), P5: validatePlannerContributionSnapshot(getFeedbackSnapshot?.()) }; },
     convertUnits(draft, units) {
+      if (units === draft.units && ["relative", "mm"].includes(units)) return structuredClone(draft);
       const profile = desktopLayoutProfileFromDraft(draft, this.getMediaGeometry());
       return desktopLayoutDraftFromProfile(convertDesktopLayoutUnits(profile, units));
     },
