@@ -598,10 +598,13 @@ export function renderResearchUiMarkup(surface = "browser") {
             <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
               <header class="preview-header">
                 <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p id="feedback-settings-version">Feedback settings are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
-                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
-                  <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
-                  <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
-                  <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+                <div class="preview-header-controls">
+                  <button id="preview-input-menu" class="preview-input-menu" type="button" aria-label="Assign feedback controls" aria-haspopup="dialog" aria-controls="binding-capture-dialog" title="Assign feedback controls"><span aria-hidden="true"></span></button>
+                  <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
+                    <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
+                    <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
+                    <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+                  </div>
                 </div>
               </header>
               ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
@@ -667,10 +670,24 @@ export function renderResearchUiMarkup(surface = "browser") {
       <div class="dialog-content"><h2 id="package-save-dialog-title">Save recipe</h2><p id="package-save-dialog-status" role="status" aria-live="polite"></p></div>
       <div class="dialog-actions"><button id="package-save-cancel" type="button">Cancel</button><button id="package-save-choose" type="button" class="primary-action">Choose file and save</button></div>
     </dialog>
-    <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
-      <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
-      <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
-    </dialog>
+      <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title" aria-describedby="binding-capture-help">
+        <div class="binding-menu-heading"><h2 id="binding-capture-title">Assign feedback controls</h2>
+          <p id="binding-capture-help">Choose a direction, then press a key or gamepad button. Click or scroll inside the capture area to assign a mouse button or wheel direction.</p>
+          <p class="field-help">Changes use your saved input settings. Gamepad sticks use analog presets in Input controls; individual axis directions cannot be assigned here.</p>
+        </div>
+        <div class="binding-direction-menu" role="group" aria-label="Feedback directions">
+          <button type="button" data-binding-capture-target="up" aria-pressed="false"><span>↑ Up</span><output data-binding-value="up"></output></button>
+          <button type="button" data-binding-capture-target="left" aria-pressed="false"><span>← Left</span><output data-binding-value="left"></output></button>
+          <button type="button" class="binding-centre-pending" disabled aria-label="Centre action not configured" title="Centre action is not configured">↺</button>
+          <button type="button" data-binding-capture-target="right" aria-pressed="false"><span>Right →</span><output data-binding-value="right"></output></button>
+          <button type="button" data-binding-capture-target="down" aria-pressed="false"><span>↓ Down</span><output data-binding-value="down"></output></button>
+        </div>
+        <div class="dialog-content binding-capture-area" tabindex="0" role="group" aria-label="Input capture area" aria-describedby="binding-capture-receipt">
+          <p id="binding-capture-instruction">Choose a direction to start listening.</p>
+          <div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Not listening.</div>
+        </div>
+        <div class="dialog-actions"><button id="binding-capture-stop" type="button" disabled>Cancel capture</button><button id="binding-capture-cancel" type="button">Done</button></div>
+      </dialog>
     <dialog id="preview-color-dialog" aria-labelledby="preview-color-dialog-title" aria-describedby="preview-color-status">
       <div class="dialog-content">
         <h2 id="preview-color-dialog-title">Choose an affect color</h2>
