@@ -31,6 +31,24 @@
   native bridge routing and browser verification; no root controller, runtime,
   arbitrary path argument, new unsafe boundary or foreground dialog test.
 
+### 20260912-p3-reproduction-v2-expectation
+
+- Status: **ready**, 27 focused P3/master tests pass after the reproducing
+  failure. Both historical and current vectors are checked in independent
+  ambient-free processes. Recompilation retains every owner payload and its
+  definition/segment hashes while adopting explicit reproduction v2. Existing
+  fixture bytes and all production source are unchanged; diff check passes.
+
+- Owner **S3**, P3-08 Backend Verification follow-up explicitly allocated by
+  root/integration. Isolated `codex/segment-p3-reproduction-v2-test` at P7 `70b30a4`.
+- Baseline reproduces one failure: content-only P3 reopen correctly recompiles
+  the master using current reproduction v2, while the test expects old v1 bytes.
+  Historical read/re-export and independent process checks still pass.
+- Deliverable: only align the P3 test with the existing current P7 vector, retain
+  frozen v1 vectors/read semantics, and cover both algorithms in fresh processes.
+  No production code, math, identity, allocation, schema or fixture-byte edits.
+  Main owns its analogous workflow assertion and final combined UI checks.
+
 ### 20260912-p5-master-settings — Planner completion
 
 - Owner **Implement segment 5**, P5-05 through P5-08; Backend Verification.
