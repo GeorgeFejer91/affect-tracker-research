@@ -536,17 +536,18 @@ impl ActivePlayer {
             .unwrap_or_else(|p| p.into_inner())
             .clone();
         if let Some(expected) = frozen {
-            if self.metadata()? != expected
-                || self
-                    .play
-                    .current_video_track()
-                    .map(|track| track.stream_id().to_string())
-                    != Some(expected.1.stream_id.clone())
-                || sink_rotation(&self.sink)?
-                    != expected.1.source_orientation.controlled_rotation()?
-            {
-                return Err(actor_unavailable("native-display-renderer-policy-stale"));
-            }
+            let current_stream = self
+                .play
+                .current_video_track()
+                .map(|track| track.stream_id().to_string());
+            orientation::validate_policy_observation(
+                &expected.1.stream_id,
+                current_stream.as_deref(),
+                self.metadata()? == expected,
+                expected.1.source_orientation.controlled_rotation()?,
+                sink_rotation(&self.sink)?,
+            )
+            .map_err(actor_unavailable)?;
         }
         Ok(())
     }
@@ -576,6 +577,10 @@ impl ActivePlayer {
             }
             *policy = Some(metadata.clone());
         }
+        // First configuration must check the selected track too, before show/play.
+        // Release the guard: validation reads the now-frozen policy itself.
+        drop(policy);
+        self.ensure_policy_current()?;
         Ok(metadata)
     }
 }
