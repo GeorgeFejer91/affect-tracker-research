@@ -134,6 +134,7 @@ test("section confirmations use owner acceptance; Preview and final save are not
   assert.match(source, /setupNavigationRevision !== navigationRevision/u);
   assert.match(source, /openSetupSection\(transition\.nextSectionId, \{ focus: true \}\)/u);
   assert.match(source, /save\.phase === "saved" && !packageIsStale/u);
+  assert.match(source, /save\.saved !== observedSuccessfulSave[\s\S]*?if \(openSection === "review"\)[\s\S]*?openSetupSection\(null\)/u);
   assert.match(source, /setupConfirmationFlow\.destroy\(\)/u);
   const navigation = source.slice(source.indexOf("function openSetupSection("), source.indexOf("async function confirmSetupSection("));
   assert.doesNotMatch(navigation, /reviewedSetupSections|\.accept\(|\.confirm\(/u);

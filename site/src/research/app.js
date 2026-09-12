@@ -249,9 +249,19 @@ function bindResearchInteractions(root, { surface }) {
   let observedPackageDraft = null;
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
+  let observedSuccessfulSave = null;
   const packageExport = createPackageExportController({ onChange: () => {
     renderPackageExportReview();
     renderSetupReviewState();
+    const save = packageExport.snapshot();
+    if (save.phase === "saved" && !packageIsStale && save.saved !== observedSuccessfulSave) {
+      observedSuccessfulSave = save.saved;
+      if (openSection === "review") {
+        query("#setup-trigger-review")?.focus();
+        openSetupSection(null);
+      }
+      announce("Final JSON saved. The current design is confirmed.");
+    }
   } });
   const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
     renderSetupReviewState();
