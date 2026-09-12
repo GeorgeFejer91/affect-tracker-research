@@ -138,3 +138,25 @@ redistribution closure, format and lifecycle evidence is recorded in30/40.
 The Live Preview task now owns a read-only qualification-gap audit; Runner keeps
 implementing complete master consumers. No flag change, weaker playback path or
 mock is authorized as a substitute for passing the existing execution gates.
+
+### Independent production CLI driver
+
+Root owns `scripts/qualification/planner-cli-driver.mjs`, separate from main's
+first-slice `planner-cli-smoke.mjs`. It launches only the explicit CLI executable
+with `jsonl`, captures its hidden-process ready receipt, supplies fresh request
+IDs and current revisions, sends actions sequentially, checks matching responses,
+and drains EOF. It records the executable hash, synced command/response transcript,
+bounded stderr, exit outcome and a receipt in a newly created evidence directory.
+Unexpected identity, duplicate output, malformed output, command rejection or
+timeout stops the driver without retrying writes. It has no editor imports or
+recipe compiler and cannot claim UI/Runner behavior from transport success.
+
+Usage: `node scripts/qualification/planner-cli-driver.mjs <CLI.exe> <actions.json> <new-evidence-directory>`.
+The action file contains an array of `{action, expectStatus?, mutation?}` steps;
+the production CLI validates each unchanged action. Known query kinds use null
+revision; edits use the latest returned revision. Expected rejection cases can
+be explicit. Six isolated synthetic subprocess checks passed for transcript/CAS/
+EOF, wrong session, duplicate output, rejection, invalid UTF-8 and timeout.
+Those tests validate the driver itself, not a production Planner run. The initial
+5-second fixture startup allowance expired under concurrent build load; the
+successful checks use 30 seconds and assert each distinct expected failure.
