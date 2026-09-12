@@ -37,9 +37,12 @@ try {
  const root=bootResearchUi(); const ui=root.researchUi; await wait();
  if(ui.openSection!==scenario.section) ui.openSetupSection(scenario.section);
  await wait();
- const pane=root.querySelector('.setup-pane');
  const section=root.querySelector('[data-setup-section="'+scenario.section+'"]');
- const top=section.getBoundingClientRect().top-pane.getBoundingClientRect().top+pane.scrollTop;
+ const persistent=section.matches('.preview-pane');
+ const settings=section.querySelector('.preview-controls-scroll');
+ const settingsScrolls=settings&&['auto','scroll'].includes(getComputedStyle(settings).overflowY)&&settings.scrollHeight>settings.clientHeight+1;
+ const pane=persistent?(settingsScrolls?settings:section):root.querySelector('.setup-pane');
+ const top=persistent?0:section.getBoundingClientRect().top-pane.getBoundingClientRect().top+pane.scrollTop;
  pane.scrollTop=top+scenario.page*Math.max(200,pane.clientHeight-80);
  await wait();
  const rect=element=>{const r=element.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
@@ -55,10 +58,10 @@ try {
   const r=e.getBoundingClientRect();return r.width>0&&(r.left<bounds.left-1||r.right>bounds.right+1);
  }).slice(0,30).map(e=>({tag:e.tagName,id:e.id,className:String(e.className),rect:rect(e)}));
  const receipt={...scenario,sourceCommit:${JSON.stringify(sourceCommit)},dataState:'Actual app default state; no synthetic media or accepted contributions injected',
-  openSection:ui.openSection,panelMotion:section.querySelector('.setup-accordion-panel').dataset.motionState,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+  openSection:ui.openSection,panelMotion:persistent?'persistent':section.querySelector('.setup-accordion-panel').dataset.motionState,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
   viewport:{width:innerWidth,height:innerHeight},pane:rect(pane),sectionRect:rect(section),
-  sectionHeight:section.getBoundingClientRect().height,pageStride:Math.max(200,pane.clientHeight-80),scrollTop:pane.scrollTop,
-  sectionsOverflow:pane.scrollWidth-pane.clientWidth,previewOverflow:root.querySelector('.preview-pane').scrollWidth-root.querySelector('.preview-pane').clientWidth,
+  sectionHeight:persistent?pane.scrollHeight:section.getBoundingClientRect().height,pageStride:Math.max(200,pane.clientHeight-80),scrollTop:pane.scrollTop,scrollSurface:persistent?(settingsScrolls?'preview-settings':'preview-pane'):'setup-pane',
+  sectionsOverflow:root.querySelector('.setup-pane').scrollWidth-root.querySelector('.setup-pane').clientWidth,previewOverflow:root.querySelector('.preview-pane').scrollWidth-root.querySelector('.preview-pane').clientWidth,
   duplicateIds:ids.filter((id,i)=>ids.indexOf(id)!==i),controls,visibleControls,overflowing,errors};
  parent.postMessage(receipt,location.origin);
 }catch(error){parent.postMessage({...scenario,errors:[String(error)]},location.origin);}
@@ -102,10 +105,12 @@ try {
           "--force-device-scale-factor=1", "--virtual-time-budget=4000", `--screenshot=${join(output, name + ".png")}`,
           "--dump-dom", `http://127.0.0.1:${server.address().port}/?case=${encodeURIComponent(JSON.stringify(scenario))}`,
         ], { windowsHide: true, timeout: 30000, maxBuffer: 3_000_000 });
+        await writeFile(join(output, name + ".html"), stdout);
         const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];
         assert.ok(raw, `No rendered receipt: ${name}`);
         const row = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&gt;", ">").replaceAll("&lt;", "<"));
-        assert.equal(row.panelMotion, "open", `Unsettled panel: ${name}`);
+        assert.equal(row.openSection, section.id, `Wrong active section: ${name}`);
+        assert.equal(row.panelMotion, section.id === "feedback" && row.scrollSurface?.startsWith("preview-") ? "persistent" : "open", `Unsettled panel: ${name}`);
         assert.equal(row.reducedMotion, true, "Static capture requires the actual reduced-motion app path.");
         rows.push({ screenshot: join(output, name + ".png"), ...row });
         if (page === 0 && row.sectionHeight) pages = Math.max(1, Math.ceil((row.sectionHeight - 80) / row.pageStride));

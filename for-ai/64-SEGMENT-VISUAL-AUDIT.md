@@ -93,6 +93,49 @@ superseded; do not use its geometry or page coverage as an acceptance receipt.
 Dark space outside a controlled iframe belongs to the capture wrapper, not
 the application layout.
 
+## Combined candidate inspection — 2026-09-12
+
+Root captured a detached, clean snapshot of integration candidate
+`64da3705d105fda62bb260e313f655024c51e83d` at
+`D:/GitHub/affect-tracker-research-visual-review`. It contains seven registered
+owners and the collected P1/P2/P4/P5/P6/P7 UI handoffs. P3's new version editor
+and subsequent contribution/acceptance work are not included. Canonical source
+had not yet been promoted; this is an interim combined UI receipt.
+
+All **33 Chrome PNGs** were visually inspected, using actual default app data
+at controlled 1280×900 and 800×700 viewports. Source remained unchanged; the
+receipts report no runtime errors, duplicate IDs or horizontal pane overflow.
+The actual Setup panes are 795px and 472px. Evidence directories:
+
+- `D:/GitHub/.affect-preview-checks/combined-64da370-chrome-sections-20260912`:
+  14 images covering full Workspace, empty Questionnaires, the retained P3
+  predecessor and Layout, including every scrolled page/footer.
+- `D:/GitHub/.affect-preview-checks/combined-64da370-chrome-v2-20260912`:
+  19 images covering persistent Flubber controls, disabled optional XR and
+  full Review at both widths.
+
+No new material visual defect was found in the captured P1/P2/P4/P5/P6 states.
+Review's rows, language controls and footer remain readable, but the newly
+combined LSL disclosure starts expanded before the primary recipe controls.
+It occupies roughly 300–350px of the initial Review view. This V22–V25
+follow-up was routed to S7/integration: keep recipe/final-save first, make LSL
+secondary and collapsed by default, and preserve values plus relevant
+enabled/error disclosure. It is not a request to remove LSL configuration.
+
+The capture harness now handles P5 as a persistent Preview surface and scrolls
+its actual settings pane or whole-pane fallback. Other owners still require
+settled open accordions; the harness also records the active owner and served
+DOM output. The initial Chrome run stopped at the obsolete P5 accordion
+assumption and is superseded by the two complete directories above. The first
+Edge image showed `ERR_CONNECTION_REFUSED`, not the app, and is excluded.
+No Edge visual pass is claimed from it.
+
+These default-state captures do not cover newly populated/invalid states,
+expanded Advanced, dialogs, final P3, successor JSON or accepted-contribution
+semantics. Earlier owner receipts retain their narrower source-specific value.
+V28 remains open until the final combined functionality and rendered states
+are verified; do not close all visual items from this interim inspection.
+
 ## Segment checklist
 
 ### P1 — Workspace and video library
