@@ -13,8 +13,9 @@ mod gst_actor;
 
 pub use contracts::{
     NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1,
-    NativeMediaPrepareReceiptV1, NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportCssV1,
-    NativeMediaViewportPxV1, PlaybackMode, PlaybackQualification,
+    NativeMediaDecodeReceiptV2, NativeMediaPrepareReceiptV1, NativeMediaStateV1,
+    NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
+    PlaybackQualification,
 };
 
 use crate::research_error::{CommandError, ResearchResult};
@@ -377,6 +378,21 @@ impl NativeMediaService {
         #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
         {
             self.with_actor(|actor| actor.attest_decode(fence))
+        }
+        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
+        {
+            let _ = fence;
+            self.actor_unavailable()
+        }
+    }
+
+    pub fn attest_decode_v2(
+        &self,
+        fence: NativeMediaCommandFenceV1,
+    ) -> ResearchResult<NativeMediaDecodeReceiptV2> {
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        {
+            self.with_actor(|actor| actor.attest_decode_v2(fence))
         }
         #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
         {
