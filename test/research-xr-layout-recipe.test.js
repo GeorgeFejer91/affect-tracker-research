@@ -9,6 +9,8 @@ import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout
 import { serializeXrLayoutProfileV1, parseXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
 import { resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
+import { createWorkspaceContribution, projectWorkspaceVideoDisplayGeometry } from "../site/src/research/workspace-contribution.js";
+import { resolveXrLayoutDependencies, resolveXrLayoutContribution } from "../site/src/research/xr-layout-authoring.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-layout-recipe-v1.json", import.meta.url)));
 const options = () => ({ workspaceContribution: structuredClone(fixture.workspace),
@@ -59,6 +61,30 @@ test("saved XR validation captures caller content before asynchronous hashing", 
   assert.deepEqual(resolved, await resolveSavedXrLayoutContribution(fixture.profiles[0], options()));
 });
 
+test("saved and live XR use the P1 v2 owner projection for repeated content at different locations", async () => {
+  const catalogue = JSON.parse(await readFile(new URL("fixtures/research-video-catalogue-contribution-v2.json", import.meta.url)));
+  const workspace = createWorkspaceContribution({ study: fixture.workspace.study, videoCatalogue: catalogue });
+  const before = canonicalJson(workspace), profile = fixture.profiles[0];
+  const inputs = { workspaceContribution: workspace, feedbackContribution: fixture.feedbackV2, selectedTarget: profile.target };
+  const saved = await resolveSavedXrLayoutContribution(profile, inputs);
+  const snapshot = (contribution, revision) => ({ revision, enabled: true, pending: false, contribution, dependencyRevisions: [] });
+  const dependencies = await resolveXrLayoutDependencies({ P1: snapshot(workspace, 41),
+    P5: snapshot(fixture.feedbackV2, 43) }, projectWorkspaceVideoDisplayGeometry);
+  assert.deepEqual(resolveXrLayoutContribution(profile, dependencies, profile.target), saved);
+  assert.equal(dependencies.catalogueRevision, 41, "bind the owner revision, not the persisted catalogue revision");
+  assert.equal(catalogue.entries.length, 2);
+  assert.notEqual(catalogue.entries[0].annotationId, catalogue.entries[1].annotationId);
+  assert.equal(saved.videos.length, 1, "P1 projects one geometry for identical content");
+  assert.equal(saved.videos[0].assetId, catalogue.entries[0].assetId);
+  assert.equal(canonicalJson(workspace), before, "both authored locations remain in the master workspace input");
+  assert.deepEqual(saved.profile, profile);
+  const tampered = structuredClone(workspace);
+  tampered.videoCatalogue.entries[1].geometry.displayWidthPx += 1;
+  await assert.rejects(resolveSavedXrLayoutContribution(profile, { ...inputs, workspaceContribution: tampered }));
+  const unsupported = { ...workspace, version: 3 };
+  await assert.rejects(resolveSavedXrLayoutContribution(profile, { ...inputs, workspaceContribution: unsupported }));
+});
+
 test("saved XR uses P5's complete successor renderer and halo envelope without truncation", async () => {
   for (const renderer of ["flubber", "grid", "procedural-face"]) for (const gradient of [false, true]) {
     const feedback = structuredClone(fixture.feedbackV2);
@@ -92,10 +118,13 @@ test("independent saved-content processes reproduce exact profiles and geometry 
   })));
   assert.equal(results[0].stdout, results[1].stdout);
   const receipts = JSON.parse(results[0].stdout);
-  assert.equal(receipts.length, fixture.profiles.length * 2);
+  assert.equal(receipts.length, fixture.profiles.length * 4);
   for (let index = 0; index < receipts.length; index += 1) {
     assert.deepEqual(parseXrLayoutProfileV1(receipts[index].source), fixture.profiles[index % fixture.profiles.length]);
-    assert.equal(receipts[index].compiled.videos.length, 2);
-    assert.equal(receipts[index].feedbackSource, canonicalJson(index < fixture.profiles.length ? fixture.feedback : fixture.feedbackV2));
+    const workspaceVersion = index < fixture.profiles.length * 2 ? 1 : 2;
+    assert.equal(JSON.parse(receipts[index].workspaceSource).version, workspaceVersion);
+    assert.equal(JSON.parse(receipts[index].workspaceSource).videoCatalogue.entries.length, 2);
+    assert.equal(receipts[index].compiled.videos.length, workspaceVersion === 1 ? 2 : 1);
+    assert.equal(receipts[index].feedbackSource, canonicalJson(index % (fixture.profiles.length * 2) < fixture.profiles.length ? fixture.feedback : fixture.feedbackV2));
   }
 });
