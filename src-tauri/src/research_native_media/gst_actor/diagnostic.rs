@@ -78,6 +78,27 @@ fn observed(
     while Instant::now() < deadline {
         let status = actor.status().map_err(|e| e.message)?;
         if status.state == state {
+            if status.reason_code.is_some() {
+                trace(
+                    "unexpected-state-error",
+                    serde_json::to_value(&status).map_err(|_| "status-json")?,
+                );
+                return Err("observed-state-retained-error".into());
+            }
+            if matches!(
+                state,
+                NativeMediaStateV1::Paused | NativeMediaStateV1::Playing
+            ) && !(status
+                .duration_ms
+                .is_some_and(|value| value.is_finite() && value > 0.0)
+                && status.video_width.is_some_and(|value| value > 0)
+                && status.video_height.is_some_and(|value| value > 0))
+            {
+                // GstPlay may report Paused before its complete MediaInfo.
+                // Keep the existing bounded wait; never treat partial data as readiness.
+                thread::sleep(Duration::from_millis(10));
+                continue;
+            }
             trace(
                 "observed-state",
                 serde_json::to_value(&status).map_err(|_| "status-json")?,

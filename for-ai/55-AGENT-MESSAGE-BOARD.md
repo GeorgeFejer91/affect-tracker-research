@@ -3322,3 +3322,14 @@ false. This test-only lane adds no production actor/FFI behavior or run authorit
   observed partial-to-complete order and no-video readiness case. Main retains
   collection and broader native/installed verification; Live Preview owns the
   actual diagnostic rerun against the corrected branch tip.
+
+Combined diagnostic candidate: Live Preview collected both state-owner commits
+`9a68e7c` and `5e0b88c` (not the first alone) after `dffe166`, preserving both
+message-board entries. The actual actor test now requires null reason codes and
+positive complete duration/geometry for Paused/Playing, under its existing20s
+bounded wait. This directly checks the attempt02 defect instead of accepting
+state labels alone. Original attempt02 and root review remain unchanged.
+Strict native Clippy at `dffe166` was blocked by the three pre-existing unused
+workspace functions (rescan, scan_videos, logical_relative_path); no lint
+suppression or unrelated source repair was made. A Clippy-specific error gate
+and clean combined native rebuild/rerun are the next evidence actions.
