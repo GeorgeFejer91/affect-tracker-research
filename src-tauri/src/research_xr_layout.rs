@@ -224,8 +224,10 @@ impl XrLayoutProfileV1 {
         half_extent_css_px: f64,
     ) -> XrResult<ResolvedFeedbackFootprint> {
         let geometry = self.resolve(None)?;
-        if algorithm_version != "feedback-envelope-v1"
-            || origin != "design-centre"
+        if !matches!(
+            algorithm_version,
+            "feedback-envelope-v1" | "feedback-envelope-v2"
+        ) || origin != "design-centre"
             || overlay_side_css_px != 1024.
             || configuration_key.is_empty()
             || configuration_key.encode_utf16().count() > 32768
@@ -428,11 +430,17 @@ mod tests {
 
     #[test]
     fn full_p5_envelope_mapping_matches_shared_javascript_fixture() {
-        let fixtures: serde_json::Value = serde_json::from_str(include_str!(
-            "../../test/fixtures/xr-feedback-envelope-v1.json"
-        ))
-        .unwrap();
-        for case in fixtures["cases"].as_array().unwrap() {
+        let fixtures: Vec<serde_json::Value> = [
+            include_str!("../../test/fixtures/xr-feedback-envelope-v1.json"),
+            include_str!("../../test/fixtures/xr-feedback-envelope-v2.json"),
+        ]
+        .iter()
+        .map(|source| serde_json::from_str(source).unwrap())
+        .collect();
+        for case in fixtures
+            .iter()
+            .flat_map(|fixture| fixture["cases"].as_array().unwrap())
+        {
             let profile: XrLayoutProfileV1 =
                 serde_json::from_value(case["profile"].clone()).unwrap();
             let e = &case["envelope"];
@@ -446,6 +454,15 @@ mod tests {
                 )
                 .unwrap();
             close(&serde_json::to_value(actual).unwrap(), &case["expected"]);
+            assert!(profile
+                .resolve_feedback_footprint(
+                    "feedback-envelope-v3",
+                    "design-centre",
+                    "fixture",
+                    1024.,
+                    100.
+                )
+                .is_err());
             assert!(profile
                 .resolve_feedback_footprint(
                     "feedback-envelope-v1",
@@ -464,15 +481,18 @@ mod tests {
                     f64::NAN
                 )
                 .is_err());
-            assert!(profile
-                .resolve_feedback_footprint(
-                    "feedback-envelope-v1",
-                    "design-centre",
-                    "fixture",
-                    1024.,
-                    f64::from_bits(1)
-                )
-                .is_err());
+            let tiny = profile.resolve_feedback_footprint(
+                "feedback-envelope-v1",
+                "design-centre",
+                "fixture",
+                1024.,
+                f64::from_bits(1),
+            );
+            if profile.feedback.enabled {
+                assert!(tiny.is_err());
+            } else {
+                assert_eq!(tiny.unwrap().metres_per_css_px, 0.);
+            }
         }
     }
 

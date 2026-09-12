@@ -736,7 +736,7 @@ fn expected_derived_integrity(
 }
 
 impl LanguageSelectionTreeV1 {
-    fn normalize_and_validate(mut self) -> ResearchResult<Self> {
+    pub(crate) fn normalize_and_validate(mut self) -> ResearchResult<Self> {
         if self.algorithm_version != LANGUAGE_TREE_ALGORITHM {
             return Err(contract_error(
                 "ExperimentPackageV1 language-selection algorithm is unsupported.",

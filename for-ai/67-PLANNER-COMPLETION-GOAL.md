@@ -116,10 +116,14 @@ editor, validation and persistence work; do not invent policy for a passing test
 - **Q05:** the already-pending question distinguishes portable references with
   explicit folder reselection from requiring the original location. Pure content
   restore is independent of authorization; P1/P7 can implement it now.
-- **Q04:** S1 identified paths such as `session-a/clip.mp4` and
-  `session_a/clip.mp4` producing the same readable alias. Root has asked the user
-  to choose explicit unique-ID edits with rescan preservation (recommended) or
-  automatic suffixes. This question is already pending; do not ask it again.
+- **Q04 answered:** the user requires location-derived IDs such as
+  `FOLDERNAME_video.mp4` and rejected the artificial collision premise. Preserve
+  the complete relative path, filename and extension in an unambiguous reversible
+  encoding; distinct legal paths must remain distinct. Do not create collisions
+  by replacing different punctuation/Unicode sequences with the same text, or
+  require manual ID repair/arbitrary suffixes. Immutable byte identity is separate.
+  Moves change the location-derived annotation and invalidate dependent acceptance;
+  S1 coordinates exact versioning/migration with P3/P7.
 - **Q09:** surface concrete questionnaire-placement/scoring ambiguities only as
   needed. Preserve explicit codes/provenance; do not invent translations,
   computed scores or implicit administration.
@@ -127,7 +131,7 @@ editor, validation and persistence work; do not invent policy for a passing test
   behavior. S5 records the exact inventory and any remaining semantic decision,
   separating temporary inspection/test state.
 
-Q04/Q05/Q08 remain pending at this checkpoint. Do not duplicate their questions or
+Q05/Q08 remain pending at this checkpoint. Do not duplicate their questions or
 treat the general completion request, elapsed time or continuation as answers.
 
 ## Planner completion evidence

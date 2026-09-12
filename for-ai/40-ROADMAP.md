@@ -14,6 +14,27 @@ producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-
 Planner completion is independent; actual execution correspondence is the final
 development stage. Existing frozen contracts and qualification gates remain.
 
+## P3 master-reproduction fixture and download lifecycle — 2026-09-12
+
+The isolated `codex/segment-p3-master-variants` pass starts from combined
+`7946bc6`. Fixture checkpoint `e331e9b` supplies P7 three unequal authored
+variants, 15 retained occurrence IDs, repeated/adjacent videos and all approved
+named-ISI placement edges. Independent boundary expectations yield
+50646/37801/48146 ms; two fresh processes with clock/RNG/storage/navigation
+unavailable reproduce the same complete P3 contribution and marker codebooks.
+Actual editor content restore remains pending until exact P1 rebind, then
+prepares identical content without a sidecar write. This is P3 software evidence;
+complete-master parsing/export/reopen still requires P7's current reader.
+
+The follow-up reproduces and fixes stale library download dispatch/status after
+replacement, reset, reopen or teardown, using the existing edit/restore epochs.
+Evidence: 56 focused P3 Node checks and 39 UI/modularity checks; desktop 9-file
+and Pages 212-file builds, syntax and whitespace pass. The existing desktop
+chunk warning remains. No Rust/wire change, physical UI/picker, installed Excel,
+Runner, timestamp, recording or research qualification is claimed. The new Q04
+location-derived annotation implementation belongs to P1; its P3 consumer
+adaptation remains an explicit versioned follow-up, preserving this v1 fixture.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated
@@ -186,6 +207,43 @@ supplement predates the final P1 revision-domain merge. Initial live captures
 that tore down the pane before screenshot are superseded by `final-chrome`.
 Edge returned no receipt and remains unverified. No installed Tauri, actual
 video decoding, physical calibration/accessibility, Runner or publication claim.
+
+## P2 full-content/presentation successor receipt — 2026-09-12
+
+Isolated `codex/segment-p2-master-content`, combined base `7946bc6`, adds the
+strict P2-owned wrapper documented in `docs/planner-p2-questionnaire-recipe.md`.
+Pure contract checkpoint: `c489438`. It preserves unchanged scientific
+definitions/modules/language trees and binds explicit label repetition 1/5/10
+to each definition's ID/hash/order. Legacy readers remain strict and unchanged
+in format. P7 owns successor root embedding, acceptance registration and file
+dispatch; this is owner-component evidence, not completed combined export.
+
+The UI exposes no JSON. Repetition changes notify the owner revision without
+changing scientific source content. Undo and restore preserve presentation;
+asynchronous restore rejects after a newer edit, replacement, cancellation,
+mode change or UI disposal. The native contribution validator adds no IPC,
+filesystem authority or unsafe boundary. Its only shared visibility seam is
+`LanguageSelectionTreeV1::normalize_and_validate` becoming crate-visible without
+an algorithm change.
+
+Evidence: 654/654 JavaScript tests; 202/202 no-default-features Rust library
+tests; three focused successor Rust tests; six pure successor JS tests;
+24/24 actual-controller Chrome cases at 1280 and 800 px. Development receipts:
+`D:/GitHub/.affect-checks/s2-recipe-ui-dev-20260912` and
+`D:/GitHub/.affect-checks/s2-recipe-ui-narrow-20260912`. These identify dirty
+owner source and capture all bundled source hashes. Both screenshots inspected:
+compact controls/helper text fit their panes. Desktop and Pages production
+boundary checks pass (9/213 files). Final clean-source checkpoint `6654bc2`
+passes 24/24 Chrome cases per width, with stable source hashes and dirty false,
+in `D:/GitHub/.affect-checks/s2-recipe-final-chrome-1280-20260912` and
+`D:/GitHub/.affect-checks/s2-recipe-final-chrome-800-20260912`.
+The fixed shared SHA-256 assertion passes Rust's focused 3/3 recheck;
+no-default-features library Clippy passes with warnings denied.
+Edge, installed Tauri, native file-dialog
+interaction, Runner correspondence, hardware and publication are not claimed.
+
+MAIA/TAS provenance limitations and Q09/Q13 remain open. Preserve supplied
+explicit codes; no computed totals, invented translation or new placement policy.
 
 ## P2 producer/consumer closure receipt — 2026-09-12
 

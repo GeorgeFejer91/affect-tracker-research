@@ -5,6 +5,8 @@ import {
   appendSheetRows, removeSheetRow, reverseSheetRowCodes,
 } from "./questionnaire-sheet.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
+import { createQuestionnairePresentationV1, validateQuestionnairePresentationV1,
+  QUESTIONNAIRE_LABEL_REPETITIONS, questionnairePresentationGroups } from "./questionnaire-recipe.js";
 
 const escape = (value) => String(value ?? "").replace(/[&<>"']/gu, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -118,8 +120,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           <label class="field"><span>Questionnaire title</span><input type="text" data-sheet-meta="title" value="${escape(sheet.title)}" maxlength="500"></label>
           <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
           <label class="field"><span>Answers for all items</span><select data-sheet-required-all><option value="" selected>No bulk change</option><option value="required">Required</option><option value="optional">Optional</option></select></label>
-          <label class="field"><span>Repeat answer labels in preview</span><select data-sheet-repeat><option value="1" ${entry.repeatLabels === 1 ? "selected" : ""}>Above every item</option><option value="5" ${entry.repeatLabels === 5 ? "selected" : ""}>Every 5 items</option><option value="10" ${entry.repeatLabels === 10 ? "selected" : ""}>Every 10 items</option></select></label>
-          <p class="field-help">Label spacing previews the questionnaire design here. Saving this setting into the finished experiment is planned with the runner work.</p>
+          <label class="field"><span>Repeat answer labels</span><select data-sheet-repeat><option value="1" ${entry.repeatLabels === 1 ? "selected" : ""}>Above every item</option><option value="5" ${entry.repeatLabels === 5 ? "selected" : ""}>Every 5 items</option><option value="10" ${entry.repeatLabels === 10 ? "selected" : ""}>Every 10 items</option></select></label>
+          <p class="field-help">Included in the final recipe. Labels also repeat whenever the answer labels change between items.</p>
           <label class="field"><span>Source / attribution</span><textarea data-sheet-meta="attribution" rows="3" maxlength="12000">${escape(sheet.attribution)}</textarea></label>
           <p class="field-help">Files are kept in this questionnaire’s language folder inside the project’s assets folder.</p>
           <p class="sheet-paste-help">Paste headers into the first cell to replace the whole table and set its option count; without headers, only the pasted range changes. Required accepts true or false. Codes-only leaves answer labels unchanged. Shift-click or Shift+arrow selects a range; Ctrl+C copies it; Ctrl+A selects all cells.</p>
@@ -165,7 +167,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   function preserveUndo(entry) {
     entry.undo = { sheet: cloneQuestionnaireSheet(entry.sheet), dirty: entry.dirty,
       sourceBytes: entry.sourceBytes, authoringResult: entry.authoringResult,
-      sourceDefinitionHash: entry.sourceDefinitionHash, layout: entry.layout, pristine: entry.pristine };
+      sourceDefinitionHash: entry.sourceDefinitionHash, layout: entry.layout, pristine: entry.pristine,
+      repeatLabels: entry.repeatLabels };
   }
 
   async function save(key) {
@@ -222,14 +225,9 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     root.querySelector("#questionnaire-sheet-preview-title").textContent = `${definition.title} · ${definition.language}`;
     const body = root.querySelector("#questionnaire-sheet-preview-content");
     const chunks = [];
-    const sameLabels = (a, b) => a.options.length === b.options.length && a.options.every((o, i) => o.label === b.options[i].label);
-    for (let start = 0; start < definition.items.length;) {
-      let end = start + 1;
-      while (end < definition.items.length && end < start + entry.repeatLabels
-        && sameLabels(definition.items[start], definition.items[end])) end += 1;
+    for (const { start, end } of questionnairePresentationGroups(definition, entry.repeatLabels)) {
       const items = definition.items.slice(start, end);
       chunks.push(`<div class="sheet-table-scroll"><table class="sheet-preview-table"><thead><tr><th scope="col">Item</th>${items[0].options.map((o) => `<th scope="col">${escape(o.label)}</th>`).join("")}</tr></thead><tbody>${items.map((item, index) => `<tr><th scope="row">${start + index + 1}. ${escape(item.prompt)}${item.required ? ' <span aria-label="Required">*</span>' : ""}</th>${item.options.map((option) => `<td><input type="radio" name="preview-${escape(item.itemId)}" aria-label="${escape(item.prompt)} — ${escape(option.label)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
-      start = end;
     }
     body.innerHTML = `<p>${escape(definition.instructions)}</p><p class="field-help">Design preview · answers here are not recorded.</p>${chunks.join("")}`;
     dialog.showModal();
@@ -267,7 +265,18 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
     try {
-      if (target.hasAttribute("data-sheet-repeat")) { entry.repeatLabels = Number(target.value); return; }
+      if (target.hasAttribute("data-sheet-repeat")) {
+        const repeat = Number(target.value);
+        if (!QUESTIONNAIRE_LABEL_REPETITIONS.includes(repeat)) throw new TypeError("Repeat answer labels every 1, 5 or 10 items.");
+        if (repeat !== entry.repeatLabels) {
+          preserveUndo(entry);
+          entry.repeatLabels = repeat;
+          entry.error = "";
+          onChange?.(); // Presentation changes invalidate P7 acceptance, not scientific source content.
+          refreshEntryState(target, entry);
+        }
+        return;
+      }
       if (target.hasAttribute("data-sheet-layout")) {
         if (entry.invalid.size) throw new TypeError("Correct highlighted cells before changing table columns.");
         entry.layout = target.value; entry.selection = null; render(); return;
@@ -457,6 +466,23 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+    getPresentation(definitions) {
+      return createQuestionnairePresentationV1(definitions, definitions.map((definition) => {
+        const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === definition.questionnaireId);
+        if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
+        return entry.repeatLabels;
+      }));
+    },
+    restorePresentation(value, definitions) {
+      const presentation = validateQuestionnairePresentationV1(value, definitions);
+      const targets = presentation.definitions.map((record) => {
+        const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === record.questionnaireId);
+        if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
+        return { entry, record };
+      });
+      targets.forEach(({ entry, record }) => { entry.repeatLabels = record.repeatLabelsEvery; });
+      render();
+    },
     presetToken(familyId, language) { return entries.get(keyFor(familyId, language))?.presetToken ?? null; },
     canLoadPreset(familyId, language) { const entry = entries.get(keyFor(familyId, language)); return Boolean(entry?.pristine && !entry.busy && !context.locked); },
     isPending(familyId, language) { const entry = entries.get(keyFor(familyId, language)); return Boolean(entry && (entry.dirty || entry.busy || entry.invalid.size)); },
