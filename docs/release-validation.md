@@ -75,3 +75,25 @@ Source: `research_native_media/capability.rs` retains false qualification flags;
 `research_runner_master/runtime.rs` requires qualified native playback before
 starting. Redistribution/source closure and physical timing remain release gates.
 FFmpeg sequence synthesis is still an assessed option, not an implemented feature.
+
+## Runner previous-file shortcut — 2026-09-13
+
+Implemented R1/RR-01 **Load previous experiment** beside the existing file picker.
+A native Runner app-data bookmark survives restarts; it is committed only after
+frontend acceptance of the exact native source hash. Reload reads current disk
+contents, including edits, through existing validation. Cancelled/invalid new
+loads preserve the bookmark. Missing files give a picker recovery message.
+Controls lock while loading, running or recording; reload never starts execution.
+The master JSON remains unchanged.
+
+- Native library compiled; three real-file persistence tests passed. Diagnostic
+  copy-only manifest receipt: `D:/GitHub/.affect-checks/runner-recent-tests-01/`.
+- `scripts/qualification/runner-recent-ui.mjs`: 17 assertions at each of 1280px
+  and 520px widths passed, using the production frontend with synthetic native
+  transport. Both screenshots inspected: `runner-recent-ui-02/desktop.png` and
+  `runner-recent-ui-02/narrow.png` under the same evidence root.
+- `npm run runner:build` passed production bundling and Runner boundary checks.
+
+This is component and frontend evidence. The installed desktop executable has
+not been rebuilt/qualified for this shortcut; all preceding native execution,
+packaging, physical timing and real XDF gates remain open.

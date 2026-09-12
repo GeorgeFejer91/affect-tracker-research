@@ -552,3 +552,21 @@ version and evidence matrix: 22 Node,350 synthetic app checks,26 master+6 sessio
 37 workspace native checks, six exact native/JS plans and Runner build boundary
 pass. Main owns lib registration and actual native/XDF integration; these are
 component receipts.
+
+## Previous experiment shortcut — 2026-09-13
+
+R1/RR-01: [x] a compact **Load previous experiment** button beside the file
+picker restores the last successfully accepted JSON across Runner restarts.
+Native app-data stores only a versioned absolute-path bookmark, confirmed against
+the native/frontend source hash. Each click re-reads and validates current file
+bytes through the normal supported reader; it does not start an experiment.
+Cancelled/rejected selections retain the previous bookmark. Missing, inaccessible
+or invalid files show a recovery message; the researcher can use the picker.
+Both load controls lock during a run, recording or an in-flight UI operation.
+No experiment JSON fields or recording policy changed.
+
+Evidence: three native persistence tests, 34 production-frontend assertions
+with synthetic native transport across two viewport widths, visually inspected
+screenshots, and Runner production build/boundary checks. See
+[release validation](../docs/release-validation.md). Installed native UI validation
+and the existing playback/XDF release gates remain open.

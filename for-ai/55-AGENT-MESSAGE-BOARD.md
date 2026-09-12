@@ -5497,3 +5497,14 @@ interpretations PASS for EN and DE, six steps each, same exact primary JSON.
 Details and next native gate: [release validation](../docs/release-validation.md).
 No final release, actual playback/XDF or physical screenshot claim. No further
 delegation; root owns the remaining work.
+
+## Root / R1 RR-01 previous-file shortcut — 2026-09-13
+
+Explicit user follow-up; sole-owner implementation and backend/UI verification,
+with no delegation. Added the previous experiment button and Runner-only native
+bookmark command; shared picker only stages a candidate in the Runner role.
+Durable confirmation follows exact source acceptance. Existing JSON unchanged.
+Three native tests and 34 browser assertions pass; desktop/narrow screenshots
+inspected and frontend build/boundary check passed. Scope and evidence are in
+[release validation](../docs/release-validation.md). Packaging and actual execution
+qualification remain the next gate, not a claim of this pass.

@@ -35,6 +35,7 @@ pub mod research_questionnaire_recipe_v2;
 mod research_recorder;
 mod research_run_storage;
 pub mod research_runner_master;
+mod research_runner_recent;
 mod research_runner_session;
 #[cfg(test)]
 mod research_runtime;
@@ -153,6 +154,9 @@ fn launch(
                 })
                 .map_err(|error| std::io::Error::other(error.message))?,
             );
+            app.manage(research_runner_recent::RunnerRecentExperiment::new(
+                app_data_dir.clone(),
+            ));
             let resource_dir = app.path().resource_dir()?;
             let parent = app
                 .get_webview_window("research")
@@ -336,6 +340,7 @@ fn launch(
             research_commands::research_load_experiment_package,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_load_planner_recipe,
+            research_commands::research_runner_previous_experiment,
             research_commands::research_workspace_media_url,
             research_commands::research_storage_readiness,
             research_commands::research_lsl_readiness,

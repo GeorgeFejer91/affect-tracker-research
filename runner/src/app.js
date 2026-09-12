@@ -30,6 +30,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
+  let previousExperiment = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -119,6 +120,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
+    query("runner-load-previous").disabled = locked || previousExperiment?.available !== true;
+    query("runner-load-previous").title = previousExperiment?.available ? `Reload ${previousExperiment.basename}` : "Load an experiment file first.";
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
     // must not prevent the participant from completing the first form.
@@ -431,12 +434,20 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (protocol.active) query("runner-session-dialog").showModal();
     else query("runner-back").click();
   });
-  listen(query("runner-open"), "click", () => action(async () => {
-    const loaded = await invoke("research_load_planner_recipe"); if (!loaded) return;
+  async function loadExperiment(previous = false) {
+    if (protocol.active || recorder?.active) throw new Error("Finish the active session or recording before loading an experiment.");
+    const loaded = previous ? await invoke("research_runner_previous_experiment", { action: "load" })
+      : await invoke("research_load_planner_recipe");
+    if (!loaded) return;
     const receipt = loaded.document;
-    await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
+    const adopted = await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
+    if (destroyed || adopted === false) return;
     if (recipe?.canonicalSourceByteSha256 !== receipt.canonicalSourceByteSha256) { invalidate(); recipe = null; throw new Error("Native and frontend package bytes disagree."); }
-  }));
+    try { previousExperiment = await invoke("research_runner_previous_experiment", { action: "confirm", sourceSha256: receipt.canonicalSourceByteSha256 }); }
+    catch { throw new Error("Experiment loaded, but its previous-file shortcut could not be saved."); }
+  }
+  listen(query("runner-open"), "click", () => action(() => loadExperiment()));
+  listen(query("runner-load-previous"), "click", () => action(() => loadExperiment(true)));
   listen(query("runner-folder"), "click", () => action(async () => { invalidate(); workspace = await invoke("research_choose_workspace"); text("runner-workspace-status", workspace.selected ? workspace.displayName : "No project folder selected."); text("runner-output-directory", ""); await refreshParticipantHistory(true); }));
   for (const id of ["runner-language-reset", "runner-preview-language-reset"]) listen(query(id), "click", () => { path = []; invalidate(); renderLanguage(); refreshTimeline(); });
   listen(query("runner-sequence-preview"), "click", () => { query("runner-sequence-dialog").showModal(); renderLanguage(); refreshTimeline(); });
@@ -542,6 +553,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   text("runner-capability", capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
   text("runner-launch-status", capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
+  try { previousExperiment = await invoke("research_runner_previous_experiment", { action: "status" }); } catch { previousExperiment = null; }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
   timer = windowObject.setInterval(async () => {
     if (destroyed || polling || busy) return; polling = true;

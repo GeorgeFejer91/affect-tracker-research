@@ -53,7 +53,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use tauri::{AppHandle, State, WebviewWindow};
+use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use uuid::Uuid;
 
@@ -953,8 +953,10 @@ pub async fn research_save_experiment_package(
 pub async fn research_load_planner_recipe(
     window: WebviewWindow,
     app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
 ) -> ResearchResult<Option<serde_json::Value>> {
     authorize(&window)?;
+    let remember_candidate = *role == crate::research_desktop::DesktopRole::Runner;
     tauri::async_runtime::spawn_blocking(move || {
         let Some(selection) = app
             .dialog()
@@ -967,7 +969,41 @@ pub async fn research_load_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe file."))?;
-        Ok(Some(read_supported_planner_recipe_path(&path)?))
+        let document = read_supported_planner_recipe_path(&path)?;
+        if remember_candidate {
+            app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
+                .selected(&path, &document)?;
+        }
+        Ok(Some(document))
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_runner_previous_experiment(
+    window: WebviewWindow,
+    app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
+    action: String,
+    source_sha256: Option<String>,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if *role != crate::research_desktop::DesktopRole::Runner {
+        return Err(CommandError::forbidden(
+            "Previous experiment loading belongs to Runner.",
+        ));
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
+        match (action.as_str(), source_sha256.as_deref()) {
+            ("status", None) => Ok(recent.status()),
+            ("load", None) => recent.load(),
+            ("confirm", Some(hash)) => recent.confirm(hash),
+            _ => Err(CommandError::invalid_contract(
+                "Unknown previous experiment action.",
+            )),
+        }
     })
     .await
     .map_err(CommandError::io)?
