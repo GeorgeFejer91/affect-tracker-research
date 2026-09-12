@@ -198,7 +198,7 @@ Independent parsers use the same pure helpers, without an editor:
 ```js
 const dependencies = await resolveXrLayoutDependencies(
   { P1: workspaceSnapshot, P5: feedbackSnapshot },
-  projectWorkspaceVideoDisplayGeometryV1,
+  projectWorkspaceVideoDisplayGeometry,
 );
 const compiled = resolveXrLayoutContribution(profile, dependencies, selectedTarget);
 ```
@@ -242,6 +242,13 @@ be truncated to the old three-field input. The physical footprint explicitly
 accepts P5's `feedback-envelope-v1` and `feedback-envelope-v2` contracts, retaining
 the same uniform square-to-circle conversion and configuration key. P5 owns all
 renderer/gradient/stroke bounds; P6 duplicates no animation math.
+
+P1's generic workspace validator and display-geometry projector dispatch exact
+V1 and V2 content. The V2 workspace retains separate path-derived location
+identities even when video bytes match; P1 supplies one geometry per content
+identity. P6 consumes that projection without dropping saved locations or
+copying P1's identity policy. Live composition injects the same generic P1
+workspace projector, binding its outer owner revision.
 
 Complete P7 envelope fixtures are being composed in this pass. Actual Runner
 correspondence and XR execution are downstream checks, not a prerequisite for
