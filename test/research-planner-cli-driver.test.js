@@ -22,7 +22,7 @@ else {
       if (r.expectedRevision!==revision) throw Error('wrong driver revision');
       revision++;
     }
-    const response={schema:'affect-research-planner-command-result',version:1,sessionId:mode==='wrong-session'?'a5b47dd1-45b4-4b69-b992-6ec777cfaf11':sessionId,requestId:r.requestId,status:mode==='rejected'?'rejected':mutation?'applied':'ok',revision,result:null,issues:[]};
+    const response={schema:'affect-research-planner-command-result',version:1,sessionId:mode==='wrong-session'?'a5b47dd1-45b4-4b69-b992-6ec777cfaf11':sessionId,requestId:r.requestId,status:mode==='rejected'?'rejected':mutation?'applied':'ok',revision,result:mode==='generated-id'?{generatedId:'authority-row-7',receivedAction:r.action}:null,issues:[]};
     output(response);
     if(mode==='duplicate')output(response);
   });
@@ -59,6 +59,41 @@ test("driver supplies live identity/revision, drains EOF and preserves a reprodu
   await assert.rejects(runPlannerCli({ executable:process.execPath,args:[script,"ok"],outputDirectory,
     steps:[{action:{kind:"snapshot"}}] }), /EEXIST/u);
   assert.deepEqual(JSON.parse(await readFile(join(outputDirectory,"receipt.json"),"utf8")), receipt);
+});
+
+test("programmatic actions use observed identities and cannot rewrite driver session metadata", async t => {
+  const { directory, script } = await fixture(t);
+  const outputDirectory = join(directory, "evidence");
+  const receipt = await runPlannerCli({ executable:process.execPath,args:[script,"generated-id"],outputDirectory,
+    steps:[{action:{kind:"snapshot"}}, {action:({ready,revision,lastResponse})=>{
+      assert.equal(revision,0);
+      assert.equal(lastResponse.status,"ok");
+      const entryId=lastResponse.result.generatedId;
+      ready.sessionId="caller-mutated-detached-copy";
+      lastResponse.revision=99;
+      return {kind:"apply",edits:[{kind:"operation",owner:"P3",operation:"cell.set",arguments:{entryId,referenceId:"ISI1"}}]};
+    }}],timeoutMs:30000 });
+  assert.equal(receipt.passed,true,receipt.failure);
+  assert.equal(receipt.finalRevision,1);
+  const lines=(await readFile(join(outputDirectory,"transcript.jsonl"),"utf8")).trim().split("\n").map(JSON.parse);
+  const requests=lines.filter(l=>l.direction==="request").map(l=>l.value);
+  assert.equal(requests[1].action.edits[0].arguments.entryId,"authority-row-7");
+  assert.equal(requests[1].sessionId,receipt.ready.sessionId);
+  assert.equal(requests[1].expectedRevision,0);
+  assert.equal(lines.find(l=>l.direction==="response").value.revision,0);
+});
+
+test("an invalid resolved action stops before dispatch and retains the prior response", async t => {
+  const { directory, script } = await fixture(t);
+  const outputDirectory = join(directory, "evidence");
+  const receipt = await runPlannerCli({ executable:process.execPath,args:[script,"generated-id"],outputDirectory,
+    steps:[{action:{kind:"snapshot"}},{action:()=>Promise.resolve({kind:"snapshot"})}],timeoutMs:30000 });
+  assert.equal(receipt.passed,false);
+  assert.match(receipt.failure,/plain object/u);
+  assert.equal(receipt.completedSteps,1);
+  const lines=(await readFile(join(outputDirectory,"transcript.jsonl"),"utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(lines.filter(l=>l.direction==="request").length,1);
+  assert.equal(lines.filter(l=>l.direction==="response").length,1);
 });
 
 for (const mode of ["wrong-session","duplicate","rejected","invalid-utf8","timeout"]) {
