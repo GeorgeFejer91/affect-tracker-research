@@ -3245,3 +3245,77 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
+
+
+### 20260912-runner-minimal-launcher — R1/RR-01, RR-03/06 presentation seams
+
+User requests UI Finalization: minimal first window with Load experiment file,
+a large Start experiment control, Absent-minded professor, Set controller and
+Remote controller connection. Start enters fullscreen on solid black before
+demographics and recipe-ordered questionnaires. Preparation is not acquisition;
+all native Start/input/media gates remain. Recording policy remains Runner-owned.
+Owner: Experiment Runner; isolated Runner worktree, branch
+`codex/segment-runner-minimal-launcher`, base `6377df4`. Current source exposes
+a permanent sidebar/video preview with demographics in the sidebar. This pass
+moves operator details into secondary panels and participant details into the
+fullscreen presentation; adds only a role-gated native fullscreen window command.
+No recipe/record/schema semantics change. Professor/controller meanings are
+pending user clarification; Orchestrator confirms no earlier accepted semantics
+or competing Runner owner. Remote transport is not inferred from a button.
+Baseline: 10 focused Node checks pass. Collect focused UI/lifecycle/error checks,
+black participant captures and frontend/native builds. New-master correspondence,
+physical native execution, device/recording qualification and remote transport
+remain deferred; Planner completion is independent.
+
+
+#### 20260912-runner-minimal-launcher handoff clarification
+
+User clarified future RR-11 full-app professor control versus RR-12 smartphone
+2D affect pad; only preview QR popups are allocated now. RR-07 allows future
+Runner controller overrides; this UI drafts presets/step size and blocks changed
+binding execution pending a native override receipt. User explicitly requires
+large Start -> demographics/questionnaires -> video, without a second start
+screen. Native gates remain. A named RR-04/07 shared adapter seam awaits visible
+input-region preparation before each stimulus after hidden questionnaire layout;
+no Planner authority is changed. Ledger65 records 13 synthetic UI scenarios,
+small-width captures, QR decoding and build/check evidence.
+
+
+### 20260912-runner-launcher-artwork — RR-01 UI Finalization
+
+Direct user follow-up allocates integration of the existing professor, input
+selector and remote SVG widgets from Create professor SVG icon. Continue the
+isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
+approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
+artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+Only launcher image/layout and asset-closure seams change; button labels and
+popups remain. Check SVG external-resource/script absence, actual headless image
+loading/containment at desktop widths, existing popup behavior, frontend closure
+and native rebuild. No new remote, controller override or execution authority.
+
+### 20260912-runner-participant-launcher — R1/RR-03 Backend Verification
+
+Owner: Experiment Runner, codex/segment-runner-minimal-launcher, isolated Runner
+worktree, base d7871ae. Direct user allocation: launcher participant number,
+retention, used-number list, exact sequence preview and participant-prefixed LSL.
+Clarification: used history is scoped to loaded JSON; each JSON has its own output
+folder. Use full canonical-source SHA-256 as folder identity; identical canonical
+JSON reopens the same folder. Original package IDs and bytes remain unchanged.
+Current source: fullscreen-only P001 input, no retained selection or timeline;
+outputs grouped by experiment ID, LSL names directly from settings. Named shared
+seams: RR-07 native outlet names, RR-08 XDF destination, RR-09 storage/recovery,
+Runner-only command registration and launcher composition. No Planner edits or
+successor allocation algorithm. Preserve declared v1 schedules and legacy recovery.
+Baseline: four focused Runner Node checks pass. Collect alias/order/history tests,
+folder isolation/recovery/naming tests, headless interaction and native build.
+Native playback/input/transport qualification and master correspondence remain open.
+
+Participant follow-up handoff: RR-03 input/retention/history/virtual picker/exact
+sequence preview implemented, with named RR-07 naming and RR-08/09 per-JSON output
+seams. User confirmed loaded-JSON history scope and dedicated output folders.
+Ledger65 and Runner README describe the naming-v1 sidecar, full-hash folder key,
+legacy recovery compatibility and exact tests. 656 Node/216 Rust tests, Clippy,
+17 synthetic Chrome scenarios at two widths and independent pyxdf name/timestamp
+checks passed. This continues d7871ae on the isolated Runner branch; canonical
+integration remains owner-controlled. No master allocation, phone app, native
+playback qualification or Planner authoring changes are included.

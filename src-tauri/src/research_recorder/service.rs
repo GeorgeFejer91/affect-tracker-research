@@ -762,6 +762,46 @@ mod tests {
         )
     }
     #[test]
+    fn participant_prefixed_native_metadata_is_retained_in_xdf() {
+        let request = own_request();
+        let loaded = crate::research_experiment_package::parse_canonical_experiment_package_text(
+            &request.experiment_package_source_text,
+        )
+        .unwrap();
+        let effective = crate::research_runner_session::participant_lsl(
+            &loaded.package.settings.advanced.lsl,
+            "P001",
+        )
+        .unwrap();
+        let (state, marker) = crate::research_lsl::build_stream_descriptions(
+            &effective,
+            130,
+            "participant-xdf-fixture",
+        )
+        .unwrap();
+        let path = std::env::var_os("AFFECT_RUNNER_PARTICIPANT_XDF_FIXTURE")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| fixture_path("participant"));
+        let service = RecorderService::default();
+        let hash = request.validate().unwrap();
+        service.start_path(request, path.clone()).unwrap();
+        let tap = service
+            .attach_own(&state, &marker, &hash, "participant-xdf-fixture")
+            .unwrap()
+            .unwrap();
+        tap.marker(20.0, "session_started").unwrap();
+        tap.state(20.125, &[0.5; 8]).unwrap();
+        tap.marker(20.25, "session_completed").unwrap();
+        assert_eq!(service.stop().unwrap().phase, "complete");
+        let bytes = std::fs::read(&path).unwrap();
+        for name in [&effective.state_stream, &effective.marker_stream] {
+            assert!(bytes
+                .windows(name.len())
+                .any(|window| window == name.as_bytes()));
+        }
+    }
+
+    #[test]
     fn own_worker_drains_terminal_marker_binds_recipe_and_never_overwrites() {
         let path = std::env::var_os("AFFECT_RUNNER_OWN_XDF_FIXTURE")
             .map(PathBuf::from)

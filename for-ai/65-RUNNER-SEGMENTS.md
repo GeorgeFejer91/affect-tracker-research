@@ -158,3 +158,171 @@ its own embedded resources/product identity. All-feature compilation is blocked
 in this environment by missing pkg-config/GStreamer SDK; this is not a recorder
 test failure or permission to weaken native player qualification. Integration
 owns merging these checkpoints into its newer P1–P7 master candidate.
+
+
+### 20260912-runner-minimal-launcher — R1/RR-01, RR-03/06 presentation seams
+
+User requests UI Finalization: minimal first window with Load experiment file,
+a large Start experiment control, Absent-minded professor, Set controller and
+Remote controller connection. Start enters fullscreen on solid black before
+demographics and recipe-ordered questionnaires. Preparation is not acquisition;
+all native Start/input/media gates remain. Recording policy remains Runner-owned.
+Owner: Experiment Runner; isolated Runner worktree, branch
+`codex/segment-runner-minimal-launcher`, base `6377df4`. Current source exposes
+a permanent sidebar/video preview with demographics in the sidebar. This pass
+moves operator details into secondary panels and participant details into the
+fullscreen presentation; adds only a role-gated native fullscreen window command.
+No recipe/record/schema semantics change. Professor/controller meanings are
+pending user clarification; Orchestrator confirms no earlier accepted semantics
+or competing Runner owner. Remote transport is not inferred from a button.
+Baseline: 10 focused Node checks pass. Collect focused UI/lifecycle/error checks,
+black participant captures and frontend/native builds. New-master correspondence,
+physical native execution, device/recording qualification and remote transport
+remain deferred; Planner completion is independent.
+
+
+### User follow-up: Runner controller and browser companions — 2026-09-12
+
+- RR-07 controller override: the researcher may override the Planner's input
+  settings for a Runner session. Preserve the original JSON, show original versus
+  effective bindings, validate and retest the actual device, freeze/hash the
+  override and bind it to attempt/recovery evidence. A changed binding must not
+  silently run under the old recipe hash. This pass supplies the override editor;
+  native override execution/evidence is a pending Backend Verification item.
+- RR-11 Absent-minded professor (future browser app): a QR code opens a GitHub
+  Pages companion with one-to-one mirrored control of the entire Runner.
+  For now implement only the popup and a clearly labelled preview QR address.
+- RR-12 Remote controller (future browser app): a separate QR code opens a
+  smartphone/tablet fullscreen 2D affect grid; touch coordinates control Runner
+  Flubber. For now implement only its popup and preview QR address.
+- Both future connections need explicit target-owned pairing, scoped authority,
+  revocation/disconnection behavior, timestamp/input provenance and applicable
+  remote skill/charter contracts. The two scopes must not be conflated. No
+  listener, live pairing token, remote WebView or hosted page is implemented by
+  displaying these static QRs. Reserved /runner/professor/ and /runner/controller/
+  Pages destinations are not deployed or claimed to be live.
+
+
+### Launcher handoff checklist — 2026-09-12
+
+Latest user clarification: pressing the large Start experiment control begins
+participant questionnaires, then the video sequence. Demographics remain the
+first participant form for a new attempt. No separate Before we begin/Begin
+experiment screen is permitted. Technical readiness remains in operator controls;
+it never bypasses native gates or silently reorders recipe hooks.
+
+- [x] RR-01 minimal launcher; secondary session/recording controls; native Runner-only
+  fullscreen window command; black transition before participant forms.
+- [x] RR-06 UI flow automatically continues from demographics into native
+  questionnaire/video protocol, with no second Start control. Native capability,
+  strict selection, current input receipt and recipe order remain required.
+- [x] RR-11/RR-12 preview QR popups with separately reserved Pages destinations;
+  no deployed page, pairing token, listener or live connection claim.
+- [ ] RR-07 execute Runner-side controller overrides: add strict native session
+  override contract, original/effective hashes, retest, immutable attempt receipt
+  and recovery matching. UI preset/step draft exists but cannot execute yet.
+- [ ] RR-11 implement whole-Runner mirrored browser access after protocol/pairing
+  allocation. Current popup is not permission to broaden native command authority.
+- [ ] RR-12 implement smartphone/tablet fullscreen 2D touch pad, scoped to affect
+  input, with explicit timestamps, disconnect behavior and acquisition evidence.
+- [ ] RR-01/RR-06 verify native fullscreen, real participant/device flow and actual
+  media on the qualified installed candidate. Headless fixtures do not close it.
+
+Evidence: focused recipe/native adapter checks (10 pass); 13 isolated headless
+Chrome launcher/dialog/override/form/escape/stop/fullscreen-rejection scenarios.
+The browser harness substitutes native services and window acknowledgements;
+it proves UI sequencing, not OS fullscreen, physical input or acquisition.
+Both QR payloads independently decoded using zxing-cpp 3.1.1; generator qrcode8.2,
+4-module quiet zone and M correction, checked-in SVGs with no runtime dependency.
+Captures and receipts: `D:/GitHub/.affect-runner-build/launcher-verified/`.
+The native build uses a separate `.affect-runner-ui-build` target directory to
+preserve the already-open prior Runner executable/window.
+
+
+Final UI correction: resize while a questionnaire hides feedback must not
+register an invisible input region. The native adapter now awaits the existing
+prepareRunInput callback again immediately before each new stimulus's media
+prepare/play. This named RR-04/RR-07 geometry seam preserves native input authority;
+a focused adapter assertion checks the order. Fullscreen/layout changes retain
+the existing native fresh-input-test gate. An armed recorder freezes the recipe,
+but does not lock the participant/language fields needed after pressing Start.
+Chrome additionally passes the 600px-wide fixture matrix; both popup screenshot
+QRs independently decode to their reserved addresses. Edge's headless invocation
+produced no DOM receipt in this environment and supplies no verification claim.
+Native default all-target Clippy with -D warnings and the standalone debug build
+pass. Full regression: 653 Node checks. No foreground input or physical native
+experiment was used for these UI receipts.
+
+
+### 20260912-runner-launcher-artwork — RR-01 UI Finalization
+
+Direct user follow-up allocates integration of the existing professor, input
+selector and remote SVG widgets from Create professor SVG icon. Continue the
+isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
+approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
+artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+Only launcher image/layout and asset-closure seams change; button labels and
+popups remain. Check SVG external-resource/script absence, actual headless image
+loading/containment at desktop widths, existing popup behavior, frontend closure
+and native rebuild. No new remote, controller override or execution authority.
+
+
+Artwork verification: the researcher additionally requested the Runner flask on
+Start. All four controls now render labelled, decorative SVGs; the three imported
+widgets preserve exact source bytes. Assets stay external local files in the
+10-file Runner production closure. The 13-scenario headless launcher matrix passes
+at 800px and 600px; the latter explicitly decodes all four SVG images and checks
+containment and decorative accessibility. Launcher screenshot was inspected.
+Receipts: D:/GitHub/.affect-runner-build/widget-audit and widget-small-audit.
+Native rebuild/open is the same UI-only handoff, not a remote or research-run claim.
+
+### Participant selection and output isolation — user amendment 2026-09-12
+
+RR-03 owns a launcher P01/P02 number input with a scrolling picker, red plus text
+for numbers used in this exact loaded JSON, retained selection and resolved sequence
+preview. V1 continues to require an explicitly declared schedule: P01 is a display
+alias for P001, never a new allocation algorithm. Preview follows the chosen
+language and exact compiled protocol, including questionnaires, videos and ISIs.
+
+RR-09 creates outputs/recipe-<full canonical-source SHA-256>/ per JSON, preserving
+an immutable experiment.package.json there. Byte-identical canonical recipes share
+their folder; changed JSON gets another. Participant attempts and Runner XDFs live
+inside that folder. Existing legacy attempts remain in place and recoverable.
+
+RR-07 new attempts use Runner session naming v1: <display participant>_<authored
+stream name> for both affect and markers, e.g. P01_AffectState. Types, channels,
+source IDs, sampling and LSL timestamps are unchanged. A separate immutable
+runner-session.v1.json binds exact recipe, run, native participant and effective
+names; frozen package/manifest schemas remain unchanged. Legacy recovery retains
+its original names. Recording policy continues to belong exclusively to Runner.
+This direct user amendment authorizes these named output/naming changes only.
+Implementation/evidence pending in this pass; qualification gates remain open.
+
+### Participant launcher handoff — 2026-09-12
+
+- [x] RR-03 launcher P01 input, original-ID alias validation, retained selection,
+  keyboard-accessible virtual number list, red/text used history for exact JSON,
+  and participant/language-specific read-only protocol timeline.
+- [x] RR-07 new-attempt affect and marker names use the P01_ prefix; immutable
+  session-v1 receipt, exact receipt verification on resume, original legacy names.
+- [x] RR-08/RR-09 new JSON-scoped attempt and XDF folders; full SHA-256 identity,
+  exact immutable recipe copy, no-overwrite files, legacy history/recovery retained,
+  rerun confirmation and attempt numbering also account for historical attempts.
+- [ ] RR-03/RR-10 comprehensive master intake/allocator and final per-option
+  execution correspondence remain the separately allocated integration stage.
+
+Evidence: 656 Node checks; 216 Rust checks (2 explicit transport exercises remain
+ignored); default all-target Clippy with -D warnings; Runner production asset and
+Planner/Runner boundary checks; 17 synthetic headless Chrome scenarios at 800px
+and 600px. Screenshots inspected for launcher and exact sequence popup. A 100,000-ID
+list keeps at most 14 option elements and reaches its last number with keyboard.
+Native tests cover changed JSON with the same experiment ID, retained/rejected IDs,
+interrupted and legacy usage, immutable naming/resume, tampering and stream metadata.
+Independent pyxdf 1.17.0 reads P01_AffectResearch and P01_AffectResearchMarkers,
+8 unchanged channels, exact synthetic samples and timestamps 20/20.125/20.25.
+No network transport or physical experiment is claimed by this fixture.
+Receipts: D:/GitHub/.affect-runner-build/participant-{node-tests.log,rust-tests.log,
+xdf-reader.json}; participant-audit, participant-small-audit and participant-boundary.
+Desktop rebuild/open follows these checks. Native playback qualification, installed
+input, actual participant/physiology recording, remote apps and master correspondence
+remain open. No Planner code, frozen recipe or manifest fields were changed.

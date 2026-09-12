@@ -229,8 +229,9 @@ test("package adapter starts from exact package bytes and lets Rust own prepare 
   const calls = [];
   const events = [];
   const { root, host, video, placeholder } = rootAndHost();
-  let inputPrepared = false;
+  let inputPreparations = 0;
   const invoke = async (command, payload) => {
+    if (command === "research_package_prepare_media") assert.equal(inputPreparations, 2, "Native prepare waits for the revealed input region.");
     calls.push([command, payload]);
     if (command === "research_package_protocol_capability") return capability();
     if (command === "research_package_recoveries") return recoveryListing();
@@ -244,13 +245,13 @@ test("package adapter starts from exact package bytes and lets Rust own prepare 
     resolveMediaHost: () => host,
     resolveFallbackVideo: () => video,
     resolvePlaceholder: () => placeholder,
-    prepareRunInput: async () => { inputPrepared = true; },
+    prepareRunInput: async () => { await Promise.resolve(); inputPreparations += 1; },
     setIntervalObject: () => 7,
     clearIntervalObject: () => {},
   });
   await adapter.initialize();
   await adapter.start(detail(), WORKSPACE);
-  assert.equal(inputPrepared, true);
+  assert.equal(inputPreparations, 2, "Refresh the visible input region before preparing native video.");
   assert.equal(adapter.active, true);
   assert.equal(host.hidden, false);
   assert.equal(video.hidden, true);
