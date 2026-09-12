@@ -1,7 +1,7 @@
 {
-  "referenceCommit": "ffe11d89671d4b6879556046607f49d8a354d193",
+  "referenceCommit": "aa8717b4a0a4eb52b00adbc5ecdb45de8289494a",
   "referencePath": "site/src/research/form-definition.js",
-  "referenceSha256": "f495bb7803b6d2b4888c7b01a3adfcd35be2c83b832ca427e4c7a925e165ebb4",
+  "referenceSha256": "add8d8f941666d57f33317185f8f40e377203261f09903e5f7832cf1174d26aa",
   "vectors": [
     {
       "label": "/version=1.0",
@@ -301,13 +301,48 @@
       "label": "language \"UND\"",
       "pointer": "/language",
       "jsonValue": "\"UND\"",
-      "accepted": true,
-      "canonicalFileSha256": "b719f8ba2056ab86cf3eaa371a942751000fe9b1130db420c067c291918f8a4b"
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"Und\"",
+      "pointer": "/language",
+      "jsonValue": "\"Und\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"uNd\"",
+      "pointer": "/language",
+      "jsonValue": "\"uNd\"",
+      "accepted": false,
+      "canonicalFileSha256": null
     },
     {
       "label": "language \"und\"",
       "pointer": "/language",
       "jsonValue": "\"und\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh\"",
+      "pointer": "/language",
+      "jsonValue": "\"abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh\"",
+      "accepted": true,
+      "canonicalFileSha256": "49e5f731dad661955006dd92e9ee7fb8d39e3e6c7762b4ed128c1be80e73fb35"
+    },
+    {
+      "label": "language \"abcdefg-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-a\"",
+      "pointer": "/language",
+      "jsonValue": "\"abcdefg-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-a\"",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "language \"en-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh\"",
+      "pointer": "/language",
+      "jsonValue": "\"en-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcdefgh\"",
       "accepted": false,
       "canonicalFileSha256": null
     },
@@ -387,6 +422,20 @@
       "jsonValue": "\" é é \"",
       "accepted": true,
       "canonicalFileSha256": "98c0bc3ebc596b55addc6e9e0782651ac07ffc0e982bb8eb88ba1c1d65c8b332"
+    },
+    {
+      "label": "null item",
+      "pointer": "/items/0",
+      "jsonValue": "null",
+      "accepted": false,
+      "canonicalFileSha256": null
+    },
+    {
+      "label": "null option",
+      "pointer": "/items/2/response/options/0",
+      "jsonValue": "null",
+      "accepted": false,
+      "canonicalFileSha256": null
     }
   ]
 }
