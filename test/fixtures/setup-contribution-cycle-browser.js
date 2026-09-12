@@ -166,6 +166,18 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
     && Number(q("#sampling-frequency").value) === legacyRecipe.settings.experiment.samplingFrequencyHz);
   check("legacy projection cannot bypass current contribution or save gates", q("#package-generate").disabled
     && !accepted("review") && ui.workspace === null);
+  // Tear down a separate real controller with an outstanding picker so the
+  // delayed response cannot adopt into its detached DOM after disposal.
+  const { initializeResearchUi } = await import("../../site/src/research/app.js");
+  const { renderResearchUiMarkup } = await import("../../site/src/research/ui-view.js");
+  const detached = document.createElement("section");
+  detached.innerHTML = renderResearchUiMarkup("browser");
+  const disposedUi = initializeResearchUi(detached, { surface: "browser" });
+  await wait(100);
+  let releaseDisposed;
+  window.showOpenFilePicker = () => new Promise(resolve => { releaseDisposed = () => resolve([handle]); });
+  detached.querySelector("#package-load").click(); disposedUi.destroy(); releaseDisposed(); await wait(150);
+  check("disposed controller cannot adopt a late selected file", disposedUi.experimentPackage === null && detached.researchUi === undefined);
   ui.openSetupSection("review"); await wait();
   q("#package-generate").scrollIntoView({ block: "end" });
   check("no controller errors", errors.length === 0);

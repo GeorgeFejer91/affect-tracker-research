@@ -269,6 +269,7 @@ function bindResearchInteractions(root, { surface }) {
   let editablePackageDefaults = null;
   let packageIsStale = false;
   let packageLoadGeneration = 0;
+  let researchUiDisposed = false;
   // Invalid drafts can have the same null fingerprint. This monotonic intent
   // revision also protects field edits and edit/revert while a file is opening.
   let packageEditRevision = 0;
@@ -3797,7 +3798,7 @@ function bindResearchInteractions(root, { surface }) {
     ));
     const reproduction = await verifySameRealmPackageReproductionV1(parsed.package);
     const preparedSettings = await validateResearchSettingsV3(parsed.package.settings);
-    const current = () => generation === packageLoadGeneration && editRevision === packageEditRevision && (!guard || guard());
+    const current = () => !researchUiDisposed && generation === packageLoadGeneration && editRevision === packageEditRevision && (!guard || guard());
     if (!current()) return false;
     if (!guard) packageExport.invalidate();
     setInputValue("planner-presentation-target", "");
@@ -3846,7 +3847,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function requestExperimentPackageLoad() {
-    if (packageExport.snapshot().busy || mode !== "setup") return;
+    if (researchUiDisposed || packageExport.snapshot().busy || mode !== "setup") return;
     if (surface === "tauri") {
       const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentPackageRequest, {
         bubbles: true,
@@ -3859,7 +3860,7 @@ function bindResearchInteractions(root, { surface }) {
     const generation = ++packageLoadGeneration;
     const editRevision = packageEditRevision;
     const draft = packageDraftFingerprint();
-    const current = () => mode === "setup" && !packageExport.snapshot().busy
+    const current = () => !researchUiDisposed && mode === "setup" && !packageExport.snapshot().busy
       && packageEditRevision === editRevision && packageDraftFingerprint() === draft;
     // Call the picker directly from the Open action. A selected recipe file
     // carries no authorization for its declared media or fixed package root.
@@ -5591,6 +5592,8 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      researchUiDisposed = true;
+      packageLoadGeneration += 1;
       stimulusCatalogueBindingDisposed = true;
       unsubscribeStimulusCatalogue();
       xrLayoutAuthoring?.destroy();
