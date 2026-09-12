@@ -4434,3 +4434,15 @@ Native and full composition evidence deferred to Main. Validator correction
   Existing GUI save/reopen behavior remains covered. No native persistence,
   rendered final app, mock export, participant run or XDF completion is claimed.
   [Exact API and handoff](../docs/planner-prepared-save.md).
+
+### 20260912-p2-prepared-recipe-restoration
+
+- Main-allocated S3 Backend Verification, P2-04/P2-07/P2-08 and P2-02.
+  Isolated codex/segment-p2-restore in D:/GitHub/affect-tracker-research-p2-restore,
+  base342026a. Own editor/helper/tests/docs only; Main owns app/native wiring.
+- Read-only prepareRestoreRecipe validates explicit v1/v2 and builds fresh
+  definitions/presentation entries. Sync single-use state commit and separate
+  once-only projection preserve real owner state without inherited source bytes.
+- Baseline18/18; final focused28/28. Broader1029/1030; sole unchanged native-effects
+  invocation allowlist failure routed to Main. API and evidence limits in
+  docs/planner-p2-prepared-restoration.md. No other owner or schema changes.
