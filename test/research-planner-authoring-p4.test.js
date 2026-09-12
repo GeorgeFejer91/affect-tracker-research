@@ -383,3 +383,73 @@ test("a throwing DOM projection cannot undo a prepared content commit", async ()
   assert.deepEqual(h.editor.getSnapshot(), committed); assert.equal(committed.pending, true);
   prepared.afterCommit();
 });
+
+test("P4 confirmation prepares an exact detached future snapshot without publishing", async () => {
+  const h = await harness(), before = h.editor.getSnapshot(), projection = h.editor.projection;
+  const count = h.changes.length, controlValues = h.root.controls.map(c => c.value);
+  const candidate = await h.editor.prepareConfirmation(lifetime());
+  const future = candidate.snapshot;
+  assert.deepEqual(Object.keys(future).sort(), Object.keys(before).sort());
+  assert.equal(future.revision, before.revision + 1); assert.equal(future.pending, false);
+  assert.deepEqual(future.contribution, fixture.cases[0].profile);
+  assert.deepEqual(future.dependencyRevisions, before.dependencyRevisions);
+  candidate.snapshot.contribution.feedback.offset.x = 999;
+  candidate.snapshot.dependencyRevisions.length = 0;
+  assert.deepEqual(candidate.snapshot, future);
+  assert.deepEqual(h.editor.getSnapshot(), before); assert.deepEqual(h.editor.projection, projection);
+  assert.deepEqual(h.root.controls.map(c => c.value), controlValues); assert.equal(h.changes.length, count);
+  assert.throws(() => candidate.afterCommit(), /not committed/);
+  assert.equal(candidate.isCurrent(), true); assert.equal(candidate.commit(), undefined);
+  assert.deepEqual(h.editor.getSnapshot(), future); assert.equal(h.changes.length, count);
+  assert.deepEqual(candidate.snapshot, future); assert.equal(candidate.isCurrent(), false);
+  assert.throws(() => candidate.commit(), /already committed/);
+  assert.equal(candidate.afterCommit(), undefined); candidate.afterCommit();
+  assert.equal(h.changes.length, count + 1); assert.deepEqual(h.editor.getSnapshot(), future);
+  const gui = await harness(); assert.deepEqual(await gui.editor.prepareContribution(), future);
+});
+
+test("P4 confirmation preserves already-prepared revision and fences competing candidates", async () => {
+  const h = await harness(); await h.editor.prepareContribution();
+  const before = h.editor.getSnapshot(), count = h.changes.length;
+  const first = await h.editor.prepareConfirmation(lifetime()), second = await h.editor.prepareConfirmation(lifetime());
+  assert.deepEqual(first.snapshot, before); assert.equal(first.isCurrent(), true);
+  first.commit(); first.afterCommit(); assert.deepEqual(h.editor.getSnapshot(), before);
+  assert.equal(h.changes.length, count); assert.equal(second.isCurrent(), false);
+  assert.throws(() => second.commit(), /stale/);
+});
+
+test("P4 confirmation rejects stale edits, reset, dependencies, disposal and aborted commands", async () => {
+  for (const change of [h => h.root.input("offsetX", "9"), h => h.root.reset(), h => h.changeP1(),
+    h => h.changeP5(), h => h.setUnnotifiedP5Revision(9), h => h.editor.destroy()]) {
+    const h = await harness(), candidate = await h.editor.prepareConfirmation(lifetime());
+    await change(h); const before = h.editor.getSnapshot(), count = h.changes.length;
+    assert.equal(candidate.isCurrent(), false); assert.throws(() => candidate.commit(), /stale/);
+    assert.deepEqual(h.editor.getSnapshot(), before); assert.equal(h.changes.length, count);
+  }
+  const h = await harness(), controller = new AbortController(); let current = true;
+  const candidate = await h.editor.prepareConfirmation({isCurrent:()=>current,signal:controller.signal});
+  current = false; assert.equal(candidate.isCurrent(), false); current = true;
+  assert.equal(candidate.isCurrent(), true); controller.abort();
+  const before = h.editor.getSnapshot(); assert.throws(() => candidate.commit(), /stale/);
+  await assert.rejects(h.editor.prepareConfirmation({isCurrent:()=>true,signal:controller.signal}), /stale/);
+  await assert.rejects(h.editor.prepareConfirmation({isCurrent:()=>true}), /abort signal/);
+  assert.deepEqual(h.editor.getSnapshot(), before);
+});
+
+test("P4 confirmation rejects mid-preparation edits and never manufactures missing readiness", async () => {
+  const h = await harness(), preparing = h.editor.prepareConfirmation(lifetime());
+  h.root.input("offsetX", "9"); const before = h.editor.getSnapshot();
+  await assert.rejects(preparing, /stale/); assert.deepEqual(h.editor.getSnapshot(), before);
+  h.changeP5(); const pending = h.editor.getSnapshot();
+  await assert.rejects(h.editor.prepareConfirmation(lifetime())); assert.deepEqual(h.editor.getSnapshot(), pending);
+  const blank = createScreenLayoutDraftEditor(rootFixture()); const initial = blank.getSnapshot();
+  await assert.rejects(blank.prepareConfirmation(lifetime()), /Connect/); assert.deepEqual(blank.getSnapshot(), initial);
+});
+
+test("P4 confirmation projection failure retains installed future and never repeats notifications", async () => {
+  const h = await harness(), candidate = await h.editor.prepareConfirmation(lifetime());
+  const future = candidate.snapshot; candidate.commit(); h.failNotifications(); const count = h.changes.length;
+  assert.throws(() => candidate.afterCommit(), /Observer failed/);
+  assert.deepEqual(h.editor.getSnapshot(), future); assert.deepEqual(candidate.snapshot, future);
+  candidate.afterCommit(); assert.equal(h.changes.length, count + 1);
+});
