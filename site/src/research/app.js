@@ -4338,6 +4338,23 @@ function bindResearchInteractions(root, { surface }) {
     if (dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
   }
 
+  function resetPreviewInspection() {
+    // Restoring configuration clears test input, not the configured palette.
+    // In particular, do not reuse the user-facing grey-palette Reset action.
+    previewInteraction?.releaseAll();
+    setupPreview.cancelInteraction();
+    cancelBindingCapture();
+    closeDialog("binding-capture-dialog");
+    cancelPreviewColorPaint();
+    previewColorAnchor = null;
+    previewColorDraft = null;
+    previewColorLabelDraft = null;
+    closeDialog("preview-color-dialog");
+    previewResponseSimulator?.reset();
+    previewDesignPoint = { x: 0, y: 0 };
+    refreshDesignPreview();
+  }
+
   function captureGamepads() {
     try { return [...(navigator.getGamepads?.() ?? [])]; }
     catch { return []; }
@@ -4365,7 +4382,7 @@ function bindResearchInteractions(root, { surface }) {
   });
   if (previewColorDialog instanceof HTMLDialogElement) {
     previewColorDialog.addEventListener("close", () => {
-      if (!previewColorAnchor) return;
+      if (previewColorDialog.open || !previewColorAnchor) return;
       cancelPreviewColorPaint();
       previewColorAnchor = null;
       previewColorDraft = null;
@@ -5625,6 +5642,10 @@ function bindResearchInteractions(root, { surface }) {
     setAffect(x, y, receipt = "Authoritative input received.") { updateInputPoint(x, y, receipt); },
     applyNativeInputStatus,
     applyNativeCapture,
+    resetPreviewInspection,
+    getPreviewInspectionSnapshot() {
+      return Object.freeze({ rendering: setupPreview.snapshot(), response: previewResponseSimulator.snapshot() });
+    },
     failNativeCapture(message) {
       if (surface !== "tauri" || !nativeCaptureDirection) return;
       cancelBindingCapture();
