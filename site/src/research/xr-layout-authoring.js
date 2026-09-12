@@ -1,7 +1,7 @@
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
-import { resolveFeedbackEnvelopeV1 } from "./feedback-envelope.js";
-import { validateFeedbackContributionV1 } from "./feedback-contribution.js";
+import { resolveFeedbackEnvelope } from "./feedback-layout.js";
+import { validateFeedbackContribution } from "./feedback-settings.js";
 import { XR_FEEDBACK_VIEWPORT_CSS_PX } from "./xr-layout-feedback.js";
 import { XrLayoutError, validateXrLayoutProfileV1 } from "./xr-layout.js";
 import { resolveXrLayoutContribution, validateXrLayoutSelection } from "./xr-layout-recipe.js";
@@ -30,8 +30,8 @@ export async function resolveXrLayoutDependencies(dependencies, projectCatalogue
   }
   if (typeof projectCatalogue !== "function") throw new TypeError("P1's geometry projector is required.");
   const p1 = readySnapshot(dependencies.P1, "P1"), p5 = readySnapshot(dependencies.P5, "P5");
-  const feedback = validateFeedbackContributionV1(p5.contribution);
-  const feedbackEnvelope = resolveFeedbackEnvelopeV1(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
+  const feedback = validateFeedbackContribution(p5.contribution);
+  const feedbackEnvelope = resolveFeedbackEnvelope(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
   const projection = await projectCatalogue(p1);
   if (!projection || projection.revision !== p1.revision || projection.pending !== false
     || !Array.isArray(projection.videos) || projection.videos.length === 0) {
