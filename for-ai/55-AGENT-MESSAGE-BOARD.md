@@ -750,6 +750,13 @@ file; follow the integration-owner collection procedure in the workflow.
   are routed to integration, with no P7 warnings observed. OS picker, physical
   media, installed native and final Runner correspondence remain unqualified.
   Source writers stop after the documentation receipt for sole-owner collection.
+- Final integration lint follow-up: main found an unnecessary unit expression
+  in the P7 test-only geometry comparison arm. The bounded repair removes that
+  expression without changing validation, tolerance, fixtures or production
+  source. All six focused native master/policy checks pass. Requested combined
+  Clippy passes with `--no-default-features --all-targets -- -D warnings -A dead_code`;
+  its existing dead-code exception remains explicit and adds no source allows.
+  Logs: `D:/GitHub/.affect-checks/p7-final-clippy{,-focused-tests}.log`.
 
 ### 20260912-p3-master-reproduction
 

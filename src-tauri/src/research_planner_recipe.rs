@@ -536,10 +536,7 @@ mod tests {
                     }
                 }
                 (Value::Number(a), Value::Number(b))
-                    if (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-10 =>
-                {
-                    ()
-                }
+                    if (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-10 => {}
                 _ if a != b => out.push(format!("{path}: {a} vs {b}")),
                 _ => (),
             }
