@@ -16,11 +16,11 @@ fn invalid(message: impl Into<String>) -> CommandError {
     CommandError::invalid_contract(message)
 }
 
-pub(super) fn hash(value: &impl serde::Serialize) -> ResearchResult<String> {
+pub(crate) fn hash(value: &impl serde::Serialize) -> ResearchResult<String> {
     canonical_sha256(value, &[])
 }
 
-pub(super) fn exact_reencoding(value: &Value, typed: &impl serde::Serialize) -> ResearchResult<()> {
+pub(crate) fn exact_reencoding(value: &Value, typed: &impl serde::Serialize) -> ResearchResult<()> {
     if canonical_json(value, &[])? != canonical_json(typed, &[])? {
         return Err(invalid(
             "Recipe content cannot be defaulted, discarded or repaired.",
@@ -29,7 +29,7 @@ pub(super) fn exact_reencoding(value: &Value, typed: &impl serde::Serialize) -> 
     Ok(())
 }
 
-pub(super) fn media(workspace: &WorkspaceContribution) -> Vec<MediaGeometry> {
+pub(crate) fn media(workspace: &WorkspaceContribution) -> Vec<MediaGeometry> {
     let mut seen = BTreeSet::new();
     workspace
         .video_catalogue
@@ -44,7 +44,7 @@ pub(super) fn media(workspace: &WorkspaceContribution) -> Vec<MediaGeometry> {
         .collect()
 }
 
-pub(super) fn desktop(
+pub(crate) fn desktop(
     profile: &DesktopLayoutContributionV1,
     workspace: &WorkspaceContribution,
     feedback: &FeedbackContributionV2,
@@ -77,7 +77,7 @@ pub(super) fn desktop(
     )
 }
 
-pub(super) fn xr(
+pub(crate) fn xr(
     profile: &XrLayoutProfileV1,
     workspace: &WorkspaceContribution,
     feedback: &FeedbackContributionV2,
@@ -116,7 +116,7 @@ pub(super) fn xr(
 
 /// Count before allocating complete route/matrix projections. P2's strict tree
 /// has already rejected cycles, duplicate leaves and unreachable definitions.
-pub(super) fn route_count(tree: &LanguageSelectionTreeV1) -> ResearchResult<usize> {
+pub(crate) fn route_count(tree: &LanguageSelectionTreeV1) -> ResearchResult<usize> {
     fn count(tree: &LanguageSelectionTreeV1, id: &str, depth: usize) -> ResearchResult<usize> {
         // Graph edges are flat JSON references. P2's established 256-node
         // acyclic-tree contract is separate from the wire nesting limit.
