@@ -39,6 +39,10 @@ export async function validateDesktopLayoutContribution(value, dependencies) {
   return (await resolveDesktopLayoutContribution(value, dependencies)).profile;
 }
 
+export async function validateSupportedDesktopLayoutContribution(value, dependencies) {
+  return (await resolveSupportedDesktopLayoutContribution(value, dependencies)).profile;
+}
+
 export async function serializeDesktopLayoutContribution(value, dependencies) {
   return `${canonicalJson(await validateDesktopLayoutContribution(value, dependencies))}\n`;
 }

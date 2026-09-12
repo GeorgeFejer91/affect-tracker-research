@@ -1,10 +1,11 @@
 import { SCREEN_LAYOUT_DRAFT_FIELDS, createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "./screen-layout-draft.js";
 import { screenLayoutSceneMarkup } from "./screen-layout-view.js";
-import { createScreenLayoutState, validateScreenLayoutContribution } from "./screen-layout-state.js";
+import { createScreenLayoutState } from "./screen-layout-state.js";
 import { createScreenLayoutDependencyBinding } from "./screen-layout-dependencies.js";
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
-import { desktopLayoutProfileFromDraft, desktopLayoutDraftFromProfile, desktopLayoutDraftField } from "./desktop-layout-contribution.js";
+import { desktopLayoutProfileFromDraft, desktopLayoutDraftFromProfile, desktopLayoutDraftField,
+  validateSupportedDesktopLayoutContribution as validateScreenLayoutContribution } from "./desktop-layout-contribution.js";
 
 /** Local UI owner only. Fixture injection is used by non-shipping qualification pages. */
 export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencies = null, onChange = () => {} } = {}) {

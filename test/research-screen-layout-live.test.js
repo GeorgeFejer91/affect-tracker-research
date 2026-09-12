@@ -14,6 +14,37 @@ import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 
 const clone = value => structuredClone(value);
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
+test("production P4 connection accepts controlled workspace3 and retains owner identity", async () => {
+  const { workspace } = JSON.parse(await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"));
+  const settings = createDefaultResearchSettings();
+  const feedback = createFeedbackContributionSource(() => ({ input: settings.input, visual: settings.visual, mappings: settings.advanced.mappings }));
+  const snapshot = { revision: 73, enabled: true, pending: false, contribution: workspace, dependencyRevisions: [] };
+  let binding, pending;
+  const controller = {
+    getWorkspaceContributionSnapshot: () => snapshot,
+    subscribeWorkspaceContributionChanges: () => () => {},
+    subscribeFeedbackChanges: () => () => {},
+    getFeedbackLayoutSnapshot: feedback.getLayoutSnapshot,
+    getFeedbackContributionSnapshot: feedback.getSnapshot,
+    connectScreenLayoutDependencies(dependencies) {
+      binding = createScreenLayoutDependencyBinding(dependencies);
+      pending = binding.refreshCatalogue();
+    },
+  };
+  const disconnect = connectScreenLayoutProducers(controller);
+  try {
+    await pending;
+    const result = binding.resolve({ ...createScreenLayoutDraft(), referencePolicy: "largest-oriented-area" });
+    assert.equal(result.issues.some(issue => issue.code.startsWith("catalogue-")), false);
+    assert.ok(result.referenceCandidates.largestVideo);
+    const expected = [...new Map(workspace.videoCatalogue.entries.map(entry => [entry.assetId, {
+      assetId: entry.assetId, displayWidth: entry.geometry.displayWidthPx, displayHeight: entry.geometry.displayHeightPx,
+    }])).values()];
+    assert.deepEqual(binding.getMediaGeometry(), expected);
+    assert.equal(result.dependencyRevisions.find(value => value.segment === "P1").revision, 73);
+    assert.deepEqual(binding.getContentDependencies().workspace, workspace);
+  } finally { disconnect(); binding.destroy(); feedback.destroy(); }
+});
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 const config = () => ({ visual: clone(DEFAULT_SETTINGS.visual), mappings: clone(DEFAULT_SETTINGS.advanced.mappings) });

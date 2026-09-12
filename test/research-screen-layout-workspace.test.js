@@ -9,9 +9,23 @@ import { createFeedbackContributionSource } from "../site/src/research/feedback-
 import { createScreenLayoutDependencyBinding } from "../site/src/research/screen-layout-dependencies.js";
 import { createScreenLayoutState } from "../site/src/research/screen-layout-state.js";
 import { createWorkspaceContribution, projectWorkspaceVideoCatalogueSnapshot } from "../site/src/research/workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
-import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft, resolveDesktopLayoutContribution } from "../site/src/research/desktop-layout-contribution.js";
+import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
+import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft, resolveDesktopLayoutContribution,
+  validateSupportedDesktopLayoutContribution } from "../site/src/research/desktop-layout-contribution.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
+
+test("current P4 preparation validates workspace3 without broadening the historical reader", async () => {
+  const { workspace } = JSON.parse(await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"));
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
+  const { videos } = await projectSupportedVideoDisplayGeometry(workspace.videoCatalogue);
+  const profile = desktopLayoutProfileFromDraft(desktopLayoutDraftFromProfile(fixture.cases[0].profile), videos);
+  const dependencies = { workspace, feedback: fixture.feedback };
+  assert.deepEqual(await validateSupportedDesktopLayoutContribution(profile, dependencies), profile);
+  await assert.rejects(resolveDesktopLayoutContribution(profile, dependencies), /unsupported/);
+  const invalid = structuredClone(dependencies);
+  invalid.workspace.videoCatalogue.entries[0].geometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90;
+  await assert.rejects(validateSupportedDesktopLayoutContribution(profile, invalid));
+});
 
 test("P4 tracks one registered workspace revision across study edits, video edits and restoration", async () => {
   const fixture = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url), "utf8"));

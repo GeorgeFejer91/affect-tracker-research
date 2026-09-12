@@ -5433,3 +5433,38 @@ SDK/Cargo usage for preserved SDK relocation from full C: to D:. Main will
 collect this checkpoint and compile combined source only after Root verifies
 the new SDK path. Existing native results above predate this test addition;
 do not claim a successful native rerun or live import for this correction.
+
+### 2026-09-13 — Root owns final release; delegation stopped
+
+The user has stopped orchestration. Chat Orchestrator is the sole release and
+validation owner on `codex/final-release-validation`, using the transferred
+`affect-tracker-research-master-v3` worktree. Other tasks remain idle.
+
+Pass: P7 export and named P1/P4 composition seams, then R1 intake/execution.
+Run one complete production CLI authoring/save/reopen scenario; proceed to the
+exact saved JSON in Runner only after export passes. Reuse existing component
+checks. Fix observed blockers, retain failures, and avoid unrelated redesign or
+repeated broad suites. Compact UI and JSON remain requirements; strict versioned
+readers and required reconstruction content must be preserved.
+
+At aad1a82, native summary regression passed. Frozen CLI SHA256
+2c9268c84cbb10d74a3eebbcbde3a4447b4fcdca4fb32e6bcded07fb2fbd4062.
+Bundled runtime verification passed 827 files / 340362958 bytes. A wrapper wrongly
+checked LASTEXITCODE after a PowerShell verifier; the verifier itself passed.
+The first launch lacked pre-main DLL resolution and exited 0xC0000135 before any
+command. The next process used its frozen runtime bin on process PATH (no global
+change), imported and natively decoded the real clip, then stopped at P4's old
+workspace reader. Evidence: `.affect-checks/root-release-fullmock-evidence-01`
+and `-02`; neither saved a master. Installed loader qualification remains open.
+
+Root fixes current screen-layout composition AND prepare/restore validation to
+use existing explicit supported workspace/catalogue readers. Historical readers
+remain unchanged. Two focused regressions cover actual producer wiring, full
+proof rejection, and old-reader rejection. All 26 P4 checks pass in
+`.affect-checks/root-release-p4-composition-test-03.log`. The initial new test
+used an unrelated automatic-reference fixture; corrected to derive the reference
+from its actual catalogue. No layout arithmetic or saved schema changed.
+
+Planner JSON export, actual Runner execution/XDF, installed distribution and
+physical display timing remain unclosed. Do not enable qualified Start flags
+from component checks. No FFmpeg rendering capability was selected or added.
