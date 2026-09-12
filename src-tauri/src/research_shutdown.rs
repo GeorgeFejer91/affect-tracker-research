@@ -108,10 +108,11 @@ impl ShutdownCoordinator {
                     notify(coordinator.exit_code.load(Ordering::Acquire));
                 } else {
                     observe(Phase::CleanupFailed);
-                    eprintln!(
+                    let line = format!(
                         "Companion shutdown remains blocked: {}",
                         result.err().unwrap_or("shutdown-failed")
                     );
+                    write_observation(&mut std::io::stderr().lock(), &line);
                 }
             });
         match worker {

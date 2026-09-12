@@ -13,6 +13,8 @@ No paths, identifiers, raw errors, source, stack or participant values are added
 The 20-phase vocabulary bounds the whole process to 20 additional stderr lines.
 Writes are best-effort: stderr I/O failure is ignored, never promoted to a
 lifecycle panic. Main identified and corrected the initial eprintln! risk.
+Root's review applies the same best-effort writer to the existing coordinator
+cleanup-failure message, preserving its already retained failure result.
 Concurrent writes may be printed in a different order; elapsed values refer to
 observation time, not event delivery or physical timing.
 
