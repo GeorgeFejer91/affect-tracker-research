@@ -1141,6 +1141,9 @@ export class NativeResearchRuntimeBridge {
     this.inputPollTimer = null;
     this.inputLayoutEpoch = 0;
     this.lastCaptureId = null;
+    this.inputCaptureGeneration = 0;
+    this.activeInputCaptureGeneration = null;
+    this.inputCapturePending = false;
     this.listeners = [];
     this.mediaListeners = [];
     this.operation = Promise.resolve();
@@ -1205,6 +1208,9 @@ export class NativeResearchRuntimeBridge {
   }
 
   destroy() {
+    this.inputCaptureGeneration += 1;
+    this.activeInputCaptureGeneration = null;
+    this.inputCapturePending = false;
     for (const [target, type, listener, options] of this.listeners) {
       target.removeEventListener(type, listener, options);
     }
@@ -1361,9 +1367,15 @@ export class NativeResearchRuntimeBridge {
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.inputCaptureRequest, (event) => {
       event.preventDefault();
-      this.#queue(() => this.#beginNativeCapture(event.detail));
+      const generation = ++this.inputCaptureGeneration;
+      this.activeInputCaptureGeneration = null;
+      this.inputCapturePending = true;
+      this.#queue(() => this.#beginNativeCapture(event.detail, generation));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.inputCaptureCancel, () => {
+      this.inputCaptureGeneration += 1;
+      this.activeInputCaptureGeneration = null;
+      this.inputCapturePending = false;
       this.#queue(() => this.invoke("research_input_cancel_setup"));
     });
     this.#listen(this.root, "focusin", (event) => {
@@ -1422,7 +1434,8 @@ export class NativeResearchRuntimeBridge {
     return this.invoke("research_input_set_region", { region });
   }
 
-  async #beginNativeInputTest(binding = this.root.researchUi?.inputBinding) {
+  async #beginNativeInputTest(binding = this.root.researchUi?.inputBinding, captureGeneration = this.inputCaptureGeneration) {
+    if (captureGeneration !== this.inputCaptureGeneration) return;
     if (!this.#applyInputCapability(binding)) {
       await this.invoke("research_input_cancel_setup");
       return;
@@ -1435,21 +1448,35 @@ export class NativeResearchRuntimeBridge {
       return;
     }
     await this.#setNativeInputRegion(".input-test-grid", "setupTest");
+    if (captureGeneration !== this.inputCaptureGeneration) return;
     const status = await this.invoke("research_input_begin_test", { binding });
-    this.root.researchUi?.applyNativeInputStatus?.(status);
+    if (captureGeneration === this.inputCaptureGeneration) this.root.researchUi?.applyNativeInputStatus?.(status);
   }
 
-  async #beginNativeCapture(detail) {
-    const binding = detail?.binding;
-    if (!this.#applyInputCapability(binding)) {
-      throw new Error("This binding cannot be captured by the safe native Tauri backend.");
+  async #beginNativeCapture(detail, generation) {
+    if (generation !== this.inputCaptureGeneration) return;
+    try {
+      const binding = detail?.binding;
+      if (!this.#applyInputCapability(binding)) {
+        throw new Error("This binding cannot be captured by the safe native Tauri backend.");
+      }
+      await this.#setNativeInputRegion("#binding-capture-dialog .dialog-content", "setupCapture");
+      if (generation !== this.inputCaptureGeneration) return;
+      const status = await this.invoke("research_input_begin_capture", {
+        binding,
+        direction: detail.direction,
+      });
+      if (generation !== this.inputCaptureGeneration) return;
+      this.inputCapturePending = false;
+      this.activeInputCaptureGeneration = generation;
+      this.root.researchUi?.applyNativeInputStatus?.(status);
+    } catch (error) {
+      if (generation !== this.inputCaptureGeneration) return;
+      this.inputCapturePending = false;
+      this.activeInputCaptureGeneration = null;
+      this.root.researchUi?.failNativeCapture?.(messageOf(error));
+      throw error;
     }
-    await this.#setNativeInputRegion("#binding-capture-dialog .dialog-content", "setupCapture");
-    const status = await this.invoke("research_input_begin_capture", {
-      binding,
-      direction: detail.direction,
-    });
-    this.root.researchUi?.applyNativeInputStatus?.(status);
   }
 
   async #refreshNativeInputRegion() {
@@ -1474,12 +1501,30 @@ export class NativeResearchRuntimeBridge {
   }
 
   async #pollNativeInputStatus() {
-    const status = await this.invoke("research_input_status");
+    if (this.inputCapturePending) return;
+    const generation = this.inputCaptureGeneration;
+    const activeGeneration = this.activeInputCaptureGeneration;
+    let status;
+    try {
+      status = await this.invoke("research_input_status");
+    } catch (error) {
+      if (generation !== this.inputCaptureGeneration) return;
+      throw error;
+    }
+    if (generation !== this.inputCaptureGeneration) return;
+    if (activeGeneration !== this.activeInputCaptureGeneration) return;
     this.root.researchUi?.applyNativeInputStatus?.(status);
-    if (status?.capture?.captureId && status.capture.captureId !== this.lastCaptureId) {
+    if (activeGeneration === generation && status?.capture?.captureId && status.capture.captureId !== this.lastCaptureId) {
       this.lastCaptureId = status.capture.captureId;
-      this.root.researchUi?.applyNativeCapture?.(status.capture);
-      await this.#beginNativeInputTest(status.capture.binding);
+      this.activeInputCaptureGeneration = null;
+      if (this.root.researchUi?.applyNativeCapture?.(status.capture) === true) {
+        // Serialize with begin/cancel so an accepted old result cannot start a
+        // test after the user has already armed another capture.
+        this.#queue(async () => {
+          if (generation !== this.inputCaptureGeneration) return;
+          await this.#beginNativeInputTest(status.capture.binding, generation);
+        });
+      }
     }
   }
 

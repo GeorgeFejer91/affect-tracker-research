@@ -161,16 +161,16 @@ function previewMarkup(label, { studio = false } = {}) {
       ${feedbackInputMarkup()}
 
       <details class="preview-response-settings inner-disclosure">
-        <summary>Try response ideas · preview only</summary>
+        <summary>Response control</summary>
         <div class="disclosure-content">
         <div class="preview-subsection-heading"><h3 id="preview-response-title">Response control</h3></div>
-        <div class="preview-segmented-control" role="group" aria-label="Response preview mode">
+        <div class="preview-segmented-control" role="group" aria-label="Saved response mode">
           <button type="button" data-response-preview-mode="continuous" aria-pressed="false">Continuous</button>
           <button type="button" data-response-preview-mode="stepwise" aria-pressed="true">Stepwise</button>
         </div>
         <div data-response-preview-panel="continuous" hidden>
           <label class="field"><span>Full-span duration</span><div class="range-field"><input id="preview-full-span-duration" type="range" min="250" max="15000" step="250" value="2000"><output for="preview-full-span-duration">2,000 ms</output></div></label>
-          <p class="field-help">Draft preview only: the duration estimates how long a held control takes to travel from −1 to +1.</p>
+          <p class="field-help">Saved time for a held direction to travel from −1 to +1. Absolute inputs supply their own position.</p>
         </div>
         <div data-response-preview-panel="stepwise">
           <fieldset class="check-group">
@@ -189,8 +189,8 @@ function previewMarkup(label, { studio = false } = {}) {
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="separatePresses" checked><span>Require separate presses</span></label>
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
           </fieldset>
-          <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
-          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Controls.</p>
+          <label class="field" data-preview-repeat-settings><span>Repeat interval</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
+          <p class="field-help">Saved grid dimensions determine each directional step. A held control repeats at the selected interval; separate presses move once per press.</p>
         </div>
         </div>
       </details>
@@ -597,11 +597,14 @@ export function renderResearchUiMarkup(surface = "browser") {
             </div>
             <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
               <header class="preview-header">
-                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p>Mode selection is preview-only.</p><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
-                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode; selection is not saved">
-                  <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
-                  <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
-                  <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p id="feedback-settings-version">Feedback settings are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
+                <div class="preview-header-controls">
+                  <button id="preview-input-menu" class="preview-input-menu" type="button" aria-label="Assign feedback controls" aria-haspopup="dialog" aria-controls="binding-capture-dialog" title="Assign feedback controls"><span aria-hidden="true"></span></button>
+                  <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
+                    <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
+                    <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
+                    <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+                  </div>
                 </div>
               </header>
               ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
@@ -667,10 +670,24 @@ export function renderResearchUiMarkup(surface = "browser") {
       <div class="dialog-content"><h2 id="package-save-dialog-title">Save recipe</h2><p id="package-save-dialog-status" role="status" aria-live="polite"></p></div>
       <div class="dialog-actions"><button id="package-save-cancel" type="button">Cancel</button><button id="package-save-choose" type="button" class="primary-action">Choose file and save</button></div>
     </dialog>
-    <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
-      <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
-      <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
-    </dialog>
+      <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title" aria-describedby="binding-capture-help">
+        <div class="binding-menu-heading"><h2 id="binding-capture-title">Assign feedback controls</h2>
+          <p id="binding-capture-help">Choose a direction, then press a key or gamepad button. Click or scroll inside the capture area to assign a mouse button or wheel direction.</p>
+          <p class="field-help">Changes use your saved input settings. Gamepad sticks use analog presets in Input controls; individual axis directions cannot be assigned here.</p>
+        </div>
+        <div class="binding-direction-menu" role="group" aria-label="Feedback directions">
+          <button type="button" data-binding-capture-target="up" aria-pressed="false"><span>↑ Up</span><output data-binding-value="up"></output></button>
+          <button type="button" data-binding-capture-target="left" aria-pressed="false"><span>← Left</span><output data-binding-value="left"></output></button>
+          <button type="button" class="binding-centre-pending" disabled aria-label="Centre action not configured" title="Centre action is not configured">↺</button>
+          <button type="button" data-binding-capture-target="right" aria-pressed="false"><span>Right →</span><output data-binding-value="right"></output></button>
+          <button type="button" data-binding-capture-target="down" aria-pressed="false"><span>↓ Down</span><output data-binding-value="down"></output></button>
+        </div>
+        <div class="dialog-content binding-capture-area" tabindex="0" role="group" aria-label="Input capture area" aria-describedby="binding-capture-receipt">
+          <p id="binding-capture-instruction">Choose a direction to start listening.</p>
+          <div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Not listening.</div>
+        </div>
+        <div class="dialog-actions"><button id="binding-capture-stop" type="button" disabled>Cancel capture</button><button id="binding-capture-cancel" type="button">Done</button></div>
+      </dialog>
     <dialog id="preview-color-dialog" aria-labelledby="preview-color-dialog-title" aria-describedby="preview-color-status">
       <div class="dialog-content">
         <h2 id="preview-color-dialog-title">Choose an affect color</h2>
@@ -684,7 +701,7 @@ export function renderResearchUiMarkup(surface = "browser") {
           <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
           <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
         </div>
-        <p id="preview-color-label-help" class="field-help">Display alias for this setup session only. The saved valence/arousal axis identity does not change.</p>
+        <p id="preview-color-label-help" class="field-help">Applied display labels are saved for axis and corner placement. The valence/arousal coordinate identity does not change.</p>
         <p id="preview-color-status" class="status-text" role="status" aria-live="polite">Editing the selected directional anchor.</p>
         <p id="preview-color-error" class="field-error" role="alert" hidden>Enter a six-digit hexadecimal color.</p>
       </div>

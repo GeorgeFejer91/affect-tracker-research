@@ -27,6 +27,8 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "./feedback-contribution.js";
+import { validateFeedbackContribution, validateFeedbackContributionV2, createFeedbackAuthoringSettingsV2 } from "./feedback-settings.js";
+import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
 import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
@@ -240,6 +242,8 @@ function bindResearchInteractions(root, { surface }) {
   let previewResponseSimulator = null;
   let previewInteraction = null;
   let feedbackPreviewMode = "flubber";
+  let feedbackSettingsVersion = 2;
+  let restoredTransparency = null;
   let responsePreviewMode = "stepwise";
   let previewColorAnchor = null;
   let previewColorDraft = null;
@@ -252,7 +256,9 @@ function bindResearchInteractions(root, { surface }) {
     .map(({ id, axisLabel }) => [id, axisLabel]));
   let inputBinding = structuredClone(DEFAULT_SETTINGS.input);
   let inputController = null;
-  const feedbackContribution = createFeedbackContributionSource(feedbackFromUi);
+  const feedbackContribution = createFeedbackContributionSource(feedbackFromUi, {
+    validate: validateFeedbackContribution, resolveEnvelope: resolveFeedbackEnvelope,
+  });
   let gamepadCaptureFrame = null;
   let inputTestPassed = false;
   let nativeInputReceiptId = null;
@@ -839,7 +845,7 @@ function bindResearchInteractions(root, { surface }) {
     refreshProjection();
   }
 
-  function isPreviewOnlyControl(target) {
+  function isFeedbackBehaviorControl(target) {
     return target instanceof HTMLInputElement && (
       ["preview-halo-size", "preview-halo-gradient", "preview-halo-steepness", "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-full-span-duration", "preview-repeat-delay"].includes(target.id)
       || target.name === "previewHoldRule" || target.name === "previewGridSizing" || target.name === "previewColorAnchors"
@@ -924,12 +930,13 @@ function bindResearchInteractions(root, { surface }) {
       gridVisible: checked("visual-grid-visible"),
       flubberVisible: checked("visual-flubber-visible"),
       hideFeedback: checked("visual-hide-feedback"),
-      sizePercent: numberValue("visual-size", 42),
+      sizePercent: design && feedbackSettingsVersion === 2 ? 42 : numberValue("visual-size", 42),
       transparencyPercent: numberValue("visual-transparency", 0),
-      position: { x: numberValue("visual-position-x", 0.5), y: numberValue("visual-position-y", 0.5) },
-      lockPosition: locked || checked("visual-lock-position"),
+      position: design && feedbackSettingsVersion === 2 ? { x: 0.5, y: 0.5 }
+        : { x: numberValue("visual-position-x", 0.5), y: numberValue("visual-position-y", 0.5) },
+      lockPosition: locked || (design && feedbackSettingsVersion === 2) || checked("visual-lock-position"),
       ...(design ? {
-        displayMode: feedbackPreviewMode,
+        displayMode: feedbackSettingsVersion === 2 ? feedbackPreviewMode : "legacy",
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
         tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
@@ -988,7 +995,7 @@ function bindResearchInteractions(root, { surface }) {
     if (map) map.dataset.colorAnchorMode = previewColorMode();
     for (const [id, label] of previewLabels()) renderPreviewAxisLabel(id, label);
     for (const [id, key, minimum, maximum] of [
-      ["preview-halo-size", "width", 0, Infinity],
+      ["preview-halo-size", "width", 0, MAX_RENDERED_HALO_PERCENT],
       ["preview-halo-steepness", "steepness", 0.1, 10],
     ]) {
       const input = query(`#${id}`);
@@ -1001,10 +1008,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     const haloHelp = query("#preview-halo-help");
     if (haloHelp) haloHelp.textContent = query("#preview-halo-size")?.getAttribute("aria-invalid") === "true"
-      ? `Enter a finite number at least 0. Keeping ${previewHaloDraft.width}%.`
-      : previewHaloDraft.width > MAX_RENDERED_HALO_PERCENT
-        ? `Requested ${previewHaloDraft.width}%; rendered at ${MAX_RENDERED_HALO_PERCENT}% for bounded drawing.`
-        : "Preview-only width. Follows the outline; 0 hides the halo.";
+      ? `Enter 0–${MAX_RENDERED_HALO_PERCENT}%. Preview keeps ${previewHaloDraft.width}%; saving requires a valid width.`
+      : "Saved width relative to the base halo stroke; 0 hides the halo.";
     const steepnessHelp = query("#preview-halo-steepness-help");
     if (steepnessHelp) steepnessHelp.textContent = query("#preview-halo-steepness")?.getAttribute("aria-invalid") === "true"
       ? `Enter 0.1–10. Keeping ${previewHaloDraft.steepness}.`
@@ -1055,6 +1060,25 @@ function bindResearchInteractions(root, { surface }) {
       simulatorHelp.textContent = responsePreviewMode === "continuous"
         ? "Click the map to set a point. Focus the map or Flubber to use your configured controls or arrow keys; hold to preview travel time."
         : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
+    }
+    const legacy = feedbackSettingsVersion === 1;
+    const versionStatus = query("#feedback-settings-version");
+    if (versionStatus) versionStatus.textContent = legacy
+      ? "Legacy feedback loaded unchanged. New response and appearance choices require explicit conversion."
+      : "Feedback type, appearance and response settings are saved in the final recipe.";
+    const upgrade = query("#feedback-upgrade-v2");
+    if (upgrade) upgrade.hidden = !legacy;
+    const labelInput = query("#preview-color-label");
+    if (labelInput instanceof HTMLInputElement) labelInput.disabled = legacy;
+    for (const control of root.querySelectorAll('input,button[data-feedback-preview-mode],button[data-response-preview-mode]')) {
+      if (control instanceof HTMLInputElement && !isFeedbackBehaviorControl(control)) continue;
+      if (!(control instanceof HTMLInputElement) && !(control instanceof HTMLButtonElement)) continue;
+      if (legacy) control.disabled = true;
+      else if (!["preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-halo-steepness"].includes(control.id)) control.disabled = false;
+    }
+    for (const id of ["visual-grid-visible", "visual-flubber-visible", "visual-size", "visual-position-x", "visual-position-y", "visual-lock-position"]) {
+      const control = query(`#${id}`);
+      if (control instanceof HTMLInputElement) control.disabled = !legacy;
     }
   }
 
@@ -1112,7 +1136,7 @@ function bindResearchInteractions(root, { surface }) {
       const suffix = inputBinding.kind === "digital" ? "" : direction === "up" || direction === "right" ? " +" : " −";
       output.textContent = `${describeInputToken(directionTokens[direction])}${suffix}`;
     });
-    root.querySelectorAll("[data-binding-direction]").forEach((button) => {
+    root.querySelectorAll("[data-binding-direction], [data-binding-capture-target]").forEach((button) => {
       if (button instanceof HTMLButtonElement) button.disabled = inputBinding.kind !== "digital";
     });
   }
@@ -1121,14 +1145,15 @@ function bindResearchInteractions(root, { surface }) {
     const preset = selectedPreset();
     const step = query("#input-step-size");
     const applicability = query("#input-step-applicability");
-    if (step instanceof HTMLInputElement) step.disabled = !preset.digital;
+    if (step instanceof HTMLInputElement) step.disabled = !preset.digital || feedbackSettingsVersion === 2;
     if (applicability) applicability.textContent = preset.digital
-      ? "Applies to digital edge-triggered presses."
+      ? feedbackSettingsVersion === 2 ? "Legacy compatibility value. Saved response settings determine current movement." : "Applies to digital edge-triggered presses."
       : "N/A for this continuous / absolute input.";
     const previewInput = query("#preview-input-source");
     if (previewInput) previewInput.textContent = preset.label;
     const summary = query('[data-section-summary="feedback"]');
-    if (summary) summary.textContent = preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
+    if (summary) summary.textContent = feedbackSettingsVersion === 2 ? `${preset.label} · ${responsePreviewMode} response`
+      : preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
   }
 
   function resetBindingsToPreset() {
@@ -1363,7 +1388,7 @@ function bindResearchInteractions(root, { surface }) {
     return Number(raw);
   }
 
-  function feedbackFromUi() {
+  function legacyFeedbackFromUi() {
     if (value("input-preset") !== (UI_PRESET_IDS[inputBinding.preset] ?? "custom")) {
       throw new TypeError("Choose a valid input preset before saving.");
     }
@@ -1374,7 +1399,8 @@ function bindResearchInteractions(root, { surface }) {
         gridEnabled: checked("visual-grid-visible"),
         flubberEnabled: checked("visual-flubber-visible"),
         sizePercent: feedbackNumber("visual-size"),
-        transparency: feedbackNumber("visual-transparency") / 100,
+        transparency: restoredTransparency?.raw === value("visual-transparency")
+          ? restoredTransparency.value : feedbackNumber("visual-transparency") / 100,
         hideFeedback: checked("visual-hide-feedback"),
         overlayPosition: { x: feedbackNumber("visual-position-x"), y: feedbackNumber("visual-position-y") },
         lockPosition: checked("visual-lock-position"),
@@ -1395,9 +1421,27 @@ function bindResearchInteractions(root, { surface }) {
     });
   }
 
+  function feedbackFromUi() {
+    const retained = legacyFeedbackFromUi();
+    if (feedbackSettingsVersion === 1) return retained;
+    const dimensions = parsePreviewGrid({ mode: query('input[name="previewGridSizing"]:checked')?.value,
+      steps: value("preview-tile-count"), columns: value("preview-tile-columns"), rows: value("preview-tile-rows") });
+    if (!dimensions) throw new TypeError("Enter valid odd response grid dimensions before saving.");
+    return validateFeedbackContributionV2({ schema: "affect-research-feedback", version: 2, ...retained,
+      presentation: { renderer: feedbackPreviewMode === "face" ? "procedural-face" : feedbackPreviewMode,
+        colorAnchors: query('input[name="previewColorAnchors"]:checked')?.value,
+        labels: { axes: Object.fromEntries(previewAxisLabels), corners: Object.fromEntries(previewCornerLabels) },
+        halo: { widthPercent: feedbackNumber("preview-halo-size"), gradient: checked("preview-halo-gradient"),
+          steepness: feedbackNumber("preview-halo-steepness") } },
+      response: { mode: responsePreviewMode, grid: { columns: dimensions.tileCount, rows: dimensions.tileRows },
+        fullSpanDurationMs: feedbackNumber("preview-full-span-duration"),
+        holdRule: query('input[name="previewHoldRule"]:checked')?.value, repeatDelayMs: feedbackNumber("preview-repeat-delay") },
+    });
+  }
+
   function researchSettingsDraft({ verifySources = true } = {}) {
     if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
-    const feedback = feedbackFromUi();
+    const feedback = legacyFeedbackFromUi();
     if (verifySources) synchronizedInputBinding();
     return {
       schema: DEFAULT_SETTINGS.schema,
@@ -1442,6 +1486,9 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function researchSettingsFromUi() {
+    if (feedbackSettingsVersion === 2) {
+      throw new TypeError("Current feedback settings require the complete Planner recipe; legacy settings/package export and Start cannot omit them.");
+    }
     return validateResearchSettingsV3(researchSettingsDraft());
   }
 
@@ -1482,6 +1529,12 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function applyFeedbackFields(normalized) {
+    feedbackSettingsVersion = normalized.version === 2 ? 2 : 1;
+    // Range defaults are editing increments, not restrictions in the existing
+    // finite-number contract. Do not round an imported valid number to a tick.
+    for (const id of ["visual-transparency", "flubber-outline-thickness", "grid-line-thickness", "grid-outline-thickness", "grid-cursor-size"]) {
+      query(`#${id}`).step = "any";
+    }
     inputBinding = structuredClone(normalized.input);
     setInputValue("input-preset", UI_PRESET_IDS[inputBinding.preset] ?? "custom");
     if (inputBinding.kind === "digital") setInputValue("input-step-size", inputBinding.stepSize);
@@ -1489,6 +1542,7 @@ function bindResearchInteractions(root, { surface }) {
     setChecked("visual-flubber-visible", normalized.visual.flubberEnabled);
     setInputValue("visual-size", normalized.visual.sizePercent);
     setInputValue("visual-transparency", normalized.visual.transparency * 100);
+    restoredTransparency = { raw: value("visual-transparency"), value: normalized.visual.transparency };
     setChecked("visual-hide-feedback", normalized.visual.hideFeedback);
     setChecked("visual-lock-position", normalized.visual.lockPosition);
     setInputValue("visual-position-x", normalized.visual.overlayPosition.x);
@@ -1513,6 +1567,31 @@ function bindResearchInteractions(root, { surface }) {
       disclosure.querySelector("[data-mapping-driver]").value = mapping.drivenBy;
       disclosure.querySelector("[data-mapping-reverse]").checked = mapping.reverse;
     }
+    if (feedbackSettingsVersion === 2) {
+      const { presentation, response } = normalized;
+      feedbackPreviewMode = presentation.renderer === "procedural-face" ? "face" : presentation.renderer;
+      responsePreviewMode = response.mode;
+      for (const control of root.querySelectorAll('input[name="previewColorAnchors"]')) control.checked = control.value === presentation.colorAnchors;
+      for (const [map, values] of [[previewAxisLabels, presentation.labels.axes], [previewCornerLabels, presentation.labels.corners]]) {
+        map.clear(); for (const [key, label] of Object.entries(values)) map.set(key, label);
+      }
+      setInputValue("preview-halo-size", presentation.halo.widthPercent);
+      setChecked("preview-halo-gradient", presentation.halo.gradient);
+      setInputValue("preview-halo-steepness", presentation.halo.steepness);
+      previewHaloDraft.width = presentation.halo.widthPercent;
+      previewHaloDraft.steepness = presentation.halo.steepness;
+      setInputValue("preview-tile-columns", response.grid.columns);
+      setInputValue("preview-tile-rows", response.grid.rows);
+      setInputValue("preview-tile-count", (response.grid.columns - 1) / 2);
+      const sizing = response.grid.columns === response.grid.rows ? "square" : "custom";
+      for (const control of root.querySelectorAll('input[name="previewGridSizing"]')) control.checked = control.value === sizing;
+      for (const control of root.querySelectorAll('input[name="previewHoldRule"]')) control.checked = control.value === response.holdRule;
+      query("#preview-full-span-duration").step = "1";
+      query("#preview-repeat-delay").step = "1";
+      setInputValue("preview-full-span-duration", response.fullSpanDurationMs);
+      setInputValue("preview-repeat-delay", response.repeatDelayMs);
+      configurePreviewResponseSimulator();
+    }
     // Input callbacks may refresh projections: publish only after all owned
     // fields have been restored, so consumers never observe a partial restore.
     resetInputTest();
@@ -1521,12 +1600,19 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function restoreFeedbackContribution(contribution, { isCurrent = () => true } = {}) {
-    const normalized = validateFeedbackContributionV1(contribution);
-    if (!isCurrent()) return false;
+    const normalized = validateFeedbackContribution(contribution);
+    if (researchUiDisposed || !isCurrent()) return false;
     applyFeedbackFields(normalized);
+    resetPreviewInspection();
     refreshProjection();
     schedulePlanRefresh();
     return feedbackContribution.getSnapshot();
+  }
+
+  async function initializeFeedbackAuthoringV2(options) {
+    const result = await restoreFeedbackContribution(createFeedbackAuthoringSettingsV2(legacyFeedbackFromUi()), options);
+    if (result) announce("Current feedback authoring initialized: Flubber, axes, 21 × 21 stepwise grid, separate presses, 2-second travel and 150% fading halo. Review these new settings before saving.");
+    return result;
   }
 
   async function applyResearchSettings(settings, options = {}) {
@@ -4145,6 +4231,11 @@ function bindResearchInteractions(root, { surface }) {
 
   function applyNativeInputStatus(status) {
     if (surface !== "tauri" || !status) return;
+    if (nativeCaptureDirection && query("#binding-capture-dialog")?.open && status.captureError) {
+      const receipt = query("#binding-capture-receipt");
+      receipt.textContent = status.captureError;
+      receipt.dataset.state = "error";
+    }
     const observation = status.lastInput;
     if (mode === "setup" && Number.isInteger(observation?.sequence)
       && observation.sequence > nativeInputLastSequence) {
@@ -4188,7 +4279,37 @@ function bindResearchInteractions(root, { surface }) {
     renderReview();
   }
 
+  function renderCaptureState(direction = null) {
+    root.querySelectorAll("[data-binding-capture-target]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.bindingCaptureTarget === direction));
+    });
+    const stop = query("#binding-capture-stop");
+    if (stop) stop.disabled = !direction;
+    const area = query(".binding-capture-area");
+    if (area) area.dataset.listening = String(Boolean(direction));
+    const instruction = query("#binding-capture-instruction");
+    if (instruction) instruction.textContent = direction
+      ? `Listening for ${direction}. Press a key or gamepad button; click or scroll here. Tab cancels capture; Escape closes.`
+      : inputBinding.kind === "digital" ? "Choose a direction to start listening."
+        : "This analog preset cannot be rebound here. Choose a digital preset in Input controls first.";
+  }
+
+  function openBindingMenu(direction = null) {
+    cancelBindingCapture();
+    const dialog = query("#binding-capture-dialog");
+    if (!dialog?.open) dialog?.showModal();
+    renderBindings();
+    const receipt = query("#binding-capture-receipt");
+    receipt.textContent = direction ? `Listening for ${direction}…` : "Not listening.";
+    receipt.dataset.state = direction ? "listening" : "idle";
+    if (direction) beginBindingCapture(direction);
+    else renderCaptureState();
+  }
+
   function beginBindingCapture(direction) {
+    if (inputBinding.kind !== "digital") return;
+    renderCaptureState(direction);
+    query(".binding-capture-area")?.focus();
     const receipt = query("#binding-capture-receipt");
     if (surface === "tauri") {
       nativeCaptureDirection = direction;
@@ -4200,6 +4321,7 @@ function bindResearchInteractions(root, { surface }) {
       return;
     }
     const complete = (result) => {
+      if (!query("#binding-capture-dialog")?.open || inputController.captureDirection !== direction) return;
       if (!result.ok) {
         if (receipt) {
           receipt.textContent = result.error instanceof Error ? result.error.message : "That action cannot be assigned.";
@@ -4213,6 +4335,7 @@ function bindResearchInteractions(root, { surface }) {
       inputController.cancelCapture();
       if (gamepadCaptureFrame !== null) cancelAnimationFrame(gamepadCaptureFrame);
       gamepadCaptureFrame = null;
+      renderCaptureState();
       setInputValue("input-preset", "custom");
       renderBindings();
       schedulePlanRefresh();
@@ -4220,21 +4343,21 @@ function bindResearchInteractions(root, { surface }) {
         receipt.textContent = `${describeInputToken(result.action)} assigned to ${result.direction}.`;
         receipt.dataset.state = "ready";
       }
-      setTimeout(() => {
-        closeDialog("binding-capture-dialog");
-        refreshProjection();
-      }, 180);
+      refreshProjection();
     };
     inputController.beginCapture(direction, complete);
     const previous = new Map();
-    for (const pad of navigator.getGamepads?.() ?? []) {
+    for (const pad of captureGamepads()) {
       if (!pad) continue;
       pad.buttons.forEach((button, index) => previous.set(`${pad.index}:${index}`, button.pressed));
     }
     const pollGamepadCapture = () => {
       gamepadCaptureFrame = null;
       if (inputController.captureDirection !== direction) return;
-      for (const pad of navigator.getGamepads?.() ?? []) {
+      const pads = captureGamepads();
+      const connected = new Set(pads.filter(Boolean).map(pad => pad.index));
+      for (const key of previous.keys()) if (!connected.has(Number(key.split(":")[0]))) previous.delete(key);
+      for (const pad of pads) {
         if (!pad) continue;
         for (let index = 0; index < pad.buttons.length; index += 1) {
           const key = `${pad.index}:${index}`;
@@ -4266,7 +4389,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function cancelBindingCapture() {
-    inputController.cancelCapture();
+    inputController?.cancelCapture();
+    renderCaptureState();
     if (gamepadCaptureFrame !== null) cancelAnimationFrame(gamepadCaptureFrame);
     gamepadCaptureFrame = null;
     if (surface === "tauri" && nativeCaptureDirection) {
@@ -4276,10 +4400,12 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function applyNativeCapture(result) {
-    if (surface !== "tauri" || !result?.binding || !result?.action) return false;
+    if (surface !== "tauri" || !result?.binding || !result?.action
+      || !query("#binding-capture-dialog")?.open || nativeCaptureDirection !== result.direction) return false;
     inputBinding = structuredClone(validateInputBindingV1(result.binding));
     resetInputTest({ notify: false });
     nativeCaptureDirection = null;
+    renderCaptureState();
     inputController.setBinding(inputBinding);
     setInputValue("input-preset", "custom");
     renderBindings();
@@ -4289,7 +4415,6 @@ function bindResearchInteractions(root, { surface }) {
       receipt.textContent = `${describeInputToken(result.action)} assigned to ${result.direction} by native capture.`;
       receipt.dataset.state = "ready";
     }
-    closeDialog("binding-capture-dialog");
     refreshProjection();
     return true;
   }
@@ -4299,13 +4424,51 @@ function bindResearchInteractions(root, { surface }) {
     if (dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
   }
 
+  function resetPreviewInspection() {
+    // Restoring configuration clears test input, not the configured palette.
+    // In particular, do not reuse the user-facing grey-palette Reset action.
+    previewInteraction?.releaseAll();
+    setupPreview.cancelInteraction();
+    cancelBindingCapture();
+    closeDialog("binding-capture-dialog");
+    cancelPreviewColorPaint();
+    previewColorAnchor = null;
+    previewColorDraft = null;
+    previewColorLabelDraft = null;
+    closeDialog("preview-color-dialog");
+    previewResponseSimulator?.reset();
+    previewDesignPoint = { x: 0, y: 0 };
+    refreshDesignPreview();
+  }
+
+  function captureGamepads() {
+    try { return [...(navigator.getGamepads?.() ?? [])]; }
+    catch { return []; }
+  }
+
+  const bindingDialog = query("#binding-capture-dialog");
+  const stopCapture = () => {
+    const wasListening = Boolean(inputController?.captureDirection || nativeCaptureDirection);
+    cancelBindingCapture();
+    const receipt = query("#binding-capture-receipt");
+    if (receipt && wasListening) { receipt.textContent = "Capture cancelled. Assignments unchanged."; receipt.dataset.state = "idle"; }
+  };
+  bindingDialog?.addEventListener("close", () => { if (!bindingDialog.open) stopCapture(); });
+  bindingDialog?.addEventListener("cancel", stopCapture);
+  bindingDialog?.addEventListener("focusout", event => {
+    if (event.target === query(".binding-capture-area") && !event.relatedTarget?.closest(".binding-capture-area")) stopCapture();
+  });
+  window.addEventListener("blur", stopCapture);
+  const cancelHiddenCapture = () => { if (document.hidden) stopCapture(); };
+  document.addEventListener("visibilitychange", cancelHiddenCapture);
+
   const previewColorDialog = query("#preview-color-dialog");
   const inlineColorPicker = createInlineColorPicker(query("#preview-color-picker"), {
     onChange: hex => setPreviewColorDraft(hex, { synchronizeHex: true }),
   });
   if (previewColorDialog instanceof HTMLDialogElement) {
     previewColorDialog.addEventListener("close", () => {
-      if (!previewColorAnchor) return;
+      if (previewColorDialog.open || !previewColorAnchor) return;
       cancelPreviewColorPaint();
       previewColorAnchor = null;
       previewColorDraft = null;
@@ -4682,16 +4845,27 @@ function bindResearchInteractions(root, { surface }) {
     const target = event.target instanceof Element ? event.target.closest("button") : null;
     if (!(target instanceof HTMLButtonElement)) return;
     if (["flubber", "grid", "face"].includes(target.dataset.feedbackPreviewMode)) {
+      if (feedbackSettingsVersion !== 2) return;
+      packageEditRevision += 1;
       feedbackPreviewMode = target.dataset.feedbackPreviewMode;
       refreshProjection();
-      announce(`${feedbackPreviewMode === "grid" ? "2D Grid" : feedbackPreviewMode === "face" ? "Responsive Face" : "Classic Flubber"} selected in the design preview.`);
+      schedulePlanRefresh();
+      announce(`${feedbackPreviewMode === "grid" ? "2D Grid" : feedbackPreviewMode === "face" ? "Procedural Face" : "Classic Flubber"} selected for the experiment.`);
       return;
     }
     if (["continuous", "stepwise"].includes(target.dataset.responsePreviewMode)) {
+      if (feedbackSettingsVersion !== 2) return;
+      packageEditRevision += 1;
       responsePreviewMode = target.dataset.responsePreviewMode;
       configurePreviewResponseSimulator();
       refreshProjection();
+      schedulePlanRefresh();
       announce(`${responsePreviewMode === "continuous" ? "Continuous" : "Stepwise"} response design selected.`);
+      return;
+    }
+    if (target.id === "feedback-upgrade-v2") {
+      packageEditRevision += 1;
+      void initializeFeedbackAuthoringV2();
       return;
     }
     if (target.dataset.previewFocus) {
@@ -4804,18 +4978,11 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
-    if (target.dataset.bindingDirection) {
-      const direction = target.dataset.bindingDirection;
-      const title = query("#binding-capture-title");
-      const receipt = query("#binding-capture-receipt");
-      if (title) title.textContent = `Capture ${target.querySelector("span")?.textContent ?? direction}`;
-      if (receipt) {
-        receipt.textContent = "Waiting for an input edge…";
-        delete receipt.dataset.state;
-      }
-      query("#binding-capture-dialog")?.showModal();
-      beginBindingCapture(direction);
+    if (target.id === "preview-input-menu") openBindingMenu();
+    if (target.dataset.bindingDirection || target.dataset.bindingCaptureTarget) {
+      openBindingMenu(target.dataset.bindingDirection ?? target.dataset.bindingCaptureTarget);
     }
+    if (target.id === "binding-capture-stop") stopCapture();
     if (target.id === "binding-reset") resetBindingsToPreset();
     if (target.id === "binding-capture-cancel") {
       cancelBindingCapture();
@@ -4966,8 +5133,9 @@ function bindResearchInteractions(root, { surface }) {
       }
     }
     if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
-    if (isPreviewOnlyControl(target)) {
+    if (isFeedbackBehaviorControl(target)) {
       refreshProjection();
+      schedulePlanRefresh();
       return;
     }
     if (isValidationControl(target) && touchedValidationControls.has(target)) {
@@ -4983,8 +5151,9 @@ function bindResearchInteractions(root, { surface }) {
     packageEditRevision += 1;
     const target = event.target;
     if (isPreviewResponseControl(target)) configurePreviewResponseSimulator();
-    if (isPreviewOnlyControl(target)) {
+    if (isFeedbackBehaviorControl(target)) {
       refreshProjection();
+      schedulePlanRefresh();
       return;
     }
     if (target instanceof HTMLInputElement && ["output-csv", "output-tsv"].includes(target.id)) {
@@ -5021,9 +5190,11 @@ function bindResearchInteractions(root, { surface }) {
   root.addEventListener("keydown", (event) => {
     if (inputController.captureDirection || nativeCaptureDirection) {
       if (event.key === "Escape") {
+        event.preventDefault();
         cancelBindingCapture();
         closeDialog("binding-capture-dialog");
-      } else if (surface !== "tauri") routeCaptureEvent(event);
+      } else if (event.key === "Tab") stopCapture();
+      else if (surface !== "tauri") routeCaptureEvent(event);
       return;
     }
     const tile = event.target instanceof Element ? event.target.closest("[data-participant-id]") : null;
@@ -5045,10 +5216,10 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener("mousedown", (event) => {
-    if (inputController.captureDirection && !event.target.closest("#binding-capture-cancel")) routeCaptureEvent(event);
+    if (inputController.captureDirection && event.target.closest(".binding-capture-area")) routeCaptureEvent(event);
   });
   root.addEventListener("wheel", (event) => {
-    if (inputController.captureDirection) routeCaptureEvent(event);
+    if (inputController.captureDirection && event.target.closest(".binding-capture-area")) routeCaptureEvent(event);
   }, { passive: false });
 
   const dropZone = query("#video-drop-zone");
@@ -5544,7 +5715,8 @@ function bindResearchInteractions(root, { surface }) {
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
     get nativeInputReceiptId() { return nativeInputReceiptId; },
-    validateFeedbackContribution: validateFeedbackContributionV1,
+    validateFeedbackContribution,
+    initializeFeedbackAuthoringV2,
     getFeedbackContributionSnapshot: feedbackContribution.getSnapshot,
     getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
     subscribeFeedbackChanges: feedbackContribution.subscribe,
@@ -5571,6 +5743,17 @@ function bindResearchInteractions(root, { surface }) {
     setAffect(x, y, receipt = "Authoritative input received.") { updateInputPoint(x, y, receipt); },
     applyNativeInputStatus,
     applyNativeCapture,
+    resetPreviewInspection,
+    getPreviewInspectionSnapshot() {
+      return Object.freeze({ rendering: setupPreview.snapshot(), response: previewResponseSimulator.snapshot() });
+    },
+    failNativeCapture(message) {
+      if (surface !== "tauri" || !nativeCaptureDirection) return;
+      cancelBindingCapture();
+      const receipt = query("#binding-capture-receipt");
+      receipt.textContent = message;
+      receipt.dataset.state = "error";
+    },
     resetAffect(reason = "safe-boundary") {
       inputController.resetNeutral(reason);
       return Object.freeze({ x: inputController.state.x, y: inputController.state.y, inputActive: inputController.state.inputActive });
@@ -5606,6 +5789,8 @@ function bindResearchInteractions(root, { surface }) {
       previewResponseSimulator = null;
       inputController.detach();
       cancelBindingCapture();
+      window.removeEventListener("blur", stopCapture);
+      document.removeEventListener("visibilitychange", cancelHiddenCapture);
       for (const [type, handler] of Object.entries(runInputHandlers)) window.removeEventListener(type, handler);
       runFeedbackStage?.removeEventListener("pointerdown", handleRunPointer);
       runFeedbackStage?.removeEventListener("pointermove", handleRunPointer);
