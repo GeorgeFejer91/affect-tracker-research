@@ -4,8 +4,8 @@
 mod research_clock;
 mod research_commands;
 mod research_contracts;
-pub mod research_desktop_layout;
 mod research_desktop;
+pub mod research_desktop_layout;
 mod research_error;
 mod research_experiment_package;
 mod research_external_protocol;
@@ -16,6 +16,7 @@ mod research_lsl;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
+pub mod research_planner_recipe;
 pub mod research_planner_recipe_policy;
 mod research_platform;
 pub mod research_protocol;
@@ -160,6 +161,8 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_load_experiment,
             research_commands::research_load_experiment_package,
             research_commands::research_save_experiment_package,
+            research_commands::research_load_planner_recipe,
+            research_commands::research_save_planner_recipe,
             research_commands::research_rescan_stimuli,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
@@ -207,6 +210,7 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_workspace_status,
             research_commands::research_load_experiment_package,
             research_commands::research_rescan_package_stimuli,
+            research_commands::research_load_planner_recipe,
             research_commands::research_workspace_media_url,
             research_commands::research_storage_readiness,
             research_commands::research_lsl_readiness,
