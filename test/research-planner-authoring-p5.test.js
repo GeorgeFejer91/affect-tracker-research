@@ -6,6 +6,8 @@ import { createInputBindingPreset, INPUT_PRESET_IDS } from "../site/src/research
 import { createPlannerAuthoringP5, P5_AUTHORING_SETTINGS } from "../site/src/research/planner-authoring-p5.js";
 import { validateFeedbackContribution } from "../site/src/research/feedback-settings.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
+import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
 
 const fixture = () => JSON.parse(readFileSync(new URL("./fixtures/research-feedback-settings-v2.json", import.meta.url), "utf8"));
 const set = (field, value) => ({ kind: "set", field, value });
@@ -17,6 +19,7 @@ function owner(initial = fixture(), prepare = null) {
   let draft = structuredClone(initial), commits = 0, preparations = 0, preparedContext;
   const adapter = createPlannerAuthoringP5({
     readDraft: () => draft,
+    readDigitalStep: () => initial.input.stepSize ?? 0.1,
     async prepareCommit(candidate, context) {
       preparations++; preparedContext = context;
       if (prepare) await prepare(candidate, context);
@@ -28,7 +31,7 @@ function owner(initial = fixture(), prepare = null) {
 }
 
 function alternative(setting, old) {
-  if (setting.id === "P5.input") return createInputBindingPreset("wasd", 0.2);
+  if (setting.id === "P5.input") return createInputBindingPreset("wasd", old.stepSize);
   if (setting.id === "P5.input.stepSize") return old === 0.123 ? 0.234 : 0.123;
   if (setting.enum) return setting.enum.find(value => value !== old);
   if (setting.type === "boolean") return !old;
@@ -150,33 +153,34 @@ test("domain-incomplete even grids and reversed bounds remain visible and repair
 test("all input presets and complete custom digital tokens use the unchanged input validator", async () => {
   const state = owner();
   for (const preset of INPUT_PRESET_IDS) {
-    const binding = createInputBindingPreset(preset, 0.234);
-    (await state.adapter.stage([operation("inputPreset", { preset, stepSize: binding.stepSize })], guard())).commit();
+    const binding = createInputBindingPreset(preset, fixture().input.stepSize);
+    (await state.adapter.stage([operation("inputPreset", { preset })], guard())).commit();
     assert.deepEqual(state.adapter.read().values["P5.input"], binding);
     assert.equal(state.adapter.read().values["P5.input.stepSize"], binding.stepSize);
   }
-  const input = { ...createInputBindingPreset("arrowKeys", 0.345), preset: "custom", directions: {
+  const input = { ...createInputBindingPreset("arrowKeys", fixture().input.stepSize), preset: "custom", directions: {
     up: { kind: "keyboard", code: "KeyQ" }, down: { kind: "wheel", direction: "down" },
     left: { kind: "mouseButton", button: 5 }, right: { kind: "gamepadButton", button: 31 },
   } };
-  (await state.adapter.stage([set("P5.input", input), set("P5.input.stepSize", 0.765)], guard())).commit();
-  assert.deepEqual(state.draft.input, { ...input, stepSize: 0.765 });
+  (await state.adapter.stage([set("P5.input", input)], guard())).commit();
+  assert.deepEqual(state.draft.input, input);
   assert.equal(state.adapter.validate().length, 0);
 });
 
-test("legacy reads and edits retain exact generation; V2 conversion requires an explicit ordered operation", async () => {
+test("legacy stays read-only until V2 conversion through an explicit ordered operation", async () => {
   const full = fixture(), legacy = { input: full.input, visual: full.visual, mappings: full.mappings };
   const state = owner(legacy);
   assert.equal(state.adapter.read().values["P5.generation"], 1);
   assert.equal(state.adapter.read().values["P5.response.mode"], null);
   assert.deepEqual(state.adapter.read().values["P5.contribution"], legacy);
   await assert.rejects(state.adapter.stage([set("P5.response.mode", "continuous")], guard()), /initialize V2/u);
-  (await state.adapter.stage([set("P5.visual.gridEnabled", false)], guard())).commit();
+  await assert.rejects(state.adapter.stage([set("P5.visual.gridEnabled", false)], guard()), /read-only/u);
+  await assert.rejects(state.adapter.stage([set("P5.visual.hideFeedback", true)], guard()), /initialize V2/u);
   assert.equal(Object.hasOwn(state.draft, "version"), false);
   (await state.adapter.stage([operation("initializeV2", {}), set("P5.response.mode", "continuous")], guard())).commit();
   assert.equal(state.draft.version, 2);
   assert.equal(state.draft.response.mode, "continuous");
-  assert.equal(state.draft.visual.gridEnabled, false);
+  assert.equal(state.draft.visual.gridEnabled, legacy.visual.gridEnabled);
   await assert.rejects(state.adapter.stage([operation("initializeV2", {})], guard()), /already initialized/u);
 });
 
@@ -190,7 +194,7 @@ test("malformed, nonfinite, unknown, read-only and unsupported edits reject the 
     set("P5.presentation.labels.axes.up", " x "), set("P5.generation", 1), set("P5.preview.x", 0.5),
     set("P5.input", { ...fixture().input, unknown: true }),
     set("P5.__proto__.x", "bad"), operation("inputPreset", { preset: "gamepadLeftStick", stepSize: 0.1 }),
-    operation("inputPreset", { preset: "arrowKeys" }), operation("resetInspection", {}),
+    operation("inputPreset", {}), operation("resetInspection", {}),
     { ...set("P5.visual.hideFeedback", false), extra: false }, { ...operation("initializeV2", {}), owner: "P4" }];
   const input = structuredClone(fixture().input); input.preset = "custom"; input.directions.left = input.directions.up;
   bad.push(set("P5.input", input));
@@ -237,10 +241,111 @@ test("async preparation catches dependency drift, detached inputs/readback canno
 test("owner-supplied guard participates in final all-owner preflight and async commits are rejected", async () => {
   let alive = true;
   const draft = fixture();
-  const adapter = createPlannerAuthoringP5({ readDraft: () => draft,
+  const adapter = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => draft.input.stepSize,
     prepareCommit: () => ({ isCurrent: () => alive, commit() {} }) });
   const candidate = await adapter.stage([set("P5.visual.hideFeedback", true)], guard());
   assert.equal(candidate.isCurrent(), true); alive = false; assert.equal(candidate.isCurrent(), false);
-  const invalid = createPlannerAuthoringP5({ readDraft: () => draft, prepareCommit: () => ({ async commit() {} }) });
+  const invalid = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => draft.input.stepSize,
+    prepareCommit: () => ({ async commit() {} }) });
   await assert.rejects(invalid.stage([set("P5.visual.hideFeedback", true)], guard()), /synchronous commit/u);
+});
+
+const request = (session, action, expectedRevision = null) => ({ schema: PLANNER_COMMAND_SCHEMA,
+  version: 1, sessionId: session.sessionId, requestId: crypto.randomUUID(), expectedRevision, action });
+
+test("the actual shared session dispatches catalogue and every writable P5 set/get with exact readback and retry", async () => {
+  for (const setting of P5_AUTHORING_SETTINGS.filter(setting => setting.writable)) {
+    const state = owner(), session = createPlannerAuthoringSession({ owners: [state.adapter] });
+    const catalogue = await session.execute(request(session, { kind: "catalogue" }));
+    assert.equal(catalogue.status, "ok");
+    assert.deepEqual(catalogue.result.settings, P5_AUTHORING_SETTINGS);
+    const before = await session.execute(request(session, { kind: "snapshot" }));
+    assert.equal(before.status, "ok");
+    assert.deepEqual(Object.keys(before.result.owners.P5.values).sort(), P5_AUTHORING_SETTINGS.map(field => field.id).sort());
+    const value = alternative(setting, state.adapter.read().values[setting.id]);
+    const edit = request(session, set(setting.id, value), 0);
+    const result = await session.execute(edit);
+    assert.equal(result.status, "applied", JSON.stringify({ field: setting.id, result }));
+    assert.equal(result.revision, 1);
+    const read = await session.execute(request(session, { kind: "get", field: setting.id }));
+    assert.equal(read.status, "ok"); assert.deepEqual(read.result.value, value, setting.id);
+    assert.deepEqual(await session.execute(edit), result);
+    assert.equal(state.commits, 1);
+    assert.equal(canonicalJson(state.adapter.read().values["P5.contribution"]), canonicalJson(validateFeedbackContribution(state.draft)));
+    session.destroy();
+  }
+});
+
+test("compatibility values are read-only, including whole-input and preset backdoors, and survive canonical readback", async () => {
+  const state = owner(), before = canonicalJson(state.draft);
+  const session = createPlannerAuthoringSession({ owners: [state.adapter] });
+  const compatibility = state.adapter.settings.filter(setting => setting.classification === "compatibility");
+  assert.equal(compatibility.length, 7);
+  for (const setting of compatibility) {
+    assert.equal(setting.writable, false);
+    const result = await session.execute(request(session, set(setting.id, alternative(setting, state.adapter.read().values[setting.id])), 0));
+    assert.equal(result.status, "rejected"); assert.equal(result.issues[0].code, "read_only");
+  }
+  const altered = { ...fixture().input, stepSize: fixture().input.stepSize === 0.7 ? 0.8 : 0.7 };
+  const bypass = await session.execute(request(session, set("P5.input", altered), 0));
+  assert.equal(bypass.status, "rejected"); assert.equal(bypass.issues[0].field, "P5.input.stepSize");
+  assert.equal(bypass.issues[0].code, "read_only");
+  const presetBypass = await session.execute(request(session, { kind: "apply", edits: [operation("inputPreset", { preset: "wasd", stepSize: 0.9 })] }, 0));
+  assert.equal(presetBypass.status, "rejected");
+  assert.equal(state.commits, 0); assert.equal(canonicalJson(state.draft), before);
+  assert.equal(canonicalJson(state.adapter.read().values["P5.contribution"]), before);
+  session.destroy();
+});
+
+test("shared session retains incomplete and GUI-invalid drafts, rejects stale CAS and commits no earlier owner on drift", async () => {
+  const state = owner(), session = createPlannerAuthoringSession({ owners: [state.adapter] });
+  const incomplete = await session.execute(request(session, set("P5.response.grid.columns", 22), 0));
+  assert.equal(incomplete.status, "incomplete");
+  assert.equal(state.adapter.read().values["P5.response.grid.columns"], 22);
+  assert.equal(state.adapter.read().values["P5.contribution"], null);
+  state.draft.response.fullSpanDurationMs = "invalid GUI text"; session.edited();
+  const read = await session.execute(request(session, { kind: "get", field: "P5.response.fullSpanDurationMs" }));
+  assert.equal(read.status, "ok"); assert.equal(read.result.value, "invalid GUI text");
+  assert.ok(read.issues.some(issue => issue.field === "P5.response.fullSpanDurationMs"));
+  const stale = await session.execute(request(session, set("P5.response.grid.columns", 23), 0));
+  assert.equal(stale.status, "rejected"); assert.equal(stale.issues[0].code, "stale_revision");
+  session.destroy();
+
+  let otherCommits = 0;
+  const atomicState = owner(), other = { id: "P7", settings: [{ id: "P7.test", type: "boolean", classification: "authored", writable: true }],
+    operations: [], read: () => ({ values: { "P7.test": false }, issues: [] }), validate: () => [],
+    stage() { atomicState.draft.presentation.halo.widthPercent = 400;
+      return { commit() { otherCommits++; } }; } };
+  const atomic = createPlannerAuthoringSession({ owners: [atomicState.adapter, other] });
+  const rejected = await atomic.execute(request(atomic, { kind: "apply", edits: [set("P5.visual.hideFeedback", true), set("P7.test", true)] }, 0));
+  assert.equal(rejected.status, "rejected"); assert.equal(rejected.issues[0].code, "stale_revision");
+  assert.equal(atomicState.commits, 0); assert.equal(otherCommits, 0);
+  assert.equal(atomicState.draft.visual.hideFeedback, false);
+  atomic.destroy();
+});
+
+test("preset transitions bind the existing UI-owned step rather than introducing a default or writable compatibility option", async () => {
+  const initial = fixture(); initial.input = createInputBindingPreset("gamepadLeftStick");
+  let draft = initial, step = 0.456;
+  const adapter = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => step,
+    prepareCommit: candidate => ({ commit() { draft = structuredClone(candidate); } }) });
+  const candidate = await adapter.stage([operation("inputPreset", { preset: "wasd" })], guard());
+  assert.equal(candidate.isCurrent(), true); step = 0.567; assert.equal(candidate.isCurrent(), false);
+  const current = await adapter.stage([operation("inputPreset", { preset: "numpad" })], guard());
+  current.commit(); assert.equal(draft.input.stepSize, 0.567);
+  assert.deepEqual(draft.input, createInputBindingPreset("numpad", 0.567));
+});
+
+test("owner publication is separate from atomic installation, synchronous and one-use", async () => {
+  let draft = fixture(), published = 0;
+  const adapter = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => draft.input.stepSize,
+    prepareCommit: candidate => ({ commit() { draft = structuredClone(candidate); },
+      afterCommit() { published++; assert.equal(draft.visual.hideFeedback, true); } }) });
+  const candidate = await adapter.stage([set("P5.visual.hideFeedback", true)], guard());
+  candidate.afterCommit(); assert.equal(published, 0);
+  candidate.commit(); assert.equal(published, 0);
+  candidate.afterCommit(); candidate.afterCommit(); assert.equal(published, 1);
+  const invalid = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => draft.input.stepSize,
+    prepareCommit: () => ({ commit() {}, async afterCommit() {} }) });
+  await assert.rejects(invalid.stage([set("P5.visual.hideFeedback", false)], guard()), /synchronous/u);
 });
