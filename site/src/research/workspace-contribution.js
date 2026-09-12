@@ -275,6 +275,7 @@ export function createWorkspaceContributionProducerV1({
   let fingerprint = null;
   let revision = 0;
   let snapshot = null;
+  let publishedSnapshot = null;
 
   function read() {
     let contribution = null;
@@ -295,13 +296,15 @@ export function createWorkspaceContributionProducerV1({
       revision += 1;
     }
     snapshot = Object.freeze({ revision, enabled: true, pending, contribution, dependencyRevisions: [] });
+    if (publishedSnapshot === null) publishedSnapshot = snapshot;
     return snapshot;
   }
 
   function changed() {
-    const previous = snapshot;
+    const hadSnapshot = snapshot !== null;
     const next = read();
-    if (!previous || canonicalJson(previous) !== canonicalJson(next)) {
+    if (!hadSnapshot || canonicalJson(publishedSnapshot) !== canonicalJson(next)) {
+      publishedSnapshot = next;
       for (const listener of listeners) listener(next);
     }
     return next;
@@ -332,6 +335,7 @@ export function createWorkspaceContributionProducer({
   let fingerprint = null;
   let revision = 0;
   let snapshot = null;
+  let publishedSnapshot = null;
 
   function read() {
     let contribution = null;
@@ -355,13 +359,15 @@ export function createWorkspaceContributionProducer({
       revision += 1;
     }
     snapshot = Object.freeze({ revision, enabled: true, pending, contribution, dependencyRevisions: [] });
+    if (publishedSnapshot === null) publishedSnapshot = snapshot;
     return snapshot;
   }
 
   function changed() {
-    const previous = snapshot;
+    const hadSnapshot = snapshot !== null;
     const next = read();
-    if (!previous || canonicalJson(previous) !== canonicalJson(next)) {
+    if (!hadSnapshot || canonicalJson(publishedSnapshot) !== canonicalJson(next)) {
+      publishedSnapshot = next;
       for (const listener of listeners) listener(next);
     }
     return next;
