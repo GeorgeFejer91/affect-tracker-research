@@ -216,6 +216,43 @@
   sole integrator. No new unsafe boundary, qualification flag or platform change.
   Production fixes and diagnostic execution remain pending their receipts.
 
+### 20260912-cli-native-selection-grants
+
+- Owner S3, explicitly reassigned by main/root after frozen P3 completion to
+  the bounded CLI-SHARED native I/O helper; Backend Verification. Isolated
+  `codex/segment-planner-cli-io`, C: `affect-tracker-research-planner-cli-io`
+  worktree, main base `3d94619`. Prior P3 branch remains frozen/collected.
+- Read all instruction changes through this base, plus main's frozen
+  `docs/planner-cli-consequential-commands-v1.md`. Main retains broker, wire,
+  registration, wrappers, app/native composition and active-request authority.
+- Allowed implementation: new `research_planner_cli_io.rs`, its own tests and
+  API documentation only. Retain native paths behind bounded purpose/request/
+  session/fingerprint grants; renderer sees opaque IDs and bounded questionnaire
+  source bytes/hash/basename/format. Existing Workspace/S7 own import, media
+  verification and writes. No compiler, editor, native actor or unsafe changes.
+- Main approved the exact proposed API, one-use claims and limits before
+  implementation. Implemented six purposes with session/request/full-request and
+  ordered-selection fingerprints, original admission/error retention, no eviction,
+  consumption before revalidation/read, cancellation/close and path-free errors.
+- Questionnaire source is at most 4 MiB, preserved byte-for-byte as bounded
+  `bytesHex` with length/SHA-256/basename/format/grant ID. This fits the broker's
+  16 MiB frame for arbitrary bytes; the existing importer still owns compilation.
+- Windows focused harness: 17/17 passed (15 new module tests, 2 existing error
+  tests). Includes actual junctions/replaced ancestors, file-type substitution,
+  existing-writer rejection, exact source snapshot timing, identity/purpose/replay,
+  revoked/closed sessions, byte/count/path and retained-capacity limits. Scoped
+  Clippy `--test planner_cli_io --no-default-features -- -D warnings -A dead_code`
+  passed; the allowance covers unused existing APIs in the standalone harness and
+  no-default-feature library. Existing `research_planner_recipe_file::tests`
+  baseline passed 10/10. Rustfmt and diff checks passed. Logs/source hashes are in
+  `D:/GitHub/.affect-preview-checks/cli-native-io-20260912/`.
+- Integration contract: `docs/planner-cli-native-selection-grants.md`. Main owns
+  registration, active request/CAS/lifetime checks, wrappers, downstream service
+  calls and retained external-effect/adoption receipts. Ancestor checks are not
+  handle-pinned against adversarial concurrent directory namespace replacement;
+  this limitation is explicit. No new dependency/unsafe, file writes or existing
+  source edits. Production CLI integration and native E2E proof remain with Main.
+
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 
 - Researcher authorized retained English TAS-20 for the local mock and asked
