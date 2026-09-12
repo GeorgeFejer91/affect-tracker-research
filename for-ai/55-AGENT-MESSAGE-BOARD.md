@@ -167,7 +167,10 @@ file; follow the integration-owner collection procedure in the workflow.
 - Experiment Runner owns16/65/66 and charter/router amendments; root owns
   60/62/64/67 and this entry. S7 owns successor contracts; integration owns shared
   app/native composition. Recording policy stays Runner-owned under16.
-- Q04 collision policy is now asked; Q05/Q08 remain pending, with no assumed
+- Q04 is now answered: location-derived IDs include the filename/extension and
+  preserve full relative-path distinctions. The collision came from proposed
+  lossy normalization; S1 owns reversible path encoding and P3/P7 reconciliation,
+  not a manual collision workflow. Q05/Q08 remain pending, with no assumed
   answer or duplicated question. G11 records Planner UI/service/command isolation
   under amendment16, coordinated through integration and the Runner owner.
   Independent work continues. Root interprets the latest all-settings goal as
