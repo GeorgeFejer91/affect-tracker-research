@@ -3298,3 +3298,20 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   the bounded-issue regression. Desktop 11-file closure passed. The clean
   artifact smoke is still pending at this source checkpoint. No canonical
   promotion or foreground app launch.
+- Clean first-slice application `680842aee1e01e0c75500c64250dba10130e0663`
+  now passes the actual nine-command policy smoke and three fresh-process
+  lifecycle cases: empty EOF, strict malformed-frame recovery and overflow exit2.
+  Windows returned0 despite Tauri `app.exit(2)` in the prior candidate; the
+  native broker now independently retains a fail-closed terminal outcome.
+  Failed prior receipts remain under `planner-cli-lifecycle-d988f3e`.
+- Final first-slice receipts are in `D:/GitHub/.affect-preview-checks/`,
+  `planner-cli-680842a/receipt.json` and `planner-cli-lifecycle-680842a/receipt.json`.
+  Executable `affect-tracker-research-integration-preview/src-tauri/target/debug/affect-planner-cli.exe`
+  SHA-256 `0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
+  Its readiness frame binds the exact clean commit. Root is cleared for its
+  independent production-driver check. This no-GStreamer policy-only build is
+  not final owner integration, media verification or Runner evidence.
+- Next in the same confirmed shared-integration allocation: collect frozen
+  P1–P7 owner adapters and file service, then install existing editor hooks and
+  separate native consequential commands. Preserve this milestone executable
+  until root finishes the independent driver. Canonical remains `460f516`.
