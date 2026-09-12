@@ -4900,6 +4900,19 @@ by this build-option change.
   remain strict. Main retains app integration and Runner collection.
 - Native owner holds shared D Cargo target for pinned runtime composition/build.
   No native playback, physical ISI, complete mock, Runner/XDF or viewport claim.
+### 20260912-native-startup-readiness-follow-up
+
+- Allocated native/P1 import shared seam, Backend Verification follow-up to
+  70ca706. Root requested setup-error ordering correction; Main approved shared
+  startup-only readiness gate. No other segment or public schema changes.
+- Fallible setup now precedes native actor creation. GUI import/rescan and CLI
+  video effects wait for validated integrity+actor capability before mutation;
+  only two startup-pending reasons poll. Strict local 60s budget does not replace
+  or extend native broker120s; guards and revision ordering remain enforced.
+- 60 focused JS checks, desktop build and 11-file boundary pass. No Rust rebuild
+  or actual-app follow-up claim; immutable70ca artifact untouched. Details in
+  `src-tauri/native-media/STARTUP-READINESS-20260912.md`. Main collects and validates
+  assembled lifecycle/Runner seams. Playback qualification remains open.
 
 ### 20260912-p2-import-cli-default-slot-fix
 

@@ -153,8 +153,6 @@ fn launch(
             let parent = app
                 .get_webview_window("research")
                 .ok_or_else(|| std::io::Error::other("Native media parent window is absent."))?;
-            let native_media =
-                NativeMediaService::start_async(resource_dir, app_data_dir.clone(), parent);
             // Setup remains operable when the safe hook cannot start. Capability
             // reporting and every test/Start command then fail closed.
             let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));
@@ -163,6 +161,23 @@ fn launch(
                 .and_then(|window| window.is_focused().ok())
                 .unwrap_or(false);
             input.set_window_focused(focused);
+            if role == DesktopRole::Planner {
+                // Finish fallible setup before starting an actor whose teardown
+                // needs the UI event loop. A setup error cannot safely join it.
+                app.manage(
+                    research_local_questionnaire_preset_commands::LocalPresetService::new(
+                        app.path().app_data_dir()?,
+                    ),
+                );
+                app.manage(Arc::clone(&setup_authoring));
+                setup_authoring
+                    .start(app.handle().clone())
+                    .map_err(|error| std::io::Error::other(error.message))?;
+            }
+            // No fallible setup remains after native startup. Normal close/exit
+            // uses the off-UI shutdown coordinator while the event loop pumps.
+            let native_media =
+                NativeMediaService::start_async(resource_dir, app_data_dir.clone(), parent);
             if role == DesktopRole::Runner {
                 let recorder = Arc::new(research_recorder::RecorderService::default());
                 let package_runtime = Arc::new(
@@ -183,19 +198,6 @@ fn launch(
             app.manage(workspace);
             app.manage(native_media);
             app.manage(input);
-            if role == DesktopRole::Planner {
-                // Reusable local presets use the real app user-data namespace,
-                // even when the CLI's authoring/WebView profile is isolated.
-                app.manage(
-                    research_local_questionnaire_preset_commands::LocalPresetService::new(
-                        app.path().app_data_dir()?,
-                    ),
-                );
-                app.manage(Arc::clone(&setup_authoring));
-                setup_authoring
-                    .start(app.handle().clone())
-                    .map_err(|error| std::io::Error::other(error.message))?;
-            }
             Ok(())
         })
         .on_window_event(|window, event| {

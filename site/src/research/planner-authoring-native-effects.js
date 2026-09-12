@@ -32,7 +32,8 @@ export function createPlannerNativeEffects({ invoke, sessionId, beforeDispatch =
       const request = structuredClone({ context, action });
       if (new TextEncoder().encode(canonicalJson({ request })).byteLength + 1 > MAX_FRAME_BYTES) commandFailure("request_limit", "Native effect exceeds the encoded transport limit.");
       if (disposed || signal?.aborted || !isCurrent()) commandFailure("canceled", "The command ended before native dispatch.");
-      await beforeDispatch();
+      await beforeDispatch({ context: request.context, action: request.action,
+        isCurrent: () => !disposed && isCurrent(), signal });
       if (disposed || signal?.aborted || !isCurrent()) commandFailure("canceled", "The command ended before native dispatch.");
       // A rejected/lost RPC is not proof that a write did not occur. The native
       // ledger supplies a more precise receipt when its acknowledgement arrives.
