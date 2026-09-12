@@ -201,8 +201,12 @@ const rejected = async (action) => { try { await action(); return false; } catch
   check("exact media rebind prepares the complete reopened XR profile", canonicalJson(rebound.contribution) === canonicalJson(xrMaster.segments.P6.profile)
     && rebound.dependencyRevisions[0].revision === dependencies().P1.revision
     && rebound.dependencyRevisions[1].revision === dependencies().P5.revision);
-  ui.openSetupSection("xr"); q('[data-xr-view="orbit"]').click();
+  const xrSection = q('[data-setup-section="xr"]');
+  if (xrSection.querySelector(".setup-accordion-trigger").getAttribute("aria-expanded") !== "true") ui.openSetupSection("xr");
+  q('[data-xr-view="orbit"]').click();
   await new Promise((done) => setTimeout(done, 100));
+  check("XR inspection is expanded for visual capture", !xrSection.querySelector(".setup-accordion-panel").hidden
+    && q("[data-xr-scene]").getBoundingClientRect().height > 0);
   check("no browser errors", errors.length === 0);
   const pane = q(".setup-pane");
   layout = { pane: { clientWidth: pane.clientWidth, scrollWidth: pane.scrollWidth },

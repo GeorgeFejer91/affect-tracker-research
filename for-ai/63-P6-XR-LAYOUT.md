@@ -9,7 +9,9 @@ entries were retained. Application integration remains the integration owner's j
 
 The user allocated segment 6 and clarified a virtual screen viewed inside a
 headset through a future WebXR Runner, with precise distance, size and viewing
-angles. This is a bounded Backend Verification pass for P6-01/02/03/05.
+angles. The original bounded Backend Verification pass covered P6-01/02/03/05;
+the subsequent Planner completion allocation covers P6-01 through P6-05,
+including complete master save/reopen and independent reproduction.
 Headset rendering, actual tracking/alignment, playback, recording and physical
 qualification remain P6-06/R1 work. No historical Playground code is restored.
 
@@ -257,21 +259,53 @@ identity. P6 consumes that projection without dropping saved locations or
 copying P1's identity policy. Live composition injects the same generic P1
 workspace projector, binding its outer owner revision.
 
-The actual P7 compiler/reader at `828fff7` now embeds both non-default spatial
-profiles in complete masters with P1/P3 V1 and V2. Six full-master tests cover
+The actual P7 compiler/reader embeds both non-default spatial profiles in
+complete masters with P1/P3 V1 and V2. Seven full-master tests cover
 canonical re-export, all variant/language XR selections, preserved P1/P5/P6
 content, explicit exclusion, incompatible-target rejection, stale integrity,
 disk-backed P7 write/close/readback and independent processes with ambient state
 forbidden. Parsed content restores as editable/pending until the real P1
 projection is available; exclusion clears a previous profile.
 
-`planner-xr-master-v1.canonical.json` is the complete V2-location XR fixture.
-Its companion `planner-xr-master-v1-reproduction.json` and
-`planner-xr-master-v1-layout.json` expose the full P7 matrix and P6 geometry for
-native consumers. `scripts/emit-xr-planner-fixtures.js` regenerates them only
-from the reviewed owner fixtures through the actual full compiler.
+The three `planner-xr-master-v1*` files are preserved historical reproduction-V1
+vectors. Their raw resolved-layout hashes retain their original meaning; a newer
+compiler must not overwrite them. Current portable tests consume P7's
+`planner-recipe-xr-current-v1*` fixtures and `plannerLayoutIdentityV1` helper.
+`scripts/emit-xr-planner-fixtures.js <evidence-directory>` requires an explicit
+output directory and emits new `planner-xr-master-v2*` receipts there.
 
-Shared application save/reopen wiring is integration-owned and remains a
-separate actual-UI check. The disk fixture supplies a file adapter instead of
-opening an OS picker. Actual Runner correspondence and XR execution are
-downstream checks, not prerequisites for validating the Planner document.
+P7 `70b30a4` explicitly introduces `planner-recipe-reproduction-v2`: the layout
+hash binds the full authored profile, selected target, owner-projected media,
+complete feedback and named algorithm versions. Derived geometry is still
+resolved and validated. This avoids runtime-dependent final digits in raw
+trigonometric results without rounding authored values or changing P6 geometry.
+An explicit regression verifies historical V1 canonical bytes and reproduction
+matrices remain unchanged; a fresh compile retains all owner content and the
+definition hash while producing the current reproduction contract.
+
+## Actual Planner master workflow — 2026-09-12
+
+The owned browser fixture now uses the actual Planner role, P1/P5/P6/P7
+controllers, shared `restorePlannerRecipe` and acknowledged `savePlannerRecipe`.
+It checks all spatial fields and full feedback, exact unchanged-file copying,
+pending media/acceptance after reopen, edits and cancelled/stale requests,
+excluded-profile reset, exact-media rebinding and explicit XR target selection.
+The synthetic file handle enforces write, close, then readback; it does not claim
+an OS picker or permission. The catalogue adapter supplies typed declarations,
+not actual media decoding or native verification. No participant Run/Start UI
+is present in this Planner fixture.
+
+Two reproduced integration defects were repaired by their owners: P7's portable
+identity fixes cross-engine raw-geometry hash mismatch; Main `adc34d2` defers
+render notification until owner edit handlers finish while retaining immediate
+stale-save fencing. The P6 fixture keeps the immediate P1-change withdrawal
+assertion. At clean combined checkpoint `663cae9`, all 59 workflow assertions
+pass at 1440px and 820px. Visual inspection then corrected the fixture's final
+accordion toggle so its screenshot actually shows XR; a visible-scene assertion
+is now included. The integration-approved connected-state hint directs users to
+confirm the section and save in Review & Export. Final capture receipts and
+check counts are recorded in the message board and roadmap.
+
+Shared application integration remains Main's authority. These Planner checks
+do not qualify Edge, an installed native build, physical media, headset tracking,
+WebXR execution, recording or final Planner–Runner correspondence.

@@ -143,7 +143,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       ? `Connect the ${unbound.join(" and ")} before exporting a complete XR experiment. Layout profiles remain available.`
       : feedbackEnvelope === null && draft.feedback.enabled
         ? "Connect the full feedback animation bounds before exporting a complete XR experiment."
-        : "Video and feedback geometry is connected. Complete XR experiment export is planned.";
+        : "Confirm this section, then save the complete experiment in Review & Export.";
   }
   function edit() {
     fileGeneration += 1;
