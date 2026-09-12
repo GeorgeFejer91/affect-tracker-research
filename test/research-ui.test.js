@@ -291,8 +291,10 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(workspacePanel, /outputs and recovery are managed automatically/u);
   for (const id of ["experiment-id", "experiment-title"]) {
     assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
-    assert.match(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));
+    assert.doesNotMatch(workspacePanel, new RegExp(`id="${id}"[^>]*readonly`, "u"));
   }
+  assert.match(workspacePanel, /id="experiment-id"[^>]*value="video-affect-study"/u);
+  assert.match(workspacePanel, /id="experiment-title"[^>]*value="Video Affect Study"/u);
   const experimentPanelStart = markup.indexOf('id="setup-panel-experiment"');
   const experimentPanelEnd = markup.indexOf('data-setup-section="input"', experimentPanelStart);
   const experimentPanel = markup.slice(experimentPanelStart, experimentPanelEnd);
@@ -344,9 +346,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(markup, /supplies every participant’s block order, complete-video order, and the ISI after each video/u);
   assert.match(markup, /Array order is authoritative/u);
   assert.match(markup, /id="sampling-frequency"[^>]*min="1"[^>]*max="240"[^>]*value="130"/u);
-  for (const id of ["experiment-id", "experiment-title", "participant-count"]) {
-    assert.match(markup, new RegExp(`id="${id}"[^>]*readonly`, "u"));
-  }
+  assert.doesNotMatch(markup, /id="experiment-(?:id|title)"[^>]*readonly/u);
+  assert.match(markup, /id="participant-count"[^>]*readonly/u);
   assert.match(markup, /Continuous rating is always enabled/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
   assert.match(markup, /external-order-v1/u);

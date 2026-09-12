@@ -72,6 +72,7 @@ import {
   verifySameRealmPackageReproductionV1,
 } from "./experiment-package.js";
 import { externalExperimentPlanToCsv } from "./tabular.js";
+import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity.js";
 import {
   assetIdFromSha256,
   browserDisplayGeometry,
@@ -79,6 +80,7 @@ import {
   validateVideoCatalogueContributionV1,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
+import { createWorkspaceContributionV1, validateWorkspaceContributionV1 } from "./workspace-contribution.js";
 import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
@@ -283,8 +285,12 @@ function bindResearchInteractions(root, { surface }) {
   const stimuli = [];
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
+  const studyIdentityListeners = new Set();
+  const workspaceContributionListeners = new Set();
+  let workspaceContributionFingerprint = null;
+  let workspaceContributionRevision = 0;
   const videoCatalogueProducer = createVideoCatalogueProducerV1({
-    onChange: () => root.researchUi?.plannerContributionChanged?.("P1"),
+    onChange: () => notifyWorkspaceContributionChanged(),
   });
   let questionnaireContributionRevision = 0;
   let questionnaireContributionFingerprint = null;
@@ -2993,6 +2999,56 @@ function bindResearchInteractions(root, { surface }) {
     return videoCatalogueProducer.getSnapshot();
   }
 
+  function getStudyIdentity() {
+    return createStudyIdentityV1({ id: value("experiment-id"), title: value("experiment-title") });
+  }
+
+  function getWorkspaceContributionSnapshot() {
+    let contribution = null;
+    let pending = true;
+    const videoSnapshot = videoCatalogueProducer.getSnapshot();
+    try {
+      if (videoSnapshot.enabled && !videoSnapshot.pending && videoSnapshot.contribution) {
+        contribution = createWorkspaceContributionV1({
+          study: getStudyIdentity(),
+          videoCatalogue: videoSnapshot.contribution,
+        });
+        pending = false;
+      }
+    } catch { /* Invalid interim study text remains pending. */ }
+    const fingerprint = canonicalJson({ pending, contribution });
+    if (fingerprint !== workspaceContributionFingerprint) {
+      workspaceContributionFingerprint = fingerprint;
+      workspaceContributionRevision += 1;
+    }
+    return Object.freeze({
+      revision: workspaceContributionRevision,
+      enabled: true,
+      pending,
+      contribution,
+      dependencyRevisions: [],
+    });
+  }
+
+  function notifyWorkspaceContributionChanged() {
+    const snapshot = getWorkspaceContributionSnapshot();
+    for (const listener of workspaceContributionListeners) listener(snapshot);
+    root.researchUi?.plannerContributionChanged?.("P1");
+  }
+
+  async function restoreStudyIdentity(identity, { isCurrent = () => true } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("Study identity restore guard must be a function.");
+    const restored = validateStudyIdentityV1(identity);
+    if (!isCurrent() || mode !== "setup") throw new Error("Study identity restoration was superseded; no fields were replaced.");
+    setInputValue("experiment-id", restored.id);
+    setInputValue("experiment-title", restored.title);
+    for (const listener of studyIdentityListeners) listener(restored);
+    notifyWorkspaceContributionChanged();
+    refreshProjection();
+    schedulePlanRefresh();
+    return getStudyIdentity();
+  }
+
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
   async function restoreQuestionnaireContribution(contribution, { isCurrent = () => true } = {}) {
     const restored = await restoreQuestionnaireAuthoring(contribution);
@@ -4477,6 +4533,12 @@ function bindResearchInteractions(root, { surface }) {
       if (colorInput instanceof HTMLInputElement && /^#[0-9a-f]{6}$/i.test(target.value)) colorInput.value = target.value;
     }
     if (target instanceof HTMLInputElement && ["participant-first-name", "participant-last-name"].includes(target.id)) renderNameCode();
+    if (target instanceof HTMLInputElement && ["experiment-id", "experiment-title"].includes(target.id)) {
+      let identity = null;
+      try { identity = getStudyIdentity(); } catch { /* Native validity UI owns interim invalid text. */ }
+      for (const listener of studyIdentityListeners) listener(identity);
+      notifyWorkspaceContributionChanged();
+    }
     if (target instanceof HTMLInputElement && target.id === "input-step-size" && inputBinding.kind === "digital") {
       try {
         inputBinding = structuredClone(validateInputBindingV1({ ...inputBinding, stepSize: Number(target.value) }));
@@ -4978,9 +5040,24 @@ function bindResearchInteractions(root, { surface }) {
       });
     },
     get packageReproductionReceipt() { return packageReproductionReceipt; },
+    getStudyIdentity,
+    restoreStudyIdentity,
+    subscribeStudyIdentityChanges(listener) {
+      if (typeof listener !== "function") throw new TypeError("Study identity listener must be a function.");
+      studyIdentityListeners.add(listener);
+      return () => studyIdentityListeners.delete(listener);
+    },
+    getWorkspaceContributionSnapshot,
+    subscribeWorkspaceContributionChanges(listener) {
+      if (typeof listener !== "function") throw new TypeError("Workspace contribution listener must be a function.");
+      workspaceContributionListeners.add(listener);
+      return () => workspaceContributionListeners.delete(listener);
+    },
+    validateWorkspaceContribution: validateWorkspaceContributionV1,
     getVideoCatalogueContributionSnapshot,
     subscribeVideoCatalogueChanges(listener) { return videoCatalogueProducer.subscribe(listener); },
     validateVideoCatalogueContribution: validateVideoCatalogueContributionV1,
+    validateStudyIdentity: validateStudyIdentityV1,
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
