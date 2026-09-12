@@ -34,6 +34,23 @@ build or installed/runtime qualification is included in this receipt.
   Actual native clip rebind/master export and Runner/XDF remain final gates;
   no current artifact or foreground app change in this source pass.
 
+### 20260912-native-controlled-orientation
+
+- Root allocated P1-06/Runner native media, Backend Verification; isolated
+  codex/native-controlled-orientation from agreed Main53d818a. Native owns
+  actor/strict receipt2 geometry and additive service method; S1 owns catalogue3/
+  workspace3 readers, Main master3/consumer composition. Root schema freeze02
+  requires nine-key controlled geometry with complete nativeDisplayMetadata2.
+- Preserve absent versus explicit tags, reject malformed/conflicting/reflection,
+  configure pinned d3d11videosink through safe property APIs before Play creation,
+  set/readback quarter-turns and fence generation/metadata. Pre-sink snapshots
+  must match raw source/PAR before applying controlled rotation once. No new
+  unsafe, qualification flags, auto fallback or silent later reconfiguration.
+- Pure receipt/derive checkpoint: 11 standalone Rust checks pass (including old
+  geometry and error tests). Tagged absence is an empty struct variant so extra
+  keys reject. No actor wiring/native build or actual playback claim yet.
+  Cancellation and lifecycle handoffs remain unchanged.
+
 ### 20260912-main-bounded-sink-diagnostic
 
 - Root allocated one external GST_DEBUG observation using frozen1ccd756,
