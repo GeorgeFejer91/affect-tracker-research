@@ -88,6 +88,27 @@ file; follow the integration-owner collection procedure in the workflow.
   unapproved until answered. Existing serialized feedback only; no Runner,
   hardware, foreground interaction, deployment or research-ready claim.
 
+### 20260912-integration-confirmation-shell
+
+- Owner: **Add segment confirmation flow**, bounded integration/accordion seam,
+  Backend Verification follow-up to `20260912-integration-resume-and-acceptance`.
+  Base `4758abd`, isolated `codex/segment-integration-preview-cleanup`.
+- Confirmation now awaits P7's validated acceptance registry, never a local
+  review click. A detached presentation module handles pending/error/duplicate
+  clicks; navigation retains acceptance, edits and dependencies expire it.
+  Validation completion cannot steal navigation after the user moves elsewhere.
+- P1/P2/P3/P4/P6 have individual footer actions. Persistent P5 has none: its
+  existing serialized settings are captured by P7's final save. The single
+  `package-generate` action is at the Section 7 bottom-right footer, retaining
+  its exact handler ID and breathing edge. P7's marker projects acknowledged
+  current-revision save only; cancel/error/older-revision writes cannot mark it.
+- Evidence: 535 Node tests pass, including four orchestration/registry tests;
+  six accordion footer alignment/breathing checks pass in background Chrome.
+  No current Edge receipt (installed headless process returns empty output).
+  Owner producers and final master/named-save adapters still need collection;
+  this checkpoint does not claim the complete export path or canonical promotion.
+  No Runner/native qualification, foreground reload, push or deployment.
+
 ### 20260912-integration-resume-and-acceptance
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
