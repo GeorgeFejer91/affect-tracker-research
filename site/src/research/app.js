@@ -3668,7 +3668,7 @@ function bindResearchInteractions(root, { surface }) {
     return getStudyIdentity();
   }
 
-  async function restoreWorkspaceContribution(contribution, {
+  async function prepareWorkspaceRestoration(contribution, {
     isCurrent = () => true,
     dependencies = {},
   } = {}) {
@@ -3679,28 +3679,18 @@ function bindResearchInteractions(root, { surface }) {
     if (typeof isCurrent !== "function" || !emptyDependencies) {
       throw new TypeError("Workspace restore options are malformed.");
     }
-    const previousRestoreGeneration = activeWorkspaceRestoreGeneration;
-    const operation = ++workspaceRestoreGeneration;
-    activeWorkspaceRestoreGeneration = operation;
-    let restored;
-    let restorePlan;
-    try {
-      restored = await validateWorkspaceContribution(contribution);
-      restorePlan = await prepareWorkspaceContentRestore(restored);
-    } catch (error) {
-      if (activeWorkspaceRestoreGeneration === operation) {
-        activeWorkspaceRestoreGeneration = previousRestoreGeneration;
-      }
-      throw error;
-    }
-    if (activeWorkspaceRestoreGeneration !== operation) {
-      throw new Error("Workspace restoration was superseded; no declarations were replaced.");
-    }
-    if (!isCurrent() || mode !== "setup") throw new Error("Workspace restoration was superseded; no declarations were replaced.");
-    pendingWorkspaceRestore = Object.freeze({ generation: operation, contribution: restored });
-    setInputValue("experiment-id", restorePlan.study.id);
-    setInputValue("experiment-title", restorePlan.study.title);
-    stimuli.splice(0, stimuli.length, ...restorePlan.videoDeclarations.map((entry) => ({
+    const generation = workspaceRestoreGeneration, catalogue = videoCatalogueProducer.getSnapshot();
+    const studyDraft = [value("experiment-id"), value("experiment-title")];
+    let committed = false, projected = false, committedGeneration = null;
+    const current = () => !committed && !researchUiDisposed && isCurrent() && mode === "setup"
+      && generation === workspaceRestoreGeneration && catalogue === videoCatalogueProducer.getSnapshot()
+      && studyDraft[0] === value("experiment-id") && studyDraft[1] === value("experiment-title");
+    const check = () => { if (!current()) throw new Error("Workspace restoration was superseded; no declarations were replaced."); };
+    check();
+    const restored = await validateWorkspaceContribution(structuredClone(contribution));
+    const restorePlan = await prepareWorkspaceContentRestore(restored);
+    check();
+    const declarations = restorePlan.videoDeclarations.map((entry) => ({
       id: entry.assetId,
       title: entry.annotationId,
       source: "workspace",
@@ -3711,14 +3701,44 @@ function bindResearchInteractions(root, { surface }) {
       contractSource: null,
       displayGeometry: null,
       youtubePreflight: null,
-    })));
-    videoCatalogueProducer.withdraw();
-    for (const listener of studyIdentityListeners) listener(restorePlan.study);
-    notifyWorkspaceContributionChanged();
-    renderPools();
-    refreshProjection();
-    schedulePlanRefresh();
-    return getWorkspaceContributionSnapshot();
+    }));
+    return Object.freeze({ isCurrent: current,
+      commit() {
+        check();
+        committedGeneration = ++workspaceRestoreGeneration;
+        activeWorkspaceRestoreGeneration = committedGeneration;
+        pendingWorkspaceRestore = Object.freeze({ generation: committedGeneration, contribution: restored });
+        setInputValue("experiment-id", restorePlan.study.id);
+        setInputValue("experiment-title", restorePlan.study.title);
+        stimuli.splice(0, stimuli.length, ...declarations);
+        videoCatalogueProducer.withdraw({ notify: false });
+        committed = true;
+      },
+      afterCommit() {
+        if (!committed || researchUiDisposed || !isCurrent() || committedGeneration !== workspaceRestoreGeneration) throw new Error("Workspace restore projection is no longer current.");
+        if (projected) return;
+        projected = true;
+        videoCatalogueProducer.notifyChange();
+        for (const listener of studyIdentityListeners) listener(restorePlan.study);
+        notifyWorkspaceContributionChanged();
+        renderPools(); refreshProjection(); schedulePlanRefresh();
+      },
+    });
+  }
+
+  async function restoreWorkspaceContribution(contribution, options = {}) {
+    // GUI Open still reserves its lifetime immediately; public preparation does not.
+    const previous = activeWorkspaceRestoreGeneration;
+    const operation = ++workspaceRestoreGeneration;
+    activeWorkspaceRestoreGeneration = operation;
+    try {
+      const prepared = await prepareWorkspaceRestoration(contribution, options);
+      prepared.commit(); prepared.afterCommit();
+      return getWorkspaceContributionSnapshot();
+    } catch (error) {
+      if (activeWorkspaceRestoreGeneration === operation) activeWorkspaceRestoreGeneration = previous;
+      throw error;
+    }
   }
 
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
@@ -6181,6 +6201,7 @@ function bindResearchInteractions(root, { surface }) {
     },
     getWorkspaceContributionSnapshot,
     restoreWorkspaceContribution: authoredMutation(restoreWorkspaceContribution),
+    prepareWorkspaceRestoration,
     subscribeWorkspaceContributionChanges(listener) {
       return workspaceContributionProducer.subscribe(listener);
     },

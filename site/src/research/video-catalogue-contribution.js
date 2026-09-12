@@ -576,21 +576,21 @@ export function createVideoCatalogueProducer({
     revision: 0, enabled: true, pending: true, contribution: null, dependencyRevisions: [],
   });
 
-  function publish(next) {
+  function publish(next, { notify = true } = {}) {
     if (canonicalJson(next) === canonicalJson(snapshot)) return snapshot;
     snapshot = deepFreeze(next);
-    for (const listener of listeners) listener(snapshot);
+    if (notify) for (const listener of listeners) listener(snapshot);
     return snapshot;
   }
 
-  function withdraw() {
+  function withdraw({ notify = true } = {}) {
     generation += 1;
     return publish({
       ...snapshot,
       revision: snapshot.contribution === null ? snapshot.revision : snapshot.revision + 1,
       pending: true,
       contribution: null,
-    });
+    }, { notify });
   }
 
   async function replaceEntries(entries) {
@@ -636,6 +636,7 @@ export function createVideoCatalogueProducer({
     replaceEntries,
     restoreContribution,
     withdraw,
+    notifyChange() { for (const listener of listeners) listener(snapshot); },
     subscribe(listener) {
       if (typeof listener !== "function") throw new TypeError("Video catalogue listener must be a function.");
       listeners.add(listener);

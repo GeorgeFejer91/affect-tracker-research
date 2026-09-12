@@ -159,6 +159,16 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
     };
     return { get intercepted() { return intercepted; }, release: fail => release(fail) };
   };
+  const workspaceBeforePreparation = JSON.stringify(ui.getWorkspaceContributionSnapshot());
+  let restoreNotifications = 0;
+  const unsubscribeRestore = ui.subscribeWorkspaceContributionChanges(() => restoreNotifications++);
+  const preparedWorkspace = await ui.prepareWorkspaceRestoration(savedWorkspace, { isCurrent: () => true });
+  check("workspace preparation preserves current state and sends no notifications", JSON.stringify(ui.getWorkspaceContributionSnapshot()) === workspaceBeforePreparation && restoreNotifications === 0);
+  preparedWorkspace.commit();
+  check("workspace prepared commit is unverified and defers notifications", ui.getWorkspaceContributionSnapshot().pending && restoreNotifications === 0);
+  preparedWorkspace.afterCommit();
+  check("workspace restore projection notifies only after state publication", restoreNotifications > 0);
+  unsubscribeRestore();
   await ui.restoreWorkspaceContribution(savedWorkspace);
   await ui.restoreStimulusVariantContent(currentVariants, {
     savedWorkspaceContribution: savedWorkspace, dependencies: { P1: ui.getWorkspaceContributionSnapshot() }, isCurrent: () => true,

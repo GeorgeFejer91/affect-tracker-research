@@ -1,5 +1,15 @@
 # Agent message board
 
+### 20260912-main-app-p1-prepared-restore
+
+- Main split actual app workspace restoration into read-only preparation,
+  synchronous unverified state install and deferred producer/UI notification.
+  Current producer default behavior and immediate GUI restore reservation remain.
+- Twenty-three catalogue/workspace tests pass; actual Planner headless Chrome
+  controller passes 38 checks including new preparation/notification assertions
+  and prior confirmation/media-rebind races. Exact source/evidence/limits:
+  docs/planner-app-prepared-restoration.md. No foreground app/native/media claim.
+
 ### 20260912-main-native-effect-js-adapter
 
 - Added exact nine-command metadata/delegation wrapper with P5 final_capture
