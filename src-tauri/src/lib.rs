@@ -176,6 +176,7 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_video_library,
             research_commands::research_import_library_videos,
             research_commands::research_export_video_library,
+            research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
             research_desktop::research_desktop_identity,
