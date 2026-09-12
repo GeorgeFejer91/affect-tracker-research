@@ -4190,3 +4190,15 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   target enum. Existing factory signature remains createPlannerPolicyCommandOwner
   ({root,onCommit}); target control is planner-presentation-target. Main owns
   target-change invalidation and current target selection in composition.
+
+### 20260912-p2-prepared-save-owner
+
+P2 follow-up allocated by Main: read-only preparation and synchronous state-only
+save commit, retaining normal-save converter parity. Implemented in isolated
+`codex/segment-p2-prepared-save` from `51ef031`. Main owns native write and
+module/definition adoption; no app.js, Rust, shared CSS, Runner or P3 changes.
+API and receipt/stale rules: `docs/p2-typed-demographics-authoring.md`.
+Evidence: 920 Research tests pass, including preparation/no-write, detached
+payload, stale edit/reset/cancel, and legacy callback receipt regressions.
+Native and full composition evidence deferred to Main. Validator correction
+`aa8717b` separately closes S1's language/sparse-array findings (10/10 focused).

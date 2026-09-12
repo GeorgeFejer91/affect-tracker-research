@@ -93,10 +93,28 @@ dispatches explicitly by version. The P2 v2 validator and routes compiler are
 ready for Main's v2 capture/export/restore. Current Main v1 compilation must
 remain rejecting until that integration is installed.
 
-The follow-up allocation for a separate read-only prepared save / state-only
-publish hook is not part of this initial implementation checkpoint; it is needed
-by Main's consequential CLI coordinator. Do not infer that the existing combined
-save callback establishes that future coordinator's atomic publication boundary.
+The editor now exposes asynchronous
+`prepareAuthoringQuestionnaireSave(questionnaireId, {isCurrent, signal})`.
+Preparation is read-only and returns a detached `payload`, pure `isCurrent()`,
+synchronous state-only `commit(sourceReceipt)`, and once-only projection
+`afterCommit()`. Each payload access copies definition, bytes, and authoring
+receipt while retaining the expected preset token. Legacy absent source bytes
+remain null; existing bytes and typed canonical JSON bytes remain exact.
+
+Main owns native storage and definition/module adoption. Its consequential
+coordinator must write storage, verify currentness, then publish its adoption
+and the prepared state commit, followed by projection. Preparation never calls
+storage or adopts modules. Cancellation, replacement, edits, lock/busy changes,
+and source-byte changes invalidate the preparation. A completed storage receipt
+must be retained if publication becomes stale. Normal editor save reuses this
+same converter/preparation before its existing onSave callback and commit.
+
+Prepared-save follow-up validation: 920 Research tests pass, including detached
+payloads, no preparation side effects, synchronous/idempotent commit,
+cancellation/edit/reset fencing, identical normal-save bytes, and existing
+legacy save/cancellation receipt checks. Evidence is in
+`D:/GitHub/.affect-checks/p2-typed/prepared-save-regression-final.log`.
+This is owner-level evidence; Main's native coordinator remains separately owned.
 
 ## Evidence and limits
 
@@ -127,3 +145,4 @@ the editor/preview use ordinary DOM-managed scrolling/reflow, not Pretext.
 Root/Online must refresh the maintained public CLI inventory from the integrated
 descriptors. No public deployment or native/participant qualification is claimed
 by this owner handoff.
+

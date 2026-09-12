@@ -10,6 +10,7 @@ import { demographicsFormDraft } from "./form-assets.js";
 import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
 import { createQuestionnairePresentationV2, validateQuestionnairePresentationV2 } from "./questionnaire-recipe-v2.js";
 import { formEntryMarkup, editFormField, moveFormField, changeFormOption, formPreviewMarkup } from "./form-sheet-view.js";
+import { prepareQuestionnaireSave } from "./questionnaire-save-preparation.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
 import { createQuestionnairePresentationV1, validateQuestionnairePresentationV1,
   QUESTIONNAIRE_LABEL_REPETITIONS, questionnairePresentationGroups } from "./questionnaire-recipe.js";
@@ -209,42 +210,21 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
 
   async function save(key, operation = null) {
     const entry = entries.get(key);
-    const checkCurrent = () => {
-      if (!entry || entries.get(key) !== entry || context.locked || operation?.signal.aborted || (operation && !operation.isCurrent())) {
-        const error = new Error("The questionnaire save was cancelled or superseded; inspect any returned storage receipt before retrying.");
-        error.code = operation?.signal.aborted ? "canceled" : "stale_revision";
-        throw error;
-      }
-    };
     if (!entry || context.locked || entry.busy) {
       if (operation) throw new Error("The questionnaire is missing, locked or already saving.");
       return;
     }
     let sourceReceipt = null;
     try {
-      checkCurrent();
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values before saving.");
       if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before saving.");
       entry.busy = true;
       entry.error = "";
       render();
-      const result = await sheetToAuthoring(entry.sheet);
-      checkCurrent();
-      const bytes = result.sourceBytes ?? entry.sourceBytes;
-      sourceReceipt = await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
-        definition: result.definition, sourceBytes: bytes,
-        expectedPresetToken: entry.presetToken,
-        authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt,
-        ...(result.sourceFormat ? { sourceFormat: result.sourceFormat } : {}) },
-      operation ? { isCurrent: () => { try { checkCurrent(); return true; } catch { return false; } }, signal: operation.signal } : undefined);
-      checkCurrent();
-      entry.sourceDefinitionHash = result.definition.definitionSha256;
-      entry.sheet = sheetFromDefinition(result.definition, { familyId: entry.sheet.familyId, authoringResult: result });
-      entry.sourceBytes = bytes;
-      entry.dirty = false;
-      entry.undo = null;
-      return { questionnaireId: result.definition.questionnaireId, definitionSha256: result.definition.definitionSha256,
-        sourceReceipt: sourceReceipt ?? null };
+      const guard = operation ?? { signal: new AbortController().signal, isCurrent: () => true };
+      const prepared = await prepareQuestionnaireSave({ readEntry: () => entries.get(key), isLocked: () => context.locked, busyExpected: true }, guard);
+      sourceReceipt = await onSave(prepared.payload, operation ? { isCurrent: prepared.isCurrent, signal: operation.signal } : undefined);
+      return prepared.commit(sourceReceipt);
     } catch (error) {
       entry.error = error instanceof Error ? error.message : String(error);
       if (operation) {
@@ -594,6 +574,12 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+    prepareAuthoringQuestionnaireSave(questionnaireId, operation) {
+      const slot = activeEntries().find(({ entry }) => entry.sheet.questionnaireId === questionnaireId);
+      if (!slot) throw new TypeError("Unknown questionnaire identity.");
+      return prepareQuestionnaireSave({ readEntry: () => entries.get(slot.key), isLocked: () => context.locked,
+        afterCommit() { render(); onChange?.(); } }, operation);
+    },
     /** Separate consequential action; the host supplies guarded native dispatch
      * and returns its real storage receipt through onSave. Never an atomic edit. */
     saveAuthoringQuestionnaire(questionnaireId, operation) {
