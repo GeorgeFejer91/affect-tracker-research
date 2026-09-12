@@ -47,6 +47,13 @@ try {
  const a=left.getBoundingClientRect(), b=grip.getBoundingClientRect(), c=right.getBoundingClientRect(), all=form.getBoundingClientRect();
  const stacked=innerWidth<760;
  const compactHeaders=left.clientWidth<=479;
+ const intro=root.querySelector('.setup-intro');
+ const introBounds=intro.getBoundingClientRect();
+ const introChildren=[...intro.children].map(element=>{
+  const bounds=element.getBoundingClientRect();
+  return {contained:bounds.left>=introBounds.left&&bounds.right<=introBounds.right,
+   overflow:element.scrollWidth-element.clientWidth};
+ });
  const headers=[...left.querySelectorAll('.setup-accordion-trigger')].map(trigger=>{
   const title=trigger.querySelector('.section-title'), summary=trigger.querySelector('.section-summary');
   const t=title.getBoundingClientRect(), s=summary.getBoundingClientRect(), h=trigger.getBoundingClientRect();
@@ -65,7 +72,7 @@ try {
   settingsUnchanged:settings===JSON.stringify(ui.settings),
   sectionsOverflow:left.scrollWidth-left.clientWidth,
   previewOverflow:right.scrollWidth-right.clientWidth,
-  compactHeaders,headers,
+  compactHeaders,headers,introChildren,
   errors};
  parent.postMessage(receipt,location.origin);
 } catch(error) { parent.postMessage({name:${JSON.stringify(scenario.name)},errors:[String(error)]},location.origin); }
@@ -109,6 +116,7 @@ try {
   await writeFile(join(output, "receipt.json"), JSON.stringify(rows, null, 2));
   for (const row of rows) {
     assert.deepEqual(row.errors, [], JSON.stringify(row));
+    assert.ok(row.introChildren.every(child=>child.contained&&child.overflow===0), JSON.stringify(row));
     assert.ok(row.contained && row.minimums && row.verticalScroll && row.gripHidden && row.settingsUnchanged && row.sectionsOverflow === 0 && row.previewOverflow === 0, JSON.stringify(row));
     assert.ok(row.headers.length>0 && row.headers.every(header=>header.contained && header.separateRows===row.compactHeaders &&
       (!row.compactHeaders || (header.titleLines<=1.05 && header.titleOverflow===0 && header.summaryOverflow===0))), JSON.stringify(row));

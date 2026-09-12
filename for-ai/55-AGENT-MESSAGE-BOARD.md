@@ -1611,3 +1611,10 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   clean Chrome seven × 50 assertions and both frontend closures. Detailed hashes
   are in the ledger. The P5 branch is clean and its source writers are stopped
   for integration-owner collection; no other owner's registration was changed.
+
+### 20260912-integration-confirmation-layout — shared shell
+
+- Assigned seam: P7 final-save/acceptance presentation with P1–P6 owned producer inputs; Backend Verification continuation, not Runner allocation.
+- Fixed the progress label overflowing a 432px setup pane after the contribution-cycle wording was introduced. The intro now wraps without squeezing its instruction into a narrow column. The eight-case headless Chrome layout harness also asserts intro-child containment and passes with zero horizontal overflow; the 432px-pane capture was inspected.
+- Current preceding evidence: 545 Node tests at `dc69e72`, 350 P5 Chrome assertions, 31 retained-settings/confirmation assertions, and both frontend builds at `4f505c3`. These are scoped evidence, not final master-JSON or installed/native qualification.
+- Intake continues for the single registered workspace revision, pure P3/P6 preparation and named-file save. P1 async restore fencing needs the owner repair. Q05 relocation policy and Q08 automatic reference metric remain unanswered; no complete master-save/reopen claim or canonical promotion is made.
