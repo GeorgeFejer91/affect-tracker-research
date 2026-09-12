@@ -229,6 +229,30 @@
   proof. Runner retains its active E2E correspondence allocation. Owned source
   writers are stopped pending integration; no shared app or Runner files changed.
 
+### 20260912-cli-p5-owner-adapter
+
+- Owner **Implement segment 5**, CLI-P5; explicitly allocated by Chat Orchestrator,
+  Backend Verification. Baseline Planner is complete. Isolated
+  `codex/segment-p5-cli-adapter` starts at canonical `460f516` in the C: P5 CLI
+  worktree; earlier feedback work and canonical source remain unchanged.
+- Deliverable: closed typed setting catalogue and read/ordered-edit/readback for
+  every saved P5 group and inactive alternative. Existing editor stays sole owner;
+  raw invalid draft text is exposed with issues. Staging is detached and has no
+  mutation or native effects; one prevalidated synchronous commit projects state.
+- Source comparison: complete P5 V2 getter currently validates immediately and
+  returns no raw invalid draft. Existing restore is asynchronous and resets test
+  state, so it cannot substitute for the atomic command commit. Main owns the
+  exact raw-reader/prepared-projector app hooks and shared session invalidation.
+- Scope: new `site/src/research/planner-authoring-p5.js`, focused owner tests and
+  owner API/evidence documentation. No app.js, native bridge/contracts, shared
+  gateway, recipe schema, acceptance/export, transient settings or Runner changes.
+- Frozen interface read from shared CLI worktree's
+  `docs/planner-authoring-command-api-v1.md`; required instruction deltas since
+  the prior fully read checkpoint were reviewed in lexical order. Baseline 13
+  feedback contract/envelope tests pass. Evidence will cover all writable groups,
+  inactive alternatives, invalid raw reads, ordered nonmutating staging, stale/
+  cancellation/dependency drift and unchanged canonical contribution semantics.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this
