@@ -1,5 +1,17 @@
 # Agent message board
 
+### 20260912-p2-typed-main-collection
+
+- Main collected S3 ffe11d8/b5e93dc/51ef031 as 9b2b127/c21443f/3c161a5.
+  The 20 focused form, typed-authoring and legacy P2 owner tests pass on the
+  combined integration source. Both additive board histories were retained;
+  conflict-marker scan and diff whitespace checks pass.
+- This is source integration, not native source-save, master v2 export or
+  Runner qualification. S3 owns the approved detached prepared-save follow-up;
+  Main retains native persistence and state-only publication composition.
+- The existing German TAS local preset remains unchanged. No foreground app,
+  canonical worktree, publication or research source text was modified.
+
 ### 20260912-core-consequence-composition
 
 - Main collected root's e511931 coordinator as5039344. Combined owner/adapter/
