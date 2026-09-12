@@ -98,6 +98,12 @@ file; follow the integration-owner collection procedure in the workflow.
   harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
   warning-list fix is verified in combined source. See 64 for paths and limits;
   this is not G09 populated/full-master evidence for the new completion goal.
+- Root diagnosed and repaired the Edge capture helper lifecycle: the launcher
+  exits before its browser requests the page. Actual HTTP receipt plus complete
+  fresh PNG now controls server lifetime. Final helper passes two XR captures per
+  Chrome/Edge at clean `7946bc6`; four PNG/harness bindings checked, all images
+  inspected or byte-identical to inspected images. Reused output refuses without
+  overwriting evidence. Details in64; full Edge/master qualification stays open.
 
 ### 20260912-runner-companion-separation
 
