@@ -45,9 +45,34 @@ pub(super) fn reconcile(
     }
 }
 
+pub(super) fn validate_policy_observation(
+    expected_stream: &str,
+    current_stream: Option<&str>,
+    metadata_matches: bool,
+    expected_rotation: u16,
+    current_rotation: u16,
+) -> Result<(), &'static str> {
+    if current_stream != Some(expected_stream)
+        || !metadata_matches
+        || expected_rotation != current_rotation
+    {
+        return Err("native-display-renderer-policy-stale");
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_frozen_policy_rejects_pending_track_change_even_with_matching_metadata() {
+        assert!(validate_policy_observation("video-0", Some("video-1"), true, 90, 90).is_err());
+        assert!(validate_policy_observation("video-0", None, true, 90, 90).is_err());
+        assert!(validate_policy_observation("video-0", Some("video-0"), false, 90, 90).is_err());
+        assert!(validate_policy_observation("video-0", Some("video-0"), true, 90, 0).is_err());
+        assert!(validate_policy_observation("video-0", Some("video-0"), true, 90, 90).is_ok());
+    }
 
     #[test]
     fn absence_and_explicit_identity_keep_distinct_provenance() {
