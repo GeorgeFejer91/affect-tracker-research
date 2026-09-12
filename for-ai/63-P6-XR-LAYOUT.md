@@ -234,7 +234,15 @@ falls back from enabled XR to desktop.
   excluded clears previous profile state. Neither prepares or accepts P6.
   The existing strict live prepare/restore path handles later verified media.
 
-The full-feedback successor dispatch and complete P7 envelope fixtures are
-being composed in this pass. Existing strict v1 feedback/profile readers remain
-unchanged. Actual Runner correspondence and XR execution are downstream checks,
-not a prerequisite for validating the complete Planner document.
+Both live and saved-content adapters now invoke P5's
+`feedback-settings.js::validateFeedbackContribution` and
+`feedback-layout.js::resolveFeedbackEnvelope` dispatch. The strict V1 reader is
+preserved; complete V2 renderer, labels, halo and response configuration cannot
+be truncated to the old three-field input. The physical footprint explicitly
+accepts P5's `feedback-envelope-v1` and `feedback-envelope-v2` contracts, retaining
+the same uniform square-to-circle conversion and configuration key. P5 owns all
+renderer/gradient/stroke bounds; P6 duplicates no animation math.
+
+Complete P7 envelope fixtures are being composed in this pass. Actual Runner
+correspondence and XR execution are downstream checks, not a prerequisite for
+validating the complete Planner document.

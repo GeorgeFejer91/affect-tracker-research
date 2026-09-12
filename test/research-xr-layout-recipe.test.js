@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { canonicalJson } from "../site/src/research/canonical.js";
 import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout-recipe.js";
 import { serializeXrLayoutProfileV1, parseXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
+import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-layout-recipe-v1.json", import.meta.url)));
 const options = () => ({ workspaceContribution: structuredClone(fixture.workspace),
@@ -57,6 +58,22 @@ test("saved XR validation captures caller content before asynchronous hashing", 
   assert.deepEqual(resolved, await resolveSavedXrLayoutContribution(fixture.profiles[0], options()));
 });
 
+test("saved XR uses P5's complete successor renderer and halo envelope without truncation", async () => {
+  for (const renderer of ["flubber", "grid", "procedural-face"]) for (const gradient of [false, true]) {
+    const feedback = structuredClone(fixture.feedbackV2);
+    feedback.presentation.renderer = renderer; feedback.presentation.halo.gradient = gradient;
+    const before = canonicalJson(feedback), envelope = resolveFeedbackEnvelope(feedback, 1024);
+    const resolved = await resolveSavedXrLayoutContribution(fixture.profiles[0], { ...options(), feedbackContribution: feedback });
+    assert.equal(resolved.feedback.configurationKey, envelope.configurationKey);
+    assert.equal(resolved.feedback.metresPerCssPx, resolved.feedback.halfExtentMetres / envelope.halfExtentCssPx);
+    assert.equal(canonicalJson(feedback), before);
+  }
+  for (const field of ["presentation", "response"]) {
+    const incomplete = structuredClone(fixture.feedbackV2); delete incomplete[field];
+    await assert.rejects(resolveSavedXrLayoutContribution(fixture.profiles[0], { ...options(), feedbackContribution: incomplete }));
+  }
+});
+
 test("independent saved-content processes reproduce exact profiles and geometry without ambient state", async () => {
   const run = promisify(execFile), entry = fileURLToPath(new URL("fixtures/xr-recipe-instance.js", import.meta.url));
   const results = await Promise.all(["UTC", "Europe/Berlin"].map((TZ) => run(process.execPath, [entry], {
@@ -64,9 +81,10 @@ test("independent saved-content processes reproduce exact profiles and geometry 
   })));
   assert.equal(results[0].stdout, results[1].stdout);
   const receipts = JSON.parse(results[0].stdout);
-  assert.equal(receipts.length, fixture.profiles.length);
+  assert.equal(receipts.length, fixture.profiles.length * 2);
   for (let index = 0; index < receipts.length; index += 1) {
-    assert.deepEqual(parseXrLayoutProfileV1(receipts[index].source), fixture.profiles[index]);
+    assert.deepEqual(parseXrLayoutProfileV1(receipts[index].source), fixture.profiles[index % fixture.profiles.length]);
     assert.equal(receipts[index].compiled.videos.length, 2);
+    assert.equal(receipts[index].feedbackSource, canonicalJson(index < fixture.profiles.length ? fixture.feedback : fixture.feedbackV2));
   }
 });
