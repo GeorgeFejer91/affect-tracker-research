@@ -62,8 +62,7 @@ export function createPlannerPolicyCommandOwner({ root, onCommit = () => {} }) {
           const field = FIELDS.find(candidate => candidate.id === id), control = fields.get(id);
           if (field.type === "boolean") control.checked = values[id]; else control.value = String(values[id]);
         }
-        onCommit();
-      } };
+      }, afterCommit: onCommit };
     },
   });
 }

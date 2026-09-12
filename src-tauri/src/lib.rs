@@ -16,6 +16,7 @@ mod research_lsl;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
+mod research_planner_authoring;
 pub mod research_planner_recipe;
 pub mod research_planner_recipe_policy;
 mod research_platform;
@@ -38,20 +39,48 @@ use research_native_media::NativeMediaService;
 use research_native_protocol::runtime::PackageProtocolRuntime;
 use research_platform::NATIVE_ACQUISITION_SUPPORTED;
 use research_workspace::WorkspaceService;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    launch(DesktopRole::Planner, tauri::generate_context!());
+    launch(DesktopRole::Planner, tauri::generate_context!(), None);
 }
 
 /// Independent Runner binary supplies its own embedded assets and identity.
 pub fn run_runner(context: tauri::Context<tauri::Wry>) {
-    launch(DesktopRole::Runner, context);
+    launch(DesktopRole::Runner, context, None);
 }
 
-fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
+/// Production CLI entry point. It owns one private, hidden Planner lifecycle;
+/// ordinary app startup has no authoring ingress or attached process control.
+pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String> {
+    if arguments.is_empty() || arguments == ["--help"] || arguments == ["help"] {
+        println!("Experiment Planner CLI\n\nUsage: affect-planner-cli jsonl\n\nStarts one hidden Planner. Read its JSON ready receipt, then send bounded\nPlanner command JSONL on stdin. Results contain request identity and revision.\nActions: catalogue, snapshot, get, validate, set, apply, cancel.\nMutations require the ready sessionId and current expectedRevision.\nEOF drains accepted commands and closes only this owned process.\nNo network listener or control of an existing application window.\nSee docs/planner-authoring-command-api-v1.md for the exact command schema.");
+        return Ok(0);
+    }
+    if arguments != ["jsonl"] {
+        return Err("Unknown CLI arguments. Use --help.".into());
+    }
+    let profile = std::env::temp_dir().join(format!("affect-planner-cli-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir(&profile)
+        .map_err(|_| "Could not create an isolated Planner CLI profile.")?;
+    let mut context = tauri::generate_context!();
+    for window in &mut context.config_mut().app.windows {
+        window.visible = false;
+        window.focus = false;
+        window.data_directory = Some(profile.join("webview"));
+    }
+    Ok(launch(DesktopRole::Planner, context, Some(profile)))
+}
+
+fn launch(
+    role: DesktopRole,
+    context: tauri::Context<tauri::Wry>,
+    cli_profile: Option<PathBuf>,
+) -> i32 {
+    let cli_enabled = cli_profile.is_some();
     let builder = tauri::Builder::default()
         .manage(role)
         .register_uri_scheme_protocol("research-media", |context, request| {
@@ -65,10 +94,17 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         })
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
-            let app_data_dir = app.path().app_data_dir()?;
+            let app_data_dir = match &cli_profile {
+                Some(profile) => profile.join("app-data"),
+                None => app.path().app_data_dir()?,
+            };
             let workspace = Arc::new(
-                WorkspaceService::with_default_workspace(app_data_dir.clone())
-                    .map_err(|error| std::io::Error::other(error.message))?,
+                (if cli_enabled {
+                    WorkspaceService::new(app_data_dir.clone())
+                } else {
+                    WorkspaceService::with_default_workspace(app_data_dir.clone())
+                })
+                .map_err(|error| std::io::Error::other(error.message))?,
             );
             let resource_dir = app.path().resource_dir()?;
             let parent_window_handle = research_parent_window_handle(app);
@@ -100,6 +136,15 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             app.manage(workspace);
             app.manage(native_media);
             app.manage(input);
+            if role == DesktopRole::Planner {
+                let authoring = Arc::new(research_planner_authoring::PlannerAuthoringBroker::new(
+                    cli_enabled,
+                ));
+                app.manage(Arc::clone(&authoring));
+                authoring
+                    .start(app.handle().clone())
+                    .map_err(|error| std::io::Error::other(error.message))?;
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -149,6 +194,11 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         });
     let builder = match role {
         DesktopRole::Planner => builder.invoke_handler(tauri::generate_handler![
+            research_planner_authoring::research_planner_authoring_status,
+            research_planner_authoring::research_planner_authoring_ready,
+            research_planner_authoring::research_planner_authoring_next,
+            research_planner_authoring::research_planner_authoring_complete,
+            research_planner_authoring::research_planner_authoring_startup_failed,
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
@@ -234,8 +284,13 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         .build(context)
         .expect("failed to build the selected companion app");
 
-    app.run(|app, event| {
+    let on_event = |app: &tauri::AppHandle, event| {
         if matches!(event, tauri::RunEvent::ExitRequested { .. }) {
+            if let Some(authoring) =
+                app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()
+            {
+                authoring.shutdown();
+            }
             if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
                 runtime.shutdown();
             }
@@ -249,7 +304,13 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
                 native_media.shutdown();
             }
         }
-    });
+    };
+    if cli_enabled {
+        app.run_return(on_event)
+    } else {
+        app.run(on_event);
+        0
+    }
 }
 
 #[cfg(target_os = "windows")]

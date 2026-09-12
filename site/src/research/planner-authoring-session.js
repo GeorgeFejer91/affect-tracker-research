@@ -4,6 +4,19 @@ import { PLANNER_RESULT_SCHEMA, PlannerCommandError, commandFailure, commandOwne
 
 const RETRY_LIMIT = 1024;
 const RETRY_BYTES = 8 * 1024 * 1024;
+const MAX_ISSUES = 64;
+
+// Bound retained result metadata before publication, including owner/observer
+// failures. This keeps the 512 KiB retry-result reservation a real upper bound,
+// including worst-case JSON escaping of every retained string.
+function boundedIssues(issues) {
+  return issues.slice(0, MAX_ISSUES).map(issue => ({
+    owner: typeof issue?.owner === "string" && /^P[1-7]$/u.test(issue.owner) ? issue.owner : null,
+    field: typeof issue?.field === "string" ? issue.field.slice(0, 163) : null,
+    code: typeof issue?.code === "string" ? issue.code.slice(0, 80) : "owner_failed",
+    message: typeof issue?.message === "string" ? issue.message.slice(0, 512) : "The owner could not complete this command.",
+  }));
+}
 
 /** Metadata coordinator only. Existing owner editors retain the sole drafts. */
 export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(), owners = [], onBeforeCommit = () => {}, onCommit = () => {} } = {}) {
@@ -55,10 +68,10 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     return { sessionId, revision, owners: Object.fromEntries([...registry].map(([id, owner]) => [id, readOwner(owner)])) };
   }
   function envelope(requestId, status, result = null, issues = []) {
-    return { schema: PLANNER_RESULT_SCHEMA, version: 1, sessionId, requestId, status, revision, result, issues };
+    return { schema: PLANNER_RESULT_SCHEMA, version: 1, sessionId, requestId, status, revision, result, issues: boundedIssues(issues) };
   }
   function issue(error) {
-    return { owner: error.field?.slice(0, 2) ?? null, field: error.field ?? null,
+    return { owner: typeof error?.field === "string" ? error.field.slice(0, 2) : null, field: error?.field ?? null,
       code: error instanceof PlannerCommandError ? error.code : "owner_failed",
       message: error instanceof PlannerCommandError ? error.message : "The owner could not complete this command." };
   }
@@ -66,7 +79,7 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     const issues = owner.validate();
     validateCommandJson(issues);
     if (!Array.isArray(issues)) throw new TypeError("Owner validation did not return issues.");
-    return issues.slice(0, 64);
+    return boundedIssues(issues);
   }
   function remember(id, fingerprint, result) {
     const bytes = new TextEncoder().encode(canonicalJson({ fingerprint, result })).byteLength;
@@ -108,7 +121,8 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
         return envelope(requestId, "ok", null, selected.flatMap(validateOwner));
       }
       if (active) commandFailure("busy", "Another authoring command is being prepared.");
-      if (retries.size >= RETRY_LIMIT || retryBytes + new TextEncoder().encode(fingerprint).byteLength + 65536 > RETRY_BYTES) commandFailure("session_capacity", "Start a new session before submitting more mutations.");
+      const retainedRequestBytes = new TextEncoder().encode(canonicalJson({ fingerprint, result: null })).byteLength;
+      if (retries.size >= RETRY_LIMIT || retryBytes + retainedRequestBytes + 512 * 1024 > RETRY_BYTES) commandFailure("session_capacity", "Start a new session before submitting more mutations.");
       const edits = action.kind === "set" ? [action] : action.edits;
       const grouped = new Map();
       for (const edit of edits) {
@@ -160,7 +174,7 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       publishing = false;
       const result = publicationStarted
         ? envelope(request?.requestId ?? null, "incomplete", { updatedOwners }, [{ owner: null, field: null, code: "publication_failed", message: "Publication began but an owner failed. Inspect the current settings; do not blindly retry." }, ...notify()])
-        : envelope(request?.requestId ?? null, error.code === "canceled" ? "canceled" : "rejected", null, [issue(error)]);
+        : envelope(request?.requestId ?? null, error?.code === "canceled" ? "canceled" : "rejected", null, [issue(error)]);
       if (ownsActive && mutation && request && fingerprint && !retries.has(request.requestId)) remember(request.requestId, fingerprint, result);
       return result;
     } finally { if (ownsActive) { active = null; publishing = false; } }

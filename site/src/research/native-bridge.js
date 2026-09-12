@@ -14,6 +14,7 @@ import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
 import { completeQuestionnaireAssetStorageRequest } from "./questionnaire-storage-request.js";
 import { completeExperimentPackageSaveRequest } from "./package-save-request.js";
 import { completePlannerFileRequest, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
+import { bootPlannerAuthoringNative } from "./planner-authoring-native.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -1216,6 +1217,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   destroy() {
+    this.authoringNative?.destroy();
     this.inputCaptureGeneration += 1;
     this.activeInputCaptureGeneration = null;
     this.inputCapturePending = false;
@@ -3049,5 +3051,6 @@ export async function bootNativeBridge(root) {
   const bridge = new NativeResearchRuntimeBridge(root);
   root.researchRuntime = bridge;
   await bridge.initialize();
+  if (bridge.plannerOnly) bridge.authoringNative = await bootPlannerAuthoringNative(root);
   return bridge;
 }

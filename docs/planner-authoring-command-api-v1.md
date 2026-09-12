@@ -12,6 +12,21 @@ The existing JavaScript editors retain their sole drafts. The shared session
 holds only identity, authored revision, operation/cancellation and retry metadata.
 Rust retains file selection, media verification and strict final-file authority.
 
+`affect-planner-cli jsonl` is the only enabled ingress. The window is configured
+hidden and unfocused before creation, retaining the normal nonzero geometry and
+native parent handle. Each invocation uses a new isolated temporary WebView/app
+profile and begins with no selected workspace. No ordinary GUI or Runner process
+is attached or controlled. Temporary profiles currently remain on disk after
+exit; no user workspace or recipe is deleted during shutdown.
+
+The native broker admits at most four queued/in-flight commands and four output
+frames, each limited to 16 MiB including line framing. Startup and in-flight
+commands have 120-second deadlines; idle sessions have a 300-second deadline.
+EOF drains queued work and flushed replies before exit 0. Framing overflow,
+unconsumed output, I/O failure or a deadline closes only this owned process with
+exit 2 and a fixed diagnostic code. A startup failure emits a fixed JSON error.
+After a nonzero exit, no assumption about an unacknowledged edit is permitted.
+
 ## Owner interface (frozen for this pass)
 
 Each owner supplies an object to `createPlannerAuthoringSession`:
@@ -108,6 +123,10 @@ Identical completed mutations return the original result. Changed reuse rejects.
 Entries are retained for the process generation: capacity exhaustion rejects new
 mutations, never evicts an old ID and reapplies it. Session destruction aborts
 pending preparation, wakes observers and prevents any later commit.
+Retained mutation metadata is capped at 1,024 entries / 8 MiB. Admission accounts
+for the escaped request fingerprint plus a 512 KiB result reservation. Results
+retain at most 64 bounded issues; no raw exception or arbitrary owner object is
+stored in an issue. Queries do not consume retained mutation identities.
 
 ## Ownership and verification
 

@@ -78,6 +78,8 @@ import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
 import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
 import { readPlannerPolicyControls, restorePlannerPolicyControls } from "./planner-policy-controls.js";
+import { createPlannerAuthoringSession } from "./planner-authoring-session.js";
+import { createPlannerPolicyCommandOwner } from "./planner-authoring-p7.js";
 import { renderPlannerContributionIssues } from "./planner-issue-view.js";
 import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
@@ -247,6 +249,7 @@ function bindResearchInteractions(root, { surface }) {
   let setupNavigationRevision = 0;
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
+  let plannerAuthoringSession = null;
   let mode = "setup";
   let selectedParticipant = "P001";
   let inputPoint = { x: 0, y: 0 };
@@ -349,7 +352,7 @@ function bindResearchInteractions(root, { surface }) {
   plannerFileWorkflow = createPlannerFileWorkflow({
     registry: plannerContributions, exporter: packageExport,
     getDocument: () => experimentPackageDocument,
-    canOperate: () => !researchUiDisposed && mode === "setup",
+    canOperate: () => !researchUiDisposed && mode === "setup" && !plannerAuthoringSession?.publishing,
     getRecipeOptions: () => ({
       recipeId: `${getStudyIdentity().id.slice(0, 121)}-recipe`,
       presentationTarget: getSelectedPlannerTarget(), policy: readPlannerPolicyControls(root),
@@ -5034,7 +5037,8 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
-  function markPlannerEdit() {
+  function markPlannerEdit({ notifyAuthoring = true } = {}) {
+    if (notifyAuthoring) plannerAuthoringSession?.edited();
     if (experimentPackageDocument?.recipe) packageIsStale = true;
     plannerFileWorkflow.edited({ deferNotification: true });
   }
@@ -5837,7 +5841,19 @@ function bindResearchInteractions(root, { surface }) {
   const unsubscribeStimulusCatalogue = workspaceContributionProducer.subscribe(updateStimulusCatalogue);
   updateStimulusCatalogue(getWorkspaceContributionSnapshot());
 
+  plannerAuthoringSession = createPlannerAuthoringSession({
+    owners: [createPlannerPolicyCommandOwner({ root })],
+    onBeforeCommit: () => markPlannerEdit({ notifyAuthoring: false }),
+    onCommit() {
+      outputFormatsTouched = true;
+      syncOutputFormatValidation();
+      packageExport.invalidate();
+      schedulePlanRefresh();
+    },
+  });
+
   return Object.freeze({
+    plannerAuthoringSession,
     get mode() { return mode; },
     connectScreenLayoutProducers() { disconnectScreenLayout(); disconnectScreenLayout = connectScreenLayoutProducers(root.researchUi); },
     connectScreenLayoutDependencies(owners) { return layoutDraftEditor.connectDependencies(owners); },
@@ -6005,6 +6021,7 @@ function bindResearchInteractions(root, { surface }) {
     },
     destroy() {
       researchUiDisposed = true;
+      plannerAuthoringSession.destroy();
       packageLoadGeneration += 1;
       stimulusCatalogueBindingDisposed = true;
       unsubscribeStimulusCatalogue();

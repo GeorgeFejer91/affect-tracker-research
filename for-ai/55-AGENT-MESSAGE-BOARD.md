@@ -3288,3 +3288,13 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Evidence now: typed success/invalid/CAS/cancel/retry and same-session native
   readback. Deferred: complete owner coverage, fresh real-media mock, final
   export integration, installed/physical Runner qualification and publication.
+- First real hidden native smoke passed at `0138516-dirty`: nine commands,
+  current-session P7 read/set/readback, retry, stale/invalid rejection and EOF.
+  Receipt: `D:/GitHub/.affect-preview-checks/planner-cli-unselected-workspace-smoke/receipt.json`.
+  This deliberately no-GStreamer slice proves neither media nor Runner behavior.
+- Follow-up checkpoint hardens returned exit codes, bounded output/retained
+  issues, one-time concurrent completion, EOF drain and safe P7 afterCommit.
+  Eight native broker/wire tests and 18 JS session/bridge tests passed, including
+  the bounded-issue regression. Desktop 11-file closure passed. The clean
+  artifact smoke is still pending at this source checkpoint. No canonical
+  promotion or foreground app launch.

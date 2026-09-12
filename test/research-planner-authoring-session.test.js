@@ -166,3 +166,44 @@ test("every staged dependency guard is checked before the first owner commits", 
     requestId: crypto.randomUUID(), expectedRevision: 0, action: { kind: "apply", edits: owners.map(owner => ({ kind: "set", field: `${owner.id}.value`, value: 1 })) } });
   assert.equal(result.issues[0].code, "stale_revision"); assert.equal(writes, 0); assert.equal(session.revision, 0);
 });
+
+test("P7 notifications run after every owner's state install and failures retain the applied result", async () => {
+  const h = harness(); let otherValue = 0, observed = 0;
+  const policy = createPlannerPolicyCommandOwner({ root: h.root, onCommit() {
+    observed++; assert.equal(otherValue, 5); throw new Error("projection failure");
+  } });
+  const session = createPlannerAuthoringSession({ owners: [policy, {
+    id: "P4", settings: [{ id: "P4.value", type: "integer", classification: "authored", writable: true }], operations: [],
+    read: () => ({ values: { "P4.value": otherValue }, issues: [] }), validate: () => [],
+    async stage() { return { commit() { otherValue = 5; } }; },
+  }] });
+  const request = h.request({ kind: "apply", edits: [
+    { kind: "set", field: "P7.participantCount", value: 42 },
+    { kind: "set", field: "P4.value", value: 5 },
+  ] }, 0, { sessionId: session.sessionId });
+  const result = await session.execute(request);
+  assert.equal(result.status, "incomplete"); assert.equal(result.revision, 1);
+  assert.equal(result.issues[0].code, "projection_failed");
+  assert.deepEqual(result.result.updatedOwners, ["P7", "P4"]);
+  assert.equal(otherValue, 5); assert.equal(observed, 1);
+  assert.equal(h.fields.get("participant-count").value, "42");
+  assert.deepEqual(await session.execute(request), result);
+  assert.equal(observed, 1);
+});
+
+test("retained post-publication issues remain bounded and retryable", async () => {
+  let value = 0;
+  const session = createPlannerAuthoringSession({ owners: [{
+    id: "P4", settings: [{ id: "P4.value", type: "integer", classification: "authored", writable: true }], operations: [],
+    read: () => ({ values: { "P4.value": value }, issues: [] }),
+    validate: () => Array.from({ length: 300 }, () => ({ owner: "P4", field: "x".repeat(1000), code: "x".repeat(1000), message: "\u0000".repeat(2000) })),
+    async stage() { return { commit() { value++; } }; },
+  }] });
+  const request = { schema: PLANNER_COMMAND_SCHEMA, version: 1, sessionId: session.sessionId,
+    requestId: crypto.randomUUID(), expectedRevision: 0, action: { kind: "set", field: "P4.value", value: 1 } };
+  const result = await session.execute(request);
+  assert.equal(result.status, "incomplete"); assert.equal(result.issues.length, 64);
+  assert.equal(result.issues[0].message.length, 512); assert.equal(result.issues[0].field.length, 163);
+  assert.ok(Buffer.byteLength(JSON.stringify(result)) < 512 * 1024);
+  assert.deepEqual(await session.execute(request), result); assert.equal(value, 1);
+});

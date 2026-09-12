@@ -12,6 +12,10 @@ repository = "https://github.com/GeorgeFejer91/affect-tracker-research"
 name = "affect-runner"
 path = "src/bin/runner.rs"
 
+[[bin]]
+name = "affect-planner-cli"
+path = "src/bin/planner-cli.rs"
+
 [lib]
 name = "affect_research"
 crate-type = ["lib", "cdylib", "staticlib"]
