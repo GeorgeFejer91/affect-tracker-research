@@ -346,6 +346,31 @@
   combined atomicity and real hidden-native CLI evidence. No app.js, bridge,
   shared gateway, native or Runner edits; no network, foreground or release claim.
 
+### 20260912-p2-cli-checkpoint-and-ui-parity
+
+- Owner S2, CLI-P2 / allocated E2E-UI P2 continuation; isolated
+  `codex/segment-p2-cli-adapter` at canonical `460f516` with main's frozen
+  shared foundation `2310efc` cherry-picked as `05795af`. Main owns app.js,
+  shared session/native bridge and canonical integration. Do not collect that
+  shared cherry-pick twice; collect P2 `28725c8` and its follow-up only.
+- Adapter checkpoint: seven registered groups (five authored), ten closed
+  operations over actual owner drafts; raw invalid values, detached atomic
+  staging, dependency/current guards, provenance and coverage retained.
+  Installation is synchronous; additive afterCommit renders only after the
+  whole shared batch. No source/native save or acceptance inside a field edit.
+- Observed evidence before final checkpoint: 23/23 focused adapter/shared tests
+  and 24/24 existing real-browser recipe checks at 800 px. These are not native
+  CLI or actual Runner correspondence claims. Integration owns those gates.
+- Next bounded deliverable explicitly allocated by Chat Orchestrator: compact
+  P2-local UI for language graph/terminal module order and before/afterSession
+  placement, plus direct metadata identity/subscale parity. Proposed hooks sent
+  to main before UI edits. Preserve Excel table as primary UI, no JSON textarea.
+  Read uncodixfy and Tauri interface-quality reference; reuse existing styling.
+- Source save needs a guarded consequential owner hook and actual storage
+  receipt; existing editor.save alone is not a CLI result. TAS translations and
+  permissions remain independently source-gated. Runner is allocated separately,
+  not a P2 mutation target. No scientific schema/scoring or runtime policy change.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this

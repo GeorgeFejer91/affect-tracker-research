@@ -4,6 +4,7 @@ import { createPlannerAuthoringP2 } from "../site/src/research/planner-authoring
 import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
 import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
 import { sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
+import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
 import { questionnaireRecipeFixture } from "./fixtures/questionnaire-recipe-fixture.js";
 
 const set = (field, value) => ({ kind: "set", field: `P2.${field}`, value });
@@ -38,6 +39,20 @@ test("P2 catalogue classifies every group and reads detached actual editor draft
   assert.equal(s.adapter.read().values["P2.questionnaires"][0].items[0].prompt, "Study item 1");
   assert.deepEqual((await sheetToAuthoring(s.editor.readAuthoringEntries()[0].sheet)).definition, s.recipe.questionnaires.definitions[0]);
   assert.equal(s.saves, 0); assert.equal(s.commits, 0);
+});
+test("P2 defers rendering and observers until the shared afterCommit phase", async () => {
+  const s = await fixture(); let rendered = 0, notified = 0;
+  const editor = { readAuthoringEntries: s.editor.readAuthoringEntries,
+    prepareAuthoringEntries(records, context) {
+      const candidate = s.editor.prepareAuthoringEntries(records, context);
+      return { commit: candidate.commit, afterCommit() { rendered++; candidate.afterCommit(); } };
+    } };
+  const adapter = createPlannerAuthoringP2({ editor, readContext: () => s.context,
+    commitContext: context => Object.assign(s.context, context), onCommit: () => { notified++; } });
+  const staged = await adapter.stage([set("presentation", adapter.read().values["P2.presentation"])], guard());
+  staged.commit(); staged.commit();
+  assert.equal(rendered, 0); assert.equal(notified, 0); assert.equal(staged.isCurrent(), false);
+  staged.afterCommit(); assert.equal(rendered, 1); assert.equal(notified, 1);
 });
 test("ordered metadata/item/option edits retain identities, provenance, German content and pending state", async () => {
   const s = await fixture(), before = s.adapter.read();
@@ -165,4 +180,32 @@ test("staging snapshots caller edits and fences cancellation, GUI edits and depe
   s.editor.loadDefinition(s.recipe.questionnaires.definitions[0], { familyId: "custom-study" });
   await assert.rejects(stagedEdit, /superseded/);
   await assert.rejects(s.adapter.stage([set("presentation", before.values["P2.presentation"])], { signal: new AbortController().signal, isCurrent: () => false }), /stale/);
+});
+
+test("real shared session reads exact P2 fields, preserves retries and fences the whole multi-owner batch", async () => {
+  const s = await fixture();
+  const session = createPlannerAuthoringSession({ owners: [s.adapter] });
+  const request = (action, expectedRevision = null) => ({ schema: "affect-research-planner-command", version: 1,
+    sessionId: session.sessionId, requestId: crypto.randomUUID(), expectedRevision, action });
+  const catalogue = await session.execute(request({ kind: "catalogue" }));
+  assert.equal(catalogue.status, "ok"); assert.equal(catalogue.result.settings.length, 7);
+  const read = await session.execute(request({ kind: "get", field: "P2.questionnaires" }));
+  assert.deepEqual(read.result.value, s.adapter.read().values["P2.questionnaires"]);
+  const mutation = request({ kind: "apply", edits: [op("updateQuestionnaire", { questionnaireId: "custom-study-en", changes: { title: "CLI title" } })] }, 0);
+  const result = await session.execute(mutation);
+  assert.equal(result.status, "incomplete"); assert.equal(result.revision, 1);
+  assert.equal(s.adapter.read().values["P2.questionnaires"][0].title, "CLI title");
+  assert.deepEqual(await session.execute(mutation), result); assert.equal(s.commits, 1);
+  assert.equal((await session.execute(request(set("presentation", []), 1))).status, "rejected");
+  session.registerOwner({ id: "P3", settings: [], operations: [{ id: "changeDependency" }],
+    read: () => ({ values: {}, issues: [] }), validate: () => [],
+    async stage() { s.context.languages[0].label = "Later owner changed a P2 dependency"; return { commit() { assert.fail("stale batch committed"); } }; } });
+  const both = await session.execute(request({ kind: "apply", edits: [
+    op("updateQuestionnaire", { questionnaireId: "custom-study-en", changes: { title: "Must not apply" } }),
+    { kind: "operation", owner: "P3", operation: "changeDependency", arguments: {} },
+  ] }, 1));
+  assert.equal(both.status, "rejected"); assert.equal(both.issues[0].code, "stale_revision");
+  assert.equal(s.adapter.read().values["P2.questionnaires"][0].title, "CLI title");
+  assert.equal(s.commits, 1); assert.equal(s.saves, 0);
+  session.destroy();
 });

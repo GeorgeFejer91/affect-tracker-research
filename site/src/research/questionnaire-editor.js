@@ -508,11 +508,10 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       if (prepared.size !== next.families.length * next.languages.length) throw new TypeError("Missing questionnaire authoring slot.");
       const projection = { ...context, families: structuredClone(next.families), languages: structuredClone(next.languages),
         definitions: structuredClone(next.definitions), locked: next.locked };
-      return () => {
+      return { commit() {
         entries.clear(); prepared.forEach((entry, key) => entries.set(key, entry));
         context = projection; fingerprint = ""; uploadKey = null;
-        render();
-      };
+      }, afterCommit: render };
     },
     getPresentation(definitions) {
       return createQuestionnairePresentationV1(definitions, definitions.map((definition) => {
