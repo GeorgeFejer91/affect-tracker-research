@@ -176,6 +176,42 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
       current(expectedRevision, expectedOperation, isCurrent);
       return prepared(value);
     },
+    async prepareConfirmation({ isCurrent, signal } = {}) {
+      if (typeof isCurrent !== "function" || !signal || typeof signal.aborted !== "boolean")
+        throw new TypeError("Layout confirmation requires its command lifetime and abort signal.");
+      const expectedRevision = revision, expectedOperation = operation, expectedIdentity = dependencyIdentity;
+      const check = () => {
+        const identity = alive ? canonicalJson(resolve(draft, { observe: false }).dependencyIdentity ?? null) : null;
+        if (!alive || signal.aborted || !isCurrent() || revision !== expectedRevision || operation !== expectedOperation
+          || identity !== expectedIdentity) throw new Error("Screen layout confirmation became stale.");
+      };
+      check();
+      let value;
+      try { value = structuredClone(await prepareDraft(structuredClone(draft))); }
+      catch (error) { check(); throw error; }
+      check();
+      const changed = canonicalJson(value) !== canonicalJson(contribution);
+      if (changed && revision === Number.MAX_SAFE_INTEGER) throw new RangeError("Screen layout revision limit reached.");
+      const future = { revision: revision + (changed ? 1 : 0), enabled: true, pending: false,
+        contribution: value, dependencyRevisions: structuredClone(projection.dependencyRevisions ?? []) };
+      let consumed = false, projected = false;
+      return Object.freeze({
+        get snapshot() { return structuredClone(future); },
+        isCurrent() { try { check(); return !consumed; } catch { return false; } },
+        commit() {
+          if (consumed) throw new Error("Screen layout confirmation was already committed.");
+          check(); consumed = true;
+          contribution = value; revision = future.revision; operation += 1;
+        },
+        afterCommit() {
+          if (!consumed) throw new Error("Screen layout confirmation has not committed.");
+          if (projected) return;
+          if (!alive) throw new Error("Screen layout editor has been destroyed.");
+          projected = true;
+          if (changed) onChange(snapshot());
+        },
+      });
+    },
     async restoreContribution(value, { isCurrent = () => true, contentOnly = false, ...dependencies } = {}) {
       const expectedRevision = revision, expectedOperation = ++operation;
       let validated;

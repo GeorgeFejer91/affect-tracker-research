@@ -200,6 +200,26 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
       });
     },
     validateContribution: validateOwned,
+    async prepareConfirmation({ isCurrent, signal } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("Layout confirmation requires its command lifetime.");
+      const expectedBinding = binding;
+      const candidate = await state.prepareConfirmation({ signal,
+        isCurrent: () => alive && binding === expectedBinding && isCurrent() });
+      let committed = false, projected = false;
+      return Object.freeze({
+        get snapshot() { return candidate.snapshot; },
+        isCurrent: candidate.isCurrent,
+        commit() { candidate.commit(); committed = true; },
+        afterCommit() {
+          if (!committed) throw new Error("Screen layout confirmation has not committed.");
+          if (projected) return;
+          if (!alive) throw new Error("Screen layout editor has been destroyed.");
+          projected = true;
+          try { candidate.afterCommit(); }
+          finally { if (alive) render(); }
+        },
+      });
+    },
     async prepareContribution(options) {
       try {
         const snapshot = await state.prepareContribution(options);
