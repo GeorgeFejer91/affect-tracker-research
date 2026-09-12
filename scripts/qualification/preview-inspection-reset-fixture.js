@@ -48,6 +48,13 @@ export async function checkPreviewInspectionReset() {
   check("both tiled views use configured non-scaling line width",[...root.querySelectorAll("[data-preview-tile-lines]")].every(path=>Number(path.style.strokeWidth)===3.75&&path.getAttribute("vector-effect")==="non-scaling-stroke"));
   change("grid-line-thickness",0.25);
   check("line width edit applies without dimensions changing",[...root.querySelectorAll("[data-preview-tile-lines]")].every(path=>Number(path.style.strokeWidth)===0.25));
+  // V2 inspection geometry is fixed (P4 owns layout). The retained V1 editor
+  // still permits dragging; exercise that lifecycle without weakening V2.
+  const configured = ui.getFeedbackContributionSnapshot().contribution;
+  if (configured.version === 2) {
+    check("V2 inspection position is intentionally locked",state().rendering.lockPosition);
+    await ui.restoreFeedbackContribution({ input: configured.input, visual: configured.visual, mappings: configured.mappings });
+  }
   const overlay=q(".preview-pane [data-preview-overlay]"),stage=q(".preview-primary-stage"),bounds=stage.getBoundingClientRect();
   // Pointer capture itself is a local test double: no OS pointer is synthesized.
   let captured=null;

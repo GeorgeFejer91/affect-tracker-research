@@ -60,6 +60,25 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   This is helper evidence, not yet V2 restore wiring; S5 owns that invocation.
   Fixture: `scripts/qualification/preview-restored-config.mjs`; local receipts
   `D:/GitHub/.affect-preview-checks/planner-inspection-reset-20260912/`.
+- Real restore dependency composed with integration approval: accepted `451c19a`
+  plus stopped S5 `5c9d3df`, local combined application `c3e7db9`. No owner app
+  edits in this follow-up; fixture/harness only. V2 actual-app checks pass 129
+  at each of 1280/800: all-field exact round trip, three renderer projections,
+  fractional styles, whole-ms timing, configured keyboard/repeat/continuous
+  behavior under a declared controlled clock, neutral/capture/draft cleanup,
+  invalid/stale/closed restore, explicit V1 conversion, pending/revisions and
+  reset/recolor persistence. Reset-helper checks pass 15 per viewport; V2
+  framing stays locked and only explicit V1 restore tests the legacy drag seam.
+- Full suite 668/668 and Pages 219-file / desktop 11-file closures pass. Receipts
+  under `D:/GitHub/.affect-preview-checks/planner-feedback-restore-20260912/`.
+  The `restore` argument to `preview-restored-config.mjs` selects the real V2
+  fixture; no argument retains the reset helper. No replacement restore/mock
+  validator, physical timing or Runner evidence is claimed.
+- Rendered follow-up remains open: narrow 800px outer viewport produces a
+  roughly 280px Preview pane; corner labels can wrap into single-character
+  columns. Integration/root received the exact PNG. S5 received stale
+  "Placement is preview-only" copy despite saved V2 placement. Functional checks
+  are not G09 layout closure; shared CSS remains integration-coordinated.
 
 ### 20260912-preview-input-menu
 
