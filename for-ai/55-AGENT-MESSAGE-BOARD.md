@@ -27,7 +27,15 @@
   Receipts: `D:/GitHub/.affect-preview-checks/about-cli-20260912/` under
   `chrome-92a5d5d/receipt.json` and `edge-92a5d5d/receipt.json`. Paired PNGs are
   byte-identical. Screenshot review prompted one final command-name wrapping
-  adjustment; fresh captures follow that CSS-only correction.
+  adjustment in `ed63bc02ccf3cc36430b4614c26db42d049d9df7`.
+- Final clean-source captures at `ed63bc0` pass the same six scenes in each
+  browser, with zero errors. Receipts are in the same evidence root under
+  `chrome-ed63bc0/receipt.json` and `edge-ed63bc0/receipt.json`; their paired
+  screenshots are byte-identical. All six final scene layouts were visually
+  reviewed (unchanged images verified by hash). Desktop command labels remain
+  whole, and mobile tables stack within390px. Pages build/closure was rerun and
+  passed after the CSS correction. This receipt update changes documentation
+  only; product/render inputs remain exactly those checked at `ed63bc0`.
 - Main must recapture the catalogue from its next actual native candidate after
   source integration; strict drift checks deliberately reject changed source.
   Main owns About navigation, collection and final publication. No deployment
