@@ -3,10 +3,10 @@
 ## P4 rendered CLI/UI correspondence — 2026-09-12
 
 The allocated E2E-UI/P4 evidence follow-up is frozen at
-`ead567ea303af239333a45fc0d26224858f28c61` on
+`6080d1354992a0c0c47fe1d76e6945d752b4ed1c` on
 `codex/segment-p4-rendered-cli-parity`, base Main84264ad. Two new qualification
 files exercise the actual rendered Planner without app/adapter changes. Chrome152
-and Edge153 each pass **810 checks over six wide/narrow scenes** on clean source.
+and Edge153 each pass **816 checks over six wide/narrow scenes** on clean source.
 All 12 images were inspected. All15fields/2operations have actual control,
 normalized readback, derived geometry/source and strict exported-P4-byte parity;
 both reference/unit modes, invalid/stale rejection and P1/P5 invalidation/recovery
@@ -15,8 +15,10 @@ overflow. Details and exact remaining comparisons are in
 [the rendered evidence ledger](../docs/planner-p4-rendered-cli-evidence.md).
 
 Receipts are in
-`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-owner-{chrome,edge}-ead567e/`,
-with independent `visual-review-ead567e.json` in the parent. They explicitly use
+`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-{chrome,edge}/`,
+with independent `visual-review-6080d13.json` in the parent. These use the explicit
+Planner companion role and supersede the earlier shared-Setup-surface ead567e
+captures, whose same-controller receipts remain preserved. They explicitly use
 synthetic P1 geometry and a real DOM-backed typed P4 comparison owner; base84264ad
 has no production P4 registry installation. Main received the frozen harness for
 a required `--require-integrated` rerun against its final clean combined source.

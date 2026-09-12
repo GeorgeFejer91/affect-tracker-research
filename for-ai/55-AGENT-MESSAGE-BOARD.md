@@ -39,6 +39,14 @@
   base84264ad registered onlyP7; the actual UI path is the full rendered Planner.
   Main has the source-bound rerun instructions. Do not close global E2E-UI or
   infer actual native CLI/import/Runner success from these synthetic-media scenes.
+- **Exact Planner role follow-up:** source
+  `6080d1354992a0c0c47fe1d76e6945d752b4ed1c` adds the explicit companion-role
+  fixture attribute/assertion. Earlier ead567e renders the shared Setup surface;
+  retain those receipts with that limit. Final exact Experiment Planner Chrome/
+  Edge each pass **816 checks**, and all12 new PNGs are inspected, at
+  `final-planner-{chrome,edge}` with `visual-review-6080d13.json` in the same
+  evidence root. UI/CLI profile files remain byte-identical. Main/root received
+  the correction; required same-app integrated registration proof is still pending.
 
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 

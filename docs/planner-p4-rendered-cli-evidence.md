@@ -4,12 +4,13 @@ The E2E-UI/P4 follow-up adds actual rendered browser evidence to the
 [owner adapter mapping](planner-authoring-p4.md). It changes no application,
 adapter, stylesheet, native service or saved schema. Application base is Main's
 `84264ad`; the frozen qualification commit is
-`ead567ea303af239333a45fc0d26224858f28c61` on
+`6080d1354992a0c0c47fe1d76e6945d752b4ed1c` on
 `codex/segment-p4-rendered-cli-parity`.
 
 ## Observed checks
 
-The full `bootResearchUi()` Planner renders in an isolated headless browser.
+The full `bootResearchUi()` Planner renders with explicit
+`data-research-program="planner"` in an isolated headless browser.
 The fixture supplies the existing synthetic catalogue at the explicit P1 event
 boundary, then uses actual P1/P5 owners and the production P4 controller. These
 media declarations are fixture data, never actual import or decoder attestations.
@@ -30,7 +31,7 @@ stale revision rejection, transient video inspection with exact rendered bounds,
 P1 revision invalidation/revalidation, missing catalogue geometry, and P5 pending
 bounds/recovery. No last-valid reference or accepted contribution fills a gap.
 
-Each browser passes **810 checks in six scenes**, with 17 field/operation
+Each browser passes **816 checks in six scenes**, with 17 field/operation
 correspondence rows per scene. The app viewports are 1440 × 900 and 820 × 900;
 measured P4 panes are 880 and 417 CSS px. Overview, calibration and placement
 captures together show all writable controls. All 12 PNGs were inspected: labels,
@@ -40,15 +41,19 @@ required, and the confirmation footer was separately checked reachable.
 Local observed browser versions: Chrome `152.0.7977.83`, Edge `153.0.4234.32`.
 Both clean-source receipts and their emitted profile files are under:
 
-- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-owner-chrome-ead567e/`
-- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-owner-edge-ead567e/`
+- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-chrome/`
+- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-edge/`
 
 The independent image/profile-file review is
-`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/visual-review-ead567e.json`.
+`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/visual-review-6080d13.json`.
 Receipts bind exact source commit/status, every served source hash, harness and
 fixture hashes, browser binary hash, screenshots, typed command transcript and
 actual exported profile bytes. Existing 13 P4 command tests passed before this
 artifact-only pass. Syntax and diff checks pass; no broad native build was run.
+
+The earlier `ead567e` 810-check receipts remain preserved, but rendered the shared
+Setup surface without declaring the separate Planner role. The exact companion
+receipts above supersede that framing; the underlying P4 controller was unchanged.
 
 ## Reproduce and run against combined registration
 
