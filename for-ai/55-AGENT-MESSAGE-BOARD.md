@@ -5017,3 +5017,13 @@ Verify first/consecutive/video-to-ISI and stale input ordering. Preserve current
 ISI input-disabled behavior; no animation freeze, playback strategy or marker
 schema change. XDF's existing markers do not independently attest reset values
 or physical paint; report that separate contract/evidence gap to root/Main.
+
+# Runner feedback container border — 2026-09-12
+
+Root allocates R1/RR-10 presentation correction on isolated
+`codex/segment-runner-feedback-border`, base bc03f75. Remove inherited 1 px
+container chrome via Runner-only CSS; preserve P5 outline and authored geometry.
+Four representative headless cases pass 348 checks: neutral, strong, hidden ISI,
+next neutral. Visible outer/inner/SVG dimensions now agree at 87.46875 px.
+All four screenshots inspected. Synthetic native/frame-scheduler evidence only;
+Main retains full native mock and collection. See docs/runner-feedback-border.md.
