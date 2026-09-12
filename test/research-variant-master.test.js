@@ -15,9 +15,12 @@ const fixturePath = fileURLToPath(new URL("./fixtures/variant-reproduction-v2.js
 const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
 const masterSource = await readFile(new URL("./fixtures/planner-recipe-locations-v1.canonical.json", import.meta.url), "utf8");
 const expectedMatrix = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-locations-v1-reproduction.json", import.meta.url)));
+const currentMasterSource = await readFile(new URL("./fixtures/planner-recipe-locations-current-v1.canonical.json", import.meta.url), "utf8");
+const currentExpectedMatrix = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-locations-current-v1-reproduction.json", import.meta.url)));
 
 test("actual complete master bytes preserve every authored P3 variant across file export and reopen", async () => {
   const { recipe } = await parsePlannerRecipeV1(new TextEncoder().encode(masterSource));
+  assert.equal(recipe.integrity.algorithmVersion, "planner-recipe-reproduction-v1");
   assert.deepEqual(recipe.segments.P1, fixture.workspace);
   assert.deepEqual(recipe.segments.P3, fixture.contribution);
   const base = fileURLToPath(new URL("../src-tauri/target/p3-master-verification/", import.meta.url));
@@ -66,7 +69,14 @@ test("complete master reopen routes P3 through content-only restore and actual P
     assert.deepEqual(accepted.contribution, fixture.contribution);
     const result = await createPlannerRecipeV1({ recipeId: document.recipe.recipeId, presentationTarget: restored.presentationTarget, policy: restored.policy,
       segments: { P1: ready.contribution, P2: restored.P2, P3: accepted.contribution, P4: restored.P4, P5: restored.P5, P6: restored.P6 } });
-    assert.equal(await serializePlannerRecipeV1(result), masterSource);
+    // Recompilation uses the current algorithm; reading the historical file
+    // above still preserves its exact original bytes and v1 hash semantics.
+    assert.equal(result.integrity.algorithmVersion, "planner-recipe-reproduction-v2");
+    assert.deepEqual(result.segments, document.recipe.segments);
+    assert.equal(result.integrity.definitionSha256, document.recipe.integrity.definitionSha256);
+    assert.deepEqual(result.integrity.segmentSha256, document.recipe.integrity.segmentSha256);
+    assert.equal(await serializePlannerRecipeV1(result), currentMasterSource);
+    assert.deepEqual(await reproducePlannerRecipeV1(result), currentExpectedMatrix);
     assert.equal(requests.length, 0);
   } finally { editor.destroy(); }
 });
@@ -74,13 +84,18 @@ test("complete master reopen routes P3 through content-only restore and actual P
 test("complete master selects every variant and language identically in fresh ambient-free processes", async () => {
   const invoke = promisify(execFile);
   const child = fileURLToPath(new URL("./fixtures/variant-reproduction-instance.js", import.meta.url));
-  const master = fileURLToPath(new URL("./fixtures/planner-recipe-locations-v1.canonical.json", import.meta.url));
-  const results = await Promise.all(["UTC", "Pacific/Auckland"].map(TZ => invoke(process.execPath, [child, fixturePath, master], { env: { ...process.env, TZ }, maxBuffer: 4 * 1024 * 1024 })));
-  assert.equal(results[0].stdout, results[1].stdout);
-  for (const result of results) assert.equal(result.stderr, "");
-  const receipt = JSON.parse(results[0].stdout);
-  assert.deepEqual(receipt.forbidden, []);
-  assert.equal(receipt.canonical, masterSource);
-  assert.deepEqual(receipt.matrix, expectedMatrix);
-  assert.equal(receipt.selections.length, expectedMatrix.cases.length);
+  for (const [stem, source, matrix] of [
+    ["planner-recipe-locations-v1", masterSource, expectedMatrix],
+    ["planner-recipe-locations-current-v1", currentMasterSource, currentExpectedMatrix],
+  ]) {
+    const master = fileURLToPath(new URL(`./fixtures/${stem}.canonical.json`, import.meta.url));
+    const results = await Promise.all(["UTC", "Pacific/Auckland"].map(TZ => invoke(process.execPath, [child, fixturePath, master], { env: { ...process.env, TZ }, maxBuffer: 4 * 1024 * 1024 })));
+    assert.equal(results[0].stdout, results[1].stdout);
+    for (const result of results) assert.equal(result.stderr, "");
+    const receipt = JSON.parse(results[0].stdout);
+    assert.deepEqual(receipt.forbidden, []);
+    assert.equal(receipt.canonical, source);
+    assert.deepEqual(receipt.matrix, matrix);
+    assert.equal(receipt.selections.length, matrix.cases.length);
+  }
 });
