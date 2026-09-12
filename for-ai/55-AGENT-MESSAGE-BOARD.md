@@ -2,6 +2,13 @@
 
 ### 20260912-root-cli-early-eof-observed
 
+- Follow-up actual `53d818a` PASSED: owned PID 14648 exited zero without force;
+  EOF 1071 ms, native shutdown 1072 ms, verification/initializer completion
+  1073 ms and joined cleanup 1093 ms. Grace remains ten seconds. No actor was
+  retained, so this validates early cancellation and initializer join only.
+  Original failed receipts remain intact; exact follow-up evidence is in the
+  linked driver document below.
+
 - Root external CLI driver continuation, Backend Verification. Actual immutable
   native CLI `356cba7` and phase-enabled `1ccd756` both exceeded the unchanged
   ten-second cleanup grace after a read-only snapshot and deliberate driver

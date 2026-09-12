@@ -83,3 +83,19 @@ The earlier `356cba7` failure remains in its separate evidence directory.
 No authoring mutation, import, video Prepare/Play, master export or Runner run
 was performed in these root checks. A fresh immutable build must repeat this
 case after the lifecycle repair; increasing the grace is not a repair.
+
+That repeat passed with immutable source
+`53d818a2fc59d4568285cb9005dff8b15baaba83`, executable SHA-256
+`c76933d349ffb1facb39ed9fab9e3f03f9a0f1b13aa8a01a1ece195b2276abff`.
+Owned hidden PID 14648 observed EOF at 1071 ms, native shutdown at 1072 ms,
+verification and initializer completion at 1073 ms, and initializer join plus
+cleanup completion at 1093 ms. It exited with code zero without forced
+termination under the unchanged ten-second grace. The deliberate assertion and
+revision zero remained preserved. No ActorRetained phase occurred, so this proves
+early verification cancellation and initializer join, not active decoder teardown.
+
+Receipt: `D:/GitHub/.affect-checks/root-native-cli-failure-cleanup-53d818a-01/cleanup-review.json`.
+Transcript SHA-256:
+`74867747ec2ea97c3df8e2ef15951677285b52a8501f31e38c75a28f1e5bfa9d`.
+The previous failure directories remain intact. This is one actual process
+observation, not a hard upper bound on OS I/O or shutdown under all conditions.
