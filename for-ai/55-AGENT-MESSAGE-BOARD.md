@@ -4434,3 +4434,39 @@ Native and full composition evidence deferred to Main. Validator correction
   Existing GUI save/reopen behavior remains covered. No native persistence,
   rendered final app, mock export, participant run or XDF completion is claimed.
   [Exact API and handoff](../docs/planner-prepared-save.md).
+
+### 20260912-root-native-workspace-publication
+
+- Main explicitly allocated the P1-03/P1-06/P1-07 shared native bridge seam,
+  Backend Verification, base `13ea36e`, isolated
+  `D:/GitHub/affect-tracker-research-native-workspace-root` on
+  `codex/segment-native-workspace-publication`.
+- Own native-bridge workspace/catalogue prepare and publication only, focused
+  tests and documentation. Main owns matching app state, CLI boot/composition,
+  native command registration and final binary. Prepare runs existing decode
+  authority and returns detached projection data; commit changes bridge state
+  synchronously without UI events. Main composes actual P1 app state alongside
+  that commit, then renders. Legacy GUI retains its event path through the same
+  preparation authority. No new decode engine, settings or qualification claim.
+- Verify withheld publication, exact workspace/catalogue/settings/caller
+  lifetime, cancellation, decode failure, legacy behavior and connector order.
+  No actual native clip playback, production mock export or Runner/XDF result
+  is implied by connector tests with synthetic controller responses.
+- Result: native bridge/catalogue focused checks pass 40/40, including nine new
+  prepared-publication and late-receipt cases. The actual bridge reuses the
+  existing decoder orchestration with synthetic controller responses in these
+  tests; no native playback or final rendered app is claimed. Node dependencies
+  reuse Main's installed tree after matching package.json/pnpm-lock.yaml hashes.
+- S3's independent read-only review identified a late native scan receipt that
+  could adopt the newer workspace as its baseline and clear/overwrite newer
+  content. Fixed all four native scan/import callers to capture their guard
+  before awaiting I/O. Regression covers a workspace change and a newer
+  publication in the same workspace. No partial catalogue is published on
+  decode failure. Log: `D:/GitHub/.affect-checks/root-native-workspace-focused.log`.
+- Frozen connector and combined commit order:
+  [native workspace publication](../docs/planner-native-workspace-publication.md).
+  Main must commit bridge state before P1 app state, then render; projection is
+  detached data, not an event callback. Main's app/boot/lib files are untouched.
+- S3 verified the four caller guards and the regression read-only after the
+  fix, with no remaining concrete finding in that bounded review. Syntax and
+  diff checks pass; there are no HTML/CSS or layout changes in this pass.

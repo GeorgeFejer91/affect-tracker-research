@@ -1388,3 +1388,197 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   assert.doesNotMatch(source, /research_update_affect_state|research_gamepad_button/u);
   assert.doesNotMatch(source, /invoke\([^\n]+(?:filePath|rootPath|outputPath)/u);
 });
+
+const preparedWorkspaceId = "11111111-1111-4111-8111-111111111111";
+function preparedWorkspaceReceipt(workspaceId = preparedWorkspaceId) {
+  return { selected: true, workspaceId, displayName: "Synthetic workspace", namespace: "research",
+    stimuliCount: 0, librariesReady: true };
+}
+function preparedScanSummary(name = "one") {
+  return { workspaceFileId: name, displayName: `${name}.mp4`, sha256: "a".repeat(64), byteLength: 10,
+    mimeType: "video/mp4", durationMs: 1000, decodeStatus: "unverified", source: null };
+}
+async function preparedBridgeFixture() {
+  const root = new EventTarget(), win = new EventTarget(), events = [], calls = [], actorCalls = [];
+  const mode = { value: "nativeGstPlay" }, progress = { textContent: "unchanged" };
+  const viewport = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 360 }) };
+  let connector, scan = { workspaceId: preparedWorkspaceId, stimuli: [preparedScanSummary()] };
+  root.dataset = { researchProgram: "planner" };
+  root.querySelector = selector => selector === "#native-playback-mode" ? mode
+    : selector === "#workspace-status" ? progress : selector === ".preview-pane .preview-primary-stage" ? viewport : null;
+  root.researchUi = { settings: { stimuli: { items: [] } }, connectPlannerNativeWorkspace: value => { connector = value; } };
+  for (const name of [RESEARCH_UI_EVENTS.workspaceReady, RESEARCH_UI_EVENTS.stimuliCatalogued]) {
+    root.addEventListener(name, event => events.push({ type: name, detail: structuredClone(event.detail) }));
+  }
+  const bridge = new NativeResearchRuntimeBridge(root, { windowObject: win,
+    setIntervalObject: () => 1, clearIntervalObject: () => {}, invoke: async (command, payload) => {
+      calls.push({ command, payload });
+      if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
+      if (command === "research_native_media_capability") return nativeMediaCapability({ runtimeBundleState: "verified",
+        runtimeIntegrityVerified: true, runtimeFileCount: 827, runtimeByteLength: 340362958, playerActorReady: true });
+      if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
+      if (command === "research_rescan_stimuli") return structuredClone(scan);
+      return {};
+    } });
+  await bridge.initialize();
+  // Synthetic controller receipts exercise the actual catalogue orchestration,
+  // not native playback or the truth of a media qualification claim.
+  bridge.nativeMedia = {
+    prepare: async ({ summary }) => { actorCalls.push(["prepare", summary.workspaceFileId]); },
+    awaitPrepared: async () => { actorCalls.push(["await"]); },
+    attestDecode: async ({ summary }) => { actorCalls.push(["attest", summary.workspaceFileId]); return {
+      ...summary, decodeStatus: "attestedQualified", decodeBackend: "nativeGstPlay", decodeAttestation: "nativeDecodedSnapshotsV1",
+      displayGeometry: { synthetic: true }, source: { kind: "workspaceFile", relativePath: `stimuli/${summary.displayName}` },
+    }; },
+    stop: async () => { actorCalls.push(["stop"]); },
+  };
+  return { root, bridge, connector, events, calls, actorCalls, mode, progress, scan,
+    setScan: value => { scan = value; } };
+}
+
+test("Planner connector prepares detached workspace data and commits without events or rescans", async () => {
+  const f = await preparedBridgeFixture();
+  assert.deepEqual(Object.keys(f.connector).sort(), ["getWorkspaceId", "prepareCatalogue", "prepareWorkspace"]);
+  assert.equal(f.connector.getWorkspaceId(), null);
+  const receipt = preparedWorkspaceReceipt(), count = f.calls.length;
+  const prepared = f.connector.prepareWorkspace(receipt);
+  receipt.displayName = "Changed caller data";
+  prepared.projection.label = "Changed projection copy";
+  assert.equal(prepared.projection.label, "Synthetic workspace");
+  assert.equal(f.bridge.workspace, null); assert.equal(f.events.length, 0); assert.equal(f.calls.length, count);
+  assert.equal(prepared.commit(), undefined);
+  assert.equal(f.connector.getWorkspaceId(), preparedWorkspaceId);
+  assert.equal(f.bridge.workspace.displayName, "Synthetic workspace");
+  assert.equal(f.events.length, 0); assert.equal(f.calls.length, count);
+  assert.throws(() => prepared.commit(), /stale|already committed/u);
+  assert.throws(() => f.connector.prepareWorkspace({ ...receipt, librariesReady: false }), /libraries/u);
+  assert.throws(() => f.connector.prepareWorkspace({ ...receipt, workspaceId: "not-a-uuid" }), /libraries/u);
+  f.bridge.destroy(); assert.equal(f.connector.getWorkspaceId(), null);
+});
+
+test("prepared catalogue uses existing sequential authority without early state/events/progress", async () => {
+  const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  const original = f.bridge.catalog;
+  const prepared = await f.connector.prepareCatalogue(f.scan, { isCurrent: () => true });
+  assert.equal(f.bridge.catalog, original); assert.equal(original.size, 0);
+  assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
+  assert.deepEqual(f.actorCalls.map(([name]) => name), ["prepare", "await", "attest", "stop"]);
+  const projection = prepared.projection;
+  projection.items[0].stimulus.title = "Mutated copy";
+  assert.equal(prepared.projection.items[0].stimulus.title, "one.mp4");
+  prepared.commit();
+  assert.equal(f.bridge.catalog.get("one").stimulus.title, "one.mp4");
+  assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
+  assert.throws(() => prepared.commit(), /stale|already committed/u);
+  f.bridge.destroy();
+});
+
+test("prepared catalogue guards caller, workspace, mode, settings, capability, newer catalogue and destruction", async () => {
+  for (const change of ["caller", "workspace", "mode", "settings", "capability", "catalogue", "destroy"]) {
+    const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+    let current = true;
+    const prepared = await f.connector.prepareCatalogue(f.scan, { isCurrent: () => current });
+    if (change === "caller") current = false;
+    if (change === "workspace") f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
+    if (change === "mode") f.mode.value = "unqualifiedWebview";
+    if (change === "settings") f.root.researchUi.settings.stimuli.items.push({ stimulusId: "new", source: { relativePath: "new.mp4" } });
+    if (change === "capability") f.bridge.nativeMediaCapability = { ...f.bridge.nativeMediaCapability, playerActorReady: false };
+    if (change === "catalogue") (await f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId, stimuli: [] })).commit();
+    if (change === "destroy") f.bridge.destroy();
+    const catalogue = f.bridge.catalog;
+    assert.equal(prepared.isCurrent(), false, change);
+    assert.throws(() => prepared.commit(), /stale/u, change);
+    assert.equal(f.bridge.catalog, catalogue); assert.equal(f.events.length, 0);
+    if (change !== "destroy") f.bridge.destroy();
+  }
+});
+
+test("workspace prepare is canceled by a later bridge publication or caller lifetime", async () => {
+  const f = await preparedBridgeFixture();
+  let current = true;
+  const canceled = f.connector.prepareWorkspace(preparedWorkspaceReceipt(), { isCurrent: () => current });
+  current = false; assert.throws(() => canceled.commit(), /stale/u); assert.equal(f.bridge.workspace, null);
+  const old = f.connector.prepareWorkspace(preparedWorkspaceReceipt());
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
+  assert.throws(() => old.commit(), /stale/u);
+  f.bridge.destroy();
+});
+
+test("a canceled pending native probe stops its actor and cannot publish or change progress", async () => {
+  const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  let entered, resume, current = true;
+  const started = new Promise(resolve => { entered = resolve; });
+  const pending = new Promise(resolve => { resume = resolve; });
+  f.bridge.nativeMedia.awaitPrepared = async () => { entered(); await pending; };
+  const work = f.connector.prepareCatalogue(f.scan, { isCurrent: () => current });
+  await started; current = false; resume();
+  await assert.rejects(work, /stale/u);
+  assert.equal(f.bridge.catalog.size, 0); assert.equal(f.events.length, 0);
+  assert.equal(f.progress.textContent, "unchanged");
+  assert.equal(f.actorCalls.filter(([name]) => name === "stop").length, 1);
+  f.bridge.destroy();
+});
+
+test("failed or duplicate catalogue preparation never partially accepts verified entries", async () => {
+  for (const failure of ["decode", "duplicate"]) {
+    const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+    const original = f.bridge.catalog;
+    const decode = f.bridge.nativeMedia.attestDecode;
+    if (failure === "decode") f.bridge.nativeMedia.attestDecode = async args => {
+      if (args.summary.workspaceFileId === "two") throw Error("Synthetic decode failure"); return decode(args);
+    };
+    await assert.rejects(f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId,
+      stimuli: [preparedScanSummary(), preparedScanSummary(failure === "decode" ? "two" : "one")] }), /failed/u);
+    assert.equal(f.bridge.catalog, original); assert.equal(original.size, 0); assert.equal(f.events.length, 0);
+    f.bridge.destroy();
+  }
+});
+
+test("legacy GUI scan reuses preparation, projects after commit and withdraws on a current failure", async () => {
+  const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  f.root.id = "native-playback-mode";
+  f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
+  assert.equal(f.events.length, 1); assert.equal(f.events[0].detail.items.length, 1);
+  assert.equal(f.bridge.catalog.size, 1); assert.match(f.progress.textContent, /complete/u);
+  f.bridge.nativeMedia.attestDecode = async () => { throw Error("Synthetic decode failure"); };
+  f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
+  assert.equal(f.bridge.catalog.size, 0); assert.deepEqual(f.events.at(-1).detail, { items: [], replace: true });
+  f.bridge.destroy();
+});
+
+test("a late GUI scan cannot erase a newly selected workspace catalogue", async () => {
+  const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  let entered, resume;
+  const started = new Promise(resolve => { entered = resolve; }), pending = new Promise(resolve => { resume = resolve; });
+  f.bridge.nativeMedia.awaitPrepared = async () => { entered(); await pending; };
+  f.root.id = "native-playback-mode"; f.root.dispatchEvent(new Event("change"));
+  await started;
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
+  const catalogue = f.bridge.catalog;
+  resume(); await f.bridge.operation;
+  assert.equal(f.bridge.catalog, catalogue); assert.equal(f.events.length, 0);
+  f.bridge.destroy();
+});
+
+test("native scan receipts are fenced before awaiting I/O, including same-workspace newer publication", async () => {
+  for (const changeWorkspace of [false, true]) {
+    const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+    let entered, resume;
+    const started = new Promise(resolve => { entered = resolve; }), pending = new Promise(resolve => { resume = resolve; });
+    const invoke = f.bridge.invoke;
+    f.bridge.invoke = async (command, payload) => {
+      if (command === "research_rescan_stimuli") { entered(); return pending; }
+      return invoke(command, payload);
+    };
+    f.root.id = "native-playback-mode"; f.root.dispatchEvent(new Event("change")); await started;
+    if (changeWorkspace) f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
+    const id = f.connector.getWorkspaceId();
+    (await f.connector.prepareCatalogue({ workspaceId: id, stimuli: [preparedScanSummary("newer")] })).commit();
+    const currentCatalogue = f.bridge.catalog;
+    resume(f.scan); await f.bridge.operation;
+    assert.equal(f.bridge.catalog, currentCatalogue); assert.ok(currentCatalogue.has("newer"));
+    assert.equal(f.events.length, 0);
+    assert.equal(f.actorCalls.filter(([kind]) => kind === "prepare").length, 1);
+    f.bridge.destroy();
+  }
+});
