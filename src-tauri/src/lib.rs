@@ -98,7 +98,10 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
         })
         .on_window_event(|window, event| {
             if window.label() == "research" {
-                if matches!(event, WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed) {
+                if matches!(
+                    event,
+                    WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
+                ) {
                     if let Some(runtime) = window.try_state::<Arc<PackageProtocolRuntime>>() {
                         runtime.shutdown();
                     }
