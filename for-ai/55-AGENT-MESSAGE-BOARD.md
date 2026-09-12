@@ -14,6 +14,22 @@
   D:/GitHub/.affect-checks. Next diagnostic uses a fresh clone and binary. No
   repeated import, canonical promotion, foreground launch or qualification claim.
 
+### 20260912-native-cli-lifecycle-observations
+
+- Root allocated CLI-SHARED/P1 native lifecycle/R1 close shared seam, Backend
+  Verification. Isolated codex/native-lifecycle-observation from Main c93c4b2.
+  Bounded deliverable: diagnose ten-second EOF cleanup failure without changing
+  cleanup behavior, timeout, actor/input authority or qualification flags.
+- CLI-only fixed enum stderr observations are once per phase, max20 lines,
+  elapsed monotonic milliseconds only; one stalled summary. EOF/drain, exit,
+  cleanup boundaries, verification/initializer and retained actor shutdown are
+  distinguished. Existing Main Master hooks preserved, no actor/input edits.
+- Four standalone std-only Rust tests pass; no Cargo hold/build or actual process
+  launch. Main's attestDecode diagnosis has priority; Main owns assembled build
+  and root's improved external driver owns exact hidden repro. Original10s
+  receipt and immutable binaries remain untouched. Details:
+  src-tauri/native-media/LIFECYCLE-OBSERVATIONS-20260912.md.
+
 ### 20260912-main-first-native-mock-and-catalogue-diagnosis
 
 - Exact clean356cba7 native-enabled CLI build passes; frozen executable SHA

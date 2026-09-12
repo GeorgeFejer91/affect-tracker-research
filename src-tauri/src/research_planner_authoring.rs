@@ -167,6 +167,7 @@ impl PlannerAuthoringBroker {
 
     fn finish_if_drained(&self, app: &AppHandle) {
         if let Some(code) = self.drained_exit_code() {
+            crate::research_shutdown::observe(crate::research_shutdown::Phase::EofDrained);
             self.wake.notify_all();
             app.exit(code);
         }
@@ -249,6 +250,7 @@ impl PlannerAuthoringBroker {
                 let read = (&mut input).take((MAX_FRAME_BYTES + 1) as u64).read_until(b'\n', &mut frame);
                 if read.is_err() { broker.fail(&input_app, "input_unavailable"); return; }
                 if frame.is_empty() {
+                    crate::research_shutdown::observe(crate::research_shutdown::Phase::EofObserved);
                     if let Ok(mut state) = broker.lock() { state.eof = true; }
                     broker.wake.notify_all(); broker.finish_if_drained(&input_app); return;
                 }
