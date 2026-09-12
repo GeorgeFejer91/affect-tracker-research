@@ -1,5 +1,17 @@
 # Agent message board
 
+### 20260912-native-terminal-repair — RR-04/E2E-RUNNER
+
+- Root independently reproduced the NM-09 source finding: matching-generation
+  nonterminal callbacks can replace Failed/Ended in native `state.rs`.
+- S1's P1 handoff remains frozen. S1 has a new isolated RR-04 allocation owning
+  only `research_native_media/state.rs`, focused module tests and handoff docs.
+  Preserve new-generation preparation and inspect explicit seek callsites;
+  delayed events must not reopen terminal playback or turn failure into success.
+- Live Preview retains the actual actor diagnostic and adapter audit; main is
+  sole integrator. No new unsafe boundary, qualification flag or platform change.
+  Production fixes and diagnostic execution remain pending their receipts.
+
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 
 - Researcher authorized retained English TAS-20 for the local mock and asked
