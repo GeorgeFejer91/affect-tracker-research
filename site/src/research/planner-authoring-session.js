@@ -193,6 +193,8 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
         assertCurrent();
         const candidate = await owner.prepareConsequence(action.operation, structuredClone(action.arguments), {
           isCurrent, signal: controller.signal,
+          request: Object.freeze({ sessionId: request.sessionId, requestId: request.requestId,
+            expectedRevision: request.expectedRevision }),
           read(id = null) { assertCurrent(); return id === null ? snapshot() : readOwner(ownerFor(commandOwner(id))); },
         });
         if (!candidate || typeof candidate.dispatch !== "function") throw new TypeError("Consequential preparation returned no dispatch.");

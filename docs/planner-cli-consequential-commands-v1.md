@@ -17,7 +17,7 @@ the keys listed below. These operations cannot appear in an atomic `apply` batch
 | `rescanVideoLibrary` | `{}` | Rescan the currently selected work directory's video library |
 | `importQuestionnaire` | `{path:string,familyId:string,language:string}` | Import source into the explicitly identified, pristine family/language slot; existing production CSV/TXT/JSON importer |
 | `saveQuestionnaire` | `{questionnaireId:string}` | Save the actual questionnaire editor draft through its native source store and return the exact acknowledgement |
-| `confirmSegment` | `{segment:"P1"\|"P2"\|"P3"\|"P4"\|"P5"\|"P6"}` | Existing ordered section confirmation/preparation; no manufactured acceptance |
+| `confirmSegment` | `{segment:"P1"\|"P2"\|"P3"\|"P4"\|"P5"\|"P6"}` | Existing ordered section confirmation/preparation; P5 returns `final_capture` because Live Preview is captured only during final save |
 | `saveRecipe` | `{directory:string}` | Segment 7 final review/Live Preview capture and fresh timestamped, no-clobber native JSON save |
 | `openRecipe` | `{path:string}` | Strict native Open and existing editable owner restore; does not grant media readiness |
 
@@ -36,8 +36,10 @@ only the latter acknowledges native workspace source persistence. A saved master
 retains exact definitions, provenance, routes and policy through the existing
 master compiler and independent strict native reader.
 
-`saveRecipe` requires all current P1–P6 confirmations and valid current P7 policy
-and presentation target. Its result includes the actual new basename and native
+`saveRecipe` requires current P1/P2/P3/P4/P6 confirmations and valid current P7
+policy and presentation target. It accepts/captures current P5 Live Preview
+internally through the same final-save workflow; P5 is not a separate user
+confirmation. Its result includes the actual new basename and native
 exact-byte save receipt. The caller combines the supplied directory and basename
 to locate the file. Filename time never alters scientific JSON identity/hashes.
 `openRecipe` preserves the original file and leaves changed/missing media pending.

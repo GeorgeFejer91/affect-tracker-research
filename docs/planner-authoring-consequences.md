@@ -18,7 +18,7 @@ An owner can additionally register `consequences` and `prepareConsequence`:
     arguments: { type: "object", additionalProperties: false,
       required: ["directory"], properties: { directory: { type: "string" } } }
   }],
-  async prepareConsequence(operation, args, { isCurrent, signal, read }) {
+  async prepareConsequence(operation, args, { isCurrent, signal, read, request }) {
     // Validate with existing domain primitives and prepare a detached candidate.
     // Only read-only preparation: no write/import/selection, editor mutation,
     // manufactured confirmation or native side effect.
@@ -46,6 +46,11 @@ This is a protocol sketch, not a filesystem implementation. Preparation's
 `read("P7")` returns detached owner readback; `read()` returns a detached whole
 session snapshot. Preparation may call native read-only helpers. Guards are
 read-only and must bind actual owner/dependency lifetimes.
+`request` is a detached frozen `{sessionId,requestId,expectedRevision}` projection
+from the validated command. Native adapters use it to bind the exact active
+broker request; it is not an ambient current-request variable or a grant by
+itself. The native broker still owns the original external fingerprint and
+purpose-bound file authority.
 
 Names are globally unique, unqualified IDs from a closed registered list; the
 owner ID is separate metadata. Every argument key is required, with

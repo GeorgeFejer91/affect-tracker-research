@@ -38,6 +38,23 @@ function harness({ prepare, validate = () => [], onBeforeCommit, onCommit, descr
 }
 const firstIssue = result => result.issues[0]?.code;
 
+test("native request identity is detached and frozen without changing retry identity", async () => {
+  let observed;
+  const h = harness({ prepare({ context, set }) {
+    observed = context.request;
+    assert.equal(Object.isFrozen(observed), true);
+    assert.throws(() => { observed.requestId = crypto.randomUUID(); }, TypeError);
+    assert.throws(() => { observed.expectedRevision = 91; }, TypeError);
+    return { dispatch({ publish }) { publish(() => set(1)); return { saved: true }; } };
+  } });
+  const request = h.request(), before = structuredClone(request);
+  const result = await h.session.execute(request);
+  assert.deepEqual(observed, { sessionId: request.sessionId, requestId: request.requestId, expectedRevision: 0 });
+  assert.deepEqual(request, before);
+  assert.deepEqual(await h.session.execute(request), result);
+  assert.equal(h.dispatches, 1);
+});
+
 test("perform requires CAS, a registered name, exact object arguments, and cannot be batched", async () => {
   const h = harness();
   const cases = [
