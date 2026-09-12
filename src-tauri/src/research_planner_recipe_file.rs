@@ -6,6 +6,9 @@ use crate::research_planner_recipe::{
     parse_planner_recipe_bytes, parse_planner_recipe_file, LoadedPlannerRecipe,
     SavedPlannerRecipeReceipt, MAX_BYTES,
 };
+use crate::research_planner_recipe_supported::{
+    parse_supported_planner_recipe_bytes, LoadedSupportedPlannerRecipe,
+};
 use serde::Serialize;
 use std::fs::{self, Metadata, OpenOptions};
 use std::io::{Read, Write};
@@ -163,6 +166,53 @@ pub(crate) fn read_planner_recipe_path(path: &Path) -> ResearchResult<serde_json
     parse_planner_recipe_file(&read_recipe_bytes(path)?)
 }
 
+/// Additive master-only intake. Legacy package dispatch remains unchanged above.
+pub(crate) fn read_supported_planner_recipe_file(
+    path: &Path,
+) -> ResearchResult<LoadedSupportedPlannerRecipe> {
+    parse_supported_planner_recipe_bytes(&read_recipe_bytes(path)?)
+}
+
+/// Select strict parsing by entrypoint while keeping one filesystem writer.
+/// This private trait does not let callers inject a parser or bypass validation.
+trait FileRecipeDocument: Sized {
+    fn parse(bytes: &[u8]) -> ResearchResult<Self>;
+    fn source_text(&self) -> &str;
+    fn save_receipt(&self) -> SavedPlannerRecipeReceipt;
+}
+
+impl FileRecipeDocument for LoadedPlannerRecipe {
+    fn parse(bytes: &[u8]) -> ResearchResult<Self> {
+        parse_planner_recipe_bytes(bytes)
+    }
+    fn source_text(&self) -> &str {
+        &self.canonical_source_text
+    }
+    fn save_receipt(&self) -> SavedPlannerRecipeReceipt {
+        SavedPlannerRecipeReceipt::from_loaded(self)
+    }
+}
+
+impl FileRecipeDocument for LoadedSupportedPlannerRecipe {
+    fn parse(bytes: &[u8]) -> ResearchResult<Self> {
+        parse_supported_planner_recipe_bytes(bytes)
+    }
+    fn source_text(&self) -> &str {
+        &self.canonical_source_text
+    }
+    fn save_receipt(&self) -> SavedPlannerRecipeReceipt {
+        SavedPlannerRecipeReceipt {
+            schema: "affect-research-planner-recipe-save-receipt".into(),
+            // Receipt version is independent of the saved recipe's version.
+            version: 1,
+            recipe_id: self.recipe.recipe_id().into(),
+            definition_sha256: self.recipe.definition_sha256().into(),
+            canonical_source_byte_sha256: self.canonical_source_byte_sha256.clone(),
+            byte_length: self.canonical_source_text.len() as u64,
+        }
+    }
+}
+
 struct StagedRecipe(PathBuf);
 
 impl Drop for StagedRecipe {
@@ -171,7 +221,10 @@ impl Drop for StagedRecipe {
     }
 }
 
-fn stage_recipe(directory: &Path, document: &LoadedPlannerRecipe) -> ResearchResult<StagedRecipe> {
+fn stage_recipe(
+    directory: &Path,
+    document: &impl FileRecipeDocument,
+) -> ResearchResult<StagedRecipe> {
     require_directory(directory)?;
     let path = directory.join(format!(".affect-research-{}.staging", Uuid::new_v4()));
     let mut file = OpenOptions::new()
@@ -181,7 +234,7 @@ fn stage_recipe(directory: &Path, document: &LoadedPlannerRecipe) -> ResearchRes
         .map_err(CommandError::io)?;
     let staged = StagedRecipe(path);
     let result = (|| {
-        file.write_all(document.canonical_source_text.as_bytes())
+        file.write_all(document.source_text().as_bytes())
             .map_err(CommandError::io)?;
         file.sync_all().map_err(CommandError::io)
     })();
@@ -191,24 +244,23 @@ fn stage_recipe(directory: &Path, document: &LoadedPlannerRecipe) -> ResearchRes
     Ok(staged)
 }
 
-fn verify_saved(
+fn verify_saved<D: FileRecipeDocument>(
     path: &Path,
-    expected: &LoadedPlannerRecipe,
+    expected: &D,
 ) -> ResearchResult<SavedPlannerRecipeReceipt> {
-    let observed = parse_planner_recipe_bytes(&read_recipe_bytes(path)?)?;
-    if observed.canonical_source_text != expected.canonical_source_text
-        || observed.canonical_source_byte_sha256 != expected.canonical_source_byte_sha256
-    {
+    let observed = D::parse(&read_recipe_bytes(path)?)?;
+    let receipt = observed.save_receipt();
+    if observed.source_text() != expected.source_text() || receipt != expected.save_receipt() {
         return Err(CommandError::invalid_contract(
             "Saved bytes do not match the prepared recipe.",
         ));
     }
-    Ok(SavedPlannerRecipeReceipt::from_loaded(&observed))
+    Ok(receipt)
 }
 
 fn verify_published(
     path: &Path,
-    expected: &LoadedPlannerRecipe,
+    expected: &impl FileRecipeDocument,
     basename: String,
 ) -> Result<SavedPlannerRecipeReceipt, PlannerRecipeWriteError> {
     verify_saved(path, expected).map_err(|error| PlannerRecipeWriteError {
@@ -283,17 +335,41 @@ pub(crate) fn write_new_planner_recipe(
     write_new_at(directory, source_text, OffsetDateTime::now_utc())
 }
 
+pub(crate) fn write_new_supported_planner_recipe(
+    directory: &Path,
+    source_text: &str,
+) -> Result<SavedPlannerRecipeFile, PlannerRecipeWriteError> {
+    write_new_supported_at(directory, source_text, OffsetDateTime::now_utc())
+}
+
+fn write_new_supported_at(
+    directory: &Path,
+    source_text: &str,
+    now: OffsetDateTime,
+) -> Result<SavedPlannerRecipeFile, PlannerRecipeWriteError> {
+    let expected = parse_supported_planner_recipe_bytes(source_text.as_bytes())?;
+    write_new_document_at(directory, &expected, now)
+}
+
 fn write_new_at(
     directory: &Path,
     source_text: &str,
     now: OffsetDateTime,
 ) -> Result<SavedPlannerRecipeFile, PlannerRecipeWriteError> {
     let expected = parse_planner_recipe_bytes(source_text.as_bytes())?;
-    let filename = planner_recipe_filename(&expected.recipe.recipe_id, now)?;
+    write_new_document_at(directory, &expected, now)
+}
+
+fn write_new_document_at(
+    directory: &Path,
+    expected: &impl FileRecipeDocument,
+    now: OffsetDateTime,
+) -> Result<SavedPlannerRecipeFile, PlannerRecipeWriteError> {
+    let filename = planner_recipe_filename(&expected.save_receipt().recipe_id, now)?;
     let stem = filename
         .strip_suffix(".json")
         .expect("Generated JSON extension");
-    let staged = stage_recipe(directory, &expected)?;
+    let staged = stage_recipe(directory, expected)?;
     for attempt in 0..MAX_NAME_ATTEMPTS {
         let basename = if attempt == 0 {
             filename.clone()
@@ -304,7 +380,7 @@ fn write_new_at(
         require_directory(directory)?;
         if publish_new(&staged, &path)? {
             return Ok(SavedPlannerRecipeFile {
-                receipt: verify_published(&path, &expected, basename.clone())?,
+                receipt: verify_published(&path, expected, basename.clone())?,
                 basename,
             });
         }
@@ -322,6 +398,8 @@ mod tests {
     use std::fs::File;
     const SOURCE: &str =
         include_str!("../../test/fixtures/planner-recipe-xr-current-v1.canonical.json");
+    const V2_SOURCE: &str =
+        include_str!("../../test/fixtures/planner-recipe-v2-mixed.canonical.json");
 
     struct TestDirectory(PathBuf);
     impl TestDirectory {
@@ -345,6 +423,160 @@ mod tests {
                 result.unwrap();
             }
         }
+    }
+
+    #[test]
+    fn supported_files_preserve_v1_and_all_v2_fixture_bytes_and_receipt_shape() {
+        use sha2::{Digest, Sha256};
+        let root = TestDirectory::new();
+        for source in [
+            SOURCE,
+            V2_SOURCE,
+            include_str!("../../test/fixtures/planner-recipe-v2-locations.canonical.json"),
+            include_str!("../../test/fixtures/planner-recipe-v2-xr.canonical.json"),
+        ] {
+            let saved = write_new_supported_planner_recipe(&root.0, source).unwrap();
+            let path = root.0.join(&saved.basename);
+            let loaded = read_supported_planner_recipe_file(&path).unwrap();
+            assert_eq!(fs::read(&path).unwrap(), source.as_bytes());
+            assert_eq!(loaded.canonical_source_text, source);
+            assert_eq!(
+                saved.receipt.canonical_source_byte_sha256,
+                format!("{:x}", Sha256::digest(source.as_bytes()))
+            );
+            assert_eq!(saved.receipt.byte_length, source.len() as u64);
+            assert_eq!(saved.receipt.recipe_id, loaded.recipe.recipe_id());
+            assert_eq!(
+                saved.receipt.definition_sha256,
+                loaded.recipe.definition_sha256()
+            );
+            let wire = serde_json::to_value(&saved.receipt).unwrap();
+            assert_eq!(wire.as_object().unwrap().len(), 6);
+            assert_eq!(
+                wire["schema"],
+                "affect-research-planner-recipe-save-receipt"
+            );
+            assert_eq!(wire["version"], 1);
+            if source == SOURCE {
+                assert_eq!(loaded.recipe.version(), 1);
+                let old = parse_planner_recipe_bytes(source.as_bytes()).unwrap();
+                assert_eq!(saved.receipt, SavedPlannerRecipeReceipt::from_loaded(&old));
+            } else {
+                assert_eq!(loaded.recipe.version(), 2);
+                assert!(read_planner_recipe_path(&path).is_err());
+                assert!(write_new_planner_recipe(&root.0, source).is_err());
+                assert!(
+                    write_selected_planner_recipe(&root.0.join("v1-only.json"), source).is_err()
+                );
+                assert!(!root.0.join("v1-only.json").exists());
+            }
+        }
+        root.assert_no_staging();
+    }
+
+    #[test]
+    fn supported_reader_and_writer_reject_unknown_malformed_and_bad_integrity() {
+        let root = TestDirectory::new();
+        let path = root.0.join("input.json");
+        let original: serde_json::Value = serde_json::from_str(V2_SOURCE).unwrap();
+        let mut invalid = vec![
+            String::new(),
+            "{}\n".into(),
+            " ".repeat(MAX_BYTES + 1),
+            V2_SOURCE.replacen(
+                "\"recipeId\":",
+                "\"recipeId\":\"duplicate\",\"recipeId\":",
+                1,
+            ),
+            include_str!("../../test/fixtures/experiment-package-v1.canonical.json").into(),
+        ];
+        for kind in ["version", "field", "definition", "reproduction"] {
+            let mut value = original.clone();
+            match kind {
+                "version" => value["version"] = serde_json::json!(99),
+                "field" => value["unknown"] = serde_json::json!(true),
+                "definition" => {
+                    value["integrity"]["definitionSha256"] = serde_json::json!("0".repeat(64))
+                }
+                _ => value["integrity"]["reproductionSha256"] = serde_json::json!("0".repeat(64)),
+            }
+            let mut bytes = crate::research_contracts::canonical_json(&value, &[]).unwrap();
+            bytes.push(b'\n');
+            invalid.push(String::from_utf8(bytes).unwrap());
+        }
+        for source in invalid {
+            fs::write(&path, &source).unwrap();
+            assert!(read_supported_planner_recipe_file(&path).is_err());
+            let error = write_new_supported_planner_recipe(&root.0, &source).unwrap_err();
+            assert!(error.published_basename.is_none());
+            assert_eq!(fs::read_dir(&root.0).unwrap().count(), 1);
+        }
+        assert!(read_supported_planner_recipe_file(&root.0).is_err());
+        root.assert_no_staging();
+    }
+
+    #[test]
+    fn supported_parallel_writes_and_clock_rollback_preserve_prior_files() {
+        let root = TestDirectory::new();
+        let loaded = parse_supported_planner_recipe_bytes(V2_SOURCE.as_bytes()).unwrap();
+        let first =
+            planner_recipe_filename(loaded.recipe.recipe_id(), OffsetDateTime::UNIX_EPOCH).unwrap();
+        fs::write(root.0.join(&first), b"prior file").unwrap();
+        let saved = std::thread::scope(|scope| {
+            let jobs: Vec<_> = (0..4)
+                .map(|_| {
+                    scope.spawn(|| {
+                        write_new_supported_at(&root.0, V2_SOURCE, OffsetDateTime::UNIX_EPOCH)
+                            .unwrap()
+                    })
+                })
+                .collect();
+            jobs.into_iter()
+                .map(|job| job.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        let mut names: Vec<_> = saved.iter().map(|file| &file.basename).collect();
+        names.sort();
+        names.dedup();
+        assert_eq!(names.len(), 4);
+        assert_eq!(fs::read(root.0.join(first)).unwrap(), b"prior file");
+        let earlier = write_new_supported_at(
+            &root.0,
+            V2_SOURCE,
+            OffsetDateTime::UNIX_EPOCH - time::Duration::seconds(1),
+        )
+        .unwrap();
+        for file in saved.into_iter().chain([earlier]) {
+            assert_eq!(
+                fs::read(root.0.join(&file.basename)).unwrap(),
+                V2_SOURCE.as_bytes()
+            );
+            assert_eq!(file.receipt, loaded.save_receipt());
+        }
+        root.assert_no_staging();
+    }
+
+    #[test]
+    fn supported_publication_denies_receipt_after_external_byte_change() {
+        let root = TestDirectory::new();
+        let loaded = parse_supported_planner_recipe_bytes(V2_SOURCE.as_bytes()).unwrap();
+        let staged = stage_recipe(&root.0, &loaded).unwrap();
+        let basename = "v2-unverified.json";
+        let path = root.0.join(basename);
+        assert!(publish_new(&staged, &path).unwrap());
+        fs::write(&path, b"external change after publication").unwrap();
+        let failure = verify_published(&path, &loaded, basename.into()).unwrap_err();
+        assert_eq!(failure.published_basename.as_deref(), Some(basename));
+        assert_eq!(
+            failure.into_command_error().code,
+            "recipe_file_written_unverified"
+        );
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            b"external change after publication"
+        );
+        drop(staged);
+        root.assert_no_staging();
     }
 
     #[test]
@@ -613,6 +845,8 @@ mod tests {
         assert!(status.success());
         assert!(is_link(&fs::symlink_metadata(&junction).unwrap()));
         assert!(read_planner_recipe_path(&junction.join("source.json")).is_err());
+        assert!(read_supported_planner_recipe_file(&junction.join("source.json")).is_err());
+        assert!(write_new_supported_planner_recipe(&junction, V2_SOURCE).is_err());
         assert!(write_new_planner_recipe(&junction, SOURCE).is_err());
         assert!(write_selected_planner_recipe(&junction.join("new.json"), SOURCE).is_err());
         assert!(write_selected_planner_recipe(&junction, SOURCE).is_err());
@@ -645,6 +879,7 @@ mod tests {
             .unwrap();
         assert!(write_selected_planner_recipe(&target, SOURCE).is_err());
         assert!(read_planner_recipe_path(&target).is_err());
+        assert!(read_supported_planner_recipe_file(&target).is_err());
         drop(locked);
         assert_eq!(fs::read(&target).unwrap(), SOURCE.as_bytes());
         root.assert_no_staging();
