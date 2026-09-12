@@ -4920,3 +4920,13 @@ parser, unchanged PackageV1 reader and per-source directory/participant semantic
 Evidence: focused supported-source, hostile-version, source-snapshot and selection
 isolation tests; no lib/app/CLI/lifecycle edits in the handoff. Main retains final
 registration and ordered integration; no installed execution claim follows.
+# Runner neutral-before-ISI invariant — 2026-09-12
+
+Root allocates RR-04/RR-05 native transition seam on isolated
+`codex/segment-runner-isi-neutral` from `893f320`. Backend Verification:
+reset authoritative response and displayed status to neutral, withdraw input and
+clear queued/held/repeat state before every interval admission and IsiStart.
+Verify first/consecutive/video-to-ISI and stale input ordering. Preserve current
+ISI input-disabled behavior; no animation freeze, playback strategy or marker
+schema change. XDF's existing markers do not independently attest reset values
+or physical paint; report that separate contract/evidence gap to root/Main.

@@ -21,6 +21,23 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Neutral before every ISI — 2026-09-12
+
+The latest user invariant now resets authoritative response and public coordinates
+before every master interval. `next()` no longer leaves status coordinates stale;
+interval admission quiesces the native input dispatch barrier, clears queued and
+held/repeat state, and publishes neutral before the deadline and IsiStart.
+No animation freeze, additional sampling or marker fields are introduced.
+Six focused worker tests pass, observing state at the actual IsiStart emitter
+boundary for first/consecutive/video-to-ISI/stale-absolute cases. Evidence and
+test-only registration hash are in `docs/runner-isi-neutral.md`.
+
+Existing XDF markers cannot independently attest neutral coordinates or physical
+paint. Actual visible video-offset-to-next-onset time also includes frontend
+poll/rAF and native preparation overhead beyond authored ISI duration. The same
+document retains source inventory and a proposed bounded diagnostic/pre-ready
+native scheduling pass; neither that pass nor FFmpeg playback is implemented.
+
 ## Supported session composition — 2026-09-12
 
 RR-02/RR-03 named shared seam, allocated by Main/root after `67ed319`.
