@@ -138,7 +138,7 @@ test("dependency-bound reopen is deterministic and rejected restore leaves edita
 });
 
 test("edits, dependency changes and teardown fence asynchronous restore and acceptance", async () => {
-  for (const action of ["edit", "dependency", "destroy", "cancel"]) {
+  for (const action of ["edit", "dependency", "destroy", "cancel", "exclude", "replace-selection"]) {
     const held = deferred(); let delay = false, current = true;
     const h = harness(async (value) => { if (delay) await held.promise; return projector(value); });
     await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.accept(); delay = true;
@@ -148,9 +148,14 @@ test("edits, dependency changes and teardown fence asynchronous restore and acce
     if (action === "dependency") { const next = structuredClone(h.get()); next.P5.revision += 1; h.publish(next); }
     if (action === "destroy") h.authoring.destroy();
     if (action === "cancel") current = false;
+    if (action === "exclude") h.authoring.restoreSelection({ status: "excluded" }, { isCurrent: () => true });
+    if (action === "replace-selection") h.authoring.restoreSelection({ status: "included", profile:
+      { ...profile, video: { ...profile.video, distanceMetres: 6 } } }, { isCurrent: () => true });
     held.resolve();
     await assert.rejects(opening, /changed/);
     if (action === "edit") assert.equal(h.state.getDraft().video.distanceMetres, 5);
+    if (action === "exclude") assert.equal(h.state.getSnapshot().enabled, false);
+    if (action === "replace-selection") assert.equal(h.state.getDraft().video.distanceMetres, 6);
     h.authoring.destroy(); assert.equal(h.listeners.size, 0);
   }
 });
