@@ -8,6 +8,10 @@ import { createDefaultResearchSettings } from "../site/src/research/contracts.js
 import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 import { createScreenLayoutDependencyBinding } from "../site/src/research/screen-layout-dependencies.js";
 import { createScreenLayoutState } from "../site/src/research/screen-layout-state.js";
+import { createWorkspaceContribution, projectWorkspaceVideoCatalogueSnapshot } from "../site/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
+import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft, resolveDesktopLayoutContribution } from "../site/src/research/desktop-layout-contribution.js";
+import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
 
 test("P4 tracks one registered workspace revision across study edits, video edits and restoration", async () => {
   const fixture = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url), "utf8"));
@@ -23,6 +27,7 @@ test("P4 tracks one registered workspace revision across study edits, video edit
     projectCatalogue: projectVideoDisplayGeometryV1, getFeedbackLayoutSnapshot: feedback.getLayoutSnapshot,
     onChange: () => state?.refreshDependencies() });
   state = createScreenLayoutState({ resolve: d => binding.resolve(d) });
+  state.replaceDraft({ ...state.draft, referencePolicy: "largest-oriented-area" });
   const detach = workspace.subscribe(() => { pending = binding.refreshCatalogue(); });
   await binding.refreshCatalogue();
   const source = workspace.getSnapshot(), initial = state.getSnapshot(), originalGeometry = state.projection.geometry;
@@ -47,6 +52,28 @@ test("P4 tracks one registered workspace revision across study edits, video edit
   assert.equal(state.getSnapshot().contribution, null);
   study = null; workspace.changed(); await pending;
   assert.deepEqual(state.projection.videos, []);
-  assert.equal(state.getSnapshot().dependencyRevisions.some(d => d.segment === "P1"), false);
+  assert.equal(bound(), workspace.getSnapshot().revision);
+  assert.equal(state.getSnapshot().pending, true);
   detach(); detachRaw(); binding.destroy(); state.destroy(); feedback.destroy();
+});
+
+test("live P4 v2 binding covers unique content while preserving every P1 location declaration", async () => {
+  const catalogue = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url), "utf8"));
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
+  const workspace = createWorkspaceContribution({ study: fixture.workspace.study, videoCatalogue: catalogue });
+  const { videos } = await projectVideoDisplayGeometry(catalogue);
+  const draft = desktopLayoutDraftFromProfile(fixture.cases[0].profile);
+  const profile = desktopLayoutProfileFromDraft(draft, videos);
+  const p1 = { revision: 71, enabled: true, pending: false, contribution: workspace, dependencyRevisions: [] };
+  const p5 = { revision: 6, enabled: true, pending: false, contribution: fixture.feedback, dependencyRevisions: [] };
+  const binding = createScreenLayoutDependencyBinding({ getCatalogueSnapshot: () => p1,
+    projectSnapshot: projectWorkspaceVideoCatalogueSnapshot, projectCatalogue: projectVideoDisplayGeometry,
+    getFeedbackSnapshot: () => p5, getFeedbackLayoutSnapshot: side => ({ revision: 6, pending: false, envelope: resolveFeedbackEnvelope(fixture.feedback, side) }) });
+  await binding.refreshCatalogue();
+  const resolved = binding.resolve(draft);
+  assert.equal(resolved.videos.length, videos.length); assert.deepEqual(resolved.issues, []);
+  assert.deepEqual(resolved.geometry, (await resolveDesktopLayoutContribution(profile, { workspace, feedback: fixture.feedback })).geometry);
+  assert.deepEqual(resolved.dependencyRevisions, [{ segment: "P1", revision: 71 }, { segment: "P5", revision: 6 }]);
+  assert.equal(binding.getContentDependencies().workspace.videoCatalogue.entries.length, catalogue.entries.length);
+  binding.destroy();
 });

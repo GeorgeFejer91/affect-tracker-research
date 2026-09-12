@@ -5450,6 +5450,9 @@ function bindResearchInteractions(root, { surface }) {
     getScreenLayoutDraftDocument: layoutDraftEditor.getDraftDocument,
     getScreenLayoutProjection() { return layoutDraftEditor.projection; },
     restoreScreenLayoutDraft: layoutDraftEditor.restoreDraft,
+    prepareScreenLayoutContribution: layoutDraftEditor.prepareContribution,
+    restoreScreenLayoutContribution: layoutDraftEditor.restoreContribution,
+    restoreScreenLayoutContent: layoutDraftEditor.restoreContent,
     validateScreenLayoutContribution: layoutDraftEditor.validateContribution,
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
     initializeXrLayoutAuthoring() {

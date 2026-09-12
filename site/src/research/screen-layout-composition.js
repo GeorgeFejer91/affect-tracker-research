@@ -1,5 +1,5 @@
-import { projectVideoDisplayGeometryV1 } from "./video-catalogue-contribution.js";
-import { projectWorkspaceVideoCatalogueSnapshotV1 } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { projectWorkspaceVideoCatalogueSnapshot } from "./workspace-contribution.js";
 
 /** One connection after all owning controllers exist; no handlers inspect
  * neighbouring DOM fields or duplicate media/animation policy. */
@@ -10,9 +10,10 @@ export function connectScreenLayoutProducers(controller) {
   ];
   void controller.connectScreenLayoutDependencies({
     getCatalogueSnapshot: () => controller.getWorkspaceContributionSnapshot(),
-    projectSnapshot: projectWorkspaceVideoCatalogueSnapshotV1,
-    projectCatalogue: projectVideoDisplayGeometryV1,
+    projectSnapshot: projectWorkspaceVideoCatalogueSnapshot,
+    projectCatalogue: projectVideoDisplayGeometry,
     getFeedbackLayoutSnapshot: side => controller.getFeedbackLayoutSnapshot(side),
+    getFeedbackSnapshot: () => controller.getFeedbackContributionSnapshot(),
   });
   return () => { for (const remove of disconnect) remove(); };
 }

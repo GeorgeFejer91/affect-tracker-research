@@ -36,7 +36,7 @@ const SECTION_SUMMARIES = Object.freeze({
   xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
   stimuli: "Variants, video order, intervals",
-  layout: "Proposed layout · not exportable",
+  layout: "Video fit and feedback placement",
   questionnaires: "Languages, demographics, questionnaires",
   feedback: "Appearance, input and animation",
   review: "Resolve blocking checks",
