@@ -1,5 +1,26 @@
 # Research v1 roadmap
 
+## P3 master-reproduction fixture and download lifecycle — 2026-09-12
+
+The isolated `codex/segment-p3-master-variants` pass starts from combined
+`7946bc6`. Fixture checkpoint `e331e9b` supplies P7 three unequal authored
+variants, 15 retained occurrence IDs, repeated/adjacent videos and all approved
+named-ISI placement edges. Independent boundary expectations yield
+50646/37801/48146 ms; two fresh processes with clock/RNG/storage/navigation
+unavailable reproduce the same complete P3 contribution and marker codebooks.
+Actual editor content restore remains pending until exact P1 rebind, then
+prepares identical content without a sidecar write. This is P3 software evidence;
+complete-master parsing/export/reopen still requires P7's current reader.
+
+The follow-up reproduces and fixes stale library download dispatch/status after
+replacement, reset, reopen or teardown, using the existing edit/restore epochs.
+Evidence: 56 focused P3 Node checks and 39 UI/modularity checks; desktop 9-file
+and Pages 212-file builds, syntax and whitespace pass. The existing desktop
+chunk warning remains. No Rust/wire change, physical UI/picker, installed Excel,
+Runner, timestamp, recording or research qualification is claimed. The new Q04
+location-derived annotation implementation belongs to P1; its P3 consumer
+adaptation remains an explicit versioned follow-up, preserving this v1 fixture.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated
