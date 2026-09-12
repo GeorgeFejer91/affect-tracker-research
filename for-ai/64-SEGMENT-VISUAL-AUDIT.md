@@ -77,6 +77,16 @@ application's real reduced-motion preference for settled static captures;
 this is not animation or physical-input qualification. No user window is
 attached or controlled. The app's default data state is recorded explicitly.
 
+For the next combined capture, the helper uses actual element visibility rather
+than layout rectangles, which Chromium may retain inside closed disclosures.
+It also records the harness SHA-256 and each PNG SHA-256. These additions apply
+to new receipts only; they do not retroactively strengthen older captures.
+The two-viewport smoke run at clean P6 `3bedea1` passes with stable source,
+zero runtime/pane-overflow errors and matching harness/PNG hashes. Root inspected
+both disabled-XR captures at
+`D:/GitHub/.affect-preview-checks/capture-helper-3bedea1-20260912`.
+This verifies the changed capture helper, not final combined V28 coverage.
+
 Local evidence directories:
 
 - `D:/GitHub/.affect-preview-checks/segment-audit-bed461b-v2`: 11 screenshots of

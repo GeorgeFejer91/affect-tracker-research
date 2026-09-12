@@ -3,6 +3,7 @@
 // This is an observation harness, not a backend or visual-quality certification.
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
@@ -12,6 +13,8 @@ import { promisify } from "node:util";
 const [browser, destination, sourceArgument, selectedArgument] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and output directory.");
 const execute = promisify(execFile);
+const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
+const harnessSha256 = sha256(await readFile(new URL(import.meta.url)));
 const source = resolve(sourceArgument ?? join(import.meta.dirname, "../.."));
 const output = resolve(destination);
 const site = join(source, "site");
@@ -46,7 +49,7 @@ try {
  pane.scrollTop=top+scenario.page*Math.max(200,pane.clientHeight-80);
  await wait();
  const rect=element=>{const r=element.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
- const shown=element=>!!element.getClientRects().length&&getComputedStyle(element).visibility!=='hidden';
+ const shown=element=>element.checkVisibility()&&getComputedStyle(element).visibility!=='hidden';
  const ids=Array.from(root.querySelectorAll('[id]'),e=>e.id);
  const controls=Array.from(section.querySelectorAll('button,input,select,textarea,summary')).filter(shown).map(e=>({
   tag:e.tagName.toLowerCase(),id:e.id,type:e.getAttribute('type'),text:(e.innerText||e.getAttribute('aria-label')||e.labels?.[0]?.innerText||'').trim(),
@@ -112,7 +115,8 @@ try {
         assert.equal(row.openSection, section.id, `Wrong active section: ${name}`);
         assert.equal(row.panelMotion, section.id === "feedback" && row.scrollSurface?.startsWith("preview-") ? "persistent" : "open", `Unsettled panel: ${name}`);
         assert.equal(row.reducedMotion, true, "Static capture requires the actual reduced-motion app path.");
-        rows.push({ screenshot: join(output, name + ".png"), ...row });
+        const screenshot = join(output, name + ".png");
+        rows.push({ screenshot, screenshotSha256: sha256(await readFile(screenshot)), ...row });
         if (page === 0 && row.sectionHeight) pages = Math.max(1, Math.ceil((row.sectionHeight - 80) / row.pageStride));
         console.log(JSON.stringify({ name, pages, errors: row.errors, overflow: [row.sectionsOverflow, row.previewOverflow] }));
       }
@@ -123,7 +127,7 @@ try {
   const finalCommit = await git("rev-parse", "HEAD");
   const finalChanges = await git("status", "--porcelain", "--", "site");
   const stableSource = finalCommit === sourceCommit && finalChanges === sourceChanges;
-  await writeFile(join(output, "receipt.json"), JSON.stringify({ source, sourceCommit, stableSource, browser, sections, viewports, rows }, null, 2));
+  await writeFile(join(output, "receipt.json"), JSON.stringify({ source, sourceCommit, stableSource, harnessSha256, browser, sections, viewports, rows }, null, 2));
   assert.ok(stableSource, "Application source changed during capture; discard this receipt.");
 }
 console.log(JSON.stringify({ sourceCommit, screenshots: rows.length, output, runtimeErrors: rows.filter(row => row.errors.length).length }));

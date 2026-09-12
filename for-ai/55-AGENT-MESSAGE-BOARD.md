@@ -222,6 +222,18 @@ file; follow the integration-owner collection procedure in the workflow.
   questionnaire hooks have no approved correspondence to the new variant
   structure and return explicit field errors; no questionnaire content is
   dropped or silently reassigned. S7 has stopped source writers for collection.
+- P7's requested follow-up `a19134d` adds an explicit Review target selector and
+  `getSelectedPlannerTarget()` (null/desktop-screen/webxr-immersive-vr), with no
+  host inference. Changed target expires active XR acceptance/current compile;
+  selected data cannot be omitted into frozen v1. Integration owns passing it
+  into the P6 footer. Owner reports 55 focused checks, actual Chrome checks and
+  both builds. This does not settle the full master/profile contract or Q08.
+- Integration reports all preceding owner handoffs collected and actual combined
+  checks running. Root awaits its exact clean source for full rendering. The
+  root capture helper now measures true visibility inside closed disclosures
+  and records harness/PNG hashes; a two-image Chrome smoke run at clean P6
+  `3bedea1` passes and both images were inspected. This is harness evidence,
+  separate from the eventual combined application.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
