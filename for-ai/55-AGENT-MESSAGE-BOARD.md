@@ -117,6 +117,21 @@ file; follow the integration-owner collection procedure in the workflow.
   labels wrapping one character per line; Live Preview owns a bounded label-layout
   fix while S5 owns saved-state copy. Neither finding is treated as completed full
   master evidence; final combined verification follows collection.
+- Latest component ledger in67 records S7 full JS master `828fff7`, live P4
+  `2499517`, full-master XR `188c080`/`485c2da` and current producer handoffs.
+  Root independently recomputed canonical definition/reproduction and all six
+  segment hashes for both master fixtures. Shared UI wiring is still active at
+  integration `4091c71`; no canonical promotion or completed-app claim.
+- Preview `9237279` resolves the narrow caption finding. Root inspected final
+  narrow axes and checked all four axes/corners HTML/PNG receipt bindings at
+  1280/800. G11 review found teardown and silent-workspace-error regressions in
+  `a0283d9`; owner fix `17b2d24` resolves both by independent source review.
+  Final rendered error layout and integrated lifecycle checks remain required.
+- Native prerequisite audit found the old temporary GStreamer devel SDK gone,
+  while Rust/MSVC and the pinned canonical runtime remain intact. S1 received
+  the bounded existing-script prerequisite/normal-native-check followup. No
+  global PATH edit, new unsafe adapter or runtime redistribution is allocated.
+  DOCS_RS source checks remain distinct from a linked Planner artifact.
 
 ### 20260912-runner-companion-separation
 
