@@ -14,6 +14,30 @@
   candidates and projection errors. API: `docs/p4-prepared-confirmation.md`.
   Actual core9 confirmation and real mock remain Main/root integration gates.
 
+### 20260912-p7-registry-prepared-owner
+
+- S7, CLI-P7 / P7-07 named registry confirmation seam, Backend Verification,
+  Root/Main allocation from `2fe9da8`. Isolated `codex/segment-p7-prepared-owner`,
+  `D:/GitHub/affect-tracker-research-p7-prepared-owner`.
+- Optional trusted preparedOwner supplies exact raw five-key future snapshot,
+  isCurrent, synchronous state-only commit and separate afterCommit projection.
+  Registry validates through existing owner validator/dependencies before owner
+  publication, then requires exact future/live equality before acceptance.
+- Existing API and P5 final-save behavior remain. No owner/app/native/schema edits.
+  P3/P4/P6 own detached candidates; Main owns actual command composition.
+- Baseline23 registry tests pass. Collect no early mutation/projection, stale,
+  abort, substitution, future/live equality and dependency rejection evidence.
+- Ready: 41 focused tests pass (23 existing registry, eight prepared-owner,
+  ten existing P5 final-save). Diff checks pass; log
+  `D:/GitHub/.affect-checks/p7-prepared-owner.log`. Snapshot/method substitution,
+  replaced dependency owners, partial/async commits and both projection errors
+  are covered without owner rollback or fake acceptance.
+- P3/P4/P6 owners confirmed exact five-key snapshot, state-only single-use commit
+  and stable detached getter after commit. Their source remains separate;
+  Main owns combined actual-editor/native composition and independent review.
+  Exact contract: `docs/planner-prepared-owner-acceptance.md`.
+
+
 ### 20260912-main-app-p1-prepared-restore
 
 - App P5/policy/target prepared hooks now reuse existing control authorities
