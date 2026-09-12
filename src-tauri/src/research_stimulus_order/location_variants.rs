@@ -7,6 +7,7 @@ use crate::research_workspace_contribution::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -219,7 +220,7 @@ impl VariantDesignV2 {
         if height * self.variants.len() > 32000 {
             return Err(invalid("Variant table exceeds cell bounds."));
         }
-        let mut next_ids = self
+        let used_ids = self
             .variants
             .iter()
             .map(|variant| {
@@ -231,10 +232,10 @@ impl VariantDesignV2 {
                         numbered(entry.entry_id(), &prefix)
                             .ok_or_else(|| invalid("Invalid occurrence identity."))
                     })
-                    .collect::<ResearchResult<Vec<_>>>()
-                    .map(|ids| ids.into_iter().max().unwrap_or(0) + 1)
+                    .collect::<ResearchResult<BTreeSet<_>>>()
             })
             .collect::<ResearchResult<Vec<_>>>()?;
+        let mut next_ids = vec![1; self.variants.len()];
         let mut rows = Vec::new();
         let mut entry_ids = Vec::new();
         for r in 0..height {
@@ -256,6 +257,9 @@ impl VariantDesignV2 {
                     .map(|(c, variant)| {
                         variant.entries.get(r).map_or_else(
                             || {
+                                while used_ids[c].contains(&next_ids[c]) {
+                                    next_ids[c] += 1;
+                                }
                                 let id = format!("{}-entry-{}", variant.variant_id, next_ids[c]);
                                 next_ids[c] += 1;
                                 id
@@ -314,6 +318,12 @@ mod tests {
             serde_json::from_value(fixture["contribution"].clone()).unwrap();
         assert_eq!(VariantDesignV2::create(&draft, &catalogue).unwrap(), design);
         design.validate(&catalogue).unwrap();
+        let mut high_ordinal = draft.clone();
+        high_ordinal.entry_ids[0][2] = "variant-2-entry-999999".into();
+        VariantDesignV2::create(&high_ordinal, &catalogue)
+            .unwrap()
+            .validate(&catalogue)
+            .unwrap();
         let mut wrong = design.clone();
         if let LocationEntry::Video { asset_id, .. } = &mut wrong.variants[0].entries[2] {
             *asset_id = format!("asset-{}", "e".repeat(64));
