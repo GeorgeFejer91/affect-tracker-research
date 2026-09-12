@@ -90,6 +90,15 @@ Its current portable identity algorithm is `planner-recipe-reproduction-v2`;
 old algorithm semantics remain independently validated. See that checkpoint's
 `docs/planner-master-recipe-v1.md` and current desktop/XR fixtures for exact APIs.
 
+Required producer follow-up: include
+`48318a9c514164d794a8f781b2129dc97729835c` and its producer ancestry when consuming
+the native reader. Its flat language graph traversal uses P2's validated node
+count (up to 256), independently of the unchanged JSON nesting limit of 64.
+The earlier reader wrongly rejected a valid 66-node graph by reusing the JSON
+depth limit. P7 supplied a complete 66-node/one-leaf recipe and reconstruction
+fixture with Rust/JS/browser coverage. Treat this as a required compatibility fix,
+not a new language policy or evidence of Runner execution correspondence.
+
 This is a completed producer handoff, not evidence that Runner has integrated
 its execution semantics. The delivered Runner backend checkpoint `b11565c`
 accepts the frozen complete package-v1 contract. Chat Orchestrator explicitly
