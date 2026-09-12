@@ -123,3 +123,40 @@ Result: source, focused native tests, responsive browser fixtures and the named
 two-browser/CLI transport checks passed. Product integration and the native/device
 support matrix remain open; future results require a separate exact-candidate
 receipt rather than upgrading this record by assumption.
+
+## Subsequent native snapshot addendum — 2026-09-12, attempt 07
+
+Live Preview completed the separately allocated native diagnostic after the
+source/transport receipt above. Tested native code:
+`b34842f1930059f2bc68748d8c6efdd039cda284`; documentation-only final receipt:
+`863c03476401e22ccb05a5acd9ab9b781f60ccf2`. This is its isolated lifecycle
+descendant, not the whole Professor application. The `live_frame.rs` Git blob
+is exactly `ba280a02386210658cea5cfee43ef9e66d23d44f` in both that candidate and
+Professor source `f418f3e`.
+
+| Single capture | Dimensions | JPEG bytes | Request round trip | Fence/format/bounds |
+|---|---|---|---|---|
+| Paused | 640×360 | 4,307 | 20.8328 ms | Passed |
+| Playing | 640×360 | 4,307 | 19.8394 ms | Passed |
+
+The 57.878-second process exited with code 0 without timeout. Subsequent
+Pause/Resume/Stop, generation-2 stale-command rejection and observed actor thread
+exit/join before parent exit passed. Four core DLLs were observed in the pinned
+runtime directory. Its 31 focused native tests passed, with one existing ignored;
+native build and the Clippy-specific gate passed. Attempt 06 is unchanged.
+
+Request latency includes queueing, capture, validation and base64; it is not a
+pure foreign-call timing measurement. Both player position estimates were 0 near
+the clip start. These two samples therefore do not establish advancing video,
+sustained cadence/throughput, playback timing under load, or installed/physical
+browser-to-native qualification. `qualified` and `installedQualification` remain
+false. Master and Pages integration gates above are unaffected.
+
+Exact artifacts in `D:/GitHub/.affect-native-diagnostic-build/attempt-07/`:
+
+- Prepared executable SHA-256:
+  `a054f2daf78bf3d36db1e2c5b820aeca930a2f1c2436689ace4d9caea6aaa364`.
+- `process-receipt.json` SHA-256:
+  `28e8eaf104d92e80624894cf996c49847b4139dd6ac63c0e6a98aee49ccb1ccc`.
+- `stdout.log` SHA-256:
+  `24b7d356961846aa475eb4e630e1cf59ff3c84726d47a047f447d39fd4a3bc3a`.

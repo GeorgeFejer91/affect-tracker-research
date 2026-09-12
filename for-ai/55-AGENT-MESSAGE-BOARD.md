@@ -3346,3 +3346,11 @@ Main owns canonical integration/Pages publication. Master remote Start waits
 for S2/Main's versioned Start freeze; monitor publish_projection seam supplied.
 Physical phone, off-host/forced-TURN, packaged native run, JPEG Playing timing/
 teardown impact and existing native readiness gates remain open.
+
+RR-11 subsequent native addendum: Live Preview stopped tested b34842f with
+docs-only receipt863c034; identical live_frame blob to f418f3e. Attempt07 passed
+one Paused and one Playing 640x360/4307-byte JPEG at20.8328/19.8394ms request
+round trip, subsequent Pause/Resume/Stop, stale generation rejection and actual
+thread exit/join. Source/transport receipt now contains a separately attributed
+addendum. No advancing-frame/sustained performance, packaged-native or physical
+phone qualification is inferred. No further RR11 source changes or native runs.
