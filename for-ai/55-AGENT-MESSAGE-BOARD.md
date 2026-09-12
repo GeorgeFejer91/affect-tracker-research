@@ -2,6 +2,30 @@
 
 ### 20260912-p4-accepted-layout-contract
 
+#### Final owner receipt — 2026-09-12
+
+- Status: **ready**, owned P4 Planner implementation complete; P4-02 through
+  P4-07 await combined integration evidence. Application checkpoint
+  `77e4752efbfb9bc4567781e0f27f830b978b6b14`; documentation-only receipt follows.
+  Source writers are stopped for integration-owner collection.
+- Main live handoff `24995177c10363fdeaddbb52ae043719c8087df2` is followed by
+  formatter-only `cca37e4`, exact P1 pure compatibility/order collection
+  `9083558`, and P4 error-focus/stale-failure/narrow-label follow-up `77e4752`.
+  The last follow-up changes only the P4 editor/state/view, its preparation test
+  and actual-app harness. Public API signatures remain frozen.
+- Final checks: 680 Node, desktop 9-file/Pages 216-file closures, 203 no-default
+  Rust tests and no-default all-target clippy/format; clean Chrome six scenes,
+  231 assertions and six inspected captures. Source hashes, PNG hashes, exact
+  browser version, receipt SHA-256 and scoped limits are in the
+  [accepted P4 evidence ledger](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+- P1 final pure files are byte-for-byte owner `ea7cf7d`; P5 pure files include
+  owner `5c9d3df`. No P1/P5 app/native files were opportunistically copied. P4
+  keeps the generic two-stage P1 binding agreed with integration.
+- Integration alone merges and wires shared footer prepare then P7 acceptance.
+  P7 owns final master save/reopen. Runner remains deferred; Edge and installed/
+  physical qualification remain unverified. No question or Q08 implementation
+  blocker remains: both methods are supported required recipe choices.
+
 #### Scope clarification and accepted type — 2026-09-12
 
 - Coordinator `84300ed` clarifies both methods as explicit per-recipe Planner

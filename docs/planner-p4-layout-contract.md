@@ -123,6 +123,9 @@ Edits and dependency changes withdraw prepared data. Identical notifications do
 not invent a revision. All restores/preparations share an operation generation;
 edits, a newer request, dependency changes, cancellation and teardown reject
 stale work before mutation. A ready restore publishes one complete state change.
+Failed validation also checks freshness before exposing an error. A current
+field error opens its containing disclosure, focuses the corresponding control
+and scrolls it into view; an old failure cannot steal focus after a newer edit.
 
 ## Native mirror and evidence
 
@@ -142,3 +145,5 @@ validator. Separate actual-app checks prepare and accept the real P4 contributio
 through P7, round-trip canonical bytes and compare them with preview geometry.
 Runner correspondence/execution/recording remains the final, separately allocated
 development stage. Installed/native/Edge/physical qualification is not implied.
+The final component's exact source, checks, capture hashes and integration limits
+are recorded in the [P4 evidence ledger](../for-ai/40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).

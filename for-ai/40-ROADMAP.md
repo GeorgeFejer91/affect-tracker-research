@@ -1,5 +1,72 @@
 # Research v1 roadmap
 
+## P4 accepted Planner layout — 2026-09-12
+
+Owner-ready Backend Verification completion for P4-02 through P4-07 is at clean
+application `77e4752efbfb9bc4567781e0f27f830b978b6b14` on
+`codex/segment-p4-accepted-layout`, based on reviewed integration `7946bc6`.
+This supersedes the historical P4 draft-only/global-Q08-blocker statements below.
+Coordinator `84300ed` explicitly allocates both reference methods as per-recipe
+choices with no selected default. Missing selection blocks only that recipe.
+
+The authoring UI derives a fixed reference from either the largest oriented video
+by pixel area or the combined maximum-width/height envelope. All unique videos
+retain aspect ratio inside that frame. Relative percentages and explicitly
+calibrated millimetres preserve the same centres, offsets, reference, drawing
+viewport and full P5 painted bounds. Validation rejects clipping, overlap,
+insufficient separation, incomplete owner data and an incompatible viewport.
+The required method selector, field labels, error focus and narrow-pane wrapping
+were inspected in the actual bootstrapped app.
+
+The strict `affect-research-desktop-layout-contribution` v1 has canonical JS/Rust
+validation and geometry fixtures. Live preparation uses complete current P1/P5
+payloads; edits, owner revisions and newer async operations withdraw or fence old
+results. Ready restore validates actual dependencies atomically; content-only
+reopen restores editable fields as pending and grants no media permission.
+The frozen internal draft v1 reader is preserved, with explicit restoration into
+draft v2 leaving the new method unselected. See
+[the contract and public APIs](../docs/planner-p4-layout-contract.md).
+
+Dependency provenance: P1 pure generic v1/v2 modules from `0b7f793` and the final
+compatibility/UTF-16-order fixes from `ea7cf7d` (collected as `9083558`); P5 pure
+v1/v2 validation/envelopes from `95b2e92` and the Unicode fix from `5c9d3df`.
+P1/P5 successor app/native changes stay with their owners. The component's live
+capture uses the base P5 UI; full P5 v2 saved content is exercised separately by
+pure and dependency tests, not claimed as combined successor-UI evidence.
+
+Final evidence:
+
+- **680/680 Node tests**, including strict contracts, whole-catalogue geometry,
+  independent-process canonical reproduction and stale success/failure guards.
+- Desktop **9-file** and Pages **216-file** build closures. The existing
+  non-failing JavaScript chunk-size warning remains.
+- Native mirror: **203/203 locked no-default Rust tests**, including four shared
+  desktop-layout cases; no-default all-target clippy with warnings denied and
+  format pass. Native source is unchanged after formatter checkpoint `cca37e4`.
+- Chrome **152.0.7977.83**, six isolated headless scenes, **231/231 assertions**,
+  all six PNGs inspected. P4 pane widths are 780 and 417 CSS px in a 1280 × 900
+  app surface. Checks include real P4 preparation/P7 registry acceptance,
+  accepted layout byte round-trip versus preview geometry, ready/pending reopen,
+  dependency invalidation, required-choice rejection, focused invalid field,
+  reachable footer and no horizontal overflow or runtime errors.
+
+The clean-source receipt, served-source/PNG hashes and copied CLI logs are under
+`D:/GitHub/.affect-preview-checks/p4-contract-20260912/final-authoring-chrome/`.
+`receipt.json` SHA-256 is
+`673e4542a902bc3175295667174f0df658527b206f48b80a1ebda9c92c452928`.
+Reproduce the scenes with `node scripts/qualification/screen-layout-live.mjs
+<chrome.exe> <new-output-directory>` from the isolated worktree.
+
+Integration is the sole merger and owns shared footer preparation/acceptance;
+P7 owns combined master construction, named save and full master reopen receipts.
+Those combined results are not established by this component handoff. The browser
+fixture supplies synthetic catalogue boundary data, not actual decoding or file
+permission evidence. Edge remains unverified; there is no installed/native,
+physical calibration, accessibility, playback, timing or acquisition claim.
+Runner correspondence/execution/recording remains the separately allocated final
+stage and does not block this Planner component's completion. Canonical `ba2110f`
+and foreground applications were not changed by this pass.
+
 ## Combined section confirmation candidate — 2026-09-12
 
 Integration application `3ac7c7f` on the isolated
