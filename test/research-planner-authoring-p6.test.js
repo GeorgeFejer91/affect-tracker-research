@@ -30,7 +30,7 @@ function fixture() {
     stageAuthoringDraft(value, options) {
       const candidate = state.stageAuthoringDraft(value, options);
       return { isCurrent: () => !disposed && candidate.isCurrent(),
-        commit() { candidate.commit(); publishes++; } };
+        commit: candidate.commit, afterCommit() { publishes++; } };
     },
   };
   return { state, editor, adapter: createPlannerAuthoringP6({ editor }), inspection,
@@ -240,4 +240,29 @@ test("every P6 command field retains its exact complete-master JSON contribution
     assert.equal(await serializePlannerRecipeV1(parsed.recipe), source);
     assert.equal(f.state.getSnapshot().contribution, null, "pure compiler test grants no live acceptance");
   }
+});
+
+test("shared session publishes P6 observers only after every owner state is installed", async () => {
+  const f = fixture(); let otherInstalled = false, observed = false;
+  const stageOwner = f.editor.stageAuthoringDraft;
+  f.editor.stageAuthoringDraft = (...args) => {
+    const staged = stageOwner(...args);
+    return { ...staged, afterCommit() {
+      assert.equal(otherInstalled, true);
+      assert.equal(f.state.getDraft().video.distanceMetres, 8);
+      observed = true; staged.afterCommit();
+    } };
+  };
+  const session = createPlannerAuthoringSession({ owners: [f.adapter, {
+    id: "P7", settings: [], operations: [{ id: "installTestState" }],
+    read: () => ({ values: {}, issues: [] }), validate: () => [],
+    async stage() { return { commit() { otherInstalled = true; } }; },
+  }] });
+  const result = await session.execute({ schema: "affect-research-planner-command", version: 1,
+    sessionId: session.sessionId, requestId: crypto.randomUUID(), expectedRevision: 0,
+    action: { kind: "apply", edits: [set("video.distanceMetres", 8),
+      { kind: "operation", owner: "P7", operation: "installTestState", arguments: {} }] } });
+  assert.equal(result.status, "applied");
+  assert.equal(observed, true); assert.equal(f.publishes, 1);
+  session.destroy();
 });

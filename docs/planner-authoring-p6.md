@@ -16,16 +16,19 @@ Use the existing `createXrLayoutEditor` instance. It exposes
 `getAuthoringSnapshot()` with a detached draft, owner/dependency revisions and
 read-only inspection/geometry inputs; and
 `stageAuthoringDraft({enabled,profile},{isCurrent,signal})`, returning
-`{isCurrent,commit}`. The adapter captures the existing draft and applies the
+`{isCurrent,commit,afterCommit}`. The adapter captures the existing draft and applies the
 entire ordered edit list to one detached candidate. Staging does not alter DOM,
 draft, accepted contribution, file generation, callbacks or media authority.
 
 The coordinator must check **all** staged `isCurrent()` predicates and global
 cancellation before any commit. Guards include the XR owner's revision, which
-changes on P1/P5 drift. `commit()` synchronously projects the prevalidated
-candidate into the sole owner, withdraws preparation, advances its revision once,
-invalidates pending profile reads and updates the existing controls. It performs
-no native operation or new domain validation. Main retains shared publication
+changes on P1/P5 drift. `commit()` synchronously installs the prevalidated
+candidate in the sole owner, withdraws preparation, advances its revision once
+and invalidates pending profile reads. It performs no native operation, observer
+call, DOM work or new domain validation. After **all** owners commit, the shared
+coordinator calls `afterCommit()` to update the existing controls and notify
+observers, with projection errors reported as incomplete applied outcomes.
+Main retains shared publication
 locking, precommit file-workflow invalidation and observer/lifecycle fencing.
 
 Atomic field edits retain inactive spatial values on exclusion. Final master

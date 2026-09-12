@@ -92,6 +92,16 @@ const values = { enabled: false, "video.distanceMetres": 4.25, "video.azimuthDeg
   cancelled.abort();
   let rejected = false; try { await pending; } catch { rejected = true; }
   check("canceled actual owner stage preserves newer UI", rejected && editor.getDraft().video.distanceMetres === 9);
+  const directStage = await adapter.stage([set("video.distanceMetres", 8)], { isCurrent: () => true });
+  const oldDom = host.innerHTML, oldPublications = publications;
+  directStage.commit();
+  check("atomic commit installs state without DOM or observer calls", editor.getDraft().video.distanceMetres === 8
+    && host.innerHTML === oldDom && publications === oldPublications);
+  directStage.afterCommit();
+  check("postcommit projection updates the actual control and observer", q('[data-xr-field="video.distanceMetres"]').value === "8"
+    && publications === oldPublications + 1);
+  directStage.afterCommit();
+  check("postcommit projection is not published twice", publications === oldPublications + 1);
   check("no browser errors", errors.length === 0);
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, checks, errors, parity, scope: "cli",
     sourceScope: "actual XR editor controls, P6 adapter and shared JS command session; synthetic typed geometry, no native CLI or media attestation" });

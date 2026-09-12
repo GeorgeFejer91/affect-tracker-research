@@ -270,12 +270,16 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     stageAuthoringDraft(value, { isCurrent, signal } = {}) {
       if (disposed) throw new XrLayoutError("profile", "stale", "The XR editor is closed.");
       const candidate = state.stageAuthoringDraft(value, { isCurrent, signal });
-      let committed = false;
+      let committed = false, projected = false;
       return Object.freeze({
         isCurrent: () => !disposed && candidate.isCurrent(),
         commit() {
           if (committed) return;
           committed = true; candidate.commit(); fileGeneration += 1;
+        },
+        afterCommit() {
+          if (!committed || projected || disposed) return;
+          projected = true;
           setFields(); render(); notify(); status("Layout changed. Confirm the section before saving.");
         },
       });
