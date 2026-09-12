@@ -408,6 +408,38 @@
 - Main receives exact registration/publication hooks and owns app/native wiring,
   combined atomicity and real hidden-native CLI evidence. No app.js, bridge,
   shared gateway, native or Runner edits; no network, foreground or release claim.
+### 20260912-p2-researcher-local-preset
+
+- Owner implementation ready for Main collection: new native store and metadata-
+  only JS owner/picker helpers; no lib/Cargo/shared composition edits. Full JS
+  **806/806**, native harness **8 passed + 1 intentionally ignored**, separate
+  explicitly supplied actual German CSV native test **1/1 passed**. Real CSV
+  production importer/editor proof preserves exact definition and original bytes
+  at the guarded save callback; the reader/save callback are injected, not IPC.
+  Main retains actual installation, picker, workspace-copy and native/UI gates.
+  See `docs/questionnaire-local-presets.md` for API, evidence and limitations.
+- Owner S2, P2 local-preset continuation explicitly allocated by main/root under
+  user amendment `fa07d1c` (read). Stage: Backend Verification followed by owner
+  UI seam verification. Isolated `codex/segment-p2-local-preset` starts at frozen
+  `7b36f06`; prior CLI/UI commits remain independently collectable.
+- Root clarified that one local installation must be reusable across new work
+  folders. This supersedes the initial selected-workspace-only proposal. Main
+  reallocated a new P2-owned `research_local_questionnaire_presets.rs` service
+  under established native app user-data; do not edit existing workspace code.
+  The study receives its own copy through the existing content-addressed
+  workspace store, so the global preset is never an experiment runtime dependency.
+- Main owns app.js, native bridge/commands/registration and native file grants
+  for installation. Exact new/read/install API and path-free receipt proposal
+  sent before native edits. P2 owns only the new native service, metadata registry,
+  production importer/picker hooks and focused tests. Do not edit lib/Cargo/
+  research_commands or P1's Runner workspace method. No live window, public item
+  text, new unsafe boundary, licence claim or clinical/scoring inference.
+- Evidence to collect: exact hash/size/source identity; bounded fresh reads;
+  unknown IDs, stale owner context, symlink/reparse, missing/corrupt/changed
+  source; user/CLI same owner loader; stale slot/language/cancellation guards;
+  unchanged public preset eligibility. Installed command/UI integration remains
+  main's gate, not a claim from injected tests. Exact Handrack appendix source and
+  local-only attribution are preserved; no additional local-use approval pending.
 
 ### 20260912-p2-cli-checkpoint-and-ui-parity
 
