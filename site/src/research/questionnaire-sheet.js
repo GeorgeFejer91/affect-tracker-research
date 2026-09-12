@@ -74,6 +74,21 @@ export function cloneQuestionnaireSheet(sheet) {
   return cloned;
 }
 
+/** Typed authoring adapters replace detached content through the same bounds
+ * and provenance bookkeeping as cell edits. Not a persisted definition import. */
+export function replaceQuestionnaireSheetDraft(sheet, content) {
+  const keys = ["familyId", "language", "questionnaireId", "questionnaireVersion", "title",
+    "instructions", "attribution", "optionCount", "optionLabels", "rows"];
+  if (!content || typeof content !== "object" || Array.isArray(content)
+    || Object.keys(content).length !== keys.length || keys.some(key => !Object.hasOwn(content, key))) {
+    throw new TypeError("Questionnaire draft has missing or unknown fields.");
+  }
+  if (content.familyId !== sheet.familyId || content.language !== sheet.language) {
+    throw new TypeError("Use a new questionnaire slot to change family or language.");
+  }
+  return commit(sheet, { ...structuredClone(content), modified: sheet.modified }, content.rows.map(row => row.itemId));
+}
+
 function snapshot(sheet) {
   const { modified: _modified, ...content } = sheet;
   return JSON.stringify(content);

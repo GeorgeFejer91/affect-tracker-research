@@ -764,6 +764,23 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p2-cli-owner-adapter
+
+- Owner S2, CLI-P2, Backend Verification; explicitly allocated by Chat
+  Orchestrator for the user's local Planner CLI extension. Isolated branch
+  `codex/segment-p2-cli-adapter`, questionnaire worktree, base `460f516`.
+- Deliverable: `planner-authoring-p2.js`, focused owner tests and minimal sheet/
+  editor state methods. Frozen shared interface read completely from integration's
+  `docs/planner-authoring-command-api-v1.md`. No shared app/native/gateway edits.
+- Reuse actual editor drafts and language/module contracts; detached ordered
+  staging, honest invalid raw fields, synchronous prevalidated projection with
+  no native save/import/acceptance. Main injects current app context and commits
+  existing arrays; no second durable questionnaire store or compiler.
+- Verify every writable group, list identities/order, scientific provenance,
+  incomplete drafts and invalid/stale/cancelled staging without live mutation.
+  Source import is a separate consequential command. TAS rights/content and all
+  Runner behavior stay outside this adapter; they do not block implementation.
+
 ### 20260912-p6-master-completion
 
 - Owner S6/P6, new Planner completion allocation from root, Backend Verification,
