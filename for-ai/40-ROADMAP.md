@@ -1,5 +1,25 @@
 # Research v1 roadmap
 
+## P3 native catalogue download command — 2026-09-12
+
+Explicitly delegated P3-08 shared seam on isolated `codex/segment-p3-native-export`
+from combined `47a87ae`. `research_export_video_catalogue` uses the existing
+window authorization and native immutable Planner role, P1's current catalogue
+verifier and P3's exact CSV/XLSX encoder before opening the named save picker.
+After selection, P1 verification runs again before the existing create-new file
+writer. The historical library export command is unchanged. Main owns registry,
+bridge/browser wiring and actual combined UI verification.
+
+Four new command-workflow tests pass against real temporary workspaces/files
+with explicit synthetic native decode attestations: role/invalid/stale rejection
+before picker, cancellation, exact CSV/XLSX output, wrong-extension/existing-file
+preservation, and media/workspace changes during selection. Four pre-existing
+command tests passed baseline. Formatting and diff checks pass. Cargo emits the
+24 baseline warnings plus the not-yet-registered new command warning. No foreground
+picker, installed runtime/decode, native execution or publication claim follows.
+P1 has a separate reported follow-up for fresh directory enumeration and link
+replacement rejection inside its verifier; this command duplicates no media policy.
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and
