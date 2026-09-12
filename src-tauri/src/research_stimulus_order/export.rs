@@ -125,8 +125,41 @@ fn zip(parts: Vec<(&str, String)>) -> Vec<u8> {
     local
 }
 pub fn library_bytes(library: &VideoLibrary, format: LibraryFormat) -> Vec<u8> {
+    rows_bytes(rows(library), format)
+}
+/// Pure encoding after the command verifies current files through P1's owner.
+pub fn catalogue_bytes(
+    catalogue: &crate::research_workspace_contribution::VideoCatalogueContribution,
+    expected_library_sha256: &str,
+    format: LibraryFormat,
+) -> ResearchResult<Vec<u8>> {
+    let library = super::location_variants::LocationLibrary::from_catalogue(catalogue)?;
+    if library.integrity_sha256 != expected_library_sha256 {
+        return Err(CommandError::invalid_contract(
+            "Video catalogue changed before export.",
+        ));
+    }
+    let mut records = vec![vec![
+        "Video annotation".into(),
+        "Filename".into(),
+        "Relative path".into(),
+        "SHA-256".into(),
+        "Bytes".into(),
+    ]];
+    records.extend(library.videos.iter().map(|video| {
+        vec![
+            video.annotation_id.clone(),
+            video.relative_path.rsplit('/').next().unwrap_or("").into(),
+            video.relative_path.clone(),
+            video.sha256.clone(),
+            video.byte_length.to_string(),
+        ]
+    }));
+    Ok(rows_bytes(records, format))
+}
+fn rows_bytes(records: Vec<Vec<String>>, format: LibraryFormat) -> Vec<u8> {
     if matches!(format, LibraryFormat::Csv) {
-        let rows = rows(library)
+        let rows = records
             .iter()
             .map(|row| {
                 row.iter()
@@ -154,7 +187,7 @@ pub fn library_bytes(library: &VideoLibrary, format: LibraryFormat) -> Vec<u8> {
         ("_rels/.rels", format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"{package_rel}\"><Relationship Id=\"rId1\" Type=\"{rel}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>")),
         ("xl/workbook.xml", format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"{rel}\"><sheets><sheet name=\"Video library\" sheetId=\"1\" r:id=\"rId1\"/><sheet name=\"Order template\" sheetId=\"2\" r:id=\"rId2\"/></sheets></workbook>")),
         ("xl/_rels/workbook.xml.rels", format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"{package_rel}\"><Relationship Id=\"rId1\" Type=\"{rel}/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"{rel}/worksheet\" Target=\"worksheets/sheet2.xml\"/></Relationships>")),
-        ("xl/worksheets/sheet1.xml", sheet(rows(library))), ("xl/worksheets/sheet2.xml", sheet(template)),
+        ("xl/worksheets/sheet1.xml", sheet(records)), ("xl/worksheets/sheet2.xml", sheet(template)),
     ])
 }
 pub fn write_export(path: &Path, format: LibraryFormat, bytes: &[u8]) -> ResearchResult<()> {

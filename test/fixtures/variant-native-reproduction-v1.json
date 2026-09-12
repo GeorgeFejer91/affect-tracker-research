@@ -1,0 +1,492 @@
+{
+  "projections": [
+    {
+      "timeline": {
+        "variantId": "variant-3",
+        "versionSha256": "fd9338543664a80c0c96c060a57992fe619860d3d5b31d8d706f2527bcc49623",
+        "plannedDurationMs": 50646,
+        "events": [
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-11",
+            "kind": "isi",
+            "referenceId": "ISI1",
+            "position": 1,
+            "eventId": "variant-3-entry-11-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 0
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-11",
+            "kind": "isi",
+            "referenceId": "ISI1",
+            "position": 1,
+            "eventId": "variant-3-entry-11-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 0
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI2",
+            "position": 2,
+            "eventId": "variant-3-entry-13-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 0
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI2",
+            "position": 2,
+            "eventId": "variant-3-entry-13-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 500
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-3-entry-15-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 500
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-3-entry-15-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 12845
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-17",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 4,
+            "eventId": "variant-3-entry-17-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 12845
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-17",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 4,
+            "eventId": "variant-3-entry-17-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 25190
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-19",
+            "kind": "isi",
+            "referenceId": "ISI3",
+            "position": 5,
+            "eventId": "variant-3-entry-19-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 25190
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-19",
+            "kind": "isi",
+            "referenceId": "ISI3",
+            "position": 5,
+            "eventId": "variant-3-entry-19-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 25690
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-21",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 6,
+            "eventId": "variant-3-entry-21-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 25690
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-21",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 6,
+            "eventId": "variant-3-entry-21-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 49146
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-23",
+            "kind": "isi",
+            "referenceId": "ISI4",
+            "position": 7,
+            "eventId": "variant-3-entry-23-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 49146
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-23",
+            "kind": "isi",
+            "referenceId": "ISI4",
+            "position": 7,
+            "eventId": "variant-3-entry-23-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 50646
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-25",
+            "kind": "isi",
+            "referenceId": "ISI1",
+            "position": 8,
+            "eventId": "variant-3-entry-25-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 50646
+          },
+          {
+            "variantId": "variant-3",
+            "entryId": "variant-3-entry-25",
+            "kind": "isi",
+            "referenceId": "ISI1",
+            "position": 8,
+            "eventId": "variant-3-entry-25-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 50646
+          }
+        ]
+      },
+      "profile": {
+        "recipeSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "variantId": "variant-3",
+        "variantVersionSha256": "fd9338543664a80c0c96c060a57992fe619860d3d5b31d8d706f2527bcc49623",
+        "entries": [
+          {
+            "entryId": "variant-3-entry-11",
+            "sourceCode": "source-1"
+          },
+          {
+            "entryId": "variant-3-entry-13",
+            "sourceCode": "source-2"
+          },
+          {
+            "entryId": "variant-3-entry-15",
+            "sourceCode": "source-3"
+          },
+          {
+            "entryId": "variant-3-entry-17",
+            "sourceCode": "source-3"
+          },
+          {
+            "entryId": "variant-3-entry-19",
+            "sourceCode": "source-4"
+          },
+          {
+            "entryId": "variant-3-entry-21",
+            "sourceCode": "source-5"
+          },
+          {
+            "entryId": "variant-3-entry-23",
+            "sourceCode": "source-6"
+          },
+          {
+            "entryId": "variant-3-entry-25",
+            "sourceCode": "source-1"
+          }
+        ],
+        "codebook": [
+          {
+            "sourceCode": "source-1",
+            "kind": "isi",
+            "identitySha256": "74d1ff6110ac5483164d594d86baf920337ed9c1106f3cea2825b112fe2ef881",
+            "durationMs": 0
+          },
+          {
+            "sourceCode": "source-2",
+            "kind": "isi",
+            "identitySha256": "8444191a706f2147f285db8ad201b912d0a280e7f3733c3098403db3cb52dd69",
+            "durationMs": 500
+          },
+          {
+            "sourceCode": "source-3",
+            "kind": "video",
+            "identitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "durationMs": 12345
+          },
+          {
+            "sourceCode": "source-4",
+            "kind": "isi",
+            "identitySha256": "5d8e355655ad420478cb28260df3ddd3cc2d29e1e6880b49fae688b2d7e1543a",
+            "durationMs": 500
+          },
+          {
+            "sourceCode": "source-5",
+            "kind": "video",
+            "identitySha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "durationMs": 23456
+          },
+          {
+            "sourceCode": "source-6",
+            "kind": "isi",
+            "identitySha256": "57067881a794a4bf919a3f26b77f4cf8e007d05cb9f15e1a12b24a2e05f77242",
+            "durationMs": 1500
+          }
+        ]
+      }
+    },
+    {
+      "timeline": {
+        "variantId": "variant-1",
+        "versionSha256": "b416d73cb74859a4a338d9d9dd5b1c0bf7e9e898422a0366120a82aef2a71302",
+        "plannedDurationMs": 37801,
+        "events": [
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-11",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 1,
+            "eventId": "variant-1-entry-11-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 0
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-11",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 1,
+            "eventId": "variant-1-entry-11-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 23456
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI4",
+            "position": 2,
+            "eventId": "variant-1-entry-13-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 23456
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI4",
+            "position": 2,
+            "eventId": "variant-1-entry-13-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 24956
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-1-entry-15-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 24956
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-1-entry-15-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 37301
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-17",
+            "kind": "isi",
+            "referenceId": "ISI2",
+            "position": 4,
+            "eventId": "variant-1-entry-17-start",
+            "eventType": "isiStart",
+            "plannedOffsetMs": 37301
+          },
+          {
+            "variantId": "variant-1",
+            "entryId": "variant-1-entry-17",
+            "kind": "isi",
+            "referenceId": "ISI2",
+            "position": 4,
+            "eventId": "variant-1-entry-17-end",
+            "eventType": "isiEnd",
+            "plannedOffsetMs": 37801
+          }
+        ]
+      },
+      "profile": {
+        "recipeSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "variantId": "variant-1",
+        "variantVersionSha256": "b416d73cb74859a4a338d9d9dd5b1c0bf7e9e898422a0366120a82aef2a71302",
+        "entries": [
+          {
+            "entryId": "variant-1-entry-11",
+            "sourceCode": "source-1"
+          },
+          {
+            "entryId": "variant-1-entry-13",
+            "sourceCode": "source-2"
+          },
+          {
+            "entryId": "variant-1-entry-15",
+            "sourceCode": "source-3"
+          },
+          {
+            "entryId": "variant-1-entry-17",
+            "sourceCode": "source-4"
+          }
+        ],
+        "codebook": [
+          {
+            "sourceCode": "source-1",
+            "kind": "video",
+            "identitySha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "durationMs": 23456
+          },
+          {
+            "sourceCode": "source-2",
+            "kind": "isi",
+            "identitySha256": "57067881a794a4bf919a3f26b77f4cf8e007d05cb9f15e1a12b24a2e05f77242",
+            "durationMs": 1500
+          },
+          {
+            "sourceCode": "source-3",
+            "kind": "video",
+            "identitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "durationMs": 12345
+          },
+          {
+            "sourceCode": "source-4",
+            "kind": "isi",
+            "identitySha256": "8444191a706f2147f285db8ad201b912d0a280e7f3733c3098403db3cb52dd69",
+            "durationMs": 500
+          }
+        ]
+      }
+    },
+    {
+      "timeline": {
+        "variantId": "variant-2",
+        "versionSha256": "ddf6252ad1f6eafd1d77126f12f08f8b0354ba092ff06792eebdcc22f9aa47e1",
+        "plannedDurationMs": 48146,
+        "events": [
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-11",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 1,
+            "eventId": "variant-2-entry-11-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 0
+          },
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-11",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 1,
+            "eventId": "variant-2-entry-11-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 12345
+          },
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-13",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 2,
+            "eventId": "variant-2-entry-13-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 12345
+          },
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-13",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4",
+            "position": 2,
+            "eventId": "variant-2-entry-13-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 35801
+          },
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-2-entry-15-start",
+            "eventType": "videoStart",
+            "plannedOffsetMs": 35801
+          },
+          {
+            "variantId": "variant-2",
+            "entryId": "variant-2-entry-15",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899",
+            "position": 3,
+            "eventId": "variant-2-entry-15-end",
+            "eventType": "videoEnd",
+            "plannedOffsetMs": 48146
+          }
+        ]
+      },
+      "profile": {
+        "recipeSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "variantId": "variant-2",
+        "variantVersionSha256": "ddf6252ad1f6eafd1d77126f12f08f8b0354ba092ff06792eebdcc22f9aa47e1",
+        "entries": [
+          {
+            "entryId": "variant-2-entry-11",
+            "sourceCode": "source-1"
+          },
+          {
+            "entryId": "variant-2-entry-13",
+            "sourceCode": "source-2"
+          },
+          {
+            "entryId": "variant-2-entry-15",
+            "sourceCode": "source-1"
+          }
+        ],
+        "codebook": [
+          {
+            "sourceCode": "source-1",
+            "kind": "video",
+            "identitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "durationMs": 12345
+          },
+          {
+            "sourceCode": "source-2",
+            "kind": "video",
+            "identitySha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "durationMs": 23456
+          }
+        ]
+      }
+    }
+  ],
+  "csvSha256": "eace94475bc15d3e61ba7bee291beae4120109f68fa408c3aad3ca5851e100e8",
+  "xlsxSha256": "d016f99709e7065b7607d1c500d30d1de7ccbd99ab8a67a52666f7a9b3fd5dcf"
+}

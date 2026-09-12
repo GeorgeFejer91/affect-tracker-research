@@ -3577,7 +3577,8 @@ dialog::backdrop {
 .stimulus-order-table td[data-order-kind="isi"] { border-inline-start: 3px solid #ff9299; }
 .stimulus-order-table td[data-order-kind="isi"] .order-cell-cue { color: #ff9299; }
 .stimulus-order-table td[data-order-kind="invalid"] input { border-color: var(--danger); }
-.planned-events { padding-inline-start: 1.25rem; }
+.planned-events { padding-inline-start: 1.25rem; max-width: 100%; overflow-x: auto; }
+.planned-events li { white-space: nowrap; }
 .planned-events small { display: block; color: var(--muted); overflow-wrap: anywhere; }
 @media (forced-colors: active) {
   .stimulus-order-table td[data-order-kind], .isi-definition label, .order-cell-cue { border-color: CanvasText; color: CanvasText; }
