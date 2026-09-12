@@ -292,3 +292,46 @@ coordinator and rerun combined lint; no warnings were suppressed. Formatting,
 PowerShell parser validation and `git diff --check` passed. This final evidence
 update changes documentation only; the actual tested native source remains
 `c87bd95d00cbd884792f809ca34365e27a93d7be`.
+
+### Attempt07: bounded RR11 JPEG captures
+
+Root allocated a separate media-only collection from RR11 `f418f3e` onto the
+verified lifetime branch. `live_frame.rs` retains exact source blob
+`ba280a02386210658cea5cfee43ef9e66d23d44f`; only actor snapshot hooks, service
+wrapper and exact base64 dependency were collected, not companion/lib/runtime/
+frontend or hmac. Clean source `b34842f1930059f2bc68748d8c6efdd039cda284`
+built with the pinned native SDK;31 focused native tests passed, one ignored.
+Clippy-specific gate passed with70 production/3 test dead-code warnings while
+the isolated production composition remains unconnected; no suppression or
+strict warning-clean claim. Formatting and diff checks passed.
+
+Prepared executable SHA:
+`a054f2daf78bf3d36db1e2c5b820aeca930a2f1c2436689ace4d9caea6aaa364`;
+original Cargo test SHA:
+`7bde621499f970543283c9230486b9f56946d0247c4f42c525e76d5aa7fbc3fc`.
+Attempt07 (PID49712) exited0 without timeout in57.8783774s. Main/RR11 confirmed
+no competing build in their lanes. The existing verified clip and private
+hidden parent were reused through a fresh disposable process/state directory.
+
+| Observed player state | JPEG dimensions | Encoded bytes | Request round trip |
+| --- | --- | --- | --- |
+| Paused | 640x360 | 4307 | 20.8328ms |
+| Playing | 640x360 | 4307 | 19.8394ms |
+
+Both captures passed base64/JPEG marker and <=96KiB bounds, exact expected
+dimensions, and current session/generation checks. The recorded latency covers
+queue, capture, native validation and base64 response; it is not an isolated
+foreign-call measurement. No threshold, retry or capture seek was added.
+Subsequent state checks, Pause/Resume/Stop, generation2/stale-fence rejection
+and actual thread exit/join before hidden-parent exit all passed. Four pinned
+core DLL paths/hashes were observed. No JPEG payload was logged or exported.
+
+Both position estimates were0 near playback start; these two single captures
+do not establish distinct/advancing frames, sustained1Hz preview, sampling/XDF
+or physical timing impact, Internet delivery, installed lifecycle or research
+qualification. The service/Professor/main composition remains separately owned.
+All qualification flags remain false. Attempt06 and all failed attempts remain
+unchanged. New evidence: `attempt-07/{stdout.log,stderr.log,process-receipt.json}`
+and `prepared-07/artifact-receipt.json` under the isolated diagnostic build root.
+Stdout SHA:
+`24b7d356961846aa475eb4e630e1cf59ff3c84726d47a047f447d39fd4a3bc3a`.
