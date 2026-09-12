@@ -55,6 +55,30 @@
 
 ### 20260912-p4-accepted-layout-contract
 
+#### Final owner receipt — 2026-09-12
+
+- Status: **ready**, owned P4 Planner implementation complete; P4-02 through
+  P4-07 await combined integration evidence. Application checkpoint
+  `77e4752efbfb9bc4567781e0f27f830b978b6b14`; documentation-only receipt follows.
+  Source writers are stopped for integration-owner collection.
+- Main live handoff `24995177c10363fdeaddbb52ae043719c8087df2` is followed by
+  formatter-only `cca37e4`, exact P1 pure compatibility/order collection
+  `9083558`, and P4 error-focus/stale-failure/narrow-label follow-up `77e4752`.
+  The last follow-up changes only the P4 editor/state/view, its preparation test
+  and actual-app harness. Public API signatures remain frozen.
+- Final checks: 680 Node, desktop 9-file/Pages 216-file closures, 203 no-default
+  Rust tests and no-default all-target clippy/format; clean Chrome six scenes,
+  231 assertions and six inspected captures. Source hashes, PNG hashes, exact
+  browser version, receipt SHA-256 and scoped limits are in the
+  [accepted P4 evidence ledger](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+- P1 final pure files are byte-for-byte owner `ea7cf7d`; P5 pure files include
+  owner `5c9d3df`. No P1/P5 app/native files were opportunistically copied. P4
+  keeps the generic two-stage P1 binding agreed with integration.
+- Integration alone merges and wires shared footer prepare then P7 acceptance.
+  P7 owns final master save/reopen. Runner remains deferred; Edge and installed/
+  physical qualification remain unverified. No question or Q08 implementation
+  blocker remains: both methods are supported required recipe choices.
+
 #### Scope clarification and accepted type — 2026-09-12
 
 - Coordinator `84300ed` clarifies both methods as explicit per-recipe Planner
@@ -221,6 +245,20 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ### 20260912-p3-location-master-reproduction
 
+- Status: **ready for integration**, application `4b20254` plus the focused
+  maximum-occurrence padding repair on this branch. 672 full Node / 204 Rust
+  no-default checks and both build closures pass at `4b20254`; 25 Node / 4 Rust
+  focused checks pass after the padding repair. Owned source writers stop after
+  this receipt for collection by **Add segment confirmation flow**.
+- P7 received the generic native `validate_and_reproduce_saved_variants` API
+  with both v1/v2 golden timelines and profiles. Complete P7 master file export,
+  strict parse, content-only P3 restore/rebind, canonical reexport and all
+  variant/language selections are now demonstrated with independent processes.
+- Integration received pure browser/native catalogue encoders and exact command
+  signatures. Remaining shared adapters must verify current P1 media before
+  generating CSV/XLSX and must fence concurrent workspace/producer changes.
+  Master runtime execution remains Runner work; no allocation policy was added.
+
 - Owner: **S3**, P3-04 through P3-08; Backend Verification continuation of the
   allocated comprehensive Planner master pass, branch `codex/segment-p3-master-variants`,
   isolated C: worktree, reviewed base `7946bc6`. Runner execution is deferred.
@@ -290,6 +328,85 @@ ask the owner/integrator to reconcile it. Git worktrees do not live-sync this
 file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
+
+### 20260912-p6-master-completion
+
+- Owner S6/P6, new Planner completion allocation from root, Backend Verification,
+  P6-01 through P6-05. Existing isolated branch/worktree fast-forwarded from
+  `3bedea1` to the supplied combined `7946bc6`; canonical remains integration-owned.
+- Existing editor, live preparation, target guard and content-only draft restore
+  are reused. Remaining deliverable: pure saved-content geometry adapter for
+  P7's strict optional XR union and a complete spatial-profile master round-trip/
+  independent reproduction fixture, with no discarded fields or stale acceptance.
+- S7 proposes `{status: "excluded"}` or `{status: "included", profile}` under
+  `segments.P6`, with explicit outer presentation target. Saved P1/P5 content
+  must validate without fabricated live snapshots or permissions. S5 owns the
+  expanded experiment-defining feedback contract and conservative envelope.
+- Allowed seams: P6 recipe helper, owned restore/validator hooks, tests and P6
+  documentation. Any root app composition is coordinated through integration.
+  P7 owns master serialization/parser/save; P1/P5 retain producer authority.
+- Evidence: complete non-default profile retention, mixed/rotated geometry,
+  inclusion/exclusion and explicit target rejection, invalid/stale content,
+  editable reopen and separate-process canonical reproduction. Actual Runner
+  correspondence, execution, tracking and recording are deferred and do not
+  block this Planner allocation. No new UI or runtime mode is introduced.
+- Intermediate checkpoints: `c68b8d2` pure saved-content/selection adapter;
+  `f442c2a` complete P5 V1/V2 dispatch after collecting P5 `95b2e92`.
+  Full suite passes 660 JavaScript checks at that checkpoint. Actual app selection
+  fixtures pass 34 assertions at each of 1440/820px; narrow capture inspected.
+- P6 Rust mirror now explicitly accepts P5 `feedback-envelope-v2` alongside V1.
+  Shared `xr-feedback-envelope-v2.json` covers Flubber gradient, Grid, Face and
+  disabled feedback on a non-default tilted profile. Five focused Rust tests
+  and 23 P6 recipe/geometry JS tests pass; float parity uses the existing 1e-10
+  tolerance. Profile bytes/schema and native authority are unchanged.
+  Integration reserved the P6 summary hunk; it now says `Geometry validated`
+  for domain preparation, separately from P7 confirmation/save.
+- Complete master codec/save/readback/reproduction evidence is ready at
+  `188c080`: 731/731 JavaScript tests and desktop/Pages boundary builds pass
+  (11/228 files). Shared application composition remains integration work;
+  this is not a dependency on actual Runner implementation.
+- Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
+  master XR tests now pass: both P1/P3 versions, complete profiles/feedback,
+  all variants/language paths, exact canonical/disk readback, explicit exclusion,
+  target/integrity rejection, pending editable restore and independent processes.
+  Three shared `planner-xr-master-v1*` fixtures provide native consumers the
+  complete current-location master, reproduction matrix and resolved XR layout.
+  Shared root-app master restoration remains integration-owned; its actual UI
+  receipt is still pending. Disk adapter evidence is not an OS-picker check.
+- S7's independent native full reader identified final-digit differences in raw
+  calculated XR geometry that prevent exact reproduction SHA agreement. Existing
+  P6 `1e-10` absolute leaf tolerance applies only to geometry fixtures; authored
+  canonical profile bytes/hashes remain exact. P7 owns an explicitly versioned
+  layout identity representation and native parity correction. P6 will adapt its
+  complete-master fixtures to that owner contract after handoff, without changing
+  domain math or using rounded authored fields to conceal the discrepancy.
+- Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
+  resolver now uses P1's generic validator/projection. Actual owner V2 fixture
+  proves two locations sharing content retain both declarations while live and
+  saved XR reproduce one identical geometry, with no copied identity policy.
+  Historical V1 remains covered. Integration reserves shared live injection.
+  Separate-process receipts now cover both workspace and feedback versions.
+- Collected P5 live/native checkpoint `5c9d3df` through `3d9297f`. The actual
+  controller now passes 43 XR/feedback assertions at each width, including full
+  non-default V2 restore for all three renderers, saved halo invalidation and
+  exact P5 envelope identity. The prior `preview-only halo` fixture expectation
+  was explicitly superseded by the new saved V2 field. The narrow fixture now
+  resolves/hashes its real input-icon assets as well as app source and PNG.
+  Receipts: `D:/GitHub/.affect-preview-checks/p6-v2-live-20260912/` (`app-wide`,
+  `app-narrow`, `app-narrow-assets`). This validates owner integration, not yet
+  a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
+  Rust now derives V2 envelopes through P5's actual native validator/projector
+  before comparing them with the shared P6 geometry fixture.
+- Shared actual-master UI follow-up collected `219cf31` in `d34951d`. The
+  expanded owned fixture currently exposes two unresolved integration defects:
+  the capture-phase edit read consumes P1's new snapshot before its change
+  notification, leaving prepared XR geometry attached to the old revision;
+  and the raw-geometry V1 master hash passes Node but fails Chrome validation.
+  Main/S1 own the notification repair; S7 owns versioned cross-runtime identity.
+  The default `all` fixture retains the immediate-withdraw assertion. Explicit
+  `master` scope isolates full reopen/save checks while the first defect is open.
+  Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
 
 ### 20260912-integration-planner-completion
 
@@ -404,6 +521,26 @@ file; follow the integration-owner collection procedure in the workflow.
   labels wrapping one character per line; Live Preview owns a bounded label-layout
   fix while S5 owns saved-state copy. Neither finding is treated as completed full
   master evidence; final combined verification follows collection.
+- Latest component ledger in67 records S7 full JS master `828fff7`, live P4
+  `2499517`, full-master XR `188c080`/`485c2da` and current producer handoffs.
+  Root independently recomputed canonical definition/reproduction and all six
+  segment hashes for both master fixtures. Shared UI wiring is still active at
+  integration `4091c71`; no canonical promotion or completed-app claim.
+- Preview `9237279` resolves the narrow caption finding. Root inspected final
+  narrow axes and checked all four axes/corners HTML/PNG receipt bindings at
+  1280/800. G11 review found teardown and silent-workspace-error regressions in
+  `a0283d9`; owner fix `17b2d24` resolves both by independent source review.
+  Final rendered error layout and integrated lifecycle checks remain required.
+- Native prerequisite audit found the old temporary GStreamer devel SDK gone,
+  while Rust/MSVC and the pinned canonical runtime remain intact. S1 received
+  the bounded existing-script prerequisite/normal-native-check followup. No
+  global PATH edit, new unsafe adapter or runtime redistribution is allocated.
+  DOCS_RS source checks remain distinct from a linked Planner artifact.
+- Capture helper now explicitly selects Planner role and rejects retained
+  participant controls. Chrome/Edge each captured four Review pages at exact
+  clean17b2d24; all eight images inspected, hashes matched and zero errors,
+  duplicate IDs or overflow. This is bounded helper/default-UI evidence only;
+  current full-master source still needs final populated/Save/error captures.
 
 ### 20260912-runner-companion-separation
 
@@ -428,85 +565,6 @@ file; follow the integration-owner collection procedure in the workflow.
   blocker on independently completing the Planner.
 - Status: documentation amendment written before source implementation. No
   capability completion or successful recording is claimed by this entry.
-
-### 20260912-p6-master-completion
-
-- Owner S6/P6, new Planner completion allocation from root, Backend Verification,
-  P6-01 through P6-05. Existing isolated branch/worktree fast-forwarded from
-  `3bedea1` to the supplied combined `7946bc6`; canonical remains integration-owned.
-- Existing editor, live preparation, target guard and content-only draft restore
-  are reused. Remaining deliverable: pure saved-content geometry adapter for
-  P7's strict optional XR union and a complete spatial-profile master round-trip/
-  independent reproduction fixture, with no discarded fields or stale acceptance.
-- S7 proposes `{status: "excluded"}` or `{status: "included", profile}` under
-  `segments.P6`, with explicit outer presentation target. Saved P1/P5 content
-  must validate without fabricated live snapshots or permissions. S5 owns the
-  expanded experiment-defining feedback contract and conservative envelope.
-- Allowed seams: P6 recipe helper, owned restore/validator hooks, tests and P6
-  documentation. Any root app composition is coordinated through integration.
-  P7 owns master serialization/parser/save; P1/P5 retain producer authority.
-- Evidence: complete non-default profile retention, mixed/rotated geometry,
-  inclusion/exclusion and explicit target rejection, invalid/stale content,
-  editable reopen and separate-process canonical reproduction. Actual Runner
-  correspondence, execution, tracking and recording are deferred and do not
-  block this Planner allocation. No new UI or runtime mode is introduced.
-- Intermediate checkpoints: `c68b8d2` pure saved-content/selection adapter;
-  `f442c2a` complete P5 V1/V2 dispatch after collecting P5 `95b2e92`.
-  Full suite passes 660 JavaScript checks at that checkpoint. Actual app selection
-  fixtures pass 34 assertions at each of 1440/820px; narrow capture inspected.
-- P6 Rust mirror now explicitly accepts P5 `feedback-envelope-v2` alongside V1.
-  Shared `xr-feedback-envelope-v2.json` covers Flubber gradient, Grid, Face and
-  disabled feedback on a non-default tilted profile. Five focused Rust tests
-  and 23 P6 recipe/geometry JS tests pass; float parity uses the existing 1e-10
-  tolerance. Profile bytes/schema and native authority are unchanged.
-  Integration reserved the P6 summary hunk; it now says `Geometry validated`
-  for domain preparation, separately from P7 confirmation/save.
-- Complete master codec/save/readback/reproduction evidence is ready at
-  `188c080`: 731/731 JavaScript tests and desktop/Pages boundary builds pass
-  (11/228 files). Shared application composition remains integration work;
-  this is not a dependency on actual Runner implementation.
-- Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
-  master XR tests now pass: both P1/P3 versions, complete profiles/feedback,
-  all variants/language paths, exact canonical/disk readback, explicit exclusion,
-  target/integrity rejection, pending editable restore and independent processes.
-  Three shared `planner-xr-master-v1*` fixtures provide native consumers the
-  complete current-location master, reproduction matrix and resolved XR layout.
-  Shared root-app master restoration remains integration-owned; its actual UI
-  receipt is still pending. Disk adapter evidence is not an OS-picker check.
-- S7's independent native full reader identified final-digit differences in raw
-  calculated XR geometry that prevent exact reproduction SHA agreement. Existing
-  P6 `1e-10` absolute leaf tolerance applies only to geometry fixtures; authored
-  canonical profile bytes/hashes remain exact. P7 owns an explicitly versioned
-  layout identity representation and native parity correction. P6 will adapt its
-  complete-master fixtures to that owner contract after handoff, without changing
-  domain math or using rounded authored fields to conceal the discrepancy.
-- Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
-  resolver now uses P1's generic validator/projection. Actual owner V2 fixture
-  proves two locations sharing content retain both declarations while live and
-  saved XR reproduce one identical geometry, with no copied identity policy.
-  Historical V1 remains covered. Integration reserves shared live injection.
-  Separate-process receipts now cover both workspace and feedback versions.
-- Collected P5 live/native checkpoint `5c9d3df` through `3d9297f`. The actual
-  controller now passes 43 XR/feedback assertions at each width, including full
-  non-default V2 restore for all three renderers, saved halo invalidation and
-  exact P5 envelope identity. The prior `preview-only halo` fixture expectation
-  was explicitly superseded by the new saved V2 field. The narrow fixture now
-  resolves/hashes its real input-icon assets as well as app source and PNG.
-  Receipts: `D:/GitHub/.affect-preview-checks/p6-v2-live-20260912/` (`app-wide`,
-  `app-narrow`, `app-narrow-assets`). This validates owner integration, not yet
-  a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
-  Rust now derives V2 envelopes through P5's actual native validator/projector
-  before comparing them with the shared P6 geometry fixture.
-- Shared actual-master UI follow-up collected `219cf31` in `d34951d`. The
-  expanded owned fixture currently exposes two unresolved integration defects:
-  the capture-phase edit read consumes P1's new snapshot before its change
-  notification, leaving prepared XR geometry attached to the old revision;
-  and the raw-geometry V1 master hash passes Node but fails Chrome validation.
-  Main/S1 own the notification repair; S7 owns versioned cross-runtime identity.
-  The default `all` fixture retains the immediate-withdraw assertion. Explicit
-  `master` scope isolates full reopen/save checks while the first defect is open.
-  Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
-  (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
 
 ### 20260912-p7-complete-planner-master
 

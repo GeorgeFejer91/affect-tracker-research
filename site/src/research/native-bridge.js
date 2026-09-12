@@ -1228,7 +1228,8 @@ export class NativeResearchRuntimeBridge {
     this.packageProtocol?.destroy();
     void this.nativeRunMedia?.stop().catch(() => {});
     this.run = null;
-    this.#clearVideo();
+    if (this.plannerOnly) void this.nativeMedia.stop().catch(() => {});
+    else this.#clearVideo();
   }
 
   #bind() {
@@ -2998,8 +2999,10 @@ export class NativeResearchRuntimeBridge {
   }
 
   #showSetupError(error) {
-    const status = this.root.querySelector?.("#start-status");
-    if (status) status.textContent = messageOf(error);
+    const message = messageOf(error);
+    const status = this.root.querySelector?.(this.plannerOnly ? "#planner-status" : "#start-status");
+    if (status) { status.textContent = message; status.hidden = false; status.scrollIntoView?.({ block: "nearest" }); }
+    this.#announce(message);
   }
 
   #showRuntimeError(error) {

@@ -159,9 +159,21 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     getDraftDocument: state.getDraftDocument,
     validateContribution: validateOwned,
     async prepareContribution(options) {
-      const snapshot = await state.prepareContribution(options);
-      render();
-      return snapshot;
+      try {
+        const snapshot = await state.prepareContribution(options);
+        render();
+        return snapshot;
+      } catch (error) {
+        const field = desktopLayoutDraftField(error.field);
+        const control = controls.find(item => item.dataset.layoutField === field);
+        if (control) {
+          render();
+          const disclosure = control.closest("details");
+          if (disclosure) disclosure.open = true;
+          control.focus(); control.scrollIntoView({ block: "nearest" });
+        }
+        throw error;
+      }
     },
     async restoreContribution(value, options = {}) {
       const dependencies = binding?.getDependencySnapshots();

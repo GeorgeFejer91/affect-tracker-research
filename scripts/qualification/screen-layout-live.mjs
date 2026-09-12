@@ -16,7 +16,7 @@ const catalogue = JSON.parse(await readFile(resolve(import.meta.dirname, "../../
 catalogue.entries.push({ ...catalogue.entries[0], sha256: "c".repeat(64), assetId: assetIdFromSha256("c".repeat(64)),
   annotationId: "Portrait fixture", sourceRelativePath: "stimuli/portrait.mp4", packageRelativePath: "assets/stimuli/portrait.mp4",
   geometry: browserDisplayGeometry({ videoWidth: 1080, videoHeight: 1920 }) });
-const cases = ["desktop-populated", "narrow-populated", "narrow-invalid", "desktop-unavailable"];
+const cases = ["desktop-populated", "narrow-populated", "narrow-invalid", "desktop-unavailable", "desktop-controls", "narrow-controls"];
 const served = new Map();
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const run = promisify(execFile);
@@ -130,10 +130,15 @@ try {
  check('no pane horizontal overflow',pane.scrollWidth<=pane.clientWidth);
  check('invalid field border is visible',!name.endsWith('invalid')||getComputedStyle(field('diameter')).borderTopColor===getComputedStyle(root.querySelector('[data-layout-errors]')).color);
  field('offsetX').focus({preventScroll:true});check('numeric keyboard focus',document.activeElement===field('offsetX'));
+ if(name.endsWith('invalid')){
+   let invalidRejected=false;try{await ui.prepareScreenLayoutContribution();}catch{invalidRejected=true;}
+   check('failed preparation focuses its invalid numeric field',invalidRejected&&document.activeElement===field('diameter'));
+ }
  const section=root.closest('[data-setup-section]'),footer=section.querySelector('[data-confirm-section]');
  pane.scrollTop+=footer.getBoundingClientRect().bottom-pane.getBoundingClientRect().bottom+16;
  check('footer reachable',footer.getBoundingClientRect().bottom<=pane.getBoundingClientRect().bottom+1);
  if(!name.endsWith('invalid'))pane.scrollTop+=section.getBoundingClientRect().top-pane.getBoundingClientRect().top;
+ if(name.endsWith('controls'))pane.scrollTop+=field('referencePolicy').labels[0].getBoundingClientRect().top-pane.getBoundingClientRect().top-16;
  await wait();check('no runtime errors',errors.length===0);
  const receipt={name,checks,errors,boot:'bootResearchUi',syntheticCatalogue:true,nativePlayback:false,acceptedLayoutVerified:true,paneWidth:pane.clientWidth,editorHeight:root.getBoundingClientRect().height,projection:p(),snapshot:snap()};
  parent.postMessage(receipt,location.origin);

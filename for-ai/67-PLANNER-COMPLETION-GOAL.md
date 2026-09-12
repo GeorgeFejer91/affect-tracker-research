@@ -77,6 +77,43 @@ Independent root source review at `7946bc6` found:
 These are source findings, not new tests or Runner failures. Reuse the repaired
 contribution lifecycle, media-refresh fencing and P3 content-only restoration.
 
+## Component checkpoint — 2026-09-12, integration still active
+
+These are exact owner handoffs, not a completed application or canonical release.
+The earlier source findings above describe the starting point, not the latest
+producer code. Integration reported clean `4091c71` with the full JS compiler
+and live P4 editor collected; shared master confirmation/save/Open wiring is
+the active critical path. Owner native readers and final combined checks remain
+separate evidence.
+
+| Owner | Ready component and evidence boundary |
+| --- | --- |
+| P1 | `0b7f793` / native `0e9b28b` / parity `ea7cf7d`: reversible relative-location v2 IDs, exact content/location pairs, complete oriented geometry and guarded restore/rebind. Native source checks with `DOCS_RS=1` are not linked-build evidence. S1 is restoring the missing pinned development SDK for normal native checks. |
+| P2 | `b08ceb0` (app `6654bc2`): complete definitions, languages, score annotations and hash-bound label-repetition presentation companion; full-master UI restoration remains an integration check. |
+| P3 | `2a16397`: location/content v2 variant contribution and independent timeline/marker fixtures; `11670a7` closes the stale CSV/XLSX save race. Native export adoption and long-ID combined UI checks remain with S3/integration. |
+| P4 | `d0267ff` accepted pure/native contract; live `2499517`: both explicit reference methods, no default, fixed-reference fit, full P1/P5 dependency validation and guarded content restoration. Final shared-controller acceptance remains integration work. |
+| P5 | `495ee13` (app `5c0ad7a`): complete v2 appearance/input/mappings, renderer, labels, halo and response/Advanced configuration. Preview `9237279` fixes bounded narrow editor captions while preserving full saved/accessibility text. |
+| P6 | `485c2da` (application `188c080`): actual full-master included-XR and excluded-profile fixtures, both P1/P3 generations, complete P5, strict readback and independent-process reproduction. Owner reports 731 JS checks; this is component evidence, not the new combined controller. |
+| P7 | `828fff7`: complete JS master compiler, strict reader, canonical integrity, named save/readback and one-use coordinated restore. Owner reports 725 JS checks at this checkpoint. Independent native master reader/persistence and actual app wiring are still active. |
+| App boundary | `a0283d9`, static followup `7e4b719`, defect fix `17b2d24`: separate Planner surface/authority. Root source review confirms the fix avoids removed Run-media teardown and preserves visible/announced workspace errors. Integrated reproduction and rendered error layout remain checks. |
+
+Root independently read the two canonical master fixtures at exact `828fff7`.
+They contain ordered P1–P6 keys, 3 unequal variants × 2 language routes, full
+questionnaire definitions/options with positive, negative/fractional and null
+score annotations, the presentation companion, all P5 v2 field groups, accepted
+P4 and explicit P6 exclusion. Independent Node crypto/canonicalization reproduced
+both definition and reproduction hashes and every segment hash. The location
+fixture keeps `session_a/clip.mp4` and `session-a/clip.mp4` distinct while allowing
+shared content identity. This verifies those saved samples; it does not establish
+fresh UI authoring or final native/browser parity.
+
+The independent Windows prerequisite audit found the pinned runtime intact but
+the former temporary development SDK removed. Rust/MSVC are installed. Use the
+existing verified 1.28.6 preparation script and process-scoped build paths; never
+count dependency-discovery bypasses as a linked artifact. Existing safe pre-main
+DLL loading and runtime redistribution/resource packaging gates remain distinct
+release limits. This goal does not approve a new unsafe adapter or runtime bundle.
+
 ## Existing-task assignments
 
 All owners received the new goal and Planner-only clarification. Stage:

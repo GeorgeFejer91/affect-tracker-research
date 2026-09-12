@@ -104,3 +104,13 @@ test("teardown during restoration prevents source adoption", async () => {
   await assert.rejects(f.workflow.open(selected), /some fields/u);
   assert.equal(f.document, null); assert.equal(f.workflow.canCopy(), false);
 });
+
+test("capture-phase invalidation fences now without reading producers before their edit handler", async () => {
+  let notifications = 0;
+  const exporter = createPackageExportController({ onChange: () => { notifications++; } });
+  const before = exporter.snapshot().revision;
+  exporter.invalidate({ notify: false });
+  assert.equal(exporter.snapshot().revision, before + 1);
+  assert.equal(notifications, 0);
+  exporter.invalidate(); assert.equal(notifications, 1);
+});

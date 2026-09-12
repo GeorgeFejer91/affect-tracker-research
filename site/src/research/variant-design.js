@@ -185,9 +185,18 @@ export function variantDesignToDraft(value) {
   const draft = { columns: value.variants.map(({ variantId, title }) => ({ variantId, title })), rows: [], entryIds: [],
     isiDefinitions: clone(value.isiDefinitions), nextIsiOrdinal: Math.max(0, ...value.isiDefinitions.map(isi => Number(isi.isiId?.slice(3)))) + 1 };
   const nextIds = value.variants.map(variant => Math.max(0, ...variant.entries.map(entry => Number(entry.entryId?.split("-entry-")[1]))) + 1);
+  const usedIds = value.variants.map(variant => new Set(variant.entries.map(entry => entry.entryId)));
+  if (value.version === 2) nextIds.fill(1);
   for (let r = 0; r < height; r++) {
     draft.rows.push(value.variants.map(variant => variant.entries[r]?.referenceId ?? ""));
-    draft.entryIds.push(value.variants.map((variant, c) => variant.entries[r]?.entryId ?? `${variant.variantId}-entry-${nextIds[c]++}`));
+    draft.entryIds.push(value.variants.map((variant, c) => {
+      if (variant.entries[r]) return variant.entries[r].entryId;
+      const prefix = `${variant.variantId}-entry-`;
+      // Padding is editor-only. It must not exhaust the identity range merely
+      // because the shorter authored sequence contains a high retained ID.
+      if (value.version === 2) while (usedIds[c].has(`${prefix}${nextIds[c]}`)) nextIds[c]++;
+      const id = `${prefix}${nextIds[c]++}`; usedIds[c].add(id); return id;
+    }));
   }
   validateVariantDraft(draft, { cellBytes: value.version === 2 ? 6144 : 160 }); return draft;
 }

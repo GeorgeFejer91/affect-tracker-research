@@ -5013,8 +5013,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function markPlannerEdit() {
-    plannerFileWorkflow.edited();
     if (experimentPackageDocument?.recipe) packageIsStale = true;
+    plannerFileWorkflow.edited({ deferNotification: true });
   }
   const authoringIntents = new AbortController();
   // Capture before child editor handlers, including edits which are invalid or
@@ -5030,7 +5030,7 @@ function bindResearchInteractions(root, { surface }) {
     const sheetMutation = ["reverse", "delete-row", "add-row", "upload", "undo", "move-up", "move-down", "remove"].includes(button.dataset.sheetAction);
     const xrMutation = ["angles", "import"].includes(button.dataset.xrAction);
     if (sheetMutation || xrMutation || button.closest("#stimulus-order-editor")
-      || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert]")
+      || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert], [data-layout-reset]")
       || ["feedback-upgrade-v2", "preview-color-apply", "preview-response-reset", "preview-recolor", "binding-reset", "workspace-choose", "video-import", "video-folder-import", "study-language-add-button", "questionnaire-add-blank"].includes(button.id)) markPlannerEdit();
   }, { capture: true, signal: authoringIntents.signal });
   const authoredMutation = operation => (...args) => { markPlannerEdit(); return operation(...args); };

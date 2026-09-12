@@ -33,7 +33,10 @@ qualification are deferred unless separately allocated by the researcher.
 - [62-PLANNER-CLOSURE-PLAN.md](62-PLANNER-CLOSURE-PLAN.md) ranks remaining gaps and
   supplies concrete proposed editor/contribution designs and single-owner passes.
   Its new recommendations remain proposals; this file owns capability status
-  and accepted decisions. All seven Planner segments remain incomplete.
+  and accepted decisions. Complete-component handoffs are now recorded in
+  [67](67-PLANNER-COMPLETION-GOAL.md); final shared authoring/save/Open validation
+  and canonical delivery remain incomplete. Older baseline rows below must not
+  be read as an assertion that those newer components are still absent.
 - Initial status baseline: integrated source
   `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, audited 2026-09-11. Unmerged branches
   and private/installed runtime state are excluded from completion claims.
@@ -94,9 +97,11 @@ qualification are deferred unless separately allocated by the researcher.
 9. Add optional XR spatial authoring and a rotatable 3D preview. Content is
    **fixed in virtual space, aligned to the participant's forward direction at
    setup**. This accepted future direction is not current APK/WebXR support.
-10. Preserve exactly two modes: **Setting Up the Experiment** and **Running the
-    Experiment**. P1–P7 are responsibility IDs, not extra modes or necessarily
-    seven identical accordions.
+10. Under the later two-program amendment in [16](16-COMPANION-APP-BOUNDARY.md),
+    **Setting Up the Experiment** belongs to Experiment Planner and **Running
+    the Experiment** belongs to the separate Experiment Runner. The Planner has
+    no participant Start/Run surface. P1–P7 are responsibility IDs, not extra modes
+    or necessarily seven identical accordions.
 11. The later 2026-09-11 requirement relayed by **Add segment confirmation flow**
     makes segment confirmations accept the current segment's contribution in
     sequence, rather than only recording that its screen was reviewed. Live
@@ -129,10 +134,13 @@ qualification are deferred unless separately allocated by the researcher.
 | P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 
-Suggested homes for retained settings: P1 study name/ID; P7 retained study/count
-metadata if required, with participant allocation left to Runner; P7 acquisition rate and recording/stream
-policy. P4 owns size/placement; P5 owns appearance/input. These placements are
-recommendations under Q12. Controls shown in multiple previews edit one owner.
+Homes for retained settings: P1 study name/ID; P7 retained study/count metadata,
+sampling rate and authored stream-emission definition. Participant allocation,
+recording policy, recorder selection and destination belong to Runner. P4 owns
+desktop size/placement; P5 owns appearance/input. Controls shown in multiple
+previews edit one owner. The complete current wire contract is P7's
+`docs/planner-master-recipe-v1.md`; historical baseline proposals below do not
+override the dated companion boundary or the active completion goal.
 
 ## Mandatory segment brief and update discipline
 
@@ -322,7 +330,7 @@ prove video identity reconstruction. See `event_marker` in
 
 **Purpose:** preview and define a reproducible video/Flubber arrangement for
 mixed video sizes.
-**User input:** physical screen dimensions or relative mode, fitting policy,
+**User input:** physical screen dimensions or relative mode, reference method,
 Flubber size, centre offsets and required calibration/reference choices (Q08).
 **Receives:** P1 display geometry and P5 style/maximum animation extent.
 **Produces:** screen profile, units/reference, video fit, Flubber footprint and
@@ -333,13 +341,14 @@ centre-relative arrangement with whole-screen miniature preview.
 Accepted relationship after video fitting:
 `flubberCentre = videoCentre + (offsetX, offsetY)`.
 `offsetX=0` places centres on the same vertical line. Right-positive x/down-
-positive y and a fixed animated Flubber design centre are recommendations (Q08).
+positive y and a fixed animated Flubber design centre are explicit in the
+accepted successor contract.
 The researcher confirmed fixed-reference percentages across all videos; save
 that reference explicitly rather than scaling offsets per video. Largest pixel resolution alone
 does not resolve widest/tallest aspect-ratio constraints. Check every fitted
 video and animation extent without silently using per-video bottom-edge alignment.
 
-- [x] **P4-01 — Implemented predecessor:** normalized feedback placement/size and Run locking exist; centre-offset/calibrated screen contracts do not.
+- [x] **P4-01 — Implemented predecessor:** normalized feedback placement/size and Run locking remain preserved; successor centre-offset/calibrated contracts are tracked below.
 - [ ] **P4-02 — Component ready, integration pending:** whole-screen miniature consumes complete P1 v1/v2 geometry and P5 v1/v2 owned painted bounds. Invalid or unselected inputs withdraw geometry; inspection never changes saved placement.
 - [ ] **P4-03 — Component ready, integration pending:** required per-recipe choice between largest oriented video by pixel area and combined maximum-width/height envelope, with no default. Automatic analysis then defines one fixed reference; contain fitting, right/down axes and fixed design centre are explicit.
 - [ ] **P4-04 — Component ready, integration pending:** relative/mm authoring requires measured active dimensions and full-viewport mapping for uniform conversion; geometry and maximum painted bounds are preserved.
@@ -354,7 +363,7 @@ has an explicit outcome.
 [preview](../site/src/research/preview.js), [UI](../site/src/research/app.js).
 **Boundary:** P4 owns geometry, not colors, input or animation parameters.
 
-**Pending P4 branch evidence, 2026-09-11:** `codex/segment-p4-screen-layout`
+**Historical P4 branch evidence, 2026-09-11:** `codex/segment-p4-screen-layout`
 contains a non-exportable UI draft for P4-02/P4-04/P4-06: numeric screen/reference/
 offset controls, a whole-screen miniature, proposed measured unit conversion and
 pure fit/overlap/clipping fixtures. Q08 choices remain proposals. The application
@@ -363,7 +372,7 @@ non-shipping verification fixtures. No accepted JSON contribution, persistence,
 runtime application or export/reload is implemented, so completion boxes above
 remain unchanged. See the [P4 evidence ledger](./40-ROADMAP.md#p4-screen--layout--non-exportable-design-draft).
 
-**2026-09-12 owner-ready follow-up:** `f8654bf` in the isolated live-geometry
+**Historical 2026-09-12 owner-ready follow-up:** `f8654bf` in the isolated live-geometry
 branch now binds actual P1/P5 producers, preserves the registered P1 workspace
 revision, validates whole-library fit, and supplies atomic internal draft
 restoration/P7 pending snapshots. Automatic largest-reference metric remains
@@ -375,7 +384,12 @@ frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and
 **2026-09-12 Planner completion:** coordinator `84300ed` clarifies both Q08
 methods as explicit recipe parameters, without choosing a global default. Pure
 accepted/native checkpoint `d0267fff` and the subsequent live preparation/reopen
-work implement this direction. See [the exact contract and API](../docs/planner-p4-layout-contract.md).
+work implement this direction. Final component source `77e4752` passes 680 Node,
+203 no-default Rust, both builds and 231 clean-source Chrome assertions across
+six inspected scenes. See [the exact contract and API](../docs/planner-p4-layout-contract.md)
+and [final component evidence](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+Integration/P7 own the remaining combined acceptance and master save/reopen
+receipts; Runner remains separately deferred.
 Current internal draft v2 adds a nullable method; explicit restoration of frozen
 v1 drafts leaves that new choice unselected. Capability boxes remain open until
 collected on the combined source. Runner correspondence is the final separately
