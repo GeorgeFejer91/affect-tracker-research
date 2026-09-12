@@ -234,7 +234,9 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
       query('[data-color-anchor="up"]').click();
       change("preview-color-label", "High arousal during the anticipated final stimulus — researcher preview label");
       if (screenshotState === "long-label") query("#preview-color-apply").click();
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // Headless virtual-time capture can finish without another animation frame.
+      // Yield one task; the geometry assertion below forces the required layout.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       check("custom label keeps the preview width", pane.scrollWidth <= pane.clientWidth + 1);
     }
     ui.destroy();
