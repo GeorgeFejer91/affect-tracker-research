@@ -11,6 +11,34 @@
   native filesystem or mutable editor authority was introduced. API/evidence:
   docs/planner-native-effects-adapter.md.
 
+### 20260912-p7-supported-native-files
+
+- S7, CLI-P7 / P7-04 / P7-05 named supported-v2 file seam, Backend Verification.
+  Root/Main allocated isolated `codex/segment-p7-supported-files`, base `1fc6cdd`,
+  worktree `D:/GitHub/affect-tracker-research-p7-supported-files`.
+- Add supported strict read/write entrypoints sharing existing native filesystem
+  machinery and unchanged compact save receipts. Legacy file APIs retain their
+  accepted versions. Main additionally allocated only WriteSupportedRecipe in
+  native effects; existing WriteRecipe remains strict v1.
+- Main approved signatures without guard arguments. Broker/effect pre/late
+  guards, command dispatch/lib/app/Runner changes remain integration-owned.
+  Standalone test harness needs the four supported native reader dependencies.
+- Baseline: ten existing native recipe-file tests pass at the clean base.
+  Collect exact V1/V2 bytes, malformed/unknown/hash/size rejection, old-reader
+  rejection, collision/no-clobber, linked-path rejection and late-ack evidence.
+  No unsafe, schema/receipt change, source substitution or runtime claim.
+- Ready: 14 native file tests and nine native effect tests pass; rustfmt and
+  diff checks pass. Logs: `D:/GitHub/.affect-checks/p7-supported-baseline.log`,
+  `p7-supported-files.log`, `p7-supported-effects.log`. D temporary directories
+  were used; Main's integration-preview Cargo target hold is released.
+- Library tests retain two baseline warnings. The effect harness build reports
+  14 unused-code warnings in the not-yet-wired production library and one existing
+  unused native-media re-export warning in the subset harness; none suppressed.
+  Exact API and dependency handoff: `docs/planner-supported-recipe-files.md`.
+  Root/Main owns supported dispatch and source adoption; no actual CLI mock,
+  runtime, packaging, qualification or publication claim is made.
+
+
 ### 20260912-main-native-v2-registration
 
 - Main collected S4 form/corrections/master2 as 197b91c/2856785/a071506/d60ce66
