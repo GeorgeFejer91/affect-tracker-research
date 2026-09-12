@@ -20,6 +20,10 @@ export function preparePlannerSurface(root) {
   if (heading) heading.textContent = "Experiment Planner";
   const navigation = root.querySelector(".mode-navigation");
   if (navigation) navigation.setAttribute("aria-label", "Experiment Planner");
+  const status = root.ownerDocument.createElement("p");
+  status.id = "planner-status"; status.className = "status-text";
+  status.setAttribute("role", "alert"); status.hidden = true;
+  root.querySelector(".setup-pane")?.prepend(status);
   const note = root.ownerDocument.createElement("p");
   note.className = "field-help";
   note.textContent = "Save the recipe, then open it in Experiment Runner to prepare a participant, play videos and record streams.";

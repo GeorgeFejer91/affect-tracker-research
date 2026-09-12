@@ -283,6 +283,7 @@ export class BrowserResearchRuntimeBridge {
   } = {}) {
     if (!(root instanceof EventTarget)) throw new TypeError("Browser runtime bridge requires the Research root event target.");
     this.root = root;
+    this.plannerOnly = root.dataset?.researchProgram === "planner";
     this.journal = journal;
     this.controllerFactory = controllerFactory;
     this.workerProbe = workerProbe;
@@ -320,6 +321,19 @@ export class BrowserResearchRuntimeBridge {
   }
 
   async initialize() {
+    if (this.plannerOnly) {
+      // Authoring persistence, media inspection and previews belong to the UI's
+      // workspace controllers. Planner never opens/audits participant journals,
+      // acquires the run lease, starts a sampling worker or probes run outputs.
+      this.#listen(this.root, RESEARCH_UI_EVENTS.startRequest, (event) => {
+        event.preventDefault();
+        this.#dispatch(RESEARCH_UI_EVENTS.startRejected, { message: "Open the saved recipe in Experiment Runner to start an experiment." });
+      });
+      this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
+        timingWorkerReady: false, lslReady: false, manifestReady: false,
+      });
+      return this;
+    }
     this.#bind();
     let journalReady = false;
     let workerReady = false;
@@ -356,6 +370,7 @@ export class BrowserResearchRuntimeBridge {
   }
 
   async refreshParticipantStates(settings = this.root.researchUi?.settings) {
+    if (this.plannerOnly) return false;
     const generation = ++this.manifestRefresh;
     this.manifestReady = false;
     this.workspaceManifests = [];
@@ -418,6 +433,7 @@ export class BrowserResearchRuntimeBridge {
     requestPersistence = false,
     verifyWorkspaceWrite = false,
   } = {}) {
+    if (this.plannerOnly) return null;
     const estimate = estimateResearchStorageUse(settings, plan);
     const requiredBytes = estimate?.requiredBytes ?? 0;
     try {
@@ -454,11 +470,11 @@ export class BrowserResearchRuntimeBridge {
       target.removeEventListener(type, listener, options);
     }
     this.listeners = [];
-    this.#clearMedia();
+    if (!this.plannerOnly) this.#clearMedia();
     void this.controller?.interrupt("runtime-destroyed");
     this.lease?.release();
     this.lease = null;
-    void this.journal.close?.();
+    if (!this.plannerOnly) void this.journal.close?.();
   }
 
   #bind() {
@@ -561,6 +577,7 @@ export class BrowserResearchRuntimeBridge {
   }
 
   async #start(detail) {
+    if (this.plannerOnly) throw new Error("Experiment execution belongs to Experiment Runner.");
     if (!this.ready) throw new Error("The browser recovery journal or timing worker is not ready.");
     if (this.run) throw new Error("A Research attempt is already active.");
     const workspace = this.root.researchUi?.workspace;
