@@ -1,8 +1,8 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { createVideoLibrary } from "./stimulus-order.js";
 import { validateVideoCatalogueContributionV1 } from "./video-catalogue-contribution.js";
-import { projectWorkspaceVideoCatalogueSnapshot, validateWorkspaceContribution } from "./workspace-contribution.js";
-import { createLocationVariantLibrary } from "./variant-library.js";
+import { projectWorkspaceVideoCatalogueSnapshot, validateWorkspaceContribution, validateSupportedWorkspaceContribution } from "./workspace-contribution.js";
+import { createLocationVariantLibrary, createLocationVariantLibraryV3 } from "./variant-library.js";
 import { compileVariantTimeline, validateVariantDesign } from "./variant-design.js";
 
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
@@ -31,6 +31,10 @@ export async function projectLegacyVariantCatalogue(snapshot) {
 }
 
 async function projectCatalogueContent(catalogue) {
+  if (catalogue.version === 3) {
+    const library = await createLocationVariantLibraryV3(catalogue);
+    return { library, videos: structuredClone(library.videos) };
+  }
   if (catalogue.version === 2) {
     const library = await createLocationVariantLibrary(catalogue);
     return { library, videos: structuredClone(library.videos) };
@@ -59,6 +63,16 @@ async function projectCatalogueContent(catalogue) {
 export async function projectSavedVariantCatalogue(savedWorkspaceContribution) {
   const workspace = await validateWorkspaceContribution(savedWorkspaceContribution);
   return projectCatalogueContent(workspace.videoCatalogue);
+}
+export async function projectSupportedSavedVariantCatalogue(value) {
+  const workspace = await validateSupportedWorkspaceContribution(value);
+  return projectCatalogueContent(workspace.videoCatalogue);
+}
+export async function projectSupportedVariantCatalogue(value) {
+  const source = normalizeVariantCatalogueSource(value);
+  if (!source.enabled || source.pending || !source.contribution) throw new TypeError("Segment 1 requires a current catalogue.");
+  return { revision: source.revision, ...await projectSupportedSavedVariantCatalogue(source.contribution),
+    sourceIntegritySha256: await canonicalSha256(source.contribution) };
 }
 
 /** Registered workspace P1 -> P3. P1 validates/extracts the nested catalogue;
