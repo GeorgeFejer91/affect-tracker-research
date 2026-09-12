@@ -62,6 +62,47 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-integration-contribution-cycle — combined candidate
+
+- Owner: **Add segment confirmation flow**, allocated integration/shared accordion
+  seam; Backend Verification continuation. Isolated branch
+  `codex/segment-integration-preview-cleanup`; clean application `3ac7c7f`.
+  Canonical `codex/research-unified` remains unchanged at `ba2110f`.
+- Collected ready P1 composite/refresh fencing, P2 content, P3 named-ISI variants
+  and content restore, P4 live pending geometry, P5 saved feedback, P6 pure
+  preparation/profile tools, P7 acceptance/target/file adapters, and root QA
+  documentation. Retained each owner history through normal merges. No
+  historical Playground capability or independent Preview follow-up was added.
+- Confirm awaits exact validated P7 acceptance, then collapses and advances.
+  Existing folders still need explicit acceptance. Navigation preserves checks;
+  relevant content/dependency/target edits expire them. Pure P3/P6 preparation
+  occurs in the one footer action. Disabled P6 needs explicit exclusion; enabled
+  P6 requires the selected compatible target. P5 has no independent Confirm;
+  its existing saved fields belong to Section 7's final capture. A current
+  acknowledged save alone can mark/collapse Section 7.
+- Actual-controller checks exposed and fixed a legacy load announcement reading
+  a receipt invalidated by live producers. The immutable parsed-file result is
+  reported without restoring current-design acceptance. A monotonic edit revision
+  now fences file selection and asynchronous adoption, including incomplete,
+  invalid and edit/revert drafts whose content fingerprints can all be null.
+- Evidence: 646 Node tests (including independent v1 reproduction), 199 locked
+  no-default Rust tests at `b9d520d` (Rust unchanged), 31 actual-controller cycle
+  checks, 31 retained-control checks, six footer/glow cases, eight layout cases,
+  and 118 live P4 assertions. Desktop 9-file / Pages 211-file builds passed at
+  `c32f806`; final build after remaining presentation intake is still required.
+  Receipts/logs: `D:/GitHub/.affect-preview-checks/integration-20260911/`.
+- The earlier P7 `browser-save` fixture cannot pass with the current required
+  successor producers: its available-v1-export assumption is no longer true.
+  The separate combined cycle verifies exact legacy file reading and preserved
+  successor save gates; earlier isolated file-writer evidence is not promoted
+  to complete combined final-save evidence.
+- Remaining: collect P7's separately allocated compact issue presentation and
+  root's full rendered audit; final master representation/save/reopen requires
+  Q08/P4's accepted type, with Q05 relocation also unanswered. Edge currently
+  yields no headless receipt. Native oriented geometry, installed/physical
+  input/playback, Runner, and complete master reproduction remain unqualified.
+  No canonical promotion, foreground launch, push or deployment is claimed.
+
 ### 20260912-integration-confirmation-shell
 
 - Owner: **Add segment confirmation flow**, bounded integration/accordion seam,

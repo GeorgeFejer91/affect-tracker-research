@@ -1,5 +1,34 @@
 # Research v1 roadmap
 
+## Combined section confirmation candidate — 2026-09-12
+
+Integration application `3ac7c7f` on the isolated
+`codex/segment-integration-preview-cleanup` combines the ready P1–P7 owner
+handoffs. The shared footer now prepares and validates the current section's
+contribution before collapsing/advancing; green checks project actual acceptance,
+not accordion navigation. P5 is captured only by the final Section 7 save.
+Enabled P6 acceptance requires the explicitly selected compatible target.
+The stronger outward-fading breathing edge and circled-check presentation remain.
+
+The actual-controller fixture covers 31 checks including pure P3/P6 confirmation,
+stale media-rebind success/failure, exact legacy-file restoration, and preserving
+newer edits during file selection/validation even when draft fingerprints are
+null. It supplies synthetic media/file boundary receipts and delays the actual
+digest; it does not establish filesystem, native, decoding or final-save support.
+Full Node tests pass 646/646; locked no-default Rust tests pass 199/199 at
+`b9d520d` with unchanged Rust source. Current layout eight-case and P4 118-check
+receipts pass; retained controls 31 and glow/footer six pass. See board entry
+`20260912-integration-contribution-cycle` for receipt paths and exact limits.
+
+This is not complete master JSON delivery. P4 remains enabled/pending with no
+accepted contribution until Q08 is answered. Q05 relocation remains unanswered.
+The new producers cannot be silently omitted into a legacy v1 file; its earlier
+available-export fixture is therefore not combined save evidence. Final master
+construction, named save/reopen and successor independent reproduction stay open.
+P7 issue-list presentation and the final root visual audit are still being
+collected. Canonical `ba2110f`, foreground applications and remote state are
+unchanged; no Runner, Edge or installed/native qualification claim is made.
+
 ## P6 live authoring and editable reopen — 2026-09-12
 
 Owner-ready Backend Verification continuation for P6-02/P6-05 on
