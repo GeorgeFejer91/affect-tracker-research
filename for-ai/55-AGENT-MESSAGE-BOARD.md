@@ -4260,3 +4260,30 @@ Native and full composition evidence deferred to Main. Validator correction
   `D:/GitHub/.affect-checks/root-recipe-restoration-20260912/planner-focused.log`.
   Main's deferred acceptance notification dependency is `f933037` (local
   cherry-pick `7894025`). No actual native invocation or final mock claim.
+
+### 20260912-root-p7-prepared-final-save
+
+- Main confirmed root's continuation on P7-03/P7-04/P7-07 and CLI final Save:
+  Backend Verification, `codex/segment-p7-prepared-save`, isolated
+  `D:/GitHub/affect-tracker-research-prepared-save-root`, base `a18768c`.
+- Scope: `planner-file-workflow.js`, `planner-recipe-capture.js`, focused tests
+  and documentation. Prepare P5 final acceptance without publishing it; compile
+  detached complete owner content through the existing versioned compiler;
+  reuse the export lifecycle and publish P5 acceptance plus exact saved-source
+  association only after the writer acknowledges matching bytes.
+- Main provides prepared acceptance and its detached validated snapshot, native
+  writes/effect receipts, actual app state/projection adapters and CLI registration.
+  Root must preserve actual accepted state for other owners, unchanged-source
+  reexport, cancellation/stale guards and late-write evidence. No second compiler,
+  fake accepted registry, native write path or user-interface redesign.
+- Collect read-only preparation, v1/v2 capture, exact-acknowledgement, late write,
+  failed adoption, stale/cancel/retry and projection checks. Production CLI mock,
+  actual Runner and XDF acceptance remain required after integration.
+- Prepared final-save/capture implementation is ready. The ten new focused
+  tests use the actual session, registry, v1/v2 compilers and a synthetic writer;
+  all pass. S1 independently reviewed the two source seams and reran these ten
+  tests without findings. The wider Planner/variant gate passes 276 checks.
+  Log: `D:/GitHub/.affect-checks/root-prepared-save-20260912/planner-focused.log`.
+  Existing GUI save/reopen behavior remains covered. No native persistence,
+  rendered final app, mock export, participant run or XDF completion is claimed.
+  [Exact API and handoff](../docs/planner-prepared-save.md).
