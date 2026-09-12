@@ -404,3 +404,22 @@ synthetic observations, legacy coded demographics and a dirty development build.
 It is not the requested mock, new typed demographics, actual timing or full
 Runner qualification. S3 owns typed authoring/assets, S4 its Rust validator,
 Main master composition, and Runner typed answers/panels. All E2E rows remain open.
+
+### Production-only mock driver prepared
+
+`scripts/qualification/planner-mock-experiment.mjs` now expresses the requested
+complete authoring flow using only production CLI commands. It verifies source
+and executable hashes; uses actual returned video/ISI/occurrence/module IDs;
+adds shipped demographics before MAIA-2/TAS-20 in each language; authors
+1750 ms → clip → 3213 ms; confirms P1/P2/P3/P4/P6; lets final Save capture P5;
+then saves, reopens, edits participant count to two and saves another version.
+It compares exact files against native receipts and all authored semantics,
+allowing only the intended count edit and named derived integrity/revision
+changes between versions. It imports no editor/compiler and writes no master.
+
+S5's read-only review found missing full semantic comparisons and missing final
+executable-hash comparison; both are fixed. Ten focused transport/comparison
+checks passed, including thirteen corruption/reordering counterexamples.
+Syntax and diff checks passed. These checks do not author a real recipe. The
+script awaits the combined native core9/typed-P2/master-v2 executable; all
+actual CLI import/export, editable reopen and Runner/XDF goal gates remain open.
