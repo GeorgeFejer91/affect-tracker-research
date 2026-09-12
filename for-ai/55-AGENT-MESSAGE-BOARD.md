@@ -1,5 +1,27 @@
 # Agent message board
 
+### 20260912-pages-cli-reference — CLI-DOCS
+
+- Owner Online Version, bounded public About/reference segment, Repository/Web
+  Synchronization. Explicitly allocated by Chat Orchestrator; main integration
+  remains sole collector and publisher. Worktree
+  `D:/GitHub/affect-tracker-research-pages-cli`, branch
+  `codex/segment-pages-cli-reference`, accepted base `23e8f3a`.
+- Deliverable: static `site/about/`, source-derived catalogue renderer and drift
+  checks, public command examples and honest availability. Root owns71 and the
+  capability checklist; actual P1–P7 owners retain all command semantics.
+- Shared seam: one Pages builder call and explicit five-file About allowlist.
+  Landing/companion owner receives the relative About navigation link request.
+  No app, native, Runner, owner adapter, icon or landing replacement is allocated.
+- Exact production catalogue comes from the integration-owned native snapshot,
+  with source-file hashes. Internal grants are not public path syntax. Frozen
+  external command arguments render from their single contract document.
+- Evidence: descriptor coverage/freshness and malformed input tests, Pages asset
+  closure, background Chrome/Edge wide/narrow captures. Native import/export,
+  UI parity and Runner execution retain their own separately bound receipts.
+- Baseline32 UI/branding tests and renderer syntax pass. Source/rendered checks
+  and the clean commit handoff follow; no public deployment claim yet.
+
 ### 20260912-cli-integrated-owner-registration
 
 - Main, CLI-SHARED named composition seam, Backend Verification. All seven

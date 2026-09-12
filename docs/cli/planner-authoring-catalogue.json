@@ -1,0 +1,2602 @@
+{
+  "schema": "affect-research-planner-cli-catalogue-reference",
+  "version": 1,
+  "sourceRevision": "23e8f3a3671f87e7e73dbfd422847479fd5e5fa7",
+  "sourceFiles": [
+    {
+      "path": "site/src/math.js",
+      "sha256": "8716e4b60d5da98f612ece228f68302ad011239c7cc0c7c28b90b33b44fa22f4"
+    },
+    {
+      "path": "site/src/research/app.js",
+      "sha256": "07d7258fdacd520554316262d59248768b7839e22d42004d67f94b528d8fdac3"
+    },
+    {
+      "path": "site/src/research/canonical.js",
+      "sha256": "e8ce3548761ea848c7780bcd78abbdf867ac343b02b56c5635853a19ec2d3a38"
+    },
+    {
+      "path": "site/src/research/contracts.js",
+      "sha256": "613077edde41da5bfacf10847982e10422430311b5c058aa1c7c4f626058bfa1"
+    },
+    {
+      "path": "site/src/research/desktop-layout-contribution.js",
+      "sha256": "487790a43863c9d39e8933ba5c89ac33fee914d2426e848a987c088255320e56"
+    },
+    {
+      "path": "site/src/research/desktop-layout.js",
+      "sha256": "5a3e34e434f14679880a14f46021a9c97da8426b0773767bedf6b93a8f80891c"
+    },
+    {
+      "path": "site/src/research/experiment-package.js",
+      "sha256": "b609a47553e7d55643aee47b05e9bdf520dd1b881c8bc6dbac705e09b5435938"
+    },
+    {
+      "path": "site/src/research/external-experiment.js",
+      "sha256": "2e4b1f4234a1e2fd356998478100e4a93d1fe98eaf913cf6ab62549badfb0780"
+    },
+    {
+      "path": "site/src/research/external-protocol.js",
+      "sha256": "7067bf735857ca379cc65b670faa4018b07ae08c33dd857ce4734b6bb2250655"
+    },
+    {
+      "path": "site/src/research/feedback-contribution.js",
+      "sha256": "ef2060c5e1869a14d32ed1031cfe16c812d4805d754b6aeeadf9ae33ed19c887"
+    },
+    {
+      "path": "site/src/research/feedback-controls-view.js",
+      "sha256": "c7fab7ec33447284366e0329142b295ed79fd1f33e2280b5921fa93662fc59aa"
+    },
+    {
+      "path": "site/src/research/feedback-envelope.js",
+      "sha256": "e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8"
+    },
+    {
+      "path": "site/src/research/feedback-layout.js",
+      "sha256": "cf70dd1cfba357d7969a1e8398f90ba641ae83c0680b4c63d7668f6323bd737e"
+    },
+    {
+      "path": "site/src/research/feedback-settings.js",
+      "sha256": "b2e74e3ed76ef04042f152d607949e09c0b3df11a014fa3cae1f3c081323c1b6"
+    },
+    {
+      "path": "site/src/research/feedback-surface.js",
+      "sha256": "1d985711f3bcb4b679fd180fbfbda15804daf0a553b1a6a99205fe992d323428"
+    },
+    {
+      "path": "site/src/research/identity.js",
+      "sha256": "c16f277fe852648759c83b708371cd8f570e0f8064a112d8682943c9b02b62c1"
+    },
+    {
+      "path": "site/src/research/inline-color-picker.js",
+      "sha256": "647bb0e8b73a6aece900dc06adf8516e0cedd6e25fc8f85a57d179b5c4edaf91"
+    },
+    {
+      "path": "site/src/research/input-controller.js",
+      "sha256": "f685e1498b928f689eb3520c07456a273fa2314cc3d7a91e5d8023e3e5f8fd33"
+    },
+    {
+      "path": "site/src/research/mappings.js",
+      "sha256": "0be2e07cfc99e5a553eac7af4145bd73070e42775c1e36fd436cb421e82b1870"
+    },
+    {
+      "path": "site/src/research/package-export-controller.js",
+      "sha256": "ef8b4833545bcd3808892b75be045efd489a113cbcb6722091dee67917618218"
+    },
+    {
+      "path": "site/src/research/package-file-picker.js",
+      "sha256": "e6ffd55fa9f85e14ad76e17f99a8d6681ba203f4a26d30778d599047d3ba1a56"
+    },
+    {
+      "path": "site/src/research/package-save-dialog.js",
+      "sha256": "2f952bd5226c5aa8a6cb3c9ba044572e77a72590959a1e8d074fd47d1c054028"
+    },
+    {
+      "path": "site/src/research/package-save-request.js",
+      "sha256": "0b80006ca5a927256f7815132a8c16dfded3c03db50f856db9b266a7499434a6"
+    },
+    {
+      "path": "site/src/research/planned-marker-contract.js",
+      "sha256": "e25d9ed487d4ba3df108026a747a9db438f689a4924c8c32c372b0fbfbe40f6c"
+    },
+    {
+      "path": "site/src/research/planner-authoring-contract.js",
+      "sha256": "42ae309dc71a2bac612ba0d2c0f626fdc645846659f4aa17c85a127e75fd6315"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p1.js",
+      "sha256": "5cc31d12eb7dddf64e891ffd5f09479458dc30c91c90bea04ac7fe0b3d59a781"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p2.js",
+      "sha256": "a0ca2a736ad254ed1358c3900a13030f131ef981f1b92195c175e78b4d2a4b03"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p3.js",
+      "sha256": "d73e8a17bf36740aaed85f2804749938f91358c714b3d716cffffb96e80adc88"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p4.js",
+      "sha256": "c8927f52897ed822349e755092697bb26d57f71c0a2b44a798dc0dd97166cee7"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p5-controls.js",
+      "sha256": "abe4c9e0fcecd77147829cd99e6d0ec7edbacb8e9d0d7f7784f28a09befc44d3"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p5.js",
+      "sha256": "92ebb656b77aecc76162f61e46c8bce18d960be859f3a16afded64d3db95ef16"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p6.js",
+      "sha256": "5ef2be7d220d94ee383d73c06e3dc2df1dbc417eb15c62ede5b337333613cfd6"
+    },
+    {
+      "path": "site/src/research/planner-authoring-p7.js",
+      "sha256": "e569bcba40f87e868119a58fa70ab57c819ab4451c2373857950a5aa66a79632"
+    },
+    {
+      "path": "site/src/research/planner-authoring-session.js",
+      "sha256": "c074826dc3c10911de1dc28c63c368605e8b6ae6f036282e32b9e306f13418cb"
+    },
+    {
+      "path": "site/src/research/planner-catalogue-export.js",
+      "sha256": "6d7fb6f5d4676fc9c4a3b654f67431995dc83786cf14015f323dcd7e6e5b9e2d"
+    },
+    {
+      "path": "site/src/research/planner-contributions.js",
+      "sha256": "c970a790fd17efa2ee3ee57d3481fbe52fb8d0a404496e7550aefeb126ed92f3"
+    },
+    {
+      "path": "site/src/research/planner-file-request.js",
+      "sha256": "df388e0804f8b3a93ab65c0f7697c9fe8dbfca921f423e1b2216330c17b9c77f"
+    },
+    {
+      "path": "site/src/research/planner-file-workflow.js",
+      "sha256": "efc325a42dffdb97df6b4d65f9dc4c282a0020c2cb3a310fe2ee5ac43ab29b27"
+    },
+    {
+      "path": "site/src/research/planner-issue-view.js",
+      "sha256": "4d534895f3fc56717676897a84f4304ffe52283f5c315d81804a607f162251bc"
+    },
+    {
+      "path": "site/src/research/planner-policy-controls.js",
+      "sha256": "a9840c92138e6756616828285ad2e70e44f38d1f3c17b50355a0077db59cbbf2"
+    },
+    {
+      "path": "site/src/research/planner-recipe-capture.js",
+      "sha256": "1353a26dd0b4aa9daaefd9c5ce4563484ded567d6892a00e894d77d24b31b5e2"
+    },
+    {
+      "path": "site/src/research/planner-recipe-file.js",
+      "sha256": "35d26336cc5afc17ca9f5e851ebc606263dad10a447e6c0f6df5ce7a4802b3f1"
+    },
+    {
+      "path": "site/src/research/planner-recipe-filename.js",
+      "sha256": "b807b1b84ffbcb113757942930a27012a7ea8d0ee7accaa718e2cd10d1507d7d"
+    },
+    {
+      "path": "site/src/research/planner-recipe-policy.js",
+      "sha256": "afe98898bf6fa45bdb6768e6a0ddaafe756e3797be322793176512d66ff0574d"
+    },
+    {
+      "path": "site/src/research/planner-recipe-questionnaires.js",
+      "sha256": "95dfa7672874081b43afd45f64056a38f831ca3c0ed8b6472ca52d7718c75528"
+    },
+    {
+      "path": "site/src/research/planner-recipe-reproduction.js",
+      "sha256": "f936d16388beb581799ca121ec70859edbc8cf9dfe169a58b13d54badfc2a9d9"
+    },
+    {
+      "path": "site/src/research/planner-recipe-restore.js",
+      "sha256": "8ea9b0342b9c117766b21998321db99014906af53679abc4219782e42ddf0f32"
+    },
+    {
+      "path": "site/src/research/planner-recipe-wire.js",
+      "sha256": "f5d1c2bd216846b71e6f638424cf8ebd1afb11c3fa9d5c0cfb217198d86bf032"
+    },
+    {
+      "path": "site/src/research/planner-recipe.js",
+      "sha256": "d003a363afe9202d7f563069b46d4d3e44de1cd6cd7f77caba266e16b71c2f2d"
+    },
+    {
+      "path": "site/src/research/planner-surface.js",
+      "sha256": "2b0bc268bc77ebe6eadf8219624cfa491d02bdd41a234ffee91d90221320c299"
+    },
+    {
+      "path": "site/src/research/planner-target.js",
+      "sha256": "f9fbd20d9be67a021e7d711f051f36e6cf14408d695bc04fff8bff4b83b49f6d"
+    },
+    {
+      "path": "site/src/research/preview-appearance.js",
+      "sha256": "281bf3e36b9c721361aadd236092180f610a1623386a19f1fa43daacab8b2a29"
+    },
+    {
+      "path": "site/src/research/preview-interaction.js",
+      "sha256": "f075a46d8ae88ab202ac860c9cd31b81b084485822d3993ab9d0554fe88068c3"
+    },
+    {
+      "path": "site/src/research/preview-layout.js",
+      "sha256": "73116fffc22491651a9e813d64cd0a1aa8c4d8b2532bcba9ab1ce80efffe1c5e"
+    },
+    {
+      "path": "site/src/research/preview-response-simulator.js",
+      "sha256": "249aa07da8f4d78a1eab802636ad0ecf75571b5a12eabdd8c453cc8b3ea154b9"
+    },
+    {
+      "path": "site/src/research/preview-tiles.js",
+      "sha256": "16940fee3ef293efd5c6c6638663a6067b050d2ec240333c306a37889c62888a"
+    },
+    {
+      "path": "site/src/research/preview.js",
+      "sha256": "509a710be4f8de7c6b28712aac1e84251bc2122fa3c21774c0ca0194b76a5908"
+    },
+    {
+      "path": "site/src/research/protocol-plan.js",
+      "sha256": "9fabca7ad0bd5bd5c5877ed67ff68bd10bb40f4fd81a187de32ad9951aa19d57"
+    },
+    {
+      "path": "site/src/research/protocol-records.js",
+      "sha256": "6cf77ed5199f7f015d4720ff0c2c975ebbbdf70311417fbc46cee1c4ef1a2699"
+    },
+    {
+      "path": "site/src/research/questionnaire-assets.js",
+      "sha256": "8dec7c82a47b11ff96daa16ad124aaa212c56ef5894dc971353dd1cec8ed6d11"
+    },
+    {
+      "path": "site/src/research/questionnaire-authoring.js",
+      "sha256": "c5d7d32bb8612796f876d8bb48453462fbc0af03a73aee3e15149377851a6ae5"
+    },
+    {
+      "path": "site/src/research/questionnaire-contribution.js",
+      "sha256": "5ad9530a2412238b3d43c7fec2ef636fe5e176b928166505e983c98b8bbbde86"
+    },
+    {
+      "path": "site/src/research/questionnaire-editor.js",
+      "sha256": "b5e4786de8bb4998fd3fce862ff75d545a52c4d4c209419291ef9b6f66c584e8"
+    },
+    {
+      "path": "site/src/research/questionnaire-inspiration.js",
+      "sha256": "7c89ef35bb59de483acd2aac193ccb655fd65f3e1b8b375e21ea255ed00383fb"
+    },
+    {
+      "path": "site/src/research/questionnaire-prebuilt.js",
+      "sha256": "9d419b5022309663bafc0424aa1d0425970f50fb27948f858a84821365a3a60b"
+    },
+    {
+      "path": "site/src/research/questionnaire-recipe.js",
+      "sha256": "3c004d8717b3cc66560697ad5a7010dfe92599f075401db24af8bb361a6dcd00"
+    },
+    {
+      "path": "site/src/research/questionnaire-routing-editor.js",
+      "sha256": "5f4438c09d5156550e6df87db4fce718653555ebccc08993806bf25df396d12d"
+    },
+    {
+      "path": "site/src/research/questionnaire-sheet.js",
+      "sha256": "9b02c8eb4126acca335d3315c80f93d94f6608e4b4aed315c67032ac234e3cff"
+    },
+    {
+      "path": "site/src/research/questionnaire-storage-request.js",
+      "sha256": "435d1c00148bf6e3117bcb2f81bc885cd6cc0a0b8717dc13436b0c69cd4e55da"
+    },
+    {
+      "path": "site/src/research/questionnaires.js",
+      "sha256": "291933ed9039979b011b614cedf2230fbe9dfb418f0f7d237efef68ecac6d532"
+    },
+    {
+      "path": "site/src/research/responsive-face.js",
+      "sha256": "ea8c5d197bef3231d3dc461a87e528869def1441fe263d8000304b91c4cfc363"
+    },
+    {
+      "path": "site/src/research/screen-layout-composition.js",
+      "sha256": "50f752ba6841528a97f935b01496e8194dfa93268bc1d207b437949f91c077f1"
+    },
+    {
+      "path": "site/src/research/screen-layout-dependencies.js",
+      "sha256": "5111609a7c560dce0e6a383188bc4f01cabd793ba18b0fd7156037fdb79e55cb"
+    },
+    {
+      "path": "site/src/research/screen-layout-draft.js",
+      "sha256": "2ac6fe38c16db4319af455dae92ff5d8e4a16b5b8e62fdaa5f89633b3218e94c"
+    },
+    {
+      "path": "site/src/research/screen-layout-editor.js",
+      "sha256": "ecd65c710fa0d4e78660e415b91666ca66d39b113689aee33bc4c94e90fd0f87"
+    },
+    {
+      "path": "site/src/research/screen-layout-state.js",
+      "sha256": "b5adbe98f82c0fab738c31f068f57694819846cb493039fda444ad041786e734"
+    },
+    {
+      "path": "site/src/research/screen-layout-view.js",
+      "sha256": "40595395587bf3ceab4e4f2f90719c29943dbaef1fda0875415e32e5e138f54f"
+    },
+    {
+      "path": "site/src/research/setup-accordion-motion.js",
+      "sha256": "572a2f56959df7bba34deaa0c4d985c30fb26136bfae479ebf8de76c99e6c310"
+    },
+    {
+      "path": "site/src/research/setup-confirmation-flow.js",
+      "sha256": "06a0c2631cff08832bb67e97cd23edd0ee040f3643b8b631bb26496b6b61c22e"
+    },
+    {
+      "path": "site/src/research/setup-layout.js",
+      "sha256": "83237320bbe132fef449f4f3d06d493eb5271e9802a296781eda4678929ff2cb"
+    },
+    {
+      "path": "site/src/research/stimulus-authoring-request.js",
+      "sha256": "b62999f44e34eb58a6f93978a927a87cb5f394eb3393088a8cbd461c4c4fd654"
+    },
+    {
+      "path": "site/src/research/stimulus-inspiration.js",
+      "sha256": "60bbe0429d4e3b68bc157f62ce0461018d8bc029c197e56aa87e28a22ebb01bd"
+    },
+    {
+      "path": "site/src/research/stimulus-order-editor.js",
+      "sha256": "a337caf75577634be88620c90b8d6918a87210222231b5d344bbcb3cd0bcdbc3"
+    },
+    {
+      "path": "site/src/research/stimulus-order.js",
+      "sha256": "c2f4b2ebf090153adab82b40497dbd8ef121163f74c5c3daa40cee0e321d7469"
+    },
+    {
+      "path": "site/src/research/stimulus-workbook.js",
+      "sha256": "fb0df702d31c3796c040d7d97394db83c15953cfb6e0c79feed18aa4c4608403"
+    },
+    {
+      "path": "site/src/research/study-identity.js",
+      "sha256": "85db76110af0e12041d9cca8111fc72b96d1aa7276b982b86b9e7eca153ceba6"
+    },
+    {
+      "path": "site/src/research/tabular.js",
+      "sha256": "1a26d98490f8ac271322381bc293134b2dbd18ea6508b69813038f62d5c0d12d"
+    },
+    {
+      "path": "site/src/research/ui-contracts.js",
+      "sha256": "e39b6cb856beca9c903cbd51465fa45f580421a8b0c80f220f1b3c7440747981"
+    },
+    {
+      "path": "site/src/research/ui-view.js",
+      "sha256": "ff7ced9301feddad423c6a210e8a8682b0fe08c85aa27dd69c297350a689586e"
+    },
+    {
+      "path": "site/src/research/variant-catalogue-adapter.js",
+      "sha256": "9bad014afa4f71171f4b3f6d95da5cb74618bb2845edc0be8c55795ac9325fd7"
+    },
+    {
+      "path": "site/src/research/variant-design.js",
+      "sha256": "4f4aa0d01514adb7db326111e7979f77f74b91182bef83007f0ef2b4631c62ea"
+    },
+    {
+      "path": "site/src/research/variant-library-export.js",
+      "sha256": "0949c9356be21d7b061df3b7dbeb750f144275224b1d3c1e005bbb27578261b6"
+    },
+    {
+      "path": "site/src/research/variant-library.js",
+      "sha256": "97e641837d69daf9a430893533d23b688371b6eee7021fd6f10a6527052736ce"
+    },
+    {
+      "path": "site/src/research/variant-video-catalogue.js",
+      "sha256": "7e5068382a3dcaa613f95b8e689a05dcc43e222596ebc903a65e2f3576b35de7"
+    },
+    {
+      "path": "site/src/research/video-catalogue-contribution.js",
+      "sha256": "9350f636b101d132f0d7e26da733b2d3a85633a14b94153dba547c72b93b5504"
+    },
+    {
+      "path": "site/src/research/workspace-contribution.js",
+      "sha256": "dc9b653c44047ebf3398c8ac7f11706f7a6714ac86834bff470a3a6e8413811b"
+    },
+    {
+      "path": "site/src/research/workspace.js",
+      "sha256": "10f1470f11164f0c257b40a5c23ec171901eeb71ee3d43c71c4dac7cfd321e07"
+    },
+    {
+      "path": "site/src/research/xr-layout-authoring.js",
+      "sha256": "4b2968d87bfdfd0ab59ddea3dea5452d2967f6bd7248eadbc4a459acf5dbabba"
+    },
+    {
+      "path": "site/src/research/xr-layout-editor.js",
+      "sha256": "450bc03b880ec3b772debd6d9d1d257200223698bbe72592835d6fc4f5b30a42"
+    },
+    {
+      "path": "site/src/research/xr-layout-feedback.js",
+      "sha256": "fb3c4fcfa0d268d6bc2aae1adc9a64c866ebad49bbce90c63eef071b7a1bf650"
+    },
+    {
+      "path": "site/src/research/xr-layout-recipe.js",
+      "sha256": "4459aa3221005d96506ec0209c272cf4b1d7225ba0b54be38d94592a5e511705"
+    },
+    {
+      "path": "site/src/research/xr-layout-view.js",
+      "sha256": "0a866e7f2581e14efc0f4b5d6e325f180adb9f7cd58f0abf0e743be9e81daae2"
+    },
+    {
+      "path": "site/src/research/xr-layout.js",
+      "sha256": "b0c892b838661a5143909daa4c7803875f375ac702ff7b6ce1ec0c83bb3d9f10"
+    },
+    {
+      "path": "site/src/research/youtube-player.js",
+      "sha256": "63af8d103494b916511a2e5857061b69f49c0bffaa55870ccee7d42ed2d5b221"
+    }
+  ],
+  "catalogue": {
+    "operations": [
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "workspaceGrantId": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspaceGrantId"
+          ],
+          "type": "object"
+        },
+        "atomic": false,
+        "consequential": true,
+        "id": "selectWorkspace",
+        "label": "Select work directory",
+        "owner": "P1",
+        "recipeOutcome": "segments.P1 is regenerated after the native grant is adopted and media is freshly verified; no absolute path is serialized.",
+        "uiAction": "Set work directory",
+        "uiControl": "#workspace-choose"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "selectionGrantId": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "selectionKind": {
+              "enum": [
+                "videos",
+                "folder"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "selectionKind",
+            "selectionGrantId"
+          ],
+          "type": "object"
+        },
+        "atomic": false,
+        "consequential": true,
+        "id": "importVideos",
+        "label": "Import video files or folder",
+        "owner": "P1",
+        "recipeOutcome": "Freshly verified locations replace segments.P1.videoCatalogue.entries; hashes, duration, and oriented geometry stay derived.",
+        "uiAction": "Add video files / Add video folder",
+        "uiControl": {
+          "folder": "#video-folder-import",
+          "videos": "#video-import"
+        }
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "atomic": false,
+        "consequential": true,
+        "id": "rescanVideoLibrary",
+        "label": "Rescan video library",
+        "owner": "P1",
+        "recipeOutcome": "The current authorized directory is re-enumerated and segments.P1.videoCatalogue is replaced only after exact fresh verification.",
+        "uiAction": "Rescan library",
+        "uiControl": "#workspace-rescan"
+      },
+      {
+        "argumentsKeys": [
+          "familyId",
+          "title",
+          "optionCount",
+          "rowCount"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "familyId": {
+              "description": "string: questionnaire family identity"
+            },
+            "optionCount": {
+              "description": "integer: 2..64"
+            },
+            "rowCount": {
+              "description": "integer: 0..1024"
+            },
+            "title": {
+              "description": "string: questionnaire title"
+            }
+          },
+          "required": [
+            "familyId",
+            "title",
+            "optionCount",
+            "rowCount"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "addQuestionnaire",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "familyId"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "familyId": {
+              "description": "string: questionnaire family identity"
+            }
+          },
+          "required": [
+            "familyId"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "removeQuestionnaire",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "changes"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "changes": {
+              "description": "nonempty object: questionnaireVersion?, title?, instructions?, attribution?, optionCount?; no other keys"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "changes"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "updateQuestionnaire",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "item",
+          "beforeItemId"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeItemId": {
+              "description": "string|null: existing item identity, or null to append"
+            },
+            "item": {
+              "description": "exact object: {itemId:string,prompt:string,required:boolean|string,subscale:string|null,options:Option[]}"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "item",
+            "beforeItemId"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "addItem",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "itemId",
+          "item"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "description": "exact object: {itemId:string,prompt:string,required:boolean|string,subscale:string|null,options:Option[]}"
+            },
+            "itemId": {
+              "description": "string: existing item identity"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "itemId",
+            "item"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "setItem",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "itemId"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "itemId": {
+              "description": "string: existing item identity"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "itemId"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "removeItem",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "itemIds"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "itemIds": {
+              "description": "string[]: every existing item identity exactly once"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "itemIds"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "reorderItems",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "itemId",
+          "optionId",
+          "label",
+          "scoreValue"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "itemId": {
+              "description": "string: existing item identity"
+            },
+            "label": {
+              "description": "string: participant-visible answer label"
+            },
+            "optionId": {
+              "description": "string: existing option identity"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            },
+            "scoreValue": {
+              "description": "number|null|string: recorded value, or invalid raw draft text"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "itemId",
+            "optionId",
+            "label",
+            "scoreValue"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "setOption",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "questionnaireId",
+          "itemId",
+          "optionIds"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "itemId": {
+              "description": "string: existing item identity"
+            },
+            "optionIds": {
+              "description": "string[]: every existing option identity exactly once"
+            },
+            "questionnaireId": {
+              "description": "string: questionnaire identity"
+            }
+          },
+          "required": [
+            "questionnaireId",
+            "itemId",
+            "optionIds"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "reorderOptions",
+        "owner": "P2"
+      },
+      {
+        "argumentsKeys": [
+          "moduleIds"
+        ],
+        "argumentsSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "moduleIds": {
+              "description": "string[]: every existing module identity exactly once"
+            }
+          },
+          "required": [
+            "moduleIds"
+          ],
+          "type": "object"
+        },
+        "description": "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}.",
+        "id": "reorderModules",
+        "owner": "P2"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "durationMs": {
+              "maximum": 3600000,
+              "minimum": 0,
+              "type": "integer",
+              "unit": "ms"
+            }
+          },
+          "required": [
+            "durationMs"
+          ],
+          "type": "object"
+        },
+        "id": "isi.add",
+        "label": "Add a named ISI",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "durationMs": {
+              "maximum": 3600000,
+              "minimum": 0,
+              "type": "integer",
+              "unit": "ms"
+            },
+            "isiId": {
+              "description": "Existing stable ISI identity.",
+              "maxLength": 9,
+              "type": "string"
+            }
+          },
+          "required": [
+            "isiId",
+            "durationMs"
+          ],
+          "type": "object"
+        },
+        "id": "isi.setDuration",
+        "label": "Edit an ISI duration",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "isiId": {
+              "description": "Existing stable ISI identity.",
+              "maxLength": 9,
+              "type": "string"
+            }
+          },
+          "required": [
+            "isiId"
+          ],
+          "type": "object"
+        },
+        "id": "isi.remove",
+        "label": "Remove an unused ISI",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeIsiId": {
+              "description": "Existing stable ISI identity. Null appends.",
+              "maxLength": 9,
+              "nullable": true,
+              "type": "string"
+            },
+            "isiId": {
+              "description": "Existing stable ISI identity.",
+              "maxLength": 9,
+              "type": "string"
+            }
+          },
+          "required": [
+            "isiId",
+            "beforeIsiId"
+          ],
+          "type": "object"
+        },
+        "id": "isi.move",
+        "label": "Reorder the ISI dictionary",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeVariantId": {
+              "description": "Existing stable variant identity. Null appends.",
+              "maxLength": 14,
+              "nullable": true,
+              "type": "string"
+            },
+            "title": {
+              "description": "Variant title; empty or duplicate titles remain incomplete drafts.",
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "beforeVariantId"
+          ],
+          "type": "object"
+        },
+        "id": "variant.add",
+        "label": "Add a variant",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "description": "Variant title; empty or duplicate titles remain incomplete drafts.",
+              "maxLength": 120,
+              "type": "string"
+            },
+            "variantId": {
+              "description": "Existing stable variant identity.",
+              "maxLength": 14,
+              "type": "string"
+            }
+          },
+          "required": [
+            "variantId",
+            "title"
+          ],
+          "type": "object"
+        },
+        "id": "variant.rename",
+        "label": "Rename a variant",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "variantId": {
+              "description": "Existing stable variant identity.",
+              "maxLength": 14,
+              "type": "string"
+            }
+          },
+          "required": [
+            "variantId"
+          ],
+          "type": "object"
+        },
+        "id": "variant.remove",
+        "label": "Remove a variant",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeVariantId": {
+              "description": "Existing stable variant identity. Null appends.",
+              "maxLength": 14,
+              "nullable": true,
+              "type": "string"
+            },
+            "variantId": {
+              "description": "Existing stable variant identity.",
+              "maxLength": 14,
+              "type": "string"
+            }
+          },
+          "required": [
+            "variantId",
+            "beforeVariantId"
+          ],
+          "type": "object"
+        },
+        "id": "variant.move",
+        "label": "Reorder variants",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeEntryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row. Null appends.",
+              "maxLength": 27,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          "required": [
+            "beforeEntryId"
+          ],
+          "type": "object"
+        },
+        "id": "row.add",
+        "label": "Insert an empty event row",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "entryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row.",
+              "maxLength": 27,
+              "type": "string"
+            }
+          },
+          "required": [
+            "entryId"
+          ],
+          "type": "object"
+        },
+        "id": "row.remove",
+        "label": "Remove an event row",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "beforeEntryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row. Null appends.",
+              "maxLength": 27,
+              "nullable": true,
+              "type": "string"
+            },
+            "entryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row.",
+              "maxLength": 27,
+              "type": "string"
+            }
+          },
+          "required": [
+            "entryId",
+            "beforeEntryId"
+          ],
+          "type": "object"
+        },
+        "id": "row.move",
+        "label": "Reorder event rows with their occurrence identities",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "entryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row.",
+              "maxLength": 27,
+              "type": "string"
+            },
+            "referenceId": {
+              "description": "Exact video annotation, ISI name or empty draft cell. Maximum 6144 UTF-8 bytes.",
+              "maxLength": 6144,
+              "type": "string"
+            }
+          },
+          "required": [
+            "entryId",
+            "referenceId"
+          ],
+          "type": "object"
+        },
+        "id": "cell.set",
+        "label": "Edit a video or ISI reference",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "entryId": {
+              "description": "Existing occurrence identity; row operations accept any occurrence in that row.",
+              "maxLength": 27,
+              "type": "string"
+            },
+            "text": {
+              "description": "Spreadsheet text, parsed by the existing P3 clipboard validator.",
+              "maxLength": 4194304,
+              "type": "string"
+            }
+          },
+          "required": [
+            "entryId",
+            "text"
+          ],
+          "type": "object"
+        },
+        "id": "table.paste",
+        "label": "Paste spreadsheet cells at an occurrence",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "id": "table.reset",
+        "label": "Reset the table and named ISIs",
+        "owner": "P3"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "units": {
+              "enum": [
+                "relative",
+                "mm"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "units"
+          ],
+          "type": "object"
+        },
+        "id": "convertUnits",
+        "label": "Convert layout units while preserving fixed geometry",
+        "owner": "P4"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {},
+          "type": "object"
+        },
+        "id": "clearCalibration",
+        "label": "Clear measured dimensions and full-viewport mapping",
+        "owner": "P4"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "preset": {
+              "enum": [
+                "arrowKeys",
+                "wasd",
+                "ijkl",
+                "numpad",
+                "pointerGrid",
+                "mouseButtonsWheel",
+                "gamepadDpad",
+                "gamepadLeftStick",
+                "gamepadRightStick"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "preset"
+          ],
+          "type": "object"
+        },
+        "id": "inputPreset",
+        "label": "Select controller preset",
+        "owner": "P5"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {},
+          "type": "object"
+        },
+        "id": "initializeV2",
+        "label": "Explicitly initialize current feedback settings from legacy",
+        "owner": "P5"
+      },
+      {
+        "arguments": {
+          "additionalProperties": false,
+          "properties": {
+            "heightDegrees": {
+              "maximum": 150,
+              "minimum": 0.1,
+              "type": "number"
+            },
+            "widthDegrees": {
+              "maximum": 150,
+              "minimum": 0.1,
+              "type": "number"
+            }
+          },
+          "required": [
+            "widthDegrees",
+            "heightDegrees"
+          ],
+          "type": "object"
+        },
+        "description": "Replaces physical width/height using the current distance. Requires a centred, untilted valid profile; creates no saved angular-size field.",
+        "id": "setAngularSize",
+        "label": "Apply centred angular screen size",
+        "owner": "P6"
+      }
+    ],
+    "settings": [
+      {
+        "classification": "authored",
+        "id": "P1.study.id",
+        "label": "Study ID",
+        "maxLength": 128,
+        "recipePath": "segments.P1.study.id",
+        "type": "string",
+        "uiControl": "#experiment-id",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P1.study.title",
+        "label": "Study title",
+        "maxLength": 200,
+        "recipePath": "segments.P1.study.title",
+        "type": "string",
+        "uiControl": "#experiment-title",
+        "writable": true
+      },
+      {
+        "classification": "derived",
+        "id": "P1.workspace.selected",
+        "label": "Work directory selected",
+        "recipePath": null,
+        "type": "boolean",
+        "uiControl": "#workspace-root",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.workspace.displayName",
+        "label": "Work directory",
+        "recipePath": null,
+        "type": "string",
+        "uiControl": "#workspace-root",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.workspace.layout",
+        "label": "Portable project layout",
+        "recipePath": "segments.P1.workspaceLayout",
+        "type": "json",
+        "uiControl": ".workspace-location-list",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.workspace.snapshot",
+        "label": "Workspace contribution state",
+        "recipePath": "segments.P1",
+        "type": "json",
+        "uiControl": "#workspace-status",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.media.pending",
+        "label": "Video verification pending",
+        "recipePath": null,
+        "type": "boolean",
+        "uiControl": "#workspace-status",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.media.ready",
+        "label": "Video catalogue ready",
+        "recipePath": null,
+        "type": "boolean",
+        "uiControl": "#workspace-status",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.media.count",
+        "label": "Verified video locations",
+        "recipePath": "segments.P1.videoCatalogue.entries",
+        "type": "integer",
+        "uiControl": "#stimulus-library-table",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P1.media.catalogue",
+        "label": "Verified video catalogue",
+        "recipePath": "segments.P1.videoCatalogue",
+        "type": "json",
+        "uiControl": "#stimulus-library-table",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "description": "Array of complete draft definitions with stable family/questionnaire/item/option IDs; numeric codes may retain invalid raw text.",
+        "id": "P2.questionnaires",
+        "label": "Questionnaire drafts",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Array of exact {languageId,languageTag,label}; each family gets one editable slot per language.",
+        "id": "P2.languages",
+        "label": "Selected languages",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Array of existing QuestionnaireModuleV2, in authored order; hashes reference accepted definitions.",
+        "id": "P2.modules",
+        "label": "Ordered questionnaire modules",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Exact LanguageSelectionTreeV1 or null for the owner's flat-language projection; no automatic participant selection.",
+        "id": "P2.languageSelection",
+        "label": "Language routing",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Array of exact {questionnaireId,repeatLabelsEvery:1|5|10}, one per draft in order. This is not pagination.",
+        "id": "P2.presentation",
+        "label": "Answer label repetition",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "derived",
+        "id": "P2.acceptedDefinitions",
+        "label": "acceptedDefinitions",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P2.coverage",
+        "label": "coverage",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "description": "Readback fields: columns [{variantId,title}], rectangular rows of raw reference strings, matching entryIds, isiDefinitions [{isiId,durationMs}], nextIsiOrdinal. Edit through stable-ID operations. Identity allocation and exact raw recovery remain editor-owned; raw invalid duration text or null is returned with an issue.",
+        "id": "P3.draft",
+        "label": "Exact editable variant draft",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P3.isiDefinitions",
+        "label": "Ordered named ISIs; edit by ISI identity",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P3.variants",
+        "label": "Ordered variants; edit by variant identity",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P3.rows",
+        "label": "Ordered event cells; edit by occurrence identity",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P3.videoAnnotations",
+        "label": "P1 video annotations available to this draft",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P3.contribution",
+        "label": "Current prepared variant contribution, or null",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P3.timelines",
+        "label": "Current planned timelines, or null",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P3.markerContract",
+        "label": "Current planned marker contract, or null",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "id": "P3.legacyConversionRequired",
+        "label": "Historical design awaiting explicit conversion",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P4.viewport.widthCssPx",
+        "jsonPath": "segments.P4.viewport.widthCssPx",
+        "label": "Design viewport width",
+        "maximum": 32768,
+        "minimum": 1,
+        "type": "integer",
+        "uiControl": "layout-screenWidth",
+        "unit": "CSS px",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.viewport.heightCssPx",
+        "jsonPath": "segments.P4.viewport.heightCssPx",
+        "label": "Design viewport height",
+        "maximum": 32768,
+        "minimum": 1,
+        "type": "integer",
+        "uiControl": "layout-screenHeight",
+        "unit": "CSS px",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.calibration.activeWidthMm",
+        "jsonPath": "segments.P4.calibration.activeWidthMm",
+        "label": "Measured active width",
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "number",
+        "uiControl": "layout-physicalWidth",
+        "unit": "mm",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.calibration.activeHeightMm",
+        "jsonPath": "segments.P4.calibration.activeHeightMm",
+        "label": "Measured active height",
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "number",
+        "uiControl": "layout-physicalHeight",
+        "unit": "mm",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.calibration.fullViewportMapping",
+        "jsonPath": "segments.P4.calibration",
+        "label": "Design viewport covers the measured display",
+        "type": "boolean",
+        "uiControl": "layout-fullViewportMapping",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "relative",
+          "mm"
+        ],
+        "id": "P4.units",
+        "jsonPath": "segments.P4.units",
+        "label": "Geometry units (converts existing geometry)",
+        "type": "string",
+        "uiControl": "layout-units",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "A supported method string or null for an unselected draft; null blocks preparation.",
+        "enum": [
+          null,
+          "largest-oriented-area",
+          "maximum-oriented-dimensions"
+        ],
+        "id": "P4.reference.method",
+        "jsonPath": "segments.P4.reference.source.policy",
+        "label": "Fixed reference method",
+        "type": "json",
+        "uiControl": "layout-referencePolicy",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.reference.maximumWidth",
+        "jsonPath": "segments.P4.reference.box.width",
+        "label": "Maximum reference width",
+        "maximum": 100000,
+        "minimum": 0.001,
+        "type": "number",
+        "uiControl": "layout-referenceWidth",
+        "unit": "mm or % viewport width",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.reference.maximumHeight",
+        "jsonPath": "segments.P4.reference.box.height",
+        "label": "Maximum reference height",
+        "maximum": 100000,
+        "minimum": 0.001,
+        "type": "number",
+        "uiControl": "layout-referenceHeight",
+        "unit": "mm or % viewport height",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.reference.centreX",
+        "jsonPath": "segments.P4.reference.centre.x",
+        "label": "Reference centre X",
+        "maximum": 100000,
+        "minimum": -100000,
+        "type": "number",
+        "uiControl": "layout-referenceX",
+        "unit": "mm or % viewport width",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.reference.centreY",
+        "jsonPath": "segments.P4.reference.centre.y",
+        "label": "Reference centre Y",
+        "maximum": 100000,
+        "minimum": -100000,
+        "type": "number",
+        "uiControl": "layout-referenceY",
+        "unit": "mm or % viewport height",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.feedback.viewportSide",
+        "jsonPath": "segments.P4.feedback.overlayViewportSide",
+        "label": "Feedback drawing viewport side",
+        "maximum": 100000,
+        "minimum": 0.001,
+        "type": "number",
+        "uiControl": "layout-diameter",
+        "unit": "mm or % shorter reference side",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.feedback.offsetX",
+        "jsonPath": "segments.P4.feedback.offset.x",
+        "label": "Feedback centre offset X",
+        "maximum": 100000,
+        "minimum": -100000,
+        "type": "number",
+        "uiControl": "layout-offsetX",
+        "unit": "mm or % reference width",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.feedback.offsetY",
+        "jsonPath": "segments.P4.feedback.offset.y",
+        "label": "Feedback centre offset Y",
+        "maximum": 100000,
+        "minimum": -100000,
+        "type": "number",
+        "uiControl": "layout-offsetY",
+        "unit": "mm or % reference height",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P4.feedback.minimumGap",
+        "jsonPath": "segments.P4.feedback.minimumGap",
+        "label": "Minimum separation",
+        "maximum": 100000,
+        "minimum": 0,
+        "type": "number",
+        "uiControl": "layout-gap",
+        "unit": "mm or % shorter reference side",
+        "writable": true
+      },
+      {
+        "classification": "derived",
+        "id": "P4.geometry",
+        "label": "Resolved screen/reference/feedback geometry in CSS pixels",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P4.videoFits",
+        "label": "All verified video contain fits and separation",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P4.reference.candidates",
+        "label": "Automatic reference candidates from the complete catalogue",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P4.reference.source",
+        "label": "Selected oriented reference source",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P4.conventions",
+        "label": "Fixed viewport, axes, centre and fitting conventions",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P5.generation",
+        "label": "Feedback generation",
+        "type": "integer",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "description": "Complete canonical P5 contribution, or null while the current owner draft is invalid.",
+        "id": "P5.contribution",
+        "label": "Validated feedback contribution",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "description": "Exact InputBindingV1: schema, version, preset, kind, stepSize, directions, axes. Digital directions are unique keyboard(code), mouseButton(button), wheel(direction), or gamepadButton(button) tokens; axes=null. Absolute/analog presets use exact pointerAxis(axis,invert) or gamepadAxis(index,invert) pairs, with stepSize/directions=null. Digital edits must preserve the existing editor-owned step. Custom capture is digital only. No live capture or input-test state.",
+        "id": "P5.input",
+        "label": "Controller bindings",
+        "type": "json",
+        "writable": true
+      },
+      {
+        "classification": "compatibility",
+        "description": "Read-only finite number 0.001–1 for digital input; null for absolute/analog input. Preset transitions reuse the existing editor's retained step.",
+        "id": "P5.input.stepSize",
+        "label": "Legacy digital step",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.gridEnabled",
+        "label": "Legacy Grid visibility",
+        "type": "boolean",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.flubberEnabled",
+        "label": "Legacy Flubber visibility",
+        "type": "boolean",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.sizePercent",
+        "label": "Legacy size (%)",
+        "maximum": 100,
+        "minimum": 5,
+        "type": "number",
+        "unit": "%",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.overlayPosition.x",
+        "label": "Legacy horizontal position",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.overlayPosition.y",
+        "label": "Legacy vertical position",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": false
+      },
+      {
+        "classification": "compatibility",
+        "description": "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative.",
+        "id": "P5.visual.lockPosition",
+        "label": "Legacy position lock",
+        "type": "boolean",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.transparency",
+        "label": "Transparency (fraction)",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.hideFeedback",
+        "label": "Hide visual feedback",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.flubber.showOutline",
+        "label": "Flubber outline",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.flubber.outlineThickness",
+        "label": "Flubber outline (CSS px)",
+        "maximum": 20,
+        "minimum": 0,
+        "type": "number",
+        "unit": "CSS px",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.flubber.showHalo",
+        "label": "Flubber halo",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.grid.lineThickness",
+        "label": "Grid line (CSS px)",
+        "maximum": 20,
+        "minimum": 0.25,
+        "type": "number",
+        "unit": "CSS px",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.grid.showOutline",
+        "label": "Grid outline",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.grid.outlineThickness",
+        "label": "Grid outline (CSS px)",
+        "maximum": 20,
+        "minimum": 0,
+        "type": "number",
+        "unit": "CSS px",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.grid.cursorSize",
+        "label": "Grid cursor radius (viewBox units)",
+        "maximum": 100,
+        "minimum": 2,
+        "type": "number",
+        "unit": "viewBox radius",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.up",
+        "label": "up color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.down",
+        "label": "down color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.left",
+        "label": "left color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.right",
+        "label": "right color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.idle",
+        "label": "idle color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.outline",
+        "label": "outline color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.halo",
+        "label": "halo color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.visual.colors.cursor",
+        "label": "cursor color",
+        "maxLength": 7,
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "flubber",
+          "grid",
+          "procedural-face"
+        ],
+        "id": "P5.presentation.renderer",
+        "label": "Feedback renderer",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "axes",
+          "corners"
+        ],
+        "id": "P5.presentation.colorAnchors",
+        "label": "Color anchor placement",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.axes.up",
+        "label": "axes up label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.axes.right",
+        "label": "axes right label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.axes.down",
+        "label": "axes down label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.axes.left",
+        "label": "axes left label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.corners.up",
+        "label": "corners up label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.corners.right",
+        "label": "corners right label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.corners.down",
+        "label": "corners down label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "1–48 UTF-16 units, well-formed Unicode, no control characters or surrounding whitespace.",
+        "id": "P5.presentation.labels.corners.left",
+        "label": "corners left label",
+        "maxLength": 48,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.presentation.halo.widthPercent",
+        "label": "Halo width (%)",
+        "maximum": 10000,
+        "minimum": 0,
+        "type": "number",
+        "unit": "%",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.presentation.halo.gradient",
+        "label": "Outward halo gradient",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.presentation.halo.steepness",
+        "label": "Halo falloff exponent",
+        "maximum": 10,
+        "minimum": 0.1,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "continuous",
+          "stepwise"
+        ],
+        "id": "P5.response.mode",
+        "label": "Response mode",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Odd count; even drafts remain incomplete until repaired.",
+        "id": "P5.response.grid.columns",
+        "label": "Response grid columns",
+        "maximum": 2001,
+        "minimum": 3,
+        "type": "integer",
+        "unit": "count",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "description": "Odd count; even drafts remain incomplete until repaired.",
+        "id": "P5.response.grid.rows",
+        "label": "Response grid rows",
+        "maximum": 2001,
+        "minimum": 3,
+        "type": "integer",
+        "unit": "count",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.response.fullSpanDurationMs",
+        "label": "Full-span duration (ms)",
+        "maximum": 15000,
+        "minimum": 250,
+        "type": "integer",
+        "unit": "ms",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "separatePresses",
+          "repeatWhileHeld"
+        ],
+        "id": "P5.response.holdRule",
+        "label": "Held direction behavior",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.response.repeatDelayMs",
+        "label": "Repeat interval (ms)",
+        "maximum": 5000,
+        "minimum": 500,
+        "type": "integer",
+        "unit": "ms",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.oscillationFrequency.min",
+        "label": "Oscillation Frequency minimum (Hz)",
+        "maximum": 10,
+        "minimum": 0,
+        "type": "number",
+        "unit": "Hz",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.oscillationFrequency.max",
+        "label": "Oscillation Frequency maximum (Hz)",
+        "maximum": 10,
+        "minimum": 0,
+        "type": "number",
+        "unit": "Hz",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.oscillationFrequency.drivenBy",
+        "label": "Oscillation Frequency driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.oscillationFrequency.reverse",
+        "label": "Oscillation Frequency reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.edgeSmoothness.min",
+        "label": "Edge Smoothness minimum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.edgeSmoothness.max",
+        "label": "Edge Smoothness maximum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.edgeSmoothness.drivenBy",
+        "label": "Edge Smoothness driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.edgeSmoothness.reverse",
+        "label": "Edge Smoothness reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.projectionAmplitude.min",
+        "label": "Projection Amplitude minimum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.projectionAmplitude.max",
+        "label": "Projection Amplitude maximum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.projectionAmplitude.drivenBy",
+        "label": "Projection Amplitude driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.projectionAmplitude.reverse",
+        "label": "Projection Amplitude reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.pulseSynchrony.min",
+        "label": "Pulse Synchrony minimum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.pulseSynchrony.max",
+        "label": "Pulse Synchrony maximum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.pulseSynchrony.drivenBy",
+        "label": "Pulse Synchrony driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.pulseSynchrony.reverse",
+        "label": "Pulse Synchrony reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.waveSizeVariation.min",
+        "label": "Wave-size Variation minimum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.waveSizeVariation.max",
+        "label": "Wave-size Variation maximum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.waveSizeVariation.drivenBy",
+        "label": "Wave-size Variation driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.waveSizeVariation.reverse",
+        "label": "Wave-size Variation reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.saturation.min",
+        "label": "Saturation minimum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.saturation.max",
+        "label": "Saturation maximum",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number",
+        "unit": "unitless",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "enum": [
+          "x-axis",
+          "y-axis",
+          "angle",
+          "radius"
+        ],
+        "id": "P5.mappings.saturation.drivenBy",
+        "label": "Saturation driver",
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P5.mappings.saturation.reverse",
+        "label": "Saturation reverse",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.enabled",
+        "label": "Include XR screen layout",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.distanceMetres",
+        "label": "Distance from setup viewer",
+        "maximum": 100,
+        "minimum": 0.1,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.azimuthDegrees",
+        "label": "Centre azimuth, right positive",
+        "maximum": 80,
+        "minimum": -80,
+        "type": "number",
+        "units": "degrees",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.elevationDegrees",
+        "label": "Centre elevation, up positive",
+        "maximum": 80,
+        "minimum": -80,
+        "type": "number",
+        "units": "degrees",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.widthMetres",
+        "label": "Screen width",
+        "maximum": 100,
+        "minimum": 0.001,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.heightMetres",
+        "label": "Screen height",
+        "maximum": 100,
+        "minimum": 0.001,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.yawDegrees",
+        "label": "Screen yaw",
+        "maximum": 80,
+        "minimum": -80,
+        "type": "number",
+        "units": "degrees",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.pitchDegrees",
+        "label": "Screen pitch",
+        "maximum": 80,
+        "minimum": -80,
+        "type": "number",
+        "units": "degrees",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.video.rollDegrees",
+        "label": "Screen roll",
+        "maximum": 180,
+        "minimum": -180,
+        "type": "number",
+        "units": "degrees",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.feedback.enabled",
+        "label": "Include adjacent feedback",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.feedback.offsetXMetres",
+        "label": "Feedback centre offset, screen-local right",
+        "maximum": 100,
+        "minimum": -100,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.feedback.offsetYMetres",
+        "label": "Feedback centre offset, screen-local up",
+        "maximum": 100,
+        "minimum": -100,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.feedback.diameterMetres",
+        "label": "Maximum feedback footprint diameter",
+        "maximum": 100,
+        "minimum": 0.001,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P6.feedback.minimumGapMetres",
+        "label": "Minimum screen gap",
+        "maximum": 10,
+        "minimum": 0,
+        "type": "number",
+        "units": "metres",
+        "writable": true
+      },
+      {
+        "classification": "derived",
+        "id": "P6.target",
+        "label": "Required XR target",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.projection",
+        "label": "Screen projection",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.coordinateSystem",
+        "label": "Spatial coordinates",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.video.fit",
+        "label": "Video fit rule",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.alignment.kind",
+        "label": "World anchor rule",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.alignment.forwardReference",
+        "label": "Setup forward reference",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.alignment.upReference",
+        "label": "Setup up reference",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.alignment.recenterPolicy",
+        "label": "Recentring rule",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.alignment.trackingLossPolicy",
+        "label": "Tracking loss rule",
+        "type": "string",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.pending",
+        "label": "Layout awaits preparation",
+        "type": "boolean",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "description": "Array of P1/P5 owner revision bindings; never a media permission.",
+        "id": "P6.dependencies",
+        "label": "Bound video and feedback revisions",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "id": "P6.angularSizeEditable",
+        "label": "Centred angular sizing available",
+        "type": "boolean",
+        "writable": false
+      },
+      {
+        "classification": "derived",
+        "description": "Null for invalid geometry; otherwise screen, all bound video fits, and optional P5 footprint. Unbound videos/feedback are null.",
+        "id": "P6.geometry",
+        "label": "Resolved setup-frame geometry",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "transient",
+        "description": "Orthographic inspection yaw/elevation in degrees, never saved screen rotation.",
+        "id": "P6.inspection.camera",
+        "label": "Inspection camera",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "transient",
+        "description": "Null for the authored screen or displayWidth/displayHeight for the current inspection; never a media grant.",
+        "id": "P6.inspection.media",
+        "label": "Inspected video display dimensions",
+        "type": "json",
+        "writable": false
+      },
+      {
+        "classification": "authored",
+        "id": "P7.participantCount",
+        "label": "Participant count",
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "integer",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.samplingFrequencyHz",
+        "label": "Sampling frequency",
+        "maximum": 240,
+        "minimum": 1,
+        "type": "integer",
+        "unit": "Hz",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.output.csv",
+        "label": "CSV output",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.output.tsv",
+        "label": "TSV output",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.lsl.enabled",
+        "label": "Emit LSL",
+        "type": "boolean",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.lsl.stateStream",
+        "label": "LSL state stream",
+        "maxLength": 80,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.lsl.streamType",
+        "label": "LSL stream type",
+        "maxLength": 80,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.lsl.markerStream",
+        "label": "LSL marker stream",
+        "maxLength": 80,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "authored",
+        "id": "P7.lsl.sourceId",
+        "label": "LSL source ID",
+        "maxLength": 120,
+        "type": "string",
+        "writable": true
+      },
+      {
+        "classification": "derived",
+        "id": "P7.playback",
+        "label": "Fixed complete-video playback policy",
+        "type": "json",
+        "writable": false
+      }
+    ]
+  }
+}

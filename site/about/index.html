@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#121311">
+  <meta name="description" content="About Affect Tracker, its Planner and Runner, and the maintained Planner CLI command reference.">
+  <link rel="canonical" href="https://georgefejer91.github.io/affect-tracker-research/about/">
+  <link rel="icon" type="image/svg+xml" href="../assets/app-logo.svg">
+  <link rel="stylesheet" href="./about.css">
+  <title>About & CLI library · Affect Tracker</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../"><img src="../assets/app-symbol.svg" alt="" width="32" height="32">Affect Tracker</a>
+    <nav aria-label="Site"><a href="../">Home</a><a href="./" aria-current="page">About</a></nav>
+  </header>
+  <main id="main">
+    <h1>About & CLI library</h1>
+    <p class="intro">Design an experiment in <strong>Experiment Planner</strong>. Use its JSON recipe in the separate <strong>Experiment Runner</strong> for participant sessions.</p>
+    <p>Planner owns questionnaires, video sequences, layout and feedback settings. Runner owns execution, participant responses, actual timing and recording. A saved recipe describes an experiment; it does not establish qualified playback or recording.</p>
+    <nav class="contents" aria-label="On this page">
+      <a href="#availability">Availability</a><a href="#quickstart">Calling the CLI</a><a href="#workflow">Open, edit & save</a><a href="#catalogue">Settings & operations</a><a href="#external">File commands</a><a href="#results">Results & errors</a>
+    </nav>
+
+    <section id="availability">
+      <h2>Availability and verification</h2>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Platform availability">
+        <table><thead><tr><th>Surface</th><th>What it provides</th><th>Boundary</th></tr></thead><tbody>
+          <tr><th scope="row">Browser Planner</th><td data-label="Provides">Visual authoring and feedback previews.</td><td data-label="Boundary">Uses browser file selection and permissions. This reference page does not run native commands.</td></tr>
+          <tr><th scope="row">Native Planner CLI</th><td data-label="Provides">Typed commands through one owned, hidden Planner process.</td><td data-label="Boundary">Local development executable; no connection to an already open app and no network listener.</td></tr>
+          <tr><th scope="row">Experiment Runner</th><td data-label="Provides">Consumes the recipe in a separate program.</td><td data-label="Boundary">Execution and recording need their own verification. Planner command results do not prove Runner behavior.</td></tr>
+        </tbody></table>
+      </div>
+      <!-- CLI:identity -->
+      <p>The catalogue is attached to the published build.</p>
+      <!-- /CLI:identity -->
+      <details><summary>What has been checked?</summary>
+        <p>At source <code>23e8f3a</code>, an actual native CLI process returned 155 settings and 32 owner-operation descriptors. An eight-command smoke check edited and read settings across P1–P7, rejected read-only and invalid edits, and exited cleanly. It did not import media, export a complete recipe or run a participant session.</p>
+        <p>The presentation-target setting was still awaiting a descriptor at that checkpoint. File commands below have a frozen interface and are being integrated. Additional controls and commands must appear in a newly captured catalogue before they are documented as available.</p>
+        <p>Executable SHA-256: <code class="digest">0e10f50d8f364e7e00a9f22f928b4064247d31ffb373fcbea4cd4774d60d138d</code></p>
+      </details>
+    </section>
+
+    <section id="quickstart">
+      <h2>Calling the CLI</h2>
+      <p>Start the local executable with its supported ingress:</p>
+      <pre><code>affect-planner-cli jsonl</code></pre>
+      <p>Wait for the ready receipt. Each invocation has a new <code>sessionId</code>. Send one JSON object per line, with a new caller-generated UUID as <code>requestId</code>. Queries use <code>expectedRevision: null</code>; edits use the latest returned revision.</p>
+      <details open><summary>Request envelope</summary>
+        <p>Replace both placeholders with actual UUIDs and send the resulting object on one line. This is a template, not a ready-to-send request.</p>
+        <pre><code>{
+  "schema": "affect-research-planner-command",
+  "version": 1,
+  "sessionId": "&lt;UUID from the ready receipt&gt;",
+  "requestId": "&lt;new caller UUID&gt;",
+  "expectedRevision": null,
+  "action": { "kind": "catalogue" }
+}</code></pre>
+      </details>
+      <p>Use these <strong>action bodies</strong> inside that envelope:</p>
+      <pre><code>{"kind":"snapshot"}
+{"kind":"get","field":"P7.participantCount"}
+{"kind":"set","field":"P7.participantCount","value":1}
+{"kind":"apply","edits":[{"kind":"set","field":"P7.output.csv","value":true},{"kind":"set","field":"P7.output.tsv","value":false}]}
+{"kind":"validate","owner":null}</code></pre>
+      <p><code>set</code> and <code>apply</code> require the current revision. Atomic owner operations belong inside <code>apply.edits</code>, using <code>{kind:"operation", owner, operation, arguments}</code>. Read generated row and variant IDs from the replies; do not guess them. Validation issues can accompany an applied, incomplete draft.</p>
+      <p><a href="./command-api.txt">Full command, lifetime and retry contract</a></p>
+    </section>
+
+    <section id="workflow">
+      <h2>Open, edit & save a new version</h2>
+      <p>This workflow uses the file-command interfaces below, whose integration is still pending at the documented checkpoint.</p>
+      <ol>
+        <li>Open the existing recipe with <code>openRecipe</code>. Keep the original file.</li>
+        <li>Select the work directory and freshly bind its media. Restored declarations do not restore permissions or media readiness.</li>
+        <li>Inspect the snapshot, edit through the owning settings or list operations, and read back the normalized values.</li>
+        <li>Resolve validation issues and confirm the required sections in order. P7 captures the final feedback configuration when saving.</li>
+        <li>Call <code>saveRecipe</code> and use the actual returned basename and exact-byte receipt.</li>
+      </ol>
+      <p>New exports use <code>recipeId_YYYY-MM-DD_HH-mm-ss-SSSZ.json</code> in UTC, with <code>_001</code> through <code>_999</code> collision suffixes. Filename time does not change canonical recipe content or its hashes.</p>
+      <p>The native writer publishes a new file without replacing an existing destination and requires a filesystem with hard-link support. Browser saving suggests the same name and rejects a nonempty selected file, but cannot guarantee atomic exclusion of concurrent writers or distinguish an existing empty file.</p>
+    </section>
+
+    <section id="catalogue">
+      <h2>Settings & owner operations</h2>
+      <p>These descriptors come from the actual registered catalogue. Expand a segment, then a field or operation for its exact metadata and argument shape. Writability and classification are preserved as returned; descriptor presence is not an execution receipt.</p>
+      <!-- CLI:catalogue -->
+      <p>The generated catalogue is attached to the published build.</p>
+      <!-- /CLI:catalogue -->
+      <p><a href="./catalogue.json" download>Download the source-bound catalogue</a></p>
+    </section>
+
+    <section id="external">
+      <h2>File commands · integration pending</h2>
+      <p>The frozen public action shape is <code>{kind:"perform", operation, arguments}</code>, in a current-session envelope with a current revision. These commands run separately from atomic edits. Paths are explicit absolute local paths supplied to the native CLI.</p>
+      <!-- CLI:external -->
+      <p>The frozen command table is attached to the published build.</p>
+      <!-- /CLI:external -->
+      <p>Internal owner descriptors may mention opaque grants. Those describe the native-to-editor boundary and are not public CLI path arguments. Before importing a questionnaire, create its intended family and language slot; import and source saving are separate operations.</p>
+      <p><a href="./consequential-commands.txt">Exact frozen file-command contract</a></p>
+    </section>
+
+    <section id="results">
+      <h2>Results & errors</h2>
+      <p>Replies identify the session, request and current revision. <code>ok</code> is a successful query; <code>applied</code> and <code>incomplete</code> describe an edit. Inspect <code>issues</code> and any effect receipt on <code>rejected</code>, <code>canceled</code> or <code>incomplete</code>.</p>
+      <details><summary>Example rejected edit</summary>
+        <p>This response shape was observed for a read-only media count. Session and request placeholders replace the transient receipt IDs; revision 1 belongs to that example session.</p>
+        <pre><code>{
+  "schema": "affect-research-planner-command-result",
+  "version": 1,
+  "sessionId": "&lt;actual session UUID&gt;",
+  "requestId": "&lt;matching request UUID&gt;",
+  "status": "rejected",
+  "revision": 1,
+  "result": null,
+  "issues": [{
+    "owner": "P1", "field": "P1.media.count",
+    "code": "read_only",
+    "message": "This setting is derived or read-only."
+  }]
+}</code></pre>
+      </details>
+      <p>For stale revisions, read current state before preparing a new edit. For invalid values or missing dependencies, follow the returned owner, field and message. A successful edit may still need validation and confirmation.</p>
+      <p>Cancellation does not undo a file already written. Reconcile an uncertain write with the same request identity; blindly retrying with a new ID can repeat an external effect. A process timeout or nonzero exit is not proof that no work occurred.</p>
+    </section>
+  </main>
+  <footer><a href="../">Affect Tracker home</a><p>The library is generated from captured command metadata and checked against its source files during the Pages build.</p></footer>
+</body>
+</html>

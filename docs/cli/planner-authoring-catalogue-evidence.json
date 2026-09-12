@@ -1,0 +1,11 @@
+{
+  "schema": "affect-research-planner-cli-catalogue-evidence",
+  "version": 1,
+  "sourceRevision": "23e8f3a3671f87e7e73dbfd422847479fd5e5fa7",
+  "executableSha256": "0e10f50d8f364e7e00a9f22f928b4064247d31ffb373fcbea4cd4774d60d138d",
+  "transcriptSha256": "a8e6cb03403a7c3241a964e4a2452bec0dde3136a02982124e2492a1af82db39",
+  "catalogueSha256": "46070ea8a8040f31bbc95bf06de000c477def4842cf76ddd5e0649bacbd7208a",
+  "completedSteps": 8,
+  "exitCode": 0,
+  "scope": "Actual native catalogue query only. This capture helper does not verify owner edits, media import, recipe export, UI parity or Runner execution."
+}

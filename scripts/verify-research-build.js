@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { aboutFiles, renderReference } from "./render-cli-reference.mjs";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const target = process.argv[2];
@@ -77,6 +78,7 @@ const rules = {
   pages: {
     root: resolve(repositoryRoot, "dist-pages"),
     allowed: (path) => path === "index.html"
+      || aboutFiles.includes(path)
       || path === "research.css"
       || path === "experiment-template.json"
       || path === "src/math.js"
@@ -117,6 +119,20 @@ if (unexpected.length > 0) {
   throw new Error(`${target} build contains non-Research files: ${unexpected.join(", ")}`);
 }
 if (!files.includes("index.html")) throw new Error(`${target} build is missing index.html.`);
+if (target === "pages") {
+  for (const path of aboutFiles) if (!files.includes(path)) throw new Error(`Pages is missing ${path}.`);
+  const expected = await renderReference(repositoryRoot);
+  if (await readFile(resolve(rule.root, "about/index.html"), "utf8") !== expected.html) throw new Error("Built CLI reference differs from its source catalogue.");
+  const copies = [
+    ["about/about.css", "site/about/about.css"],
+    ["about/catalogue.json", "docs/cli/planner-authoring-catalogue.json"],
+    ["about/command-api.txt", "docs/planner-authoring-command-api-v1.md"],
+    ["about/consequential-commands.txt", "docs/planner-cli-consequential-commands-v1.md"],
+  ];
+  for (const [built, source] of copies) {
+    if (!(await readFile(resolve(rule.root, built))).equals(await readFile(resolve(repositoryRoot, source)))) throw new Error(`Built ${built} differs from its source.`);
+  }
+}
 await verifyRelativeModuleClosure(rule.root, files);
 await verifySelectedLogo(rule.root, files, target);
 for (const theme of ["light", "dark"]) {

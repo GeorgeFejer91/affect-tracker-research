@@ -1,6 +1,7 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildCliReference } from "./render-cli-reference.mjs";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const sourceRoot = resolve(repositoryRoot, "site");
@@ -50,3 +51,5 @@ await Promise.all([
   "native-package-protocol.js",
   "native-run-media.js",
 ].map((name) => rm(resolve(outputRoot, "src", "research", name), { force: true })));
+
+await buildCliReference(repositoryRoot, outputRoot);
