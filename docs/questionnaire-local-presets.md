@@ -217,3 +217,39 @@ Use `pnpm planner:cli:build` (optionally `--no-default-features` for a clearly
 unqualified authoring check); this builds/verifies desktop assets and enables
 the embedded protocol explicitly. Prior unrelated native receipts must be audited
 against their own build commands, not presumed valid or invalid from these failures.
+
+## Verified embedded native readback
+
+The embedded candidate at `e439018b81a5eea26b72551d651eadc7669471cd` passed two
+independent native CLI sessions. Executable SHA-256:
+`eb8f896d08bbd76f723437a05d76b976ac3a7aec99b2fb186cf62c9f43517b6b`.
+Each freshly read the installed source through actual Rust IPC and the production
+CSV importer, reported the exact preset `ready:true/state:installed`, rejected a
+write to the derived metadata and preserved revision0, then drained EOF and
+exited0. Each owned a distinct WebView browser PID and a fresh D: profile under
+its exact invocation directory, not the shared GUI profile.
+
+Private evidence directories under `local-preset-main-20260912/`:
+
+- `native-readback-e439018-corrected-profile-check/`: PID46772, transcript
+  `4472075d3dffe48ee1af87778fc1023bda966e5c32ceed3a8fb9a0ef5266dbc5`.
+- `native-readback-e439018-second-session/`: PID11692, transcript
+  `4191f1550bd277f0627d337c1ef18ded59f4f64de20853b1694952914adb0ea4`;
+  includes the actual 156-setting/32-operation `catalogue.json` for reference
+  generation. Each session has its driver and detailed readback receipts.
+- `installation-location-review.json`: requested versus OS-resolved local
+  namespace, exact source identity and unpackaged-app visibility limitation.
+
+The first embedded proof stopped before commands because the harness expected
+`webview` as the browser leaf; observed WebView2 uses its `webview/EBWebView`
+child. The corrected check still asserts the exact owned parent/profile path;
+the failed `native-readback-e439018/` receipt is preserved. Application bytes did
+not change for this harness correction.
+
+The final checks add 12 adapter/driver and39 architecture/build/native-bridge
+passes to the earlier914-test JavaScript gate and native9+explicit1 installation
+checks. Desktop11-file closure and embedded native build pass; existing10 native
+dead-code warnings remain. No German item text is in the public repository/build.
+These receipts do not establish native GUI file-picker installation, study-copy
+persistence/reopening, unpackaged-app visibility, master export or Runner use.
+The user's existing app has not been restarted or foregrounded.

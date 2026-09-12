@@ -26,9 +26,11 @@ const receipt = await runPlannerCli({ executable, outputDirectory, steps: [
     const profile = /--user-data-dir=(?:"([^"]+)"|(\S+))/u.exec(browser.CommandLine);
     assert.ok(profile, "The owned browser did not declare its profile.");
     const directory = resolve(profile[1] ?? profile[2]);
-    assert.equal(basename(directory), "webview");
-    assert.match(basename(dirname(directory)), /^affect-planner-cli-[a-f0-9-]{36}$/u);
-    assert.equal(dirname(dirname(directory)).toLowerCase(), resolve(tmpdir()).toLowerCase());
+    // WebView2 creates its EBWebView store beneath the builder's data directory.
+    assert.equal(basename(directory), "EBWebView");
+    assert.equal(basename(dirname(directory)), "webview");
+    assert.match(basename(dirname(dirname(directory))), /^affect-planner-cli-[a-f0-9-]{36}$/u);
+    assert.equal(dirname(dirname(dirname(directory))).toLowerCase(), resolve(tmpdir()).toLowerCase());
     profileReview = { processId: ready.processId, browserProcessId: browser.ProcessId,
       browserParentProcessId: browser.ParentProcessId, directory,
       ownedFreshProfile: true, sharedGuiProfile: false };
@@ -46,6 +48,7 @@ const responses = transcript.filter(entry => entry.direction === "response").map
 assert.equal(responses.length, 4);
 const descriptor = responses[0].result.settings.find(setting => setting.id === "P2.localPresets");
 assert.equal(descriptor.writable, false);
+await writeFile(join(outputDirectory, "catalogue.json"), `${JSON.stringify(responses[0].result, null, 2)}\n`, { flag: "wx" });
 const expected = RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS[0];
 const local = responses[1].result.value.find(asset => asset.id === expected.id);
 assert.ok(local, "The native fixed-source preset was not projected.");
