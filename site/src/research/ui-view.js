@@ -122,7 +122,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-anchor-modes" role="group" aria-label="Color anchor placement">
           <label class="radio-field"><input type="radio" name="previewColorAnchors" value="axes" checked><span>Axes</span></label>
           <label class="radio-field"><input type="radio" name="previewColorAnchors" value="corners"><span>Corners</span></label>
-          <span class="field-help">Placement is preview-only.</span>
+          <span id="preview-color-placement-help" class="field-help">Color anchor placement is saved.</span>
         </div>
         <div class="preview-affect-map-layout">
           <button type="button" class="preview-color-anchor anchor-up" data-color-anchor="up" aria-haspopup="dialog" aria-controls="preview-color-dialog">

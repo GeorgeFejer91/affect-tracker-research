@@ -1062,6 +1062,14 @@ function bindResearchInteractions(root, { surface }) {
         : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
     const legacy = feedbackSettingsVersion === 1;
+    const placementHelp = query("#preview-color-placement-help");
+    if (placementHelp) placementHelp.textContent = legacy
+      ? "Legacy packages retain axis colors. Convert to configure saved anchor placement."
+      : "Color anchor placement is saved.";
+    const labelHelp = query("#preview-color-label-help");
+    if (labelHelp) labelHelp.textContent = legacy
+      ? "Legacy packages do not store display labels. Convert to configure saved labels."
+      : "Applied display labels are saved for axis and corner placement. Valence/arousal identity stays unchanged.";
     const versionStatus = query("#feedback-settings-version");
     if (versionStatus) versionStatus.textContent = legacy
       ? "Legacy feedback loaded unchanged. New response and appearance choices require explicit conversion."
