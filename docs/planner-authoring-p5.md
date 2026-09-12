@@ -4,7 +4,7 @@ CLI-P5, Backend Verification, base `460f516`. This is an adapter over the comple
 Planner feedback editor. It adds no recipe schema, draft store, input acquisition,
 acceptance, file writer or Runner behavior. P7 still owns acceptance and export.
 
-`createPlannerAuthoringP5({ readDraft, prepareCommit })` from
+`createPlannerAuthoringP5({ readDraft, readDigitalStep, prepareCommit })` from
 `site/src/research/planner-authoring-p5.js` returns the frozen shared owner
 interface: `id`, `settings`, `operations`, `read`, `stage`, `validate`.
 The exported `P5_AUTHORING_SETTINGS` is the closed catalogue; its product IDs
@@ -12,7 +12,7 @@ are not an arbitrary JSON-pointer or DOM-selection interface.
 
 ## Required integration hooks
 
-Main owns the following two hooks inside the existing `app.js` P5 closure.
+Main owns the following three hooks inside the existing `app.js` P5 closure.
 Do not substitute the strict contribution getter or asynchronous public restore.
 
 ```js
@@ -20,6 +20,10 @@ const p5 = createPlannerAuthoringP5({
   readDraft() {
     // Detached complete V2-shaped raw owner draft, or exact legacy triple.
     // Use current controls/models, including invalid numeric text as strings.
+  },
+  readDigitalStep() {
+    // Pure current #input-step-size value under resetBindingsToPreset semantics.
+    // Retained while analog input makes the saved step null. No adapter default.
   },
   async prepareCommit(draft, { contribution, issues, isCurrent, signal }) {
     // Prelocate all controls and check owner lifetime, with no mutation.
@@ -30,6 +34,9 @@ const p5 = createPlannerAuthoringP5({
       commit() {
         // Synchronous, prevalidated, nonthrowing projection of all draft fields.
         // No native work, synthetic input/change, acceptance, reset or refresh.
+      },
+      afterCommit() {
+        // Optional synchronous notifications/render, after ALL owners commit.
       },
     };
   },
@@ -47,9 +54,20 @@ fractional transparency rather than its percent display. Preserve the existing
 with the raw binding; expose a mismatched/invalid preset in that draft so its
 validation issue cannot be hidden by the last valid binding.
 
+`readDigitalStep()` returns the existing editor-owned numeric value that
+`resetBindingsToPreset()` would use for a digital preset. It is still available
+in the disabled field while the selected analog binding has `stepSize: null`.
+Use that existing operation's normalization, not a new CLI default. The adapter
+checks it is finite and 0.001–1 when selecting digital input, binds it in the
+staged freshness guard, and never stores it separately. Preset transitions
+therefore preserve the UI's historical value. On nondigital projection leave
+the disabled numeric field intact rather than replacing it with null.
+
 Do not copy excluded inspection/capture/dialog fields into the draft. For
 legacy generation return exactly `{ input, visual, mappings }`; V2-only
-catalogue fields then read as null, with no implicit conversion.
+catalogue fields then read as null, with no implicit conversion. This CLI edits
+V2 only; legacy read and explicit initialization are supported, but there is no
+separate legacy editing mode. Legacy active-field edits reject before conversion.
 
 `prepareCommit` receives a detached candidate after the entire ordered edit
 list. Valid candidates use the unchanged owner validator's canonicalization.
@@ -65,7 +83,9 @@ The session calls every staged `isCurrent()` before any commit. P5's guard
 includes the original raw-draft fingerprint, caller cancellation/lifetime and
 the optional prepared owner guard. The session then owns the publication lock,
 file invalidation and revision. Commit projects values only, with no await or
-new validation. Shared `onCommit` performs one post-publication refresh; input
+new validation. The optional prepared `afterCommit` is forwarded as a one-use
+post-publication hook; the session runs it only after all owners have committed.
+Its errors are applied/incomplete, never rejected-as-no-change. Input
 controller/simulator updates must use valid values and preserve pending state.
 All saved values must be installed before callbacks observe them. No transient
 reset, grey-palette Reset, RNG action or color-dialog interaction is an edit.
@@ -78,7 +98,7 @@ The external IDs are `P5.` followed by the saved field in the first column.
 | Saved field | Existing control / model | Projection and raw-read notes |
 | --- | --- | --- |
 | Schema/version | `feedbackSettingsVersion` | V2 schema/version constants; legacy triple remains generation 1. Catalogue generation/contribution are read-only |
-| `input` | `inputBinding`; `#input-preset`; `#input-step-size` for digital input | Clone the complete typed binding; map preset via `UI_PRESET_IDS`; step is null for absolute/analog and compatibility-only in V2 |
+| `input` | `inputBinding`; `#input-preset`; `#input-step-size` for digital input | Clone the complete typed binding; map preset via `UI_PRESET_IDS`; step is null for absolute/analog and read-only compatibility in V2. Whole-binding edits cannot change that step |
 | `visual.gridEnabled`, `.flubberEnabled` | `#visual-grid-visible`, `#visual-flubber-visible` | Boolean; retained inactive V2 compatibility values |
 | `visual.sizePercent` | `#visual-size` | Legacy percentage; do not change V2's fixed inspection scale |
 | `visual.overlayPosition.x`, `.y`, `.lockPosition` | `#visual-position-x`, `#visual-position-y`, `#visual-lock-position` | Legacy values; P4/P6 retain current experiment placement authority |
@@ -106,15 +126,21 @@ existing `FLUBBER_MAPPING_SPECS`; reversal and drivers retain their meanings.
 
 ## Operations and validation
 
-`inputPreset` takes exactly `{ preset, stepSize }`. All nine existing presets
-are supported; digital step must be explicit 0.001–1, and other presets require
-null. It calls the existing input owner initializer, not live device capture.
+`inputPreset` takes exactly **`{ preset }`**. All nine existing presets
+are supported, matching the
+existing preset picker. Digital step comes from `readDigitalStep`, never command
+arguments; other kinds retain the contract's null. Extra `stepSize` rejects.
+It calls the existing input owner initializer, not live device capture.
 `initializeV2` takes exactly `{}` and is available only on a valid legacy draft.
 It explicitly materializes the existing documented authoring defaults; later
 edits in the same batch can replace them. Already-V2 initialization rejects.
 
-Whole `P5.input` edits use exact InputBindingV1 validation. Its nullable legacy
-step is also separately writable/classified for compatibility. All other saved
+Whole `P5.input` edits use exact InputBindingV1 validation and cannot bypass
+the read-only digital step. The seven inactive compatibility entries (step,
+legacy visibility, scale, centre and lock) are **read-only**, matching disabled
+V2 UI. They remain readable and survive unchanged open/export; this follows the
+Chat Orchestrator's explicit parity decision. It does not add another geometry
+or response editor. All active saved alternatives remain writable. Other saved
 leaf fields have typed closed descriptors. Malformed/type/range/enum/color/label
 edits reject before preparation; cross-field incomplete combinations may commit
 with issues. Readback never truncates accepted labels or invents a contribution.
@@ -124,4 +150,7 @@ inactive renderer/grid/halo/response alternatives, all presets/custom tokens,
 canonical bytes/envelope reuse, explicit legacy conversion, invalid raw reads,
 stale/canceled/dependency-drift staging and one-use synchronous projection. These
 are owner/software checks; real shared editor/native CLI/file verification remains
-integration-owned. No changed DOM/layout or native implementation is claimed here.
+integration-owned. The new goal69 explicitly allocates actual Runner correspondence
+to the Runner owner; those checks are now required for that wider goal. They are
+not claimed by this adapter's software tests. No changed DOM/layout or native
+implementation is claimed here.

@@ -252,6 +252,27 @@
   feedback contract/envelope tests pass. Evidence will cover all writable groups,
   inactive alternatives, invalid raw reads, ordered nonmutating staging, stale/
   cancellation/dependency drift and unchanged canonical contribution semantics.
+- Ready owner implementation: `88a5df2` plus the current compatibility/session
+  follow-up. Shared dependency `2310efc` is collected separately, with no edits
+  to its files. Catalogue: **70** entries, **61 writable**, **7 compatibility
+  read-only**, **2 derived read-only**; two closed operations. All active saved
+  alternatives remain writable. Every writable entry passes both direct owner
+  and actual shared-session set/readback, with canonical contribution equality.
+- Root's E2E-UI decision keeps dormant geometry/visibility/step values read-only,
+  matching V2 UI. Whole input/preset commands cannot bypass that restriction.
+  `inputPreset` takes only `{preset}` and reuses the pure `readDigitalStep` hook
+  for the existing editor's retained value, including analog-to-digital changes.
+  Legacy CLI is unchanged read plus explicit V2 initialization, not a separate
+  legacy editing mode. No dormant UI controls are re-enabled.
+- Final hooks: `createPlannerAuthoringP5({readDraft,readDigitalStep,prepareCommit})`;
+  staged `isCurrent/commit/afterCommit` separates atomic installation from later
+  owner rendering/notifications. Exact field/operation-to-control/model-to-JSON
+  mapping and projection rules are in `docs/planner-authoring-p5.md`.
+- **42 focused checks pass**: 16 P5 adapter, 13 shared foundation and 13 existing
+  P5 contract/envelope checks. Prepared owner hooks are test doubles here; actual
+  combined UI parity/native CLI/file execution remains Main's shared seam. The
+  user's new goal69 activates Runner correspondence under its own owner; this
+  adapter receipt does not claim that wider goal complete or defer its allocation.
 
 ### 20260912-p3-native-catalogue-export-command
 

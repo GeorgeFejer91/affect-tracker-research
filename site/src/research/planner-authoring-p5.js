@@ -2,6 +2,7 @@ import { canonicalJson } from "./canonical.js";
 import { createInputBindingPreset, INPUT_PRESETS, INPUT_PRESET_IDS, validateInputBindingV1 } from "./contracts.js";
 import { FLUBBER_MAPPING_SPECS, MAPPING_DRIVERS } from "./mappings.js";
 import { createFeedbackAuthoringSettingsV2, validateFeedbackContribution } from "./feedback-settings.js";
+import { PlannerCommandError } from "./planner-authoring-contract.js";
 
 function freeze(value) {
   if (value && typeof value === "object") {
@@ -40,19 +41,25 @@ function exact(value, keys, label) {
 
 const definition = (path, type, label, extra = {}) => ({ id: `P5.${path}`, type,
   classification: "authored", writable: true, label, ...extra });
-const number = (path, label, minimum, maximum, extra = {}) => definition(path, "number", label, { minimum, maximum, ...extra });
+const number = (path, label, minimum, maximum, extra = {}) => definition(path, "number", label, {
+  minimum, maximum,
+  unit: path.endsWith("Ms") ? "ms" : path.endsWith("Percent") ? "%"
+    : /\.(outlineThickness|lineThickness)$/u.test(path) ? "CSS px" : path.endsWith("cursorSize") ? "viewBox radius"
+      : path.startsWith("response.grid.") ? "count" : path.startsWith("mappings.oscillationFrequency.") ? "Hz" : "unitless",
+  ...extra });
 const boolean = (path, label, extra) => definition(path, "boolean", label, extra);
 const choice = (path, label, values) => definition(path, "string", label, { enum: values });
-const compatibility = { classification: "compatibility", description: "Retained legacy value; V2 response and P4/P6 geometry remain authoritative." };
+const compatibility = { classification: "compatibility", writable: false,
+  description: "Retained read-only legacy value; V2 response and P4/P6 geometry remain authoritative." };
 
 export const P5_AUTHORING_SETTINGS = freeze([
   definition("generation", "integer", "Feedback generation", { classification: "derived", writable: false }),
   definition("contribution", "json", "Validated feedback contribution", { classification: "derived", writable: false,
     description: "Complete canonical P5 contribution, or null while the current owner draft is invalid." }),
   definition("input", "json", "Controller bindings", {
-    description: "Exact InputBindingV1: schema, version, preset, kind, stepSize, directions, axes. Digital directions are unique keyboard(code), mouseButton(button), wheel(direction), or gamepadButton(button) tokens; axes=null. Absolute/analog presets use exact pointerAxis(axis,invert) or gamepadAxis(index,invert) pairs, with stepSize/directions=null. Custom capture is digital only. No live capture or input-test state." }),
+    description: "Exact InputBindingV1: schema, version, preset, kind, stepSize, directions, axes. Digital directions are unique keyboard(code), mouseButton(button), wheel(direction), or gamepadButton(button) tokens; axes=null. Absolute/analog presets use exact pointerAxis(axis,invert) or gamepadAxis(index,invert) pairs, with stepSize/directions=null. Digital edits must preserve the existing editor-owned step. Custom capture is digital only. No live capture or input-test state." }),
   definition("input.stepSize", "json", "Legacy digital step", { ...compatibility,
-    description: "Finite number 0.001–1 for digital input; null for absolute/analog input. Inactive compatibility value in V2." }),
+    description: "Read-only finite number 0.001–1 for digital input; null for absolute/analog input. Preset transitions reuse the existing editor's retained step." }),
   boolean("visual.gridEnabled", "Legacy Grid visibility", compatibility),
   boolean("visual.flubberEnabled", "Legacy Flubber visibility", compatibility),
   number("visual.sizePercent", "Legacy size (%)", 5, 100, compatibility),
@@ -94,9 +101,7 @@ export const P5_AUTHORING_SETTINGS = freeze([
 
 export const P5_AUTHORING_OPERATIONS = freeze([
   { id: "inputPreset", label: "Select controller preset", arguments: { type: "object", additionalProperties: false,
-    required: ["preset", "stepSize"], properties: { preset: { type: "string", enum: [...INPUT_PRESET_IDS] },
-      stepSize: { anyOf: [{ type: "number", minimum: 0.001, maximum: 1 }, { type: "null" }],
-        description: "Explicit digital compatibility step 0.001–1, or null for absolute/analog presets." } } } },
+    required: ["preset"], properties: { preset: { type: "string", enum: [...INPUT_PRESET_IDS] } } } },
   { id: "initializeV2", label: "Explicitly initialize current feedback settings from legacy", arguments: {
     type: "object", additionalProperties: false, properties: {} } },
 ]);
@@ -132,7 +137,7 @@ function inspect(draft) {
   const issues = [];
   const issue = (field, message) => issues.push({ owner: "P5", field, code: "invalid_feedback", message });
   const values = { "P5.generation": isV2(draft) ? draft.version ?? null : 1 };
-  for (const setting of P5_AUTHORING_SETTINGS.filter(entry => entry.writable)) {
+  for (const setting of P5_AUTHORING_SETTINGS.filter(entry => entry.classification !== "derived")) {
     if (!isV2(draft) && v2Only(setting)) { values[setting.id] = null; continue; }
     const value = at(draft, pathOf(setting));
     values[setting.id] = value === undefined ? null : detached(value);
@@ -157,9 +162,8 @@ function inspect(draft) {
 
 function current(context) {
   if (context.signal?.aborted || !context.isCurrent()) {
-    const error = new Error("P5 staging was canceled or superseded.");
-    error.code = context.signal?.aborted ? "canceled" : "stale_revision";
-    throw error;
+    throw new PlannerCommandError(context.signal?.aborted ? "canceled" : "stale_revision",
+      "P5 staging was canceled or superseded.", "P5.contribution");
   }
 }
 
@@ -167,8 +171,8 @@ function current(context) {
  * prepareCommit must not mutate; its commit is synchronous and cannot fail.
  * The shared session must check its revision/lifetime immediately before commit.
  */
-export function createPlannerAuthoringP5({ readDraft, prepareCommit }) {
-  if (typeof readDraft !== "function" || typeof prepareCommit !== "function") throw new TypeError("P5 owner draft hooks are required.");
+export function createPlannerAuthoringP5({ readDraft, readDigitalStep, prepareCommit }) {
+  if ([readDraft, readDigitalStep, prepareCommit].some(hook => typeof hook !== "function")) throw new TypeError("P5 owner draft hooks are required.");
   const read = () => inspect(detached(readDraft()));
   return Object.freeze({
     id: "P5", settings: P5_AUTHORING_SETTINGS, operations: P5_AUTHORING_OPERATIONS, read,
@@ -179,14 +183,22 @@ export function createPlannerAuthoringP5({ readDraft, prepareCommit }) {
       if (!Array.isArray(edits) || edits.length < 1 || edits.length > 256) throw new TypeError("P5 staging requires 1–256 ordered edits.");
       let draft = detached(readDraft());
       const initial = canonicalJson(draft);
+      const digitalStep = detached(readDigitalStep()), initialStep = canonicalJson(digitalStep);
       for (const supplied of edits) {
         const edit = detached(supplied);
         if (edit.kind === "set") {
           exact(edit, ["kind", "field", "value"], "P5 field edit");
           const setting = registered.get(edit.field);
-          if (!setting?.writable) throw new TypeError("P5 setting is unknown or read-only.");
-          if (!isV2(draft) && v2Only(setting)) throw new TypeError("Explicitly initialize V2 before editing current feedback settings.");
-          checkValue(setting, edit.value);
+          if (!setting?.writable) throw new PlannerCommandError(setting ? "read_only" : "unknown_setting", "P5 setting is unknown or read-only.", edit.field);
+          if (!isV2(draft)) throw new PlannerCommandError("legacy_feedback",
+            "Explicitly initialize V2 before editing current feedback settings.", edit.field);
+          try {
+            checkValue(setting, edit.value);
+            if (setting.id === "P5.input" && edit.value.kind === "digital" && edit.value.stepSize !== digitalStep) {
+              throw new PlannerCommandError("read_only", "Controller edits must preserve the existing read-only digital step.", "P5.input.stepSize");
+            }
+          } catch (error) { if (error instanceof PlannerCommandError) throw error;
+            throw new PlannerCommandError("invalid_value", error.message, edit.field); }
           const path = pathOf(setting), target = at(draft, path.slice(0, -1));
           if (!target || !Object.hasOwn(target, path.at(-1))) throw new TypeError("The current P5 owner draft is missing a required field.");
           target[path.at(-1)] = setting.id === "P5.input" ? detached(validateInputBindingV1(edit.value)) : edit.value;
@@ -194,12 +206,14 @@ export function createPlannerAuthoringP5({ readDraft, prepareCommit }) {
           exact(edit, ["kind", "owner", "operation", "arguments"], "P5 operation");
           if (edit.owner !== "P5") throw new TypeError("Operation belongs to another owner.");
           if (edit.operation === "inputPreset") {
-            exact(edit.arguments, ["preset", "stepSize"], "Input preset arguments");
-            const { preset, stepSize } = edit.arguments;
-            if (!INPUT_PRESET_IDS.includes(preset) || (INPUT_PRESETS[preset].kind !== "digital" && stepSize !== null)) {
-              throw new TypeError("Select a supported preset with an explicit matching step or null.");
+            if (!isV2(draft)) throw new PlannerCommandError("legacy_feedback", "Explicitly initialize V2 before editing controller settings.", "P5.input");
+            exact(edit.arguments, ["preset"], "Input preset arguments");
+            const { preset } = edit.arguments;
+            if (!INPUT_PRESET_IDS.includes(preset)) throw new TypeError("Select a supported input preset.");
+            if (INPUT_PRESETS[preset].kind === "digital" && (!Number.isFinite(digitalStep) || digitalStep < 0.001 || digitalStep > 1)) {
+              throw new PlannerCommandError("invalid_value", "The editor's retained digital step is invalid.", "P5.input.stepSize");
             }
-            draft.input = detached(createInputBindingPreset(preset, stepSize));
+            draft.input = detached(createInputBindingPreset(preset, digitalStep));
           } else if (edit.operation === "initializeV2") {
             exact(edit.arguments, [], "V2 initialization arguments");
             if (isV2(draft)) throw new TypeError("Current feedback settings are already initialized.");
@@ -214,18 +228,26 @@ export function createPlannerAuthoringP5({ readDraft, prepareCommit }) {
       const prepared = await prepareCommit(draft, { contribution: values["P5.contribution"],
         issues: freeze(issues), isCurrent: context.isCurrent, signal: context.signal });
       current(context);
-      if (canonicalJson(detached(readDraft())) !== initial) throw new Error("P5 owner changed during staging.");
+      if (canonicalJson(detached(readDraft())) !== initial || canonicalJson(detached(readDigitalStep())) !== initialStep) {
+        throw new PlannerCommandError("stale_revision", "P5 owner changed during staging.", "P5.contribution");
+      }
       if (typeof prepared?.commit !== "function" || prepared.commit.constructor.name === "AsyncFunction") {
         throw new TypeError("P5 owner must prepare a synchronous commit.");
       }
-      let committed = false;
+      if (prepared.afterCommit !== undefined && (typeof prepared.afterCommit !== "function"
+        || prepared.afterCommit.constructor.name === "AsyncFunction")) {
+        throw new TypeError("P5 owner post-publication hook must be synchronous.");
+      }
+      let committed = false, published = false;
       return Object.freeze({
         isCurrent() {
           try { return !committed && !context.signal?.aborted && context.isCurrent()
-            && canonicalJson(detached(readDraft())) === initial && (prepared.isCurrent?.() ?? true); }
+            && canonicalJson(detached(readDraft())) === initial && canonicalJson(detached(readDigitalStep())) === initialStep
+            && (prepared.isCurrent?.() ?? true); }
           catch { return false; }
         },
         commit() { if (!committed) { committed = true; prepared.commit(); } },
+        afterCommit() { if (committed && !published) { published = true; prepared.afterCommit?.(); } },
       });
     },
   });
