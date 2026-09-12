@@ -20,7 +20,8 @@ it does not require an authoring sidecar or write a file.
 | `getStimulusOrderSnapshot()` | Exactly `{revision, enabled, pending, contribution, dependencyRevisions}`; dependencies contain the actual P1 **snapshot** revision. |
 | `setStimulusOrderCatalogue(P1snapshot)` | Async. Accepts the registered **workspace composite** snapshot. Immediately withdraws P3 preparation on a changed, pending, unavailable or invalid producer; validates/projects its content before exposing catalogue timing. |
 | `validateStimulusVariantContribution(contribution, {dependencies})` | Async. `dependencies.P1` is the exact five-key current P1 snapshot. Returns `true` or throws after domain, identity and duration validation. Use as P7's owner validator. |
-| `restoreStimulusVariantContribution(contribution, {isCurrent, dependencies})` | Async. Validates and projects `dependencies.P1`, validates the full P3 payload, and checks the caller's `isCurrent()` plus the editor generation before one atomic commit. Returns the final five-key snapshot. P7 must await it. |
+| `restoreStimulusVariantContribution(contribution, {isCurrent, dependencies})` | Async ready-media path. Validates and projects `dependencies.P1`, validates the full P3 payload, and checks the caller's `isCurrent()` plus editor/restore generations before one atomic commit. Returns the final five-key snapshot. P7 must await it. |
+| `restoreStimulusVariantContent(contribution, {savedWorkspaceContribution, dependencies, isCurrent})` | Async content-only path. Validates the saved P1 workspace payload and P3 declarations, then restores the editable table/dictionary while publishing `pending:true`, `contribution:null` and the actual current `dependencies.P1.revision`. No media readiness, filesystem permission, sidecar write or acceptance is inferred from saved content. |
 | `prepareStimulusVariantContribution({isCurrent?})` | Async. Validates the current table and bound P1 durations, checks generation and optional caller guard, then returns the final five-key prepared P3 snapshot. No sidecar or storage write. Invalid, stale or cancelled preparation rejects and must not advance shared confirmation. |
 | `confirmStimulusOrder()` | Explicit legacy workspace compatibility: saves the named-ISI authoring document through the existing storage receipt boundary. The final master flow uses preparation followed by P7 acceptance instead. |
 
@@ -41,6 +42,18 @@ validator, prepares the current table before registry acceptance, restores P1
 before P3, awaits restoration, then accepts the returned current snapshot.
 Prepared domain data, P7 registry acceptance and acknowledged final persistence
 are separate states. Neither owner reads DOM cells to construct another's payload.
+
+When P1 restoration stages media declarations as unresolved, P7 passes the
+strictly parsed saved P1 workspace payload to the content-only hook and the
+actual pending P1 snapshot in `dependencies.P1`. P3 uses the pure
+`projectSavedVariantCatalogue` declaration projection, with no fabricated ready
+snapshot. Users can view and edit the table before media rebind; preparation
+remains blocked. Later verified P1 snapshots preserve that draft and require
+explicit preparation/acceptance. Changed media identities leave old references
+unresolved rather than substituting videos. Pending producer changes retain
+their actual P1 revision in P3's dependency list. All three restore paths share
+a latest-request guard; newer reopen, edits, dependency changes and teardown
+invalidate a delayed restoration before it can mutate the editor.
 
 ## Explicit P1 compatibility projection
 

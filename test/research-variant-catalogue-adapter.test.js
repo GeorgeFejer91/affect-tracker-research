@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
-import { projectLegacyVariantCatalogue, projectVariantCatalogue, validateStimulusVariantContribution } from "../site/src/research/variant-catalogue-adapter.js";
+import { projectLegacyVariantCatalogue, projectSavedVariantCatalogue, projectVariantCatalogue, validateStimulusVariantContribution } from "../site/src/research/variant-catalogue-adapter.js";
 import { addIsiDurations, compileVariantTimeline, createVariantDocument, createVariantDraft, pasteVariantTable } from "../site/src/research/variant-design.js";
 import { createPlannedMarkerProfile } from "../site/src/research/planned-marker-contract.js";
 import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
@@ -30,6 +30,9 @@ const makeEditor = () => createStimulusOrderEditor({ root: { querySelector: () =
 test("the same accepted P1 fixture resolves stored references, timelines and marker codebooks", async () => {
   assert.deepEqual(legacySource, bindingFixture.sourceSnapshot);
   assert.deepEqual((await projectLegacyVariantCatalogue(legacySource)).library, projection.library);
+  const declarations = await projectSavedVariantCatalogue(source.contribution);
+  assert.deepEqual(Object.keys(declarations).sort(), ["library", "videos"], "saved declarations cannot manufacture a ready snapshot or revision");
+  assert.deepEqual(declarations.library, projection.library);
   assert.deepEqual(document, bindingFixture.document);
   assert.equal(projection.revision, 11, "bind the owner snapshot revision, not its separate domain revision");
   for (const video of projection.videos) {
@@ -96,7 +99,7 @@ test("P1 withdrawal, reused revision and racing projections cannot retain or res
   await editor.setCatalogueSource({ ...source, revision: 13, pending: true, contribution: null });
   await update;
   assert.equal(editor.getSnapshot().contribution, null);
-  assert.deepEqual(editor.getSnapshot().dependencyRevisions, []);
+  assert.deepEqual(editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 13 }]);
   await assert.rejects(editor.restoreContribution(document.contribution, { dependencies: { P1: source } }), /stale/);
   const reopening = editor.restoreContribution(document.contribution, { dependencies: { P1: { ...source, revision: 14 } } });
   editor.reset();

@@ -5464,6 +5464,7 @@ function bindResearchInteractions(root, { surface }) {
     confirmStimulusOrder: () => stimulusOrderEditor.confirm(),
     restoreStimulusOrder: (document, receipt) => stimulusOrderEditor.restore(document, receipt),
     restoreStimulusVariantContribution: (contribution, receipt) => stimulusOrderEditor.restoreContribution(contribution, receipt),
+    restoreStimulusVariantContent: (contribution, options) => stimulusOrderEditor.restoreContent(contribution, options),
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
     get experimentPackage() { return experimentPackageDocument?.package ?? null; },

@@ -1049,6 +1049,48 @@ file; follow the integration-owner collection procedure in the workflow.
   shared mounts with P5/P7. Physical calibration, interactive accessibility,
   native/Runner, real-media composition and publication gates remain unverified.
   Canonical checkout was not modified; writers stop after the ready handoff.
+### 20260912-p3-content-only-reopen
+
+- Concrete P7 incompatibility after clean `ffe7e62`: P1 stages saved workspace
+  declarations as pending until media rebind, so P3's ready-media restore cannot
+  yet display the authored version table. This is an in-scope P3-08 continuation.
+- P3 owns an explicit content-only restore: validate saved workspace content
+  through P1, validate P3 against those declarations, render the editable draft,
+  and remain pending on the actual P1 snapshot revision. No synthetic ready
+  snapshot, media authorization or sidecar write. Live media rebind remains P1.
+- Evidence: table/dictionary restoration before media, edits surviving rebind,
+  blocked preparation while pending, invalid/stale restore without mutation,
+  and mismatched newly verified media without silent reference substitution.
+  Exact method proposed to P7/integration; no unrelated UI or ingestion changes.
+
+#### Content-only reopen ready — 2026-09-12
+
+- P7 and integration accepted the exact async method
+  `restoreStimulusVariantContent(payload, {savedWorkspaceContribution, dependencies, isCurrent})`.
+  P1's saved-workspace validator feeds a pure declaration projection with only
+  library/video data, no fabricated snapshot or revision. The editable table and
+  dictionary render with null prepared contribution, pending state and the
+  actual current P1 revision. Verified live media preserves user edits and
+  still requires explicit preparation followed by P7 acceptance.
+- All three P3 restore methods now share a latest-request operation guard.
+  New restore requests also fence prior catalogue projection, preparation and
+  sidecar-save results. User edits, P1 withdrawal, teardown and caller
+  cancellation reject stale completion before mutation; stale error reporting
+  does not overwrite a newer restore's status.
+- Focused fixture uses `variant-workspace-binding-v1.json` as saved content,
+  actual unresolved P1 revision 41, later pending 42 and verified 43. Tests prove
+  visible saved references/ISI dictionary, editing before rebind, zero writes,
+  exact later preparation, no substitution of changed media bytes, invalid
+  content preservation, newer-restore precedence and async cancellation.
+- Dependency `61c1943` collects the unchanged pure P1 video module/test from
+  `fae3ee19ab3732fd41c0b4241fa4111c91bfcf53`. The subsequent P1 `e4562d9`
+  changes no consumed study/workspace/video module; its app intake and test
+  follow-up remain for integration to collect with P1. No P1 app hunks copied.
+- Final repair evidence: **102/102** targeted P3/P1/UI/modularity checks,
+  Pages **180** files and desktop **8** files pass; existing chunk warning
+  remains. No serialized P3/Rust contract change, media authorization, new
+  import path or native/physical/full combined UI qualification claim.
+
 ### 20260912-p3-catalogue-consumer-continuation
 
 - Owner **S3**, P3-03 through P3-08, Backend Verification continuation explicitly
