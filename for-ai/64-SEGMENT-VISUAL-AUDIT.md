@@ -27,6 +27,31 @@ not evidence of canonical integration. “Rendered” means the real bootstrappe
 application was captured and a person or visual agent inspected the image;
 source searches and zero-overflow assertions alone do not satisfy that term.
 
+## Review snapshot — 2026-09-12
+
+All seven owners have completed a bounded visual cleanup handoff. Actual
+rendered owner versions were inspected at desktop and constrained widths;
+the evidence and remaining limits are recorded below. Canonical source is
+still clean `ba2110f`, and the isolated integration candidate is still clean
+`c7ba103`. Neither is the final combined seven-segment application. The open
+checkboxes retain that distinction; they do not mean the owner fixes are absent.
+
+| Segment | Cleanup verified in the owner handoff | Ready checkpoint |
+| --- | --- | --- |
+| P1 Workspace | One video import/catalogue home; shorter directory copy; readable path/action rows and actual ready/error states. | `9d4b663` plus separate relocation `3df60fa` |
+| P2 Questionnaires | Removed obsolete dialogs; earlier, compact table; disclosed detailed settings; visible errors and language labels. | `714b22d` (app source `9ff3d5f`) |
+| P3 Versions and ISIs | One named-ISI/version table; removed inert handlers; stable video colors; invalid-cell focus and horizontal reveal. | `4a2389c` |
+| P4 Screen layout | Paired geometry fields; fewer nested boxes; adjacent missing-input warning; readable miniature legend. | `466412a` |
+| P5 Flubber and controls | Consolidated old sections; one anchor-color editing route; no overlapping caption; useful settings scroll area. | `597a612` (app source `8d3d256`) |
+| P6 Optional XR | Independent segment; disclosed profile tools; readable spatial legend; compact fields and errors. | `e43f018` (UI handoff `5d60ef6`) |
+| P7 Review and export | One export path; grouped repeated prerequisites; disclosed details; readable narrow language recovery and footer. | `6bac40f` |
+
+The shared header reflow is ready at `82c7d6c`; removal of the old Experiment
+shell is in integration candidate `c7ba103`. The required next visual step is
+V28: render and inspect the exact combined source after the integration owner
+resumes. Do not substitute an older installed application or aggregate test
+counts from separate branches for that check.
+
 ## Capture method and baseline
 
 The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
@@ -71,15 +96,16 @@ the application layout.
   replaces it. Coordinate the existing P3 importer handlers; do not duplicate them.
 - [ ] **V02** Retain one short directory explanation and one live status/error
   region. Remove the repeated initial “Set a work directory to begin” sentence.
-  Owner handoff `9f2d84b` implements this visual change; integrated reinspection
+  Owner handoff `9d4b663` implements this visual change; integrated reinspection
   is pending.
 - [ ] **V03** Verify empty, ready, populated-library and error states through
   actual application events. The initial P1 populated-text fixture directly
   edited DOM labels; it did not prove readiness transitions and left the root
   amber. Disabled Explorer buttons are expected on the browser surface, so do
-  not enable them just for a screenshot. Revised fixture requested.
+  not enable them just for a screenshot. The revised fixture uses actual
+  readiness events; combined reinspection remains pending.
 
-The initial ready handoff has four inspected app screenshots in
+The final owner handoff has nine app screenshots and a source/hash manifest in
 `D:/GitHub/affect-tracker-research-workspace-library/artifacts/p1-workspace-visual`.
 Narrow rows may stack to preserve readable labels and target sizes. Do not
 compress them by making actions difficult to hit or removing path/error text.
@@ -94,7 +120,8 @@ compress them by making actions difficult to hit or removing path/error text.
 - [ ] **V05** Audit the active editor's empty, populated and invalid-cell states
   at desktop and narrow pane widths. Consolidate repeated import instructions,
   toolbars and status copy. Keep language labels and option-label/score
-  distinctions explicit. The P2 owner is producing real bootstrap captures.
+  distinctions explicit. P2's real bootstrap captures are ready at `714b22d`;
+  their coverage and source limits are recorded below.
 
 Full questionnaire definitions and table projections are different representations,
 not interchangeable redundant exports. Validated wording, provenance and
@@ -192,7 +219,8 @@ placement, not the Flubber outline or halo.
 P6's later user answer accepts head-forward setup without eye tracking,
 world-fixed placement during the attempt, stopping on tracking loss and
 recentering only between attempts. Preserve this decision; do not re-ask it
-or restore an earlier pending warning. Final owner app captures are pending.
+or restore an earlier pending warning. Final owner app captures were inspected;
+combined verification remains pending.
 
 ### P7 — Review and recipe export
 
@@ -251,8 +279,19 @@ Subsequent owner handoffs, still requiring combined verification:
   Compose both handoffs; neither alone contains both changes.
 - P2 `9ff3d5f`: empty-coverage duplication removed, table moved approximately
   282px earlier, invalid cell and error visible together. Independent review
-  matched all 36 source hashes in the final receipt. Expanded settings,
-  Save/Preview/footer and the German accordion still need rendered coverage.
+  matched all 36 source hashes in the final receipt. Coverage-only handoff
+  `714b22d` adds six settled actual-app captures of expanded settings,
+  Save/Preview/footer and the German accordion at 1600px and 1000px. The app
+  source remains `9ff3d5f`; the receipt's capture-helper changes are committed
+  in `714b22d`. Accepted evidence directory:
+  `D:/GitHub/.affect-checks/s2-visual-details-settled-20260911`.
+  Independent review inspected all six images and matched all 37 source-file
+  hashes against the clean handoff. German labels, expanded settings, wrapped
+  actions, Save/Preview and Confirm have no material visual defect in these
+  states. The receipt records image paths, not PNG digests; it is not a
+  cryptographic image-file binding.
+  Initial timing/scroll diagnostic captures are superseded, not acceptance
+  evidence. Combined source verification remains open.
 - P4 `466412a`: root inspected the revised desktop top, narrow fields/footer
   and invalid state. Paired fields, adjacent missing-input notice, full legend,
   shorter draft copy and visible error border address V09–V12 locally.
@@ -275,13 +314,18 @@ Subsequent owner handoffs, still requiring combined verification:
   readable at desktop/320px. All 24 HTML/PNG receipt pairs match their hashes
   and source tree. Final evidence: the owner's `single-flow-states` directory;
   older `polish-states` captures are superseded. No new material issue found
-  in that scoped recheck; combined integration is still required.
+  in that scoped recheck. Legacy package size/position labels distinguish
+  their existing contract from P4's draft geometry. Combined integration is
+  still required.
 - P6 `5d60ef6`: owner reports Profile tools disclosure, external readable
   diagram legend and stabilized eight actual app captures. Earlier 760/420px
   blank captures were rejected; newer settled-pane captures supersede them.
   Root inspected the final desktop/narrow scene and narrow error screenshots:
   legend and readouts are readable, profile tools are disclosed and the footer
   is visible. Evidence: `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911`.
+  Documentation checkpoint `e43f018` records two producer interop fixtures
+  re-passing against P5's final clean `597a612`, with the same producer source
+  hash. Automatic live binding and combined master export remain open.
 - P7 `6bac40f` includes `06d14fe` compactness and the lower-row follow-up. Root
   inspected empty/populated/error Review, then final lower, expanded details
   and legacy narrow captures. The language status/help now spans the available

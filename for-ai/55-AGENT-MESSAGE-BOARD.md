@@ -78,6 +78,13 @@ file; follow the integration-owner collection procedure in the workflow.
 - Concrete findings and owned follow-ups are V01–V28 in the new audit record.
   No app capability box is closed by delegation, source inspection or a clean
   screenshot alone. Background monitor now tracks rendered compactness too.
+- 2026-09-12 handoff: all seven owners have bounded cleanup checkpoints with
+  inspected rendered evidence. `64-SEGMENT-VISUAL-AUDIT.md` now lists the exact
+  ready source and remaining combined check, including P2 `714b22d`, P3
+  `4a2389c` and P6 documentation `e43f018`. Canonical remains `ba2110f` and
+  integration candidate `c7ba103`; respect the integration owner's existing
+  confirmation-semantics pass check. This handoff does not answer it or claim
+  the final combined seven-segment UI has been verified.
 - Deferred claims: current installed app, physical/native input, backend
   qualification, Runner, publishing and whole-Planner completion.
 
