@@ -1,5 +1,5 @@
-import { parsePlannerRecipeV1, parsePlannerRecipeFile } from "./planner-recipe.js";
-import { MAX_PLANNER_RECIPE_BYTES, exactRecipeObject } from "./planner-recipe-wire.js";
+import { parsePlannerRecipeV1, parsePlannerRecipeFile, parseSupportedPlannerRecipe } from "./planner-recipe.js";
+import { MAX_PLANNER_RECIPE_BYTES, PLANNER_RECIPE_SCHEMA, readPlannerRecipeJsonBytes, exactRecipeObject } from "./planner-recipe-wire.js";
 import { plannerRecipeFilename } from "./planner-recipe-filename.js";
 
 const encoder = new TextEncoder();
@@ -38,7 +38,23 @@ export function validatePlannerRecipeSaveReceipt(receipt, expected) {
 
 /** Invoke directly from a user action. This selects a recipe, never its media
  * root, and performs strict version dispatch before any application adoption. */
-export function openBrowserPlannerRecipeFile({ isCurrent, pickOpenFile = globalThis.showOpenFilePicker?.bind(globalThis) }) {
+export function openBrowserPlannerRecipeFile(options) {
+  return openBrowserRecipeFile(options, parsePlannerRecipeFile);
+}
+
+export function openSupportedBrowserPlannerRecipeFile(options) {
+  return openBrowserRecipeFile(options, async bytes => {
+    const { value } = readPlannerRecipeJsonBytes(bytes);
+    if (value.schema === PLANNER_RECIPE_SCHEMA) {
+      const document = await parseSupportedPlannerRecipe(bytes);
+      return Object.freeze({ kind: `planner-recipe-v${document.recipe.version}`, document });
+    }
+    // The old dispatcher retains sole legacy-package validation authority.
+    return parsePlannerRecipeFile(bytes);
+  });
+}
+
+function openBrowserRecipeFile({ isCurrent, pickOpenFile = globalThis.showOpenFilePicker?.bind(globalThis) }, parseFile) {
   const requireCurrent = currentGuard(isCurrent);
   requireCurrent();
   if (typeof pickOpenFile !== "function") return Promise.reject(new Error("This browser cannot open recipe files. Use desktop Chrome or Edge."));
@@ -49,7 +65,7 @@ export function openBrowserPlannerRecipeFile({ isCurrent, pickOpenFile = globalT
     requireCurrent();
     if (!Array.isArray(handles) || handles.length !== 1) throw new TypeError("Select exactly one recipe file.");
     const bytes = await readFileBytes(handles[0]); requireCurrent();
-    const result = await parsePlannerRecipeFile(bytes); requireCurrent();
+    const result = await parseFile(bytes); requireCurrent();
     return result;
   }, error => { if (error?.name === "AbortError") return null; throw error; });
 }
@@ -57,13 +73,21 @@ export function openBrowserPlannerRecipeFile({ isCurrent, pickOpenFile = globalT
 /** Validate immutable bytes before the final save-button gesture. Both fresh
  * compile and an explicitly unchanged loaded-file reexport use this writer;
  * the caller supplies their distinct eligibility guard. No owner restoration. */
-export async function prepareBrowserPlannerRecipeSave(sourceText, {
+export function prepareBrowserPlannerRecipeSave(sourceText, options) {
+  return prepareBrowserRecipeSave(sourceText, options, parsePlannerRecipeV1);
+}
+
+export function prepareSupportedBrowserPlannerRecipeSave(sourceText, options) {
+  return prepareBrowserRecipeSave(sourceText, options, parseSupportedPlannerRecipe);
+}
+
+async function prepareBrowserRecipeSave(sourceText, {
   isCurrent, pickSaveFile = globalThis.showSaveFilePicker?.bind(globalThis),
-}) {
+}, parseDocument) {
   const requireCurrent = currentGuard(isCurrent);
   requireCurrent();
   if (typeof sourceText !== "string" || encoder.encode(sourceText).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new TypeError("Invalid Planner recipe save source.");
-  const expected = await parsePlannerRecipeV1(encoder.encode(sourceText)); requireCurrent();
+  const expected = await parseDocument(encoder.encode(sourceText)); requireCurrent();
   const sourceBytes = encoder.encode(expected.canonicalSourceText);
   let busy = false;
   return Object.freeze({ recipeId: expected.recipe.recipeId, byteLength: sourceBytes.byteLength, expected,
@@ -92,7 +116,7 @@ export async function prepareBrowserPlannerRecipeSave(sourceText, {
           writable = await handle.createWritable({ keepExistingData: false }); requireCurrent();
           await writable.write(sourceBytes.slice()); requireCurrent();
           await writable.close(); closed = true; requireCurrent();
-          const observed = await parsePlannerRecipeV1(await readFileBytes(handle)); requireCurrent();
+          const observed = await parseDocument(await readFileBytes(handle)); requireCurrent();
           if (observed.canonicalSourceText !== expected.canonicalSourceText) throw new Error("The saved bytes differ from the prepared recipe.");
           return validatePlannerRecipeSaveReceipt({ schema: PLANNER_RECIPE_SAVE_RECEIPT_SCHEMA, version: 1,
             recipeId: observed.recipe.recipeId, definitionSha256: observed.recipe.integrity.definitionSha256,

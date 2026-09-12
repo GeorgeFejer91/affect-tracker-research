@@ -13,6 +13,30 @@
   parity remains S7/Main work, not silently asserted complete.
 - Exact composition and evidence limits: docs/planner-core9-app-composition.md.
 
+### 20260912-p7-supported-gui-files
+
+- S7, CLI-P7 / P7-03/P7-04/P7-07 GUI/CLI parity seam, Backend Verification.
+  Root/Main allocation, clean base `1747784`, isolated branch
+  `codex/segment-p7-gui-supported`, D:/GitHub/affect-tracker-research-p7-gui-supported.
+- Main approved optional workflow documentAdapter {parseDocument,compileDocument,
+  captureInput}, explicit-version accepted capture and named supported browser
+  open/save helpers. Strict-v1 defaults and existing legacy package dispatch stay.
+- Scope only workflow, browser file helper, accepted capture, focused tests/docs.
+  Main owns app injection, P2 version selection and native GUI registration.
+  No control/schema/compiler/native/publication changes.
+- Baseline26 GUI workflow/browser-file/prepared-save tests pass. Collect exact
+  mixed typed-v2/v1 bytes, stale and failure guards, unchanged-copy handling,
+  browser no-replacement checks and existing receipt/metadata semantics.
+- Ready: 47 focused legacy/supported GUI, capture, prepared-save and architecture
+  checks pass, plus diff check. Log `D:/GitHub/.affect-checks/p7-gui-supported-final.log`.
+  Actual canonical mixed-v2/v1 fixtures use real registry/compiler/readers with
+  typed picker/restore doubles. No installed GUI/native/Runner claim.
+- Exact Main-approved injection and helper contract:
+  `docs/planner-supported-gui-files.md`. Main selects the actual P2 version,
+  injects all three hooks and owns native GUI registration; this worktree stops
+  after the clean handoff. Existing browser concurrency limits remain explicit.
+
+
 ### 20260912-p4-prepared-confirmation
 
 - Root/Main allocated CLI-P4 confirmation, Backend Verification, isolated
