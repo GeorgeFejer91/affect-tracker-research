@@ -14,6 +14,17 @@ const MAX_CONTRIBUTION_BYTES = 5 * 1024 * 1024;
  * v1 inclusion adapter. P2 retains its exact existing package representation. */
 export function registerAvailablePlannerContributions(controller) {
   const unregister = [];
+  let disposed = false;
+  const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    const failures = [];
+    for (const remove of unregister.splice(0).reverse()) {
+      try { remove(); } catch (error) { failures.push(error); }
+    }
+    if (failures.length) throw new AggregateError(failures, "Planner owner cleanup failed.");
+  };
+  try {
   if (typeof controller.getQuestionnaireContributionSnapshot === "function") {
     unregister.push(controller.registerPlannerContribution("P2",
       () => controller.getQuestionnaireContributionSnapshot(), {
@@ -24,7 +35,7 @@ export function registerAvailablePlannerContributions(controller) {
       }));
   }
   for (const [segment, getter, validator, subscription] of [
-    ["P1", "getVideoCatalogueContributionSnapshot", "validateVideoCatalogueContribution", "subscribeVideoCatalogueChanges"],
+    ["P1", "getWorkspaceContributionSnapshot", "validateWorkspaceContribution", "subscribeWorkspaceContributionChanges"],
     ["P3", "getStimulusOrderSnapshot", "validateStimulusVariantContribution"],
     ["P4", "getScreenLayoutContributionSnapshot", "validateScreenLayoutContribution"],
     ["P5", "getFeedbackContributionSnapshot", "validateFeedbackContribution", "subscribeFeedbackChanges"],
@@ -39,11 +50,35 @@ export function registerAvailablePlannerContributions(controller) {
         } : null,
       }));
       if (subscription && typeof controller[subscription] === "function") {
-        unregister.push(controller[subscription](() => controller.plannerContributionChanged(segment)));
+        const remove = controller[subscription](() => { if (!disposed) controller.plannerContributionChanged(segment); });
+        if (typeof remove !== "function") throw new TypeError(`${segment}: subscriptions must return an unsubscribe function.`);
+        unregister.push(remove);
       }
     }
   }
-  return () => { for (const remove of unregister.reverse()) remove(); };
+  }
+  catch (error) { try { cleanup(); } catch { /* Preserve initialization failure. */ } throw error; }
+  return cleanup;
+}
+
+/** Preserve live getter descriptors while ensuring subscriptions are removed
+ * before producer teardown. Failed initialization and repeated destroy are safe. */
+export function installPlannerContributions(root, controller) {
+  let cleanup = () => {};
+  let disposed = false;
+  const descriptors = Object.getOwnPropertyDescriptors(controller);
+  descriptors.destroy = { enumerable: true, value() {
+    if (disposed) return;
+    disposed = true;
+    try { cleanup(); } finally {
+      try { controller.destroy(); } finally { if (root.researchUi === managed) delete root.researchUi; }
+    }
+  } };
+  const managed = Object.freeze(Object.defineProperties({}, descriptors));
+  root.researchUi = managed;
+  try { cleanup = registerAvailablePlannerContributions(managed); }
+  catch (error) { try { managed.destroy(); } catch { /* Preserve initialization failure. */ } throw error; }
+  return managed;
 }
 
 function segmentId(segment) {

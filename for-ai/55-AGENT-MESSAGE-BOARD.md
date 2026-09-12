@@ -83,6 +83,30 @@ file; follow the integration-owner collection procedure in the workflow.
   this checkpoint does not claim the complete export path or canonical promotion.
   No Runner/native qualification, foreground reload, push or deployment.
 
+### 20260912-p7-named-file-and-owner-lifecycle
+
+- Owner **S7**, same resumed Backend Verification pass, P7-03/P7-04/P7-07.
+  Composes integration confirmation shell `ff52d54` through `b8095a6`.
+- Browser final save prepares strict canonical bytes, then offers a named file
+  picker from a separate explicit user gesture. Await write/close, read the file
+  back, strictly parse and compare exact bytes before acknowledging. Cancellation,
+  permission/write/close/read failure and stale edits cannot claim current save.
+  Open selects a file directly without requiring the fixed workspace root.
+  Neither path confers asset-root authority. Native OS picker remains unchanged.
+- UI adoption now completes all asynchronous validation before one synchronous
+  settings projection; edits during an open picker preserve the newer design.
+  Registration cleanup preserves getter descriptors, unsubscribes before producer
+  destruction, and cleans partial initialization and repeated teardown.
+- Evidence: 38 focused acceptance/confirmation/save/adapter Node checks, 30 UI and
+  modularity checks, headless Chrome 13 actual browser-mode named-file/lifecycle
+  assertions with synthetic file handles, and 32 existing native-bridge export
+  regression assertions. Evidence under sibling `affect-tracker-research-p7-evidence`
+  (`browser-named-file`, `named-save-native-regression`). No actual OS picker,
+  filesystem persistence, installed native or Edge qualification is claimed.
+- Typed successor master composition remains open, including P4 accepted geometry
+  contract/Q08 and the P1-owned coherent workspace dependency projection. This
+  checkpoint does not mark all P7 or integrated Planner complete.
+
 ### 20260912-p7-accepted-master-recipe
 
 - Owner: **S7**, P7; **open**, resumed by researcher via roadmap/integration.

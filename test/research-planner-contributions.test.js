@@ -1,11 +1,43 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerContributionRegistry, registerAvailablePlannerContributions, validatePlannerContributionSnapshot } from "../site/src/research/planner-contributions.js";
+import { createPlannerContributionRegistry, registerAvailablePlannerContributions, installPlannerContributions, validatePlannerContributionSnapshot } from "../site/src/research/planner-contributions.js";
 
 const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: false,
   contribution: { accepted: "design" }, dependencyRevisions: [], ...overrides });
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
 const validated = { validateContribution: async () => true };
+
+test("installed owners retain live getters and dispose subscriptions before producers exactly once", () => {
+  const root = {}; let count = 1, callback; const events = [];
+  const controller = Object.freeze({
+    get count() { return count; },
+    getFeedbackContributionSnapshot: () => snapshot(),
+    registerPlannerContribution() { events.push("register"); return () => events.push("unregister"); },
+    subscribeFeedbackChanges(listener) { callback = listener; return () => { events.push("unsubscribe"); listener(); }; },
+    plannerContributionChanged() { events.push("changed"); },
+    destroy() { events.push("destroy"); callback(); },
+  });
+  const installed = installPlannerContributions(root, controller);
+  count = 2; assert.equal(installed.count, 2); assert.equal(root.researchUi, installed);
+  callback(); installed.destroy(); installed.destroy(); callback();
+  assert.deepEqual(events, ["register", "changed", "unsubscribe", "unregister", "destroy"]);
+  assert.equal(root.researchUi, undefined);
+});
+
+test("failed registration releases prior owners and destroys the UI without leaking a root controller", () => {
+  const root = {}; const events = [];
+  const controller = Object.freeze({
+    getQuestionnaireContributionSnapshot: () => snapshot(), getFeedbackContributionSnapshot: () => snapshot(),
+    registerPlannerContribution(segment) {
+      if (segment === "P5") throw new Error("registration failed");
+      return () => events.push("unregister");
+    },
+    destroy() { events.push("destroy"); },
+  });
+  assert.throws(() => installPlannerContributions(root, controller), /registration failed/);
+  assert.deepEqual(events, ["unregister", "destroy"]);
+  assert.equal(root.researchUi, undefined);
+});
 
 test("confirmation requires owner validation and freezes a detached snapshot", async () => {
   const registry = createPlannerContributionRegistry();

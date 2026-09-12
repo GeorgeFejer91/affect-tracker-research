@@ -270,8 +270,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /workspace\.loadExperimentPackage\(\)/u);
-  assert.match(source, /workspace\.saveExperimentPackage\(sourceText\)/u);
+  assert.match(source, /openBrowserExperimentPackage\(\)/u);
+  assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
   assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);
   assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
@@ -653,7 +653,7 @@ test("programmatic binding, color, and overlay changes invalidate the frozen pro
   assert.match(source, /onPositionChange\(position\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function resetBindingsToPreset\(\)[\s\S]*?resetInputTest\(\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /inputBinding = structuredClone\(result\.binding\);\s*resetInputTest\(\{ notify: false \}\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
-  assert.match(source, /function applyResearchSettings\(settings, \{[\s\S]*?applyFeedbackFields\(\{ input: normalized\.input, visual: normalized\.visual, mappings: normalized\.advanced\.mappings \}\);/u);
+  assert.match(source, /function applyNormalizedResearchSettings\(normalized, \{[\s\S]*?applyFeedbackFields\(\{ input: normalized\.input, visual: normalized\.visual, mappings: normalized\.advanced\.mappings \}\);/u);
   assert.match(source, /function applyFeedbackFields\(normalized\)[\s\S]*?inputBinding = structuredClone\(normalized\.input\);[\s\S]*?resetInputTest\(\);/u);
   assert.match(source, /if \(target\.dataset\.colorReset\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function schedulePlanRefresh\(\)[\s\S]*?settingsSnapshot = null;[\s\S]*?plan = null;[\s\S]*?capabilities\.manifestReady = false;/u);

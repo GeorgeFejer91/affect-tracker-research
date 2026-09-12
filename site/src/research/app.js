@@ -62,7 +62,9 @@ import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
-import { createPlannerContributionRegistry, registerAvailablePlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
+import { createPackageSaveDialog } from "./package-save-dialog.js";
+import { openBrowserExperimentPackage } from "./package-file-picker.js";
+import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
@@ -183,10 +185,7 @@ export function bootResearchUi({ surface: requestedSurface } = {}) {
 export function initializeResearchUi(root, { surface = "browser" } = {}) {
   const shell = root.querySelector(".research-shell");
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
-  const controller = createUiController(root, { surface });
-  root.researchUi = controller;
-  registerAvailablePlannerContributions(controller);
-  return controller;
+  return installPlannerContributions(root, createUiController(root, { surface }));
 }
 
 // Interaction and projection code is kept below the declarative instrument so
@@ -258,6 +257,7 @@ function bindResearchInteractions(root, { surface }) {
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
   let observedSuccessfulSave = null;
+  const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root) : null;
   const packageExport = createPackageExportController({ onChange: () => {
     renderPackageExportReview();
     renderSetupReviewState();
@@ -1500,12 +1500,15 @@ function bindResearchInteractions(root, { surface }) {
     return feedbackContribution.getSnapshot();
   }
 
-  async function applyResearchSettings(settings, {
+  async function applyResearchSettings(settings, options = {}) {
+    return applyNormalizedResearchSettings(await validateResearchSettingsV3(settings), options);
+  }
+
+  function applyNormalizedResearchSettings(normalized, {
     preserveVerifiedStimuli = false,
     guard = null,
     packageProjection = false,
   } = {}) {
-    const normalized = await validateResearchSettingsV3(settings);
     if (typeof guard === "function" && !guard()) return false;
     if (packageProjection) questionnaireEditor.reset();
     const preservedSourceText = experimentDocument
@@ -3760,6 +3763,7 @@ function bindResearchInteractions(root, { surface }) {
       receipt?.canonicalSourceText ?? receipt?.sourceText ?? receipt,
     ));
     const reproduction = await verifySameRealmPackageReproductionV1(parsed.package);
+    const preparedSettings = await validateResearchSettingsV3(parsed.package.settings);
     const current = () => generation === packageLoadGeneration && (!guard || guard());
     if (!current()) return false;
     if (!guard) packageExport.invalidate();
@@ -3785,8 +3789,10 @@ function bindResearchInteractions(root, { surface }) {
       ));
       if (definition) requestQuestionnaireFamily(familyIdForDefinition(definition));
     }
-    if (!await applyResearchSettings(parsed.package.settings, {
-      preserveVerifiedStimuli: true, packageProjection: true, guard: current,
+    // All asynchronous validation precedes this synchronous state adoption.
+    // The guard binds external edits, not the recipe's own projection changes.
+    if (!applyNormalizedResearchSettings(preparedSettings, {
+      preserveVerifiedStimuli: true, packageProjection: true,
     })) return false;
     packageContributionFingerprint = plannerContributions.read().fingerprint;
     observedContributions = packageContributionFingerprint;
@@ -3813,12 +3819,21 @@ function bindResearchInteractions(root, { surface }) {
       if (!event.defaultPrevented) announce("The native experiment package adapter is not connected.");
       return;
     }
-    if (!workspace) {
-      announce(`Select the package root before loading ${EXPERIMENT_PACKAGE_FILE_NAME}.`);
-      return;
-    }
-    void workspace.loadExperimentPackage()
-      .then((receipt) => applyExperimentPackageReceipt(receipt, { rootWorkspace: workspace }))
+    const generation = ++packageLoadGeneration;
+    const draft = packageDraftFingerprint();
+    const current = () => mode === "setup" && !packageExport.snapshot().busy
+      && packageDraftFingerprint() === draft;
+    // Call the picker directly from the Open action. A selected recipe file
+    // carries no authorization for its declared media or fixed package root.
+    void openBrowserExperimentPackage()
+      .then((receipt) => {
+        if (!receipt) { announce("Open cancelled. The current design is preserved."); return; }
+        if (generation !== packageLoadGeneration || !current()) {
+          announce("The design changed while opening the file. Newer edits were preserved."); return;
+        }
+        packageExport.invalidate();
+        return applyExperimentPackageReceipt(receipt, { guard: current });
+      })
       .catch((error) => {
         announce(`Experiment package load failed: ${error instanceof Error ? error.message : String(error)}`);
       });
@@ -3829,11 +3844,12 @@ function bindResearchInteractions(root, { surface }) {
     const draft = observedPackageDraft;
     const contributionFingerprint = plannerContributions.read().fingerprint;
     const currentWorkspace = workspace;
+    const isCurrent = () => mode === "setup" && currentWorkspace === workspace
+      && packageDraftFingerprint() === draft
+      && plannerContributions.read().fingerprint === contributionFingerprint;
     try {
       const result = await packageExport.save({
-        isCurrent: () => mode === "setup" && currentWorkspace === workspace
-          && packageDraftFingerprint() === draft
-          && plannerContributions.read().fingerprint === contributionFingerprint,
+        isCurrent,
         compile: async () => {
           await plannerContributions.assertPackageV1();
           if (reexport) {
@@ -3855,21 +3871,14 @@ function bindResearchInteractions(root, { surface }) {
         },
         write: async (parsed) => {
           if (surface === "tauri") return requestExperimentPackageSave(root, parsed);
-          if (!currentWorkspace) throw new Error("Select the package root before saving the recipe.");
-          const sourceText = parsed.canonicalSourceText;
-          const persisted = await workspace.saveExperimentPackage(sourceText);
-          if (persisted.canonicalSourceText !== sourceText
-            || persisted.canonicalSourceByteSha256 !== parsed.canonicalSourceByteSha256) {
-            throw new Error("The browser writer did not confirm the exact recipe bytes.");
-          }
-          return persisted;
+          return packageSaveDialog.request(parsed.canonicalSourceText, { isCurrent });
         },
         adopt: async (parsed, guard) => {
-          if (!reexport) return applyExperimentPackageReceipt(parsed, { rootWorkspace: currentWorkspace, guard });
+          if (!reexport) return applyExperimentPackageReceipt(parsed, { guard });
           return true;
         },
       });
-      if (result.status === "saved") announce(`${EXPERIMENT_PACKAGE_FILE_NAME} saved. Its exact canonical bytes were acknowledged.`);
+      if (result.status === "saved") announce("Recipe saved to the selected file. Its exact canonical bytes were acknowledged.");
       else if (result.status === "cancelled") announce("Save cancelled. Your design is still available.");
       else if (result.status !== "busy") announce("The design changed during export. Newer edits were preserved; save the current design again.");
     } catch (error) {
@@ -5519,6 +5528,7 @@ function bindResearchInteractions(root, { surface }) {
       inlineColorPicker.destroy();
       setupLayout.destroy();
       packageExport.destroy();
+      packageSaveDialog?.destroy();
       layoutDraftEditor.destroy();
 
       xrLayoutEditor?.destroy();
