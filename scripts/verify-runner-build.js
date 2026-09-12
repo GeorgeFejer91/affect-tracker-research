@@ -12,7 +12,7 @@ const sharedCss = await readFile(resolve(root, "site/research.css"), "utf8");
 for (const theme of ["dark", "light"]) {
   if (sharedCss.includes(`flubber-input-${theme}.svg`)) expectedKinds.push(`flubber-input-${theme}.svg`);
 }
-const actualKinds = files.map(file => file === "index.html" ? file : file.replace(/^assets\/(.+)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
+const actualKinds = files.map(file => file === "index.html" ? file : file.replace(/^assets\/(runner-symbol|app-symbol|flubber-input-dark|flubber-input-light|runner)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
 assert.deepEqual(actualKinds.sort(), expectedKinds.sort(), "Runner build must contain exactly the declared entry and referenced shared CSS assets.");
 const graph = await build({ entryPoints: [resolve(root, "runner/src/entry.js")], bundle: true, write: false, metafile: true, format: "esm", loader: { ".svg": "dataurl" }, logLevel: "silent" });
 for (const input of Object.keys(graph.metafile.inputs)) {
