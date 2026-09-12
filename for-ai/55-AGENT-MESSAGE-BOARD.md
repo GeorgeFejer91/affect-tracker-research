@@ -71,6 +71,21 @@
 - S4 owns the new standalone native FormDefinition validator; Main stays on
   core9 integration. No source duplication or v1 reader widening is permitted.
 
+### 20260912-native-master-v2-decoder
+
+- Main/root allocated S4 the new native P2/master2/supported-dispatch lane from
+  `5f786f0`; Backend Verification, `codex/segment-native-master-v2`. Main/Runner
+  agreed the typed supported API plus existing typed policy accessor before use.
+- Explicit mixed LikertV1/FormV1 P2, reproduction-v3 and selection2; no v2-as-v1
+  rewriting. Existing non-P2 algorithms are reused; old master edits are only
+  visibility for shared helpers. Main owns lib/file-service; Runner execution.
+- Exact JS30291fc detached-generated desktop/XR/location fixtures bind native
+  master/matrix and selection checks. Existing P6 derived geometry alone retains
+  its strict absolute1e-10 tolerance; authored content and identities stay exact.
+- Final focused native gate passes71/71; rustfmt/diff checks pass. Initial
+  test-only numeric equality and XR projection failures are retained; exact
+  identities/limits and handoff are in `docs/native-planner-recipe-v2.md`.
+
 ### 20260912-p2-native-form-validator
 
 - Language follow-up: max80 characters and case-insensitive `und` rejection,
