@@ -98,6 +98,16 @@ file; follow the integration-owner collection procedure in the workflow.
   an absolute path or permission. The existing video-only snapshot remains the
   P3/P4/P6 boundary. `restoreStudyIdentity` validates before mutation;
   relocation-dependent catalogue restoration still waits on Q05.
+- The composite and video-only getters expose the same outer P1 revision.
+  Identity, catalogue and pending-state changes publish through the subscription
+  seam only; the registry owns notification. Consumers can therefore bind their
+  P1 dependency to the registered composite revision without fallback fields,
+  duplicate notifications or an unrelated embedded catalogue revision.
+- Workspace restore accepts only the validated composite's authored content and
+  stages its videos as unresolved portable declarations. It does not restore an
+  absolute path, handle or permission. A later user-selected directory resolves
+  the catalogue only after every file is freshly hashed and decoder-probed and
+  the resulting complete catalogue exactly matches the saved contribution.
 - Native P1-06 assessment: both native decode paths already observe width and
   height, but `ScannedStimulusSummary` discards them, and the GstPlay actor's
   `PlayVideoInfo` values are stream dimensions without an orientation/PAR

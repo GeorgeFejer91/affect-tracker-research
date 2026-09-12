@@ -74,13 +74,17 @@ import {
 import { externalExperimentPlanToCsv } from "./tabular.js";
 import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity.js";
 import {
-  assetIdFromSha256,
   browserDisplayGeometry,
   createVideoCatalogueProducerV1,
   validateVideoCatalogueContributionV1,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
-import { createWorkspaceContributionV1, validateWorkspaceContributionV1 } from "./workspace-contribution.js";
+import {
+  createWorkspaceContributionProducerV1,
+  prepareWorkspaceContentRestoreV1,
+  validateWorkspaceContributionV1,
+  verifyWorkspaceRestoredVideoEntriesV1,
+} from "./workspace-contribution.js";
 import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
@@ -286,11 +290,19 @@ function bindResearchInteractions(root, { surface }) {
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
   const studyIdentityListeners = new Set();
-  const workspaceContributionListeners = new Set();
-  let workspaceContributionFingerprint = null;
-  let workspaceContributionRevision = 0;
+  let pendingWorkspaceRestore = null;
+  let workspaceContributionProducer = null;
   const videoCatalogueProducer = createVideoCatalogueProducerV1({
-    onChange: () => notifyWorkspaceContributionChanged(),
+    onChange: () => workspaceContributionProducer?.changed(),
+  });
+  workspaceContributionProducer = createWorkspaceContributionProducerV1({
+    getStudyIdentity: () => getStudyIdentity(),
+    getVideoCatalogueSnapshot: () => {
+      const snapshot = videoCatalogueProducer.getSnapshot();
+      return pendingWorkspaceRestore
+        ? Object.freeze({ ...snapshot, pending: true, contribution: null })
+        : snapshot;
+    },
   });
   let questionnaireContributionRevision = 0;
   let questionnaireContributionFingerprint = null;
@@ -2986,17 +2998,17 @@ function bindResearchInteractions(root, { surface }) {
   /** P1 accepted-data handoff. One incomplete video invalidates the whole view. */
   async function refreshVideoCatalogueContribution() {
     try {
-      return await videoCatalogueProducer.replaceEntries(
-        workspaceStimuliToVideoCatalogueEntriesV1(stimuli),
-      );
+      const entries = workspaceStimuliToVideoCatalogueEntriesV1(stimuli);
+      if (pendingWorkspaceRestore) {
+        const expected = await verifyWorkspaceRestoredVideoEntriesV1(pendingWorkspaceRestore, entries);
+        pendingWorkspaceRestore = null;
+        return await videoCatalogueProducer.restoreContribution(expected);
+      }
+      return await videoCatalogueProducer.replaceEntries(entries);
     } catch {
       videoCatalogueProducer.withdraw();
       return videoCatalogueProducer.getSnapshot();
     }
-  }
-
-  function getVideoCatalogueContributionSnapshot() {
-    return videoCatalogueProducer.getSnapshot();
   }
 
   function getStudyIdentity() {
@@ -3004,36 +3016,15 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function getWorkspaceContributionSnapshot() {
-    let contribution = null;
-    let pending = true;
-    const videoSnapshot = videoCatalogueProducer.getSnapshot();
-    try {
-      if (videoSnapshot.enabled && !videoSnapshot.pending && videoSnapshot.contribution) {
-        contribution = createWorkspaceContributionV1({
-          study: getStudyIdentity(),
-          videoCatalogue: videoSnapshot.contribution,
-        });
-        pending = false;
-      }
-    } catch { /* Invalid interim study text remains pending. */ }
-    const fingerprint = canonicalJson({ pending, contribution });
-    if (fingerprint !== workspaceContributionFingerprint) {
-      workspaceContributionFingerprint = fingerprint;
-      workspaceContributionRevision += 1;
-    }
-    return Object.freeze({
-      revision: workspaceContributionRevision,
-      enabled: true,
-      pending,
-      contribution,
-      dependencyRevisions: [],
-    });
+    return workspaceContributionProducer.getSnapshot();
   }
 
   function notifyWorkspaceContributionChanged() {
-    const snapshot = getWorkspaceContributionSnapshot();
-    for (const listener of workspaceContributionListeners) listener(snapshot);
-    root.researchUi?.plannerContributionChanged?.("P1");
+    return workspaceContributionProducer.changed();
+  }
+
+  function getVideoCatalogueContributionSnapshot() {
+    return workspaceContributionProducer.getVideoCatalogueSnapshot();
   }
 
   async function restoreStudyIdentity(identity, { isCurrent = () => true } = {}) {
@@ -3047,6 +3038,44 @@ function bindResearchInteractions(root, { surface }) {
     refreshProjection();
     schedulePlanRefresh();
     return getStudyIdentity();
+  }
+
+  async function restoreWorkspaceContribution(contribution, {
+    isCurrent = () => true,
+    dependencies = {},
+  } = {}) {
+    const emptyDependencies = dependencies instanceof Map
+      ? dependencies.size === 0
+      : dependencies !== null && typeof dependencies === "object"
+        && !Array.isArray(dependencies) && Object.keys(dependencies).length === 0;
+    if (typeof isCurrent !== "function" || !emptyDependencies) {
+      throw new TypeError("Workspace restore options are malformed.");
+    }
+    const restored = await validateWorkspaceContributionV1(contribution);
+    const restorePlan = await prepareWorkspaceContentRestoreV1(restored);
+    if (!isCurrent() || mode !== "setup") throw new Error("Workspace restoration was superseded; no declarations were replaced.");
+    pendingWorkspaceRestore = restored;
+    setInputValue("experiment-id", restorePlan.study.id);
+    setInputValue("experiment-title", restorePlan.study.title);
+    stimuli.splice(0, stimuli.length, ...restorePlan.videoDeclarations.map((entry) => ({
+      id: entry.assetId,
+      title: entry.annotationId,
+      source: "workspace",
+      location: entry.sourceRelativePath,
+      file: null,
+      poolId: null,
+      verification: "pending",
+      contractSource: null,
+      displayGeometry: null,
+      youtubePreflight: null,
+    })));
+    videoCatalogueProducer.withdraw();
+    for (const listener of studyIdentityListeners) listener(restorePlan.study);
+    notifyWorkspaceContributionChanged();
+    renderPools();
+    refreshProjection();
+    schedulePlanRefresh();
+    return getWorkspaceContributionSnapshot();
   }
 
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
@@ -3649,7 +3678,11 @@ function bindResearchInteractions(root, { surface }) {
       const importedPaths = await workspace.importVideoFiles(files);
       for (let index = 0; index < files.length; index += 1) {
         const relativePath = `stimuli/${importedPaths[index]}`;
-        const stimulus = addStimulus({
+        let stimulus = stimuli.find(({ source, location }) => (
+          source === "workspace" && location === relativePath
+        ));
+        if (stimulus) stimulus.file = files[index];
+        else stimulus = addStimulus({
           title: files[index].name.replaceAll("\\", "/").split("/").at(-1),
           source: "workspace",
           location: relativePath,
@@ -5048,14 +5081,17 @@ function bindResearchInteractions(root, { surface }) {
       return () => studyIdentityListeners.delete(listener);
     },
     getWorkspaceContributionSnapshot,
+    restoreWorkspaceContribution,
     subscribeWorkspaceContributionChanges(listener) {
-      if (typeof listener !== "function") throw new TypeError("Workspace contribution listener must be a function.");
-      workspaceContributionListeners.add(listener);
-      return () => workspaceContributionListeners.delete(listener);
+      return workspaceContributionProducer.subscribe(listener);
     },
     validateWorkspaceContribution: validateWorkspaceContributionV1,
     getVideoCatalogueContributionSnapshot,
-    subscribeVideoCatalogueChanges(listener) { return videoCatalogueProducer.subscribe(listener); },
+    subscribeVideoCatalogueChanges(listener) {
+      if (typeof listener !== "function") throw new TypeError("Video catalogue listener must be a function.");
+      const projected = () => listener(getVideoCatalogueContributionSnapshot());
+      return workspaceContributionProducer.subscribe(projected);
+    },
     validateVideoCatalogueContribution: validateVideoCatalogueContributionV1,
     validateStudyIdentity: validateStudyIdentityV1,
     getQuestionnaireContributionSnapshot,
