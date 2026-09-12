@@ -5254,6 +5254,7 @@ function bindResearchInteractions(root, { surface }) {
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
     get nativeInputReceiptId() { return nativeInputReceiptId; },
+    validateFeedbackContribution: validateFeedbackContributionV1,
     getFeedbackContributionSnapshot: feedbackContribution.getSnapshot,
     getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
     subscribeFeedbackChanges: feedbackContribution.subscribe,

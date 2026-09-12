@@ -71,6 +71,8 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     const notifications = [];
     const unsubscribe = ui.subscribeFeedbackChanges((snapshot) => notifications.push(snapshot));
     const initialFeedback = ui.getFeedbackContributionSnapshot();
+    check("P7 can validate through the P5 controller", canonicalJson(ui.validateFeedbackContribution(initialFeedback.contribution))
+      === canonicalJson(initialFeedback.contribution));
     check("P5 current saved contribution is independent of experiment compilation", !initialFeedback.pending
       && canonicalJson(initialFeedback.contribution) === canonicalJson(savedFeedback(settings)));
     check("P5 live bounds use the current saved configuration", canonicalJson(ui.getFeedbackLayoutSnapshot(1024).envelope)
