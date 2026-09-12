@@ -1464,3 +1464,23 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   browser/computer-control tooling require explicit opt-in for a named check.
 - Evidence: documentation diff inspected locally; no application, user window,
   or experiment was launched or interacted with during this documentation pass.
+
+### 20260912-p5-live-contribution
+
+- Owner: **Implement segment 5**, P5 `feedback`; **open**, bounded Backend
+  Verification continuation for P5-05/P5-07 and existing saved-control round trips.
+  Isolated branch `codex/segment-p5-contribution`, existing C: feedback worktree,
+  base `64da370` explicitly approved by integration as a reviewed candidate.
+- Inputs: current saved bindings, appearance and six mappings. Contribution:
+  strict `{input,visual,mappings}` preserving existing v1 semantics, one owner
+  revision and deterministic CSS-pixel envelope. P4/P6 consume bounds; P7 owns
+  registration, final capture/acceptance, naming, compilation and save.
+- Shared seams: P5 field extraction/restoration, refresh and controller getters
+  in `app.js`; new bounded `feedback-contribution.js`, focused tests/fixture.
+  No P7 registry edits, geometry policy, UI polish or other-owner handlers.
+- Baseline: 61 focused existing Node tests pass on the reviewed base. Collect
+  invalid/saved/draft revision checks, exact restoration and envelope agreement,
+  actual bootstrapped headless checks and frontend build closure.
+- Q10 has no new answer; simulator response/halo/tile/alternate-renderer drafts
+  remain excluded. Existing color Recolor/Reset still writes saved literal colors.
+  No Runner, native authority, physical qualification or publication claim.
