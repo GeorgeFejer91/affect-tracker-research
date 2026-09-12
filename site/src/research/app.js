@@ -793,6 +793,7 @@ function bindResearchInteractions(root, { surface }) {
       const output = anchor.querySelector("[data-color-anchor-label]");
       if (output) output.textContent = label;
       anchor.setAttribute("aria-label", `${label}. Edit anchor color.`);
+      anchor.title = label;
     });
   }
 
