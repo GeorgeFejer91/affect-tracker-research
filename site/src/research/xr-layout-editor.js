@@ -45,6 +45,10 @@ export function createXrLayoutState() {
       const next = parseXrLayoutProfileV1(source), nextDependencies = validateRevisions(revisions);
       draft = next; accepted = structuredClone(next); dependencies = nextDependencies; enabled = true; revision += 1;
     },
+    loadDraft(source) {
+      const next = parseXrLayoutProfileV1(source);
+      draft = next; accepted = null; enabled = true; revision += 1;
+    },
     setDependencyRevisions(value) {
       validateRevisions(value);
       if (dependencies.catalogue !== value.catalogue || dependencies.feedback !== value.feedback) {
@@ -249,6 +253,13 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       projectDependencies(next);
       state.load(source, { catalogue: next.catalogueRevision, feedback: next.feedbackRevision });
       setFields(); render(); notify(); status("XR layout reopened with the current video and feedback settings.");
+      return state.getSnapshot();
+    },
+    restoreDraft(profile) {
+      if (disposed) throw new Error("The XR editor is closed.");
+      const source = serializeXrLayoutProfileV1(profile);
+      fileGeneration += 1; state.loadDraft(source); setFields(); render(); notify();
+      status("Saved XR settings reopened. Verify the video library and feedback, then confirm the layout.");
       return state.getSnapshot();
     },
     setDependencies(dependencies) {

@@ -40,6 +40,7 @@ function harness(project = projector) {
       state.load(serializeXrLayoutProfileV1(value), { catalogue: deps.catalogueRevision, feedback: deps.feedbackRevision });
       return state.getSnapshot();
     },
+    restoreDraft(value) { state.loadDraft(serializeXrLayoutProfileV1(value)); return state.getSnapshot(); },
   };
   const authoring = createXrLayoutAuthoring({ editor, projectCatalogue: project,
     getDependencies: () => current,
@@ -183,6 +184,23 @@ test("footer preparation validates a dirty draft without P7 acceptance and obeys
   h.authoring.destroy();
 });
 
+test("content-only reopen renders saved XR settings while real media remains pending", async () => {
+  const h = harness(); await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.prepare();
+  const missing = dependencies(); missing.P1.pending = true; missing.P1.contribution = null;
+  h.publish(missing); await h.authoring.refresh();
+  const saved = { ...profile, video: { ...profile.video, distanceMetres: 4 } };
+  const draft = h.authoring.restoreDraft(saved, { isCurrent: () => true });
+  assert.equal(draft.enabled, true); assert.equal(draft.pending, true); assert.equal(draft.contribution, null);
+  assert.deepEqual(h.state.getDraft(), saved);
+  await assert.rejects(h.authoring.prepare());
+  assert.throws(() => h.authoring.restoreDraft(profile, { isCurrent: () => false }), /changed/);
+  assert.throws(() => h.authoring.restoreDraft({ ...saved, target: "desktop" }));
+  assert.deepEqual(h.state.getSnapshot(), draft); assert.deepEqual(h.state.getDraft(), saved);
+  h.publish(dependencies()); await h.authoring.refresh();
+  assert.equal((await h.authoring.prepare()).contribution.video.distanceMetres, 4);
+  h.authoring.destroy(); assert.throws(() => h.authoring.restoreDraft(profile), /changed/);
+});
+
 test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {
   const catalogue = JSON.parse(await readFile(new URL("fixtures/research-video-catalogue-contribution-v1.json", import.meta.url)));
   const videos = createVideoCatalogueProducerV1();
@@ -198,6 +216,8 @@ test("P6 composes the committed P1/P5 producers and rejects a tampered or withdr
   assert.deepEqual(ready.videos[0].geometry.videoCentre, ready.videos[1].geometry.videoCentre);
   const tampered = structuredClone(current()); tampered.P1.contribution.videoCatalogue.entries[0].geometry.displayWidthPx += 1;
   await assert.rejects(resolveXrLayoutDependencies(tampered, projectWorkspaceVideoDisplayGeometryV1));
+  const invalidStudy = structuredClone(current()); invalidStudy.P1.contribution.study.title = "";
+  await assert.rejects(resolveXrLayoutDependencies(invalidStudy, projectWorkspaceVideoDisplayGeometryV1));
   const h = harness(projectWorkspaceVideoDisplayGeometryV1); h.publish(current()); await h.authoring.refresh();
   h.state.setEnabled(true); await h.authoring.prepare();
   const unsubscribe = p1.subscribe(() => h.publish(current()));

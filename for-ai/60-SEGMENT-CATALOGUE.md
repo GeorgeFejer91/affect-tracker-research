@@ -369,10 +369,10 @@ retain one anchor per attempt, recenter between attempts, stop on tracking loss.
 rotatable 3D preview. **Consumers:** P7 and later R1 XR adapters.
 
 - [ ] **P6-01 — Pending integration:** strict separate `XrLayoutProfileV1` authoring contribution and explicit WebXR target; P7 successor master embedding remains open.
-- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; P1 live geometry producer remains a dependency.
+- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; actual P1 workspace geometry/subscription is connected and validated in the owner candidate.
 - [ ] **P6-03 — Pending integration:** declared right/up/back metre frame, world-fixed initial-head-forward policy and rotated local feedback centre; pure JS/Rust transform fixtures pass.
 - [ ] **P6-04 — Answered, pending integration:** Q11 confirmed policies are explicit in the strict profile. Actual alignment/tracking enforcement remains deferred P6-06.
-- [ ] **P6-05 — Pending integration:** canonical authoring export/reopen, invalid/stale/target rejection, full P5 envelope conversion and JS/Rust/browser fixtures pass. Finished master recipe round trip remains P7 work.
+- [ ] **P6-05 — Pending integration:** live P1/P5 dependency binding, atomic canonical profile reopen, invalid/stale/target rejection, full P5 envelope conversion and pure independent-process geometry reproduction pass. Footer preparation is separate from P7 acceptance/save; finished master recipe round trip remains P7 work.
 - [ ] **P6-06 — Deferred:** headset/APK/WebXR execution, LSL recording and physical qualification belong to a separate Runner pass.
 
 **Planner acceptance:** spatial profile round-trips with reproducible transform/

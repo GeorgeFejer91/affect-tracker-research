@@ -128,6 +128,11 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
     validate,
     prepare,
     accept: prepare,
+    restoreDraft(profile, { isCurrent = () => true } = {}) {
+      const capturedProfile = validateXrLayoutProfileV1(profile);
+      if (disposed || !isCurrent()) throw stale();
+      return editor.restoreDraft(capturedProfile);
+    },
     restore(profile, options = {}) { return commit(profile, options, true); },
     destroy() {
       disposed = true; generation += 1;

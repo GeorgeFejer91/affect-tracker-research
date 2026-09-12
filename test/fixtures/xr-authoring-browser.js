@@ -6,6 +6,7 @@ import catalogue from "./research-video-catalogue-contribution-v1.json";
 // Synthetic typed catalogue events exercise real application producers. No
 // directory picker, decoder, WebXR session, native adapter or Run is invoked.
 const checks = [], errors = [];
+let layout = null;
 window.addEventListener("error", (event) => errors.push(event.message));
 window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
 const check = (name, pass) => { if (!pass) throw new Error(name); checks.push(name); };
@@ -79,6 +80,10 @@ const rejected = async (action) => { try { await action(); return false; } catch
   publish(true); await waitFor(() => dependencies().P1.pending); await ui.waitForXrLayoutDependencies();
   check("one unsupported video withdraws all geometry", ui.getXrLayoutDependencyStatus().pending && q("[data-xr-media]").options.length === 1);
   check("missing geometry cannot be accepted", await rejected(() => ui.acceptXrLayoutContribution()));
+  const draftOnly = ui.restoreXrLayoutDraft(accepted.contribution, { isCurrent: () => true });
+  check("saved XR draft reopens with unresolved media without accepting it", draftOnly.enabled && draftOnly.pending
+    && draftOnly.contribution === null && q('[data-xr-field="video.distanceMetres"]').value === String(accepted.contribution.video.distanceMetres));
+  check("draft-only reopen still requires verified live media", await rejected(() => ui.prepareXrLayoutContribution()));
   publish(); await waitFor(() => !dependencies().P1.pending); await ui.waitForXrLayoutDependencies();
   const restored = await ui.restoreXrLayoutContribution(accepted.contribution, { dependencies: dependencies(), selectedTarget: "webxr-immersive-vr" });
   check("reopen preserves exact canonical profile", serializeXrLayoutProfileV1(restored.contribution) === serializeXrLayoutProfileV1(accepted.contribution));
@@ -93,9 +98,15 @@ const rejected = async (action) => { try { await action(); return false; } catch
   enable(true); await ui.acceptXrLayoutContribution(); q('[data-xr-view="orbit"]').click();
   await new Promise((done) => setTimeout(done, 100));
   check("no browser errors", errors.length === 0);
-  const pane = q(".setup-pane"); check("XR pane does not overflow horizontally", pane.scrollWidth <= pane.clientWidth + 1);
+  const pane = q(".setup-pane");
+  layout = { pane: { clientWidth: pane.clientWidth, scrollWidth: pane.scrollWidth },
+    overflowing: [...pane.querySelectorAll("*")].filter((element) => element.getBoundingClientRect().width
+      && element.getBoundingClientRect().right > pane.getBoundingClientRect().left + pane.clientWidth + 1)
+      .map((element) => ({ tag: element.tagName, id: element.id, className: element.className,
+        right: element.getBoundingClientRect().right })).slice(0, 20) };
   pane.scrollTop += q("[data-xr-scene]").getBoundingClientRect().top - pane.getBoundingClientRect().top - 20;
+  check("XR pane does not overflow horizontally", pane.scrollWidth <= pane.clientWidth + 1);
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, checks, errors,
-    sourceScope: "synthetic catalogue through actual P1/P5/P6/P7 application owners", profile: ui.getXrLayoutContribution().contribution });
+    layout, sourceScope: "synthetic catalogue through actual P1/P5/P6/P7 application owners", profile: ui.getXrLayoutContribution().contribution });
   ui.destroy(); await ui.waitForXrLayoutDependencies();
-})().catch((error) => { document.querySelector("#receipt").textContent = JSON.stringify({ passed: false, error: error.message, checks, errors }); });
+})().catch((error) => { document.querySelector("#receipt").textContent = JSON.stringify({ passed: false, error: error.message, checks, errors, layout }); });

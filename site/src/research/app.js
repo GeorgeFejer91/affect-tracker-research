@@ -5395,6 +5395,7 @@ function bindResearchInteractions(root, { surface }) {
     acceptXrLayoutContribution(options) { return xrLayoutAuthoring.prepare(options); },
     validateXrLayoutContribution(profile, options) { return xrLayoutAuthoring.validate(profile, options); },
     restoreXrLayoutContribution(profile, options) { return xrLayoutAuthoring.restore(profile, options); },
+    restoreXrLayoutDraft(profile, options) { return xrLayoutAuthoring.restoreDraft(profile, options); },
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
