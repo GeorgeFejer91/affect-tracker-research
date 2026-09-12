@@ -375,6 +375,12 @@ file; follow the integration-owner collection procedure in the workflow.
   versions and XR; maximum derived difference is 3.552713678800501e-15 under the
   strict 1e-10 absolute geometry-only comparison. Current full fixtures and the
   source-bound parity harness are documented in the master contract.
+- Independent root review found a native-only language graph limit inherited
+  incorrectly from JSON nesting. A real 66-node, one-language master succeeded
+  in JS and failed the old native binary. The native traversal now binds P2's
+  validated node count (maximum 256); the flat graph, wire nesting and matrix
+  limits remain separate. The same complete vector is in native, JavaScript,
+  browser and independent-process parity checks.
 
 ### 20260912-p3-master-reproduction
 

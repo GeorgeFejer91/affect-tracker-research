@@ -121,6 +121,20 @@ test("v2 binds exact layout inputs and named algorithms while v1 hashes retain t
   }
 });
 
+test("a valid 66-node language graph is independent of JSON nesting and retains its one terminal path", async () => {
+  const value = await load("planner-recipe-deep-language-v1.canonical");
+  const encoded = new TextEncoder().encode(`${canonicalJson(value)}\n`);
+  const parsed = await parsePlannerRecipeV1(encoded);
+  const matrix = await reproducePlannerRecipeV1(parsed.recipe);
+  assert.deepEqual(matrix, await load("planner-recipe-deep-language-v1-reproduction"));
+  assert.equal(value.segments.P2.languageSelection.nodes.length, 66);
+  assert.equal(matrix.routeCount, 1); assert.equal(matrix.caseCount, 3);
+  assert.equal(matrix.languages[0].languageSelectionPath.length, 66);
+  const { selectionSha256: _hash, ...selector } = matrix.cases[0];
+  const selected = await reconstructPlannerRecipeSelectionV1(parsed.recipe, selector);
+  assert.equal(selected.language.languageSelectionPath.length, 66);
+});
+
 test("two independent processes read only saved data and reproduce bytes and every selected projection", () => {
   const program = `import{readFileSync}from'node:fs';
     import{parsePlannerRecipeV1,serializePlannerRecipeV1,reproducePlannerRecipeV1,reconstructPlannerRecipeSelectionV1}from'./site/src/research/planner-recipe.js';

@@ -445,6 +445,15 @@ mod tests {
                 XR,
                 include_str!("../../test/fixtures/planner-recipe-xr-current-v1-reproduction.json"),
             ),
+            (
+                include_bytes!(
+                    "../../test/fixtures/planner-recipe-deep-language-v1.canonical.json"
+                )
+                .as_slice(),
+                include_str!(
+                    "../../test/fixtures/planner-recipe-deep-language-v1-reproduction.json"
+                ),
+            ),
         ] {
             let loaded = parse_planner_recipe_bytes(bytes).unwrap_or_else(|error| {
                 panic!("{}: {error}", read_value(bytes).unwrap()["recipeId"])

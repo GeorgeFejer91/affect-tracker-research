@@ -55,6 +55,9 @@ Canonical bytes use the existing recursive lexical-key JSON algorithm, preserve
 all array order, encode UTF-8 and end with exactly one LF. Duplicate keys,
 non-finite numbers, unknown/missing fields, noncanonical bytes and unsupported
 versions reject. Maximum file size is 16 MiB and JSON nesting depth is 64.
+Language graph depth is a separate concern: P2's validated acyclic tree may have
+up to 256 flat nodes. A 66-node chain remains valid and does not create 66 levels
+of JSON nesting. Native and browser readers share that existing owner contract.
 
 Integrity has exactly `algorithmVersion`, `definitionSha256`, `segmentSha256`,
 and `reproductionSha256`. New compilation uses `planner-recipe-reproduction-v2`.
