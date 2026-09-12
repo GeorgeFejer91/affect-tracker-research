@@ -157,3 +157,15 @@ test("producer exposes one revisioned snapshot and withdraws invalid catalogues 
     [1, false], [1, true], [1, false], [1, true], [2, true], [3, false],
   ]);
 });
+
+test("producer can restore validated catalogue content without granting directory authority", async () => {
+  const saved = await createVideoCatalogueContributionV1({ revision: 9, entries: [entry()] });
+  const producer = createVideoCatalogueProducerV1();
+  const restored = await producer.restoreContribution(saved);
+  assert.equal(restored.revision, 1, "live owner revision is local and monotonic");
+  assert.deepEqual(restored.contribution, saved);
+  assert.equal(restored.pending, false);
+  assert.equal(Object.hasOwn(restored.contribution, "absolutePath"), false);
+  await assert.rejects(producer.restoreContribution({ ...saved, revision: 10 }));
+  assert.deepEqual(producer.getSnapshot(), restored, "invalid saved content cannot mutate the live producer");
+});

@@ -298,9 +298,25 @@ export function createVideoCatalogueProducerV1({ onChange = () => {} } = {}) {
     }
   }
 
+  async function restoreContribution(value) {
+    const contribution = await validateVideoCatalogueContributionV1(value);
+    generation += 1;
+    publish({ ...snapshot, pending: true });
+    const identityChanged = snapshot.contribution === null
+      || canonicalJson(snapshot.contribution) !== canonicalJson(contribution);
+    lastAccepted = contribution;
+    return publish({
+      ...snapshot,
+      revision: identityChanged ? snapshot.revision + 1 : snapshot.revision,
+      pending: false,
+      contribution,
+    });
+  }
+
   return Object.freeze({
     getSnapshot: () => snapshot,
     replaceEntries,
+    restoreContribution,
     withdraw,
     subscribe(listener) {
       if (typeof listener !== "function") throw new TypeError("Video catalogue listener must be a function.");
