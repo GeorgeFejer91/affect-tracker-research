@@ -205,3 +205,42 @@ test("deferred restore A cannot replace newer B, revive after withdrawal, or era
   await assert.rejects(failingOlderRestore, /deferred invalid A/u);
   assert.deepEqual(producer.getSnapshot(), newerSuccess, "stale failure must preserve newer success");
 });
+
+test("same-recipe media refresh identity blocks a late match after removal and a stale failure after newer success", async () => {
+  const producer = createVideoCatalogueProducerV1();
+  const savedA = await createVideoCatalogueContributionV1({ revision: 7, entries: [entry()] });
+  const savedB = await createVideoCatalogueContributionV1({
+    revision: 8,
+    entries: [{ ...entry(), annotationId: "newer-media" }],
+  });
+  let refreshGeneration = 0;
+  async function refreshAfter(verification, contribution) {
+    const operation = ++refreshGeneration;
+    const isCurrent = () => operation === refreshGeneration;
+    try {
+      await verification;
+      return await producer.restoreContribution(contribution, { isCurrent });
+    } catch (error) {
+      if (isCurrent()) producer.withdraw();
+      throw error;
+    }
+  }
+
+  let releaseMatchingA;
+  const matchingA = new Promise((resolve) => { releaseMatchingA = resolve; });
+  const lateMatchingA = refreshAfter(matchingA, savedA);
+  refreshGeneration += 1; // A media edit/removal starts a newer refresh.
+  const removed = producer.withdraw();
+  releaseMatchingA();
+  assert.deepEqual(await lateMatchingA, removed, "old matching media cannot revive after removal");
+  assert.deepEqual(producer.getSnapshot(), removed);
+
+  let rejectStaleRefresh;
+  const staleFailure = new Promise((resolve, reject) => { rejectStaleRefresh = reject; });
+  const lateFailure = refreshAfter(staleFailure, savedA);
+  refreshGeneration += 1;
+  const newerSuccess = await producer.restoreContribution(savedB);
+  rejectStaleRefresh(new TypeError("late stale media failure"));
+  await assert.rejects(lateFailure, /late stale media failure/u);
+  assert.deepEqual(producer.getSnapshot(), newerSuccess, "stale media failure cannot withdraw newer success");
+});

@@ -293,6 +293,7 @@ function bindResearchInteractions(root, { surface }) {
   let pendingWorkspaceRestore = null;
   let workspaceRestoreGeneration = 0;
   let activeWorkspaceRestoreGeneration = 0;
+  let videoCatalogueRefreshGeneration = 0;
   let workspaceContributionProducer = null;
   const videoCatalogueProducer = createVideoCatalogueProducerV1({
     onChange: () => workspaceContributionProducer?.changed(),
@@ -2999,9 +3000,12 @@ function bindResearchInteractions(root, { surface }) {
 
   /** P1 accepted-data handoff. One incomplete video invalidates the whole view. */
   async function refreshVideoCatalogueContribution() {
+    const refreshOperation = ++videoCatalogueRefreshGeneration;
     const pendingRestore = pendingWorkspaceRestore;
     if (!pendingRestore) activeWorkspaceRestoreGeneration = ++workspaceRestoreGeneration;
-    const restoreIsCurrent = () => pendingWorkspaceRestore === pendingRestore
+    const refreshIsCurrent = () => videoCatalogueRefreshGeneration === refreshOperation;
+    const restoreIsCurrent = () => refreshIsCurrent()
+      && pendingWorkspaceRestore === pendingRestore
       && activeWorkspaceRestoreGeneration === pendingRestore?.generation;
     try {
       const entries = workspaceStimuliToVideoCatalogueEntriesV1(stimuli);
@@ -3022,7 +3026,9 @@ function bindResearchInteractions(root, { surface }) {
       }
       return await videoCatalogueProducer.replaceEntries(entries);
     } catch {
-      if (pendingRestore && !restoreIsCurrent()) return videoCatalogueProducer.getSnapshot();
+      if (!refreshIsCurrent() || (pendingRestore && !restoreIsCurrent())) {
+        return videoCatalogueProducer.getSnapshot();
+      }
       videoCatalogueProducer.withdraw();
       return videoCatalogueProducer.getSnapshot();
     }

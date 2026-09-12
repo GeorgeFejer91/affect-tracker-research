@@ -796,3 +796,11 @@ test("Run feedback projection owns its visible coordinate receipt as well as the
   assert.match(source, /createResearchPreview\(root\.querySelector\('\[data-mode-panel="run"\]'\)/u);
   assert.doesNotMatch(source, /createResearchPreview\(root\.querySelector\("\.run-feedback-stage"\)/u);
 });
+
+test("every asynchronous video catalogue refresh owns a latest-media fence", async () => {
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /const refreshOperation = \+\+videoCatalogueRefreshGeneration;/u);
+  assert.match(source, /const refreshIsCurrent = \(\) => videoCatalogueRefreshGeneration === refreshOperation;/u);
+  assert.match(source, /const restoreIsCurrent = \(\) => refreshIsCurrent\(\)/u);
+  assert.match(source, /if \(!refreshIsCurrent\(\) \|\| \(pendingRestore && !restoreIsCurrent\(\)\)\)/u);
+});
