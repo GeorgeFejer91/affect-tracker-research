@@ -62,7 +62,7 @@ Independent root source review at `7946bc6` found:
    from accepted producer contributions.
 2. `screen-layout-state.js` remains pending/null with a throwing accepted
    validator. Real P1/P5 geometry and internal draft restore already exist;
-   accepted layout and the remaining Q08 reference policy are missing.
+   accepted layout and explicit per-recipe reference selection are missing.
 3. P5's payload contains historical `input`, `visual`, `mappings`. Configured
    halo parameters, response/grid modes/dimensions, hold/timing behavior and
    edited anchor labels remain separate Preview state. S5 owns closing this
@@ -109,13 +109,21 @@ coordinate shared application hunks through integration. No competing formats.
 Pending choices block only their dependent behavior. Continue independent schema,
 editor, validation and persistence work; do not invent policy for a passing test.
 
-- **Q08:** fixed-reference percentages and automatic reference analysis are
-  accepted. The already-pending question distinguishes the largest oriented
-  width×height video from a rectangle combining maximum width and height. S4
-  identifies any additional exact required choice without reopening principles.
-- **Q05:** the already-pending question distinguishes portable references with
-  explicit folder reselection from requiring the original location. Pure content
-  restore is independent of authorization; P1/P7 can implement it now.
+- **Q08 implementation refinement:** implement both proposed analysis methods as
+  an explicit required per-recipe UI choice, with no silently selected default:
+  the largest oriented width×height video or the combined maximum-width/height
+  envelope. After selection, automatically derive one fixed reference, preview
+  it and save the method/result. Missing selection blocks the current recipe,
+  not the application's accepted-type implementation. This parameterizes the
+  Planner rather than inventing a global answer; the global default preference
+  is optional and still unanswered. S4 owns the exact versioned semantics.
+- **Q05:** original absolute-directory provenance remains optional/unanswered.
+  P1 confirms existing logical roots and exact relative source/package paths
+  fully represent authored media declarations. Reopening requires fresh explicit
+  root authorization, rehash/reprobe and exact comparison. Neither live permission
+  nor Runner relocation policy is inferred. A custom native shell root currently
+  resets to the app-data default on restart; that local preference gap is separate
+  from master JSON generation and is not a universal compilation blocker.
 - **Q04 answered:** the user requires location-derived IDs such as
   `FOLDERNAME_video.mp4` and rejected the artificial collision premise. Preserve
   the complete relative path, filename and extension in an unambiguous reversible
@@ -131,8 +139,10 @@ editor, validation and persistence work; do not invent policy for a passing test
   behavior. S5 records the exact inventory and any remaining semantic decision,
   separating temporary inspection/test state.
 
-Q05/Q08 remain pending at this checkpoint. Do not duplicate their questions or
-treat the general completion request, elapsed time or continuation as answers.
+Do not duplicate the outstanding preference questions or treat the general
+completion request, elapsed time or continuation as answers. Parameterized
+authoring with an explicit researcher selection does not require choosing that
+researcher's actual experiment configuration in this development task.
 
 ## Planner completion evidence
 
