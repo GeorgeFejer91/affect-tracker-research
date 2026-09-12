@@ -1,5 +1,7 @@
 import { preparePlannerSurface } from "./planner-surface.js";
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { FORM_DEFINITION_SCHEMA, verifyP2Definition } from "./form-definition.js";
+import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
 import {
@@ -2443,7 +2445,7 @@ function bindResearchInteractions(root, { surface }) {
       definitionSha256: definition.definitionSha256,
       placement,
     }, {
-      definition,
+      definition: definition.schema === FORM_DEFINITION_SCHEMA ? null : definition,
       blockIds: protocolBlockIds(),
       stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     });
@@ -2481,6 +2483,11 @@ function bindResearchInteractions(root, { surface }) {
       sourceSha256: authoringReceipt.original.sha256,
       bytes: new Uint8Array(bytes instanceof ArrayBuffer ? bytes.slice(0) : bytes),
     };
+    return storeQuestionnairePayload(payload);
+  }
+
+  async function storeQuestionnairePayload(payload) {
+    if (!capabilities.directoryPermission) throw new Error("Select the parent work directory before adding questionnaire assets.");
     if (surface === "browser") {
       if (!workspace || typeof workspace.saveQuestionnaireAsset !== "function") {
         throw new Error("The browser questionnaire asset store is not available.");
@@ -2490,7 +2497,7 @@ function bindResearchInteractions(root, { surface }) {
     return requestQuestionnaireAssetStorage(root, payload);
   }
 
-  async function saveEditedQuestionnaire({ familyId, language, definition, sourceBytes, authoringReceipt, expectedPresetToken }, guard = {}) {
+  async function saveEditedQuestionnaire({ familyId, language, definition, sourceBytes, authoringReceipt, expectedPresetToken, sourceFormat }, guard = {}) {
     const current = () => !researchUiDisposed && !guard.signal?.aborted
       && (guard.isCurrent === undefined || guard.isCurrent());
     if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
@@ -2500,12 +2507,18 @@ function bindResearchInteractions(root, { surface }) {
       || !studyLanguages.some(({ languageTag }) => languageTag === language)) {
       throw new Error("This questionnaire or language is no longer included.");
     }
-    validateQuestionnaireDefinitionV1(definition);
+    definition = await verifyP2Definition(definition);
+    if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
     if (definition.language !== language || familyIdForDefinition(definition) !== familyId) {
       throw new TypeError("The edited questionnaire does not match its language table.");
     }
     let sourceReceipt = null;
-    if (sourceBytes && authoringReceipt) sourceReceipt = await storeQuestionnaireSource(sourceBytes, definition, authoringReceipt);
+    if (definition.schema === FORM_DEFINITION_SCHEMA) {
+      if (sourceFormat !== "formDefinitionV1") throw new TypeError("Typed form save requires its explicit source format.");
+      const payload = await prepareFormSourceStorage(sourceBytes, definition);
+      if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
+      sourceReceipt = await storeQuestionnairePayload(payload);
+    } else if (sourceBytes && authoringReceipt) sourceReceipt = await storeQuestionnaireSource(sourceBytes, definition, authoringReceipt);
     else if (!questionnaireDefinition(definition.questionnaireId)) throw new Error("The questionnaire source is missing; import or edit the table and save again.");
     // A storage receipt cannot adopt an asset into a slot removed while saving.
     if (!current() || languageEditorLocked || questionnaireEditor.presetToken(familyId, language) !== expectedPresetToken

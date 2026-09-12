@@ -2,6 +2,11 @@
 
 ### 20260912-main-master-v2-compiler
 
+- Main's app save callback now routes explicitly verified typed canonical JSON
+  through existing workspace storage with exact source-byte hash and no fabricated
+  CSV receipt. Eight source/prepared-save/P2 checks pass; actual native invocation
+  and source/adoption composition remain unqualified. Registry projection split
+  f933037 separately passes 21 tests and is allocated to root's prepared Open.
 - Main added explicit master2/reproduction3/selection2 JS APIs, reusing existing
   non-P2 algorithms and preserving strict V1 entrypoints and canonical fixtures.
   Fifteen focused old/new compiler/file tests pass. API and synthetic mixed

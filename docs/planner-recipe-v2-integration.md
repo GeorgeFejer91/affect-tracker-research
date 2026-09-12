@@ -31,3 +31,14 @@ preservation, mixed route selection, version/algorithm confusion, malformed
 presentation and changed definition rejection. Native decoding, actual CLI
 source saving, full app capture/restore, Runner execution and XDF evidence remain
 separately gated. No current foreground app or canonical branch was changed.
+
+The main editor save callback now explicitly verifies typed definitions and
+routes their exact canonical JSON + LF through the existing workspace storage
+command with format `json`. `form-source-storage.js` computes the file hash from
+the actual source bytes, not the definition self-hash, and refuses changed or
+noncanonical source. It invents no CSV provenance receipt. Existing Likert source
+storage retains its original format/receipt path. Module shape validation reuses
+the existing V2 module validator, with the already verified typed definition
+bound directly by its identity/hash rather than passed into the strict legacy
+definition validator. Eight focused source/prepared-save/P2 checks pass; this is
+not yet an actual native app storage receipt or consequential CLI publication.
