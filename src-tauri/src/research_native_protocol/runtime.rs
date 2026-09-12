@@ -267,6 +267,7 @@ impl PackageRunStatus {
 }
 
 pub struct PackageProtocolRuntime {
+    professor_monitor: Arc<crate::research_professor::monitor::MonitorMailbox>,
     recorder: Option<Arc<crate::research_recorder::RecorderService>>,
     workspace: Arc<WorkspaceService>,
     native_media: Arc<NativeMediaService>,
@@ -319,6 +320,7 @@ impl PackageProtocolRuntime {
     ) -> Self {
         Self {
             recorder: None,
+            professor_monitor: Arc::default(),
             workspace,
             native_media,
             input,
@@ -333,6 +335,12 @@ impl PackageProtocolRuntime {
     ) -> Self {
         self.recorder = Some(recorder);
         self
+    }
+
+    pub(crate) fn professor_monitor(
+        &self,
+    ) -> Arc<crate::research_professor::monitor::MonitorMailbox> {
+        Arc::clone(&self.professor_monitor)
     }
 
     /// Serialize recorder mutations with Start/resume. UI state is not authority.
@@ -549,6 +557,7 @@ impl PackageProtocolRuntime {
             lsl.is_some(),
         )));
         let active_run = self.launch_worker(WorkerInit {
+            professor_monitor: self.professor_monitor(),
             receipt: receipt.clone(),
             selection,
             participant,
@@ -804,6 +813,7 @@ impl PackageProtocolRuntime {
             lsl.is_some(),
         )));
         let active_run = self.launch_worker(WorkerInit {
+            professor_monitor: self.professor_monitor(),
             receipt: receipt.clone(),
             selection,
             participant,
@@ -1209,6 +1219,7 @@ fn initial_status(
 }
 
 struct WorkerInit {
+    professor_monitor: Arc<crate::research_professor::monitor::MonitorMailbox>,
     receipt: PackageStartRunReceipt,
     selection: CompiledPackageSelectionV1,
     participant: CodedParticipant,
@@ -1232,6 +1243,7 @@ struct WorkerInit {
 }
 
 struct Worker {
+    professor_monitor: Arc<crate::research_professor::monitor::MonitorMailbox>,
     receipt: PackageStartRunReceipt,
     selection: CompiledPackageSelectionV1,
     participant: CodedParticipant,
@@ -1300,6 +1312,7 @@ impl Worker {
             .unwrap_or_default();
         Ok(Self {
             receipt: init.receipt,
+            professor_monitor: init.professor_monitor,
             selection: init.selection,
             participant: init.participant,
             workspace_id: init.workspace_id,
@@ -1998,6 +2011,7 @@ impl Worker {
                     || self.selection.settings.visual.flubber_enabled),
         };
         self.storage.write_sample(&sample)?;
+        self.professor_monitor.publish(&sample);
         if self.sample_sequence.is_multiple_of(u64::from(
             self.selection.settings.experiment.sampling_frequency_hz,
         )) {

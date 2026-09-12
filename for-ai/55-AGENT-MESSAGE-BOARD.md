@@ -3319,3 +3319,21 @@ legacy recovery compatibility and exact tests. 656 Node/216 Rust tests, Clippy,
 checks passed. This continues d7871ae on the isolated Runner branch; canonical
 integration remains owner-controlled. No master allocation, phone app, native
 playback qualification or Planner authoring changes are included.
+
+### 20260912-runner-professor-companion — R1/RR-11 Backend Verification
+
+Owner: Match landing page app icons task, isolated branch
+codex/segment-runner-professor-companion at stopped base3301440.
+Explicit user allocation: Internet QR companion; semantic Start/Pause/Resume/Stop;
+current-video preview; Ratings timeline widget opening stacked valence/arousal
+plots. Amendment68 is authoritative for this bounded remote reactivation.
+Root reserved lane; Experiment Runner owns master/session APIs; Live Preview
+agreed read-only SnapshotLiveFrame actor arm/handle/service wrapper; main owns
+canonical lib/Cargo integration. Existing sampler gains a nonblocking 4Hz mailbox
+publication only after successful sample write. Input, questions, files and
+recording remain native/local; no Planner fields or v1 recipe changes.
+Implementation in progress: native HMAC/grants/revision/dedupe; bundled BRSP and
+VDO SDK1.5.5; inert-before-enable transport; command/state and separate lossy JPEG
+lane; browser popup timeline. Qualification still open: physical phone/Internet
+route and packaged native run, JPEG Playing timing/teardown impact, and unchanged
+native readiness gates. No completion or platform qualification is claimed.

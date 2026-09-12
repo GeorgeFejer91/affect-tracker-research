@@ -88,6 +88,20 @@ impl std::fmt::Debug for GstPlayActorHandle {
 }
 
 impl GstPlayActorHandle {
+    pub(super) fn snapshot_live_frame(
+        &self,
+        fence: NativeMediaCommandFenceV1,
+    ) -> ResearchResult<super::live_frame::LiveFrame> {
+        let admission = super::live_frame::Admission::acquire()?;
+        self.request_with_timeout(
+            |response| ActorCommand::SnapshotLiveFrame {
+                fence,
+                response,
+                admission,
+            },
+            Duration::from_millis(300),
+        )
+    }
     pub(super) fn start(config: GstActorConfig) -> Result<Self, ActorInitError> {
         let (command_sender, command_receiver) = mpsc::channel();
         let (startup_sender, startup_receiver) = mpsc::sync_channel(1);
@@ -252,6 +266,11 @@ impl Drop for GstPlayActorHandle {
 }
 
 enum ActorCommand {
+    SnapshotLiveFrame {
+        fence: NativeMediaCommandFenceV1,
+        response: mpsc::SyncSender<ResearchResult<super::live_frame::LiveFrame>>,
+        admission: super::live_frame::Admission,
+    },
     Status {
         response: mpsc::SyncSender<ResearchResult<NativeMediaStatusV1>>,
     },
@@ -441,6 +460,20 @@ fn handle_command(
                 Ok(status.clone())
             });
             let _ = response.send(result);
+        }
+        ActorCommand::SnapshotLiveFrame {
+            fence,
+            response,
+            admission,
+        } => {
+            let result = ensure_fence(status, &fence).and_then(|_| {
+                let player = active
+                    .as_ref()
+                    .ok_or_else(|| actor_unavailable("native-gstplay-player-missing"))?;
+                super::live_frame::capture(&player.play, status)
+            });
+            let _ = response.send(result);
+            drop(admission);
         }
         ActorCommand::AttestDecode { fence, response } => {
             let result = ensure_fence(status, &fence).and_then(|_| {

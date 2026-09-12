@@ -19,6 +19,7 @@ mod research_participant;
 pub mod research_planner_recipe;
 pub mod research_planner_recipe_policy;
 mod research_platform;
+mod research_professor;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
 mod research_recorder;
@@ -88,14 +89,19 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             input.set_window_focused(focused);
             if role == DesktopRole::Runner {
                 let recorder = Arc::new(research_recorder::RecorderService::default());
-                app.manage(Arc::new(
+                let runtime = Arc::new(
                     PackageProtocolRuntime::with_services(
                         Arc::clone(&workspace),
                         Arc::clone(&native_media),
                         Arc::clone(&input),
                     )
                     .with_recorder(Arc::clone(&recorder)),
-                ));
+                );
+                app.manage(Arc::new(research_professor::ProfessorService::new(
+                    Arc::clone(&runtime),
+                    Arc::clone(&native_media),
+                )));
+                app.manage(runtime);
                 app.manage(recorder);
             }
             app.manage(workspace);
@@ -110,6 +116,11 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
                     WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
                 ) {
                     if let Some(runtime) = window.try_state::<Arc<PackageProtocolRuntime>>() {
+                        if let Some(professor) =
+                            window.try_state::<Arc<research_professor::ProfessorService>>()
+                        {
+                            professor.disable();
+                        }
                         runtime.shutdown();
                     }
                     if let Some(recorder) =
@@ -189,6 +200,14 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_professor::commands::research_professor_begin,
+            research_professor::commands::research_professor_verify,
+            research_professor::commands::research_professor_disable,
+            research_professor::commands::research_professor_arm,
+            research_professor::commands::research_professor_disarm,
+            research_professor::commands::research_professor_snapshot,
+            research_professor::commands::research_professor_apply,
+            research_professor::commands::research_professor_frame,
             research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
             research_runner_session::research_runner_selection,
@@ -239,6 +258,9 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
 
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::ExitRequested { .. }) {
+            if let Some(professor) = app.try_state::<Arc<research_professor::ProfessorService>>() {
+                professor.disable();
+            }
             if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
                 runtime.shutdown();
             }

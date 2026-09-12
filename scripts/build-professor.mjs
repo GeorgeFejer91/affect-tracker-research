@@ -1,0 +1,12 @@
+import { build } from 'vite';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+const root=resolve(import.meta.dirname,'..'),out=resolve(root,'companion/dist');
+await build({configFile:resolve(root,'companion/vite.config.js')});
+await cp(resolve(root,'companion/vendor'),resolve(out,'vendor'),{recursive:true});
+await mkdir(resolve(out,'licenses'),{recursive:true});
+const sources=[['BRSP (MIT)','companion/vendor/brsp/LICENSE'],['VDO.Ninja SDK (MPL-2.0)','companion/vendor/vdoninja/1.5.5/LICENSE-MPL-2.0.txt']];
+const escape=value=>value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const sections=await Promise.all(sources.map(async([title,path])=>`<h2>${title}</h2><pre>${escape(await readFile(resolve(root,path),'utf8'))}</pre>`));
+await writeFile(resolve(out,'licenses/index.html'),`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Companion licenses</title><h1>Companion licenses</h1><p><a href="../">Return to companion</a> · <a href="../vendor/PROVENANCE.md">Source provenance</a> · <a href="../vendor/vdoninja/1.5.5/vdoninja-sdk.js">VDO.Ninja corresponding source</a></p>${sections.join('')}</html>`);
+console.log('Professor artifact includes exact transport source and licenses.');

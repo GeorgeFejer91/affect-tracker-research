@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; base-uri 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data: blob:; media-src 'self' blob: http://research-media.localhost research-media:; object-src 'none'; frame-src 'none'; style-src 'self'; script-src 'self'"
+      "csp": "default-src 'self'; base-uri 'self'; connect-src ipc: http://ipc.localhost wss://wss.vdo.ninja https://turnservers.vdo.ninja; img-src 'self' data: blob:; media-src 'self' blob: http://research-media.localhost research-media:; object-src 'none'; frame-src 'none'; style-src 'self'; script-src 'self'"
     }
   },
   "bundle": {

@@ -9,6 +9,7 @@ import { deriveParticipantRecord } from "../../site/src/research/identity.js";
 import { validateQuestionnaireAnswers } from "../../site/src/research/questionnaires.js";
 import { createRunnerPresentation } from "./presentation.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
+import { createProfessorHost } from "./professor.js";
 import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 
 const messageOf = (error) => error?.message ?? String(error);
@@ -49,6 +50,35 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     },
   });
   const presentation = createRunnerPresentation(root, { invoke, windowObject, isActive: () => protocol.active });
+  const professor = createProfessorHost(root, { invoke, onChange: renderControls,
+    onArmedEnded() { if (!destroyed && !protocol.active && presentation.active) presentation.showPage("preparation"); },
+    execute(command, grant, prepared) {
+    const operation = queue.then(async () => {
+      if (destroyed) throw new Error("Runner closed.");
+      busy = true; renderControls();
+      let outcome;
+      const apply = async () => {
+        outcome = await invoke("research_professor_apply", { request: {
+          grant, commandId: command.commandId, expectedRevision: command.expectedRevision, action: command.action,
+        } });
+        if (!outcome.ok) throw new Error("Runner rejected remote command.");
+        return outcome.localEffect?.receipt;
+      };
+      try {
+        if (command.action === "start") {
+          if (!prepared) throw new Error("No locally prepared attempt.");
+          await protocol.start(prepared.detail, prepared.workspaceId, { executeStart: apply });
+        } else if (command.action === "stop") await protocol.finish("stopEarly", { executeFinish: apply });
+        else { await apply(); await protocol.refresh(); }
+        return outcome;
+      } catch (error) {
+        if (outcome && !outcome.ok) return outcome;
+        throw error;
+      } finally { busy = false; if (!destroyed) renderControls(); }
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  } });
   const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
   const participantPicker = createParticipantPicker(root, { onChange: commit => {
     invalidate(); refreshTimeline();
@@ -76,10 +106,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     return queue;
   }
   function invalidate() {
+    if (professor.armed) void professor.disarm().catch(fail);
     revision += 1; preflight = null; selection = null; inputReceipt = null;
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
   }
   function destroy() {
+    if (professor.enabled) void professor.stop().catch(() => {});
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
     listeners.forEach((remove) => remove()); participantPicker.destroy(); controllerSettings.destroy(); protocol.destroy(); preview.destroy(); delete root.researchUi;
   }
@@ -266,7 +298,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-record-status", recorder.available === false ? "This build does not include LSL recording." : `${recorder.phase} · ${recorder.sampleCount ?? 0} samples${recorder.fileName ? ` · ${recorder.fileName}` : ""}${recorder.error ? ` · ${recorder.error}` : ""}`);
     renderControls();
   }
-  for (const [button, dialog] of [["runner-settings", "runner-settings-dialog"], ["runner-preparation-settings", "runner-settings-dialog"], ["runner-controller", "runner-controller-dialog"], ["runner-professor", "runner-professor-dialog"], ["runner-remote", "runner-remote-dialog"], ["runner-session-menu", "runner-session-dialog"]]) {
+  for (const [button, dialog] of [["runner-session-professor", "runner-professor-dialog"], ["runner-settings", "runner-settings-dialog"], ["runner-preparation-settings", "runner-settings-dialog"], ["runner-controller", "runner-controller-dialog"], ["runner-professor", "runner-professor-dialog"], ["runner-remote", "runner-remote-dialog"], ["runner-session-menu", "runner-session-dialog"]]) {
     listen(query(button), "click", () => query(dialog).showModal());
   }
   root.querySelectorAll("[data-close-dialog]").forEach(button => listen(button, "click", () => query(button.dataset.closeDialog).close()));
@@ -325,8 +357,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     }
     const participant = disposition === "new-attempt" ? deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") }) : null;
     query("runner-first").value = ""; query("runner-last").value = "";
-    await protocol.start({ ...selection.detail, participant, inputTestReceiptId: inputReceipt?.receiptId,
-      attemptDisposition: disposition, recoveryFinalizationOnly: disposition === "finalize", rerunConfirmed: query("runner-rerun").checked }, workspace.workspaceId);
+    const detail = { ...selection.detail, participant, inputTestReceiptId: inputReceipt?.receiptId,
+      attemptDisposition: disposition, recoveryFinalizationOnly: disposition === "finalize", rerunConfirmed: query("runner-rerun").checked };
+    if (professor.waitForStart && disposition === "new-attempt") {
+      await professor.arm(detail, workspace.workspaceId);
+      presentation.showPage("run");
+      text("runner-session", "Prepared locally · waiting for Professor to start");
+    }
+    else await protocol.start(detail, workspace.workspaceId);
   }
   listen(query("runner-pause"), "click", () => action(() => protocol.togglePause()));
   listen(query("runner-stop"), "click", () => query("runner-stop-dialog").showModal());

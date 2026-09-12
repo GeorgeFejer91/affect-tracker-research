@@ -10,3 +10,5 @@ site/assets/research-stimuli/openlav/v1/metadata/original/*.txt -text whitespace
 *.xlsx binary
 *.zip binary
 *.dll binary
+# Transport provenance pins identify exact upstream bytes, including line endings.
+companion/vendor/** -text whitespace=-trailing-space

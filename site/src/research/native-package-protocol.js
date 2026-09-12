@@ -327,7 +327,7 @@ function questionnaireChoices(answers) {
     }));
 }
 
-function startRequest(detail, workspaceId) {
+export function startRequest(detail, workspaceId) {
   if (typeof workspaceId !== "string" || !UUID_PATTERN.test(workspaceId)
     || typeof detail?.experimentPackageSourceText !== "string"
     || detail.experimentPackageSourceText.length === 0
@@ -535,7 +535,7 @@ export class NativePackageProtocolAdapter {
     return receipt;
   }
 
-  async start(detail, workspaceId) {
+  async start(detail, workspaceId, { executeStart = null } = {}) {
     if (this.run) throw new Error("A Rust package protocol attempt is already active.");
     const packageRequest = packageSourceRequest(detail, workspaceId);
     await this.#ensureRecoveries(workspaceId, detail.experimentPackageSourceText);
@@ -563,7 +563,7 @@ export class NativePackageProtocolAdapter {
     }) : startRequest(detail, workspaceId);
     let receipt;
     try {
-      receipt = validateNativePackageStartReceiptV1(await this.invoke(command, { request }));
+      receipt = validateNativePackageStartReceiptV1(await (executeStart ? executeStart() : this.invoke(command, { request })));
     } catch (error) {
       await this.#reconcileRejectedActivation(detail).catch(() => {});
       throw error;
@@ -656,16 +656,16 @@ export class NativePackageProtocolAdapter {
     });
   }
 
-  async finish(outcome) {
+  async finish(outcome, { executeFinish = null } = {}) {
     const run = this.#requiredRun();
     if (run.finalizing) return null;
     if (!["completed", "stopEarly"].includes(outcome)) throw new TypeError("Unknown package run outcome.");
     run.finalizing = true;
     this.#stopPolling();
     try {
-      const receipt = validateFinalizeReceipt(await this.invoke("research_finish_package_run", {
+      const receipt = validateFinalizeReceipt(await (executeFinish ? executeFinish() : this.invoke("research_finish_package_run", {
         request: { runId: run.receipt.runId, outcome },
-      }), {
+      })), {
         recovery: {
           runId: run.receipt.runId,
           participantId: run.receipt.participantId,

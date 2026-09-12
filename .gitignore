@@ -11,3 +11,5 @@ src-tauri/gen/schemas/
 coverage/
 *.log
 runner/dist/
+companion/dist/
+artifacts/professor/

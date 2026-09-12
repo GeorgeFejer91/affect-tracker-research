@@ -26,6 +26,8 @@
     "desktop:logos:axis:check": "node scripts/build-axis-bloom-variants.mjs --check",
     "desktop:logo:select": "node scripts/select-app-logo.mjs",
     "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64",
+    "companion:build": "node scripts/build-professor.mjs",
+    "companion:dev": "vite --config companion/vite.config.js",
     "runner:dev": "vite --config runner/vite.config.js",
     "runner:build": "vite build --config runner/vite.config.js && node scripts/verify-runner-build.js",
     "runner:check": "cargo check --manifest-path src-tauri/Cargo.toml --locked --bin affect-runner",
@@ -39,6 +41,7 @@
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/cli": "2.11.4",
     "esbuild": "0.28.1",
+    "qrcode": "1.5.4",
     "vite": "8.2.2"
   }
 }

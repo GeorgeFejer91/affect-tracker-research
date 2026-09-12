@@ -1,0 +1,66 @@
+{
+  "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "targetHello": {
+    "protocol": "brsp",
+    "version": 1,
+    "type": "hello",
+    "sessionId": "professor_fixture",
+    "senderId": "target_fixture",
+    "senderEpoch": 4294967295,
+    "sequence": 0,
+    "body": {
+      "role": "target",
+      "nonce": "target_nonce_fixture_12345678",
+      "capabilities": [
+        "command-ack",
+        "latest-state",
+        "state-snapshot"
+      ],
+      "requestedScopes": [],
+      "grantedScopes": [
+        "runner.observe",
+        "runner.operate",
+        "runner.video"
+      ]
+    }
+  },
+  "controllerHello": {
+    "protocol": "brsp",
+    "version": 1,
+    "type": "hello",
+    "sessionId": "professor_fixture",
+    "senderId": "controller_fixture",
+    "senderEpoch": 2147483648,
+    "sequence": 0,
+    "body": {
+      "role": "controller",
+      "nonce": "controller_nonce_fixture_12345678",
+      "capabilities": [
+        "command-ack",
+        "latest-state",
+        "state-snapshot"
+      ],
+      "requestedScopes": [
+        "runner.observe",
+        "runner.operate",
+        "runner.video"
+      ],
+      "grantedScopes": []
+    }
+  },
+  "transcript": "{\"controllerHello\":{\"body\":{\"capabilities\":[\"command-ack\",\"latest-state\",\"state-snapshot\"],\"grantedScopes\":[],\"nonce\":\"controller_nonce_fixture_12345678\",\"requestedScopes\":[\"runner.observe\",\"runner.operate\",\"runner.video\"],\"role\":\"controller\"},\"protocol\":\"brsp\",\"senderEpoch\":2147483648,\"senderId\":\"controller_fixture\",\"sequence\":0,\"sessionId\":\"professor_fixture\",\"type\":\"hello\",\"version\":1},\"protocol\":\"brsp\",\"sessionId\":\"professor_fixture\",\"targetHello\":{\"body\":{\"capabilities\":[\"command-ack\",\"latest-state\",\"state-snapshot\"],\"grantedScopes\":[\"runner.observe\",\"runner.operate\",\"runner.video\"],\"nonce\":\"target_nonce_fixture_12345678\",\"requestedScopes\":[],\"role\":\"target\"},\"protocol\":\"brsp\",\"senderEpoch\":4294967295,\"senderId\":\"target_fixture\",\"sequence\":0,\"sessionId\":\"professor_fixture\",\"type\":\"hello\",\"version\":1},\"version\":1}",
+  "proof": {
+    "protocol": "brsp",
+    "version": 1,
+    "type": "proof",
+    "sessionId": "professor_fixture",
+    "senderId": "controller_fixture",
+    "senderEpoch": 2147483648,
+    "sequence": 1,
+    "body": {
+      "algorithm": "HMAC-SHA-256",
+      "role": "controller",
+      "value": "Giq7h_aaxlqwriY9PvMxz5lFvZFQuUozRPTEZzLWFHw"
+    }
+  }
+}

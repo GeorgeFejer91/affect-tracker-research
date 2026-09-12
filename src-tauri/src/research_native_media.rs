@@ -2,6 +2,8 @@
 mod capability;
 #[path = "research_native_media/contracts.rs"]
 mod contracts;
+#[path = "research_native_media/live_frame.rs"]
+pub mod live_frame;
 #[path = "research_native_media/state.rs"]
 mod state;
 
@@ -33,6 +35,20 @@ pub struct NativeMediaService {
 }
 
 impl NativeMediaService {
+    pub(crate) fn snapshot_live_frame(
+        &self,
+        fence: NativeMediaCommandFenceV1,
+    ) -> ResearchResult<live_frame::LiveFrame> {
+        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
+        {
+            self.with_actor(|actor| actor.snapshot_live_frame(fence))
+        }
+        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
+        {
+            let _ = fence;
+            self.actor_unavailable()
+        }
+    }
     /// Constructs the production service. The optional native parent handle is
     /// obtained by the Tauri composition root and never crosses the command
     /// boundary exposed to the WebView.
