@@ -5490,3 +5490,10 @@ is now 90 seconds within the unchanged 120-second broker deadline, with absolute
 deadline/cancellation checks retained. Fourteen focused startup/transport checks
 pass. This allowance change does not resolve or qualify the stalled native
 shutdown; retain root-release-fullmock-evidence-05 as a release blocker.
+
+Root result: production CLI scenario 55/55 PASS at a1d9110; both timestamped
+77,746-byte master3 files validated and original preserved. Native/JS Runner
+interpretations PASS for EN and DE, six steps each, same exact primary JSON.
+Details and next native gate: [release validation](../docs/release-validation.md).
+No final release, actual playback/XDF or physical screenshot claim. No further
+delegation; root owns the remaining work.

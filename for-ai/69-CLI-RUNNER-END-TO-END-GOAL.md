@@ -423,3 +423,15 @@ checks passed, including thirteen corruption/reordering counterexamples.
 Syntax and diff checks passed. These checks do not author a real recipe. The
 script awaits the combined native core9/typed-P2/master-v2 executable; all
 actual CLI import/export, editable reopen and Runner/XDF goal gates remain open.
+
+### 2026-09-13 — Root serial validation result
+
+The real CLI mock now passes all 55 steps, timestamped save/reopen/edit/resave,
+and first-file preservation. The exact 77,746-byte JSON also passes both native
+and browser Runner readers for English and German, including all six steps and
+saved P4/P5 geometry. See [the concise release validation record](../docs/release-validation.md)
+for exact files, source/artifact hashes and evidence. Root remains sole owner;
+other tasks stay idle. Planner validation is passed for this scenario. Actual
+Runner playback, native combined screenshots and XDF remain open, with qualified
+Start still disabled. Continue at the native Runner gate; do not repeat the
+passed Planner scenario unless a relevant change invalidates it.
