@@ -126,6 +126,30 @@ file; follow the integration-owner collection procedure in the workflow.
   roadmap entry. Edge produced no receipt and remains unverified. No runtime,
   installed/native/hardware qualification, canonical merge, push or deployment.
 - Source writers stop at handoff; integration may collect the clean branch.
+### 20260912-p7-policy-and-language-composition
+
+- Owner **S7**, same Backend Verification pass, P7-05/P7-06/P7-09 foundation.
+  Added closed `PlannerRecipePolicyV1` JS/Rust component with exact retained
+  participant metadata, sampling, output, LSL and complete-video playback.
+  Neither parser defaults absent fields or introduces Runner allocation.
+  Both assert the shared fixture canonical hash
+  `c2b30a0af779d28e1ca5c753f84b36717ce10af241ab7a2837be49df6c982f21`.
+- P2 route composition preserves every definition, code, module and nested route.
+  Before/after-session hooks retain their meaning. P2 confirmed there is no
+  authorized variant correspondence for blocks or attached-ISI after-stimulus
+  hooks; those produce a precise P2 module-field error without modifying content.
+  Historical v1 reading and its hooks remain unchanged.
+- Evidence: 5 component Node checks including two independent processes with
+  ambient clock/RNG/storage/navigation unavailable; 8 existing package Node
+  checks including hostile-process complete-package reproduction; 2 Rust policy
+  checks; 8 existing Rust package checks; no-default-features all-target Clippy
+  with warnings denied. No new dependency, unsafe boundary or runtime authority.
+- `docs/planner-p7-recipe-assembly.md` records exact interfaces and remaining
+  assembly gates. The full successor envelope/native dispatch and integrated
+  content-only reopen remain unfinished. P4 has no accepted desktop type while
+  Q08 is pending; master composition must not serialize its internal draft.
+  P3/P6 own content-only restore additions; actual pending P1 snapshots remain
+  pending until fresh exact media rebinding. Integration owns collection.
 
 ### 20260912-p7-named-file-and-owner-lifecycle
 
