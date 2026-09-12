@@ -306,7 +306,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (questionnaire?.position !== status.position) {
         questionnaire = {definition:step.payload.definition,position:status.position,answers:{...status.answers},master:true};
         text("runner-questionnaire-title", questionnaire.definition.title); text("runner-questionnaire-instructions", questionnaire.definition.instructions);
-        text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items`);
+        text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items · Answer every item to continue`);
         renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
         query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=false;
       }
@@ -343,10 +343,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-questionnaire-progress", `Item ${itemIndex + 1} of ${definition.items.length}`);
     const host = query("runner-questionnaire-items"); host.replaceChildren();
     for (const item of [definition.items[itemIndex]]) {
-      const fieldset = document.createElement("fieldset"), legend = document.createElement("legend"); legend.textContent = `${item.order}. ${item.prompt}${item.required ? " (required)" : ""}`; fieldset.append(legend);
+      const fieldset = document.createElement("fieldset"), legend = document.createElement("legend"); legend.textContent = `${item.order}. ${item.prompt} (required)`; fieldset.append(legend);
       for (const option of item.options) {
         const label = document.createElement("label"), input = document.createElement("input"), span = document.createElement("span");
-        input.type = "radio"; input.name = `answer-${item.itemId}`; input.value = option.optionId; input.dataset.answerItem = item.itemId; input.checked = questionnaire.answers[item.itemId] === option.optionId;
+        input.type = "radio"; input.name = `answer-${item.itemId}`; input.value = option.optionId; input.dataset.answerItem = item.itemId; input.checked = questionnaire.answers[item.itemId] === option.optionId; input.required = true;
         span.textContent = option.label; label.append(input, span); fieldset.append(label);
       } host.append(fieldset);
     }
@@ -442,6 +442,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   });
   listen(query("runner-questionnaire-form"), "submit", (event) => { event.preventDefault(); action(async () => {
     if (!questionnaire) return; validateQuestionnaireAnswers(questionnaire.definition, questionnaire.answers);
+    if (questionnaire.definition.items.some(item => !Object.hasOwn(questionnaire.answers, item.itemId) || questionnaire.answers[item.itemId] === null)) throw new Error("Answer every questionnaire item before continuing.");
     await protocol.questionnaireSubmit({ protocolStepPosition: questionnaire.position, answers: { ...questionnaire.answers } });
   }); });
   listen(query("runner-questionnaire-previous"), "click", () => {
@@ -450,7 +451,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-questionnaire-next"), "click", () => {
     if (!questionnaire || busy) return;
     const item = questionnaire.definition.items[questionnaire.itemIndex];
-    if (item.required && !Object.hasOwn(questionnaire.answers, item.itemId)) { fail(new Error("Choose a response before continuing.")); return; }
+    if (!Object.hasOwn(questionnaire.answers, item.itemId) || questionnaire.answers[item.itemId] === null) { fail(new Error("Choose a response before continuing.")); return; }
     questionnaire.itemIndex = Math.min(questionnaire.definition.items.length - 1, questionnaire.itemIndex + 1); renderQuestionnaireItem();
   });
   listen(query("runner-discover"), "click", () => action(async () => {

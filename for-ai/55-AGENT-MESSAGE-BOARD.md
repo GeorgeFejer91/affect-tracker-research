@@ -1096,6 +1096,40 @@
   receipt; existing editor.save alone is not a CLI result. TAS translations and
   permissions remain independently source-gated. Runner is allocated separately,
   not a P2 mutation target. No scientific schema/scoring or runtime policy change.
+### 20260912-runner-information-and-mandatory-submission-handoff
+
+- RR-07/RR-08/RR-10, Backend Verification, isolated information-stream branch
+  based on stopped core `0aab279`. Implements the approved bounded primary
+  information envelope, startup before acquisition, full source/selection and
+  native response/observation/outcome records, with independent XDF-only readback.
+  Exact schema and analysis bounds: `docs/runner-information-stream-v1.md`.
+- Direct user requirement on 2026-09-12: “importantly, the questionnaire data is
+  always mandatory to fill out, aprticipants cannot ever leave them empty!”
+  Every new Runner submission now requires every displayed item. This includes
+  older optional metadata, with native master/package guards and UI validation;
+  source bytes/hashes and historical artifact readers are unchanged. Partial
+  drafts never complete forms. Main/S3/root were notified of the shared native
+  `research_native_protocol/responses.rs` guard and exact policy boundary.
+- Evidence: 261 native tests pass, two explicit ignored; eight focused Node
+  checks; five master and 17 legacy headless cases; Runner build and boundary
+  verification. The synthetic XDF `information-synthetic-stream-02.xdf` under
+  `D:/GitHub/.affect-runner-master-build` has SHA-256
+  `9f545514672115d0ac50a82946d31b1123f8a0268b1d8b6fdc4c26a45910d865`.
+  Independent pyxdf 1.17.0 verifies both actual footers and reads 78 information
+  frames plus three affect samples. XDF-only reconstruction recovers all ten
+  synthetic occurrences, complete source/plan, two complete response records and
+  outcome. Actual LSL span is 0.0118323 seconds; synthetic native observation
+  span is about 51 seconds. These clocks must never be conflated.
+- Missing/duplicate/reordered/corrupt/oversized frames, reversed clocks, missing
+  or forged answers and a truncated actual XDF footer reject or remain incomplete.
+  `information-synthetic-stream-02.reconstruction.json`, focused logs and
+  `information-master-ui-01` / `information-legacy-ui-01` hold the evidence.
+- Typed demographics contract `7da84a9` was read in full and agreed. This commit
+  still carries the existing coded master participant preparation and Likert
+  response version 1. Main/P2 own the new schema dispatch; Runner's typed consumer
+  follows separately. No producer CLI mock or actual native video execution was
+  claimed, no qualified capability changed, and user-opened apps remain intact.
+
 ### 20260912-runner-master-core-handoff
 
 - Core master consumer is being frozen independently of the newly allocated

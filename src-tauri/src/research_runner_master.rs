@@ -2,6 +2,7 @@
 //! A plan is content interpretation, never a playback or acquisition attestation.
 pub(crate) mod commands;
 pub(crate) mod forms;
+pub(crate) mod information;
 pub(crate) mod lsl;
 pub(crate) mod markers;
 pub(crate) mod response;

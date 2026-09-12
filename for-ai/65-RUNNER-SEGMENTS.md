@@ -21,6 +21,49 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Mandatory questionnaire completion — 2026-09-12
+
+Direct user requirement: every displayed questionnaire item must be answered
+before submission or advancement. Apply this at both Runner UI and native
+submission boundaries, including older definitions with `required: false`.
+Preserve the original definition and hashes; this is an execution completion
+rule, not a source rewrite. Explicit “Prefer not to say” options count as answers.
+Incomplete drafts may be saved after interruption but never count as submitted
+forms or a completed experiment. The typed demographics successor follows the
+same rule. Planner/P2 owners must reflect this requirement in authoring.
+
+## Active self-contained information pass — 2026-09-12
+
+RR-07/RR-08/RR-10, Backend Verification, explicitly approved by the user through
+Chat Orchestrator and root amendment `f877b8a` (goal ledger 69 read in full).
+Core candidate `0aab279` is stopped; this pass works only in
+`codex/segment-runner-information-stream` at
+`D:/GitHub/affect-tracker-research-runner-information`.
+Deliverable: one bounded versioned primary information outlet whose saved XDF
+contains exact canonical source, selection, complete form/video/ISI definitions,
+typed answers, observed lifecycle and outcome without requiring an external JSON
+or sidecar. See `docs/runner-information-stream-v1.md` for the sole exact schema.
+The recorder attaches before the startup header and no acquisition begins before
+commit; preserve native and LSL observation times, missing data and all old v1
+contracts. Evidence now is transport/framing and independent XDF-only readback
+with explicit synthetic data and corruption/gap/oversize tests. Actual CLI-created
+EN/DE execution still awaits the exact producer artifact and native gates.
+S2/main own typed demographics dispatch; do not invent that P2 contract here.
+
+Checkpoint evidence: 261 native tests pass, two ignored; eight focused Node
+checks and five master/17 legacy headless cases pass, including rejection of
+empty forms and skipped older optional items. The Runner build and separate-app
+boundary check pass. Independent pyxdf 1.17.0 reads the saved synthetic
+`information-synthetic-stream-02.xdf` without a producer JSON: 78 primary frames,
+three affect samples, ten complete occurrences, two complete response records,
+exact source/plan, terminal outcome and verified actual XDF footers. Its SHA-256
+is `9f545514672115d0ac50a82946d31b1123f8a0268b1d8b6fdc4c26a45910d865`.
+Framing corruption/gaps/duplicates/order/size/clock and forged/missing answer
+checks pass; truncating the actual XDF footer rejects. This is synthetic
+engineering evidence, with actual LSL span 0.0118323 seconds distinct from the
+synthetic 51-second native timeline. Typed demographics and actual CLI/native
+EN/DE execution remain separate gates; the agreed typed contract is `7da84a9`.
+
 ## Core master consumer checkpoint — 2026-09-12
 
 The allocated RR-02/RR-10 and RR-03–07 seams now include complete native/JS master

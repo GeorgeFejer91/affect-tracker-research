@@ -54,11 +54,11 @@ export function renderMasterQuestionnaire(host, definition, presentation, answer
     head.append(headings); table.append(head); const body = document.createElement("tbody");
     for (const item of definition.items.slice(group.start, group.end)) {
       const row = document.createElement("tr"), label = document.createElement("th"); label.scope = "row"; label.id = `runner-item-${item.order}`;
-      label.textContent = `${item.order}. ${item.prompt}${item.required ? " (required)" : ""}`; row.append(label);
+      label.textContent = `${item.order}. ${item.prompt} (required)`; row.append(label);
       for (const [index, option] of item.options.entries()) {
         const cell = document.createElement("td"), input = document.createElement("input");
         input.type = "radio"; input.name = `answer-${item.itemId}`; input.value = option.optionId; input.dataset.answerItem = item.itemId;
-        input.checked = answers[item.itemId] === option.optionId;
+        input.checked = answers[item.itemId] === option.optionId; input.required = true;
         input.setAttribute("aria-labelledby", `${label.id} runner-option-${group.start}-${index}`);
         cell.append(input); row.append(cell);
       }

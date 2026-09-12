@@ -76,10 +76,10 @@ impl FormAnswers {
             && definition
                 .items
                 .iter()
-                .any(|i| i.required && !next.contains_key(&i.item_id))
+                .any(|i| !next.contains_key(&i.item_id))
         {
             return Err(CommandError::invalid_contract(
-                "Answer every required questionnaire item before continuing.",
+                "Answer every questionnaire item before continuing.",
             ));
         }
         let mut responses = Vec::new();
@@ -124,6 +124,17 @@ mod tests {
         let now = Instant::now();
         let mut answers = FormAnswers::default();
         assert!(answers.replace(step, vec![], true, now, now).is_err());
+        // Runner completion is mandatory even for older authored optional flags.
+        // Preserve the source definition; only incomplete drafts may be retained.
+        let mut optional = step.clone();
+        for item in optional.payload["definition"]["items"]
+            .as_array_mut()
+            .unwrap()
+        {
+            item["required"] = json!(false);
+        }
+        assert!(answers.replace(&optional, vec![], false, now, now).is_ok());
+        assert!(answers.replace(&optional, vec![], true, now, now).is_err());
         let item = &step.payload["definition"]["items"][0];
         let choice = MasterChoice {
             item_id: item["itemId"].as_str().unwrap().into(),
@@ -156,13 +167,28 @@ mod tests {
         let submitted = answers
             .replace(
                 step,
-                vec![choice],
+                step.payload["definition"]["items"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|item| MasterChoice {
+                        item_id: item["itemId"].as_str().unwrap().into(),
+                        option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
+                    })
+                    .collect(),
                 true,
                 now,
                 now + std::time::Duration::from_secs(1),
             )
             .unwrap();
-        assert_eq!(draft["responses"], submitted["responses"]);
+        assert_eq!(draft["responses"][0], submitted["responses"][0]);
+        assert_eq!(
+            submitted["responses"].as_array().unwrap().len(),
+            step.payload["definition"]["items"]
+                .as_array()
+                .unwrap()
+                .len()
+        );
         assert_eq!(submitted["status"], "submitted");
         assert_eq!(submitted["responses"][0]["responseLatencyMs"], 100.);
         assert_eq!(

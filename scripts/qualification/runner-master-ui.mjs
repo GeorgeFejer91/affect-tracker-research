@@ -73,7 +73,11 @@ try{
   check(q('runner-questionnaire-next').hidden,'label repetition does not become pagination');
   check(q('runner-first').value===''&&q('runner-last').value==='','transient names cleared');
   if(mode==='video'){
-   q('runner-questionnaire-items').querySelector('input').click();await tick();await click('runner-questionnaire-submit');await tick();await tick();
+   await click('runner-questionnaire-submit');await tick();check(!q('runner-questionnaire').hidden,'empty form cannot advance');
+   const answerRows=q('runner-questionnaire-items').querySelectorAll('tbody tr');
+   answerRows[0].querySelector('input').click();await tick();await click('runner-questionnaire-submit');await tick();
+   check(!q('runner-questionnaire').hidden,'older optional item cannot be skipped');
+   for(const row of answerRows)row.querySelector('input').click();await tick();await click('runner-questionnaire-submit');await tick();await tick();
    check(!q('runner-stage').hidden&&q('runner-questionnaire').hidden,'native projection selects video surface');
    check(innerWidth===1920&&innerHeight===1080,'actual headless viewport matches authored P4');
    const box=plan.selected.layout.geometry.feedback,observed=root.querySelector('.run-feedback-stage').getBoundingClientRect();
