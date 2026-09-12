@@ -62,6 +62,27 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p6-profile-tool-action
+
+- Owner S6/P6, bounded UI presentation follow-up within Backend Verification,
+  requested by integration after clean `82c8f0f` handoff. Same isolated branch.
+- Move the standalone profile validation action inside collapsed Profile tools
+  and label its download purpose. Section confirmation remains the main action.
+  Keep action identifiers and domain behavior stable; no root handler changes.
+- Evidence: focused P6 checks and background DOM/render check for collapsed tools
+  and retained profile interoperability. Integration owns footer preparation,
+  P7 target selection, acceptance and save composition.
+- Status: **ready**. The action is labelled `Validate for download`, its status
+  stays inside collapsed Profile tools, and `Confirm section` remains the main
+  footer action. Action identifiers and domain transitions are unchanged.
+  Targeted evidence: 28 P6 Node checks; 20 standalone Chrome assertions including
+  hidden action/keyboard access; 28 actual-app Chrome assertions at 820px with
+  inspected capture. Desktop 9-file / Pages 197-file closures pass. Receipts:
+  `D:/GitHub/.affect-preview-checks/p6-profile-tools-20260912/` (`standalone-fixed`,
+  `app-narrow`). The app receipt records input hashes for this diff over `82c8f0f`.
+  Earlier full-suite/native/runtime limits remain unchanged; source writers stop
+  after this small handoff.
+
 ### 20260912-p6-live-authoring-binding
 
 - Owner S6/P6; Backend Verification continuation, P6-05; **open**. Existing

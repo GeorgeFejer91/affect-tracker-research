@@ -69,14 +69,13 @@ export function xrLayoutEditorMarkup() {
       </div>
       <dl class="xr-geometry-readout" data-xr-readout></dl>
       <p class="field-help" data-xr-dependencies>Library geometry and the feedback envelope must be bound by the master recipe before experiment export.</p>
-      <div class="xr-profile-actions">
-        <button type="button" data-xr-action="accept">Accept layout</button>
-      </div>
       <details class="inner-disclosure"><summary>Profile tools</summary><div class="disclosure-content xr-profile-actions">
+        <p class="field-help">Save or reopen a standalone authoring profile. Use Confirm section below to include this layout in the experiment.</p>
+        <button type="button" data-xr-action="accept">Validate for download</button>
         <button type="button" data-xr-action="export">Download authoring profile</button>
         <label class="field"><span>Open authoring profile</span><input type="file" accept=".json,application/json" data-xr-file></label>
+        <p role="status" aria-live="polite" data-xr-status>Validate the profile to enable download.</p>
       </div></details>
-      <p role="status" aria-live="polite" data-xr-status>Accept the layout to download its authoring profile.</p>
     </div>
   </div>`;
 }
