@@ -189,8 +189,7 @@ schema; the integrity explicitly names reproduction v2. Earlier fixture bytes
 remain unchanged. `scripts/qualification/planner-master-parity.mjs` runs the
 independent Rust example against complete masters, both desktop policies/units
 and all three renderers, checking every selected variant/language with source
-and executable hashes. Shared actual-application save/reopen and final combined
-evidence remain integration work. Actual Planner–Runner correspondence is later.
+and executable hashes. Actual Planner–Runner correspondence is later.
 
 `scripts/qualification/planner-master-browser.mjs <browser.exe> <new-directory>`
 runs the four complete current vectors in a fresh headless browser profile. Its
@@ -201,3 +200,49 @@ directories reject before capture, preserving earlier receipts. Receipt metadata
 binds commit, dirty state, harness, served HTML, bundled sources and fixture hashes.
 This is actual browser codec evidence, separate from application UI/file-picker
 or installed native qualification. Chrome 152 and Edge 153 both pass this harness.
+
+## Final P7 combined verification — 2026-09-12
+
+Clean application checkpoint `15f5bfd36750c182a0943223dbcc491de182af60`
+contains integration candidate `875efae0a852bdcea978e8a12b74c0e81288d51c`.
+The product source is identical; the only additional changes are the P7 browser
+codec harness and its documentation/board entry. P7-03 through P7-09 are ready
+for the integration owner's final delivery. Root retains catalogue and complete
+application promotion authority.
+
+- All **769 JavaScript** and **235 no-default native library** tests pass.
+- The actual shared Planner workflow passes **65 checks in each of Chrome 152
+  and Edge 153**. It authors study/policy/order/ISI/layout/feedback changes,
+  confirms owner sections, captures final P5 settings, writes a named test file,
+  checks exact closed readback, opens it in a fresh controller, copies unresolved
+  media content unchanged, rebinds exact media declarations, then reconfirms and
+  recompiles identical bytes. Edit/revert and layout/color Reset withdraw old
+  source eligibility. Both saved-state PNGs were inspected: Review heading,
+  confirmation mark, save status and reachable footer agree.
+- The rebuilt independent Rust reader reproduces both actual browser-authored
+  files, complete matrices and **12 selected projections** exactly. Both files
+  have SHA-256 `09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+  These desktop cases have zero derived geometry difference.
+- **11 independent JS/native matrix cases** cover both location generations,
+  long language graph, both desktop methods/units, all three renderers and XR.
+  Maximum derived geometry difference is `3.552713678800501e-15`; authored
+  content, identity and hashes agree exactly. Actual Chrome and Edge each pass
+  **79 codec assertions** on the same clean combined source.
+
+Evidence is under `D:/GitHub/.affect-checks/`: `p7-final-combined-node.log`,
+`p7-final-combined-native.log`, `p7-final-combined-native-example-build.log`,
+`p7-final-combined-app-{chrome,edge}/`,
+`p7-final-combined-generated-native/`, `p7-final-combined-native-parity/` and
+`p7-final-combined-codec-{chrome,edge}/`. Each receipt retains its exact source
+and artifact bindings. The standalone generated-file verifier is
+`p7-verify-generated-masters.mjs` in that evidence directory.
+
+The UI fixture uses an explicit synthetic media boundary and disk-backed picker
+adapter, and seeds questionnaire content through its owned restore API. Actual
+table editing has its separate P2 evidence. These checks do not establish OS
+picker interaction, physical decoding, installed native qualification or Runner
+execution/recording correspondence. The normal no-default example build retains
+five unrelated geometry/workspace dead-code warnings; the native test build
+retains two geometry warnings. No warnings-denied combined Clippy claim is made.
+The integration owner separately owns build closure, final all-section visuals
+and canonical delivery.
