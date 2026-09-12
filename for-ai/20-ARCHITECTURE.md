@@ -123,7 +123,7 @@ not be merged into a catch-all controller or runtime module:
 | Product boundary | Frontend responsibility | Rust/native responsibility |
 |---|---|---|
 | Package and contracts | Authoring projections, strict browser reader, validation messages | Canonical parser/compiler, hashes, selected-language/participant projection |
-| Workspace and assets | Folder-selection affordances, catalogue projection, preview requests | Opaque workspace authority, closed-tree scan, grants, hashing and decode attestation |
+| Workspace and assets | Folder-selection affordances, catalogue projection, preview requests; P2 guarded local-preset inspection/import through its existing editor | Opaque workspace authority, closed-tree scan, grants, hashing and decode attestation; fixed-source researcher-local preset storage in actual app user-data, copied through the existing workspace source store before acceptance |
 | Protocol and questionnaires | Setup editors and Run-step view models | Authoritative reducer, hook/ISI progression, drafts, submissions and recovery boundary |
 | Participant and attempt | Transient form state and status tiles | Code derivation verification, locks, create-new attempt allocation and reconstruction |
 | Input | Binding editor and live-test presentation | Device capture, conflict/edge policy, authoritative state and sampling feed |
@@ -132,7 +132,46 @@ not be merged into a catch-all controller or runtime module:
 | Native media | Geometry/status projection through one adapter | GstPlay actor, private file grant, lifecycle, timestamps and child-window adapter |
 | Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
 | Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
-| Platform bridge | One selected browser/native adapter | Narrow authorized commands/events; no product policy in handlers |
+| Platform bridge | One selected browser/native adapter; the explicitly selected Planner JSONL adapter routes typed commands to the same registered owners | Narrow authorized commands/events; bounded owned-process CLI broker/wire validation; no product policy in handlers |
+
+The user-authorized Planner CLI extension in [68](68-PLANNER-CLI.md) has an
+explicit bridge mirror: `site/src/research/planner-authoring-native.js` owns
+the fixed status/ready/next/complete/startup-failure IPC calls;
+`planner-authoring-contract.js` and `planner-authoring-session.js` own typed
+validation, owner dispatch, revision/cancellation/retry and atomic publication.
+`src-tauri/src/research_planner_authoring.rs` and its `wire.rs` own the bounded
+native stdin/stdout broker and process lifecycle. `src-tauri/src/bin/planner-cli.rs`
+selects this hidden native Planner role. It is not an ordinary-window attachment,
+network service, DOM-command interface or alternate editor/compiler. `app.js`
+registers actual P1–P7 owners; it does not copy their setting semantics. Boundary
+guards explicitly name this adapter, rather than exempting arbitrary new invoke
+callers. Consequential imports/saves use separately allocated native grants and
+effects plus the same guarded owner-adoption seam. Their interfaces and evidence
+remain in the shared command documents and [71](71-CLI-LIBRARY.md).
+
+The local questionnaire library has its own fixed authority pair:
+`questionnaire-local-presets.js` handles public metadata, current-source
+verification and guarded pristine-slot loading through the existing editor;
+the selected native bridge calls
+`research_local_questionnaire_preset_commands.rs`. Those Planner-only commands
+accept a fixed preset ID and, for installation, bounded exact source bytes,
+never a caller-supplied storage path. `research_local_questionnaire_presets.rs`
+owns fresh read/hash verification and no-clobber installation beneath the real
+application user-data root, including when CLI WebView profiles are temporary.
+Main owns registration and picker composition. The normal workspace service
+retains study-source persistence before accepted definition adoption, so final
+recipes do not depend on an ambient local preset store. The local German TAS
+source remains researcher-installed rather than public repository content;
+the newly requested project-authored demographics asset is a separate P2
+versioned form allocation. Store/IPC/GUI/CLI evidence must be stated separately.
+
+The later complete-XDF requirement in [69](69-CLI-RUNNER-END-TO-END-GOAL.md)
+allocates a new Runner-only versioned primary information stream retaining
+canonical recipe content, definitions and typed answers alongside observations.
+Historical v1 marker exclusions later in this file remain the v1 contract;
+they do not prohibit this explicit successor allocation or silently acquire its
+new payload. P2/main own typed-form producer/reader compatibility, and Runner
+owns actual presentation, acquisition, stream encoding and XDF persistence.
 
 The Segment 3 authoring slice uses `stimulus-order.js` for the library and
 historical numeric design reader, `variant-design.js` for the successor named
