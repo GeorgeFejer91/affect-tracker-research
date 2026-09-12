@@ -15,6 +15,7 @@ export function preparePlannerSurface(root) {
   if (reviewLabel) reviewLabel.textContent = "Review & Export";
   for (const title of root.querySelectorAll("h2, h3, [data-section-title]")) {
     if (title.textContent === "Review & Start") title.textContent = "Review & Export";
+    if (title.textContent === "Before starting") title.textContent = "Recipe review";
   }
   const heading = root.querySelector(".product-block h1");
   if (heading) heading.textContent = "Experiment Planner";

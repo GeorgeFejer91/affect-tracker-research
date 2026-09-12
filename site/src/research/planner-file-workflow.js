@@ -27,7 +27,14 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
   return Object.freeze({
     canCopy,
     get opening() { return opening; },
-    edited() { edit += 1; source = null; exporter.invalidate(); onChange(); },
+    edited({ deferNotification = false } = {}) {
+      edit += 1; source = null;
+      // Capture-phase intent must fence immediately without reading producers
+      // before their target/bubble handlers publish the authored change.
+      exporter.invalidate({ notify: !deferNotification });
+      if (deferNotification) queueMicrotask(() => { if (!disposed) onChange(); });
+      else onChange();
+    },
     /** select is invoked synchronously to preserve the Open button gesture.
      * It returns a strictly dispatched {kind, document}, or null on cancel. */
     async open(select, { openLegacy, isCurrent = () => true } = {}) {

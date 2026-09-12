@@ -10,10 +10,10 @@ export function createPackageExportController({ onChange = () => {} } = {}) {
   const publish = () => { if (!disposed) onChange(snapshot()); };
   return Object.freeze({
     snapshot,
-    invalidate() {
+    invalidate({ notify = true } = {}) {
       revision += 1;
       if (!busy) phase = "editing";
-      publish();
+      if (notify) publish();
     },
     async save({ compile, write, adopt = async () => {}, isCurrent = () => true }) {
       if (disposed || busy) return Object.freeze({ status: "busy" });
