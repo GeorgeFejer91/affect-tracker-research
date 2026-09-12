@@ -33,7 +33,10 @@ qualification are deferred unless separately allocated by the researcher.
 - [62-PLANNER-CLOSURE-PLAN.md](62-PLANNER-CLOSURE-PLAN.md) ranks remaining gaps and
   supplies concrete proposed editor/contribution designs and single-owner passes.
   Its new recommendations remain proposals; this file owns capability status
-  and accepted decisions. All seven Planner segments remain incomplete.
+  and accepted decisions. Complete-component handoffs are now recorded in
+  [67](67-PLANNER-COMPLETION-GOAL.md); final shared authoring/save/Open validation
+  and canonical delivery remain incomplete. Older baseline rows below must not
+  be read as an assertion that those newer components are still absent.
 - Initial status baseline: integrated source
   `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, audited 2026-09-11. Unmerged branches
   and private/installed runtime state are excluded from completion claims.
@@ -94,9 +97,11 @@ qualification are deferred unless separately allocated by the researcher.
 9. Add optional XR spatial authoring and a rotatable 3D preview. Content is
    **fixed in virtual space, aligned to the participant's forward direction at
    setup**. This accepted future direction is not current APK/WebXR support.
-10. Preserve exactly two modes: **Setting Up the Experiment** and **Running the
-    Experiment**. P1–P7 are responsibility IDs, not extra modes or necessarily
-    seven identical accordions.
+10. Under the later two-program amendment in [16](16-COMPANION-APP-BOUNDARY.md),
+    **Setting Up the Experiment** belongs to Experiment Planner and **Running
+    the Experiment** belongs to the separate Experiment Runner. The Planner has
+    no participant Start/Run surface. P1–P7 are responsibility IDs, not extra modes
+    or necessarily seven identical accordions.
 11. The later 2026-09-11 requirement relayed by **Add segment confirmation flow**
     makes segment confirmations accept the current segment's contribution in
     sequence, rather than only recording that its screen was reviewed. Live
@@ -129,10 +134,13 @@ qualification are deferred unless separately allocated by the researcher.
 | P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 
-Suggested homes for retained settings: P1 study name/ID; P7 retained study/count
-metadata if required, with participant allocation left to Runner; P7 acquisition rate and recording/stream
-policy. P4 owns size/placement; P5 owns appearance/input. These placements are
-recommendations under Q12. Controls shown in multiple previews edit one owner.
+Homes for retained settings: P1 study name/ID; P7 retained study/count metadata,
+sampling rate and authored stream-emission definition. Participant allocation,
+recording policy, recorder selection and destination belong to Runner. P4 owns
+desktop size/placement; P5 owns appearance/input. Controls shown in multiple
+previews edit one owner. The complete current wire contract is P7's
+`docs/planner-master-recipe-v1.md`; historical baseline proposals below do not
+override the dated companion boundary or the active completion goal.
 
 ## Mandatory segment brief and update discipline
 

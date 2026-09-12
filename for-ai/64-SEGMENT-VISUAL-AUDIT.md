@@ -63,6 +63,43 @@ V28: render and inspect the final combined source after ready handoffs are
 collected. Do not substitute an older installed application or aggregate test
 counts from separate branches for that check.
 
+## Complete-settings followup — 2026-09-12
+
+The new P5 v2 restored labels exposed a real narrow-pane defect after the earlier
+default-state cleanup: corner captions could break one character per line.
+Preview `d711fb4` rearranges corner anchors; final `9237279` bounds only narrow
+left/right editor captions to three lines while preserving the full DOM text,
+accessible name, hover text, dialog editor and saved label. Root inspected the
+final narrow axes image and previously reviewed the corner arrangement. This is
+editor compactness, not truncation of participant labels or experiment content.
+
+Final evidence lives under
+`D:/GitHub/.affect-preview-checks/planner-feedback-labels-20260912/` in
+`clean-capped-axes` and `clean-capped-corners`. Root verified all four 1280/800
+HTML and PNG hashes against their JSON receipts; all bind clean application
+`92372794f5fa151448abf287797b67c109337fc5`. The receipts contain 122 passing label
+checks. Full restored-controller checks and the eventual combined app retain
+their own source binding; these owner images do not close G09 for master Save.
+
+The companion-boundary review also found and routed a missing retained Planner
+error surface. Fix `17b2d24` creates visible/announced `#planner-status` and covers
+a rejected workspace command. Root source review confirms the fix; that fixture
+hides the error before its screenshot, so final combined error-layout rendering
+must still include the visible failure state.
+
+The capture helper now explicitly boots `data-research-program="planner"` and
+asserts that participant Run/Start surfaces are absent. This prevents future
+captures from accidentally exercising preserved compatibility markup. Exact
+clean `17b2d24` was captured in Chrome and Edge, four Review PNGs per browser at
+1280/800 with full scroll. Root/independent review inspected all eight images;
+every PNG and harness binding matches, with zero participant controls, errors,
+duplicate IDs or pane overflow. The footer is reachable. Receipt directories:
+`D:/GitHub/.affect-preview-checks/planner-role-chrome-17b2d24-20260912` and
+`D:/GitHub/.affect-preview-checks/planner-role-edge-17b2d24-20260912`.
+The residual heading "Before starting" was routed to integration for Planner
+review wording. This smoke proves the changed helper/default Planner surface,
+not populated master export or a native/runtime bridge.
+
 ## Capture method and baseline
 
 The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
