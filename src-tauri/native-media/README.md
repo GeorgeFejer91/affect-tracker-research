@@ -99,16 +99,45 @@ LSL, timing, installed workflow, or research qualification.
 
 The checked-in code can stage and verify the integration tree and report its
 status without exposing paths. It cannot package that tree for distribution.
-It does not yet contain the GstPlay player actor or the renderer-to-application-
-window handle adapter. The latter contains a small unavoidable native-handle
-`unsafe` boundary and requires explicit user approval and audit before
-implementation. A future native build must also solve and test safe pre-`main`
+The GstPlay actor and two contained Windows adapters are implemented and were
+approved for implementation on 2026-09-10. Focused adapter review and runtime
+qualification remain open; see [the RR-04 audit](ADAPTER-AUDIT-20260912.md).
+A future distributable native build must also solve and test safe pre-`main`
 Windows DLL resolution; a nested Tauri resource directory or CI development
 `PATH` is not a production loader design.
 
-Until that actor, redistribution review, installed media matrix, lifecycle
+Until adapter review, redistribution review, installed media matrix, lifecycle
 fencing, audio, resize/DPI, shutdown/recovery, and timing qualification all
 land, `nativeGstPlay` fails closed for qualified Start. The separately selected
 `unqualifiedWebview` mode remains development-only and permanently labels its
 attempt evidence unqualified. No build or UI may claim support for “all video
 formats.”
+
+## Opt-in offscreen engineering diagnostic
+
+`gst_actor/diagnostic.rs` is compiled only into a Windows `native-gstreamer`
+library test executable. The ignored test uses an isolated hidden blank WebView,
+no application commands, a hash-locked existing clip and test-only muted audio.
+It does not open the Planner or Runner, enable qualified Start, or record an
+experiment. Use a dedicated process through `run-actor-diagnostic.ps1`; never
+mix this test with other tests in the same process. The launcher verifies the
+runtime/clip, retains logs and enforces an owned-child timeout. Its pinned-runtime
+process PATH is explicitly development-only, not installed loader evidence.
+
+Build with the real pinned SDK, `DOCS_RS` absent and the required-runtime gate:
+
+```powershell
+cargo test --manifest-path src-tauri/Cargo.toml --locked --lib --features native-gstreamer research_native_media:: --no-run -j 2
+```
+
+The library test executable may lack the Common Controls6 manifest required by
+the real Tauri GUI code. `prepare-actor-diagnostic.ps1` copies (never overwrites)
+that emitted executable and embeds `diagnostic-test.manifest` using the explicit
+Windows SDK `mt.exe`. It validates the result and records original/prepared,
+manifest and tool SHA-256s. This is a test-artifact preparation step, not a
+production packaging change or a signed artifact.
+
+Then pass that exact prepared `affect_research-<hash>.exe`, the verified runtime
+root, the allocated `dictator-3-study.mp4`, and a new absolute evidence directory
+to the launcher. Environment/build prerequisites and claim limits are recorded
+in the linked audit. Failed attempts must remain alongside later reruns.

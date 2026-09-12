@@ -3245,3 +3245,35 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
+
+### 20260912-rr04-native-diagnostic — E2E-RUNNER Backend Verification
+
+Owner: Live Preview, explicitly reallocated by Chat Orchestrator. Isolated
+`codex/rr04-native-media-diagnostic`, base `460f516`. Main and Runner confirmed
+the native-media diagnostic seam has no competing edits. Intended function:
+audit the two approved adapters, propose standalone loading, and exercise the
+existing actor offscreen with one exact local clip. Additional input: explicit
+diagnostic opt-in and existing clip/runtime paths; no owned recipe JSON or
+research output contribution. Producers: pinned runtime and locked local clip;
+consumer: test-only native actor diagnostic. Current source has the actor but
+no installed qualification and fixed-false readiness. Only RR-04 diagnostic,
+native-media test hooks, and this audit/documentation seam are allocated.
+Baseline: nine focused Node media tests pass. First native build attempt did
+not execute because Cargo was absent from the process PATH; retry will use
+absolute Cargo after the shared build slot is free. Collect exact source,
+artifact, fixture and runtime identities plus observed transitions/failures.
+No new unsafe, capability promotion, existing-window interaction, acquisition,
+distribution, or installed/physical qualification. See
+`src-tauri/native-media/ADAPTER-AUDIT-20260912.md` for findings and design.
+
+RR-04 diagnostic observations: real-SDK native library build passed; the test
+executable initially failed before main because its new GUI dependency needed
+the Common Controls6 manifest. A separate copy-only manifest preparer preserves
+the original and records artifact hashes; prepared copy passed20 native media
+tests. Opted-in attempt02 completed actual decode/control/rerun/thread-exit
+exercise with the exact allocated clip and four resolved pinned core DLLs.
+This exposed persistent `gstreamer-media-info-incomplete` on Paused/Playing;
+root separately allocated state.rs repair, with initial partial metadata versus
+terminal errors explicitly called out. Evidence is under
+`D:/GitHub/.affect-native-diagnostic-build/attempt-02`; qualification remains
+false. This test-only lane adds no production actor/FFI behavior or run authority.

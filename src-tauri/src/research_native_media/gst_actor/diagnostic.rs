@@ -1,0 +1,283 @@
+//! Explicitly opted-in engineering diagnostic. Never compiled into a product.
+use super::*;
+use sha2::{Digest, Sha256};
+use std::fs::{self, OpenOptions};
+use std::io::{Read, Seek, SeekFrom};
+use std::os::windows::fs::OpenOptionsExt;
+
+const CLIP_SHA256: &str = "b5327e7465ec92a4c93f3236a1ebab4556cdf508e24eafe6c593eac1e13afd49";
+const CLIP_BYTES: u64 = 86_870_779;
+static MUTED_DIAGNOSTIC: AtomicBool = AtomicBool::new(false);
+
+pub(super) fn mute_if_opted_in(play: &gst_play::Play) {
+    if MUTED_DIAGNOSTIC.load(Ordering::Acquire) {
+        play.set_mute(true);
+        assert!(
+            play.is_muted(),
+            "diagnostic must not produce audible output"
+        );
+    }
+}
+
+fn trace(stage: &str, value: serde_json::Value) {
+    println!(
+        "NATIVE_DIAGNOSTIC {}",
+        serde_json::json!({
+            "schema": "affect-native-engineering-diagnostic-v1",
+            "stage": stage, "value": value,
+            "buildCommit": env!("AFFECT_TRACKER_BUILD_COMMIT"),
+            "qualified": false, "installedQualification": false,
+        })
+    );
+}
+
+fn locked_fixture(path: &std::path::Path) -> Result<NativeMediaGrant, String> {
+    let mut file = OpenOptions::new()
+        .read(true)
+        .share_mode(1)
+        .open(path)
+        .map_err(|_| "fixture-open-failed")?;
+    if file
+        .metadata()
+        .map_err(|_| "fixture-metadata-failed")?
+        .len()
+        != CLIP_BYTES
+    {
+        return Err("fixture-length-mismatch".into());
+    }
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 65_536];
+    loop {
+        let count = file.read(&mut buffer).map_err(|_| "fixture-read-failed")?;
+        if count == 0 {
+            break;
+        }
+        hasher.update(&buffer[..count]);
+    }
+    if format!("{:x}", hasher.finalize()) != CLIP_SHA256 {
+        return Err("fixture-hash-mismatch".into());
+    }
+    file.seek(SeekFrom::Start(0))
+        .map_err(|_| "fixture-rewind-failed")?;
+    Ok(NativeMediaGrant {
+        media_grant_id: uuid::Uuid::new_v4().to_string(),
+        workspace_file_id: "diagnostic-exact-local-clip".into(),
+        path: path.to_path_buf(),
+        file,
+        sha256: CLIP_SHA256.into(),
+        mime_type: "video/mp4".into(),
+        byte_length: CLIP_BYTES,
+    })
+}
+
+fn observed(
+    actor: &GstPlayActorHandle,
+    state: NativeMediaStateV1,
+) -> Result<NativeMediaStatusV1, String> {
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while Instant::now() < deadline {
+        let status = actor.status().map_err(|e| e.message)?;
+        if status.state == state {
+            trace(
+                "observed-state",
+                serde_json::to_value(&status).map_err(|_| "status-json")?,
+            );
+            return Ok(status);
+        }
+        if status.state == NativeMediaStateV1::Failed {
+            trace(
+                "actor-failed",
+                serde_json::to_value(&status).map_err(|_| "status-json")?,
+            );
+            return Err("actor-reported-failed".into());
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    Err(format!("observed-state-timeout-{state:?}"))
+}
+
+fn exercise(
+    parent: tauri::WebviewWindow,
+    runtime: PathBuf,
+    state: PathBuf,
+    clip: PathBuf,
+) -> Result<(), String> {
+    // This retained parent belongs only to this isolated diagnostic process.
+    // Its event loop continues while the actor starts, operates, and shuts down.
+    let grant = locked_fixture(&clip)?;
+    trace(
+        "fixture-verified",
+        serde_json::json!({"sha256": CLIP_SHA256, "bytes": CLIP_BYTES}),
+    );
+    let handle = parent.hwnd().map_err(|_| "hidden-parent-hwnd")?.0 as isize;
+    let actor = GstPlayActorHandle::start(GstActorConfig::new(runtime, state, handle))
+        .map_err(|e| e.reason_code().to_owned())?;
+    trace(
+        "actor-started",
+        serde_json::json!({"parentHidden": !parent.is_visible().unwrap_or(true)}),
+    );
+    let viewport = NativeMediaViewportPxV1 {
+        left_px: 0,
+        top_px: 0,
+        width_px: 320,
+        height_px: 180,
+        layout_revision: 1,
+    };
+    let receipt = actor.prepare(grant, viewport).map_err(|e| e.message)?;
+    let fence = NativeMediaCommandFenceV1 {
+        session_id: receipt.session_id,
+        generation: receipt.generation,
+    };
+    observed(&actor, NativeMediaStateV1::Paused)?;
+    let decode = actor.attest_decode(fence.clone()).map_err(|e| e.message)?;
+    if decode.decoded_snapshot_count != 3 {
+        return Err("expected-three-snapshots".into());
+    }
+    trace(
+        "decode-observed",
+        serde_json::to_value(decode).map_err(|_| "decode-json")?,
+    );
+    actor.play(fence.clone()).map_err(|e| e.message)?;
+    observed(&actor, NativeMediaStateV1::Playing)?;
+    actor.pause(fence.clone()).map_err(|e| e.message)?;
+    observed(&actor, NativeMediaStateV1::Paused)?;
+    actor.play(fence.clone()).map_err(|e| e.message)?;
+    observed(&actor, NativeMediaStateV1::Playing)?;
+    actor.stop(fence.clone()).map_err(|e| e.message)?;
+    observed(&actor, NativeMediaStateV1::Idle)?;
+    let next = actor
+        .prepare(locked_fixture(&clip)?, viewport)
+        .map_err(|e| e.message)?;
+    if next.generation <= fence.generation {
+        return Err("generation-not-advanced".into());
+    }
+    if actor.play(fence).is_ok() {
+        return Err("stale-command-accepted".into());
+    }
+    trace(
+        "stale-command-rejected",
+        serde_json::json!({"generation": next.generation}),
+    );
+    observed(&actor, NativeMediaStateV1::Paused)?;
+    actor
+        .stop(NativeMediaCommandFenceV1 {
+            session_id: next.session_id,
+            generation: next.generation,
+        })
+        .map_err(|e| e.message)?;
+    // Observe thread completion before interpreting shutdown as successful:
+    // production shutdown may otherwise drop its JoinHandle after a timeout.
+    let (closed_sender, closed_receiver) = mpsc::sync_channel(1);
+    actor
+        .commands
+        .send(ActorCommand::Shutdown {
+            response: closed_sender,
+        })
+        .map_err(|_| "shutdown-send")?;
+    closed_receiver
+        .recv_timeout(Duration::from_secs(5))
+        .map_err(|_| "shutdown-ack-timeout")?;
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let finished = actor
+            .join
+            .lock()
+            .map_err(|_| "join-lock")?
+            .as_ref()
+            .is_some_and(JoinHandle::is_finished);
+        if finished {
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("actor-thread-exit-timeout".into());
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    trace(
+        "actor-thread-exited",
+        serde_json::json!({"observedBeforeParentExit": true}),
+    );
+    actor.shutdown();
+    actor.shutdown();
+    if actor.join.lock().map_err(|_| "join-lock")?.is_some() {
+        return Err("actor-join-retained".into());
+    }
+    if actor.status_snapshot().state != NativeMediaStateV1::ShuttingDown {
+        return Err("shutdown-not-observed".into());
+    }
+    if actor.status().is_ok() {
+        return Err("command-after-shutdown-accepted".into());
+    }
+    if parent.is_visible().map_err(|_| "parent-visibility")? {
+        return Err("diagnostic-parent-became-visible".into());
+    }
+    trace(
+        "shutdown-returned",
+        serde_json::json!({"repeated": true, "parentHidden": true}),
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "explicit offscreen native diagnostic; run only via bounded dedicated process"]
+fn offscreen_native_actor_lifecycle() -> Result<(), String> {
+    if std::env::var("AFFECT_NATIVE_DIAGNOSTIC_OPT_IN").as_deref() != Ok("1") {
+        return Err("explicit-diagnostic-opt-in-required".into());
+    }
+    let runtime = PathBuf::from(
+        std::env::var_os("AFFECT_NATIVE_DIAGNOSTIC_RUNTIME").ok_or("runtime-required")?,
+    );
+    let clip =
+        PathBuf::from(std::env::var_os("AFFECT_NATIVE_DIAGNOSTIC_CLIP").ok_or("clip-required")?);
+    let state = PathBuf::from(
+        std::env::var_os("AFFECT_NATIVE_DIAGNOSTIC_STATE").ok_or("new-state-directory-required")?,
+    );
+    if !runtime.is_absolute() || !clip.is_absolute() || !state.is_absolute() {
+        return Err("absolute-paths-required".into());
+    }
+    crate::research_native_media::capability::runtime_manifest::verify_runtime_tree(&runtime)
+        .map_err(|e| format!("runtime-rejected-{}", e.code.as_str()))?;
+    fs::create_dir(&state).map_err(|_| "state-directory-must-be-new")?;
+    trace(
+        "runtime-verified",
+        serde_json::json!({"manifestSha256": crate::research_native_media::capability::runtime_manifest::PINNED_RUNTIME_MANIFEST_SHA256}),
+    );
+    MUTED_DIAGNOSTIC.store(true, Ordering::Release);
+    let mut context = tauri::generate_context!();
+    context.config_mut().app.windows.clear();
+    context.config_mut().identifier = "io.github.affectresearch.native-diagnostic".into();
+    let (sender, receiver) = mpsc::sync_channel(1);
+    let app = tauri::Builder::default().any_thread().setup(move |app| {
+        let parent = tauri::WebviewWindowBuilder::new(app, "native-diagnostic", tauri::WebviewUrl::External("about:blank".parse()?))
+            .title("Offscreen native engineering diagnostic")
+            .visible(false).focused(false).skip_taskbar(true).inner_size(320.0, 180.0)
+            .data_directory(state.join("webview"))
+            .build()?;
+        let app_handle = app.handle().clone();
+        thread::Builder::new().name("native-diagnostic-owner".into()).spawn(move || {
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| exercise(parent, runtime, state.join("gstreamer"), clip)));
+            match result {
+                Ok(Ok(())) => {
+                    trace("complete", serde_json::json!({"engineeringOnly": true}));
+                    let _ = sender.send(());
+                    app_handle.exit(0);
+                }
+                failure => {
+                    trace("failed", serde_json::json!({"reason": match failure { Ok(Err(reason)) => reason, _ => "diagnostic-panicked".into() }}));
+                    // Never unwind an uncertain actor lifetime into parent teardown.
+                    // This executable is an explicitly isolated diagnostic process.
+                    std::process::exit(2);
+                }
+            }
+        })?;
+        Ok(())
+    }).build(context).map_err(|_| "hidden-test-app-build-failed")?;
+    let exit = app.run_return(|_, _| {});
+    if exit != 0 {
+        return Err(format!("hidden-test-app-exit-{exit}"));
+    }
+    receiver
+        .try_recv()
+        .map_err(|_| "diagnostic-did-not-complete")?;
+    Ok(())
+}

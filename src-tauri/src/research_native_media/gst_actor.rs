@@ -3,6 +3,10 @@ mod runtime_environment;
 #[path = "gst_actor/windows_renderer.rs"]
 mod windows_renderer;
 
+#[cfg(test)]
+#[path = "gst_actor/diagnostic.rs"]
+mod diagnostic;
+
 use super::contracts::{
     NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1, NativeMediaPrepareReceiptV1,
     NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportPxV1, NATIVE_MEDIA_DECODE_SCHEMA,
@@ -518,6 +522,8 @@ fn prepare_player(
     let workspace_file_id = grant.workspace_file_id.clone();
     let renderer = child.create_renderer().map_err(actor_unavailable)?;
     let play = gst_play::Play::new(Some(renderer.clone()));
+    #[cfg(test)]
+    diagnostic::mute_if_opted_in(&play);
     let signal_adapter = gst_play::PlaySignalAdapter::with_main_context(&play, context);
     let display_source_metadata = Arc::new(Mutex::new(None));
     connect_signals(
