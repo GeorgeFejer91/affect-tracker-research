@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createPlannedMarkerProfile, inspectPlannedMarkerTrace } from "../site/src/research/planned-marker-contract.js";
 import { readFile } from "node:fs/promises";
+import { compileVariantTimeline } from "../site/src/research/variant-design.js";
 
 const profile = {
   recipeSha256: "a".repeat(64), variantId: "variant-1", variantVersionSha256: "b".repeat(64),
@@ -44,6 +45,23 @@ test("planned codebook embeds exact source identity and duration without file pa
   assert.equal(value.codebook[1].durationMs, 500);
   assert.doesNotMatch(JSON.stringify(value), /assets\/stimuli|relativePath|annotationId|\.mp4/);
   await assert.rejects(createPlannedMarkerProfile(fixture.document.contribution, "variant-1", [], profile.recipeSha256));
+});
+test("timing and marker profiles share explicit annotation references when durable asset IDs differ", async () => {
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
+  const videos = fixture.videos.map(video => ({ ...video, assetId: `asset-${video.sha256}` }));
+  for (const variant of fixture.document.contribution.variants) {
+    const timeline = compileVariantTimeline(fixture.document.contribution, variant.variantId, videos);
+    const marker = await createPlannedMarkerProfile(fixture.document.contribution, variant.variantId, videos, profile.recipeSha256);
+    const sources = new Map(marker.codebook.map(source => [source.sourceCode, source]));
+    assert.equal(marker.entries.reduce((total, entry) => total + sources.get(entry.sourceCode).durationMs, 0), timeline.plannedDurationMs);
+    assert.deepEqual(marker.entries.map(entry => entry.entryId), variant.entries.map(entry => entry.entryId));
+  }
+  // Asset-only geometry records and ambiguous aliases require a validated P1
+  // projection. Both consumers reject them instead of guessing precedence.
+  for (const invalid of [videos.map(({ annotationId: _annotation, ...video }) => video), [...videos, videos[0]]]) {
+    assert.throws(() => compileVariantTimeline(fixture.document.contribution, "variant-1", invalid), /annotationId/);
+    await assert.rejects(createPlannedMarkerProfile(fixture.document.contribution, "variant-1", invalid, profile.recipeSha256), /annotationId/);
+  }
 });
 test("synthetic marker profile reconstructs repeated video, interval, form, pauses and restart without external source files", () => {
   const result = inspectPlannedMarkerTrace(structuredClone(profile), trace(steps));

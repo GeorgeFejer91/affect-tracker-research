@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
+import { indexVariantVideos } from "./variant-video-catalogue.js";
 import { parseSheetTable } from "./questionnaire-sheet.js";
 import { ORDER_LIMITS, validateVideoLibrary, validateStimulusOrderDocument } from "./stimulus-order.js";
 
@@ -218,13 +219,14 @@ export function migrateLegacyOrder(value) {
 }
 /** Resolve planned boundaries. No clock reading, synthetic measured onset, or hidden intervals. */
 export function compileVariantTimeline(contribution, variantId, videos) {
+  const videoIndex = indexVariantVideos(videos);
   const variant = contribution.variants.find(item => item.variantId === variantId);
   if (!variant) throw new TypeError("Unknown variant.");
   let elapsed = 0;
   const events = [];
   for (const [position, entry] of variant.entries.entries()) {
     const durationMs = entry.kind === "isi" ? contribution.isiDefinitions.find(isi => isi.isiId === entry.referenceId)?.durationMs
-      : videos.find(video => (video.annotationId ?? video.videoId) === entry.referenceId)?.durationMs;
+      : videoIndex.get(entry.referenceId)?.durationMs;
     boundedInteger(durationMs, entry.kind === "video" ? 1 : 0, entry.kind === "video" ? Number.MAX_SAFE_INTEGER : 3600000, `${entry.referenceId} duration from ${entry.kind === "video" ? "Segment 1" : "the dictionary"}`);
     const base = { variantId, entryId: entry.entryId, kind: entry.kind, referenceId: entry.referenceId, position: position + 1 };
     events.push({ ...base, eventId: `${entry.entryId}-start`, eventType: `${entry.kind}Start`, plannedOffsetMs: elapsed });

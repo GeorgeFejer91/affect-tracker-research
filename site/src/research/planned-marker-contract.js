@@ -1,11 +1,13 @@
 import { boundedInteger, exactKeys, MARKER_CONTRACT } from "./variant-design.js";
 import { canonicalSha256 } from "./canonical.js";
+import { indexVariantVideos } from "./variant-video-catalogue.js";
 
 const SHA = /^[a-f0-9]{64}$/u;
 const CODE = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
 const KEYS = ["schema", "version", "recipeSha256", "runId", "attemptId", "variantId", "variantVersionSha256", "sequence", "eventType", "entryId", "executionId", "sourceCode", "monotonicMs"];
 
 export async function createPlannedMarkerProfile(contribution, variantId, videos, recipeSha256) {
+  const videoIndex = indexVariantVideos(videos);
   if (!SHA.test(recipeSha256)) throw new TypeError("A marker profile must bind the final recipe SHA-256.");
   const variant = contribution.variants.find(item => item.variantId === variantId);
   if (!variant) throw new TypeError("Unknown variant.");
@@ -14,7 +16,7 @@ export async function createPlannedMarkerProfile(contribution, variantId, videos
     const key = `${entry.kind}:${entry.referenceId}`;
     if (!codes.has(key)) {
       const sourceCode = `source-${codebook.length + 1}`;
-      const source = entry.kind === "video" ? videos.find(video => (video.assetId ?? video.annotationId) === entry.referenceId)
+      const source = entry.kind === "video" ? videoIndex.get(entry.referenceId)
         : contribution.isiDefinitions.find(isi => isi.isiId === entry.referenceId);
       if (!source) throw new TypeError("Marker source is missing from the accepted catalogue or dictionary.");
       boundedInteger(source.durationMs, entry.kind === "video" ? 1 : 0, entry.kind === "isi" ? 3600000 : Number.MAX_SAFE_INTEGER, "Marker source duration");

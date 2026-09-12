@@ -37,6 +37,60 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p3-catalogue-consumer-continuation
+
+- Owner **S3**, P3-03 through P3-08, Backend Verification continuation explicitly
+  authorized through **Create segment catalogue**. Branch
+  `codex/segment-stimuli-order-table`, isolated worktree
+  `D:/GitHub/affect-tracker-research-stimuli-order`, clean base `4a2389c`.
+- Bounded deliverable: fix demonstrated catalogue withdrawal/reused-revision
+  stale acceptance, bind reopen atomically to the actual P1 revision, and make
+  timeline/marker consumers use one explicit video reference projection.
+  Prior named-ISI/versioned contribution/UI remains the implementation baseline.
+- Shared seams: P1 supplies immutable catalogue identity/duration snapshots;
+  P3 owns its consumers and accepted contribution; P7 awaits owned restoration
+  and composes the final recipe. Exact current producer APIs requested directly
+  from both owners. Integration alone collects the checkpoint.
+- Baseline: 29 focused Node tests pass (variant design, marker profiles,
+  editor and stored stimulus-order contracts). Collect failing reproductions,
+  repair regressions and an exact API/fixture handoff. No repeated unchanged UI
+  matrix, Runner allocation, clocks, LSL emission, device or release claims.
+
+#### Owner-ready consumer repair and shared fixture — 2026-09-12
+
+- Reproduced both root findings before fixing: withdrawal/reused-revision input
+  retained acceptance; restore reported P1 revision 8 after binding actual 7.
+  The repair clears acceptance on invalid/withdrawn/pending dependencies,
+  rejects reused revisions with changed content and revision regression,
+  clones inputs, fences delayed projections/reopen/save, and preserves an
+  identical accepted snapshot without fabricating a new dependency revision.
+- P1 explicitly approved P3's compatibility adapter. Dependency checkpoint
+  `3242fa6` imports only the unchanged catalogue module, its tests and shared
+  fixture from P1 `3d6a6b2bdf33cc685668e650ca163c39be75c491`; P1 app wiring and
+  other integration work are not copied into this owner branch.
+- The adapter validates the exact P1 five-key snapshot and P1 domain payload,
+  matches path/SHA/length to retain stored P3 v1 references, then attaches P1
+  asset identity/duration. Timing and marker generation share explicit
+  annotation resolution and reject duplicate aliases or asset-only geometry
+  records. No stored-ID migration or serialized Rust/P3 type change.
+- Public API and composition instructions:
+  [`docs/planner-p3-contribution-api.md`](../docs/planner-p3-contribution-api.md).
+  P7 confirmed `dependencies.P1` carries the exact five-key owner snapshot;
+  async restore returns the final five-key P3 snapshot and needs no sidecar.
+  Integration owns the one P1 subscription into `setStimulusOrderCatalogue`;
+  P7 owns registration, acceptance and master composition.
+- Shared valid/invalid fixture:
+  `test/fixtures/variant-catalogue-binding-v1.json`; P3 integrity
+  `ebc3bee014e02ca51308b7ffb7dc1c2f870ffa3e421fbf4a2563ba118f558920`.
+  It uses the exact P1 shared fixture through both timeline/marker consumers,
+  with owner revision 11 distinct from domain revision 1.
+- Final repair checks: **84/84** targeted Node tests (P3, P1 module, UI and
+  modular boundaries); Pages **178** files and desktop **8** files pass build
+  closure; whitespace check passes. Existing desktop >500 kB chunk warning
+  remains. Prior accepted P3 UI is preserved; no new visual or native/Rust
+  qualification claimed. The combined live subscription and master export
+  remain integration/P7 work, not implied by this component receipt.
+
 ### 20260911-variants-final-planner
 
 - Owner **S3**, P3 `variants`; component ready, Backend Verification continuation authorized

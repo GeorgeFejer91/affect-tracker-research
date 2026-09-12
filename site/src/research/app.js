@@ -47,6 +47,7 @@ import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration
 import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { isLibraryVideoName } from "./stimulus-order.js";
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
+import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import {
@@ -5231,6 +5232,8 @@ function bindResearchInteractions(root, { surface }) {
     get workspace() { return workspace; },
     get stimulusOrder() { return stimulusOrderEditor.document; },
     getStimulusOrderSnapshot: () => stimulusOrderEditor.getSnapshot(),
+    setStimulusOrderCatalogue: (snapshot) => stimulusOrderEditor.setCatalogueSource(snapshot),
+    validateStimulusVariantContribution,
     confirmStimulusOrder: () => stimulusOrderEditor.confirm(),
     restoreStimulusOrder: (document, receipt) => stimulusOrderEditor.restore(document, receipt),
     restoreStimulusVariantContribution: (contribution, receipt) => stimulusOrderEditor.restoreContribution(contribution, receipt),

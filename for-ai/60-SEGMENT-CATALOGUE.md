@@ -247,12 +247,12 @@ its exact wire representation is owned by P3/P7, not fixed by this document.
 
 - [x] **P3-01 — Implemented predecessor:** strict imported block/video schedules, per-video ISIs and deterministic protocol resolution exist; no variant allocation is implied.
 - [ ] **P3-02 — Component ready, integration pending:** named-ISI/video-column editor and atomic paste with precise errors; compact actual-boot empty/populated/error renders. Planned offsets wait for P1 verified durations.
-- [ ] **P3-03 — Component ready, producer dependency:** pure paired-boundary derivation and accepted Q02 validation exist; missing durations reject rather than invent timing. P1's verified duration receipt is still required.
+- [ ] **P3-03 — Component ready, integration pending:** pure paired-boundary derivation and accepted Q02 validation exist; the explicit P1 v1 adapter now validates identity/duration against the shared producer fixture. Missing durations reject rather than invent timing; combined live subscription remains the composition owner's handoff.
 - [ ] **P3-04 — Component ready, P7 integration pending:** typed contribution embeds versioned ordered variants and `runnerAssigned` ownership; no participant controls or allocation algorithm.
 - [ ] **P3-05 — Component ready, integration pending:** unique entry IDs preserve repeated occurrences; marker execution IDs distinguish restarts.
 - [ ] **P3-06 — Specification ready, integration pending:** versioned marker envelope defines recipe/run/attempt/variant/version/entry/execution identities, sequence and observed monotonic time. Runner emission is deferred.
 - [ ] **P3-07 — Specification ready, integration pending:** synthetic reconstruction fixtures cover video/ISI/forms, pauses, interruptions/restarts and incomplete streams; no recorded-stream qualification claim.
-- [ ] **P3-08 — Component ready, integration pending:** JS/Rust canonical fixtures, native/browser save/reopen and standalone contribution validation preserve exact order without randomization or cell repair.
+- [ ] **P3-08 — Component ready, integration pending:** JS/Rust canonical fixtures, native/browser save/reopen and standalone contribution validation preserve exact order without randomization or cell repair. Async P7 restoration accepts the canonical payload plus actual P1 snapshot, returns its exact dependency revision, and fences withdrawal/revision reuse/cancellation; see `docs/planner-p3-contribution-api.md` and the shared catalogue-binding fixture.
 - [ ] **P3-09 — Component ready, integration pending:** distinct consistent video colors, red ISIs and textual type/ID/duration cues; actual narrow-pane rendering inspected.
 - [ ] **P3-10 — Component ready, integration pending:** comma-separated whole milliseconds create stable names; duplicate values allowed, referenced deletion blocked, edits invalidate acceptance. Q14 lifecycle rules accepted.
 

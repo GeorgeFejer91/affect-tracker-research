@@ -1,0 +1,572 @@
+{
+  "sourceSnapshot": {
+    "revision": 11,
+    "enabled": true,
+    "pending": false,
+    "contribution": {
+      "schema": "affect-research-video-catalogue-contribution",
+      "version": 1,
+      "revision": 1,
+      "entries": [
+        {
+          "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "annotationId": "session1_landscape",
+          "sourceRelativePath": "stimuli/session1/landscape.mp4",
+          "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "byteLength": 1024,
+          "durationMs": 12345,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080,
+            "displayAspect": {
+              "numerator": 16,
+              "denominator": 9
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        },
+        {
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "annotationId": "session2_portrait",
+          "sourceRelativePath": "stimuli/session2/portrait.mp4",
+          "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "byteLength": 2048,
+          "durationMs": 23456,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1080,
+            "displayHeightPx": 1920,
+            "displayAspect": {
+              "numerator": 9,
+              "denominator": 16
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        }
+      ],
+      "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+    },
+    "dependencyRevisions": []
+  },
+  "document": {
+    "schema": "affect-research-stimulus-order",
+    "version": 2,
+    "librarySha256": "05a8e605cf43d77ddb70ddcbbce95ad022c3f55f7cc346ed566d008dc0d0065e",
+    "draft": {
+      "columns": [
+        {
+          "variantId": "variant-1",
+          "title": "Variant 1"
+        },
+        {
+          "variantId": "variant-2",
+          "title": "Variant 2"
+        }
+      ],
+      "rows": [
+        [
+          "video-3cf9b41545994899",
+          "video-b8f73962688de9b4"
+        ],
+        [
+          "ISI1",
+          "ISI2"
+        ],
+        [
+          "video-b8f73962688de9b4",
+          "video-3cf9b41545994899"
+        ],
+        [
+          "",
+          ""
+        ],
+        [
+          "",
+          ""
+        ]
+      ],
+      "entryIds": [
+        [
+          "variant-1-entry-1",
+          "variant-2-entry-1"
+        ],
+        [
+          "variant-1-entry-2",
+          "variant-2-entry-2"
+        ],
+        [
+          "variant-1-entry-3",
+          "variant-2-entry-3"
+        ],
+        [
+          "variant-1-entry-4",
+          "variant-2-entry-4"
+        ],
+        [
+          "variant-1-entry-5",
+          "variant-2-entry-5"
+        ]
+      ],
+      "isiDefinitions": [
+        {
+          "isiId": "ISI1",
+          "durationMs": 500
+        },
+        {
+          "isiId": "ISI2",
+          "durationMs": 1500
+        }
+      ],
+      "nextIsiOrdinal": 3
+    },
+    "contribution": {
+      "schema": "affect-research-variant-design",
+      "version": 1,
+      "librarySha256": "05a8e605cf43d77ddb70ddcbbce95ad022c3f55f7cc346ed566d008dc0d0065e",
+      "isiDefinitions": [
+        {
+          "isiId": "ISI1",
+          "durationMs": 500
+        },
+        {
+          "isiId": "ISI2",
+          "durationMs": 1500
+        }
+      ],
+      "variants": [
+        {
+          "variantId": "variant-1",
+          "title": "Variant 1",
+          "entries": [
+            {
+              "entryId": "variant-1-entry-1",
+              "kind": "video",
+              "referenceId": "video-3cf9b41545994899"
+            },
+            {
+              "entryId": "variant-1-entry-2",
+              "kind": "isi",
+              "referenceId": "ISI1"
+            },
+            {
+              "entryId": "variant-1-entry-3",
+              "kind": "video",
+              "referenceId": "video-b8f73962688de9b4"
+            }
+          ],
+          "versionSha256": "adb8af0c6edd3466b4b3b02ac062942968160027b390098f0eefe4e2963ea9bc"
+        },
+        {
+          "variantId": "variant-2",
+          "title": "Variant 2",
+          "entries": [
+            {
+              "entryId": "variant-2-entry-1",
+              "kind": "video",
+              "referenceId": "video-b8f73962688de9b4"
+            },
+            {
+              "entryId": "variant-2-entry-2",
+              "kind": "isi",
+              "referenceId": "ISI2"
+            },
+            {
+              "entryId": "variant-2-entry-3",
+              "kind": "video",
+              "referenceId": "video-3cf9b41545994899"
+            }
+          ],
+          "versionSha256": "cd76c35bb37ca560c4c7cbf0a7c82ba4851e54266dcf2771dc3149ffc1f539db"
+        }
+      ],
+      "allocation": {
+        "kind": "runnerAssigned"
+      },
+      "markerContract": {
+        "schema": "affect-research-planned-markers",
+        "version": 1,
+        "vocabulary": [
+          "sessionStart",
+          "videoStart",
+          "videoEnd",
+          "isiStart",
+          "isiEnd",
+          "formStart",
+          "formEnd",
+          "pause",
+          "resume",
+          "interruption",
+          "restart",
+          "complete",
+          "partial"
+        ],
+        "identity": "recipe-run-attempt-variant-entry-execution-v1",
+        "clock": "runner-observed-monotonic-v1",
+        "sequence": "strictly-increasing-per-run-v1",
+        "onset": "observed-media-lifecycle-not-qualified-visible-onset-v1",
+        "reconstruction": "embedded-codebook-paired-boundaries-no-gap-repair-v1"
+      },
+      "integritySha256": "ebc3bee014e02ca51308b7ffb7dc1c2f870ffa3e421fbf4a2563ba118f558920"
+    },
+    "integritySha256": "d524ebe1ecf471cff3503e08ec21404bf46968fcfc8c67abd6f16ca20b25ed11"
+  },
+  "timelines": [
+    {
+      "variantId": "variant-1",
+      "versionSha256": "adb8af0c6edd3466b4b3b02ac062942968160027b390098f0eefe4e2963ea9bc",
+      "plannedDurationMs": 36301,
+      "events": [
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-1",
+          "kind": "video",
+          "referenceId": "video-3cf9b41545994899",
+          "position": 1,
+          "eventId": "variant-1-entry-1-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 0
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-1",
+          "kind": "video",
+          "referenceId": "video-3cf9b41545994899",
+          "position": 1,
+          "eventId": "variant-1-entry-1-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 12345
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI1",
+          "position": 2,
+          "eventId": "variant-1-entry-2-start",
+          "eventType": "isiStart",
+          "plannedOffsetMs": 12345
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI1",
+          "position": 2,
+          "eventId": "variant-1-entry-2-end",
+          "eventType": "isiEnd",
+          "plannedOffsetMs": 12845
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-3",
+          "kind": "video",
+          "referenceId": "video-b8f73962688de9b4",
+          "position": 3,
+          "eventId": "variant-1-entry-3-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 12845
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-3",
+          "kind": "video",
+          "referenceId": "video-b8f73962688de9b4",
+          "position": 3,
+          "eventId": "variant-1-entry-3-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 36301
+        }
+      ]
+    },
+    {
+      "variantId": "variant-2",
+      "versionSha256": "cd76c35bb37ca560c4c7cbf0a7c82ba4851e54266dcf2771dc3149ffc1f539db",
+      "plannedDurationMs": 37301,
+      "events": [
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-1",
+          "kind": "video",
+          "referenceId": "video-b8f73962688de9b4",
+          "position": 1,
+          "eventId": "variant-2-entry-1-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 0
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-1",
+          "kind": "video",
+          "referenceId": "video-b8f73962688de9b4",
+          "position": 1,
+          "eventId": "variant-2-entry-1-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 23456
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI2",
+          "position": 2,
+          "eventId": "variant-2-entry-2-start",
+          "eventType": "isiStart",
+          "plannedOffsetMs": 23456
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI2",
+          "position": 2,
+          "eventId": "variant-2-entry-2-end",
+          "eventType": "isiEnd",
+          "plannedOffsetMs": 24956
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-3",
+          "kind": "video",
+          "referenceId": "video-3cf9b41545994899",
+          "position": 3,
+          "eventId": "variant-2-entry-3-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 24956
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-3",
+          "kind": "video",
+          "referenceId": "video-3cf9b41545994899",
+          "position": 3,
+          "eventId": "variant-2-entry-3-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 37301
+        }
+      ]
+    }
+  ],
+  "markerProfiles": [
+    {
+      "recipeSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "variantId": "variant-1",
+      "variantVersionSha256": "adb8af0c6edd3466b4b3b02ac062942968160027b390098f0eefe4e2963ea9bc",
+      "entries": [
+        {
+          "entryId": "variant-1-entry-1",
+          "sourceCode": "source-1"
+        },
+        {
+          "entryId": "variant-1-entry-2",
+          "sourceCode": "source-2"
+        },
+        {
+          "entryId": "variant-1-entry-3",
+          "sourceCode": "source-3"
+        }
+      ],
+      "codebook": [
+        {
+          "sourceCode": "source-1",
+          "kind": "video",
+          "identitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "durationMs": 12345
+        },
+        {
+          "sourceCode": "source-2",
+          "kind": "isi",
+          "identitySha256": "e00647dc0e74fc30255b14e75d6043850817d8e228be12515cd4fcf0b16de83c",
+          "durationMs": 500
+        },
+        {
+          "sourceCode": "source-3",
+          "kind": "video",
+          "identitySha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "durationMs": 23456
+        }
+      ]
+    },
+    {
+      "recipeSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "variantId": "variant-2",
+      "variantVersionSha256": "cd76c35bb37ca560c4c7cbf0a7c82ba4851e54266dcf2771dc3149ffc1f539db",
+      "entries": [
+        {
+          "entryId": "variant-2-entry-1",
+          "sourceCode": "source-1"
+        },
+        {
+          "entryId": "variant-2-entry-2",
+          "sourceCode": "source-2"
+        },
+        {
+          "entryId": "variant-2-entry-3",
+          "sourceCode": "source-3"
+        }
+      ],
+      "codebook": [
+        {
+          "sourceCode": "source-1",
+          "kind": "video",
+          "identitySha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "durationMs": 23456
+        },
+        {
+          "sourceCode": "source-2",
+          "kind": "isi",
+          "identitySha256": "e6d1db04a6a60743bb07a77e1439c36a07755763ba9cf7068713e6272eda2c6e",
+          "durationMs": 1500
+        },
+        {
+          "sourceCode": "source-3",
+          "kind": "video",
+          "identitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "durationMs": 12345
+        }
+      ]
+    }
+  ],
+  "invalidSnapshots": [
+    {
+      "name": "pending catalogue",
+      "snapshot": {
+        "revision": 11,
+        "enabled": true,
+        "pending": true,
+        "contribution": {
+          "schema": "affect-research-video-catalogue-contribution",
+          "version": 1,
+          "revision": 1,
+          "entries": [
+            {
+              "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "annotationId": "session1_landscape",
+              "sourceRelativePath": "stimuli/session1/landscape.mp4",
+              "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "byteLength": 1024,
+              "durationMs": 12345,
+              "geometry": {
+                "status": "verified",
+                "source": "browser-decoder",
+                "displayWidthPx": 1920,
+                "displayHeightPx": 1080,
+                "displayAspect": {
+                  "numerator": 16,
+                  "denominator": 9
+                },
+                "rotationDegrees": null,
+                "pixelAspectRatio": null,
+                "metadataInterpretation": "decoder-oriented-display"
+              }
+            },
+            {
+              "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "annotationId": "session2_portrait",
+              "sourceRelativePath": "stimuli/session2/portrait.mp4",
+              "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+              "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "byteLength": 2048,
+              "durationMs": 23456,
+              "geometry": {
+                "status": "verified",
+                "source": "browser-decoder",
+                "displayWidthPx": 1080,
+                "displayHeightPx": 1920,
+                "displayAspect": {
+                  "numerator": 9,
+                  "denominator": 16
+                },
+                "rotationDegrees": null,
+                "pixelAspectRatio": null,
+                "metadataInterpretation": "decoder-oriented-display"
+              }
+            }
+          ],
+          "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+        },
+        "dependencyRevisions": []
+      }
+    },
+    {
+      "name": "withdrawn catalogue",
+      "snapshot": {
+        "revision": 12,
+        "enabled": true,
+        "pending": true,
+        "contribution": null,
+        "dependencyRevisions": []
+      }
+    },
+    {
+      "name": "unsupported catalogue",
+      "snapshot": {
+        "revision": 11,
+        "enabled": true,
+        "pending": false,
+        "contribution": {
+          "schema": "affect-research-video-catalogue-contribution",
+          "version": 2,
+          "revision": 1,
+          "entries": [
+            {
+              "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "annotationId": "session1_landscape",
+              "sourceRelativePath": "stimuli/session1/landscape.mp4",
+              "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "byteLength": 1024,
+              "durationMs": 12345,
+              "geometry": {
+                "status": "verified",
+                "source": "browser-decoder",
+                "displayWidthPx": 1920,
+                "displayHeightPx": 1080,
+                "displayAspect": {
+                  "numerator": 16,
+                  "denominator": 9
+                },
+                "rotationDegrees": null,
+                "pixelAspectRatio": null,
+                "metadataInterpretation": "decoder-oriented-display"
+              }
+            },
+            {
+              "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "annotationId": "session2_portrait",
+              "sourceRelativePath": "stimuli/session2/portrait.mp4",
+              "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+              "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "byteLength": 2048,
+              "durationMs": 23456,
+              "geometry": {
+                "status": "verified",
+                "source": "browser-decoder",
+                "displayWidthPx": 1080,
+                "displayHeightPx": 1920,
+                "displayAspect": {
+                  "numerator": 9,
+                  "denominator": 16
+                },
+                "rotationDegrees": null,
+                "pixelAspectRatio": null,
+                "metadataInterpretation": "decoder-oriented-display"
+              }
+            }
+          ],
+          "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+        },
+        "dependencyRevisions": []
+      }
+    }
+  ]
+}

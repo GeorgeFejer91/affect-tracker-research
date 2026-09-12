@@ -6,7 +6,7 @@ import { createVariantDocument } from "../site/src/research/variant-design.js";
 import { requestStimulusAuthoring } from "../site/src/research/stimulus-authoring-request.js";
 import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
 
-const { library, document: design } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
+const { library, document: design, videos } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
 function fixture(operate) {
   const handlers = new Map();
   let renders = 0;
@@ -22,7 +22,7 @@ function fixture(operate) {
     querySelectorAll() { return []; },
   };
   const editor = createStimulusOrderEditor({ root, operate });
-  return { editor, handlers, status, get renders() { return renders; } };
+  return { editor, handlers, status, versions, get renders() { return renders; } };
 }
 function cell(value) {
   return { dataset: { orderRow: "1", orderColumn: "0" }, value, removeAttribute() {}, setAttribute() {} };
@@ -134,4 +134,90 @@ test("P7 contribution reopen is editable and invalid ISI edits immediately inval
   assert.equal(ui.editor.getSnapshot().pending, false);
   assert.notEqual(ui.editor.document.contribution.variants[0].versionSha256, design.contribution.variants[0].versionSha256);
   assert.equal(ui.editor.document.contribution.variants[1].versionSha256, design.contribution.variants[1].versionSha256);
+});
+
+test("catalogue withdrawal and changed content under a reused revision invalidate acceptance", async () => {
+  for (const replacement of [null, { revision: 7, videos: videos.map(video => ({ ...video, durationMs: video.durationMs + 1000 })) }]) {
+    const ui = fixture(async (_operation, { document }) => ({ library, design: document }));
+    await ui.editor.adopt({ library, design }, { loadSaved: true });
+    ui.editor.setCatalogue({ revision: 7, videos });
+    assert.equal(await ui.editor.confirm(), true);
+    const accepted = ui.editor.getSnapshot();
+    if (replacement) assert.throws(() => ui.editor.setCatalogue(replacement), /without a new revision/);
+    else ui.editor.setCatalogue(replacement);
+    const withdrawn = ui.editor.getSnapshot();
+    assert.equal(withdrawn.contribution, null);
+    assert.equal(withdrawn.pending, true);
+    assert.ok(withdrawn.revision > accepted.revision);
+    assert.equal(ui.versions.innerHTML, "");
+    assert.equal(await ui.editor.confirm(), false, "withdrawn or rejected dependencies must not be reaccepted");
+  }
+});
+
+test("both reopen APIs keep the actual prebound P1 revision and timing without a fabricated increment", async () => {
+  for (const [method, value] of [["restore", design], ["restoreContribution", design.contribution]]) {
+    const ui = fixture(async () => { throw new Error("Reopen must not write."); });
+    ui.editor.setCatalogue({ revision: 7, videos });
+    await ui.editor[method](value, { library });
+    const accepted = ui.editor.getSnapshot();
+    assert.deepEqual(accepted.dependencyRevisions, [{ segment: "P1", revision: 7 }]);
+    assert.equal(accepted.pending, false);
+    assert.deepEqual(accepted.contribution, design.contribution);
+    assert.match(ui.versions.innerHTML, /Planned duration: 3500 ms/);
+    ui.editor.setCatalogue({ revision: 7, videos: structuredClone(videos) });
+    assert.deepEqual(ui.editor.getSnapshot(), accepted, "an identical producer snapshot must not discard reopen acceptance");
+  }
+});
+
+test("malformed catalogue inputs clear acceptance; a fresh revision can be reviewed without mutating its source", async () => {
+  for (const invalid of [{ revision: -1, videos }, { revision: 7, videos: [...videos, videos[0]] }]) {
+    const ui = fixture(async (_operation, { document }) => ({ library, design: document }));
+    const catalogue = { revision: 7, videos: structuredClone(videos) };
+    await ui.editor.restore(design, { library, catalogue });
+    catalogue.videos[0].durationMs = 9000;
+    assert.match(ui.versions.innerHTML, /Planned duration: 3500 ms/);
+    assert.throws(() => ui.editor.setCatalogue(invalid));
+    assert.equal(ui.editor.getSnapshot().contribution, null);
+    assert.equal(await ui.editor.confirm(), false);
+    ui.editor.setCatalogue({ revision: 8, videos });
+    assert.equal(await ui.editor.confirm(), true);
+    assert.deepEqual(ui.editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 8 }]);
+  }
+});
+
+test("restore validates the supplied P1 identity and cancellation before committing any state", async () => {
+  for (const [method, value] of [["restore", design], ["restoreContribution", design.contribution]]) {
+    const ui = fixture(async () => {});
+    await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+    const initial = ui.editor.getSnapshot();
+    await assert.rejects(ui.editor[method](value, { library, catalogue: { revision: 8, videos: videos.slice(1) } }), /does not match/);
+    assert.deepEqual(ui.editor.getSnapshot(), initial);
+    await assert.rejects(ui.editor[method](value, { library, isCurrent: () => false }), /changed while reopening/);
+    assert.deepEqual(ui.editor.getSnapshot(), initial);
+    const reopening = ui.editor[method](value, { library });
+    ui.editor.setCatalogue(null);
+    await assert.rejects(reopening);
+    assert.equal(ui.editor.getSnapshot().contribution, null);
+  }
+});
+
+test("an explicit P1 withdrawal also invalidates a restored legacy library-only contribution", async () => {
+  const ui = fixture(async () => {});
+  await ui.editor.restore(design, { library });
+  ui.editor.setCatalogue(null);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  assert.equal(await ui.editor.confirm(), false);
+  await ui.editor.adopt({ library, design }, { loadSaved: true });
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+});
+
+test("catalogue withdrawal during compilation prevents the stale authoring write", async () => {
+  let writes = 0;
+  const ui = fixture(async (_operation, { document }) => { writes++; return { library, design: document }; });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  const confirmation = ui.editor.confirm();
+  ui.editor.setCatalogue(null);
+  assert.equal(await confirmation, false);
+  assert.equal(writes, 0);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
 });
