@@ -201,8 +201,7 @@ function bindResearchInteractions(root, { surface }) {
   let disconnectScreenLayout = () => {};
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
     onChange() {
-      const ui = root.researchUi;
-      if (ui?.getPlannerContributionReview().snapshots.some(item => item.segment === "P4")) ui.plannerContributionChanged("P4");
+      root.researchUi?.plannerContributionChanged?.("P4");
     },
   });
   const announcer = root.querySelector("#research-announcer");

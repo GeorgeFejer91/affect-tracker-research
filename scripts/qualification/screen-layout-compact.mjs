@@ -16,12 +16,13 @@ const cases = ["desktop", "narrow"].flatMap(pane => [
   {state:"unavailable",position:"top"}, {state:"unavailable",position:"middle"}, {state:"unavailable",position:"bottom"},
   {state:"populated",position:"middle"}, {state:"portrait",position:"top"}, {state:"error",position:"bottom"},
 ].map(sample => ({ name: `${pane}-${sample.state}-${sample.position}`, pane, ...sample })));
-const syntheticFixtures = {media:[{id:"portrait",source:"synthetic",width:1080,height:1920}],envelope:{source:"synthetic",revision:"p4-review-v1",left:0.6,right:0.6,top:0.6,bottom:0.6,paddingCssPx:2}};
 
 function fixture(sample) {
   return `<!doctype html><html lang="en"><meta charset="utf-8"><link rel="stylesheet" href="/site/research.css">
 <div id="research-app" data-research-surface="browser"></div><script type="module">
-import { bootResearchUi } from '/site/src/research/app.js${sample.state === "portrait" ? "?p4synthetic=portrait" : ""}';
+import { bootResearchUi } from '/site/src/research/app.js';
+import { RESEARCH_UI_EVENTS } from '/site/src/research/ui-contracts.js';
+import { browserDisplayGeometry } from '/site/src/research/video-catalogue-contribution.js';
 const sample=${JSON.stringify(sample)}, errors=[], checks=[];
 addEventListener('error',e=>errors.push(e.message));
 addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
@@ -29,6 +30,10 @@ const check=(name,pass)=>checks.push({name,pass:Boolean(pass)});
 const wait=()=>new Promise(resolve=>setTimeout(resolve,350));
 try {
  const app=bootResearchUi(), ui=app.researchUi;
+ if(sample.state==='portrait')app.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.stimuliCatalogued,{detail:{replace:true,items:[{
+   stimulus:{stimulusId:'portrait',title:'Portrait fixture',source:{kind:'workspaceFile',relativePath:'stimuli/portrait.mp4',mimeType:'video/mp4',sha256:'a'.repeat(64),byteLength:1024,durationMs:1000}},
+   verified:true,displayGeometry:browserDisplayGeometry({videoWidth:1080,videoHeight:1920})
+ }]}}));
  ui.openSetupSection('layout'); await wait();
  if(sample.pane==='narrow')app.querySelector('[data-setup-resizer]').dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true}));
  const root=app.querySelector('[data-screen-layout-draft]'), pane=app.querySelector('.setup-pane');
@@ -57,7 +62,7 @@ try {
  check('readable control text',visible.every(e=>parseFloat(getComputedStyle(e).fontSize)>=12));
  check('exactly one draft reset',root.querySelectorAll('[data-layout-reset]').length===1);
  check('draft boundary visible',root.textContent.includes('not saved in the experiment package'));
- check('media source is explicit',root.querySelector('[data-layout-dependencies]').textContent.includes(sample.state==='portrait'?'Synthetic verification samples':'unavailable'));
+ check('media source is explicit',root.querySelector('[data-layout-dependencies]').textContent.includes(sample.state==='portrait'?'verified video display':'required to check every video'));
  check('package and settings unchanged',settings===JSON.stringify(ui.settings)&&packageText===ui.experimentPackageSourceText);
  field('offsetX').focus({preventScroll:true});check('keyboard focus retained',document.activeElement===field('offsetX'));
  const footer=section.querySelector('[data-confirm-section]');
@@ -86,16 +91,7 @@ const server = createServer(async (request, response) => {
       const file = resolve(site, "." + decodeURIComponent(url.pathname.slice(5)));
       assert.ok(file.startsWith(site + sep));
       response.setHeader("Content-Type", ({ ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" })[extname(file)] ?? "application/octet-stream");
-      let content=await readFile(file);
-      if(url.pathname==='/site/src/research/app.js'&&url.searchParams.get('p4synthetic')==='portrait') {
-        // Test-only dependency injection into the actual bootstrap composition.
-        // Production source and accepted settings are never mutated.
-        const anchor='createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"))';
-        const source=content.toString('utf8');
-        assert.equal(source.split(anchor).length,2,'P4 editor injection seam changed');
-        content=source.replace(anchor,anchor.slice(0,-1)+', { fixtures: '+JSON.stringify(syntheticFixtures)+' })');
-      }
-      response.end(content);
+      response.end(await readFile(file));
     } else { response.writeHead(404); response.end(); }
   } catch { response.writeHead(404); response.end(); }
 });
