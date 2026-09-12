@@ -61,7 +61,7 @@ export function createXrLayoutState() {
         dependencyRevisions: Object.entries(dependencies).filter(([, value]) => value !== null)
           .map(([key, value]) => ({ segment: key === "catalogue" ? "P1" : "P5", revision: value })) };
     },
-    serialize() { if (!enabled || accepted === null) throw new Error("Accept the current XR layout before exporting."); return serializeXrLayoutProfileV1(accepted); },
+    serialize() { if (!enabled || accepted === null) throw new Error("Validate the current authoring profile before downloading."); return serializeXrLayoutProfileV1(accepted); },
   };
 }
 
@@ -220,7 +220,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     resolveXrLayoutProfileV1(draft, media);
     if (catalogueGeometry !== null) resolveXrCatalogueV1(draft, catalogueGeometry);
     if (feedbackEnvelope !== null) resolveXrFeedbackFootprintV1(draft, feedbackEnvelope);
-    state.accept(); render(); notify(); status("Layout accepted. You can download its authoring profile.");
+    state.accept(); render(); notify(); status("Authoring profile validated. Download is available.");
     return state.getSnapshot();
   }
   function projectDependencies(next) {
