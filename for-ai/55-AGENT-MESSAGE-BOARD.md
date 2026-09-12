@@ -32,21 +32,18 @@
   `docs/planner-p4-rendered-cli-evidence.md` states methods and exact remaining
   native stdin/media/master comparisons. Thirteen P4 baseline tests and final
   syntax/diff checks pass. No production fix or broad native build was needed.
-- Main's final combined registration/source rerun is pending. Harness accepts a
-  separate clean source root and `--require-integrated`; this requires existing
-  app P4 registration and uses that same session/controller. Current owner
-  receipts explicitly use a separate real DOM-backed P4 comparison owner because
-  base84264ad registered onlyP7; the actual UI path is the full rendered Planner.
-  Main has the source-bound rerun instructions. Do not close global E2E-UI or
-  infer actual native CLI/import/Runner success from these synthetic-media scenes.
+- Main's final combined registration/source rerun is complete. The same clean source
+  root with `--require-integrated` runs on the full rendered Planner session and
+  registry, with `integratedSession: true` in both Chrome and Edge receipts.
+  Main has the source-bound rerun outputs. Do not close global E2E-UI or infer actual
+  native CLI/import/Runner success from these synthetic-media scenes.
 - **Exact Planner role follow-up:** source
-  `6080d1354992a0c0c47fe1d76e6945d752b4ed1c` adds the explicit companion-role
+  `79e073bdcfc0b1e93ab0b7ed5d975e4a58bf95b5` adds the explicit companion-role
   fixture attribute/assertion. Earlier ead567e renders the shared Setup surface;
   retain those receipts with that limit. Final exact Experiment Planner Chrome/
   Edge each pass **816 checks**, and all12 new PNGs are inspected, at
-  `final-planner-{chrome,edge}` with `visual-review-6080d13.json` in the same
-  evidence root. UI/CLI profile files remain byte-identical. Main/root received
-  the correction; required same-app integrated registration proof is still pending.
+  `final-planner-{chrome,edge}-integrated` in the same evidence root. UI/CLI
+  profile files remain byte-identical. Main/root received the rerun.
 
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 

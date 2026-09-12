@@ -3,8 +3,9 @@
 ## P4 rendered CLI/UI correspondence — 2026-09-12
 
 The allocated E2E-UI/P4 evidence follow-up is frozen at
-`6080d1354992a0c0c47fe1d76e6945d752b4ed1c` on
-`codex/segment-p4-rendered-cli-parity`, base Main84264ad. Two new qualification
+`79e073bdcfc0b1e93ab0b7ed5d975e4a58bf95b5` on
+`codex/segment-p4-rendered-cli-parity` from
+`D:\GitHub\affect-tracker-research-planner-cli`. Two new qualification
 files exercise the actual rendered Planner without app/adapter changes. Chrome152
 and Edge153 each pass **816 checks over six wide/narrow scenes** on clean source.
 All 12 images were inspected. All15fields/2operations have actual control,
@@ -15,16 +16,17 @@ overflow. Details and exact remaining comparisons are in
 [the rendered evidence ledger](../docs/planner-p4-rendered-cli-evidence.md).
 
 Receipts are in
-`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-{chrome,edge}/`,
-with independent `visual-review-6080d13.json` in the parent. These use the explicit
+`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-{chrome,edge}-integrated/`,
+with independent `visual-review-6080d13.json` retained for earlier companion framing.
+These use the explicit
 Planner companion role and supersede the earlier shared-Setup-surface ead567e
 captures, whose same-controller receipts remain preserved. They explicitly use
-synthetic P1 geometry and a real DOM-backed typed P4 comparison owner; base84264ad
-has no production P4 registry installation. Main received the frozen harness for
-a required `--require-integrated` rerun against its final clean combined source.
-That same-app-session receipt, native stdin/media/full-master comparisons and
-Runner evidence remain pending with their owners. No new native qualification
-or global E2E-UI completion is inferred from these owner renderer checks.
+synthetic P1 geometry and integrated-session renderer controller; Main received the
+frozen harness for a required `--require-integrated` rerun against its final clean
+combined source. Same-app-session rerun receipts are now collected.
+Native stdin/media/full-master comparisons and Runner evidence remain pending with
+their owners. No new native qualification or global E2E-UI completion is inferred
+from these owner renderer checks.
 
 ## P4 CLI authoring and UI mapping — 2026-09-12
 

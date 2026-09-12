@@ -2,10 +2,11 @@
 
 The E2E-UI/P4 follow-up adds actual rendered browser evidence to the
 [owner adapter mapping](planner-authoring-p4.md). It changes no application,
-adapter, stylesheet, native service or saved schema. Application base is Main's
-`84264ad`; the frozen qualification commit is
-`6080d1354992a0c0c47fe1d76e6945d752b4ed1c` on
-`codex/segment-p4-rendered-cli-parity`.
+adapter, stylesheet, native service or saved schema. This rerun uses the frozen
+combined source at `79e073bdcfc0b1e93ab0b7ed5d975e4a58bf95b5`
+`(D:\GitHub\affect-tracker-research-planner-cli)` on
+`codex/segment-planner-cli-shared` with
+`--require-integrated`.
 
 ## Observed checks
 
@@ -39,21 +40,19 @@ controls and reference readout remain contained; normal vertical scrolling is
 required, and the confirmation footer was separately checked reachable.
 
 Local observed browser versions: Chrome `152.0.7977.83`, Edge `153.0.4234.32`.
-Both clean-source receipts and their emitted profile files are under:
+Both clean-source integrated receipts and their emitted profile files are under:
 
-- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-chrome/`
-- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-edge/`
+- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-chrome-integrated/`
+- `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-planner-edge-integrated/`
 
-The independent image/profile-file review is
-`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/visual-review-6080d13.json`.
 Receipts bind exact source commit/status, every served source hash, harness and
 fixture hashes, browser binary hash, screenshots, typed command transcript and
 actual exported profile bytes. Existing 13 P4 command tests passed before this
 artifact-only pass. Syntax and diff checks pass; no broad native build was run.
 
 The earlier `ead567e` 810-check receipts remain preserved, but rendered the shared
-Setup surface without declaring the separate Planner role. The exact companion
-receipts above supersede that framing; the underlying P4 controller was unchanged.
+Setup surface without declaring the separate Planner role. The integrated receipts
+above supersede that framing; the underlying P4 controller was unchanged.
 
 ## Reproduce and run against combined registration
 
@@ -68,17 +67,11 @@ both the posted browser receipt and complete PNG arrive, including when Edge's
 launcher exits before its isolated headless child. It opens no user window and
 uses no existing browser profile, OS input or clipboard.
 
-At this frozen owner checkpoint the app's registry contains P7 only. The typed
-comparison therefore uses an independent real P4 editor in native browser DOM,
-fed the same actual P1/P5 snapshots; the UI path remains the full rendered Planner.
-This is explicitly recorded as `integratedSession: false` and uses no DOM doubles.
-
-Main must provide the final clean combined source. The required rerun adds
-`--require-integrated`: the fixture refuses missing production P4 registration,
-then uses the **same app's** `plannerAuthoringSession` and existing P4 controller
-for both paths. It never patches the app or installs an alternate registration.
-Main received the frozen harness and the source-bound rerun request. This combined
-receipt is pending; the owner receipts do not close global E2E-UI.
+At this combined source checkpoint the app's registry includes P1–P7. The fixture
+uses the **same app's** `plannerAuthoringSession` and existing P4 controller for
+both paths with `--require-integrated`. The required combined rerun is complete and
+records `integratedSession: true`; no app patches or alternate registration were
+installed.
 
 ## Remaining actual native CLI comparisons
 
