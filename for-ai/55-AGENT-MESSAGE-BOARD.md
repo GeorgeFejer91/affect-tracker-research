@@ -4437,6 +4437,16 @@ Native and full composition evidence deferred to Main. Validator correction
 
 ### 20260912-p2-prepared-recipe-restoration
 
+Main integration follow-up: collected P2 checkpoint b44d8e0 as 5b1afe7 and
+native broker ab22b5e as 107cdc3. Registered the two existing native grant/effect
+modules and the fixed effect/revision IPC commands in the composition root.
+Production library cargo check passes (seven unused-code warnings); focused
+P2 restoration plus architecture gate passes 17/17. The fixed native-effect
+adapter allowlist omission is corrected without widening its IPC endpoint.
+This is Backend Verification of the named P2/P7 shared seam, not end-to-end
+native Open/Save or a rebuilt current-app qualification. Main still owns app
+operation composition and boot wiring; root owns the allocated bridge helper.
+
 - Main-allocated S3 Backend Verification, P2-04/P2-07/P2-08 and P2-02.
   Isolated codex/segment-p2-restore in D:/GitHub/affect-tracker-research-p2-restore,
   base342026a. Own editor/helper/tests/docs only; Main owns app/native wiring.

@@ -20,6 +20,8 @@ mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
 mod research_planner_authoring;
+mod research_planner_cli_effects;
+mod research_planner_cli_io;
 pub mod research_planner_recipe;
 mod research_planner_recipe_file;
 pub mod research_planner_recipe_policy;
@@ -240,6 +242,8 @@ fn launch(
             research_planner_authoring::research_planner_authoring_ready,
             research_planner_authoring::research_planner_authoring_next,
             research_planner_authoring::research_planner_authoring_complete,
+            research_planner_authoring::research_planner_authoring_effect,
+            research_planner_authoring::research_planner_authoring_revision,
             research_planner_authoring::research_planner_authoring_startup_failed,
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
