@@ -225,7 +225,7 @@ function bindResearchInteractions(root, { surface }) {
   const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
     onChange: (snapshot) => {
       const summary = root.querySelector('[data-section-summary="xr"]');
-      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Layout accepted";
+      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Geometry validated";
       root.researchUi?.plannerContributionChanged?.("P6");
     },
   }) : null;

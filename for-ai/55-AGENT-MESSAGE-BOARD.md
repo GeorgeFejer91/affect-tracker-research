@@ -104,6 +104,19 @@ file; follow the integration-owner collection procedure in the workflow.
   editable reopen and separate-process canonical reproduction. Actual Runner
   correspondence, execution, tracking and recording are deferred and do not
   block this Planner allocation. No new UI or runtime mode is introduced.
+- Intermediate checkpoints: `c68b8d2` pure saved-content/selection adapter;
+  `f442c2a` complete P5 V1/V2 dispatch after collecting P5 `95b2e92`.
+  Full suite passes 660 JavaScript checks at that checkpoint. Actual app selection
+  fixtures pass 34 assertions at each of 1440/820px; narrow capture inspected.
+- P6 Rust mirror now explicitly accepts P5 `feedback-envelope-v2` alongside V1.
+  Shared `xr-feedback-envelope-v2.json` covers Flubber gradient, Grid, Face and
+  disabled feedback on a non-default tilted profile. Five focused Rust tests
+  and 23 P6 recipe/geometry JS tests pass; float parity uses the existing 1e-10
+  tolerance. Profile bytes/schema and native authority are unchanged.
+  Integration reserved the P6 summary hunk; it now says `Geometry validated`
+  for domain preparation, separately from P7 confirmation/save.
+- Complete master codec/save/reopen evidence remains in progress with S7. This
+  is not a proposal-only stop or a dependency on actual Runner implementation.
 
 ### 20260912-integration-contribution-cycle — combined candidate
 
