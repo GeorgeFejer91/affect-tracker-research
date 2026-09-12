@@ -15,6 +15,8 @@ import { createXrLayoutAuthoring } from "../site/src/research/xr-layout-authorin
 import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
 import { serializeXrLayoutProfileV1, createDefaultXrLayoutProfile } from "../site/src/research/xr-layout.js";
 import { projectWorkspaceVideoDisplayGeometry } from "../site/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
+import { plannerLayoutIdentityV1 } from "../site/src/research/planner-recipe-reproduction.js";
 
 const masters = await Promise.all(["planner-recipe-v1", "planner-recipe-locations-v1"].map(async name =>
   JSON.parse(await readFile(new URL(`fixtures/${name}.canonical.json`, import.meta.url)))));
@@ -42,7 +44,11 @@ test("complete master retains and reconstructs every spatial field through canon
     });
     const matrix = await reproducePlannerRecipeV1(document.recipe);
     const presentation = matrix.presentations.find(value => value.presentationTarget === "webxr-immersive-vr");
-    assert.equal(presentation.layoutSha256, await canonicalSha256(expected));
+    const media = (await projectVideoDisplayGeometry(input.segments.P1.videoCatalogue)).videos;
+    const identity = plannerLayoutIdentityV1(input.presentationTarget, profile, media, input.segments.P5);
+    assert.equal(matrix.algorithmVersion, "planner-recipe-reproduction-v2");
+    assert.equal(presentation.layoutIdentitySha256, await canonicalSha256(identity));
+    assert.equal(Object.hasOwn(presentation, "layoutSha256"), false, "portable input identity is explicitly distinct from raw geometry hashing");
     assert.equal(matrix.presentations.length, 2, "the explicitly authored desktop profile also survives");
     for (const item of matrix.cases.filter(value => value.presentationTarget === "webxr-immersive-vr")) {
       const selected = await reconstructPlannerRecipeSelectionV1(document.recipe, selector(item));
@@ -157,12 +163,26 @@ test("independent full-master processes reproduce identical XR bytes and every s
 
 test("the native-consumer XR master fixture matches the actual full compiler and P6 projection", async () => {
   const recipe = await compilePlannerRecipeV1(core(spatial.profiles[0]));
-  const source = await readFile(new URL("fixtures/planner-xr-master-v1.canonical.json", import.meta.url), "utf8");
-  const matrix = JSON.parse(await readFile(new URL("fixtures/planner-xr-master-v1-reproduction.json", import.meta.url)));
+  const source = await readFile(new URL("fixtures/planner-recipe-xr-current-v1.canonical.json", import.meta.url), "utf8");
+  const matrix = JSON.parse(await readFile(new URL("fixtures/planner-recipe-xr-current-v1-reproduction.json", import.meta.url)));
   const layout = JSON.parse(await readFile(new URL("fixtures/planner-xr-master-v1-layout.json", import.meta.url)));
   assert.equal(await serializePlannerRecipeV1(recipe), source);
   assert.deepEqual(await reproducePlannerRecipeV1(recipe), matrix);
   assert.deepEqual(await resolveSavedXrLayoutContribution(recipe.segments.P6.profile, {
     workspaceContribution: recipe.segments.P1, feedbackContribution: recipe.segments.P5, selectedTarget: recipe.presentationTarget,
   }), layout);
+});
+
+test("historical raw-geometry XR master retains its exact reader semantics and fixture bytes", async () => {
+  const source = await readFile(new URL("fixtures/planner-xr-master-v1.canonical.json", import.meta.url), "utf8");
+  const matrix = JSON.parse(await readFile(new URL("fixtures/planner-xr-master-v1-reproduction.json", import.meta.url)));
+  const old = await parsePlannerRecipeV1(encoder.encode(source));
+  assert.equal(old.recipe.integrity.algorithmVersion, "planner-recipe-reproduction-v1");
+  assert.equal(await serializePlannerRecipeV1(old.recipe), source);
+  assert.deepEqual(await reproducePlannerRecipeV1(old.recipe), matrix);
+  assert.ok(matrix.presentations.every(value => Object.hasOwn(value, "layoutSha256") && !Object.hasOwn(value, "layoutIdentitySha256")));
+  const current = await compilePlannerRecipeV1(core(spatial.profiles[0]));
+  assert.deepEqual(current.segments, old.recipe.segments, "portable hashing changes no authored content");
+  assert.equal(current.integrity.definitionSha256, old.recipe.integrity.definitionSha256);
+  assert.notEqual(current.integrity.reproductionSha256, old.recipe.integrity.reproductionSha256);
 });

@@ -5,8 +5,8 @@ import { canonicalJson } from "../../site/src/research/canonical.js";
 import { resolveSavedXrLayoutContribution } from "../../site/src/research/xr-layout-recipe.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import savedXr from "./xr-layout-recipe-v1.json";
-import xrMaster from "./planner-xr-master-v1.canonical.json";
-import desktopMaster from "./planner-recipe-locations-v1.canonical.json";
+import xrMaster from "./planner-recipe-xr-current-v1.canonical.json";
+import desktopMaster from "./planner-recipe-locations-current-v1.canonical.json";
 
 // Synthetic typed catalogue events exercise real application producers. No
 // directory picker, decoder, WebXR session, native adapter or Run is invoked.
@@ -27,6 +27,7 @@ const rejected = async (action) => { try { await action(); return false; } catch
 
 (async () => {
   const root = document.querySelector("main"); root.id = "research-app"; root.dataset.researchSurface = "browser";
+  root.dataset.researchProgram = "planner";
   bootResearchUi(); const ui = root.researchUi, q = (selector) => root.querySelector(selector);
   const change = (selector, value) => {
     const field = q(selector); field.value = value; field.dispatchEvent(new Event("input", { bubbles: true }));
@@ -42,6 +43,7 @@ const rejected = async (action) => { try { await action(); return false; } catch
     })),
   } }));
   const dependencies = () => ({ P1: ui.getWorkspaceContributionSnapshot(), P5: ui.getFeedbackContributionSnapshot() });
+  check("actual Planner contains no participant Run controls", !q('[data-mode="run"]') && !q("#start-experiment"));
   if (scope !== "master") {
   await ui.waitForXrLayoutDependencies();
   check("disabled XR survives unavailable catalogue", !ui.getXrLayoutContribution().enabled && ui.getXrLayoutDependencyStatus().pending);
