@@ -3267,3 +3267,26 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
+
+### 20260912-planner-cli-shared-first-slice — shared integration / P7
+
+- Owner: Add segment confirmation flow, `codex/segment-planner-cli-shared`,
+  isolated `affect-tracker-research-planner-cli` worktree from clean `460f516`.
+- Direct user follow-up, relayed by root: load/edit saved JSON and create
+  timestamp-named versions; fresh requested mock and all authored settings are
+  the final CLI target. Root owns the dated authority/coverage amendment in 68.
+- Stage: Backend Verification. This pass delivers the typed owner gateway,
+  settings catalogue/snapshot, authored revision/CAS and P7 policy path through
+  one owned hidden Planner's stdin/stdout. No listener, arbitrary live attach,
+  generic DOM/shell control, second compiler or mutable Rust editor.
+- Verified baseline: existing owner drafts are JavaScript; native services own
+  files/media/final strict validation. Focused policy/file workflow: 11/11 pass.
+- Shared seams: new `planner-authoring-*` modules, narrow app/bootstrap/native
+  bridge installation, native CLI broker/lifecycle/registration. The frozen
+  owner adapter interface is `docs/planner-authoring-command-api-v1.md`.
+- P7 file owner is separately allocated timestamp naming and native exact
+  no-clobber file service. P1–P6 remain their owners' work. New timestamps affect
+  filenames only, not recipe IDs, integrity or reproduction.
+- Evidence now: typed success/invalid/CAS/cancel/retry and same-session native
+  readback. Deferred: complete owner coverage, fresh real-media mock, final
+  export integration, installed/physical Runner qualification and publication.
