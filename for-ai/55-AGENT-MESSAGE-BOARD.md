@@ -306,6 +306,20 @@
   candidate178d453, canonical460f516. No production native CLI/mock/Runner
   execution success yet. See69 for exact evidence limits and pending inputs.
 
+
+### 20260912-p7-cli-target-native-effects
+
+- S7, CLI-P7 / P7-05 / P7-07, Backend Verification continuation allocated by Main.
+  Isolated branch `codex/segment-p7-cli-target`, base `0b9da49`, worktree
+  `D:/GitHub/affect-tracker-research-p7-cli-target`.
+- Current owner projects policy controls but omits the explicit Review target.
+  Deliverable: P7 target control projection and focused command/restore tests.
+  Shared session, app composition and native registration remain Main-owned.
+  Native helper boundary is being recovered with Main before implementation.
+- Baseline: 13 authoring-session tests pass. No schema, compiler, provenance,
+  source questionnaire, runtime or qualification changes are allocated here.
+
+
 ### 20260912-p6-cli-owner-adapter
 
 - Owner S6, CLI-P6, Backend Verification, explicitly allocated by Chat
@@ -4006,6 +4020,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Evidence now: typed success/invalid/CAS/cancel/retry and same-session native
   readback. Deferred: complete owner coverage, fresh real-media mock, final
   export integration, installed/physical Runner qualification and publication.
+<<<<<<< HEAD
 - First real hidden native smoke passed at `0138516-dirty`: nine commands,
   current-session P7 read/set/readback, retry, stale/invalid rejection and EOF.
   Receipt: `D:/GitHub/.affect-preview-checks/planner-cli-unselected-workspace-smoke/receipt.json`.
@@ -4033,3 +4048,11 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   P1–P7 owner adapters and file service, then install existing editor hooks and
   separate native consequential commands. Preserve this milestone executable
   until root finishes the independent driver. Canonical remains `460f516`.
+=======
+
+- 20260912-p7-cli-target handoff: 26/26 focused authoring-session, recipe-component
+  and recipe-file tests pass; git diff --check passes. Main approved the exact
+  target enum. Existing factory signature remains createPlannerPolicyCommandOwner
+  ({root,onCommit}); target control is planner-presentation-target. Main owns
+  target-change invalidation and current target selection in composition.
+>>>>>>> 3308468 (Expose explicit Review target through P7 authoring owner)

@@ -12,6 +12,7 @@ function harness() {
     ["lsl-enabled", { checked: false }], ["lsl-state-stream", { value: "AffectResearch" }],
     ["lsl-stream-type", { value: "Affect" }], ["lsl-marker-stream", { value: "AffectResearchMarkers" }],
     ["lsl-source-id", { value: "affect-research" }],
+    ["planner-presentation-target", { value: "desktop-screen" }],
   ]);
   const root = { querySelector: selector => fields.get(selector.slice(1)) };
   let commits = 0;
@@ -40,8 +41,8 @@ test("a disposed UI gesture cannot publish through the shared command session", 
 test("CLI policy catalogue and get use the exact existing UI-owned controls", async () => {
   const h = harness();
   const catalogue = await h.session.execute(h.request({ kind: "catalogue" }));
-  assert.equal(catalogue.result.settings.length, 10);
-  assert.equal(catalogue.result.settings.filter(setting => setting.writable).length, 9);
+  assert.equal(catalogue.result.settings.length, 11);
+  assert.equal(catalogue.result.settings.filter(setting => setting.writable).length, 10);
   h.fields.get("participant-count").value = "91";
   h.session.edited();
   const get = await h.session.execute(h.request({ kind: "get", field: "P7.participantCount" }));
@@ -56,13 +57,41 @@ test("CLI policy catalogue and get use the exact existing UI-owned controls", as
 
 test("every writable policy setting performs typed set/get/export-reader round trip", async () => {
   const h = harness();
-  const values = [57, 200, false, true, true, "StudyState", "StudyAffect", "StudyMarkers", "study-2026"];
+  const values = [57, 200, false, true, true, "StudyState", "StudyAffect", "StudyMarkers", "study-2026", "webxr-immersive-vr"];
   for (const [index, setting] of h.owner.settings.filter(item => item.writable).entries()) {
     const response = await h.session.execute(h.request({ kind: "set", field: setting.id, value: values[index] }, h.session.revision));
     assert.equal(response.status, "applied", setting.id);
     assert.equal((await h.session.execute(h.request({ kind: "get", field: setting.id }))).result.value, values[index]);
   }
   assert.deepEqual(readPlannerPolicyControls(h.root).lsl, { enabled: true, stateStream: "StudyState", streamType: "StudyAffect", markerStream: "StudyMarkers", sourceId: "study-2026" });
+});
+
+test("presentation target follows explicit UI restore and CLI edits without a P6 owner", async () => {
+  const h = harness();
+  const control = h.fields.get("planner-presentation-target");
+  control.value = "webxr-immersive-vr";
+  h.session.edited();
+  assert.equal((await h.session.execute(h.request({ kind: "get", field: "P7.presentationTarget" }))).result.value, control.value);
+  const stale = await h.session.execute(h.request({ kind: "set", field: "P7.presentationTarget", value: "desktop-screen" }, 0));
+  assert.equal(stale.status, "rejected");
+  assert.equal(control.value, "webxr-immersive-vr");
+  const applied = await h.session.execute(h.request({ kind: "set", field: "P7.presentationTarget", value: "desktop-screen" }, h.session.revision));
+  assert.equal(applied.status, "applied");
+  assert.equal(control.value, "desktop-screen");
+  const cleared = await h.session.execute(h.request({ kind: "set", field: "P7.presentationTarget", value: "" }, h.session.revision));
+  assert.equal(cleared.status, "incomplete");
+  assert.equal(h.owner.read().values["P7.presentationTarget"], "");
+  assert.equal(h.owner.validate()[0].code, "invalid_target");
+});
+
+test("unknown presentation target rejects the whole batch without changing UI policy", async () => {
+  const h = harness(), before = h.session.snapshot();
+  const result = await h.session.execute(h.request({ kind: "apply", edits: [
+    { kind: "set", field: "P7.participantCount", value: 13 },
+    { kind: "set", field: "P7.presentationTarget", value: "ambient-host" },
+  ] }, 0));
+  assert.equal(result.issues[0].code, "invalid_value");
+  assert.deepEqual(h.session.snapshot(), before);
 });
 
 test("batch syntax failure does not partially apply an earlier edit", async () => {
