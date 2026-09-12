@@ -128,8 +128,10 @@ file; follow the integration-owner collection procedure in the workflow.
   were sent to their consumers and integration without repeating owner tests.
 - P1 follow-up `a2f4491` adds study identity and a workspace composite, while
   retaining its video-only projection. Root and integration independently
-  identified different revision domains/payloads across that projection and
-  P7 registration. S1 owns a coherent registered-owner revision/projection;
+  identified different revision domains/payloads that would conflict when P7
+  switches to the composite. Fixed-tip review confirms `cc5cc83` still registers
+  the video-only getter; it does not yet include the study/workspace composite.
+  S1 owns a coherent registered-owner revision/projection;
   S3/P4/P6 must consume it and S7 restore it consistently. Integration holds
   this follow-up until the interface agrees; it is not a reason to stop other
   ready collection. Q05-dependent restoration remains a separate decision.
