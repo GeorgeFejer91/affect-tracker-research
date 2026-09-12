@@ -234,6 +234,26 @@ file; follow the integration-owner collection procedure in the workflow.
   and records harness/PNG hashes; a two-image Chrome smoke run at clean P6
   `3bedea1` passes and both images were inspected. This is harness evidence,
   separate from the eventual combined application.
+- Root captured and inspected all 30 default-state combined Chrome images at
+  clean `b9d520d` (all seven sections, two viewports, full scroll). Image/harness
+  hashes match; no errors, duplicate IDs or pane overflow. P1–P6 have no new
+  material visual issue in these states. P7's new eight-box repeated warning
+  list is assigned to S7 for V23/V25 grouping/compactness with diagnostics and
+  focus routes preserved. Exact images/coverage are in `64`; this is not final
+  master or populated-state proof.
+- Integration reports 646 combined Node checks, actual-controller cycle 27
+  including P1 restore races, and both builds at `c32f806`; Rust 199 passed
+  `b9d520d` with no later Rust delta. Root inspected the application diff:
+  `c32f806` changes only legacy-load announcement's immutable local receipt
+  reference. P7 additionally identified a blank/incomplete-form edit during a
+  pending picker that a null fingerprint cannot detect. Integration owns the
+  explicit edit/load epoch and actual-controller regression; do not rearm v1
+  export or clear successor gates to make the old fixture pass.
+- The subsequent clean integration `3ac7c7f` implements that explicit edit
+  revision through picker/parse/reproduction. Owner reports 31 actual-controller
+  cases, including blank/null/invalid drafts, edit-revert and delayed digest,
+  plus 646 Node checks. No markup/style changes; P7 alone owns the remaining
+  warning-list presentation hunk. Final combined source follows its collection.
 
 ### 20260911-roadmap-rendered-compactness-audit
 

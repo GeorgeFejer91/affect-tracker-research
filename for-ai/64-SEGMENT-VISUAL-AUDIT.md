@@ -41,7 +41,9 @@ rendered owner versions were inspected at desktop and constrained widths;
 the evidence and remaining limits are recorded below. Canonical source remains
 clean `ba2110f`. Integration has advanced beyond its initial `c7ba103` UI
 candidate; the exact interim capture below is `64da370`, and later owner-reported
-checks name `4f505c3`. None is the final verified combined application. The open
+checks name `4f505c3`. A later 30-image combined capture at `b9d520d` is reviewed
+below; its Review warning-list follow-up remains open. None is the final verified
+combined application. The open
 checkboxes retain that distinction; they do not mean the owner fixes are absent.
 
 | Segment | Cleanup verified in the owner handoff | Ready checkpoint |
@@ -186,6 +188,48 @@ capture, not a capture made after that commit or final combined integration.
 The owner reports 28 focused Node, 20 standalone visibility/keyboard Chrome,
 28 actual-app Chrome checks and both builds. Combined footer preparation and
 P7 acceptance/save semantics remain separately assigned; V28 stays open.
+
+## Full combined default-state review at b9d520d — 2026-09-12
+
+All **30 actual Chrome PNGs** in
+`D:/GitHub/.affect-preview-checks/combined-b9d520d-chrome-20260912` were inspected
+at 1280×900/800×700, including full scroll coverage of all seven registered
+sections. The detached visual worktree was clean at
+`b9d520d4c687419b03da343cf115e1a8834ab163`. Source remained stable; all 30 image
+hashes and the harness hash match the receipt. No runtime errors, duplicate IDs
+or horizontal pane overflow were recorded. Setup panes are 795px/472px.
+
+- P1–P4: 12 images. One compact catalogue/identity home; readable empty
+  questionnaire state; the new P3 prerequisite and retained footer; orderly P4
+  fields, legend, missing-video issue and reachable footer. No new material
+  visual regression in these default states.
+- P5: 10 images. Full saved-controls scroll remains readable; the removed
+  separate confirmation is replaced by the Section 7 final-capture explanation.
+  No new material clipping, duplicate controls or compactness regression.
+- P6: two disabled-state images. One enable choice and one footer confirmation;
+  no new material visual regression. Enabled profile coverage remains in the
+  separately recorded owner receipts.
+- P7: six images. Recipe/explicit target precede collapsed LSL, language
+  recovery/footer remain readable, and final Save is reachable at both widths.
+  **New V23/V25 regression:** eight separately boxed/bulleted contribution
+  warnings repeat acceptance/unsupported-format reasons per segment and expose
+  the internal name P1. They dominate the initial Review view and extend through
+  much of a second narrow page. S7 owns a compact grouped presentation preserving
+  distinct reasons, diagnostic codes and focus destinations; integration owns
+  collection. This is separate from the already-fixed LSL ordering issue.
+
+These images use actual default data: they do not show populated questionnaire/
+version editors, expanded tools/Advanced, valid accepted geometry, file-picker
+states or a finished master recipe. Combined controller tests remain separate.
+Integration found a legacy-load announcement dereferencing a receipt cleared by
+live producers; `c32f806` fixes that reference using the validated local result.
+Root compared the application diff: only that load announcement/comment changes,
+with no markup/style/geometry delta. The images were still captured at `b9d520d`,
+not `c32f806`. Integration's follow-up `3ac7c7f` adds an explicit edit revision
+to protect pending file loads, including blank/incomplete drafts and edit-revert;
+the owner reports 31 actual-controller checks and 646 Node checks passing.
+It changes no markup/style. The Review presentation follow-up remains open;
+keep V28 and canonical promotion open.
 
 ## Segment checklist
 
