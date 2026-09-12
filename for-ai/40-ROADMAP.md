@@ -1,5 +1,32 @@
 # Research v1 roadmap
 
+## P2 producer/consumer closure receipt — 2026-09-12
+
+On the isolated P2 branch based at `714b22d`, added a coverage-aware, non-mutating
+`validateQuestionnairePlannerContribution` callback for P7's acceptance registry.
+Strict editable restoration and complete family/language coverage must both
+pass; incomplete imported content can still be restored for repair using the
+existing restore API. No questionnaire content, scoring policy, wire format,
+UI layout, Runner or native adapter changed in this pass.
+
+Focused Node checks pass 28/28: contribution, prebuilt inventory, grid,
+integration and supplied-source suites. They include synthetic EN/DE/FR
+authoring with a negative fractional code, independent-process byte-identical
+re-export, and rejection of acceptance after the French asset is removed.
+The ready preset inventory is MAIA-2 EN/DE only; source-specific scoring
+annotations remain unchanged, as recorded under P2-05 in the central catalogue.
+
+P7's clean owner checkpoint `6bac40f` independently passed its 27-case isolated
+Chrome export fixture, including full bilingual/nested-route restore, wording
+edit and delayed synthetic save acknowledgement. Receipt:
+`D:\GitHub\.affect-checks\s2-p7-consumer-chrome-20260912`. An Edge invocation
+returned no browser output and produced no fixture result; it is not passing
+evidence. Source stayed clean at the same P7 commit across the successful run.
+The new acceptance callback and P7's next code-edit/acceptance fixture still
+need combined integration; no canonical merge, actual native save, app reload
+or deployment is claimed here. User-authorized merge/reload remains with the
+sole integration owner. Prior visual evidence is unchanged and not repeated.
+
 ## P2 spreadsheet and contribution receipts — 2026-09-11
 
 Pending owner branch `codex/segment-questionnaires-table-catalogue`:
