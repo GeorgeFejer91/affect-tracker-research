@@ -3,6 +3,7 @@ import { applyScreenLayoutFit } from "./screen-layout-draft.js";
 
 export const DESKTOP_LAYOUT_SCHEMA = "affect-research-desktop-layout-contribution";
 export const DESKTOP_LAYOUT_MAX_BYTES = 8192;
+export const DESKTOP_LAYOUT_MAX_MEDIA = 10000;
 // A recipe requires an explicit choice. Neither method is a default.
 export const DEFAULT_DESKTOP_REFERENCE_POLICY = null;
 export const DESKTOP_REFERENCE_POLICIES = Object.freeze(["largest-oriented-area", "maximum-oriented-dimensions"]);
@@ -30,7 +31,7 @@ const zero = n => Object.is(n, -0) ? 0 : n;
 
 /** P1 validates ownership and metadata before supplying this geometry projection. */
 export function validateDesktopMediaGeometry(media) {
-  if (!Array.isArray(media) || !media.length || media.length > 500) fail("media", "missing", "Verify one to 500 videos before preparing the layout.");
+  if (!Array.isArray(media) || !media.length || media.length > DESKTOP_LAYOUT_MAX_MEDIA) fail("media", "missing", "Verify a complete video catalogue within the 10000-entry limit before preparing the layout.");
   const ids = new Set();
   return media.map(item => {
     exact(item, ["assetId", "displayWidth", "displayHeight"], "media entry");

@@ -1,6 +1,6 @@
 import { canonicalJson } from "./canonical.js";
-import { validateWorkspaceContributionV1 } from "./workspace-contribution.js";
-import { projectVideoDisplayGeometryV1 } from "./video-catalogue-contribution.js";
+import { validateWorkspaceContribution } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { DESKTOP_LAYOUT_SCHEMA, DESKTOP_LAYOUT_MAX_BYTES, DesktopLayoutError,
@@ -14,8 +14,8 @@ export async function resolveDesktopLayoutContribution(value, { workspace, feedb
   const capturedWorkspace = structuredClone(workspace), capturedFeedback = structuredClone(feedback);
   const validFeedback = validateFeedbackContribution(capturedFeedback);
   if (canonicalJson(validFeedback) !== canonicalJson(capturedFeedback)) throw new DesktopLayoutError("feedback", "noncanonical", "Saved feedback settings must be canonical.");
-  const validWorkspace = await validateWorkspaceContributionV1(capturedWorkspace);
-  const { videos } = await projectVideoDisplayGeometryV1(validWorkspace.videoCatalogue);
+  const validWorkspace = await validateWorkspaceContribution(capturedWorkspace);
+  const { videos } = await projectVideoDisplayGeometry(validWorkspace.videoCatalogue);
   const side = resolveDesktopLayoutBase(profile).geometry.feedback.width;
   const result = resolveDesktopLayoutGeometry(profile, videos, resolveFeedbackEnvelope(validFeedback, side));
   if (result.issues.length) {
