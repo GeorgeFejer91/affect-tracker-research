@@ -62,6 +62,8 @@ pub(crate) struct MasterWorker {
     typed_answers: super::typed_forms::TypedFormAnswers,
     terminal: bool,
     pub cancellation: Arc<AtomicBool>,
+    #[cfg(test)]
+    before_observe: Option<fn(&MasterWorker, MarkerEvent)>,
 }
 impl MasterWorker {
     #[allow(clippy::too_many_arguments)] // Private composition, no untyped IPC arguments.
@@ -170,6 +172,8 @@ impl MasterWorker {
             terminal: false,
             typed_answers: Default::default(),
             cancellation: Arc::new(AtomicBool::new(false)),
+            #[cfg(test)]
+            before_observe: None,
         })
     }
     pub(crate) fn run(&mut self, receiver: Receiver<Message>) {
@@ -237,6 +241,13 @@ impl MasterWorker {
                         self.opened = true;
                     }
                     MasterStepKind::Interval => {
+                        // Complete the native dispatch barrier before clearing any
+                        // final queued release/absolute update and resetting P5.
+                        self.quiesce()?;
+                        self.reset_response();
+                        // Publish neutral while still awaiting admission, before
+                        // the interval clock or IsiStart can become observable.
+                        self.publish();
                         self.state.phase = MasterPhase::Interval;
                         let now = Instant::now();
                         self.step_started = Some(now);
@@ -625,6 +636,10 @@ impl MasterWorker {
         Ok(())
     }
     fn observe(&mut self, event: MarkerEvent, occurrence: bool) -> ResearchResult<()> {
+        #[cfg(test)]
+        if let Some(probe) = self.before_observe {
+            probe(self, event);
+        }
         let id = if occurrence {
             Some(self.current()?.entry_id.clone())
         } else {
@@ -678,13 +693,19 @@ impl MasterWorker {
         self.answers = Default::default();
         self.typed_answers = Default::default();
         self.state.answers.clear();
-        self.response = ResponseState::new(self.prepared.feedback.response.clone(), Instant::now());
+        self.reset_response();
         if self.state.completed_step_count == self.state.step_count {
             self.finish(true, None)
         } else {
             self.state.phase = MasterPhase::AwaitingPresentation;
             Ok(())
         }
+    }
+    fn reset_response(&mut self) {
+        self.response = ResponseState::new(self.prepared.feedback.response.clone(), Instant::now());
+        self.state.current_valence = 0.;
+        self.state.current_arousal = 0.;
+        self.state.input_active = false;
     }
     fn finish(&mut self, complete: bool, failure: Option<&str>) -> ResearchResult<()> {
         let input_failure = self.quiesce().err();
@@ -773,6 +794,205 @@ mod tests {
         research_native_protocol::runtime::PackageProtocolRuntime,
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
+    fn with_neutral_worker(check: impl FnOnce(&mut MasterWorker)) {
+        // Exact saved fixture, synthetic worker boundary/input state only; no
+        // decoded video, physical input, renderer paint or XDF attestation.
+        let root =
+            std::env::temp_dir().join(format!("runner-isi-neutral-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(root.join("outputs")).unwrap();
+        let prepared = PreparedMaster::read(
+            include_str!(
+                "../../../test/fixtures/planner-recipe-locations-current-v1.canonical.json"
+            ),
+            "P001",
+            MasterSelector {
+                variant_id: "variant-3".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let workspace = Arc::new(WorkspaceService::new(root.join("app")).unwrap());
+        let media = Arc::new(NativeMediaService::unavailable_for_tests());
+        let input = Arc::new(ResearchInputService::for_tests());
+        let binding = prepared.feedback.input.clone();
+        let receipt = input.issue_test_receipt_for_tests(binding.clone()).unwrap();
+        let mailbox = Arc::new(ProtocolInputMailbox::new(binding.kind));
+        let sink = Arc::clone(&mailbox);
+        let authority = InputAuthority {
+            service: Arc::clone(&input),
+            id: input
+                .prepare_run_full(binding, &receipt.receipt_id, move |v| sink.push(v))
+                .unwrap(),
+        };
+        let legacy = PackageProtocolRuntime::with_services(
+            Arc::clone(&workspace),
+            Arc::clone(&media),
+            Arc::clone(&input),
+        );
+        let storage =
+            MasterStorage::create(&root, &prepared, "run-neutral-test", Value::Null, false)
+                .unwrap();
+        let mut worker = legacy
+            .begin_companion(|lease| {
+                MasterWorker::new(
+                    prepared,
+                    "unused".into(),
+                    vec![],
+                    NativeMediaViewportPxV1::initial(),
+                    storage,
+                    authority,
+                    mailbox,
+                    workspace,
+                    media,
+                    Arc::new(RecorderService::default()),
+                    lease,
+                )
+            })
+            .unwrap();
+        worker.before_observe = Some(|worker, event| {
+            if matches!(event, MarkerEvent::IsiStart) {
+                assert_eq!((worker.response.x, worker.response.y), (0., 0.));
+                assert!(!worker.response.active(Instant::now()));
+                assert_eq!(
+                    (worker.state.current_valence, worker.state.current_arousal),
+                    (0., 0.)
+                );
+                let displayed = lock(&worker.public);
+                assert_eq!(
+                    (displayed.current_valence, displayed.current_arousal),
+                    (0., 0.)
+                );
+                assert!(!displayed.input_active);
+                assert_eq!(displayed.phase, MasterPhase::AwaitingPresentation);
+                assert!(worker.clock.is_none());
+                assert!(matches!(
+                    worker.authority.service.status().phase,
+                    crate::research_input::NativeInputPhase::RunPrepared
+                ));
+                let pending = worker.mailbox.drain().unwrap();
+                assert!(pending.digital.is_empty() && pending.continuous.is_none());
+                assert_eq!(pending.coalesced_count, 0);
+            }
+        });
+        check(&mut worker);
+        drop(worker);
+        drop(legacy);
+        drop(input);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    fn seed_stale_digital(worker: &mut MasterWorker) {
+        let edge = crate::research_input::NativeDigitalInput {
+            direction: crate::research_contracts::DirectionV1::Right,
+            detail: "synthetic-held".into(),
+            apply_step: true,
+            input_active: true,
+            impulse: false,
+            observed_at: Instant::now(),
+        };
+        worker.response.digital(edge.clone());
+        worker.response.x = 0.8;
+        worker.response.y = -0.4;
+        worker.state.current_valence = 0.8;
+        worker.state.current_arousal = -0.4;
+        worker.state.input_active = true;
+        worker
+            .mailbox
+            .push(crate::research_input::NativeInputUpdate::Digital(edge));
+        worker.publish();
+    }
+    fn present_interval(worker: &mut MasterWorker, position: u32) {
+        assert_eq!(
+            worker.prepared.plan.steps[position as usize - 1].kind,
+            MasterStepKind::Interval
+        );
+        worker.state.position = position;
+        worker.state.phase = MasterPhase::AwaitingPresentation;
+        worker.action(MasterAction::Presented { position }).unwrap();
+        // No queued repeat/held movement may return even after its deadline.
+        worker
+            .response
+            .advance(Instant::now() + Duration::from_secs(10));
+        assert_eq!((worker.response.x, worker.response.y), (0., 0.));
+        assert!(!worker.state.input_active);
+    }
+    #[test]
+    fn first_isi_resets_non_neutral_state_before_its_start_observation() {
+        with_neutral_worker(|worker| {
+            seed_stale_digital(worker);
+            present_interval(worker, 2);
+        });
+    }
+    #[test]
+    fn consecutive_isis_each_reset_before_admission_including_zero_duration() {
+        with_neutral_worker(|worker| {
+            seed_stale_digital(worker);
+            present_interval(worker, 2);
+            worker.tick().unwrap(); // Exact fixture's first ISI is zero duration.
+            assert_eq!(worker.state.position, 3);
+            seed_stale_digital(worker);
+            present_interval(worker, 3);
+        });
+    }
+    #[test]
+    fn video_to_isi_publishes_neutral_without_waiting_for_a_tick() {
+        with_neutral_worker(|worker| {
+            let video_position = worker
+                .prepared
+                .plan
+                .steps
+                .windows(2)
+                .find(|pair| {
+                    pair[0].kind == MasterStepKind::Video
+                        && pair[1].kind == MasterStepKind::Interval
+                })
+                .unwrap()[0]
+                .position;
+            worker.state.position = video_position;
+            assert_eq!(worker.current().unwrap().kind, MasterStepKind::Video);
+            seed_stale_digital(worker);
+            // Enter the actual next() seam used after observed video end/stop.
+            worker.next().unwrap();
+            assert_eq!(worker.state.position, video_position + 1);
+            assert_eq!(
+                (worker.state.current_valence, worker.state.current_arousal),
+                (0., 0.)
+            );
+            worker.publish();
+            assert_eq!(lock(&worker.public).current_valence, 0.);
+            present_interval(worker, video_position + 1);
+        });
+    }
+    #[test]
+    fn stale_absolute_updates_and_coalescing_cannot_restore_pre_isi_affect() {
+        with_neutral_worker(|worker| {
+            // Inject the alternative transport queue independently of a physical
+            // device; this checks clearing, not device binding qualification.
+            worker.mailbox = Arc::new(ProtocolInputMailbox::new(
+                crate::research_contracts::InputKindV1::Absolute,
+            ));
+            let value = crate::research_input::NativeContinuousInput {
+                x: 0.75,
+                y: -0.5,
+                detail: "synthetic-absolute".into(),
+                input_active: true,
+                observed_at: Instant::now(),
+            };
+            worker.response.continuous(value.clone());
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Continuous(
+                    value.clone(),
+                ));
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Continuous(value));
+            worker.state.current_valence = 0.75;
+            worker.state.current_arousal = -0.5;
+            present_interval(worker, 2);
+        });
+    }
     #[test]
     fn master_v2_requires_every_typed_and_likert_answer_before_advancing() {
         use super::super::typed_forms::{FormAnswerValue, TypedChoice};
