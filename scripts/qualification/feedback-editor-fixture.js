@@ -221,9 +221,10 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     check("editor has no horizontal overflow", pane.scrollWidth <= pane.clientWidth + 1,
       { scroll: pane.scrollWidth, client: pane.clientWidth });
     checkControlSeparation("expanded controls do not overlap");
-    query('[data-confirm-section="feedback"]').click();
-    check("feedback confirmation is available and announced", ui.reviewedSetupSections.includes("feedback")
-      && query('[data-feedback-nav-status]').textContent === "Reviewed");
+    check("feedback is captured by final save, without a separate confirmation",
+      !query('[data-confirm-section="feedback"]') && !ui.reviewedSetupSections.includes("feedback")
+      && query('[data-feedback-nav-status]').textContent === "Captured at final save"
+      && query('#setup-panel-review #package-generate'));
     ui.openSetupSection("feedback", { focus: true });
     query("#preview-advanced-settings").open = screenshotState === "advanced";
     pane.scrollIntoView({ block: "start" });

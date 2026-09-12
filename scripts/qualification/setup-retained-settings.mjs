@@ -17,6 +17,7 @@ import fixture from './test/fixtures/experiment-package-v1.canonical.json';
 import { initializeResearchUi } from './site/src/research/app.js';
 import { renderResearchUiMarkup } from './site/src/research/ui-view.js';
 import { SETUP_SECTIONS, MAPPING_FIELDS } from './site/src/research/ui-contracts.js';
+import { SETUP_CONFIRMATION_SEGMENTS } from './site/src/research/setup-confirmation-flow.js';
 import { canonicalJson } from './site/src/research/canonical.js';
 import { createExperimentPackageV1, serializeExperimentPackageV1 } from './site/src/research/experiment-package.js';
 const results=[], errors=[];
@@ -79,15 +80,23 @@ const wait=()=>new Promise(resolve=>setTimeout(resolve,150));
   };
   check(surface+' nondefault settings survive retained-control projection',canonicalJson(readControls())===canonicalJson(settings));
   check(surface+' physical input receipt is not inferred',app.nativeInputReceiptId===null);
-  for(const {id} of SETUP_SECTIONS){
+  for(const [id,segment] of Object.entries(SETUP_CONFIRMATION_SEGMENTS)){
    root.querySelector('[data-open-section="'+id+'"]').click();
    root.querySelector('[data-confirm-section="'+id+'"]').click();
-   check(surface+' confirms '+id,app.reviewedSetupSections.includes(id));
+   await wait();
+   const accepted=app.getPlannerAcceptanceReview().entries.find(entry=>entry.segment===segment);
+   check(surface+' '+id+' check matches actual acceptance',app.reviewedSetupSections.includes(id)
+     === ['accepted','excluded'].includes(accepted?.status));
   }
+  check(surface+' unverified media cannot acquire a workspace confirmation',!app.reviewedSetupSections.includes('workspace'));
+  check(surface+' Preview and final save are not standalone confirmations',
+   !root.querySelector('[data-confirm-section="feedback"]') && !root.querySelector('[data-confirm-section="review"]')
+   && !app.reviewedSetupSections.includes('review'));
+  const acceptedBeforeNavigation=canonicalJson(app.reviewedSetupSections);
   const first=SETUP_SECTIONS[0].id;
   root.querySelector('[data-open-section="'+first+'"]').click();
   root.querySelector('[data-open-section="'+first+'"]').click();
-  check(surface+' toggling retains reviewed state',app.reviewedSetupSections.length===SETUP_SECTIONS.length);
+  check(surface+' toggling retains acceptance',canonicalJson(app.reviewedSetupSections)===acceptedBeforeNavigation);
   check(surface+' confirmation does not mutate retained controls',canonicalJson(readControls())===canonicalJson(settings));
   const bytes=await serializeExperimentPackageV1(await createExperimentPackageV1({...fixture,settings:readControls()}));
   check(surface+' canonical recipe bytes unchanged after retained-control projection',bytes===expected);
