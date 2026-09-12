@@ -1,3 +1,4 @@
+import { canonicalJson } from "./canonical.js";
 import { restoreQuestionnaireRecipeContent } from "./questionnaire-recipe-restoration.js";
 import { questionnaireFamilyId } from "./questionnaire-assets.js";
 import {
@@ -249,20 +250,26 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const entry = entries.get(key);
     if (!entry || context.locked || entry.busy || (onlyIfPristine && !entry.pristine)
       || (expectedPresetToken !== null && expectedPresetToken !== entry.presetToken)) return false;
-    restoreGeneration++;
-    preserveUndo(entry);
-    entry.sheet = sheetFromDefinition(definition, { familyId, authoringResult });
-    entry.sourceBytes = sourceBytes;
-    entry.authoringResult = authoringResult;
-    entry.invalid.clear();
-    entry.rawOptionCount = null;
-    entry.error = "";
-    entry.dirty = true;
-    entry.pristine = false;
-    entry.open = true;
+    const prepared = prepareLoadedDefinition(entry, definition, { familyId, sourceBytes, authoringResult });
+    installLoadedDefinition(entry, prepared);
     render();
     onChange?.();
     return true;
+  }
+
+  function prepareLoadedDefinition(entry, definition, { familyId, sourceBytes, authoringResult }) {
+    const candidate = { ...entry };
+    preserveUndo(candidate);
+    candidate.sheet = sheetFromDefinition(definition, { familyId, authoringResult });
+    candidate.sourceBytes = sourceBytes; candidate.authoringResult = authoringResult;
+    candidate.invalid = new Map(); candidate.rawOptionCount = null; candidate.error = "";
+    candidate.dirty = true; candidate.pristine = false; candidate.open = true;
+    return candidate;
+  }
+
+  function installLoadedDefinition(entry, prepared) {
+    restoreGeneration++;
+    Object.assign(entry, prepared);
   }
 
   async function preview(entry) {
@@ -585,6 +592,58 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { restoreGeneration++; entries.clear(); fingerprint = ""; },
+    async prepareAuthoringImport(imported, { familyId, language, sourceBytes, isCurrent, signal }) {
+      if (typeof isCurrent !== "function" || !signal || !(sourceBytes instanceof Uint8Array))
+        throw new TypeError("Questionnaire import needs exact source bytes and current-operation/cancellation guards.");
+      const key = keyFor(familyId, language), entry = entries.get(key), oldContext = context;
+      const generation = restoreGeneration, token = entry?.presetToken;
+      const state = () => JSON.stringify({ context, entries: [...entries].map(([key, value]) =>
+        [key, { ...value, invalid: [...value.invalid] }]) });
+      const before = state();
+      let committed = false, projected = false, committedGeneration;
+      const current = () => {
+        try { return !committed && !signal.aborted && isCurrent() && !context.locked
+          && context === oldContext && generation === restoreGeneration
+          && entries.get(key) === entry && entry?.presetToken === token && entry.pristine && !entry.busy
+          && context.families.some(f => f.id === familyId) && context.languages.some(l => l.languageTag === language)
+          && state() === before; }
+        catch { return false; }
+      };
+      const check = () => { if (!current()) {
+        const error = new Error("The questionnaire import slot changed or is no longer pristine.");
+        error.code = signal.aborted ? "canceled" : "stale_revision"; throw error;
+      } };
+      check();
+      const captured = structuredClone(imported), bytes = sourceBytes.slice();
+      if (captured?.definition?.language !== language || questionnaireFamilyId(captured.definition) !== familyId)
+        throw new TypeError("Imported questionnaire family or language differs from the requested slot.");
+      // Reuse the importer to verify that the supplied result and original bytes
+      // are one exact source, including TXT/JSON normalization receipts.
+      const verified = await importQuestionnaireAuthoring(bytes, {
+        logicalName: captured.authoringReceipt?.original?.logicalName,
+        sourceKind: captured.definition.source.kind,
+        sourceDocumentSha256: captured.definition.source.sourceDocumentSha256,
+      });
+      if (canonicalJson(verified) !== canonicalJson(captured)) throw new TypeError("Imported questionnaire result does not match its exact source bytes.");
+      check();
+      const prepared = prepareLoadedDefinition(entry, verified.definition, { familyId, sourceBytes: bytes, authoringResult: verified });
+      check();
+      return {
+        questionnaireId: verified.definition.questionnaireId,
+        isCurrent: current,
+        commit() {
+          check(); installLoadedDefinition(entry, prepared);
+          committedGeneration = restoreGeneration; committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new TypeError("Commit questionnaire import before its projection.");
+          if (projected) return;
+          projected = true;
+          if (restoreGeneration !== committedGeneration) return;
+          render(); onChange?.();
+        },
+      };
+    },
     async prepareRestoreRecipe(contribution, { isCurrent, signal }) {
       if (typeof isCurrent !== "function" || !signal) throw new TypeError("Questionnaire restore needs current-operation and cancellation guards.");
       const generation = restoreGeneration, oldContext = context, slots = [...entries];
