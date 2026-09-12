@@ -37,6 +37,28 @@ pub struct MasterStartRequest {
     pub rerun_confirmed: bool,
     pub input_test_receipt_id: String,
 }
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterStartRequestV2 {
+    pub version: u32,
+    pub workspace_id: String,
+    pub source_text: String,
+    pub participant_id: String,
+    pub selector: MasterSelector,
+    pub rerun_confirmed: bool,
+    pub input_test_receipt_id: String,
+}
+
+struct StartInput {
+    version: u32,
+    workspace_id: String,
+    source_text: String,
+    participant_id: String,
+    participant: Value,
+    selector: MasterSelector,
+    rerun_confirmed: bool,
+    input_test_receipt_id: String,
+}
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum MasterPhase {
@@ -66,7 +88,8 @@ pub struct MasterStatus {
     pub position: u32,
     pub step_count: u32,
     pub completed_step_count: u32,
-    pub answers: std::collections::BTreeMap<String, String>,
+    // V1 serializes strings; V2 serializes closed tagged values, never a guessed union.
+    pub answers: std::collections::BTreeMap<String, Value>,
     pub sample_count: u64,
     pub event_count: u64,
     pub missed_slot_count: u64,
@@ -101,6 +124,46 @@ pub enum MasterAction {
     Pause,
     Resume,
     Stop,
+    #[serde(skip)]
+    DraftV2 {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    #[serde(skip)]
+    SubmitV2 {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
+pub enum MasterActionV2 {
+    Presented {
+        position: u32,
+    },
+    Draft {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    Submit {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    Pause,
+    Resume,
+    Stop,
+}
+impl From<MasterActionV2> for MasterAction {
+    fn from(value: MasterActionV2) -> Self {
+        match value {
+            MasterActionV2::Presented { position } => Self::Presented { position },
+            MasterActionV2::Draft { position, answers } => Self::DraftV2 { position, answers },
+            MasterActionV2::Submit { position, answers } => Self::SubmitV2 { position, answers },
+            MasterActionV2::Pause => Self::Pause,
+            MasterActionV2::Resume => Self::Resume,
+            MasterActionV2::Stop => Self::Stop,
+        }
+    }
 }
 pub(crate) type Message = (MasterAction, mpsc::Sender<ResearchResult<MasterStatus>>);
 struct Active {
@@ -153,6 +216,53 @@ impl MasterRuntime {
         request: MasterStartRequest,
         window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
+        let code = validate_participant_code(&request.participant.participant_code)?;
+        if !(1..=120).contains(&request.participant.age) {
+            return Err(CommandError::invalid_contract(
+                "Participant age must be within 1–120.",
+            ));
+        }
+        let participant = json!({"participantId":request.participant.participant_id,"participantCode":code,"age":request.participant.age,"gender":request.participant.gender,"handedness":request.participant.handedness});
+        self.start_input(
+            StartInput {
+                version: 1,
+                workspace_id: request.workspace_id,
+                source_text: request.source_text,
+                participant_id: request.participant.participant_id,
+                participant,
+                selector: request.selector,
+                rerun_confirmed: request.rerun_confirmed,
+                input_test_receipt_id: request.input_test_receipt_id,
+            },
+            window,
+        )
+    }
+    pub fn start_v2(
+        &self,
+        request: MasterStartRequestV2,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        if request.version != 2 {
+            return Err(CommandError::invalid_contract(
+                "Master v2 Start requires version 2.",
+            ));
+        }
+        super::validate_master_participant(&request.participant_id)?;
+        self.start_input(
+            StartInput {
+                version: 2,
+                workspace_id: request.workspace_id,
+                source_text: request.source_text,
+                participant_id: request.participant_id,
+                participant: Value::Null,
+                selector: request.selector,
+                rerun_confirmed: request.rerun_confirmed,
+                input_test_receipt_id: request.input_test_receipt_id,
+            },
+            window,
+        )
+    }
+    fn start_input(&self, request: StartInput, window: (u32, u32, f64)) -> ResearchResult<Value> {
         let mut active = lock(&self.active);
         if active.as_ref().is_some_and(|a| !a.worker.is_finished()) {
             return Err(CommandError::run_active());
@@ -161,38 +271,120 @@ impl MasterRuntime {
             let _ = previous.worker.join();
         }
         self.legacy.begin_companion(|lease| {
-            crate::research_platform::require_native_acquisition(crate::research_platform::NATIVE_ACQUISITION_SUPPORTED)?;
-            if self.media.authorize_playback(PlaybackMode::NativeGstPlay)? != PlaybackQualification::QualifiedNative { return Err(CommandError::native_media_unavailable("native-gstplay-qualification-required")); }
-            let prepared = PreparedMaster::read(&request.source_text, &request.participant.participant_id, request.selector)?;
+            crate::research_platform::require_native_acquisition(
+                crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
+            )?;
+            if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
+                != PlaybackQualification::QualifiedNative
+            {
+                return Err(CommandError::native_media_unavailable(
+                    "native-gstplay-qualification-required",
+                ));
+            }
+            let prepared = PreparedMaster::read(
+                &request.source_text,
+                &request.participant_id,
+                request.selector,
+            )?;
+            if prepared.plan.version != request.version {
+                return Err(CommandError::invalid_contract(
+                    "Start version must match the exact master version.",
+                ));
+            }
             let viewport = native_viewport(&prepared, window)?;
-            let bindings = self.workspace.validate_runner_video_catalogue(&request.workspace_id, &prepared.loaded.recipe.segments.p1["videoCatalogue"])?;
-            let code = validate_participant_code(&request.participant.participant_code)?;
-            if !(1..=120).contains(&request.participant.age) { return Err(CommandError::invalid_contract("Participant age must be within 1–120.")); }
+            let bindings = self.workspace.validate_runner_video_catalogue(
+                &request.workspace_id,
+                &prepared.loaded.recipe.segment("P1")?["videoCatalogue"],
+            )?;
             let recording = self.recorder.status();
-            if recording.active && recording.recipe_sha256.as_deref() != Some(&prepared.plan.recipe_source_byte_sha256) { return Err(CommandError::forbidden("The recorder belongs to a different experiment JSON.")); }
+            if recording.active
+                && recording.recipe_sha256.as_deref()
+                    != Some(&prepared.plan.recipe_source_byte_sha256)
+            {
+                return Err(CommandError::forbidden(
+                    "The recorder belongs to a different experiment JSON.",
+                ));
+            }
             let run_id = format!("run-{}", uuid::Uuid::new_v4());
             // Validate stream limits before consuming the native input-test receipt.
             MasterMarkers::new(&prepared.plan, &run_id, "attempt-preflight")?;
-            let mailbox = Arc::new(ProtocolInputMailbox::new(prepared.loaded.recipe.segments.p5.input.kind));
+            let mailbox = Arc::new(ProtocolInputMailbox::new(prepared.feedback.input.kind));
             let sink = Arc::clone(&mailbox);
-            let authority = InputAuthority { service: Arc::clone(&self.input), id: self.input.prepare_run_full(prepared.loaded.recipe.segments.p5.input.clone(), &request.input_test_receipt_id, move |update| sink.push(update))? };
-            let participant = json!({"participantId":request.participant.participant_id,"participantCode":code,"age":request.participant.age,"gender":request.participant.gender,"handedness":request.participant.handedness});
-            let storage = self.workspace.with_workspace(&request.workspace_id, |root,_| MasterStorage::create(root, &prepared, &run_id, participant, request.rerun_confirmed))?;
+            let authority = InputAuthority {
+                service: Arc::clone(&self.input),
+                id: self.input.prepare_run_full(
+                    prepared.feedback.input.clone(),
+                    &request.input_test_receipt_id,
+                    move |update| sink.push(update),
+                )?,
+            };
+            let participant = request.participant;
+            let storage = self
+                .workspace
+                .with_workspace(&request.workspace_id, |root, _| {
+                    MasterStorage::create(
+                        root,
+                        &prepared,
+                        &run_id,
+                        participant,
+                        request.rerun_confirmed,
+                    )
+                })?;
             let receipt = storage.receipt.clone();
             let (sender, receiver) = mpsc::sync_channel(32);
-            let mut worker = MasterWorker::new(prepared, request.workspace_id, bindings, viewport, storage, authority.clone(), mailbox, Arc::clone(&self.workspace), Arc::clone(&self.media), Arc::clone(&self.recorder), lease)?;
+            let mut worker = MasterWorker::new(
+                prepared,
+                request.workspace_id,
+                bindings,
+                viewport,
+                storage,
+                authority.clone(),
+                mailbox,
+                Arc::clone(&self.workspace),
+                Arc::clone(&self.media),
+                Arc::clone(&self.recorder),
+                lease,
+            )?;
             let status = Arc::clone(&worker.public);
             let cancellation = Arc::clone(&worker.cancellation);
-            let handle = thread::Builder::new().name("runner-master".into()).spawn(move || {
-                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| worker.run(receiver)));
-                if outcome.is_err() { worker.fail("master-worker-panicked"); }
-            }).map_err(CommandError::io)?;
-            *active = Some(Active {run_id,sender,status,worker:handle,authority,cancellation,window});
+            let handle = thread::Builder::new()
+                .name("runner-master".into())
+                .spawn(move || {
+                    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        worker.run(receiver)
+                    }));
+                    if outcome.is_err() {
+                        worker.fail("master-worker-panicked");
+                    }
+                })
+                .map_err(CommandError::io)?;
+            *active = Some(Active {
+                run_id,
+                sender,
+                status,
+                worker: handle,
+                authority,
+                cancellation,
+                window,
+            });
             Ok(receipt)
         })
     }
     pub fn status(&self) -> Option<MasterStatus> {
         lock(&self.active).as_ref().map(|a| lock(&a.status).clone())
+    }
+    pub(crate) fn require_version(&self, run_id: &str, version: u32) -> ResearchResult<()> {
+        let active = lock(&self.active);
+        let a = active
+            .as_ref()
+            .filter(|a| a.run_id == run_id)
+            .ok_or_else(CommandError::no_active_run)?;
+        if lock(&a.status).version != version {
+            return Err(CommandError::invalid_contract(
+                "The command version does not match this master attempt.",
+            ));
+        }
+        Ok(())
     }
     pub(crate) fn validate_window(
         &self,
@@ -264,7 +456,7 @@ pub(crate) fn native_viewport(
     prepared: &PreparedMaster,
     (width, height, scale): (u32, u32, f64),
 ) -> ResearchResult<NativeMediaViewportPxV1> {
-    let authored = &prepared.loaded.recipe.segments.p4.viewport;
+    let authored = &prepared.layout.viewport;
     if !scale.is_finite()
         || f64::from(width) / scale != authored.width_css_px
         || f64::from(height) / scale != authored.height_css_px
@@ -287,4 +479,32 @@ pub(crate) fn native_viewport(
         layout_revision: 1,
     }
     .to_physical(scale, width, height)
+}
+
+#[cfg(test)]
+mod versioned_ingress_tests {
+    use super::*;
+    #[test]
+    fn start_v2_has_only_participant_id_and_action_values_are_closed() {
+        let request = json!({"version":2,"workspaceId":"workspace-test","sourceText":"untrusted","participantId":"P001","selector":{"variantId":"variant-1","languageId":"en","languageSelectionPath":["en"],"presentationTarget":"desktop-screen"},"rerunConfirmed":false,"inputTestReceiptId":"test"});
+        assert!(serde_json::from_value::<MasterStartRequestV2>(request.clone()).is_ok());
+        assert!(serde_json::from_value::<MasterStartRequest>(request.clone()).is_err());
+        for field in ["participant", "fullName", "age", "participantCode"] {
+            let mut wrong = request.clone();
+            wrong[field] = json!("unexpected");
+            assert!(serde_json::from_value::<MasterStartRequestV2>(wrong).is_err());
+        }
+        let action = json!({"type":"submit","position":1,"answers":[{"itemId":"age","value":{"kind":"integer","integer":0}}]});
+        assert!(serde_json::from_value::<MasterActionV2>(action.clone()).is_ok());
+        assert!(serde_json::from_value::<MasterAction>(action.clone()).is_err());
+        for value in [
+            json!({"kind":"integer","integer":"1"}),
+            json!({"kind":"integer","integer":1.5}),
+            json!({"kind":"singleChoice","optionId":"male","scoreValue":9}),
+        ] {
+            let mut wrong = action.clone();
+            wrong["answers"][0]["value"] = value;
+            assert!(serde_json::from_value::<MasterActionV2>(wrong).is_err());
+        }
+    }
 }

@@ -8,10 +8,13 @@ pub(crate) mod markers;
 pub(crate) mod response;
 pub mod runtime;
 pub(crate) mod storage;
+pub(crate) mod typed_forms;
 pub(crate) mod worker;
 use crate::research_contracts::canonical_sha256;
 use crate::research_error::{CommandError, ResearchResult};
-use crate::research_planner_recipe::{parse_planner_recipe_bytes, LoadedPlannerRecipe};
+use crate::research_planner_recipe_supported::{
+    parse_supported_planner_recipe_bytes, LoadedSupportedPlannerRecipe,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -60,8 +63,10 @@ pub struct MasterPlan {
 }
 
 pub struct PreparedMaster {
-    pub loaded: LoadedPlannerRecipe,
+    pub loaded: LoadedSupportedPlannerRecipe,
     pub plan: MasterPlan,
+    pub layout: crate::research_desktop_layout::DesktopLayoutContributionV1,
+    pub feedback: crate::research_feedback::FeedbackContributionV2,
 }
 
 fn invalid(message: &str) -> CommandError {
@@ -91,16 +96,20 @@ impl PreparedMaster {
         selector: MasterSelector,
     ) -> ResearchResult<Self> {
         validate_master_participant(participant_id)?;
-        let loaded = parse_planner_recipe_bytes(source.as_bytes())?;
+        let loaded = parse_supported_planner_recipe_bytes(source.as_bytes())?;
         let selected = loaded.recipe.reconstruct_selection(&json!(selector))?;
-        if loaded.recipe.presentation_target != "desktop-screen" {
+        if loaded.recipe.presentation_target() != "desktop-screen" {
             return Err(invalid("This master requires XR presentation; desktop execution cannot substitute its desktop profile."));
         }
-        let p3 = &loaded.recipe.segments.p3;
+        let p3 = loaded.recipe.segment("P3")?;
+        let layout = serde_json::from_value(loaded.recipe.segment("P4")?)
+            .map_err(|_| invalid("Validated desktop layout is unavailable."))?;
+        let feedback = serde_json::from_value(loaded.recipe.segment("P5")?)
+            .map_err(|_| invalid("Validated feedback policy is unavailable."))?;
         let legacy_library = if p3["version"] == 1 {
             let catalogue =
                 crate::research_workspace_contribution::validate_workspace_contribution(
-                    &loaded.recipe.segments.p1,
+                    &loaded.recipe.segment("P1")?,
                 )?;
             Some(crate::research_stimulus_order::VideoLibrary::create(
                 catalogue
@@ -180,12 +189,18 @@ impl PreparedMaster {
             );
         }
         append_forms(&mut steps, &selected, "afterSession")?;
-        let identity = json!({"schema":"affect-runner-master-plan","version":1,"algorithmVersion":"master-sequence-v1",
+        let version = loaded.recipe.version();
+        let algorithm = if version == 2 {
+            "master-sequence-v2"
+        } else {
+            "master-sequence-v1"
+        };
+        let identity = json!({"schema":"affect-runner-master-plan","version":version,"algorithmVersion":algorithm,
             "recipeSourceByteSha256":loaded.canonical_source_byte_sha256,"participantId":participant_id,"selector":selector});
         let plan = MasterPlan {
             schema: "affect-runner-master-plan",
-            version: 1,
-            algorithm_version: "master-sequence-v1",
+            version,
+            algorithm_version: algorithm,
             recipe_source_byte_sha256: loaded.canonical_source_byte_sha256.clone(),
             participant_id: participant_id.into(),
             selector,
@@ -193,7 +208,12 @@ impl PreparedMaster {
             selected,
             steps,
         };
-        Ok(Self { loaded, plan })
+        Ok(Self {
+            loaded,
+            plan,
+            layout,
+            feedback,
+        })
     }
 }
 
@@ -263,6 +283,49 @@ mod tests {
         }
     }
 
+    #[test]
+    fn v2_plan_preserves_exact_owner_selection_and_versioned_identity() {
+        let source = include_str!("../../test/fixtures/runner-master-v2-owner.canonical.json");
+        let selections: Vec<Value> = serde_json::from_str(include_str!(
+            "../../test/fixtures/runner-master-v2-owner-selections.canonical.json"
+        ))
+        .unwrap();
+        let mut plans = Vec::new();
+        for selected in selections {
+            let selector = MasterSelector {
+                variant_id: selected["variant"]["variantId"].as_str().unwrap().into(),
+                language_id: selected["language"]["languageId"].as_str().unwrap().into(),
+                language_selection_path: serde_json::from_value(
+                    selected["language"]["languageSelectionPath"].clone(),
+                )
+                .unwrap(),
+                presentation_target: "desktop-screen".into(),
+            };
+            let prepared = PreparedMaster::read(source, "P001", selector).unwrap();
+            assert_eq!(prepared.plan.version, 2);
+            assert_eq!(prepared.plan.algorithm_version, "master-sequence-v2");
+            assert_eq!(prepared.loaded.canonical_source_text, source);
+            assert_eq!(
+                crate::research_contracts::canonical_json(&prepared.plan.selected, &[]).unwrap(),
+                crate::research_contracts::canonical_json(&selected, &[]).unwrap()
+            );
+            assert_eq!(
+                prepared.plan.steps[0].payload["presentation"]["kind"],
+                "fields"
+            );
+            plans.push(prepared.plan);
+        }
+        if let Ok(path) = std::env::var("AFFECT_RUNNER_V2_PLAN_FIXTURE") {
+            use std::io::Write;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+                .unwrap();
+            file.write_all(&crate::research_contracts::canonical_json(&plans, &[]).unwrap())
+                .unwrap();
+        }
+    }
     #[test]
     fn complete_master_keeps_forms_repeated_locations_and_every_interval() {
         let prepared = PreparedMaster::read(SOURCE, "P001", selector()).unwrap();

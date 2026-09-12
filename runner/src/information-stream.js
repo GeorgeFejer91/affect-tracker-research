@@ -1,6 +1,7 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "../../site/src/research/canonical.js";
 import { readRunnerRecipe, resolveRunnerSelection } from "./recipe.js";
 import { inspectMasterStream } from "./master-stream.js";
+import { validateTypedResponseRows } from "./typed-responses.js";
 
 export const INFORMATION_LIMITS = Object.freeze({ frameBytes: 128 * 1024, transferBytes: 64 * 1024 * 1024, chunkBytes: 64 * 1024, frames: 1_000_000 });
 const encoder = new TextEncoder(), decoder = new TextDecoder("utf-8", { fatal: true });
@@ -73,11 +74,14 @@ export class InformationAssembler {
 }
 
 async function reconstructStartup(startup, context) {
-  exact(startup, ["schema", "version", "recipeSourceText", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "markerProfile", "effectiveLsl", "legacyCodedParticipant", "build"], "Information startup");
-  require(startup.schema === "affect-runner-startup" && startup.version === 1 && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
+  require(startup?.schema === "affect-runner-startup" && [1, 2].includes(startup.version) && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
+  const keys = ["schema", "version", "recipeSourceText", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "markerProfile", "effectiveLsl", "build"];
+  if (startup.version === 1) keys.push("legacyCodedParticipant");
+  exact(startup, keys, "Information startup");
   const receipt = await readRunnerRecipe(encoder.encode(startup.recipeSourceText));
   require(receipt.recipe && receipt.canonicalSourceText === startup.recipeSourceText && receipt.canonicalSourceByteSha256 === startup.recipeSourceByteSha256, "Startup does not contain its exact canonical master source.");
   const plan = await resolveRunnerSelection(receipt, startup.participantId, startup.selector.languageSelectionPath, startup.selector.variantId);
+  require(plan.version === startup.version, "Startup version differs from its exact master source.");
   require(plan.planIdentitySha256 === startup.planIdentitySha256 && canonicalJson(plan.selector) === canonicalJson(startup.selector), "Startup selection differs from reconstructed master.");
   const planned = plan.selected.markerProfile, execution = structuredClone(planned); execution.entries = [];
   for (const step of plan.steps) {
@@ -93,22 +97,31 @@ async function reconstructStartup(startup, context) {
   require(lsl.enabled && canonicalJson(lsl) === canonicalJson(startup.effectiveLsl), "Information stream names or policy differ from the selected participant.");
   exact(startup.build, ["commit", "appVersion"], "Startup build");
   require(typeof startup.build.commit === "string" && /^[a-f0-9]{7,64}(?:-dirty)?$/u.test(startup.build.commit) && typeof startup.build.appVersion === "string" && startup.build.appVersion.length <= 100, "Invalid startup build identity.");
-  // Current master generation uses the existing coded participant preparation.
-  const p = startup.legacyCodedParticipant;
-  exact(p, ["participantId", "participantCode", "age", "gender", "handedness"], "Legacy participant");
-  require(p.participantId === plan.participantId && typeof p.participantCode === "string" && encoder.encode(p.participantCode).length <= 32 && p.participantCode === p.participantCode.normalize("NFC").toUpperCase() && [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(p.participantCode)].length === 2 && !/[<>:"/\\|?*_\p{Cc}]/u.test(p.participantCode) && integer(p.age, 1, 120) && ["W", "M", "N", "S", "X"].includes(p.gender) && ["L", "R", "A"].includes(p.handedness), "Invalid legacy coded participant.");
+  // Historical startup1 retains its coded participant preparation. Startup2
+  // binds only participantId; demographics are ordinary mandatory form answers.
+  if (startup.version === 1) {
+    const p = startup.legacyCodedParticipant;
+    exact(p, ["participantId", "participantCode", "age", "gender", "handedness"], "Legacy participant");
+    require(p.participantId === plan.participantId && typeof p.participantCode === "string" && encoder.encode(p.participantCode).length <= 32 && p.participantCode === p.participantCode.normalize("NFC").toUpperCase() && [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(p.participantCode)].length === 2 && !/[<>:"/\\|?*_\p{Cc}]/u.test(p.participantCode) && integer(p.age, 1, 120) && ["W", "M", "N", "S", "X"].includes(p.gender) && ["L", "R", "A"].includes(p.handedness), "Invalid legacy coded participant.");
+  }
   return plan;
 }
 
 function validateResponses(record, plan, context, open, alreadySubmitted) {
   exact(record, ["schema", "version", "entryId", "position", "module", "questionnaireId", "questionnaireVersion", "definitionSha256", "status", "responses", "runId", "attemptId", "participantId", "recipeSourceByteSha256", "planIdentitySha256", "monotonicMs"], "Response record");
-  require(record.schema === "affect-runner-master-responses" && record.version === 1 && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
+  require(record.schema === "affect-runner-master-responses" && record.version === plan.version && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
   const step = plan.steps[record.position - 1];
   require(step?.kind === "questionnaire" && step.entryId === record.entryId && open === record.entryId && !alreadySubmitted.has(record.entryId), "Answers do not belong to the current unsubmitted form occurrence.");
   const definition = step.payload.definition;
   for (const key of ["runId", "attemptId", "recipeSourceByteSha256"]) require(record[key] === context[key], "Responses belong to another attempt.");
   require(record.participantId === plan.participantId && record.planIdentitySha256 === plan.planIdentitySha256 && canonicalJson(record.module) === canonicalJson(step.payload.module), "Response selection or module differs.");
   for (const key of ["questionnaireId", "questionnaireVersion", "definitionSha256"]) require(record[key] === definition[key], "Response definition differs.");
+  if (definition.schema === "affect-research-form-definition" && definition.version === 1 && plan.version === 2) {
+    validateTypedResponseRows(definition, record.responses, { submitted: record.status === "submitted", monotonicMs: record.monotonicMs });
+    if (record.status === "submitted") alreadySubmitted.add(record.entryId);
+    return;
+  }
+  require(definition.schema === "affect-research-questionnaire-definition" && definition.version === 1, "Unsupported response definition.");
   require(Array.isArray(record.responses) && record.responses.length <= definition.items.length, "Response count exceeds definition.");
   let previous = 0;
   for (const response of record.responses) {
@@ -155,7 +168,7 @@ export async function inspectInformationStream(samples) {
   }
   const framing = assembler.finish();
   if (!framing.complete) issues.push({ code: "uncommitted-or-missing-information" });
-  const trace = await inspectMasterStream(markerSamples);
+  const trace = await inspectMasterStream(markerSamples, { planVersion: plan?.version ?? 1 });
   issues.push(...trace.issues);
   if (outcome) {
     require(outcome.completedStepCount === trace.occurrences.filter(o => o.state === "ended").length, "Outcome completed count differs from observed occurrences.");

@@ -239,7 +239,11 @@ pub(crate) fn startup_bundle(
     settings: &crate::research_contracts::ResearchLslSettingsV1,
     participant: serde_json::Value,
 ) -> serde_json::Value {
-    serde_json::json!({"schema":"affect-runner-startup","version":1,"recipeSourceText":prepared.loaded.canonical_source_text,"recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,"participantId":prepared.plan.participant_id,"selector":prepared.plan.selector,"markerProfile":markers.profile_message,"effectiveLsl":settings,"legacyCodedParticipant":participant,"build":{"commit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION")}})
+    let mut value = serde_json::json!({"schema":"affect-runner-startup","version":prepared.plan.version,"recipeSourceText":prepared.loaded.canonical_source_text,"recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,"participantId":prepared.plan.participant_id,"selector":prepared.plan.selector,"markerProfile":markers.profile_message,"effectiveLsl":settings,"build":{"commit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION")}});
+    if prepared.plan.version == 1 {
+        value["legacyCodedParticipant"] = participant;
+    }
+    value
 }
 
 #[cfg(test)]

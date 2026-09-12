@@ -12,8 +12,11 @@ function parse(text, maximum) {
 }
 
 /** Independent recorded-stream consumer. No codebook sidecar, gap repair or
- * clock substitution. Each sample is {value: canonical marker text,timestamp}. */
-export async function inspectMasterStream(samples) {
+ * clock substitution. Each sample is {value: canonical marker text,timestamp}.
+ * The version is supplied by verified startup context for v2; the historical
+ * dictionary-only entrypoint retains v1 by default. No hash-probing fallback. */
+export async function inspectMasterStream(samples, { planVersion = 1 } = {}) {
+  if (![1, 2].includes(planVersion)) throw new Error("Unsupported master plan version.");
   if (!Array.isArray(samples) || samples.length > 200001) throw new Error("Master stream trace exceeds its bound.");
   if (!samples.length) return { status: "incomplete", occurrences: [], issues: [{ code: "missing-profile" }] };
   const profile = parse(samples[0].value, 4 * 1024 * 1024);
@@ -23,7 +26,7 @@ export async function inspectMasterStream(samples) {
   masterParticipantId(profile.participantId);
   const { profileSha256, ...body } = profile;
   if (profileSha256 !== await canonicalSha256(body)) throw new Error("Master profile integrity differs.");
-  const identity = { schema: "affect-runner-master-plan", version: 1, algorithmVersion: "master-sequence-v1",
+  const identity = { schema: "affect-runner-master-plan", version: planVersion, algorithmVersion: `master-sequence-v${planVersion}`,
     recipeSourceByteSha256: profile.recipeSourceByteSha256, participantId: profile.participantId, selector: profile.selector };
   if (profile.planIdentitySha256 !== await canonicalSha256(identity)) throw new Error("Master profile has a different immutable selection.");
   for (const key of ["recipeSha256", "variantId", "variantVersionSha256"]) if (profile.plannedProfile[key] !== profile.executionProfile[key]) throw new Error("Master execution profile changes a planned identity.");

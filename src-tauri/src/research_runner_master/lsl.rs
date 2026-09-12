@@ -178,7 +178,7 @@ mod tests {
         )
         .unwrap();
         let settings = crate::research_runner_session::participant_lsl(
-            &prepared.loaded.recipe.policy.lsl,
+            &prepared.loaded.recipe.policy().lsl,
             "P001",
         )
         .unwrap();

@@ -94,32 +94,38 @@ impl MasterStorage {
         let session_name = format!("{}_{}_R{attempt:02}", prepared.plan.participant_id, run_id);
         let session = directories.create_session(&session_name)?;
         let session_identity = checked_run_child(&directories.participant, &session_name)?;
-        let receipt = json!({"schema":"affect-runner-master-attempt","version":1,"runId":run_id,"attemptId":attempt_id,"attemptNumber":attempt,
+        let mut receipt = json!({"schema":"affect-runner-master-attempt","version":prepared.plan.version,"runId":run_id,"attemptId":attempt_id,"attemptNumber":attempt,
             "participantId":prepared.plan.participant_id,"participant":participant,
             "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,
             "buildCommit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION"),
             "outputDirectory":format!("outputs/{}/{}/{}", recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?, prepared.plan.participant_id, session_name),
             "status":"prepared","completedStepCount":0});
+        if prepared.plan.version == 2 {
+            receipt.as_object_mut().unwrap().remove("participant");
+        }
         write_new(
             &session.join("experiment.master.json"),
             prepared.loaded.canonical_source_text.as_bytes(),
         )?;
         write_new(
-            &session.join("master-plan.v1.json"),
+            &session.join(format!("master-plan.v{}.json", prepared.plan.version)),
             &canonical_json(&prepared.plan, &[])?,
         )?;
         write_new(
-            &session.join("master-attempt.v1.json"),
+            &session.join(format!("master-attempt.v{}.json", prepared.plan.version)),
             &canonical_json(&receipt, &[])?,
         )?;
         let events = writer(&session, "master-events.v1.jsonl")?;
         let samples = writer(&session, "master-samples.v1.jsonl")?;
         let diagnostics = writer(&session, "master-diagnostics.v1.jsonl")?;
-        let responses = writer(&session, "master-responses.v1.jsonl")?;
+        let responses = writer(
+            &session,
+            &format!("master-responses.v{}.jsonl", prepared.plan.version),
+        )?;
         let csv = prepared
             .loaded
             .recipe
-            .policy
+            .policy()
             .output
             .csv
             .then(|| writer(&session, "master-samples.csv"))
@@ -127,7 +133,7 @@ impl MasterStorage {
         let tsv = prepared
             .loaded
             .recipe
-            .policy
+            .policy()
             .output
             .tsv
             .then(|| writer(&session, "master-samples.tsv"))
@@ -262,7 +268,12 @@ impl MasterStorage {
         receipt["files"] = json!(files);
         self.revalidate()?;
         write_new(
-            &self.session.join("master-result.v1.json"),
+            &self.session.join(format!(
+                "master-result.v{}.json",
+                receipt["version"]
+                    .as_u64()
+                    .ok_or_else(|| CommandError::invalid_contract("Missing attempt version."))?
+            )),
             &canonical_json(&receipt, &[])?,
         )?;
         self.terminal = true;

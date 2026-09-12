@@ -1,4 +1,5 @@
 import { questionnairePresentationGroups } from "../../site/src/research/questionnaire-recipe.js";
+import { renderTypedForm } from "./typed-form.js";
 
 /** Compare complete native interpretation. Only derived P4/P5 geometry gets the
  * owner's documented numeric tolerance; authored content always matches exactly. */
@@ -38,9 +39,15 @@ export function clearMasterDesktopLayout(root) {
 }
 
 /** Full form, with the exact P2 label repetition groups. Repetition is not
- * pagination, and researcher-supplied codes never replace visible labels. */
+ * pagination, and researcher-supplied codes never replace visible labels.
+ * Typed forms return a controller which the caller retains for the occurrence
+ * and destroys before changing forms; polling must not replace active inputs. */
 export function renderMasterQuestionnaire(host, definition, presentation, answers) {
   if (presentation.questionnaireId !== definition.questionnaireId || presentation.definitionSha256 !== definition.definitionSha256) throw new Error("Questionnaire presentation does not bind this definition.");
+  if (definition.schema === "affect-research-form-definition" && definition.version === 1) {
+    return renderTypedForm(host, definition, presentation, Object.entries(answers).map(([itemId, value]) => ({ itemId, value })));
+  }
+  if (definition.schema !== "affect-research-questionnaire-definition" || definition.version !== 1 || (presentation.kind !== undefined && presentation.kind !== "likert")) throw new Error("Unsupported questionnaire presentation.");
   const document = host.ownerDocument;
   host.replaceChildren();
   for (const group of questionnairePresentationGroups(definition, presentation.repeatLabelsEvery)) {
@@ -58,7 +65,7 @@ export function renderMasterQuestionnaire(host, definition, presentation, answer
       for (const [index, option] of item.options.entries()) {
         const cell = document.createElement("td"), input = document.createElement("input");
         input.type = "radio"; input.name = `answer-${item.itemId}`; input.value = option.optionId; input.dataset.answerItem = item.itemId;
-        input.checked = answers[item.itemId] === option.optionId; input.required = true;
+        input.checked = (presentation.kind === "likert" ? answers[item.itemId]?.optionId : answers[item.itemId]) === option.optionId; input.required = true;
         input.setAttribute("aria-labelledby", `${label.id} runner-option-${group.start}-${index}`);
         cell.append(input); row.append(cell);
       }

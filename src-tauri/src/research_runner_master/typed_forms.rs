@@ -9,7 +9,7 @@ use std::{collections::BTreeMap, time::Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) enum FormAnswerValue {
+pub enum FormAnswerValue {
     Text {
         text: String,
     },
@@ -25,7 +25,7 @@ pub(crate) enum FormAnswerValue {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct TypedChoice {
+pub struct TypedChoice {
     pub item_id: String,
     pub value: FormAnswerValue,
 }
