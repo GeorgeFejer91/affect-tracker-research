@@ -207,3 +207,42 @@ Both P6 functions are exported from `site/src/research/xr-layout-authoring.js`;
 the projector is P1's `site/src/research/workspace-contribution.js`. The compiled
 result contains `{profile, requirements, videos, feedback}`. Master serialization
 and target selection remain P7-owned; this helper introduces no new saved fields.
+
+## Successor master adapter — Planner completion pass
+
+P7's successor master stores `segments.P6` as the closed union
+`{status: "excluded"}` or `{status: "included", profile: XrLayoutProfileV1}`.
+Included means the entire profile is retained. Excluded intentionally contains
+no XR profile; reopening it discards a previous document's profile/preparation,
+disables XR and initializes only the editor's defaults. Those defaults are not
+saved execution data. P4 desktop configuration remains in the master; the
+explicit selected presentation target still controls compatibility and never
+falls back from enabled XR to desktop.
+
+`xr-layout-recipe.js` is the pure P6 import for a master parser:
+
+- `validateXrLayoutSelection(selection)` validates that exact union and the
+  complete included profile. It supplies no profile when excluded.
+- `resolveSavedXrLayoutContribution(profile, {workspaceContribution,
+  feedbackContribution, selectedTarget})` validates complete saved P1/P5 content
+  through their owners, reproduces all declared videos/feedback geometry, and
+  returns `{profile, requirements, videos, feedback}`. It creates no live
+  snapshot, revision, media permission or readiness receipt. Caller data is
+  captured before asynchronous workspace hashing.
+- The controller's synchronous `restoreXrLayoutSelection(selection,{isCurrent})`
+  requires a current-request guard. Included restores an editable pending draft;
+  excluded clears previous profile state. Neither prepares or accepts P6.
+  The existing strict live prepare/restore path handles later verified media.
+
+Both live and saved-content adapters now invoke P5's
+`feedback-settings.js::validateFeedbackContribution` and
+`feedback-layout.js::resolveFeedbackEnvelope` dispatch. The strict V1 reader is
+preserved; complete V2 renderer, labels, halo and response configuration cannot
+be truncated to the old three-field input. The physical footprint explicitly
+accepts P5's `feedback-envelope-v1` and `feedback-envelope-v2` contracts, retaining
+the same uniform square-to-circle conversion and configuration key. P5 owns all
+renderer/gradient/stroke bounds; P6 duplicates no animation math.
+
+Complete P7 envelope fixtures are being composed in this pass. Actual Runner
+correspondence and XR execution are downstream checks, not a prerequisite for
+validating the complete Planner document.

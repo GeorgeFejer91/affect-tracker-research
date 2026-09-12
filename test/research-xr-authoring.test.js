@@ -15,6 +15,7 @@ import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url)));
+const feedbackV2 = JSON.parse(await readFile(new URL("fixtures/research-feedback-settings-v2.json", import.meta.url)));
 const profile = createDefaultXrLayoutProfile();
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const snapshot = (contribution, revision) => ({ enabled: true, revision, pending: false, contribution, dependencyRevisions: [] });
@@ -41,6 +42,7 @@ function harness(project = projector) {
       return state.getSnapshot();
     },
     restoreDraft(value) { state.loadDraft(serializeXrLayoutProfileV1(value)); return state.getSnapshot(); },
+    restoreExcluded() { state.resetExcluded(); return state.getSnapshot(); },
   };
   const authoring = createXrLayoutAuthoring({ editor, projectCatalogue: project,
     getDependencies: () => current,
@@ -120,6 +122,25 @@ test("changes with a mistakenly reused owner revision still withdraw accepted P6
   h.authoring.destroy();
 });
 
+test("successor response and halo edits invalidate live XR using the complete P5 payload", async () => {
+  const h = harness(), value = dependencies(); value.P5.contribution = structuredClone(feedbackV2);
+  h.publish(value); await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.prepare();
+  const previous = h.writes.at(-1).feedbackEnvelope.configurationKey;
+  const changed = structuredClone(value); changed.P5.revision += 1;
+  changed.P5.contribution.response.repeatDelayMs += 100;
+  changed.P5.contribution.presentation.halo.widthPercent += 40;
+  h.publish(changed); assert.equal(h.state.getSnapshot().pending, true);
+  await h.authoring.refresh();
+  assert.equal(h.writes.at(-1).feedbackEnvelope.algorithmVersion, "feedback-envelope-v2");
+  assert.notEqual(h.writes.at(-1).feedbackEnvelope.configurationKey, previous);
+  assert.equal((await h.authoring.prepare()).dependencyRevisions[1].revision, changed.P5.revision);
+  const invalid = structuredClone(changed); delete invalid.P5.contribution.response;
+  h.publish(invalid); await h.authoring.refresh();
+  await assert.rejects(h.authoring.prepare());
+  assert.equal(h.state.getSnapshot().contribution, null);
+  h.authoring.destroy();
+});
+
 test("dependency-bound reopen is deterministic and rejected restore leaves editable state intact", async () => {
   const h = harness(); await h.authoring.refresh();
   const options = { dependencies: h.get(), selectedTarget: profile.target, isCurrent: () => true };
@@ -137,7 +158,7 @@ test("dependency-bound reopen is deterministic and rejected restore leaves edita
 });
 
 test("edits, dependency changes and teardown fence asynchronous restore and acceptance", async () => {
-  for (const action of ["edit", "dependency", "destroy", "cancel"]) {
+  for (const action of ["edit", "dependency", "destroy", "cancel", "exclude", "replace-selection"]) {
     const held = deferred(); let delay = false, current = true;
     const h = harness(async (value) => { if (delay) await held.promise; return projector(value); });
     await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.accept(); delay = true;
@@ -147,9 +168,14 @@ test("edits, dependency changes and teardown fence asynchronous restore and acce
     if (action === "dependency") { const next = structuredClone(h.get()); next.P5.revision += 1; h.publish(next); }
     if (action === "destroy") h.authoring.destroy();
     if (action === "cancel") current = false;
+    if (action === "exclude") h.authoring.restoreSelection({ status: "excluded" }, { isCurrent: () => true });
+    if (action === "replace-selection") h.authoring.restoreSelection({ status: "included", profile:
+      { ...profile, video: { ...profile.video, distanceMetres: 6 } } }, { isCurrent: () => true });
     held.resolve();
     await assert.rejects(opening, /changed/);
     if (action === "edit") assert.equal(h.state.getDraft().video.distanceMetres, 5);
+    if (action === "exclude") assert.equal(h.state.getSnapshot().enabled, false);
+    if (action === "replace-selection") assert.equal(h.state.getDraft().video.distanceMetres, 6);
     h.authoring.destroy(); assert.equal(h.listeners.size, 0);
   }
 });
@@ -199,6 +225,28 @@ test("content-only reopen renders saved XR settings while real media remains pen
   h.publish(dependencies()); await h.authoring.refresh();
   assert.equal((await h.authoring.prepare()).contribution.video.distanceMetres, 4);
   h.authoring.destroy(); assert.throws(() => h.authoring.restoreDraft(profile), /changed/);
+});
+
+test("master XR exclusion discards prior document state and included restore requires fresh preparation", async () => {
+  const h = harness(); await h.authoring.refresh();
+  const saved = { ...profile, video: { ...profile.video, distanceMetres: 7 } };
+  const included = { status: "included", profile: saved }, excluded = { status: "excluded" };
+  assert.throws(() => h.authoring.restoreSelection(included), /current-request guard/);
+  h.authoring.restoreSelection(included, { isCurrent: () => true }); await h.authoring.prepare();
+  for (const invalid of [{ status: "excluded", profile: saved }, { status: "included" }, { status: "off" }]) {
+    const before = h.state.getSnapshot();
+    assert.throws(() => h.authoring.restoreSelection(invalid, { isCurrent: () => true }));
+    assert.deepEqual(h.state.getSnapshot(), before);
+  }
+  assert.throws(() => h.authoring.restoreSelection(excluded, { isCurrent: () => false }), /changed/);
+  assert.equal(h.state.getDraft().video.distanceMetres, 7);
+  const result = h.authoring.restoreSelection(excluded, { isCurrent: () => true });
+  assert.equal(result.enabled, false); assert.equal(result.contribution, null);
+  assert.deepEqual(h.state.getDraft(), profile, "no profile exists in an excluded recipe");
+  h.state.setEnabled(true); assert.equal(h.state.getSnapshot().pending, true);
+  h.authoring.restoreSelection(included, { isCurrent: () => true });
+  assert.deepEqual(h.state.getDraft(), saved); assert.equal(h.state.getSnapshot().pending, true);
+  h.authoring.destroy(); assert.throws(() => h.authoring.restoreSelection(excluded, { isCurrent: () => true }), /changed/);
 });
 
 test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {

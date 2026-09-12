@@ -2,6 +2,7 @@ import { bootResearchUi } from "../../site/src/research/app.js";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 import { serializeXrLayoutProfileV1 } from "../../site/src/research/xr-layout.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
+import savedXr from "./xr-layout-recipe-v1.json";
 
 // Synthetic typed catalogue events exercise real application producers. No
 // directory picker, decoder, WebXR session, native adapter or Run is invoked.
@@ -95,7 +96,27 @@ const rejected = async (action) => { try { await action(); return false; } catch
   enable(false); await ui.acceptPlannerContribution("P6");
   check("explicitly excluded XR adds no desktop issue", ui.getPlannerContributionReview().issues.every((issue) => issue.segment !== "P6")
     && ui.getPlannerAcceptanceReview().entries.find((item) => item.segment === "P6").status === "excluded");
-  enable(true); await ui.acceptXrLayoutContribution(); q('[data-xr-view="orbit"]').click();
+  const completeProfile = savedXr.profiles[0];
+  ui.restoreXrLayoutSelection({ status: "included", profile: completeProfile }, { isCurrent: () => true });
+  check("included master selection renders every authored spatial field as a pending draft", q("[data-xr-enabled]").checked
+    && ui.getXrLayoutContribution().pending && [...q("[data-xr-layout-editor]").querySelectorAll("[data-xr-field]")].every((field) => {
+      const [group, key] = field.dataset.xrField.split(".");
+      return (field.type === "checkbox" ? field.checked : Number(field.value)) === completeProfile[group][key];
+    }));
+  await ui.prepareXrLayoutContribution();
+  check("prepared master profile preserves complete canonical content", serializeXrLayoutProfileV1(ui.getXrLayoutContribution().contribution) === serializeXrLayoutProfileV1(completeProfile));
+  change("#planner-presentation-target", "webxr-immersive-vr");
+  await ui.acceptPlannerContribution("P6", { selectedTarget: ui.getSelectedPlannerTarget() });
+  change("#planner-presentation-target", "desktop-screen");
+  check("explicit desktop target expires XR acceptance", ui.getPlannerAcceptanceReview().entries.find((item) => item.segment === "P6").status !== "accepted");
+  check("included XR cannot be accepted for selected desktop target", await rejected(() => ui.acceptPlannerContribution("P6", { selectedTarget: ui.getSelectedPlannerTarget() })));
+  ui.restoreXrLayoutSelection({ status: "excluded" }, { isCurrent: () => true });
+  check("excluded master clears prior document state and disables XR", !q("[data-xr-enabled]").checked && !ui.getXrLayoutContribution().enabled
+    && ui.getXrLayoutContribution().contribution === null && q('[data-xr-field="video.distanceMetres"]').value === "2");
+  enable(true); check("reenabling excluded master requires fresh preparation", ui.getXrLayoutContribution().pending);
+  ui.restoreXrLayoutSelection({ status: "included", profile: completeProfile }, { isCurrent: () => true });
+  change("#planner-presentation-target", "webxr-immersive-vr");
+  await ui.prepareXrLayoutContribution(); q('[data-xr-view="orbit"]').click();
   await new Promise((done) => setTimeout(done, 100));
   check("no browser errors", errors.length === 0);
   const pane = q(".setup-pane");

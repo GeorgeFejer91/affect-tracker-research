@@ -49,6 +49,9 @@ export function createXrLayoutState() {
       const next = parseXrLayoutProfileV1(source);
       draft = next; accepted = null; enabled = true; revision += 1;
     },
+    resetExcluded() {
+      draft = createDefaultXrLayoutProfile(); accepted = null; enabled = false; revision += 1;
+    },
     setDependencyRevisions(value) {
       validateRevisions(value);
       if (dependencies.catalogue !== value.catalogue || dependencies.feedback !== value.feedback) {
@@ -260,6 +263,12 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       const source = serializeXrLayoutProfileV1(profile);
       fileGeneration += 1; state.loadDraft(source); setFields(); render(); notify();
       status("Saved XR settings reopened. Verify the video library and feedback, then confirm the layout.");
+      return state.getSnapshot();
+    },
+    restoreExcluded() {
+      if (disposed) throw new Error("The XR editor is closed.");
+      fileGeneration += 1; state.resetExcluded(); setFields(); render(); notify();
+      status("XR is excluded from the reopened experiment.");
       return state.getSnapshot();
     },
     setDependencies(dependencies) {

@@ -74,6 +74,25 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   This is helper evidence, not yet V2 restore wiring; S5 owns that invocation.
   Fixture: `scripts/qualification/preview-restored-config.mjs`; local receipts
   `D:/GitHub/.affect-preview-checks/planner-inspection-reset-20260912/`.
+- Real restore dependency composed with integration approval: accepted `451c19a`
+  plus stopped S5 `5c9d3df`, local combined application `c3e7db9`. No owner app
+  edits in this follow-up; fixture/harness only. V2 actual-app checks pass 129
+  at each of 1280/800: all-field exact round trip, three renderer projections,
+  fractional styles, whole-ms timing, configured keyboard/repeat/continuous
+  behavior under a declared controlled clock, neutral/capture/draft cleanup,
+  invalid/stale/closed restore, explicit V1 conversion, pending/revisions and
+  reset/recolor persistence. Reset-helper checks pass 15 per viewport; V2
+  framing stays locked and only explicit V1 restore tests the legacy drag seam.
+- Full suite 668/668 and Pages 219-file / desktop 11-file closures pass. Receipts
+  under `D:/GitHub/.affect-preview-checks/planner-feedback-restore-20260912/`.
+  The `restore` argument to `preview-restored-config.mjs` selects the real V2
+  fixture; no argument retains the reset helper. No replacement restore/mock
+  validator, physical timing or Runner evidence is claimed.
+- Rendered follow-up remains open: narrow 800px outer viewport produces a
+  roughly 280px Preview pane; corner labels can wrap into single-character
+  columns. Integration/root received the exact PNG. S5 received stale
+  "Placement is preview-only" copy despite saved V2 placement. Functional checks
+  are not G09 layout closure; shared CSS remains integration-coordinated.
 
 ### 20260912-preview-input-menu
 
@@ -192,6 +211,117 @@ file; follow the integration-owner collection procedure in the workflow.
   goal alone. Root coordination records the updated charter/decision authority;
   independent owner work continues. No foreground launch, canonical promotion,
   remote push, deployment, or qualification is authorized by this pass label.
+
+### 20260912-root-planner-completion-goal
+
+- Owner **Create segment catalogue**, root roadmap/QA. The user explicitly set
+  a sustained full Planner completion goal, then deferred actual Planner–Runner
+  correspondence validation to the final development step. Stage: Backend
+  Verification; no repeated stage-pause question.
+- Root deliverable: new67 goal/evidence ledger, current60/62 routing and final
+  rendered audit64; no producer edits. S1–S7, Live Preview and integration received
+  bounded new assignments and the clarification; no duplicate tasks created.
+- Baseline `7946bc6` / application `d6acfd1`, plus reviewed docs-only `d83c7a5`. Root isolated
+  branch `codex/planner-completion-roadmap`; sole integration owner uses new
+  `codex/segment-planner-completion`. The previous UI intake is complete; its
+  freeze does not prohibit newly authorized Planner completion.
+- Independent root source review found v1-only generation/import prerequisite,
+  null accepted P4, configured P5 state outside its historical payload and
+  v1-only file adapters. Reuse current lifecycle fixes. G01–G11 in67 require
+  complete Planner authoring/validation/save/reopen and exact-source evidence.
+- Experiment Runner owns16/65/66 and charter/router amendments; root owns
+  60/62/64/67 and this entry. S7 owns successor contracts; integration owns shared
+  app/native composition. Recording policy stays Runner-owned under16.
+- Q04 is now answered: location-derived IDs include the filename/extension and
+  preserve full relative-path distinctions. The collision came from proposed
+  lossy normalization; S1 owns reversible path encoding and P3/P7 reconciliation,
+  not a manual collision workflow. Q05/Q08 remain pending, with no assumed
+  answer or duplicated question. G11 records Planner UI/service/command isolation
+  under amendment16, coordinated through integration and the Runner owner.
+  Independent work continues. Root interprets the latest all-settings goal as
+  saving the current renderer selection, including existing project-authored
+  procedural Face, without restoring historical Face/Photoatlas capabilities.
+  Temporary test/inspection state stays distinct. No Runner/runtime or physical
+  qualification is implied by the Planner goal.
+- Prior cleanup receipt closed: all 29 exact `7946bc6` default Chrome images
+  across seven sections/two viewports/full scroll were inspected; all PNG and
+  harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
+  warning-list fix is verified in combined source. See 64 for paths and limits;
+  this is not G09 populated/full-master evidence for the new completion goal.
+
+### 20260912-runner-companion-separation
+
+- Owner: Experiment Runner; R1 / RR-01–RR-09, Backend Verification. Explicit user
+  allocation: two independent apps, Planner previews/JSON retained; Runner reads
+  that JSON and owns playback/acquisition/LSL and own+selected external XDF.
+  User clarified recording policy belongs solely to Runner.
+- Worktree: `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-runner`;
+  branch `codex/segment-runner-desktop-app`, reviewed base `7946bc6`. Main stays
+  integration-owned. Baseline 53 focused Node checks passed before mutation.
+- Deliverable: docs16/65/66 and charter/routers first; separate desktop entry,
+  native services/command registries, strict recipe intake, existing package
+  execution composition and bounded recorder implementation/evidence.
+- Named shared seams: lib.rs/main/bootstrap, desktop config/build scripts,
+  Planner composition Run extraction only. Retain all P1–P7 producers,
+  confirmation, async load/edit/save guards and persistent P5 preview. P7 owns
+  successor schema; no competing format. Root owns new67 and60/62/64.
+- Evidence: app/command boundary checks, strict intake/canonical rejection,
+  XDF typed/clock/failure fixtures, native software checks and separate frontend
+  closures. Installed playback/native physical/LSL qualification remains open.
+  Actual Planner–Runner correspondence is the last development stage, not a
+  blocker on independently completing the Planner.
+- Status: documentation amendment written before source implementation. No
+  capability completion or successful recording is claimed by this entry.
+
+### 20260912-p6-master-completion
+
+- Owner S6/P6, new Planner completion allocation from root, Backend Verification,
+  P6-01 through P6-05. Existing isolated branch/worktree fast-forwarded from
+  `3bedea1` to the supplied combined `7946bc6`; canonical remains integration-owned.
+- Existing editor, live preparation, target guard and content-only draft restore
+  are reused. Remaining deliverable: pure saved-content geometry adapter for
+  P7's strict optional XR union and a complete spatial-profile master round-trip/
+  independent reproduction fixture, with no discarded fields or stale acceptance.
+- S7 proposes `{status: "excluded"}` or `{status: "included", profile}` under
+  `segments.P6`, with explicit outer presentation target. Saved P1/P5 content
+  must validate without fabricated live snapshots or permissions. S5 owns the
+  expanded experiment-defining feedback contract and conservative envelope.
+- Allowed seams: P6 recipe helper, owned restore/validator hooks, tests and P6
+  documentation. Any root app composition is coordinated through integration.
+  P7 owns master serialization/parser/save; P1/P5 retain producer authority.
+- Evidence: complete non-default profile retention, mixed/rotated geometry,
+  inclusion/exclusion and explicit target rejection, invalid/stale content,
+  editable reopen and separate-process canonical reproduction. Actual Runner
+  correspondence, execution, tracking and recording are deferred and do not
+  block this Planner allocation. No new UI or runtime mode is introduced.
+
+### 20260912-p7-complete-planner-master
+
+- Owner **S7**, P7-03 through P7-09; Backend Verification. Root explicitly
+  allocated full Planner completion after the bounded UI intake, then clarified
+  that actual Planner–Runner correspondence is the final deferred development
+  stage. Isolated `codex/segment-p7-accepted-recipe`, base `7946bc6`.
+- Goal/deliverable: one complete, strict versioned master JSON with ordered P1–P6
+  contributions, explicit retained policy/target, integrity, acknowledged named
+  saving and editable reopening. Every run-defining owner field is preserved;
+  frozen v1 readers remain unchanged. No alternative draft-as-accepted format.
+- Current source has accepted-snapshot capture, v1 file adapters and standalone
+  policy/language components; complete successor serialization and native read
+  dispatch are missing. This pass owns those contract/persistence modules.
+  Integration owns shared app wiring/confirmation; domain owners retain their
+  validators, complete field capture, projections and mutation APIs.
+- P1 confirms its complete saved workspace content is valid without restoring
+  permissions; Q05-dependent physical-path fields remain absent. P2/P5 own new
+  complete authoring wrappers where existing preview controls need promotion.
+  P6 agrees a strict included/excluded full-profile union. Accepted P4 layout
+  remains required and is never replaced by the internal draft while Q08 is open.
+- Evidence now: canonical strict round trips, tamper/unknown/missing rejection,
+  independent-process reconstruction from only saved data, exact-byte save
+  acknowledgements and asynchronous edit/reopen fencing. Final Planner evidence
+  adds integrated authoring→save→fresh editable reopen→reexport at desktop/narrow
+  widths. Runtime correspondence, recording, media timing and installed Runner
+  qualification are deferred. XDF stream selection is Runner-session policy;
+  authored LSL output and planned markers remain experiment definitions.
 
 ### 20260912-integration-contribution-cycle — combined candidate
 

@@ -1,9 +1,11 @@
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
-import { resolveFeedbackEnvelopeV1 } from "./feedback-envelope.js";
-import { validateFeedbackContributionV1 } from "./feedback-contribution.js";
-import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
-import { XR_TARGET_REQUIREMENTS, XrLayoutError, resolveXrCatalogueV1, validateXrLayoutProfileV1 } from "./xr-layout.js";
+import { resolveFeedbackEnvelope } from "./feedback-layout.js";
+import { validateFeedbackContribution } from "./feedback-settings.js";
+import { XR_FEEDBACK_VIEWPORT_CSS_PX } from "./xr-layout-feedback.js";
+import { XrLayoutError, validateXrLayoutProfileV1 } from "./xr-layout.js";
+import { resolveXrLayoutContribution, validateXrLayoutSelection } from "./xr-layout-recipe.js";
+export { resolveXrLayoutContribution } from "./xr-layout-recipe.js";
 
 const EMPTY_DEPENDENCIES = Object.freeze({ catalogueRevision: null, feedbackRevision: null,
   catalogueGeometry: null, feedbackEnvelope: null });
@@ -28,8 +30,8 @@ export async function resolveXrLayoutDependencies(dependencies, projectCatalogue
   }
   if (typeof projectCatalogue !== "function") throw new TypeError("P1's geometry projector is required.");
   const p1 = readySnapshot(dependencies.P1, "P1"), p5 = readySnapshot(dependencies.P5, "P5");
-  const feedback = validateFeedbackContributionV1(p5.contribution);
-  const feedbackEnvelope = resolveFeedbackEnvelopeV1(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
+  const feedback = validateFeedbackContribution(p5.contribution);
+  const feedbackEnvelope = resolveFeedbackEnvelope(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
   const projection = await projectCatalogue(p1);
   if (!projection || projection.revision !== p1.revision || projection.pending !== false
     || !Array.isArray(projection.videos) || projection.videos.length === 0) {
@@ -37,16 +39,6 @@ export async function resolveXrLayoutDependencies(dependencies, projectCatalogue
   }
   return { catalogueRevision: p1.revision, feedbackRevision: p5.revision,
     catalogueGeometry: structuredClone(projection.videos), feedbackEnvelope };
-}
-
-export function resolveXrLayoutContribution(profile, dependencies, selectedTarget) {
-  const validated = validateXrLayoutProfileV1(profile);
-  if (selectedTarget !== validated.target) {
-    throw new XrLayoutError("target", "unsupported-target", "Select the compatible WebXR VR target for this XR layout. A desktop target cannot use it.");
-  }
-  return { profile: validated, requirements: { ...XR_TARGET_REQUIREMENTS },
-    videos: resolveXrCatalogueV1(validated, dependencies.catalogueGeometry),
-    feedback: resolveXrFeedbackFootprintV1(validated, dependencies.feedbackEnvelope) };
 }
 
 /** One P6 consumer of the two live producers. Subscription callbacks withdraw
@@ -132,6 +124,12 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
       const capturedProfile = validateXrLayoutProfileV1(profile);
       if (disposed || !isCurrent()) throw stale();
       return editor.restoreDraft(capturedProfile);
+    },
+    restoreSelection(selection, { isCurrent } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
+      const captured = validateXrLayoutSelection(selection);
+      if (disposed || !isCurrent()) throw stale();
+      return captured.status === "included" ? editor.restoreDraft(captured.profile) : editor.restoreExcluded();
     },
     restore(profile, options = {}) { return commit(profile, options, true); },
     destroy() {
