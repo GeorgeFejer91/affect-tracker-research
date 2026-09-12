@@ -164,8 +164,13 @@ tests; three focused successor Rust tests; six pure successor JS tests;
 `D:/GitHub/.affect-checks/s2-recipe-ui-narrow-20260912`. These identify dirty
 owner source and capture all bundled source hashes. Both screenshots inspected:
 compact controls/helper text fit their panes. Desktop and Pages production
-boundary checks pass (9/213 files). Final clean-source receipts are collected
-after the implementation checkpoint. Edge, installed Tauri, native file-dialog
+boundary checks pass (9/213 files). Final clean-source checkpoint `6654bc2`
+passes 24/24 Chrome cases per width, with stable source hashes and dirty false,
+in `D:/GitHub/.affect-checks/s2-recipe-final-chrome-1280-20260912` and
+`D:/GitHub/.affect-checks/s2-recipe-final-chrome-800-20260912`.
+The fixed shared SHA-256 assertion passes Rust's focused 3/3 recheck;
+no-default-features library Clippy passes with warnings denied.
+Edge, installed Tauri, native file-dialog
 interaction, Runner correspondence, hardware and publication are not claimed.
 
 MAIA/TAS provenance limitations and Q09/Q13 remain open. Preserve supplied

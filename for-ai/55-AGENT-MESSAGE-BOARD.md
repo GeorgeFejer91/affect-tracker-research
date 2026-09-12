@@ -64,7 +64,7 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260912-p2-master-content-and-presentation
 
-- Owner **S2**, P2-04–P2-08, **open**, Backend Verification under the user's
+- Owner **S2**, P2-04–P2-08, **ready**, Backend Verification under the user's
   new full-Planner completion allocation. Isolated branch
   `codex/segment-p2-master-content`, worktree
   `D:\GitHub\affect-tracker-research-questionnaires-table`, clean combined
@@ -96,6 +96,14 @@ file; follow the integration-owner collection procedure in the workflow.
   validator; no native permissions, commands or normalizer algorithm changes.
   P7 registration/root serde remains exclusively S7-owned. The user authorized
   integrator merge/reload after readiness and confirmed in-app work saved.
+- Final implementation checkpoint `6654bc2` (parent pure `c489438`): clean
+  source-bound Chrome receipts pass 24/24 each under
+  `D:/GitHub/.affect-checks/s2-recipe-final-chrome-1280-20260912` and
+  `D:/GitHub/.affect-checks/s2-recipe-final-chrome-800-20260912`.
+  Both record stable sources and `dirty: false`. Native fixed shared digest
+  recheck passes 3/3; `cargo clippy --locked --no-default-features --lib -- -D warnings`
+  passes. S2 writers stopped after receipt documentation; collect commits in
+  order. No canonical merge/reload or combined-master completion claimed here.
 
 ### 20260912-integration-contribution-cycle — combined candidate
 
