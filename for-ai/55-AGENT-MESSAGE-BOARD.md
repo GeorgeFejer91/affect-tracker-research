@@ -91,6 +91,14 @@ owns full source-bound combined builds and actual native/application execution.
   RR11 snapshots remain pre-sink and are not claimed to match rotated display.
   S1 owns workspace attest/cache/binding, commands and JS bridge; Main registers
   and composes. Root retains actual rescan and rotated-fixture qualification.
+- Root review follow-up: first configuration now drops the policy mutex guard
+  and revalidates the newly frozen policy before returning to show/play. A pure
+  observation helper rejects changed/missing current track even when old metadata
+  and rotation match, plus metadata/readback drift. Four standalone helper tests
+  pass with D: temporary storage (initial default C: linker temporary write failed).
+  Formatting/diff checks pass; assembled native compilation of this small follow-up
+  belongs to Main/S1. This prevents a source-level first-play race, not an observed
+  playback defect; no EOS or runtime lifecycle behavior is changed.
 
 ### 20260912-main-bounded-sink-diagnostic
 
