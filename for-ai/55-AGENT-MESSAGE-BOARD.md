@@ -8,6 +8,24 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260912-p3-location-master-reproduction
+
+- Owner: **S3**, P3-04 through P3-08; Backend Verification continuation of the
+  allocated comprehensive Planner master pass, branch `codex/segment-p3-master-variants`,
+  isolated C: worktree, reviewed base `7946bc6`. Runner execution is deferred.
+- Q04: consume P1 catalogue v2 exact reversible location annotations plus immutable
+  content asset IDs. P3 design v2 carries both identities for each video occurrence;
+  no implicit v1 migration, reassignment, sorting, allocation or hidden intervals.
+- Shared seams: P1 pure catalogue/workspace dependency from `0b7f793`; optional
+  bounded parser argument approved by S2 (default 4000 remains unchanged); P7
+  embeds P3 verbatim. Integration owns app/native bridge/command registration.
+- Evidence now: v1/v2 strict readers, duplicate bytes at distinct paths, rename
+  invalidation, long/comma/formula-leading IDs, CSV/XLSX, all variant timelines,
+  independent reconstruction, content-only reopen and revision binding. Native
+  parity/export awaits P1's typed native catalogue; full master proof awaits P7.
+- G09: include a long nested-path ID in the existing table/catalogue headless
+  render check; retain bounded layout and full editable/copyable IDs.
+
 ### 20260911-preview-palette-halo
 
 - Owner: Live Preview. Stage: UI implementation, allocated by integration.

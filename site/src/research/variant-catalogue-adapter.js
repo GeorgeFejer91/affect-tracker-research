@@ -1,7 +1,8 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { createVideoLibrary } from "./stimulus-order.js";
 import { validateVideoCatalogueContributionV1 } from "./video-catalogue-contribution.js";
-import { projectWorkspaceVideoCatalogueSnapshotV1, validateWorkspaceContributionV1 } from "./workspace-contribution.js";
+import { projectWorkspaceVideoCatalogueSnapshot, validateWorkspaceContribution } from "./workspace-contribution.js";
+import { createLocationVariantLibrary } from "./variant-library.js";
 import { compileVariantTimeline, validateVariantDesign } from "./variant-design.js";
 
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
@@ -30,6 +31,10 @@ export async function projectLegacyVariantCatalogue(snapshot) {
 }
 
 async function projectCatalogueContent(catalogue) {
+  if (catalogue.version === 2) {
+    const library = await createLocationVariantLibrary(catalogue);
+    return { library, videos: structuredClone(library.videos) };
+  }
   const aliases = new Set(), identities = new Map();
   for (const entry of catalogue.entries) {
     if (aliases.has(entry.annotationId)) throw new TypeError("Segment 1 video annotation aliases are ambiguous.");
@@ -52,7 +57,7 @@ async function projectCatalogueContent(catalogue) {
 /** Portable authored declarations only: no snapshot, revision, media readiness
  * or filesystem authority is manufactured from a saved recipe. */
 export async function projectSavedVariantCatalogue(savedWorkspaceContribution) {
-  const workspace = await validateWorkspaceContributionV1(savedWorkspaceContribution);
+  const workspace = await validateWorkspaceContribution(savedWorkspaceContribution);
   return projectCatalogueContent(workspace.videoCatalogue);
 }
 
@@ -60,9 +65,8 @@ export async function projectSavedVariantCatalogue(savedWorkspaceContribution) {
  * the dependency and fingerprint bind the complete registered owner snapshot. */
 export async function projectVariantCatalogue(snapshot) {
   const source = normalizeVariantCatalogueSource(snapshot);
-  const projected = await projectWorkspaceVideoCatalogueSnapshotV1(source);
-  const catalogue = await projectLegacyVariantCatalogue(projected);
-  return { ...catalogue, sourceIntegritySha256: await canonicalSha256(source.contribution) };
+  const projected = await projectWorkspaceVideoCatalogueSnapshot(source);
+  return { revision: projected.revision, ...await projectCatalogueContent(projected.contribution), sourceIntegritySha256: await canonicalSha256(source.contribution) };
 }
 
 /** P7 registration validator: domain validation, including the actual P1
