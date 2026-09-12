@@ -191,3 +191,20 @@ writer acknowledgements were injected, so these are not native IPC or disk-write
 receipts. The private `p2-preset-ui-90e69/REPORT.md` and summary retain these limits;
 summary SHA-256 is
 `9899f71f23622257a5ea3ffa6272db1092c963028d4261abba444c3d13cc0d30`.
+
+## Native readback startup counterevidence
+
+Clean6098972 built successfully, but its actual native readback run exited2 on
+the120-second startup deadline without a ready receipt. The preserved
+`native-readback-6098972/` contains the driver receipt and stderr. Process
+inspection showed the renderer using a pre-existing default EBWebView browser
+profile instead of the newly created private profile. This does not establish
+that the preset read itself failed.
+
+Pinned local tauri-runtime2.11.3 omits `data_directory` in its
+`WebviewAttributes::from(WindowConfig)` conversion. CLI startup now suppresses
+automatic creation only for its one fixed window and uses the native builder's
+explicit absolute data-directory setter, with visibility and focus both false.
+Normal Planner/Runner window startup remains unchanged. Twelve focused adapter
+and driver tests pass; a fresh actual process receipt must prove this correction.
+No existing WebView process or profile was closed, modified or deleted.

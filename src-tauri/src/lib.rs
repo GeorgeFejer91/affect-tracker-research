@@ -12,9 +12,9 @@ mod research_external_protocol;
 pub mod research_feedback;
 mod research_gamepad;
 mod research_input;
-mod research_lsl;
-mod research_local_questionnaire_presets;
 mod research_local_questionnaire_preset_commands;
+mod research_local_questionnaire_presets;
+mod research_lsl;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
@@ -70,10 +70,16 @@ pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String
     std::fs::create_dir(&profile)
         .map_err(|_| "Could not create an isolated Planner CLI profile.")?;
     let mut context = tauri::generate_context!();
+    if context.config().app.windows.len() != 1
+        || context.config().app.windows[0].label != "research"
+    {
+        return Err("Planner CLI requires its one fixed research window.".into());
+    }
     for window in &mut context.config_mut().app.windows {
+        window.create = false;
         window.visible = false;
         window.focus = false;
-        window.data_directory = Some(profile.join("webview"));
+        window.data_directory = None;
     }
     Ok(launch(DesktopRole::Planner, context, Some(profile)))
 }
@@ -101,6 +107,19 @@ fn launch(
         })
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
+            if let Some(profile) = &cli_profile {
+                let config = app.config().app.windows.first().ok_or_else(|| {
+                    std::io::Error::other("Planner CLI window configuration is absent.")
+                })?;
+                // The pinned runtime's WindowConfig -> WebviewAttributes
+                // conversion omits data_directory. Set it on the native builder
+                // so this invocation never falls back to the shared GUI profile.
+                tauri::WebviewWindowBuilder::from_config(app, config)?
+                    .data_directory(profile.join("webview"))
+                    .visible(false)
+                    .focused(false)
+                    .build()?;
+            }
             let app_data_dir = match &cli_profile {
                 Some(profile) => profile.join("app-data"),
                 None => app.path().app_data_dir()?,
@@ -146,9 +165,11 @@ fn launch(
             if role == DesktopRole::Planner {
                 // Reusable local presets use the real app user-data namespace,
                 // even when the CLI's authoring/WebView profile is isolated.
-                app.manage(research_local_questionnaire_preset_commands::LocalPresetService::new(
-                    app.path().app_data_dir()?,
-                ));
+                app.manage(
+                    research_local_questionnaire_preset_commands::LocalPresetService::new(
+                        app.path().app_data_dir()?,
+                    ),
+                );
                 app.manage(Arc::clone(&setup_authoring));
                 setup_authoring
                     .start(app.handle().clone())
