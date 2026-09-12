@@ -59,6 +59,8 @@ import {
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "./questionnaire-contribution.js";
+import { QUESTIONNAIRE_RECIPE_SCHEMA, validateQuestionnaireRecipeContributionV1,
+  validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
 import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
@@ -401,6 +403,7 @@ function bindResearchInteractions(root, { surface }) {
   });
   let questionnaireContributionRevision = 0;
   let questionnaireContributionFingerprint = null;
+  let questionnaireRestoreGeneration = 0;
   const questionnaireEditor = createQuestionnaireEditor({
     root,
     onChange: () => {
@@ -3298,11 +3301,11 @@ function bindResearchInteractions(root, { surface }) {
     query("#settings-file-input")?.click();
   }
 
-  function languageTreeFromUi() {
+  function languageTreeFromUi({ allowPresentation = false } = {}) {
     if (languageEditorLocked && loadedLanguageSelection) return loadedLanguageSelection;
     const pending = questionnaireEditor.pendingKeys();
     if (pending.length) throw new TypeError(`Save the questionnaire tables first: ${pending.join(", ")}.`);
-    if (questionnaireEditor.hasPresentationDraft()) {
+    if (!allowPresentation && questionnaireEditor.hasPresentationDraft()) {
       throw new TypeError("Repeated label headers are a design preview. Return each preview to ‘Above every item’ before building with the current experiment format.");
     }
     const flat = createCoveredFlatLanguageSelectionV1({
@@ -3317,6 +3320,19 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   /** P2 accepted-data handoff. Pending edits are never misreported as accepted. */
+  function observeQuestionnaireRevision() {
+    const source = coverageSource();
+    let presentation = null;
+    try { presentation = questionnaireEditor.getPresentation(source.definitions); } catch { /* Unready slots are pending. */ }
+    const fingerprint = canonicalJson({ source, presentation, studyLanguages, requestedQuestionnaireFamilies,
+      loadedLanguageSelection, pending: questionnaireEditor.pendingKeys() });
+    if (fingerprint !== questionnaireContributionFingerprint) {
+      questionnaireContributionFingerprint = fingerprint;
+      questionnaireContributionRevision += 1;
+    }
+    return questionnaireContributionRevision;
+  }
+
   function getQuestionnaireContributionSnapshot() {
     let contribution = null;
     let pending = !languageEditorLocked && (questionnaireEditor.pendingKeys().length > 0 || questionnaireEditor.hasPresentationDraft());
@@ -3330,13 +3346,22 @@ function bindResearchInteractions(root, { surface }) {
         languageSelection: structuredClone(languageTreeFromUi()),
       };
     } catch { pending = true; }
-    const fingerprint = canonicalJson({ contribution, pending, studyLanguages, requestedQuestionnaireFamilies });
-    if (fingerprint !== questionnaireContributionFingerprint) {
-      questionnaireContributionFingerprint = fingerprint;
-      questionnaireContributionRevision += 1;
-    }
-    return { revision: questionnaireContributionRevision, enabled: true, pending,
+    return { revision: observeQuestionnaireRevision(), enabled: true, pending,
       contribution, dependencyRevisions: [] };
+  }
+
+  function getQuestionnaireRecipeContributionSnapshot() {
+    let contribution = null;
+    let pending = !languageEditorLocked && questionnaireEditor.pendingKeys().length > 0;
+    try {
+      const source = coverageSource();
+      contribution = { schema: QUESTIONNAIRE_RECIPE_SCHEMA, version: 1,
+        questionnaires: { algorithmVersion: QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
+          definitions: structuredClone(source.definitions), modules: structuredClone(source.modules) },
+        languageSelection: structuredClone(languageTreeFromUi({ allowPresentation: true })),
+        presentation: questionnaireEditor.getPresentation(source.definitions) };
+    } catch { pending = true; }
+    return { revision: observeQuestionnaireRevision(), enabled: true, pending, contribution, dependencyRevisions: [] };
   }
 
   /** P1 accepted-data handoff. One incomplete video invalidates the whole view. */
@@ -3460,8 +3485,32 @@ function bindResearchInteractions(root, { surface }) {
 
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
   async function restoreQuestionnaireContribution(contribution, { isCurrent = () => true } = {}) {
+    const generation = ++questionnaireRestoreGeneration;
+    const revision = observeQuestionnaireRevision();
     const restored = await restoreQuestionnaireAuthoring(contribution);
-    if (!isCurrent() || mode !== "setup") throw new Error("Questionnaire restoration was superseded; no tables were replaced.");
+    if (researchUiDisposed || generation !== questionnaireRestoreGeneration
+      || revision !== observeQuestionnaireRevision() || !isCurrent() || mode !== "setup") {
+      throw new Error("Questionnaire restoration was superseded; no tables were replaced.");
+    }
+    commitQuestionnaireRestoration(restored);
+    return getQuestionnaireContributionSnapshot();
+  }
+
+  async function restoreQuestionnaireRecipeContribution(value, { isCurrent = () => true } = {}) {
+    const generation = ++questionnaireRestoreGeneration;
+    const revision = observeQuestionnaireRevision();
+    const contribution = await validateQuestionnaireRecipeContributionV1(value);
+    const restored = await restoreQuestionnaireAuthoring({ questionnaires: contribution.questionnaires,
+      languageSelection: contribution.languageSelection });
+    if (researchUiDisposed || generation !== questionnaireRestoreGeneration
+      || revision !== observeQuestionnaireRevision() || !isCurrent() || mode !== "setup") {
+      throw new Error("Questionnaire restoration was superseded; no tables were replaced.");
+    }
+    commitQuestionnaireRestoration(restored, contribution.presentation);
+    return getQuestionnaireRecipeContributionSnapshot();
+  }
+
+  function commitQuestionnaireRestoration(restored, presentation = null) {
     questionnaireEditor.reset();
     questionnaireDefinitions.splice(0, questionnaireDefinitions.length, ...restored.contribution.questionnaires.definitions);
     questionnaireModules.splice(0, questionnaireModules.length, ...restored.contribution.questionnaires.modules);
@@ -3473,7 +3522,7 @@ function bindResearchInteractions(root, { surface }) {
     questionnaireContributionRevision += 1;
     clearParticipantLanguageSelection();
     renderQuestionnaires();
-    return getQuestionnaireContributionSnapshot();
+    if (presentation) questionnaireEditor.restorePresentation(presentation, restored.contribution.questionnaires.definitions);
   }
 
   function packageRoutes() {
@@ -5723,6 +5772,9 @@ function bindResearchInteractions(root, { surface }) {
     getSelectedPlannerTarget,
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
+    getQuestionnaireRecipeContributionSnapshot,
+    restoreQuestionnaireRecipeContribution,
+    validateQuestionnaireRecipeContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
