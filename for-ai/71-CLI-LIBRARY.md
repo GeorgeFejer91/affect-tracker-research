@@ -97,8 +97,11 @@ absolute-path CLI interface. Do not publish them as interchangeable forms.
 
 Select a real work directory; create language/questionnaire slots before import;
 import actual video and questionnaire files; save questionnaire sources; author
-the settings and chronology; resolve validation issues; confirm P1–P6 in the
-existing order; then save through P7. Reopening restores editable content but
+the settings and chronology; resolve validation issues; confirm P1, P2, P3, P4
+and P6 in the existing order; then save through P7, which captures the current
+P5 Live Preview settings. P5 has no independent confirmation action: the
+registered `confirmSegment` vocabulary reports that final-capture requirement
+explicitly for P5. Reopening restores editable content but
 requires fresh media binding/preparation before it is ready to run or re-export.
 
 Every export creates a new timestamped file. The implemented shared naming form
@@ -137,6 +140,32 @@ row IDs and returned filenames. It exposes detached validated replies and sends
 the resolved action unchanged. Eight driver subprocess tests pass; their synthetic
 children validate the driver only. JSON action files remain static, and the
 driver imports no editor, media fixture or master compiler.
+
+The requested authoring sequence is implemented as an external verification
+driver in `scripts/qualification/planner-mock-experiment.mjs`. It consumes a
+local configuration with `executable`, `expectedCommit`,
+`expectedExecutableSha256`, a new empty `workspace`, new `evidenceDirectory`
+and `scratchDirectory`, `video:{path,sha256}` and four
+`questionnaires:[{path,sha256,familyId,language}]` entries. These configuration
+paths are local verification inputs, never publicly shipped examples or recipe
+fields. Usage: `node scripts/qualification/planner-mock-experiment.mjs <config.json>`.
+The supplied production executable must include core9, typed P2 and master-v2
+composition. The script verifies those descriptors before dispatching mutations.
+
+It selects the workspace, imports the actual video/four questionnaire sources,
+adds shipped EN/DE demographics, saves six sources, authors both language routes
+and named ISI chronology, sets layout/Flubber/input/policy, then saves, reopens,
+changes participant count and saves a second timestamped version. IDs and
+basenames come from actual command readback. Only `saveRecipe` writes master
+files; the script compares their bytes and semantics with authored inputs and
+preserves earlier versions. Any unexpected command result or unknown timeout
+stops the driver without repeating native work. It does not run the Runner.
+
+This script is prepared, not yet production-executed. Ten focused driver/
+comparison tests pass, including counterexamples with unchanged item counts but
+wrong event/language order, video identity, layout, input, renderer, XR or LSL
+policy. Those are driver checks only. Actual command/JSON/Runner evidence must
+replace this pending status before E2E-RECIPE can be completed.
 
 ## Maintenance checklist for every segment pass
 

@@ -349,3 +349,77 @@ MAIA-2 then TAS-20, 37+20 items, beforeSession. The external
 `root-bilingual-source-preflight.json` in the TAS source evidence directory
 records the import identities and explicit source-only limitation; no master
 JSON or production CLI session was created by that preflight.
+
+### Later integration prerequisites and independent review — 2026-09-12
+
+Root's consequential coordinator is clean `e511931`, parent `23e8f3a`; Main
+collected it as `5039344`. It adds guarded prepare/dispatch/adopt, late-effect
+receipts, separate public descriptors and exact retry bounds. The final root
+all-owner gate passed 152 tests, including 30 new cases. S4 reproduced an
+owner-only drift omission in the dispatch-facing guard; the fix and regression
+are included. Main owns real operation registration and request/grant binding.
+These tests create no experiment file. See `docs/planner-authoring-consequences.md`
+after integration for the complete owner protocol.
+
+Main's corrected embedded CLI `e439018b81a5eea26b72551d651eadc7669471cd`,
+executable SHA `eb8f896d08bbd76f723437a05d76b976ac3a7aec99b2fb186cf62c9f43517b6b`,
+passed two fresh-profile local-preset readback sessions. The second captured
+156 settings/32 internal operations, read the actual installed German TAS
+through native IPC/production importer, rejected a read-only write and preserved
+revision zero before exit zero. Root inspected the receipt's exact source/
+definition hashes and owned WebView parent/profile. Evidence directory:
+`D:/GitHub/.affect-checks/local-preset-main-20260912/native-readback-e439018-second-session/`;
+transcript SHA `4191f1550bd277f0627d337c1ef18ded59f4f64de20853b1694952914adb0ea4`.
+This proves installed-source reading, not study-source saving or mock export.
+
+Failed intervening `6098972`/`827ad87` attempts exposed profile-construction and
+embedded-build gaps. The corrected builder explicitly sets its owned WebView
+profile and the CLI rejects development mode; `tauri/custom-protocol` is required.
+Earlier `680842a`/`23e8f3a` transcripts retain their observed command exchanges,
+but retrospective embedded-asset/profile-isolation claims require their actual
+build/launch evidence. A ready commit string alone does not establish them.
+Do not infer that older binaries share the newer missing-feature defect without
+that audit. Final catalogue/mock verification must use the corrected workflow.
+
+The actual clip diagnostic now passes at `c87bd95`, prepared executable SHA
+`c9c7d7c71413e3ed81e13916ba434c9b6ce65925975d0bf6db476460f030b5c4`.
+Root read all attempt06 stdout and its process receipt: three decoded positions,
+254406 ms/1920×1080 metadata, all five Paused/Playing snapshots with null reason,
+stop/new generation/stale rejection, and actual actor exit/join before hidden
+parent exit. Earlier failed receipts remain. This closes that partial-metadata
+diagnostic; complete playback, installed/runtime and composed Start gates remain.
+
+Runner checkpoint `388399e` now records exact recipe, definitions and answers in
+the primary information stream. Root independently read XDF02 using pyxdf 1.17.0
+and separate Python, with no production reconstruction/compiler imports or
+producer JSON. Verified: 78 frames/26 transfers, chunk/base64/length/order/hash,
+exact embedded source, P1–P6/policy, both definitions and complete answer records,
+all ten ordered occurrence pairs, raw clocks and both XDF footers. XDF SHA:
+`9f545514672115d0ac50a82946d31b1123f8a0268b1d8b6fdc4c26a45910d865`.
+Independent script/report in `D:/GitHub/.affect-runner-master-build/`:
+`root-review-information-xdf-02.py`, `root-independent-information-xdf-02-review.json`.
+
+This remains synthetic: 0.0118323 seconds of actual LSL time carries 51158 ms of
+synthetic observations, legacy coded demographics and a dirty development build.
+It is not the requested mock, new typed demographics, actual timing or full
+Runner qualification. S3 owns typed authoring/assets, S4 its Rust validator,
+Main master composition, and Runner typed answers/panels. All E2E rows remain open.
+
+### Production-only mock driver prepared
+
+`scripts/qualification/planner-mock-experiment.mjs` now expresses the requested
+complete authoring flow using only production CLI commands. It verifies source
+and executable hashes; uses actual returned video/ISI/occurrence/module IDs;
+adds shipped demographics before MAIA-2/TAS-20 in each language; authors
+1750 ms → clip → 3213 ms; confirms P1/P2/P3/P4/P6; lets final Save capture P5;
+then saves, reopens, edits participant count to two and saves another version.
+It compares exact files against native receipts and all authored semantics,
+allowing only the intended count edit and named derived integrity/revision
+changes between versions. It imports no editor/compiler and writes no master.
+
+S5's read-only review found missing full semantic comparisons and missing final
+executable-hash comparison; both are fixed. Ten focused transport/comparison
+checks passed, including thirteen corruption/reordering counterexamples.
+Syntax and diff checks passed. These checks do not author a real recipe. The
+script awaits the combined native core9/typed-P2/master-v2 executable; all
+actual CLI import/export, editable reopen and Runner/XDF goal gates remain open.
