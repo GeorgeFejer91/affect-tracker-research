@@ -15,6 +15,11 @@
   collect evidence now; final combined-source native CLI/UI and real-media mock
   are integration-owned. Runner correspondence is active with its separate owner.
   User windows/focus are preserved; only fresh-profile headless browsers run here.
+- Helper `2174311` has been collected by Main. All 50 focused checks pass.
+  The first rendered-control probe passes all 61 fields individually at both
+  widths, plus preset/renderer/capture and pending recovery cases. This uses the
+  real UI and typed adapter with detached oracle hooks; Main's new actual command
+  wiring and source-bound final screenshots remain the next evidence seam.
 
 ### 20260912-cli-p5-owner-adapter
 
