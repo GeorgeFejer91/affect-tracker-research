@@ -62,6 +62,40 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-root-planner-completion-goal
+
+- Owner **Create segment catalogue**, root roadmap/QA. The user explicitly set
+  a sustained full Planner completion goal, then deferred actual Planner–Runner
+  correspondence validation to the final development step. Stage: Backend
+  Verification; no repeated stage-pause question.
+- Root deliverable: new67 goal/evidence ledger, current60/62 routing and final
+  rendered audit64; no producer edits. S1–S7, Live Preview and integration received
+  bounded new assignments and the clarification; no duplicate tasks created.
+- Baseline `7946bc6` / application `d6acfd1`, plus reviewed docs-only `d83c7a5`. Root isolated
+  branch `codex/planner-completion-roadmap`; sole integration owner uses new
+  `codex/segment-planner-completion`. The previous UI intake is complete; its
+  freeze does not prohibit newly authorized Planner completion.
+- Independent root source review found v1-only generation/import prerequisite,
+  null accepted P4, configured P5 state outside its historical payload and
+  v1-only file adapters. Reuse current lifecycle fixes. G01–G11 in67 require
+  complete Planner authoring/validation/save/reopen and exact-source evidence.
+- Experiment Runner owns16/65/66 and charter/router amendments; root owns
+  60/62/64/67 and this entry. S7 owns successor contracts; integration owns shared
+  app/native composition. Recording policy stays Runner-owned under16.
+- Q04 collision policy is now asked; Q05/Q08 remain pending, with no assumed
+  answer or duplicated question. G11 records Planner UI/service/command isolation
+  under amendment16, coordinated through integration and the Runner owner.
+  Independent work continues. Root interprets the latest all-settings goal as
+  saving the current renderer selection, including existing project-authored
+  procedural Face, without restoring historical Face/Photoatlas capabilities.
+  Temporary test/inspection state stays distinct. No Runner/runtime or physical
+  qualification is implied by the Planner goal.
+- Prior cleanup receipt closed: all 29 exact `7946bc6` default Chrome images
+  across seven sections/two viewports/full scroll were inspected; all PNG and
+  harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
+  warning-list fix is verified in combined source. See 64 for paths and limits;
+  this is not G09 populated/full-master evidence for the new completion goal.
+
 ### 20260912-runner-companion-separation
 
 - Owner: Experiment Runner; R1 / RR-01–RR-09, Backend Verification. Explicit user
