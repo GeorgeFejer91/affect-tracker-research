@@ -247,8 +247,13 @@ export async function projectVideoReferenceAliasesV1(value) {
  * Replace is last-write-wins; an invalid or explicitly withdrawn catalogue is
  * represented as pending with a null contribution, never as a shortened list.
  */
-export function createVideoCatalogueProducerV1({ onChange = () => {} } = {}) {
-  if (typeof onChange !== "function") throw new TypeError("Video catalogue onChange must be a function.");
+export function createVideoCatalogueProducerV1({
+  onChange = () => {},
+  validateRestoredContribution = validateVideoCatalogueContributionV1,
+} = {}) {
+  if (typeof onChange !== "function" || typeof validateRestoredContribution !== "function") {
+    throw new TypeError("Video catalogue producer inputs are malformed.");
+  }
   const listeners = new Set([onChange]);
   let generation = 0;
   let lastAccepted = null;
@@ -298,9 +303,11 @@ export function createVideoCatalogueProducerV1({ onChange = () => {} } = {}) {
     }
   }
 
-  async function restoreContribution(value) {
-    const contribution = await validateVideoCatalogueContributionV1(value);
-    generation += 1;
+  async function restoreContribution(value, { isCurrent = () => true } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("Video catalogue restore guard must be a function.");
+    const operation = ++generation;
+    const contribution = await validateRestoredContribution(value);
+    if (operation !== generation || !isCurrent()) return snapshot;
     publish({ ...snapshot, pending: true });
     const identityChanged = snapshot.contribution === null
       || canonicalJson(snapshot.contribution) !== canonicalJson(contribution);

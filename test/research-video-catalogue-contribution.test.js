@@ -169,3 +169,39 @@ test("producer can restore validated catalogue content without granting director
   await assert.rejects(producer.restoreContribution({ ...saved, revision: 10 }));
   assert.deepEqual(producer.getSnapshot(), restored, "invalid saved content cannot mutate the live producer");
 });
+
+test("deferred restore A cannot replace newer B, revive after withdrawal, or erase newer success on failure", async () => {
+  const validations = [];
+  const producer = createVideoCatalogueProducerV1({
+    validateRestoredContribution(value) {
+      return new Promise((resolve, reject) => validations.push({ value, resolve, reject }));
+    },
+  });
+  const savedA = await createVideoCatalogueContributionV1({ revision: 7, entries: [entry()] });
+  const savedB = await createVideoCatalogueContributionV1({
+    revision: 8,
+    entries: [{ ...entry(), annotationId: "newer-b" }],
+  });
+
+  const restoreA = producer.restoreContribution(savedA);
+  const restoreB = producer.restoreContribution(savedB);
+  validations[1].resolve(savedB);
+  const acceptedB = await restoreB;
+  validations[0].resolve(savedA);
+  assert.deepEqual(await restoreA, acceptedB, "late A must observe, not replace, accepted B");
+  assert.deepEqual(producer.getSnapshot(), acceptedB);
+
+  const restoreBeforeWithdrawal = producer.restoreContribution(savedA);
+  const withdrawn = producer.withdraw();
+  validations[2].resolve(savedA);
+  assert.deepEqual(await restoreBeforeWithdrawal, withdrawn, "late validation must not revive withdrawn content");
+  assert.deepEqual(producer.getSnapshot(), withdrawn);
+
+  const failingOlderRestore = producer.restoreContribution(savedA);
+  const newerRestore = producer.restoreContribution(savedB);
+  validations[4].resolve(savedB);
+  const newerSuccess = await newerRestore;
+  validations[3].reject(new TypeError("deferred invalid A"));
+  await assert.rejects(failingOlderRestore, /deferred invalid A/u);
+  assert.deepEqual(producer.getSnapshot(), newerSuccess, "stale failure must preserve newer success");
+});
