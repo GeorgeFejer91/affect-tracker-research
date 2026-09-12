@@ -136,6 +136,41 @@
   physical media and runtime qualification remain Main/Runner-owned.
 
 
+### 20260912-root-cli-consequences-coordinator
+
+- Owner: Chat Orchestrator, isolated branch `codex/segment-cli-consequences-root`
+  in `D:/GitHub/affect-tracker-research-cli-consequences-root`, base `23e8f3a`.
+  Main explicitly transferred this unfinished shared seam from S6/S4 to root.
+  Stage: Backend Verification; catalogue CLI-SHARED, with named CLI-P1/P2/P7
+  dependencies for file/import/confirmation operations and E2E-RECIPE.
+- The existing session had atomic settings and list edits but no `perform`
+  coordinator. Added optional consequential descriptors/preparation/dispatch,
+  one guarded synchronous adoption, retained effects, compact results and shared
+  cancellation/CAS/retry admission. Existing owner methods remain required and
+  unchanged; no second editor state or native filesystem authority was added.
+- Exact API and constraints: `docs/planner-authoring-consequences.md`. Main owns
+  Rust wire/grants/effects, app registration/services and production adoption.
+  This pass changes only contract/session, their focused tests and these docs.
+- Initial 43 focused tests passed. Expanded all-owner run exposed a missing
+  worktree dependency and a changed P1 rejection code. Reused the exact lock-
+  matching installed dependency tree and preserved `consequential_operation`.
+  The subsequent all-owner session/native-adapter regression passed 151 tests. The 29
+  new coordinator cases include late acknowledgements after cancellation,
+  destruction or stale dependencies and exact no-redispatch retries. No native
+  filesystem, rendered UI or actual Runner execution is implied by these tests.
+- Additional proven fixes: reentrant query rejection cannot release an outer
+  publication lock; comma-joined property names cannot spoof exact argument keys.
+  S4's independent read-only review reproduced an owner-only drift omission in
+  dispatch's guard. It now composes the owner guard until adoption, then follows
+  its own adopted session revision. A focused regression covers both outcomes.
+  Final post-review all-owner gate: 152 tests passed, including 30 new
+  consequential coordinator cases; `git diff --check` passed.
+  No capability checkbox is newly completed. Full production operation
+  registration, CLI-authored timestamped mock JSON, saved-file reopen/versioning,
+  real Runner execution and independent XDF reconstruction remain outstanding.
+- Canonical S6 partial changes were preserved separately, not overwritten here;
+  Main is the sole integration owner and must reconcile that historical diff.
+
 ### 20260912-cli-integrated-owner-registration
 
 - Main, CLI-SHARED named composition seam, Backend Verification. All seven

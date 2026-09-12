@@ -1,10 +1,26 @@
 import { canonicalJson } from "./canonical.js";
 import { PLANNER_RESULT_SCHEMA, PlannerCommandError, commandFailure, commandOwner,
-  commandField, validateCommandJson, validatePlannerCommand, validateSettingValue } from "./planner-authoring-contract.js";
+  commandField, commandConsequence, exactCommandKeys, validateCommandJson, validatePlannerCommand, validateSettingValue } from "./planner-authoring-contract.js";
 
 const RETRY_LIMIT = 1024;
 const RETRY_BYTES = 8 * 1024 * 1024;
 const MAX_ISSUES = 64;
+const RESULT_RESERVATION = 512 * 1024;
+const COMPACT_BYTES = 64 * 1024;
+
+function compact(value) {
+  validateCommandJson(value);
+  if (new TextEncoder().encode(canonicalJson(value)).byteLength > COMPACT_BYTES) {
+    commandFailure("result_limit", "Return a compact receipt; inspect full content through its owner.");
+  }
+  return structuredClone(value);
+}
+
+function consequenceArguments(descriptor, args) {
+  exactCommandKeys(args, descriptor.arguments.required);
+  // The owner validates domain-specific types/ranges during read-only preparation.
+  // This coordinator owns the closed argument vocabulary, not another validator.
+}
 
 // Bound retained result metadata before publication, including owner/observer
 // failures. This keeps the 512 KiB retry-result reservation a real upper bound,
@@ -21,7 +37,7 @@ function boundedIssues(issues) {
 /** Metadata coordinator only. Existing owner editors retain the sole drafts. */
 export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(), owners = [], onBeforeCommit = () => {}, onCommit = () => {} } = {}) {
   let revision = 0, generation = 0, destroyed = false, active = null, retryBytes = 0, publishing = false;
-  const registry = new Map(), settings = new Map(), retries = new Map(), listeners = new Set();
+  const registry = new Map(), settings = new Map(), retries = new Map(), listeners = new Set(), consequences = new Map();
   function advance() {
     if (!Number.isSafeInteger(revision + 1)) commandFailure("session_exhausted", "Start a new authoring session.");
     revision++; generation++;
@@ -51,8 +67,30 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     }
     const names = owner.operations.map(operation => operation.id);
     if (new Set(names).size !== names.length || names.some(name => !/^[a-z][a-zA-Z0-9.-]{0,79}$/u.test(name))) throw new TypeError("Planner operation descriptor is invalid.");
+    const descriptors = owner.consequences ?? [];
+    if (!Array.isArray(descriptors) || (descriptors.length && typeof owner.prepareConsequence !== "function")) {
+      throw new TypeError("Consequential owner preparation is unavailable.");
+    }
+    const consequenceNames = new Set();
+    for (const descriptor of descriptors) {
+      validateCommandJson(descriptor); commandConsequence(descriptor.id);
+      const shape = descriptor.arguments;
+      if (consequences.has(descriptor.id) || consequenceNames.has(descriptor.id)
+        || !shape || shape.type !== "object" || shape.additionalProperties !== false
+        || !Array.isArray(shape.required) || shape.required.some(key => typeof key !== "string")
+        || !shape.properties || typeof shape.properties !== "object" || Array.isArray(shape.properties)
+        || new Set(shape.required).size !== shape.required.length
+        || shape.required.length !== Object.keys(shape.properties).length
+        || [...shape.required].sort().some((key, index) => key !== Object.keys(shape.properties).sort()[index])) {
+        throw new TypeError("Consequential descriptors require globally unique IDs and closed required arguments.");
+      }
+      consequenceNames.add(descriptor.id);
+    }
     registry.set(owner.id, owner);
     owner.settings.forEach(setting => settings.set(setting.id, Object.freeze(structuredClone(setting))));
+    descriptors.forEach(descriptor => consequences.set(descriptor.id, {
+      owner: owner.id, descriptor: structuredClone(descriptor),
+    }));
   }
   owners.forEach(addOwner);
   function ownerFor(id) { const owner = registry.get(id); if (!owner) commandFailure("owner_unavailable", "Planner owner is not connected.", id); return owner; }
@@ -64,7 +102,7 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
   }
   function snapshot() {
     if (destroyed) commandFailure("session_closed", "Planner authoring session is closed.");
-    if (publishing) commandFailure("busy", "An atomic authoring batch is being published.");
+    if (publishing || active?.dispatching) commandFailure("busy", "Authoring publication or consequential work is in progress.");
     return { sessionId, revision, owners: Object.fromEntries([...registry].map(([id, owner]) => [id, readOwner(owner)])) };
   }
   function envelope(requestId, status, result = null, issues = []) {
@@ -82,12 +120,14 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     return boundedIssues(issues);
   }
   function remember(id, fingerprint, result) {
+    if (destroyed) return; // Return late evidence to the broker without reviving a disposed cache.
     const bytes = new TextEncoder().encode(canonicalJson({ fingerprint, result })).byteLength;
     // Reserve bounded admission before staging; no retry record is evicted.
     retries.set(id, { fingerprint, result: structuredClone(result) }); retryBytes += bytes;
   }
   async function execute(input, lifetime = {}) {
     let request, fingerprint, mutation = false, ownsActive = false, publicationStarted = false;
+    let consequence = null;
     const updatedOwners = [];
     try {
       request = validatePlannerCommand(input);
@@ -95,21 +135,31 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       if (publishing) commandFailure("busy", "An atomic authoring batch is being published.");
       if (request.sessionId !== sessionId) commandFailure("stale_session", "The authoring session has changed.");
       const { action, requestId } = request;
-      mutation = ["set", "apply"].includes(action.kind);
+      mutation = ["set", "apply", "perform"].includes(action.kind);
       fingerprint = canonicalJson(request);
       const prior = retries.get(requestId);
       if (prior) {
         if (prior.fingerprint !== fingerprint) commandFailure("request_id_reused", "Request identity was reused with different content.");
         return structuredClone(prior.result);
       }
-      if (active?.requestId === requestId) commandFailure("request_in_flight", "This request is still in flight.");
+      if (active?.requestId === requestId) {
+        if (active.fingerprint !== fingerprint) commandFailure("request_id_reused", "Request identity was reused with different content.");
+        commandFailure("request_in_flight", "This request is still in flight.");
+      }
       if (action.kind === "cancel") {
         const canceled = active?.requestId === action.requestId;
         if (canceled) { active.controller.abort(); generation++; }
         return envelope(requestId, "ok", { canceled });
       }
       if (request.expectedRevision !== null && request.expectedRevision !== revision) commandFailure("stale_revision", "Read the current revision before applying changes.");
-      if (action.kind === "catalogue") return envelope(requestId, "ok", { settings: [...settings.values()], operations: [...registry.values()].flatMap(owner => owner.operations.map(operation => ({ ...operation, owner: owner.id }))) });
+      if (action.kind === "catalogue") return envelope(requestId, "ok", {
+        settings: [...settings.values()],
+        operations: [...registry.values()].flatMap(owner => owner.operations.map(operation => ({ ...operation, owner: owner.id }))),
+        ...(consequences.size ? { consequences: [...consequences.values()].map(item => ({ ...structuredClone(item.descriptor), owner: item.owner })) } : {}),
+      });
+      if (active?.dispatching && ["get", "snapshot", "validate"].includes(action.kind)) {
+        commandFailure("busy", "Consequential work is in progress; read again after its result.");
+      }
       if (action.kind === "snapshot") return envelope(requestId, "ok", snapshot());
       if (action.kind === "get") {
         if (!settings.has(action.field)) commandFailure("unknown_setting", "Setting is not registered.", action.field);
@@ -122,7 +172,93 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       }
       if (active) commandFailure("busy", "Another authoring command is being prepared.");
       const retainedRequestBytes = new TextEncoder().encode(canonicalJson({ fingerprint, result: null })).byteLength;
-      if (retries.size >= RETRY_LIMIT || retryBytes + retainedRequestBytes + 512 * 1024 > RETRY_BYTES) commandFailure("session_capacity", "Start a new session before submitting more mutations.");
+      if (retries.size >= RETRY_LIMIT || retryBytes + retainedRequestBytes + RESULT_RESERVATION > RETRY_BYTES) commandFailure("session_capacity", "Start a new session before submitting more mutations.");
+      if (action.kind === "perform") {
+        const registered = consequences.get(action.operation);
+        if (!registered) commandFailure("unknown_operation", "Consequential operation is not registered.");
+        consequenceArguments(registered.descriptor, action.arguments);
+        const owner = ownerFor(registered.owner);
+        let currentRevision = revision, currentGeneration = ++generation;
+        const controller = new AbortController();
+        const operationState = { requestId, controller, fingerprint, dispatching: false };
+        active = operationState; ownsActive = true;
+        consequence = { operation: action.operation, owner: owner.id, published: false,
+          effect: null, result: null, issues: [], closed: false };
+        const isCurrent = () => !consequence.closed && !destroyed && !controller.signal.aborted
+          && !lifetime.signal?.aborted && (lifetime.isCurrent === undefined || lifetime.isCurrent() === true)
+          && active === operationState && revision === currentRevision && generation === currentGeneration;
+        const assertCurrent = () => {
+          if (!isCurrent()) commandFailure(controller.signal.aborted || lifetime.signal?.aborted ? "canceled" : "stale_revision", "The consequential operation is no longer current.", owner.id);
+        };
+        assertCurrent();
+        const candidate = await owner.prepareConsequence(action.operation, structuredClone(action.arguments), {
+          isCurrent, signal: controller.signal,
+          read(id = null) { assertCurrent(); return id === null ? snapshot() : readOwner(ownerFor(commandOwner(id))); },
+        });
+        if (!candidate || typeof candidate.dispatch !== "function") throw new TypeError("Consequential preparation returned no dispatch.");
+        const candidateCurrent = () => candidate.isCurrent === undefined || candidate.isCurrent() === true;
+        // Native adapters must see owner drift even while dispatch is awaiting.
+        // Successful adoption can itself invalidate the pre-adoption guard.
+        const dispatchCurrent = () => isCurrent() && (consequence.published || candidateCurrent());
+        assertCurrent();
+        if (!candidateCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before dispatch.", owner.id);
+        operationState.dispatching = true;
+        const recordEffect = receipt => {
+          // Evidence can arrive after cancellation; retaining it grants no new work.
+          if (consequence.closed || active !== operationState) commandFailure("operation_closed", "Effect recording is closed.", owner.id);
+          if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || !Object.keys(receipt).length) {
+            commandFailure("invalid_receipt", "An effect requires a nonempty receipt object.", owner.id);
+          }
+          const detached = compact(receipt); // Never erase the old receipt on failure.
+          consequence.effect = detached;
+        };
+        const publish = (install, afterCommit) => {
+          if (consequence.published) commandFailure("already_published", "A consequential command can publish only once.", owner.id);
+          assertCurrent();
+          if (!candidateCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
+          if (typeof install !== "function" || Object.prototype.toString.call(install) === "[object AsyncFunction]"
+            || (afterCommit !== undefined && (typeof afterCommit !== "function" || Object.prototype.toString.call(afterCommit) === "[object AsyncFunction]"))) {
+            commandFailure("invalid_publication", "Publication hooks must be synchronous functions.", owner.id);
+          }
+          publishing = true;
+          try {
+            onBeforeCommit({ owners: [owner.id], revision, operation: action.operation });
+            assertCurrent();
+            if (!candidateCurrent()) commandFailure("stale_revision", "Consequential dependencies changed before publication.", owner.id);
+            advance(); currentRevision = revision; currentGeneration = generation;
+            publicationStarted = true; consequence.published = true; updatedOwners.push(owner.id);
+            const installed = install();
+            if (installed && typeof installed.then === "function") {
+              // A broken owner may return a rejecting Promise. Preserve the
+              // protocol failure without leaving an unhandled rejection behind.
+              Promise.resolve(installed).catch(() => {});
+              commandFailure("invalid_publication", "Publication returned asynchronous work; inspect the applied state.", owner.id);
+            }
+            try {
+              const projected = afterCommit?.();
+              if (projected && typeof projected.then === "function") {
+                Promise.resolve(projected).catch(() => {});
+                throw new TypeError("Asynchronous projection.");
+              }
+            } catch { consequence.issues.push({ owner: owner.id, field: null, code: "projection_failed", message: "The result was adopted, but its projection failed." }); }
+            try { onCommit({ owners: [owner.id], revision, operation: action.operation }); }
+            catch { consequence.issues.push({ owner: owner.id, field: null, code: "projection_failed", message: "The result was adopted, but a shared projection failed." }); }
+            try { consequence.issues.push(...validateOwner(owner)); }
+            catch { consequence.issues.push({ owner: owner.id, field: null, code: "validation_unavailable", message: "The result was adopted; owner validation is unavailable." }); }
+          } finally { publishing = false; }
+          consequence.issues.push(...notify());
+        };
+        const returned = await candidate.dispatch({ isCurrent: dispatchCurrent, signal: controller.signal, recordEffect, publish });
+        consequence.result = compact(returned === undefined ? null : returned);
+        assertCurrent();
+        if (!consequence.published) commandFailure("missing_publication", "Consequential dispatch finished without adopting its result.", owner.id);
+        const result = envelope(requestId, consequence.issues.length ? "incomplete" : "applied", {
+          operation: consequence.operation, owner: consequence.owner, published: true,
+          effect: consequence.effect, result: consequence.result, updatedOwners,
+        }, consequence.issues);
+        remember(requestId, fingerprint, result);
+        return result;
+      }
       const edits = action.kind === "set" ? [action] : action.edits;
       const grouped = new Map();
       for (const edit of edits) {
@@ -131,12 +267,16 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
           const setting = settings.get(edit.field);
           if (!setting) commandFailure("unknown_setting", "Setting is not registered.", edit.field);
           validateSettingValue(setting, edit.value);
-        } else if (!owner.operations.some(operation => operation.id === edit.operation)) commandFailure("unknown_operation", "Owner operation is not registered.", owner.id);
+        } else {
+          const operation = owner.operations.find(operation => operation.id === edit.operation);
+          if (!operation) commandFailure("unknown_operation", "Owner operation is not registered.", owner.id);
+          if (operation.consequential === true || operation.atomic === false) commandFailure("consequential_operation", "Use the registered perform command for consequential work.", owner.id);
+        }
         if (!grouped.has(owner.id)) grouped.set(owner.id, []);
         grouped.get(owner.id).push(edit);
       }
       const base = revision, operation = ++generation, controller = new AbortController();
-      active = { requestId, controller }; ownsActive = true;
+      active = { requestId, controller, fingerprint }; ownsActive = true;
       const isCurrent = () => !destroyed && !controller.signal.aborted && !lifetime.signal?.aborted
         && (lifetime.isCurrent === undefined || lifetime.isCurrent() === true)
         && revision === base && generation === operation;
@@ -174,13 +314,22 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       remember(requestId, fingerprint, result);
       return result;
     } catch (error) {
-      publishing = false;
-      const result = publicationStarted
+      if (ownsActive) publishing = false;
+      const result = consequence
+        ? envelope(request?.requestId ?? null,
+          consequence.effect !== null || publicationStarted || error?.code === "missing_publication" ? "incomplete" : error?.code === "canceled" ? "canceled" : "rejected",
+          { operation: consequence.operation, owner: consequence.owner, published: consequence.published,
+            effect: consequence.effect, result: consequence.result, updatedOwners },
+          [...consequence.issues, issue(error)])
+        : publicationStarted
         ? envelope(request?.requestId ?? null, "incomplete", { updatedOwners }, [{ owner: null, field: null, code: "publication_failed", message: "Publication began but an owner failed. Inspect the current settings; do not blindly retry." }, ...notify()])
         : envelope(request?.requestId ?? null, error?.code === "canceled" ? "canceled" : "rejected", null, [issue(error)]);
       if (ownsActive && mutation && request && fingerprint && !retries.has(request.requestId)) remember(request.requestId, fingerprint, result);
       return result;
-    } finally { if (ownsActive) { active = null; publishing = false; } }
+    } finally {
+      if (consequence) consequence.closed = true;
+      if (ownsActive) { active = null; publishing = false; }
+    }
   }
   return Object.freeze({
     execute, snapshot, registerOwner: addOwner,
