@@ -3,6 +3,7 @@ import {
   canEditXrAngularSize, createDefaultXrLayoutProfile, parseXrLayoutProfileV1,
   resolveXrCatalogueV1, resolveXrLayoutProfileV1, serializeXrLayoutProfileV1, validateXrLayoutProfileV1,
   withXrAngularSize,
+  XrLayoutError,
 } from "./xr-layout.js";
 import { xrLayoutSceneSvg } from "./xr-layout-view.js";
 import { resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
@@ -39,6 +40,25 @@ export function createXrLayoutState() {
     setEnabled(value) { if (typeof value !== "boolean") throw new TypeError("XR enabled must be Boolean."); if (enabled !== value) { enabled = value; revision += 1; } },
     setDraft(value) { draft = structuredClone(value); accepted = null; revision += 1; },
     getDraft() { return structuredClone(draft); },
+    stageAuthoringDraft(value, { isCurrent, signal } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("XR staging requires a current-operation guard.");
+      if (!value || Object.keys(value).sort().join(",") !== "enabled,profile" || typeof value.enabled !== "boolean") {
+        throw new TypeError("XR staging requires an explicit enabled flag and detached profile.");
+      }
+      const next = structuredClone(value), baseRevision = revision;
+      let committed = false;
+      const current = () => !committed && !signal?.aborted && isCurrent() && revision === baseRevision;
+      if (!current()) throw new XrLayoutError("profile", "stale", "The XR authoring operation is no longer current.");
+      return Object.freeze({
+        isCurrent: current,
+        // The coordinator checks every staged owner before any publication.
+        // Only prevalidated, detached field edits reach this owner-local seam.
+        commit() {
+          if (committed) return;
+          committed = true; enabled = next.enabled; draft = next.profile; accepted = null; revision += 1;
+        },
+      });
+    },
     invalidate() { accepted = null; revision += 1; },
     accept() { accepted = validate(); revision += 1; return structuredClone(accepted); },
     load(source, revisions = dependencies) {
@@ -150,7 +170,9 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     const draft = state.getDraft();
     for (const field of fields) {
       const [group, name] = field.dataset.xrField.split(".");
-      draft[group][name] = field.type === "checkbox" ? field.checked : field.value === "" ? null : Number(field.value);
+      const number = Number(field.value);
+      draft[group][name] = field.type === "checkbox" ? field.checked
+        : field.value.trim() !== "" && Number.isFinite(number) ? number : field.value;
     }
     state.setDraft(draft);
     status("Layout changed. Accept it again before exporting.");
@@ -243,6 +265,21 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
   return Object.freeze({
     getSnapshot: () => state.getSnapshot(),
     getDraft: () => state.getDraft(),
+    getAuthoringSnapshot: () => structuredClone({ ...state.getSnapshot(), draft: state.getDraft(),
+      camera, media, catalogueGeometry, feedbackEnvelope, disposed }),
+    stageAuthoringDraft(value, { isCurrent, signal } = {}) {
+      if (disposed) throw new XrLayoutError("profile", "stale", "The XR editor is closed.");
+      const candidate = state.stageAuthoringDraft(value, { isCurrent, signal });
+      let committed = false;
+      return Object.freeze({
+        isCurrent: () => !disposed && candidate.isCurrent(),
+        commit() {
+          if (committed) return;
+          committed = true; candidate.commit(); fileGeneration += 1;
+          setFields(); render(); notify(); status("Layout changed. Confirm the section before saving.");
+        },
+      });
+    },
     acceptLayout,
     loadProfile(source) {
       fileGeneration += 1; state.load(source); setFields(); render(); notify();
