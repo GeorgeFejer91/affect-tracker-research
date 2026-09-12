@@ -342,6 +342,21 @@
   CLI now rejects tauri::is_dev() before any profile/window, and the dedicated
   build helper explicitly enables embedded assets. Audit earlier receipts using
   their exact commands. Profile proof now inspects only the owned child's browser.
+### 20260912-runner-information-field-hardening
+
+- Root independently verified XDF02 using pyxdf and independent Python, without
+  production reconstruction imports or producer JSON. Its review passed all
+  78 frames/26 transfers, complete embedded source, two complete frozen answer
+  records (including older optional metadata), all ten ordered occurrence pairs,
+  affect bounds and both actual footers. Synthetic timing/coded demographics and
+  dirty-build limitations remain explicit in the independent report under
+  `D:/GitHub/.affect-runner-master-build/root-independent-information-xdf-02-review.json`.
+- Root identified comma-joined property-name checks as ambiguous. The Runner
+  information and prior dictionary readers now compare actual property count
+  plus every required key. A focused comma-collision negative and old dictionary
+  compatibility assertion accompany the change. No schema or accepted source
+  semantics change. This small hardening commit is independently collectible
+  from the active typed-form branch; typed implementation remains separate.
 
 ### 20260912-p2-demographics-contract-fixtures
 

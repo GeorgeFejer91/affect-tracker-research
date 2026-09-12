@@ -2,10 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { canonicalJson } from "../site/src/research/canonical.js";
 import { InformationAssembler, inspectInformationStream } from "../runner/src/information-stream.js";
+import { inspectMasterStream } from "../runner/src/master-stream.js";
 import { frameRecords, informationFixture } from "./fixtures/runner-information-fixture.js";
 
 const change = (samples, index, fn) => { const copy = structuredClone(samples), frame = JSON.parse(copy[index].value); fn(frame); copy[index].value = canonicalJson(frame); return copy; };
 const assemble = async samples => { const reader = new InformationAssembler(), values = []; for (const sample of samples) { const value = await reader.push(sample); if (value) values.push(value); } return { status: reader.finish(), values }; };
+
+test("prior dictionary stream remains readable and rejects comma-colliding profile fields", async () => {
+  const fixture = await informationFixture(), profile = fixture.records[0].value.markerProfile;
+  const samples = [{ value: canonicalJson(profile), timestamp: 0 }, ...fixture.records.filter(r => r.kind === "observation").map((r, i) => ({ value: canonicalJson(r.value), timestamp: i + 1 }))];
+  assert.equal((await inspectMasterStream(samples)).status, "complete");
+  const malformed = structuredClone(profile); malformed["executionProfile,participantId"] = null; delete malformed.executionProfile; delete malformed.participantId;
+  await assert.rejects(inspectMasterStream([{ value: canonicalJson(malformed), timestamp: 0 }]), /profile binding/u);
+});
 
 test("bounded multi-chunk Unicode transfer preserves exact values and both observed LSL times", async () => {
   const value = { text: "ü𝄞 test ".repeat(15000) }, samples = await frameRecords([{ kind: "startup", value }, { kind: "outcome", value: {} }]);
@@ -23,6 +32,9 @@ test("missing, duplicated, reordered, corrupt and oversized information cannot c
   await assert.rejects(assemble(change(samples, 1, f => f.payload.data = "!" + f.payload.data.slice(1))), /base64/u);
   await assert.rejects(assemble(change(samples, 0, f => f.payload.byteLength = 64 * 1024 * 1024 + 1)), /bound/u);
   await assert.rejects(assemble(change(samples, 0, f => f.payload.extra = true)), /unknown/u);
+  await assert.rejects(assemble(change(samples, 0, f => {
+    f.payload["chunkCount,contentKind"] = null; delete f.payload.chunkCount; delete f.payload.contentKind;
+  })), /missing or unknown fields/u);
   await assert.rejects(assemble(change(samples, 1, f => f.attemptId = "attempt-other")), /context/u);
   await assert.rejects(assemble(change(samples, 3, f => f.payload.sha256 = "a".repeat(64))), /hash/u);
   await assert.rejects(assemble(change(samples, 1, f => f.payload.data = "A" + f.payload.data.slice(1))), /hash/u);
