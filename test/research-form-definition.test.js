@@ -33,6 +33,16 @@ test("strict form validation rejects branch confusion, malformed Unicode, bounds
 });
 const answer = (itemId, value) => ({ itemId, value });
 const complete = () => [answer("fullName", { kind: "text", text: "  Synthetic É例  " }), answer("age", { kind: "integer", integer: 0 }), answer("gender", { kind: "singleChoice", optionId: "preferNotToSay" }), answer("handedness", { kind: "singleChoice", optionId: "left" })];
+test("definition size follows the frozen 16 MiB bound without an unapproved 4 MiB cutoff", () => {
+  const d = structuredClone(fixtures[0]);
+  const item = { itemId: "field", order: 1, prompt: "Prompt", required: true, response: { kind: "singleChoice",
+    options: Array.from({ length: 256 }, (_, i) => ({ optionId: `option-${i}`, order: i + 1, label: "x".repeat(2000) })) } };
+  d.items = Array.from({ length: 9 }, (_, i) => ({ ...structuredClone(item), itemId: `field-${i}`, order: i + 1 }));
+  assert.ok(new TextEncoder().encode(canonicalJson(d)).length > 4 * 1024 * 1024);
+  assert.doesNotThrow(() => validateFormDefinitionV1(d));
+  d.items = Array.from({ length: 33 }, (_, i) => ({ ...structuredClone(item), itemId: `field-${i}`, order: i + 1 }));
+  assert.throws(() => validateFormDefinitionV1(d), /16 MiB/);
+});
 test("typed answers retain exact text, canonical item order and all-displayed completion", () => {
   const d = structuredClone(fixtures[0]); d.items.forEach(i => i.required = false);
   assert.deepEqual(validateFormAnswers(d, complete().reverse()).answers, complete());
