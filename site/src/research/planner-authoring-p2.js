@@ -1,4 +1,5 @@
 import { canonicalJson } from "./canonical.js";
+import { commandFailure, PlannerCommandError } from "./planner-authoring-contract.js";
 import { createFlatLanguageSelectionV1, validateLanguageSelectionTreeV1 } from "./experiment-package.js";
 import { analyzeQuestionnaireLanguageCoverage } from "./questionnaire-assets.js";
 import { validateQuestionnaireModuleV2 } from "./questionnaires.js";
@@ -145,6 +146,16 @@ const operationShapes = {
   reorderOptions: ["questionnaireId", "itemId", "optionIds"],
   reorderModules: ["moduleIds"],
 };
+const argumentTypes = {
+  familyId: "string: questionnaire family identity", questionnaireId: "string: questionnaire identity",
+  title: "string: questionnaire title", optionCount: "integer: 2..64", rowCount: "integer: 0..1024",
+  changes: "nonempty object: questionnaireVersion?, title?, instructions?, attribution?, optionCount?; no other keys",
+  item: "exact object: {itemId:string,prompt:string,required:boolean|string,subscale:string|null,options:Option[]}",
+  beforeItemId: "string|null: existing item identity, or null to append", itemId: "string: existing item identity",
+  itemIds: "string[]: every existing item identity exactly once", optionId: "string: existing option identity",
+  label: "string: participant-visible answer label", scoreValue: "number|null|string: recorded value, or invalid raw draft text",
+  optionIds: "string[]: every existing option identity exactly once", moduleIds: "string[]: every existing module identity exactly once",
+};
 
 /** Adapter over existing editor/app state. No retained drafts, file IO or compiler. */
 export function createPlannerAuthoringP2({ editor, readContext, commitContext, onCommit = () => {} }) {
@@ -283,7 +294,9 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
   }
   return Object.freeze({ id: "P2", settings,
     operations: Object.freeze(Object.entries(operationShapes).map(([id, argumentsKeys]) => Object.freeze({ id,
-      argumentsKeys, description: "Closed typed questionnaire draft operation; no source import or file write." }))),
+      argumentsKeys, argumentsSchema: { type: "object", additionalProperties: false, required: argumentsKeys,
+        properties: Object.fromEntries(argumentsKeys.map(key => [key, { description: argumentTypes[key] }])) },
+      description: "Closed typed questionnaire draft operation; no source import or file write. Option is {optionId:string,label:string,scoreValue:number|null|string}." }))),
     read() {
       const state = capture(); let currentCoverage = null;
       try { currentCoverage = coverage(state.context); } catch { /* Report issues, not a fabricated complete result. */ }
@@ -294,10 +307,11 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     },
     validate() { return issuesFor(capture()); },
     async stage(edits, { isCurrent, signal }) {
+      try {
       const state = capture(), before = fingerprint(state);
       const current = () => !signal.aborted && isCurrent() && fingerprint(capture()) === before;
       if (state.context.locked || state.records.some(record => record.busy)) throw new TypeError("Questionnaire editor is locked or saving.");
-      if (!current()) throw new TypeError("Questionnaire staging is stale or cancelled.");
+      if (!current()) commandFailure(signal.aborted ? "canceled" : "stale_revision", "Questionnaire staging is stale or cancelled.", "P2.questionnaires");
       json(edits); list(edits, 256, "Edits");
       if (!edits.length || new TextEncoder().encode(canonicalJson(edits)).byteLength > 16 * 1024 * 1024) throw new TypeError("Questionnaire edit batch is empty or oversized.");
       const detached = clone(edits);
@@ -315,10 +329,18 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
           try { await sheetToAuthoring(record.sheet); record.error = ""; }
           catch (error) { record.error = String(error.message); }
         }
-        if (!current()) throw new TypeError("Questionnaire staging was superseded; no drafts were changed.");
+        if (!current()) commandFailure(signal.aborted ? "canceled" : "stale_revision", "Questionnaire staging was superseded; no drafts were changed.", "P2.questionnaires");
       }
       const project = editor.prepareAuthoringEntries(state.records, state.context);
-      return { isCurrent: current, commit() { commitContext(state.context); project(); onCommit(); } };
+      let committed = false;
+      return { isCurrent: () => !committed && current(), commit() {
+        if (committed) return;
+        committed = true; commitContext(state.context); project.commit();
+      }, afterCommit() { project.afterCommit(); onCommit(); } };
+      } catch (error) {
+        if (error instanceof PlannerCommandError) throw error;
+        commandFailure("invalid_value", String(error.message).slice(0, 512), "P2.questionnaires");
+      }
     },
   });
 }
