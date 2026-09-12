@@ -59,10 +59,10 @@ function draft(record) {
 }
 function makeRecord(family, language, optionCount = 5, rowCount = 0) {
   if (family.id === "demographics") return { sheet: sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }),
-    invalid: [], layout: "fields", repeatLabels: 1, dirty: true, busy: false, error: "", rawOptionCount: null };
+    invalid: [], layout: "fields", repeatLabels: 1, dirty: true, pristine: true, busy: false, error: "", rawOptionCount: null };
   return { sheet: createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
     title: family.label, optionCount, rowCount }), invalid: [], layout: "labels-and-codes", repeatLabels: 1,
-    dirty: true, busy: false, error: "", rawOptionCount: null };
+    dirty: true, pristine: true, busy: false, error: "", rawOptionCount: null };
 }
 function findRecord(records, id) {
   const found = records.find(record => record.sheet.questionnaireId === id);
@@ -81,6 +81,7 @@ function ordered(values, ids, key) {
 // Preserve weak-map provenance by cloning the actual owner sheet, then invoking
 // its normal bounded mutation path. Raw invalid codes remain separate UI drafts.
 function replaceDraft(record, value) {
+  record.pristine = false;
   if (isFormSheet(record.sheet) || value?.kind === "form") {
     if (!isFormSheet(record.sheet) || value?.kind !== "form") throw new TypeError("A questionnaire draft cannot silently change definition kind.");
     replaceFormDraft(record, value); return;
@@ -281,6 +282,7 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     }
     if (name === "reorderModules") { state.context.modules = ordered(state.context.modules, args.moduleIds, "moduleId"); return; }
     const record = findRecord(state.records, args.questionnaireId), content = draft(record);
+    record.pristine = false;
     if (isFormSheet(record.sheet)) {
       if (name === "updateForm") {
         if (!args.changes || !Object.keys(args.changes).length || Object.keys(args.changes).some(k => !["title", "questionnaireVersion", "provenance"].includes(k))) throw new TypeError("Invalid form metadata changes.");
