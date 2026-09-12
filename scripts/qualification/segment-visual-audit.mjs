@@ -45,7 +45,7 @@ async function waitForCapture(name, screenshot) {
 
 function fixture(scenario) {
   return `<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/site/research.css">
-<div id="research-app" data-research-surface="browser"></div><pre id="receipt" hidden></pre>
+<div id="research-app" data-research-surface="browser" data-research-program="planner"></div><pre id="receipt" hidden></pre>
 <script>const errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));console.error=(...a)=>errors.push(a.join(' '));</script>
 <script type="module">
 import { bootResearchUi } from '/site/src/research/app.js';
@@ -75,7 +75,8 @@ try {
  const overflowing=Array.from(section.querySelectorAll('*')).filter(shown).filter(e=>{
   const r=e.getBoundingClientRect();return r.width>0&&(r.left<bounds.left-1||r.right>bounds.right+1);
  }).slice(0,30).map(e=>({tag:e.tagName,id:e.id,className:String(e.className),rect:rect(e)}));
- const receipt={...scenario,sourceCommit:${JSON.stringify(sourceCommit)},dataState:'Actual app default state; no synthetic media or accepted contributions injected',
+ const receipt={...scenario,sourceCommit:${JSON.stringify(sourceCommit)},dataState:'Actual Planner UI default state; no bridge, synthetic media or accepted contributions injected',
+  program:root.dataset.researchProgram,participantControls:root.querySelectorAll('[data-mode-button="run"],[data-mode-panel="run"],#start-experiment,#review-participant-chooser,#preflight-list').length,
   openSection:ui.openSection,panelMotion:persistent?'persistent':section.querySelector('.setup-accordion-panel').dataset.motionState,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
   viewport:{width:innerWidth,height:innerHeight},pane:rect(pane),sectionRect:rect(section),
   sectionHeight:persistent?pane.scrollHeight:section.getBoundingClientRect().height,pageStride:Math.max(200,pane.clientHeight-80),scrollTop:pane.scrollTop,scrollSurface:persistent?(settingsScrolls?'preview-settings':'preview-pane'):'setup-pane',
@@ -141,6 +142,8 @@ try {
         await writeFile(join(output, name + ".launcher.json"), JSON.stringify({stdoutLength:stdout.length,stderrLength:stderr.length}));
         const row = captured.receipt;
         assert.equal(row.sourceCommit, sourceCommit, `Wrong source receipt: ${name}`);
+        assert.equal(row.program, "planner", `Wrong application program: ${name}`);
+        assert.equal(row.participantControls, 0, `Planner still contains participant execution controls: ${name}`);
         assert.equal(row.openSection, section.id, `Wrong active section: ${name}`);
         assert.equal(row.panelMotion, section.id === "feedback" && row.scrollSurface?.startsWith("preview-") ? "persistent" : "open", `Unsettled panel: ${name}`);
         assert.equal(row.reducedMotion, true, "Static capture requires the actual reduced-motion app path.");

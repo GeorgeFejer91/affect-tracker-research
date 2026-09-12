@@ -132,6 +132,11 @@ file; follow the integration-owner collection procedure in the workflow.
   the bounded existing-script prerequisite/normal-native-check followup. No
   global PATH edit, new unsafe adapter or runtime redistribution is allocated.
   DOCS_RS source checks remain distinct from a linked Planner artifact.
+- Capture helper now explicitly selects Planner role and rejects retained
+  participant controls. Chrome/Edge each captured four Review pages at exact
+  clean17b2d24; all eight images inspected, hashes matched and zero errors,
+  duplicate IDs or overflow. This is bounded helper/default-UI evidence only;
+  current full-master source still needs final populated/Save/error captures.
 
 ### 20260912-runner-companion-separation
 

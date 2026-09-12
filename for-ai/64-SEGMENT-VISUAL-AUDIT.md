@@ -87,6 +87,19 @@ a rejected workspace command. Root source review confirms the fix; that fixture
 hides the error before its screenshot, so final combined error-layout rendering
 must still include the visible failure state.
 
+The capture helper now explicitly boots `data-research-program="planner"` and
+asserts that participant Run/Start surfaces are absent. This prevents future
+captures from accidentally exercising preserved compatibility markup. Exact
+clean `17b2d24` was captured in Chrome and Edge, four Review PNGs per browser at
+1280/800 with full scroll. Root/independent review inspected all eight images;
+every PNG and harness binding matches, with zero participant controls, errors,
+duplicate IDs or pane overflow. The footer is reachable. Receipt directories:
+`D:/GitHub/.affect-preview-checks/planner-role-chrome-17b2d24-20260912` and
+`D:/GitHub/.affect-preview-checks/planner-role-edge-17b2d24-20260912`.
+The residual heading "Before starting" was routed to integration for Planner
+review wording. This smoke proves the changed helper/default Planner surface,
+not populated master export or a native/runtime bridge.
+
 ## Capture method and baseline
 
 The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
