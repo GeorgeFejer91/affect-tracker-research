@@ -138,7 +138,7 @@ fn text(value: &str, maximum: usize) -> bool {
     !value.is_empty() && value.chars().take(maximum + 1).count() <= maximum
 }
 fn language(value: &str) -> bool {
-    if value == "und" {
+    if value.len() > 80 || value.eq_ignore_ascii_case("und") {
         return false;
     }
     let mut parts = value.split('-');

@@ -73,6 +73,10 @@
 
 ### 20260912-p2-native-form-validator
 
+- Language follow-up: max80 characters and case-insensitive `und` rejection,
+  matching S3 `aa8717b`. Final focused native suite passes 22/22 with 62 pinned
+  JS parity cases (21 accepted / 41 rejected); 16 MiB correction stays intact.
+
 - Follow-up from Runner/S3: align the initial JS/native 4 MiB cap to the frozen
   contract's 16 MiB bound. Focused regression accepts >4 MiB and rejects >16 MiB
   while preserving all individual field limits. Corrected suite passes 22/22
@@ -85,7 +89,7 @@
   existing canonical JSON/hash authority, admits whole-float JSON integers while
   rejecting negative zero/coercion/unsafe values, and preserves text exactly.
 - Evidence: final native suite 22/22, both frozen EN/DE byte/hash fixtures,
-  malformed contracts and 55 production-JS-reference acceptance/canonical
+  malformed contracts and 62 production-JS-reference acceptance/canonical
   vectors; rustfmt/diff checks pass. See `docs/native-form-definition-v1.md`.
 - Main owns lib/master/app integration; Runner owns answers/mandatory submission,
   participant controls and XDF. No historical reader, integration or other-segment

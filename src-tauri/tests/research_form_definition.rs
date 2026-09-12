@@ -235,14 +235,7 @@ fn unicode_scalar_bounds_and_whitespace_are_exact() {
 
 #[test]
 fn language_grammar_preserves_case_and_rejects_implicit_language() {
-    for tag in [
-        "en",
-        "de",
-        "en-US",
-        "zh-Hant-TW",
-        "abcdefgh-12345678",
-        "UND",
-    ] {
+    for tag in ["en", "de", "en-US", "zh-Hant-TW", "abcdefgh-12345678"] {
         let mut value = fixture();
         value["language"] = json!(tag);
         rehash(&mut value);
@@ -251,6 +244,9 @@ fn language_grammar_preserves_case_and_rejects_implicit_language() {
     for tag in [
         "",
         "und",
+        "UND",
+        "Und",
+        "uNd",
         "e",
         "abcdefghi",
         "en_uk",
@@ -264,6 +260,20 @@ fn language_grammar_preserves_case_and_rejects_implicit_language() {
         let mut value = fixture();
         value["language"] = json!(tag);
         reject(value);
+    }
+    let exactly_eighty = format!("abcdefgh{}", "-abcdefgh".repeat(8));
+    assert_eq!(exactly_eighty.len(), 80);
+    let mut value = fixture();
+    value["language"] = json!(exactly_eighty);
+    rehash(&mut value);
+    decode_form_definition_v1(&value).unwrap();
+    for tag in [
+        format!("abcdefg{}-a", "-abcdefgh".repeat(8)),
+        format!("en{}", "-abcdefgh".repeat(9)),
+    ] {
+        assert!(tag.len() > 80);
+        value["language"] = json!(tag);
+        reject(value.clone());
     }
 }
 

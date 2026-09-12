@@ -2,7 +2,8 @@
 
 P2 / E2E-DEMOGRAPHICS, Backend Verification. Main/root allocated this new-only
 module from Main base `f3a2bc2`, using the frozen contract/fixtures `7da84a9`
-and production JavaScript validator `ffe11d8`. Main owns lib/master/P2
+and production JavaScript validator `ffe11d8`, subsequently corrected through
+`aa8717b` for the frozen size/language bounds. Main owns lib/master/P2
 composition; Runner owns participant controls, answers, submission and XDF.
 
 `src-tauri/src/research_form_definition.rs` exports `FormDefinitionV1`,
@@ -45,10 +46,10 @@ coercion, negative zero, safe integer bounds, Unicode scalars, language grammar,
 individual limits, aggregate 16 MiB size and stale hashes. Existing included
 contract tests retain the historical fixture/reader checks.
 
-`test/fixtures/form-definition-native-parity-v1.json` contains 55 vectors observed
-against the pinned production JS verifier: 21 accepted and 34 rejected. Accepted
+`test/fixtures/form-definition-native-parity-v1.json` contains 62 vectors observed
+against production JS `aa8717b`: 21 accepted and 41 rejected. Accepted
 cases additionally bind the canonical file SHA-256. The reference source hash
-is `f495bb7803b6d2b4888c7b01a3adfcd35be2c83b832ca427e4c7a925e165ebb4`;
+is `add8d8f941666d57f33317185f8f40e377203261f09903e5f7832cf1174d26aa`;
 the corpus records its full source commit and path. Numeric inputs are retained
 as JSON text to preserve negative zero and whole-float spellings. The reference
 uses the unchanged canonical/questionnaire dependencies from this base.
@@ -57,7 +58,7 @@ The external generator and logs are retained in
 `D:/GitHub/.affect-checks/native-form-s4-20260912/`. Initial test invocation found
 Cargo/rustfmt absent from PATH; process-scoped toolchain paths corrected that
 without changing machine configuration. The final focused native suite passed
-22/22, including all 55 JS-reference vectors (21 accepted / 34 rejected), both
+22/22, including all 62 JS-reference vectors (21 accepted / 41 rejected), both
 frozen fixtures and the existing contract/error tests. Rustfmt and diff checks
 passed. The build retained existing library/standalone unused-code warnings and
 the existing bin/lib PDB filename collision warning; none was suppressed. No
@@ -71,8 +72,8 @@ Follow-up contract correction: the initial reference JS/native 4 MiB form cap
 was narrower than frozen `7da84a9`'s 16 MiB master bound. Native now uses 16 MiB,
 coordinated with S3's JS correction. The focused size regression accepts a valid
 form larger than 4 MiB and rejects a form larger than 16 MiB whose individual
-items/options still satisfy their bounds. The 55 pinned JS vectors do not assert
-the superseded cap; their other contract observations remain unchanged.
+items/options still satisfy their bounds. The JS corpus does not assert the
+superseded cap.
 
 The corrected 22/22 suite passed again through an external standalone Cargo
 harness including the exact same test/source paths and existing contract/error
@@ -81,3 +82,12 @@ owners. It used copied repository lockfile/dependency declarations plus explicit
 harness build exposed that missing feature and is retained. Final log:
 `D:/GitHub/.affect-checks/native-form-s4-20260912/cargo-cap-fix-final.log`.
 No shared application build target was changed by this follow-up validation.
+
+Language follow-up: match the existing questionnaire grammar's 80-character
+maximum and reject `und` case-insensitively. Regenerated the pinned JS corpus
+against `aa8717b`, adding `Und`/`uNd`, valid 80-character and invalid 81/83-character
+tags, plus null item/option rejection. The historical generator/55-case results
+remain in Git and external evidence. The corrected native suite passes 22/22;
+`cargo-language-fix.log` and `generate-parity-language.mjs` in the same evidence
+directory record the final comparison. Public types and the 16 MiB limit are
+unchanged; no Runner integration or answer policy is added.
