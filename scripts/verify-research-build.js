@@ -89,6 +89,8 @@ const rules = {
       || path === "questionnaires/vr-exp-en.csv"
       || path === "assets/app-logo.svg"
       || path === "assets/app-symbol.svg"
+      || path === "assets/questionnaires/demographics/en.json"
+      || path === "assets/questionnaires/demographics/de.json"
       || /^assets\/flubber-input-(?:light|dark)\.svg$/u.test(path)
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")

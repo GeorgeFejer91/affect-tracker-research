@@ -1,5 +1,10 @@
 # P2 authoring adapter
 
+The allocated typed demographics extension adds three operations and an explicit
+form draft/presentation branch. Its exact API, UI mapping, v2 compatibility and
+integration limits are in [P2 typed demographics authoring](p2-typed-demographics-authoring.md).
+The legacy mappings below remain unchanged for Likert questionnaires.
+
 `createPlannerAuthoringP2({editor,readContext,commitContext,onCommit?})` adapts
 the existing questionnaire editor. It has no independent draft store, source
 compiler, native bridge, or file writer. It uses the frozen shared command API

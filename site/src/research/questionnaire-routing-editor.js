@@ -33,6 +33,7 @@ export function questionnaireRoutingSnapshot(context) {
  * graph/module draft, source writes, translations or acceptance live here. */
 export function questionnaireRoutingEdits(context, action) {
   if (context.locked) throw new TypeError("Questionnaire settings are locked.");
+  if (action.kind === "add-demographics") return [{ kind: "operation", owner: "P2", operation: "addDemographics", arguments: {} }];
   const state = questionnaireRoutingSnapshot(context), tree = state.languageSelection;
   const node = action.nodeId ? find(tree.nodes, "nodeId", action.nodeId) : null;
   const option = action.optionId ? find(node.options, "optionId", action.optionId) : null;
@@ -198,6 +199,7 @@ export function createQuestionnaireRoutingEditor({ root, readContext, applyEdits
     root.innerHTML = `<fieldset class="sheet-body" ${busy || state.locked ? "disabled" : ""}><legend>Language routing &amp; questionnaire placement</legend>
       <p class="sheet-paste-help">The language choice selects its supplied assets. Before/after-task modules run in the order listed for that language.</p>
       <p class="sheet-error" role="status" aria-live="polite">${escape(error)}</p>
+      <div class="sheet-actions">${button("Add demographics", "add-demographics", {}, state.families.some(f => f.id === "demographics") || state.languages.some(l => !["en", "de"].includes(l.languageTag)))}</div>
       ${details("questions", "Language questions", nodes + `<div class="sheet-actions">${button("Add first question", "wrap-root")}</div>`)}
       ${details("modules", "Questionnaire modules", modules + select("Add saved questionnaire module", "module-add", "", [["", "Select an asset…"], ...state.definitions.map(d => [d.questionnaireId, `${d.title} · ${d.language}`])]))}
       ${languages}</fieldset>`;

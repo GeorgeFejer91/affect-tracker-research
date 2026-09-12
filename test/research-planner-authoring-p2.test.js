@@ -33,7 +33,7 @@ test("P2 catalogue classifies every group and reads detached actual editor draft
   const s = await fixture(), read = s.adapter.read();
   assert.deepEqual(Object.keys(read.values).sort(), s.adapter.settings.map(field => field.id).sort());
   assert.equal(s.adapter.settings.filter(field => field.writable).length, 5);
-  assert.equal(s.adapter.operations.length, 10);
+  assert.equal(s.adapter.operations.length, 13);
   assert.deepEqual(read.issues, []);
   read.values["P2.questionnaires"][0].items[0].prompt = "outside mutation";
   assert.equal(s.adapter.read().values["P2.questionnaires"][0].items[0].prompt, "Study item 1");
