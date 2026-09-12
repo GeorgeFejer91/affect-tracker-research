@@ -1,5 +1,9 @@
 # Planner CLI authoring extension
 
+The researcher has now activated the complete CLI/UI/Runner test goal in
+[69](69-CLI-RUNNER-END-TO-END-GOAL.md). Its explicit execution allocation
+supersedes earlier Runner deferral for that test, without weakening claim gates.
+
 ## User amendment — 2026-09-12
 
 After completion of the baseline Planner in [67](67-PLANNER-COMPLETION-GOAL.md),

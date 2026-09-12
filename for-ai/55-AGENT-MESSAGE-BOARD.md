@@ -1,5 +1,17 @@
 # Agent message board
 
+### 20260912-cli-runner-goal — E2E-UI/E2E-RECIPE/E2E-RUNNER
+
+- Chat Orchestrator created the explicit user-requested end-to-end goal. New69
+  records test progression;60 owns open capability items;65/66 supersede earlier
+  RR-02/RR-10 deferral for this bounded desktop test. Backend Verification.
+- Root owns these documentation amendments on the existing isolated CLI-roadmap
+  branch after80b5afa. No implementation files overlap. Main remains integrator;
+  Runner owns actual consumer/runtime gaps and coordinates shared Rust first.
+- Deliver exact CLI transcript, UI parity mapping, real timestamped recipe and
+  Runner observations. Existing source/qualification gates remain. TAS source
+  question is pending; independent work continues. Goal remains active.
+
 ### 20260912-planner-cli-roadmap — CLI-P1–CLI-P7/CLI-SHARED
 
 - Owner: Chat Orchestrator, bounded roadmap/shared-contract pass, Backend

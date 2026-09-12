@@ -46,7 +46,21 @@ remain open until integrated and verified. Scope, example and evidence are in
   lifecycle fences, bounded transport, truthful results and the requested real
   mock experiment with full end-to-end setting coverage.
 
-### Baseline authority
+### CLI-to-Runner validation goal — 2026-09-12
+
+The user explicitly activated the final correspondence work; [69](69-CLI-RUNNER-END-TO-END-GOAL.md)
+owns the test plan and evidence ledger. These items add to the CLI implementation
+rows; they do not reopen the completed baseline authoring goal.
+
+- [ ] **E2E-UI:** every authored CLI setting/list operation has an actual UI
+  counterpart, with matching normalized values and JSON contribution evidence.
+- [ ] **E2E-RECIPE:** production CLI creates the requested real bilingual mock
+  from scratch, exports timestamped versions and preserves/reproduces exact files.
+- [ ] **E2E-RUNNER:** RR-02/RR-10 load that exact artifact, bind actual media and
+  verify observed behavior for both routes, video/ISIs, feedback/layout/input and
+  authored outputs. Parsing or synthetic execution alone does not close this row.
+
+### Baseline evidence rules
 
 - The dated amendment in [the charter](15-RESEARCH-V1-CHARTER.md) adopts this
   roadmap as the final-state capability and ownership plan. Accepted decisions
