@@ -255,6 +255,21 @@
   Main/root retain production hidden CLI, rendered UI and real-media/full-recipe
   proof. Runner retains its active E2E correspondence allocation. Owned source
   writers are stopped pending integration; no shared app or Runner files changed.
+### 20260912-e2e-ui-p5-controls
+
+- Root allocated E2E-UI/P5 on the existing isolated CLI-P5 branch: operate all
+  61 writable settings plus preset through actual rendered Planner controls,
+  compare complete contributions with the typed owner, and inspect wide/narrow
+  captures. Record each setting as verified, mode-specific N/A or unresolved.
+- Main additionally allocated the new `planner-authoring-p5-controls.js` seam
+  over fixed DOM controls and injected closure model hooks. Main retains all
+  `app.js`, bootstrap, native bridge and shared harness edits. The exact model
+  proposal was sent before implementation. The existing owner draft remains sole
+  authority; commit installs prepared values, afterCommit projects observers.
+- Stage: Backend Verification. New helper tests and a P5-only rendered harness
+  collect evidence now; final combined-source native CLI/UI and real-media mock
+  are integration-owned. Runner correspondence is active with its separate owner.
+  User windows/focus are preserved; only fresh-profile headless browsers run here.
 
 ### 20260912-cli-p5-owner-adapter
 
