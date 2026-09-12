@@ -238,6 +238,7 @@ export async function checkP5Ui({ scene = "overview", runChecks = true, requireI
   await restore(configured);
   for (const detail of q(".preview-pane").querySelectorAll("details[open]")) detail.querySelector(":scope > summary").click();
   q(".preview-controls-scroll").scrollTop = 0;
+  if (scene === "overview") q(".preview-pane").scrollTop = 0;
   if (scene === "response") await visible("#preview-repeat-delay");
   if (scene === "advanced") await visible("#grid-cursor-size");
   if (scene === "mappings") await visible('[data-mapping="pulse-synchrony"] [data-mapping-max]');
