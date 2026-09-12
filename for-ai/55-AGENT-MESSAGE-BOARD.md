@@ -10,6 +10,20 @@
   dependency/revision behavior. CLI confirmation/final-P5 composition remains
   pending; docs/planner-authoring-consequences.md records the exact API.
 
+### 20260912-p4-prepared-content-restore
+
+- Root-allocated CLI-P4 / P7 Open seam, Backend Verification, isolated
+  `codex/p4-prepared-restore` from Main `928b395`. Own editor/state, focused P4
+  tests and docs only. P5 remains frozen; Main owns actual registration.
+- Added `prepareRestoreContent(value,{savedWorkspaceContribution,
+  savedFeedbackContribution,isCurrent})` returning read-only guard, synchronous
+  state commit and separate synchronous projection. Existing `restoreContent`
+  reuses it. Actual dependency readiness stays unresolved and acceptance cleared.
+- Evidence and exact API: `docs/p4-prepared-content-restoration.md`. Focused
+  real-owner tests pass 65/65, and diff checks pass. They cover immutability, stale/lifecycle/dependency guards,
+  competing preparation and partial projection failures. No native/UI/Runner
+  or integrated Open claim; Main receives a clean stopped handoff.
+
 ### 20260912-main-master-v2-compiler
 
 - Main's app save callback now routes explicitly verified typed canonical JSON

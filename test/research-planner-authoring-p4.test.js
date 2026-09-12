@@ -42,6 +42,7 @@ function rootFixture() {
     querySelectorAll: selector => selector === "[data-layout-field]" ? controls : [],
     addEventListener(type, fn) { if (!handlers.has(type)) handlers.set(type, []); handlers.get(type).push(fn); },
     removeEventListener(type, fn) { handlers.set(type, handlers.get(type).filter(value => value !== fn)); },
+    reset() { for (const handler of handlers.get("click")) handler({ target: { closest: () => true }, stopPropagation() {} }); },
     input(key, value) {
       const target = controls.find(control => control.dataset.layoutField === key);
       if (target.type === "checkbox") target.checked = value; else target.value = value ?? "";
@@ -289,4 +290,96 @@ test("CLI preparation retains the actual accepted profile and independent geomet
   assert.deepEqual(actual.contribution, expected);
   const untouched = clone(actual.contribution); untouched.feedback.offset.x = original.contribution.feedback.offset.x;
   assert.deepEqual(untouched, original.contribution);
+});
+
+const restoreOptions = (isCurrent = () => true) => ({ savedWorkspaceContribution: clone(fixture.workspace),
+  savedFeedbackContribution: clone(fixture.feedback), isCurrent });
+
+test("prepared P4 content validates without mutation, commits state then projects exactly once", async () => {
+  const h = await harness(), value = clone(fixture.cases[0].profile); value.feedback.offset.x = 1.25;
+  const before = { draft: h.editor.draft, snapshot: h.editor.getSnapshot(), projection: h.editor.projection,
+    controls: h.root.controls.map(c => c.value), count: h.changes.length };
+  const prepared = await h.editor.prepareRestoreContent(value, restoreOptions());
+  assert.equal(prepared.isCurrent(), true);
+  assert.deepEqual({ draft: h.editor.draft, snapshot: h.editor.getSnapshot(), projection: h.editor.projection,
+    controls: h.root.controls.map(c => c.value), count: h.changes.length }, before);
+  assert.throws(() => prepared.afterCommit(), /not committed/);
+  const expected = desktopLayoutDraftFromProfile(value); value.feedback.offset.x = 999;
+  assert.equal(prepared.commit(), undefined);
+  assert.deepEqual(h.editor.draft, expected);
+  assert.equal(h.editor.getSnapshot().pending, true); assert.equal(h.editor.getSnapshot().contribution, null);
+  assert.equal(h.changes.length, before.count);
+  assert.deepEqual(h.root.controls.map(c => c.value), before.controls);
+  assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit(), /already committed/);
+  assert.equal(prepared.afterCommit(), undefined); prepared.afterCommit();
+  assert.equal(h.changes.length, before.count + 1);
+  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "offsetX").value, "1.25");
+  const legacy = await harness(); await legacy.editor.restoreContent({ ...clone(fixture.cases[0].profile),
+    feedback: { ...clone(fixture.cases[0].profile.feedback), offset: { ...fixture.cases[0].profile.feedback.offset, x: 1.25 } } }, restoreOptions());
+  assert.deepEqual(h.editor.draft, legacy.editor.draft); assert.deepEqual(h.editor.projection, legacy.editor.projection);
+});
+
+test("prepared content rejects edits, reset, disposal, dependency drift and cancellation without replacement", async () => {
+  for (const change of [h => h.root.input("offsetX", "9"), h => h.root.reset(), h => h.editor.destroy(),
+    h => h.changeP1(), h => h.changeP5(), h => h.setUnnotifiedP5Revision(9)]) {
+    const h = await harness(), prepared = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+    await change(h); const before = h.editor.getSnapshot(), draft = h.editor.draft;
+    assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit(), /stale/);
+    assert.deepEqual(h.editor.getSnapshot(), before); assert.deepEqual(h.editor.draft, draft);
+  }
+  const h = await harness(); let current = true;
+  const prepared = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions(() => current));
+  current = false; assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit(), /stale/);
+  const before = h.editor.getSnapshot();
+  await assert.rejects(h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions(() => false)), /stale/);
+  await assert.rejects(h.editor.prepareRestoreContent({ ...fixture.cases[0].profile, unknown: true }, restoreOptions()));
+  await assert.rejects(h.editor.prepareRestoreContent(fixture.cases[0].profile, {}), /complete saved/);
+  assert.deepEqual(h.editor.getSnapshot(), before);
+});
+
+test("preparing content cannot observe new feedback revisions or revive unresolved media", async () => {
+  const h = await harness(); h.changeP5();
+  const before = h.editor.getSnapshot();
+  const prepared = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  assert.deepEqual(h.editor.getSnapshot(), before); prepared.commit(); prepared.afterCommit();
+  assert.equal(h.editor.getSnapshot().pending, true);
+  assert.equal(h.editor.getSnapshot().contribution, null);
+  assert.ok(h.editor.projection.issues.some(issue => issue.code === "feedback-unavailable"));
+  const blank = createScreenLayoutDraftEditor(rootFixture());
+  const content = await blank.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  content.commit(); content.afterCommit();
+  assert.equal(blank.getSnapshot().pending, true); assert.equal(blank.projection.videos.length, 0);
+  assert.equal(blank.projection.exportable, false);
+});
+
+test("content projection failures retain committed state and synchronize controls", async () => {
+  const h = await harness(), value = clone(fixture.cases[0].profile); value.feedback.offset.x = 1.25;
+  const prepared = await h.editor.prepareRestoreContent(value, restoreOptions());
+  prepared.commit(); const committed = h.editor.getSnapshot(); h.failNotifications();
+  assert.throws(() => prepared.afterCommit(), /Observer failed/);
+  assert.deepEqual(h.editor.getSnapshot(), committed);
+  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "offsetX").value, "1.25");
+  prepared.afterCommit(); assert.deepEqual(h.editor.getSnapshot(), committed);
+});
+
+test("in-flight content preparation and competing prepared commits are fenced", async () => {
+  const h = await harness();
+  const pending = h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  h.root.reset(); await assert.rejects(pending, /stale/);
+  const first = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  const second = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  assert.equal(first.isCurrent(), true); assert.equal(second.isCurrent(), true);
+  first.commit(); assert.equal(second.isCurrent(), false); assert.throws(() => second.commit(), /stale/);
+  h.root.input("offsetX", "9"); const current = h.editor.getSnapshot();
+  assert.throws(() => first.afterCommit(), /stale/);
+  assert.deepEqual(h.editor.getSnapshot(), current); assert.equal(h.editor.draft.offsetX, "9");
+});
+
+test("a throwing DOM projection cannot undo a prepared content commit", async () => {
+  const h = await harness(), prepared = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
+  prepared.commit(); const committed = h.editor.getSnapshot();
+  Object.defineProperty(h.root.nodes.get("[data-layout-scene]"), "innerHTML", { set() { throw new Error("Projection failed"); } });
+  assert.throws(() => prepared.afterCommit(), /Projection failed/);
+  assert.deepEqual(h.editor.getSnapshot(), committed); assert.equal(committed.pending, true);
+  prepared.afterCommit();
 });

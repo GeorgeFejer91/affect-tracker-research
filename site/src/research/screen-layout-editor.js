@@ -4,7 +4,7 @@ import { createScreenLayoutState, validateScreenLayoutContribution } from "./scr
 import { createScreenLayoutDependencyBinding } from "./screen-layout-dependencies.js";
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
-import { desktopLayoutProfileFromDraft, desktopLayoutDraftField } from "./desktop-layout-contribution.js";
+import { desktopLayoutProfileFromDraft, desktopLayoutDraftFromProfile, desktopLayoutDraftField } from "./desktop-layout-contribution.js";
 
 /** Local UI owner only. Fixture injection is used by non-shipping qualification pages. */
 export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencies = null, onChange = () => {} } = {}) {
@@ -18,6 +18,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
   const document = root.ownerDocument;
   let projection;
   let state;
+  let alive = true;
   const dependencyChanged = () => {
     if (!state) return;
     state.refreshDependencies();
@@ -146,6 +147,29 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     render();
   }
 
+  async function prepareRestoreContent(value, { savedWorkspaceContribution, savedFeedbackContribution, isCurrent = () => true } = {}) {
+    if (!savedWorkspaceContribution || !savedFeedbackContribution) throw new TypeError("Reopening layout content requires its complete saved workspace and feedback settings.");
+    if (typeof isCurrent !== "function") throw new TypeError("Layout restoration requires a current-operation guard.");
+    const expectedBinding = binding;
+    const current = () => alive && binding === expectedBinding && isCurrent();
+    const source = structuredClone(value);
+    const staged = await state.prepareRestoreContent(source, { contentDependencies: { workspace: savedWorkspaceContribution,
+      feedback: savedFeedbackContribution }, isCurrent: current });
+    const next = desktopLayoutDraftFromProfile(source);
+    let committed = false, projected = false;
+    return Object.freeze({ isCurrent: staged.isCurrent,
+      commit() { staged.commit(); committed = true; draft = next; conversionIssues = []; },
+      afterCommit() {
+        if (!committed) throw new Error("Screen layout content restoration has not committed.");
+        if (projected) return;
+        if (!current()) throw new Error("Screen layout content projection became stale.");
+        projected = true;
+        try { staged.afterCommit(); }
+        finally { if (alive) { draft = state.draft; syncFields(); render(); } }
+      },
+    });
+  }
+
   syncFields();
   render();
   root.addEventListener("input", edit);
@@ -199,11 +223,10 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
       const snapshot = await state.restoreContribution(value, { dependencies, isCurrent: options.isCurrent });
       draft = state.draft; conversionIssues = []; syncFields(); render(); return snapshot;
     },
-    async restoreContent(value, { savedWorkspaceContribution, savedFeedbackContribution, isCurrent } = {}) {
-      if (!savedWorkspaceContribution || !savedFeedbackContribution) throw new TypeError("Reopening layout content requires its complete saved workspace and feedback settings.");
-      const snapshot = await state.restoreContribution(value, { contentDependencies: { workspace: savedWorkspaceContribution,
-        feedback: savedFeedbackContribution }, isCurrent, contentOnly: true });
-      draft = state.draft; conversionIssues = []; syncFields(); render(); return snapshot;
+    prepareRestoreContent,
+    async restoreContent(value, options) {
+      const prepared = await prepareRestoreContent(value, options);
+      prepared.commit(); prepared.afterCommit(); return state.getSnapshot();
     },
     connectDependencies(owners) {
       binding?.destroy();
@@ -221,6 +244,7 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     refreshCatalogue() { return binding?.refreshCatalogue(); },
     refreshFeedback() { binding?.refreshFeedback(); },
     destroy() {
+      alive = false;
       binding?.destroy();
       state.destroy();
       root.removeEventListener("input", edit);

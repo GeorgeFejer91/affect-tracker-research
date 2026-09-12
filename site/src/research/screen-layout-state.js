@@ -116,6 +116,45 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
       });
     },
     refreshDependencies() { return commit(draft, resolve(draft)); },
+    async prepareRestoreContent(value, { contentDependencies, isCurrent = () => true } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("Layout restoration requires a current-operation guard.");
+      const expectedRevision = revision, expectedOperation = operation, expectedIdentity = dependencyIdentity;
+      const check = () => {
+        const identity = alive ? canonicalJson(resolve(draft, { observe: false }).dependencyIdentity ?? null) : null;
+        if (!alive || !isCurrent() || revision !== expectedRevision || operation !== expectedOperation
+          || identity !== expectedIdentity) throw new Error("Screen layout content restoration became stale.");
+      };
+      check();
+      let validated;
+      try {
+        validated = await validateContribution(structuredClone(value), { contentDependencies: structuredClone(contentDependencies) });
+      } catch (error) { check(); throw error; }
+      check();
+      const next = desktopLayoutDraftFromProfile(validated);
+      const nextProjection = structuredClone(resolve(next, { observe: false }));
+      const nextIdentity = canonicalJson(nextProjection.dependencyIdentity ?? null);
+      check();
+      if (revision === Number.MAX_SAFE_INTEGER) throw new RangeError("Screen layout revision limit reached.");
+      let consumed = false, projected = false;
+      return Object.freeze({
+        isCurrent() { try { check(); return !consumed; } catch { return false; } },
+        commit() {
+          if (consumed) throw new Error("Screen layout content restoration was already committed.");
+          check();
+          consumed = true;
+          draft = next; projection = nextProjection; dependencyIdentity = nextIdentity;
+          revision += 1; operation += 1; contribution = null;
+        },
+        afterCommit() {
+          if (!consumed) throw new Error("Screen layout content restoration has not committed.");
+          if (projected) return;
+          if (!alive || !isCurrent() || revision !== expectedRevision + 1 || operation !== expectedOperation + 1)
+            throw new Error("Screen layout content projection became stale.");
+          projected = true;
+          onChange(snapshot());
+        },
+      });
+    },
     async restoreDraft(document, { isCurrent = () => true } = {}) {
       const validated = validateScreenLayoutDraftDocument(document);
       // Preserve the historical v1 reader. Explicit draft restoration upgrades
