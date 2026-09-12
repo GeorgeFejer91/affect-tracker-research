@@ -74,6 +74,41 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
   This is helper evidence, not yet V2 restore wiring; S5 owns that invocation.
   Fixture: `scripts/qualification/preview-restored-config.mjs`; local receipts
   `D:/GitHub/.affect-preview-checks/planner-inspection-reset-20260912/`.
+- Real restore dependency composed with integration approval: accepted `451c19a`
+  plus stopped S5 `5c9d3df`, local combined application `c3e7db9`. No owner app
+  edits in this follow-up; fixture/harness only. V2 actual-app checks pass 129
+  at each of 1280/800: all-field exact round trip, three renderer projections,
+  fractional styles, whole-ms timing, configured keyboard/repeat/continuous
+  behavior under a declared controlled clock, neutral/capture/draft cleanup,
+  invalid/stale/closed restore, explicit V1 conversion, pending/revisions and
+  reset/recolor persistence. Reset-helper checks pass 15 per viewport; V2
+  framing stays locked and only explicit V1 restore tests the legacy drag seam.
+- Full suite 668/668 and Pages 219-file / desktop 11-file closures pass. Receipts
+  under `D:/GitHub/.affect-preview-checks/planner-feedback-restore-20260912/`.
+  The `restore` argument to `preview-restored-config.mjs` selects the real V2
+  fixture; no argument retains the reset helper. No replacement restore/mock
+  validator, physical timing or Runner evidence is claimed.
+- Rendered follow-up remains open: narrow 800px outer viewport produces a
+  roughly 280px Preview pane; corner labels can wrap into single-character
+  columns. Integration/root received the exact PNG. S5 received stale
+  "Placement is preview-only" copy despite saved V2 placement. Functional checks
+  are not G09 layout closure; shared CSS remains integration-coordinated.
+- Integration/root explicitly allocated the narrow color-anchor CSS seam next.
+  On `13e9551`, the real 800px fixture reproduced insufficient up/down text
+  columns and overflowing long side labels. Bounded repair: corner anchors use
+  two equal columns above/below a centered map; at narrow pane widths swatches
+  sit above labels; axis placement is preserved with bounded smaller columns.
+  All accepted label text wraps without the later media rule disabling it.
+- New `preview-label-layout-fixture.js` exercises both placements with four
+  48-character labels including an unbroken string. Harness modes `labels-axes`
+  and `labels-corners` check text width, full text retention, button containment,
+  panel containment and non-overlap with the map. At outer 800px the fixture
+  explicitly sizes only the Preview pane to 280px; this does not modify the
+  product split owner. Desktop uses its actual default pane. Before/after PNGs
+  and checks live under `D:/GitHub/.affect-preview-checks/planner-feedback-labels-20260912/`.
+  Ordinary restored-label images and both long-label placements were inspected.
+  Full 668 tests and both 219/11-file closures pass. S5 owns the separate saved
+  placement copy correction `4b7ff6f`; it is not duplicated in this CSS pass.
 
 ### 20260912-preview-input-menu
 
