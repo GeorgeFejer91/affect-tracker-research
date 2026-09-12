@@ -280,6 +280,13 @@
   `2310efc`; the intervening `dddd646` is its unchanged dependency cherry-pick.
   Source writers are stopped. Entry/build/native/UI-parity and real media/file
   checks follow Main's actual hook installation, not this unregistered adapter.
+- Shared post-publication dependency `0138516` collected as unchanged `70c900e`.
+  **43 focused tests pass**, including the new actual shared-session P5/P7
+  observer-order test: all states install before notifications, publication
+  readback stays busy, P5 render failure reports incomplete at the applied
+  revision, other notifications continue and identical retries do not reapply.
+  No P5 production change in this follow-up; the 798-test receipt retains its
+  earlier exact source binding. Native/real editor evidence remains Main's work.
 
 ### 20260912-p3-native-catalogue-export-command
 

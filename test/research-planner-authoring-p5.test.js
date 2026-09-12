@@ -349,3 +349,44 @@ test("owner publication is separate from atomic installation, synchronous and on
     prepareCommit: () => ({ commit() {}, async afterCommit() {} }) });
   await assert.rejects(invalid.stage([set("P5.visual.hideFeedback", false)], guard()), /synchronous/u);
 });
+
+test("shared afterCommit observes all installed owners and preserves applied state when a P5 projection fails", async () => {
+  for (const failProjection of [false, true]) {
+    let draft = fixture(), otherValue = false, reentrantRead;
+    const events = [];
+    const p5 = createPlannerAuthoringP5({ readDraft: () => draft, readDigitalStep: () => draft.input.stepSize,
+      prepareCommit: candidate => ({
+        commit() { draft = structuredClone(candidate); events.push("P5 installed"); },
+        afterCommit() {
+          events.push("P5 notified");
+          assert.equal(otherValue, true, "P5 observers must not see partially installed P7 state");
+          assert.equal(session.publishing, true);
+          assert.throws(() => session.snapshot());
+          reentrantRead = session.execute(request(session, { kind: "snapshot" }));
+          if (failProjection) throw new Error("Deliberate owner renderer failure");
+        },
+      }) });
+    const p7 = { id: "P7", settings: [{ id: "P7.test", type: "boolean", classification: "authored", writable: true }],
+      operations: [], read: () => ({ values: { "P7.test": otherValue }, issues: [] }), validate: () => [],
+      stage: () => ({ commit() { otherValue = true; events.push("P7 installed"); },
+        afterCommit() { assert.equal(draft.visual.hideFeedback, true); events.push("P7 notified"); } }) };
+    const session = createPlannerAuthoringSession({ owners: [p5, p7],
+      onBeforeCommit() { assert.equal(session.publishing, true); events.push("invalidate"); },
+      onCommit() { events.push("shared refresh"); } });
+    session.subscribe(() => { assert.equal(session.publishing, false); events.push("observer"); });
+    const edit = request(session, { kind: "apply", edits: [set("P5.visual.hideFeedback", true), set("P7.test", true)] }, 0);
+    const result = await session.execute(edit);
+    assert.deepEqual(events, ["invalidate", "P5 installed", "P7 installed", "P5 notified", "P7 notified", "shared refresh", "observer"]);
+    assert.equal(result.status, failProjection ? "incomplete" : "applied");
+    assert.equal(result.revision, 1); assert.deepEqual(result.result.updatedOwners, ["P5", "P7"]);
+    assert.equal(result.issues.length, Number(failProjection));
+    if (failProjection) { assert.equal(result.issues[0].code, "projection_failed"); assert.equal(result.issues[0].owner, "P5"); }
+    const read = await reentrantRead;
+    assert.equal(read.status, "rejected"); assert.equal(read.issues[0].code, "busy");
+    assert.equal(session.snapshot().owners.P5.values["P5.visual.hideFeedback"], true);
+    assert.equal(session.snapshot().owners.P7.values["P7.test"], true);
+    assert.deepEqual(await session.execute(edit), result);
+    assert.equal(events.length, 7, "retry must not repeat an applied observer phase");
+    session.destroy();
+  }
+});
