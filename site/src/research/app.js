@@ -60,6 +60,7 @@ import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { openBrowserExperimentPackage } from "./package-file-picker.js";
+import { parsePlannerTargetSelection } from "./planner-target.js";
 import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
 import {
@@ -1357,10 +1358,14 @@ function bindResearchInteractions(root, { surface }) {
       // Its whitespace/source-byte hash may change without any design edit;
       // retain the full definition and its semantic hash in this comparison.
       delete settings.externalProtocol.sourceByteSha256;
-      return canonicalJson({ settings, languageSelection: languageTreeFromUi() });
+      return canonicalJson({ settings, languageSelection: languageTreeFromUi(), selectedTarget: getSelectedPlannerTarget() });
     } catch {
       return null; // Invalid/pending edits cannot match an accepted compilation.
     }
+  }
+
+  function getSelectedPlannerTarget() {
+    return parsePlannerTargetSelection(value("planner-presentation-target"));
   }
 
   function observePackageDraft() {
@@ -3205,6 +3210,11 @@ function bindResearchInteractions(root, { surface }) {
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
     const review = plannerContributions.read();
+    const selectedTarget = getSelectedPlannerTarget();
+    const targetStatus = query("#planner-target-status");
+    if (targetStatus) targetStatus.textContent = selectedTarget
+      ? "This presentation choice needs the new recipe format. Final export is awaiting the remaining layout definition."
+      : "Choose the intended presentation. XR execution requires a compatible future Runner.";
     const lslDetails = query("#review-lsl");
     if (lslDetails && (checked("lsl-enabled") || lslDetails.querySelector(':invalid, [aria-invalid="true"]'))) lslDetails.open = true;
     const output = query("#package-save-status");
@@ -3225,7 +3235,7 @@ function bindResearchInteractions(root, { surface }) {
       const button = query(`#${id}`);
       if (!button) continue;
       button.disabled = mode !== "setup" || state.busy
-        || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0))
+        || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0 || selectedTarget !== null))
         || (id === "package-edit" && !experimentPackageDocument);
     }
     const list = query("#package-contribution-issues");
@@ -3526,6 +3536,7 @@ function bindResearchInteractions(root, { surface }) {
     const current = () => generation === packageLoadGeneration && (!guard || guard());
     if (!current()) return false;
     if (!guard) packageExport.invalidate();
+    setInputValue("planner-presentation-target", "");
     packageReproductionReceipt = reproduction;
     experimentPackageDocument = parsed;
     editablePackageDefaults = { experimentId: parsed.package.settings.experiment.id,
@@ -3610,6 +3621,7 @@ function bindResearchInteractions(root, { surface }) {
       const result = await packageExport.save({
         isCurrent,
         compile: async () => {
+          if (getSelectedPlannerTarget() !== null) throw new Error("The selected presentation needs the new recipe format; it cannot be omitted from a v1 save.");
           await plannerContributions.assertPackageV1();
           if (reexport) {
             if (!experimentPackageDocument || packageIsStale) throw new Error("Open an unchanged recipe before re-exporting.");
@@ -4771,6 +4783,12 @@ function bindResearchInteractions(root, { surface }) {
       resetBindingsToPreset();
       inputController.resetNeutral("preset-change");
     }
+    if (target instanceof HTMLSelectElement && target.id === "planner-presentation-target") {
+      plannerContributions.invalidateAcceptance("P6");
+      packageExport.invalidate();
+      observePackageDraft();
+      renderPackageExportReview();
+    }
     if (target instanceof HTMLInputElement && target.name === "attemptDisposition") {
       clearParticipantLanguageSelection();
     }
@@ -5246,6 +5264,7 @@ function bindResearchInteractions(root, { surface }) {
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
+    getSelectedPlannerTarget,
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },

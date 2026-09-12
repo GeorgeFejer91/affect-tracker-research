@@ -283,6 +283,13 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
       } finally { if (accepting.get(segment) === sequence) accepting.delete(segment); }
     },
     clearAcceptance() { accepted.clear(); accepting.clear(); notify(); },
+    invalidateAcceptance(segment) {
+      segmentId(segment);
+      const receipt = accepted.get(segment);
+      if (receipt?.snapshot.enabled) receipt.stale = true;
+      accepting.delete(segment);
+      notify();
+    },
     assertAccepted(options) {
       const review = readAccepted(options);
       if (review.issues.length) throw new TypeError(review.issues[0].message);

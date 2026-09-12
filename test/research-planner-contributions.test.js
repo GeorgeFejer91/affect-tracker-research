@@ -7,6 +7,20 @@ const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: fal
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
 const validated = { validateContribution: async () => true };
 
+test("explicit target invalidation expires active XR acceptance without discarding forms or disabled exclusion", async () => {
+  const registry = createPlannerContributionRegistry(); let xr = snapshot();
+  registry.register("P2", () => snapshot(), validated);
+  registry.register("P6", () => xr, validated);
+  await registry.accept("P2"); await registry.accept("P6", { selectedTarget: "webxr-immersive-vr" });
+  registry.invalidateAcceptance("P6");
+  const entries = registry.readAccepted({ requiredSegments: ["P2"] }).entries;
+  assert.equal(entries.find((entry) => entry.segment === "P2").status, "accepted");
+  assert.equal(entries.find((entry) => entry.segment === "P6").status, "stale");
+  xr = snapshot({ revision: 1, enabled: false, contribution: null });
+  await registry.accept("P6"); registry.invalidateAcceptance("P6");
+  assert.equal(registry.readAccepted({ requiredSegments: ["P2"] }).entries.find((entry) => entry.segment === "P6").status, "excluded");
+});
+
 test("installed owners retain live getters and dispose subscriptions before producers exactly once", () => {
   const root = {}; let count = 1, callback; const events = [];
   const controller = Object.freeze({

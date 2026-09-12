@@ -62,6 +62,29 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p7-explicit-presentation-seam
+
+- Integration requested P7-owned target selection after the `929a257` foundation
+  handoff. Review now has an explicit selector and typed controller
+  `getSelectedPlannerTarget()` returning null / `desktop-screen` /
+  `webxr-immersive-vr`. Initial null; never infer from host/profile. Integration
+  owns passing it into P6 shared-footer acceptance. Changed selection expires
+  active P6 acceptance and compiled output, leaving forms/exclusion intact.
+  Selected target is blocked from being omitted into frozen v1 output. No master
+  format, P4 geometry, XR runtime or Q15 profile combination is invented.
+- Collected integration's approved `ec4bb04` CSS/harness as `2a302b3` (identical
+  two source files; additive board context retained) after the 800px regression
+  exposed the previously fixed progress overflow on this older branch base.
+- Evidence: 55 focused registry/target/policy/language/UI Node checks; Chrome15
+  actual browser-mode file/target/lifecycle assertions; Chrome32 native-bridge
+  export assertions each at 1366/800; both target Review images inspected after
+  the shared correction. Pages195/desktop9 build closures pass; existing chunk
+  warning remains. Evidence sibling `affect-tracker-research-p7-evidence` folders
+  `explicit-target-browser`, `explicit-target-review`, `explicit-target-narrow-ec4`.
+- P3 content-only restore `3413865` and P6 draft restore `82c8f0f` were agreed and
+  handed to sole integration; no competing owner implementation. Full desktop
+  master/dispatch/combined reopen remains open pending Q08/P4's accepted type.
+
 ### 20260912-p7-policy-and-language-composition
 
 - Owner **S7**, same Backend Verification pass, P7-05/P7-06/P7-09 foundation.

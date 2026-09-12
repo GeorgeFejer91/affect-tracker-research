@@ -6,9 +6,18 @@ import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.j
 import { validatePlannerRecipePolicyV1, plannerRecipePolicyFromPackageV1 } from "../site/src/research/planner-recipe-policy.js";
 import { compilePlannerQuestionnaireRoutesV1, selectPlannerQuestionnaireRouteV1 } from "../site/src/research/planner-recipe-questionnaires.js";
 import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
+import { parsePlannerTargetSelection } from "../site/src/research/planner-target.js";
 
 const pkg = JSON.parse(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url), "utf8"));
 const policyFixture = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url), "utf8"));
+
+test("presentation choice is explicit, closed and never inferred from a host or profile", () => {
+  assert.equal(parsePlannerTargetSelection(""), null);
+  for (const id of ["desktop-screen", "webxr-immersive-vr"]) assert.equal(parsePlannerTargetSelection(id), id);
+  for (const invalid of [undefined, null, "tauri", "chrome", "immersive-vr", { target: "webxr-immersive-vr" }]) {
+    assert.throws(() => parsePlannerTargetSelection(invalid), /supported presentation/);
+  }
+});
 const definitions = [];
 for (const language of ["en", "de", "fr"]) {
   const sheet = createQuestionnaireSheet({ familyId: "synthetic", language, optionCount: 2, rowCount: 1 });
