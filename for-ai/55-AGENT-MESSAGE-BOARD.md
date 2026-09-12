@@ -366,6 +366,28 @@ file; follow the integration-owner collection procedure in the workflow.
 - Readiness remains four distinct states: implemented component, clean owner
   handoff, integrated source and verified combined application. The monitor is
   updated to follow resumed work and will not reapply the superseded stage pause.
+- Independent source review at P3 `4a2389c` against P7 `6bac40f` found three
+  concrete P3-03/P3-08/P7-07 risks, routed to S3 with S1/S7 coordination:
+  `stimulus-order-editor.js` retains acceptance after catalogue withdrawal or
+  changed content under the same revision; `variant-design.js` and
+  `planned-marker-contract.js` prefer different video identity fields; and
+  editor restoration invents a P1 revision increment while retaining old
+  catalogue data. S3 owns the corrections, S1 the canonical identity/snapshot,
+  and S7 the restoration dependency sequencing. Require focused regression
+  receipts before closing these issues; root performed source review only.
+- Interim combined UI: detached clean `64da370` was captured in 33 Chrome
+  images and visually inspected across all seven registered owners. New P3 and
+  successor acceptance are absent; V28 remains open. The Review/LSL disclosure
+  priority finding was routed to S7/integration. Root's harness now supports
+  the persistent P5 scroll surface. Exact evidence/limits are in `64`.
+- New ready producer handoffs routed to consumers/integration: P1 `3d6a6b2`
+  supplies catalogue geometry/identity/revision subscription (43 focused checks);
+  P2 `743a951` supplies its strict async contribution validator (28 checks).
+  Readiness is owner-reported here, not a claim of combined incorporation.
+- Q05 portability/reselection and Q08 automatic-reference extent are pending
+  as two concise researcher questions in the coordinator task. Automatic
+  largest-video reference selection itself is already required by the original
+  request; P4's manual-only proposal was corrected. Other work continues.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
