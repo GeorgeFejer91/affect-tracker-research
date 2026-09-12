@@ -42,7 +42,7 @@ The frozen EN/DE definitions must reproduce exact canonical file bytes, final
 LF, definition hashes and manifest file hashes. Focused malformed cases exercise
 every closed object, missing keys, response branches, ordered unique IDs, type
 coercion, negative zero, safe integer bounds, Unicode scalars, language grammar,
-individual limits, aggregate 4 MiB size and stale hashes. Existing included
+individual limits, aggregate 16 MiB size and stale hashes. Existing included
 contract tests retain the historical fixture/reader checks.
 
 `test/fixtures/form-definition-native-parity-v1.json` contains 55 vectors observed
@@ -66,3 +66,18 @@ broad native-feature, Clippy, browser, or runtime gate was run for this module.
 This is typed-reader and canonical parity evidence only. Master v2 integration,
 actual native CLI/UI authoring, Runner typed responses, participant execution,
 and saved-XDF reconstruction remain separate owner gates.
+
+Follow-up contract correction: the initial reference JS/native 4 MiB form cap
+was narrower than frozen `7da84a9`'s 16 MiB master bound. Native now uses 16 MiB,
+coordinated with S3's JS correction. The focused size regression accepts a valid
+form larger than 4 MiB and rejects a form larger than 16 MiB whose individual
+items/options still satisfy their bounds. The 55 pinned JS vectors do not assert
+the superseded cap; their other contract observations remain unchanged.
+
+The corrected 22/22 suite passed again through an external standalone Cargo
+harness including the exact same test/source paths and existing contract/error
+owners. It used copied repository lockfile/dependency declarations plus explicit
+`time/parsing` (normally enabled by app feature unification); the first minimal
+harness build exposed that missing feature and is retained. Final log:
+`D:/GitHub/.affect-checks/native-form-s4-20260912/cargo-cap-fix-final.log`.
+No shared application build target was changed by this follow-up validation.

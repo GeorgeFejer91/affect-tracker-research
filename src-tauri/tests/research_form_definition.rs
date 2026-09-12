@@ -282,7 +282,16 @@ fn item_and_option_count_limits_and_total_canonical_size() {
     for item in value["items"].as_array_mut().unwrap() {
         item["prompt"] = json!("😀".repeat(8000));
     }
-    reject(value); // All individual fields fit, aggregate bytes exceed 4 MiB.
+    rehash(&mut value);
+    assert!(canonical_json(&value, &[]).unwrap().len() > 4 * 1024 * 1024);
+    decode_form_definition_v1(&value).unwrap(); // The frozen bound is 16 MiB.
+    for item in value["items"].as_array_mut().unwrap() {
+        item["response"] = json!({"kind":"singleChoice", "options": (1..=5)
+            .map(|i| json!({"optionId":format!("option{i}"),"order":i,"label":"😀".repeat(2000)}))
+            .collect::<Vec<_>>()});
+    }
+    assert!(canonical_json(&value, &[]).unwrap().len() > 16 * 1024 * 1024);
+    reject(value); // Each individual field fits; the complete form is too large.
     let mut value = fixture();
     value["items"][2]["response"]["options"] = json!((1..=256)
         .map(|i| json!({"optionId":format!("opt{i}"),"order":i,"label":"L"}))
