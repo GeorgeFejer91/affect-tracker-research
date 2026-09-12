@@ -296,12 +296,18 @@ test("Workspace exposes one selected root and three fixed project locations", as
   for (const obsoleteWorkspaceStructure of [
     /class="[^"]*\bdirectory-list\b/u,
     /class="[^"]*\bprotocol-import-card\b/u,
-    /id="video-drop-zone"/u,
-    /id="stimulus-library-table"/u,
     /id="settings-load"/u,
     /id="settings-save"/u,
-    /id="workspace-rescan"/u,
   ]) assert.doesNotMatch(workspacePanel, obsoleteWorkspaceStructure);
+  for (const id of ["video-drop-zone", "stimulus-library-table", "video-import", "video-folder-import", "workspace-rescan"]) {
+    assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
+    assert.equal((markup.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
+  }
+  assert.doesNotMatch(workspacePanel, /data-open-section="stimuli"[^>]*>Manage videos</u);
+  const stimuliPanelStart = markup.indexOf('id="setup-panel-stimuli"');
+  const stimuliPanelEnd = markup.indexOf('data-setup-section="experiment"', stimuliPanelStart);
+  const stimuliPanel = markup.slice(stimuliPanelStart, stimuliPanelEnd);
+  assert.doesNotMatch(stimuliPanel, /id="(?:video-drop-zone|stimulus-library-table|video-import|video-folder-import|workspace-rescan)"/u);
 
   for (const id of ["workspace-choose", "workspace-rescan", "video-import", "video-folder-import", "package-load", "package-generate", "package-file-status", "experiment-load", "experiment-template-download", "experiment-file-status", "settings-load", "settings-save"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
@@ -323,6 +329,9 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
   assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);
   assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
+  assert.match(source, /if \(target\.id === "video-import"\) requestVideoImport\(\)/u);
+  assert.match(source, /if \(target\.id === "video-folder-import"\) requestVideoImport\(\{ directory: true \}\)/u);
+  assert.match(source, /const dropZone = query\("#video-drop-zone"\)/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
   assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(source, /directoryPermission \? "ready" : "warning"/u);
