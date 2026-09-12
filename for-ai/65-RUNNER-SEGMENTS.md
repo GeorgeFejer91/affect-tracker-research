@@ -97,3 +97,15 @@ unqualified Start disabled. Both have zero runtime errors, duplicate IDs and pag
 overflow at 1280 pixels. Native replies in that harness are synthetic. Receipt and
 screenshots: `D:/GitHub/.affect-runner-build/boundary-audit/`. No physical input,
 foreground application control, native experiment or real stream recording ran.
+
+Static G11 follow-up: Chat Orchestrator allocated the browser entry boundary to
+this lane. Static `site/index.html` now explicitly identifies Planner and uses
+the same seven-section/preview/Review & Export surface. Its browser bridge skips
+participant journal creation/audit/reconciliation, runtime lease, sampling worker,
+output-manifest and acquisition storage probes, and refuses a synthetic Start
+event. Browser authoring remains in its existing workspace/UI controllers. The
+headless harness now checks both Planner surfaces plus Runner, with dependency
+traps proving browser Planner startup/refresh/destruction invokes no run service.
+Receipt: `D:/GitHub/.affect-runner-build/static-boundary-audit/`. This supersedes
+the earlier desktop-only qualification of the entry boundary; historical combined
+modules remain testable but are no longer the active Planner entry programs.
