@@ -4517,6 +4517,13 @@ Final qualification additionally requires the same saved master in actual
 Runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
 Both final executables require explicit pinned native-gstreamer build support;
 the current builder defaults alone do not establish that capability.
+Planner builder now accepts explicit --native-gstreamer, combining it with
+mandatory tauri/custom-protocol and not forwarding the custom flag to Cargo.
+This does not alter capability flags: qualified_start_available,
+qualified_format_matrix_ready and redistribution_review_ready remain false.
+Runner Start is blocked pending the separately owned claim-specific review.
+No native build, runtime staging, research qualification or capture is claimed
+by this build-option change.
 
 - Main explicitly allocated the P1-03/P1-06/P1-07 shared native bridge seam,
   Backend Verification, base `13ea36e`, isolated

@@ -3,9 +3,11 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const flags = new Set(process.argv.slice(2));
-if ([...flags].some(flag => !["--release", "--no-default-features"].includes(flag))) {
-  throw new Error("Usage: node scripts/build-planner-cli.js [--release] [--no-default-features]");
+if ([...flags].some(flag => !["--release", "--no-default-features", "--native-gstreamer"].includes(flag))) {
+  throw new Error("Usage: node scripts/build-planner-cli.js [--release] [--no-default-features] [--native-gstreamer]");
 }
+const features = flags.delete("--native-gstreamer")
+  ? "tauri/custom-protocol,native-gstreamer" : "tauri/custom-protocol";
 function run(command, args) {
   const child = spawnSync(command, args, { cwd: root, stdio: "inherit", windowsHide: true, shell: false });
   if (child.error) throw child.error;
@@ -16,4 +18,4 @@ run(process.execPath, [resolve(root, "scripts/verify-research-build.js"), "deskt
 const cargo = process.env.CARGO ?? (process.platform === "win32" && process.env.USERPROFILE
   ? resolve(process.env.USERPROFILE, ".cargo/bin/cargo.exe") : "cargo");
 run(cargo, ["build", "--manifest-path", "src-tauri/Cargo.toml", "--locked", "--bin", "affect-planner-cli",
-  "--features", "tauri/custom-protocol", "-j", "2", ...flags]);
+  "--features", features, "-j", "2", ...flags]);
