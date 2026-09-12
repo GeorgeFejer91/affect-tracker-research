@@ -5339,3 +5339,40 @@ D:/GitHub/.affect-checks/p1-controlled-workspace-tests-01/artifact-receipt.json.
 Runtime pin verifies 827 files / 340362958 bytes. Eight build warnings include
 unwired integration seams, not a launch/readiness claim. Mixed-native proof
 test extension remains next; Main retains integrated CLI/live/installed checks.
+
+### P1/P3 export compatibility follow-up
+
+Main review of 9f2dc75 identifies an existing closed-v2 consumer:
+research_commands.rs export_video_catalogue_with_picker calls the historical
+validate_planner_video_catalogue before/after its picker and serializes through
+the historical catalogue_bytes type. It therefore cannot export catalogue3.
+The explicit validate_planner_video_catalogue_v3 wrapper exists, but this picker
+has not been allocated for migration in this pass. Keep the failure explicit;
+do not downconvert or silently treat the existing picker as v3-capable. Main
+owns allocation/priority of the P1/P3 export seam after the current integration
+gate. This is separate from supported full-project save and native attestation.
+
+### Mixed catalogue3 routing gate
+
+Root forbids reimplementing the opaque native workspace-file ID algorithm in
+Runner. Fresh RescanResult has workspaceId and summaries with opaque ID, name,
+hash, bytes and MIME, but source is null before attestation. No adequate current
+location mapping helper was found. Mixed-native backend proof equality can be
+tested with direct owner receipts; it is not evidence of mixed Runner support.
+Mixed catalogue3 runtime remains pending/rejected until a versioned native
+registration/location mapping is approved. All-controlled catalogue3 can use
+the uniform explicit attest-v2 loop independently. S1 sent Root a read-only
+registration proposal with native-issued IDs, exact declared content/location
+closure, workspace/scan-revision binding and real prepare fences; no mapping
+or opaque-ID reconstruction was implemented.
+
+Final S1 test extension: real-SDK native lib compiles (7 known unwired/dead-code
+warnings); 33 workspace + 5 P1 contribution + 9 geometry + 4 historical export
+tests pass. Mixed native proof test accepts independently attested old/new
+entries, rejects schema-valid browser substitution and wrong attestation
+version despite matching dimensions. JS controller additionally rejects an
+attestation returned across a changed active generation fence; 49 focused
+bridge/controller/catalogue tests pass. Latest copied diagnostic receipt:
+D:/GitHub/.affect-checks/p1-controlled-workspace-tests-03/artifact-receipt.json.
+The mixed runtime routing and old export limitations above remain unresolved;
+these test results do not promote either capability. Cargo target released.

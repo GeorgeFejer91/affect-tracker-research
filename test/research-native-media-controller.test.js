@@ -39,6 +39,11 @@ test("controlled summary v2 is explicit, strict and preserves the complete proof
   assert.deepEqual(await controller.attestDecodeV2({ workspaceId: WORKSPACE, summary }), summary);
   assert.equal(calls.at(-1)[0], "research_native_media_attest_decode_v2");
   assert.deepEqual(calls.at(-1)[1].request.fence, { sessionId: SESSION, generation: 1 });
+  controller.invoke = async () => {
+    controller.fence = { sessionId: SESSION, generation: 2 };
+    return summary;
+  };
+  await assert.rejects(() => controller.attestDecodeV2({ workspaceId: WORKSPACE, summary }), /generation fence/u);
 });
 
 function viewport() {
