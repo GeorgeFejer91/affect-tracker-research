@@ -1111,6 +1111,8 @@ export class NativeResearchRuntimeBridge {
     this.nativePackageProtocolCapability = null;
     this.nativeInputCapability = null;
     this.catalog = new Map();
+    this.workspacePublication = 0;
+    this.destroyed = false;
     this.recoveries = [];
     this.participantStateById = new Map();
     this.storageReadiness = null;
@@ -1217,10 +1219,17 @@ export class NativeResearchRuntimeBridge {
       installSource: request => this.invoke("research_install_local_questionnaire_preset", { request }),
     });
     if (workspace?.selected) await this.#adoptWorkspace(workspace, { rescan: true });
+    this.root.researchUi?.connectPlannerNativeWorkspace?.(Object.freeze({
+      getWorkspaceId: () => this.destroyed ? null : this.workspace?.workspaceId ?? null,
+      prepareWorkspace: (receipt, options) => this.prepareWorkspace(receipt, options),
+      prepareCatalogue: (receipt, options) => this.prepareCatalogue(receipt, options),
+    }));
     return this;
   }
 
   destroy() {
+    this.destroyed = true;
+    this.workspacePublication += 1;
     this.authoringNative?.destroy();
     this.inputCaptureGeneration += 1;
     this.activeInputCaptureGeneration = null;
@@ -1722,64 +1731,127 @@ export class NativeResearchRuntimeBridge {
   }
 
   async #adoptWorkspace(workspace, { rescan = false } = {}) {
-    if (!workspace?.workspaceId || workspace.librariesReady !== true) {
+    const prepared = this.prepareWorkspace(workspace);
+    prepared.commit();
+    this.#dispatch(RESEARCH_UI_EVENTS.workspaceReady, prepared.projection);
+    if (rescan) await this.#rescanWorkspace();
+  }
+
+  prepareWorkspace(receipt, { isCurrent = () => true } = {}) {
+    if (typeof isCurrent !== "function" || receipt?.selected !== true
+      || !RUN_ID_PATTERN.test(receipt?.workspaceId ?? "") || receipt.librariesReady !== true) {
       throw new Error("The selected native workspace did not initialize the Research libraries and fixed package asset tree.");
     }
-    this.workspace = Object.freeze({ ...workspace });
-    this.catalog.clear();
-    this.#dispatch(RESEARCH_UI_EVENTS.workspaceReady, {
+    const workspace = Object.freeze(structuredClone(receipt));
+    const priorWorkspace = this.workspace, priorCatalog = this.catalog, publication = this.workspacePublication;
+    let committed = false;
+    const current = () => !committed && !this.destroyed && isCurrent()
+      && this.workspace === priorWorkspace && this.catalog === priorCatalog && this.workspacePublication === publication;
+    if (!current()) throw new Error("Native workspace preparation is stale.");
+    const projection = {
       surface: "tauri",
       label: workspace.displayName ?? "Windows Research workspace",
       directoryPermission: true,
       workspaceId: workspace.workspaceId,
+    };
+    return Object.freeze({
+      isCurrent: current,
+      get projection() { return structuredClone(projection); },
+      commit: () => {
+        if (!current()) throw new Error("Native workspace preparation is stale or already committed.");
+        this.workspace = workspace;
+        this.catalog = new Map();
+        this.workspacePublication += 1;
+        committed = true;
+      },
     });
-    if (rescan) await this.#rescanWorkspace();
   }
 
   async #rescanWorkspace() {
     this.#requireWorkspace();
+    const current = this.#catalogueCurrent();
     const result = await this.invoke("research_rescan_stimuli", { workspaceId: this.workspace.workspaceId });
+    if (!current()) throw new Error("The workspace or catalogue changed during the native scan.");
     await this.#catalogue(result);
   }
 
   async #importStimuli(selectionKind, workspaceId) {
     this.#requireWorkspace();
     if (!workspaceId || workspaceId !== this.workspace.workspaceId) throw new Error("The workspace changed before video import began.");
+    const current = this.#catalogueCurrent();
     const result = await this.invoke("research_import_stimuli", {
       workspaceId,
       selectionKind,
     });
     if (workspaceId !== this.workspace?.workspaceId) throw new Error("The workspace changed during video import.");
+    if (!current()) throw new Error("The workspace or catalogue changed during video import.");
     if (result) await this.#catalogue(result);
   }
 
+  #catalogueCurrent() {
+    const workspace = this.workspace, catalog = this.catalog, publication = this.workspacePublication;
+    const playbackMode = this.#selectedPlaybackMode();
+    const settingsSignature = JSON.stringify(this.root.researchUi?.settings?.stimuli ?? null);
+    const capabilitySignature = JSON.stringify(this.nativeMediaCapability);
+    return () => !this.destroyed && this.workspace === workspace && this.catalog === catalog
+      && this.workspacePublication === publication && this.#selectedPlaybackMode() === playbackMode
+      && JSON.stringify(this.root.researchUi?.settings?.stimuli ?? null) === settingsSignature
+      && JSON.stringify(this.nativeMediaCapability) === capabilitySignature;
+  }
+
   async #catalogue(result, { settings = this.root.researchUi?.settings } = {}) {
-    if (result?.workspaceId !== this.workspace.workspaceId || !Array.isArray(result.stimuli)) {
+    const current = this.#catalogueCurrent();
+    try {
+      const prepared = await this.prepareCatalogue(result, { settings, isCurrent: current, reportProgress: true });
+      prepared.commit();
+      this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, prepared.projection);
+    } catch (error) {
+      // A failed current GUI scan withdraws prior readiness, never publishes a
+      // partially verified catalogue. A stale scan cannot erase newer work.
+      if (current()) {
+        this.catalog = new Map();
+        this.workspacePublication += 1;
+        this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
+      }
+      throw error;
+    }
+  }
+
+  async prepareCatalogue(result, { settings = this.root.researchUi?.settings, isCurrent = () => true, reportProgress = false } = {}) {
+    if (typeof isCurrent !== "function" || !this.workspace
+      || result?.workspaceId !== this.workspace.workspaceId || !Array.isArray(result.stimuli)) {
       throw new Error("Native stimulus scan returned an invalid workspace binding.");
     }
+    const workspace = this.workspace;
     const playbackMode = this.#selectedPlaybackMode();
-    let scannedStimuli = result.stimuli;
+    const baseCurrent = this.#catalogueCurrent();
+    const selectedSettings = structuredClone(settings);
+    let committed = false;
+    const current = () => !committed && isCurrent() && baseCurrent();
+    const check = () => { if (!current()) throw new Error("Native catalogue preparation is stale or already committed."); };
+    check();
+    let scannedStimuli = structuredClone(result.stimuli);
     let decodeQualification = "attestedUnqualified";
     if (playbackMode === "nativeGstPlay") {
       if (this.nativeMediaCapability?.runtimeIntegrityVerified !== true
         || this.nativeMediaCapability?.playerActorReady !== true) {
-        this.catalog.clear();
-        this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
         throw new Error(`Native GstPlay decode verification is unavailable (${this.nativeMediaCapability?.reasonCode ?? "unknown"}).`);
       }
       const viewportHost = this.root.querySelector?.(".preview-pane .preview-primary-stage");
       const progress = this.root.querySelector?.("#workspace-status");
       const result = await attestNativeGstCatalogue({
         controller: this.nativeMedia,
-        workspaceId: this.workspace.workspaceId,
+        workspaceId: workspace.workspaceId,
         stimuli: scannedStimuli,
         viewportHost,
         onProgress: ({ index, total, scanned }) => {
-          if (progress) progress.textContent = scanned
+          check();
+          if (reportProgress && progress) progress.textContent = scanned
             ? `GstPlay decode verification ${index + 1} of ${total}: ${scanned.displayName}`
             : `GstPlay decode verification complete for ${total} video${total === 1 ? "" : "s"}.`;
         },
       });
+      check();
       scannedStimuli = result.qualified;
       decodeQualification = "attestedQualified";
       if (result.failures.length > 0) {
@@ -1787,21 +1859,21 @@ export class NativeResearchRuntimeBridge {
         throw new Error(`Native GstPlay decode verification failed for ${details.join("; ")}`);
       }
     } else if (playbackMode !== "unqualifiedWebview") {
-      this.catalog.clear();
-      this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items: [], replace: true });
       throw new Error("The retired native LibVLC playback mode is unavailable.");
     }
     const nextCatalog = new Map();
     const items = [];
     const failures = [];
     for (const scanned of scannedStimuli) {
+      check();
       try {
         const summary = playbackMode === "nativeGstPlay" ? scanned : await probeAndAttestNativeVideo({
           invoke: this.invoke,
-          workspaceId: this.workspace.workspaceId,
+          workspaceId: workspace.workspaceId,
           summary: scanned,
           videoFactory: this.videoFactory,
         });
+        check();
         const validNative = summary.decodeStatus === "attestedQualified"
           && summary.decodeBackend === "nativeGstPlay"
           && summary.decodeAttestation === "nativeDecodedSnapshotsV1";
@@ -1811,7 +1883,7 @@ export class NativeResearchRuntimeBridge {
         if (!(playbackMode === "nativeGstPlay" ? validNative : validFallback) || !summary.source) {
           throw new Error(`${summary.displayName} did not produce the selected playback mode's decode contract.`);
         }
-        const existing = settings?.stimuli?.items?.find(({ source }) => (
+        const existing = selectedSettings?.stimuli?.items?.find(({ source }) => (
           source.kind === "workspaceFile" && source.relativePath === summary.source.relativePath
         ));
         const stimulusId = existing?.stimulusId ?? safeStimulusId(summary);
@@ -1820,7 +1892,8 @@ export class NativeResearchRuntimeBridge {
           title: existing?.title ?? summary.displayName,
           source: Object.freeze({ ...summary.source }),
         });
-        nextCatalog.set(summary.workspaceFileId, Object.freeze({ summary: Object.freeze({ ...summary }), stimulus }));
+        if (nextCatalog.has(summary.workspaceFileId)) throw new Error("Native scan contains a duplicate video identity.");
+        nextCatalog.set(summary.workspaceFileId, Object.freeze({ summary: Object.freeze(structuredClone(summary)), stimulus }));
         items.push(Object.freeze({
           stimulus,
           verified: true,
@@ -1829,12 +1902,23 @@ export class NativeResearchRuntimeBridge {
           displayGeometry: validNative ? summary.displayGeometry : null,
         }));
       } catch (error) {
+        check();
         failures.push(`${scanned.displayName}: ${messageOf(error)}`);
       }
     }
-    this.catalog = nextCatalog;
-    this.#dispatch(RESEARCH_UI_EVENTS.stimuliCatalogued, { items, replace: true });
+    check();
     if (failures.length > 0) throw new Error(`Native decode verification failed for ${failures.join("; ")}`);
+    const projection = structuredClone({ items, replace: true });
+    return Object.freeze({
+      isCurrent: current,
+      get projection() { return structuredClone(projection); },
+      commit: () => {
+        check();
+        this.catalog = nextCatalog;
+        this.workspacePublication += 1;
+        committed = true;
+      },
+    });
   }
 
   async #loadSettings() {
@@ -1856,10 +1940,12 @@ export class NativeResearchRuntimeBridge {
     const receipt = await this.invoke("research_load_experiment_package");
     if (!receipt) return;
     if (this.workspace) {
+      const current = this.#catalogueCurrent();
       const result = await this.invoke("research_rescan_package_stimuli", {
         workspaceId: this.workspace.workspaceId,
         sourceText: receipt.canonicalSourceText,
       });
+      if (!current()) throw new Error("The workspace or catalogue changed during the native package scan.");
       await this.#catalogue(result, { settings: receipt.package?.settings });
     }
     this.#dispatch(RESEARCH_UI_EVENTS.experimentPackageLoaded, { receipt });
@@ -2136,10 +2222,12 @@ export class NativeResearchRuntimeBridge {
     if (detail?.playbackMode !== "nativeGstPlay") {
       throw new Error("Reproducible experiment packages require Rust-owned native GstPlay playback.");
     }
+    const current = this.#catalogueCurrent();
     const result = await this.invoke("research_rescan_package_stimuli", {
       workspaceId: this.workspace.workspaceId,
       sourceText: detail.experimentPackageSourceText,
     });
+    if (!current()) throw new Error("The workspace or catalogue changed during the native package scan.");
     await this.#catalogue(result, { settings: detail.researchSettings });
     await this.packageProtocol.preflight(
       this.workspace.workspaceId,
