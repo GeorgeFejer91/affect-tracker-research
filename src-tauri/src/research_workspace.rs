@@ -985,6 +985,7 @@ impl WorkspaceService {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
     pub(crate) fn verify_workspace_file(
         &self,
         workspace_id: &str,
@@ -1016,6 +1017,7 @@ impl WorkspaceService {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
     pub(crate) fn verify_native_workspace_file(
         &self,
         workspace_id: &str,
@@ -1637,6 +1639,7 @@ fn scanned_candidate<'a>(
         })
 }
 
+#[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
 fn webview_attested_candidate<'a>(
     scanned: &'a [ScannedStimulus],
     workspace_file_id: &str,

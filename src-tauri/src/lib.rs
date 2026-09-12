@@ -19,6 +19,7 @@ mod research_platform;
 pub mod research_protocol;
 mod research_recorder;
 mod research_run_storage;
+#[cfg(test)]
 mod research_runtime;
 mod research_stimulus_order;
 mod research_timing;

@@ -793,6 +793,7 @@ impl ResearchInputService {
         Ok(())
     }
 
+    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
     pub fn ensure_run_ready(&self, authority_id: &str) -> ResearchResult<()> {
         validate_run_ready(&lock(&self.state), authority_id, true)
     }

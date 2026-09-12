@@ -14,18 +14,22 @@ use crate::research_input::{
     NativeInputCapability, NativeInputRegionRequest, NativeInputStatus, ResearchInputService,
 };
 use crate::research_lsl::{probe_readiness, LslReadiness};
+#[cfg(test)]
+use crate::research_native_media::PlaybackMode;
 use crate::research_native_media::{
     NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaPrepareReceiptV1,
     NativeMediaService, NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
-    PlaybackMode,
 };
+#[cfg(test)]
 use crate::research_participant::TransientParticipant;
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
+#[cfg(test)]
 use crate::research_protocol::{
     native_protocol_capability, native_protocol_runtime_unavailable, protocol_preflight,
-    NativeProtocolCapability, ProtocolPreflightReceipt, ResearchSettingsDocument,
-    ResearchSettingsV2, ResearchSettingsV3, ResolvedProtocolPlanV1,
+    NativeProtocolCapability, ProtocolPreflightReceipt, ResolvedProtocolPlanV1,
 };
+use crate::research_protocol::{ResearchSettingsDocument, ResearchSettingsV2, ResearchSettingsV3};
+#[cfg(test)]
 use crate::research_runtime::{
     FinalizeReceipt, FinalizeRecoveryRequest, FinishOutcome, MediaPlaybackFailureReceipt,
     MediaPlaybackFailureReport, ParticipantTileStatus, RecoveryListing, ResearchRuntime,
@@ -252,6 +256,8 @@ pub fn research_native_media_set_viewport(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_native_media_play(
     window: WebviewWindow,
     native_media: State<'_, Arc<NativeMediaService>>,
@@ -287,6 +293,8 @@ pub fn research_native_media_attest_decode(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_native_media_pause(
     window: WebviewWindow,
     native_media: State<'_, Arc<NativeMediaService>>,
@@ -318,6 +326,8 @@ fn physical_media_viewport(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_native_protocol_capability(
     window: WebviewWindow,
 ) -> ResearchResult<NativeProtocolCapability> {
@@ -327,6 +337,8 @@ pub fn research_native_protocol_capability(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub struct ProtocolPreflightRequest {
     pub research_settings: ResearchSettingsV2,
     pub assignment_plan: ResolvedAssignmentPlanV1,
@@ -334,6 +346,8 @@ pub struct ProtocolPreflightRequest {
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_protocol_preflight(
     window: WebviewWindow,
     request: ProtocolPreflightRequest,
@@ -916,6 +930,8 @@ pub fn research_lsl_readiness(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub struct StartProtocolRunRequest {
     pub workspace_id: String,
     pub research_settings: ResearchSettingsV2,
@@ -930,6 +946,8 @@ pub struct StartProtocolRunRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub struct ResumeProtocolRunRequest {
     pub workspace_id: String,
     pub recovery_id: String,
@@ -943,6 +961,8 @@ pub struct ResumeProtocolRunRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub struct FinalizeProtocolRecoveryRequest {
     pub workspace_id: String,
     pub recovery_id: String,
@@ -952,6 +972,8 @@ pub struct FinalizeProtocolRecoveryRequest {
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_start_protocol_run(
     window: WebviewWindow,
     request: StartProtocolRunRequest,
@@ -994,6 +1016,8 @@ pub fn research_start_protocol_run(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_resume_protocol_run(
     window: WebviewWindow,
     request: ResumeProtocolRunRequest,
@@ -1024,6 +1048,8 @@ pub fn research_resume_protocol_run(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_finalize_protocol_recovery(
     window: WebviewWindow,
     request: FinalizeProtocolRecoveryRequest,
@@ -1043,6 +1069,8 @@ pub fn research_finalize_protocol_recovery(
     Err(native_protocol_runtime_unavailable())
 }
 
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 fn validate_protocol_run_envelope(
     workspace_id: &str,
     input_test_receipt_id: &str,
@@ -1119,6 +1147,8 @@ fn validate_protocol_run_envelope(
     Ok(())
 }
 
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 fn validate_canonical_uuid(value: &str, label: &str) -> ResearchResult<()> {
     match uuid::Uuid::parse_str(value) {
         Ok(uuid) if uuid.to_string() == value => Ok(()),
@@ -1129,6 +1159,8 @@ fn validate_canonical_uuid(value: &str, label: &str) -> ResearchResult<()> {
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_start_run(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1139,6 +1171,8 @@ pub fn research_start_run(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_resume_run(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1149,6 +1183,8 @@ pub fn research_resume_run(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_finalize_recovery(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1159,6 +1195,8 @@ pub fn research_finalize_recovery(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_run_status(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1168,6 +1206,8 @@ pub fn research_run_status(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_set_stimulus_state(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1178,6 +1218,8 @@ pub fn research_set_stimulus_state(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_finish_run(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1189,6 +1231,8 @@ pub fn research_finish_run(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_report_media_failure(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1199,6 +1243,8 @@ pub fn research_report_media_failure(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_recoveries(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,
@@ -1209,6 +1255,8 @@ pub fn research_recoveries(
 }
 
 #[tauri::command]
+#[cfg(test)]
+#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
 pub fn research_participant_states(
     window: WebviewWindow,
     runtime: State<'_, Arc<ResearchRuntime>>,

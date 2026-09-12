@@ -511,6 +511,7 @@ pub struct ResearchEventV1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub struct ResearchRunManifestV2 {
     pub schema: String,
     pub version: u32,
@@ -537,6 +538,7 @@ pub struct ResearchRunManifestV2 {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub enum RunPlaybackModeV1 {
     NativeLibvlc,
     UnqualifiedWebview,
@@ -545,6 +547,7 @@ pub enum RunPlaybackModeV1 {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub enum RunPlaybackQualificationV1 {
     QualifiedNative,
     Unqualified,
@@ -576,6 +579,7 @@ pub enum CompletionStatusV1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub struct RunTimingV1 {
     pub sample_rate_hz: u16,
     pub sample_count: u64,
@@ -588,6 +592,7 @@ pub struct RunTimingV1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub struct RunOutputV1 {
     pub kind: RunOutputKindV1,
     pub file_name: String,
@@ -599,6 +604,7 @@ pub struct RunOutputV1 {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // Frozen historical manifest reader; current Runner writes v4.
 pub enum RunOutputKindV1 {
     Settings,
     Events,
@@ -1836,6 +1842,7 @@ impl ResearchEventV1 {
     }
 }
 
+#[allow(dead_code)] // Preserve validation for historical manifest compatibility.
 impl ResearchRunManifestV2 {
     pub fn validate(&self) -> ResearchResult<()> {
         let experiment_id_is_canonical =
@@ -2050,6 +2057,7 @@ impl ResearchRunManifestV2 {
     }
 }
 
+#[allow(dead_code)] // Used by the retained historical manifest reader.
 fn is_reserved_filename_character(character: char) -> bool {
     character.is_control()
         || matches!(
@@ -2058,6 +2066,7 @@ fn is_reserved_filename_character(character: char) -> bool {
         )
 }
 
+#[allow(dead_code)] // Used by the retained historical manifest reader.
 fn expected_session_stem(manifest: &ResearchRunManifestV2, started_at: &str) -> String {
     let compact_timestamp: String = started_at
         .chars()
@@ -2075,6 +2084,7 @@ fn expected_session_stem(manifest: &ResearchRunManifestV2, started_at: &str) -> 
     )
 }
 
+#[allow(dead_code)] // Used by the retained historical manifest reader.
 fn manifest_run_id_is_valid(platform: ResearchPlatformV1, value: &str, label: &str) -> bool {
     match platform {
         ResearchPlatformV1::TauriWindows => Uuid::parse_str(value).is_ok_and(|parsed| {
