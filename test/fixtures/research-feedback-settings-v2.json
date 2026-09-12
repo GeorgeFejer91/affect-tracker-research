@@ -1,0 +1,134 @@
+{
+  "schema": "affect-research-feedback",
+  "version": 2,
+  "input": {
+    "schema": "affect-research-input-binding",
+    "version": 1,
+    "preset": "arrowKeys",
+    "kind": "digital",
+    "stepSize": 0.1,
+    "directions": {
+      "up": {
+        "kind": "keyboard",
+        "code": "ArrowUp"
+      },
+      "down": {
+        "kind": "keyboard",
+        "code": "ArrowDown"
+      },
+      "left": {
+        "kind": "keyboard",
+        "code": "ArrowLeft"
+      },
+      "right": {
+        "kind": "keyboard",
+        "code": "ArrowRight"
+      }
+    },
+    "axes": null
+  },
+  "visual": {
+    "gridEnabled": true,
+    "flubberEnabled": true,
+    "sizePercent": 32,
+    "transparency": 0.05,
+    "hideFeedback": false,
+    "overlayPosition": {
+      "x": 0.72,
+      "y": 0.5
+    },
+    "lockPosition": false,
+    "flubber": {
+      "showOutline": true,
+      "outlineThickness": 2,
+      "showHalo": true
+    },
+    "grid": {
+      "lineThickness": 1,
+      "showOutline": true,
+      "outlineThickness": 2,
+      "cursorSize": 14
+    },
+    "colors": {
+      "up": "#f2c94c",
+      "down": "#2f80ed",
+      "left": "#eb5757",
+      "right": "#27ae60",
+      "idle": "#9ca3af",
+      "outline": "#f8fafc",
+      "halo": "#93c5fd",
+      "cursor": "#ffffff"
+    }
+  },
+  "mappings": {
+    "oscillationFrequency": {
+      "min": 0.5,
+      "max": 2.5,
+      "drivenBy": "y-axis",
+      "reverse": false
+    },
+    "edgeSmoothness": {
+      "min": 0,
+      "max": 1,
+      "drivenBy": "x-axis",
+      "reverse": false
+    },
+    "projectionAmplitude": {
+      "min": 0.2,
+      "max": 0.4,
+      "drivenBy": "y-axis",
+      "reverse": false
+    },
+    "pulseSynchrony": {
+      "min": 0.2,
+      "max": 1,
+      "drivenBy": "x-axis",
+      "reverse": false
+    },
+    "waveSizeVariation": {
+      "min": 0,
+      "max": 0.8,
+      "drivenBy": "x-axis",
+      "reverse": true
+    },
+    "saturation": {
+      "min": 0,
+      "max": 1,
+      "drivenBy": "radius",
+      "reverse": false
+    }
+  },
+  "presentation": {
+    "renderer": "grid",
+    "colorAnchors": "corners",
+    "labels": {
+      "axes": {
+        "up": "Alert / wach",
+        "right": "Positive valence",
+        "down": "Low arousal",
+        "left": "Negative valence"
+      },
+      "corners": {
+        "up": "Upper left",
+        "right": "Upper right",
+        "down": "Lower right",
+        "left": "Calm corner"
+      }
+    },
+    "halo": {
+      "widthPercent": 275.5,
+      "gradient": false,
+      "steepness": 2.5
+    }
+  },
+  "response": {
+    "mode": "stepwise",
+    "grid": {
+      "columns": 31,
+      "rows": 15
+    },
+    "fullSpanDurationMs": 4250,
+    "holdRule": "repeatWhileHeld",
+    "repeatDelayMs": 900
+  }
+}

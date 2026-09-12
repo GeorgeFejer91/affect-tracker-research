@@ -36,8 +36,11 @@ export function validateFeedbackContributionV1(value) {
 /** One revision source for final capture and layout consumers. Reads validate
  * current controls, including invalid edits, rather than a last-valid cache.
  * Preview movement and simulator drafts are deliberately absent from the reader. */
-export function createFeedbackContributionSource(readConfiguration) {
+export function createFeedbackContributionSource(readConfiguration, {
+  validate = validateFeedbackContributionV1, resolveEnvelope = resolveFeedbackEnvelopeV1,
+} = {}) {
   if (typeof readConfiguration !== "function") throw new TypeError("A feedback reader is required.");
+  if (typeof validate !== "function" || typeof resolveEnvelope !== "function") throw new TypeError("Feedback validators are required.");
   let snapshot = null;
   let fingerprint = null;
   let destroyed = false;
@@ -45,7 +48,7 @@ export function createFeedbackContributionSource(readConfiguration) {
   function refresh() {
     if (destroyed) throw new Error("Feedback contribution source is closed.");
     let contribution = null;
-    try { contribution = validateFeedbackContributionV1(readConfiguration()); } catch { /* pending */ }
+    try { contribution = validate(readConfiguration()); } catch { /* pending */ }
     const next = canonicalJson(contribution);
     if (snapshot && next === fingerprint) return snapshot;
     const revision = snapshot ? snapshot.revision + 1 : 0;
@@ -67,7 +70,7 @@ export function createFeedbackContributionSource(readConfiguration) {
       }
       const current = refresh();
       return Object.freeze({ revision: current.revision, pending: current.pending,
-        envelope: current.pending ? null : resolveFeedbackEnvelopeV1(current.contribution, overlaySideCssPx) });
+        envelope: current.pending ? null : resolveEnvelope(current.contribution, overlaySideCssPx) });
     },
     subscribe(listener) {
       if (destroyed || typeof listener !== "function") throw new TypeError("An active feedback listener is required.");
