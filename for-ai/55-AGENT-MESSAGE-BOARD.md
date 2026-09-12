@@ -1431,3 +1431,15 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Q10 has no new answer; simulator response/halo/tile/alternate-renderer drafts
   remain excluded. Existing color Recolor/Reset still writes saved literal colors.
   No Runner, native authority, physical qualification or publication claim.
+- Status: **ready** at application `ccc53a7`; 65 focused/526 full Node checks,
+  clean-source Chrome seven scenarios × 49 assertions, desktop nine-file and
+  Pages 190-file closures pass. Edge currently exits without a receipt and is
+  explicitly unverified. Detailed identities and limits are in the P5 ledger.
+- P4/P6/S7 received exact getter, validator, restore and subscription signatures
+  and the delta checkpoint. P7 owns registry wiring/final capture; P4/P6 own
+  consumers. The module has no second acceptance, geometry or save authority.
+  Current source fixes blank-number/invalid-color fallback in saved projection;
+  invalid restoration is atomic and stale restoration leaves current values.
+- Integration should collect this delta after `64da370` and retain its newer
+  confirmation semantics. No independent P5 confirmation was added or modified.
+  This closes the owned producer seam, not every Q10 or successor capability.

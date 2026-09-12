@@ -1,5 +1,60 @@
 # Research v1 roadmap
 
+## P5 saved contribution and live bounds — 2026-09-12
+
+Bounded Backend Verification continuation, P5-05/P5-07, application checkpoint
+`ccc53a7aaaa4e53c6d1f8b0611da32c8d429b178` on
+`codex/segment-p5-contribution`, based on the integration-reviewed `64da370`.
+The previously accepted P5 editor is preserved. This is an owner handoff,
+pending integration and P4/P6/P7 consumer composition.
+
+`feedback-contribution.js` validates exactly `{input,visual,mappings}` through
+the existing v1 validators, with no new recipe fields. The UI's saved settings
+and contribution now use one strict reader. Empty numeric fields and invalid
+color text reject instead of becoming zero or an authoring fallback. Display
+fallbacks remain confined to the non-authoritative preview renderer.
+
+The application exposes these P5-owned interfaces:
+
+- `getFeedbackContributionSnapshot()` returns the shared five-key snapshot:
+  revision, enabled, pending, contribution and dependencyRevisions. Invalid
+  saved controls return pending/null; valid changes and recovery advance the
+  actual owner revision. Temporary simulator choices do not advance it.
+- `getFeedbackLayoutSnapshot(overlaySideCssPx)` returns revision, pending and
+  the envelope resolved from current saved values. A positive explicit CSS-pixel
+  viewport is required; invalid configuration returns a null envelope. The
+  existing algorithm, fixed design centre, viewport side and square half extent
+  retain their meanings. This is not physical calibration or a circular radius.
+- `subscribeFeedbackChanges(listener)` returns an unsubscribe function. Saved
+  edits, invalidation and restoration notify immutable complete snapshots.
+- `restoreFeedbackContribution(value,{isCurrent})` validates before mutation,
+  returns false for a stale request, and otherwise restores every P5 field
+  before publishing a new snapshot. Package apply uses the same field writer.
+
+P7 owns registration, final capture/acceptance, master serialization and named
+save; P4/P6 own geometry consumers. The saved/temporary inventory below remains
+unchanged. Q10 has no new answer, so P5-06 remains open and no simulator, Face,
+halo-width, tile, label-placement or hold rule is added to saved contracts.
+
+Evidence: 65 focused and 526 full JavaScript checks pass; the clean application
+checkpoint passes seven isolated Chrome boot scenarios with 49 assertions each,
+including all saved fields, invalid values, revision/envelope agreement and
+atomic/stale restoration. Actual CSS widths include 320px; Tauri-marked cases
+are browser fixtures, not native execution. Desktop frontend closure is nine
+files and Pages closure is 190 files. The existing large-chunk warning remains.
+No Rust/runtime schema, native authority, physical input or publication changed.
+
+Clean Chrome receipts and hashes are under
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/contribution-final-chrome`.
+Application tree is `810cc4b0fe2f03d02d433cb8c4cc12f787a439eb`.
+Desktop JS SHA-256 is
+`40841515e85bb7beced0e526b1c0c8953e5bbba99753b183b1cec86ec0e8504e`;
+CSS SHA-256 is
+`be7cf790a5db18b4a156809a01beed6b5680e30119bdfc1d389c9398831552ec`.
+Edge attempts exited zero with no stdout/stderr or test receipt, including fresh
+profiles and a diagnostic retry; that application check is unverified. Earlier
+P5 Edge receipts remain historical and do not qualify this change.
+
 ## P2 spreadsheet and contribution receipts — 2026-09-11
 
 Pending owner branch `codex/segment-questionnaires-table-catalogue`:
