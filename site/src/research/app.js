@@ -3260,6 +3260,8 @@ function bindResearchInteractions(root, { surface }) {
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
     const review = plannerContributions.read();
+    const lslDetails = query("#review-lsl");
+    if (lslDetails && (checked("lsl-enabled") || lslDetails.querySelector(':invalid, [aria-invalid="true"]'))) lslDetails.open = true;
     const output = query("#package-save-status");
     const messages = {
       editing: packageIsStale ? "The current design has changes to save." : "Review the design, then save its recipe.",
@@ -5306,6 +5308,8 @@ function bindResearchInteractions(root, { surface }) {
     getVideoCatalogueContributionSnapshot,
     subscribeVideoCatalogueChanges(listener) { return videoCatalogueProducer.subscribe(listener); },
     validateVideoCatalogueContribution: validateVideoCatalogueContributionV1,
+    acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
+    getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },

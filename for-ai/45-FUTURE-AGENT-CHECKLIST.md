@@ -72,6 +72,13 @@ attach concrete receipts in `40-ROADMAP.md` when resolving an item.
 
 ## Questionnaires, language, and future Runner work
 
+- **Review source-specific MAIA-2 scoring before claiming bilingual scoring
+  equivalence (P2-05/P2-06, Q09).** The supplied English asset has 37 items,
+  forward 0–5 codes and no subscale annotations; the German source has 37
+  items, supplied reverse codes and eight subscale annotations. Do not silently
+  modify either source to make them look equivalent. Any additional authorized
+  instrument version or computed scoring policy needs its own explicit decision,
+  provenance and tests. TAS remains unavailable as a ready bilingual preset.
 - **Persist and execute questionnaire label repetition through an explicit
   versioned contract.** Section 2 can preview answer labels above every item,
   every 5 items, or every 10 items, but v1 has no presentation field for this.
