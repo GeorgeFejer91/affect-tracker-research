@@ -1,0 +1,43 @@
+{
+  "workspaceFileId": "wf-aaaaaaaaaaaaaaaaaaaaaaaa",
+  "displayName": "clip.mp4",
+  "sha256": "ab63806e5069d264d4e0c877125c3705afd04156046bf122aa93a5de9e907dab",
+  "byteLength": 27,
+  "mimeType": "video/mp4",
+  "durationMs": 1000,
+  "decodeStatus": "attestedQualified",
+  "decodeBackend": "nativeGstPlay",
+  "decodeAttestation": "nativeDecodedSnapshotsV2",
+  "decodedPositionsMs": [100, 500, 900],
+  "displayGeometry": {
+    "displayAspect": {"denominator": 9, "numerator": 16},
+    "displayHeightPx": 1080,
+    "displayWidthPx": 1920,
+    "metadataInterpretation": "controlled-renderer-and-pre-sink-square-pixel-snapshot",
+    "nativeDisplayMetadata": {
+      "encodedHeightPx": 1080,
+      "encodedWidthPx": 1920,
+      "pixelAspectRatio": {"denominator": 1, "numerator": 1},
+      "renderer": {"configuredRotationDegrees": 0, "readbackRotationDegrees": 0, "sinkFactory": "d3d11videosink"},
+      "schema": "affect-research-native-display-metadata-receipt",
+      "snapshotHeightPx": 1080,
+      "snapshotInterpretation": "pre-renderer-square-pixel",
+      "snapshotPixelAspectRatio": {"denominator": 1, "numerator": 1},
+      "snapshotWidthPx": 1920,
+      "sourceOrientation": {"media": {"status": "absent"}, "stream": {"status": "absent"}},
+      "version": 2
+    },
+    "pixelAspectRatio": {"denominator": 1, "numerator": 1},
+    "rotationDegrees": 0,
+    "source": "native-gstplay-controlled-renderer",
+    "status": "verified"
+  },
+  "source": {
+    "kind": "workspaceFile",
+    "relativePath": "stimuli/clip.mp4",
+    "mimeType": "video/mp4",
+    "sha256": "ab63806e5069d264d4e0c877125c3705afd04156046bf122aa93a5de9e907dab",
+    "byteLength": 27,
+    "durationMs": 1000
+  }
+}

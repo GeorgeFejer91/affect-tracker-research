@@ -252,6 +252,19 @@ mod tests {
             Some(DecodeEvidence::NativeDecodedSnapshotsV2)
         );
         assert!(summary.source.is_some());
+        let mut serialized = serde_json::to_value(&summary).unwrap();
+        // Normalize only the opaque ID so the fixture never duplicates its
+        // native generation algorithm. All producer fields/proof remain exact.
+        assert_eq!(serialized["workspaceFileId"], item.workspace_file_id);
+        serialized["workspaceFileId"] = "wf-aaaaaaaaaaaaaaaaaaaaaaaa".into();
+        let expected_summary: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../test/fixtures/native-decoded-summary-v2.json"
+        ))
+        .unwrap();
+        assert_eq!(
+            canonical_json(&serialized, &[]).unwrap(),
+            canonical_json(&expected_summary, &[]).unwrap()
+        );
         let mut catalogue = serde_json::json!({
             "schema": "affect-research-video-catalogue-contribution", "version": 3,
             "revision": 1, "annotationPolicy": "relative-path-reversible-v1",

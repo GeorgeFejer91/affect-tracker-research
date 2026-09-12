@@ -5344,3 +5344,27 @@ bridge/controller/catalogue tests pass. Latest copied diagnostic receipt:
 D:/GitHub/.affect-checks/p1-controlled-workspace-tests-03/artifact-receipt.json.
 The mixed runtime routing and old export limitations above remain unresolved;
 these test results do not promote either capability. Cargo target released.
+
+## P1 summary2 declared-location correction — 2026-09-12
+
+Main's actual native 148a806 fullmock retained an acknowledged import but failed
+publication at attestDecode(decoded-summary-invalid). Read-only diagnosis found
+summary2 had inherited summary1's wf-ID pseudo-path requirement, contradicting
+scan_planner_videos / attest_native_decode_v2, which return the declared logical
+stimuli/<relative> location independently of the opaque ID.
+
+Main allocated the narrow correction: summary2 now reuses P1's strict canonical
+portable-location parser. Summary1 and its existing rejection set are unchanged.
+No native-ID algorithm, path inference, geometry relaxation or repeated import
+was added. Shared native-decoded-summary-v2.json covers the complete serialized
+producer shape, normalizing only the opaque test ID; Rust's actual workspace
+producer is compared through canonical serialization, while JS consumes that
+same fixture. Unsafe paths, non-NFC names, and legacy-reader crossover reject.
+Direct execution of the original 9f2dc75 validator rejects that fixture; the
+corrected validator accepts it. All 147 focused JS/modularity checks pass.
+
+The added Rust serialization assertion is PENDING compilation: Root paused all
+SDK/Cargo usage for preserved SDK relocation from full C: to D:. Main will
+collect this checkpoint and compile combined source only after Root verifies
+the new SDK path. Existing native results above predate this test addition;
+do not claim a successful native rerun or live import for this correction.
