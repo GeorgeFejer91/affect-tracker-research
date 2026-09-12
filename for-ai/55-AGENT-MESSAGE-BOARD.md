@@ -4219,3 +4219,13 @@ Evidence: 920 Research tests pass, including preparation/no-write, detached
 payload, stale edit/reset/cancel, and legacy callback receipt regressions.
 Native and full composition evidence deferred to Main. Validator correction
 `aa8717b` separately closes S1's language/sparse-array findings (10/10 focused).
+
+## P6-RESTORE-SELECTION-20260912 — prepared optional XR reopening
+
+- Allocation: Chat Orchestrator, P6-04/P6-05 shared CLI openRecipe restoration seam; Backend Verification.
+- Isolated branch `codex/segment-p6-restore-selection`, worktree `D:/GitHub/affect-tracker-research-p6-restore-selection`, base Main `928b395`.
+- Owner scope: xr-layout-authoring.js, xr-layout-editor.js, focused P6 tests and docs. Canonical checkout and old partial coordinator patch untouched.
+- Prepared exact included/excluded selection is read-only; synchronous commit installs pending/unaccepted content, afterCommit projects/notifies separately. Existing restoreSelection uses the same seam. Request, dependency, revision and disposal guards reject stale adoption.
+- API and evidence boundaries: `docs/p6-prepared-selection-restoration.md`. Baseline authoring 13/13 passed. Focused restoration checks 12/12 passed; existing P6 compatibility checks passed before the fixture-only correction (the first new fixture overlapped feedback and correctly rejected, then its authored offset was fixed).
+- Main owns actual application wiring and independent integration review. No runtime, acceptance, native, foreground, deployment or other segment changes.
+- Final combined gate: 75/75 tests passed across research-xr-selection-restoration, research-xr-authoring, research-planner-xr-roundtrip, research-planner-authoring-p6 and research-xr-layout; git diff --check passed. Ready for Main review; no integration or runtime qualification claim.

@@ -7,6 +7,9 @@ import {
 } from "./xr-layout.js";
 import { xrLayoutSceneSvg } from "./xr-layout-view.js";
 import { resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
+import { validateXrLayoutSelection } from "./xr-layout-recipe.js";
+
+const staleRestore = () => new XrLayoutError("profile", "stale", "The XR selection restore is no longer current.");
 
 function validateRevisions(value) {
   if (!value || Object.keys(value).sort().join(",") !== "catalogue,feedback"
@@ -40,6 +43,22 @@ export function createXrLayoutState() {
     setEnabled(value) { if (typeof value !== "boolean") throw new TypeError("XR enabled must be Boolean."); if (enabled !== value) { enabled = value; revision += 1; } },
     setDraft(value) { draft = structuredClone(value); accepted = null; revision += 1; },
     getDraft() { return structuredClone(draft); },
+    prepareRestoreSelection(selection, { isCurrent } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
+      const captured = validateXrLayoutSelection(selection), baseRevision = revision;
+      const next = captured.status === "included" ? captured.profile : createDefaultXrLayoutProfile();
+      let committed = false;
+      const current = () => !committed && isCurrent() && revision === baseRevision;
+      if (!current()) throw staleRestore();
+      return Object.freeze({
+        isCurrent: current,
+        commit() {
+          if (!current()) throw staleRestore();
+          committed = true; draft = next; enabled = captured.status === "included";
+          accepted = null; revision += 1;
+        },
+      });
+    },
     stageAuthoringDraft(value, { isCurrent, signal } = {}) {
       if (typeof isCurrent !== "function") throw new TypeError("XR staging requires a current-operation guard.");
       if (!value || Object.keys(value).sort().join(",") !== "enabled,profile" || typeof value.enabled !== "boolean") {
@@ -261,6 +280,37 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
     const item = catalogueGeometry?.find(({ assetId }) => assetId === select.value);
     media = item ? { displayWidth: item.displayWidth, displayHeight: item.displayHeight } : next.previewMedia;
   }
+  function prepareRestoreSelection(selection, { isCurrent } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
+    const generation = fileGeneration;
+    const candidate = state.prepareRestoreSelection(selection, {
+      isCurrent: () => !disposed && generation === fileGeneration && isCurrent(),
+    });
+    let committedRevision = null, committedGeneration = null, projected = false;
+    return Object.freeze({
+      isCurrent: candidate.isCurrent,
+      commit() {
+        candidate.commit();
+        committedGeneration = ++fileGeneration;
+        committedRevision = state.getSnapshot().revision;
+        return state.getSnapshot();
+      },
+      afterCommit() {
+        if (projected) return;
+        if (committedRevision === null || disposed || !isCurrent()
+          || fileGeneration !== committedGeneration || state.getSnapshot().revision !== committedRevision) throw staleRestore();
+        projected = true;
+        setFields(); render(); notify();
+        status(state.getSnapshot().enabled
+          ? "Saved XR settings reopened. Verify the video library and feedback, then confirm the layout."
+          : "XR is excluded from the reopened experiment.");
+      },
+    });
+  }
+  function restoreSelection(selection) {
+    const candidate = prepareRestoreSelection(selection, { isCurrent: () => true });
+    const snapshot = candidate.commit(); candidate.afterCommit(); return snapshot;
+  }
   setFields(); render();
   return Object.freeze({
     getSnapshot: () => state.getSnapshot(),
@@ -285,6 +335,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       });
     },
     acceptLayout,
+    prepareRestoreSelection,
     loadProfile(source) {
       fileGeneration += 1; state.load(source); setFields(); render(); notify();
       status("Authoring profile reopened. All saved geometry is editable.");
@@ -300,17 +351,10 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       return state.getSnapshot();
     },
     restoreDraft(profile) {
-      if (disposed) throw new Error("The XR editor is closed.");
-      const source = serializeXrLayoutProfileV1(profile);
-      fileGeneration += 1; state.loadDraft(source); setFields(); render(); notify();
-      status("Saved XR settings reopened. Verify the video library and feedback, then confirm the layout.");
-      return state.getSnapshot();
+      return restoreSelection({ status: "included", profile });
     },
     restoreExcluded() {
-      if (disposed) throw new Error("The XR editor is closed.");
-      fileGeneration += 1; state.resetExcluded(); setFields(); render(); notify();
-      status("XR is excluded from the reopened experiment.");
-      return state.getSnapshot();
+      return restoreSelection({ status: "excluded" });
     },
     setDependencies(dependencies) {
       if (disposed) return;
