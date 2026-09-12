@@ -25,6 +25,7 @@ import {
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
+import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { createInlineColorPicker } from "./inline-color-picker.js";
 import { createPreviewInteraction } from "./preview-interaction.js";
@@ -181,6 +182,7 @@ function createInteractionController(root, { surface }) {
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
+  const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
   let openSection = "workspace";
   let readySetupSectionCount = 0;
@@ -356,6 +358,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function isValidationControl(element) {
+    if (element?.closest?.("[data-screen-layout-draft]")) return false;
     return element instanceof HTMLInputElement
       || element instanceof HTMLSelectElement
       || element instanceof HTMLTextAreaElement;
@@ -529,7 +532,7 @@ function bindResearchInteractions(root, { surface }) {
     openSetupSection(null);
     renderSetupReviewState();
     announce(reviewedSetupSections.size === SETUP_SECTIONS.length
-      ? `${current?.label ?? "Setup section"} reviewed. All eight setup sections have been reviewed.`
+      ? `${current?.label ?? "Setup section"} reviewed. All ${SETUP_SECTIONS.length} setup sections have been reviewed.`
       : `${current?.label ?? "Setup section"} reviewed. There is no next setup section.`);
   }
 
@@ -4045,7 +4048,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     const fieldsValid = syncFieldValidation({ force: true });
     if (blocking.length > 0 || !fieldsValid) {
-      const invalid = query('[aria-invalid="true"]:not([data-preview-grid-input]):not([data-preview-appearance-input])');
+      const invalid = [...root.querySelectorAll('[aria-invalid="true"]:not([data-preview-grid-input]):not([data-preview-appearance-input])')]
+        .find(control => !control.closest("[data-screen-layout-draft]"));
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
       const focusTarget = isValidationControl(invalid)
@@ -4981,6 +4985,7 @@ function bindResearchInteractions(root, { surface }) {
       previewInteraction = null;
       inlineColorPicker.destroy();
       setupLayout.destroy();
+      layoutDraftEditor.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

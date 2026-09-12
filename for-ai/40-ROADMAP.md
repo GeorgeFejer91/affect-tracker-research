@@ -44,6 +44,47 @@ integrated and verified before checking canonical capability items.
 This file records implementation and qualification truth. The first internal
 candidate is `0.4.0-alpha.1`; it is neither stable nor research-ready.
 
+## P4 Screen & Layout — non-exportable design draft
+
+The 2026-09-11 P4 UI Finalization slice adds an editable whole-screen miniature,
+fixed-reference percentages, centre offsets, nominal Flubber diameter, separation
+diagnostics and measured millimetre conversion. Contain fitting, positive axes,
+the design centre and calibration mapping remain visibly proposed Q08 choices.
+Invalid inputs clear stale geometry; conversion preserves geometry or rejects the
+change without clamping. This is draft evidence for P4-02/P4-04/P4-06 only.
+
+The actual application has no media/envelope producer connected and explicitly
+reports that fit is unverified. Mixed-aspect video and maximum-animation examples
+exist only in non-shipping synthetic fixtures. No draft values enter settings,
+package bytes, Start/Run authority or a P7 accepted contribution. Persisted layout,
+actual P1/P5 composition and export/reload remain unimplemented.
+
+Evidence on `codex/segment-p4-screen-layout`, based on `6be0a79`: 437/437 JavaScript
+tests; 91/91 headless Edge assertions across actual application, wide, 360-CSS-px
+and forced-colors fixtures; inspected application/narrow screenshots; desktop
+frontend build and Research-only eight-file closure. The browser checks use an
+isolated background profile and a reduced-motion preference. Reproduction lives
+in `scripts/qualification/screen-layout-draft.mjs`; local receipts are under
+`D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+This is not installed Tauri, Chrome, physical calibration, interactive assistive-
+technology, runtime-screen compatibility, playback or research qualification.
+Integration must collect this branch before claiming canonical availability.
+
+The separate P4 compactness follow-up (`codex/segment-p4-layout-compact`) composes
+that feature with accepted preview/divider base `bed461b`. It groups dimensions
+and offsets in paired rows, removes nested form borders/repeated copy, places
+missing-media limits beside the miniature and preserves visible validation.
+The default editor is approximately 19% shorter at desktop width and 26% shorter
+in the 432px Setup pane. Actual `bootResearchUi` screenshots at 1280×900 include
+top/middle/footer positions, physical-unit fields, missing inputs, invalid fields
+and a synthetic portrait/envelope injected only by the non-shipping harness.
+Final evidence: 459/459 JavaScript tests, 164/164 headless Edge assertions across
+12 captures and desktop 8-file closure. Receipts and inspected screenshots are
+under `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`; reproduce with
+`scripts/qualification/screen-layout-compact.mjs`. Scroll remains necessary,
+with all controls and confirmation reachable. No geometry semantics, accepted
+contribution, runtime authority or qualification status changed.
+
 ## Repository transition — verified
 
 - Research retains ancestry through exact pre-split commit
