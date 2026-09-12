@@ -173,9 +173,10 @@ export function sheetFromDefinition(value, { familyId = value?.questionnaireId, 
 }
 
 /** Parse an explicit TSV/CSV rectangle. There is no content-based delimiter guessing or formula evaluation. */
-export function parseSheetTable(text, { delimiter = "\t", maxColumns = 65, maxRows = 1024 } = {}) {
+export function parseSheetTable(text, { delimiter = "\t", maxColumns = 65, maxRows = 1024, maxCellCharacters = 4000 } = {}) {
   integer(maxColumns, 1, 130, "Table column limit");
   integer(maxRows, 1, 1025, "Table row limit");
+  integer(maxCellCharacters, 1, 6144, "Table cell character limit");
   if (typeof text !== "string" || text.length > QUESTIONNAIRE_SHEET_LIMITS.bytes
     || encoder.encode(text).byteLength > QUESTIONNAIRE_SHEET_LIMITS.bytes) throw new RangeError("Pasted table exceeds the 4 MiB limit.");
   if (delimiter !== "\t" && delimiter !== ",") throw new TypeError("Choose a tab or comma delimiter.");
@@ -185,7 +186,7 @@ export function parseSheetTable(text, { delimiter = "\t", maxColumns = 65, maxRo
   let record = [], field = "", quoted = false, closed = false;
   const append = (value) => {
     field += value;
-    if (field.length > 4000) throw new RangeError("Pasted cells may not exceed 4000 characters.");
+    if (field.length > maxCellCharacters) throw new RangeError(`Pasted cells may not exceed ${maxCellCharacters} characters.`);
   };
   const finishField = () => {
     record.push(field); field = ""; closed = false;

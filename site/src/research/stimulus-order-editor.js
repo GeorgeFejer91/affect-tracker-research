@@ -1,5 +1,6 @@
 import { canonicalJson } from "./canonical.js";
-import { validateVideoLibrary, videoLibraryCsv } from "./stimulus-order.js";
+import { videoLibraryCsv } from "./stimulus-order.js";
+import { validateVariantLibrary as validateVideoLibrary } from "./variant-library.js";
 import { videoLibraryWorkbook } from "./stimulus-workbook.js";
 import { normalizeVariantCatalogue, validateVariantCatalogueLibrary } from "./variant-video-catalogue.js";
 import { normalizeVariantCatalogueSource, projectSavedVariantCatalogue, projectVariantCatalogue } from "./variant-catalogue-adapter.js";
@@ -110,7 +111,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     const stale = library?.integritySha256 !== next.integritySha256;
     library = next; colors = videoColorMap(library);
     if (stale || receipt.designError) { generation++; catalogueOperation++; producerIdentity = null; if (confirmed || receipt.designError) edited = true; confirmed = null; catalogue = null; legacy = null; notify(); }
-    if (design?.version === 2) { draft = structuredClone(design.draft); confirmed = catalogueExpected && !catalogue ? null : design; edited = !confirmed; }
+    if ([2, 3].includes(design?.version)) { draft = structuredClone(design.draft); confirmed = catalogueExpected && !catalogue ? null : design; edited = !confirmed; }
     if (design?.version === 1) { legacy = design; report("A legacy numeric-ISI design is saved. Use Convert saved design to review its named ISIs before confirming."); }
     else report(receipt.designError || `${library.videos.length} videos available. Define ISIs and paste the variant columns.`, Boolean(receipt.designError));
     render(); notify();
@@ -244,7 +245,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       const binding = restoreBinding(receipt, next);
       const verified = await validateStoredVariantDocument(document, next);
       if (token !== generation || operation !== restoreOperation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
-      if (verified.version !== 2) throw new Error("Legacy designs require explicit conversion.");
+      if (![2, 3].includes(verified.version)) throw new Error("Legacy designs require explicit conversion.");
       const result = commitRestore(verified, next, binding, receipt);
       report(`${confirmed.contribution.variants.length} variants reopened. Edits require confirmation.`);
       return result;
@@ -316,7 +317,8 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
         const verified = await validateVideoLibrary(library);
         if (!isCurrent()) return;
         const bytes = format === "csv" ? new TextEncoder().encode(videoLibraryCsv(verified)) : videoLibraryWorkbook(verified);
-        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256 });
+        await operate("export-library", { format, bytes, librarySha256: verified.integritySha256,
+          ...(verified.version === 2 ? { catalogue: verified.catalogue } : {}) });
         if (isCurrent()) report(`Video library ${format.toUpperCase()} export ready.`);
       } catch (error) { if (isCurrent()) report(error.message, true); }
       finally { busy = false; render(); notify(); }
