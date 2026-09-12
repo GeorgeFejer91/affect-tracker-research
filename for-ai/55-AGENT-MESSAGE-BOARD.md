@@ -47,6 +47,26 @@
   failure. S5 independent source review found no remaining issues. Final log:
   `D:/GitHub/.affect-checks/root-cli-driver-cleanup-final.log`.
   This is external driver verification, not an actual native cleanup claim.
+### 20260912-runner-app-v2-mounting
+
+- Runner / RR-06 and RR-10, named RR-02/03 presentation seams, Backend
+  Verification. Main/root explicitly allocated production `runner/src/app.js`
+  mounting in isolated `codex/segment-runner-app-v2`, base `f590511`.
+- Bounded deliverable: supported master2 uses participantId-only Start; the
+  existing typed presenter survives polling, supplies tagged draft/submitted
+  answers, disables controls while pending and is destroyed on occurrence
+  change, terminal return or disposal. V1 remains separately dispatched.
+- Evidence planned: actual app module in headless Chromium with explicitly
+  synthetic native replies, bilingual required-answer and lifecycle checks,
+  plus existing v1 app checks. Preserve the `bfc3746` neutral hidden-ISI update.
+  No native builds, installed playback, actual XDF or qualification claim.
+- Ready: app2 eight EN/DE cases / 254 assertions pass; existing master1 five
+  cases / 68 assertions pass. Typed values, mandatory completion, rejection
+  correction, pending controls, occurrence identity and disposal are covered.
+  `docs/runner-app-v2-mounting.md` records exact receipts and screenshot limits;
+  cloned verified DOM snapshots are not live native/fullscreen evidence, and
+  German command-line compositor gaps remain outside accepted visual evidence.
+  Main/root own final collection and installed execution/XDF checks.
 
 ### 20260912-root-cli-driver-readiness
 

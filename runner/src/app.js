@@ -53,7 +53,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   });
   let protocol = legacyProtocol;
   const masterProtocol = new NativeMasterProtocolAdapter({ invoke, windowObject, render: renderMaster, fail, terminal: async status => {
-    preflight = null; inputReceipt = null; questionnaire = null;
+    if (destroyed) return;
+    preflight = null; inputReceipt = null; clearQuestionnaire();
     text("runner-receipt", status.result ? `Participant ${participantLabel(status.participantId)} · ${status.result.status}\n${status.result.outputDirectory}` : `Participant ${participantLabel(status.participantId)} · incomplete attempt\n${status.failureCode ?? "Native finalization unavailable"}`);
     query("runner-receipt").hidden = false;
     preview.update({hideFeedback:true}); clearMasterDesktopLayout(root);
@@ -90,8 +91,28 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     revision += 1; preflight = null; selection = null; inputReceipt = null;
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
   }
+  function clearQuestionnaire() {
+    questionnaire?.presenter?.destroy();
+    questionnaire = null;
+  }
+  function questionnaireDetail(current, allowPartial) {
+    if (current.presenter) {
+      const result = current.presenter.read({ allowPartial });
+      current.answers = Object.fromEntries(result.answers.map(row => [row.itemId, row.value]));
+      text("runner-questionnaire-progress", current.presenter.progress().text);
+    } else {
+      const choices = current.version === 2 ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
+        if (answer?.kind !== "singleChoice") throw new Error("This questionnaire requires a declared choice.");
+        return [id, answer.optionId];
+      })) : current.answers;
+      validateQuestionnaireAnswers(current.definition, choices, { allowPartial });
+      if (!allowPartial && current.definition.items.some(item => !Object.hasOwn(choices, item.itemId) || choices[item.itemId] === null)) throw new Error("Answer every questionnaire item before continuing.");
+    }
+    return { protocolStepPosition: current.position, answers: structuredClone(current.answers) };
+  }
   function destroy() {
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
+    clearQuestionnaire();
     listeners.forEach((remove) => remove()); participantPicker.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
@@ -116,7 +137,15 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-stop").disabled = busy || !protocol.active;
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
-    query("runner-demographics").hidden = value("runner-attempt") !== "new-attempt";
+    query("runner-demographics").hidden = recipe?.recipe?.version === 2 || value("runner-attempt") !== "new-attempt";
+    if (questionnaire) {
+      const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
+      questionnaire.presenter?.setDisabled(disabled);
+      query("runner-questionnaire-items").querySelectorAll("input,textarea").forEach(input => { input.disabled = disabled; });
+      query("runner-questionnaire-submit").disabled = disabled;
+      query("runner-questionnaire-next").disabled = disabled;
+      query("runner-questionnaire-previous").disabled = disabled || questionnaire.itemIndex === 0;
+    }
   }
   function renderLanguage() {
     for (const id of ["runner-language", "runner-preview-language"]) {
@@ -140,7 +169,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     try {
       const timeline = await participantTimeline(recipe, participantId(), path, value("runner-variant"));
       if (destroyed || generation !== revision || !query("runner-sequence-dialog").open) return;
-      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. Demographics come first for a new attempt. Questionnaire durations depend on responses.`);
+      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${recipe.recipe?.version === 2 ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
       for (const event of timeline.events) {
         const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
         row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition;
@@ -184,6 +213,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const generation = ++revision;
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
     selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
+    clearQuestionnaire();
     participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
     const candidate = await readRunnerRecipe(bytes);
     if (destroyed || generation !== revision) return false;
@@ -200,7 +230,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     clearMasterDesktopLayout(root);
     root.querySelector(".stimulus-stage").hidden=false;root.querySelector(".run-feedback-stage").hidden=false;
     query("runner-questionnaire-submit").disabled=false;
-    text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v1` : `${candidate.package.settings.experiment.title} · package v1`);
+    text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
+    text("runner-preparation-title", master?.version === 2 ? "Experiment language" : "Participant details");
     query("runner-variant-field").hidden = !master;
     query("runner-variant").replaceChildren();
     const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = "Choose variant…"; query("runner-variant").append(prompt);
@@ -247,7 +278,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const checked = await invoke("research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText,
         participantId: participantId(), selector: candidate.selector } });
       if (destroyed || generation !== revision) return;
-      if (checked?.schema !== "affect-runner-master-preflight" || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
+      if (checked?.schema !== "affect-runner-master-preflight" || checked.version !== candidate.version || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
       preflight = checked;
       text("runner-preflight", checked.nativeStartReady ? "Master and media verified. Test the configured input before Start." : `Master and media verified. ${checked.reasons.join(" · ")}`);
       return;
@@ -294,7 +325,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     renderControls();
   }
   async function renderMaster(status, plan) {
-    if (!status.active) return;
+    if (destroyed || !status.active) return;
     const step = plan.steps[status.position - 1];
     if (!step) throw new Error("Native master status references an absent occurrence.");
     text("runner-session", `${participantLabel(status.participantId)} · ${status.position}/${status.stepCount}`);
@@ -304,15 +335,20 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (step.kind === "questionnaire") {
       presentation.showPage("questionnaire"); preview.update({hideFeedback:true});
       if (questionnaire?.position !== status.position) {
-        questionnaire = {definition:step.payload.definition,position:status.position,answers:{...status.answers},master:true};
-        text("runner-questionnaire-title", questionnaire.definition.title); text("runner-questionnaire-instructions", questionnaire.definition.instructions);
+        clearQuestionnaire();
+        questionnaire = {definition:step.payload.definition,position:status.position,answers:structuredClone(status.answers),master:true,version:plan.version};
+        text("runner-questionnaire-title", questionnaire.definition.title);
+        query("runner-questionnaire").lang = questionnaire.definition.language;
         text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items · Answer every item to continue`);
-        renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
+        questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
+        text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
+        text("runner-questionnaire-submit", questionnaire.presenter?.submitLabel ?? "Submit responses");
+        if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
         query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=false;
       }
       query("runner-questionnaire-submit").disabled=status.phase!=="questionnaire";
     } else {
-      questionnaire=null; presentation.showPage("run");
+      clearQuestionnaire(); presentation.showPage("run");
       applyMasterDesktopLayout(root,plan,windowObject);
       root.querySelector(".stimulus-stage").hidden=step.kind!=="video";
       root.querySelector(".run-feedback-stage").hidden=step.kind!=="video";
@@ -327,16 +363,18 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function renderQuestionnaire(detail) {
     if (protocol.active) presentation.showPage(detail.active === false ? "run" : "questionnaire");
     else query("runner-questionnaire").hidden = true;
-    if (detail.active === false) { questionnaire = null; return; }
+    if (detail.active === false) { clearQuestionnaire(); return; }
     const definitions = selection?.compiled.settings.questionnaires.definitions;
     const definition = definitions?.find((item) => item.questionnaireId === detail.questionnaireId);
     if (!definition) throw new Error("The native questionnaire is absent from the frozen recipe.");
     validateQuestionnaireAnswers(definition, detail.answers, { allowPartial: true });
     if (questionnaire?.position === detail.protocolStepPosition) return; // Preserve local focus and newer pending choices.
+    clearQuestionnaire();
     questionnaire = { definition, position: detail.protocolStepPosition, answers: { ...detail.answers }, itemIndex: 0 };
     renderQuestionnaireItem();
   }
   function renderQuestionnaireItem() {
+    text("runner-questionnaire-submit", "Submit responses");
     query("runner-questionnaire-previous").hidden = false;
     const { definition, itemIndex } = questionnaire;
     text("runner-questionnaire-title", definition.title); text("runner-questionnaire-instructions", definition.instructions);
@@ -377,7 +415,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   listen(query("runner-prepare"), "click", () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
-    if (value("runner-attempt") === "new-attempt") participantRecord();
+    if (recipe.recipe?.version !== 2 && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
   }));
@@ -420,11 +458,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
-    const participant = disposition === "new-attempt" ? deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") }) : null;
+    const participant = recipe.recipe?.version !== 2 && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
-      await masterProtocol.start(selection, {workspaceId:workspace.workspaceId,sourceText:recipe.canonicalSourceText,selector:selection.selector,
-        participant:{participantId:participantId(),...participant},inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked});
+      const request = {workspaceId:workspace.workspaceId,sourceText:recipe.canonicalSourceText,selector:selection.selector,
+        inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
+      if (selection.version === 2) Object.assign(request, {version:2,participantId:participantId()});
+      else request.participant = {participantId:participantId(),...participant};
+      await masterProtocol.start(selection, request);
       inputReceipt=null; renderControls(); return;
     }
     await protocol.start({ ...selection.detail, participant, inputTestReceiptId: inputReceipt?.receiptId,
@@ -435,16 +476,27 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-stop-cancel"), "click", () => query("runner-stop-dialog").close());
   listen(query("runner-stop-confirm"), "click", () => { query("runner-stop-dialog").close(); action(() => protocol.finish("stopEarly")); });
   listen(query("runner-questionnaire-form"), "change", (event) => {
-    if (!questionnaire || !event.target.dataset.answerItem) return;
-    questionnaire.answers[event.target.dataset.answerItem] = event.target.value;
-    const detail = { protocolStepPosition: questionnaire.position, answers: { ...questionnaire.answers } };
-    action(() => protocol.questionnaireDraft(detail));
+    const current = questionnaire;
+    if (!current || busy || (!event.target.dataset.answerItem && !event.target.dataset.formItem)) return;
+    if (!current.presenter) current.answers[event.target.dataset.answerItem] = current.version === 2
+      ? {kind:"singleChoice",optionId:event.target.value} : event.target.value;
+    action(async () => {
+      if (questionnaire !== current) return;
+      const detail = questionnaireDetail(current, true);
+      await protocol.questionnaireDraft(detail);
+    });
   });
-  listen(query("runner-questionnaire-form"), "submit", (event) => { event.preventDefault(); action(async () => {
-    if (!questionnaire) return; validateQuestionnaireAnswers(questionnaire.definition, questionnaire.answers);
-    if (questionnaire.definition.items.some(item => !Object.hasOwn(questionnaire.answers, item.itemId) || questionnaire.answers[item.itemId] === null)) throw new Error("Answer every questionnaire item before continuing.");
-    await protocol.questionnaireSubmit({ protocolStepPosition: questionnaire.position, answers: { ...questionnaire.answers } });
-  }); });
+  listen(query("runner-questionnaire-form"), "input", () => {
+    if (questionnaire?.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
+  });
+  listen(query("runner-questionnaire-form"), "submit", (event) => {
+    event.preventDefault(); const current = questionnaire;
+    if (!current || busy) return;
+    action(async () => {
+      if (questionnaire !== current) return;
+      await protocol.questionnaireSubmit(questionnaireDetail(current, false));
+    });
+  });
   listen(query("runner-questionnaire-previous"), "click", () => {
     if (questionnaire && !busy) { questionnaire.itemIndex = Math.max(0, questionnaire.itemIndex - 1); renderQuestionnaireItem(); }
   });
