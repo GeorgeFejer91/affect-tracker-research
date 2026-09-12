@@ -45,6 +45,10 @@ remain open until integrated and verified. Scope, example and evidence are in
 - [ ] **CLI-SHARED:** one typed gateway, complete setting registry, revision and
   lifecycle fences, bounded transport, truthful results and the requested real
   mock experiment with full end-to-end setting coverage.
+- [ ] **CLI-DOCS:** maintained About → CLI library on GitHub Pages and matching
+  [for-ai reference](71-CLI-LIBRARY.md), source-derived command inventory and
+  drift check, exact input/output/UI/JSON mappings, examples and verification
+  status; rendered and deployed documentation checked against integrated source.
 
 ### CLI-to-Runner validation goal — 2026-09-12
 

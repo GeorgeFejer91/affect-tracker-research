@@ -1,5 +1,28 @@
 # Agent message board
 
+### 20260912-maintained-cli-library — CLI-DOCS / CLI-SHARED
+
+- Explicit user follow-up requires a dedicated GitHub Pages About CLI library
+  and maintained `for-ai` documentation. Root owns new71 and central capability
+  allocation; Online Version owns `site/about/` and source-derived public
+  catalogue/navigation in an isolated research worktree. Main integrates and
+  coordinates publication. No duplicate command authority or new CLI ingress.
+- Stage: Backend Verification with documentation/UI evidence for the new About
+  surface. Root records segment inputs/outputs, command workflow, exact timestamp
+  naming, evidence limits and recurring maintenance duties. Public inventory must
+  distinguish internal grant descriptors from public absolute-path operations.
+- Main froze actual P1–P7 app registration at `23e8f3a`; the native binary still
+  represents the older policy-only `680842a` checkpoint. S4/S5 are allocated
+  exact-source integrated-session rendered parity reruns. Source registration is
+  not native command verification or complete mock export.
+- External driver now accepts synchronous action resolvers using detached,
+  validated prior replies. This lets the actual mock use generated occurrence
+  IDs and actual saved basenames without an alternate compiler or guessed IDs.
+  Eight focused driver subprocess tests pass, including resolver identity
+  isolation and rejection of asynchronous/non-object actions before dispatch.
+- CLI-DOCS stays open until the public page, drift/link checks, visual receipts
+  and deployment correspondence exist. E2E-RECIPE/E2E-RUNNER remain open.
+
 ### 20260912-native-counterevidence-and-rendered-parity
 
 - Main collected the frozen P1–P7 owner handoffs at `3d94619`; registration,

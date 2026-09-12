@@ -15,6 +15,9 @@ supersedes older blanket no-CLI wording. The new extension is not yet complete.
 
 Capability status remains in [60](60-SEGMENT-CATALOGUE.md), CLI-P1 through
 CLI-P7 and CLI-SHARED. This file holds the scope, example and evidence ledger.
+The maintained command library and About-page documentation requirement are in
+[71](71-CLI-LIBRARY.md); every future command change must update that reference
+and its public source-derived catalogue.
 
 ## Scope and authority
 
@@ -51,7 +54,8 @@ saved state; cancellation cannot undo a file that was already written.
 
 Every new export receives a readable prefix and Windows-safe UTC creation
 timestamp with subsecond precision. Exact spelling belongs to the shared helper;
-an example is `great-dictator-mock--20260912T153045123Z.json`. Clock time belongs
+the implemented form is `great-dictator-mock_2026-09-12_15-30-45-123Z.json`,
+with a collision suffix when needed. Clock time belongs
 only in the filename, never in canonical content, identity, integrity hashes or
 reproduction. Editing a loaded file exports a new version, preserving the old.
 
