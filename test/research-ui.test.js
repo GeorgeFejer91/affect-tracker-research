@@ -41,6 +41,7 @@ const expectedSections = [
   ["stimuli", "Experiment Plan & Stimuli"],
   ["layout", "Screen & Layout"],
   ["feedback", "Flubber & Controls"],
+  ["xr", "VR screen layout"],
   ["review", "Review & Start"],
 ];
 

@@ -1,3 +1,35 @@
+/* P6 authoring: text reflows; the inspection scene has a responsive viewBox. */
+.xr-layout-editor { min-width: 0; }
+.xr-layout-editor [data-xr-content] { min-width: 0; }
+.xr-profile-fields { min-width: 0; margin: 0.75rem 0; padding: 0.65rem 0; border: 0; border-top: 1px solid var(--border); }
+.xr-profile-fields legend { padding: 0 0.35rem; color: var(--text); }
+.xr-layout-editor .field-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.xr-layout-editor input { max-width: 100%; min-width: 0; }
+.xr-layout-figure { margin: 1rem 0; }
+.xr-layout-figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--border); background: var(--surface-quiet); }
+.xr-layout-figure svg text { font-size: 12px; fill: var(--text); }
+.xr-layout-figure figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.4rem; }
+.xr-screen-frame { fill: var(--surface-raised); stroke: var(--border-strong); stroke-width: 2; }
+.xr-video-plane { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.xr-feedback-footprint { fill: none; stroke: var(--success); stroke-width: 2; }
+.xr-feedback-envelope { fill: none; stroke: var(--success); stroke-width: 1; stroke-dasharray: 4 3; }
+.xr-distance-line { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.xr-axis-line { stroke: var(--muted); stroke-width: 1.5; }
+.xr-offset-line { stroke: var(--success); stroke-width: 1; stroke-dasharray: 3 3; }
+.xr-view-controls, .xr-profile-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; }
+.xr-view-controls .field { flex: 1 1 11rem; }
+.xr-profile-actions .field { flex: 1 1 100%; }
+.xr-geometry-readout { display: grid; gap: 0.4rem; font-variant-numeric: tabular-nums; }
+.xr-geometry-readout > div { display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; }
+.xr-geometry-readout dt { color: var(--muted); }
+.xr-geometry-readout dd { margin: 0; overflow-wrap: anywhere; }
+.xr-layout-editor [data-xr-error], .xr-layout-editor [data-xr-status] { overflow-wrap: anywhere; }
+@media (forced-colors: active) {
+  .xr-video-plane, .xr-screen-frame { fill: Canvas; stroke: CanvasText; }
+  .xr-feedback-footprint, .xr-feedback-envelope, .xr-distance-line, .xr-axis-line, .xr-offset-line { stroke: CanvasText; }
+  .xr-layout-figure svg text { fill: CanvasText; }
+}
+
 :root {
   color-scheme: dark;
   font-family: ui-sans-serif, system-ui, sans-serif;

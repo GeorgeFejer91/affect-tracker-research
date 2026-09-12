@@ -19,6 +19,7 @@ mod research_run_storage;
 mod research_runtime;
 mod research_timing;
 mod research_workspace;
+pub mod research_xr_layout;
 
 use research_input::ResearchInputService;
 use research_native_media::NativeMediaService;

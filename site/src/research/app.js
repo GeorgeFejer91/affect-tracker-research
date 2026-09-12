@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -189,6 +190,14 @@ function bindResearchInteractions(root, { surface }) {
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
+  const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
+    onChange: (snapshot) => {
+      const summary = root.querySelector('[data-section-summary="xr"]');
+      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Layout accepted";
+      root.researchUi?.plannerContributionChanged?.("P6");
+    },
+  }) : null;
   let openSection = "workspace";
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
@@ -5166,6 +5175,9 @@ function bindResearchInteractions(root, { surface }) {
 
   return Object.freeze({
     get mode() { return mode; },
+    getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
+    setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
@@ -5244,6 +5256,8 @@ function bindResearchInteractions(root, { surface }) {
       setupLayout.destroy();
       packageExport.destroy();
       layoutDraftEditor.destroy();
+
+      xrLayoutEditor?.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

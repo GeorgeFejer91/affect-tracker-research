@@ -1,4 +1,5 @@
 import { createDefaultResearchSettings } from "./contracts.js";
+import { xrLayoutEditorMarkup } from "./xr-layout-view.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { SETUP_SECTIONS } from "./ui-contracts.js";
 import { feedbackAppearanceMarkup, feedbackInputMarkup, feedbackAdvancedMarkup } from "./feedback-controls-view.js";
@@ -31,6 +32,7 @@ export const DEFAULT_LANGUAGE_SELECTION_SOURCE = JSON.stringify(DEFAULT_LANGUAGE
 export { COLOR_FIELDS, describeInputToken } from "./feedback-controls-view.js";
 
 const SECTION_SUMMARIES = Object.freeze({
+  xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
   stimuli: "Externally ordered video protocol",
   layout: "Proposed layout · not exportable",
@@ -511,6 +513,7 @@ const SECTION_CONTENT = Object.freeze({
   layout: screenLayoutDraftMarkup,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
+  xr: xrLayoutEditorMarkup,
   review: reviewSection,
 });
 

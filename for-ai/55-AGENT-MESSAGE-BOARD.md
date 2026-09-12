@@ -985,6 +985,62 @@ file; follow the integration-owner collection procedure in the workflow.
   wording to describe extensible language variants using one shared authoring,
   validation, package and Runner-selection model. Current picker/preload audit
   remains unchanged; no two-language schema restriction is implied.
+### 20260911-p6-virtual-screen
+
+- Owner: **S6**, P6 `xr-layout`; **ready for combined integration**, Backend Verification, bounded Planner
+  contribution/editor. User clarified a virtual screen for future WebXR with
+  precise distance, physical size and viewing angles. P6-01/02/03/05 allocated;
+  P6-04 explicitly answered: head-forward without eye tracking, one anchor per
+  attempt, stop on tracking loss, recenter between attempts. P6-06 deferred.
+- Branch `codex/segment-p6-virtual-screen`, worktree
+  `D:/GitHub/affect-tracker-research-p6-virtual-screen`, base `305d3ac`; canonical
+  docs `6be0a79` merged, retaining both owners' board entries.
+- Authority provenance: read all canonical working-tree `for-ai/` Markdown in
+  order, including the uncommitted 2026-09-11 charter amendment and `60`/`62`.
+  Documentation is now committed and merged. This pass changes only P6's
+  status/decisions, its contract/evidence receipt and this owned entry.
+- P6 owns explicit metres/angles, fixed-screen contain fit, world-fixed initial
+  alignment requirements, local feedback centre offsets and inspection preview.
+  P1 supplies media geometry; P5 supplies style/full animation envelope; P7 owns
+  combined recipe, native save and stale/v1 exclusion. No v1 reinterpretation,
+  captured headset pose, runtime acquisition or filesystem authority is added.
+- Allowed files: new `xr-layout*.js`, Rust pure mirror, focused fixtures/tests,
+  contract documentation and this entry. Shared seams: `ui-view.js` P6 mount,
+  `app.js` editor construction/teardown/getter only, scoped `research.css`, and
+  `lib.rs` module registration. Agreed with P5/integration: own `xr` entry in
+  `SETUP_SECTIONS`, `SECTION_CONTENT.xr`, generic confirmation/motion and dynamic
+  section counts. P5's removed Visual section is not used. Shared package/Start
+  guards belong to S7.
+- Coordination registered with integration, P5, P7 and S3 owners. P5 preserves
+  the mount; P7 owns master composition. No other worktree will be edited.
+- Baseline: Node v24.19.0, 45/45 focused UI/package/architecture tests. Final
+  evidence: 443/443 Node tests (17 P6), 5/5 focused Rust tests, full 191/191 Rust suite
+  and warnings-denied Clippy/fmt; desktop 8-file and Pages 173-file closures.
+  Chrome and Edge each pass 18 isolated editor checks; 2 actual P5 producer
+  interop fixtures pass. Exact commands/limits are in the P6 ledger receipt.
+- **Required atomic dependency:** P7 `e524b9f` automatically registers the getter
+  and blocks active XR on every v1 save/re-export/Start path. Do not activate P6
+  UI in canonical source without this seam. P7 followup corrects issue route to
+  `xr`. Full master successor embedding remains open, not bypassed by the separate
+  explicitly labelled authoring profile.
+- P1 projection agreed: opaque `assetId` plus verified oriented displayWidth/
+  displayHeight and catalogue revision. Its producer is still in progress.
+  P5 envelope conversion uses an explicit 1024 CSS-pixel reference viewport and
+  circumscribed-circle bound. P5's source SHA-256 for interop is
+  `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`;
+  do not copy P5 policy. Its automatic live wiring remains a convergence seam.
+- P5 producer checkpoint is now ready and clean:
+  `597a612bbb8ad30d44ed4cb872df026034ee1935` (application source `8d3d256`).
+  Both P6 interop fixtures re-passed at that checkpoint with the same source hash.
+- No desktop input, GUI launch, publication or headset/research qualification.
+- Feature checkpoint: `adc9494`; subsequent owned compactness/error-presentation
+  followup is separately committed. Final actual-boot evidence is
+  `D:/GitHub/.affect-preview-checks/p6-boot-handoff-20260911/`: 8 inspected
+  empty/populated/scene/error captures, 74 assertions, panes 383–815 px.
+  47 focused tests and both build closures pass after the UI followup.
+  Earlier blank breakpoint-adjacent captures are excluded. The external legend
+  retains readable axis/shape meanings when SVG labels shrink. New shared hunk:
+  `SECTION_SUMMARIES.xr` and its P6-only changed-state projection.
 
 ### 20260911-preview-pinned-input
 

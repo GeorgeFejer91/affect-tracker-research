@@ -362,21 +362,26 @@ future compatible VR APK/WebXR Runner.
 **User input:** XR selection, video spatial/angular size, distance, centre
 azimuth/elevation, orientation and relative Flubber offset.
 **Confirmed:** world-fixed content, aligned to participant forward direction at
-setup. Recentring/tracking-loss details remain Q11.
+setup. Q11 answered in S6 on 2026-09-11: head-forward without eye tracking;
+retain one anchor per attempt, recenter between attempts, stop on tracking loss.
 **Receives:** P1 geometry, P5 feedback/input requirements and P4 centre semantics.
 **Produces:** world-fixed spatial profile, alignment/target requirements and
 rotatable 3D preview. **Consumers:** P7 and later R1 XR adapters.
 
-- [ ] **P6-01 — Missing:** optional spatial profile and explicit compatible-target requirements.
-- [ ] **P6-02 — Missing:** 3D preview distinguishing video angular width/height, centre offset and distance.
-- [ ] **P6-03 — Missing:** world-fixed initial-forward alignment and video-local centre-offset transform with declared axes/units.
-- [ ] **P6-04 — Decision:** forward reference, recentering/tracking loss and whether anything requires measured eye gaze (Q11).
-- [ ] **P6-05 — Missing:** validation/export/reopen fixtures and explicit unsupported-target rejection.
+- [ ] **P6-01 — Pending integration:** strict separate `XrLayoutProfileV1` authoring contribution and explicit WebXR target; P7 successor master embedding remains open.
+- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; P1 live geometry producer remains a dependency.
+- [ ] **P6-03 — Pending integration:** declared right/up/back metre frame, world-fixed initial-head-forward policy and rotated local feedback centre; pure JS/Rust transform fixtures pass.
+- [ ] **P6-04 — Answered, pending integration:** Q11 confirmed policies are explicit in the strict profile. Actual alignment/tracking enforcement remains deferred P6-06.
+- [ ] **P6-05 — Pending integration:** canonical authoring export/reopen, invalid/stale/target rejection, full P5 envelope conversion and JS/Rust/browser fixtures pass. Finished master recipe round trip remains P7 work.
 - [ ] **P6-06 — Deferred:** headset/APK/WebXR execution, LSL recording and physical qualification belong to a separate Runner pass.
 
 **Planner acceptance:** spatial profile round-trips with reproducible transform/
 angle fixtures; the preview does not claim headset accuracy. World-fixed is not
 a measured-eye-tracking requirement. No active XR implementation exists at baseline.
+P6 worktree source/contract and exact limits are in
+[63-P6-XR-LAYOUT.md](63-P6-XR-LAYOUT.md), with receipts in
+[40-ROADMAP.md](40-ROADMAP.md#p6-virtual-screen-authoring--2026-09-11).
+These component results do not close canonical capabilities before integration.
 **Boundary:** no unrelated Playground restoration or device work merely to finish authoring.
 
 ## P7 — Review, Recipe & Export
@@ -473,11 +478,11 @@ An open decision blocks only its dependent capability.
 | Q08 | Percentage basis answered; details open / P4 | Use one fixed reference area across all videos. Exact reference extent/selection, physical calibration, axes and stable Flubber centre remain open. | Centre-to-centre anchoring and fixed-reference percentages are accepted; fixed design centre remains recommended. |
 | Q09 | Open / P2 | Required questionnaire placements, computed scoring and missing-answer semantics beyond option codes? | Preserve explicit existing definitions/placements until answered. |
 | Q10 | Open / P5 | Which simulator/draft controls must become saved experiment controls, including hold, halo, tiles and alternate renderer choices? | Enumerate saved controls/units; do not assume every draft is approved. |
-| Q11 | Anchor answered; details open / P6 | World-fixed, initially forward-aligned. How does recentering/tracking loss work; is forward head pose or measured eye gaze? | Head-forward recommended; do not infer eye-tracking support. |
+| Q11 | Answered / P6 | Direct S6 answer on 2026-09-11: “Yes, use these alignment rules.” Head-forward with no eye tracking, world anchor throughout each attempt, stop on tracking loss, recenter only before the next attempt. | Profile encodes requirements; physical enforcement is later Runner work. |
 | Q12 | Open / P1/P7 | Accept proposed homes/exposure for study identity, any retained participant-count metadata, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values; participant allocation is Runner-owned under updated Q06. |
 | Q13 | Open / P7 | Does final JSON restore only accepted runnable design or also drafts/provenance; how are edits to used recipes versioned? | Separate editable drafts from immutable run evidence. |
 | Q14 | Named-only/user-defined values answered; lifecycle details open / P3 | Researcher-supplied durations create named ISI entries; the sample names/times/count are illustrative. Version cells use names only, excluding raw numeric values. | Embed dictionary/references. Stable IDs and dependency invalidation are recommended; naming/duplicate/delete details remain open. |
-| Q15 | Open / P6/P7 | Are desktop and XR alternative profiles in one recipe or separate target requirements; does initial spatial authoring use a flat monoscopic plane, and which plane rotations/depth offsets are exposed? | Explicit selected target, no silent desktop fallback; flat plane proposed first. Rotatable inspection is distinct from saved plane rotation. |
+| Q15 | Initial screen scope clarified; master selection open / P6/P7 | Researcher described a video screen inside a future WebXR headset with precise distance, size and viewing angles. P6 implements a flat monoscopic screen with yaw/pitch/roll, coplanar local feedback and explicit WebXR requirement. Combining desktop/XR alternatives in one master recipe remains P7 work. | No silent desktop fallback. Rotatable inspection remains separate from saved screen rotation. |
 
 ## Recommended order and completion criteria
 
