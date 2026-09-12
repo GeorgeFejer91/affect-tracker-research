@@ -1,0 +1,53 @@
+{
+  "schema": "affect-research-video-catalogue-contribution",
+  "version": 2,
+  "revision": 3,
+  "annotationPolicy": "relative-path-reversible-v1",
+  "entries": [
+    {
+      "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "annotationId": "session%5Fa_clip.mp4",
+      "sourceRelativePath": "stimuli/session_a/clip.mp4",
+      "packageRelativePath": "assets/stimuli/session_a/clip.mp4",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "byteLength": 1024,
+      "durationMs": 12345,
+      "geometry": {
+        "status": "verified",
+        "source": "browser-decoder",
+        "displayWidthPx": 1920,
+        "displayHeightPx": 1080,
+        "displayAspect": {
+          "numerator": 16,
+          "denominator": 9
+        },
+        "rotationDegrees": null,
+        "pixelAspectRatio": null,
+        "metadataInterpretation": "decoder-oriented-display"
+      }
+    },
+    {
+      "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "annotationId": "session-a_clip.mp4",
+      "sourceRelativePath": "stimuli/session-a/clip.mp4",
+      "packageRelativePath": "assets/stimuli/session-a/clip.mp4",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "byteLength": 1024,
+      "durationMs": 12345,
+      "geometry": {
+        "status": "verified",
+        "source": "browser-decoder",
+        "displayWidthPx": 1920,
+        "displayHeightPx": 1080,
+        "displayAspect": {
+          "numerator": 16,
+          "denominator": 9
+        },
+        "rotationDegrees": null,
+        "pixelAspectRatio": null,
+        "metadataInterpretation": "decoder-oriented-display"
+      }
+    }
+  ],
+  "integritySha256": "a0e0d58eeed93d7feca9e374e59f3e0d157064c6c3e1e391291fba8accf9e26f"
+}
