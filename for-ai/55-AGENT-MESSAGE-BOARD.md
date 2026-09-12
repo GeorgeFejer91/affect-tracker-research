@@ -176,6 +176,14 @@ file; follow the integration-owner collection procedure in the workflow.
   P1's saved-content validator. Restore an editable draft while keeping actual
   P1 revisions and pending/null contribution; prepare/accept wait for verified
   media rebind. Preserve serialized contracts and stale/edit/dependency guards.
+- P3 subsequently delivered clean `3413865` above `ffe7e62`: the agreed
+  content-only restore populates editable sequences/ISIs, returns pending/null
+  with the actual P1 revision and permits preparation only after verified
+  rebind. Owner reports 102 targeted checks and both builds. P7/integration
+  received the handoff. Independent source review found no new material defect;
+  tests exercise the actual editor using a lightweight DOM, including no writes
+  and edits surviving rebind. Root ran no tests or rendered-browser check for
+  this repair; actual master reopen remains a combined check.
 - P7 handoffs `a4bd8a1`/`f283de0` add named-file acknowledgement/lifecycle and
   composite registration. Root inspected its actual rendered cancelled-save
   Review image: primary recipe/status precedes collapsed LSL, resolving that
@@ -199,6 +207,16 @@ file; follow the integration-owner collection procedure in the workflow.
   integration's single prepare/accept action. Exact coverage limits are in `64`.
   This handoff still includes P1 `5988ce0`; the S1
   refresh-race repair remains a separate required integration dependency.
+- P7 clean foundation handoff `929a257` includes named-file acknowledgement,
+  subscription lifecycle, composite registration, strict retained-policy
+  JS/Rust validation and complete P2 route compilation. Owner checks cover
+  canonical policy agreement and independent-process reproduction; exact
+  interfaces/gates are in `docs/planner-p7-recipe-assembly.md` on that branch.
+  The final master envelope, native dispatch and combined reopen remain open
+  until P4 has an accepted desktop contract. Historical block/after-stimulus
+  questionnaire hooks have no approved correspondence to the new variant
+  structure and return explicit field errors; no questionnaire content is
+  dropped or silently reassigned. S7 has stopped source writers for collection.
 
 ### 20260911-roadmap-rendered-compactness-audit
 
