@@ -171,6 +171,50 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     finally { busy = false; render(); notify(); if (issue && token === generation && restoreToken === restoreOperation) revealIssue(issue); }
     return snapshot();
   }
+  /** CLI confirmation validates detached content without publishing readiness.
+   * The registry consumes the future snapshot; the coordinator owns commit. */
+  async function prepareConfirmation({ isCurrent = () => true, signal } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("Confirmation requires a current-operation guard.");
+    const token = generation, scan = catalogueOperation, restoreToken = restoreOperation;
+    const nextGeneration = generation + 1;
+    let committed = false, projected = false, stale = false;
+    const current = () => {
+      try {
+        if (destroyed || busy || committed || token !== generation || scan !== catalogueOperation
+          || restoreToken !== restoreOperation || signal?.aborted || isCurrent() !== true) stale = true;
+      } catch { stale = true; }
+      return !stale;
+    };
+    const check = () => { if (!current()) throw new Error("The table or catalogue changed during confirmation. Confirm the current table again."); };
+    check();
+    if (!library) throw new Error("Confirm the video catalogue in Segment 1 first.");
+    if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
+    validateVariantCatalogueLibrary(catalogue, library);
+    const pendingDraft = structuredClone(draft), pendingLibrary = structuredClone(library), pendingCatalogue = structuredClone(catalogue);
+    const document = await createVariantDocument(pendingDraft, pendingLibrary);
+    for (const variant of document.contribution.variants) compileVariantTimeline(document.contribution, variant.variantId, pendingCatalogue.videos);
+    check();
+    const future = { revision: nextGeneration, enabled: true, pending: false,
+      contribution: structuredClone(document.contribution),
+      dependencyRevisions: [{ segment: "P1", revision: pendingCatalogue.revision }] };
+    return Object.freeze({
+      get snapshot() { return structuredClone(future); },
+      isCurrent: current,
+      commit() {
+        check();
+        confirmed = document; edited = false; legacy = null; generation = nextGeneration;
+        authoringPublicationPending = false; committed = true;
+      },
+      afterCommit() {
+        if (!committed) throw new Error("Commit the confirmed table before publishing its projection.");
+        if (projected) return;
+        projected = true;
+        if (destroyed || generation !== nextGeneration) return;
+        render(); notify();
+        report(`${document.contribution.variants.length} variants ready for review.`);
+      },
+    });
+  }
   function revealIssue(error) {
     const isiId = /^(ISI[1-9][0-9]*) duration/u.exec(error.message)?.[1];
     const selector = Number.isInteger(error.row) && Number.isInteger(error.column)
@@ -260,7 +304,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   host?.addEventListener("input", onInput); host?.addEventListener("change", onEdit); host?.addEventListener("paste", onPaste); host?.addEventListener("click", onClick);
   versions?.addEventListener?.("click", onClick); render();
   return {
-    confirm, confirmLibrary, adopt, prepareContribution,
+    confirm, confirmLibrary, adopt, prepareContribution, prepareConfirmation,
     // Command adapters project the existing owner draft. No second state store
     // or accepted contribution is created by an atomic authoring edit.
     captureAuthoringDraft() {
