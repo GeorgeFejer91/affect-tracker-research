@@ -77,6 +77,16 @@ application's real reduced-motion preference for settled static captures;
 this is not animation or physical-input qualification. No user window is
 attached or controlled. The app's default data state is recorded explicitly.
 
+For the next combined capture, the helper uses actual element visibility rather
+than layout rectangles, which Chromium may retain inside closed disclosures.
+It also records the harness SHA-256 and each PNG SHA-256. These additions apply
+to new receipts only; they do not retroactively strengthen older captures.
+The two-viewport smoke run at clean P6 `3bedea1` passes with stable source,
+zero runtime/pane-overflow errors and matching harness/PNG hashes. Root inspected
+both disabled-XR captures at
+`D:/GitHub/.affect-preview-checks/capture-helper-3bedea1-20260912`.
+This verifies the changed capture helper, not final combined V28 coverage.
+
 Local evidence directories:
 
 - `D:/GitHub/.affect-preview-checks/segment-audit-bed461b-v2`: 11 screenshots of
@@ -163,6 +173,19 @@ integration prepare/accept composition; one final action must replace that
 prerequisite sequence. Source receipts record 28 passing assertions each but
 no PNG digest, so cryptographic image-file binding is unrecorded. These two
 states do not close V19–V21/V28 or final master/target wiring.
+
+P6 follow-up `3bedea1` resolves that owner-state action duplication. Root
+inspected the actual 820px capture at
+`D:/GitHub/.affect-preview-checks/p6-profile-tools-20260912/app-narrow/xr-authoring.png`:
+Profile tools is collapsed and Confirm section is the sole main action; diagram,
+measurements, status and footer remain readable. The optional action is now
+Validate for download inside the disclosure. Its receipt names base `82c8f0f`
+and a then-uncommitted diff; root matched all 60 recorded source hashes against
+the final clean `3bedea1` with zero mismatches. It is a source-hash-verified owner
+capture, not a capture made after that commit or final combined integration.
+The owner reports 28 focused Node, 20 standalone visibility/keyboard Chrome,
+28 actual-app Chrome checks and both builds. Combined footer preparation and
+P7 acceptance/save semantics remain separately assigned; V28 stays open.
 
 ## Segment checklist
 
