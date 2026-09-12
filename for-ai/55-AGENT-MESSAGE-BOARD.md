@@ -501,6 +501,32 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260912-integration-planner-completion
 
+- Complete product candidate `875efae0a852bdcea978e8a12b74c0e81288d51c`
+  collects all ready P1–P7 owner changes, Preview badge correction, strict
+  browser/native file wiring, P3 catalogue export and isolated companion build
+  cleanup. Current full checks pass: 769 JavaScript, 235 no-default native,
+  desktop 11-file / Pages 235-file / Runner 7-file build boundaries. Root and
+  P7 independently report 65 actual-controller master checks in each Chrome
+  and Edge; the saved Review header now agrees with the acknowledged file.
+- Supplemental confirmation fixture now uses the current strict file-adapter
+  stale error and authors its old test rows against P1's current location IDs
+  by exact path. The frozen old data is unchanged. All 35 real-controller
+  checks pass, including edit/revert/invalid-edit Open fencing, rebind races,
+  persistent confirmation and exact legacy-file reopening. All six accordion
+  footers also pass bottom-right placement and layered breathing-glow checks.
+- Companion boundary capture retains the real Planner alert through capture,
+  proving its synthetic workspace rejection is visible alongside Section 1.
+  All three role fixtures pass; source/CSS/harness/browser/PNG hashes are now
+  recorded. The Planner error PNG was inspected. These are synthetic boundary
+  and browser checks, not OS dialog, physical decoding or installed evidence.
+- The first normal SDK native attempt correctly rejected an unstaged runtime.
+  The checked-in stager then independently verified the pinned installer and
+  populated this worktree's ignored runtime: 827 files, 340362958 bytes, verified
+  true. Required-runtime linked testing follows without DOCS_RS or gate bypass.
+  Evidence is under `D:/GitHub/.affect-preview-checks/planner-completion-20260912/`;
+  failed attempts remain preserved. Final canonical delivery and root checklist
+  receipt collection remain open; no foreground launch or remote push occurred.
+
 - Shared composition follow-up: full P7 compiler/file/reopen `828fff7` and live
   P4 prepare/content restore `2499517` are collected. Main now wires footer P4
   preparation, final P5 capture, full-master compile/acknowledgement, one named

@@ -1,6 +1,8 @@
 import { bootResearchUi } from "../../site/src/research/app.js";
 import { canonicalJson } from "../../site/src/research/canonical.js";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
+import { createVariantDesign, variantDesignToDraft } from "../../site/src/research/variant-design.js";
+import { projectSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import variants from "./variant-workspace-binding-v1.json";
 import legacyRecipe from "./experiment-package-v1.canonical.json";
@@ -38,6 +40,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   ui.restorePlannerRecipePolicy(initialPolicy, { isCurrent: () => true });
   const source = `${canonicalJson(legacyRecipe)}\n`, bytes = new TextEncoder().encode(source);
   const handle = { kind: "file", getFile: async () => ({ size: bytes.byteLength, arrayBuffer: async () => bytes.slice().buffer }) };
+  const staleOpenMessage = "Recipe open failed: The design or file operation changed. Prepare the current recipe again.";
   // No legacy experiment document exists yet, so draft fingerprints are null.
   // A delayed file selection must not overwrite even invalid or reverted edits.
   await wait(100);
@@ -58,7 +61,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
       q("#sampling-frequency").dispatchEvent(new Event("input", { bubbles: true }));
     }
     release();
-    await until(() => q("#research-announcer").textContent.includes("Newer edits were preserved"));
+    await until(() => q("#research-announcer").textContent === staleOpenMessage);
     check(`incomplete-draft file open preserves ${label}`,
       ui.experimentPackage === null && q("#sampling-frequency").value === (revert ? before : edited));
   }
@@ -73,7 +76,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   q("#package-load").click(); await until(() => releaseParsing);
   q("#experiment-title").value = "Keep my newer study title";
   q("#experiment-title").dispatchEvent(new Event("input", { bubbles: true }));
-  releaseParsing(); await until(() => q("#research-announcer").textContent.includes("Newer edits were preserved"));
+  releaseParsing(); await until(() => q("#research-announcer").textContent === staleOpenMessage);
   check("edits during real asynchronous file validation prevent adoption", ui.experimentPackage === null
     && q("#experiment-title").value === "Keep my newer study title");
   const publish = (entries = catalogue.entries) => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.stimuliCatalogued, { detail: {
@@ -102,7 +105,16 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   await clickConfirm("questionnaires");
   check("questionnaire confirmation advances to variants", accepted("questionnaires") && ui.openSection === "stimuli");
   const savedWorkspace = ui.getWorkspaceContributionSnapshot().contribution;
-  await ui.restoreStimulusVariantContent(variants.contribution, {
+  // This live cycle authors against the current P1 location contract. Preserve
+  // the historical fixture unchanged; translate its test rows by exact path.
+  const oldLibrary = (await projectSavedVariantCatalogue(variants.initialSnapshot.contribution)).library;
+  const currentLibrary = (await projectSavedVariantCatalogue(savedWorkspace)).library;
+  const currentDraft = variantDesignToDraft(variants.contribution);
+  const aliases = new Map(oldLibrary.videos.map(video => [video.annotationId,
+    currentLibrary.videos.find(current => current.relativePath === video.relativePath)?.annotationId]));
+  currentDraft.rows = currentDraft.rows.map(row => row.map(cell => aliases.has(cell) ? aliases.get(cell) : cell));
+  const currentVariants = await createVariantDesign(currentDraft, currentLibrary);
+  await ui.restoreStimulusVariantContent(currentVariants, {
     savedWorkspaceContribution: savedWorkspace, dependencies: { P1: ui.getWorkspaceContributionSnapshot() }, isCurrent: () => true,
   });
   await ui.setStimulusOrderCatalogue(ui.getWorkspaceContributionSnapshot());
@@ -148,7 +160,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
     return { get intercepted() { return intercepted; }, release: fail => release(fail) };
   };
   await ui.restoreWorkspaceContribution(savedWorkspace);
-  await ui.restoreStimulusVariantContent(variants.contribution, {
+  await ui.restoreStimulusVariantContent(currentVariants, {
     savedWorkspaceContribution: savedWorkspace, dependencies: { P1: ui.getWorkspaceContributionSnapshot() }, isCurrent: () => true,
   });
   check("saved authored table opens while real media stays unresolved", ui.getWorkspaceContributionSnapshot().pending

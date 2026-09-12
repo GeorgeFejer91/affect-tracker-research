@@ -12,6 +12,8 @@ const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Supply a headless browser executable and output directory.");
 const source = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 const execute = promisify(execFile), hash = bytes => createHash("sha256").update(bytes).digest("hex");
+const git = async args => (await execute("git", args, { cwd: source, windowsHide: true })).stdout.trim();
+const commit = await git(["rev-parse", "HEAD"]), workingTreeStatus = await git(["status", "--short"]);
 await mkdir(output, { recursive: true });
 const entry = `
 import { bootResearchUi } from './site/src/research/app.js';
@@ -42,7 +44,7 @@ try {
    const bridge=await new NativeResearchRuntimeBridge(root,{invoke}).initialize();
    root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.selectWorkspaceRequest,{cancelable:true}));await bridge.operation;
    const status=root.querySelector('#planner-status');if(status.hidden||status.textContent!=='Synthetic workspace rejection'||root.querySelector('#research-announcer').textContent!=='Synthetic workspace rejection')throw new Error('Planner authoring error was not visibly announced');
-   status.hidden=true;bridge.destroy();await Promise.resolve();
+   root.researchUi.openSetupSection('workspace');status.scrollIntoView({block:'start'});bridge.destroy();await Promise.resolve();
   }
   else {
    const forbidden=()=>{throw new Error('Planner invoked a participant runtime dependency');};
@@ -70,6 +72,8 @@ try {
   pageOverflow:document.documentElement.scrollWidth-innerWidth,
   runButtons:root.querySelectorAll('[data-mode-button="run"],#start-experiment,#review-participant-chooser,#preflight-list').length,
   reviewTitle:root.querySelector('[data-setup-section="review"] .section-title')?.textContent,
+  plannerError:root.querySelector('#planner-status:not([hidden])')?.textContent??'',
+  plannerErrorVisible:(()=>{const status=root.querySelector('#planner-status:not([hidden])');if(!status)return false;const rect=status.getBoundingClientRect();return rect.height>0&&rect.top>=0&&rect.bottom<=innerHeight;})(),
   previewCount:root.querySelectorAll('.research-preview-stage').length,
   sections:root.querySelectorAll('[data-setup-section]').length,
   startDisabled:root.querySelector('#runner-start')?.disabled,
@@ -80,6 +84,7 @@ try {
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: source, sourcefile: 'companion-audit-entry.js' }, bundle: true, format: 'esm', write: false, platform: 'browser', logLevel: 'silent', metafile: true });
 const inputs = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs).filter(path => path !== 'companion-audit-entry.js').map(async path => [path, hash(await readFile(join(source,path)))])));
+for (const path of ['site/research.css', 'runner/runner.css', 'scripts/qualification/companion-boundary-audit.mjs']) inputs[path]=hash(await readFile(join(source,path)));
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://127.0.0.1');
  if(url.pathname==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="'+(url.searchParams.get('program').endsWith('planner')?'/site/research.css':'/runner/runner.css')+'"><script type="module" src="/runner/src/audit.js"></script>');return;}
@@ -98,5 +103,12 @@ try {for(const program of ['planner','browser-planner','runner']){
  assert.deepEqual(row.errors,[]);assert.equal(row.appError,'');assert.deepEqual(row.duplicateIds,[]);assert.ok(row.pageOverflow<=1);
  if(program.endsWith('planner')){assert.equal(row.runButtons,0);assert.equal(row.reviewTitle,'Review & Export');assert.ok(row.previewCount>=1);assert.ok(row.sections>=7);}
  else{assert.equal(row.startDisabled,true);assert.equal(row.recipeLoaded,true);assert.equal(row.plannerEditors,0);}
+ if(program==='planner'){assert.equal(row.plannerError,'Synthetic workspace rejection');assert.equal(row.plannerErrorVisible,true);}
+ row.screenshotSha256=hash(await readFile(join(output,program+'.png')));
  console.log(JSON.stringify(row));
-}}finally{server.close();await writeFile(join(output,'receipt.json'),JSON.stringify({source,scope:'Headless frontend; synthetic native replies; no physical/native run',inputs,rows},null,2));}
+}}finally{
+ server.close();
+ assert.equal(await git(['rev-parse','HEAD']),commit);
+ for(const [path,digest] of Object.entries(inputs))assert.equal(hash(await readFile(join(source,path))),digest,path);
+ await writeFile(join(output,'receipt.json'),JSON.stringify({source,commit,workingTreeStatus,browser,browserSha256:hash(await readFile(browser)),scope:'Headless frontend; synthetic native replies; visible Planner workspace error; no physical/native run',inputs,rows},null,2));
+}
