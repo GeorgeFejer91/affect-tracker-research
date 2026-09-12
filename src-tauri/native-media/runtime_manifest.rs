@@ -57,6 +57,7 @@ pub enum RuntimeManifestErrorCode {
     RuntimeFileHashMismatch,
     RuntimeTreeTooLarge,
     RuntimeIo,
+    VerificationCanceled,
 }
 
 impl RuntimeManifestErrorCode {
@@ -78,6 +79,7 @@ impl RuntimeManifestErrorCode {
             Self::RuntimeFileHashMismatch => "runtime-file-hash-mismatch",
             Self::RuntimeTreeTooLarge => "runtime-tree-too-large",
             Self::RuntimeIo => "runtime-io-failed",
+            Self::VerificationCanceled => "runtime-verification-canceled",
         }
     }
 }
@@ -100,20 +102,56 @@ pub struct VerifiedRuntimeBundle {
 }
 
 pub fn verify_runtime_tree(root: &Path) -> Result<VerifiedRuntimeBundle, RuntimeManifestError> {
-    verify_runtime_tree_against(
+    verify_runtime_tree_cancellable(root, &|| false)
+}
+
+pub fn verify_runtime_tree_cancellable(
+    root: &Path,
+    canceled: &impl Fn() -> bool,
+) -> Result<VerifiedRuntimeBundle, RuntimeManifestError> {
+    verify_runtime_tree_against_cancellable(
         root,
         PINNED_RUNTIME_MANIFEST_SHA256,
         PINNED_RUNTIME_FILE_COUNT,
         PINNED_RUNTIME_BYTE_LENGTH,
+        canceled,
     )
 }
 
+#[cfg(test)]
 fn verify_runtime_tree_against(
     root: &Path,
     expected_manifest_sha256: &str,
     expected_file_count: usize,
     expected_byte_length: u64,
 ) -> Result<VerifiedRuntimeBundle, RuntimeManifestError> {
+    verify_runtime_tree_against_cancellable(
+        root,
+        expected_manifest_sha256,
+        expected_file_count,
+        expected_byte_length,
+        &|| false,
+    )
+}
+
+fn check_canceled(canceled: &impl Fn() -> bool) -> Result<(), RuntimeManifestError> {
+    if canceled() {
+        Err(RuntimeManifestError::new(
+            RuntimeManifestErrorCode::VerificationCanceled,
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn verify_runtime_tree_against_cancellable(
+    root: &Path,
+    expected_manifest_sha256: &str,
+    expected_file_count: usize,
+    expected_byte_length: u64,
+    canceled: &impl Fn() -> bool,
+) -> Result<VerifiedRuntimeBundle, RuntimeManifestError> {
+    check_canceled(canceled)?;
     let root_metadata = fs::symlink_metadata(root).map_err(|error| {
         RuntimeManifestError::new(if error.kind() == std::io::ErrorKind::NotFound {
             RuntimeManifestErrorCode::RuntimeMissing
@@ -146,6 +184,7 @@ fn verify_runtime_tree_against(
     }
     let bytes = fs::read(&manifest_path)
         .map_err(|_| RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeIo))?;
+    check_canceled(canceled)?;
     if sha256_bytes(&bytes) != expected_manifest_sha256 {
         return Err(RuntimeManifestError::new(
             RuntimeManifestErrorCode::RuntimeTreeIdentityMismatch,
@@ -161,7 +200,7 @@ fn verify_runtime_tree_against(
         ));
     }
 
-    let observed = enumerate_runtime_files(root)?;
+    let observed = enumerate_runtime_files_cancellable(root, canceled)?;
     if entries
         .keys()
         .any(|relative| observed.binary_search(relative).is_err())
@@ -181,6 +220,7 @@ fn verify_runtime_tree_against(
 
     let mut total_bytes = 0_u64;
     for (relative, expected_hash) in &entries {
+        check_canceled(canceled)?;
         let path = root.join(relative_path(relative));
         let metadata = fs::symlink_metadata(&path).map_err(|error| {
             RuntimeManifestError::new(if error.kind() == std::io::ErrorKind::NotFound {
@@ -200,7 +240,7 @@ fn verify_runtime_tree_against(
             .ok_or_else(|| {
                 RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeTreeTooLarge)
             })?;
-        let observed_hash = sha256_file(&path)?;
+        let observed_hash = sha256_file_cancellable(&path, canceled)?;
         if observed_hash != *expected_hash {
             return Err(RuntimeManifestError::new(
                 RuntimeManifestErrorCode::RuntimeFileHashMismatch,
@@ -213,8 +253,10 @@ fn verify_runtime_tree_against(
         ));
     }
     for required in REQUIRED_PE_FILES {
+        check_canceled(canceled)?;
         validate_pe_x64(&root.join(required))?;
     }
+    check_canceled(canceled)?;
     Ok(VerifiedRuntimeBundle {
         file_count: entries.len(),
         byte_length: total_bytes,
@@ -312,9 +354,18 @@ fn validate_required_entries(
     Ok(())
 }
 
+#[cfg(test)]
 fn enumerate_runtime_files(root: &Path) -> Result<Vec<String>, RuntimeManifestError> {
+    enumerate_runtime_files_cancellable(root, &|| false)
+}
+
+fn enumerate_runtime_files_cancellable(
+    root: &Path,
+    canceled: &impl Fn() -> bool,
+) -> Result<Vec<String>, RuntimeManifestError> {
     let mut files = Vec::new();
-    enumerate_directory(root, root, 0, &mut files)?;
+    enumerate_directory(root, root, 0, &mut files, canceled)?;
+    check_canceled(canceled)?;
     files.sort();
     Ok(files)
 }
@@ -324,7 +375,9 @@ fn enumerate_directory(
     directory: &Path,
     depth: usize,
     files: &mut Vec<String>,
+    canceled: &impl Fn() -> bool,
 ) -> Result<(), RuntimeManifestError> {
+    check_canceled(canceled)?;
     if depth > MAX_TREE_DEPTH || files.len() > MAX_RUNTIME_FILES {
         return Err(RuntimeManifestError::new(
             RuntimeManifestErrorCode::RuntimeTreeTooLarge,
@@ -333,6 +386,7 @@ fn enumerate_directory(
     let entries = fs::read_dir(directory)
         .map_err(|_| RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeIo))?;
     for entry in entries {
+        check_canceled(canceled)?;
         let entry =
             entry.map_err(|_| RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeIo))?;
         let metadata = fs::symlink_metadata(entry.path())
@@ -344,7 +398,7 @@ fn enumerate_directory(
             ));
         }
         if file_type.is_dir() {
-            enumerate_directory(root, &entry.path(), depth + 1, files)?;
+            enumerate_directory(root, &entry.path(), depth + 1, files, canceled)?;
         } else if file_type.is_file() {
             let relative = entry
                 .path()
@@ -463,16 +517,34 @@ fn validate_pe_x64(path: &Path) -> Result<(), RuntimeManifestError> {
     Ok(())
 }
 
+#[cfg(test)]
 fn sha256_file(path: &Path) -> Result<String, RuntimeManifestError> {
+    sha256_file_cancellable(path, &|| false)
+}
+
+fn sha256_file_cancellable(
+    path: &Path,
+    canceled: &impl Fn() -> bool,
+) -> Result<String, RuntimeManifestError> {
+    check_canceled(canceled)?;
     let file = File::open(path)
         .map_err(|_| RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeIo))?;
     let mut reader = BufReader::new(file);
+    sha256_reader_cancellable(&mut reader, canceled)
+}
+
+fn sha256_reader_cancellable(
+    reader: &mut impl Read,
+    canceled: &impl Fn() -> bool,
+) -> Result<String, RuntimeManifestError> {
     let mut digest = Sha256::new();
     let mut buffer = [0_u8; 64 * 1024];
     loop {
+        check_canceled(canceled)?;
         let count = reader
             .read(&mut buffer)
             .map_err(|_| RuntimeManifestError::new(RuntimeManifestErrorCode::RuntimeIo))?;
+        check_canceled(canceled)?;
         if count == 0 {
             break;
         }
@@ -492,9 +564,81 @@ fn relative_path(relative: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     const IMAGE_FILE_MACHINE_I386: u16 = 0x014c;
+
+    #[test]
+    fn canceled_verification_never_returns_a_partial_bundle() {
+        assert_eq!(
+            verify_runtime_tree_cancellable(Path::new("not-opened"), &|| true)
+                .unwrap_err()
+                .code,
+            RuntimeManifestErrorCode::VerificationCanceled
+        );
+        let root = temporary_directory("cancel-every-boundary");
+        let identity = write_fixture(&root, IMAGE_FILE_MACHINE_AMD64);
+        let count = Cell::new(0);
+        let run = |canceled: &dyn Fn() -> bool| {
+            verify_runtime_tree_against_cancellable(
+                &root,
+                &identity.manifest_sha256,
+                identity.file_count,
+                identity.byte_length,
+                &|| canceled(),
+            )
+        };
+        let verified = run(&|| {
+            count.set(count.get() + 1);
+            false
+        })
+        .unwrap();
+        assert_eq!(verified, verify_fixture(&root, &identity).unwrap());
+        // Includes traversal, between files, PE checks and final publication.
+        for stop_at in 1..=count.get() {
+            let seen = Cell::new(0);
+            assert_eq!(
+                run(&|| {
+                    seen.set(seen.get() + 1);
+                    seen.get() >= stop_at
+                })
+                .unwrap_err()
+                .code,
+                RuntimeManifestErrorCode::VerificationCanceled
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn large_file_hash_checks_cancellation_after_each_bounded_read() {
+        struct CancelingReader<'a> {
+            canceled: &'a Cell<bool>,
+            reads: usize,
+        }
+        impl Read for CancelingReader<'_> {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                assert!(bytes.len() <= 64 * 1024);
+                self.reads += 1;
+                bytes.fill(42);
+                self.canceled.set(true);
+                Ok(bytes.len())
+            }
+        }
+        let canceled = Cell::new(false);
+        let mut reader = CancelingReader {
+            canceled: &canceled,
+            reads: 0,
+        };
+        assert_eq!(
+            sha256_reader_cancellable(&mut reader, &|| canceled.get())
+                .unwrap_err()
+                .code,
+            RuntimeManifestErrorCode::VerificationCanceled
+        );
+        assert_eq!(reader.reads, 1);
+    }
 
     struct FixtureIdentity {
         manifest_sha256: String,

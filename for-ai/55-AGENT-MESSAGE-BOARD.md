@@ -35,6 +35,20 @@
   five-test Rust suite passes. It postdates the frozen1ccd756 executable. Shared
   Cargo hold released; foreground apps, original workspace and evidence preserved.
 
+### 20260912-native-runtime-verification-cancellation
+
+- Root allocated CLI-SHARED/P1 native lifecycle, Backend Verification; isolated
+  codex/native-verification-cancel from agreed Main0ccc7ec. Actual earlyEOF trace
+  localizes wait before runtime verification completes, not actor teardown.
+- Runtime-only cancellation predicate checks traversal/files and64KiB hash
+  chunks. Existing complete-verification wrapper/build pins stay unchanged.
+  Canceled capability is failclosed/nullcounts, no partial receipt, actual joins
+  and parent retention preserved. No timeout/unsafe/qualification changes.
+- Ten direct-rustc verifier tests pass; capability regression awaits assembled
+  Main test. No Cargo build/processlaunch; original10s failure intact. Details:
+  src-tauri/native-media/VERIFICATION-CANCELLATION-20260912.md. Main owns combined
+  build and root exact hiddenEOF repro; orientation remains separately gated.
+
 ### 20260912-main-attestation-reason-refinement
 
 - Main continues CLI-P1/P1 media catalogue Backend Verification, bounded to
