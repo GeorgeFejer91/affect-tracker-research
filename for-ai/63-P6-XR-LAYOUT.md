@@ -250,6 +250,21 @@ identity. P6 consumes that projection without dropping saved locations or
 copying P1's identity policy. Live composition injects the same generic P1
 workspace projector, binding its outer owner revision.
 
-Complete P7 envelope fixtures are being composed in this pass. Actual Runner
-correspondence and XR execution are downstream checks, not a prerequisite for
-validating the complete Planner document.
+The actual P7 compiler/reader at `828fff7` now embeds both non-default spatial
+profiles in complete masters with P1/P3 V1 and V2. Six full-master tests cover
+canonical re-export, all variant/language XR selections, preserved P1/P5/P6
+content, explicit exclusion, incompatible-target rejection, stale integrity,
+disk-backed P7 write/close/readback and independent processes with ambient state
+forbidden. Parsed content restores as editable/pending until the real P1
+projection is available; exclusion clears a previous profile.
+
+`planner-xr-master-v1.canonical.json` is the complete V2-location XR fixture.
+Its companion `planner-xr-master-v1-reproduction.json` and
+`planner-xr-master-v1-layout.json` expose the full P7 matrix and P6 geometry for
+native consumers. `scripts/emit-xr-planner-fixtures.js` regenerates them only
+from the reviewed owner fixtures through the actual full compiler.
+
+Shared application save/reopen wiring is integration-owned and remains a
+separate actual-UI check. The disk fixture supplies a file adapter instead of
+opening an OS picker. Actual Runner correspondence and XR execution are
+downstream checks, not prerequisites for validating the Planner document.
