@@ -1,6 +1,7 @@
-import { canonicalJson } from "./canonical.js";
+import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { createVideoLibrary } from "./stimulus-order.js";
 import { validateVideoCatalogueContributionV1 } from "./video-catalogue-contribution.js";
+import { projectWorkspaceVideoCatalogueSnapshotV1 } from "./workspace-contribution.js";
 import { compileVariantTimeline, validateVariantDesign } from "./variant-design.js";
 
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
@@ -17,9 +18,9 @@ export function normalizeVariantCatalogueSource(snapshot) {
   return JSON.parse(canonicalJson(snapshot));
 }
 
-/** Explicit P1 contribution v1 -> P3 library/reference v1 compatibility adapter.
- * Stored P3 IDs are never rewritten to a different identity scheme. */
-export async function projectVariantCatalogue(snapshot) {
+/** Explicit legacy video-only projection, outside the registered P1 workspace
+ * revision domain. Retained for existing fixtures and component consumers. */
+export async function projectLegacyVariantCatalogue(snapshot) {
   snapshot = normalizeVariantCatalogueSource(snapshot);
   if (!snapshot.enabled || snapshot.pending || !snapshot.contribution) {
     throw new TypeError("Segment 1 requires an accepted, current video catalogue.");
@@ -42,6 +43,15 @@ export async function projectVariantCatalogue(snapshot) {
     return { ...video, assetId: entry.assetId, durationMs: entry.durationMs };
   });
   return { revision: snapshot.revision, sourceIntegritySha256: catalogue.integritySha256, library, videos };
+}
+
+/** Registered workspace P1 -> P3. P1 validates/extracts the nested catalogue;
+ * the dependency and fingerprint bind the complete registered owner snapshot. */
+export async function projectVariantCatalogue(snapshot) {
+  const source = normalizeVariantCatalogueSource(snapshot);
+  const projected = await projectWorkspaceVideoCatalogueSnapshotV1(source);
+  const catalogue = await projectLegacyVariantCatalogue(projected);
+  return { ...catalogue, sourceIntegritySha256: await canonicalSha256(source.contribution) };
 }
 
 /** P7 registration validator: domain validation, including the actual P1

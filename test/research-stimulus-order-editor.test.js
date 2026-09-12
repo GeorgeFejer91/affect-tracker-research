@@ -221,3 +221,33 @@ test("catalogue withdrawal during compilation prevents the stale authoring write
   assert.equal(writes, 0);
   assert.equal(ui.editor.getSnapshot().contribution, null);
 });
+
+test("master-recipe preparation confirms current edits without writing an authoring sidecar", async () => {
+  let writes = 0;
+  const ui = fixture(async () => { writes++; throw new Error("Unexpected sidecar write"); });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  const result = await ui.editor.prepareContribution();
+  assert.equal(writes, 0); assert.equal(result.pending, false);
+  assert.deepEqual(result, ui.editor.getSnapshot());
+  assert.equal(result.contribution.variants[0].entries[1].referenceId, "ISI2");
+  assert.notEqual(result.contribution.variants[0].versionSha256, design.contribution.variants[0].versionSha256);
+  assert.match(ui.versions.innerHTML, /variants · versions/);
+  ui.handlers.get("input")({ target: cell("unknown") });
+  await assert.rejects(ui.editor.prepareContribution(), /Event 2/);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  assert.equal(writes, 0);
+});
+
+test("master preparation rejects cancellation and catalogue withdrawal before acceptance", async () => {
+  const ui = fixture(async () => { throw new Error("Unexpected sidecar write"); });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  await assert.rejects(ui.editor.prepareContribution({ isCurrent: () => false }), /changed during confirmation/);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  const preparing = ui.editor.prepareContribution();
+  ui.editor.setCatalogue(null);
+  await assert.rejects(preparing);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  assert.equal(ui.editor.getSnapshot().pending, true);
+});

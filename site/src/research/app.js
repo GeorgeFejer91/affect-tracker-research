@@ -5232,6 +5232,7 @@ function bindResearchInteractions(root, { surface }) {
     get workspace() { return workspace; },
     get stimulusOrder() { return stimulusOrderEditor.document; },
     getStimulusOrderSnapshot: () => stimulusOrderEditor.getSnapshot(),
+    prepareStimulusVariantContribution: (options) => stimulusOrderEditor.prepareContribution(options),
     setStimulusOrderCatalogue: (snapshot) => stimulusOrderEditor.setCatalogueSource(snapshot),
     validateStimulusVariantContribution,
     confirmStimulusOrder: () => stimulusOrderEditor.confirm(),

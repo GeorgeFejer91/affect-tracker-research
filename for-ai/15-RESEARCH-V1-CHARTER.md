@@ -299,9 +299,11 @@ and its confirmation control becomes a disabled **Reviewed** receipt. Header
 chevrons continue to open and close reviewed sections without clearing review
 state or requiring confirmation again. Editing a saved Segment 3 order, changing
 its library, or selecting another workspace clears the affected review receipt;
-the researcher must confirm the new content. Workspace confirmation writes
-video annotations, and Segment 3 confirmation writes the validated order, before
-advancing. Those authoring documents remain separate from the review trail.
+the researcher must confirm the new content. In the successor master flow,
+Segment 3 prepares its validated domain contribution before P7 registry
+acceptance and shared confirmation advance. Preparation does not require an
+authoring sidecar write; final recipe persistence remains a separately
+acknowledged P7 operation. Explicit legacy authoring storage remains compatible.
 
 ### 1. Workspace & Libraries
 
@@ -457,18 +459,21 @@ and binding the selected version to recorded participant data belong to the
 Runner, not Segment 3 or Segment 4. This is a future Runner contract change;
 it does not authorize hidden runtime randomization or reinterpret old records.
 
-Confirming Segment 1 scans the owned video library and stores canonical
-`assets/video-library.annotations.json`. Each annotation binds safe relative
-path, complete-file SHA-256, and byte length; the readable `video-<16 hex>` ID
+P1 owns the verified workspace/video catalogue. P3 consumes its validated
+projection on the registered P1 workspace revision. The compatibility video
+library binds safe relative path, complete-file SHA-256, and byte length; its `video-<16 hex>` ID
 maps back to that identity, with collisions rejected. This hash binding is not
 encryption, a digital signature, proof of authorship, or decode qualification.
-Metadata stays beside `assets/stimuli/` so the exact video-only package closure
-is unchanged. CSV and genuine XLSX downloads list current video annotations;
+The explicit legacy storage API retains `assets/video-library.annotations.json`
+beside `assets/stimuli/`, preserving the video-only package closure; the successor
+master flow does not require that sidecar. CSV and genuine XLSX downloads list current video annotations;
 XLSX also contains an empty order template. Spreadsheet text is escaped and
 never emitted as formulas.
 
-Confirming Segment 3 validates and persists canonical
-`assets/stimulus-order.design.json`. Stable variant IDs and SHA-256 version
+Confirming Segment 3 prepares a canonical domain contribution, then P7 accepts
+the exact current snapshot before shared confirmation advances. The explicit
+legacy API can persist `assets/stimulus-order.design.json`; preparation for the
+final master JSON does not write that file. Stable variant IDs and SHA-256 version
 annotations bind each variant's name, exact video/ISI sequence, occurrence IDs,
 and referenced definitions. The successor authoring document is version 2;
 its embedded `affect-research-variant-design` contribution is version 1.

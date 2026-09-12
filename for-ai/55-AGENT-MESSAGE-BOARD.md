@@ -91,6 +91,59 @@ file; follow the integration-owner collection procedure in the workflow.
   qualification claimed. The combined live subscription and master export
   remain integration/P7 work, not implied by this component receipt.
 
+#### Composite P1 revision follow-up — 2026-09-12
+
+- Root supplied a concrete dependency mismatch after `dcaa60c`: P1's new
+  workspace composite has a different owner revision from its inner video
+  producer. Root clarified that P7 `cc5cc83` still registers the compatible
+  video-only chain; switching to the composite is the upcoming integration
+  risk, not an existing regression at that fixed tip. This is an in-scope P3-03/P3-08
+  continuation, with the accepted UI and serialized variant model unchanged.
+- P1 owns the validated catalogue projection from its registered workspace
+  snapshot. P3 will preserve that snapshot's revision and bind the full owner
+  content; P7 restore, validation and the live subscription must use the same
+  registered snapshot. No consumer will invent or independently remap revisions.
+- Evidence to collect: study-only changes with unchanged videos, video changes,
+  stale or mismatched projections, and canonical restore/acceptance in both
+  cases. Root, S1, S7 and integration notified before implementation. The prior
+  video-only handoff is held for this shared-seam correction.
+
+#### Composite dependency and preparation ready — 2026-09-12
+
+- P1 froze its one-argument validated
+  `projectWorkspaceVideoCatalogueSnapshotV1` at
+  `5988ce04a6ec253d5512c31770193b88bb3c33dc`. Dependency commit `bc2efb1`
+  collects its unchanged study/workspace/video modules and their focused tests,
+  without copying P1 app handlers. P3 now consumes the registered workspace
+  snapshot, preserves its outer revision, and fingerprints its full validated
+  content. Nested video revision/hash remain unchanged. The former video-only
+  projection is explicitly named `projectLegacyVariantCatalogue` and cannot
+  substitute for the production workspace dependency.
+- `variant-workspace-binding-v1.json` and focused tests cover workspace 30→31
+  for a study-only edit (videos unchanged), then workspace 31→32 with video
+  catalogue 1→2, including coherent pending/prepared states, duration changes,
+  canonical reopen, exact returned dependencies and rejection of revision reuse.
+- Integration requested `prepareStimulusVariantContribution({isCurrent?})`:
+  it validates the current table and actual P1 durations, checks generation and
+  caller freshness, performs **no storage write**, and returns the prepared
+  five-key P3 snapshot. Failure rejects; shared confirmation must not advance.
+  Main awaits preparation, then P7 registry acceptance, then advances its shared
+  confirmation. Prepared domain data is neither registry acceptance nor final
+  acknowledged persistence. The help/charter now make that distinction.
+- Explicit integration decisions: retain S1's single browser import, actual
+  decoder metadata and producer-refresh path; discard P3's superseded
+  `ingestBrowserFiles` replacement. No duplicate import or fabricated geometry.
+  Main may omit the one empty-library CSS rule hiding the bottom confirmation,
+  as requested by the researcher; preserve the prerequisite and truthful error.
+  Main owns the shared confirmation handler and the one **workspace** snapshot
+  subscription to P3. Do not wire its legacy video-only getter as registered P1.
+- Final follow-up checks: **96/96** targeted P3/P1/UI/modularity tests pass,
+  including two no-sidecar-write/stale-preparation cases; Pages **180** files
+  and desktop **8** files pass build closure. Existing chunk-size warning
+  remains. No Rust wire change, full live composition, native/physical or new
+  visual qualification is claimed. The API document contains the final exact
+  signatures and separate current/legacy fixtures.
+
 ### 20260911-variants-final-planner
 
 - Owner **S3**, P3 `variants`; component ready, Backend Verification continuation authorized

@@ -422,14 +422,14 @@ function stimuliSection() {
       <div class="disclosure-content">
         <p>The downloads list every library video with its annotation. The Excel workbook also includes an empty order template. Randomize or counterbalance in Excel, then copy only the variant cells, without headers or the Event column, and paste into the first destination cell.</p>
         <p>Define pauses by entering comma-separated durations, then use their ISI names in the table. Each cell contains one video annotation or one ISI name. Durations range from 0 to 3,600,000 ms. Leave unused rows at the bottom; empty cells inside a sequence require correction.</p>
-        <p>Confirming Segment 1 saves identities that bind each video's path and exact bytes. Confirming this table saves the variant IDs and version annotations. Changing a variant's name, video order, or pauses changes its version. Participant allocation belongs to the experiment runner.</p>
-        <p>Video annotations bind file identities; they are not encryption or proof of authorship. The saved design retains each occurrence and its planned start/end events. The Runner chooses the allocation policy and records actual times and the selected variant version.</p>
+        <p>Segment 1 verifies the video identities. Confirming this table validates its variant IDs and version annotations for the final recipe. Changing a variant's name, video order, or pauses changes its version. Participant allocation belongs to the experiment runner.</p>
+        <p>Video annotations bind file identities; they are not encryption or proof of authorship. The recipe retains each occurrence and its planned start/end events. The Runner chooses the allocation policy and records actual times and the selected variant version.</p>
       </div>
     </details>
     <p id="stimulus-order-status" class="status-text" role="status" aria-live="polite">Confirm the video library in Segment 1 to begin.</p>
     <button type="button" data-order-prerequisite data-open-section="workspace">Open Segment 1</button>
     <div id="stimulus-order-editor"></div>
-    <div id="stimulus-order-versions" aria-label="Saved variant version annotations"></div>`;
+    <div id="stimulus-order-versions" aria-label="Variant version annotations"></div>`;
 }
 
 function inputSection() {

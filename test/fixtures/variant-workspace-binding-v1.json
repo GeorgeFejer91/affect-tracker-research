@@ -1,0 +1,342 @@
+{
+  "initialSnapshot": {
+    "revision": 30,
+    "enabled": true,
+    "pending": false,
+    "contribution": {
+      "schema": "affect-research-workspace-contribution",
+      "version": 1,
+      "study": {
+        "schema": "affect-research-study-identity",
+        "version": 1,
+        "id": "study-one",
+        "title": "Study one"
+      },
+      "workspaceLayout": {
+        "assetRoot": "assets",
+        "videoLibrary": "assets/stimuli",
+        "projectFile": "experiment.package.json"
+      },
+      "videoCatalogue": {
+        "schema": "affect-research-video-catalogue-contribution",
+        "version": 1,
+        "revision": 1,
+        "entries": [
+          {
+            "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "annotationId": "session1_landscape",
+            "sourceRelativePath": "stimuli/session1/landscape.mp4",
+            "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byteLength": 1024,
+            "durationMs": 12345,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1920,
+              "displayHeightPx": 1080,
+              "displayAspect": {
+                "numerator": 16,
+                "denominator": 9
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          },
+          {
+            "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "annotationId": "session2_portrait",
+            "sourceRelativePath": "stimuli/session2/portrait.mp4",
+            "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "byteLength": 2048,
+            "durationMs": 23456,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1080,
+              "displayHeightPx": 1920,
+              "displayAspect": {
+                "numerator": 9,
+                "denominator": 16
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          }
+        ],
+        "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+      }
+    },
+    "dependencyRevisions": []
+  },
+  "renamedSnapshot": {
+    "revision": 31,
+    "enabled": true,
+    "pending": false,
+    "contribution": {
+      "schema": "affect-research-workspace-contribution",
+      "version": 1,
+      "study": {
+        "schema": "affect-research-study-identity",
+        "version": 1,
+        "id": "study-one",
+        "title": "Renamed study"
+      },
+      "workspaceLayout": {
+        "assetRoot": "assets",
+        "videoLibrary": "assets/stimuli",
+        "projectFile": "experiment.package.json"
+      },
+      "videoCatalogue": {
+        "schema": "affect-research-video-catalogue-contribution",
+        "version": 1,
+        "revision": 1,
+        "entries": [
+          {
+            "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "annotationId": "session1_landscape",
+            "sourceRelativePath": "stimuli/session1/landscape.mp4",
+            "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byteLength": 1024,
+            "durationMs": 12345,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1920,
+              "displayHeightPx": 1080,
+              "displayAspect": {
+                "numerator": 16,
+                "denominator": 9
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          },
+          {
+            "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "annotationId": "session2_portrait",
+            "sourceRelativePath": "stimuli/session2/portrait.mp4",
+            "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "byteLength": 2048,
+            "durationMs": 23456,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1080,
+              "displayHeightPx": 1920,
+              "displayAspect": {
+                "numerator": 9,
+                "denominator": 16
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          }
+        ],
+        "integritySha256": "32d6fa8c1ea75e56212e5240c4f9ce52ba4fe15b096cab7e70cf234e3398f48f"
+      }
+    },
+    "dependencyRevisions": []
+  },
+  "videoChangedSnapshot": {
+    "revision": 32,
+    "enabled": true,
+    "pending": false,
+    "contribution": {
+      "schema": "affect-research-workspace-contribution",
+      "version": 1,
+      "study": {
+        "schema": "affect-research-study-identity",
+        "version": 1,
+        "id": "study-one",
+        "title": "Renamed study"
+      },
+      "workspaceLayout": {
+        "assetRoot": "assets",
+        "videoLibrary": "assets/stimuli",
+        "projectFile": "experiment.package.json"
+      },
+      "videoCatalogue": {
+        "schema": "affect-research-video-catalogue-contribution",
+        "version": 1,
+        "revision": 2,
+        "entries": [
+          {
+            "assetId": "asset-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "annotationId": "session1_landscape",
+            "sourceRelativePath": "stimuli/session1/landscape.mp4",
+            "packageRelativePath": "assets/stimuli/session1/landscape.mp4",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byteLength": 1024,
+            "durationMs": 12346,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1920,
+              "displayHeightPx": 1080,
+              "displayAspect": {
+                "numerator": 16,
+                "denominator": 9
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          },
+          {
+            "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "annotationId": "session2_portrait",
+            "sourceRelativePath": "stimuli/session2/portrait.mp4",
+            "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "byteLength": 2048,
+            "durationMs": 23456,
+            "geometry": {
+              "status": "verified",
+              "source": "browser-decoder",
+              "displayWidthPx": 1080,
+              "displayHeightPx": 1920,
+              "displayAspect": {
+                "numerator": 9,
+                "denominator": 16
+              },
+              "rotationDegrees": null,
+              "pixelAspectRatio": null,
+              "metadataInterpretation": "decoder-oriented-display"
+            }
+          }
+        ],
+        "integritySha256": "9a606f2e5e79700c11d82f6f9e7ce2dd0d4421a1a8226a292fe672a9462abdb6"
+      }
+    },
+    "dependencyRevisions": []
+  },
+  "contribution": {
+    "schema": "affect-research-variant-design",
+    "version": 1,
+    "librarySha256": "05a8e605cf43d77ddb70ddcbbce95ad022c3f55f7cc346ed566d008dc0d0065e",
+    "isiDefinitions": [
+      {
+        "isiId": "ISI1",
+        "durationMs": 500
+      },
+      {
+        "isiId": "ISI2",
+        "durationMs": 1500
+      }
+    ],
+    "variants": [
+      {
+        "variantId": "variant-1",
+        "title": "Variant 1",
+        "entries": [
+          {
+            "entryId": "variant-1-entry-1",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899"
+          },
+          {
+            "entryId": "variant-1-entry-2",
+            "kind": "isi",
+            "referenceId": "ISI1"
+          },
+          {
+            "entryId": "variant-1-entry-3",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4"
+          }
+        ],
+        "versionSha256": "adb8af0c6edd3466b4b3b02ac062942968160027b390098f0eefe4e2963ea9bc"
+      },
+      {
+        "variantId": "variant-2",
+        "title": "Variant 2",
+        "entries": [
+          {
+            "entryId": "variant-2-entry-1",
+            "kind": "video",
+            "referenceId": "video-b8f73962688de9b4"
+          },
+          {
+            "entryId": "variant-2-entry-2",
+            "kind": "isi",
+            "referenceId": "ISI2"
+          },
+          {
+            "entryId": "variant-2-entry-3",
+            "kind": "video",
+            "referenceId": "video-3cf9b41545994899"
+          }
+        ],
+        "versionSha256": "cd76c35bb37ca560c4c7cbf0a7c82ba4851e54266dcf2771dc3149ffc1f539db"
+      }
+    ],
+    "allocation": {
+      "kind": "runnerAssigned"
+    },
+    "markerContract": {
+      "schema": "affect-research-planned-markers",
+      "version": 1,
+      "vocabulary": [
+        "sessionStart",
+        "videoStart",
+        "videoEnd",
+        "isiStart",
+        "isiEnd",
+        "formStart",
+        "formEnd",
+        "pause",
+        "resume",
+        "interruption",
+        "restart",
+        "complete",
+        "partial"
+      ],
+      "identity": "recipe-run-attempt-variant-entry-execution-v1",
+      "clock": "runner-observed-monotonic-v1",
+      "sequence": "strictly-increasing-per-run-v1",
+      "onset": "observed-media-lifecycle-not-qualified-visible-onset-v1",
+      "reconstruction": "embedded-codebook-paired-boundaries-no-gap-repair-v1"
+    },
+    "integritySha256": "ebc3bee014e02ca51308b7ffb7dc1c2f870ffa3e421fbf4a2563ba118f558920"
+  },
+  "expected": [
+    {
+      "dependencyRevisions": [
+        {
+          "segment": "P1",
+          "revision": 30
+        }
+      ],
+      "sourceIntegritySha256": "cb4db3ff8417da954cab33ba7a99ee21b6b95545d64d7ba8c4751366bb3f23b7",
+      "variant1PlannedDurationMs": 36301
+    },
+    {
+      "dependencyRevisions": [
+        {
+          "segment": "P1",
+          "revision": 31
+        }
+      ],
+      "sourceIntegritySha256": "5fa45c370f9563f776402b96000ae539c287c61e2392fd9176126d4e1abed8e0",
+      "variant1PlannedDurationMs": 36301
+    },
+    {
+      "dependencyRevisions": [
+        {
+          "segment": "P1",
+          "revision": 32
+        }
+      ],
+      "sourceIntegritySha256": "2b2f839842a486aa967b927d4b291840156c1cb8f5f42654c61b1565d941365f",
+      "variant1PlannedDurationMs": 36302
+    }
+  ]
+}

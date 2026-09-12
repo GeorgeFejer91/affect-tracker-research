@@ -69,7 +69,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   function renderVersions() {
     if (!versions) return;
     if (legacy) { versions.innerHTML = '<button type="button" data-order-convert-legacy>Convert saved design</button>'; return; }
-    versions.innerHTML = confirmed ? `<details class="inner-disclosure"><summary>${confirmed.contribution.variants.length} saved variants · versions and planned events</summary><div class="disclosure-content">${confirmed.contribution.variants.map(variant => {
+    versions.innerHTML = confirmed ? `<details class="inner-disclosure"><summary>${confirmed.contribution.variants.length} variants · versions and planned events</summary><div class="disclosure-content">${confirmed.contribution.variants.map(variant => {
       let timing;
       try { const timeline = compileVariantTimeline(confirmed.contribution, variant.variantId, catalogue?.videos ?? library.videos); timing = `<p>Planned duration: ${timeline.plannedDurationMs} ms. Actual times are recorded by the Runner.</p>`; }
       catch { timing = "<p>Planned offsets need verified video durations from Segment 1. The ordered boundaries below are preserved.</p>"; }
@@ -143,6 +143,20 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       busy = false; render(); notify();
       if (issue && token === generation) revealIssue(issue);
     }
+  }
+  async function prepareContribution({ isCurrent = () => true } = {}) {
+    if (busy || !library) throw new Error("Confirm the video catalogue in Segment 1 first.");
+    busy = true; const token = generation; let issue = null; render();
+    try {
+      validateVariantCatalogueLibrary(catalogue, library);
+      const document = await createVariantDocument(draft, library);
+      for (const variant of document.contribution.variants) compileVariantTimeline(document.contribution, variant.variantId, catalogue?.videos ?? []);
+      if (token !== generation || !isCurrent()) throw new Error("The table or catalogue changed during confirmation. Confirm the current table again.");
+      confirmed = document; edited = false; legacy = null; generation++;
+      report(`${document.contribution.variants.length} variants ready for review.`);
+    } catch (error) { issue = error; report(error.message, true); throw error; }
+    finally { busy = false; render(); notify(); if (issue && token === generation) revealIssue(issue); }
+    return snapshot();
   }
   function revealIssue(error) {
     const isiId = /^(ISI[1-9][0-9]*) duration/u.exec(error.message)?.[1];
@@ -218,7 +232,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   host?.addEventListener("input", onInput); host?.addEventListener("change", onEdit); host?.addEventListener("paste", onPaste); host?.addEventListener("click", onClick);
   versions?.addEventListener?.("click", onClick); render();
   return {
-    confirm, confirmLibrary, adopt,
+    confirm, confirmLibrary, adopt, prepareContribution,
     async restore(document, receipt) {
       const token = generation;
       receipt = await restoreReceipt(receipt);
