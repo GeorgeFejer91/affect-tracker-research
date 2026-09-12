@@ -121,7 +121,7 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
           const e = source.envelope;
           if (e.algorithmVersion !== "feedback-envelope-v1" || e.origin !== "design-centre" || e.overlaySideCssPx !== side
             || typeof e.configurationKey !== "string" || !e.configurationKey.length
-            || !Number.isFinite(e.halfExtentCssPx) || e.halfExtentCssPx < 0) throw new TypeError("Unsupported or inconsistent feedback envelope.");
+            || !Number.isFinite(e.halfExtentCssPx * 2) || e.halfExtentCssPx < 0) throw new TypeError("Unsupported or inconsistent feedback envelope.");
           // Size belongs to P4, so a size edit may change resolved extent without revising P5.
           previousFeedback = checkRevision(source, previousFeedback, e.configurationKey);
           result.dependencyRevisions.push({ segment: "P5", revision: source.revision });

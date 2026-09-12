@@ -218,3 +218,32 @@ test("actual P1 shared conformance fixture and P5 source compose through one sub
   assert.deepEqual(state.getSnapshot(), stopped);
   binding.destroy(); state.destroy(); p5.destroy();
 });
+
+test("wrong algorithm, centre, viewport and nonfinite P5 extents never become fit evidence", () => {
+  for (const mutate of [
+    e => { e.algorithmVersion = "other"; }, e => { e.origin = "animated-centroid"; },
+    e => { e.overlaySideCssPx += 1; }, e => { e.halfExtentCssPx = -1; },
+    e => { e.halfExtentCssPx = Number.MAX_VALUE; }, e => { e.configurationKey = ""; },
+  ]) {
+    const binding = createScreenLayoutDependencyBinding({ getFeedbackLayoutSnapshot: side => {
+      const envelope = clone(resolveFeedbackEnvelopeV1(config(), side)); mutate(envelope);
+      return { revision: 1, pending: false, envelope };
+    } });
+    const p = binding.resolve(draft());
+    assert.equal(p.geometry.maximumFeedback, null);
+    assert.ok(p.issues.some(i => i.code === "feedback-unavailable"));
+  }
+});
+
+test("hidden feedback has no painted overlap and invalid P4 fields still track saved dependency revisions", async () => {
+  const h = harness(); await h.binding.refreshCatalogue();
+  h.changeFeedback(c => { c.visual.hideFeedback = true; });
+  h.owner.replaceDraft({ ...h.owner.draft, offsetY: 0 });
+  assert.equal(h.owner.projection.geometry.maximumFeedback.width, 0);
+  assert.equal(h.owner.projection.issues.some(i => i.code === "video-overlap"), false);
+  h.owner.replaceDraft({ ...h.owner.draft, diameter: "" });
+  const r = h.owner.getSnapshot().revision;
+  h.changeFeedback(c => { c.visual.hideFeedback = false; });
+  assert.equal(h.owner.projection.geometry, null);
+  assert.ok(h.owner.getSnapshot().revision > r);
+});
