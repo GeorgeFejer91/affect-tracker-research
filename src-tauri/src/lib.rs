@@ -5,6 +5,7 @@ mod research_clock;
 mod research_commands;
 mod research_contracts;
 mod research_desktop;
+pub mod research_desktop_layout;
 mod research_error;
 mod research_experiment_package;
 mod research_external_protocol;

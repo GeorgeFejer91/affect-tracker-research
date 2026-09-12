@@ -1,22 +1,21 @@
 import { canonicalJson } from "./canonical.js";
-import { validateWorkspaceContributionV1 } from "./workspace-contribution.js";
-import { projectVideoDisplayGeometryV1 } from "./video-catalogue-contribution.js";
+import { validateWorkspaceContribution } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
-import { APPROVED_DESKTOP_REFERENCE_POLICY, DESKTOP_LAYOUT_SCHEMA, DESKTOP_LAYOUT_MAX_BYTES, DesktopLayoutError,
-  assertDesktopReferenceApproved, validateDesktopLayoutProfileV1, selectDesktopReference,
+import { DESKTOP_LAYOUT_SCHEMA, DESKTOP_LAYOUT_MAX_BYTES, DesktopLayoutError,
+  validateDesktopLayoutProfileV1, selectDesktopReference,
   resolveDesktopLayoutBase, resolveDesktopLayoutGeometry } from "./desktop-layout.js";
 
 /** Full saved content, with no editor, permission, storage or revision authority. */
 export async function resolveDesktopLayoutContribution(value, { workspace, feedback } = {}) {
   const profile = validateDesktopLayoutProfileV1(value);
-  assertDesktopReferenceApproved(profile);
   // Capture all asynchronous inputs before the first await.
   const capturedWorkspace = structuredClone(workspace), capturedFeedback = structuredClone(feedback);
   const validFeedback = validateFeedbackContribution(capturedFeedback);
   if (canonicalJson(validFeedback) !== canonicalJson(capturedFeedback)) throw new DesktopLayoutError("feedback", "noncanonical", "Saved feedback settings must be canonical.");
-  const validWorkspace = await validateWorkspaceContributionV1(capturedWorkspace);
-  const { videos } = await projectVideoDisplayGeometryV1(validWorkspace.videoCatalogue);
+  const validWorkspace = await validateWorkspaceContribution(capturedWorkspace);
+  const { videos } = await projectVideoDisplayGeometry(validWorkspace.videoCatalogue);
   const side = resolveDesktopLayoutBase(profile).geometry.feedback.width;
   const result = resolveDesktopLayoutGeometry(profile, videos, resolveFeedbackEnvelope(validFeedback, side));
   if (result.issues.length) {
@@ -45,7 +44,7 @@ export async function parseDesktopLayoutContribution(source, dependencies) {
 }
 
 /** Explicit new authoring, never a defaulting or migration path for saved JSON. */
-export function desktopLayoutProfileFromDraft(draft, videos, policy = APPROVED_DESKTOP_REFERENCE_POLICY) {
+export function desktopLayoutProfileFromDraft(draft, videos, policy = draft.referencePolicy ?? null) {
   const numeric = key => {
     const raw = draft[key];
     if (typeof raw !== "number" && (typeof raw !== "string" || !raw.trim())) throw new DesktopLayoutError(key, "invalid-number", `Enter a number for ${key}.`);
@@ -53,7 +52,7 @@ export function desktopLayoutProfileFromDraft(draft, videos, policy = APPROVED_D
     if (!Number.isFinite(value)) throw new DesktopLayoutError(key, "invalid-number", `Enter a finite number for ${key}.`);
     return Object.is(value, -0) ? 0 : value;
   };
-  if (policy === null) throw new DesktopLayoutError("reference", "reference-policy-pending", "The automatic largest-video reference rule is awaiting confirmation.");
+  if (policy === null) throw new DesktopLayoutError("referencePolicy", "reference-policy-required", "Choose a reference method before preparing the layout.");
   const hasCalibration = draft.fullViewportMapping || !["", null, undefined].includes(draft.physicalWidth) || !["", null, undefined].includes(draft.physicalHeight);
   if (hasCalibration && draft.fullViewportMapping !== true) throw new DesktopLayoutError("fullViewportMapping", "mapping-required", "Confirm that the design viewport covers the measured active display.");
   return validateDesktopLayoutProfileV1({
@@ -70,6 +69,7 @@ export function desktopLayoutProfileFromDraft(draft, videos, policy = APPROVED_D
 export function desktopLayoutDraftFromProfile(value) {
   const p = validateDesktopLayoutProfileV1(value);
   return { screenWidth: p.viewport.widthCssPx, screenHeight: p.viewport.heightCssPx,
+    referencePolicy: p.reference.source.policy,
     physicalWidth: p.calibration?.activeWidthMm ?? "", physicalHeight: p.calibration?.activeHeightMm ?? "",
     fullViewportMapping: p.calibration !== null, units: p.units,
     referenceWidth: p.reference.box.width, referenceHeight: p.reference.box.height,
