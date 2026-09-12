@@ -59,6 +59,7 @@ pub(crate) struct MasterWorker {
     clock: Option<DeadlineClock>,
     interval_deadline: Option<Instant>,
     answers: FormAnswers,
+    typed_answers: super::typed_forms::TypedFormAnswers,
     terminal: bool,
     pub cancellation: Arc<AtomicBool>,
 }
@@ -88,7 +89,7 @@ impl MasterWorker {
         let markers = MasterMarkers::new(&prepared.plan, &run_id, &attempt_id)?;
         storage.profile(&markers.profile_message)?;
         let settings = crate::research_runner_session::participant_lsl(
-            &prepared.loaded.recipe.policy.lsl,
+            &prepared.loaded.recipe.policy().lsl,
             &prepared.plan.participant_id,
         )?;
         let startup = super::information::startup_bundle(
@@ -101,7 +102,7 @@ impl MasterWorker {
         let lsl = if settings.enabled {
             Some(MasterLslService::start(
                 &settings,
-                prepared.loaded.recipe.policy.sampling_frequency_hz as u16,
+                prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
                 &run_id,
                 &prepared.plan.recipe_source_byte_sha256,
                 &recorder,
@@ -114,7 +115,7 @@ impl MasterWorker {
         let now = Instant::now();
         let state = MasterStatus {
             schema: "affect-runner-master-status",
-            version: 1,
+            version: prepared.plan.version,
             active: true,
             run_id,
             attempt_id,
@@ -137,7 +138,7 @@ impl MasterWorker {
             failure_code: None,
             result: None,
         };
-        let response = ResponseState::new(prepared.loaded.recipe.segments.p5.response.clone(), now);
+        let response = ResponseState::new(prepared.feedback.response.clone(), now);
         Ok(Self {
             prepared,
             workspace_id,
@@ -167,6 +168,7 @@ impl MasterWorker {
             interval_deadline: None,
             answers: Default::default(),
             terminal: false,
+            typed_answers: Default::default(),
             cancellation: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -257,6 +259,12 @@ impl MasterWorker {
             MasterAction::Submit { position, answers } => {
                 self.answers_action(position, answers, true)
             }
+            MasterAction::DraftV2 { position, answers } => {
+                self.typed_answers_action(position, answers, false)
+            }
+            MasterAction::SubmitV2 { position, answers } => {
+                self.typed_answers_action(position, answers, true)
+            }
             MasterAction::Pause => {
                 if self.state.phase != MasterPhase::Playing {
                     return Err(invalid("Pause requires native Playing."));
@@ -292,6 +300,9 @@ impl MasterWorker {
         answers: Vec<super::runtime::MasterChoice>,
         submitted: bool,
     ) -> ResearchResult<()> {
+        if self.prepared.plan.version != 1 {
+            return Err(invalid("Use the versioned master answer command."));
+        }
         self.require_position(position, MasterPhase::Questionnaire)?;
         let step = self.current()?.clone();
         let mut record = self.answers.replace(
@@ -302,17 +313,86 @@ impl MasterWorker {
                 .ok_or_else(|| invalid("Questionnaire was not presented."))?,
             Instant::now(),
         )?;
+        self.state.answers = self
+            .answers
+            .projection()
+            .into_iter()
+            .map(|(id, value)| (id, json!(value)))
+            .collect();
+        self.record_answers(&mut record, submitted)
+    }
+    fn typed_answers_action(
+        &mut self,
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+        submitted: bool,
+    ) -> ResearchResult<()> {
+        use super::typed_forms::FormAnswerValue;
+        if self.prepared.plan.version != 2 {
+            return Err(invalid("Typed answers require master version 2."));
+        }
+        self.require_position(position, MasterPhase::Questionnaire)?;
+        let step = self.current()?.clone();
+        let start = self
+            .step_started
+            .ok_or_else(|| invalid("Questionnaire was not presented."))?;
+        let now = Instant::now();
+        let mut record = if step.payload["definition"]["schema"]
+            == "affect-research-form-definition"
+        {
+            let definition = crate::research_form_definition::decode_form_definition_v1(
+                &step.payload["definition"],
+            )?;
+            let result = self
+                .typed_answers
+                .replace(&definition, answers, submitted, start, now)?;
+            self.state.answers = self
+                .typed_answers
+                .projection()
+                .into_iter()
+                .map(|(id, value)| (id, json!(value)))
+                .collect();
+            json!({"schema":"affect-runner-master-responses","version":2,"entryId":step.entry_id,"position":step.position,"module":step.payload["module"],"questionnaireId":definition.questionnaire_id,"questionnaireVersion":definition.questionnaire_version,"definitionSha256":definition.definition_sha256,"status":if submitted {"submitted"} else {"draft"},"responses":result.responses})
+        } else {
+            let choices = answers
+                .into_iter()
+                .map(|choice| match choice.value {
+                    FormAnswerValue::SingleChoice { option_id } => {
+                        Ok(super::runtime::MasterChoice {
+                            item_id: choice.item_id,
+                            option_id,
+                        })
+                    }
+                    _ => Err(invalid(
+                        "Likert answers require a frozen single-choice option.",
+                    )),
+                })
+                .collect::<ResearchResult<Vec<_>>>()?;
+            let mut record = self
+                .answers
+                .replace(&step, choices, submitted, start, now)?;
+            record["version"] = json!(2);
+            self.state.answers = self
+                .answers
+                .projection()
+                .into_iter()
+                .map(|(id, option_id)| (id, json!(FormAnswerValue::SingleChoice { option_id })))
+                .collect();
+            record
+        };
+        self.record_answers(&mut record, submitted)
+    }
+    fn record_answers(&mut self, record: &mut Value, submitted: bool) -> ResearchResult<()> {
         record["runId"] = json!(self.state.run_id);
         record["attemptId"] = json!(self.state.attempt_id);
         record["participantId"] = json!(self.state.participant_id);
         record["recipeSourceByteSha256"] = json!(self.state.recipe_source_byte_sha256);
         record["planIdentitySha256"] = json!(self.state.plan_identity_sha256);
         record["monotonicMs"] = json!(self.elapsed());
-        self.storage.responses(&record)?;
+        self.storage.responses(record)?;
         if let Some(lsl) = &mut self.lsl {
-            lsl.record(ContentKind::Responses, &record)?;
+            lsl.record(ContentKind::Responses, record)?;
         }
-        self.state.answers = self.answers.projection();
         if submitted {
             self.observe(MarkerEvent::FormEnd, true)?;
             self.next()?;
@@ -447,7 +527,7 @@ impl MasterWorker {
                 let now = Instant::now();
                 self.response.clear_holds(now);
                 self.clock = Some(DeadlineClock::new(
-                    self.prepared.loaded.recipe.policy.sampling_frequency_hz as u16,
+                    self.prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
                     now,
                 )?);
                 self.state.phase = MasterPhase::Playing;
@@ -515,7 +595,7 @@ impl MasterWorker {
             y.atan2(x).to_degrees().rem_euclid(360.)
         };
         let active = self.response.active(now);
-        let feedback = &self.prepared.loaded.recipe.segments.p5;
+        let feedback = &self.prepared.feedback;
         let animation = feedback.visual.flubber_enabled;
         let lsl = self
             .lsl
@@ -535,10 +615,10 @@ impl MasterWorker {
             .transpose()?;
         self.state.sample_count += 1;
         let mappings = &feedback.mappings;
-        let sample = json!({"schema":"affect-runner-master-sample","version":1,"sequence":self.state.sample_count,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"participantId":self.state.participant_id,"recipeSourceByteSha256":self.state.recipe_source_byte_sha256,"planIdentitySha256":self.state.plan_identity_sha256,"entryId":self.current()?.entry_id,"executionId":self.occurrence,"monotonicMs":self.elapsed(),"lslTimeSeconds":lsl,"mediaTimeMs":self.state.media_time_ms,"sampleRateHz":self.prepared.loaded.recipe.policy.sampling_frequency_hz,"scheduledElapsedMs":due.scheduled_elapsed.as_secs_f64()*1000.,"observedElapsedMs":due.observed_elapsed.as_secs_f64()*1000.,"schedulerLatenessMs":due.lateness.as_secs_f64()*1000.,"schedulerJitterMs":due.jitter_ms,"stateAnchorAgeMs":now.saturating_duration_since(self.response.anchor).as_secs_f64()*1000.,"missedSlotsBefore":due.missed_slots_before,"valence":x,"arousal":y,"radius":radius,"angleDegrees":angle,"inputActive":active,"animationActive":animation,"inputKind":feedback.input.kind,"feedbackVisible":!feedback.visual.hide_feedback,"oscillationFrequency":mappings.oscillation_frequency.evaluate(x,y),"edgeSmoothness":mappings.edge_smoothness.evaluate(x,y),"projectionAmplitude":mappings.projection_amplitude.evaluate(x,y),"pulseSynchrony":mappings.pulse_synchrony.evaluate(x,y),"waveSizeVariation":mappings.wave_size_variation.evaluate(x,y),"saturation":mappings.saturation.evaluate(x,y)});
+        let sample = json!({"schema":"affect-runner-master-sample","version":1,"sequence":self.state.sample_count,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"participantId":self.state.participant_id,"recipeSourceByteSha256":self.state.recipe_source_byte_sha256,"planIdentitySha256":self.state.plan_identity_sha256,"entryId":self.current()?.entry_id,"executionId":self.occurrence,"monotonicMs":self.elapsed(),"lslTimeSeconds":lsl,"mediaTimeMs":self.state.media_time_ms,"sampleRateHz":self.prepared.loaded.recipe.policy().sampling_frequency_hz,"scheduledElapsedMs":due.scheduled_elapsed.as_secs_f64()*1000.,"observedElapsedMs":due.observed_elapsed.as_secs_f64()*1000.,"schedulerLatenessMs":due.lateness.as_secs_f64()*1000.,"schedulerJitterMs":due.jitter_ms,"stateAnchorAgeMs":now.saturating_duration_since(self.response.anchor).as_secs_f64()*1000.,"missedSlotsBefore":due.missed_slots_before,"valence":x,"arousal":y,"radius":radius,"angleDegrees":angle,"inputActive":active,"animationActive":animation,"inputKind":feedback.input.kind,"feedbackVisible":!feedback.visual.hide_feedback,"oscillationFrequency":mappings.oscillation_frequency.evaluate(x,y),"edgeSmoothness":mappings.edge_smoothness.evaluate(x,y),"projectionAmplitude":mappings.projection_amplitude.evaluate(x,y),"pulseSynchrony":mappings.pulse_synchrony.evaluate(x,y),"waveSizeVariation":mappings.wave_size_variation.evaluate(x,y),"saturation":mappings.saturation.evaluate(x,y)});
         self.storage.sample(&sample)?;
         if self.state.sample_count.is_multiple_of(u64::from(
-            self.prepared.loaded.recipe.policy.sampling_frequency_hz,
+            self.prepared.loaded.recipe.policy().sampling_frequency_hz,
         )) {
             self.storage.checkpoint()?;
         }
@@ -596,11 +676,9 @@ impl MasterWorker {
         self.state.interval_remaining_ms = None;
         self.state.media_time_ms = None;
         self.answers = Default::default();
+        self.typed_answers = Default::default();
         self.state.answers.clear();
-        self.response = ResponseState::new(
-            self.prepared.loaded.recipe.segments.p5.response.clone(),
-            Instant::now(),
-        );
+        self.response = ResponseState::new(self.prepared.feedback.response.clone(), Instant::now());
         if self.state.completed_step_count == self.state.step_count {
             self.finish(true, None)
         } else {
@@ -696,6 +774,184 @@ mod tests {
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
     #[test]
+    fn master_v2_requires_every_typed_and_likert_answer_before_advancing() {
+        use super::super::typed_forms::{FormAnswerValue, TypedChoice};
+        for language in ["en", "de"] {
+            let root =
+                std::env::temp_dir().join(format!("affect-master-v2-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir(&root).unwrap();
+            std::fs::create_dir(root.join("outputs")).unwrap();
+            let prepared = PreparedMaster::read(
+                include_str!("../../../test/fixtures/runner-master-v2-owner.canonical.json"),
+                "P001",
+                MasterSelector {
+                    variant_id: "variant-1".into(),
+                    language_id: language.into(),
+                    language_selection_path: vec!["both".into(), language.into()],
+                    presentation_target: "desktop-screen".into(),
+                },
+            )
+            .unwrap();
+            let workspace = Arc::new(WorkspaceService::new(root.join("app")).unwrap());
+            let media = Arc::new(NativeMediaService::unavailable_for_tests());
+            let input = Arc::new(ResearchInputService::for_tests());
+            let recorder = Arc::new(RecorderService::default());
+            let binding = prepared.feedback.input.clone();
+            let receipt = input.issue_test_receipt_for_tests(binding.clone()).unwrap();
+            let mailbox = Arc::new(ProtocolInputMailbox::new(binding.kind));
+            let sink = Arc::clone(&mailbox);
+            let authority = InputAuthority {
+                service: Arc::clone(&input),
+                id: input
+                    .prepare_run_full(binding, &receipt.receipt_id, move |v| sink.push(v))
+                    .unwrap(),
+            };
+            let legacy = PackageProtocolRuntime::with_services(
+                Arc::clone(&workspace),
+                Arc::clone(&media),
+                Arc::clone(&input),
+            );
+            let storage =
+                MasterStorage::create(&root, &prepared, "run-typed-test", Value::Null, false)
+                    .unwrap();
+            assert_eq!(storage.receipt["version"], 2);
+            assert!(storage.receipt.get("participant").is_none());
+            let output = root.join(storage.receipt["outputDirectory"].as_str().unwrap());
+            let mut worker = legacy
+                .begin_companion(|lease| {
+                    MasterWorker::new(
+                        prepared,
+                        "unused".into(),
+                        vec![],
+                        NativeMediaViewportPxV1::initial(),
+                        storage,
+                        authority,
+                        mailbox,
+                        workspace,
+                        media,
+                        recorder,
+                        lease,
+                    )
+                })
+                .unwrap();
+            worker.observe(MarkerEvent::SessionStart, false).unwrap();
+            assert!(worker
+                .action(MasterAction::SubmitV2 {
+                    position: 1,
+                    answers: vec![]
+                })
+                .is_err());
+            worker
+                .action(MasterAction::Presented { position: 1 })
+                .unwrap();
+            assert!(worker
+                .action(MasterAction::Submit {
+                    position: 1,
+                    answers: vec![]
+                })
+                .is_err());
+            assert!(worker
+                .action(MasterAction::SubmitV2 {
+                    position: 1,
+                    answers: vec![]
+                })
+                .is_err());
+            let answers = vec![
+                TypedChoice {
+                    item_id: "fullName".into(),
+                    value: FormAnswerValue::Text {
+                        text: "  Fictitious Ä\nName  ".into(),
+                    },
+                },
+                TypedChoice {
+                    item_id: "age".into(),
+                    value: FormAnswerValue::Integer { integer: 0 },
+                },
+                TypedChoice {
+                    item_id: "gender".into(),
+                    value: FormAnswerValue::SingleChoice {
+                        option_id: "preferNotToSay".into(),
+                    },
+                },
+                TypedChoice {
+                    item_id: "handedness".into(),
+                    value: FormAnswerValue::SingleChoice {
+                        option_id: "ambidextrous".into(),
+                    },
+                },
+            ];
+            let mut partial = answers.clone();
+            partial.pop();
+            worker
+                .action(MasterAction::DraftV2 {
+                    position: 1,
+                    answers: partial.clone(),
+                })
+                .unwrap();
+            assert!(worker
+                .action(MasterAction::SubmitV2 {
+                    position: 1,
+                    answers: partial
+                })
+                .is_err());
+            assert_eq!(worker.state.position, 1);
+            worker
+                .action(MasterAction::SubmitV2 {
+                    position: 1,
+                    answers,
+                })
+                .unwrap();
+            assert_eq!(worker.state.position, 2);
+            assert!(worker.state.answers.is_empty());
+            worker
+                .action(MasterAction::Presented { position: 2 })
+                .unwrap();
+            let choices = worker.current().unwrap().payload["definition"]["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|item| TypedChoice {
+                    item_id: item["itemId"].as_str().unwrap().into(),
+                    value: FormAnswerValue::SingleChoice {
+                        option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
+                    },
+                })
+                .collect::<Vec<_>>();
+            assert!(worker
+                .action(MasterAction::SubmitV2 {
+                    position: 2,
+                    answers: choices[..1].to_vec()
+                })
+                .is_err());
+            worker
+                .action(MasterAction::SubmitV2 {
+                    position: 2,
+                    answers: choices,
+                })
+                .unwrap();
+            assert_eq!(worker.state.completed_step_count, 2);
+            worker.action(MasterAction::Stop).unwrap();
+            let records = std::fs::read_to_string(output.join("master-responses.v2.jsonl"))
+                .unwrap()
+                .lines()
+                .map(|s| serde_json::from_str::<Value>(s).unwrap())
+                .collect::<Vec<_>>();
+            assert_eq!(records.len(), 3);
+            assert_eq!(
+                records[1]["responses"][0]["value"]["text"],
+                "  Fictitious Ä\nName  "
+            );
+            assert_eq!(records[1]["responses"][1]["value"]["integer"], 0);
+            assert_eq!(records[2]["responses"][0]["optionId"], "option-1");
+            assert!(records[2]["responses"][0].get("value").is_none());
+            assert!(records.iter().all(|r| r["version"] == 2));
+            drop(worker);
+            drop(legacy);
+            drop(input);
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
     fn observed_form_submission_precedes_distinct_zero_interval_and_partial_stop() {
         // Synthetic authority/fixture: tests reducer/storage ordering, never media qualification.
         let root =
@@ -719,7 +975,7 @@ mod tests {
         let media = Arc::new(NativeMediaService::unavailable_for_tests());
         let input = Arc::new(ResearchInputService::for_tests());
         let recorder = Arc::new(RecorderService::default());
-        let binding = prepared.loaded.recipe.segments.p5.input.clone();
+        let binding = prepared.feedback.input.clone();
         let receipt = input.issue_test_receipt_for_tests(binding.clone()).unwrap();
         let mailbox = Arc::new(ProtocolInputMailbox::new(binding.kind));
         let sink = Arc::clone(&mailbox);

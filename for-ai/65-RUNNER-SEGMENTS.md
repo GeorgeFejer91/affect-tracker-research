@@ -21,6 +21,31 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Master-v2 worker/presenter integration — 2026-09-12
+
+RR-06/RR-10 Backend Verification, Main/root allocated named RR-02/RR-03/RR-07
+consumer seams in isolated `codex/segment-runner-v2-integration`, based on
+typed component `b06990b`. This supersedes the component-only pending-consumer
+status below, without claiming final production composition.
+
+The worker now consumes supported master1/2 through owner `30c9909` and exact
+JS owner `30291fc`. V2 Start accepts participantId only; native v2 actions and
+status use tagged values. All displayed typed and Likert items are mandatory,
+including old optional metadata. Drafts never advance. Startup2 embeds exact
+source without legacy coded demographics; response2 retains schema-specific
+typed or original Likert fields. Output identity remains source hash/participant
+number, with no demographic-derived filenames or allocation.
+
+Nineteen focused native tests pass, including actual EN/DE worker submissions,
+and six native plans agree with independent JS interpretation. Sixteen JS checks,
+44 master-presenter browser controls checks and Runner build/boundary checks pass.
+Main-approved test-only registrations/session adapter were used for native tests
+and are excluded from the deliverable. Their exact patch/hash and evidence are
+in `docs/runner-master-v2-integration.md`. Main owns final module/command
+registration, supported RunnerDocument and app presenter lifetime/mounting.
+Actual installed EN/DE execution, video playback and independent recorded XDF
+acceptance remain open. Existing foreground apps have not been replaced.
+
 ## Typed participant form component — 2026-09-12
 
 RR-06/RR-10 with named RR-02/RR-03/RR-07 consumer seams, Backend Verification.

@@ -3,13 +3,16 @@ import {
   resolveLanguageSelectionTraversalStepV1,
 } from "../../site/src/research/experiment-package.js";
 import { evaluateFlubberMappings } from "../../site/src/research/mappings.js";
-import { parsePlannerRecipeFile } from "../../site/src/research/planner-recipe.js";
+import { parsePlannerRecipeFile, parseSupportedPlannerRecipe } from "../../site/src/research/planner-recipe.js";
+import { readPlannerRecipeJsonBytes, PLANNER_RECIPE_SCHEMA } from "../../site/src/research/planner-recipe-wire.js";
 import { resolveMasterPlan } from "./master-recipe.js";
 
 export { resolveLanguageSelectionTraversalStepV1 };
 
 /** P7's complete dispatch preserves both independent strict readers. */
 export async function readRunnerRecipe(bytes) {
+  const { value } = readPlannerRecipeJsonBytes(bytes);
+  if (value?.schema === PLANNER_RECIPE_SCHEMA) return parseSupportedPlannerRecipe(bytes);
   return (await parsePlannerRecipeFile(bytes)).document;
 }
 

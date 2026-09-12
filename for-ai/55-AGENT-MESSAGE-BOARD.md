@@ -4901,3 +4901,13 @@ legacy recovery compatibility and exact tests. 656 Node/216 Rust tests, Clippy,
 checks passed. This continues d7871ae on the isolated Runner branch; canonical
 integration remains owner-controlled. No master allocation, phone app, native
 playback qualification or Planner authoring changes are included.
+# Runner master-v2 integration allocation — 2026-09-12
+
+RR-06/RR-10 Backend Verification: Main/root allocated the Runner worker,
+presenter and information-reader integration on `codex/segment-runner-v2-integration`
+in `D:/GitHub/affect-tracker-research-runner-v2`, based on frozen `b06990b`.
+Consume S4's supported master parser and exact mixed definitions; preserve v1
+execution/readers. Deliver versioned Start/actions/status/responses and typed
+presentation, with focused native/JS correspondence and hostile submission
+checks. Main owns lib/command/app registration; S4 owns P2/master parsing.
+Actual installed EN/DE execution and independent XDF acceptance remain open.

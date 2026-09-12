@@ -6,11 +6,13 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
-const [browser, destination] = process.argv.slice(2);
+const [browser, destination, mode] = process.argv.slice(2);
+assert.ok(mode === undefined || mode === "--master-presenter");
 assert.ok(browser && destination); const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output); const execute = promisify(execFile);
 const entry = String.raw`
 import {renderTypedForm} from './runner/src/typed-form.js';
+import {renderMasterQuestionnaire} from './runner/src/master-presentation.js';
 import {verifyFormDefinitionV1} from './site/src/research/form-definition.js';
 const language=new URL(location.href).searchParams.get('language'),checks=[],errors=[];
 const check=(value,label)=>{if(!value)throw new Error(label);checks.push(label);};
@@ -18,7 +20,8 @@ try {
  const definition=await verifyFormDefinitionV1(await(await fetch('/test/fixtures/demographics-'+language+'-form-v1.canonical.json')).json());
  document.documentElement.lang=language; document.getElementById('title').textContent=definition.title;
  const host=document.getElementById('fields'),form=document.querySelector('form'),button=document.querySelector('button');
- const presenter=renderTypedForm(host,definition,{kind:'fields',questionnaireId:definition.questionnaireId,definitionSha256:definition.definitionSha256});
+ const presentation={kind:'fields',questionnaireId:definition.questionnaireId,definitionSha256:definition.definitionSha256};
+ const presenter=new URL(location.href).searchParams.get('presenter')==='master'?renderMasterQuestionnaire(host,definition,presentation,{}):renderTypedForm(host,definition,presentation);
  document.getElementById('instructions').textContent=presenter.instructions;button.textContent=presenter.submitLabel;
  let submits=0;form.addEventListener('submit',e=>{e.preventDefault();presenter.read();submits++;});
  const fill=(id,value)=>{const input=host.querySelector('[data-form-item="'+id+'"]');input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));return input;};
@@ -47,6 +50,7 @@ try {
  check(button.getBoundingClientRect().bottom<=innerHeight,'all demographic fields and Submit fit desktop viewport');
  check([...host.querySelectorAll('input,textarea')].every(input=>input.required),'required semantics exposed to browser');
 }catch(error){errors.push(String(error));}
+await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 const receipt=document.createElement('pre');receipt.id='receipt';receipt.hidden=true;receipt.textContent=JSON.stringify({language,checks,errors,viewport:[innerWidth,innerHeight],scope:'P2 validator and real browser controls only; fictitious answers; no native execution'});document.body.append(receipt);
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "typed-form-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent" });
@@ -63,9 +67,9 @@ await new Promise(done => server.listen(0, "127.0.0.1", done)); const rows = [];
 try {
   for (const language of ["en", "de"]) {
     const profile = await mkdtemp(join(output, "profile-"));
-    const { stdout } = await execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", "--virtual-time-budget=10000", `--screenshot=${join(output, language + ".png")}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?language=${language}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
+    const { stdout } = await execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", "--virtual-time-budget=10000", `--screenshot=${join(output, language + ".png")}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?language=${language}&presenter=${mode === "--master-presenter" ? "master" : "typed"}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
     await writeFile(join(output, language + ".html"), stdout);
     const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1]; assert.ok(raw, "Missing browser receipt");
     const row = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">")); rows.push(row); console.log(JSON.stringify(row)); assert.deepEqual(row.errors, []);
   }
-} finally { server.close(); await writeFile(join(output, "receipt.json"), JSON.stringify({ root, rows }, null, 2)); }
+} finally { server.close(); await writeFile(join(output, "receipt.json"), JSON.stringify({ root, presenter: mode === "--master-presenter" ? "master" : "typed", rows }, null, 2)); }
