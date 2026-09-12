@@ -3,9 +3,10 @@ import { applyScreenLayoutFit } from "./screen-layout-draft.js";
 
 export const DESKTOP_LAYOUT_SCHEMA = "affect-research-desktop-layout-contribution";
 export const DESKTOP_LAYOUT_MAX_BYTES = 8192;
-// Q08 is owned by the researcher. Calculation candidates are not an approval.
-export const APPROVED_DESKTOP_REFERENCE_POLICY = null;
-const POLICIES = ["largest-oriented-area", "maximum-oriented-dimensions"];
+// A recipe requires an explicit choice. Neither method is a default.
+export const DEFAULT_DESKTOP_REFERENCE_POLICY = null;
+export const DESKTOP_REFERENCE_POLICIES = Object.freeze(["largest-oriented-area", "maximum-oriented-dimensions"]);
+const POLICIES = DESKTOP_REFERENCE_POLICIES;
 const rectangle = (cx, cy, width, height) => ({ x: cx - width / 2, y: cy - height / 2, width, height, cx, cy });
 const outside = (r, s) => r.x < -1e-7 || r.y < -1e-7 || r.x + r.width > s.width + 1e-7 || r.y + r.height > s.height + 1e-7;
 
@@ -41,7 +42,7 @@ export function validateDesktopMediaGeometry(media) {
   });
 }
 
-/** Explicit calculation policy only; callers cannot turn it into accepted policy. */
+/** Automatic analysis after an explicit per-recipe method choice. */
 export function selectDesktopReference(media, policy) {
   const videos = validateDesktopMediaGeometry(media);
   if (!POLICIES.includes(policy)) fail("reference.policy", "unsupported", "The automatic reference policy is unsupported.");
@@ -86,7 +87,7 @@ export function validateDesktopLayoutProfileV1(value) {
   number(f.overlayViewportSide, "feedback.overlayViewportSide", 0.001, 100000);
   number(f.offset.x, "feedback.offset.x", -100000, 100000); number(f.offset.y, "feedback.offset.y", -100000, 100000);
   number(f.minimumGap, "feedback.minimumGap", 0, 100000);
-  if (new TextEncoder().encode(canonicalJson(value)).length > DESKTOP_LAYOUT_MAX_BYTES) fail("layout", "size", "Layout exceeds its bounded contract size.");
+  if (new TextEncoder().encode(canonicalJson(value)).length + 1 > DESKTOP_LAYOUT_MAX_BYTES) fail("layout", "size", "Layout exceeds its bounded contract size.");
   return structuredClone(value);
 }
 
@@ -122,10 +123,6 @@ export function resolveDesktopLayoutGeometry(value, media, envelope) {
   const maximum = rectangle(cx, cy, half * 2, half * 2);
   applyScreenLayoutFit(result, videos.map(v => ({ id: v.assetId, width: v.displayWidth, height: v.displayHeight })), maximum, "saved-maximum");
   return { ...result, profile: p, envelope: structuredClone(envelope), inputKind: "live" };
-}
-
-export function assertDesktopReferenceApproved(value) {
-  if (APPROVED_DESKTOP_REFERENCE_POLICY === null || value.reference.source.policy !== APPROVED_DESKTOP_REFERENCE_POLICY) fail("reference", "reference-policy-pending", "The automatic largest-video reference rule is awaiting confirmation.");
 }
 
 /** Representation conversion uses the fixed reference, never the inspected video. */
