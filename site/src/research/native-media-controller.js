@@ -1,4 +1,5 @@
 import { validateVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { validateControlledVideoDisplayGeometry } from "./video-display-controlled.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
@@ -100,9 +101,19 @@ export function validateNativeMediaPrepareReceiptV1(value) {
 }
 
 export function validateNativeDecodedStimulusSummaryV1(value) {
+  return validateNativeDecodedStimulusSummary(value, 1);
+}
+
+export function validateNativeDecodedStimulusSummaryV2(value) {
+  return validateNativeDecodedStimulusSummary(value, 2);
+}
+
+function validateNativeDecodedStimulusSummary(value, version) {
   let displayGeometry;
   try {
-    displayGeometry = validateVideoDisplayGeometry(value?.displayGeometry);
+    displayGeometry = version === 2
+      ? validateControlledVideoDisplayGeometry(value?.displayGeometry)
+      : validateVideoDisplayGeometry(value?.displayGeometry);
   } catch {
     throw new TypeError("Native decoded stimulus summary is malformed.");
   }
@@ -115,7 +126,7 @@ export function validateNativeDecodedStimulusSummaryV1(value) {
     || !finiteNonnegative(value.durationMs) || value.durationMs < 10
     || value.decodeStatus !== "attestedQualified"
     || value.decodeBackend !== "nativeGstPlay"
-    || value.decodeAttestation !== "nativeDecodedSnapshotsV1"
+    || value.decodeAttestation !== `nativeDecodedSnapshotsV${version}`
     || !Array.isArray(value.decodedPositionsMs) || value.decodedPositionsMs.length !== 3
     || value.decodedPositionsMs.some((position) => !finiteNonnegative(position))
     || value.decodedPositionsMs.some((position, index) => index > 0 && position <= value.decodedPositionsMs[index - 1])
@@ -128,7 +139,7 @@ export function validateNativeDecodedStimulusSummaryV1(value) {
     || value.source.sha256 !== value.sha256
     || value.source.byteLength !== value.byteLength
     || value.source.durationMs !== value.durationMs
-    || displayGeometry.source !== "native-gstplay-metadata") {
+    || displayGeometry.source !== (version === 2 ? "native-gstplay-controlled-renderer" : "native-gstplay-metadata")) {
     throw new TypeError("Native decoded stimulus summary is malformed.");
   }
   return Object.freeze({
@@ -253,6 +264,14 @@ export class NativeMediaController {
   }
 
   async attestDecode({ workspaceId, summary }) {
+    return this.#attestDecode({ workspaceId, summary }, 1);
+  }
+
+  async attestDecodeV2({ workspaceId, summary }) {
+    return this.#attestDecode({ workspaceId, summary }, 2);
+  }
+
+  async #attestDecode({ workspaceId, summary }, version) {
     const fence = this.#requiredFence();
     if (typeof workspaceId !== "string" || !UUID_PATTERN.test(workspaceId)
       || !summary || typeof summary !== "object"
@@ -262,8 +281,9 @@ export class NativeMediaController {
       || typeof summary.mimeType !== "string" || summary.mimeType.length < 1 || summary.mimeType.length > 128) {
       throw new TypeError("Native decode attestation requires one exact prepared workspace stimulus.");
     }
-    const result = validateNativeDecodedStimulusSummaryV1(await this.invoke(
-      "research_native_media_attest_decode",
+    const validate = version === 2 ? validateNativeDecodedStimulusSummaryV2 : validateNativeDecodedStimulusSummaryV1;
+    const result = validate(await this.invoke(
+      version === 2 ? "research_native_media_attest_decode_v2" : "research_native_media_attest_decode",
       {
         request: {
           workspaceId,
@@ -280,6 +300,10 @@ export class NativeMediaController {
       || result.byteLength !== summary.byteLength
       || result.mimeType !== summary.mimeType) {
       throw new Error("Native decode attestation returned a different stimulus identity.");
+    }
+    if (version === 2 && (!this.fence
+      || this.fence.sessionId !== fence.sessionId || this.fence.generation !== fence.generation)) {
+      throw new Error("Native decode attestation crossed the active generation fence.");
     }
     return result;
   }

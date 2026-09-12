@@ -1,7 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { attestNativeGstCatalogue, NativeCatalogueFailure } from "../site/src/research/native-media-catalogue.js";
+import { attestNativeGstCatalogue, attestNativeGstCatalogueV2, NativeCatalogueFailure } from "../site/src/research/native-media-catalogue.js";
+
+test("controlled catalogue selects only the explicit v2 method and stops its generation", async () => {
+  const calls = [];
+  const controller = {
+    async prepare() { calls.push("prepare"); },
+    async awaitPrepared() { calls.push("prepared"); },
+    async attestDecode() { throw new Error("Historical method must not be selected"); },
+    async attestDecodeV2({ summary }) { calls.push("v2"); return summary; },
+    async stop() { calls.push("stop"); },
+  };
+  const options = { controller, workspaceId: "workspace", stimuli: [{ workspaceFileId: "test" }], viewportHost: { getBoundingClientRect() {} } };
+  assert.equal((await attestNativeGstCatalogueV2(options)).qualified.length, 1);
+  assert.deepEqual(calls, ["prepare", "prepared", "v2", "stop"]);
+  delete controller.attestDecodeV2;
+  await assert.rejects(() => attestNativeGstCatalogueV2(options), /malformed/u);
+});
 
 test("native GstPlay catalogue qualification is sequential and always stops each generation", async () => {
   const calls = [];

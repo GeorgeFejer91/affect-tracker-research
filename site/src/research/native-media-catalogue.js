@@ -37,17 +37,25 @@ export class NativeCatalogueFailure extends Error {
   }
 }
 
-export async function attestNativeGstCatalogue({
+export async function attestNativeGstCatalogue(options) {
+  return attestCatalogue(options, "attestDecode");
+}
+
+export async function attestNativeGstCatalogueV2(options) {
+  return attestCatalogue(options, "attestDecodeV2");
+}
+
+async function attestCatalogue({
   controller,
   workspaceId,
   stimuli,
   viewportHost,
   onProgress = () => {},
-} = {}) {
+} = {}, attestMethod) {
   if (!controller
     || typeof controller.prepare !== "function"
     || typeof controller.awaitPrepared !== "function"
-    || typeof controller.attestDecode !== "function"
+    || typeof controller[attestMethod] !== "function"
     || typeof controller.stop !== "function"
     || typeof workspaceId !== "string"
     || !Array.isArray(stimuli)
@@ -68,7 +76,7 @@ export async function attestNativeGstCatalogue({
       phase = "awaitPrepared";
       await controller.awaitPrepared({ attempts: 600, intervalMs: 25 });
       phase = "attestDecode";
-      qualified.push(await controller.attestDecode({ workspaceId, summary: scanned }));
+      qualified.push(await controller[attestMethod]({ workspaceId, summary: scanned }));
     } catch (error) {
       operationError = error;
       failures.push(Object.freeze({ scanned, error, phase }));
