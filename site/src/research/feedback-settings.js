@@ -28,7 +28,7 @@ function labels(value, label) {
   exact(value, keys, label);
   return Object.freeze(Object.fromEntries(keys.map(key => {
     const text = value[key];
-    if (typeof text !== "string" || text.length < 1 || text.length > 48
+    if (typeof text !== "string" || text.length < 1 || text.length > 48 || !text.isWellFormed()
       || text !== text.trim() || /[\u0000-\u001f\u007f]/u.test(text)) {
       throw new TypeError(`${label}.${key} requires 1–48 display characters without control characters.`);
     }

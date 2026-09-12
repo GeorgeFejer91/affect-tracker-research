@@ -1602,9 +1602,9 @@ function bindResearchInteractions(root, { surface }) {
 
   async function restoreFeedbackContribution(contribution, { isCurrent = () => true } = {}) {
     const normalized = validateFeedbackContribution(contribution);
-    if (!isCurrent()) return false;
+    if (researchUiDisposed || !isCurrent()) return false;
     applyFeedbackFields(normalized);
-    root.researchUi?.resetPreviewInspection?.();
+    resetPreviewInspection();
     refreshProjection();
     schedulePlanRefresh();
     return feedbackContribution.getSnapshot();
