@@ -6,6 +6,8 @@ import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
 import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
 import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
 import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
+import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url)));
 const profile = createDefaultXrLayoutProfile();
@@ -155,4 +157,26 @@ test("explicitly disabled XR needs no producers and remains absent from desktop 
   await assert.rejects(h.authoring.accept(), /Connect valid P1/);
   await assert.rejects(registry.assertPackageV1({}));
   h.authoring.destroy();
+});
+
+test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {
+  const catalogue = JSON.parse(await readFile(new URL("fixtures/research-video-catalogue-contribution-v1.json", import.meta.url)));
+  const p1 = createVideoCatalogueProducerV1();
+  let feedback = { input: DEFAULT_SETTINGS.input, ...fixture.cases[0].configuration };
+  const p5 = createFeedbackContributionSource(() => feedback);
+  await p1.replaceEntries(catalogue.entries);
+  const current = () => ({ P1: p1.getSnapshot(), P5: p5.getSnapshot() });
+  const resolved = await resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1);
+  const ready = resolveXrLayoutContribution(profile, resolved, profile.target);
+  assert.deepEqual(ready.videos.map(({ assetId }) => assetId), catalogue.entries.map(({ assetId }) => assetId));
+  assert.deepEqual(ready.videos[0].geometry.videoCentre, ready.videos[1].geometry.videoCentre);
+  const tampered = structuredClone(current()); tampered.P1.contribution.entries[0].geometry.displayWidthPx += 1;
+  await assert.rejects(resolveXrLayoutDependencies(tampered, projectVideoDisplayGeometryV1));
+  feedback = { ...feedback, visual: { ...feedback.visual, grid: { ...feedback.visual.grid, cursorSize: 99 } } };
+  const changed = await resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1);
+  assert.notEqual(changed.feedbackRevision, resolved.feedbackRevision);
+  assert.notEqual(changed.feedbackEnvelope.configurationKey, resolved.feedbackEnvelope.configurationKey);
+  p1.withdraw();
+  await assert.rejects(resolveXrLayoutDependencies(current(), projectVideoDisplayGeometryV1));
+  p5.destroy();
 });

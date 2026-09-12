@@ -1,7 +1,7 @@
 import { canonicalJson } from "./canonical.js";
 import { validatePlannerContributionSnapshot } from "./planner-contributions.js";
 import { resolveFeedbackEnvelopeV1 } from "./feedback-envelope.js";
-import { validateInputBindingV1 } from "./contracts.js";
+import { validateFeedbackContributionV1 } from "./feedback-contribution.js";
 import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
 import { XR_TARGET_REQUIREMENTS, XrLayoutError, resolveXrCatalogueV1, validateXrLayoutProfileV1 } from "./xr-layout.js";
 
@@ -28,9 +28,7 @@ export async function resolveXrLayoutDependencies(dependencies, projectCatalogue
   }
   if (typeof projectCatalogue !== "function") throw new TypeError("P1's geometry projector is required.");
   const p1 = readySnapshot(dependencies.P1, "P1"), p5 = readySnapshot(dependencies.P5, "P5");
-  const feedback = p5.contribution;
-  if (Object.keys(feedback).sort().join(",") !== "input,mappings,visual") throw new TypeError("P5 must supply its complete saved feedback contribution.");
-  validateInputBindingV1(feedback.input);
+  const feedback = validateFeedbackContributionV1(p5.contribution);
   const feedbackEnvelope = resolveFeedbackEnvelopeV1(feedback, XR_FEEDBACK_VIEWPORT_CSS_PX);
   const projection = await projectCatalogue(p1.contribution);
   if (!projection || !Array.isArray(projection.videos) || projection.videos.length === 0) {

@@ -1,5 +1,6 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
+import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -83,6 +84,7 @@ import {
   assetIdFromSha256,
   browserDisplayGeometry,
   createVideoCatalogueProducerV1,
+  projectVideoDisplayGeometryV1,
   validateVideoCatalogueContributionV1,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
@@ -179,6 +181,7 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
   const controller = createUiController(root, { surface });
   root.researchUi = controller;
   registerAvailablePlannerContributions(controller);
+  controller.initializeXrLayoutAuthoring();
   return controller;
 }
 
@@ -199,6 +202,7 @@ function bindResearchInteractions(root, { surface }) {
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
   const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  let xrLayoutAuthoring = null;
   const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
     onChange: (snapshot) => {
       const summary = root.querySelector('[data-section-summary="xr"]');
@@ -5249,6 +5253,19 @@ function bindResearchInteractions(root, { surface }) {
   return Object.freeze({
     get mode() { return mode; },
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    initializeXrLayoutAuthoring() {
+      if (xrLayoutAuthoring || !xrLayoutEditor) return;
+      xrLayoutAuthoring = createXrLayoutAuthoring({ editor: xrLayoutEditor,
+        getDependencies: () => ({ P1: videoCatalogueProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
+        subscribe: [videoCatalogueProducer.subscribe, feedbackContribution.subscribe],
+        projectCatalogue: projectVideoDisplayGeometryV1,
+      });
+    },
+    waitForXrLayoutDependencies() { return xrLayoutAuthoring.refresh(); },
+    getXrLayoutDependencyStatus() { return xrLayoutAuthoring.getStatus(); },
+    acceptXrLayoutContribution() { return xrLayoutAuthoring.accept(); },
+    validateXrLayoutContribution(profile, options) { return xrLayoutAuthoring.validate(profile, options); },
+    restoreXrLayoutContribution(profile, options) { return xrLayoutAuthoring.restore(profile, options); },
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
@@ -5329,6 +5346,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      xrLayoutAuthoring?.destroy();
       feedbackContribution.destroy();
       previewLayout.destroy();
       previewInteraction?.destroy();
