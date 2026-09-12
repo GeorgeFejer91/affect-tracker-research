@@ -105,6 +105,37 @@ research qualification or broader Backend Verification stage-completion claim.
 Clean-source receipts are supplied with the owner checkpoint; Vite's existing
 non-failing chunk-size warning remains.
 
+## P6 complete-master composition — 2026-09-12
+
+Owner checkpoint `188c08036a3afedcefb7d571fc9b2a63237fba2f` on isolated
+`codex/segment-p6-virtual-screen` composes P7 `828fff7`, accepted P4 `d0267ff`,
+P1's generic V1/V2 workspace projection and complete P5 V1/V2 bounds. The strict
+XR profile stores physical screen distance/size, centre azimuth/elevation, plane
+yaw/pitch/roll and relative feedback footprint. Its confirmed head-forward,
+world-fixed, between-attempt recenter and tracking-loss rules remain explicit.
+
+Six complete-master tests preserve both non-default spatial profiles across
+canonical save/reopen, both P1/P3 versions and every authored variant/language
+selection. P7's actual writer closes and rereads disk-backed fixture files;
+exact bytes/hash, exclusion, incompatible targets and stale integrity are
+checked. Separate processes reproduce identical master bytes and spatial
+selections with clock/RNG/storage/navigation unavailable. Content-only XR
+restoration stays pending until its actual P1 projection is supplied. Shared
+`planner-xr-master-v1*` fixtures contain a complete current-location master,
+reproduction matrix and resolved layout for the native reader owner.
+
+Evidence on that checkpoint: **731/731 Node tests**, desktop **11-file** and
+Pages **228-file** boundary builds. Logs are
+`D:/GitHub/.affect-preview-checks/p6-full-master-{node,desktop,pages}-20260912.log`.
+The existing non-failing desktop chunk warning remains. Earlier owned live UI
+evidence is 43 assertions at each 1440/820px and five focused Rust geometry/
+actual-P5-envelope checks; those receipts precede this full-master merge.
+
+Integration owns the shared application master-save/reopen handlers and their
+final combined UI receipt. This owner checkpoint does not claim OS-picker,
+installed/native, Edge, headset execution, recording or final Planner–Runner
+correspondence qualification. It adds no Runner implementation or authority.
+
 ## P6 live authoring and editable reopen — 2026-09-12
 
 Owner-ready Backend Verification continuation for P6-02/P6-05 on

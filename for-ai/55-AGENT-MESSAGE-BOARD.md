@@ -192,8 +192,10 @@ file; follow the integration-owner collection procedure in the workflow.
   tolerance. Profile bytes/schema and native authority are unchanged.
   Integration reserved the P6 summary hunk; it now says `Geometry validated`
   for domain preparation, separately from P7 confirmation/save.
-- Complete master codec/save/reopen evidence remains in progress with S7. This
-  is not a proposal-only stop or a dependency on actual Runner implementation.
+- Complete master codec/save/readback/reproduction evidence is ready at
+  `188c080`: 731/731 JavaScript tests and desktop/Pages boundary builds pass
+  (11/228 files). Shared application composition remains integration work;
+  this is not a dependency on actual Runner implementation.
 - Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
   master XR tests now pass: both P1/P3 versions, complete profiles/feedback,
   all variants/language paths, exact canonical/disk readback, explicit exclusion,
