@@ -11,6 +11,7 @@ import { NativeMediaController } from "./native-media-controller.js";
 import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
 import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
 import { completeQuestionnaireAssetStorageRequest } from "./questionnaire-storage-request.js";
+import { completeExperimentPackageSaveRequest } from "./package-save-request.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -1251,7 +1252,8 @@ export class NativeResearchRuntimeBridge {
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.saveExperimentPackageRequest, (event) => {
       event.preventDefault();
-      this.#queue(() => this.#saveExperimentPackage(event.detail));
+      this.#queue(() => completeExperimentPackageSaveRequest(event.detail,
+        (sourceText) => this.#saveExperimentPackage(sourceText)));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.saveSettingsRequest, (event) => {
       event.preventDefault();
@@ -1784,23 +1786,16 @@ export class NativeResearchRuntimeBridge {
     this.#dispatch(RESEARCH_UI_EVENTS.experimentPackageLoaded, { receipt });
   }
 
-  async #saveExperimentPackage(detail) {
-    if (typeof detail?.sourceText !== "string") {
+  async #saveExperimentPackage(sourceText) {
+    if (typeof sourceText !== "string") {
       throw new TypeError("Native package save requires canonical experiment.package.json text.");
     }
     const receipt = await this.invoke("research_save_experiment_package", {
-      sourceText: detail.sourceText,
+      sourceText,
     });
-    if (!receipt) return;
-    if (this.workspace) {
-      const result = await this.invoke("research_rescan_package_stimuli", {
-        workspaceId: this.workspace.workspaceId,
-        sourceText: detail.sourceText,
-      });
-      await this.#catalogue(result, { settings: this.root.researchUi?.experimentPackage?.settings });
-      await this.packageProtocol.refreshRecoveries(this.workspace.workspaceId, detail.sourceText);
-    }
-    this.#announce(`experiment.package.json saved with hash ${receipt.canonicalSourceByteSha256}.`);
+    // Saving a design does not depend on decoder/recovery readiness. The UI
+    // validates this receipt before adopting it and requests readiness separately.
+    return receipt;
   }
 
   async #saveSettings(detail) {

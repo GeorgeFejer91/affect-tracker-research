@@ -1,7 +1,16 @@
 import { bootResearchUi } from "../../site/src/research/app.js?visual-qualification=2";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 
-const FIXTURE_STATES = Object.freeze(["setup", "stimulus", "questionnaire", "interval", "complete"]);
+const FIXTURE_STATES = Object.freeze([
+  "setup",
+  "workspace-empty",
+  "workspace-populated",
+  "workspace-error",
+  "stimulus",
+  "questionnaire",
+  "interval",
+  "complete",
+]);
 const requestedState = new URLSearchParams(window.location.search).get("state") ?? "stimulus";
 
 if (!FIXTURE_STATES.includes(requestedState)) {
@@ -60,7 +69,25 @@ async function showQuestionnaire() {
   });
 }
 
-if (requestedState === "setup") {
+if (["workspace-empty", "workspace-populated", "workspace-error"].includes(requestedState)) {
+  if (root.querySelector("#setup-panel-workspace")?.hidden) {
+    root.researchUi.openSetupSection("workspace");
+  }
+  if (requestedState !== "workspace-empty") {
+    dispatch(RESEARCH_UI_EVENTS.workspaceReady, {
+      surface: "browser",
+      label: "synthetic-isolated-workspace",
+      directoryPermission: requestedState === "workspace-populated",
+    });
+  }
+  if (requestedState === "workspace-populated") {
+    root.querySelector("#experiment-id").value = "affect-validation";
+    root.querySelector("#experiment-title").value = "Affect validation study";
+    const packageStatus = root.querySelector("#package-file-status");
+    packageStatus.textContent = "experiment.package.json loaded";
+    packageStatus.dataset.state = "ready";
+  }
+} else if (requestedState === "setup") {
   root.researchUi.openSetupSection("review");
 } else if (requestedState === "questionnaire") {
   await showQuestionnaire();

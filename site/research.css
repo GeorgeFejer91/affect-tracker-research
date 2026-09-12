@@ -1,3 +1,35 @@
+/* P6 authoring: text reflows; the inspection scene has a responsive viewBox. */
+.xr-layout-editor { min-width: 0; }
+.xr-layout-editor [data-xr-content] { min-width: 0; }
+.xr-profile-fields { min-width: 0; margin: 0.75rem 0; padding: 0.65rem 0; border: 0; border-top: 1px solid var(--border); }
+.xr-profile-fields legend { padding: 0 0.35rem; color: var(--text); }
+.xr-layout-editor .field-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.xr-layout-editor input { max-width: 100%; min-width: 0; }
+.xr-layout-figure { margin: 1rem 0; }
+.xr-layout-figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--border); background: var(--surface-quiet); }
+.xr-layout-figure svg text { font-size: 12px; fill: var(--text); }
+.xr-layout-figure figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.4rem; }
+.xr-screen-frame { fill: var(--surface-raised); stroke: var(--border-strong); stroke-width: 2; }
+.xr-video-plane { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.xr-feedback-footprint { fill: none; stroke: var(--success); stroke-width: 2; }
+.xr-feedback-envelope { fill: none; stroke: var(--success); stroke-width: 1; stroke-dasharray: 4 3; }
+.xr-distance-line { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.xr-axis-line { stroke: var(--muted); stroke-width: 1.5; }
+.xr-offset-line { stroke: var(--success); stroke-width: 1; stroke-dasharray: 3 3; }
+.xr-view-controls, .xr-profile-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; }
+.xr-view-controls .field { flex: 1 1 11rem; }
+.xr-profile-actions .field { flex: 1 1 100%; }
+.xr-geometry-readout { display: grid; gap: 0.4rem; font-variant-numeric: tabular-nums; }
+.xr-geometry-readout > div { display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; }
+.xr-geometry-readout dt { color: var(--muted); }
+.xr-geometry-readout dd { margin: 0; overflow-wrap: anywhere; }
+.xr-layout-editor [data-xr-error], .xr-layout-editor [data-xr-status] { overflow-wrap: anywhere; }
+@media (forced-colors: active) {
+  .xr-video-plane, .xr-screen-frame { fill: Canvas; stroke: CanvasText; }
+  .xr-feedback-footprint, .xr-feedback-envelope, .xr-distance-line, .xr-axis-line, .xr-offset-line { stroke: CanvasText; }
+  .xr-layout-figure svg text { fill: CanvasText; }
+}
+
 :root {
   color-scheme: dark;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -237,7 +269,7 @@ h3 {
   width: 4rem;
   height: 4rem;
   margin-bottom: 0.85rem;
-  background: center / contain no-repeat url("./assets/app-logo.svg");
+  background: center / contain no-repeat url("./assets/app-symbol.svg");
   content: "";
 }
 
@@ -280,7 +312,7 @@ h3 {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  background: center / contain no-repeat url("./assets/app-logo.svg");
+  background: center / contain no-repeat url("./assets/app-symbol.svg");
 }
 
 .build-label,
@@ -340,6 +372,7 @@ h3 {
 }
 
 .setup-pane {
+  container: setup-pane / inline-size;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
@@ -553,7 +586,8 @@ h3 {
 }
 
 .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-.setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after {
+.setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
+.preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
   position: absolute;
   inset: -2px;
   border: 2px solid rgb(240 197 105 / 95%);
@@ -722,6 +756,10 @@ legend {
 
 .workspace-location-list {
   border-top: 1px solid var(--border);
+}
+
+#workspace-status:empty {
+  display: none;
 }
 
 .workspace-location-row {
@@ -988,7 +1026,7 @@ legend {
 .sheet-chevron { flex-shrink: 0; }
 .questionnaire-sheet[open] > summary .sheet-chevron { rotate: 180deg; }
 .sheet-body { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 12px; border: 0; border-top: 1px solid var(--border); }
-.sheet-settings { display: grid; grid-template-columns: minmax(130px, 2fr) minmax(100px, 1fr) minmax(120px, 1fr); align-items: start; gap: 10px; }
+.sheet-settings { display: grid; grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr); align-items: start; gap: 10px; }
 .sheet-labels-heading, .sheet-footer { justify-content: space-between; }
 .sheet-labels { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
 .sheet-labels .field > span { font-size: 12px; }
@@ -1035,8 +1073,7 @@ legend {
 .sheet-preview-table td { text-align: center; }
 .questionnaire-sheet-preview .sheet-table-scroll { max-height: none; margin-bottom: 16px; }
 @media (max-width: 600px) {
-  .sheet-settings { grid-template-columns: 1fr 1fr; }
-  .sheet-title-field { grid-column: 1 / -1; }
+  .sheet-settings { grid-template-columns: 1fr; }
   .sheet-body { padding: 8px; }
   .sheet-save-state { max-width: 75px; }
 }
@@ -1195,12 +1232,59 @@ legend {
 
 .package-finalization {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.9rem;
-  border-left: 3px solid var(--accent);
+  margin-bottom: 0.5rem;
+  padding: 0 0 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.package-finalization > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.package-finalization .button-row {
+  margin: 0;
+}
+
+#package-contribution-issues button {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#review-legacy-files .authoring-tools {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#review-legacy-files .authoring-tools > section {
+  min-width: 0;
+}
+
+#review-legacy-files p,
+#review-legacy-files output {
+  overflow-wrap: anywhere;
+}
+
+[data-setup-section="review"] .participant-language-readiness {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+[data-setup-section="review"] .participant-language-readiness > div {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+[data-setup-section="review"] .participant-language-readiness > button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .package-finalization h3,
@@ -1845,18 +1929,53 @@ tbody tr:last-child td {
 
 .preflight-list {
   display: grid;
-  gap: 0.45rem;
+  gap: 0;
   margin-bottom: 1rem;
 }
 
 .preflight-list li {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: center;
   gap: 0.6rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-quiet);
+  min-height: 2.5rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.preflight-list button {
+  min-height: 2.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.preflight-list button:hover {
+  text-decoration: underline;
+}
+
+.review-checks-title {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+#output-format-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0;
+}
+
+#output-format-group p {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .preflight-result {
@@ -1912,6 +2031,55 @@ tbody tr:last-child td {
   padding: 1.1rem;
   background: #151714;
   scrollbar-color: #4e554b #181a17;
+}
+
+.feedback-navigation {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.feedback-navigation button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.feedback-input-settings {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.feedback-input-settings .binding-button,
+.feedback-input-settings .input-test p {
+  overflow-wrap: anywhere;
+}
+
+.feedback-input-settings .binding-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+}
+
+.feedback-input-settings .input-test {
+  grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr);
+}
+
+.preview-controls-scroll > .setup-section-confirmation {
+  margin-top: 1rem;
+}
+
+.preview-controls-scroll {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.preview-controls-scroll > * {
+  min-width: 0;
 }
 
 .preview-header {
@@ -2047,34 +2215,6 @@ tbody tr:last-child td {
   overflow: visible;
 }
 
-@container preview-pane (max-width: 36rem) {
-  .preview-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-  .preview-feedback-modes { width: 100%; }
-  .preview-affect-map .preview-affect-map-layout {
-    grid-template-columns: minmax(3.5rem, 1fr) minmax(6.5rem, 8rem) minmax(3.5rem, 1fr);
-  }
-  .preview-affect-map .preview-color-anchor.anchor-left,
-  .preview-affect-map .preview-color-anchor.anchor-right {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    padding-inline: 0.25rem;
-    text-align: center;
-  }
-  .research-preview-studio .preview-subsection-heading,
-  .research-preview-studio .preview-simulator-help { flex-wrap: wrap; gap: 0.4rem; }
-  .preview-quick-appearance .field-grid,
-  .preview-advanced-settings .field-grid,
-  .preview-advanced-settings .mapping-grid,
-  .preview-footer { grid-template-columns: minmax(0, 1fr); }
-  .preview-advanced-settings .color-row { grid-template-columns: minmax(0, 1fr) 2.75rem; }
-  .preview-advanced-settings .color-row input[id$="-hex"] { grid-column: 1; }
-  .preview-advanced-settings .color-row button { grid-column: 2; }
-}
-
 .preview-primary-stage:focus-visible,
 .preview-controls-scroll:focus-visible {
   outline: 2px solid var(--accent-strong);
@@ -2085,15 +2225,6 @@ tbody tr:last-child td {
   content: none;
 }
 
-.research-preview-studio > .preview-primary-stage::after {
-  position: absolute;
-  right: 0.65rem;
-  bottom: 0.5rem;
-  color: #96998f;
-  content: "Selected feedback · design preview";
-  font-size: 0.72rem;
-  pointer-events: none;
-}
 
 .preview-mode-label {
   position: absolute;
@@ -2450,6 +2581,46 @@ tbody tr:last-child td {
   justify-content: end;
   gap: 0.25rem 0.45rem;
   padding-top: 0.75rem;
+}
+
+@container preview-pane (max-width: 36rem) {
+  .feedback-input-settings .field-grid,
+  .feedback-input-settings .binding-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .preview-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .preview-feedback-modes { width: 100%; }
+  .preview-affect-map .preview-affect-map-layout {
+    grid-template-columns: minmax(3.5rem, 1fr) minmax(6.5rem, 8rem) minmax(3.5rem, 1fr);
+  }
+  .preview-affect-map .preview-color-anchor.anchor-left,
+  .preview-affect-map .preview-color-anchor.anchor-right {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding-inline: 0.25rem;
+    text-align: center;
+  }
+  .research-preview-studio .preview-subsection-heading,
+  .research-preview-studio .preview-simulator-help { flex-wrap: wrap; gap: 0.4rem; }
+  .preview-quick-appearance .field-grid,
+  .preview-advanced-settings .field-grid,
+  .preview-advanced-settings .mapping-grid,
+  .preview-footer { grid-template-columns: minmax(0, 1fr); }
+  .preview-advanced-settings .color-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .preview-advanced-settings .color-row input[id$="-hex"] { grid-column: 1; }
+  .preview-advanced-settings .color-row button { grid-column: 2; }
+}
+
+@container preview-pane (max-width: 24rem) {
+  .feedback-input-settings .input-test {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feedback-input-settings .input-test-grid { max-width: 8rem; }
+  .preview-advanced-settings .color-row button { grid-column: 1 / -1; }
 }
 
 #preview-color-dialog .field-grid {
@@ -3020,23 +3191,7 @@ dialog::backdrop {
     line-height: 1.15;
   }
 
-  .preview-quick-appearance .field-grid,
-  .preview-advanced-settings .field-grid,
-  .preview-advanced-settings .mapping-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
-  .preview-advanced-settings .color-row {
-    grid-template-columns: minmax(0, 1fr) 2.75rem;
-  }
-
-  .preview-advanced-settings .color-row input[id$="-hex"] {
-    grid-column: 1;
-  }
-
-  .preview-advanced-settings .color-row button {
-    grid-column: 2;
-  }
 }
 
 @media (max-width: 759px) {
@@ -3139,14 +3294,6 @@ dialog::backdrop {
     overscroll-behavior: auto;
   }
 
-  .workspace-location-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .workspace-location-actions {
-    justify-content: flex-start;
-  }
-
   .directory-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3175,6 +3322,17 @@ dialog::backdrop {
 }
 
 @media (max-width: 479px) {
+  .workspace-location-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-location-actions {
+    justify-content: flex-start;
+  }
+
+}
+
+@container setup-pane (max-width: 479px) {
   .setup-accordion-trigger {
     grid-template-areas:
       "number title review chevron"
@@ -3206,7 +3364,9 @@ dialog::backdrop {
   .section-chevron {
     grid-area: chevron;
   }
+}
 
+@media (max-width: 479px) {
   .setup-section-confirmation {
     align-items: stretch;
   }
@@ -3242,7 +3402,8 @@ dialog::backdrop {
   }
 
   .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after {
+  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
+  .preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
     animation: none !important;
     inset: -4px;
     border-color: var(--focus);
@@ -3291,7 +3452,8 @@ dialog::backdrop {
   }
 
   .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after {
+  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
+  .preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
     border-color: Highlight;
     animation: none;
     box-shadow: none;

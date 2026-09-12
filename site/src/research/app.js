@@ -1,4 +1,5 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -12,6 +13,7 @@ import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
   resolveExternalExperimentPlanV1,
+  serializeExperimentDefinitionV1,
   validateExperimentDefinitionV1,
 } from "./external-experiment.js";
 import {
@@ -54,6 +56,9 @@ import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "./questionnaire-contribution.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
+import { requestExperimentPackageSave } from "./package-save-request.js";
+import { createPackageExportController } from "./package-export-controller.js";
+import { createPlannerContributionRegistry, registerAvailablePlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
@@ -165,6 +170,7 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
   const controller = createUiController(root, { surface });
   root.researchUi = controller;
+  registerAvailablePlannerContributions(controller);
   return controller;
 }
 
@@ -184,6 +190,14 @@ function bindResearchInteractions(root, { surface }) {
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
+  const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
+    onChange: (snapshot) => {
+      const summary = root.querySelector('[data-section-summary="xr"]');
+      if (summary) summary.textContent = !snapshot.enabled ? "Not enabled" : snapshot.pending ? "Layout draft" : "Layout accepted";
+      root.researchUi?.plannerContributionChanged?.("P6");
+    },
+  }) : null;
   let openSection = "workspace";
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
@@ -220,6 +234,25 @@ function bindResearchInteractions(root, { surface }) {
   let workspace = null;
   let experimentDocument = null;
   let experimentPackageDocument = null;
+  let editablePackageDefaults = null;
+  let packageIsStale = false;
+  let packageLoadGeneration = 0;
+  let observedPackageDraft = null;
+  let observedContributions = canonicalJson({ snapshots: [], issues: [] });
+  let packageContributionFingerprint = null;
+  const packageExport = createPackageExportController({ onChange: () => renderPackageExportReview() });
+  const plannerContributions = createPlannerContributionRegistry({ onChange: () => {
+    const next = plannerContributions.read().fingerprint;
+    if (next === observedContributions) return;
+    observedContributions = next;
+    packageExport.invalidate();
+    if (experimentPackageDocument) {
+      packageIsStale = true;
+      packageReproductionReceipt = null;
+    }
+    clearParticipantLanguageSelection();
+    schedulePlanRefresh();
+  } });
   let browserPackageRoot = null;
   let packageAssetClosureSha256 = null;
   let packageReproductionReceipt = null;
@@ -468,9 +501,11 @@ function bindResearchInteractions(root, { surface }) {
       if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
       if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
       if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = reviewed ? "Reviewed" : "Not reviewed";
-      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed
-        ? "Reviewed for this setup session. Use the section header to open or close it."
-        : "Not reviewed yet. Confirm once to mark this section reviewed.";
+      if (id === "feedback") {
+        const navigationStatus = query("[data-feedback-nav-status]");
+        if (navigationStatus) navigationStatus.textContent = reviewed ? "Reviewed" : "Not reviewed";
+      }
+      if (confirmation instanceof HTMLElement) confirmation.textContent = reviewed ? "Reviewed" : "Not reviewed";
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed;
         button.dataset.reviewState = reviewed ? "reviewed" : "pending";
@@ -486,7 +521,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
-    openSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    openSection = sectionId === "feedback" ? "feedback"
+      : sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
     const panelChanges = [];
     let focusTarget = null;
     root.querySelectorAll("[data-setup-section]").forEach((section) => {
@@ -506,9 +542,11 @@ function bindResearchInteractions(root, { surface }) {
         panelChanges.push([panel, isOpen]);
       }
     });
+    if (openSection === "feedback") focusTarget = query("#preview-title");
     focusTarget?.focus();
+    if (openSection === "feedback") focusTarget?.scrollIntoView({ block: "start", behavior: "auto" });
     panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
-    if (surface === "tauri" && openSection === "input") {
+    if (surface === "tauri" && openSection === "feedback") {
       queueMicrotask(() => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputBindingChanged, {
         bubbles: true,
         detail: Object.freeze({ binding: structuredClone(inputBinding) }),
@@ -987,7 +1025,7 @@ function bindResearchInteractions(root, { surface }) {
       : "N/A for this continuous / absolute input.";
     const previewInput = query("#preview-input-source");
     if (previewInput) previewInput.textContent = preset.label;
-    const summary = query('[data-section-summary="input"]');
+    const summary = query('[data-section-summary="feedback"]');
     if (summary) summary.textContent = preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
   }
 
@@ -1217,9 +1255,9 @@ function bindResearchInteractions(root, { surface }) {
     return inputBinding;
   }
 
-  async function researchSettingsFromUi() {
+  function researchSettingsDraft({ verifySources = true } = {}) {
     if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
-    return validateResearchSettingsV3({
+    return {
       schema: DEFAULT_SETTINGS.schema,
       version: 3,
       experiment: {
@@ -1228,8 +1266,14 @@ function bindResearchInteractions(root, { surface }) {
         participantCount: numberValue("participant-count"),
         samplingFrequencyHz: numberValue("sampling-frequency"),
       },
-      stimuli: { items: resolvedStimuliFromUi() },
-      input: structuredClone(synchronizedInputBinding()),
+      stimuli: { items: verifySources ? resolvedStimuliFromUi() : experimentDocument.definition.stimuli.map((reference) => ({
+        ...reference,
+        sources: stimuli.filter((stimulus) => stimulus.contractSource?.kind === "workspaceFile"
+          && stimulus.contractSource.relativePath === reference.relativePath)
+          .map((stimulus) => structuredClone(stimulus.contractSource)),
+      })) },
+      input: structuredClone(verifySources ? synchronizedInputBinding()
+        : inputBinding.kind === "digital" ? { ...inputBinding, stepSize: numberValue("input-step-size", 0.1) } : inputBinding),
       visual: {
         gridEnabled: checked("visual-grid-visible"),
         flubberEnabled: checked("visual-flubber-visible"),
@@ -1276,7 +1320,39 @@ function bindResearchInteractions(root, { surface }) {
         definitionSha256: experimentDocument.definitionSha256,
         definition: structuredClone(experimentDocument.definition),
       },
-    });
+    };
+  }
+
+  async function researchSettingsFromUi() {
+    return validateResearchSettingsV3(researchSettingsDraft());
+  }
+
+  function packageDraftFingerprint() {
+    try {
+      // A loaded design still has editable settings while media verification is
+      // pending. Fingerprinting reads its declared sources without requiring a
+      // decoder receipt; compilation retains the strict source verifier above.
+      const settings = researchSettingsDraft({ verifySources: false });
+      // Package construction canonicalizes the imported experiment document.
+      // Its whitespace/source-byte hash may change without any design edit;
+      // retain the full definition and its semantic hash in this comparison.
+      delete settings.externalProtocol.sourceByteSha256;
+      return canonicalJson({ settings, languageSelection: languageTreeFromUi() });
+    } catch {
+      return null; // Invalid/pending edits cannot match an accepted compilation.
+    }
+  }
+
+  function observePackageDraft() {
+    const current = packageDraftFingerprint();
+    if (current === observedPackageDraft) return;
+    observedPackageDraft = current;
+    packageExport.invalidate();
+    if (experimentPackageDocument) {
+      packageIsStale = true;
+      packageReproductionReceipt = null;
+      clearParticipantLanguageSelection();
+    }
   }
 
   async function protocolSettingsFromUi(baseSettings = null) {
@@ -1286,9 +1362,11 @@ function bindResearchInteractions(root, { surface }) {
   async function applyResearchSettings(settings, {
     preserveVerifiedStimuli = false,
     guard = null,
+    packageProjection = false,
   } = {}) {
     const normalized = await validateResearchSettingsV3(settings);
     if (typeof guard === "function" && !guard()) return false;
+    if (packageProjection) questionnaireEditor.reset();
     const preservedSourceText = experimentDocument
       && experimentDocument.sourceByteSha256 === normalized.externalProtocol.sourceByteSha256
       && experimentDocument.definitionSha256 === normalized.externalProtocol.definitionSha256
@@ -1296,7 +1374,9 @@ function bindResearchInteractions(root, { surface }) {
       : null;
     experimentDocument = Object.freeze({
       definition: structuredClone(normalized.externalProtocol.definition),
-      sourceText: preservedSourceText,
+      sourceText: packageProjection
+        ? serializeExperimentDefinitionV1(normalized.externalProtocol.definition)
+        : preservedSourceText,
       sourceByteSha256: normalized.externalProtocol.sourceByteSha256,
       definitionSha256: normalized.externalProtocol.definitionSha256,
     });
@@ -1399,6 +1479,7 @@ function bindResearchInteractions(root, { surface }) {
     renderQuestionnaires();
     renderBindings();
     refreshProjection();
+    if (packageProjection) observedPackageDraft = packageDraftFingerprint();
     schedulePlanRefresh();
     const fileStatus = query("#experiment-file-status");
     if (fileStatus) {
@@ -1505,6 +1586,10 @@ function bindResearchInteractions(root, { surface }) {
     const packageAssetsReady = packageAssetsVerified();
     const packageReady = Boolean(
       experimentPackageDocument
+      && !packageIsStale
+      && !packageExport.snapshot().busy
+      && plannerContributions.read().issues.length === 0
+      && packageContributionFingerprint === plannerContributions.read().fingerprint
       && packageReproductionReceipt?.byteIdenticalReexport === true
       && packageReproductionReceipt.sameRealmDeterminismVerified === true
       && packageAssetsReady,
@@ -1532,12 +1617,13 @@ function bindResearchInteractions(root, { surface }) {
       {
         id: "package",
         result: packageReady ? "pass" : "block",
-        label: "Portable package",
+        label: "Recipe",
         message: packageReady
           ? `${packageReproductionReceipt.caseCount} deterministic cases verified; fixed assets match ${experimentPackageDocument.package.integrity.assetManifestSha256}`
-          : experimentPackageDocument
-            ? "Rescan assets/stimuli/ and resolve any package/settings drift"
-            : "Generate or load experiment.package.json before Start",
+          : packageIsStale ? "Design changed. Edit and save the recipe again."
+            : packageExport.snapshot().busy ? "Wait for the recipe save to finish."
+              : plannerContributions.read().issues[0]?.message
+                ?? (experimentPackageDocument ? "Rescan the project videos before starting." : "Save or load a recipe before starting."),
       },
       {
         id: "language",
@@ -1546,8 +1632,8 @@ function bindResearchInteractions(root, { surface }) {
         message: languageReady
           ? `${compiledPackageSelection.languageTag} · ${selectedPackageRoute().labels.join(" › ")}`
           : selectedAttemptDisposition() === "resume-compatible"
-            ? "Restore the exact terminal route from the recoverable attempt"
-            : "The participant must traverse the package-owned tree to a terminal language",
+            ? "Restore the saved language for this attempt"
+            : "Choose a language for this participant",
       },
       {
         id: "stimuli",
@@ -1656,13 +1742,43 @@ function bindResearchInteractions(root, { surface }) {
     const list = query("#preflight-list");
     if (!(list instanceof HTMLElement)) return;
     const items = preflightItems();
-    list.replaceChildren(...items.map((item) => {
+    // Group only the repeated missing-document explanation. Underlying gates,
+    // their count, and Start/recovery decisions remain independent and intact.
+    const awaitingExperiment = !experimentDocument ? items.filter((item) =>
+      ["stimuli", "plan", "questionnaires"].includes(item.id) && item.result === "block" && /experiment\.json/u.test(item.message)) : [];
+    const displayItems = awaitingExperiment.length > 1 ? items.flatMap((item) => {
+      if (!awaitingExperiment.includes(item)) return [item];
+      return item !== awaitingExperiment[0] ? [] : [{ ...item,
+        id: awaitingExperiment.map(({ id }) => id).join(" "),
+        label: awaitingExperiment.map(({ id }) => ({ stimuli: "Videos", plan: "Schedule", questionnaires: "Questionnaires" })[id]).join(" / "),
+        message: "Load an experiment in Legacy compatibility.", reveal: "review-legacy-files" }];
+    }) : items;
+    const repeatedMessages = new Map();
+    for (const item of displayItems) {
+      const key = `${item.result}:${item.message}`;
+      if (!repeatedMessages.has(key)) repeatedMessages.set(key, []);
+      repeatedMessages.get(key).push(item);
+    }
+    const compactItems = [...repeatedMessages.values()].map((group) => group.length === 1 ? group[0] : ({
+      ...group[0], id: group.map(({ id }) => id).join(" "), label: group.map(({ label }) => label).join(" / "),
+      ...(/terminal language route/u.test(group[0].message)
+        ? { message: "Choose the participant's language to prepare the schedule.", reveal: "choose-participant-language" } : {}),
+    }));
+    const revealTargets = { experiment: "sampling-frequency", package: "package-finalization-title",
+      language: "choose-participant-language", participant: selectedParticipantState() === "available" ? "review-participant-details" : "review-participant-chooser",
+      storage: "review-provenance", timing: "review-provenance", playback: "review-provenance", output: "output-format-group" };
+    list.replaceChildren(...compactItems.map((item) => {
       const row = document.createElement("li");
       row.dataset.result = item.result;
+      row.dataset.preflightIds = item.id;
       const result = document.createElement("span");
       result.className = "preflight-result";
-      result.textContent = item.result === "pass" ? "Pass" : item.result === "warning" ? "Review" : "Blocking";
-      const message = document.createElement("span");
+      result.setAttribute("role", "img");
+      result.textContent = item.result === "pass" ? "✓" : "!";
+      result.setAttribute("aria-label", item.result === "pass" ? "Pass" : item.result === "warning" ? "Review" : "Blocking");
+      const reveal = item.reveal ?? (item.result === "block" ? revealTargets[item.id] : null);
+      const message = document.createElement(reveal ? "button" : "span");
+      if (reveal) { message.type = "button"; message.dataset.reviewReveal = reveal; }
       message.textContent = `${item.label}: ${item.message}`;
       row.append(result, message);
       return row;
@@ -1683,16 +1799,14 @@ function bindResearchInteractions(root, { surface }) {
         : "All blocking checks pass. Start will freeze this attempt."
       : `${blocking.length} blocking preflight item${blocking.length === 1 ? "" : "s"} remain.`;
     const pass = (id) => items.some((item) => item.id === id && item.result !== "block");
-    const readySections = [
-      pass("workspace"),
-      pass("questionnaires") || selectedPendingFinalization(),
-      pass("stimuli") && pass("plan"),
-      pass("experiment"),
-      pass("input"),
-      Boolean(protocolSettingsSnapshot) || selectedPendingFinalization(),
-      pass("timing") && pass("lsl") && (surface !== "tauri" || pass("playback")),
-      items.every(({ result }) => result !== "block"),
-    ].filter(Boolean).length;
+    const readinessBySection = {
+      workspace: pass("workspace") && pass("experiment"),
+      questionnaires: pass("questionnaires") || selectedPendingFinalization(),
+      stimuli: pass("stimuli") && pass("plan"),
+      feedback: pass("input") && (Boolean(protocolSettingsSnapshot) || selectedPendingFinalization()),
+      review: items.every(({ result }) => result !== "block"),
+    };
+    const readySections = SETUP_SECTIONS.filter(({ id }) => readinessBySection[id] === true).length;
     readySetupSectionCount = readySections;
     renderSetupReviewState();
   }
@@ -1841,6 +1955,7 @@ function bindResearchInteractions(root, { surface }) {
     const coverage = questionnaireLanguageCoverage();
     const status = query("#questionnaire-coverage-status");
     if (status) {
+      status.hidden = coverage.familyRows.length === 0;
       status.dataset.state = coverage.complete ? "ready" : "error";
       status.textContent = coverage.familyRows.length === 0
         ? "No questionnaire modules included."
@@ -2530,6 +2645,8 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function schedulePlanRefresh() {
+    observePackageDraft();
+    renderPackageReceipt();
     planRefresh += 1;
     const generation = planRefresh;
     settingsSnapshot = null;
@@ -3042,12 +3159,12 @@ function bindResearchInteractions(root, { surface }) {
     const status = query("#package-file-status");
     const reproduction = query("#package-reproduction-status");
     if (status) {
-      if (experimentPackageDocument && packageReproductionReceipt) {
+      if (experimentPackageDocument && packageReproductionReceipt && !packageIsStale) {
         status.dataset.state = "ready";
         status.textContent = `${experimentPackageDocument.package.packageId} · ${experimentPackageDocument.package.integrity.packageDefinitionSha256}`;
       } else {
         status.dataset.state = "warning";
-        status.textContent = "No project JSON loaded";
+        status.textContent = packageIsStale ? "Recipe changed · save the current design" : "No project JSON loaded";
       }
     }
     if (reproduction) {
@@ -3058,6 +3175,49 @@ function bindResearchInteractions(root, { surface }) {
         reproduction.dataset.state = "warning";
         reproduction.textContent = "Not verified";
       }
+    }
+    renderPackageExportReview();
+  }
+
+  function renderPackageExportReview() {
+    const state = packageExport.snapshot();
+    const review = plannerContributions.read();
+    const output = query("#package-save-status");
+    const messages = {
+      editing: packageIsStale ? "The current design has changes to save." : "Review the design, then save its recipe.",
+      compiling: "Validating the current design…",
+      saving: "Waiting for the file writer. Finish or cancel the save dialog.",
+      saved: "Recipe saved. The writer confirmed its exact bytes and hash.",
+      cancelled: "Save cancelled. The design is still editable; try again when ready.",
+      changed: "The design changed during export. Newer edits remain here; save them again.",
+      error: "Save was not confirmed. The design remains available to retry.",
+    };
+    if (output) {
+      output.textContent = messages[state.phase];
+      output.dataset.state = state.phase === "saved" && !packageIsStale ? "ready" : "warning";
+    }
+    for (const id of ["package-generate", "package-edit", "package-load"]) {
+      const button = query(`#${id}`);
+      if (!button) continue;
+      button.disabled = mode !== "setup" || state.busy
+        || (id === "package-generate" && ((languageEditorLocked && packageIsStale) || review.issues.length > 0))
+        || (id === "package-edit" && !experimentPackageDocument);
+    }
+    const list = query("#package-contribution-issues");
+    if (list) {
+      list.replaceChildren(...review.issues.map(({ segment, code, message }) => {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.plannerSegment = segment;
+        const label = { P1: "Workspace", P2: "Questionnaires", P3: "Stimulus order", P4: "Screen layout", P5: "Flubber & controls", P6: "VR screen layout" }[segment];
+        button.textContent = code === "successor-required"
+          ? `${label}: these settings cannot be saved in the current recipe format.`
+          : message.replace(`${segment}:`, `${label}:`);
+        item.append(button);
+        return item;
+      }));
+      list.hidden = review.issues.length === 0;
     }
   }
 
@@ -3321,6 +3481,7 @@ function bindResearchInteractions(root, { surface }) {
     const applied = await applyResearchSettings(compiled.settings, {
       preserveVerifiedStimuli: true,
       guard: stillCurrent,
+      packageProjection: true,
     });
     if (!applied || !stillCurrent()) return false;
     compiledPackageSelection = compiled;
@@ -3330,12 +3491,20 @@ function bindResearchInteractions(root, { surface }) {
     return true;
   }
 
-  async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null } = {}) {
-    const parsed = receipt?.package && receipt?.canonicalSourceText
-      ? receipt
-      : await parseExperimentPackageV1(new TextEncoder().encode(receipt?.sourceText ?? receipt));
-    packageReproductionReceipt = await verifySameRealmPackageReproductionV1(parsed.package);
+  async function applyExperimentPackageReceipt(receipt, { rootWorkspace = null, guard = null } = {}) {
+    const generation = ++packageLoadGeneration;
+    const parsed = await parseExperimentPackageV1(new TextEncoder().encode(
+      receipt?.canonicalSourceText ?? receipt?.sourceText ?? receipt,
+    ));
+    const reproduction = await verifySameRealmPackageReproductionV1(parsed.package);
+    const current = () => generation === packageLoadGeneration && (!guard || guard());
+    if (!current()) return false;
+    if (!guard) packageExport.invalidate();
+    packageReproductionReceipt = reproduction;
     experimentPackageDocument = parsed;
+    editablePackageDefaults = { experimentId: parsed.package.settings.experiment.id,
+      packageId: parsed.package.packageId, playback: structuredClone(parsed.package.playback) };
+    packageIsStale = false;
     browserPackageRoot = surface === "browser" ? rootWorkspace : null;
     packageAssetClosureSha256 = null;
     clearParticipantLanguageSelection();
@@ -3353,17 +3522,25 @@ function bindResearchInteractions(root, { surface }) {
       ));
       if (definition) requestQuestionnaireFamily(familyIdForDefinition(definition));
     }
-    await applyResearchSettings(parsed.package.settings, { preserveVerifiedStimuli: true });
+    if (!await applyResearchSettings(parsed.package.settings, {
+      preserveVerifiedStimuli: true, packageProjection: true, guard: current,
+    })) return false;
+    packageContributionFingerprint = plannerContributions.read().fingerprint;
+    observedContributions = packageContributionFingerprint;
     renderPackageReceipt();
     root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.setupSettingsReady, {
       bubbles: true,
       detail: Object.freeze({ settings: parsed.package.settings }),
     }));
     announce(`Loaded ${parsed.package.packageId}. Its complete ${packageReproductionReceipt.caseCount}-case protocol matrix and canonical re-export passed the local deterministic check. No language was selected; the participant must traverse the package tree before Start.`);
-    if (surface === "browser" && workspace) await requestWorkspaceRescan();
+    if (workspace) void requestWorkspaceRescan().catch((error) => {
+      announce(`Recipe loaded; workspace verification still needs attention: ${error instanceof Error ? error.message : String(error)}`);
+    });
+    return true;
   }
 
   function requestExperimentPackageLoad() {
+    if (packageExport.snapshot().busy || mode !== "setup") return;
     if (surface === "tauri") {
       const event = new CustomEvent(RESEARCH_UI_EVENTS.loadExperimentPackageRequest, {
         bubbles: true,
@@ -3384,39 +3561,95 @@ function bindResearchInteractions(root, { surface }) {
       });
   }
 
-  async function generateExperimentPackage() {
+  async function generateExperimentPackage({ reexport = false } = {}) {
+    observePackageDraft();
+    const draft = observedPackageDraft;
+    const contributionFingerprint = plannerContributions.read().fingerprint;
+    const currentWorkspace = workspace;
     try {
-      const settings = await researchSettingsFromUi();
-      const languageSelection = languageTreeFromUi();
-      const packageValue = await createExperimentPackageV1({
-        packageId: `${settings.experiment.id.slice(0, 119)}-package`,
-        languageSelection,
-        settings,
+      const result = await packageExport.save({
+        isCurrent: () => mode === "setup" && currentWorkspace === workspace
+          && packageDraftFingerprint() === draft
+          && plannerContributions.read().fingerprint === contributionFingerprint,
+        compile: async () => {
+          await plannerContributions.assertPackageV1();
+          if (reexport) {
+            if (!experimentPackageDocument || packageIsStale) throw new Error("Open an unchanged recipe before re-exporting.");
+            await plannerContributions.assertPackageV1(experimentPackageDocument.package);
+            return experimentPackageDocument;
+          }
+          if (languageEditorLocked) throw new Error("Choose Edit recipe before revising the loaded design.");
+          const settings = await researchSettingsFromUi();
+          const languageSelection = languageTreeFromUi();
+          const retained = editablePackageDefaults?.experimentId === settings.experiment.id ? editablePackageDefaults : null;
+          const packageValue = await createExperimentPackageV1({
+            packageId: retained?.packageId ?? `${settings.experiment.id.slice(0, 119)}-package`,
+            ...(retained ? { playback: retained.playback } : {}), languageSelection, settings,
+          });
+          await plannerContributions.assertPackageV1(packageValue);
+          const sourceText = await serializeExperimentPackageV1(packageValue);
+          return parseExperimentPackageV1(new TextEncoder().encode(sourceText));
+        },
+        write: async (parsed) => {
+          if (surface === "tauri") return requestExperimentPackageSave(root, parsed);
+          if (!currentWorkspace) throw new Error("Select the package root before saving the recipe.");
+          const sourceText = parsed.canonicalSourceText;
+          const persisted = await workspace.saveExperimentPackage(sourceText);
+          if (persisted.canonicalSourceText !== sourceText
+            || persisted.canonicalSourceByteSha256 !== parsed.canonicalSourceByteSha256) {
+            throw new Error("The browser writer did not confirm the exact recipe bytes.");
+          }
+          return persisted;
+        },
+        adopt: async (parsed, guard) => {
+          if (!reexport) return applyExperimentPackageReceipt(parsed, { rootWorkspace: currentWorkspace, guard });
+          return true;
+        },
       });
-      const sourceText = await serializeExperimentPackageV1(packageValue);
-      const parsed = await parseExperimentPackageV1(new TextEncoder().encode(sourceText));
-      if (surface === "tauri") {
-        await applyExperimentPackageReceipt(parsed);
-        const event = new CustomEvent(RESEARCH_UI_EVENTS.saveExperimentPackageRequest, {
-          bubbles: true,
-          cancelable: true,
-          detail: Object.freeze({
-            sourceText,
-            packageDefinitionSha256: packageValue.integrity.packageDefinitionSha256,
-          }),
-        });
-        root.dispatchEvent(event);
-        if (!event.defaultPrevented) throw new Error("The native package save adapter is not connected.");
-      } else {
-        if (!workspace) throw new Error("Select the package root before generating the experiment package.");
-        const persisted = await workspace.saveExperimentPackage(sourceText);
-        await applyExperimentPackageReceipt(persisted, { rootWorkspace: workspace });
-      }
-      announce(`${EXPERIMENT_PACKAGE_FILE_NAME} generated with a verified deterministic protocol matrix.`);
+      if (result.status === "saved") announce(`${EXPERIMENT_PACKAGE_FILE_NAME} saved. Its exact canonical bytes were acknowledged.`);
+      else if (result.status === "cancelled") announce("Save cancelled. Your design is still available.");
+      else if (result.status !== "busy") announce("The design changed during export. Newer edits were preserved; save the current design again.");
     } catch (error) {
+      announce(`Recipe export failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    renderPackageReceipt();
+    renderReview();
+  }
+
+  async function editExperimentPackage() {
+    if (!experimentPackageDocument || packageExport.snapshot().busy || mode !== "setup") return;
+    const restore = root.researchUi?.restoreQuestionnaireContribution;
+    if (typeof restore !== "function") {
+      announce("Editable recipe restoration requires the questionnaire contribution adapter. The loaded recipe is preserved.");
+      return;
+    }
+    const original = experimentPackageDocument;
+    const generation = ++packageLoadGeneration;
+    const draft = packageDraftFingerprint();
+    const isCurrent = () => generation === packageLoadGeneration
+      && experimentPackageDocument === original && packageDraftFingerprint() === draft
+      && mode === "setup" && !packageExport.snapshot().busy;
+    try {
+      // P2 restores full definitions/modules and the exact tree, never a grid-only
+      // projection or the currently selected participant-language subset.
+      const restored = await restore({
+        questionnaires: structuredClone(original.package.settings.questionnaires),
+        languageSelection: structuredClone(original.package.languageSelection),
+      }, { isCurrent });
+      if (restored === false || generation !== packageLoadGeneration || experimentPackageDocument !== original) return;
+      experimentPackageDocument = null;
+      packageContributionFingerprint = null;
+      packageIsStale = false;
       packageReproductionReceipt = null;
+      packageAssetClosureSha256 = null;
+      languageEditorLocked = false;
+      clearParticipantLanguageSelection();
+      packageExport.invalidate();
       renderPackageReceipt();
-      announce(`Package generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      schedulePlanRefresh();
+      announce("Recipe opened for editing. Save a new snapshot when the changes are ready.");
+    } catch (error) {
+      announce(`Recipe editing could not be opened: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -3427,6 +3660,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     const definition = validateExperimentDefinitionV1(receipt.definition);
     experimentPackageDocument = null;
+    editablePackageDefaults = null;
     browserPackageRoot = null;
     packageAssetClosureSha256 = null;
     packageReproductionReceipt = null;
@@ -4052,6 +4286,10 @@ function bindResearchInteractions(root, { surface }) {
         .find(control => !control.closest("[data-screen-layout-draft]"));
       const sectionId = invalid?.closest("[data-setup-section]")?.getAttribute("data-setup-section") ?? "review";
       openSetupSection(sectionId);
+      // P5 is persistent; reveal nested disclosures before focusing a saved field.
+      for (let parent = invalid?.parentElement; parent && parent !== root; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+      }
       const focusTarget = isValidationControl(invalid)
         ? invalid
         : invalid?.querySelector?.("input, select, textarea, button");
@@ -4237,7 +4475,26 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "video-import") requestVideoImport();
     if (target.id === "video-folder-import") requestVideoImport({ directory: true });
     if (target.id === "package-load") requestExperimentPackageLoad();
-    if (target.id === "package-generate") void generateExperimentPackage();
+    if (target.dataset.reviewReveal) {
+      const destination = query(`#${target.dataset.reviewReveal}`);
+      if (destination) {
+        const disclosure = destination instanceof HTMLDetailsElement ? destination : destination.closest("details");
+        if (disclosure) disclosure.open = true;
+        let focusTarget = destination.matches("button,input,select") ? destination
+          : destination.querySelector("button:not([disabled]),input:not([disabled]),select:not([disabled])") ?? destination;
+        if (focusTarget.matches(":disabled")) focusTarget = destination.closest("section") ?? destination.parentElement;
+        if (!focusTarget.matches("button,input,select")) focusTarget.tabIndex = -1;
+        focusTarget.focus();
+        destination.scrollIntoView({ block: "nearest" });
+      }
+    }
+    if (target.id === "package-generate") void generateExperimentPackage({ reexport: languageEditorLocked });
+    if (target.id === "package-edit") void editExperimentPackage();
+    if (target.dataset.plannerSegment) {
+      const section = PLANNER_SEGMENT_SECTIONS[target.dataset.plannerSegment];
+      if (SETUP_SECTIONS.some(({ id }) => id === section)) openSetupSection(section, { focus: true });
+      else announce(`${target.dataset.plannerSegment} has no accepted editor in this build. Its active contribution blocks export.`);
+    }
     if (target.id === "choose-participant-language") openParticipantLanguageDialog();
     if (target.dataset.languageOption) void chooseParticipantLanguageOption(target.dataset.languageOption);
     if (target.id === "participant-language-back" && !languageSelectionBusy) {
@@ -4877,16 +5134,19 @@ function bindResearchInteractions(root, { surface }) {
 
   root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
     root.dataset.nativeWorkspaceReady = "true";
-    capabilities.directoryPermission = event.detail?.directoryPermission !== false;
+    const directoryPermission = event.detail?.directoryPermission !== false;
+    capabilities.directoryPermission = directoryPermission;
     const output = query("#workspace-root");
     if (output) {
       output.textContent = event.detail?.label ?? (event.detail?.surface === "browser" ? "Browser workspace ready" : "Windows workspace ready");
-      output.dataset.state = "ready";
+      output.dataset.state = directoryPermission ? "ready" : "warning";
     }
     const status = query("#workspace-status");
     if (status) {
-      status.dataset.state = "ready";
-      status.textContent = "Work directory ready. Project locations are available.";
+      status.dataset.state = directoryPermission ? "ready" : "error";
+      status.textContent = directoryPermission
+        ? "Work directory ready. Project locations are available."
+        : "Work directory access is unavailable. Restore access or select it again.";
     }
     for (const id of ["workspace-rescan", "settings-save", "stimulus-add-workspace", "video-import", "video-folder-import"]) {
       const button = query(`#${id}`);
@@ -4915,6 +5175,9 @@ function bindResearchInteractions(root, { surface }) {
 
   return Object.freeze({
     get mode() { return mode; },
+    getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
+    setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
@@ -4944,6 +5207,12 @@ function bindResearchInteractions(root, { surface }) {
       });
     },
     get packageReproductionReceipt() { return packageReproductionReceipt; },
+    get packageExportStatus() { return packageExport.snapshot(); },
+    registerPlannerContribution(segment, getSnapshot, options) {
+      return plannerContributions.register(segment, getSnapshot, options);
+    },
+    plannerContributionChanged(segment) { plannerContributions.changed(segment); },
+    getPlannerContributionReview() { return plannerContributions.read(); },
     getQuestionnaireContributionSnapshot,
     restoreQuestionnaireContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
@@ -4985,7 +5254,10 @@ function bindResearchInteractions(root, { surface }) {
       previewInteraction = null;
       inlineColorPicker.destroy();
       setupLayout.destroy();
+      packageExport.destroy();
       layoutDraftEditor.destroy();
+
+      xrLayoutEditor?.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

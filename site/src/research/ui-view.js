@@ -1,6 +1,8 @@
 import { createDefaultResearchSettings } from "./contracts.js";
+import { xrLayoutEditorMarkup } from "./xr-layout-view.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
-import { INPUT_PRESET_OPTIONS, MAPPING_FIELDS, SETUP_SECTIONS } from "./ui-contracts.js";
+import { SETUP_SECTIONS } from "./ui-contracts.js";
+import { feedbackAppearanceMarkup, feedbackInputMarkup, feedbackAdvancedMarkup } from "./feedback-controls-view.js";
 import { screenLayoutDraftMarkup } from "./screen-layout-view.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
@@ -27,36 +29,15 @@ const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
 });
 export const DEFAULT_LANGUAGE_SELECTION_SOURCE = JSON.stringify(DEFAULT_LANGUAGE_SELECTION_TREE, null, 2);
 
-export const COLOR_FIELDS = Object.freeze([
-  Object.freeze({ id: "up", label: "High arousal anchor", axisLabel: "High arousal", value: DEFAULT_COLORS.up }),
-  Object.freeze({ id: "down", label: "Low arousal anchor", axisLabel: "Low arousal", value: DEFAULT_COLORS.down }),
-  Object.freeze({ id: "left", label: "Negative valence anchor", axisLabel: "Negative valence", value: DEFAULT_COLORS.left }),
-  Object.freeze({ id: "right", label: "Positive valence anchor", axisLabel: "Positive valence", value: DEFAULT_COLORS.right }),
-  Object.freeze({ id: "idle", label: "Idle color", value: DEFAULT_COLORS.idle }),
-  Object.freeze({ id: "outline", label: "Outline color", value: DEFAULT_COLORS.outline }),
-  Object.freeze({ id: "halo", label: "Halo color", value: DEFAULT_COLORS.halo }),
-  Object.freeze({ id: "cursor", label: "Cursor color", value: DEFAULT_COLORS.cursor }),
-]);
-
-export function describeInputToken(token) {
-  if (token.kind === "keyboard") return token.code;
-  if (token.kind === "wheel") return `Wheel ${token.direction}`;
-  if (token.kind === "mouseButton") return `Mouse button ${token.button}`;
-  if (token.kind === "gamepadButton") return `Gamepad button ${token.button}`;
-  if (token.kind === "pointerAxis") return `Pointer ${token.axis.toUpperCase()}${token.invert ? " reversed" : ""}`;
-  if (token.kind === "gamepadAxis") return `Gamepad axis ${token.index}${token.invert ? " reversed" : ""}`;
-  return "Unassigned";
-}
+export { COLOR_FIELDS, describeInputToken } from "./feedback-controls-view.js";
 
 const SECTION_SUMMARIES = Object.freeze({
+  xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
-  experiment: "Identity and acquisition · 130 Hz",
   stimuli: "Externally ordered video protocol",
   layout: "Proposed layout · not exportable",
   questionnaires: "Languages, demographics, questionnaires",
-  input: "Arrow keys · step 0.1",
-  visual: "Grid and Flubber",
-  advanced: "Outbound LSL and mappings",
+  feedback: "Appearance, input and animation",
   review: "Resolve blocking checks",
 });
 
@@ -174,8 +155,13 @@ function previewMarkup(label, { studio = false } = {}) {
         <output data-preview-input-availability class="field-help" role="status" aria-live="polite"></output>
       </section>
 
-      <div class="preview-controls-scroll" tabindex="0" role="region" aria-label="Live preview settings">
-      <section class="preview-response-settings" aria-labelledby="preview-response-title">
+      <div class="preview-controls-scroll" tabindex="0" role="region" aria-label="Flubber and Controls settings">
+      ${feedbackAppearanceMarkup()}
+      ${feedbackInputMarkup()}
+
+      <details class="preview-response-settings inner-disclosure">
+        <summary>Try response ideas · preview only</summary>
+        <div class="disclosure-content">
         <div class="preview-subsection-heading"><h3 id="preview-response-title">Response control</h3></div>
         <div class="preview-segmented-control" role="group" aria-label="Response preview mode">
           <button type="button" data-response-preview-mode="continuous" aria-pressed="false">Continuous</button>
@@ -203,74 +189,19 @@ function previewMarkup(label, { studio = false } = {}) {
             <label class="radio-field"><input type="radio" name="previewHoldRule" value="repeatWhileHeld"><span>Repeat while held</span></label>
           </fieldset>
           <label class="field" data-preview-repeat-settings><span>Repeat delay</span><div class="range-field"><input id="preview-repeat-delay" type="range" min="500" max="5000" step="100" value="500"><output for="preview-repeat-delay">500 ms</output></div></label>
-          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Advanced preview settings.</p>
+          <p class="field-help">Draft preview only: tiles and hold behavior are not saved with the experiment. The saved input step size is under Controls.</p>
         </div>
-      </section>
-
-      <section id="preview-quick-appearance" class="preview-quick-appearance" aria-labelledby="preview-appearance-title">
-        <div class="preview-subsection-heading"><h3 id="preview-appearance-title">Appearance</h3></div>
-        <div class="field-grid">
-          <label class="field"><span>Size (% of stage)</span><div class="range-field"><input id="visual-size" type="number" min="5" max="100" step="1" value="${DEFAULT_SETTINGS.visual.sizePercent}" required><output for="visual-size">${DEFAULT_SETTINGS.visual.sizePercent}%</output></div></label>
-          <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
-          <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Preview-only width. Follows the outline and fades to transparent outward.</output></label>
-          <label class="check-field"><input id="preview-halo-gradient" type="checkbox" checked><span>Fade halo outward</span></label>
-          <label class="field"><span>Gradient steepness</span><input id="preview-halo-steepness" data-preview-appearance-input type="number" min="0.1" max="10" step="0.1" value="1" aria-describedby="preview-halo-steepness-help"><output id="preview-halo-steepness-help" class="field-help">1 = normal; higher values fade faster. Does not change halo width.</output></label>
-        </div>
-      </section>
-
-      <details id="preview-advanced-settings" class="inner-disclosure preview-advanced-settings">
-        <summary>Advanced preview settings</summary>
-        <div class="disclosure-content">
-          <p class="field-help">These saved controls refine visibility, position, rendering, colors, and affect mappings.</p>
-          <label class="field"><span>Saved input step size</span><input id="input-step-size" type="number" min="0.001" max="1" step="0.001" value="0.1" required><output id="input-step-applicability" class="field-help">Applies to digital edge-triggered presses.</output></label>
-          <section aria-labelledby="preview-visibility-title">
-            <h3 id="preview-visibility-title">Visibility and position</h3>
-            <div class="field-grid">
-              <label class="check-field"><input id="visual-grid-visible" type="checkbox" checked><span><strong>Grid</strong><br><span class="field-help">Show the valence–arousal field.</span></span></label>
-              <label class="check-field"><input id="visual-flubber-visible" type="checkbox" checked><span><strong>Flubber</strong><br><span class="field-help">Show the procedural affect form.</span></span></label>
-              <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
-              <label class="check-field"><input id="visual-lock-position" type="checkbox"><span><strong>Lock position</strong><br><span class="field-help">The sole control for disabling drag. Forced on during Run.</span></span></label>
-              <label class="field"><span>Normalized horizontal position</span><input id="visual-position-x" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.x}" required></label>
-              <label class="field"><span>Normalized vertical position</span><input id="visual-position-y" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.y}" required></label>
-            </div>
-          </section>
-          <details class="inner-disclosure" open>
-            <summary>Flubber outline</summary>
-            <div class="disclosure-content field-grid">
-              <label class="check-field"><input id="flubber-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
-              <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="flubber-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.flubber.outlineThickness}"><output for="flubber-outline-thickness">${DEFAULT_SETTINGS.visual.flubber.outlineThickness.toFixed(2)}</output></div></label>
-            </div>
-          </details>
-          <details class="inner-disclosure">
-            <summary>Grid appearance</summary>
-            <div class="disclosure-content field-grid">
-              <label class="field"><span>Grid Line Thickness</span><div class="range-field"><input id="grid-line-thickness" type="range" min="0.25" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.lineThickness}"><output for="grid-line-thickness">${DEFAULT_SETTINGS.visual.grid.lineThickness.toFixed(2)}</output></div></label>
-              <label class="check-field"><input id="grid-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
-              <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="grid-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.outlineThickness}"><output for="grid-outline-thickness">${DEFAULT_SETTINGS.visual.grid.outlineThickness.toFixed(2)}</output></div></label>
-              <label class="field"><span>Cursor Size</span><div class="range-field"><input id="grid-cursor-size" type="range" min="2" max="100" step="1" value="${DEFAULT_SETTINGS.visual.grid.cursorSize}"><output for="grid-cursor-size">${DEFAULT_SETTINGS.visual.grid.cursorSize.toFixed(1)}</output></div></label>
-            </div>
-          </details>
-          <details class="inner-disclosure">
-            <summary>Color &amp; Gradient</summary>
-            <div class="disclosure-content">
-              <p class="field-help">The directional controls around the 2D map select its four anchors. This list also owns idle, outline, halo, and cursor colors.</p>
-              <div class="color-list">${colorRows()}</div>
-            </div>
-          </details>
-          <section aria-labelledby="preview-mapping-title">
-            <h3 id="preview-mapping-title" class="mapping-title">Flubber–Affect Mapping</h3>
-            <p class="field-help">x-axis and y-axis normalize from [−1, 1], radius from [0, 1], and angle from [0°, 360°). Neutral angle is zero. Reverse changes t to 1−t before interpolation.</p>
-            ${MAPPING_FIELDS.map(mappingDisclosure).join("")}
-          </section>
         </div>
       </details>
+
+      ${feedbackAdvancedMarkup()}
       <div class="preview-coordinates preview-coordinate-receipt" aria-label="Current affect coordinates"><span>Valence</span><span data-preview-x>+0.000</span><span>Arousal</span><span data-preview-y>+0.000</span></div>
       <footer class="preview-footer">
         <div class="preview-metric"><span>Position</span><span data-preview-position>0.50, 0.50</span></div>
         <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
         <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
       </footer>
+      ${sectionConfirmationMarkup(SETUP_SECTIONS.find(({ id }) => id === "feedback"), SETUP_SECTIONS.findIndex(({ id }) => id === "feedback"))}
       </div>
     </div>`;
 }
@@ -325,7 +256,7 @@ function stimulusInspirationMarkup() {
 function workspaceSection() {
   const folderIcon = folderIconMarkup();
   return `
-    <p class="section-lead">Set one work directory. The video library and project JSON remain fixed inside it; outputs and recovery are managed automatically.</p>
+    <p class="section-lead">Choose one work directory. Videos, project JSON, outputs, and recovery stay inside it.</p>
     <div class="workspace-location-list" aria-label="Project locations">
       <section class="workspace-location-row" data-workspace-location="workspaceRoot" aria-labelledby="workspace-location-root-title">
         <div class="workspace-location-copy">
@@ -344,7 +275,6 @@ function workspaceSection() {
           <p><code>assets/stimuli/</code></p>
         </div>
         <div class="workspace-location-actions">
-          <button type="button" data-open-section="stimuli">Manage videos</button>
           <button type="button" class="folder-icon-button" data-open-workspace-location="videoLibrary" aria-label="Open video library in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
         </div>
       </section>
@@ -360,19 +290,29 @@ function workspaceSection() {
         </div>
       </section>
     </div>
+    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
+      <p>Drop complete video files or a folder here</p>
+      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
+      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
+    </div>
+    <div class="table-scroll stimulus-library" aria-label="Stimulus library">
+      <table>
+        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
+      </table>
+    </div>
     <div class="field-grid">
       <label class="field"><span>Experiment ID</span><input id="experiment-id" name="experimentId" required maxlength="128" pattern="[a-z0-9][a-z0-9_-]*" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
       <label class="field"><span>Experiment title</span><input id="experiment-title" name="experimentTitle" required maxlength="200" value="" readonly aria-describedby="workspace-experiment-identity-help"></label>
       <p id="workspace-experiment-identity-help" class="field-help is-wide">Identity is read from the loaded project JSON or compatibility experiment file.</p>
     </div>
-    <p id="workspace-status" class="status-text" role="status" aria-live="polite">Set a work directory to begin.</p>`;
+    <p id="workspace-status" class="status-text" role="status" aria-live="polite"></p>`;
 }
 
-function experimentSection() {
+function experimentCompatibilityMarkup() {
   return `
-    <p class="section-lead">Experiment identity and participant IDs come from the loaded experiment.json. Sampling remains the one editable acquisition setting.</p>
-    <details class="inner-disclosure">
-      <summary>Advanced file compatibility</summary>
+    <details id="review-legacy-files" class="inner-disclosure">
+      <summary>Legacy experiment and settings compatibility</summary>
       <div class="disclosure-content authoring-tools">
         <section aria-labelledby="experiment-file-title">
           <div>
@@ -385,6 +325,8 @@ function experimentSection() {
             <a id="experiment-template-download" class="button-link" href="${EXPERIMENT_TEMPLATE_URL}" download="experiment.json">Download template</a>
           </div>
           <output id="experiment-file-status" class="field-output" data-state="warning">No experiment.json loaded</output>
+          <label class="field"><span>Legacy planned participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="participant-count-legacy-help"></label>
+          <p id="participant-count-legacy-help" class="field-help">This is the imported v1 schedule count. Change it by editing and reloading experiment.json.</p>
         </section>
         <section aria-labelledby="legacy-settings-title">
           <div>
@@ -394,28 +336,12 @@ function experimentSection() {
           <div class="button-row"><button id="settings-load" type="button">Load settings.json</button><button id="settings-save" type="button" disabled>Save settings.json</button></div>
         </section>
       </div>
-    </details>
-    <div class="field-grid">
-      <label class="field"><span>Total participant count</span><input id="participant-count" name="participantCount" type="number" min="1" max="100000" step="1" value="1" required readonly aria-describedby="experiment-derived-help"></label>
-      <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
-      <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
-      <p id="experiment-derived-help" class="field-help is-wide">To change identity, participant count, block order, video order, or ISI, edit and reload experiment.json.</p>
-      <div class="field-block is-wide">
-        <span class="field-label">Rating method</span>
-        <output class="field-output" data-state="ready">Continuous rating is always enabled</output>
-        <p class="field-help">Samples are collected only while a complete video is actively playing. There is no summary-rating mode.</p>
-      </div>
-    </div>`;
+    </details>`;
 }
 
 function stimuliSection() {
   return `
     <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
-    <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
-      <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
-      <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
-    </div>
     <div class="condition-toolbar">
       <div>
         <h3>Declared blocks</h3>
@@ -443,52 +369,6 @@ function stimuliSection() {
           <table><thead><tr><th>Participant</th><th>Block order</th><th>Complete-video order and ISI</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The exact schedule appears after every referenced workspace video is verified.</td></tr></tbody></table>
         </div>
         <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
-      </div>
-    </details>
-    <div class="table-scroll stimulus-library" aria-label="Stimulus library">
-      <table>
-        <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
-        <tbody id="stimulus-library-table"><tr><td colspan="5" class="empty-state">No complete videos have been imported.</td></tr></tbody>
-      </table>
-    </div>`;
-}
-
-function inputSection() {
-  const options = `${INPUT_PRESET_OPTIONS.map(({ id, label }) => `<option value="${id}">${label}</option>`).join("")}<option value="custom" hidden>Custom binding</option>`;
-  const directions = [
-    ["up", "Increase arousal"],
-    ["down", "Decrease arousal"],
-    ["left", "Decrease valence"],
-    ["right", "Increase valence"],
-  ].map(([id, label]) => `
-    <button class="binding-button" type="button" data-binding-direction="${id}" aria-haspopup="dialog">
-      <span>${label}</span><output data-binding-value="${id}">${describeInputToken(DEFAULT_SETTINGS.input.directions[id])}</output>
-    </button>`).join("");
-  return `
-    <p class="section-lead">Select a complete preset or capture conflict-free custom actions. Digital controls change state once per physical edge; operating-system key repeat is ignored. Set the saved step size and explore draft response behavior in the live preview.</p>
-    <div class="field-grid">
-      <label class="field"><span>Input Device</span><select id="input-preset">${options}</select></label>
-    </div>
-    <details class="inner-disclosure" open>
-      <summary>Custom bindings</summary>
-      <div class="disclosure-content">
-        <p class="field-help">Select a direction, then perform the keyboard, mouse, wheel, or gamepad action. A captured action cannot be assigned twice.</p>
-        <div id="binding-grid" class="binding-grid">${directions}</div>
-        <button id="binding-reset" type="button" class="section-actions">Restore selected preset</button>
-      </div>
-    </details>
-    <details class="inner-disclosure" open>
-      <summary>Live input test</summary>
-      <div class="disclosure-content">
-        <div id="input-test" class="input-test" role="group" aria-label="Live input test">
-          <div class="input-test-grid" tabindex="0" role="group" aria-label="Input test surface; focus here and use the configured input device" aria-describedby="input-test-status"><span class="input-test-cursor" aria-hidden="true"></span></div>
-          <div>
-            <p><strong>Input receipt</strong></p>
-            <p id="input-test-status" class="status-text" role="status" aria-live="polite">Focus this test and use the selected device.</p>
-            <p>Valence <span id="input-test-x">+0.000</span> · Arousal <span id="input-test-y">+0.000</span></p>
-            <button id="input-test-reset" type="button">Reset test to neutral</button>
-          </div>
-        </div>
       </div>
     </details>`;
 }
@@ -528,43 +408,8 @@ function questionnairesSection() {
     </dialog>`;
 }
 
-function colorRows() {
-  return COLOR_FIELDS.map(({ id, label, value }) => `
-    <div class="color-row" data-color-row="${id}">
-      <label for="color-${id}">${label}</label>
-      <input id="color-${id}" type="color" value="${value}" aria-label="${label} color wheel">
-      <input id="color-${id}-hex" value="${value}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-label="${label} hexadecimal value">
-      <button type="button" data-color-reset="${id}" aria-label="Reset ${escapeAttribute(label)}">Reset</button>
-    </div>`).join("");
-}
-
-function visualSection() {
+function lslSettingsMarkup() {
   return `
-    <p class="section-lead">Appearance controls now sit beside the live renderer so changes remain visible while you work. The same saved settings are used during Run.</p>
-    <button type="button" data-preview-focus="appearance" aria-controls="preview-quick-appearance">Go to appearance controls</button>`;
-}
-
-function mappingDisclosure(mapping) {
-  const step = mapping.allowedMax > 1 ? 0.1 : 0.01;
-  const escapedLabel = escapeAttribute(mapping.label);
-  const unitSuffix = mapping.unit ? ` (${escapeAttribute(mapping.unit)})` : "";
-  return `
-    <details class="inner-disclosure mapping-disclosure" data-mapping="${mapping.id}">
-      <summary>${mapping.label}</summary>
-      <div class="disclosure-content mapping-grid">
-        <label class="field"><span>Min${mapping.unit ? ` (${mapping.unit})` : ""}</span><input id="mapping-${mapping.id}-min" data-mapping-min aria-label="${escapedLabel} minimum${unitSuffix}" type="number" min="${mapping.allowedMin}" max="${mapping.allowedMax}" step="${step}" value="${mapping.min}" required></label>
-        <label class="field"><span>Max${mapping.unit ? ` (${mapping.unit})` : ""}</span><input id="mapping-${mapping.id}-max" data-mapping-max aria-label="${escapedLabel} maximum${unitSuffix}" type="number" min="${mapping.allowedMin}" max="${mapping.allowedMax}" step="${step}" value="${mapping.max}" required></label>
-        <label class="field"><span>Driven By</span><select id="mapping-${mapping.id}-driver" data-mapping-driver aria-label="${escapedLabel} driven by"><option value="x-axis"${mapping.driver === "x-axis" ? " selected" : ""}>x-axis</option><option value="y-axis"${mapping.driver === "y-axis" ? " selected" : ""}>y-axis</option><option value="angle"${mapping.driver === "angle" ? " selected" : ""}>angle</option><option value="radius"${mapping.driver === "radius" ? " selected" : ""}>radius</option></select></label>
-        <label class="check-field"><input id="mapping-${mapping.id}-reverse" data-mapping-reverse aria-label="Reverse ${escapedLabel}" type="checkbox"${mapping.reverse ? " checked" : ""}><span>Reverse</span></label>
-        <div class="mapping-output"><span>Live preview <span data-mapping-output>0.000${mapping.unit ? ` ${mapping.unit}` : ""}</span></span><span class="mapping-meter" aria-hidden="true"><span data-mapping-meter></span></span></div>
-        <p class="field-help is-wide">Allowed output ${mapping.allowedMin}–${mapping.allowedMax}${mapping.unit ? ` ${mapping.unit}` : ""}.</p>
-      </div>
-    </details>`;
-}
-
-function advancedSection() {
-  return `
-    <p class="section-lead">LSL remains part of the frozen protocol and is outbound and Windows-only. Advanced feedback settings are available beside the live renderer.</p>
     <details class="inner-disclosure" open>
       <summary>LSL</summary>
       <div class="disclosure-content">
@@ -577,21 +422,39 @@ function advancedSection() {
         </div>
         <p id="lsl-capability" class="capability-note" role="status">Browser mode preserves these values but cannot start while LSL is enabled.</p>
       </div>
-    </details>
-    <button type="button" data-preview-focus="advanced" aria-controls="preview-advanced-settings">Go to advanced preview settings</button>`;
+    </details>`;
 }
 
 function reviewSection() {
   return `
-    <p class="section-lead">Start is fail-closed. Review the resolved plan, privacy-safe participant identity, local outputs, input receipt, media verification, timing capability, and platform-specific LSL state.</p>
+    ${lslSettingsMarkup()}
     <section class="package-finalization" aria-labelledby="package-finalization-title">
-      <div><p class="context-label">Final setup step</p><h3 id="package-finalization-title">Build the experiment package</h3><p>After all languages, questionnaire assets, videos, and settings are ready, create the internal project package. Its raw JSON stays behind this interface.</p></div>
-      <button id="package-generate" type="button" class="primary-action">Build project package</button>
+      <div><h3 id="package-finalization-title">Recipe file</h3><p>Includes questionnaires and settings. Keep videos in the project library.</p></div>
+      <div class="button-row">
+        <button id="package-generate" type="button" class="primary-action">Save recipe</button>
+        <button id="package-edit" type="button" disabled>Edit recipe</button>
+      </div>
     </section>
+    <p id="package-save-status" role="status" aria-live="polite">Review the design, then save its recipe.</p>
+    <ul id="package-contribution-issues" aria-label="Recipe issues by segment" hidden></ul>
+    <div class="field-grid spaced-field-grid">
+      <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
+      <p class="field-help">Continuous rating is always enabled during video playback.</p>
+    </div>
+    <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
+      <legend>Rating output formats</legend>
+      <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
+      <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
+      <p id="output-format-help" class="field-help">Choose at least one. CSV and TSV contain the same records.</p>
+      <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
+    </fieldset>
+    ${experimentCompatibilityMarkup()}
+    <h3 class="review-checks-title">Before starting</h3>
     <ul id="preflight-list" class="preflight-list" aria-label="Experiment preflight checks"></ul>
-    <details class="inner-disclosure" open>
-      <summary>Resolved schedule and output</summary>
+    <details id="review-provenance" class="inner-disclosure">
+      <summary>Schedule, playback & output details</summary>
       <div class="disclosure-content field-grid">
+        <div class="field-block is-wide"><span class="field-label">Package reproduction matrix</span><output id="package-reproduction-status" class="field-output" data-state="warning">Not verified</output></div>
         <div class="field-block is-wide"><span class="field-label">Output location</span><output id="review-output-path" class="field-output path-value">outputs/&lt;experiment-id&gt;/&lt;participant-id&gt;/&lt;session-stem&gt;/</output></div>
         <div class="field-block"><span class="field-label">Settings hash</span><output id="settings-hash" class="field-output hash-value">Pending validated settings</output></div>
         <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
@@ -600,10 +463,10 @@ function reviewSection() {
         <label class="field is-wide tauri-only"><span>Native playback qualification</span><select id="native-playback-mode"><option value="nativeGstPlay" selected>GStreamer / GstPlay · qualification required</option><option value="unqualifiedWebview">WebView video · unqualified testing only</option></select><output id="native-media-capability" class="field-help">Native runtime capability has not been checked.</output></label>
       </div>
     </details>
-    <details class="inner-disclosure" open>
+    <details id="review-participant-chooser" class="inner-disclosure">
       <summary>Participant chooser</summary>
       <div class="disclosure-content">
-        <p class="field-help">States are reconstructed from workspace locks, recovery journals, and manifests. They are not editable flags.</p>
+        <p class="field-help">Availability and recovery are read from saved attempts.</p>
         <div class="participant-toolbar"><button id="participant-window-previous" type="button" disabled>Previous participants</button><output id="participant-window-status">Showing 1–24 of 24</output><button id="participant-window-next" type="button" disabled>Next participants</button></div>
         <div id="participant-grid" class="participant-grid" role="radiogroup" aria-label="Participant state chooser"></div>
         <fieldset id="attempt-disposition" class="check-group attempt-disposition" hidden>
@@ -617,8 +480,8 @@ function reviewSection() {
         <p id="participant-active-warning" class="coverage-message" hidden role="status">This participant has an active lock. Finish or recover that active attempt before starting here.</p>
       </div>
     </details>
-    <details class="inner-disclosure" open>
-      <summary>Transient participant details</summary>
+    <details id="review-participant-details" class="inner-disclosure">
+      <summary>Participant details</summary>
       <div class="disclosure-content">
         <p class="field-help">Names are used only to derive an uppercase two-grapheme code. Raw names and any self-description are removed before Start and never enter files, logs, markers, or recovery state.</p>
         <div class="field-grid spaced-field-grid">
@@ -631,18 +494,11 @@ function reviewSection() {
         </div>
       </div>
     </details>
-    <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
-      <legend>Rating output formats</legend>
-      <label class="check-field"><input id="output-csv" type="checkbox" checked><span>CSV</span></label>
-      <label class="check-field"><input id="output-tsv" type="checkbox"><span>TSV</span></label>
-      <p id="output-format-help" class="field-help">Both formats serialize the same canonical records with identical columns, order, values, and row count. At least one is required.</p>
-      <p id="output-format-error" class="field-error" hidden>Select CSV, TSV, or both.</p>
-    </fieldset>
     <section class="participant-language-readiness" aria-labelledby="participant-language-label">
       <div>
         <h3 id="participant-language-label">Participant language</h3>
         <output id="participant-language-status" class="field-output" data-state="warning" aria-live="polite">Choose a package language for this participant and attempt.</output>
-        <p class="field-help">The participant follows the package-owned tree from its root. Start stays blocked until a terminal language is chosen. A compatible recovery restores its frozen route instead of asking again.</p>
+        <p class="field-help">Choose a language before starting. A resumed attempt keeps its original language.</p>
       </div>
       <button id="choose-participant-language" type="button" disabled>Choose participant language</button>
     </section>
@@ -655,12 +511,9 @@ function reviewSection() {
 const SECTION_CONTENT = Object.freeze({
   workspace: workspaceSection,
   layout: screenLayoutDraftMarkup,
-  experiment: experimentSection,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
-  input: inputSection,
-  visual: visualSection,
-  advanced: advancedSection,
+  xr: xrLayoutEditorMarkup,
   review: reviewSection,
 });
 
@@ -668,7 +521,7 @@ function sectionConfirmationMarkup(section, index) {
   const isLast = index === SETUP_SECTIONS.length - 1;
   return `
     <div class="setup-section-confirmation">
-      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed yet. Confirm once to mark this section reviewed.</p>
+      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}">Not reviewed</p>
       <button
         class="setup-section-confirm-button"
         type="button"
@@ -677,6 +530,17 @@ function sectionConfirmationMarkup(section, index) {
         aria-describedby="setup-confirmation-status-${section.id}"
       >${isLast ? "Confirm review" : "Confirm section"}</button>
     </div>`;
+}
+
+function feedbackNavigationMarkup(section, index) {
+  return `<div class="feedback-navigation">
+    <button type="button" id="setup-trigger-feedback" data-open-section="feedback" aria-controls="preview-title">
+      <span class="section-number">${index + 1}</span><span>${section.label}</span>
+      <span class="section-review-status" data-section-review-status="feedback"><span data-section-review-check="feedback" aria-hidden="true" hidden>✓</span></span>
+      <span class="sr-only" data-feedback-nav-status>Not reviewed</span>
+    </button>
+    <span class="field-help" data-section-summary="feedback">${SECTION_SUMMARIES.feedback}</span>
+  </div>`;
 }
 
 function accordionMarkup(section, index) {
@@ -726,8 +590,8 @@ export function renderResearchUiMarkup(surface = "browser") {
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           <form id="research-settings-form" class="setup-layout" novalidate>
             <div class="setup-pane" id="setup-sections">
-              <div class="setup-intro"><p>Review each section before preparing a session.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
-              ${SETUP_SECTIONS.map(accordionMarkup).join("")}
+              <div class="setup-intro"><p>Review the design before creating a session.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output></div>
+              ${SETUP_SECTIONS.map((section, index) => section.id === "feedback" ? feedbackNavigationMarkup(section, index) : accordionMarkup(section, index)).join("")}
             </div>
             <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"
               aria-label="Resize sections and live preview" aria-orientation="vertical"
@@ -736,10 +600,10 @@ export function renderResearchUiMarkup(surface = "browser") {
               title="Drag to resize. Arrow keys adjust; double-click resets.">
               <span id="setup-resizer-help" class="sr-only">Drag left or right to resize. Use Left and Right arrows, Shift for larger steps, Home or End for the limits, and Enter to reset. Escape cancels a drag.</span>
             </div>
-            <aside class="preview-pane" aria-labelledby="preview-title">
+            <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
               <header class="preview-header">
-                <div><h2 id="preview-title">Live feedback preview</h2><p>Presentation only. Sampling uses the run scheduler.</p></div>
-                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode">
+                <div><h2 id="preview-title" tabindex="-1">Flubber &amp; Controls</h2><p>Mode selection is preview-only.</p><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
+                <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback preview mode; selection is not saved">
                   <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
                   <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
                   <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>

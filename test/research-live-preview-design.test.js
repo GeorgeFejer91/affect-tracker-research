@@ -200,12 +200,12 @@ test("continuous and stepwise response controls retain their exact timing contra
   ]);
 });
 
-test("Stepwise owns a draft tile spinner and the saved step size remains under Advanced", () => {
+test("Stepwise owns a draft tile spinner and the saved step size stays with device Controls", () => {
   assert.equal(countId(markup, "input-step-size"), 1);
   const stepwisePanel = between(
     studioMarkup,
     '<div data-response-preview-panel="stepwise">',
-    '<section id="preview-quick-appearance"',
+    '<details id="preview-advanced-settings"',
   );
   assertAttributes(inputTag(stepwisePanel, "preview-tile-count"), {
     type: "number", min: "1", max: "1000", step: "1", value: "10",
@@ -218,7 +218,7 @@ test("Stepwise owns a draft tile spinner and the saved step size remains under A
   const validation = between(appSource, "function syncControlValidation(", "function syncOutputFormatValidation(");
   assert.match(validation, /control\?\.hasAttribute\("data-preview-grid-input"\).*data-preview-appearance-input.*return true;/u);
   assert.match(appSource, /\[aria-invalid="true"\]:not\(\[data-preview-grid-input\]\)/u);
-  assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<details id="preview-advanced-settings"')), "input-step-size"), {
+  assertAttributes(inputTag(studioMarkup.slice(studioMarkup.indexOf('<section id="feedback-input-settings"')), "input-step-size"), {
     type: "number",
     min: "0.001",
     max: "1",
@@ -393,9 +393,6 @@ test("advanced preview settings retain every detailed visual control and six uni
   assert.ok(advancedStart >= 0);
   const advanced = studioMarkup.slice(advancedStart);
   const advancedVisualIds = [
-    "visual-grid-visible",
-    "visual-flubber-visible",
-    "visual-hide-feedback",
     "visual-lock-position",
     "visual-position-x",
     "visual-position-y",
@@ -409,7 +406,7 @@ test("advanced preview settings retain every detailed visual control and six uni
   ];
   for (const id of advancedVisualIds) assert.equal(countId(advanced, id), 1, id);
 
-  for (const id of ["visual-size", "visual-transparency", "flubber-halo-visible"]) {
+  for (const id of ["visual-size", "visual-transparency", "flubber-halo-visible", "visual-grid-visible", "visual-flubber-visible", "visual-hide-feedback"]) {
     assert.equal(countId(studioMarkup, id), 1, id);
   }
 
@@ -504,7 +501,8 @@ test("preview CSS has responsive and forced-color coverage without gradients or 
   assert.match(compactDesktop, /\.preview-header\s*\{/u);
   assert.match(compactDesktop, /\.preview-feedback-modes\s*\{/u);
   assert.match(compactDesktop, /\.preview-affect-map-layout\s*\{/u);
-  assert.match(compactDesktop, /\.preview-advanced-settings \.mapping-grid/u);
+  const compactPane = between(cssSource, "@container preview-pane (max-width: 36rem)", "@container preview-pane (max-width: 24rem)");
+  assert.match(compactPane, /\.preview-advanced-settings \.mapping-grid/u);
 
   const compactPhone = between(cssSource, "@media (max-width: 479px)", "@media (prefers-reduced-motion: reduce)");
   assert.match(compactPhone, /\.preview-affect-map-layout\s*\{/u);

@@ -148,7 +148,7 @@ test("native experiment load event invokes the path-free picker and forwards its
     }
     if (command === "research_load_experiment_package") return packageResult;
     if (command === "research_save_experiment_package") return {
-      schema: "affect-research-saved-experiment-package-receipt",
+      schema: "affect-research-experiment-package-save-receipt",
       version: 1,
       packageId: "portable-study",
       packageDefinitionSha256: "d".repeat(64),
@@ -215,17 +215,22 @@ test("native experiment load event invokes the path-free picker and forwards its
     [["research_load_experiment_package"]],
   );
 
+  const saveCompletions = [];
   const saveRequest = new CustomEvent(
     RESEARCH_UI_EVENTS.saveExperimentPackageRequest,
-    { cancelable: true, detail: { sourceText: "{}\n" } },
+    { cancelable: true, detail: { sourceText: "{}\n", complete: (result) => saveCompletions.push(result) } },
   );
   root.dispatchEvent(saveRequest);
+  assert.deepEqual(saveCompletions, [], "bridge acceptance must not be reported as a saved file");
   await bridge.operation;
   assert.equal(saveRequest.defaultPrevented, true);
   assert.deepEqual(
     calls.filter(([command]) => command === "research_save_experiment_package"),
     [["research_save_experiment_package", { sourceText: "{}\n" }]],
   );
+  assert.equal(saveCompletions.length, 1);
+  assert.equal(saveCompletions[0].status, "saved");
+  assert.equal(saveCompletions[0].receipt.byteLength, 3);
 
   bridge.workspace = Object.freeze({
     workspaceId: "11111111-1111-4111-8111-111111111111",

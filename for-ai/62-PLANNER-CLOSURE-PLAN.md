@@ -378,6 +378,13 @@ after each retained control has a destination and a working saved contract.
 
 ## P6 design: Optional XR Spatial Layout
 
+**2026-09-11 P6 update:** Q11 is answered: head-forward without eye tracking,
+one world anchor throughout each attempt, stop on tracking loss and recenter
+only between attempts. The implementation below is now specified and tested in
+[63-P6-XR-LAYOUT.md](63-P6-XR-LAYOUT.md), pending integration. That contract's
+edge-interior angular extrema and full P5 footprint mapping refine the earlier
+corner-ray proposal. P7 master embedding and actual XR execution remain open.
+
 Expose an optional spatial profile inside Setup. A desktop recipe can finish
 without it. Enabling it reveals **setup alignment**, **video plane**, **Flubber
 relationship**, and an orbitable 3D preview with forward axes, screen plane and
@@ -499,7 +506,7 @@ ownership, all of which are already confirmed.
 | Q08: exact screen reference/calibration | Shared saved reference rectangle, contain fit, design centre, explicit physical calibration | Final P4 geometry contract |
 | Q09: questionnaire placement/scoring | Preserve existing hooks and codes; implement additional requested placement and scoring explicitly | New placement/scoring features, not editable content/reopen fixes |
 | Q10: saved preview controls | Inventory existing saved values first; add only specifically approved extras | New persistent feedback behavior, not control consolidation design |
-| Q11: forward/recenter/tracking | Head-forward setup frame proposed; world-fixed anchor retained | Optional P6 final contract and later Runner behavior |
+| Q11: answered in S6 | Head-forward without eye tracking; anchor fixed per attempt; stop on tracking loss; recenter between attempts | Authoring policies confirmed; physical Runner enforcement deferred |
 | Q12/Q13: retained settings and drafts | P1 identity, P7 any required count metadata/acquisition/output; accepted recipes separate from drafts | Final navigation/save semantics |
 | Q15: spatial profile scope/selection | Flat monoscopic plane first; explicit desktop/XR profile requirements with no silent fallback | Optional P6 and P7's spatial-target contract |
 

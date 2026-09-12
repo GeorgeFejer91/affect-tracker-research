@@ -540,7 +540,7 @@ function validatePool(value, path) {
   };
 }
 
-function validateVisual(value) {
+export function validateVisualSettingsV1(value) {
   exactObject(value, "ResearchSettingsV1.visual", [
     "gridEnabled", "flubberEnabled", "sizePercent", "transparency", "hideFeedback",
     "overlayPosition", "lockPosition", "flubber", "grid", "colors",
@@ -665,7 +665,7 @@ export function validateResearchSettingsV1(value) {
       pools,
     },
     input: copy(validateInputBindingV1(value.input)),
-    visual: validateVisual(value.visual),
+    visual: validateVisualSettingsV1(value.visual),
     advanced: validateAdvanced(value.advanced),
     output: {
       csv: boolean(value.output.csv, "ResearchSettingsV1.output.csv"),
