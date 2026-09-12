@@ -1,10 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
 import { resolveFeedbackEnvelopeV1 } from "../site/src/research/feedback-envelope.js";
-import { createScreenLayoutDraft, convertScreenLayoutDraftUnits } from "../site/src/research/screen-layout-draft.js";
+import { createScreenLayoutDraft, convertScreenLayoutDraftUnits, resolveScreenLayoutDraft } from "../site/src/research/screen-layout-draft.js";
 import { createScreenLayoutState, validateScreenLayoutDraftDocument, validateScreenLayoutContribution } from "../site/src/research/screen-layout-state.js";
 import { createScreenLayoutDependencyBinding, screenLayoutReferenceCandidates } from "../site/src/research/screen-layout-dependencies.js";
+import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
+import { connectScreenLayoutProducers } from "../site/src/research/screen-layout-composition.js";
 
 const clone = value => structuredClone(value);
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
@@ -175,4 +179,42 @@ test("snapshots and projection copies cannot mutate owner state; no-op refresh d
   assert.notEqual(h.owner.projection.geometry.feedback.cx, 0);
   const snap = h.owner.getSnapshot(); snap.dependencyRevisions[0].revision = 999;
   assert.deepEqual(h.owner.getSnapshot(), before);
+});
+
+test("actual P1 shared conformance fixture and P5 source compose through one subscription lifecycle", async () => {
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url), "utf8"));
+  const p1 = createVideoCatalogueProducerV1();
+  await p1.replaceEntries(fixture.entries);
+  let configuration = { input: clone(DEFAULT_SETTINGS.input), ...config() };
+  const p5 = createFeedbackContributionSource(() => configuration);
+  let binding, state, pending;
+  state = createScreenLayoutState({ resolve: d => binding ? binding.resolve(d) : resolveScreenLayoutDraft(d) });
+  const controller = {
+    getVideoCatalogueContributionSnapshot: p1.getSnapshot,
+    subscribeVideoCatalogueChanges: p1.subscribe,
+    getFeedbackLayoutSnapshot: p5.getLayoutSnapshot,
+    subscribeFeedbackChanges: p5.subscribe,
+    connectScreenLayoutDependencies(dependencies) {
+      binding = createScreenLayoutDependencyBinding({ ...dependencies, onChange: () => state.refreshDependencies() });
+      pending = binding.refreshCatalogue(); return pending;
+    },
+    refreshScreenLayoutCatalogue() { pending = binding.refreshCatalogue(); return pending; },
+    refreshScreenLayoutFeedback() { binding.refreshFeedback(); },
+  };
+  const disconnect = connectScreenLayoutProducers(controller);
+  await pending;
+  const projected = await projectVideoDisplayGeometryV1(fixture);
+  assert.deepEqual(state.projection.videos.map(v => [v.id, v.displayWidth, v.displayHeight]),
+    projected.videos.map(v => [v.assetId, v.displayWidth, v.displayHeight]));
+  assert.equal(state.getSnapshot().dependencyRevisions[0].revision, p1.getSnapshot().revision);
+  const before = state.getSnapshot().revision;
+  configuration.visual.flubber.outlineThickness = 20; p5.refresh();
+  assert.ok(state.getSnapshot().revision > before);
+  p1.withdraw(); await pending;
+  assert.deepEqual(state.projection.videos, []);
+  disconnect();
+  const stopped = state.getSnapshot();
+  configuration.visual.flubber.outlineThickness = 10; p5.refresh();
+  assert.deepEqual(state.getSnapshot(), stopped);
+  binding.destroy(); state.destroy(); p5.destroy();
 });

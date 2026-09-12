@@ -95,7 +95,7 @@ export function createScreenLayoutDependencyBinding({ getCatalogueSnapshot, proj
       const result = resolveScreenLayoutDraft(draft);
       result.inputKind = "live";
       result.dependencyRevisions = [];
-      result.dependencyIdentity = { catalogue: null, feedback: null };
+      result.dependencyIdentity = { catalogue: null, catalogueValidation: catalogueIssue?.code ?? "checked", feedback: null };
       let availableMedia = [];
       try {
         const current = readCatalogue();

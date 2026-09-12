@@ -29,6 +29,7 @@ import { createFeedbackContributionSource, validateFeedbackContributionV1 } from
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
 import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
+import { connectScreenLayoutProducers } from "./screen-layout-composition.js";
 import { createPreviewResponseSimulator } from "./preview-response-simulator.js";
 import { createInlineColorPicker } from "./inline-color-picker.js";
 import { createPreviewInteraction } from "./preview-interaction.js";
@@ -179,6 +180,7 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
   const controller = createUiController(root, { surface });
   root.researchUi = controller;
   registerAvailablePlannerContributions(controller);
+  controller.connectScreenLayoutProducers();
   return controller;
 }
 
@@ -196,7 +198,13 @@ function createInteractionController(root, { surface }) {
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
-  const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
+  let disconnectScreenLayout = () => {};
+  const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
+    onChange() {
+      const ui = root.researchUi;
+      if (ui?.getPlannerContributionReview().snapshots.some(item => item.segment === "P4")) ui.plannerContributionChanged("P4");
+    },
+  });
   const announcer = root.querySelector("#research-announcer");
   const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
   const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
@@ -5248,6 +5256,15 @@ function bindResearchInteractions(root, { surface }) {
 
   return Object.freeze({
     get mode() { return mode; },
+    connectScreenLayoutProducers() { disconnectScreenLayout(); disconnectScreenLayout = connectScreenLayoutProducers(root.researchUi); },
+    connectScreenLayoutDependencies(owners) { return layoutDraftEditor.connectDependencies(owners); },
+    refreshScreenLayoutCatalogue() { return layoutDraftEditor.refreshCatalogue(); },
+    refreshScreenLayoutFeedback() { layoutDraftEditor.refreshFeedback(); },
+    getScreenLayoutContributionSnapshot: layoutDraftEditor.getSnapshot,
+    getScreenLayoutDraftDocument: layoutDraftEditor.getDraftDocument,
+    getScreenLayoutProjection() { return layoutDraftEditor.projection; },
+    restoreScreenLayoutDraft: layoutDraftEditor.restoreDraft,
+    validateScreenLayoutContribution: layoutDraftEditor.validateContribution,
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
@@ -5336,6 +5353,7 @@ function bindResearchInteractions(root, { surface }) {
       inlineColorPicker.destroy();
       setupLayout.destroy();
       packageExport.destroy();
+      disconnectScreenLayout();
       layoutDraftEditor.destroy();
 
       xrLayoutEditor?.destroy();
