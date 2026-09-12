@@ -119,7 +119,9 @@ its own install. A failed sequence cannot resume by catching a step failure.
 
 Sequence results add only `progress: {attempted, completed, finished}` to the
 ordinary result object. `finish` requires all ten successful installs, including
-immutable document adoption, and retains a compact result. Dispatch settling
+immutable document adoption, and retains a compact result. The coordinator
+validates the final owner state at finish, not intermediate partially restored
+state; actual projection/observer failures are still retained. Dispatch settling
 without finish is incomplete. Fixed ten-label progress stays within the existing
 reserved result bound. Busy reads and exact retry behavior cover the whole
 sequence. This reports partial restoration honestly; it does not promise rollback

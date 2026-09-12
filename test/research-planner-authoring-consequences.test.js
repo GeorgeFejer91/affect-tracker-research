@@ -113,6 +113,20 @@ test("only openRecipe can opt into sequence publication", () => {
   assert.throws(() => harness({ descriptors: [{ ...descriptor(), publication: "sequence" }] }), /reserved/);
 });
 
+test("sequence validates only the completed recipe, not temporarily missing target", async () => {
+  let target = false, validations = 0;
+  const h = harness({ descriptors: [{ ...descriptor("openRecipe", ["path"]), publication: "sequence" }],
+    validate() { validations++; return target ? [] : [{ owner: "P7", field: "P7.presentationTarget", code: "invalid_target", message: "Choose a target." }]; },
+    prepare() { return { dispatch({ publishStep, finish }) {
+      for (const step of PLANNER_REOPEN_STEPS) publishStep(step, () => { if (step === "presentationTarget") target = true; });
+      finish({ opened: true });
+    } }; },
+  });
+  const result = await h.session.execute(reopen(h));
+  assert.equal(result.status, "applied"); assert.deepEqual(result.issues, []);
+  assert.equal(validations, 1);
+});
+
 test("native request identity is detached and frozen without changing retry identity", async () => {
   let observed;
   const h = harness({ prepare({ context, set }) {

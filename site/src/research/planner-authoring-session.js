@@ -263,8 +263,10 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
             } catch { consequence.issues.push({ owner: owner.id, field: null, code: "projection_failed", message: "The result was adopted, but its projection failed." }); }
             try { onCommit({ owners: [owner.id], revision, operation: action.operation }); }
             catch { consequence.issues.push({ owner: owner.id, field: null, code: "projection_failed", message: "The result was adopted, but a shared projection failed." }); }
-            try { consequence.issues.push(...validateOwner(owner)); }
-            catch { consequence.issues.push({ owner: owner.id, field: null, code: "validation_unavailable", message: "The result was adopted; owner validation is unavailable." }); }
+            if (!sequence) {
+              try { consequence.issues.push(...validateOwner(owner)); }
+              catch { consequence.issues.push({ owner: owner.id, field: null, code: "validation_unavailable", message: "The result was adopted; owner validation is unavailable." }); }
+            }
           } catch (error) { if (sequence) sequenceFailed = true; throw error; }
           finally { publishing = false; }
           consequence.issues.push(...notify());
@@ -276,6 +278,8 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
             commandFailure("missing_publication", "Recipe restore must complete every step before finishing.", owner.id);
           }
           consequence.result = compact(result === undefined ? null : result);
+          try { consequence.issues.push(...validateOwner(owner)); }
+          catch { consequence.issues.push({ owner: owner.id, field: null, code: "validation_unavailable", message: "The result was adopted; owner validation is unavailable." }); }
           consequence.progress.finished = true;
         };
         const returned = await candidate.dispatch({ isCurrent: dispatchCurrent, signal: controller.signal, recordEffect,

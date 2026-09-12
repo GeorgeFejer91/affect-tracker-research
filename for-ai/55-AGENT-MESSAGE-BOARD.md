@@ -2,6 +2,10 @@
 
 ### 20260912-cli-open-sequence-coordinator
 
+- Root review found intermediate P7 validation could retain a missing-target
+  issue after successful full restoration. Main defers sequence validation to
+  finish, preserves projection/observer errors, and adds a final-target regression.
+  The focused consequence/session gate now passes 55 tests.
 - Root approved Main's openRecipe-only sequence extension with fixed ten-step
   order and explicit terminal finish. Revision advances before real synchronous
   installs; attempted/completed progress survives partial throws and late cancel.
