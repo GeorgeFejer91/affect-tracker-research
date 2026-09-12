@@ -100,13 +100,19 @@ try {
   }
   await wait(150);
   const pane = q(".setup-pane"), section = q('[data-setup-section="stimuli"]');
-  pane.scrollTop += q("#stimulus-order-editor").getBoundingClientRect().top - pane.getBoundingClientRect().top - 12;
+  const captureTop = q(mode === "invalid" ? "#stimulus-order-status" : "#stimulus-order-editor");
+  pane.scrollTop += captureTop.getBoundingClientRect().top - pane.getBoundingClientRect().top - 12;
   if (mode === "actions") q(".stimulus-order-scroll").scrollLeft = 100000;
   await wait(80);
   check("no setup pane horizontal overflow", pane.scrollWidth <= pane.clientWidth + 1);
   check("reorder controls exist with explicit accessible names", [...section.querySelectorAll("[data-order-move]")].every(control => control.getAttribute("aria-label")?.startsWith("Move ")));
   const rect = node => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
   const bounds = rect(q("#stimulus-order-editor"));
+  if (mode === "invalid") {
+    const status = rect(q("#stimulus-order-status")), input = rect(q('[data-isi-id="ISI1"]')), paneRect = rect(pane);
+    check("invalid duration message and focused field are both visible in capture", status.y >= paneRect.y && status.y + status.height <= paneRect.y + paneRect.height
+      && input.y >= paneRect.y && input.y + input.height <= paneRect.y + paneRect.height);
+  }
   for (const row of section.querySelectorAll(".isi-definition")) check("named ISI row including all actions fits editor", rect(row).x >= bounds.x - 1 && rect(row).x + rect(row).width <= bounds.x + bounds.width + 1);
   check("no browser runtime errors", errors.length === 0);
   document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, checks, errors, trace, viewport: { width: innerWidth, height: innerHeight }, editor: bounds,
