@@ -1,3 +1,4 @@
+import { preparePlannerSurface } from "./planner-surface.js";
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
@@ -187,6 +188,7 @@ export function bootResearchUi({ surface: requestedSurface } = {}) {
   const surface = requestedSurface ?? declaredSurface;
   if (surface !== declaredSurface) throw new Error("Research surface does not match its entry module.");
   mount.innerHTML = renderResearchUiMarkup(surface);
+  if (mount.dataset.researchProgram === "planner") preparePlannerSurface(mount);
   mount.setAttribute("aria-busy", "false");
   initializeResearchUi(mount, { surface });
   return mount;
@@ -443,7 +445,7 @@ function bindResearchInteractions(root, { surface }) {
   });
   // The Run projection owns both the adjacent feedback stage and the visible
   // coordinate receipt in the footer.
-  const runPreview = createResearchPreview(root.querySelector('[data-mode-panel="run"]'), {
+  const runPreview = root.dataset.researchProgram === "planner" ? { update() {}, destroy() {} } : createResearchPreview(root.querySelector('[data-mode-panel="run"]'), {
     initialState: { lockPosition: true },
   });
   previewResponseSimulator = createPreviewResponseSimulator({
@@ -573,6 +575,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function setMode(nextMode) {
+    if (root.dataset.researchProgram === "planner" && nextMode !== "setup") return;
     mode = normalizeResearchMode(nextMode);
     setupLayout.setEnabled(mode === "setup");
     if (mode !== "setup") {
@@ -4741,6 +4744,10 @@ function bindResearchInteractions(root, { surface }) {
   runFeedbackStage?.addEventListener("lostpointercapture", handleRunPointer);
 
   function requestStart() {
+    if (root.dataset.researchProgram === "planner") {
+      announce("Open the saved recipe in Experiment Runner.");
+      return;
+    }
     const blocking = preflightItems().filter(({ result }) => result === "block");
     const pendingFinalization = selectedPendingFinalization();
     if (pendingFinalization) {

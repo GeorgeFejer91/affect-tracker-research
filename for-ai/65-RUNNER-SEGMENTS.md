@@ -68,3 +68,32 @@ Baseline: 53 focused Node checks passed on `7946bc6` before mutation (UI, modula
 architecture, package and native package-protocol files). No application launch
 or physical recording occurred. Subsequent implementation receipts belong here;
 none of the open items above is closed by this documentation amendment.
+
+### Desktop boundary checkpoint — 2026-09-12
+
+RR-01 and G11 shared seam implemented: independent `affect-runner` Cargo binary,
+Runner Tauri identity/app-data/build entry, exclusive role-based native command
+registries. Planner constructs no acquisition runtime and does not expose Start,
+resume, finalize or playback commands. Its actual desktop boot removes participant
+execution controls before controllers mount, retains seven authoring sections and
+Flubber preview, and names the final section **Review & Export**. Historical
+combined renderer code remains for legacy static/compatibility paths; this is a
+desktop allocation, not a claim that every old module has been deleted.
+
+Runner has its own interface, strict unchanged v1 package intake and compiled
+selection, native protocol adapter and shared pure feedback renderer. It imports
+no Planner editor or Planner runtime bridge. XDF controls are unavailable until
+the separate recorder service is implemented; RR-08 remains open. RR-03–RR-07
+remain under implementation/verification, and this checkpoint does not claim
+successor-master support or installed native execution qualification.
+
+Evidence: 648 existing Node tests; four new Runner parity/rejection/feedback and
+native boundary checks; 199 no-default-feature Rust library tests. Both frontend
+builds pass (Planner nine output files, Runner five). Headless Chrome actual app
+boot harness `scripts/qualification/companion-boundary-audit.mjs` verifies Planner
+title, seven sections, preview, absence of Run controls and native runtime startup
+calls; Runner loads the canonical package, contains no Planner editors and keeps
+unqualified Start disabled. Both have zero runtime errors, duplicate IDs and page
+overflow at 1280 pixels. Native replies in that harness are synthetic. Receipt and
+screenshots: `D:/GitHub/.affect-runner-build/boundary-audit/`. No physical input,
+foreground application control, native experiment or real stream recording ran.

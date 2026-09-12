@@ -10,3 +10,4 @@ src-tauri/target/
 src-tauri/gen/schemas/
 coverage/
 *.log
+runner/dist/
