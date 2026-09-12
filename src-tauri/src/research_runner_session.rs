@@ -443,6 +443,97 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
     #[test]
+    fn master_v3_and_v2_sources_isolate_selection_history_and_reject_changed_snapshots() {
+        use crate::research_runner_master::{
+            storage::{history, MasterStorage},
+            MasterSelector, PreparedMaster,
+        };
+        let root = std::env::temp_dir().join(format!("runner-v2-session-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        let other = include_str!("../../test/fixtures/planner-recipe-v2-locations.canonical.json");
+        let a = selection(
+            &root,
+            include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json"),
+            Some("P001".into()),
+        )
+        .unwrap();
+        let b = selection(&root, other, Some("P002".into())).unwrap();
+        assert_ne!(a.output_directory, b.output_directory);
+        assert_eq!(
+            selection(
+                &root,
+                include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json"),
+                None
+            )
+            .unwrap()
+            .participant_id
+            .as_deref(),
+            Some("P001")
+        );
+        assert_eq!(
+            selection(&root, other, None)
+                .unwrap()
+                .participant_id
+                .as_deref(),
+            Some("P002")
+        );
+        let prepared = PreparedMaster::read(
+            include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json"),
+            "P001",
+            MasterSelector {
+                variant_id: "variant-3".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let attempt = MasterStorage::create(
+            &root,
+            &prepared,
+            "run-session-isolation",
+            serde_json::Value::Null,
+            false,
+        )
+        .unwrap();
+        drop(attempt);
+        assert_eq!(
+            history(
+                &root,
+                include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json")
+            )
+            .unwrap()["participants"][0]["participantId"],
+            "P001"
+        );
+        assert!(history(&root, other).unwrap()["participants"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+        let snapshot = root
+            .join(&a.output_directory)
+            .join("experiment.master.json");
+        assert_eq!(
+            fs::read(&snapshot).unwrap(),
+            include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json").as_bytes()
+        );
+        fs::write(&snapshot, b"corrupt").unwrap();
+        assert!(selection(
+            &root,
+            include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json"),
+            None
+        )
+        .is_err());
+        assert_eq!(
+            fs::read(
+                root.join(&b.output_directory)
+                    .join("experiment.master.json")
+            )
+            .unwrap(),
+            other.as_bytes()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn complete_master_selection_retains_exact_source_in_its_own_folder() {
         let root =
             std::env::temp_dir().join(format!("runner-master-output-{}", uuid::Uuid::new_v4()));

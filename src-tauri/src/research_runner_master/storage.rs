@@ -100,7 +100,7 @@ impl MasterStorage {
             "buildCommit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION"),
             "outputDirectory":format!("outputs/{}/{}/{}", recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?, prepared.plan.participant_id, session_name),
             "status":"prepared","completedStepCount":0});
-        if prepared.plan.version == 2 {
+        if matches!(prepared.plan.version, 2 | 3) {
             receipt.as_object_mut().unwrap().remove("participant");
         }
         write_new(
@@ -120,7 +120,10 @@ impl MasterStorage {
         let diagnostics = writer(&session, "master-diagnostics.v1.jsonl")?;
         let responses = writer(
             &session,
-            &format!("master-responses.v{}.jsonl", prepared.plan.version),
+            &format!(
+                "master-responses.v{}.jsonl",
+                if prepared.plan.version == 1 { 1 } else { 2 }
+            ),
         )?;
         let csv = prepared
             .loaded

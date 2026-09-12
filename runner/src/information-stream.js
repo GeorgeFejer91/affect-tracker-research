@@ -74,7 +74,7 @@ export class InformationAssembler {
 }
 
 async function reconstructStartup(startup, context) {
-  require(startup?.schema === "affect-runner-startup" && [1, 2].includes(startup.version) && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
+  require(startup?.schema === "affect-runner-startup" && [1, 2, 3].includes(startup.version) && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
   const keys = ["schema", "version", "recipeSourceText", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "markerProfile", "effectiveLsl", "build"];
   if (startup.version === 1) keys.push("legacyCodedParticipant");
   exact(startup, keys, "Information startup");
@@ -97,7 +97,7 @@ async function reconstructStartup(startup, context) {
   require(lsl.enabled && canonicalJson(lsl) === canonicalJson(startup.effectiveLsl), "Information stream names or policy differ from the selected participant.");
   exact(startup.build, ["commit", "appVersion"], "Startup build");
   require(typeof startup.build.commit === "string" && /^[a-f0-9]{7,64}(?:-dirty)?$/u.test(startup.build.commit) && typeof startup.build.appVersion === "string" && startup.build.appVersion.length <= 100, "Invalid startup build identity.");
-  // Historical startup1 retains its coded participant preparation. Startup2
+  // Historical startup1 retains its coded participant preparation. Startup2/3
   // binds only participantId; demographics are ordinary mandatory form answers.
   if (startup.version === 1) {
     const p = startup.legacyCodedParticipant;
@@ -109,14 +109,14 @@ async function reconstructStartup(startup, context) {
 
 function validateResponses(record, plan, context, open, alreadySubmitted) {
   exact(record, ["schema", "version", "entryId", "position", "module", "questionnaireId", "questionnaireVersion", "definitionSha256", "status", "responses", "runId", "attemptId", "participantId", "recipeSourceByteSha256", "planIdentitySha256", "monotonicMs"], "Response record");
-  require(record.schema === "affect-runner-master-responses" && record.version === plan.version && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
+  require(record.schema === "affect-runner-master-responses" && record.version === ({1:1,2:2,3:2}[plan.version]) && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
   const step = plan.steps[record.position - 1];
   require(step?.kind === "questionnaire" && step.entryId === record.entryId && open === record.entryId && !alreadySubmitted.has(record.entryId), "Answers do not belong to the current unsubmitted form occurrence.");
   const definition = step.payload.definition;
   for (const key of ["runId", "attemptId", "recipeSourceByteSha256"]) require(record[key] === context[key], "Responses belong to another attempt.");
   require(record.participantId === plan.participantId && record.planIdentitySha256 === plan.planIdentitySha256 && canonicalJson(record.module) === canonicalJson(step.payload.module), "Response selection or module differs.");
   for (const key of ["questionnaireId", "questionnaireVersion", "definitionSha256"]) require(record[key] === definition[key], "Response definition differs.");
-  if (definition.schema === "affect-research-form-definition" && definition.version === 1 && plan.version === 2) {
+  if (definition.schema === "affect-research-form-definition" && definition.version === 1 && [2, 3].includes(plan.version)) {
     validateTypedResponseRows(definition, record.responses, { submitted: record.status === "submitted", monotonicMs: record.monotonicMs });
     if (record.status === "submitted") alreadySubmitted.add(record.entryId);
     return;

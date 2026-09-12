@@ -8,9 +8,10 @@ import { extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
 
-const [browser, destination, onlyCase] = process.argv.slice(2);
+const [browser, destination, onlyCase, recipeVersion = "2"] = process.argv.slice(2);
 assert.ok(browser && destination);
-assert.ok(onlyCase === undefined || /^(en|de)-(form|flow|stop|dispose)$/u.test(onlyCase));
+assert.ok(["2", "3"].includes(recipeVersion));
+assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|stop|dispose)$/u.test(onlyCase));
 const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output);
 const entry = String.raw`
@@ -18,7 +19,7 @@ import {bootRunner} from './runner/src/app.js';
 import {resolveRunnerSelection} from './runner/src/recipe.js';
 import {validateFormAnswers} from './site/src/research/form-definition.js';
 import {validateQuestionnaireAnswers} from './site/src/research/questionnaires.js';
-const params=new URL(location.href).searchParams,language=params.get('language'),mode=params.get('case');
+const params=new URL(location.href).searchParams,language=params.get('language'),mode=params.get('case'),masterVersion=Number(params.get('version'));
 const checks=[],calls=[],errors=[],submissions=[];
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
 const tick=(ms=50)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -51,13 +52,15 @@ const invoke=async(command,args)=>{
   case 'research_runner_fullscreen':fullscreen=args.fullscreen;return;
   case 'research_runner_master_plan':return selected();
   case 'research_runner_master_rescan':return{workspaceId:'synthetic-workspace',stimuli:[]};
-  case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:2,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,nativeStartReady:true,reasons:[]};
-  case 'research_runner_master_start_v2':{
+  case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,nativeStartReady:true,reasons:[]};
+  case 'research_runner_master_start_v2':
+  case 'research_runner_master_start_v3':{
+   check(command==='research_runner_master_start_v'+masterVersion,'exact Start version dispatch');
    check(fullscreen,'Start2 follows fullscreen acknowledgement');
    check(Object.keys(args.request).sort().join('|')===['version','workspaceId','sourceText','participantId','selector','rerunConfirmed','inputTestReceiptId'].sort().join('|'),'Start2 has exact participant-only fields');
-   check(args.request.version===2&&args.request.participantId==='P001','Start2 retains canonical participant ID');
+   check(args.request.version===masterVersion&&args.request.participantId==='P001','Start2 retains canonical participant ID');
    check(args.request.sourceText===app.recipe.canonicalSourceText,'Start2 retains exact canonical source');
-   const receipt={schema:'affect-runner-master-attempt',version:2,runId:'run-00000000-0000-4000-8000-000000000001',attemptId:'attempt-synthetic',participantId:'P001',recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256};
+   const receipt={schema:'affect-runner-master-attempt',version:masterVersion,runId:'run-00000000-0000-4000-8000-000000000001',attemptId:'attempt-synthetic',participantId:'P001',recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256};
    status={...receipt,schema:'affect-runner-master-status',active:true,position:1,stepCount:plan.steps.length,phase:'awaitingPresentation',answers:{},sampleCount:0,missedSlotCount:0,currentValence:0,currentArousal:0};return receipt;
   }
   case 'research_runner_master_status':{
@@ -65,8 +68,11 @@ const invoke=async(command,args)=>{
    if(holdPoll){holdPoll=false;await new Promise(resolve=>{releasePoll=resolve;});}
    return snapshot;
   }
-  case 'research_runner_master_action_v2':{
-   const action=args.action;
+  case 'research_runner_master_action_v2':
+  case 'research_runner_master_action_v3':{
+   check(command==='research_runner_master_action_v'+masterVersion,'exact action version dispatch');
+   if(masterVersion===3)check(args.request.version===3&&args.request.runId===status.runId,'action3 exact envelope');
+   const action=masterVersion===3?args.request.action:args.action;
    if(action.type==='presented'){
     check(action.position===status.position,'presented acknowledgement binds current occurrence');
     const kind=plan.steps[status.position-1].kind;status.phase=kind==='questionnaire'?'questionnaire':kind==='video'?'playing':'interval';
@@ -91,8 +97,8 @@ const invoke=async(command,args)=>{
 try{
  const win=new Proxy(window,{get(target,key){if(key==='requestAnimationFrame')return callback=>setTimeout(()=>callback(performance.now()),16);const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
  app=await bootRunner(root,{invoke,windowObject:win,pollMs:250});
- await app.adoptRecipe(new Uint8Array(await(await fetch('/test/fixtures/runner-master-v2-owner.canonical.json')).arrayBuffer()));
- check(q('runner-recipe-status').textContent.includes('master v2'),'launcher identifies master v2');
+ await app.adoptRecipe(new Uint8Array(await(await fetch('/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
+ check(q('runner-recipe-status').textContent.includes('master v'+masterVersion),'launcher identifies master v2');
  q('runner-variant').value='variant-1';q('runner-variant').dispatchEvent(new Event('change'));
  q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'fullscreen preparation');
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');
@@ -169,7 +175,7 @@ try{
   const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);
  }
 }catch(error){errors.push(String(error));}
-const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,checks,errors,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:mode==='form',scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);
+const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,masterVersion,checks,errors,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:mode==='form',scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "runner-app-v2-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent" });
 const server = createServer(async (req, res) => {
@@ -185,9 +191,9 @@ await new Promise(done => server.listen(0, "127.0.0.1", done));
 const rows = [], execute = promisify(execFile);
 try {
   for (const language of ["en", "de"]) for (const mode of ["form", "flow", "stop", "dispose"]) {
-    if (onlyCase !== undefined && onlyCase !== `${language}-${mode}`) continue;
+    if (onlyCase !== undefined && onlyCase !== "all" && onlyCase !== `${language}-${mode}`) continue;
     const name = `${language}-${mode}`, profile = await mkdtemp(join(output, "profile-"));
-    const { stdout } = await execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", "--virtual-time-budget=15000", `--screenshot=${join(output, `${name}.png`)}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?language=${language}&case=${mode}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
+    const { stdout } = await execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", "--virtual-time-budget=15000", `--screenshot=${join(output, `${name}.png`)}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?language=${language}&case=${mode}&version=${recipeVersion}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
     await writeFile(join(output, `${name}.html`), stdout);
     const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1]; assert.ok(raw, `Missing ${name} receipt`);
     const row = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">"));

@@ -535,3 +535,20 @@ xdf-reader.json}; participant-audit, participant-small-audit and participant-bou
 Desktop rebuild/open follows these checks. Native playback qualification, installed
 input, actual participant/physiology recording, remote apps and master correspondence
 remain open. No Planner code, frozen recipe or manifest fields were changed.
+
+
+### Master3 intake component handoff — 2026-09-12
+
+R1 RR-02/RR-03/RR-04/RR-07/RR-10: explicit master3 plan/start/action/status/startup
+handling retains full controlled P1 proofs; typed response records and filename
+remain2. Master1/2 command gates remain exact. All questionnaire items remain
+mandatory in the UI and native worker, including legacy optional flags; offered
+prefer-not-to-say is an explicit valid response. Per-JSON history remains isolated.
+Wholly controlled3 freshly uses native attest2, wholly historical uses attest1;
+mixed proof catalogues are rejected pending a native-owned location mapping.
+Do not duplicate opaque native IDs or weaken full proof checks to enable them.
+See [Runner master3 intake](../docs/runner-master-v3-intake.md) for dependency,
+version and evidence matrix: 22 Node,350 synthetic app checks,26 master+6 session+
+37 workspace native checks, six exact native/JS plans and Runner build boundary
+pass. Main owns lib registration and actual native/XDF integration; these are
+component receipts.

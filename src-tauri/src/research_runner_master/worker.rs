@@ -1,5 +1,6 @@
 //! One native owner of master lifecycle observations, sampling and persistence.
 use super::{
+    bindings::MasterVideoBinding,
     forms::FormAnswers,
     information::{ContentKind, PreparedTransfer},
     lsl::MasterLslService,
@@ -19,7 +20,7 @@ use crate::{
     research_native_protocol::{input_mailbox::ProtocolInputMailbox, runtime::CompanionLease},
     research_recorder::RecorderService,
     research_timing::DeadlineClock,
-    research_workspace::{RunnerVideoBinding, WorkspaceService},
+    research_workspace::WorkspaceService,
 };
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -34,7 +35,7 @@ use std::{
 pub(crate) struct MasterWorker {
     prepared: PreparedMaster,
     workspace_id: String,
-    bindings: Vec<RunnerVideoBinding>,
+    bindings: Vec<MasterVideoBinding>,
     viewport: NativeMediaViewportPxV1,
     storage: MasterStorage,
     authority: InputAuthority,
@@ -70,7 +71,7 @@ impl MasterWorker {
     pub(crate) fn new(
         prepared: PreparedMaster,
         workspace_id: String,
-        bindings: Vec<RunnerVideoBinding>,
+        bindings: Vec<MasterVideoBinding>,
         viewport: NativeMediaViewportPxV1,
         mut storage: MasterStorage,
         authority: InputAuthority,
@@ -339,8 +340,8 @@ impl MasterWorker {
         submitted: bool,
     ) -> ResearchResult<()> {
         use super::typed_forms::FormAnswerValue;
-        if self.prepared.plan.version != 2 {
-            return Err(invalid("Typed answers require master version 2."));
+        if !matches!(self.prepared.plan.version, 2 | 3) {
+            return Err(invalid("Typed answers require master version 2 or 3."));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
         let step = self.current()?.clone();
@@ -424,21 +425,12 @@ impl MasterWorker {
         let binding = self
             .bindings
             .iter()
-            .find(|b| {
-                asset["assetId"] == b.asset_id
-                    && asset["sourceRelativePath"] == b.source_relative_path
-            })
+            .find(|b| b.matches(asset))
             .ok_or_else(|| {
                 invalid("The video occurrence has no exact native asset/location binding.")
             })?;
-        let grant = self.workspace.issue_native_media_grant(
-            &self.workspace_id,
-            &binding.workspace_file_id,
-            &binding.sha256,
-            binding.byte_length,
-            &binding.mime_type,
-        )?;
-        self.bound_file = Some(binding.workspace_file_id.clone());
+        let grant = binding.issue_grant(&self.workspace, &self.workspace_id)?;
+        self.bound_file = Some(binding.workspace_file_id().to_owned());
         let receipt = self.media.prepare(grant, self.viewport)?;
         self.fence = Some(NativeMediaCommandFenceV1 {
             session_id: receipt.session_id,
@@ -994,15 +986,30 @@ mod tests {
         });
     }
     #[test]
-    fn master_v2_requires_every_typed_and_likert_answer_before_advancing() {
+    fn master_v2_and_v3_require_every_typed_and_likert_answer_before_advancing() {
         use super::super::typed_forms::{FormAnswerValue, TypedChoice};
-        for language in ["en", "de"] {
+        for (version, source, language) in [
+            (
+                2,
+                include_str!("../../../test/fixtures/runner-master-v2-owner.canonical.json"),
+            ),
+            (
+                3,
+                include_str!("../../../test/fixtures/runner-master-v3-owner.canonical.json"),
+            ),
+        ]
+        .into_iter()
+        .flat_map(|(version, source)| {
+            ["en", "de"]
+                .into_iter()
+                .map(move |language| (version, source, language))
+        }) {
             let root =
                 std::env::temp_dir().join(format!("affect-master-v2-{}", uuid::Uuid::new_v4()));
             std::fs::create_dir(&root).unwrap();
             std::fs::create_dir(root.join("outputs")).unwrap();
             let prepared = PreparedMaster::read(
-                include_str!("../../../test/fixtures/runner-master-v2-owner.canonical.json"),
+                source,
                 "P001",
                 MasterSelector {
                     variant_id: "variant-1".into(),
@@ -1034,7 +1041,7 @@ mod tests {
             let storage =
                 MasterStorage::create(&root, &prepared, "run-typed-test", Value::Null, false)
                     .unwrap();
-            assert_eq!(storage.receipt["version"], 2);
+            assert_eq!(storage.receipt["version"], version);
             assert!(storage.receipt.get("participant").is_none());
             let output = root.join(storage.receipt["outputDirectory"].as_str().unwrap());
             let mut worker = legacy

@@ -6,9 +6,9 @@ export class NativeMasterProtocolAdapter {
   }
   async start(plan, request) {
     if (this.active) throw new Error("A master attempt is already active.");
-    if (![1, 2].includes(plan.version)) throw new Error("Unsupported master plan version.");
-    if (plan.version === 2 && (request.version !== 2 || request.participantId !== plan.participantId || Object.hasOwn(request, "participant"))) throw new Error("Master v2 Start requires its participant ID without legacy participant preparation.");
-    const receipt = await this.invoke(plan.version === 2 ? "research_runner_master_start_v2" : "research_runner_master_start", { request });
+    if (![1, 2, 3].includes(plan.version)) throw new Error("Unsupported master plan version.");
+    if ([2, 3].includes(plan.version) && (request.version !== plan.version || request.participantId !== plan.participantId || Object.hasOwn(request, "participant"))) throw new Error("Typed master Start requires its participant ID without legacy participant preparation.");
+    const receipt = await this.invoke(({1:"research_runner_master_start",2:"research_runner_master_start_v2",3:"research_runner_master_start_v3"}[plan.version]), { request });
     if (receipt?.schema !== "affect-runner-master-attempt" || receipt.version !== plan.version || receipt.recipeSourceByteSha256 !== plan.recipeSourceByteSha256
       || receipt.planIdentitySha256 !== plan.planIdentitySha256 || receipt.participantId !== plan.participantId || !/^run-[a-f0-9-]{36}$/u.test(receipt.runId)) {
       throw new Error("Native master Start did not return this exact plan and participant.");
@@ -47,13 +47,14 @@ export class NativeMasterProtocolAdapter {
       || status.attemptId !== this.receipt.attemptId || status.recipeSourceByteSha256 !== this.plan.recipeSourceByteSha256 || status.planIdentitySha256 !== this.plan.planIdentitySha256) throw new Error("Native master status does not match this attempt.");
   }
   async command(action) {
-    const status = await this.invoke(this.plan.version === 2 ? "research_runner_master_action_v2" : "research_runner_master_action", { runId: this.receipt.runId, action });
+    const args = { runId: this.receipt.runId, action };
+    const status = await this.invoke(({1:"research_runner_master_action",2:"research_runner_master_action_v2",3:"research_runner_master_action_v3"}[this.plan.version]), this.plan.version === 3 ? {request:{version:3,...args}} : args);
     this.assertStatus(status); this.status = status; return status;
   }
   async togglePause() { await this.command({ type: this.status?.phase === "paused" ? "resume" : "pause" }); }
   async finish() { await this.command({ type: "stop" }); await this.poll(); }
   questionnaireAnswers(detail) {
-    return this.plan.version === 2
+    return [2, 3].includes(this.plan.version)
       ? Object.entries(detail.answers).map(([itemId, value]) => ({ itemId, value: structuredClone(value) }))
       : Object.entries(detail.answers).map(([itemId, optionId]) => ({ itemId, optionId }));
   }

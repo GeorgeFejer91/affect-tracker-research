@@ -1,5 +1,6 @@
 //! Complete master consumption. The frozen package runtime/records stay separate.
 //! A plan is content interpretation, never a playback or acquisition attestation.
+pub(crate) mod bindings;
 pub(crate) mod commands;
 pub(crate) mod forms;
 pub(crate) mod information;
@@ -190,10 +191,11 @@ impl PreparedMaster {
         }
         append_forms(&mut steps, &selected, "afterSession")?;
         let version = loaded.recipe.version();
-        let algorithm = if version == 2 {
-            "master-sequence-v2"
-        } else {
-            "master-sequence-v1"
+        let algorithm = match version {
+            1 => "master-sequence-v1",
+            2 => "master-sequence-v2",
+            3 => "master-sequence-v3",
+            _ => return Err(invalid("Unsupported Runner master version.")),
         };
         let identity = json!({"schema":"affect-runner-master-plan","version":version,"algorithmVersion":algorithm,
             "recipeSourceByteSha256":loaded.canonical_source_byte_sha256,"participantId":participant_id,"selector":selector});
@@ -316,6 +318,49 @@ mod tests {
             plans.push(prepared.plan);
         }
         if let Ok(path) = std::env::var("AFFECT_RUNNER_V2_PLAN_FIXTURE") {
+            use std::io::Write;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+                .unwrap();
+            file.write_all(&crate::research_contracts::canonical_json(&plans, &[]).unwrap())
+                .unwrap();
+        }
+    }
+    #[test]
+    fn v3_plan_preserves_exact_owner_selection_and_versioned_identity() {
+        let source = include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json");
+        let selections: Vec<Value> = serde_json::from_str(include_str!(
+            "../../test/fixtures/runner-master-v3-owner-selections.canonical.json"
+        ))
+        .unwrap();
+        let mut plans = Vec::new();
+        for selected in selections {
+            let selector = MasterSelector {
+                variant_id: selected["variant"]["variantId"].as_str().unwrap().into(),
+                language_id: selected["language"]["languageId"].as_str().unwrap().into(),
+                language_selection_path: serde_json::from_value(
+                    selected["language"]["languageSelectionPath"].clone(),
+                )
+                .unwrap(),
+                presentation_target: "desktop-screen".into(),
+            };
+            let prepared = PreparedMaster::read(source, "P001", selector).unwrap();
+            assert_eq!(prepared.plan.version, 3);
+            assert_eq!(prepared.plan.algorithm_version, "master-sequence-v3");
+            assert_eq!(prepared.loaded.canonical_source_text, source);
+            assert_eq!(
+                crate::research_contracts::canonical_json(&prepared.plan.selected, &[]).unwrap(),
+                crate::research_contracts::canonical_json(&selected, &[]).unwrap()
+            );
+            assert_eq!(
+                prepared.plan.steps[0].payload["presentation"]["kind"],
+                "fields"
+            );
+            plans.push(prepared.plan);
+        }
+        if let Ok(path) = std::env::var("AFFECT_RUNNER_V3_PLAN_FIXTURE") {
             use std::io::Write;
             let mut file = std::fs::OpenOptions::new()
                 .write(true)
