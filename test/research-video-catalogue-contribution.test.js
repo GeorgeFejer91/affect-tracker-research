@@ -4,12 +4,22 @@ import test from "node:test";
 import {
   assetIdFromSha256,
   browserDisplayGeometry,
+  createVideoCatalogueContribution,
   createVideoCatalogueContributionV1,
+  createVideoCatalogueProducer,
   createVideoCatalogueProducerV1,
+  projectVideoDisplayGeometry,
+  projectVideoReferenceAliases,
   projectVideoDisplayGeometryV1,
   projectVideoReferenceAliasesV1,
   reviseVideoCatalogueContributionV1,
+  validateVideoCatalogueContribution,
   validateVideoCatalogueContributionV1,
+  validateVideoDisplayGeometry,
+  validateVideoDisplayGeometryV1,
+  videoAnnotationIdFromRelativePathV1,
+  videoRelativePathFromAnnotationIdV1,
+  workspaceStimuliToVideoCatalogueEntries,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "../site/src/research/video-catalogue-contribution.js";
 
@@ -25,6 +35,20 @@ function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annot
     byteLength: 1_024,
     durationMs: 12_345,
     geometry: browserDisplayGeometry({ videoWidth: 1_920, videoHeight: 1_080 }),
+  };
+}
+
+function nativeGeometry(overrides = {}) {
+  return {
+    status: "verified",
+    source: "native-gstplay-metadata",
+    displayWidthPx: 1_080,
+    displayHeightPx: 1_920,
+    displayAspect: { numerator: 9, denominator: 16 },
+    rotationDegrees: 90,
+    pixelAspectRatio: { numerator: 1, denominator: 1 },
+    metadataInterpretation: "explicit-orientation-and-square-pixel-snapshot",
+    ...overrides,
   };
 }
 
@@ -57,6 +81,96 @@ test("P1 catalogue identity, duration and oriented display geometry are canonica
 test("shared P1 fixture remains an exact canonical consumer boundary", async () => {
   const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
   assert.deepEqual(await validateVideoCatalogueContributionV1(fixture), fixture);
+});
+
+test("native GstPlay geometry retains explicit orientation and source pixel aspect metadata", async () => {
+  assert.deepEqual(validateVideoDisplayGeometry(nativeGeometry()), nativeGeometry());
+  const anamorphic = nativeGeometry({
+    displayWidthPx: 1_024,
+    displayHeightPx: 576,
+    displayAspect: { numerator: 16, denominator: 9 },
+    rotationDegrees: 0,
+    pixelAspectRatio: { numerator: 64, denominator: 45 },
+  });
+  assert.deepEqual(validateVideoDisplayGeometry(anamorphic), anamorphic);
+  for (const invalid of [
+    nativeGeometry({ rotationDegrees: null }),
+    nativeGeometry({ rotationDegrees: 45 }),
+    nativeGeometry({ pixelAspectRatio: null }),
+    nativeGeometry({ pixelAspectRatio: { numerator: 2, denominator: 2 } }),
+    nativeGeometry({ metadataInterpretation: "raw-stream-dimensions" }),
+  ]) assert.throws(() => validateVideoDisplayGeometry(invalid));
+  assert.throws(() => validateVideoDisplayGeometryV1(nativeGeometry()), /supported verified geometry source/u);
+});
+
+test("v2 path identities are NFC, reversible and distinguish delimiter-like path components", () => {
+  const cases = new Map([
+    ["stimuli/session-a/clip.mp4", "session-a_clip.mp4"],
+    ["stimuli/session_a/clip.mp4", "session%5Fa_clip.mp4"],
+    ["stimuli/-clip.mp4", "%2Dclip.mp4"],
+    ["stimuli/=clip.mp4", "%3Dclip.mp4"],
+    ["stimuli/percent%set/clip_final.webm", "percent%25set_clip%5Ffinal.webm"],
+    ["stimuli/Δοκιμή/映像.mp4", "Δοκιμή_映像.mp4"],
+  ]);
+  for (const [path, expected] of cases) {
+    assert.equal(videoAnnotationIdFromRelativePathV1(path), expected);
+    assert.equal(videoRelativePathFromAnnotationIdV1(expected), path);
+  }
+  assert.throws(() => videoRelativePathFromAnnotationIdV1("bad%2Fescape.mp4"), /noncanonical escape/u);
+  assert.throws(() => videoAnnotationIdFromRelativePathV1("stimuli/e\u0301/clip.mp4"), /NFC/u);
+  assert.throws(() => videoAnnotationIdFromRelativePathV1("stimuli/ clip.mp4"), /beneath stimuli/u);
+});
+
+test("v2 keeps byte-identical videos at distinct locations while sharing content identity", async () => {
+  const hash = "d".repeat(64);
+  const first = entry({ hash, path: "stimuli/session-a/clip.mp4", annotationId: "session-a_clip.mp4" });
+  const second = entry({ hash, path: "stimuli/session_a/clip.mp4", annotationId: "session%5Fa_clip.mp4" });
+  const catalogue = await createVideoCatalogueContribution({ revision: 3, entries: [second, first] });
+  assert.equal(catalogue.version, 2);
+  assert.equal(catalogue.annotationPolicy, "relative-path-reversible-v1");
+  assert.deepEqual(catalogue.entries.map(({ assetId }) => assetId), [first.assetId, first.assetId]);
+  assert.deepEqual(catalogue.entries.map(({ annotationId }) => annotationId), [
+    "session%5Fa_clip.mp4", "session-a_clip.mp4",
+  ]);
+  assert.deepEqual((await projectVideoReferenceAliases(catalogue)).references, [
+    { assetId: first.assetId, annotationId: "session%5Fa_clip.mp4" },
+    { assetId: first.assetId, annotationId: "session-a_clip.mp4" },
+  ]);
+  assert.deepEqual((await projectVideoDisplayGeometry(catalogue)).videos, [
+    { assetId: first.assetId, displayWidth: 1_920, displayHeight: 1_080 },
+  ]);
+  assert.deepEqual(await validateVideoCatalogueContribution(catalogue), catalogue);
+});
+
+test("current workspace projection ignores editable display text and derives location identity", () => {
+  const accepted = {
+    title: "A researcher's display name",
+    source: "workspace",
+    verification: "verified",
+    contractSource: {
+      kind: "workspaceFile",
+      relativePath: "stimuli/folder_name/video.final.mp4",
+      mimeType: "video/mp4",
+      sha256: "a".repeat(64),
+      byteLength: 1_024,
+      durationMs: 12_345,
+    },
+    displayGeometry: browserDisplayGeometry({ videoWidth: 1_920, videoHeight: 1_080 }),
+  };
+  assert.equal(workspaceStimuliToVideoCatalogueEntries([accepted])[0].annotationId,
+    "folder%5Fname_video.final.mp4");
+});
+
+test("current producer writes v2 and migrates an exact restored v1 on the next media refresh", async () => {
+  const historical = await createVideoCatalogueContributionV1({ revision: 9, entries: [entry()] });
+  const producer = createVideoCatalogueProducer();
+  assert.equal((await producer.restoreContribution(historical)).contribution.version, 1);
+  const currentEntry = {
+    ...entry({ annotationId: "folder_video.mp4" }),
+  };
+  const migrated = await producer.replaceEntries([currentEntry]);
+  assert.equal(migrated.contribution.version, 2);
+  assert.equal(migrated.contribution.revision, 10);
 });
 
 test("live workspace projection rejects incomplete or unsupported videos instead of shortening the catalogue", () => {

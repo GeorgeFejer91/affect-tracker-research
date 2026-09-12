@@ -365,6 +365,12 @@ file; follow the integration-owner collection procedure in the workflow.
   for domain preparation, separately from P7 confirmation/save.
 - Complete master codec/save/reopen evidence remains in progress with S7. This
   is not a proposal-only stop or a dependency on actual Runner implementation.
+- Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
+  resolver now uses P1's generic validator/projection. Actual owner V2 fixture
+  proves two locations sharing content retain both declarations while live and
+  saved XR reproduce one identical geometry, with no copied identity policy.
+  Historical V1 remains covered. Integration reserves shared live injection.
+  Separate-process receipts now cover both workspace and feedback versions.
 - Collected P5 live/native checkpoint `5c9d3df` through `3d9297f`. The actual
   controller now passes 43 XR/feedback assertions at each width, including full
   non-default V2 restore for all three renderers, saved halo invalidation and

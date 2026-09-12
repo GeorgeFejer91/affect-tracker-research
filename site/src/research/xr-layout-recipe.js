@@ -1,5 +1,5 @@
-import { validateWorkspaceContributionV1 } from "./workspace-contribution.js";
-import { projectVideoDisplayGeometryV1 } from "./video-catalogue-contribution.js";
+import { validateWorkspaceContribution } from "./workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
@@ -43,8 +43,8 @@ export async function resolveSavedXrLayoutContribution(profile, {
   const validated = checkedProfile(profile, selectedTarget);
   const savedWorkspace = structuredClone(workspaceContribution);
   const savedFeedback = validateFeedbackContribution(feedbackContribution);
-  const workspace = await validateWorkspaceContributionV1(savedWorkspace);
-  const projection = await projectVideoDisplayGeometryV1(workspace.videoCatalogue);
+  const workspace = await validateWorkspaceContribution(savedWorkspace);
+  const projection = await projectVideoDisplayGeometry(workspace.videoCatalogue);
   if (projection.videos.length === 0) {
     throw new XrLayoutError("dependencies", "media-missing", "The XR experiment layout requires at least one declared video.");
   }
