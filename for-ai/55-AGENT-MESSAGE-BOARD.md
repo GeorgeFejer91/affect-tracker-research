@@ -4446,3 +4446,51 @@ Native and full composition evidence deferred to Main. Validator correction
 - Baseline18/18; final focused28/28. Broader1029/1030; sole unchanged native-effects
   invocation allowlist failure routed to Main. API and evidence limits in
   docs/planner-p2-prepared-restoration.md. No other owner or schema changes.
+
+### 20260912-root-core9-native-broker
+
+- Main allocated native core-nine CLI operation binding to root, Backend
+  Verification on `codex/segment-cli-native-broker`, isolated
+  `D:/GitHub/affect-tracker-research-cli-native-broker-root`, base `a66c189`.
+- Own `research_planner_authoring.rs`, its wire/operation submodules, focused
+  native tests and documentation. Main retains lib command registration,
+  frontend bridge and app wiring; S7 owns additive supported file reads/writes
+  and the exact `NativeEffect::WriteSupportedRecipe` service variant.
+- Keep the complete original external request identity before replacing CLI
+  paths with one-use purpose-bound grants. Bind native effects to the exact
+  pending request, purpose, non-path IDs, revision and cancellation. Closed
+  native effect/revision IPC uses existing role/window authorization.
+- Reuse the collected grant and effect services; never hold the broker state
+  lock during filesystem work. Retain compact possibly-changed/acknowledged
+  outcomes separately from bounded pending payloads. Changed request reuse
+  rejects, exact retry never repeats a native effect, and lost output does not
+  imply that no file/workspace change occurred.
+- Verify actual temporary-directory effects, denied/malformed/canceled/stale
+  calls, concurrency/retention/admission and original identity preservation.
+  No new unsafe boundary, remote listener, schema/compiler authority, native
+  playback qualification or completed user mock is implied by this pass.
+- Result: all 27 actual-broker focused checks pass, including real temporary
+  workspace/source/media storage, typed master file save/reopen, pending/exact
+  retries, grant/ID/revision checks, capacity and late saved-file outcomes.
+  Synthetic media checks assert storage only. Log:
+  `D:/GitHub/.affect-checks/root-native-broker-final.log`.
+- S3 independently reviewed read-only and identified cancellation starvation
+  under a full four-command work queue. Fixed with one bounded cancellation
+  slot and matching output capacity; exact regression passes. S3 verified the
+  fix in source with no remaining finding from this bounded review.
+- Main approved two temporary test-only module declarations in `lib.rs` because
+  Cargo also compiles the production library. They are excluded from this
+  owner deliverable. Main still owns real registration of the CLI grant/effect
+  modules and both IPC commands. Do not claim final native CLI or mock export
+  from this source-level/service verification.
+- Exact internal IPC, public-operation mapping, returned basename/receipts,
+  retention limits and process-loss caveats:
+  [native CLI broker](../docs/planner-native-cli-broker.md).
+- Final rustfmt/diff checks and focused Clippy `-D clippy::all` pass. The
+  unregistered production effect commands account for unused-code warnings;
+  the subset harness retains one existing native-media import warning. No
+  warnings were suppressed in production source. Clippy log:
+  `D:/GitHub/.affect-checks/root-native-broker-clippy.log`.
+- Excluded test composition is
+  `D:/GitHub/.affect-checks/root-native-broker-test-composition.patch`, SHA-256
+  `f2cc3efbefe55315bf2db9457ef84649e02687117e0d2109edae2f3105f21cd0`.

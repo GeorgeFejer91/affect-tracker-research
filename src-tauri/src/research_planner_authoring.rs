@@ -1,7 +1,15 @@
+mod effects;
+mod execution;
+#[cfg(test)]
+mod native_tests;
 mod wire;
 
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_planner_cli_io::PlannerCliIoGrants;
+use crate::research_workspace::WorkspaceService;
+use effects::{failure, NativeLedger};
+pub(crate) use effects::{NativeRequest, NativeResult, RevisionNotice};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, Read, Write};
@@ -9,9 +17,14 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State, WebviewWindow};
+use uuid::Uuid;
 use wire::{parse_command, PlannerCommand, PlannerResponse, MAX_FRAME_BYTES};
+use wire::{Consequence, PlannerAction};
 
 const MAX_PENDING: usize = 4;
+// One bounded control slot lets cancellation enter while all work slots are
+// occupied. Its response has a matching reserved output-channel slot.
+const MAX_ADMITTED: usize = MAX_PENDING + 1;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(120);
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(120);
 const IDLE_TIMEOUT: Duration = Duration::from_secs(300);
@@ -26,6 +39,7 @@ struct BrokerState {
     closed: bool,
     output_pending: usize,
     last_activity: Instant,
+    native: NativeLedger,
 }
 
 /// An explicitly invoked CLI owns inherited stdin/stdout and one hidden Planner.
@@ -39,11 +53,12 @@ pub(crate) struct PlannerAuthoringBroker {
     output: mpsc::SyncSender<Value>,
     receiver: Mutex<Option<mpsc::Receiver<Value>>>,
     exit_status: AtomicI32,
+    grants: Mutex<Option<PlannerCliIoGrants>>,
 }
 
 impl PlannerAuthoringBroker {
     pub fn new(enabled: bool) -> Self {
-        let (output, receiver) = mpsc::sync_channel(MAX_PENDING);
+        let (output, receiver) = mpsc::sync_channel(MAX_ADMITTED);
         Self {
             enabled,
             created: Instant::now(),
@@ -57,12 +72,14 @@ impl PlannerAuthoringBroker {
                 closed: false,
                 output_pending: 0,
                 last_activity: Instant::now(),
+                native: NativeLedger::default(),
             }),
             wake: Condvar::new(),
             output,
             receiver: Mutex::new(Some(receiver)),
             // Fail closed until accepted EOF work and replies fully drain.
             exit_status: AtomicI32::new(2),
+            grants: Mutex::new(None),
         }
     }
 
@@ -124,6 +141,7 @@ impl PlannerAuthoringBroker {
         }
         // Claim completion and reserve its output under ONE lock. A concurrent
         // duplicate cannot publish twice, and EOF cannot race the final reply.
+        state.native.complete(&response.request_id)?;
         state.pending.remove(&response.request_id);
         state.revision = state.revision.max(response.revision);
         state.output_pending += 1;
@@ -167,6 +185,12 @@ impl PlannerAuthoringBroker {
             state.closed = true;
             state.queue.clear();
             state.pending.clear();
+            state.native.close();
+        }
+        if let Ok(mut grants) = self.grants.lock() {
+            if let Some(grants) = grants.as_mut() {
+                grants.close();
+            }
         }
         self.wake.notify_all();
     }
@@ -305,6 +329,7 @@ impl PlannerAuthoringBroker {
                 "Use the current ready receipt's session identity.",
             ));
         }
+        state.native.admit(&request)?;
         if state.pending.contains_key(&request.request_id)
             || state
                 .queue
@@ -316,15 +341,29 @@ impl PlannerAuthoringBroker {
                 "This command is still in flight.",
             ));
         }
-        if state.queue.len() + state.pending.len() >= MAX_PENDING {
+        let pending_count = state.queue.len() + state.pending.len();
+        let is_cancel = matches!(request.action, PlannerAction::Cancel { .. });
+        if pending_count >= MAX_ADMITTED || (pending_count >= MAX_PENDING && !is_cancel) {
             return Err(CommandError::new(
                 "busy",
                 "The bounded authoring queue is full.",
             ));
         }
+        let canceled = if let PlannerAction::Cancel { request_id } = &request.action {
+            state.native.cancel(request_id);
+            Some(request_id.clone())
+        } else {
+            None
+        };
         state.queue.push_back(request);
         state.last_activity = Instant::now();
         drop(state);
+        if let Some(id) = canceled.and_then(|id| Uuid::parse_str(&id).ok()) {
+            let mut grants = self.grants.lock().map_err(CommandError::io)?;
+            if let Some(grants) = grants.as_mut() {
+                grants.revoke_request(id);
+            }
+        }
         self.wake.notify_all();
         Ok(())
     }
@@ -339,7 +378,44 @@ impl PlannerAuthoringBroker {
                 state
                     .pending
                     .insert(request.request_id.clone(), Instant::now());
-                return Ok(Some(request));
+                let denied = state.native.denied(&request.request_id);
+                drop(state);
+                if let Some(response) = denied {
+                    self.reserve_completion(&response)?;
+                    self.send_reserved_output(
+                        serde_json::to_value(response).map_err(CommandError::io)?,
+                    )?;
+                } else {
+                    match self.forward_request(&request) {
+                        Ok(forwarded) => return Ok(Some(forwarded)),
+                        Err(error) => {
+                            let response = PlannerResponse {
+                                schema: "affect-research-planner-command-result".into(),
+                                version: 1,
+                                session_id: request.session_id.clone(),
+                                request_id: request.request_id.clone(),
+                                status: if error.code == "canceled" {
+                                    "canceled"
+                                } else {
+                                    "rejected"
+                                }
+                                .into(),
+                                revision: self.lock()?.revision,
+                                result: Value::Null,
+                                issues: vec![
+                                    json!({"owner":null,"field":null,"code":error.code,"message":error.message}),
+                                ],
+                            };
+                            self.lock()?.native.retain_denial(&response)?;
+                            self.reserve_completion(&response)?;
+                            self.send_reserved_output(
+                                serde_json::to_value(response).map_err(CommandError::io)?,
+                            )?;
+                        }
+                    }
+                }
+                state = self.lock()?;
+                continue;
             }
             if state.eof {
                 return Ok(None);
@@ -350,6 +426,52 @@ impl PlannerAuthoringBroker {
                 .map_err(CommandError::io)?
                 .0;
         }
+    }
+
+    fn forward_request(&self, request: &PlannerCommand) -> ResearchResult<PlannerCommand> {
+        let PlannerAction::Perform {
+            operation,
+            arguments,
+        } = &request.action
+        else {
+            return Ok(request.clone());
+        };
+        let binding = {
+            let state = self.lock()?;
+            if let Some(forwarded) = state.native.forwarded(&request.request_id) {
+                return Ok(forwarded);
+            }
+            if state.closed || state.revision != request.expected_revision.unwrap_or(u64::MAX) {
+                return Err(failure(
+                    "stale_revision",
+                    "Read the current authoring revision before native work.",
+                ));
+            }
+            state.native.binding(request)?
+        };
+        let operation = Consequence::parse(operation, arguments)?;
+        let grant = match operation.selection() {
+            Some(selection) => {
+                // The grant helper performs path inspection. It never runs
+                // under the broker state lock or owns an editor draft.
+                let mut grants = self.grants.lock().map_err(CommandError::io)?;
+                let grants =
+                    grants.get_or_insert_with(|| PlannerCliIoGrants::new(binding.session_id));
+                Some(grants.issue(binding, selection)?.grant_id)
+            }
+            None => None,
+        };
+        let forwarded = operation.forward(request, grant)?;
+        let mut state = self.lock()?;
+        if state.closed {
+            return Err(failure(
+                "session_closed",
+                "Planner CLI closed during selection.",
+            ));
+        }
+        state.native.binding(request)?;
+        state.native.remember_forward(forwarded.clone(), grant)?;
+        Ok(forwarded)
     }
 }
 
@@ -364,6 +486,33 @@ fn authorize(
         ));
     }
     Ok(())
+}
+
+#[tauri::command]
+pub(crate) fn research_planner_authoring_revision(
+    window: WebviewWindow,
+    role: State<'_, DesktopRole>,
+    broker: State<'_, Arc<PlannerAuthoringBroker>>,
+    request: RevisionNotice,
+) -> ResearchResult<()> {
+    authorize(&window, &role, &broker)?;
+    broker.notice_revision(request)
+}
+
+#[tauri::command]
+pub(crate) async fn research_planner_authoring_effect(
+    window: WebviewWindow,
+    role: State<'_, DesktopRole>,
+    broker: State<'_, Arc<PlannerAuthoringBroker>>,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    request: NativeRequest,
+) -> ResearchResult<NativeResult> {
+    authorize(&window, &role, &broker)?;
+    let broker = Arc::clone(&broker);
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || broker.native_effect(&workspace, request))
+        .await
+        .map_err(CommandError::io)?
 }
 
 #[tauri::command]
@@ -597,14 +746,14 @@ mod tests {
     #[test]
     fn output_backpressure_is_bounded_and_does_not_leak_a_reservation() {
         let broker = broker();
-        for _ in 0..MAX_PENDING {
+        for _ in 0..MAX_ADMITTED {
             broker.send_output(Value::Null).unwrap();
         }
         assert_eq!(
             broker.send_output(Value::Null).unwrap_err().code,
             "output_busy"
         );
-        assert_eq!(broker.lock().unwrap().output_pending, MAX_PENDING);
+        assert_eq!(broker.lock().unwrap().output_pending, MAX_ADMITTED);
     }
 
     #[test]
