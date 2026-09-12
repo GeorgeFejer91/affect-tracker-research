@@ -39,6 +39,7 @@ const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["questionnaires", "Languages & Study Assets"],
   ["stimuli", "Experiment Plan & Stimuli"],
+  ["layout", "Screen & Layout"],
   ["feedback", "Flubber & Controls"],
   ["review", "Review & Start"],
 ];

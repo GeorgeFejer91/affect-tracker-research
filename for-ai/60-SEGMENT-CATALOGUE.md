@@ -312,6 +312,15 @@ has an explicit outcome.
 [preview](../site/src/research/preview.js), [UI](../site/src/research/app.js).
 **Boundary:** P4 owns geometry, not colors, input or animation parameters.
 
+**Pending P4 branch evidence, 2026-09-11:** `codex/segment-p4-screen-layout`
+contains a non-exportable UI draft for P4-02/P4-04/P4-06: numeric screen/reference/
+offset controls, a whole-screen miniature, proposed measured unit conversion and
+pure fit/overlap/clipping fixtures. Q08 choices remain proposals. The application
+does not yet consume P1 geometry or P5 bounds; synthetic inputs are confined to
+non-shipping verification fixtures. No accepted JSON contribution, persistence,
+runtime application or export/reload is implemented, so completion boxes above
+remain unchanged. See the [P4 evidence ledger](./40-ROADMAP.md#p4-screen--layout--non-exportable-design-draft).
+
 ## P5 — Flubber & Controls
 
 **Purpose:** one persistent editor for Flubber appearance/control, with Advanced

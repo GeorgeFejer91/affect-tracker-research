@@ -24,6 +24,7 @@ export const SETUP_SECTIONS = Object.freeze([
   Object.freeze({ id: "workspace", label: "Workspace & Libraries" }),
   Object.freeze({ id: "questionnaires", label: "Languages & Study Assets" }),
   Object.freeze({ id: "stimuli", label: "Experiment Plan & Stimuli" }),
+  Object.freeze({ id: "layout", label: "Screen & Layout" }),
   Object.freeze({ id: "feedback", label: "Flubber & Controls" }),
   Object.freeze({ id: "review", label: "Review & Start" }),
 ]);

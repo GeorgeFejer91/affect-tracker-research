@@ -317,6 +317,54 @@ file; follow the integration-owner collection procedure in the workflow.
 - Deferred claims: current installed app, physical/native input, backend
   qualification, Runner, publishing and whole-Planner completion.
 
+### 20260911-p4-layout-compactness
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization, explicitly allocated
+  by the researcher's cross-task rendered-UI compactness follow-up. Apply
+  uncodixfy within the existing P4-02/P4-04/P4-06 non-exportable draft only.
+- Branch `codex/segment-p4-layout-compact`, isolated worktree
+  `D:/GitHub/affect-tracker-research-screen-layout-polish`; accepted base
+  `bed461b`, composed with ready P4 feature `3094bb8` at `3529787`. Original
+  feature handoff remains untouched. Reviewed composition keeps both owners'
+  initialization/teardown, all preview invalid-field exclusions and pane ID.
+- No additional researcher input, accepted JSON contribution or changed geometry
+  semantics. P1/P5 remain unavailable producers; Q08/export/Run stay deferred.
+  Current source has repeated draft/provenance text, boxed form groups and
+  full-width unit controls; inspect actual rendering before choosing changes.
+- Allowed files: P4 view/editor copy, P4-only CSS, dedicated background screenshot
+  harness and owned evidence entries. Do not alter preview effects, other
+  sections, contracts, shared application behavior or native authority.
+- Baseline: 49/49 focused P4/UI/divider checks on the changed composed candidate.
+  Collect actual `bootResearchUi` screenshots at desktop and minimum Setup-pane
+  widths with populated, unavailable-media and invalid-number states. Inspect
+  labels/errors/focus/target sizes, scroll reachability and redundancy; record
+  residuals without claiming installed or physical accessibility qualification.
+- Integration and catalogue tasks receive the separate ready polish commit and
+  screenshot receipts; do not delay feature collection for this visual follow-up.
+- Result: two-column dimension/centre/offset pairs, aligned numeric controls,
+  unboxed fieldsets, shorter spacing and miniature, missing-input notice directly
+  below the diagram, one draft/export notice and short status, conventions in a
+  disclosure, complete shape legend and reference strokes painted over video.
+  Fixed a rendered invalid-border specificity conflict in P4's scoped CSS.
+- Evidence: final 459/459 JavaScript tests, desktop 8-file frontend closure,
+  164/164 headless Edge assertions in 12 actual `bootResearchUi` screenshots.
+  Each application frame is 1280×900; Setup panes are 795px and 432px including
+  scrollbars. Captures cover top/middle/footer, measured physical values,
+  missing producers, invalid numbers and explicitly synthetic portrait/bounds.
+  The portrait case injects fixtures only in the harness-served bootstrap module;
+  production source and settings contain none. Numeric focus, visible invalid
+  borders, paired rows, target/text size and footer reachability are checked.
+- Receipts/screenshots: `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`;
+  reproducible with `scripts/qualification/screen-layout-compact.mjs`. Inspected
+  desktop top, narrow middle/footer/error/physical and portrait screenshots.
+  Default editor height fell from 1415→1150px desktop and 1755→1304px narrow.
+- Residuals: vertical scrolling is still required; header may wrap at the minimum
+  pane width. Q08, actual P1/P5 composition and accepted save/export remain open.
+  P5 reports retained normalized fields under **Legacy package layout**, with
+  explicit legacy copy; its ready branch, not this P4 pass, owns that change.
+  No installed Tauri, physical measurement, assistive-technology or runtime claim.
+  Writers stop after handoff; the integration owner reviews the combined UI.
+
 ### 20260911-integration-preview-cleanup
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
@@ -664,6 +712,43 @@ file; follow the integration-owner collection procedure in the workflow.
   its spreadsheet/catalogue and authoring integration, not Runner completion.
   Integration acknowledged continued isolated ownership; no main checkout writes.
   The earlier native build failed from disk exhaustion, not a passing native gate.
+
+### 20260911-p4-screen-layout-draft
+
+- Owner: **S4**, P4 `layout`; **ready**, UI Finalization. The researcher's
+  cross-task coordination explicitly allocated an independent non-exportable
+  draft while Q08/pass confirmation for persisted geometry remains pending.
+- Branch: `codex/segment-p4-screen-layout`; worktree
+  `D:/GitHub/affect-tracker-research-screen-layout`; initial base `305d3ac`.
+  Merged the integration owner's documentation checkpoint `6be0a79` normally;
+  preserved the original P4 entry and inherited instruction snapshot externally.
+  Inherited instruction changes are not P4 implementation or product approval.
+- Scope: pure proposed geometry, numeric draft editor and whole-screen miniature.
+  Q08 conventions stay labelled proposals; no accepted contribution, package,
+  Start, Run, persistence, acquisition or qualification change. P4-02/P4-04/
+  P4-06 receive draft evidence only; no P4 capability is marked complete.
+- Inputs: researcher-entered draft screen/reference/size/offset/calibration;
+  P1 geometry and P5 envelope are explicit unavailable dependencies. Synthetic
+  media/envelopes live only in non-shipping verification fixtures. P1's proposed
+  verified display dimensions/revision and P5's proposed saved-v1 envelope are
+  acknowledged but are not yet integrated or treated as frozen contracts here.
+- Shared seams: `ui-contracts.js` section registry; `ui-view.js` section mount
+  and summary; `app.js` initialization/teardown and generic-form draft isolation;
+  scoped `research.css`. New draft model/view/editor modules own all geometry.
+  P5 and P7 were notified; no other segment calculation or native owner is edited.
+  Legacy Input/Visual/Advanced removal stays P5-owned; Experiment removal stays
+  with integration after retained-value handoff. Counts now derive from registry.
+- Evidence: baseline 54/54 focused checks; final 437/437 JavaScript tests,
+  91/91 isolated headless Edge assertions in four scenarios, inspected application
+  and narrow screenshots, desktop frontend build/eight-file closure. Mixed-ratio
+  containment, fixed centres, conversion, invalid/overlap/clipping cases, package
+  isolation, reflow and semantic checks pass. Reproduce with the committed
+  `scripts/qualification/screen-layout-draft.mjs`; local receipts live under
+  `D:/GitHub/.affect-preview-checks/p4-screen-layout-20260911`.
+- Requested action: integration owner collects the clean P4 commit and reconciles
+  shared mounts with P5/P7. Physical calibration, interactive accessibility,
+  native/Runner, real-media composition and publication gates remain unverified.
+  Canonical checkout was not modified; writers stop after the ready handoff.
 
 ### 20260911-roadmap-agent-coordination-audit
 

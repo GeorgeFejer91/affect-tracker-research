@@ -2,6 +2,7 @@ import { createDefaultResearchSettings } from "./contracts.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
 import { SETUP_SECTIONS } from "./ui-contracts.js";
 import { feedbackAppearanceMarkup, feedbackInputMarkup, feedbackAdvancedMarkup } from "./feedback-controls-view.js";
+import { screenLayoutDraftMarkup } from "./screen-layout-view.js";
 
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
@@ -32,6 +33,7 @@ export { COLOR_FIELDS, describeInputToken } from "./feedback-controls-view.js";
 const SECTION_SUMMARIES = Object.freeze({
   workspace: "Work folder, videos, project JSON",
   stimuli: "Externally ordered video protocol",
+  layout: "Proposed layout · not exportable",
   questionnaires: "Languages, demographics, questionnaires",
   feedback: "Appearance, input and animation",
   review: "Resolve blocking checks",
@@ -506,6 +508,7 @@ function reviewSection() {
 
 const SECTION_CONTENT = Object.freeze({
   workspace: workspaceSection,
+  layout: screenLayoutDraftMarkup,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
   review: reviewSection,

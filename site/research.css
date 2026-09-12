@@ -23,6 +23,59 @@
   --control-height: 2.45rem;
 }
 
+/* P4's temporary screen model has no package or Run authority. */
+.screen-layout-draft {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.screen-layout-draft p,
+.screen-layout-draft output,
+.screen-layout-draft label,
+.screen-layout-draft li {
+  overflow-wrap: anywhere;
+}
+
+.screen-layout-draft p { margin: 0; }
+.screen-layout-draft fieldset { margin: 0; min-width: 0; padding: 0; border: 0; }
+.screen-layout-draft legend { padding: 0; margin-bottom: 8px; }
+.screen-layout-draft label { display: block; min-width: 0; }
+.screen-layout-draft label > input,
+.screen-layout-draft label > select { margin-top: 4px; }
+.layout-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+.screen-layout-draft .layout-fields label { display: grid; grid-template-rows: 1fr auto; }
+.screen-layout-draft [data-layout-unit] { color: var(--muted); }
+.screen-layout-draft summary { cursor: pointer; padding-block: 6px; }
+.layout-units { max-width: 22rem; }
+.layout-calibration .layout-fields { margin-block: 8px 12px; }
+.screen-layout-draft .layout-check { display: flex; align-items: flex-start; gap: 8px; min-height: 24px; margin-bottom: 8px; }
+.layout-check input { flex: 0 0 auto; }
+.layout-miniature { min-width: 0; background: var(--surface-quiet); padding: 4px; border: 1px solid var(--border-strong); }
+.layout-miniature svg { display: block; width: 100%; max-height: 240px; overflow: hidden; }
+.layout-miniature svg * { vector-effect: non-scaling-stroke; }
+.layout-screen { fill: var(--surface-quiet); stroke: var(--text); stroke-width: 2; }
+.layout-reference { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 7 5; }
+.layout-video { fill: var(--surface-raised); stroke: var(--text); stroke-width: 1.5; }
+.layout-offset { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 4; }
+.layout-feedback { fill: none; stroke: var(--accent); stroke-width: 2; }
+.layout-maximum { fill: none; stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.layout-centre { fill: none; stroke: var(--text); stroke-width: 1.5; }
+.layout-legend,
+.layout-readout { font-size: 0.9rem; color: var(--muted); }
+.layout-status { color: var(--warning); }
+.layout-errors { margin: 0; padding-left: 20px; color: var(--danger); }
+#screen-layout-editor [aria-invalid="true"] { border-color: var(--danger); }
+.screen-layout-draft button { justify-self: start; }
+.screen-layout-draft :is(input, select, button, summary):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 380px) { .layout-fields { grid-template-columns: minmax(0, 1fr); } }
+@media (forced-colors: active) {
+  .layout-screen, .layout-video { fill: Canvas; stroke: CanvasText; }
+  .layout-reference, .layout-offset, .layout-maximum, .layout-centre { stroke: CanvasText; }
+  .layout-feedback { stroke: Highlight; }
+  .layout-errors, .layout-status, .layout-readout, .layout-legend { color: CanvasText; }
+}
+
 * {
   box-sizing: border-box;
 }
