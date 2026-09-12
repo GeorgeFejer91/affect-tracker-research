@@ -93,13 +93,46 @@ editor `save(familyId/language)` is a UI action that catches errors; it is **not
 an exact CLI side-effect receipt. Integration must use a guarded owner save seam
 and the native storage acknowledgement before claiming that CLI action works.
 
-The current table controls already expose title, instructions, attribution,
+The table controls expose title, version, instructions, attribution,
 option count, answer labels/codes, required values and label repetition. CSV/TXT/
 JSON imports and whole/range Excel paste remain source authoring routes, not
-raw master-JSON editing. The explicitly allocated E2E-UI follow-up adds direct
-graph/terminal-route/module placement controls and advanced identity/subscale
-controls. Until integrated and exercised, richer CLI edits are adapter evidence,
-not full GUI parity or native CLI/Runner correspondence.
+raw master-JSON editing. Compact advanced settings expose item IDs, subscales,
+option IDs, item/option order and per-item option add/remove. Questionnaire and
+family identities are established by standardized source import or blank-family
+creation; they are not rewritten as part of participant wording edits.
+
+`createQuestionnaireRoutingEditor({root,readContext,applyEdits})` is the P2-local
+view. Main injects a Section 2 mount and invokes `sync()` on external owner
+changes, `destroy()` at teardown. The view keeps only transient expansion/busy/
+error state, reads the same context as the adapter and submits closed edits to
+the same shared session. It never supplies raw source hashes or a JSON editor.
+`applyEdits(edits,{isCurrent,signal})` must honor the view's lifetime guard in
+addition to the session/owner revision guard; otherwise late disposal could
+still apply a pending gesture. It may return an applied/incomplete result or
+throw. Unknown stored selection values remain explicitly unavailable in the UI.
+
+Graph gestures edit question/option IDs, prompts and labels, wrap an existing
+route or the root in a new question, move routes between questions, reorder
+questions/options and flatten a question into its parent. Existing strict tree
+validation rejects cycles, duplicate/missing leaves and ID collisions before
+any change. Languages expose IDs, tags, labels and order; changing a tag creates
+missing-asset work, never a translation. Modules expose accepted source
+references, before/afterSession placement, ID, global order and add/remove.
+Each terminal language has a separate explicit module order/add/remove list.
+
+`editor.saveAuthoringQuestionnaire(questionnaireId,{isCurrent,signal})` reuses the
+normal source-save flow but throws failures and returns
+`{questionnaireId,definitionSha256,sourceReceipt}`. The existing onSave callback
+receives an optional second guard; the host checks it before native dispatch and
+adoption and returns the actual storage acknowledgement. A null sourceReceipt
+means the callback returned no acknowledgement, not a fabricated successful
+write. Cancellation after a returned receipt retains it as `error.sourceReceipt`.
+Native failures with possible side effects must likewise retain their receipts.
+The UI's existing `save(key)` remains compatible and catches/display errors.
+
+The owner view has focused Chrome event/semantic and screenshot checks; shared
+app mounting, real native CLI invocation and actual Runner correspondence remain
+integration evidence, not claims established by the isolated owner harness.
 
 Bundled MAIA-2 and rights-gated TAS source availability are independent of the
 adapter. Never invent a missing translation, permission, reverse-code scheme,

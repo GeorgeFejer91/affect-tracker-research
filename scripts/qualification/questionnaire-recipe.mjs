@@ -10,14 +10,14 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 const execute = promisify(execFile);
-const [browser, destination, width = "1280"] = process.argv.slice(2);
+const [browser, destination, width = "1280", entryPoint = "test/fixtures/questionnaire-recipe-browser.js"] = process.argv.slice(2);
 assert.ok(browser && destination && /^\d{3,4}$/u.test(width), "Supply browser, isolated output and optional width.");
 const output = resolve(destination); await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
 const hash = value => createHash("sha256").update(value).digest("hex");
 const git = async (...args) => (await execute("git", args, { windowsHide: true })).stdout.trim();
 const commit = await git("rev-parse", "HEAD"), status = await git("status", "--porcelain");
-const bundle = await build({ entryPoints: ["test/fixtures/questionnaire-recipe-browser.js"], bundle: true,
+const bundle = await build({ entryPoints: [entryPoint], bundle: true,
   write: false, metafile: true, format: "iife", target: "chrome105", logLevel: "silent", loader: { ".csv": "text" },
   define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
 const inputs = [...new Set([...Object.keys(bundle.metafile.inputs), "site/research.css", "scripts/qualification/questionnaire-recipe.mjs"])].sort();

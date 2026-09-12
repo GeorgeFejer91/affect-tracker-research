@@ -3,6 +3,7 @@ import {
   applyQuestionnaireGridPaste, setQuestionnaireGridCell, setOptionCount,
   questionnaireGridColumns, questionnaireGridRows, serializeQuestionnaireGrid,
   appendSheetRows, removeSheetRow, reverseSheetRowCodes,
+  replaceQuestionnaireSheetDraft,
 } from "./questionnaire-sheet.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
 import { createQuestionnairePresentationV1, validateQuestionnairePresentationV1,
@@ -28,7 +29,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 });
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
-      repeatLabels: 1, rawOptionCount: null, optionsOpen: false, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
+      repeatLabels: 1, rawOptionCount: null, optionsOpen: false, metadataOpen: false, metadataItem: 0, layout: "labels-and-codes", selection: null, presetToken: Symbol("questionnaire-slot"),
       sourceDefinitionHash: null, sourceBytes: null, authoringResult: null, undo: null };
   }
 
@@ -119,6 +120,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         <div class="sheet-actions"><button type="button" data-sheet-action="add-row">Add row</button><button type="button" data-sheet-action="copy-table">Copy whole table</button><button type="button" data-sheet-action="upload">Import file</button><button type="button" data-sheet-action="template">Download table template</button><button type="button" data-sheet-action="undo" ${entry.undo ? "" : "disabled"}>Undo edit</button></div>
         <details class="sheet-options" ${entry.optionsOpen ? "open" : ""}><summary>Questionnaire settings &amp; paste help</summary><div class="sheet-options-content">
           <label class="field"><span>Questionnaire title</span><input type="text" data-sheet-meta="title" value="${escape(sheet.title)}" maxlength="500"></label>
+          <label class="field"><span>Questionnaire version</span><input type="text" data-sheet-meta="questionnaireVersion" value="${escape(sheet.questionnaireVersion)}" maxlength="120"></label>
           <label class="field"><span>Instructions for participants</span><textarea data-sheet-meta="instructions" rows="2" maxlength="8000">${escape(sheet.instructions)}</textarea></label>
           <label class="field"><span>Answers for all items</span><select data-sheet-required-all><option value="" selected>No bulk change</option><option value="required">Required</option><option value="optional">Optional</option></select></label>
           <label class="field"><span>Repeat answer labels</span><select data-sheet-repeat><option value="1" ${entry.repeatLabels === 1 ? "selected" : ""}>Above every item</option><option value="5" ${entry.repeatLabels === 5 ? "selected" : ""}>Every 5 items</option><option value="10" ${entry.repeatLabels === 10 ? "selected" : ""}>Every 10 items</option></select></label>
@@ -127,11 +129,36 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           <p class="field-help">Files are kept in this questionnaire’s language folder inside the project’s assets folder.</p>
           <p class="sheet-paste-help">Paste headers into the first cell to replace the whole table and set its option count; without headers, only the pasted range changes. Required accepts true or false. Codes-only leaves answer labels unchanged. Shift-click or Shift+arrow selects a range; Ctrl+C copies it; Ctrl+A selects all cells.</p>
           <p class="sheet-paste-help">Replacement tables retain item identity and subscale only for unambiguous matches. New items receive new identities. The final recipe retains full metadata.</p>
+          ${metadataMarkup(entry)}
         </div></details>
-        <div class="sheet-footer"><span>Before the video task</span><div class="sheet-actions"><button type="button" data-sheet-action="preview">Preview</button><button type="button" data-sheet-action="save" class="primary-action" ${!entry.dirty ? "disabled" : ""}>Save questionnaire</button></div></div>
+        <div class="sheet-footer"><span>Placement is set under questionnaire modules.</span><div class="sheet-actions"><button type="button" data-sheet-action="preview">Preview</button><button type="button" data-sheet-action="save" class="primary-action" ${!entry.dirty ? "disabled" : ""}>Save questionnaire</button></div></div>
         <div class="sheet-family-actions"><button type="button" data-sheet-action="move-up" ${index < context.languages.length ? "disabled" : ""}>Move questionnaire up</button><button type="button" data-sheet-action="move-down" ${index >= (context.families.length - 1) * context.languages.length ? "disabled" : ""}>Move questionnaire down</button><button type="button" data-sheet-action="remove">Remove questionnaire${context.languages.length > 1 ? " (all languages)" : ""}</button></div>
       </fieldset>
     </details>`;
+  }
+
+  function metadataMarkup(entry) {
+    const rows = entry.sheet.rows;
+    const index = Math.min(entry.metadataItem ?? 0, Math.max(0, rows.length - 1)), row = rows[index];
+    if (!row) return '<p class="field-help">Add an item to edit its identity and subscale.</p>';
+    return `<details class="sheet-options" data-sheet-metadata ${entry.metadataOpen ? "open" : ""}><summary>Item identities, subscales &amp; option order</summary><div class="sheet-options-content">
+      <p class="field-help">These identifiers and subscales are researcher metadata, not participant labels. Editing an instrument creates a modified source; no total score is inferred.</p>
+      <label class="field"><span>Item to edit</span><select data-sheet-metadata-item>${rows.map((item, i) => `<option value="${i}" ${i === index ? "selected" : ""}>${i + 1}: ${escape(item.itemId)}</option>`).join("")}</select></label>
+      <label class="field"><span>Item ID</span><input type="text" data-sheet-item-meta="itemId" data-row="${index}" value="${escape(row.itemId)}" maxlength="128"></label>
+      <label class="field"><span>Subscale (blank for none)</span><input type="text" data-sheet-item-meta="subscale" data-row="${index}" value="${escape(row.subscale)}" maxlength="300"></label>
+      <div class="sheet-actions"><button type="button" data-sheet-action="item-up" data-row="${index}" ${index === 0 ? "disabled" : ""}>Move item up</button><button type="button" data-sheet-action="item-down" data-row="${index}" ${index === rows.length - 1 ? "disabled" : ""}>Move item down</button></div>
+      <div class="sheet-table-scroll" tabindex="0" role="region" aria-label="Item option identities and order"><table class="sheet-table"><thead><tr><th>Option ID</th><th>Participant label</th><th>Option actions</th></tr></thead><tbody>${row.options.map((option, i) => `<tr><td><input type="text" data-sheet-option-id="${i}" data-row="${index}" maxlength="128" value="${escape(option.optionId)}" aria-label="Option ${i + 1} ID"></td><td>${escape(option.label)}</td><td><div class="sheet-actions"><button type="button" data-sheet-action="option-up" data-row="${index}" data-option="${i}" ${i === 0 ? "disabled" : ""}>Move up</button><button type="button" data-sheet-action="option-down" data-row="${index}" data-option="${i}" ${i === row.options.length - 1 ? "disabled" : ""}>Move down</button><button type="button" data-sheet-action="option-remove" data-row="${index}" data-option="${i}" ${row.options.length <= 2 ? "disabled" : ""}>Remove</button></div></td></tr>`).join("")}</tbody></table></div>
+      <div class="sheet-actions"><button type="button" data-sheet-action="option-add" data-row="${index}" ${row.options.length >= entry.sheet.optionCount ? "disabled" : ""}>Add option to this item</button></div>
+      </div></details>`;
+  }
+
+  function editMetadata(entry, change) {
+    if (entry.invalid.size || entry.rawOptionCount !== null) throw new TypeError("Correct invalid cells and option count before changing identities or order.");
+    const candidate = cloneQuestionnaireSheet(entry.sheet);
+    change(candidate);
+    const { modified: _modified, ...content } = candidate;
+    replaceQuestionnaireSheetDraft(candidate, content);
+    preserveUndo(entry); entry.sheet = candidate; entry.error = ""; markChanged(entry);
   }
 
   function render() {
@@ -145,6 +172,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       details.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.open = details.open; });
       const options = details.querySelector(".sheet-options");
       options.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.optionsOpen = options.open; });
+      const metadata = details.querySelector("[data-sheet-metadata]");
+      metadata?.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.metadataOpen = metadata.open; });
     });
   }
 
@@ -172,29 +201,49 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       repeatLabels: entry.repeatLabels, rawOptionCount: entry.rawOptionCount };
   }
 
-  async function save(key) {
+  async function save(key, operation = null) {
     const entry = entries.get(key);
-    if (!entry || context.locked || entry.busy) return;
+    const checkCurrent = () => {
+      if (!entry || entries.get(key) !== entry || context.locked || operation?.signal.aborted || (operation && !operation.isCurrent())) {
+        const error = new Error("The questionnaire save was cancelled or superseded; inspect any returned storage receipt before retrying.");
+        error.code = operation?.signal.aborted ? "canceled" : "stale_revision";
+        throw error;
+      }
+    };
+    if (!entry || context.locked || entry.busy) {
+      if (operation) throw new Error("The questionnaire is missing, locked or already saving.");
+      return;
+    }
+    let sourceReceipt = null;
     try {
+      checkCurrent();
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values before saving.");
       if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before saving.");
       entry.busy = true;
       entry.error = "";
       render();
       const result = await sheetToAuthoring(entry.sheet);
-      if (entries.get(key) !== entry || context.locked) throw new Error("The questionnaire table changed while preparing its save.");
+      checkCurrent();
       const bytes = result.sourceBytes ?? entry.sourceBytes;
-      await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
+      sourceReceipt = await onSave({ familyId: entry.sheet.familyId, language: entry.sheet.language,
         definition: result.definition, sourceBytes: bytes,
         expectedPresetToken: entry.presetToken,
-        authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt });
+        authoringReceipt: result.authoringReceipt ?? entry.authoringResult?.authoringReceipt },
+      operation ? { isCurrent: () => { try { checkCurrent(); return true; } catch { return false; } }, signal: operation.signal } : undefined);
+      checkCurrent();
       entry.sourceDefinitionHash = result.definition.definitionSha256;
       entry.sheet = sheetFromDefinition(result.definition, { familyId: entry.sheet.familyId, authoringResult: result });
       entry.sourceBytes = bytes;
       entry.dirty = false;
       entry.undo = null;
+      return { questionnaireId: result.definition.questionnaireId, definitionSha256: result.definition.definitionSha256,
+        sourceReceipt: sourceReceipt ?? null };
     } catch (error) {
       entry.error = error instanceof Error ? error.message : String(error);
+      if (operation) {
+        if (sourceReceipt !== null && sourceReceipt !== undefined) error.sourceReceipt = sourceReceipt;
+        throw error;
+      }
     } finally {
       entry.busy = false;
       render();
@@ -273,6 +322,17 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
     try {
+      if (target.hasAttribute("data-sheet-metadata-item")) {
+        entry.metadataItem = Number(target.value); render(); return;
+      }
+      if (target.hasAttribute("data-sheet-item-meta") || target.hasAttribute("data-sheet-option-id")) {
+        editMetadata(entry, sheet => {
+          const row = sheet.rows[Number(target.dataset.row)];
+          if (target.hasAttribute("data-sheet-option-id")) row.options[Number(target.dataset.sheetOptionId)].optionId = target.value;
+          else row[target.dataset.sheetItemMeta] = target.dataset.sheetItemMeta === "subscale" && target.value === "" ? null : target.value;
+        });
+        render(); return;
+      }
       if (target.hasAttribute("data-sheet-repeat")) {
         const repeat = Number(target.value);
         if (!QUESTIONNAIRE_LABEL_REPETITIONS.includes(repeat)) throw new TypeError("Repeat answer labels every 1, 5 or 10 items.");
@@ -305,7 +365,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
 
   container?.addEventListener("paste", (event) => {
     const target = event.target;
-    if (!target.closest(".sheet-table-scroll")) return;
+    if (!target.closest(".sheet-table-scroll") || target.closest("[data-sheet-metadata]")) return;
     event.preventDefault();
     event.stopPropagation();
     const entry = entries.get(target.closest("[data-sheet-key]").dataset.sheetKey);
@@ -426,6 +486,27 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         Object.assign(entry, entry.undo); entry.undo = null; entry.invalid.clear(); entry.error = "";
         render(); onChange?.(); return;
       }
+      if (action.startsWith("item-") || action.startsWith("option-")) {
+        const rowIndex = Number(button.dataset.row), optionIndex = Number(button.dataset.option);
+        let selected = rowIndex;
+        editMetadata(entry, sheet => {
+          const row = sheet.rows[rowIndex];
+          if (action === "option-add") {
+            let suffix = 1; while (row.options.some(o => o.optionId === `option-${suffix}`)) suffix++;
+            row.options.push({ optionId: `option-${suffix}`, label: String(row.options.length + 1), scoreValue: null });
+          } else if (action === "option-remove") row.options.splice(optionIndex, 1);
+          else {
+            const list = action.startsWith("item-") ? sheet.rows : row.options;
+            const index = action.startsWith("item-") ? rowIndex : optionIndex;
+            const next = index + (action.endsWith("-up") ? -1 : 1);
+            if (next < 0 || next >= list.length) throw new TypeError("This entry cannot move further.");
+            [list[index], list[next]] = [list[next], list[index]];
+            if (action.startsWith("item-")) selected = next;
+          }
+          sheet.optionLabels = Array.from({ length: sheet.optionCount }, (_, i) => sheet.rows.every(r => r.options[i]?.label === sheet.rows[0]?.options[i]?.label) ? sheet.rows[0]?.options[i]?.label ?? null : null);
+        });
+        entry.metadataItem = selected; render(); return;
+      }
       if (entry.invalid.size) throw new TypeError("Correct the highlighted recorded values first.");
       preserveUndo(entry);
       if (action === "add-row") appendSheetRows(entry.sheet);
@@ -477,6 +558,14 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
   return Object.freeze({ sync, loadDefinition, save, reset() { entries.clear(); fingerprint = ""; },
+    /** Separate consequential action; the host supplies guarded native dispatch
+     * and returns its real storage receipt through onSave. Never an atomic edit. */
+    saveAuthoringQuestionnaire(questionnaireId, operation) {
+      if (typeof operation?.isCurrent !== "function" || !operation.signal) throw new TypeError("Questionnaire save needs current-operation and cancellation guards.");
+      const slot = activeEntries().find(({ entry }) => entry.sheet.questionnaireId === questionnaireId);
+      if (!slot) throw new TypeError("Unknown questionnaire identity.");
+      return save(slot.key, operation);
+    },
     /** Detached typed snapshots retain sheet-owner provenance, not a second store. */
     readAuthoringEntries() {
       return activeEntries().map(({ entry }) => ({ sheet: cloneQuestionnaireSheet(entry.sheet),

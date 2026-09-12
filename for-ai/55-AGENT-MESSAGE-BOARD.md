@@ -348,6 +348,32 @@
 
 ### 20260912-p2-cli-checkpoint-and-ui-parity
 
+- UI/save follow-up status: implemented, owner verification passing; main's
+  approved app mount and native save/session wiring are still integration work.
+  New P2-local routing editor uses the actual adapter/context, compact existing
+  details controls, no alternate store or raw JSON. Graph topology, prompts/IDs/
+  labels, terminal order, module references/order and before/afterSession controls
+  are direct UI gestures. Existing sheet adds version, item/option IDs, subscale,
+  item/option order and per-item option count controls under advanced settings.
+- Guarded consequential `saveAuthoringQuestionnaire` checks before preparation,
+  native dispatch and adoption, returns the callback's real receipt and retains
+  a returned receipt on late cancellation. Main forwards the guard and actual
+  native acknowledgement. Routing `applyEdits(edits,guard)` must honor teardown
+  cancellation in addition to session revision; no callback contains a file write
+  inside an atomic edit batch.
+- Observed full JS suite **800/800**, focused owner/shared **31/31**, existing
+  actual-app questionnaire recipe **24/24**, desktop build/boundary pass (existing
+  chunk-size warning). New actual-control Chrome harness passes at 800/1280;
+  inspected focused routing and metadata screenshots under
+  `D:/GitHub/.affect-checks/p2-routing-ui-20260912-*`. These snapshots isolate the
+  new controls after full live-view containment checks, not whole-app screenshots.
+  Edge headless twice returned empty DOM/stdout/stderr; no Edge UI claim. Main
+  must use its known Edge/native harness for integrated evidence.
+- Root relayed the user's explicit English TAS authorization for the requested
+  local mock on 2026-09-12. It does not prove public redistribution permission.
+  Root is locating an authorized German TAS-20 source; no fabricated translation,
+  TAS-26 substitution or global public-preload-ready relabelling in this pass.
+
 - Owner S2, CLI-P2 / allocated E2E-UI P2 continuation; isolated
   `codex/segment-p2-cli-adapter` at canonical `460f516` with main's frozen
   shared foundation `2310efc` cherry-picked as `05795af`. Main owns app.js,
