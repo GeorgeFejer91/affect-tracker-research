@@ -62,6 +62,29 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p6-live-authoring-binding
+
+- Owner S6/P6; Backend Verification continuation, P6-05; **open**. Existing
+  branch/worktree `codex/segment-p6-virtual-screen`,
+  `D:/GitHub/affect-tracker-research-p6-virtual-screen` now uses the integration
+  owner's explicitly supplied combined candidate `64da370` (fast-forward from
+  clean P6 handoff `e43f018`). Canonical `ba2110f` was read-only.
+- Deliverable: P1 verified display geometry and P5 saved feedback revisions
+  connected to the existing editor; deterministic optional contribution,
+  validation and atomic dependency-ordered reopen for P7. No new user input,
+  profile field, XR runtime or UI redesign. Q11 remains answered.
+- Current evidence: profile/geometry/producer interop already implemented;
+  live producer APIs and master composition were absent at the prior handoff.
+  Baseline 31 focused P6/P5/registry tests pass on the combined candidate.
+- Allowed seams: new P6 authoring/binding module, P6 editor acceptance/restore,
+  its app initialization/getters/teardown, focused tests and owned docs.
+  P1/P5 own producers and notification APIs; P7 owns master target selection,
+  acceptance registry and persistence. Other handlers are not duplicated.
+- Planned evidence: actual producer changes, malformed/missing geometry,
+  pending/reused revisions, asynchronous replacement/teardown, dependency-bound
+  reopen and explicit selected-target rejection. Disabled XR must not block
+  desktop. Background app/build checks only; no hardware or runtime claims.
+
 ### 20260912-integration-resume-and-acceptance
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
