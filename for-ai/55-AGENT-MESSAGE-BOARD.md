@@ -31,6 +31,22 @@
   Runner owns remaining typed app mounting. Main retains full production mock
   and final integration. Cargo hold released. No actual playback, physical
   timing, final XDF/viewport, canonical promotion or release claim.
+### 20260912-root-cli-driver-failure-cleanup
+
+- Root, CLI-P7/RR-10 external diagnostic driver, Backend Verification; isolated
+  `codex/segment-cli-driver-cleanup` from `963f56e`. Own driver/test/docs only.
+- Actual native mock attempt at `356cba7` copied the video but failed app
+  publication; the old driver immediately terminated its owned process on the
+  failed assertion. Preserve that failed attempt and do not retry its write.
+- Give subsequent failed runs bounded EOF cleanup before any forced termination,
+  without changing their failed result or issuing another command. Baseline
+  fifteen driver/mock checks pass. Production owners, native coordinator and
+  catalogue diagnosis remain Main's separate lane.
+- Ready: 18 focused checks pass, including orderly EOF cleanup, stalled-child
+  termination and a thrown termination request that still retains the original
+  failure. S5 independent source review found no remaining issues. Final log:
+  `D:/GitHub/.affect-checks/root-cli-driver-cleanup-final.log`.
+  This is external driver verification, not an actual native cleanup claim.
 
 ### 20260912-root-cli-driver-readiness
 

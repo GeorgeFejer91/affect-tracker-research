@@ -131,7 +131,7 @@ export async function runPlannerCli({ executable, steps, outputDirectory, args =
   outputDirectory = resolve(outputDirectory);
   await mkdir(outputDirectory); // Exclusive new directory: never replace evidence.
   const transcript = await open(join(outputDirectory, "transcript.jsonl"), "wx");
-  let child, ready = null, revision = null, completed = 0, failed = null, exit = null, lastResponse = null;
+  let child, ready = null, revision = null, completed = 0, failed = null, exit = null, lastResponse = null, failureCleanup = null;
   let stderr = Buffer.alloc(0), stderrTruncated = false, exitPromise = null;
   const record = async (direction, value) => {
     await transcript.writeFile(`${JSON.stringify({ direction, value })}\n`);
@@ -188,16 +188,37 @@ export async function runPlannerCli({ executable, steps, outputDirectory, args =
     output.assertDrained(); assert.equal(exit.code, 0, "Owned CLI did not exit successfully");
   } catch (error) {
     failed = error instanceof Error ? error.message : String(error);
-    // This is the exact spawned child, never an attached researcher process.
-    if (child && child.exitCode === null && child.signalCode === null) child.kill();
-    if (exitPromise) exit = await deadline(exitPromise, 10000, "Owned CLI shutdown unconfirmed").catch(error => ({ code: null, signal: null, error: error.message }));
+    if (child && exitPromise) {
+      // EOF lets the production broker drain and its native coordinator join.
+      // Never send another command or turn a clean exit into a successful run.
+      failureCleanup = { eofRequested: child.stdin.writableEnded, gracePeriodMs: Math.min(timeoutMs, 10000),
+        graceExpired: false, forcedTerminationRequested: false, terminationSignalSent: null, terminationError: null };
+      const alive = () => child.pid && child.exitCode === null && child.signalCode === null;
+      if (alive() && !child.stdin.destroyed && !child.stdin.writableEnded) {
+        try { child.stdin.end(); failureCleanup.eofRequested = true; }
+        catch { /* The exit observation below still decides whether cleanup finished. */ }
+      }
+      try { exit = await deadline(exitPromise, failureCleanup.gracePeriodMs, "Owned CLI EOF cleanup deadline elapsed"); }
+      catch {
+        failureCleanup.graceExpired = true;
+        // External diagnostic cleanup of this exact owned child only. This is
+        // forced termination, never evidence of orderly native shutdown.
+        if (alive()) {
+          failureCleanup.forcedTerminationRequested = true;
+          try { failureCleanup.terminationSignalSent = child.kill(); }
+          catch { failureCleanup.terminationError = "owned-child-termination-request-failed"; }
+        }
+        exit = await deadline(exitPromise, 10000, "Owned CLI shutdown unconfirmed")
+          .catch(error => ({ code: null, signal: null, error: error.message }));
+      }
+    }
   } finally {
     await transcript.close();
     await writeFile(join(outputDirectory, "stderr.log"), stderr, { flag: "wx" });
   }
   const receipt = { schema: "affect-research-planner-cli-driver-receipt", version: 1,
     executable, executableSha256, args, ready, completedSteps: completed, requestedSteps: steps.length,
-    finalRevision: revision, exit, passed: failed === null, failure: failed, stderrTruncated,
+    finalRevision: revision, exit, passed: failed === null, failure: failed, failureCleanup, stderrTruncated,
     transcriptSha256: hash(await readFile(join(outputDirectory, "transcript.jsonl"))),
     limitation: "Driver transport receipt only. Inspect commands, exact saved artifacts, UI parity and Runner observations separately." };
   await writeFile(join(outputDirectory, "receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
