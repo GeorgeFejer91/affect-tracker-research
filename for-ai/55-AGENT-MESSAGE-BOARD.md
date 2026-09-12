@@ -204,6 +204,32 @@ file; follow the integration-owner collection procedure in the workflow.
   this checkpoint does not claim all-platform P1-06 closure. P1-04/Q04 and
   P1-05/Q05 also remain open; validated catalogue content is not filesystem
   reauthorization.
+- Follow-up for blank-study authoring adds strict editable study identity and
+  one composite `getWorkspaceContributionSnapshot()` seam. Its contribution
+  contains study ID/title, the accepted video catalogue, and only the fixed
+  relative layout (`assets`, `assets/stimuli`, `experiment.package.json`), never
+  an absolute path or permission. The existing video-only snapshot remains the
+  P3/P4/P6 boundary. `restoreStudyIdentity` validates before mutation;
+  relocation-dependent catalogue restoration still waits on Q05.
+- The composite and video-only getters expose the same outer P1 revision.
+  Identity, catalogue and pending-state changes publish through the subscription
+  seam only; the registry owns notification. Consumers can therefore bind their
+  P1 dependency to the registered composite revision without fallback fields,
+  duplicate notifications or an unrelated embedded catalogue revision.
+- Workspace restore accepts only the validated composite's authored content and
+  stages its videos as unresolved portable declarations. It does not restore an
+  absolute path, handle or permission. A later user-selected directory resolves
+  the catalogue only after every file is freshly hashed and decoder-probed and
+  the resulting complete catalogue exactly matches the saved contribution.
+- Native P1-06 assessment: both native decode paths already observe width and
+  height, but `ScannedStimulusSummary` discards them, and the GstPlay actor's
+  `PlayVideoInfo` values are stream dimensions without an orientation/PAR
+  receipt. GstPlay snapshot conversion can normalize pixel aspect, but its API
+  does not by itself attest image-orientation handling. The remaining owner
+  work is a safe, versioned oriented-display receipt derived from explicit
+  orientation metadata or a proven rendered-snapshot pipeline, followed by
+  installed-runtime fixtures/qualification. No new FFI appears necessary, but
+  raw dimensions must not be promoted as display geometry.
 
 ### 20260911-integration-authoring-cleanup-receipt
 
