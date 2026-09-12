@@ -158,9 +158,11 @@ file; follow the integration-owner collection procedure in the workflow.
   concrete owner-state finding. Full narrow/footer/combined verification stays
   open. Pure content reopen can proceed without restoring filesystem authority;
   the final typed desktop master still needs P4's accepted geometry contract.
-- S4 reports 110 actual Chrome composition checks and four images for live
-  binding, invalidation, unit conversion and guarded draft restore; its final
-  P1 revision fixture/handoff is pending. Integration reports clean `4f505c3`
+- S4 final clean handoff `1c70f2e` (app `f8654bf`) reports 118 actual Chrome
+  checks/four source-bound images and 563 Node checks for live binding,
+  invalidation, unit conversion and guarded draft restore. The study-only and
+  video-change fixtures use P1's registered revision; accepted contribution
+  remains pending Q08. Integration reports clean `4f505c3`
   passes 545 Node checks, Chrome retained-UI/P5 checks and both builds. These
   owner reports do not promote canonical `ba2110f` or qualify Edge/Runner.
 
