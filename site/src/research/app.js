@@ -25,6 +25,7 @@ import {
   evaluateFlubberMappings,
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
+import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "./feedback-contribution.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
 import { createScreenLayoutDraftEditor } from "./screen-layout-editor.js";
@@ -220,6 +221,7 @@ function bindResearchInteractions(root, { surface }) {
     .map(({ id, axisLabel }) => [id, axisLabel]));
   let inputBinding = structuredClone(DEFAULT_SETTINGS.input);
   let inputController = null;
+  const feedbackContribution = createFeedbackContributionSource(feedbackFromUi);
   let gamepadCaptureFrame = null;
   let inputTestPassed = false;
   let nativeInputReceiptId = null;
@@ -1237,9 +1239,9 @@ function bindResearchInteractions(root, { surface }) {
     return Object.fromEntries(MAPPING_FIELDS.map((spec) => {
       const disclosure = query(`[data-mapping="${spec.id}"]`);
       return [spec.contractId, {
-        min: Number(disclosure?.querySelector("[data-mapping-min]")?.value),
-        max: Number(disclosure?.querySelector("[data-mapping-max]")?.value),
-        drivenBy: disclosure?.querySelector("[data-mapping-driver]")?.value ?? spec.driver,
+        min: feedbackNumber(`mapping-${spec.id}-min`),
+        max: feedbackNumber(`mapping-${spec.id}-max`),
+        drivenBy: disclosure?.querySelector("[data-mapping-driver]")?.value,
         reverse: disclosure?.querySelector("[data-mapping-reverse]")?.checked === true,
       }];
     }));
@@ -1247,7 +1249,7 @@ function bindResearchInteractions(root, { surface }) {
 
   function synchronizedInputBinding() {
     if (inputBinding.kind !== "digital") return inputBinding;
-    const stepSize = numberValue("input-step-size", 0.1);
+    const stepSize = feedbackNumber("input-step-size");
     if (stepSize !== inputBinding.stepSize) {
       inputBinding = structuredClone(validateInputBindingV1({ ...inputBinding, stepSize }));
       inputController?.setBinding(inputBinding);
@@ -1255,8 +1257,48 @@ function bindResearchInteractions(root, { surface }) {
     return inputBinding;
   }
 
+  function feedbackNumber(id) {
+    const raw = value(id).trim();
+    if (!raw || !Number.isFinite(Number(raw))) throw new TypeError(`Enter a number for ${id}.`);
+    return Number(raw);
+  }
+
+  function feedbackFromUi() {
+    if (value("input-preset") !== (UI_PRESET_IDS[inputBinding.preset] ?? "custom")) {
+      throw new TypeError("Choose a valid input preset before saving.");
+    }
+    return validateFeedbackContributionV1({
+      input: inputBinding.kind === "digital"
+        ? { ...inputBinding, stepSize: feedbackNumber("input-step-size") } : inputBinding,
+      visual: {
+        gridEnabled: checked("visual-grid-visible"),
+        flubberEnabled: checked("visual-flubber-visible"),
+        sizePercent: feedbackNumber("visual-size"),
+        transparency: feedbackNumber("visual-transparency") / 100,
+        hideFeedback: checked("visual-hide-feedback"),
+        overlayPosition: { x: feedbackNumber("visual-position-x"), y: feedbackNumber("visual-position-y") },
+        lockPosition: checked("visual-lock-position"),
+        flubber: {
+          showOutline: checked("flubber-outline-visible"),
+          outlineThickness: feedbackNumber("flubber-outline-thickness"),
+          showHalo: checked("flubber-halo-visible"),
+        },
+        grid: {
+          lineThickness: feedbackNumber("grid-line-thickness"),
+          showOutline: checked("grid-outline-visible"),
+          outlineThickness: feedbackNumber("grid-outline-thickness"),
+          cursorSize: feedbackNumber("grid-cursor-size"),
+        },
+        colors: Object.fromEntries(COLOR_FIELDS.map(({ id }) => [id, value(`color-${id}-hex`).trim().toLowerCase()])),
+      },
+      mappings: mappingsFromUi(),
+    });
+  }
+
   function researchSettingsDraft({ verifySources = true } = {}) {
     if (!experimentDocument) throw new TypeError("Load a valid experiment.json first.");
+    const feedback = feedbackFromUi();
+    if (verifySources) synchronizedInputBinding();
     return {
       schema: DEFAULT_SETTINGS.schema,
       version: 3,
@@ -1272,32 +1314,8 @@ function bindResearchInteractions(root, { surface }) {
           && stimulus.contractSource.relativePath === reference.relativePath)
           .map((stimulus) => structuredClone(stimulus.contractSource)),
       })) },
-      input: structuredClone(verifySources ? synchronizedInputBinding()
-        : inputBinding.kind === "digital" ? { ...inputBinding, stepSize: numberValue("input-step-size", 0.1) } : inputBinding),
-      visual: {
-        gridEnabled: checked("visual-grid-visible"),
-        flubberEnabled: checked("visual-flubber-visible"),
-        sizePercent: numberValue("visual-size"),
-        transparency: numberValue("visual-transparency") / 100,
-        hideFeedback: checked("visual-hide-feedback"),
-        overlayPosition: {
-          x: numberValue("visual-position-x"),
-          y: numberValue("visual-position-y"),
-        },
-        lockPosition: checked("visual-lock-position"),
-        flubber: {
-          showOutline: checked("flubber-outline-visible"),
-          outlineThickness: numberValue("flubber-outline-thickness"),
-          showHalo: checked("flubber-halo-visible"),
-        },
-        grid: {
-          lineThickness: numberValue("grid-line-thickness"),
-          showOutline: checked("grid-outline-visible"),
-          outlineThickness: numberValue("grid-outline-thickness"),
-          cursorSize: numberValue("grid-cursor-size"),
-        },
-        colors: colorValues(),
-      },
+      input: feedback.input,
+      visual: feedback.visual,
       advanced: {
         lsl: {
           enabled: checked("lsl-enabled"),
@@ -1306,7 +1324,7 @@ function bindResearchInteractions(root, { surface }) {
           markerStream: value("lsl-marker-stream"),
           sourceId: value("lsl-source-id"),
         },
-        mappings: mappingsFromUi(),
+        mappings: feedback.mappings,
       },
       output: { csv: checked("output-csv"), tsv: checked("output-tsv") },
       questionnaires: {
@@ -1359,6 +1377,54 @@ function bindResearchInteractions(root, { surface }) {
     return baseSettings ? validateResearchSettingsV3(baseSettings) : researchSettingsFromUi();
   }
 
+  function applyFeedbackFields(normalized) {
+    inputBinding = structuredClone(normalized.input);
+    setInputValue("input-preset", UI_PRESET_IDS[inputBinding.preset] ?? "custom");
+    if (inputBinding.kind === "digital") setInputValue("input-step-size", inputBinding.stepSize);
+    setChecked("visual-grid-visible", normalized.visual.gridEnabled);
+    setChecked("visual-flubber-visible", normalized.visual.flubberEnabled);
+    setInputValue("visual-size", normalized.visual.sizePercent);
+    setInputValue("visual-transparency", normalized.visual.transparency * 100);
+    setChecked("visual-hide-feedback", normalized.visual.hideFeedback);
+    setChecked("visual-lock-position", normalized.visual.lockPosition);
+    setInputValue("visual-position-x", normalized.visual.overlayPosition.x);
+    setInputValue("visual-position-y", normalized.visual.overlayPosition.y);
+    setChecked("flubber-outline-visible", normalized.visual.flubber.showOutline);
+    setInputValue("flubber-outline-thickness", normalized.visual.flubber.outlineThickness);
+    setChecked("flubber-halo-visible", normalized.visual.flubber.showHalo);
+    setInputValue("grid-line-thickness", normalized.visual.grid.lineThickness);
+    setChecked("grid-outline-visible", normalized.visual.grid.showOutline);
+    setInputValue("grid-outline-thickness", normalized.visual.grid.outlineThickness);
+    setInputValue("grid-cursor-size", normalized.visual.grid.cursorSize);
+    for (const [id, color] of Object.entries(normalized.visual.colors)) {
+      setInputValue(`color-${id}`, color);
+      setInputValue(`color-${id}-hex`, color);
+    }
+    for (const spec of MAPPING_FIELDS) {
+      const disclosure = query(`[data-mapping="${spec.id}"]`);
+      const mapping = normalized.mappings[spec.contractId];
+      if (!(disclosure instanceof HTMLElement)) continue;
+      disclosure.querySelector("[data-mapping-min]").value = String(mapping.min);
+      disclosure.querySelector("[data-mapping-max]").value = String(mapping.max);
+      disclosure.querySelector("[data-mapping-driver]").value = mapping.drivenBy;
+      disclosure.querySelector("[data-mapping-reverse]").checked = mapping.reverse;
+    }
+    // Input callbacks may refresh projections: publish only after all owned
+    // fields have been restored, so consumers never observe a partial restore.
+    resetInputTest();
+    inputController?.setBinding(inputBinding);
+    renderBindings();
+  }
+
+  async function restoreFeedbackContribution(contribution, { isCurrent = () => true } = {}) {
+    const normalized = validateFeedbackContributionV1(contribution);
+    if (!isCurrent()) return false;
+    applyFeedbackFields(normalized);
+    refreshProjection();
+    schedulePlanRefresh();
+    return feedbackContribution.getSnapshot();
+  }
+
   async function applyResearchSettings(settings, {
     preserveVerifiedStimuli = false,
     guard = null,
@@ -1404,44 +1470,12 @@ function bindResearchInteractions(root, { surface }) {
         youtubePreflight: null,
       };
     }));
-    inputBinding = structuredClone(normalized.input);
-    resetInputTest();
-    setInputValue("input-preset", UI_PRESET_IDS[inputBinding.preset] ?? "custom");
-    if (inputBinding.kind === "digital") setInputValue("input-step-size", inputBinding.stepSize);
-    inputController?.setBinding(inputBinding);
-    setChecked("visual-grid-visible", normalized.visual.gridEnabled);
-    setChecked("visual-flubber-visible", normalized.visual.flubberEnabled);
-    setInputValue("visual-size", normalized.visual.sizePercent);
-    setInputValue("visual-transparency", normalized.visual.transparency * 100);
-    setChecked("visual-hide-feedback", normalized.visual.hideFeedback);
-    setChecked("visual-lock-position", normalized.visual.lockPosition);
-    setInputValue("visual-position-x", normalized.visual.overlayPosition.x);
-    setInputValue("visual-position-y", normalized.visual.overlayPosition.y);
-    setChecked("flubber-outline-visible", normalized.visual.flubber.showOutline);
-    setInputValue("flubber-outline-thickness", normalized.visual.flubber.outlineThickness);
-    setChecked("flubber-halo-visible", normalized.visual.flubber.showHalo);
-    setInputValue("grid-line-thickness", normalized.visual.grid.lineThickness);
-    setChecked("grid-outline-visible", normalized.visual.grid.showOutline);
-    setInputValue("grid-outline-thickness", normalized.visual.grid.outlineThickness);
-    setInputValue("grid-cursor-size", normalized.visual.grid.cursorSize);
-    for (const [id, color] of Object.entries(normalized.visual.colors)) {
-      setInputValue(`color-${id}`, color);
-      setInputValue(`color-${id}-hex`, color);
-    }
+    applyFeedbackFields({ input: normalized.input, visual: normalized.visual, mappings: normalized.advanced.mappings });
     setChecked("lsl-enabled", normalized.advanced.lsl.enabled);
     setInputValue("lsl-state-stream", normalized.advanced.lsl.stateStream);
     setInputValue("lsl-stream-type", normalized.advanced.lsl.streamType);
     setInputValue("lsl-marker-stream", normalized.advanced.lsl.markerStream);
     setInputValue("lsl-source-id", normalized.advanced.lsl.sourceId);
-    for (const spec of MAPPING_FIELDS) {
-      const disclosure = query(`[data-mapping="${spec.id}"]`);
-      const mapping = normalized.advanced.mappings[spec.contractId];
-      if (!(disclosure instanceof HTMLElement)) continue;
-      disclosure.querySelector("[data-mapping-min]").value = String(mapping.min);
-      disclosure.querySelector("[data-mapping-max]").value = String(mapping.max);
-      disclosure.querySelector("[data-mapping-driver]").value = mapping.drivenBy;
-      disclosure.querySelector("[data-mapping-reverse]").checked = mapping.reverse;
-    }
     setChecked("output-csv", normalized.output.csv);
     setChecked("output-tsv", normalized.output.tsv);
     questionnaireDefinitions.splice(
@@ -2645,6 +2679,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function schedulePlanRefresh() {
+    feedbackContribution.refresh();
     observePackageDraft();
     renderPackageReceipt();
     planRefresh += 1;
@@ -5219,6 +5254,10 @@ function bindResearchInteractions(root, { surface }) {
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
     get nativeInputReceiptId() { return nativeInputReceiptId; },
+    getFeedbackContributionSnapshot: feedbackContribution.getSnapshot,
+    getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
+    subscribeFeedbackChanges: feedbackContribution.subscribe,
+    restoreFeedbackContribution,
     getYouTubePreflight(stimulusId) {
       const record = stimuli.find(({ id }) => id === stimulusId)?.youtubePreflight;
       return record ? structuredClone(record) : null;
@@ -5249,6 +5288,7 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      feedbackContribution.destroy();
       previewLayout.destroy();
       previewInteraction?.destroy();
       previewInteraction = null;

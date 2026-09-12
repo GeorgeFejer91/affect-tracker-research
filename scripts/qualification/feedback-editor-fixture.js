@@ -1,6 +1,8 @@
 // Non-shipping DOM fixture. No platform adapter, workspace, media, acquisition or IPC.
 import { bootResearchUi } from "../../site/src/research/app.js";
 import { MAPPING_FIELDS, RESEARCH_UI_EVENTS, SETUP_SECTIONS } from "../../site/src/research/ui-contracts.js";
+import { canonicalJson } from "../../site/src/research/canonical.js";
+import { resolveFeedbackEnvelopeV1 } from "../../site/src/research/feedback-envelope.js";
 
 export async function checkFeedbackEditor({ settings, experimentReceipt, surface, zoom = 1, screenshotState = "default" }) {
   const rows = [];
@@ -66,6 +68,13 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     await settle(() => query("#experiment-file-status")?.dataset.state === "ready");
     await load(settings);
     check("saved settings load unchanged", same(savedFeedback(ui.settings), savedFeedback(settings)));
+    const notifications = [];
+    const unsubscribe = ui.subscribeFeedbackChanges((snapshot) => notifications.push(snapshot));
+    const initialFeedback = ui.getFeedbackContributionSnapshot();
+    check("P5 current saved contribution is independent of experiment compilation", !initialFeedback.pending
+      && canonicalJson(initialFeedback.contribution) === canonicalJson(savedFeedback(settings)));
+    check("P5 live bounds use the current saved configuration", canonicalJson(ui.getFeedbackLayoutSnapshot(1024).envelope)
+      === canonicalJson(resolveFeedbackEnvelopeV1(savedFeedback(settings), 1024)));
     const pane = query('[data-setup-section="feedback"]');
     check("one persistent feedback owner", root.querySelectorAll('[data-setup-section="feedback"]').length === 1);
     for (const id of ["input", "visual", "advanced"]) {
@@ -124,6 +133,9 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     }
     await settle(() => ui.settings?.visual?.grid?.cursorSize === 19);
     const edited = structuredClone(ui.settings);
+    const editedFeedback = ui.getFeedbackContributionSnapshot();
+    check("saved edits update one P5 contribution and dependency revision", editedFeedback.revision > initialFeedback.revision
+      && notifications.length > 0 && canonicalJson(editedFeedback.contribution) === canonicalJson(savedFeedback(edited)));
     check("digital binding and step serialize", edited.input.preset === "wasd" && edited.input.stepSize === 0.125);
     check("appearance and existing layout serialize", !edited.visual.gridEnabled && edited.visual.flubberEnabled
       && edited.visual.hideFeedback && edited.visual.transparency === 0.37 && edited.visual.sizePercent === 42
@@ -137,6 +149,32 @@ export async function checkFeedbackEditor({ settings, experimentReceipt, surface
     query('[data-feedback-preview-mode="face"]').click();
     await settle(() => Boolean(ui.settings));
     check("preview drafts do not enter saved feedback", same(savedFeedback(ui.settings), savedFeedback(edited)));
+    check("temporary simulator choices do not advance P5 revision", ui.getFeedbackContributionSnapshot().revision === editedFeedback.revision);
+    for (const [id, invalid, original] of [["input-step-size", "", "0.125"], ["mapping-projection-amplitude-min", "", "0.2"],
+      ["visual-position-x", "", "0.23"], ["color-idle-hex", "invalid", "#123456"]]) {
+      change(id, invalid);
+      const pending = ui.getFeedbackContributionSnapshot();
+      check(`${id} invalidates contribution and bounds without a fallback`, pending.pending && pending.contribution === null
+        && ui.getFeedbackLayoutSnapshot(1024).envelope === null);
+      await settle(() => ui.settings === null);
+      change(id, original);
+      check(`${id} repair advances revision`, !ui.getFeedbackContributionSnapshot().pending
+        && ui.getFeedbackContributionSnapshot().revision > pending.revision);
+    }
+    await settle(() => Boolean(ui.settings));
+    const beforeRestore = ui.getFeedbackContributionSnapshot();
+    const rejected = structuredClone(beforeRestore.contribution);
+    rejected.visual.flubber.haloWidth = 200;
+    let rejectedRestore = false;
+    try { await ui.restoreFeedbackContribution(rejected); } catch { rejectedRestore = true; }
+    check("invalid restore rejects atomically", rejectedRestore && ui.getFeedbackContributionSnapshot() === beforeRestore);
+    check("stale restore leaves saved controls unchanged", await ui.restoreFeedbackContribution(savedFeedback(settings), { isCurrent: () => false }) === false
+      && ui.getFeedbackContributionSnapshot() === beforeRestore);
+    const restored = await ui.restoreFeedbackContribution(savedFeedback(settings));
+    check("valid restore commits every P5 field and reports actual revision", restored.revision > beforeRestore.revision
+      && canonicalJson(restored.contribution) === canonicalJson(savedFeedback(settings))
+      && canonicalJson(notifications.at(-1).contribution) === canonicalJson(savedFeedback(settings)));
+    unsubscribe();
     await load(settings);
     await load(JSON.parse(JSON.stringify(edited)));
     check("edited feedback roundtrip", same(savedFeedback(ui.settings), savedFeedback(edited)));
