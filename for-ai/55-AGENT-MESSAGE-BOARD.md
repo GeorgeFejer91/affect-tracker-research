@@ -3245,3 +3245,34 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
+
+### 20260912-rr04-native-terminal-precedence
+
+- Owner: bounded RR-04/NM-09 native media state repair; Backend Verification.
+  Branch `codex/segment-native-media-terminal-order`, isolated worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-native-media-terminal`,
+  exact base `460f516`. Main remains the sole integrator.
+- Demonstrated gap: `apply_generation_fenced_signal` permits delayed same-generation
+  Playing/Paused/Buffering callbacks to overwrite terminal Failed/Ended observations;
+  existing coverage checks only immediate error projection.
+- Deliverable: define terminal precedence in
+  `src-tauri/src/research_native_media/state.rs`, with focused same-module callback-order
+  and new-generation reset regressions. Preserve legitimate explicit seek and
+  prepare/restart after callsite inspection. Errors must never become success.
+- No `gst_actor`, `lib`, capability, runtime, public-contract or unsafe change.
+  Evidence is limited to focused locked no-default reducer tests, formatting and
+  diff checks; broad native builds, installed/physical playback and foreground
+  app launch remain deferred. Report ignored-signal boolean/revision semantics
+  in the ready handoff.
+- Status: **ready for integration**. `Failed` is absorbing for same-generation
+  callbacks; `Ended` is absorbing except that a later explicit error or unknown
+  backend state upgrades it to `Failed`. Ignored terminal callbacks return
+  `false`, leave the complete status unchanged and do not advance `sequence`.
+  A new Prepare generation clears the terminal observation and accepts media,
+  seek-done and playback callbacks normally.
+- Focused command
+  `cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features research_native_media::state::tests --lib`
+  passes 6/6 with 232 filtered out. `cargo fmt --check` and `git diff --check`
+  pass. Two existing no-default test-build dead-code warnings in
+  `research_video_geometry.rs` remain unchanged. Main retains collection and
+  broader native/installed verification.
