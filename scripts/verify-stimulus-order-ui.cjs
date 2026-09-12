@@ -10,6 +10,7 @@ const assert = require("node:assert/strict");
 
 (async () => {
   const root = path.resolve(__dirname, "..");
+  const sectionOnly = process.argv.includes("--section-only");
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
   const dirty = execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).trim();
   const output = path.join(root, "src-tauri/target/segment3-verification", `${commit.slice(0, 12)}-${Date.now()}`);
@@ -53,6 +54,7 @@ const assert = require("node:assert/strict");
       const editor = createStimulusOrderEditor({ root, operate: async () => ({ library: fixture.library, design: fixture.document }) });
       await editor.adopt({ library: fixture.library, design: fixture.document }, { loadSaved: true });
       editor.setCatalogue({revision:1,videos:fixture.videos});
+      await editor.prepareContribution();
       const section = root.querySelector('[data-setup-section="stimuli"]');
       // The fixture renders only the changed section; no app interaction is simulated.
       root.replaceChildren(section);
@@ -97,11 +99,20 @@ const assert = require("node:assert/strict");
       const root = bootResearchUi({ surface: "browser" });
       root.researchUi.openSetupSection("stimuli");
     });
+    if (sectionOnly) await page.evaluate(() => {
+      const root = document.querySelector("#research-app");
+      root.replaceChildren(root.querySelector('[data-setup-section="stimuli"]'));
+      root.style.maxWidth = "432px";
+      root.style.minWidth = "0";
+      root.style.width = "432px";
+      root.style.display = "block";
+    });
     const bootChecks = [];
-    for (const state of ["empty", "populated", "error"]) {
+    for (const state of sectionOnly ? ["empty", "location"] : ["empty", "populated", "error", "location"]) {
       if (state === "populated") await page.evaluate(async () => {
         const fixture = await (await fetch("/test/fixtures/variant-design-v1.json")).json();
-        await document.querySelector("#research-app").researchUi.restoreStimulusOrder(fixture.document, { library: fixture.library });
+        await document.querySelector("#research-app").researchUi.restoreStimulusOrder(fixture.document,
+          { library: fixture.library, catalogue: { revision: 1, videos: fixture.videos } });
       });
       if (state === "error") await page.evaluate(async () => {
         const fixture = await (await fetch("/test/fixtures/variant-design-v1.json")).json();
@@ -113,7 +124,8 @@ const assert = require("node:assert/strict");
         // An accepted six-column order then loses the last column's video in
         // a valid P1 rescan. This exercises real stale-reference validation.
         const draft = pasteVariantTable(createVariantDraft(), 0, 0, [a,a,a,a,a,b].join("\t"), fixture.library);
-        await root.researchUi.restoreStimulusOrder(await createVariantDocument(draft, fixture.library), { library: fixture.library });
+        await root.researchUi.restoreStimulusOrder(await createVariantDocument(draft, fixture.library),
+          { library: fixture.library, catalogue: { revision: 2, videos: fixture.videos } });
         const library = await createVideoLibrary(fixture.library.videos.slice(0, 1).map(({ annotationId, ...entry }) => entry));
         const changed = new Promise(resolve => {
           const observer = new MutationObserver(() => {
@@ -124,6 +136,26 @@ const assert = require("node:assert/strict");
         root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.videoLibraryChanged, { detail: { library, design: null } }));
         await changed;
       });
+      if (state === "location") await page.evaluate(async () => {
+        const fixture = await (await fetch("/test/fixtures/variant-reproduction-v2.json")).json();
+        const { createVideoCatalogueContribution, videoAnnotationIdFromRelativePathV1 } = await import("/site/src/research/video-catalogue-contribution.js");
+        const { createWorkspaceContribution } = await import("/site/src/research/workspace-contribution.js");
+        const { projectSavedVariantCatalogue } = await import("/site/src/research/variant-catalogue-adapter.js");
+        const { createVariantDocument } = await import("/site/src/research/variant-design.js");
+        const sourceRelativePath = `stimuli/${Array.from({ length: 8 }, (_, i) => `${"_".repeat(200)}${i}`).join("/")}/clip.mp4`;
+        const changed = fixture.workspace.videoCatalogue.entries[0], previous = changed.annotationId;
+        Object.assign(changed, { sourceRelativePath, packageRelativePath: `assets/${sourceRelativePath}`,
+          annotationId: videoAnnotationIdFromRelativePathV1(sourceRelativePath) });
+        const workspace = createWorkspaceContribution({ study: fixture.workspace.study,
+          videoCatalogue: await createVideoCatalogueContribution({ revision: 7, entries: fixture.workspace.videoCatalogue.entries }) });
+        const projection = await projectSavedVariantCatalogue(workspace);
+        fixture.draft.rows = fixture.draft.rows.map(row => row.map(cell => cell === previous ? changed.annotationId : cell));
+        const root = document.querySelector("#research-app");
+        await root.researchUi.restoreStimulusOrder(await createVariantDocument(fixture.draft, projection.library), {
+          dependencies: { P1: { revision: 44, enabled: true, pending: false, contribution: workspace, dependencyRevisions: [] } },
+        });
+        root.querySelector("#stimulus-order-versions details").open = true;
+      });
       for (const width of [1600, 800]) {
         await page.setViewportSize({ width, height: 1200 });
         if (state === "error") assert.equal(await page.evaluate(() => document.querySelector("#research-app").researchUi.confirmStimulusOrder()), false);
@@ -132,17 +164,24 @@ const assert = require("node:assert/strict");
           const focused = document.activeElement, bounds = focused.getBoundingClientRect(), pane = scroll.getBoundingClientRect();
           return { open: root.researchUi.openSection, viewportContained: document.documentElement.scrollWidth <= innerWidth,
             tableWidth: scroll.clientWidth, tableScrollWidth: scroll.scrollWidth,
-            tableContained: scroll.getBoundingClientRect().right <= root.querySelector(".setup-pane").getBoundingClientRect().right,
+            tableContained: scroll.getBoundingClientRect().right <= (root.querySelector(".setup-pane") ?? root).getBoundingClientRect().right,
             snapshot: root.researchUi.getStimulusOrderSnapshot(), errorVisible: root.querySelector("#stimulus-order-status").dataset.state === "error",
             errorText: root.querySelector("#stimulus-order-status").textContent,
+            longestCell: Math.max(0, ...[...root.querySelectorAll("[data-order-row]")].map(input => input.value.length)),
+            longestOption: Math.max(0, ...[...root.querySelectorAll("#video-annotation-options option")].map(option => option.value.length)),
+            maxCellWidth: Math.max(0, ...[...root.querySelectorAll("[data-order-row]")].map(input => input.getBoundingClientRect().width)),
             focusedCell: [focused.dataset.orderRow, focused.dataset.orderColumn],
             focusedInvalid: focused.getAttribute("aria-invalid") === "true",
             focusedCellVisible: bounds.left >= pane.left && bounds.right <= pane.right && bounds.top >= 0 && bounds.bottom <= innerHeight };
         });
-        assert.equal(check.open, "stimuli"); assert.equal(check.viewportContained, true);
+        assert.equal(check.open, "stimuli"); assert.equal(check.viewportContained, true, `${state} at ${width}px`);
         assert.equal(check.tableContained, true);
         if (width === 800 && state !== "empty") assert.ok(check.tableScrollWidth > check.tableWidth);
         if (state === "populated") assert.equal(check.snapshot.pending, false);
+        if (state === "location") {
+          assert.ok(check.longestCell > 4000); assert.equal(check.longestCell, check.longestOption);
+          assert.ok(check.maxCellWidth < 500); assert.equal(check.snapshot.pending, false);
+        }
         if (state === "error") {
           assert.equal(check.errorVisible, true); assert.equal(check.snapshot.contribution, null);
           assert.match(check.errorText, /Event 1, Variant 6: Unknown annotation/);
@@ -154,7 +193,7 @@ const assert = require("node:assert/strict");
       }
     }
     assert.deepEqual(errors, []);
-    const evidence = { commit, dirty, sourceSha256: Object.fromEntries([...sources].sort()), ...receipt, snapshot: undefined, contained, bootChecks, errors, output };
+    const evidence = { commit, dirty, sectionOnly, sourceSha256: Object.fromEntries([...sources].sort()), ...receipt, snapshot: undefined, contained, bootChecks, errors, output };
     await writeFile(path.join(output, "segment3-ui-receipt.json"), JSON.stringify(evidence, null, 2) + "\n");
     console.log(JSON.stringify(evidence));
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

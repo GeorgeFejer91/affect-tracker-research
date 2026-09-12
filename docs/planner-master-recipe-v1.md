@@ -57,7 +57,7 @@ non-finite numbers, unknown/missing fields, noncanonical bytes and unsupported
 versions reject. Maximum file size is 16 MiB and JSON nesting depth is 64.
 
 Integrity has exactly `algorithmVersion`, `definitionSha256`, `segmentSha256`,
-and `reproductionSha256`. Algorithm is `planner-recipe-reproduction-v1`.
+and `reproductionSha256`. New compilation uses `planner-recipe-reproduction-v2`.
 `segmentSha256` has all six owner keys and hashes each full canonical payload.
 `definitionSha256` hashes the entire authored root with `integrity` omitted.
 Planned marker profiles bind this definition hash. `reproductionSha256` binds the
@@ -73,6 +73,40 @@ Reusable variant/timeline, language/presentation and layout projections are hash
 once; matrix cases refer to their complete identities rather than duplicating all
 questionnaire/media data for each product row. Individual selection reconstruction
 returns the complete selected content with no hidden runtime defaults.
+
+Reproduction v2 uses presentation entries `{presentationTarget,
+layoutIdentitySha256}`. Their hash covers this exact internal identity:
+
+```js
+{
+  schema: "affect-research-planner-layout-identity", version: 1,
+  presentationTarget,
+  algorithms: {
+    layout: "desktop-layout-resolution-v1" /* or xr-layout-resolution-v1 */,
+    feedbackEnvelope: "feedback-envelope-v2",
+    feedbackFootprint: null /* or xr-feedback-footprint-v1 */
+  },
+  profile, // complete validated P4 or P6 profile, without rounding
+  media, // actual P1 display projection: ordered unique content IDs/dimensions
+  feedback // complete validated P5 v2 contribution
+}
+```
+
+The identifiers freeze the current owner algorithms; changes to their meaning
+require a new identifier. All readers actually resolve and validate the complete
+layout before hashing the identity. Authored root, owner hashes, profiles and
+dependencies remain byte-exact. Independent numerical evidence compares exact
+object/array shape and nonnumeric leaves, with absolute error less than `1e-10`
+for derived geometry only. Saved inputs are never rounded or tolerance-matched.
+Raw trigonometric output varies by about `1e-15` across JavaScript/Rust on the
+tilted XR fixture and is unsuitable as a portable SHA input.
+
+The earlier unreleased `planner-recipe-reproduction-v1` keeps its original
+`layoutSha256 = SHA(full raw resolved layout)` meaning in readers. It is never
+reinterpreted as v2. Native intake rejects an old v1 file if exact reconstruction
+differs, including the known tilted XR vector. Browser readers likewise preserve
+original bytes only when exact legacy reconstruction succeeds; they never repair
+a cross-engine v1 mismatch. Frozen `ExperimentPackageV1` is unchanged.
 
 The historical block/after-stimulus questionnaire hooks have no approved
 correspondence to successor variants yet. Preserve their exact content and report
@@ -133,9 +167,23 @@ Failure reports completed portions and denies source adoption; it never rolls
 back over newer edits. Only a successful return permits unchanged-source saving.
 Ordinary Save adopts metadata only and never invokes these restore callbacks.
 
-Real complete fixtures cover historical and location-aware owner versions,
-all authored variants/languages, both explicit-policy owner calculations,
-strict integrity, fresh-process reconstruction, save readback and partial/stale
-restoration. P7 native independent read/save and shared application integration
-remain work in progress at this component checkpoint. Actual Planner–Runner
-correspondence is a later stage.
+Native `research_planner_recipe` exposes `parse_planner_recipe_bytes`,
+`parse_planner_recipe_file`, `PlannerRecipeV1::{validate,reproduce,
+reconstruct_selection,canonical_file_bytes}` and the exact saved receipt.
+It invokes each owner's Rust validator/projection, independently rebuilds all
+routes, timelines, marker profiles and layouts, then checks all hashes.
+`research_load_planner_recipe` is read-only in both companion registries;
+`research_save_planner_recipe(source_text)` is Planner-only and also checks the
+executable role. Named staged writes are acknowledged only after strict exact
+file readback. Cancellation returns null; invalid source is rejected before the
+picker/write. No new unsafe boundary or runtime authority is introduced.
+
+Current v2-algorithm fixtures are `planner-recipe-current-v1`,
+`planner-recipe-locations-current-v1` and `planner-recipe-xr-current-v1`, each with
+canonical JSON and reproduction matrix. Their filename's v1 denotes the master
+schema; the integrity explicitly names reproduction v2. Earlier fixture bytes
+remain unchanged. `scripts/qualification/planner-master-parity.mjs` runs the
+independent Rust example against complete masters, both desktop policies/units
+and all three renderers, checking every selected variant/language with source
+and executable hashes. Shared actual-application save/reopen and final combined
+evidence remain integration work. Actual Planner–Runner correspondence is later.

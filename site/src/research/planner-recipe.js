@@ -68,12 +68,12 @@ async function prepareCore(input) {
   return { core: freezeRecipeValue(core), questionnaireRoutes, variantCatalogue, desktopLayout, xrLayout };
 }
 
-async function compilePrepared(prepared) {
+async function compilePrepared(prepared, algorithmVersion = PLANNER_RECIPE_INTEGRITY_ALGORITHM) {
   const { core } = prepared;
   const definitionSha256 = await canonicalSha256(core), segmentSha256 = {};
   for (const segment of PLANNER_RECIPE_SEGMENTS) segmentSha256[segment] = await canonicalSha256(core.segments[segment]);
-  const reproduction = await reproducePreparedPlannerRecipeV1(prepared, definitionSha256);
-  const integrity = { algorithmVersion: PLANNER_RECIPE_INTEGRITY_ALGORITHM, definitionSha256, segmentSha256,
+  const reproduction = await reproducePreparedPlannerRecipeV1(prepared, definitionSha256, algorithmVersion);
+  const integrity = { algorithmVersion, definitionSha256, segmentSha256,
     reproductionSha256: await canonicalSha256(reproduction.matrix) };
   const recipe = freezeRecipeValue({ ...core, integrity });
   if (encoder.encode(`${canonicalJson(recipe)}\n`).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new RangeError("Planner recipe exceeds 16 MiB.");
@@ -95,7 +95,7 @@ export async function createPlannerRecipeV1(options) {
 async function verifyRecipe(value) {
   const saved = validatePlannerRecipeStructureV1(captureJson(value));
   const { integrity, ...core } = saved;
-  const verified = await compilePrepared(await prepareCore(core));
+  const verified = await compilePrepared(await prepareCore(core), integrity.algorithmVersion);
   if (canonicalJson(integrity) !== canonicalJson(verified.recipe.integrity)) {
     throw new PlannerRecipeIssue("P7", "integrity", "integrity-mismatch", "Recipe content, owner hashes or independent reconstruction do not match its saved integrity.");
   }

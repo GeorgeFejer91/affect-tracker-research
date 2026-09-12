@@ -6,6 +6,8 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub mod export;
+pub mod location_variants;
+pub mod reproduction;
 pub mod variants;
 pub const LIBRARY_FILE: &str = "video-library.annotations.json";
 pub const ORDER_FILE: &str = "stimulus-order.design.json";

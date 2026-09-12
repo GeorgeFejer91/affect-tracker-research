@@ -544,6 +544,16 @@ file; follow the integration-owner collection procedure in the workflow.
   caller lifetime fences, dependency-order content restoration and no source
   adoption after partial failure. The complete P2 registration takes precedence
   over the legacy getter and cannot be silently reduced for v1 export.
+- Native master/read/save is implemented with all owner Rust validators and
+  P3's exact reproduction seam. Real parity exposed platform trigonometric
+  differences around 1e-15; root/S6 confirmed a versioned exact input identity,
+  not rounding or relaxed integrity. New reproduction v2 binds complete layout
+  inputs and named algorithms; v1 readers retain their prior raw-hash meaning.
+  Every reader still resolves/validates geometry. Ten independent native/JS
+  cases pass, including both desktop policies/units, three renderers, both P1/P3
+  versions and XR; maximum derived difference is 3.552713678800501e-15 under the
+  strict 1e-10 absolute geometry-only comparison. Current full fixtures and the
+  source-bound parity harness are documented in the master contract.
 
 ### 20260912-p3-master-reproduction
 

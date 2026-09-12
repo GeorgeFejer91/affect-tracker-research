@@ -13,6 +13,7 @@ import { createPlannedMarkerProfile } from "../site/src/research/planned-marker-
 import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
 import { videoLibraryCsv, validateVideoLibrary } from "../site/src/research/stimulus-order.js";
 import { validateVariantLibrary } from "../site/src/research/variant-library.js";
+import { createLocationLibraryExport } from "../site/src/research/variant-library-export.js";
 import { videoLibraryWorkbook } from "../site/src/research/stimulus-workbook.js";
 import { parseSheetTable } from "../site/src/research/questionnaire-sheet.js";
 import { assertVariantReproduction } from "./fixtures/assert-variant-reproduction.js";
@@ -114,6 +115,17 @@ test("location paste keeps bounded parser options and enforces its own UTF-8 byt
   assert.deepEqual(unchanged, createVariantDraft());
   assert.throws(() => pasteVariantTable(unchanged, 0, 0, "x".repeat(4001),
     { version: 1, videos: [] }), /4000 characters/);
+});
+
+test("location exports regenerate bytes from the validated catalogue and reject stale identity or format", async () => {
+  assert.deepEqual(await createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "csv"),
+    new TextEncoder().encode(videoLibraryCsv(library)));
+  assert.deepEqual(await createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "xlsx"),
+    videoLibraryWorkbook(library));
+  await assert.rejects(createLocationLibraryExport(workspace.videoCatalogue, "e".repeat(64), "csv"), /changed/);
+  await assert.rejects(createLocationLibraryExport(workspace.videoCatalogue, library.integritySha256, "xls"), /CSV or Excel/);
+  const forged = structuredClone(workspace.videoCatalogue); forged.entries[0].annotationId = "wrong.mp4";
+  await assert.rejects(createLocationLibraryExport(forged, library.integritySha256, "xlsx"));
 });
 
 test("v2 pending editable reopen, actual revision binding, and both download payloads retain P1 authority", async () => {

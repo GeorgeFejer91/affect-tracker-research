@@ -5,6 +5,10 @@ import { projectSavedVariantCatalogue } from "../site/src/research/variant-catal
 import { addIsiDurations, createVariantDraft, createVariantDesign, pasteVariantTable } from "../site/src/research/variant-design.js";
 import { createVideoCatalogueContribution } from "../site/src/research/video-catalogue-contribution.js";
 import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
+import { assertVariantReproduction } from "../test/fixtures/assert-variant-reproduction.js";
+import { sha256Hex } from "../site/src/research/canonical.js";
+import { videoLibraryCsv } from "../site/src/research/stimulus-order.js";
+import { videoLibraryWorkbook } from "../site/src/research/stimulus-workbook.js";
 
 const workspace = JSON.parse(await readFile(new URL("../test/fixtures/variant-workspace-binding-v1.json", import.meta.url))).initialSnapshot.contribution;
 const { library } = await projectSavedVariantCatalogue(workspace);
@@ -55,3 +59,14 @@ locationExpected[2].entries[1].assetId = locations.entries[1].assetId;
 const locationContribution = await createVariantDesign(locationDraft, locationLibrary);
 await writeFile(new URL("../test/fixtures/variant-reproduction-v2.json", import.meta.url),
   `${JSON.stringify({ workspace: locationWorkspace, draft: locationDraft, contribution: locationContribution, expected: locationExpected }, null, 2)}\n`);
+
+for (const [version, savedWorkspace, savedContribution, independentExpected, projectedLibrary] of [
+  [1, workspace, contribution, expected, library],
+  [2, locationWorkspace, locationContribution, locationExpected, locationLibrary],
+]) {
+  const projections = await assertVariantReproduction(savedWorkspace, savedContribution, "f".repeat(64), independentExpected);
+  const csvSha256 = await sha256Hex(videoLibraryCsv(projectedLibrary));
+  const xlsxSha256 = await sha256Hex(videoLibraryWorkbook(projectedLibrary));
+  await writeFile(new URL(`../test/fixtures/variant-native-reproduction-v${version}.json`, import.meta.url),
+    `${JSON.stringify({ projections, csvSha256, xlsxSha256 }, null, 2)}\n`);
+}

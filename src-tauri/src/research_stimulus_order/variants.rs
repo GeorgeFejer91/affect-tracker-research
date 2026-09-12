@@ -54,7 +54,7 @@ pub struct VariantDocument {
     pub contribution: VariantDesign,
     pub integrity_sha256: String,
 }
-fn numbered(value: &str, prefix: &str) -> Option<u32> {
+pub(super) fn numbered(value: &str, prefix: &str) -> Option<u32> {
     let suffix = value.strip_prefix(prefix)?;
     if suffix.is_empty()
         || suffix.len() > 6
@@ -65,7 +65,7 @@ fn numbered(value: &str, prefix: &str) -> Option<u32> {
     }
     suffix.parse().ok()
 }
-fn marker_contract() -> Value {
+pub(super) fn marker_contract() -> Value {
     json!({
         "schema":"affect-research-planned-markers", "version":1,
         "vocabulary":["sessionStart","videoStart","videoEnd","isiStart","isiEnd","formStart","formEnd","pause","resume","interruption","restart","complete","partial"],
@@ -77,6 +77,9 @@ fn marker_contract() -> Value {
 }
 impl VariantDraft {
     pub fn validate(&self) -> ResearchResult<()> {
+        self.validate_cell_bytes(160)
+    }
+    pub(super) fn validate_cell_bytes(&self, cell_bytes: usize) -> ResearchResult<()> {
         if self.columns.is_empty()
             || self.columns.len() > 64
             || self.rows.is_empty()
@@ -110,7 +113,7 @@ impl VariantDraft {
             }
             for (c, cell) in row.iter().enumerate() {
                 let id = &self.entry_ids[r][c];
-                if cell.len() > 160
+                if cell.len() > cell_bytes
                     || numbered(id, &format!("{}-entry-", self.columns[c].variant_id)).is_none()
                     || !entries.insert(id)
                 {

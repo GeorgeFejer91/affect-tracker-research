@@ -95,7 +95,43 @@ P3 additionally enforces 6144 UTF-8 bytes per cell. Full IDs survive CSV/XLSX
 exports. v2 download requests include the validated P1 catalogue for the export
 adapter to verify against the current owned library before generating bytes.
 
-### Historical v1 projection
+### Native validation, reproduction and exports
+
+The public native owner seam is
+`research_stimulus_order::reproduction::validate_and_reproduce_saved_variants(
+workspace: &WorkspaceContribution, contribution: &serde_json::Value,
+definition_sha256: &str) -> ResearchResult<Value>`. It validates the complete
+saved workspace and matching P1/P3 version, then returns
+`{variants:[{variantId,versionSha256,timeline,markerProfile}]}` in authored order.
+Both historical v1 and location v2 are supported. Projections exactly match
+JavaScript, including duplicate-content locations and paired zero ISI boundaries.
+No runtime environment, files, participant policy or clock enters this function.
+
+`location_variants::VariantDesignV2` is a closed type with a tagged video/ISI
+entry enum; it cannot reinterpret historical v1 entries. `create` accepts the
+existing editable draft and validated P1 catalogue; `validate` recompiles and
+compares the complete contract. The old draft validator keeps its 160-byte
+limit; only the new compiler selects the 6144-byte location bound.
+
+Native `export::catalogue_bytes(&VideoCatalogueContribution, expected_library_sha256,
+LibraryFormat)` validates the declaration/hash and regenerates deterministic
+CSV/XLSX. The integration command must first call P1's
+`WorkspaceService::validate_planner_video_catalogue` to verify current owned media,
+then use the existing named-file picker. Browser helper
+`createLocationLibraryExport(catalogue, expectedLibrarySha256, format)` in
+`variant-library-export.js` performs the same pure encoding; its adapter must
+verify current media through P1 and fence workspace/producer changes. Neither
+helper accepts arbitrary paths or trusts UI-generated workbook bytes.
+
+The full master fixture from P7 `828fff7` now exercises actual named JSON file
+export/read/strict parse, unchanged canonical reexport, the P3 content-only reopen
+adapter with real P1 producer revisions, and every saved variant/language
+selection. Independent processes forbid clock/RNG/storage/navigation reads and
+produce byte-identical output. Other owner restoration in the P3-focused test is
+represented by saved-content adapters; complete combined UI restoration remains
+P7/integration evidence.
+
+### Historical v1 projection details
 
 [`projectVariantCatalogue`](../site/src/research/variant-catalogue-adapter.js)
 consumes the registered `affect-research-workspace-contribution` v1 snapshot
