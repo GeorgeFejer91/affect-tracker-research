@@ -21,6 +21,19 @@ RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
 remain; no execution success is inferred from a valid recipe or mocked run.
+## Supported session composition — 2026-09-12
+
+RR-02/RR-03 named shared seam, allocated by Main/root after `67ed319`.
+`research_runner_session.rs` now reads supported master1/2 through S4's parser
+and preserves exact PackageV1 intake. The validated source owns its directory,
+selection and history; recording reads the same source's unchanged LSL policy.
+Five focused native tests pass, including two master2 output folders with
+isolated participant selections/used history, exact source snapshots and corrupt
+snapshot rejection. Log: `runner-session-v2-native-01.log` under
+`D:/GitHub/.affect-runner-master-build/`. Only test-only lib registrations were
+needed and are excluded; their patch/hash is in the integration handoff doc.
+Main retains production registration/app mounting and assembled-app checks.
+
 ## Master-v2 worker/presenter integration — 2026-09-12
 
 RR-06/RR-10 Backend Verification, Main/root allocated named RR-02/RR-03/RR-07

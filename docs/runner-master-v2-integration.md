@@ -23,9 +23,13 @@ Register the owner modules `research_form_definition`,
   explicitly supported source version. Existing v1 Start/actions retain their
   old ingress shape and cannot submit to a v2 attempt.
 
-Main also owns supported `RunnerDocument` dispatch for directory/history/recorder
-selection. The participant number and exact source hash own output identity;
-demographic answers never determine paths or allocation.
+Main subsequently allocated supported `RunnerDocument` dispatch to Runner.
+The production session module now uses P7's bounded canonical intake followed by
+exact schema dispatch: supported master1/2 through S4, or unchanged PackageV1
+through its owner. Unsupported or invalid sources never fall back to another
+reader. Directory/history/recorder selection consumes the validated enum and
+its exact policy. The participant number and exact source hash own output
+identity; demographic answers never determine paths or allocation.
 
 `renderMasterQuestionnaire(host,definition,presentation,answers)` returns the typed
 form handle for a fields definition. Main must retain it for the occurrence and
@@ -89,3 +93,20 @@ focused rerun is retained as `runner-v2-native-final.log`.
 
 Main's final app mounting, actual native EN/DE
 execution, recorder output and independent XDF-only reconstruction remain open.
+
+## Supported session composition checkpoint
+
+The isolated `codex/segment-runner-session-v2` pass starts from `67ed319` and
+changes only `research_runner_session.rs` plus this handoff/agent ledger.
+Tests cover supported-version and source-integrity rejection, preserved v1
+readers, source/policy identity, two master2 participant selections and histories,
+exact per-source snapshots, and rejection of a corrupted retained snapshot.
+This is real local storage behavior with synthetic fixtures, not an experiment.
+The previous worker-only test adapter is now the production session composition.
+All five focused session tests pass in `runner-session-v2-native-01.log`.
+
+Native evidence uses only a Main-approved test-only four-module lib registration,
+excluded from delivery. Patch: `runner-session-v2-test-only-registration.patch`,
+SHA-256 `d2032c170fd4b4420f67bd1928379f26c1aa453de19e5c1bc6dcf55a461214bc`,
+under `D:/GitHub/.affect-runner-master-build/`. Main still owns production lib/app
+registration and actual assembled-app verification.

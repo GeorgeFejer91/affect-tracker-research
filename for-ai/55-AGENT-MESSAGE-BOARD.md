@@ -4911,3 +4911,12 @@ execution/readers. Deliver versioned Start/actions/status/responses and typed
 presentation, with focused native/JS correspondence and hostile submission
 checks. Main owns lib/command/app registration; S4 owns P2/master parsing.
 Actual installed EN/DE execution and independent XDF acceptance remain open.
+# Runner supported session intake allocation — 2026-09-12
+
+Main/root allocate RR-02/RR-03 shared `research_runner_session.rs` composition
+to Runner on isolated `codex/segment-runner-session-v2`, base `67ed319`.
+Backend Verification deliverable: supported master1/2 intake through S4's exact
+parser, unchanged PackageV1 reader and per-source directory/participant semantics.
+Evidence: focused supported-source, hostile-version, source-snapshot and selection
+isolation tests; no lib/app/CLI/lifecycle edits in the handoff. Main retains final
+registration and ordered integration; no installed execution claim follows.

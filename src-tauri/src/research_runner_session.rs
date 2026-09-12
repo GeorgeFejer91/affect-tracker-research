@@ -18,20 +18,25 @@ use tauri::{Manager, State, WebviewWindow};
 
 pub(crate) enum RunnerDocument {
     Package(Box<LoadedExperimentPackageReceipt>),
-    Master(Box<crate::research_planner_recipe::LoadedPlannerRecipe>),
+    Master(Box<crate::research_planner_recipe_supported::LoadedSupportedPlannerRecipe>),
 }
 impl RunnerDocument {
     pub(crate) fn read(source: &str) -> ResearchResult<Self> {
-        // Dispatch through P7's complete bounded reader, then retain typed owners.
-        let value = crate::research_planner_recipe::parse_planner_recipe_file(source.as_bytes())?;
-        if value["kind"] == "planner-recipe-v1" {
-            Ok(Self::Master(Box::new(
-                crate::research_planner_recipe::parse_planner_recipe_bytes(source.as_bytes())?,
-            )))
-        } else {
-            Ok(Self::Package(Box::new(
+        // P7 bounds and canonical-byte checks precede exact schema dispatch.
+        // Each owner validates its own complete version; no fallback or repair.
+        let value = crate::research_planner_recipe::read_value(source.as_bytes())?;
+        match value["schema"].as_str() {
+            Some("affect-research-planner-recipe") => Ok(Self::Master(Box::new(
+                crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes(
+                    source.as_bytes(),
+                )?,
+            ))),
+            Some("affect-research-experiment-package") => Ok(Self::Package(Box::new(
                 parse_canonical_experiment_package_text(source)?,
-            )))
+            ))),
+            _ => Err(CommandError::invalid_contract(
+                "Runner requires a supported complete master or experiment package.",
+            )),
         }
     }
     pub(crate) fn source_hash(&self) -> &str {
@@ -43,7 +48,7 @@ impl RunnerDocument {
     pub(crate) fn lsl_enabled(&self) -> bool {
         match self {
             Self::Package(p) => p.package.settings.advanced.lsl.enabled,
-            Self::Master(p) => p.recipe.policy.lsl.enabled,
+            Self::Master(p) => p.recipe.policy().lsl.enabled,
         }
     }
     fn valid_participant(&self, id: &str) -> bool {
@@ -315,6 +320,128 @@ pub async fn research_runner_selection(
 #[cfg(test)]
 mod tests {
     use super::*;
+    const MASTER_V2: &str =
+        include_str!("../../test/fixtures/runner-master-v2-owner.canonical.json");
+    #[test]
+    fn supported_master_intake_is_closed_and_preserves_exact_source_and_policy() {
+        use crate::research_planner_recipe_supported::SupportedPlannerRecipe;
+        let document = RunnerDocument::read(MASTER_V2).unwrap();
+        let RunnerDocument::Master(master) = &document else {
+            panic!("Expected master");
+        };
+        assert!(matches!(master.recipe, SupportedPlannerRecipe::V2(_)));
+        assert_eq!(master.canonical_source_text, MASTER_V2);
+        assert_eq!(document.source_hash(), master.canonical_source_byte_sha256);
+        assert_eq!(document.lsl_enabled(), master.recipe.policy().lsl.enabled);
+        assert!(document.valid_participant("P001"));
+        assert!(document.valid_participant("P100000"));
+        for id in ["P01", "P0001", "P000", "P100001", "../P001"] {
+            assert!(!document.valid_participant(id));
+        }
+        assert!(RunnerDocument::read(MASTER_V2.trim_end()).is_err());
+        let value: serde_json::Value = serde_json::from_str(MASTER_V2).unwrap();
+        for version in [
+            serde_json::json!(1),
+            serde_json::json!(3),
+            serde_json::json!("2"),
+        ] {
+            let mut wrong = value.clone();
+            wrong["version"] = version;
+            let mut bytes = crate::research_contracts::canonical_json(&wrong, &[]).unwrap();
+            bytes.push(b'\n');
+            assert!(RunnerDocument::read(std::str::from_utf8(&bytes).unwrap()).is_err());
+        }
+        let mut wrong = value;
+        wrong["segments"]["P2"]["questionnaires"]["definitions"][0]["title"] =
+            serde_json::json!("Changed without owner integrity");
+        let mut bytes = crate::research_contracts::canonical_json(&wrong, &[]).unwrap();
+        bytes.push(b'\n');
+        assert!(RunnerDocument::read(std::str::from_utf8(&bytes).unwrap()).is_err());
+        let v1 = RunnerDocument::read(include_str!(
+            "../../test/fixtures/planner-recipe-current-v1.canonical.json"
+        ))
+        .unwrap();
+        assert!(
+            matches!(v1,RunnerDocument::Master(p) if matches!(p.recipe,SupportedPlannerRecipe::V1(_)))
+        );
+        assert!(matches!(
+            RunnerDocument::read(include_str!(
+                "../../test/fixtures/experiment-package-v1.canonical.json"
+            ))
+            .unwrap(),
+            RunnerDocument::Package(_)
+        ));
+    }
+    #[test]
+    fn two_master_v2_sources_isolate_selection_history_and_reject_changed_snapshots() {
+        use crate::research_runner_master::{
+            storage::{history, MasterStorage},
+            MasterSelector, PreparedMaster,
+        };
+        let root = std::env::temp_dir().join(format!("runner-v2-session-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        let other = include_str!("../../test/fixtures/planner-recipe-v2-locations.canonical.json");
+        let a = selection(&root, MASTER_V2, Some("P001".into())).unwrap();
+        let b = selection(&root, other, Some("P002".into())).unwrap();
+        assert_ne!(a.output_directory, b.output_directory);
+        assert_eq!(
+            selection(&root, MASTER_V2, None)
+                .unwrap()
+                .participant_id
+                .as_deref(),
+            Some("P001")
+        );
+        assert_eq!(
+            selection(&root, other, None)
+                .unwrap()
+                .participant_id
+                .as_deref(),
+            Some("P002")
+        );
+        let prepared = PreparedMaster::read(
+            MASTER_V2,
+            "P001",
+            MasterSelector {
+                variant_id: "variant-3".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let attempt = MasterStorage::create(
+            &root,
+            &prepared,
+            "run-session-isolation",
+            serde_json::Value::Null,
+            false,
+        )
+        .unwrap();
+        drop(attempt);
+        assert_eq!(
+            history(&root, MASTER_V2).unwrap()["participants"][0]["participantId"],
+            "P001"
+        );
+        assert!(history(&root, other).unwrap()["participants"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+        let snapshot = root
+            .join(&a.output_directory)
+            .join("experiment.master.json");
+        assert_eq!(fs::read(&snapshot).unwrap(), MASTER_V2.as_bytes());
+        fs::write(&snapshot, b"corrupt").unwrap();
+        assert!(selection(&root, MASTER_V2, None).is_err());
+        assert_eq!(
+            fs::read(
+                root.join(&b.output_directory)
+                    .join("experiment.master.json")
+            )
+            .unwrap(),
+            other.as_bytes()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn complete_master_selection_retains_exact_source_in_its_own_folder() {
         let root =
