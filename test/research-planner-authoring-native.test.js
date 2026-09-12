@@ -7,6 +7,7 @@ test("CLI explicitly builds one hidden native WebView with its owned profile", a
   const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
   assert.match(source, /context\.config\(\)\.app\.windows\.len\(\) != 1/u);
   assert.match(source, /window\.create = false/u);
+  assert.match(source, /if tauri::is_dev\(\) \{\s*return Err\(\s*"Planner CLI requires embedded assets/u);
   assert.doesNotMatch(source, /window\.data_directory = Some/u);
   assert.match(source, /if let Some\(profile\) = &cli_profile[\s\S]*?WebviewWindowBuilder::from_config\(app, config\)\?[\s\S]*?\.data_directory\(profile\.join\("webview"\)\)[\s\S]*?\.visible\(false\)[\s\S]*?\.focused\(false\)/u);
 });

@@ -208,3 +208,12 @@ explicit absolute data-directory setter, with visibility and focus both false.
 Normal Planner/Runner window startup remains unchanged. Twelve focused adapter
 and driver tests pass; a fresh actual process receipt must prove this correction.
 No existing WebView process or profile was closed, modified or deleted.
+
+The6098972 and827ad87 verification builds also omitted Tauri's existing
+`tauri/custom-protocol` feature, permitting a development-server URL instead of
+embedded assets. Neither attempt produced native readback evidence. CLI startup
+now rejects development-mode builds before creating a profile or window.
+Use `pnpm planner:cli:build` (optionally `--no-default-features` for a clearly
+unqualified authoring check); this builds/verifies desktop assets and enables
+the embedded protocol explicitly. Prior unrelated native receipts must be audited
+against their own build commands, not presumed valid or invalid from these failures.

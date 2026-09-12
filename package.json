@@ -18,6 +18,7 @@
     "qualification:browser:serve": "python -m http.server 8013 --bind 127.0.0.1 --directory .",
     "desktop:dev": "vite --config desktop/vite.config.js",
     "desktop:build": "vite build --config desktop/vite.config.js && node scripts/verify-research-build.js desktop",
+    "planner:cli:build": "node scripts/build-planner-cli.js",
     "desktop:preview": "vite preview --config desktop/vite.config.js",
     "desktop:icons": "tauri icon desktop/icons/app-icon.svg -o src-tauri/icons",
     "desktop:logos:build": "node scripts/build-app-logo-concepts.mjs",

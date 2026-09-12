@@ -13,6 +13,11 @@
 - Twelve focused adapter/driver checks pass. Actual rebuilt process/profile
   and preset IPC readback remain pending. Earlier transport/readback receipts
   remain valid for their observed commands, but did not prove profile isolation.
+- The609/827 verification builds also omitted tauri/custom-protocol and could
+  load a dev URL. Neither produced ready/readback; they are retained failures.
+  CLI now rejects tauri::is_dev() before any profile/window, and the dedicated
+  build helper explicitly enables embedded assets. Audit earlier receipts using
+  their exact commands. Profile proof now inspects only the owned child's browser.
 
 ### 20260912-local-preset-installation-namespace
 

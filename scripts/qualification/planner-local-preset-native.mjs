@@ -1,16 +1,39 @@
 // Actual production stdin -> hidden Planner -> native preset read -> CSV import.
 // Read-only with respect to the local preset and experiment. No GUI attachment.
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { runPlannerCli } from "./planner-cli-driver.mjs";
 import { RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS } from "../../site/src/research/questionnaire-local-presets.js";
 
 const [executable, outputDirectory, expectedCommit] = process.argv.slice(2);
 assert.ok(executable && outputDirectory && /^[a-f0-9]{40}$/.test(expectedCommit ?? ""),
   "Usage: node planner-local-preset-native.mjs <executable> <fresh-evidence-dir> <build-commit>");
+let profileReview;
 const receipt = await runPlannerCli({ executable, outputDirectory, steps: [
-  { action: { kind: "catalogue" } },
+  { action: ({ ready }) => {
+    assert.equal(process.platform, "win32", "This native profile receipt is Windows-specific.");
+    assert.ok(Number.isSafeInteger(ready.processId) && ready.processId > 0);
+    const raw = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+      `Get-CimInstance Win32_Process -Filter 'ParentProcessId = ${ready.processId}' | Where-Object Name -eq 'msedgewebview2.exe' | Select-Object ProcessId,ParentProcessId,CommandLine | ConvertTo-Json -Compress`],
+    { windowsHide: true, encoding: "utf8", timeout: 10000 });
+    const children = [].concat(JSON.parse(raw));
+    assert.equal(children.length, 1, "The CLI must own a distinct WebView browser process.");
+    const browser = children[0];
+    assert.equal(browser.ParentProcessId, ready.processId);
+    const profile = /--user-data-dir=(?:"([^"]+)"|(\S+))/u.exec(browser.CommandLine);
+    assert.ok(profile, "The owned browser did not declare its profile.");
+    const directory = resolve(profile[1] ?? profile[2]);
+    assert.equal(basename(directory), "webview");
+    assert.match(basename(dirname(directory)), /^affect-planner-cli-[a-f0-9-]{36}$/u);
+    assert.equal(dirname(dirname(directory)).toLowerCase(), resolve(tmpdir()).toLowerCase());
+    profileReview = { processId: ready.processId, browserProcessId: browser.ProcessId,
+      browserParentProcessId: browser.ParentProcessId, directory,
+      ownedFreshProfile: true, sharedGuiProfile: false };
+    return { kind: "catalogue" };
+  } },
   { action: { kind: "get", field: "P2.localPresets" } },
   { action: { kind: "set", field: "P2.localPresets", value: [] }, expectStatus: "rejected" },
   { action: { kind: "get", field: "P2.localPresets" } },
@@ -33,6 +56,7 @@ assert.equal(responses[3].revision, responses[1].revision);
 const review = { schema: "affect-research-local-preset-native-readback", version: 1,
   passed: true, buildCommit: receipt.ready.buildCommit, executableSha256: receipt.executableSha256,
   transcriptSha256: receipt.transcriptSha256, preset: local,
+  profile: profileReview,
   nativeIpcAndProductionImporter: true, readonlyRejectionPreservedState: true,
   limits: ["Native installed-source readback, not native file-picker installation, study-source saving, rendered UI, master export or Runner qualification."] };
 await writeFile(join(outputDirectory, "readback-review.json"), `${JSON.stringify(review, null, 2)}\n`, { flag: "wx" });

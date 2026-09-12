@@ -66,6 +66,12 @@ pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String
     if arguments != ["jsonl"] {
         return Err("Unknown CLI arguments. Use --help.".into());
     }
+    if tauri::is_dev() {
+        return Err(
+            "Planner CLI requires embedded assets. Build with --features tauri/custom-protocol."
+                .into(),
+        );
+    }
     let profile = std::env::temp_dir().join(format!("affect-planner-cli-{}", uuid::Uuid::new_v4()));
     std::fs::create_dir(&profile)
         .map_err(|_| "Could not create an isolated Planner CLI profile.")?;
