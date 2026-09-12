@@ -13,6 +13,7 @@ import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
 import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
 import { completeQuestionnaireAssetStorageRequest } from "./questionnaire-storage-request.js";
 import { completeExperimentPackageSaveRequest } from "./package-save-request.js";
+import { completePlannerFileRequest, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
@@ -1247,7 +1248,10 @@ export class NativeResearchRuntimeBridge {
           } else if (operation === "save-order") {
             receipt = await this.invoke("research_save_stimulus_order", { workspaceId, document: payload.document });
           } else if (operation === "export-library") {
-            const saved = await this.invoke("research_export_video_library", { workspaceId, librarySha256: payload.librarySha256, format: payload.format });
+            if (!["csv", "xlsx"].includes(payload.format) || (Object.hasOwn(payload, "catalogue") && payload.catalogue?.version !== 2)) throw new TypeError("Unsupported catalogue export format or version.");
+            const saved = payload.catalogue?.version === 2
+              ? await this.invoke("research_export_video_catalogue", { workspaceId, catalogue: payload.catalogue, librarySha256: payload.librarySha256, format: payload.format })
+              : await this.invoke("research_export_video_library", { workspaceId, librarySha256: payload.librarySha256, format: payload.format });
             if (!saved) throw new Error("Video library export cancelled.");
             receipt = { saved };
           } else throw new Error("Unknown video authoring operation.");
@@ -1284,6 +1288,18 @@ export class NativeResearchRuntimeBridge {
     this.#listen(this.root, RESEARCH_UI_EVENTS.loadExperimentPackageRequest, (event) => {
       event.preventDefault();
       this.#queue(() => this.#loadExperimentPackage());
+    });
+    this.#listen(this.root, PLANNER_LOAD_REQUEST, event => {
+      event.preventDefault();
+      // Selecting authored JSON never rescans or authorizes its media folders.
+      this.#queue(() => completePlannerFileRequest(event.detail, () => this.invoke("research_load_planner_recipe")));
+    });
+    this.#listen(this.root, PLANNER_SAVE_REQUEST, event => {
+      event.preventDefault();
+      this.#queue(() => completePlannerFileRequest(event.detail, () => {
+        if (!this.plannerOnly || typeof event.detail?.sourceText !== "string") throw new TypeError("Save a complete recipe from Experiment Planner.");
+        return this.invoke("research_save_planner_recipe", { sourceText: event.detail.sourceText });
+      }));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.saveExperimentPackageRequest, (event) => {
       event.preventDefault();

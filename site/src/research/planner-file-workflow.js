@@ -49,7 +49,7 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
         if (selected?.kind === "experiment-package-v1") {
           if (typeof openLegacy !== "function") throw new TypeError("The legacy recipe reader is not connected.");
           source = null;
-          return openLegacy(selected.document, { guard: current });
+          return await openLegacy(selected.document, { guard: current });
         }
         if (selected?.kind !== "planner-recipe-v1") throw new TypeError("Unsupported recipe file type.");
         const prepared = await preparePlannerRecipeReopenV1(selected.document.canonicalSourceText, { isCurrent: current });

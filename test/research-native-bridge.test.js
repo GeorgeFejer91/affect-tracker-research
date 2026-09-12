@@ -31,6 +31,38 @@ import {
 } from "../site/src/research/native-bridge.js";
 import { createInputBindingPreset } from "../site/src/research/contracts.js";
 import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "../site/src/research/planner-file-request.js";
+
+test("Planner native file requests acknowledge exact results without rescanning media or invoking Runner", async () => {
+  const root = new EventTarget(), win = new EventTarget(), calls = [];
+  root.dataset = { researchProgram: "planner" }; root.querySelector = () => null; root.researchUi = {};
+  let response = { kind: "planner-recipe-v1", document: { canonicalSourceText: "strict adapter fixture" } }, fail = false;
+  const bridge = new NativeResearchRuntimeBridge(root, { windowObject: win,
+    setIntervalObject: () => 1, clearIntervalObject: () => {}, invoke: async (command, payload) => {
+      calls.push({ command, payload });
+      if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
+      if (command === "research_native_media_capability") return nativeMediaCapability();
+      if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
+      if (["research_load_planner_recipe", "research_save_planner_recipe"].includes(command)) {
+        if (fail) throw Error("selected file failed");
+        return response;
+      }
+      return {};
+    } });
+  await bridge.initialize(); calls.length = 0;
+  assert.deepEqual(await requestPlannerFile(root, PLANNER_LOAD_REQUEST), response);
+  assert.deepEqual(calls.map(item => item.command), ["research_load_planner_recipe"]);
+  response = { acknowledged: "transport fixture; full workflow validates its exact receipt" };
+  assert.deepEqual(await requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: "exact source" }), response);
+  assert.deepEqual(calls.at(-1), { command: "research_save_planner_recipe", payload: { sourceText: "exact source" } });
+  response = null; assert.equal(await requestPlannerFile(root, PLANNER_LOAD_REQUEST), null);
+  fail = true; await assert.rejects(requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: "exact source" }), /selected file failed/u);
+  const count = calls.length;
+  bridge.plannerOnly = false;
+  await assert.rejects(requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: "exact source" }), /Experiment Planner/u);
+  assert.equal(calls.length, count);
+  bridge.plannerOnly = true; bridge.destroy();
+});
 
 test("native capture fences cancelled, rearmed, rejected and delayed results", async () => {
   const root = new EventTarget(), win = new EventTarget(), projected = [], captures = [], calls = [], polls = [];

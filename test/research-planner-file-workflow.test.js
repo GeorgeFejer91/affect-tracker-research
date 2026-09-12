@@ -6,7 +6,7 @@ import { createPackageExportController } from "../site/src/research/package-expo
 import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
 import { parsePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
 
-const sourceText = await readFile(new URL("./fixtures/planner-recipe-v1.canonical.json", import.meta.url), "utf8");
+const sourceText = await readFile(new URL("./fixtures/planner-recipe-current-v1.canonical.json", import.meta.url), "utf8");
 const parsed = await parsePlannerRecipeV1(new TextEncoder().encode(sourceText));
 function receipt(document) {
   return { schema: "affect-research-planner-recipe-save-receipt", version: 1,
@@ -113,4 +113,15 @@ test("capture-phase invalidation fences now without reading producers before the
   assert.equal(exporter.snapshot().revision, before + 1);
   assert.equal(notifications, 0);
   exporter.invalidate(); assert.equal(notifications, 1);
+});
+
+test("legacy asynchronous adoption retains Open busy state until it completes", async () => {
+  const f = await fixture(); let release;
+  const opening = f.workflow.open(() => ({ kind: "experiment-package-v1", document: {} }), {
+    openLegacy: () => new Promise(resolve => { release = resolve; }),
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.workflow.opening, true);
+  assert.equal((await f.workflow.save()).status, "busy");
+  release(true); assert.equal(await opening, true); assert.equal(f.workflow.opening, false);
 });

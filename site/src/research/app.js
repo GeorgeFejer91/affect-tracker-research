@@ -66,6 +66,7 @@ import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
 import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
+import { prepareVerifiedCatalogueExport } from "./planner-catalogue-export.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
@@ -3260,11 +3261,21 @@ function bindResearchInteractions(root, { surface }) {
     } else if (operation === "save-order") {
       receipt = await selected.saveStimulusOrder(payload.document);
     } else if (operation === "export-library") {
-      const current = await selected.videoLibrary();
-      if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+      if (!["csv", "xlsx"].includes(payload.format)) throw new TypeError("Choose CSV or Excel.");
+      let bytes;
+      if (Object.hasOwn(payload, "catalogue")) {
+        bytes = await prepareVerifiedCatalogueExport(payload, {
+          getSnapshot: getWorkspaceContributionSnapshot, readMedia: () => selected.videoLibrary(),
+          isCurrent: () => !researchUiDisposed && mode === "setup" && selected === workspace,
+        });
+      } else {
+        const current = await selected.videoLibrary();
+        if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+        bytes = payload.bytes;
+      }
       if (selected !== workspace) throw new Error("The workspace changed during export.");
       const mime = payload.format === "csv" ? "text/csv;charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      const url = URL.createObjectURL(new Blob([payload.bytes], { type: mime }));
+      const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
       const link = document.createElement("a");
       link.href = url; link.download = `video-library.${payload.format}`;
       root.append(link); link.click(); link.remove();
@@ -4096,7 +4107,7 @@ function bindResearchInteractions(root, { surface }) {
       : openBrowserPlannerRecipeFile(options), { openLegacy: applyExperimentPackageReceipt })
       .then(result => {
         if (result === null) announce("Open cancelled. The current design is preserved.");
-        else if (result) announce("Recipe opened for editing. Rebind and verify its video folder before changing and confirming media-dependent sections. An unchanged copy can be saved without granting media access.");
+        else if (result && experimentPackageDocument?.recipe) announce("Recipe opened for editing. Rebind and verify its video folder before changing and confirming media-dependent sections. An unchanged copy can be saved without granting media access.");
       }).catch(error => announce(`Recipe open failed: ${error instanceof Error ? error.message : String(error)}`));
   }
 
@@ -5019,7 +5030,7 @@ function bindResearchInteractions(root, { surface }) {
   const authoringIntents = new AbortController();
   // Capture before child editor handlers, including edits which are invalid or
   // later reverted. Disclosure, confirmation and preview inspection are not edits.
-  for (const type of ["input", "change"]) root.addEventListener(type, event => {
+  for (const type of ["input", "change", "paste"]) root.addEventListener(type, event => {
     const target = event.target;
     if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label")) return;
     markPlannerEdit();
@@ -5030,7 +5041,7 @@ function bindResearchInteractions(root, { surface }) {
     const sheetMutation = ["reverse", "delete-row", "add-row", "upload", "undo", "move-up", "move-down", "remove"].includes(button.dataset.sheetAction);
     const xrMutation = ["angles", "import"].includes(button.dataset.xrAction);
     if (sheetMutation || xrMutation || button.closest("#stimulus-order-editor")
-      || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert], [data-layout-reset]")
+      || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert], [data-layout-reset], [data-color-reset]")
       || ["feedback-upgrade-v2", "preview-color-apply", "preview-response-reset", "preview-recolor", "binding-reset", "workspace-choose", "video-import", "video-folder-import", "study-language-add-button", "questionnaire-add-blank"].includes(button.id)) markPlannerEdit();
   }, { capture: true, signal: authoringIntents.signal });
   const authoredMutation = operation => (...args) => { markPlannerEdit(); return operation(...args); };

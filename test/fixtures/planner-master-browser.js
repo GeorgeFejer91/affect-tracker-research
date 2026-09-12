@@ -3,7 +3,7 @@ import { preparePlannerSurface } from "../../site/src/research/planner-surface.j
 import { canonicalJson } from "../../site/src/research/canonical.js";
 import { parsePlannerRecipeV1 } from "../../site/src/research/planner-recipe.js";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
-import sample from "./planner-recipe-locations-v1.canonical.json";
+import sample from "./planner-recipe-locations-current-v1.canonical.json";
 
 const checks = [], errors = [];
 const check = (name, condition) => { if (!condition) throw Error(name); checks.push(name); };
@@ -49,16 +49,25 @@ try {
   };
   edit("#experiment-title", "Fresh assembled experiment");
   edit("#sampling-frequency", "111");
+  const names = sample.segments.P1.videoCatalogue.entries.map(entry => entry.annotationId);
+  const clipboard = new DataTransfer(); clipboard.setData("text/plain", `${names[0]}\tISI2\nISI1\t${names[1]}`);
+  q('[data-order-row="0"][data-order-column="0"]').dispatchEvent(new ClipboardEvent("paste", { clipboardData: clipboard, bubbles: true, cancelable: true }));
+  edit('[data-isi-id="ISI2"]', "625", "change");
+  edit('[data-layout-field="referencePolicy"]', "maximum-oriented-dimensions", "change");
+  edit('[data-layout-field="offsetX"]', "5");
+  edit("#color-idle-hex", "#123abc");
+  edit("#preview-full-span-duration", "5500");
   await wait(150);
-  const confirm = async section => {
-    if (ui.openSection !== section) ui.openSetupSection(section);
-    const button = q(`[data-confirm-section="${section}"]`);
+  const expectedFeedback = ui.getFeedbackContributionSnapshot().contribution;
+  const confirm = async (section, app = root, controller = ui) => {
+    if (controller.openSection !== section) controller.openSetupSection(section);
+    const button = app.querySelector(`[data-confirm-section="${section}"]`);
     check(`${section} footer exists and is enabled`, button && !button.disabled);
     button.click();
     await until(() => button.getAttribute("aria-busy") === "false", `${section} confirmation completion`);
     await wait(50);
-    check(`${section} confirms exact current owner`, ui.reviewedSetupSections.includes(section));
-    check(`${section} circled check is visible`, !q(`[data-section-review-check="${section}"]`).hidden);
+    check(`${section} confirms exact current owner`, controller.reviewedSetupSections.includes(section));
+    check(`${section} circled check is visible`, !app.querySelector(`[data-section-review-check="${section}"]`).hidden);
   };
   for (const section of ["workspace", "questionnaires", "stimuli", "layout", "xr"]) await confirm(section);
   check("cycle automatically reaches Section 7", ui.openSection === "review");
@@ -88,7 +97,13 @@ try {
   const document = await parsePlannerRecipeV1(firstBytes);
   check("saved bytes are sole adopted document", document.canonicalSourceText === ui.plannerRecipeSourceText);
   check("fresh field edits and current Preview are fully saved", document.recipe.segments.P1.study.title === "Fresh assembled experiment"
-    && document.recipe.policy.samplingFrequencyHz === 111 && canonicalJson(document.recipe.segments.P5) === canonicalJson(sample.segments.P5));
+    && document.recipe.policy.samplingFrequencyHz === 111 && canonicalJson(document.recipe.segments.P5) === canonicalJson(expectedFeedback));
+  check("direct color and response controls change saved settings", document.recipe.segments.P5.visual.colors.idle === "#123abc"
+    && document.recipe.segments.P5.response.fullSpanDurationMs === 5500);
+  check("direct reference method and offset are saved", document.recipe.segments.P4.reference.source.policy === "maximum-oriented-dimensions"
+    && document.recipe.segments.P4.feedback.offset.x === 5);
+  check("pasted order and edited named ISI survive compilation", document.recipe.segments.P3.variants[0].entries[0].referenceId === names[0]
+    && document.recipe.segments.P3.isiDefinitions.find(item => item.isiId === "ISI2").durationMs === 625);
   check("all six complete segments are present", Object.keys(document.recipe.segments).join(",") === "P1,P2,P3,P4,P5,P6");
   const reopened = window.document.createElement("section");
   reopened.innerHTML = renderResearchUiMarkup("browser"); preparePlannerSurface(reopened);
@@ -109,12 +124,34 @@ try {
   reopened.querySelector("#package-save-choose").click();
   check("unchanged pending copy is acknowledged", (await saving).status === "saved");
   check("copy is byte-identical", new TextDecoder().decode(await (await fetch("/saved-file")).arrayBuffer()) === document.canonicalSourceText);
+  publish(reopened); await until(() => !other.getWorkspaceContributionSnapshot().pending, "exact media rebind");
+  await other.setStimulusOrderCatalogue(other.getWorkspaceContributionSnapshot());
+  await wait(150);
+  check("exact rebind preserves full authored P1", canonicalJson(other.getWorkspaceContributionSnapshot().contribution) === canonicalJson(document.recipe.segments.P1));
+  const sampling = reopened.querySelector("#sampling-frequency");
+  sampling.value = "112"; sampling.dispatchEvent(new Event("input", { bubbles: true }));
+  sampling.value = "111"; sampling.dispatchEvent(new Event("input", { bubbles: true }));
+  check("edit and revert requires current composition after rebind", !other.canSaveUnchangedPlannerRecipe);
+  for (const section of ["workspace", "questionnaires", "stimuli", "layout", "xr"]) await confirm(section, reopened, other);
+  const reboundSave = other.savePlannerRecipe();
+  await until(() => reopened.querySelector("#package-save-dialog").open, "rebound current compile dialog");
+  reopened.querySelector("#package-save-choose").click();
+  check("rebound current design saves through fresh capture", (await reboundSave).status === "saved");
+  check("rebound compilation preserves exact complete source", other.plannerRecipeSourceText === document.canonicalSourceText);
   reopened.querySelector("[data-layout-reset]").click();
   check("layout reset immediately revokes unchanged source eligibility", !other.canSaveUnchangedPlannerRecipe
     && other.getScreenLayoutDraftDocument().draft.referencePolicy === null);
   let resetSaveRejected = false;
   try { await other.savePlannerRecipe(); } catch { resetSaveRejected = true; }
   check("reset design cannot silently save the old master", resetSaveRejected && !reopened.querySelector("#package-save-dialog").open);
+  await other.restorePlannerRecipe(document.canonicalSourceText, guard);
+  const resetColor = reopened.querySelector("[data-color-reset]");
+  check("color reset control exists", resetColor);
+  resetColor.click();
+  check("color reset immediately revokes unchanged source eligibility", !other.canSaveUnchangedPlannerRecipe);
+  let colorSaveRejected = false;
+  try { await other.savePlannerRecipe(); } catch { colorSaveRejected = true; }
+  check("reset colors cannot silently save the old master", colorSaveRejected && !reopened.querySelector("#package-save-dialog").open);
   other.destroy();
   reopened.remove(); root.hidden = false;
   ui.openSetupSection("review"); await wait(150); q("#package-generate").scrollIntoView({ block: "end" });
