@@ -62,6 +62,41 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p2-master-content-and-presentation
+
+- Owner **S2**, P2-04–P2-08, **open**, Backend Verification under the user's
+  new full-Planner completion allocation. Isolated branch
+  `codex/segment-p2-master-content`, worktree
+  `D:\GitHub\affect-tracker-research-questionnaires-table`, clean combined
+  base `7946bc6b319ddf689bdaa81c07ec8aa6a4b3869d` (application `d6acfd1`).
+- Current gap: label repetition 1/5/10 is editor-only, lacks change notification,
+  blocks the old contribution and disappears on restore. Existing item labels,
+  codes, required flags, definitions, modules and nested languages already have
+  strict legacy preservation. Complete that data flow without changing frozen
+  v1 readers or inventing scoring totals/translations/placement correspondence.
+- Deliverable: a strict versioned P2 presentation/content companion, exact
+  UI-to-contribution coverage, guarded editable restore, multilingual custom
+  fixture and independent-process canonical reproduction. Own P2 model/editor
+  and P2-only app getter/restore hooks, focused tests and owned documentation.
+  S7 owns master embedding/registration/file dispatch; integration owns shared
+  confirmation and final convergence. Coordinate the wrapper before collection.
+- Evidence: malformed/unknown/missing/stale/hash/coverage rejection; every
+  visible questionnaire data field; presentation-only revision changes;
+  delayed restore/edit/teardown fencing; background actual-controller cases.
+  Reuse accepted compact UI; do not repeat settled visual matrices.
+- Deferred: Q09 new scoring/placement/missing-answer policy, Q13 invalid draft
+  durability, unavailable authorized TAS assets, actual Runner correspondence,
+  acquisition, hardware, native permissions and publication. Runner work does
+  not block Planner-owned serialization and editable content validation.
+- Update: pure contract `c489438` sent to S7 with exact module/API/schema and
+  shared fixture digest. UI/native follow-up implements the agreed getters and
+  guarded restore; 654 JS / 202 native library tests pass, Chrome 24 cases at
+  each of 1280/800 px and production closure pass. Native owner seam is one new
+  pure `research_questionnaire_recipe` module plus crate-visible existing tree
+  validator; no native permissions, commands or normalizer algorithm changes.
+  P7 registration/root serde remains exclusively S7-owned. The user authorized
+  integrator merge/reload after readiness and confirmed in-app work saved.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion

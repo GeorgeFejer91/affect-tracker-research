@@ -79,14 +79,16 @@ attach concrete receipts in `40-ROADMAP.md` when resolving an item.
   modify either source to make them look equivalent. Any additional authorized
   instrument version or computed scoring policy needs its own explicit decision,
   provenance and tests. TAS remains unavailable as a ready bilingual preset.
-- **Persist and execute questionnaire label repetition through an explicit
-  versioned contract.** Section 2 can preview answer labels above every item,
-  every 5 items, or every 10 items, but v1 has no presentation field for this.
-  Decide the package/settings/questionnaire presentation owner and migration,
-  add exact browser/Rust fixtures, and implement an accessible participant
-  renderer that retains question/option associations, keyboard operation,
-  focus, reflow, and non-color meaning. Until then this remains labelled
-  preview state and must not affect Runner behavior or current package hashes.
+- **Integrate the P2 presentation companion, then qualify its future Runner
+  rendering separately.** The 2026-09-12 P2 owner pass adds an explicit versioned
+  contribution preserving label repetition 1/5/10 with exact definition hashes,
+  strict JavaScript/Rust validation and guarded editable restore. See
+  `docs/planner-p2-questionnaire-recipe.md`; P7 owns final master embedding.
+  Frozen v1 still has no presentation field and must not silently drop choices.
+  Future Runner work must retain question/option associations, keyboard operation,
+  focus, reflow, and non-color meaning, including an early label-header restart
+  when consecutive items have different answer labels. Runner qualification is
+  deferred and does not block Planner-owned serialization.
 - **Review optional-item output semantics.** The current single-choice
   answer validator omits unanswered optional items from response rows rather
   than writing a blank row. Decide whether analysis needs explicit missing-

@@ -139,6 +139,38 @@ that tore down the pane before screenshot are superseded by `final-chrome`.
 Edge returned no receipt and remains unverified. No installed Tauri, actual
 video decoding, physical calibration/accessibility, Runner or publication claim.
 
+## P2 full-content/presentation successor receipt — 2026-09-12
+
+Isolated `codex/segment-p2-master-content`, combined base `7946bc6`, adds the
+strict P2-owned wrapper documented in `docs/planner-p2-questionnaire-recipe.md`.
+Pure contract checkpoint: `c489438`. It preserves unchanged scientific
+definitions/modules/language trees and binds explicit label repetition 1/5/10
+to each definition's ID/hash/order. Legacy readers remain strict and unchanged
+in format. P7 owns successor root embedding, acceptance registration and file
+dispatch; this is owner-component evidence, not completed combined export.
+
+The UI exposes no JSON. Repetition changes notify the owner revision without
+changing scientific source content. Undo and restore preserve presentation;
+asynchronous restore rejects after a newer edit, replacement, cancellation,
+mode change or UI disposal. The native contribution validator adds no IPC,
+filesystem authority or unsafe boundary. Its only shared visibility seam is
+`LanguageSelectionTreeV1::normalize_and_validate` becoming crate-visible without
+an algorithm change.
+
+Evidence: 654/654 JavaScript tests; 202/202 no-default-features Rust library
+tests; three focused successor Rust tests; six pure successor JS tests;
+24/24 actual-controller Chrome cases at 1280 and 800 px. Development receipts:
+`D:/GitHub/.affect-checks/s2-recipe-ui-dev-20260912` and
+`D:/GitHub/.affect-checks/s2-recipe-ui-narrow-20260912`. These identify dirty
+owner source and capture all bundled source hashes. Both screenshots inspected:
+compact controls/helper text fit their panes. Desktop and Pages production
+boundary checks pass (9/213 files). Final clean-source receipts are collected
+after the implementation checkpoint. Edge, installed Tauri, native file-dialog
+interaction, Runner correspondence, hardware and publication are not claimed.
+
+MAIA/TAS provenance limitations and Q09/Q13 remain open. Preserve supplied
+explicit codes; no computed totals, invented translation or new placement policy.
+
 ## P2 producer/consumer closure receipt — 2026-09-12
 
 On the isolated P2 branch based at `714b22d`, added a coverage-aware, non-mutating
