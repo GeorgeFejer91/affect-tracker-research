@@ -114,6 +114,68 @@ count dependency-discovery bypasses as a linked artifact. Existing safe pre-main
 DLL loading and runtime redistribution/resource packaging gates remain distinct
 release limits. This goal does not approve a new unsafe adapter or runtime bundle.
 
+## Integrated workflow proof — `63fe416`, 2026-09-12
+
+Root independently ran the actual combined controller fixture at clean
+`63fe4169548ae609382421108992874bafad69bf` in Chrome and Edge: **64 checks per
+browser passed**, producing byte-identical master JSON. It exercises real P3
+TSV paste and named-ISI edits, P4 method/geometry changes, P5 color/response
+changes, study/policy edits, sequential confirmation, final P5 capture, named
+save, exact disk readback, fresh editable Open, unresolved-media copy, exact
+media rebind, edit/revert, reconfirmation and byte-identical re-export. P4 layout
+Reset and P5 color Reset now revoke old-source eligibility. Those two real
+integration defects were independently found and routed before this checkpoint.
+
+The fixture seeds P2 content through its owner restore API; its complete table
+editing evidence remains separately owned by S2. Media and file-picker boundaries
+are synthetic; bytes are written to a real isolated test file. This is not OS
+picker interaction, physical decoding or installed-app qualification. Canonical
+delivery and the final all-section visual check remain open.
+
+Root then passed each actual browser-generated file to the independently built,
+source-bound native reader from clean `732bf88`. Both canonical documents,
+reproduction matrices and all six selected variant/language projections agree;
+derived desktop geometry difference is zero. Both browser files have SHA-256
+`09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+Evidence directories:
+
+- `D:/GitHub/.affect-preview-checks/master-workflow-assets-chrome-63fe416-20260912`
+- `D:/GitHub/.affect-preview-checks/master-workflow-assets-edge-63fe416-20260912`
+- `D:/GitHub/.affect-preview-checks/master-workflow-native-63fe416-20260912`
+
+The browser harness now keeps its server alive until the page's actual HTTP
+receipt and complete PNG arrive, independently of early Edge launcher exit.
+It serves real CSS/assets and binds source, harness, HTML, browser executable
+and screenshot hashes. Earlier missing-icon harness images are superseded for
+visual inspection; the underlying 64 workflow checks also passed there.
+
+P7's native cross-check found small raw XR floating-point differences. Successor
+`70b30a4` introduces explicitly tagged `planner-recipe-reproduction-v2`: exact
+full layout inputs/dependencies and named algorithms determine portable layout
+identity, while both implementations still resolve/validate the geometry.
+Authored values and root/segment hashes remain exact; geometry-only comparison
+uses the existing strict absolute error below 1e-10. Frozen experiment-package
+v1 and earlier master reproduction-v1 semantics remain unchanged. Independent
+review found this identity design sound and verified all 159 source hashes,
+ten generated file hashes and the executable hash in clean `732bf88` evidence
+(eight distinct recipes, 60 selections, maximum difference about 3.55e-15).
+The review additionally caught a native-only 64-edge language-tree cap, distinct
+from JSON nesting depth. Owner fix `48318a9` restores the existing 256-node owner
+contract with a real 66-node vector; final combined collection/parity is required.
+
+Normal native build prerequisites are now restored. S1 reports **212 passing,
+one ignored** linked native-feature tests with `DOCS_RS` absent, required pinned
+runtime verification enabled, and process-scoped SDK paths. This removes the
+missing-development-SDK blocker, not installed DLL/redistribution qualification.
+S1 is closing the separate current-directory/link verification finding from P3.
+
+Latest remaining handoffs include P3 native export `ea3c788` and test-only v2
+expectation `c7afb28`, P4 final `fa64e8d` (app `77e4752`), P6 full-master UI
+`7fd56d5` (app `51685b0`, 60 assertions at each width), and Preview badge removal
+`6d9cc35`. Integration remains the sole merger. Final saved Review header text
+must agree with the actual master state; root routed the residual misleading
+"Resolve blocking checks" caption observed at `63fe416`.
+
 ## Existing-task assignments
 
 All owners received the new goal and Planner-only clarification. Stage:

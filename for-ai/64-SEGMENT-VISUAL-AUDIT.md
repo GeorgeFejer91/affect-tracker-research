@@ -100,6 +100,40 @@ The residual heading "Before starting" was routed to integration for Planner
 review wording. This smoke proves the changed helper/default Planner surface,
 not populated master export or a native/runtime bridge.
 
+## Combined master UI checkpoint — `0e492ff` / `63fe416`
+
+Root and independent review inspected all 18 Chrome/Edge default Layout/Review
+PNGs at exact clean `0e492ff8a27873f97d81180fa98544b08554096b`. All image/harness
+hashes match; no participant controls, runtime errors or pane overflow appear.
+P4's unselected required reference method, missing-media errors, paired numeric
+fields and confirmation footer are readable at 1280/800. P7's grouped issues
+and Save footer fit. Full evidence is under
+`D:/GitHub/.affect-preview-checks/master-ui-{chrome,edge}-0e492ff-20260912`.
+
+One real new P5 finding: the duplicate "Previewing Classic Flubber" badge covers
+the upper edge of Flubber/halo in the narrow pane. Live Preview handoff `6d9cc35`
+removes the visual badge while retaining its accessible state and selected-mode
+controls; it changes no animation size or halo. Final combined recapture remains
+required. The orphan "Before starting" heading is corrected in later `63fe416`.
+
+The 64-check full master workflow at clean `63fe416` passed independently in both
+Chrome and Edge. Root inspected both final saved-state screenshots after fixing
+the harness to serve actual CSS/assets. Its new source/HTML/browser/PNG bindings
+are recorded under `master-workflow-assets-{chrome,edge}-63fe416-20260912`.
+The images exposed a truthful-state issue: a saved file and completed checkmark
+still show "Resolve blocking checks" in the Review header. This is routed to
+integration. The fixture uses synthetic media/picker boundaries and seeds P2 via
+its owner API; see67 for exact workflow/native-reader evidence and limits.
+
+Independent final P4 owner review also verified six `77e4752` images, all 75
+served source hashes and receipt hash at
+`D:/GitHub/.affect-preview-checks/p4-contract-20260912/final-authoring-chrome`.
+The six scenes contain 231 passing checks, with no material layout defect at
+780/417 px pane widths. Invalid input, focus, error and footer appear together.
+The unselected-method state is asserted but absent from those owner PNGs; the
+combined default images above provide that visual coverage. The owner receipt
+does not bind a capture-time browser version/hash.
+
 ## Capture method and baseline
 
 The first audited integrated application source is clean `bed461b9c65d8e518092d8c9d813e944b1f96ce6`.
