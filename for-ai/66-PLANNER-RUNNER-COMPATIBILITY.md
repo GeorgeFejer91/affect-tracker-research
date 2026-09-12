@@ -1,5 +1,13 @@
 # Planner JSON and Runner compatibility contract
 
+## Correspondence goal activated — 2026-09-12
+
+The direct request now activates the formerly deferred end-to-end test: author
+from production CLI, verify UI parity, load the exact exported master and observe
+Runner actions. See [69](69-CLI-RUNNER-END-TO-END-GOAL.md) for allocation,
+evidence and remaining inputs. Earlier deferral text below does not block this
+newly authorized work, and completed Planner authoring remains independently true.
+
 This is the producer/consumer inventory, not another recipe schema. P7 owns
 complete canonical recipe formats. Runner derives requirements after strict
 parsing and rejects any unsupported execution feature. The final correspondence

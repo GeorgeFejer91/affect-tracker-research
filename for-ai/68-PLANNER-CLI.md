@@ -1,5 +1,9 @@
 # Planner CLI authoring extension
 
+The researcher has now activated the complete CLI/UI/Runner test goal in
+[69](69-CLI-RUNNER-END-TO-END-GOAL.md). Its explicit execution allocation
+supersedes earlier Runner deferral for that test, without weakening claim gates.
+
 ## User amendment — 2026-09-12
 
 After completion of the baseline Planner in [67](67-PLANNER-COMPLETION-GOAL.md),
@@ -80,9 +84,13 @@ Preliminary identification: 86,870,779 bytes, SHA-256
 1920×1080, duration 254405 ms. These checks are not native P1 decode/closure
 attestation. Record the actual CLI import receipt before declaring readiness.
 
-At baseline `460f516`, MAIA-2 EN/DE content is present. The retained English
-TAS-20 source requires an authorized copy; German TAS-20 content is absent.
-The user was asked for the applicable EN/DE files. Do not invent translations,
+At baseline `460f516`, MAIA-2 EN/DE content is present and German TAS-20
+content is absent. On 2026-09-12 the researcher explicitly authorized use of
+the retained English TAS-20 for this local experiment and requested an online
+German source. This resolves the English authorization question for the mock;
+it does not change public redistribution flags. The German source and import
+verification are tracked in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+Do not invent translations,
 substitute blank items, alter supplied coding or call an English-only fixture
 the requested bilingual experiment. Preserve source attribution and codes;
 successful JSON export does not establish scoring validity or permission.

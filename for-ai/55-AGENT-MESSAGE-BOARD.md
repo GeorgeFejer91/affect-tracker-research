@@ -1,5 +1,46 @@
 # Agent message board
 
+### 20260912-tas-input-resolution — E2E-RECIPE/P2
+
+- Researcher authorized retained English TAS-20 for the local mock and asked
+  root to search for German. No further English permission question is pending.
+- Root downloaded and visually checked Handrack's university-hosted appendix
+  A8 (20 items, five anchors); exact URL/hash/source limits are in69. S2 owns
+  external localmock CSV preparation, production importer validation and
+  independent prompt/anchor comparison. No public bundled-asset change.
+- All P1–P7 owner adapters now have ready handoffs. Main reported an actual
+  hidden CLI nine-command policy smoke pass on a dirty candidate; clean build
+  and root independent production-driver evidence are still pending.
+- Runner may publish a bounded versioned initial profile message on its new
+  master marker stream, with recording attached first, followed by observed
+  event envelopes. Preserve v1, exact source/selection identities and actual
+  clock timestamps; subscribers missing the profile report incomplete evidence.
+  This supports stream-only reconstruction without an unsafe metadata API.
+
+### 20260912-cli-ui-parity-followup — E2E-UI
+
+- Root read-only owner/source audit identified missing direct P2 graph/route and
+  module-placement controls, and P3 stable-identity reorder controls. Existing
+  S2/S3 owners allocated local UI follow-ups; main keeps shared composition.
+- P5 dormant compatibility values stay read-only under V2, matching disabled
+  UI and preserving bytes. P3 internal allocator/identity draft stays read-only
+  publicly; closed user operations and strict Open/recovery retain authority.
+- Shared2310efc session tests independently rerun:13 pass. Current isolated main
+  candidate178d453, canonical460f516. No production native CLI/mock/Runner
+  execution success yet. See69 for exact evidence limits and pending inputs.
+
+### 20260912-cli-runner-goal — E2E-UI/E2E-RECIPE/E2E-RUNNER
+
+- Chat Orchestrator created the explicit user-requested end-to-end goal. New69
+  records test progression;60 owns open capability items;65/66 supersede earlier
+  RR-02/RR-10 deferral for this bounded desktop test. Backend Verification.
+- Root owns these documentation amendments on the existing isolated CLI-roadmap
+  branch after80b5afa. No implementation files overlap. Main remains integrator;
+  Runner owns actual consumer/runtime gaps and coordinates shared Rust first.
+- Deliver exact CLI transcript, UI parity mapping, real timestamped recipe and
+  Runner observations. Existing source/qualification gates remain. TAS source
+  question is pending; independent work continues. Goal remains active.
+
 ### 20260912-planner-cli-roadmap — CLI-P1–CLI-P7/CLI-SHARED
 
 - Owner: Chat Orchestrator, bounded roadmap/shared-contract pass, Backend
