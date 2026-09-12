@@ -13,8 +13,9 @@ use std::path::{Path, PathBuf};
 pub(crate) mod runtime_manifest;
 
 use runtime_manifest::{
-    verify_runtime_tree, PINNED_BINDINGS_SERIES, PINNED_GSTREAMER_VERSION, PINNED_INSTALLER_SHA256,
-    PINNED_RUNTIME_MANIFEST_SHA256, PINNED_TARGET, RUNTIME_RELATIVE_ROOT,
+    verify_runtime_tree_cancellable, RuntimeManifestErrorCode, PINNED_BINDINGS_SERIES,
+    PINNED_GSTREAMER_VERSION, PINNED_INSTALLER_SHA256, PINNED_RUNTIME_MANIFEST_SHA256,
+    PINNED_TARGET, RUNTIME_RELATIVE_ROOT,
 };
 
 pub(crate) struct InspectedCapability {
@@ -77,6 +78,14 @@ pub(crate) fn inspect_capability(
     resource_dir: &Path,
     native_acquisition_supported: bool,
 ) -> InspectedCapability {
+    inspect_capability_cancellable(resource_dir, native_acquisition_supported, &|| false)
+}
+
+pub(crate) fn inspect_capability_cancellable(
+    resource_dir: &Path,
+    native_acquisition_supported: bool,
+    canceled: &impl Fn() -> bool,
+) -> InspectedCapability {
     let runtime_root = resource_dir.join(RUNTIME_RELATIVE_ROOT);
     let (runtime_bundle_state, runtime_integrity_verified, file_count, byte_length, reason) =
         if !native_acquisition_supported {
@@ -88,7 +97,7 @@ pub(crate) fn inspect_capability(
                 NATIVE_ACQUISITION_UNSUPPORTED_REASON.to_owned(),
             )
         } else {
-            match verify_runtime_tree(&runtime_root) {
+            match verify_runtime_tree_cancellable(&runtime_root, canceled) {
                 Ok(verified) => (
                     RuntimeBundleState::Verified,
                     true,
@@ -97,7 +106,11 @@ pub(crate) fn inspect_capability(
                     "native-gstplay-actor-not-started".to_owned(),
                 ),
                 Err(error) => {
-                    let state = if error.code.as_str() == "runtime-not-staged" {
+                    let state = if matches!(
+                        error.code,
+                        RuntimeManifestErrorCode::RuntimeMissing
+                            | RuntimeManifestErrorCode::VerificationCanceled
+                    ) {
                         RuntimeBundleState::NotStaged
                     } else {
                         RuntimeBundleState::Invalid
@@ -130,5 +143,26 @@ fn safe_reason(reason_code: &str) -> String {
         reason_code.to_owned()
     } else {
         "native-gstplay-actor-failed".to_owned()
+    }
+}
+
+#[cfg(test)]
+mod cancellation_tests {
+    use super::*;
+
+    #[test]
+    fn canceled_inspection_publishes_no_partial_integrity_or_counts() {
+        let capability =
+            inspect_capability_cancellable(Path::new("not-opened"), true, &|| true).into_public();
+        assert_eq!(capability.reason_code, "runtime-verification-canceled");
+        assert_eq!(
+            capability.runtime_bundle_state,
+            RuntimeBundleState::NotStaged
+        );
+        assert!(!capability.runtime_integrity_verified);
+        assert!(!capability.player_actor_ready);
+        assert!(!capability.qualified_start_available);
+        assert_eq!(capability.runtime_file_count, None);
+        assert_eq!(capability.runtime_byte_length, None);
     }
 }

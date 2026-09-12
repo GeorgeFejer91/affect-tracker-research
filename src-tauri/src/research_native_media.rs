@@ -148,8 +148,11 @@ impl NativeMediaService {
         let started = thread::Builder::new()
             .name("affect-native-media-startup".to_owned())
             .spawn(move || {
-                let mut capability =
-                    inspect_capability(&resource_dir, NATIVE_ACQUISITION_SUPPORTED);
+                let mut capability = capability::inspect_capability_cancellable(
+                    &resource_dir,
+                    NATIVE_ACQUISITION_SUPPORTED,
+                    &|| lifecycle.requested.load(Ordering::Acquire),
+                );
                 crate::research_shutdown::observe(
                     crate::research_shutdown::Phase::VerificationCompleted,
                 );
