@@ -1,5 +1,17 @@
 # Experiment Runner agent ledger
 
+## Hidden ISI preview cache — 2026-09-12
+
+R1/RR-10 continuation applies native neutral status through the existing P5
+mapping before hiding interval feedback. The app previously changed visibility
+alone and retained cached video coordinates. All six headless app cases now pass,
+including checks of actual hidden preview state/mappings and SVG cursor before
+Presented for first/consecutive/video-following ISIs, and neutral next-video
+start. Runner build/boundary checks pass. See `docs/runner-isi-neutral.md` and
+`runner-isi-preview-ui-03/receipt.json` under the Runner evidence directory.
+No visible neutral frame, physical timing, XDF attestation, new scheduler,
+animation freeze or production schema change is claimed.
+
 ## Neutral before every ISI — 2026-09-12
 
 The latest user invariant now resets authoritative response and public coordinates

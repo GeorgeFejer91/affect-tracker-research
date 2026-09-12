@@ -1,5 +1,32 @@
 # Neutral before every ISI
 
+## Hidden preview continuation
+
+R1/RR-10 continuation from `acac539` applies the native status coordinates through
+`runnerMasterFeedbackState` in the interval branch before `hideFeedback:true`.
+Previously that branch changed only visibility, leaving cached preview coordinates
+and mappings from the video. No renderer-authored zero overrides native authority;
+the preceding native invariant supplies neutral. Hidden/input-disabled intervals,
+animation behavior, recipe, sampling and markers are unchanged.
+
+The existing full app headless harness now includes first, consecutive and
+video-following ISIs plus the next video. At the actual mocked Presented command
+it checks hidden SVG cursor coordinates, idle color, and the actual preview
+closure's cached x/y and six P5 mapping values. A test-only esbuild observer reads
+that closure without changing its calculations or production API. Strong video
+coordinates are observed first, then neutral values before interval admission.
+This establishes hidden preview state/DOM updates, not a visible Flubber frame or
+physical compositor/presentation timing.
+
+All six harness cases pass in `runner-isi-preview-ui-03/receipt.json` under
+`D:/GitHub/.affect-runner-master-build/`; Runner build/boundary verification also
+passes (`runner-isi-preview-build.log`). The first attempt's animated SVG path
+inequality was not a reliable hidden-renderer assertion and was replaced by
+direct cached-state observation; the second attempt rejected a test-plugin regex
+flag unsupported by esbuild. Both failed logs are retained; production remains
+the single interval projection change. Native replies and sequence advances are
+synthetic, and no desktop app was launched.
+
 The user's 2026-09-12 invariant requires neutral Flubber coordinates before every
 interstimulus interval. RR-04/RR-05 implements this in the native master worker.
 `next()` already replaced the response state but previously left its public

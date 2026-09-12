@@ -12,11 +12,12 @@ await mkdir(output);const execute=promisify(execFile);
 const entry=String.raw`
 import {bootRunner} from './runner/src/app.js';
 import {resolveRunnerSelection} from './runner/src/recipe.js';
+import {runnerMasterFeedbackState} from './runner/src/recipe.js';
 const mode=new URL(location.href).searchParams.get('case'),checks=[],calls=[],errors=[];
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
 const tick=()=>new Promise(r=>setTimeout(r,120));
 addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
-let app,plan,status,fullscreen=false,receipt;
+let app,plan,status,fullscreen=false,receipt,strongSeen=false;
 document.body.innerHTML='<div id="experiment-runner"></div>';const root=document.querySelector('#experiment-runner'),q=id=>root.querySelector('#'+id);
 const click=async id=>{q(id).click();await tick();};
 const selected=()=>resolveRunnerSelection(app.recipe,'P001',['both','en'],'variant-3');
@@ -45,9 +46,18 @@ const invoke=async(command,args)=>{calls.push(command);switch(command){
   const action=args.action;
   if(action.type==='presented'){
    check(action.position===status.position,'presentation acknowledgement binds current occurrence');
+   if(mode==='isi-neutral'&&plan.steps[status.position-1].kind==='interval'){
+    const cursor=root.querySelector('[data-preview-grid-cursor]'),overlay=root.querySelector('[data-preview-overlay]');
+    check(cursor.getAttribute('cx')==='50'&&cursor.getAttribute('cy')==='50','hidden preview coordinates neutral before Presented '+status.position);
+    check(root.querySelector('.run-feedback-stage').hidden&&overlay.hidden,'interval feedback stays hidden '+status.position);
+    check(overlay.style.getPropertyValue('--flubber-color')===plan.selected.feedback.visual.colors.idle,'hidden Flubber has rendered neutral idle color '+status.position);
+    const cached=globalThis.__runnerPreviewAuditState,expected=runnerMasterFeedbackState(plan.selected.feedback,0,0);
+    for(const key of ['x','y','frequency','edgeSmoothness','amplitude','pulseSynchrony','waveVariation','saturation'])check(cached[key]===expected[key],'actual cached neutral mapping '+key+' before Presented '+status.position);
+    if(strongSeen){check(cached.x===0&&cached.y===0,'cached nonneutral video state replaced before ISI');strongSeen=false;}
+   }
    status.phase=plan.steps[status.position-1].kind==='questionnaire'?'questionnaire':plan.steps[status.position-1].kind==='video'?'playing':'interval';
   } else if(action.type==='draft'){status.answers=Object.fromEntries(action.answers.map(a=>[a.itemId,a.optionId]));}
-  else if(action.type==='submit'){status.position=4;status.phase='awaitingPresentation';status.answers={};}
+  else if(action.type==='submit'){status.position=mode==='isi-neutral'?2:4;status.phase='awaitingPresentation';status.answers={};}
   else if(action.type==='stop'){status.active=false;status.phase='finished';status.result={status:'stopped',outputDirectory:'outputs/recipe-synthetic/P001/attempt-synthetic'};}
   return structuredClone(status);
  }
@@ -83,6 +93,24 @@ try{
    const box=plan.selected.layout.geometry.feedback,observed=root.querySelector('.run-feedback-stage').getBoundingClientRect();
    for(const key of ['x','y','width','height'])check(Math.abs(box[key]-observed[key])<0.1,'saved feedback geometry '+key);
    check(root.querySelector('.research-preview-stage').dataset.previewVariant==='studio','complete P5 renderer active');
+  }else if(mode==='isi-neutral'){
+   for(const row of q('runner-questionnaire-items').querySelectorAll('tbody tr'))row.querySelector('input').click();
+   await tick();await click('runner-questionnaire-submit');await tick();await tick();
+   check(status.position===2&&status.phase==='interval','first ISI admitted after neutral check');
+   status={...status,position:3,phase:'awaitingPresentation'};await tick();await tick();
+   check(status.phase==='interval','consecutive ISI admitted after neutral check');
+   const video=plan.steps.find(s=>s.kind==='video');
+   status={...status,position:video.position,phase:'awaitingPresentation',currentValence:0.9,currentArousal:-0.8};await tick();await tick();
+   const cursor=root.querySelector('[data-preview-grid-cursor]');
+   check(Number(cursor.getAttribute('cx'))>90&&Number(cursor.getAttribute('cy'))>85,'strong nonneutral video state reaches actual preview geometry');
+   check(globalThis.__runnerPreviewAuditState.x===0.9&&globalThis.__runnerPreviewAuditState.y===-0.8,'actual preview cache contains strong video state');strongSeen=true;
+   const interval=plan.steps.find(s=>s.kind==='interval'&&s.position>video.position);
+   status={...status,position:interval.position,phase:'awaitingPresentation',currentValence:0,currentArousal:0};await tick();await tick();
+   check(status.phase==='interval'&&!strongSeen,'video-following ISI resets hidden state before admission');
+   const next=plan.steps.find(s=>s.kind==='video'&&s.position>interval.position);
+   status={...status,position:next.position,phase:'awaitingPresentation'};await tick();await tick();
+   check(!root.querySelector('.run-feedback-stage').hidden,'next video restores existing feedback visibility');
+   check(cursor.getAttribute('cx')==='50'&&cursor.getAttribute('cy')==='50','next video starts from neutral preview state');
   }else if(mode==='stop'){
    await click('runner-stop');await click('runner-stop-confirm');await tick();await tick();check(!fullscreen&&!q('runner-launcher').hidden,'partial stop returns launcher');check(!q('runner-receipt').hidden,'partial output receipt visible');
   }
@@ -92,10 +120,12 @@ try{
 }catch(e){errors.push(String(e));}
 const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({mode,checks,errors,viewport:[innerWidth,innerHeight],calls,scope:'Synthetic frontend projections only; no real run or native qualification'});document.body.append(result);
 `;
-const bundle=await build({stdin:{contents:entry,resolveDir:root,sourcefile:'master-ui-audit.js'},bundle:true,format:'esm',write:false,platform:'browser',logLevel:'silent'});
+// Test-only observation of the actual preview closure; no production API or
+// renderer behavior change. Static DOM geometry is checked independently above.
+const bundle=await build({stdin:{contents:entry,resolveDir:root,sourcefile:'master-ui-audit.js'},bundle:true,format:'esm',write:false,platform:'browser',logLevel:'silent',plugins:[{name:'preview-state-observer',setup(builder){builder.onLoad({filter:/[\\/]research[\\/]preview\.js$/},async({path})=>{const source=await readFile(path,'utf8'),needle='state = normalizedState({ ...state, ...nextState, ...square });';assert.ok(source.includes(needle));return{contents:source.replace(needle,needle+' globalThis.__runnerPreviewAuditState = structuredClone(state);'),loader:'js',resolveDir:resolve(path,'..')};});}}]});
 const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://127.0.0.1');if(url.pathname==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/runner/runner.css"><script type="module" src="/runner/src/audit.js"></script>');return;}if(url.pathname==='/runner/src/audit.js'){res.setHeader('Content-Type','text/javascript');res.end(bundle.outputFiles[0].text);return;}const path=resolve(root,'.'+decodeURIComponent(url.pathname));assert.ok(path.startsWith(root+sep));res.setHeader('Content-Type',({'.css':'text/css','.svg':'image/svg+xml','.json':'application/json'})[extname(path)]??'application/octet-stream');res.end(await readFile(path));}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const rows=[];
-try{for(const mode of ['launcher','sequence','questionnaire','video','stop']){
+try{for(const mode of ['launcher','sequence','questionnaire','video','isi-neutral','stop']){
  const profile=await mkdtemp(join(output,'profile-'));
  const {stdout}=await execute(browser,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--window-size=${viewport}`,'--force-device-scale-factor=1','--virtual-time-budget=10000',`--screenshot=${join(output,mode+'.png')}`,'--dump-dom',`http://127.0.0.1:${server.address().port}/?case=${mode}`],{windowsHide:true,timeout:45000,maxBuffer:4_000_000});
  await writeFile(join(output,mode+'.html'),stdout);const raw=stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];assert.ok(raw,`Missing ${mode} receipt`);

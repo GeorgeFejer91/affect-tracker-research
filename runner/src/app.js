@@ -316,7 +316,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       applyMasterDesktopLayout(root,plan,windowObject);
       root.querySelector(".stimulus-stage").hidden=step.kind!=="video";
       root.querySelector(".run-feedback-stage").hidden=step.kind!=="video";
-      preview.update(step.kind === "video" ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {hideFeedback:true});
+      preview.update(step.kind === "video" ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {...runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal),hideFeedback:true});
       if (step.kind === "video" && status.phase === "awaitingPresentation") {
         const ready=await setRegion(root.querySelector(".run-feedback-stage"),"runFeedback");
         if (!ready.runReady) throw new Error("Native participant input is not ready for this video.");
