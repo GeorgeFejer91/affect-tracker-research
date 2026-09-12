@@ -1795,6 +1795,7 @@ export class NativeResearchRuntimeBridge {
           verified: true,
           decodeQualification,
           workspaceFileId: summary.workspaceFileId,
+          displayGeometry: validNative ? summary.displayGeometry : null,
         }));
       } catch (error) {
         failures.push(`${scanned.displayName}: ${messageOf(error)}`);

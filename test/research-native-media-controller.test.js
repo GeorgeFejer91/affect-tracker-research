@@ -69,6 +69,16 @@ function decodedSummary(overrides = {}) {
     decodeBackend: "nativeGstPlay",
     decodeAttestation: "nativeDecodedSnapshotsV1",
     decodedPositionsMs: [250, 1250.125, 2250.25],
+    displayGeometry: {
+      status: "verified",
+      source: "native-gstplay-metadata",
+      displayWidthPx: 1080,
+      displayHeightPx: 1920,
+      displayAspect: { numerator: 9, denominator: 16 },
+      rotationDegrees: 90,
+      pixelAspectRatio: { numerator: 1, denominator: 1 },
+      metadataInterpretation: "explicit-orientation-and-square-pixel-snapshot",
+    },
     source: {
       kind: "workspaceFile",
       relativePath: `stimuli/.workspace/${FILE}`,
@@ -95,6 +105,9 @@ test("qualified native decode summaries are strict and identity-bound", () => {
   assert.throws(() => validateNativeDecodedStimulusSummaryV1({ ...decodedSummary(), extra: true }), /malformed/u);
   assert.throws(() => validateNativeDecodedStimulusSummaryV1(decodedSummary({ decodeStatus: "attestedUnqualified" })), /malformed/u);
   assert.throws(() => validateNativeDecodedStimulusSummaryV1(decodedSummary({ decodedPositionsMs: [1, 1, 2] })), /malformed/u);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1(decodedSummary({
+    displayGeometry: { ...decodedSummary().displayGeometry, source: "browser-decoder" },
+  })), /malformed/u);
   assert.equal(validateNativeDecodedStimulusSummaryV1(decodedSummary({
     workspaceFileId: PACKAGE_FILE,
     source: { ...decodedSummary().source, relativePath: "stimuli/demo/video.mp4" },

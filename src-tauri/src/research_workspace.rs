@@ -5,6 +5,10 @@ use crate::research_contracts::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_experiment_package::{ExperimentPackageV1, EXPERIMENT_PACKAGE_FILE_NAME};
 use crate::research_protocol::ResearchSettingsDocument;
+use crate::research_video_geometry::{derive_native_display_geometry_v1, NativeDisplayGeometryV1};
+use crate::research_workspace_contribution::{
+    validate_video_catalogue_contribution, VideoCatalogueContribution,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
@@ -13,6 +17,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use tauri::http::{header, Method, Request, Response, StatusCode};
+use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 mod stimulus_authoring;
@@ -56,6 +61,7 @@ pub struct ScannedStimulusSummary {
     pub decode_backend: Option<DecodeBackend>,
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
+    pub display_geometry: Option<NativeDisplayGeometryV1>,
     pub source: Option<WorkspaceSourceContract>,
 }
 
@@ -220,6 +226,7 @@ pub(crate) struct ScannedStimulus {
     pub decode_backend: Option<DecodeBackend>,
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
+    pub display_geometry: Option<NativeDisplayGeometryV1>,
 }
 
 #[derive(Debug, Clone)]
@@ -439,6 +446,94 @@ impl WorkspaceService {
         })
     }
 
+    /// Scans the Planner's one canonical video library. Historical Run-side
+    /// `stimuli/` readers remain unchanged; new authoring imparts no authority
+    /// to that legacy directory.
+    pub fn rescan_planner_videos(&self, workspace_id: &str) -> ResearchResult<RescanResult> {
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        workspace.scanned = scan_planner_videos(&libraries.package_assets)?;
+        workspace.media_grants.clear();
+        Ok(RescanResult {
+            workspace_id: workspace.id.clone(),
+            stimuli: workspace.scanned.iter().map(scanned_summary).collect(),
+        })
+    }
+
+    /// Validates one P1 v2 catalogue against the exact currently selected,
+    /// freshly readable and natively qualified Planner media closure. This is
+    /// the safe Rust seam for P3 export and P7 persistence; it grants no path.
+    pub fn validate_planner_video_catalogue(
+        &self,
+        workspace_id: &str,
+        value: &serde_json::Value,
+    ) -> ResearchResult<VideoCatalogueContribution> {
+        let catalogue = validate_video_catalogue_contribution(value)?;
+        if catalogue.version != 2 {
+            return Err(CommandError::invalid_contract(
+                "Current Planner catalogue authority requires video catalogue v2.",
+            ));
+        }
+        let guard = self.lock_selected();
+        let workspace = selected_ref(&guard, workspace_id)?;
+        validate_selected_workspace(workspace)?;
+        if catalogue.entries.len() != workspace.scanned.len() {
+            return Err(CommandError::forbidden(
+                "The current Planner video library does not match the accepted catalogue.",
+            ));
+        }
+        for entry in &catalogue.entries {
+            let matches = workspace
+                .scanned
+                .iter()
+                .filter(|candidate| candidate.logical_relative_path == entry.source_relative_path)
+                .collect::<Vec<_>>();
+            let [candidate] = matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "A catalogue location does not resolve to one current Planner video.",
+                ));
+            };
+            let observed_duration_ms = candidate.duration_ms.filter(|value| {
+                value.is_finite()
+                    && *value >= 1.0
+                    && value.fract() == 0.0
+                    && *value <= crate::research_contracts::MAX_SAFE_INTEGER as f64
+            });
+            let observed_geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
+                CommandError::forbidden(
+                    "A current Planner video has no verified oriented display geometry.",
+                )
+            })?;
+            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
+            if candidate.decode_status != DecodeStatus::AttestedQualified
+                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
+                || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+                || observed_hash != entry.sha256
+                || observed_hash != candidate.sha256
+                || observed_bytes != entry.byte_length
+                || observed_bytes != candidate.byte_length
+                || entry.asset_id != format!("asset-{observed_hash}")
+                || entry.package_relative_path != format!("assets/{}", entry.source_relative_path)
+                || observed_duration_ms.map(|value| value as u64) != Some(entry.duration_ms)
+                || serde_json::to_value(observed_geometry).map_err(|_| {
+                    CommandError::invalid_contract(
+                        "Planner display geometry could not be validated.",
+                    )
+                })? != serde_json::to_value(&entry.geometry).map_err(|_| {
+                    CommandError::invalid_contract(
+                        "Catalogue display geometry could not be validated.",
+                    )
+                })?
+            {
+                return Err(CommandError::forbidden(
+                    "A current Planner video no longer matches the accepted catalogue.",
+                ));
+            }
+        }
+        Ok(catalogue)
+    }
+
     /// Resolves the complete, declared package media closure beneath the fixed
     /// `assets/stimuli/` root. Any extra, missing, linked, unreadable, or
     /// byte-mismatched file fails before the catalogue can be qualified.
@@ -608,15 +703,19 @@ impl WorkspaceService {
     ) -> ResearchResult<RescanResult> {
         let destination = self.with_workspace(workspace_id, |root, _| {
             let libraries = validate_workspace_libraries(root)?;
-            ensure_exact_child_directory(&libraries.stimuli, "imported")
+            Ok(libraries.package_assets)
         })?;
         let mut sources = collect_import_videos(selections)?;
-        sources.sort();
+        sources.sort_by(|left, right| {
+            left.relative_path
+                .cmp(&right.relative_path)
+                .then_with(|| left.source.cmp(&right.source))
+        });
         sources.dedup();
         for source in sources {
-            import_video(&source, &destination)?;
+            import_planner_video(&source, &destination)?;
         }
-        self.rescan(workspace_id)
+        self.rescan_planner_videos(workspace_id)
     }
 
     pub fn issue_media_url(
@@ -726,11 +825,14 @@ impl WorkspaceService {
             || receipt.video_height == 0
             || receipt.video_width > 32_768
             || receipt.video_height > 32_768
+            || receipt.display_metadata.encoded_width_px != receipt.video_width
+            || receipt.display_metadata.encoded_height_px != receipt.video_height
         {
             return Err(CommandError::invalid_contract(
                 "Native GstPlay decode evidence is incomplete.",
             ));
         }
+        let display_geometry = derive_native_display_geometry_v1(&receipt.display_metadata)?;
         validate_native_positions(receipt.duration_ms, &receipt.decoded_positions_ms)?;
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
@@ -756,11 +858,12 @@ impl WorkspaceService {
                 "The workspace stimulus changed during native decode preflight.",
             ));
         }
-        candidate.duration_ms = Some(receipt.duration_ms);
+        candidate.duration_ms = Some(receipt.duration_ms.round());
         candidate.decode_status = DecodeStatus::AttestedQualified;
         candidate.decode_backend = Some(DecodeBackend::NativeGstPlay);
         candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
         candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
+        candidate.display_geometry = Some(display_geometry);
         Ok(scanned_summary(candidate))
     }
 
@@ -868,6 +971,7 @@ impl WorkspaceService {
         candidate.decode_backend = Some(DecodeBackend::WebviewVideoFrameCallback);
         candidate.decode_attestation = Some(DecodeEvidence::RepresentativeFramesV1);
         candidate.decoded_positions_ms = request.decoded_positions_ms;
+        candidate.display_geometry = None;
         Ok(scanned_summary(candidate))
     }
 
@@ -1454,6 +1558,7 @@ fn scan_package_videos(
                 decode_backend: None,
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
+                display_geometry: None,
             });
         }
     }
@@ -1538,10 +1643,80 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
                 decode_backend: None,
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
+                display_geometry: None,
             });
         }
     }
     files.sort_by(|left, right| left.id.cmp(&right.id));
+    Ok(files)
+}
+
+fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
+    let mut queue = VecDeque::from([(package_assets_root.to_owned(), 0usize)]);
+    let mut files = Vec::new();
+    while let Some((directory, depth)) = queue.pop_front() {
+        if depth > MAX_SCAN_DEPTH {
+            return Err(CommandError::forbidden(
+                "The Planner video library exceeds the supported folder depth.",
+            ));
+        }
+        for entry in fs::read_dir(&directory).map_err(CommandError::io)? {
+            let entry = entry.map_err(CommandError::io)?;
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path).map_err(CommandError::io)?;
+            if metadata.file_type().is_symlink() {
+                return Err(CommandError::forbidden(
+                    "The Planner video library cannot contain links or junctions.",
+                ));
+            }
+            if metadata.is_dir() {
+                let canonical = path.canonicalize().map_err(CommandError::io)?;
+                if !canonical.starts_with(package_assets_root) {
+                    return Err(CommandError::forbidden(
+                        "A Planner video folder escaped assets/stimuli/.",
+                    ));
+                }
+                queue.push_back((canonical, depth + 1));
+                continue;
+            }
+            if !metadata.is_file() || !is_video(&path) {
+                continue;
+            }
+            if files.len() >= MAX_SCAN_FILES {
+                return Err(CommandError::forbidden(
+                    "The Planner video library exceeds 10000 video files.",
+                ));
+            }
+            let relative = path
+                .strip_prefix(package_assets_root)
+                .map_err(|_| CommandError::forbidden("A Planner video escaped assets/stimuli/."))?;
+            let relative_path = portable_import_relative_path(relative)?;
+            let logical_relative_path = format!("stimuli/{relative_path}");
+            let (sha256, byte_length) = hash_file(&path)?;
+            let mime_type = video_mime_type(&path).to_owned();
+            let mut opaque_hash = Sha256::new();
+            opaque_hash.update(b"affect-research:planner-workspace-file:v1\0");
+            opaque_hash.update(logical_relative_path.as_bytes());
+            opaque_hash.update([0]);
+            opaque_hash.update(sha256.as_bytes());
+            let opaque = format!("wf-{:x}", opaque_hash.finalize());
+            files.push(ScannedStimulus {
+                id: opaque[..27].to_owned(),
+                path,
+                logical_relative_path,
+                sha256,
+                byte_length,
+                mime_type,
+                duration_ms: None,
+                decode_status: DecodeStatus::Unverified,
+                decode_backend: None,
+                decode_attestation: None,
+                decoded_positions_ms: Vec::new(),
+                display_geometry: None,
+            });
+        }
+    }
+    files.sort_by(|left, right| left.logical_relative_path.cmp(&right.logical_relative_path));
     Ok(files)
 }
 
@@ -1611,6 +1786,7 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
         decode_backend: entry.decode_backend,
         decode_attestation: entry.decode_attestation,
         decoded_positions_ms: entry.decoded_positions_ms.clone(),
+        display_geometry: entry.display_geometry.clone(),
         source,
     }
 }
@@ -1795,22 +1971,45 @@ fn logical_relative_path(workspace_file_id: &str) -> String {
     format!("stimuli/.workspace/{workspace_file_id}")
 }
 
-fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<PathBuf>> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ImportedVideo {
+    source: PathBuf,
+    relative_path: String,
+}
+
+fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<ImportedVideo>> {
     let mut videos = Vec::new();
     let mut queue = VecDeque::new();
     for selection in selections {
+        let selected_metadata = fs::symlink_metadata(&selection)
+            .map_err(|_| CommandError::forbidden("An imported selection is unavailable."))?;
+        if selected_metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "An imported selection cannot be a link or junction.",
+            ));
+        }
         let canonical = selection
             .canonicalize()
             .map_err(|_| CommandError::forbidden("An imported selection is unavailable."))?;
         if canonical.is_file() {
             if is_video(&canonical) {
-                videos.push(canonical);
+                let name = canonical.file_name().ok_or_else(|| {
+                    CommandError::forbidden("An imported video name is unavailable.")
+                })?;
+                videos.push(ImportedVideo {
+                    relative_path: portable_import_relative_path(Path::new(name))?,
+                    source: canonical,
+                });
             }
         } else if canonical.is_dir() {
-            queue.push_back((canonical, 0usize));
+            let name = canonical.file_name().ok_or_else(|| {
+                CommandError::forbidden("An imported folder name is unavailable.")
+            })?;
+            let prefix = portable_import_relative_path(Path::new(name))?;
+            queue.push_back((canonical, prefix, 0usize));
         }
     }
-    while let Some((directory, depth)) = queue.pop_front() {
+    while let Some((directory, prefix, depth)) = queue.pop_front() {
         if depth > MAX_SCAN_DEPTH {
             return Err(CommandError::forbidden(
                 "The imported folder exceeds the supported recursion depth.",
@@ -1818,14 +2017,22 @@ fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<PathBuf
         }
         for entry in fs::read_dir(directory).map_err(CommandError::io)? {
             let entry = entry.map_err(CommandError::io)?;
-            let metadata = fs::symlink_metadata(entry.path()).map_err(CommandError::io)?;
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path).map_err(CommandError::io)?;
             if metadata.file_type().is_symlink() {
-                continue;
+                return Err(CommandError::forbidden(
+                    "An imported folder cannot contain links or junctions.",
+                ));
             }
+            let name = entry.file_name();
+            let relative_path = portable_import_relative_path(&Path::new(&prefix).join(name))?;
             if metadata.is_dir() {
-                queue.push_back((entry.path(), depth + 1));
-            } else if metadata.is_file() && is_video(&entry.path()) {
-                videos.push(entry.path());
+                queue.push_back((path, relative_path, depth + 1));
+            } else if metadata.is_file() && is_video(&path) {
+                videos.push(ImportedVideo {
+                    source: path,
+                    relative_path,
+                });
                 if videos.len() > MAX_SCAN_FILES {
                     return Err(CommandError::forbidden(
                         "An import may contain at most 10000 videos.",
@@ -1842,6 +2049,40 @@ fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<PathBuf
     Ok(videos)
 }
 
+fn import_planner_video(source: &ImportedVideo, destination: &Path) -> ResearchResult<()> {
+    let (digest, _) = hash_file(&source.source)?;
+    let mut parts = source.relative_path.split('/').collect::<Vec<_>>();
+    let file_name = parts
+        .pop()
+        .ok_or_else(|| CommandError::forbidden("An imported video path is empty."))?;
+    let mut parent = destination.to_owned();
+    for part in parts {
+        parent = ensure_exact_child_directory(&parent, part)?;
+    }
+    let target = parent.join(file_name);
+    if source.source == target {
+        return Ok(());
+    }
+    if target.exists() {
+        let (existing_digest, _) = hash_file(&target)?;
+        if existing_digest == digest {
+            return Ok(());
+        }
+        return Err(CommandError::forbidden(
+            "An imported video conflicts with an existing curated file.",
+        ));
+    }
+    let staging = parent.join(format!(".{}.import", Uuid::new_v4()));
+    let mut input = File::open(&source.source).map_err(CommandError::io)?;
+    let mut output = create_new(&staging)?;
+    std::io::copy(&mut input, &mut output).map_err(CommandError::io)?;
+    output.sync_all().map_err(CommandError::io)?;
+    drop(output);
+    fs::rename(staging, target).map_err(CommandError::io)
+}
+
+// Frozen legacy authoring import used by the historical video-library v1
+// editor. New Planner intake uses `import_planner_video` above.
 fn import_video(source: &Path, destination: &Path) -> ResearchResult<()> {
     let (digest, _) = hash_file(source)?;
     let stem = source
@@ -1889,6 +2130,52 @@ fn sanitize_file_stem(value: &str) -> String {
         .trim()
         .trim_matches('.')
         .to_owned()
+}
+
+fn portable_import_relative_path(path: &Path) -> ResearchResult<String> {
+    let parts = path
+        .components()
+        .map(|component| {
+            let value = component.as_os_str().to_str().ok_or_else(|| {
+                CommandError::forbidden("Imported video paths must be valid Unicode.")
+            })?;
+            let normalized = value.nfc().collect::<String>();
+            if value != normalized
+                || value.is_empty()
+                || matches!(value, "." | "..")
+                || value.ends_with(['.', ' '])
+                || value.chars().any(|character| {
+                    character.is_control()
+                        || matches!(character, '<' | '>' | ':' | '"' | '\\' | '|' | '?' | '*')
+                })
+            {
+                return Err(CommandError::forbidden(
+                    "An imported video path is not portable canonical text.",
+                ));
+            }
+            Ok(value.to_owned())
+        })
+        .collect::<ResearchResult<Vec<_>>>()?;
+    if parts.is_empty() || parts.len() > MAX_SCAN_DEPTH + 2 {
+        return Err(CommandError::forbidden(
+            "An imported video path exceeds the supported folder depth.",
+        ));
+    }
+    let relative = parts.join("/");
+    if relative.as_bytes().len() > 2_048 {
+        return Err(CommandError::forbidden(
+            "An imported video path exceeds 2048 UTF-8 bytes.",
+        ));
+    }
+    crate::research_workspace_contribution::video_annotation_id_from_relative_path_v1(&format!(
+        "stimuli/{relative}"
+    ))
+    .map_err(|_| {
+        CommandError::forbidden(
+            "An imported video path cannot form a portable catalogue location ID.",
+        )
+    })?;
+    Ok(relative)
 }
 
 fn serve_media(grant: MediaGrant, request: Request<Vec<u8>>) -> Response<Vec<u8>> {
@@ -2384,6 +2671,180 @@ mod tests {
     }
 
     #[test]
+    fn planner_import_preserves_nested_locations_and_does_not_collapse_equal_content() {
+        let base = temporary_directory("planner-location-import");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        let sources = base.join("sources");
+        let session_dash = sources.join("session-a");
+        let session_underscore = sources.join("session_a");
+        fs::create_dir_all(&workspace).unwrap();
+        fs::create_dir_all(&session_dash).unwrap();
+        fs::create_dir_all(&session_underscore).unwrap();
+        fs::write(session_dash.join("clip.mp4"), b"identical-video-bytes").unwrap();
+        fs::write(
+            session_underscore.join("clip.mp4"),
+            b"identical-video-bytes",
+        )
+        .unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+
+        let result = service
+            .import_paths(
+                &workspace_id,
+                vec![session_underscore.clone(), session_dash.clone()],
+            )
+            .unwrap();
+        assert_eq!(result.stimuli.len(), 2);
+        assert_eq!(result.stimuli[0].sha256, result.stimuli[1].sha256);
+        assert_ne!(
+            result.stimuli[0].workspace_file_id,
+            result.stimuli[1].workspace_file_id
+        );
+        assert_eq!(
+            fs::read(
+                workspace
+                    .join("assets")
+                    .join("stimuli")
+                    .join("session-a")
+                    .join("clip.mp4")
+            )
+            .unwrap(),
+            b"identical-video-bytes"
+        );
+        assert_eq!(
+            fs::read(
+                workspace
+                    .join("assets")
+                    .join("stimuli")
+                    .join("session_a")
+                    .join("clip.mp4")
+            )
+            .unwrap(),
+            b"identical-video-bytes"
+        );
+        let guard = service.lock_selected();
+        let paths = guard
+            .as_ref()
+            .unwrap()
+            .scanned
+            .iter()
+            .map(|entry| entry.logical_relative_path.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            paths,
+            ["stimuli/session-a/clip.mp4", "stimuli/session_a/clip.mp4"]
+        );
+        drop(guard);
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn planner_catalogue_validation_rechecks_current_file_duration_and_geometry() {
+        let base = temporary_directory("planner-catalogue-authority");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir_all(&workspace).unwrap();
+        let workspace_id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let video = workspace
+            .join("assets")
+            .join("stimuli")
+            .join("session_a")
+            .join("clip.mp4");
+        fs::create_dir_all(video.parent().unwrap()).unwrap();
+        fs::write(&video, b"planner-video-bytes").unwrap();
+        let scan = service.rescan_planner_videos(&workspace_id).unwrap();
+        let item = &scan.stimuli[0];
+        let summary = service
+            .attest_native_decode(
+                &workspace_id,
+                &item.sha256,
+                item.byte_length,
+                &item.mime_type,
+                &crate::research_native_media::NativeMediaDecodeReceiptV1 {
+                    schema: "affect-research-native-media-decode-receipt",
+                    version: 1,
+                    session_id: Uuid::new_v4().to_string(),
+                    generation: 1,
+                    media_grant_id: Uuid::new_v4().to_string(),
+                    workspace_file_id: item.workspace_file_id.clone(),
+                    duration_ms: 1_000.25,
+                    video_width: 1_920,
+                    video_height: 1_080,
+                    audio_stream_count: 1,
+                    decoded_positions_ms: vec![100.0, 500.0, 900.0],
+                    decoded_snapshot_count: 3,
+                    display_metadata:
+                        crate::research_video_geometry::NativeDisplayMetadataReceiptV1 {
+                            schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
+                            version: 1,
+                            encoded_width_px: 1_920,
+                            encoded_height_px: 1_080,
+                            pixel_aspect_ratio: crate::research_video_geometry::VideoRatioV1 {
+                                numerator: 1,
+                                denominator: 1,
+                            },
+                            orientation:
+                                crate::research_video_geometry::NativeVideoOrientationV1::Identity,
+                            snapshot_width_px: 1_920,
+                            snapshot_height_px: 1_080,
+                            snapshot_pixel_aspect_ratio:
+                                crate::research_video_geometry::VideoRatioV1 {
+                                    numerator: 1,
+                                    denominator: 1,
+                                },
+                        },
+                },
+            )
+            .unwrap();
+        assert_eq!(summary.duration_ms, Some(1_000.0));
+        let source = summary.source.as_ref().unwrap();
+        let core = serde_json::json!({
+            "schema": "affect-research-video-catalogue-contribution",
+            "version": 2,
+            "revision": 1,
+            "annotationPolicy": "relative-path-reversible-v1",
+            "entries": [{
+                "assetId": format!("asset-{}", item.sha256),
+                "annotationId": "session%5Fa_clip.mp4",
+                "sourceRelativePath": source.relative_path,
+                "packageRelativePath": format!("assets/{}", source.relative_path),
+                "sha256": item.sha256,
+                "byteLength": item.byte_length,
+                "durationMs": 1_000,
+                "geometry": summary.display_geometry
+            }]
+        });
+        let mut catalogue = core.clone();
+        catalogue.as_object_mut().unwrap().insert(
+            "integritySha256".to_owned(),
+            serde_json::json!(crate::research_contracts::canonical_sha256(&core, &[]).unwrap()),
+        );
+        assert_eq!(
+            service
+                .validate_planner_video_catalogue(&workspace_id, &catalogue)
+                .unwrap()
+                .entries[0]
+                .annotation_id,
+            "session%5Fa_clip.mp4"
+        );
+
+        fs::write(&video, b"changed-planner-video").unwrap();
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue)
+            .is_err());
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
     fn workspace_location_wire_values_are_closed_and_camel_case() {
         assert_eq!(
             serde_json::from_str::<WorkspaceLocation>("\"workspaceRoot\"").unwrap(),
@@ -2801,6 +3262,26 @@ mod tests {
                     audio_stream_count: 1,
                     decoded_positions_ms: vec![100.0, 500.0, 900.0],
                     decoded_snapshot_count: 3,
+                    display_metadata:
+                        crate::research_video_geometry::NativeDisplayMetadataReceiptV1 {
+                            schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
+                            version: 1,
+                            encoded_width_px: 1_920,
+                            encoded_height_px: 1_080,
+                            pixel_aspect_ratio: crate::research_video_geometry::VideoRatioV1 {
+                                numerator: 1,
+                                denominator: 1,
+                            },
+                            orientation:
+                                crate::research_video_geometry::NativeVideoOrientationV1::Identity,
+                            snapshot_width_px: 1_920,
+                            snapshot_height_px: 1_080,
+                            snapshot_pixel_aspect_ratio:
+                                crate::research_video_geometry::VideoRatioV1 {
+                                    numerator: 1,
+                                    denominator: 1,
+                                },
+                        },
                 },
             )
             .unwrap();

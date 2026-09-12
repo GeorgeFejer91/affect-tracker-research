@@ -15,15 +15,17 @@ mod research_lsl;
 mod research_native_media;
 mod research_native_protocol;
 mod research_participant;
-mod research_platform;
 pub mod research_planner_recipe_policy;
+mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
 mod research_run_storage;
 mod research_runtime;
 mod research_stimulus_order;
 mod research_timing;
+mod research_video_geometry;
 mod research_workspace;
+pub mod research_workspace_contribution;
 pub mod research_xr_layout;
 
 use research_input::ResearchInputService;

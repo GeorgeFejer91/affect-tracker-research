@@ -4,6 +4,7 @@
 )]
 
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_video_geometry::NativeDisplayMetadataReceiptV1;
 use serde::{Deserialize, Serialize};
 
 pub const NATIVE_MEDIA_CAPABILITY_SCHEMA: &str = "affect-research-native-media-capability";
@@ -277,6 +278,7 @@ pub struct NativeMediaDecodeReceiptV1 {
     pub audio_stream_count: u32,
     pub decoded_positions_ms: Vec<f64>,
     pub decoded_snapshot_count: u32,
+    pub display_metadata: NativeDisplayMetadataReceiptV1,
 }
 
 #[cfg(test)]
