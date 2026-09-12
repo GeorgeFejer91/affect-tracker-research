@@ -1,7 +1,69 @@
 //! One off-UI cleanup transaction. A failed transaction never grants window exit.
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::{self, JoinHandle};
+use std::time::Instant;
+
+/// Closed, process-local diagnostic vocabulary, never a public protocol.
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub(crate) enum Phase {
+    EofObserved,
+    EofDrained,
+    ExitRequested,
+    CleanupStarted,
+    AuthoringStarted,
+    AuthoringCompleted,
+    InputStarted,
+    InputCompleted,
+    VerificationCompleted,
+    InitializerCompleted,
+    NativeShutdownRequested,
+    InitializerStopped,
+    ActorStopped,
+    InitializerJoined,
+    ActorJoined,
+    NativeJoined,
+    NativeStalled,
+    CleanupCompleted,
+    CleanupFailed,
+    ActorRetained,
+}
+
+#[derive(Default)]
+struct LifecycleObservations {
+    started: OnceLock<Instant>,
+    emitted: AtomicU64,
+}
+
+impl LifecycleObservations {
+    fn record(&self, phase: Phase) -> Option<String> {
+        let started = self.started.get()?;
+        let bit = 1_u64 << phase as u8;
+        if self.emitted.fetch_or(bit, Ordering::Relaxed) & bit != 0 {
+            return None;
+        }
+        Some(format!(
+            "Planner lifecycle phase={phase:?} elapsed_ms={}",
+            started.elapsed().as_millis()
+        ))
+    }
+}
+
+static OBSERVATIONS: LifecycleObservations = LifecycleObservations {
+    started: OnceLock::new(),
+    emitted: AtomicU64::new(0),
+};
+
+pub(crate) fn enable_cli_observations() {
+    let _ = OBSERVATIONS.started.set(Instant::now());
+}
+
+pub(crate) fn observe(phase: Phase) {
+    if let Some(line) = OBSERVATIONS.record(phase) {
+        eprintln!("{line}");
+    }
+}
 
 #[derive(Default)]
 pub(crate) struct ShutdownCoordinator {
@@ -28,15 +90,18 @@ impl ShutdownCoordinator {
         let worker = thread::Builder::new()
             .name("affect-companion-shutdown".into())
             .spawn(move || {
+                observe(Phase::CleanupStarted);
                 // Only catches Rust unwinding; foreign aborts/hangs are not recoverable.
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(work))
                     .unwrap_or(Err("companion-shutdown-panicked"));
                 *coordinator.result.lock().unwrap_or_else(|p| p.into_inner()) = Some(result);
                 if result.is_ok() {
+                    observe(Phase::CleanupCompleted);
                     // Native actor and initializer have actually joined before this
                     // notification. The worker's remaining tail owns no native HWND.
                     notify(coordinator.exit_code.load(Ordering::Acquire));
                 } else {
+                    observe(Phase::CleanupFailed);
                     eprintln!(
                         "Companion shutdown remains blocked: {}",
                         result.err().unwrap_or("shutdown-failed")
@@ -75,6 +140,42 @@ mod tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::Duration;
+
+    #[test]
+    fn observations_are_disabled_by_default_and_once_per_closed_phase() {
+        assert!((Phase::ActorRetained as u8) < 64);
+        let observations = LifecycleObservations::default();
+        assert!(observations.record(Phase::EofObserved).is_none());
+        observations.started.set(Instant::now()).unwrap();
+        let line = observations.record(Phase::EofObserved).unwrap();
+        assert!(line.starts_with("Planner lifecycle phase=EofObserved elapsed_ms="));
+        assert!(line.rsplit('=').next().unwrap().parse::<u128>().is_ok());
+        for _ in 0..1000 {
+            assert!(observations.record(Phase::EofObserved).is_none());
+        }
+        assert!(observations.record(Phase::NativeStalled).is_some());
+        assert!(observations.record(Phase::NativeStalled).is_none());
+    }
+
+    #[test]
+    fn concurrent_observation_of_one_transition_emits_once() {
+        let observations = Arc::new(LifecycleObservations::default());
+        observations.started.set(Instant::now()).unwrap();
+        let threads: Vec<_> = (0..32)
+            .map(|_| {
+                let observations = Arc::clone(&observations);
+                thread::spawn(move || observations.record(Phase::ExitRequested).is_some())
+            })
+            .collect();
+        assert_eq!(
+            threads
+                .into_iter()
+                .filter_map(|worker| worker.join().ok())
+                .filter(|emitted| *emitted)
+                .count(),
+            1
+        );
+    }
 
     #[test]
     fn pending_work_vetoes_exit_and_repeated_requests_run_once() {

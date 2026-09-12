@@ -150,6 +150,9 @@ impl NativeMediaService {
             .spawn(move || {
                 let mut capability =
                     inspect_capability(&resource_dir, NATIVE_ACQUISITION_SUPPORTED);
+                crate::research_shutdown::observe(
+                    crate::research_shutdown::Phase::VerificationCompleted,
+                );
                 #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
                 let actor = if capability.runtime_integrity_verified()
                     && !lifecycle.requested.load(Ordering::Acquire)
@@ -192,6 +195,11 @@ impl NativeMediaService {
                 #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
                 {
                     state.actor = actor;
+                    if state.actor.is_some() {
+                        crate::research_shutdown::observe(
+                            crate::research_shutdown::Phase::ActorRetained,
+                        );
+                    }
                     // Paired with request_shutdown's state lock: neither order
                     // can miss a shutdown requested during runtime inspection.
                     if lifecycle.requested.load(Ordering::Acquire) {
@@ -200,6 +208,10 @@ impl NativeMediaService {
                         }
                     }
                 }
+                drop(state);
+                crate::research_shutdown::observe(
+                    crate::research_shutdown::Phase::InitializerCompleted,
+                );
             });
         match started {
             Ok(join) => {
@@ -423,10 +435,12 @@ impl NativeMediaService {
         {
             return false;
         }
+        crate::research_shutdown::observe(crate::research_shutdown::Phase::InitializerStopped);
         #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
         if self.actor().is_some_and(|actor| !actor.is_stopped()) {
             return false;
         }
+        crate::research_shutdown::observe(crate::research_shutdown::Phase::ActorStopped);
         true
     }
 
@@ -477,12 +491,15 @@ impl NativeMediaService {
                 "native-media-initializer-panicked",
             ));
         }
+        crate::research_shutdown::observe(crate::research_shutdown::Phase::InitializerJoined);
         #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
         if let Some(actor) = self.actor() {
             actor.finish_shutdown()?;
         }
+        crate::research_shutdown::observe(crate::research_shutdown::Phase::ActorJoined);
         self.parent.lock().unwrap_or_else(|p| p.into_inner()).take();
         self.lifecycle.completed.store(true, Ordering::Release);
+        crate::research_shutdown::observe(crate::research_shutdown::Phase::NativeJoined);
         Ok(())
     }
 

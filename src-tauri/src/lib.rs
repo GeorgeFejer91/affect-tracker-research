@@ -105,6 +105,9 @@ fn launch(
     cli_profile: Option<PathBuf>,
 ) -> i32 {
     let cli_enabled = cli_profile.is_some();
+    if cli_enabled {
+        research_shutdown::enable_cli_observations();
+    }
     let authoring = Arc::new(research_planner_authoring::PlannerAuthoringBroker::new(
         cli_enabled,
     ));
@@ -339,6 +342,7 @@ fn launch(
 
     let on_event = |app: &tauri::AppHandle, event| {
         if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+            research_shutdown::observe(research_shutdown::Phase::ExitRequested);
             let coordinator = app.state::<Arc<research_shutdown::ShutdownCoordinator>>();
             coordinator.join_finished();
             if !coordinator.ready_to_exit() {
@@ -376,7 +380,13 @@ fn request_companion_exit(app: &tauri::AppHandle, code: i32) {
             shutdown_before_native(&work_app)?;
             if let Some(media) = work_app.try_state::<Arc<NativeMediaService>>() {
                 media.request_shutdown();
+                research_shutdown::observe(research_shutdown::Phase::NativeShutdownRequested);
                 while !media.is_stopped() {
+                    if media.shutdown_status()
+                        == research_native_media::NativeMediaShutdownStatus::Stalled
+                    {
+                        research_shutdown::observe(research_shutdown::Phase::NativeStalled);
+                    }
                     std::thread::sleep(std::time::Duration::from_millis(20));
                 }
                 media
@@ -396,7 +406,9 @@ fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
     if let Some(authoring) =
         app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()
     {
+        research_shutdown::observe(research_shutdown::Phase::AuthoringStarted);
         authoring.shutdown();
+        research_shutdown::observe(research_shutdown::Phase::AuthoringCompleted);
     }
     if let Some(master) = app.try_state::<Arc<research_runner_master::runtime::MasterRuntime>>() {
         master.shutdown();
@@ -414,7 +426,9 @@ fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
         recorder.shutdown();
     }
     if let Some(input) = app.try_state::<Arc<ResearchInputService>>() {
+        research_shutdown::observe(research_shutdown::Phase::InputStarted);
         input.shutdown();
+        research_shutdown::observe(research_shutdown::Phase::InputCompleted);
     }
     Ok(())
 }
