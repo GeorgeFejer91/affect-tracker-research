@@ -417,6 +417,13 @@ file; follow the integration-owner collection procedure in the workflow.
   complete current-location master, reproduction matrix and resolved XR layout.
   Shared root-app master restoration remains integration-owned; its actual UI
   receipt is still pending. Disk adapter evidence is not an OS-picker check.
+- S7's independent native full reader identified final-digit differences in raw
+  calculated XR geometry that prevent exact reproduction SHA agreement. Existing
+  P6 `1e-10` absolute leaf tolerance applies only to geometry fixtures; authored
+  canonical profile bytes/hashes remain exact. P7 owns an explicitly versioned
+  layout identity representation and native parity correction. P6 will adapt its
+  complete-master fixtures to that owner contract after handoff, without changing
+  domain math or using rounded authored fields to conceal the discrepancy.
 - Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
   resolver now uses P1's generic validator/projection. Actual owner V2 fixture
   proves two locations sharing content retain both declarations while live and
@@ -434,6 +441,45 @@ file; follow the integration-owner collection procedure in the workflow.
   a full master-file save. Latest focused checks: 36 P6 Node and five Rust.
   Rust now derives V2 envelopes through P5's actual native validator/projector
   before comparing them with the shared P6 geometry fixture.
+- Shared actual-master UI follow-up collected `219cf31` in `d34951d`. The
+  expanded owned fixture currently exposes two unresolved integration defects:
+  the capture-phase edit read consumes P1's new snapshot before its change
+  notification, leaving prepared XR geometry attached to the old revision;
+  and the raw-geometry V1 master hash passes Node but fails Chrome validation.
+  Main/S1 own the notification repair; S7 owns versioned cross-runtime identity.
+  The default `all` fixture retains the immediate-withdraw assertion. Explicit
+  `master` scope isolates full reopen/save checks while the first defect is open.
+  Failure receipts: `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`wide-diagnostic`, `master-dev`). No failed check is counted as passing.
+- Final actual-master handoff: **ready**, clean application checkpoint
+  `51685b06a6ddc79e32c06afdc6446c9db5bc12f2`. Main `adc34d2` resolves the
+  capture-order defect and P7 `70b30a4` supplies portable reproduction-V2.
+  The default `all` fixture retains immediate P1 withdrawal and now passes
+  **60/60 checks at both 1440/820px** in the explicit Planner role. The real
+  shared controller saves/reopens every spatial/feedback field, preserves exact
+  acknowledged unchanged bytes, keeps media/confirmation pending, rejects stale
+  edits/opens, clears exclusion and prepares after exact media rebind. Catalogue
+  and file-picker adapters are synthetic; they grant no physical-media authority.
+- Both final PNGs inspected: expanded XR scene, tilted screen/feedback footprint,
+  angular readouts and footer fit; no browser errors or horizontal overflow.
+  Capture toggling an already-open accordion was corrected and visible-scene
+  coverage added. Main explicitly allocated the one-line P6 hint; it now directs
+  confirmation followed by complete saving in Review & Export. Source, harness,
+  real CSS/icons and image hashes bind clean receipts at
+  `D:/GitHub/.affect-preview-checks/p6-shared-master-ui-20260912/`
+  (`final-wide-51685b0`, `final-narrow-51685b0`).
+- Validation: 44 focused P6 JavaScript and five Rust tests pass. The `663cae9`
+  combined-source suite is 761/763 with two legacy-V1 byte expectations routed
+  to Main (`research-planner-file-workflow.test.js:36`) and S3
+  (`research-variant-master.test.js:42`); Main reports its fix at `63fe416`.
+  Desktop11/Pages234 builds pass. This receipt does not count those two tests
+  as passing or claim installed/Edge/OS-picker/headset/Runner qualification.
+- Historical P6 V1 canonical/reproduction/layout vectors remain byte-identical
+  to `188c080`. Seven complete-master tests now use P7's current portable helper
+  and fixtures, with explicit historical-reader coverage. The generator requires
+  an evidence directory and emits new `planner-xr-master-v2*` files there.
+  Root owns P6 catalogue closure and Main owns canonical combined integration;
+  no remaining P6 product or geometry repair is allocated at this checkpoint.
 
 ### 20260912-integration-planner-completion
 
