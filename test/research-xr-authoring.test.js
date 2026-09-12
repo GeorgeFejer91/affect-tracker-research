@@ -41,6 +41,7 @@ function harness(project = projector) {
       return state.getSnapshot();
     },
     restoreDraft(value) { state.loadDraft(serializeXrLayoutProfileV1(value)); return state.getSnapshot(); },
+    restoreExcluded() { state.resetExcluded(); return state.getSnapshot(); },
   };
   const authoring = createXrLayoutAuthoring({ editor, projectCatalogue: project,
     getDependencies: () => current,
@@ -199,6 +200,28 @@ test("content-only reopen renders saved XR settings while real media remains pen
   h.publish(dependencies()); await h.authoring.refresh();
   assert.equal((await h.authoring.prepare()).contribution.video.distanceMetres, 4);
   h.authoring.destroy(); assert.throws(() => h.authoring.restoreDraft(profile), /changed/);
+});
+
+test("master XR exclusion discards prior document state and included restore requires fresh preparation", async () => {
+  const h = harness(); await h.authoring.refresh();
+  const saved = { ...profile, video: { ...profile.video, distanceMetres: 7 } };
+  const included = { status: "included", profile: saved }, excluded = { status: "excluded" };
+  assert.throws(() => h.authoring.restoreSelection(included), /current-request guard/);
+  h.authoring.restoreSelection(included, { isCurrent: () => true }); await h.authoring.prepare();
+  for (const invalid of [{ status: "excluded", profile: saved }, { status: "included" }, { status: "off" }]) {
+    const before = h.state.getSnapshot();
+    assert.throws(() => h.authoring.restoreSelection(invalid, { isCurrent: () => true }));
+    assert.deepEqual(h.state.getSnapshot(), before);
+  }
+  assert.throws(() => h.authoring.restoreSelection(excluded, { isCurrent: () => false }), /changed/);
+  assert.equal(h.state.getDraft().video.distanceMetres, 7);
+  const result = h.authoring.restoreSelection(excluded, { isCurrent: () => true });
+  assert.equal(result.enabled, false); assert.equal(result.contribution, null);
+  assert.deepEqual(h.state.getDraft(), profile, "no profile exists in an excluded recipe");
+  h.state.setEnabled(true); assert.equal(h.state.getSnapshot().pending, true);
+  h.authoring.restoreSelection(included, { isCurrent: () => true });
+  assert.deepEqual(h.state.getDraft(), saved); assert.equal(h.state.getSnapshot().pending, true);
+  h.authoring.destroy(); assert.throws(() => h.authoring.restoreSelection(excluded, { isCurrent: () => true }), /changed/);
 });
 
 test("P6 composes the committed P1/P5 producers and rejects a tampered or withdrawn catalogue", async () => {

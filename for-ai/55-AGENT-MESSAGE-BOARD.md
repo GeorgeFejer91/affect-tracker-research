@@ -111,6 +111,28 @@ file; follow the integration-owner collection procedure in the workflow.
   qualification are deferred. XDF stream selection is Runner-session policy;
   authored LSL output and planned markers remain experiment definitions.
 
+### 20260912-p6-master-completion
+
+- Owner S6/P6, new Planner completion allocation from root, Backend Verification,
+  P6-01 through P6-05. Existing isolated branch/worktree fast-forwarded from
+  `3bedea1` to the supplied combined `7946bc6`; canonical remains integration-owned.
+- Existing editor, live preparation, target guard and content-only draft restore
+  are reused. Remaining deliverable: pure saved-content geometry adapter for
+  P7's strict optional XR union and a complete spatial-profile master round-trip/
+  independent reproduction fixture, with no discarded fields or stale acceptance.
+- S7 proposes `{status: "excluded"}` or `{status: "included", profile}` under
+  `segments.P6`, with explicit outer presentation target. Saved P1/P5 content
+  must validate without fabricated live snapshots or permissions. S5 owns the
+  expanded experiment-defining feedback contract and conservative envelope.
+- Allowed seams: P6 recipe helper, owned restore/validator hooks, tests and P6
+  documentation. Any root app composition is coordinated through integration.
+  P7 owns master serialization/parser/save; P1/P5 retain producer authority.
+- Evidence: complete non-default profile retention, mixed/rotated geometry,
+  inclusion/exclusion and explicit target rejection, invalid/stale content,
+  editable reopen and separate-process canonical reproduction. Actual Runner
+  correspondence, execution, tracking and recording are deferred and do not
+  block this Planner allocation. No new UI or runtime mode is introduced.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion
