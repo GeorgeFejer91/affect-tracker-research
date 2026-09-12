@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { resolve, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
-import { catalogueSourcePaths } from "./render-cli-reference.mjs";
+import { catalogueSourcePaths, validateCatalogueShape } from "./render-cli-reference.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const evidenceRoot = process.argv[2];
@@ -28,8 +28,7 @@ assert.equal(response?.status, "ok");
 assert.equal(response.sessionId, receipt.ready.sessionId);
 assert.equal(request.sessionId, receipt.ready.sessionId);
 const catalogue = response.result;
-assert.ok(Array.isArray(catalogue.settings) && Array.isArray(catalogue.operations));
-assert.deepEqual(Object.keys(catalogue).sort(), ["operations", "settings"]);
+validateCatalogueShape(catalogue);
 const sourceRevision = receipt.ready.buildCommit;
 const sourceFiles = [];
 for (const path of await catalogueSourcePaths(root)) {

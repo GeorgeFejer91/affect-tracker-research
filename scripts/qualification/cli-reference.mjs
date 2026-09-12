@@ -55,17 +55,24 @@ try {
     await page.goto(`${origin}${prefix}about/`, { waitUntil: "networkidle" });
     assert.equal(await page.title(), "About & CLI library · Affect Tracker");
     assert.equal(await page.locator("[data-descriptor]").count(), descriptorCount);
+    assert.equal(await page.locator("[data-consequence]").count(), reference.catalogue.consequences?.length ?? 0);
     const links = await page.locator("a[href], link[href], img[src]").evaluateAll(elements => elements.map(element => element.href || element.src));
     for (const url of links.filter(url => url.startsWith(origin))) {
       assert.ok(new URL(url).pathname.startsWith(prefix));
       assert.equal((await fetch(url)).status, 200, url);
     }
-    for (const scene of ["overview", "catalogue", "file-commands"]) {
+    for (const scene of ["overview", "catalogue", ...(reference.catalogue.consequences?.length ? ["public-consequences"] : []), "file-commands"]) {
       if (scene === "catalogue") {
         await page.evaluate(() => {
           document.querySelector("#owner-p7").open = true;
           document.querySelector('#owner-p7 [data-descriptor="P7.participantCount"]').open = true;
           document.querySelector("#owner-p7").scrollIntoView();
+        });
+      } else if (scene === "public-consequences") {
+        await page.locator("#public-consequences").evaluate(element => {
+          element.open = true;
+          element.querySelector("[data-consequence]").open = true;
+          element.scrollIntoView();
         });
       } else if (scene === "file-commands") {
         await page.locator("#external").evaluate(element => element.scrollIntoView());

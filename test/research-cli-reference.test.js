@@ -4,7 +4,8 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readCatalogue, renderReference, renderExternalContract } from "../scripts/render-cli-reference.mjs";
+import { createHash } from "node:crypto";
+import { readCatalogue, renderReference, renderExternalContract, validateCatalogueShape, renderConsequences } from "../scripts/render-cli-reference.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
@@ -74,4 +75,85 @@ test("external commands render from the frozen contract without interpreting mar
   assert.ok(html.includes("&lt;script&gt;"));
   assert.ok(!html.includes("<script>"));
   assert.throws(() => renderExternalContract("missing table"), /table is missing/u);
+});
+
+const publicCommand = () => ({
+  id: "importVideos", owner: "P1", label: '<script>"metadata"</script>',
+  arguments: { type: "object", additionalProperties: false, required: ["paths"], properties: { paths: { type: "array", items: { type: "string" } } } },
+});
+const catalogueWith = consequences => ({ settings: [], operations: [{ id: "importVideos", owner: "P1" }], consequences });
+
+test("catalogue namespace compatibility retains absent and empty consequences independently", () => {
+  const legacy = { settings: [], operations: [] };
+  assert.doesNotThrow(() => validateCatalogueShape(legacy));
+  assert.equal(renderConsequences(legacy), "");
+  assert.doesNotThrow(() => validateCatalogueShape(catalogueWith([])));
+  assert.match(renderConsequences(catalogueWith([])), /0 public consequences/u);
+  const catalogue = catalogueWith([publicCommand()]);
+  const before = JSON.stringify(catalogue);
+  assert.doesNotThrow(() => validateCatalogueShape(catalogue));
+  const html = renderConsequences(catalogue);
+  assert.equal(JSON.stringify(catalogue), before);
+  assert.equal((html.match(/data-consequence="importVideos"/gu) ?? []).length, 1);
+  assert.ok(!html.includes("data-descriptor="));
+  assert.ok(html.includes("use perform"));
+  assert.ok(html.includes("&lt;script&gt;"));
+  assert.ok(!html.includes("<script>"));
+  assert.ok(html.includes("&quot;items&quot;"));
+});
+
+test("capture and reader shared validation reject unknown or malformed namespaces", () => {
+  for (const consequences of [null, {}, "commands", 1]) {
+    assert.throws(() => validateCatalogueShape(catalogueWith(consequences)), /namespaces/u);
+  }
+  for (const catalogue of [{ operations: [] }, { settings: [] }, { settings: [], operations: [], unknown: [] }]) {
+    assert.throws(() => validateCatalogueShape(catalogue), /namespaces/u);
+  }
+});
+
+test("public consequences require globally unique IDs and exact closed required arguments", () => {
+  const duplicate = publicCommand();
+  duplicate.owner = "P2";
+  assert.throws(() => validateCatalogueShape(catalogueWith([publicCommand(), duplicate])), /duplicate public/u);
+  const mutations = [
+    item => { item.id = "P1.invalid"; },
+    item => { item.owner = "P8"; },
+    item => { item.arguments.additionalProperties = true; },
+    item => { item.arguments.required = ["paths", "paths"]; },
+    item => { item.arguments.required = ["other"]; },
+    item => { item.arguments.required = []; },
+    item => { item.arguments.required = [1]; },
+    item => { item.arguments.properties = []; },
+    item => { item.arguments.properties = null; },
+    item => { item.arguments.type = "array"; },
+  ];
+  for (const mutate of mutations) {
+    const item = publicCommand(); mutate(item);
+    assert.throws(() => validateCatalogueShape(catalogueWith([item])), /public CLI consequence/u);
+  }
+  assert.throws(() => validateCatalogueShape(catalogueWith([null])), /public CLI consequence/u);
+});
+
+test("reader and full page retain consequences separately under the complete evidence digest", async t => {
+  const { directory, reference, save } = await copiedReference(t);
+  reference.catalogue.consequences = [publicCommand()];
+  await save();
+  await assert.rejects(readCatalogue(directory), /production evidence/u);
+  // This isolated test fixture is not a production catalogue or capture receipt.
+  const evidencePath = resolve(directory, "docs/cli/planner-authoring-catalogue-evidence.json");
+  const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+  evidence.catalogueSha256 = createHash("sha256").update(JSON.stringify(reference.catalogue)).digest("hex");
+  await writeFile(evidencePath, JSON.stringify(evidence));
+  for (const path of ["site/about/index.html", "docs/planner-cli-consequential-commands-v1.md"]) {
+    await mkdir(resolve(directory, path, ".."), { recursive: true });
+    await writeFile(resolve(directory, path), await readFile(resolve(root, path)));
+  }
+  const { html, reference: rendered } = await renderReference(directory);
+  assert.deepEqual(rendered.catalogue, reference.catalogue);
+  assert.equal((html.match(/data-descriptor=/gu) ?? []).length, reference.catalogue.settings.length + reference.catalogue.operations.length);
+  assert.deepEqual([...html.matchAll(/data-consequence="([^"]+)"/gu)].map(match => match[1]), ["importVideos"]);
+  assert.ok(html.includes("1 public consequences"));
+  reference.catalogue.consequences[0].label = "Changed after capture";
+  await save();
+  await assert.rejects(readCatalogue(directory), /production evidence/u);
 });

@@ -22,6 +22,29 @@ const escape = value => String(value).replace(/[&<>"']/gu, char => ({
 })[char]);
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 
+export function validateCatalogueShape(catalogue) {
+  if (!catalogue || !Array.isArray(catalogue.settings) || !Array.isArray(catalogue.operations)
+      || Object.keys(catalogue).some(key => !["settings", "operations", "consequences"].includes(key))
+      || (Object.hasOwn(catalogue, "consequences") && !Array.isArray(catalogue.consequences))) {
+    throw new Error("Invalid CLI catalogue namespaces.");
+  }
+  const ids = new Set();
+  for (const item of catalogue.consequences ?? []) {
+    const shape = item?.arguments;
+    if (!item || typeof item.id !== "string" || !/^[a-z][a-zA-Z0-9.-]{0,79}$/u.test(item.id)
+        || !/^P[1-7]$/u.test(item.owner) || ids.has(item.id)
+        || !shape || shape.type !== "object" || shape.additionalProperties !== false
+        || !Array.isArray(shape.required) || shape.required.some(key => typeof key !== "string")
+        || new Set(shape.required).size !== shape.required.length
+        || !shape.properties || typeof shape.properties !== "object" || Array.isArray(shape.properties)
+        || shape.required.length !== Object.keys(shape.properties).length
+        || [...shape.required].sort().some((key, index) => key !== Object.keys(shape.properties).sort()[index])) {
+      throw new Error("Invalid or duplicate public CLI consequence descriptor; closed required arguments are mandatory.");
+    }
+    ids.add(item.id);
+  }
+}
+
 export async function catalogueSourcePaths(repositoryRoot) {
   const queue = ["app", "planner-authoring-session", "planner-authoring-contract", ...owners.map(([id]) => `planner-authoring-${id.toLowerCase()}`)]
     .map(name => `site/src/research/${name}.js`);
@@ -46,6 +69,7 @@ export async function readCatalogue(repositoryRoot) {
       || !Array.isArray(reference.catalogue?.settings) || !Array.isArray(reference.catalogue?.operations)) {
     throw new Error("CLI reference requires a versioned production catalogue with source identity.");
   }
+  validateCatalogueShape(reference.catalogue);
   const tracked = new Set();
   for (const file of reference.sourceFiles) {
     const path = file.path;
@@ -110,6 +134,13 @@ function renderCatalogue(catalogue) {
   }).join("\n");
 }
 
+export function renderConsequences(catalogue) {
+  validateCatalogueShape(catalogue);
+  if (!Object.hasOwn(catalogue, "consequences")) return "";
+  const items = catalogue.consequences;
+  return `<details class="owner" id="public-consequences"><summary>Registered public consequential commands<span class="meta">${items.length} public consequences · separate from owner operations</span></summary><p>Use <code>perform</code> with the exact registered arguments. Registration alone does not verify successful execution.</p>${items.map(item => `<details class="entry" data-consequence="${escape(item.id)}"><summary><code>${escape(item.id)}</code><span class="meta">${escape(item.owner)} · public consequential command · use perform</span></summary><pre><code>${escape(JSON.stringify(item, null, 2))}</code></pre></details>`).join("\n")}</details>`;
+}
+
 function inlineMarkdown(value) {
   return value.split(/(`[^`]+`)/u).map(part => part.startsWith("`")
     ? `<code>${escape(part.slice(1, -1).replaceAll("\\|", "|"))}</code>` : escape(part)).join("");
@@ -134,7 +165,7 @@ export async function renderReference(repositoryRoot) {
   const contract = await readFile(resolve(repositoryRoot, "docs/planner-cli-consequential-commands-v1.md"), "utf8");
   let html = await readFile(resolve(repositoryRoot, "site/about/index.html"), "utf8");
   html = replaceSlot(html, "identity", `<p><strong>Catalogue source:</strong> <code class="digest">${reference.sourceRevision}</code> ${reference.catalogue.settings.length} settings and ${reference.catalogue.operations.length} owner operations. Source-file hashes were checked when this page was built.</p>`);
-  html = replaceSlot(html, "catalogue", renderCatalogue(reference.catalogue));
+  html = replaceSlot(html, "catalogue", renderCatalogue(reference.catalogue) + renderConsequences(reference.catalogue));
   html = replaceSlot(html, "external", renderExternalContract(contract));
   return { html, reference, contract };
 }

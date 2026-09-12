@@ -1,5 +1,25 @@
 # Agent message board
 
+### 20260912-about-consequences-compatibility — CLI-DOCS
+
+- Root/Main approved a narrow follow-up from frozen `f616819` on isolated branch
+  `codex/about-consequences-compatibility`. Capture/parser/render/tests/harness
+  and maintenance docs only; no new inventory or publication claim.
+- Shared validation accepts required settings/operations plus optional array
+  consequences, validates independent globally unique public IDs and closed
+  required argument schemas, and retains the entire catalogue evidence digest.
+  Rendering/counts use a separate public `perform` namespace; legacy absence
+  and explicit empty arrays remain supported. Internal names may overlap.
+- Ten focused tests pass, including malformed namespaces/descriptors, namespace
+  overlap, escaped full metadata, complete page coverage and consequence digest
+  rejection. Pages build/253-file closure and syntax checks pass. Legacy About
+  HTML is byte-identical to reviewed `ed63bc0` output (SHA-256
+  `cf347061d370f152563c9797c76bd5c581e1a043890655d7db349298b89f582b`);
+  no repeat browser capture needed for the unchanged inventory. The harness
+  will capture the public section when actual entries exist. Existing captured
+  source/counts remain unchanged; Main will recapture only from the final
+  combined native app and review that new section before publication.
+
 ### 20260912-pages-cli-reference — CLI-DOCS
 
 - Owner Online Version, bounded public About/reference segment, Repository/Web

@@ -19,6 +19,18 @@ production `catalogue` query, retaining descriptors only, with this envelope:
 }
 ```
 
+The catalogue also accepts an optional `consequences` array from an actual
+registered production response. Absence remains valid; an empty array explicitly
+contains no registered public consequences. Preserve the complete response in the
+wrapper and evidence digest. Public consequence IDs are globally unique within
+that array and may match internal operation names. Their required argument names
+must exactly match a closed object schema (`additionalProperties: false`).
+The renderer shows these descriptors and their count separately, labelled for
+`perform`; it does not merge them with atomic/internal owner operations or infer
+execution qualification from registration. The browser harness captures the new
+section when the actual catalogue contains entries. Compatibility tests use
+isolated synthetic fixtures only, never as production inventory.
+
 Run `node scripts/capture-cli-reference.mjs <production-driver-evidence-directory>`
 against the exact source used by that executable. The generator verifies the
 transcript hash, finds the actual successful catalogue request/reply, and checks
