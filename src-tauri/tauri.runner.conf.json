@@ -1,19 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Experiment Planner",
+  "productName": "Experiment Runner",
   "version": "0.4.0-alpha.1",
-  "identifier": "io.github.georgefejer91.affecttracker",
+  "identifier": "io.github.georgefejer91.affecttracker.runner",
   "build": {
-    "beforeDevCommand": "pnpm desktop:dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm desktop:build",
-    "frontendDist": "../desktop/dist"
+    "beforeDevCommand": "pnpm runner:dev",
+    "devUrl": "http://localhost:1421",
+    "beforeBuildCommand": "pnpm runner:build",
+    "frontendDist": "../runner/dist"
   },
   "app": {
     "windows": [
       {
         "label": "research",
-        "title": "Experiment Planner",
+        "title": "Experiment Runner",
         "url": "index.html",
         "width": 1280,
         "height": 860,
@@ -31,8 +31,8 @@
     "active": true,
     "targets": "all",
     "category": "Education",
-    "shortDescription": "Experiment recipe authoring with live Flubber previews",
-    "longDescription": "Authors comprehensive experiment recipes and previews feedback and layout for the separate Experiment Runner companion.",
+    "shortDescription": "Desktop experiment execution and LSL recording",
+    "longDescription": "Consumes Experiment Planner recipes, runs the native protocol and records selected LSL streams to XDF. Runtime qualification remains separately gated.",
     "copyright": "Copyright 2026 George Fejer",
     "icon": [
       "icons/32x32.png",
@@ -45,5 +45,6 @@
       "native-media/gstreamer-runtime-v1.json",
       "native-media/GSTREAMER-RUNTIME-NOTICE.txt"
     ]
-  }
+  },
+  "mainBinaryName": "affect-runner"
 }

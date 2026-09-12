@@ -1,3 +1,4 @@
+import { nativeInputRegionRequest } from "./input-region.js";
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 
 import {
@@ -300,30 +301,7 @@ export function nativeInputBindingSupported(binding, capability) {
   });
 }
 
-export function nativeInputRegionRequest(element, purpose, layoutEpoch, windowObject = globalThis.window) {
-  const bounds = element?.getBoundingClientRect?.();
-  const viewportWidth = Number(windowObject?.innerWidth);
-  const viewportHeight = Number(windowObject?.innerHeight);
-  if (!bounds || [bounds.left, bounds.top, bounds.right, bounds.bottom, bounds.width, bounds.height]
-    .some((value) => !Number.isFinite(value))
-    || !Number.isInteger(layoutEpoch) || layoutEpoch < 1
-    || bounds.width < 8 || bounds.height < 8
-    || !Number.isFinite(viewportWidth) || !Number.isFinite(viewportHeight)
-    || bounds.left < 0 || bounds.top < 0
-    || bounds.right > viewportWidth + 0.5 || bounds.bottom > viewportHeight + 0.5) {
-    throw new Error("The visible native input allow-region is unavailable.");
-  }
-  return Object.freeze({
-    purpose,
-    layoutEpoch,
-    left: bounds.left,
-    top: bounds.top,
-    width: bounds.width,
-    height: bounds.height,
-    viewportWidth,
-    viewportHeight,
-  });
-}
+export { nativeInputRegionRequest } from "./input-region.js";
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -1097,14 +1075,15 @@ export class NativeResearchRuntimeBridge {
     this.setInterval = setIntervalObject;
     this.clearInterval = clearIntervalObject;
     this.videoFactory = videoFactory;
+    this.plannerOnly = root.dataset?.researchProgram === "planner";
     this.nativeMedia = new NativeMediaController({ invoke });
-    this.nativeRunMedia = new NativeRunMedia({
+    this.nativeRunMedia = this.plannerOnly ? null : new NativeRunMedia({
       controller: this.nativeMedia,
       resolveHost: () => this.root.querySelector?.("#run-native-video-host"),
       resolveFallbackVideo: () => this.root.querySelector?.("#run-video"),
       resolvePlaceholder: () => this.root.querySelector?.("#run-stimulus-placeholder"),
     });
-    this.packageProtocol = new NativePackageProtocolAdapter(root, {
+    this.packageProtocol = this.plannerOnly ? null : new NativePackageProtocolAdapter(root, {
       invoke,
       dispatch: (type, detail) => this.#dispatch(type, detail),
       prepareRunInput: async () => {
@@ -1150,6 +1129,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   async initialize() {
+    if (this.plannerOnly) return this.#initializePlanner();
     this.#bind();
     try {
       const [workspace, sourceCapabilities, nativeMediaCapability, nativeProtocolCapability, nativePackageProtocolCapability, inputCapability, inputStatus, status, packageStatus] = await Promise.all([
@@ -1207,6 +1187,33 @@ export class NativeResearchRuntimeBridge {
     return this;
   }
 
+  async #initializePlanner() {
+    const identity = await this.invoke("research_desktop_identity");
+    if (identity?.program !== "planner" || identity.schema !== "affect-research-desktop-identity" || identity.version !== 1) {
+      throw new Error("This authoring surface requires the Experiment Planner executable.");
+    }
+    this.#bind();
+    const [workspace, sources, media, input, inputStatus] = await Promise.all([
+      this.invoke("research_workspace_status"), this.invoke("research_source_capabilities"),
+      this.invoke("research_native_media_capability"), this.invoke("research_input_capability"),
+      this.invoke("research_input_status"),
+    ]);
+    this.nativeMediaCapability = validateNativeMediaCapabilityV2(media);
+    this.nativeInputCapability = input;
+    this.#applyInputCapability();
+    this.root.researchUi?.applyNativeInputStatus?.(inputStatus);
+    this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
+      indexedDbReady: true, repositoryAssetsReady: sources?.repositoryAsset?.supported === true,
+      nativeMediaCapability: this.nativeMediaCapability,
+      nativeInputReady: input?.nativeAuthorityReady === true,
+      timingWorkerReady: false, nativePlaybackReady: false, lslReady: false, manifestReady: false,
+      manifestReason: "Participant execution and recording belong to Experiment Runner.",
+    });
+    this.#startInputPolling();
+    if (workspace?.selected) await this.#adoptWorkspace(workspace, { rescan: true });
+    return this;
+  }
+
   destroy() {
     this.inputCaptureGeneration += 1;
     this.activeInputCaptureGeneration = null;
@@ -1218,8 +1225,8 @@ export class NativeResearchRuntimeBridge {
     this.#stopPolling();
     this.#stopInputPolling();
     this.#clearMediaListeners();
-    this.packageProtocol.destroy();
-    void this.nativeRunMedia.stop().catch(() => {});
+    this.packageProtocol?.destroy();
+    void this.nativeRunMedia?.stop().catch(() => {});
     this.run = null;
     this.#clearVideo();
   }
@@ -1319,6 +1326,7 @@ export class NativeResearchRuntimeBridge {
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.startRequest, (event) => {
       event.preventDefault();
+      if (this.plannerOnly) { this.#announce("Open the recipe in Experiment Runner."); return; }
       this.#queue(async () => {
         try {
           if (this.packageProtocol.owns(event.detail)) await this.#startPackage(event.detail);
@@ -1332,33 +1340,33 @@ export class NativeResearchRuntimeBridge {
       });
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.pauseRequest, () => {
-      if (this.packageProtocol.active) {
+      if (this.packageProtocol?.active) {
         this.#queue(() => this.packageProtocol.togglePause());
         return;
       }
       this.#queueForCurrentRun((fence) => this.#togglePause(fence));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.stopEarlyRequest, () => {
-      if (this.packageProtocol.active) {
+      if (this.packageProtocol?.active) {
         this.#queue(() => this.packageProtocol.finish("stopEarly"));
         return;
       }
       this.#queueForCurrentRun((fence) => this.#finish(fence, "stopEarly"));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.continueRequest, () => {
-      if (this.packageProtocol.active) {
+      if (this.packageProtocol?.active) {
         this.#queue(() => this.packageProtocol.continue());
         return;
       }
       this.#queueForCurrentRun((fence) => this.#continueRun(fence, { directGesture: true }));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireDraftRequest, (event) => {
-      if (!this.packageProtocol.active) return;
+      if (!this.packageProtocol?.active) return;
       event.preventDefault();
       this.#queue(() => this.packageProtocol.questionnaireDraft(event.detail));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.questionnaireSubmitRequest, (event) => {
-      if (!this.packageProtocol.active) return;
+      if (!this.packageProtocol?.active) return;
       event.preventDefault();
       this.#queue(() => this.packageProtocol.questionnaireSubmit(event.detail));
     });
@@ -1379,7 +1387,7 @@ export class NativeResearchRuntimeBridge {
       this.#queue(() => this.invoke("research_input_cancel_setup"));
     });
     this.#listen(this.root, "focusin", (event) => {
-      if (this.run || this.packageProtocol.active || this.root.researchUi?.openSection !== "input") return;
+      if (this.run || this.packageProtocol?.active || this.root.researchUi?.openSection !== "input") return;
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest("#binding-capture-dialog")) return;
       if (target?.closest(".input-test-grid")) {
@@ -1391,7 +1399,7 @@ export class NativeResearchRuntimeBridge {
     this.#listen(this.window, "resize", () => {
       this.#queue(async () => {
         await this.#refreshNativeInputRegion();
-        if (this.packageProtocol.active) await this.packageProtocol.resize();
+        if (this.packageProtocol?.active) await this.packageProtocol.resize();
         else await this.#refreshNativeMediaViewport();
       });
     });
@@ -1480,7 +1488,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   async #refreshNativeInputRegion() {
-    if (this.run || this.packageProtocol.active) {
+    if (this.run || this.packageProtocol?.active) {
       await this.#setNativeInputRegion(".run-feedback-stage", "runFeedback");
       return;
     }
@@ -1894,7 +1902,7 @@ export class NativeResearchRuntimeBridge {
     protocolSettings = null,
     protocolPlan = null,
   ) {
-    if (!settings || !plan || !this.workspace) return;
+    if (this.plannerOnly || !settings || !plan || !this.workspace) return;
     if (protocolSettings?.version !== 2
       || !protocolPlan || typeof protocolPlan !== "object" || Array.isArray(protocolPlan)) {
       throw new Error("Native readiness requires frozen ResearchSettingsV2 and the selected participant protocol plan.");
@@ -1978,7 +1986,7 @@ export class NativeResearchRuntimeBridge {
     protocolSettings = null,
     protocolPlan = null,
   ) {
-    if (!settings || !this.workspace) return;
+    if (this.plannerOnly || !settings || !this.workspace) return;
     const packageSourceText = this.root.researchUi?.experimentPackageSourceText;
     if (typeof packageSourceText === "string" && packageSourceText.length > 0) {
       const listing = await this.packageProtocol.refreshRecoveries(
@@ -2099,7 +2107,7 @@ export class NativeResearchRuntimeBridge {
 
   async #startPackage(detail) {
     this.#requireWorkspace();
-    if (this.run || this.packageProtocol.active) {
+    if (this.run || this.packageProtocol?.active) {
       throw new Error("A native Research attempt is already active.");
     }
     if (detail?.playbackMode !== "nativeGstPlay") {
