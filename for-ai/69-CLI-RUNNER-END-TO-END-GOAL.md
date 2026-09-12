@@ -115,3 +115,26 @@ All other active authoring fields still require both-way CLI/UI coverage. These
 decisions do not permit removing an active capability merely to avoid a missing
 UI implementation. Registry metadata, tests of pure adapters, native operations
 and actual UI behavior remain distinct evidence layers.
+
+### File-writer review and execution gate — 2026-09-12
+
+S7 handed off `f5c0547deaf76d7d0178cb3677b6f8a8d4c29d69` from its clean isolated
+worktree. Root independently reran the nine focused filename/file JS checks:
+all passed. Four inspected disk-backed browser-fixture exports share SHA-256
+`09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+Chrome and Edge receipts each contain 65 passed checks; all 196 recorded source
+hash comparisons match the frozen S7 worktree. Receipts are under
+`D:/GitHub/.affect-checks/p7-cli-file-versions-{chrome,edge}/`.
+Their explicit synthetic-media/disk-picker limitation remains: these files are
+not the requested CLI-created experiment or evidence of native execution.
+The new native writer requires hard-link support; browser preflight prevents
+ordinary nonempty replacement but does not prove atomic multi-writer exclusion.
+
+Runner's isolated master-consumer baseline is `3301440`. Root confirmed the
+reported current blocker in `research_native_media/capability.rs`: qualified
+Start, format-matrix and redistribution readiness are false, and actor readiness
+does not enable Start. The corresponding missing installed/bootstrap, source/
+redistribution closure, format and lifecycle evidence is recorded in30/40.
+The Live Preview task now owns a read-only qualification-gap audit; Runner keeps
+implementing complete master consumers. No flag change, weaker playback path or
+mock is authorized as a substitute for passing the existing execution gates.
