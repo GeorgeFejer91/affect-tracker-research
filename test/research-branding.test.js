@@ -89,10 +89,11 @@ test("Research Pages, desktop, app header, and GitHub explainer expose Aurora Ax
   assert.doesNotMatch(pages, /rel="manifest"|serviceWorker\.register/u);
   assert.match(desktop, /rel="icon" type="image\/svg\+xml" href="\.\.\/site\/assets\/app-logo\.svg"/u);
   assert.match(ui, /class="product-mark" aria-hidden="true"/u);
-  assert.match(styles, /\.product-mark\s*\{[\s\S]*app-logo\.svg/u);
-  assert.match(styles, /\.research-loading::before\s*\{[\s\S]*app-logo\.svg/u);
+  assert.match(styles, /\.product-mark\s*\{[^}]*app-symbol\.svg/u);
+  assert.match(styles, /\.research-loading::before\s*\{[^}]*app-symbol\.svg/u);
   assert.match(readme, /src="\.\/site\/assets\/app-logo\.svg"/u);
   assert.match(readme, /Aurora Axis/u);
   assert.match(pagesBuilder, /"assets", "app-logo\.svg"/u);
+  assert.match(pagesBuilder, /"assets", "app-symbol\.svg"/u);
   assert.match(buildVerifier, /assets\/app-logo\.svg/u);
 });

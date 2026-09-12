@@ -52,10 +52,24 @@ async function verifySelectedLogo(root, files, buildTarget) {
     throw new Error(`${buildTarget} index.html does not reference its emitted app-logo SVG.`);
   }
 
+  const selectedSymbol = await readFile(resolve(repositoryRoot, "site", "assets", "app-symbol.svg"));
+  const expectedSymbolFiles = buildTarget === "pages"
+    ? ["assets/app-symbol.svg"]
+    : files.filter((path) => /^assets\/app-symbol-[A-Za-z0-9_-]+\.svg$/u.test(path));
+  if (expectedSymbolFiles.length !== 1) {
+    throw new Error(`${buildTarget} build must contain exactly one transparent app-symbol SVG.`);
+  }
+  const emittedSymbol = await readFile(resolve(root, expectedSymbolFiles[0]));
+  if (!emittedSymbol.equals(selectedSymbol)) {
+    throw new Error(`${buildTarget} build app-symbol SVG differs from the transparent source.`);
+  }
+
+  const symbolFilename = expectedSymbolFiles[0].split("/").at(-1);
   const stylesheets = files.filter((path) => path.endsWith(".css"));
   const styles = await Promise.all(stylesheets.map((path) => readFile(resolve(root, path), "utf8")));
-  if (!styles.some((source) => source.includes(logoFilename))) {
-    throw new Error(`${buildTarget} stylesheet does not render its emitted app-logo SVG.`);
+  if (!styles.some((source) => source.includes(symbolFilename))
+      || styles.some((source) => source.includes(logoFilename))) {
+    throw new Error(`${buildTarget} stylesheet must render the transparent app-symbol SVG instead of the launcher tile.`);
   }
 }
 
@@ -74,6 +88,7 @@ const rules = {
       || path === "questionnaires/ssq-six-item-en.csv"
       || path === "questionnaires/vr-exp-en.csv"
       || path === "assets/app-logo.svg"
+      || path === "assets/app-symbol.svg"
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")
       || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),
@@ -85,7 +100,7 @@ const rules = {
       || /^assets\/(?:maia-2-(?:de|en)|ssq-six-item-en|vr-exp-en)-[A-Za-z0-9_-]+\.csv$/u.test(path)
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)
       || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path)
-      || /^assets\/app-logo-[A-Za-z0-9_-]+\.svg$/u.test(path),
+      || /^assets\/app-(?:logo|symbol)-[A-Za-z0-9_-]+\.svg$/u.test(path),
   },
 };
 

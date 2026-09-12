@@ -184,7 +184,7 @@ h3 {
   width: 4rem;
   height: 4rem;
   margin-bottom: 0.85rem;
-  background: center / contain no-repeat url("./assets/app-logo.svg");
+  background: center / contain no-repeat url("./assets/app-symbol.svg");
   content: "";
 }
 
@@ -227,7 +227,7 @@ h3 {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  background: center / contain no-repeat url("./assets/app-logo.svg");
+  background: center / contain no-repeat url("./assets/app-symbol.svg");
 }
 
 .build-label,

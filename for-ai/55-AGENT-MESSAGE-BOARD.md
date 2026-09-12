@@ -99,6 +99,36 @@ file; follow the integration-owner collection procedure in the workflow.
   workspace policy, Runner behavior, publication, or unrelated visual cleanup.
   Integration retains canonical merge and final redundant-wrapper removal.
 
+### 20260911-branding-transparent-symbols
+
+- Owner: **Create professor SVG icon**, bounded `branding` concern; UI
+  Finalization. Integration owner acknowledged these seams before edits.
+- Branch `codex/segment-branding-transparent-symbols`, base `ba2110f`, isolated
+  worktree `D:/GitHub/affect-tracker-research-branding-symbols`; **ready**.
+- User outcome: transparent applet symbols. Current `.product-mark` and
+  `.research-loading::before` render `app-logo.svg`, including its dark tile.
+  Add the same Aurora Axis artwork without launcher backdrops as
+  `site/assets/app-symbol.svg`; switch only those CSS URLs and update the
+  Pages copy and desktop/Pages asset verification seams plus existing branding
+  assertions. Launcher/favicon artwork remains independently selected.
+- Catalogue dependencies: shared Planner shell across P1–P7; no capability
+  checklist completion, inputs, JSON contribution, persistence or R1 behavior.
+  Runner vial and professor button are transparent artwork in this task's
+  artifact directory; Runner integration is deferred with runtime work.
+- Baseline: 8/8 existing logo/concept/branding checks pass. Evidence to collect:
+  rendered alpha and light/dark small-size inspection, existing branding tests,
+  local frontend build asset closure. No native/release/platform claim or GUI
+  interaction. Return a clean commit to the named integration owner.
+- Receipt: 470/470 JavaScript tests pass, including 8 branding/concept tests;
+  local desktop 9-file and Pages 177-file build closure pass. All 18 raster
+  cases (Planner/Runner/professor × 16/24/32/48/128/512 px) have a transparent
+  outer canvas; inspected artwork on light and dark surfaces at 32/128 px.
+  The source symbol exactly matches the rendered Planner artifact. Existing
+  Vite large-chunk warning remains. Full local evidence and transparent SVGs:
+  `C:/Users/Georgeous/.codex/visualizations/2026/09/11/01a090d2-3396-7093-b572-4301e03441bb/`.
+  Actual user-window rendering, native build, installed app and publication
+  remain unverified. Integration owner collects the source candidate.
+
 ### 20260911-integration-authoring-cleanup-receipt
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **ready**.
