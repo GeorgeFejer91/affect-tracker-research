@@ -182,7 +182,8 @@ file readback. Cancellation returns null; invalid source is rejected before the
 picker/write. No new unsafe boundary or runtime authority is introduced.
 
 Current v2-algorithm fixtures are `planner-recipe-current-v1`,
-`planner-recipe-locations-current-v1` and `planner-recipe-xr-current-v1`, each with
+`planner-recipe-locations-current-v1`, `planner-recipe-xr-current-v1` and
+`planner-recipe-deep-language-v1`, each with
 canonical JSON and reproduction matrix. Their filename's v1 denotes the master
 schema; the integrity explicitly names reproduction v2. Earlier fixture bytes
 remain unchanged. `scripts/qualification/planner-master-parity.mjs` runs the
@@ -190,3 +191,13 @@ independent Rust example against complete masters, both desktop policies/units
 and all three renderers, checking every selected variant/language with source
 and executable hashes. Shared actual-application save/reopen and final combined
 evidence remain integration work. Actual Planner–Runner correspondence is later.
+
+`scripts/qualification/planner-master-browser.mjs <browser.exe> <new-directory>`
+runs the four complete current vectors in a fresh headless browser profile. Its
+79 assertions cover exact compile/read/re-export, full reproduction matrices and
+selected content/layout profiles. A bounded loopback HTTP receipt owns completion;
+the Edge launcher may exit before its browser returns a result. Nonempty evidence
+directories reject before capture, preserving earlier receipts. Receipt metadata
+binds commit, dirty state, harness, served HTML, bundled sources and fixture hashes.
+This is actual browser codec evidence, separate from application UI/file-picker
+or installed native qualification. Chrome 152 and Edge 153 both pass this harness.

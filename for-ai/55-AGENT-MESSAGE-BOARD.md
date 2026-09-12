@@ -750,6 +750,16 @@ file; follow the integration-owner collection procedure in the workflow.
   validated node count (maximum 256); the flat graph, wire nesting and matrix
   limits remain separate. The same complete vector is in native, JavaScript,
   browser and independent-process parity checks.
+- Clean `48318a9` passes 43 focused P7 JavaScript checks, 79 actual Chrome codec
+  assertions and 11 independent JS/native full-master cases. The last native
+  receipt confirms the same maximum geometry delta recorded above. Evidence:
+  `D:/GitHub/.affect-checks/p7-deep-language-{chrome,native}-clean/receipt.json`.
+- Bounded harness follow-up: reuse root's diagnosed Edge launcher lifecycle
+  approach in the P7 codec script only. Receive a bounded loopback page receipt
+  independently of launcher stdout, preserve nonempty evidence directories,
+  and bind fixture/harness/source hashes. Product and other-owner files stay
+  unchanged. Collect fresh Chrome/Edge codec evidence; actual shared UI and
+  named OS-picker qualification remain separate integration checks.
 
 ### 20260912-p3-master-reproduction
 
