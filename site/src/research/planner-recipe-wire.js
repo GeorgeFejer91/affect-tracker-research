@@ -31,6 +31,20 @@ export function freezeRecipeValue(value) {
   return value;
 }
 
+/** The legacy canonicalizer uses ordinary objects for its output. Reject the
+ * reserved prototype setter before canonical cloning so it cannot disappear
+ * from a direct JavaScript compiler input before an owner checks unknown keys. */
+export function assertPlannerRecipeJsonValue(value, depth = 0, visiting = new Set()) {
+  if (depth > MAX_PLANNER_RECIPE_DEPTH) throw new RangeError("Planner recipe JSON is nested too deeply.");
+  if (!value || typeof value !== "object") return;
+  if (visiting.has(value)) throw new TypeError("Planner recipe contains a circular reference.");
+  if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype) throw new TypeError("Planner recipe requires plain JSON objects.");
+  if (Object.hasOwn(value, "__proto__")) throw new TypeError("Planner recipe contains an unsupported __proto__ field.");
+  visiting.add(value);
+  for (const child of Object.values(value)) assertPlannerRecipeJsonValue(child, depth + 1, visiting);
+  visiting.delete(value);
+}
+
 /** Bound depth before calling the recursive strict JSON/key scanner. */
 function assertDepth(text) {
   let depth = 0, quoted = false, escaped = false;
@@ -56,6 +70,7 @@ export function readPlannerRecipeJsonBytes(input) {
   const sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   assertDepth(sourceText);
   const value = parseStrictJsonDocument(sourceText);
+  assertPlannerRecipeJsonValue(value);
   const canonicalSourceText = `${canonicalJson(value)}\n`;
   const canonicalBytes = encoder.encode(canonicalSourceText);
   if (canonicalBytes.byteLength !== bytes.byteLength || bytes.some((byte, index) => byte !== canonicalBytes[index])) {

@@ -1,7 +1,8 @@
 import { prepareBrowserPackageSave } from "./package-file-picker.js";
 
 /** One browser-only prepared-save dialog. No package or workspace authority. */
-export function createPackageSaveDialog(root) {
+export function createPackageSaveDialog(root, { prepareSave = prepareBrowserPackageSave } = {}) {
+  if (typeof prepareSave !== "function") throw new TypeError("Recipe dialog requires a typed save preparation adapter.");
   let pending = null;
   let disposed = false;
   let preparing = false;
@@ -34,12 +35,12 @@ export function createPackageSaveDialog(root) {
       if (pending || disposed || preparing) throw new Error("The recipe save dialog is unavailable.");
       preparing = true;
       let prepared;
-      try { prepared = await prepareBrowserPackageSave(sourceText, { isCurrent: () => !disposed && isCurrent() }); }
+      try { prepared = await prepareSave(sourceText, { isCurrent: () => !disposed && isCurrent() }); }
       finally { preparing = false; }
       if (disposed || !isCurrent()) throw new Error("The design changed while preparing the save dialog.");
       return new Promise((resolve, reject) => {
         pending = { resolve, reject, prepared };
-        status.textContent = `${prepared.packageId} · ${prepared.byteLength.toLocaleString()} bytes ready. Choose a name and destination in the file dialog.`;
+        status.textContent = `${prepared.recipeId ?? prepared.packageId} · ${prepared.byteLength.toLocaleString()} bytes ready. Choose a name and destination in the file dialog.`;
         save.disabled = false; cancel.disabled = false;
         try { dialog.showModal(); save.focus(); }
         catch (error) { pending = null; reject(error); }

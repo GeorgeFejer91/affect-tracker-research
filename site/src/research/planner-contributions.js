@@ -11,7 +11,8 @@ const MAX_CONTRIBUTION_BYTES = 5 * 1024 * 1024;
 
 /** Bind available producer APIs only after the complete UI controller exists.
  * P3/P6 are successor contributions: registering them deliberately supplies no
- * v1 inclusion adapter. P2 retains its exact existing package representation. */
+ * v1 inclusion adapter. A full P2 recipe wrapper also requires the successor;
+ * controllers exposing only the legacy getter retain its exact representation. */
 export function registerAvailablePlannerContributions(controller) {
   const unregister = [];
   let disposed = false;
@@ -25,7 +26,17 @@ export function registerAvailablePlannerContributions(controller) {
     if (failures.length) throw new AggregateError(failures, "Planner owner cleanup failed.");
   };
   try {
-  if (typeof controller.getQuestionnaireContributionSnapshot === "function") {
+  if (typeof controller.getQuestionnaireRecipeContributionSnapshot === "function") {
+    unregister.push(controller.registerPlannerContribution("P2",
+      () => controller.getQuestionnaireRecipeContributionSnapshot(), {
+        validateContribution: typeof controller.validateQuestionnaireRecipeContribution === "function"
+          ? async (value, context) => {
+            const result = await controller.validateQuestionnaireRecipeContribution(value, context);
+            if (result !== true && (!result || typeof result !== "object")) throw new TypeError("P2: contribution validation failed.");
+            return true;
+          } : null,
+      }));
+  } else if (typeof controller.getQuestionnaireContributionSnapshot === "function") {
     unregister.push(controller.registerPlannerContribution("P2",
       () => controller.getQuestionnaireContributionSnapshot(), {
         validateContribution: validateQuestionnairePlannerContribution,

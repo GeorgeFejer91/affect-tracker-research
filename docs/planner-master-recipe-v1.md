@@ -19,10 +19,10 @@ copies another owner's formulas, or strips newly authored content to fit v1.
 
 | Segment | Complete persisted contribution |
 | --- | --- |
-| P1 | `affect-research-workspace-contribution` v1: study, fixed logical workspace layout and complete hash-bound video catalogue, including decoder-oriented geometry. |
+| P1 | `affect-research-workspace-contribution` v1 or v2: study, fixed logical workspace layout and complete hash-bound video catalogue, including decoder-oriented geometry. V2 preserves reversible relative-location annotations separately from immutable byte identity. |
 | P2 | P2's `affect-research-questionnaire-recipe-contribution` v1: full definitions/modules, full language tree and strict `affect-research-questionnaire-presentation` v1 companion with repetition policy bound to each definition ID/hash. |
-| P3 | `affect-research-variant-design` v1: exact ordered variants, entries, named ISIs, identities, integrity, Runner-assigned selection boundary and planned marker contract. |
-| P4 | P4's accepted `affect-research-desktop-layout-contribution` v1; exact owner type/automatic reference policy is being finalized. The internal screen-layout draft is forbidden. |
+| P3 | `affect-research-variant-design` v1 or v2, matched to P1: exact ordered variants, entries, named ISIs, identities, integrity, Runner-assigned selection boundary and planned marker contract. V2 binds each video occurrence to its exact location/content pair. |
+| P4 | Accepted `affect-research-desktop-layout-contribution` v1. Each recipe explicitly selects `largest-oriented-area` or `maximum-oriented-dimensions`; neither is a default. Saved source identity/dimensions must reproduce from P1. Internal screen-layout drafts are forbidden. |
 | P5 | P5's complete `affect-research-feedback` v2, including saved renderer, response/grid, labels, halo, input, appearance and all mappings. Old three-field feedback cannot silently stand in for it. |
 | P6 | Exactly `{status:"excluded"}` or `{status:"included",profile:<entire XrLayoutProfileV1>}`. |
 
@@ -110,15 +110,32 @@ bytes. Picker cancellation, failed write, mismatched acknowledgement or stale
 completion cannot mark the current design saved. Neither saving nor reconstructing
 a file establishes Runner execution or recording qualification.
 
-## API delivery status
+## Public API and delivery status
 
-The initial implemented boundary modules are `planner-recipe-wire.js` and
-`planner-recipe-capture.js`. Their syntax/structure/capture checks are not full
-domain validation. The complete public API being implemented is
-`compilePlannerRecipeV1`, `validatePlannerRecipeV1`, `parsePlannerRecipeV1`,
-`serializePlannerRecipeV1` in `planner-recipe.js`, plus
-`reconstructPlannerRecipeSelectionV1` and bounded complete reproduction in
-`planner-recipe-reproduction.js`. P7 owns corresponding native strict read/save;
-integration owns app/controller wiring. Successful complete-master fixtures await
-the accepted P4 type and the full P2/P5 owner wrappers; no placeholder payload is
-an accepted recipe. Actual Planner–Runner correspondence is a later stage.
+`planner-recipe.js` implements `compilePlannerRecipeV1`,
+`createPlannerRecipeV1`, `validatePlannerRecipeV1`, `parsePlannerRecipeV1`,
+`serializePlannerRecipeV1`, `reproducePlannerRecipeV1` and
+`reconstructPlannerRecipeSelectionV1`. `parsePlannerRecipeFile` dispatches strictly
+between the successor and unchanged frozen package reader. Syntax-only wire
+validation is never sufficient to adopt or save a document.
+
+`planner-recipe-file.js` implements `openBrowserPlannerRecipeFile`,
+`prepareBrowserPlannerRecipeSave` and `validatePlannerRecipeSaveReceipt`.
+Prepare immutable canonical text before the save dialog; invoke its
+`chooseAndSave()` directly on the final button gesture. The shared dialog accepts
+`{prepareSave: prepareBrowserPlannerRecipeSave}` without duplicate listeners.
+
+`preparePlannerRecipeReopenV1(sourceText,{isCurrent})` validates before mutation.
+Its one-use `apply(owners)` requires synchronous `begin` to revoke prior source
+eligibility, then guarded P1, P2, P5, P3, P4, P6, policy and presentationTarget
+callbacks. P3/P4 adapters obtain actual current dependencies after P1/P5 restore.
+Failure reports completed portions and denies source adoption; it never rolls
+back over newer edits. Only a successful return permits unchanged-source saving.
+Ordinary Save adopts metadata only and never invokes these restore callbacks.
+
+Real complete fixtures cover historical and location-aware owner versions,
+all authored variants/languages, both explicit-policy owner calculations,
+strict integrity, fresh-process reconstruction, save readback and partial/stale
+restoration. P7 native independent read/save and shared application integration
+remain work in progress at this component checkpoint. Actual Planner–Runner
+correspondence is a later stage.

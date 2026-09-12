@@ -348,6 +348,15 @@ file; follow the integration-owner collection procedure in the workflow.
   widths. Runtime correspondence, recording, media timing and installed Runner
   qualification are deferred. XDF stream selection is Runner-session policy;
   authored LSL output and planned markers remain experiment definitions.
+- Complete JS checkpoint now compiles/reads/reproduces real P1/P3 V1 and V2,
+  full P2/P5, chosen accepted P4 and explicit P6 exclusion. Q08 was clarified
+  by the coordinator: both owner methods are accepted explicit per-recipe
+  choices, with no default. Full native mirror and actual-app composition
+  continue; component success does not close the whole Planner allocation.
+- Delivered file/restore seams use exact closed-file readback, strict receipt,
+  caller lifetime fences, dependency-order content restoration and no source
+  adoption after partial failure. The complete P2 registration takes precedence
+  over the legacy getter and cannot be silently reduced for v1 export.
 
 ### 20260912-p3-master-reproduction
 
