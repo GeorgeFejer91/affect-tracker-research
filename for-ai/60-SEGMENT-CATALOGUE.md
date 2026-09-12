@@ -22,6 +22,32 @@ qualification are deferred unless separately allocated by the researcher.
 
 ## Authority, status and evidence
 
+### New CLI extension — 2026-09-12
+
+The completed baseline predates the user's CLI request. These additional items
+remain open until integrated and verified. Scope, example and evidence are in
+[68](68-PLANNER-CLI.md); these checkboxes are the capability authority.
+
+- [ ] **CLI-P1:** study/workspace selection, actual import/rescan and verified
+  catalogue readback through P1; derived media facts read-only.
+- [ ] **CLI-P2:** questionnaire import and item/option/code editing, languages,
+  routes, ordered modules and presentation settings through P2.
+- [ ] **CLI-P3:** named ISI dictionary and ordered variant/list edits through P3;
+  derived identity, events and markers read-only.
+- [ ] **CLI-P4:** all screen/reference/placement/calibration settings and explicit
+  unit conversion through P4, retaining the fixed reference convention.
+- [ ] **CLI-P5:** all saved controller, Flubber/Grid, labels/colors, response and
+  mapping settings through P5, including inactive alternatives.
+- [ ] **CLI-P6:** optional XR inclusion, spatial/feedback settings and supported
+  angular-size operations through P6; preview camera remains transient.
+- [ ] **CLI-P7:** recipe/policy edits, strict open/compile/validate, timestamped
+  new-version export, exact receipt and independent saved-file reproduction.
+- [ ] **CLI-SHARED:** one typed gateway, complete setting registry, revision and
+  lifecycle fences, bounded transport, truthful results and the requested real
+  mock experiment with full end-to-end setting coverage.
+
+### Baseline authority
+
 - The dated amendment in [the charter](15-RESEARCH-V1-CHARTER.md) adopts this
   roadmap as the final-state capability and ownership plan. Accepted decisions
   below supersede conflicting old product-direction wording. Existing v1 JSON,

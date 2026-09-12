@@ -1,5 +1,25 @@
 # Agent message board
 
+### 20260912-planner-cli-roadmap — CLI-P1–CLI-P7/CLI-SHARED
+
+- Owner: Chat Orchestrator, bounded roadmap/shared-contract pass, Backend
+  Verification continuation of direct user CLI/mock request. Branch
+  `codex/segment-planner-cli-roadmap`, isolated canonical-GitHub worktree
+  `affect-tracker-research-planner-cli-roadmap`, base `460f516`.
+- Scope: new68, bounded16/50 amendment and60 capability additions only. Main
+  integration owns production shared gateway/lifecycle/composition; S1–S6 own
+  isolated adapters and S7 timestamp/file service. No app-source edits here.
+- Latest answer narrows first workflow to saved JSON load/edit/new timestamped
+  file; no live attachment/network needed. Creation time is filename metadata,
+  never recipe content/hashes. Existing baseline Planner completion stands.
+- Evidence now: source/interface review, content inventory and documentation
+  diff/link checks. CLI implementation and actual mock remain in progress.
+  German TAS-20 source is missing; researcher source question remains pending.
+  No invented questionnaire/media readiness or Runner execution claim.
+- Integration owner: Add segment confirmation flow. Owner interface resides in
+  its CLI worktree at `docs/planner-authoring-command-api-v1.md`; all owner tasks
+  receive exact interface/file boundaries before implementation.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this
