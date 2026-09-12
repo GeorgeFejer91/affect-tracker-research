@@ -103,6 +103,13 @@ the researcher's local-use authorization. A second Greifswald download returned
 bot-challenge HTML, not a usable PDF, and must not become an input.
 No fabricated translation or blank template may stand in for the instrument.
 
+The researcher subsequently requested German TAS as a preconfigured Planner
+asset in the integration task. The dated amendment in
+[70](70-RESEARCH-PROVENANCE.md) allocates a local researcher-installed preset
+to S2/main without granting public reusable-preload eligibility. This added
+convenience does not replace the required production CLI authoring transcript
+or change the requested experiment. Local source preparation remains complete.
+
 Runner current-master runtime consumption and native execution gates require
 fresh inspection by the Runner owner. Previous strict reader or legacy-package
 tests do not prove this master can run. Add precise gaps and actual receipts as
