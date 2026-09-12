@@ -1,5 +1,27 @@
 # CLI → Planner JSON → Runner validation goal
 
+## Precision and pre-ISI neutral reset — 2026-09-12
+
+The user explicitly requires Flubber to reset to neutral before every ISI and
+asks to evaluate whether FFmpeg synthesis of a fixed sequence improves timing.
+Runner owns the neutral state/input/projection ordering; current XDF reset-state
+attestation is an open versioned-contract gap. This applies to first and repeated
+ISIs as well as video-to-ISI transitions. Existing ISI input policy is preserved.
+
+Root's [timing assessment](../docs/runner-playback-timing-assessment.md) records
+the current variable gaps around the authored timer, the native-timeline and
+pre-rendered-block alternatives, primary documentation and an actual offline
+synthetic FFmpeg/frame/PTS diagnostic. The latter verifies encoded boundaries
+only. It does not change the requested 1750/3213 ms values, adopt FFmpeg as a
+dependency, select a new playback strategy or prove actual playback precision.
+Keep the modular master and original asset/occurrence identities authoritative.
+
+Final correspondence now explicitly requires screenshots comparing saved P4
+controls and actual Runner video/Flubber placement at the same declared viewport.
+DOM bounds or video-only JPEGs do not prove combined native-window composition;
+screenshots do not prove temporal accuracy. Actual timing and XDF evidence must
+remain separately identified. Native playback qualification is still open.
+
 ### Current reconstruction prerequisite receipt
 
 Root independently read the earlier Runner synthetic lifecycle XDF with pyxdf

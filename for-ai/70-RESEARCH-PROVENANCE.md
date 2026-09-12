@@ -68,6 +68,17 @@ codes, without inferred reverse scoring, subscales, totals or thresholds.
 
 ## Project-authored boundaries
 
+Timing research on 2026-09-12 used official GStreamer clock/gapless design,
+FFmpeg concat filter/demuxer, LSL timestamp guidance and Psychtoolbox photodiode
+documentation. Exact links, observations and limitations are in
+[runner-playback-timing-assessment.md](../docs/runner-playback-timing-assessment.md).
+These inform a proposed native scheduling/measurement direction, not an adopted
+new backend or copied implementation. An externally installed FFmpeg executable
+generated and decoded synthetic black/white diagnostic clips; executable hashes
+and commands are retained outside the repository. No FFmpeg binary/source was
+bundled, no real stimulus was substituted and no new dependency/license closure
+or physical presentation qualification is claimed.
+
 The closed Research contract family, package and legacy-authoring readers,
 canonical JSON encoding, package/settings/assets/assignment/protocol hash
 binding, independent-instance reproduction gate, participant-code derivation,
