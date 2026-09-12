@@ -5,7 +5,11 @@ import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.j
 import { compilePlannerRecipeV3, parsePlannerRecipeV3, parsePlannerRecipeV2, parsePlannerRecipeV1,
   parseSupportedPlannerRecipe, serializePlannerRecipeV3, reproducePlannerRecipeV3,
   reconstructPlannerRecipeSelectionV3, validatePlannerRecipeV3 } from "../site/src/research/planner-recipe.js";
-import { plannerRecipeVersionForContributions } from "../site/src/research/planner-recipe-capture.js";
+import { plannerRecipeVersionForContributions, capturePlannerRecipeInputVersion } from "../site/src/research/planner-recipe-capture.js";
+import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
+import { createPackageExportController } from "../site/src/research/package-export-controller.js";
+import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
+import { prepareSupportedBrowserPlannerRecipeSave } from "../site/src/research/planner-recipe-file.js";
 
 // Synthetic contract fixture, not a native renderer receipt or qualification.
 async function controlledCore(name = "locations", explicit = false) {
@@ -85,4 +89,50 @@ test("master3 rejects mixed chains and drift instead of repairing old sources", 
     assert.equal(`${canonicalJson(old.recipe)}\n`, new TextDecoder().decode(bytes));
     await assert.rejects(parsePlannerRecipeV3(bytes));
   }
+});
+
+test("supported GUI master3 save/open/exact-copy retains proof and confirms final feedback only after write", async () => {
+  const recipe = await compilePlannerRecipeV3((await controlledCore()).core);
+  const registry = createPlannerContributionRegistry(), exporter = createPackageExportController();
+  let document = null, compiles = 0;
+  const written = [], restored = [];
+  for (const [segment, value] of Object.entries(recipe.segments)) {
+    registry.register(segment, () => ({ revision: 1, enabled: segment !== "P6", pending: false,
+      contribution: segment === "P6" ? null : value, dependencyRevisions: [] }), { validateContribution: async () => true });
+  }
+  for (const segment of ["P1", "P2", "P3", "P4", "P6"]) await registry.accept(segment);
+  const restoreOwners = { begin() { document = null; } };
+  for (const name of ["P1", "P2", "P5", "P3", "P4", "P6", "policy", "presentationTarget"]) {
+    restoreOwners[name] = async value => { restored.push([name, value]); return true; };
+  }
+  const workflow = createPlannerFileWorkflow({ registry, exporter, getDocument: () => document,
+    adoptDocument: value => { document = value; }, canOperate: () => true, restoreOwners,
+    getRecipeOptions: () => ({ recipeId: recipe.recipeId, policy: recipe.policy, presentationTarget: recipe.presentationTarget }),
+    documentAdapter: {
+      parseDocument: parseSupportedPlannerRecipe,
+      captureInput: (registry, options) => capturePlannerRecipeInputVersion(registry, { ...options, version: 3 }),
+      async compileDocument(input) {
+        compiles++;
+        return parseSupportedPlannerRecipe(new TextEncoder().encode(await serializePlannerRecipeV3(await compilePlannerRecipeV3(input))));
+      },
+    },
+    async write(value, context) {
+      let bytes = new Uint8Array();
+      const handle = { kind: "file", async getFile() { return { size: bytes.length, arrayBuffer: async () => bytes.slice().buffer }; },
+        async createWritable() { return { async write(value) { bytes = value.slice(); }, async close() {}, async abort() {} }; } };
+      const prepared = await prepareSupportedBrowserPlannerRecipeSave(value.canonicalSourceText, { ...context, pickSaveFile: () => handle });
+      const receipt = await prepared.chooseAndSave(); written.push(bytes); return receipt;
+    },
+  });
+  assert.equal((await workflow.save()).status, "saved");
+  assert.equal(compiles, 1);
+  assert.equal(document.recipe.version, 3);
+  assert.equal(registry.readAccepted().entries.find(value => value.segment === "P5").status, "accepted");
+  const saved = document;
+  assert.equal(await workflow.open(() => ({ kind: "planner-recipe-v3", document: saved })), true);
+  assert.deepEqual(restored.map(([name]) => name), ["P1", "P2", "P5", "P3", "P4", "P6", "policy", "presentationTarget"]);
+  assert.deepEqual(restored[0][1], recipe.segments.P1);
+  assert.equal((await workflow.save()).status, "saved");
+  assert.equal(compiles, 1);
+  assert.deepEqual(written[1], written[0]);
 });
