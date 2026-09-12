@@ -62,6 +62,42 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
 
+### 20260912-p3-master-reproduction
+
+- Owner **S3**, P3-04 through P3-08, resumed Backend Verification under the
+  researcher's comprehensive Planner completion allocation. Isolated branch
+  `codex/segment-p3-master-variants`, worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-p3-master-variants`,
+  base `7946bc6`. Earlier owner checkpoint `3413865` is preserved and collected
+  in this combined base. Canonical integration remains separately owned.
+- Function/input/contribution: author exact variant columns and named ISIs;
+  consume P1 identities/durations; produce ordered versioned occurrences and
+  planned marker semantics for P7's complete master. No additional researcher
+  input, participant assignment or allocation policy is introduced.
+- Current source has domain validation, actual workspace-revision binding,
+  sidecar-free preparation and editable pending-content restoration. Complete
+  master embedding/reopen and independent all-variant reproduction remain.
+- Allowed files: P3 domain/adapter/editor where demonstrated defects require,
+  P3 fixtures/tests and API/evidence docs. P7 owns master creation/parsing and
+  integration owns shared app/native wiring. S1 owns new Q04 path-derived IDs;
+  the direct decision is acknowledged and any consumer migration is explicit.
+- Baseline: 49 focused P3 Node checks pass on the combined base. Collect a
+  representative multivariant repeated-video/ISI fixture, independently expected
+  ordered boundaries and marker bindings through actual master export/reopen.
+  Background/CLI only. Strict historical readers stay unchanged; Runner
+  execution/correspondence, actual timestamps, recording and qualification are
+  deferred by the researcher's latest instruction, not Planner completion gates.
+- First reusable fixture/checkpoint: three unequal variants in authored order
+  3, 1, 2; 15 non-contiguous occurrence IDs; all accepted ISI placement edges;
+  duplicate durations and an unused dictionary definition. Independently fixed
+  totals are 50646/37801/48146 ms. P7's full reader can reuse the owner assertion
+  against actual P1/P3 payloads and the master's definition hash.
+- Evidence: 54 focused P3 Node tests pass, including two fresh processes with
+  clock/RNG/storage/navigation unavailable, exact editable re-export, pending
+  content restore, current-revision media rebind and zero sidecar writes.
+  This is a reusable P3 component fixture, not yet a complete master receipt.
+  No application/Rust wire or build input changes; no unchanged broad build run.
+
 ### 20260912-integration-contribution-cycle — combined candidate
 
 - Owner: **Add segment confirmation flow**, allocated integration/shared accordion
