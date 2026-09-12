@@ -12,8 +12,10 @@ export class PlannerCommandError extends Error {
 }
 export function commandFailure(code, message, field = null) { throw new PlannerCommandError(code, message, field); }
 export function exactCommandKeys(value, keys) {
+  const actual = value && typeof value === "object" ? Object.keys(value).sort() : [];
+  const expected = [...keys].sort();
   if (!value || typeof value !== "object" || Array.isArray(value)
-    || Object.keys(value).sort().join(",") !== [...keys].sort().join(",")) {
+    || actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
     commandFailure("malformed_command", "Command fields are missing or unknown.");
   }
 }
@@ -37,6 +39,12 @@ export function commandOwner(value) {
 }
 export function commandField(value) {
   if (typeof value !== "string" || !FIELD.test(value)) commandFailure("unknown_setting", "Unknown Planner setting.");
+  return value;
+}
+export function commandConsequence(value) {
+  if (typeof value !== "string" || !/^[a-z][a-zA-Z0-9.-]{0,79}$/u.test(value)) {
+    commandFailure("unknown_operation", "Unknown consequential operation.");
+  }
   return value;
 }
 export function validatePlannerEdit(edit) {
@@ -65,13 +73,20 @@ export function validatePlannerCommand(value) {
       exactCommandKeys(action, ["kind", "edits"]);
       if (!Array.isArray(action.edits) || action.edits.length < 1 || action.edits.length > PLANNER_COMMAND_MAX_EDITS) commandFailure("limit_exceeded", "A batch requires 1–256 edits.");
       action.edits.forEach(validatePlannerEdit); break;
+    case "perform":
+      exactCommandKeys(action, ["kind", "operation", "arguments"]);
+      commandConsequence(action.operation);
+      if (!action.arguments || typeof action.arguments !== "object" || Array.isArray(action.arguments)) {
+        commandFailure("malformed_command", "Consequential arguments require an object.");
+      }
+      break;
     case "cancel":
       exactCommandKeys(action, ["kind", "requestId"]);
       if (!UUID.test(action.requestId ?? "")) commandFailure("malformed_command", "Cancellation requires a request UUID.");
       break;
     default: commandFailure("unknown_action", "Unknown Planner command action.");
   }
-  if (["set", "apply"].includes(action.kind) && value.expectedRevision === null) commandFailure("revision_required", "Authored changes require an expected revision.");
+  if (["set", "apply", "perform"].includes(action.kind) && value.expectedRevision === null) commandFailure("revision_required", "Authored changes require an expected revision.");
   return structuredClone(value);
 }
 

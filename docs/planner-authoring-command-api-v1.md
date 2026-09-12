@@ -78,8 +78,10 @@ commit phases are synchronous; no native side effect belongs in either phase.
 
 Native imports, media preparation, confirmation and final file writes are
 separate consequential commands, not members of an atomic field-edit batch.
-Their later adapters must use the same current-operation guard and return exact
-side-effect receipts; cancellation cannot undo an already written file.
+Their adapters use the same current-operation guard and return exact
+side-effect receipts; cancellation cannot undo an already written file. The
+optional owner interface and result/lifetime rules are specified in
+[`planner-authoring-consequences.md`](planner-authoring-consequences.md).
 
 ## Wire envelope
 
@@ -96,7 +98,8 @@ side-effect receipts; cancellation cannot undo an already written file.
 
 Queries use `expectedRevision:null`. First-slice actions are `catalogue`,
 `snapshot`, `get` (`field`), `validate` (`owner` or null), `set`, `apply`
-(`edits`), and `cancel` (`requestId` of the operation to cancel).
+(`edits`), `perform` (`operation`, `arguments`), and `cancel` (`requestId` of the
+operation to cancel).
 Mutation revisions are required. JSON objects have exact keys; duplicate keys,
 prototype-sensitive keys, invalid UTF-8/JSON, trailing input, nonfinite values,
 oversized input and unknown actions fail closed.
