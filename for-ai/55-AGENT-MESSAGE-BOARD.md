@@ -29,6 +29,38 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 
 ## Integration and ownership
 
+### 20260912-preview-planner-restore
+
+- Owner: Live Preview, P5-05–08 dependency; Planner-only Backend Verification.
+  Branch `codex/segment-preview-planner-restore`, accepted combined base
+  `9c79e04`, isolated `D:/GitHub/affect-tracker-research-preview-planner`.
+- Goal: restored configured feedback matches the current renderer and response
+  controls, while transient inspection cannot overwrite a reopened configuration.
+- Verified current source: P5 v1 contribution saves input/visual/mappings only;
+  simulator, halo width/fade, placement/labels and selected renderer are draft
+  fields. S5 owns the strict successor, schema dispatch, read/write/invalidation
+  and downstream envelope. Preview does not add a second JSON owner.
+- Released seam: `resetPreviewInspection` helper/public method, renderer drag
+  cancellation, applied-configuration inspection tests. S5 invokes the helper
+  after atomic validated restore. It must not invoke the grey-palette Reset action.
+- Root clarified that current Flubber/Grid/project-authored procedural Face
+  selection is saved configuration in the new goal. No historical Photoatlas,
+  photorealistic assets or validated-instrument claim is authorized.
+- Evidence: source-bound unit and background actual-app restore/readback tests,
+  configured key/grid/timing/render checks, transient isolation, invalid/stale
+  restore and complete build closures. Runner correspondence/execution/recording
+  and physical qualification are later work, not Planner completion gates.
+- Status: implementing released transient lifecycle seam while S5 constructs
+  the successor contribution. Shared collection stays with integration.
+- Early dependency implemented: public reset/readback methods, renderer drag
+  cancellation, stale color-close guard and configured CSS-pixel tile thickness.
+  Focused renderer tests pass; full suite 651/651, Pages 214-file and desktop
+  11-file closure pass. Actual-app reset fixture passes 14 checks at each of
+  1280/800, including pointer-capture test-double cleanup and unchanged palette.
+  This is helper evidence, not yet V2 restore wiring; S5 owns that invocation.
+  Fixture: `scripts/qualification/preview-restored-config.mjs`; local receipts
+  `D:/GitHub/.affect-preview-checks/planner-inspection-reset-20260912/`.
+
 ### 20260912-preview-input-menu
 
 - Owner: Live Preview; P5-01/P5-03/P5-08 dependency. Backend Verification

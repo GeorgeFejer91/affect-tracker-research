@@ -273,12 +273,15 @@ export function createResearchPreview(root, options = {}) {
         const path = previewTileLines(state.tileCount, state.tileRows);
         for (const line of tileLines) {
           line.setAttribute("d", path);
-          line.setAttribute("stroke-width", String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows))));
-          line.style.strokeWidth = String(Math.min(0.4, 8 / Math.max(state.tileCount, state.tileRows)));
         }
         renderedTileCount = dimensions;
       }
-      for (const line of tileLines) setElementHidden(line, !tiled);
+      for (const line of tileLines) {
+        setElementHidden(line, !tiled);
+        line.setAttribute("vector-effect", "non-scaling-stroke");
+        line.setAttribute("stroke-width", String(state.grid.lineThickness));
+        line.style.strokeWidth = String(state.grid.lineThickness);
+      }
       const tile = previewTileGeometry(state.x, state.y, state.tileCount, state.tileRows);
       for (const highlight of activeTiles) {
         setElementHidden(highlight, !tiled);
@@ -409,7 +412,14 @@ export function createResearchPreview(root, options = {}) {
     snapshot() {
       return structuredClone(state);
     },
+    cancelInteraction() {
+      if (draggingPointer !== null) finishPointer({ pointerId: draggingPointer });
+      // Phase and frame time are inspection state, never saved configuration.
+      phase = 0;
+      lastFrame = performance.now();
+    },
     destroy() {
+      if (draggingPointer !== null) finishPointer({ pointerId: draggingPointer });
       cancelAnimationFrame(frameId);
       overlay.removeEventListener("pointerdown", onPointerDown);
       overlay.removeEventListener("pointermove", onPointerMove);

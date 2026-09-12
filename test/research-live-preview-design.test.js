@@ -370,8 +370,14 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
             assert.ok(Math.abs(Number(rectangles[0].getAttribute("y")) + Number(rectangles[0].getAttribute("height")) / 2 - 50) < 1e-10);
             assert.ok(Number(rectangles[0].getAttribute("height")) > 0);
             assert.ok(Number(rectangles[0].getAttribute("width")) > 0);
-            assert.equal(Number(tilePath.getAttribute("stroke-width")), Math.min(0.4, 8 / Math.max(tileCount, tileRows)));
+            assert.equal(Number(tilePath.getAttribute("stroke-width")), 1);
+            assert.equal(tilePath.getAttribute("vector-effect"), "non-scaling-stroke");
           }
+        }
+        for (const lineThickness of [0.25, 3.75, 20]) {
+          preview.update({ grid: { lineThickness } });
+          assert.equal(Number(tilePath.getAttribute("stroke-width")), lineThickness);
+          assert.equal(Number(tilePath.style.strokeWidth), lineThickness);
         }
         preview.update({ responseMode: "continuous" });
         assert.equal(tile.getAttribute("hidden"), "");
