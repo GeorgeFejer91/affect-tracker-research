@@ -3,7 +3,8 @@
 //! Call without a broker lock; the guard must acquire and release its own lock.
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_planner_recipe_file::{
-    write_new_planner_recipe, PlannerRecipeWriteError, SavedPlannerRecipeFile,
+    write_new_planner_recipe, write_new_supported_planner_recipe, PlannerRecipeWriteError,
+    SavedPlannerRecipeFile,
 };
 use crate::research_workspace::{
     QuestionnaireAssetReceipt, RescanResult, WorkspaceService, WorkspaceStatus,
@@ -34,6 +35,10 @@ pub(crate) enum NativeEffect {
         bytes: Vec<u8>,
     },
     WriteRecipe {
+        directory: PathBuf,
+        source_text: String,
+    },
+    WriteSupportedRecipe {
         directory: PathBuf,
         source_text: String,
     },
@@ -143,6 +148,12 @@ pub(crate) fn execute_native_effect(
             directory,
             source_text,
         } => write_new_planner_recipe(&directory, &source_text)
+            .map(NativeEffectReceipt::Recipe)
+            .map_err(recipe_failure),
+        NativeEffect::WriteSupportedRecipe {
+            directory,
+            source_text,
+        } => write_new_supported_planner_recipe(&directory, &source_text)
             .map(NativeEffectReceipt::Recipe)
             .map_err(recipe_failure),
     };
@@ -398,6 +409,68 @@ mod tests {
             NativeEffectFailureClass::NoRecipePublished
         );
         assert_eq!(fs::read_dir(&fixture.root).unwrap().count(), 1); // app-data only
+    }
+
+    #[test]
+    fn supported_recipe_effect_preserves_v1_rejection_and_late_v2_receipt() {
+        let fixture = Fixture::new();
+        let source = include_str!("../../test/fixtures/planner-recipe-v2-mixed.canonical.json");
+        let legacy = execute_native_effect(
+            &fixture.service,
+            NativeEffect::WriteRecipe {
+                directory: fixture.root.clone(),
+                source_text: source.into(),
+            },
+            || Ok(()),
+        );
+        assert_eq!(
+            legacy.result.err().unwrap().class,
+            NativeEffectFailureClass::NoRecipePublished
+        );
+        let rejected = execute_native_effect(
+            &fixture.service,
+            NativeEffect::WriteSupportedRecipe {
+                directory: fixture.root.clone(),
+                source_text: source.into(),
+            },
+            || Err(stale()),
+        );
+        assert_eq!(
+            rejected.result.err().unwrap().class,
+            NativeEffectFailureClass::EffectNotInvoked
+        );
+        assert_eq!(fs::read_dir(&fixture.root).unwrap().count(), 1);
+        let checks = Cell::new(0);
+        let outcome = execute_native_effect(
+            &fixture.service,
+            NativeEffect::WriteSupportedRecipe {
+                directory: fixture.root.clone(),
+                source_text: source.into(),
+            },
+            || {
+                checks.set(checks.get() + 1);
+                if checks.get() == 1 {
+                    Ok(())
+                } else {
+                    Err(stale())
+                }
+            },
+        );
+        assert_eq!(outcome.superseded, Some(stale()));
+        match outcome.result.unwrap() {
+            NativeEffectReceipt::Recipe(receipt) => {
+                let path = fixture.root.join(receipt.basename);
+                assert_eq!(fs::read(&path).unwrap(), source.as_bytes());
+                assert_eq!(
+                    crate::research_planner_recipe_file::read_supported_planner_recipe_file(&path)
+                        .unwrap()
+                        .recipe
+                        .version(),
+                    2
+                );
+            }
+            _ => panic!("Lost supported recipe receipt"),
+        }
     }
 
     #[test]
