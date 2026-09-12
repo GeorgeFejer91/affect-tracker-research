@@ -29,17 +29,16 @@ pub struct LocationLibrary {
     pub integrity_sha256: String,
 }
 impl LocationLibrary {
-    pub fn from_catalogue(catalogue: &VideoCatalogueContribution) -> ResearchResult<Self> {
-        let value = serde_json::to_value(catalogue)
-            .map_err(|_| invalid("Cannot encode video catalogue."))?;
-        let source = validate_video_catalogue_contribution(&value)?;
-        if source.version != 2 {
-            return Err(invalid("Location references require catalogue version 2."));
-        }
-        let mut library = Self {
-            schema: "affect-research-video-library".into(),
-            version: 2,
-            videos: source
+    pub fn from_catalogue_v3(
+        catalogue: &crate::research_workspace_contribution::v3::VideoCatalogueContributionV3,
+    ) -> ResearchResult<Self> {
+        let source =
+            crate::research_workspace_contribution::v3::validate_video_catalogue_contribution_v3(
+                &serde_json::to_value(catalogue)
+                    .map_err(|_| invalid("Cannot encode catalogue v3."))?,
+            )?;
+        Self::from_videos(
+            source
                 .entries
                 .into_iter()
                 .map(|entry| LocationVideo {
@@ -51,6 +50,35 @@ impl LocationLibrary {
                     duration_ms: entry.duration_ms,
                 })
                 .collect(),
+        )
+    }
+    pub fn from_catalogue(catalogue: &VideoCatalogueContribution) -> ResearchResult<Self> {
+        let value = serde_json::to_value(catalogue)
+            .map_err(|_| invalid("Cannot encode video catalogue."))?;
+        let source = validate_video_catalogue_contribution(&value)?;
+        if source.version != 2 {
+            return Err(invalid("Location references require catalogue version 2."));
+        }
+        Self::from_videos(
+            source
+                .entries
+                .into_iter()
+                .map(|entry| LocationVideo {
+                    annotation_id: entry.annotation_id,
+                    asset_id: entry.asset_id,
+                    relative_path: entry.package_relative_path,
+                    sha256: entry.sha256,
+                    byte_length: entry.byte_length,
+                    duration_ms: entry.duration_ms,
+                })
+                .collect(),
+        )
+    }
+    fn from_videos(videos: Vec<LocationVideo>) -> ResearchResult<Self> {
+        let mut library = Self {
+            schema: "affect-research-video-library".into(),
+            version: 2,
+            videos,
             integrity_sha256: String::new(),
         };
         library.integrity_sha256 = digest(&library, &["integritySha256"])?;
@@ -115,6 +143,10 @@ impl VariantDesignV2 {
     ) -> ResearchResult<Self> {
         draft.validate_cell_bytes(6144)?;
         let library = LocationLibrary::from_catalogue(catalogue)?;
+        Self::create_with_library(draft, library)
+    }
+    fn create_with_library(draft: &VariantDraft, library: LocationLibrary) -> ResearchResult<Self> {
+        draft.validate_cell_bytes(6144)?;
         if draft.isi_definitions.iter().any(|isi| {
             library
                 .videos
@@ -201,6 +233,15 @@ impl VariantDesignV2 {
         Ok(value)
     }
     pub fn validate(&self, catalogue: &VideoCatalogueContribution) -> ResearchResult<()> {
+        self.validate_with_library(LocationLibrary::from_catalogue(catalogue)?)
+    }
+    pub fn validate_v3(
+        &self,
+        catalogue: &crate::research_workspace_contribution::v3::VideoCatalogueContributionV3,
+    ) -> ResearchResult<()> {
+        self.validate_with_library(LocationLibrary::from_catalogue_v3(catalogue)?)
+    }
+    fn validate_with_library(&self, library: LocationLibrary) -> ResearchResult<()> {
         if self.variants.is_empty()
             || self.variants.len() > 64
             || self.isi_definitions.len() > 1024
@@ -293,7 +334,7 @@ impl VariantDesignV2 {
             isi_definitions: self.isi_definitions.clone(),
             next_isi_ordinal,
         };
-        if Self::create(&draft, catalogue)? != *self {
+        if Self::create_with_library(&draft, library)? != *self {
             return Err(invalid(
                 "Variant location/content pairs or integrity do not match.",
             ));

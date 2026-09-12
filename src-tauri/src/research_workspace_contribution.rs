@@ -5,6 +5,9 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use unicode_normalization::UnicodeNormalization;
 
+#[path = "research_workspace_contribution_v3.rs"]
+pub mod v3;
+
 pub const VIDEO_CATALOGUE_SCHEMA: &str = "affect-research-video-catalogue-contribution";
 pub const WORKSPACE_CONTRIBUTION_SCHEMA: &str = "affect-research-workspace-contribution";
 pub const VIDEO_LOCATION_ID_POLICY_V1: &str = "relative-path-reversible-v1";
@@ -46,7 +49,7 @@ pub struct VideoDisplayGeometry {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct VideoCatalogueEntry {
+pub struct VideoCatalogueEntry<G = VideoDisplayGeometry> {
     pub asset_id: String,
     pub annotation_id: String,
     pub source_relative_path: String,
@@ -54,7 +57,7 @@ pub struct VideoCatalogueEntry {
     pub sha256: String,
     pub byte_length: u64,
     pub duration_ms: u64,
-    pub geometry: VideoDisplayGeometry,
+    pub geometry: G,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -291,6 +294,11 @@ fn validate_geometry(value: &VideoDisplayGeometry, allow_native: bool) -> Resear
 }
 
 fn validate_entry(value: &VideoCatalogueEntry, version: u32) -> ResearchResult<()> {
+    validate_entry_identity(value, version)?;
+    validate_geometry(&value.geometry, version == 2)
+}
+
+fn validate_entry_identity<G>(value: &VideoCatalogueEntry<G>, version: u32) -> ResearchResult<()> {
     if value.sha256.len() != 64
         || !value
             .sha256
@@ -337,7 +345,7 @@ fn validate_entry(value: &VideoCatalogueEntry, version: u32) -> ResearchResult<(
             ));
         }
     }
-    validate_geometry(&value.geometry, version == 2)
+    Ok(())
 }
 
 pub fn validate_video_catalogue_contribution(
