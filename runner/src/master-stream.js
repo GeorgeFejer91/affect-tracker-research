@@ -2,7 +2,7 @@ import { canonicalJson, canonicalSha256 } from "../../site/src/research/canonica
 import { inspectPlannedMarkerTrace } from "../../site/src/research/planned-marker-contract.js";
 import { masterParticipantId } from "./master-recipe.js";
 
-const profileKeys = ["schema", "version", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "runId", "attemptId", "plannedProfile", "executionProfile", "profileSha256"].sort().join(",");
+const profileKeys = ["schema", "version", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "runId", "attemptId", "plannedProfile", "executionProfile", "profileSha256"];
 const sha = /^[a-f0-9]{64}$/u, code = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
 function parse(text, maximum) {
   if (typeof text !== "string" || new TextEncoder().encode(text).length > maximum) throw new Error("Master stream payload exceeds its byte bound.");
@@ -18,7 +18,7 @@ export async function inspectMasterStream(samples) {
   if (!samples.length) return { status: "incomplete", occurrences: [], issues: [{ code: "missing-profile" }] };
   const profile = parse(samples[0].value, 4 * 1024 * 1024);
   if (profile.schema !== "affect-runner-master-stream-profile") return { status: "incomplete", occurrences: [], issues: [{ code: "missing-profile" }] };
-  if (Object.keys(profile).sort().join(",") !== profileKeys || profile.version !== 1 || !sha.test(profile.recipeSourceByteSha256) || !sha.test(profile.planIdentitySha256)
+  if (Object.keys(profile).length !== profileKeys.length || profileKeys.some(key => !Object.hasOwn(profile, key)) || profile.version !== 1 || !sha.test(profile.recipeSourceByteSha256) || !sha.test(profile.planIdentitySha256)
     || !code.test(profile.runId) || !code.test(profile.attemptId)) throw new Error("Invalid master profile binding.");
   masterParticipantId(profile.participantId);
   const { profileSha256, ...body } = profile;

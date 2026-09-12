@@ -9,7 +9,7 @@ const transferId = /^transfer-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a
 const kinds = ["startup", "observation", "responses", "outcome"];
 function require(value, message) { if (!value) throw new Error(message); }
 function exact(value, keys, label) {
-  require(value && Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).sort().join(",") === [...keys].sort().join(","), `${label} has missing or unknown fields.`);
+  require(value && Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key)), `${label} has missing or unknown fields.`);
 }
 function integer(n, min, max) { return Number.isSafeInteger(n) && n >= min && n <= max; }
 function canonicalParse(text, maximum, label) {
