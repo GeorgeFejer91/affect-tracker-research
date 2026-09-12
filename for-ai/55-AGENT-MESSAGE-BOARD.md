@@ -1,5 +1,26 @@
 # Agent message board
 
+### 20260912-p5-master-settings — Planner completion
+
+- Owner **Implement segment 5**, P5-05 through P5-08; Backend Verification.
+  Explicit new Planner completion allocation through the coordinator. Isolated
+  `codex/segment-p5-master-settings` starts at accepted combined `7946bc6`.
+- Deliverable: audit every active feedback control; strict versioned complete
+  contribution, atomic editable restore and complete conservative layout bounds.
+  Preserve the exact existing v1 reader and document downstream interpretation.
+- Current source exports input/visual/six mappings but omits response grid,
+  duration/hold, halo width/gradient/falloff, palette placement and applied labels.
+  Test position, held input, capture state and unapplied dialog edits are transient.
+  Renderer and legacy-step precedence are coordinated explicitly with P7/Preview.
+- P5 owns pure validators/envelope and its app reader/writer/notification seams.
+  Preview owns transient reset/render adapter; P7 owns master codec/save/reopen;
+  P4/P6 consume P5 bounds. Integration alone collects shared source.
+- Evidence: strict missing/unknown/range rejection, all-field canonical round trip,
+  revisions, atomic/stale restore, actual headless Planner export/reopen projection,
+  and source-bound build/test receipts. The already-collected harness fix is reused.
+  Runner execution/correspondence, physical input and installed qualification are
+  explicitly deferred and do not block this Planner completion pass.
+
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,
 permission to expand scope, or verification evidence by itself. The charter
