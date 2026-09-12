@@ -5,6 +5,8 @@ import { execFileSync } from "node:child_process";
 import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
 import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
 import { validateWorkspaceContributionV1 } from "../site/src/research/workspace-contribution.js";
+import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
 import { DEFAULT_DESKTOP_REFERENCE_POLICY, validateDesktopLayoutProfileV1, selectDesktopReference,
   resolveDesktopLayoutBase, resolveDesktopLayoutGeometry, convertDesktopLayoutUnits, assertDesktopLayoutViewport } from "../site/src/research/desktop-layout.js";
 import { validateDesktopLayoutContribution, resolveDesktopLayoutContribution, serializeDesktopLayoutContribution, parseDesktopLayoutContribution, desktopLayoutDraftFromProfile,
@@ -142,6 +144,20 @@ test("accepted composition rejects altered media, feedback and fit instead of tr
   await assert.rejects(validateDesktopLayoutContribution(overlap, fixture), { code: "video-overlap" });
   const missing = profile(); missing.reference.source.assetId = `asset-${"d".repeat(64)}`;
   await assert.rejects(validateDesktopLayoutContribution(missing, fixture), { code: "source-mismatch" });
+});
+
+test("generic P1 v2 dispatch fits every unique content asset while retaining repeated location declarations", async () => {
+  const catalogue = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url), "utf8"));
+  const workspace = createWorkspaceContribution({ study: fixture.workspace.study, videoCatalogue: catalogue });
+  const { videos } = await projectVideoDisplayGeometry(catalogue);
+  assert.ok(videos.length < catalogue.entries.length);
+  const d = desktopLayoutDraftFromProfile(profile());
+  const p = desktopLayoutProfileFromDraft(d, videos);
+  const accepted = await validateDesktopLayoutContribution(p, { workspace, feedback: fixture.feedback });
+  assert.equal(accepted.reference.source.assetId, videos[0].assetId);
+  const resolved = await resolveDesktopLayoutContribution(p, { workspace, feedback: fixture.feedback });
+  assert.equal(resolved.videos.length, videos.length);
+  assert.equal((await parseDesktopLayoutContribution(await serializeDesktopLayoutContribution(p, { workspace, feedback: fixture.feedback }), { workspace, feedback: fixture.feedback })).reference.source.assetId, videos[0].assetId);
 });
 
 test("two clean processes reproduce candidate bytes and geometry without app/default/storage imports", () => {
