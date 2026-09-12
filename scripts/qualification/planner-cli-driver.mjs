@@ -94,23 +94,36 @@ function validateAction(action) {
   return action;
 }
 
-/** steps: [{ action, expectStatus?, mutation? }]. Action bodies pass unchanged to
+/** steps: [{ action, expectStatus?, mutation?, checkResponse?, until?, maxQueries?, queryIntervalMs? }]. Action bodies pass unchanged to
  * the production CLI. mutation defaults true except documented query actions.
  * args is injectable only for driver tests; the command-line entry always uses jsonl.
  * Programmatic callers may supply a synchronous action({ready,revision,lastResponse})
  * resolver to use IDs or filenames returned by the previous command. It receives
  * detached copies, imports no application authority, and its resolved command is
  * validated and recorded exactly like a static action. JSON action files stay static.
+ * checkResponse asserts on detached request/response copies. until repeats only a
+ * fixed read-only query within explicit bounds. Each observation is recorded with
+ * a fresh request ID; elapsed spacing is not evidence of readiness. Completed
+ * steps counts the logical query step once, not each recorded query attempt.
  */
 export async function runPlannerCli({ executable, steps, outputDirectory, args = ["jsonl"], timeoutMs = 150000 }) {
   assert.ok(Array.isArray(steps) && steps.length > 0 && steps.length <= MAX_STEPS, "Require 1–4096 command steps");
   assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs > 0);
   for (const step of steps) {
     assert.ok(step && typeof step === "object" && !Array.isArray(step));
-    assert.ok(Object.keys(step).every(key => ["action", "expectStatus", "mutation"].includes(key)), "Unknown driver step field");
+    assert.ok(Object.keys(step).every(key => ["action", "expectStatus", "mutation", "checkResponse", "until", "maxQueries", "queryIntervalMs"].includes(key)), "Unknown driver step field");
     if (typeof step.action !== "function") validateAction(step.action);
     if (step.mutation !== undefined) assert.equal(typeof step.mutation, "boolean");
     if (step.expectStatus !== undefined) assert.ok(["ok", "applied", "incomplete", "rejected", "canceled"].includes(step.expectStatus));
+    if (step.checkResponse !== undefined) assert.ok(typeof step.checkResponse === "function"
+      && Object.prototype.toString.call(step.checkResponse) !== "[object AsyncFunction]", "Response check must be synchronous");
+    if (step.until !== undefined) {
+      assert.ok(typeof step.until === "function" && Object.prototype.toString.call(step.until) !== "[object AsyncFunction]", "Readiness predicate must be synchronous");
+      assert.ok(typeof step.action !== "function" && ["catalogue", "snapshot", "get", "validate"].includes(step.action.kind)
+        && step.mutation !== true, "Only a fixed read-only query may repeat");
+      assert.ok(Number.isSafeInteger(step.maxQueries) && step.maxQueries >= 1 && step.maxQueries <= 100, "Bound readiness queries to 1–100");
+      assert.ok(Number.isSafeInteger(step.queryIntervalMs) && step.queryIntervalMs >= 10 && step.queryIntervalMs <= 1000, "Bound query spacing to 10–1000 ms");
+    } else assert.ok(step.maxQueries === undefined && step.queryIntervalMs === undefined, "Query bounds require a readiness predicate");
   }
   executable = resolve(executable);
   assert.ok((await stat(executable)).isFile(), "CLI executable must be a file");
@@ -141,22 +154,34 @@ export async function runPlannerCli({ executable, steps, outputDirectory, args =
     assert.equal(ready.processId, child.pid, "Ready receipt does not identify the owned child");
     revision = ready.revision; await record("ready", ready);
     for (const step of steps) {
-      const action = validateAction(typeof step.action === "function"
-        ? step.action({ ready: structuredClone(ready), revision, lastResponse: structuredClone(lastResponse) })
-        : step.action);
-      const mutation = step.mutation ?? !["catalogue", "snapshot", "get", "validate", "cancel"].includes(action.kind);
-      const request = { schema: "affect-research-planner-command", version: 1, sessionId: ready.sessionId,
-        requestId: randomUUID(), expectedRevision: mutation ? revision : null, action };
-      const line = `${JSON.stringify(request)}\n`;
-      assert.ok(Buffer.byteLength(line) <= MAX_FRAME, "Command exceeds native JSONL frame bound");
-      await record("request", request);
-      await deadline(new Promise((resolveWrite, rejectWrite) => child.stdin.write(line, error => error ? rejectWrite(error) : resolveWrite())), timeoutMs, "CLI input stalled; outcome may be unknown");
-      const result = await output.next(timeoutMs);
-      await record("response", result);
-      validateResponse(result, request, revision);
-      if (step.expectStatus) assert.equal(result.status, step.expectStatus, "Unexpected CLI result status");
-      else assert.ok(["ok", "applied", "incomplete"].includes(result.status), `CLI command ${action.kind} returned ${result.status}`);
-      revision = result.revision; lastResponse = result; completed++;
+      for (let query = 0; ; query++) {
+        const action = validateAction(typeof step.action === "function"
+          ? step.action({ ready: structuredClone(ready), revision, lastResponse: structuredClone(lastResponse) })
+          : step.action);
+        const mutation = step.mutation ?? !["catalogue", "snapshot", "get", "validate", "cancel"].includes(action.kind);
+        const request = { schema: "affect-research-planner-command", version: 1, sessionId: ready.sessionId,
+          requestId: randomUUID(), expectedRevision: mutation ? revision : null, action };
+        const line = `${JSON.stringify(request)}\n`;
+        assert.ok(Buffer.byteLength(line) <= MAX_FRAME, "Command exceeds native JSONL frame bound");
+        await record("request", request);
+        await deadline(new Promise((resolveWrite, rejectWrite) => child.stdin.write(line, error => error ? rejectWrite(error) : resolveWrite())), timeoutMs, "CLI input stalled; outcome may be unknown");
+        const result = await output.next(timeoutMs);
+        await record("response", result);
+        validateResponse(result, request, revision);
+        // Preserve valid observed state even if the semantic review below fails.
+        revision = result.revision; lastResponse = result;
+        if (step.expectStatus) assert.equal(result.status, step.expectStatus, "Unexpected CLI result status");
+        else assert.ok(["ok", "applied", "incomplete"].includes(result.status), `CLI command ${action.kind} returned ${result.status}`);
+        if (step.checkResponse) assert.equal(step.checkResponse({ request: structuredClone(request), response: structuredClone(result) }), undefined,
+          "Response check must assert synchronously without returning a value");
+        if (!step.until) break;
+        const settled = step.until(structuredClone(result));
+        assert.equal(typeof settled, "boolean", "Readiness predicate must return a boolean");
+        if (settled) break;
+        assert.ok(query + 1 < step.maxQueries, "Readiness query bound exhausted; no mutation was retried");
+        await new Promise(resolveWait => setTimeout(resolveWait, step.queryIntervalMs));
+      }
+      completed++;
     }
     child.stdin.end();
     exit = await deadline(exitPromise, timeoutMs, "CLI did not drain and exit after EOF");

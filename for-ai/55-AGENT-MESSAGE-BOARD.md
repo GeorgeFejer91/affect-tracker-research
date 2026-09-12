@@ -1,5 +1,26 @@
 # Agent message board
 
+### 20260912-root-cli-driver-readiness
+
+- Root, CLI-P7 / RR-10 external production mock driver, Backend Verification.
+  Isolated `codex/segment-cli-driver-readiness`, base `f0cdfb1`, worktree
+  `D:/GitHub/affect-tracker-research-cli-driver-readiness-root`.
+- Main actual app composition establishes that published workspace selection can
+  remain media_pending and intermediate P2 imports/saves retain unsaved language
+  drafts. Driver must verify actual native acknowledgement and adoption while
+  allowing only those named domain-readiness issues. Final Save stays strict.
+- Own external driver/mock/tests and handoff docs only; no production owner,
+  compiler, app or native changes. Baseline eight subprocess checks pass.
+  Query settling must use observable readiness; no arbitrary delay as proof,
+  repeat of mutations or fabricated acceptance. Actual native mock is pending.
+- Ready component: 15 focused subprocess/mock checks pass; S5 independent
+  source review and actual native-I/O transcript follow-up report no findings.
+  Actual import can retain `invalid_draft` in other still-empty language slots;
+  allowed only during import, never any save or confirmation. All imports run
+  before the first save. Log: `D:/GitHub/.affect-checks/root-cli-driver-readiness-final.log`.
+  See `docs/planner-mock-readiness-checks.md`. Collect after `f0cdfb1`; this is
+  driver preparation, not a completed production mock or Runner/XDF run.
+
 ### 20260912-root-production-mock-driver-preparation
 
 - Root, E2E-RECIPE external driver seam, Backend Verification, roadmap worktree.

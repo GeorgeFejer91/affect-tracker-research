@@ -22,6 +22,63 @@ const apply = edits => ({ kind: "apply", edits });
 const perform = (operation, args) => ({ kind: "perform", operation, arguments: args });
 const get = field => ({ kind: "get", field });
 
+/** Actual successful native effects may leave unrelated authoring drafts open.
+ * Only the observed domain-readiness issues below may accompany publication. */
+export function assertPublishedConsequence({request, response}) {
+  const operation = request.action.operation;
+  const allowed = operation === "selectWorkspace" ? [["P1", "P1.media.catalogue", "media_pending"]]
+    : ["importQuestionnaire", "saveQuestionnaire"].includes(operation)
+      ? [["P2", "P2.questionnaires", "unsaved_draft"], ["P2", "P2.languages", "missing_language_asset"],
+        // Import fills the initially empty language slots in sequence. All
+        // imports must finish before saving; invalid drafts are never allowed
+        // on save or confirmation and cannot pass final artifact comparison.
+        ...(operation === "importQuestionnaire" ? [["P2", "P2.questionnaires", "invalid_draft"]] : [])] : [];
+  assert.ok(["applied", "incomplete"].includes(response.status));
+  assert.equal(response.result?.operation, operation);
+  assert.equal(response.result.published, true, "Native result was not adopted");
+  assert.equal(response.status, response.issues.length ? "incomplete" : "applied");
+  for (const issue of response.issues) assert.ok(allowed.some(([owner,field,code]) => issue.owner === owner && issue.field === field && issue.code === code),
+    `Unexpected ${operation} issue: ${issue.code}`);
+  if (operation === "confirmSegment") {
+    assert.equal(response.result.result?.confirmed, true);
+    assert.equal(response.result.result.segment, request.action.arguments.segment);
+    return;
+  }
+  const effect = response.result.effect;
+  assert.equal(effect?.operation, operation, "Wrong native acknowledgement operation");
+  assert.equal(effect.requestId, request.requestId, "Wrong native acknowledgement request");
+  assert.equal(effect.stage, "completed");
+  assert.equal(effect.outcome, "acknowledged", "Native effect has no successful acknowledgement");
+  assert.equal(typeof effect.possiblyChanged, "boolean");
+  assert.ok(effect.receipt && typeof effect.receipt === "object" && !Array.isArray(effect.receipt));
+  if (operation === "openRecipe") assert.equal(response.result.progress?.finished, true);
+}
+
+// Read only exposed owner fields. This observes settled bindings; subsequent
+// mutations still use the production revision/dependency guards and may reject.
+export function mockBindingsReady(response, { requireLayout = false } = {}) {
+  assert.equal(response.status, "ok");
+  const owners = response.result.owners;
+  const p1 = owners.P1.values, p3 = owners.P3.values, p4 = owners.P4.values;
+  if (p1["P1.media.ready"] !== true) return false;
+  const entries = p1["P1.media.catalogue"]?.entries;
+  if (!Array.isArray(entries) || entries.length !== 1) return false;
+  if (owners.P1.issues.length || owners.P3.issues.some(issue => ["dependency_unavailable", "owner_busy"].includes(issue.code))) return false;
+  if (JSON.stringify(p3["P3.videoAnnotations"]) !== JSON.stringify(entries.map(entry => entry.annotationId))) return false;
+  const reference = p4["P4.reference.candidates"]?.largestVideo, entry = entries[0];
+  if (!reference || reference.assetId !== entry.assetId || reference.width !== entry.geometry?.displayWidthPx
+    || reference.height !== entry.geometry?.displayHeightPx) return false;
+  if (owners.P4.issues.some(issue => /^catalogue-|^feedback-unavailable$/u.test(issue.code))) return false;
+  if (requireLayout && (owners.P4.issues.length || !p4["P4.geometry"] || p4["P4.videoFits"]?.length !== 1
+    || p4["P4.videoFits"][0].id !== entry.assetId)) return false;
+  if (owners.P6.values["P6.enabled"]) {
+    const revision = p1["P1.workspace.snapshot"]?.revision;
+    if (!owners.P6.values["P6.dependencies"]?.some(value => value.segment === "P1" && value.revision === revision)
+      || owners.P6.issues.some(issue => issue.code === "dependency_pending")) return false;
+  }
+  return true;
+}
+
 async function fileHash(path) {
   const hash = createHash("sha256");
   for await (const bytes of createReadStream(path)) hash.update(bytes);
@@ -115,12 +172,14 @@ export async function authorMockExperiment(config) {
   let catalogue, initial, annotationId, lastSnapshot;
   const expected = {};
   const saves = [], sourceSaveResults = [], steps = [];
-  const step = (action, expectStatus) => steps.push({ action, ...(expectStatus ? { expectStatus } : {}) });
+  const step = (action, expectStatus, checkResponse) => steps.push({ action, ...(expectStatus ? { expectStatus } : {}), ...(checkResponse ? { checkResponse } : {}) });
   const readSnapshot = check => {
     step({ kind: "snapshot" }, "ok");
     return context => { lastSnapshot = context.lastResponse.result; return check(lastSnapshot, context); };
   };
-  const checkedPerform = (operation, args) => step(perform(operation, args), "applied");
+  const checkedPerform = (operation, args) => step(perform(operation, args), undefined, assertPublishedConsequence);
+  const settleBindings = requireLayout => steps.push({ action: {kind:"snapshot"}, expectStatus:"ok",
+    until: response => mockBindingsReady(response, {requireLayout}), maxQueries:100, queryIntervalMs:50 });
   step({ kind: "catalogue" }, "ok");
   step(({ ready, lastResponse }) => {
     assert.equal(ready.buildCommit, config.expectedCommit);
@@ -139,7 +198,7 @@ export async function authorMockExperiment(config) {
       lsl: { enabled: true, stateStream: "AffectResearch", streamType: "Affect", markerStream: "AffectResearchMarkers", sourceId: "mock-dictator" },
       playback: initial.owners.P7.values["P7.playback"] };
     return perform("selectWorkspace", { directory: config.workspace });
-  }, "applied");
+  }, undefined, assertPublishedConsequence);
   step(apply([
     set("P1.study.id", "mock-dictator"), set("P1.study.title", "Bilingual MAIA-2 / TAS-20 and Great Dictator mock"),
     set("P2.languages", languages), set("P7.participantCount", 1), set("P7.presentationTarget", "desktop-screen"),
@@ -148,6 +207,7 @@ export async function authorMockExperiment(config) {
     set("P7.lsl.markerStream", "AffectResearchMarkers"), set("P7.lsl.sourceId", "mock-dictator"),
   ]));
   checkedPerform("importVideos", { paths: [config.video.path] });
+  settleBindings(false);
   step(get("P1.media.catalogue"), "ok");
   step(({ lastResponse }) => {
     const library = lastResponse.result.value;
@@ -172,7 +232,7 @@ export async function authorMockExperiment(config) {
       const matches = lastResponse.result.value.filter(draft => draft.familyId === familyId && draft.language === language);
       assert.equal(matches.length, 1);
       return perform("saveQuestionnaire", { questionnaireId: matches[0].questionnaireId });
-    }, "applied");
+    }, undefined, assertPublishedConsequence);
     step(({ lastResponse }) => { sourceSaveResults.push(lastResponse); return get("P2.modules"); }, "ok");
   }
   step(readSnapshot(snapshot => {
@@ -239,15 +299,17 @@ export async function authorMockExperiment(config) {
     assert.equal(expected.feedback.visual.hideFeedback, false);
     return { kind: "validate", owner: null };
   }), "ok");
+  settleBindings(true);
   for (const segment of ["P1", "P2", "P3", "P4", "P6"]) checkedPerform("confirmSegment", { segment });
   // P5 Live Preview is captured by final Save, as in the existing GUI.
   checkedPerform("saveRecipe", { directory: config.workspace });
   step(({ lastResponse }) => {
     saves.push(savedFile(lastResponse, config.workspace));
     return perform("openRecipe", { path: saves[0].path });
-  }, "applied");
+  }, "applied", assertPublishedConsequence);
   step(set("P7.participantCount", 2), "applied");
   checkedPerform("rescanVideoLibrary", {});
+  settleBindings(true);
   for (const segment of ["P1", "P2", "P3", "P4", "P6"]) checkedPerform("confirmSegment", { segment });
   checkedPerform("saveRecipe", { directory: config.workspace });
   step(({ lastResponse }) => {

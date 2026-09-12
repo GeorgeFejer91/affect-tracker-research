@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertMockRecipe } from "../scripts/qualification/planner-mock-experiment.mjs";
+import { assertMockRecipe, assertPublishedConsequence, mockBindingsReady } from "../scripts/qualification/planner-mock-experiment.mjs";
 
 // Minimal comparison inputs, not valid master fixtures or native run evidence.
 // The production native reader remains responsible for complete schema/hash validation.
@@ -42,6 +42,44 @@ test("mock comparison uses actual returned identities and preserves the requeste
   assert.doesNotThrow(() => assertMockRecipe(recipe, expected, 1));
   recipe.policy.participantCount = 2;
   assert.doesNotThrow(() => assertMockRecipe(recipe, expected, 2));
+});
+
+function acknowledged(operation, issues=[]) {
+  const request={requestId:"request-1",action:{kind:"perform",operation,arguments:{}}};
+  const response={status:issues.length?"incomplete":"applied",issues,
+    result:{operation,published:true,effect:{operation,requestId:request.requestId,stage:"completed",outcome:"acknowledged",possiblyChanged:true,receipt:{saved:true}}}};
+  return {request,response};
+}
+test("mock accepts only named partial-readiness issues after actual native acknowledgement",()=>{
+  const cases=[acknowledged("selectWorkspace",[{owner:"P1",field:"P1.media.catalogue",code:"media_pending"}]),
+    acknowledged("importQuestionnaire",[{owner:"P2",field:"P2.questionnaires",code:"unsaved_draft"}]),
+    acknowledged("importQuestionnaire",[{owner:"P2",field:"P2.questionnaires",code:"invalid_draft"}]),
+    acknowledged("saveQuestionnaire",[{owner:"P2",field:"P2.languages",code:"missing_language_asset"}]),acknowledged("saveRecipe")];
+  for(const value of cases)assert.doesNotThrow(()=>assertPublishedConsequence(value));
+  const mutations=[r=>r.result.published=false,r=>r.result.effect.outcome="unknown",r=>r.result.effect.outcome="synthetic",
+    r=>r.result.effect.operation="different",r=>r.result.effect.requestId="other",r=>r.result.effect.stage="dispatching",
+    r=>r.result.effect.receipt=null,r=>r.status="rejected",r=>r.issues[0].code="projection_failed",r=>r.status="applied"];
+  for(const mutate of mutations){const value=structuredClone(cases[0]);mutate(value.response);assert.throws(()=>assertPublishedConsequence(value));}
+  const failedFinal=acknowledged("saveRecipe",[{owner:"P2",field:"P2.questionnaires",code:"unsaved_draft"}]);
+  assert.throws(()=>assertPublishedConsequence(failedFinal));
+  for(const operation of ["saveQuestionnaire","saveRecipe","confirmSegment"])
+    assert.throws(()=>assertPublishedConsequence(acknowledged(operation,[{owner:"P2",field:"P2.questionnaires",code:"invalid_draft"}])));
+});
+
+test("mock readiness needs matching video identities and completed layout dependency projections",()=>{
+  const response={status:"ok",result:{owners:{
+    P1:{values:{"P1.media.ready":true,"P1.workspace.snapshot":{revision:8},"P1.media.catalogue":{entries:[{annotationId:"clip",assetId:"asset",geometry:{displayWidthPx:1920,displayHeightPx:1080}}]}},issues:[]},
+    P3:{values:{"P3.videoAnnotations":["clip"]},issues:[]},
+    P4:{values:{"P4.reference.candidates":{largestVideo:{assetId:"asset",width:1920,height:1080}},"P4.geometry":{},"P4.videoFits":[{id:"asset"}]},issues:[]},
+    P6:{values:{"P6.enabled":false},issues:[]},
+  }}};
+  assert.equal(mockBindingsReady(response,{requireLayout:true}),true);
+  for(const mutate of [o=>o.P1.values["P1.media.ready"]=false,o=>o.P3.values["P3.videoAnnotations"]=["old"],
+    o=>o.P3.issues.push({code:"owner_busy"}),o=>o.P4.issues.push({code:"catalogue-pending"}),
+    o=>o.P4.values["P4.reference.candidates"].largestVideo.width=1280,o=>o.P4.values["P4.videoFits"]=[],
+    o=>o.P6.values["P6.enabled"]=true]) {
+    const value=structuredClone(response);mutate(value.result.owners);assert.equal(mockBindingsReady(value,{requireLayout:true}),false);
+  }
 });
 
 test("same counts and definition identities cannot hide wrong sequence, routing, layout, feedback or policy", () => {
