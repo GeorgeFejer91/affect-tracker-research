@@ -5,13 +5,15 @@ import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-e
 import { createVariantDocument } from "../site/src/research/variant-design.js";
 import { requestStimulusAuthoring } from "../site/src/research/stimulus-authoring-request.js";
 import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
 
 const { library, document: design, videos } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
+const contentFixture = JSON.parse(await readFile(new URL("./fixtures/variant-workspace-binding-v1.json", import.meta.url), "utf8"));
 function fixture(operate) {
   const handlers = new Map();
-  let renders = 0;
+  let renders = 0, markup = "";
   const host = {
-    set innerHTML(_value) { renders++; },
+    set innerHTML(value) { renders++; markup = value; },
     querySelector() { return null; },
     addEventListener(type, handler) { handlers.set(type, handler); },
     removeEventListener(type) { handlers.delete(type); },
@@ -22,7 +24,7 @@ function fixture(operate) {
     querySelectorAll() { return []; },
   };
   const editor = createStimulusOrderEditor({ root, operate });
-  return { editor, handlers, status, versions, get renders() { return renders; } };
+  return { editor, handlers, status, versions, get renders() { return renders; }, get markup() { return markup; } };
 }
 function cell(value) {
   return { dataset: { orderRow: "1", orderColumn: "0" }, value, removeAttribute() {}, setAttribute() {} };
@@ -250,4 +252,97 @@ test("master preparation rejects cancellation and catalogue withdrawal before ac
   await assert.rejects(preparing);
   assert.equal(ui.editor.getSnapshot().contribution, null);
   assert.equal(ui.editor.getSnapshot().pending, true);
+});
+
+const unresolvedP1 = revision => ({ revision, enabled: true, pending: true, contribution: null, dependencyRevisions: [] });
+const contentOptions = (revision = 41) => ({
+  savedWorkspaceContribution: contentFixture.initialSnapshot.contribution,
+  dependencies: { P1: unresolvedP1(revision) }, isCurrent: () => true,
+});
+
+test("saved table and ISIs reopen before media; editing survives exact rebind without extra writes", async () => {
+  let writes = 0;
+  const ui = fixture(async () => { writes++; throw new Error("Content restore must not write."); });
+  const payload = contentFixture.contribution;
+  const restored = await ui.editor.restoreContent(payload, contentOptions());
+  assert.equal(restored.enabled, true); assert.equal(restored.pending, true); assert.equal(restored.contribution, null);
+  assert.deepEqual(restored.dependencyRevisions, [{ segment: "P1", revision: 41 }]);
+  assert.ok(ui.markup.includes(`value="${payload.variants[0].entries[0].referenceId}"`));
+  assert.ok(ui.markup.includes('data-isi-id="ISI1"'));
+  await assert.rejects(ui.editor.prepareContribution(), /Segment 1/);
+  assert.equal(await ui.editor.confirm(), false);
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  await ui.editor.setCatalogueSource(unresolvedP1(42));
+  assert.ok(ui.markup.includes('value="ISI2"'));
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 43 });
+  assert.equal(ui.editor.getSnapshot().pending, true, "media readiness alone cannot accept the edited table");
+  const prepared = await ui.editor.prepareContribution();
+  assert.equal(prepared.pending, false);
+  assert.deepEqual(prepared.dependencyRevisions, [{ segment: "P1", revision: 43 }]);
+  assert.equal(prepared.contribution.variants[0].entries[1].referenceId, "ISI2");
+  assert.deepEqual(prepared.contribution.variants[1], payload.variants[1]);
+  assert.equal(writes, 0);
+});
+
+test("invalid or cancelled content-only restore preserves the current draft", async () => {
+  const ui = fixture(async () => {}), payload = contentFixture.contribution;
+  await ui.editor.restoreContent(payload, contentOptions());
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  const prior = ui.editor.getSnapshot(), markup = ui.markup;
+  const invalid = structuredClone(payload); invalid.integritySha256 = "f".repeat(64);
+  await assert.rejects(ui.editor.restoreContent(invalid, contentOptions()));
+  await assert.rejects(ui.editor.restoreContent(payload, { ...contentOptions(), isCurrent: () => false }), /changed while reopening/);
+  const options = contentOptions(); options.savedWorkspaceContribution = structuredClone(options.savedWorkspaceContribution);
+  options.savedWorkspaceContribution.videoCatalogue.entries[0].byteLength++;
+  await assert.rejects(ui.editor.restoreContent(payload, options));
+  assert.deepEqual(ui.editor.getSnapshot(), prior); assert.equal(ui.markup, markup);
+});
+
+test("content-only restore cannot overtake a newer restore, edit, withdrawal or teardown", async () => {
+  const payload = contentFixture.contribution;
+  const ui = fixture(async () => {});
+  const first = ui.editor.restoreContent(payload, contentOptions(41));
+  const second = ui.editor.restoreContent(payload, contentOptions(42));
+  const results = await Promise.allSettled([first, second]);
+  assert.equal(results[0].status, "rejected"); assert.equal(results[1].status, "fulfilled");
+  assert.deepEqual(ui.editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 42 }]);
+  for (const action of [editor => editor.handlers.get("input")({ target: cell("ISI2") }),
+    editor => editor.editor.setCatalogueSource(unresolvedP1(43)), editor => editor.editor.destroy()]) {
+    const current = fixture(async () => {});
+    await current.editor.restoreContent(payload, contentOptions());
+    const reopening = current.editor.restoreContent(payload, contentOptions());
+    await action(current);
+    await assert.rejects(reopening, /changed while reopening/);
+    assert.equal(current.editor.getSnapshot().contribution, null);
+  }
+});
+
+test("different freshly verified video bytes cannot silently replace saved table references", async () => {
+  const ui = fixture(async () => {}), payload = contentFixture.contribution;
+  await ui.editor.restoreContent(payload, contentOptions());
+  const workspace = structuredClone(contentFixture.initialSnapshot.contribution);
+  const entries = workspace.videoCatalogue.entries;
+  entries[0].sha256 = "c".repeat(64); entries[0].assetId = `asset-${entries[0].sha256}`; entries[0].byteLength++;
+  workspace.videoCatalogue = await createVideoCatalogueContributionV1({ revision: 2, entries });
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 42, contribution: workspace });
+  assert.ok(ui.markup.includes(`value="${payload.variants[0].entries[0].referenceId}"`));
+  await assert.rejects(ui.editor.prepareContribution(), /Event 1/);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+});
+
+test("a newer content reopen supersedes an older preparation or save before it can publish", async () => {
+  for (const method of ["prepareContribution", "confirm"]) {
+    let writes = 0;
+    const ui = fixture(async (_operation, { document }) => { writes++; return { library, design: document }; });
+    await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+    const preparing = ui.editor[method]();
+    const reopening = ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+    const results = await Promise.allSettled([preparing, reopening]);
+    if (method === "prepareContribution") assert.equal(results[0].status, "rejected");
+    else assert.equal(results[0].value, false);
+    assert.equal(results[1].status, "fulfilled");
+    assert.equal(ui.editor.getSnapshot().contribution, null);
+    assert.deepEqual(ui.editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 41 }]);
+    assert.equal(writes, 0);
+  }
 });

@@ -1,7 +1,7 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { createVideoLibrary } from "./stimulus-order.js";
 import { validateVideoCatalogueContributionV1 } from "./video-catalogue-contribution.js";
-import { projectWorkspaceVideoCatalogueSnapshotV1 } from "./workspace-contribution.js";
+import { projectWorkspaceVideoCatalogueSnapshotV1, validateWorkspaceContributionV1 } from "./workspace-contribution.js";
 import { compileVariantTimeline, validateVariantDesign } from "./variant-design.js";
 
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
@@ -26,6 +26,10 @@ export async function projectLegacyVariantCatalogue(snapshot) {
     throw new TypeError("Segment 1 requires an accepted, current video catalogue.");
   }
   const catalogue = await validateVideoCatalogueContributionV1(snapshot.contribution);
+  return { revision: snapshot.revision, sourceIntegritySha256: catalogue.integritySha256, ...await projectCatalogueContent(catalogue) };
+}
+
+async function projectCatalogueContent(catalogue) {
   const aliases = new Set(), identities = new Map();
   for (const entry of catalogue.entries) {
     if (aliases.has(entry.annotationId)) throw new TypeError("Segment 1 video annotation aliases are ambiguous.");
@@ -42,7 +46,14 @@ export async function projectLegacyVariantCatalogue(snapshot) {
     if (!entry) throw new TypeError("The Segment 1 identity projection is incomplete.");
     return { ...video, assetId: entry.assetId, durationMs: entry.durationMs };
   });
-  return { revision: snapshot.revision, sourceIntegritySha256: catalogue.integritySha256, library, videos };
+  return { library, videos };
+}
+
+/** Portable authored declarations only: no snapshot, revision, media readiness
+ * or filesystem authority is manufactured from a saved recipe. */
+export async function projectSavedVariantCatalogue(savedWorkspaceContribution) {
+  const workspace = await validateWorkspaceContributionV1(savedWorkspaceContribution);
+  return projectCatalogueContent(workspace.videoCatalogue);
 }
 
 /** Registered workspace P1 -> P3. P1 validates/extracts the nested catalogue;

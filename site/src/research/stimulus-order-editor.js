@@ -2,7 +2,7 @@ import { canonicalJson } from "./canonical.js";
 import { validateVideoLibrary, videoLibraryCsv } from "./stimulus-order.js";
 import { videoLibraryWorkbook } from "./stimulus-workbook.js";
 import { normalizeVariantCatalogue, validateVariantCatalogueLibrary } from "./variant-video-catalogue.js";
-import { normalizeVariantCatalogueSource, projectVariantCatalogue } from "./variant-catalogue-adapter.js";
+import { normalizeVariantCatalogueSource, projectSavedVariantCatalogue, projectVariantCatalogue } from "./variant-catalogue-adapter.js";
 import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, resolveVariantCell, resolveVariantEntries, validateStoredVariantDocument, validateVariantDraft, validateVariantDesign, variantDesignToDraft, videoColorMap } from "./variant-design.js";
 
 const escape = value => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -11,7 +11,8 @@ const escape = value => String(value).replaceAll("&", "&amp;").replaceAll("<", "
 export function createStimulusOrderEditor({ root, operate, onChange = () => {}, announce = () => {} }) {
   let draft = createVariantDraft(), library = null, confirmed = null, busy = false, generation = 0, edited = false;
   let catalogue = null, lastCatalogue = null, catalogueExpected = false, legacy = null, colors = new Map();
-  let catalogueOperation = 0, producerIdentity = null, producerRevision = null;
+  let catalogueOperation = 0, restoreOperation = 0, producerIdentity = null, producerRevision = null;
+  let unresolvedP1Revision = null;
   const host = root.querySelector("#stimulus-order-editor"), status = root.querySelector("#stimulus-order-status"), versions = root.querySelector("#stimulus-order-versions");
   const report = (message, failed = false) => {
     if (status) { status.textContent = message; status.dataset.state = failed ? "error" : "ready"; }
@@ -19,6 +20,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   };
   const notify = () => { onChange(); root.researchUi?.plannerContributionChanged?.("P3"); };
   function changed() { confirmed = null; edited = true; generation++; if (versions) versions.replaceChildren(); notify(); }
+  function beginRestore() { catalogueOperation++; return ++restoreOperation; }
   function checkCatalogue(next) {
     if (next && lastCatalogue && (next.revision < lastCatalogue.revision
       || (next.revision === lastCatalogue.revision && canonicalJson(next) !== canonicalJson(lastCatalogue)))) {
@@ -30,7 +32,8 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     return { revision: generation, enabled: edited || Boolean(confirmed) || Boolean(legacy),
       pending: busy || edited || Boolean(legacy) || Boolean(library && !confirmed) || (catalogueExpected && !catalogue),
       contribution: confirmed ? structuredClone(confirmed.contribution) : null,
-      dependencyRevisions: catalogue ? [{ segment: "P1", revision: catalogue.revision }] : [] };
+      dependencyRevisions: catalogue ? [{ segment: "P1", revision: catalogue.revision }]
+        : unresolvedP1Revision !== null ? [{ segment: "P1", revision: unresolvedP1Revision }] : [] };
   }
   function restoreBinding(receipt, next) {
     const binding = checkCatalogue(normalizeVariantCatalogue(Object.hasOwn(receipt, "catalogue") ? receipt.catalogue : catalogue));
@@ -46,6 +49,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   }
   function commitRestore(document, next, binding, receipt) {
     catalogueOperation++; producerIdentity = receipt.producerIdentity ?? null;
+    unresolvedP1Revision = null;
     producerRevision = receipt.producerRevision ?? producerRevision;
     library = next; catalogue = binding;
     if (binding) { lastCatalogue = binding; catalogueExpected = true; }
@@ -99,10 +103,10 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     try { validatePending(); } catch (error) { report(error.message, true); }
   }
   async function adopt(receipt, { loadSaved = false } = {}) {
-    const token = generation, next = await validateVideoLibrary(receipt.library ?? receipt);
-    if (token !== generation) throw new Error("The workspace or table changed during the library scan. Rescan the library.");
+    const token = generation, restoreToken = restoreOperation, next = await validateVideoLibrary(receipt.library ?? receipt);
+    if (token !== generation || restoreToken !== restoreOperation) throw new Error("The workspace or table changed during the library scan. Rescan the library.");
     const design = loadSaved && !edited && receipt.design ? await validateStoredVariantDocument(receipt.design, next) : null;
-    if (token !== generation) throw new Error("The workspace or table changed while loading. Confirm Segment 1 again.");
+    if (token !== generation || restoreToken !== restoreOperation) throw new Error("The workspace or table changed while loading. Confirm Segment 1 again.");
     const stale = library?.integritySha256 !== next.integritySha256;
     library = next; colors = videoColorMap(library);
     if (stale || receipt.designError) { generation++; catalogueOperation++; producerIdentity = null; if (confirmed || receipt.designError) edited = true; confirmed = null; catalogue = null; legacy = null; notify(); }
@@ -113,49 +117,49 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   }
   async function confirmLibrary() {
     if (busy) return false;
-    busy = true; const token = generation; render();
+    busy = true; const token = generation, restoreToken = restoreOperation; render();
     const workspaceStatus = root.querySelector("#workspace-status");
     if (workspaceStatus) workspaceStatus.textContent = "Reading video identities and saving the library annotations…";
     try {
       const receipt = await operate("confirm-library");
-      if (token !== generation) throw new Error("The workspace changed during confirmation. Confirm Segment 1 again.");
+      if (token !== generation || restoreToken !== restoreOperation) throw new Error("The workspace changed during confirmation. Confirm Segment 1 again.");
       await adopt(receipt, { loadSaved: true });
       if (workspaceStatus) workspaceStatus.textContent = `${library.videos.length} video annotations saved. Segment 3 is ready.`;
       return true;
-    } catch (error) { if (workspaceStatus) workspaceStatus.textContent = error.message; report(error.message, true); return false; }
+    } catch (error) { if (token === generation && restoreToken === restoreOperation) { if (workspaceStatus) workspaceStatus.textContent = error.message; report(error.message, true); } return false; }
     finally { busy = false; render(); notify(); }
   }
   async function confirm() {
     if (busy || !library) { report("Confirm the video library in Segment 1 first.", true); return false; }
-    busy = true; const token = generation; let issue = null; render();
+    busy = true; const token = generation, restoreToken = restoreOperation; let issue = null; render();
     try {
       if (catalogueExpected) validateVariantCatalogueLibrary(catalogue, library);
       const document = await createVariantDocument(draft, library);
-      if (token !== generation) throw new Error("The table or catalogue changed before saving. Confirm the current table again.");
+      if (token !== generation || restoreToken !== restoreOperation) throw new Error("The table or catalogue changed before saving. Confirm the current table again.");
       const receipt = await operate("save-order", { document });
       const saved = await validateStoredVariantDocument(receipt.design, library);
-      if (token !== generation || canonicalJson(saved) !== canonicalJson(document)) throw new Error("The table changed while saving. Confirm the current table again.");
+      if (token !== generation || restoreToken !== restoreOperation || canonicalJson(saved) !== canonicalJson(document)) throw new Error("The table changed while saving. Confirm the current table again.");
       confirmed = saved; edited = false; legacy = null; generation++; notify();
       report(`${saved.contribution.variants.length} variants saved with version annotations. Allocation policy belongs to the Runner.`);
       return true;
-    } catch (error) { issue = error; report(error.message, true); return false; }
+    } catch (error) { issue = error; if (token === generation && restoreToken === restoreOperation) report(error.message, true); return false; }
     finally {
       busy = false; render(); notify();
-      if (issue && token === generation) revealIssue(issue);
+      if (issue && token === generation && restoreToken === restoreOperation) revealIssue(issue);
     }
   }
   async function prepareContribution({ isCurrent = () => true } = {}) {
     if (busy || !library) throw new Error("Confirm the video catalogue in Segment 1 first.");
-    busy = true; const token = generation; let issue = null; render();
+    busy = true; const token = generation, restoreToken = restoreOperation; let issue = null; render();
     try {
       validateVariantCatalogueLibrary(catalogue, library);
       const document = await createVariantDocument(draft, library);
       for (const variant of document.contribution.variants) compileVariantTimeline(document.contribution, variant.variantId, catalogue?.videos ?? []);
-      if (token !== generation || !isCurrent()) throw new Error("The table or catalogue changed during confirmation. Confirm the current table again.");
+      if (token !== generation || restoreToken !== restoreOperation || !isCurrent()) throw new Error("The table or catalogue changed during confirmation. Confirm the current table again.");
       confirmed = document; edited = false; legacy = null; generation++;
       report(`${document.contribution.variants.length} variants ready for review.`);
-    } catch (error) { issue = error; report(error.message, true); throw error; }
-    finally { busy = false; render(); notify(); if (issue && token === generation) revealIssue(issue); }
+    } catch (error) { issue = error; if (token === generation && restoreToken === restoreOperation) report(error.message, true); throw error; }
+    finally { busy = false; render(); notify(); if (issue && token === generation && restoreToken === restoreOperation) revealIssue(issue); }
     return snapshot();
   }
   function revealIssue(error) {
@@ -234,29 +238,43 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   return {
     confirm, confirmLibrary, adopt, prepareContribution,
     async restore(document, receipt) {
-      const token = generation;
+      const token = generation, operation = beginRestore();
       receipt = await restoreReceipt(receipt);
       const next = await validateVideoLibrary(receipt.library ?? receipt);
       const binding = restoreBinding(receipt, next);
       const verified = await validateStoredVariantDocument(document, next);
-      if (token !== generation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
+      if (token !== generation || operation !== restoreOperation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
       if (verified.version !== 2) throw new Error("Legacy designs require explicit conversion.");
       const result = commitRestore(verified, next, binding, receipt);
       report(`${confirmed.contribution.variants.length} variants reopened. Edits require confirmation.`);
       return result;
     },
     async restoreContribution(contribution, receipt) {
-      const token = generation;
+      const token = generation, operation = beginRestore();
       receipt = await restoreReceipt(receipt);
       const next = await validateVideoLibrary(receipt.library ?? receipt);
       const binding = restoreBinding(receipt, next);
       const accepted = await validateVariantDesign(contribution, next);
       const document = await createVariantDocument(variantDesignToDraft(accepted), next);
-      if (token !== generation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
+      if (token !== generation || operation !== restoreOperation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
       return commitRestore(document, next, binding, receipt);
     },
+    async restoreContent(contribution, { savedWorkspaceContribution, dependencies, isCurrent = () => true }) {
+      const token = generation, operation = beginRestore(), source = normalizeVariantCatalogueSource(dependencies?.P1);
+      if (producerRevision !== null && source.revision < producerRevision) throw new TypeError("The Segment 1 catalogue revision is stale.");
+      const declared = await projectSavedVariantCatalogue(savedWorkspaceContribution);
+      const accepted = await validateVariantDesign(contribution, declared.library);
+      const restoredDraft = variantDesignToDraft(accepted);
+      if (token !== generation || operation !== restoreOperation || !isCurrent()) throw new Error("The design changed while reopening.");
+      catalogueOperation++; producerIdentity = canonicalJson(source); producerRevision = source.revision;
+      unresolvedP1Revision = source.revision; catalogueExpected = true; catalogue = null;
+      library = declared.library; colors = videoColorMap(library); draft = structuredClone(restoredDraft);
+      confirmed = null; legacy = null; edited = true; generation++; render(); notify();
+      report("Variant table reopened. Confirm the video library in Segment 1 before confirming this table.");
+      return snapshot();
+    },
     setCatalogue(snapshot) {
-      catalogueOperation++; producerIdentity = null;
+      catalogueOperation++; producerIdentity = null; unresolvedP1Revision = null;
       let next;
       try { next = checkCatalogue(normalizeVariantCatalogue(snapshot)); }
       catch (error) { catalogueExpected = true; catalogue = null; changed(); render(); report(error.message, true); throw error; }
@@ -270,22 +288,22 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
         source = normalizeVariantCatalogueSource(input); identity = canonicalJson(source);
         if (producerRevision !== null && source.revision < producerRevision) throw new TypeError("The Segment 1 catalogue revision is stale.");
       }
-      catch (error) { catalogueOperation++; producerIdentity = null; catalogueExpected = true; catalogue = null; changed(); render(); report(error.message, true); throw error; }
+      catch (error) { catalogueOperation++; producerIdentity = null; unresolvedP1Revision = null; catalogueExpected = true; catalogue = null; changed(); render(); report(error.message, true); throw error; }
       if (identity === producerIdentity && catalogue) return snapshot();
       const operation = ++catalogueOperation;
-      producerRevision = source.revision;
+      producerRevision = source.revision; unresolvedP1Revision = source.revision;
       producerIdentity = identity; catalogueExpected = true; catalogue = null; changed(); render();
       if (!source.enabled || source.pending || source.contribution === null) return snapshot();
       try {
         const projection = await projectVariantCatalogue(source);
         if (operation !== catalogueOperation) return snapshot();
         checkCatalogue(projection);
-        catalogue = projection; lastCatalogue = projection; library = projection.library; colors = videoColorMap(library);
+        catalogue = projection; lastCatalogue = projection; unresolvedP1Revision = null; library = projection.library; colors = videoColorMap(library);
         changed(); render(); return snapshot();
       } catch (error) { if (operation === catalogueOperation) report(error.message, true); throw error; }
     },
     getSnapshot: snapshot,
-    reset() { generation++; catalogueOperation++; producerIdentity = null; producerRevision = null; library = null; catalogue = null; lastCatalogue = null; catalogueExpected = false; confirmed = null; legacy = null; draft = createVariantDraft(); edited = false; render(); notify(); },
+    reset() { generation++; catalogueOperation++; producerIdentity = null; producerRevision = null; unresolvedP1Revision = null; library = null; catalogue = null; lastCatalogue = null; catalogueExpected = false; confirmed = null; legacy = null; draft = createVariantDraft(); edited = false; render(); notify(); },
     get document() { return confirmed ? structuredClone(confirmed) : null; },
     get active() { return edited || Boolean(confirmed) || Boolean(legacy); },
     get pending() { return snapshot().pending; },
