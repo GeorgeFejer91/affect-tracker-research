@@ -26,8 +26,11 @@ itself reserve or advance that lifetime.
 
 `commit()` is synchronous, state-only and single-use. It replaces the actual
 entry map and editor context with prepared state, clearing pending upload and
-projection fingerprints. Main installs app definitions/modules/families/languages
-in the same publication step; it must not call editor.sync/reset or the existing
+projection fingerprints. Main commits the editor first, then installs the
+prevalidated app definitions/modules/families/languages in the same synchronous
+publication step. The old editor context can alias those app arrays: changing
+them first correctly invalidates the prepared guard (verified in the actual app).
+It must not call editor.sync/reset or the existing
 rendering restorePresentation inside that state boundary. `afterCommit()` renders
 and notifies once, after publication. It rejects before commit and skips stale
 projection after another editor lifetime change. The existing GUI

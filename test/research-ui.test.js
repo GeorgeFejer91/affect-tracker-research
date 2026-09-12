@@ -280,7 +280,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /if \(target\.id === "video-folder-import"\) requestVideoImport\(\{ directory: true \}\)/u);
   assert.match(source, /const dropZone = query\("#video-drop-zone"\)/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
-  assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
+  assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady, event => projectWorkspaceReady\(event\.detail\)\)/u);
+  assert.match(source, /function projectWorkspaceReady\(detail\)[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(source, /directoryPermission \? "ready" : "warning"/u);
   assert.match(source, /Work directory access is unavailable\. Restore access or select it again\./u);
   assert.match(markup, /Package reproduction matrix/u);

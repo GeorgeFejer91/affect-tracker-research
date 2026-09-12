@@ -631,8 +631,35 @@ export function createVideoCatalogueProducer({
     });
   }
 
+  async function preparePublication({ entries, restored = null }, { isCurrent }) {
+    const previous = snapshot, operation = generation;
+    let committed = false, projected = false, committedGeneration;
+    const current = () => !committed && operation === generation && previous === snapshot && isCurrent();
+    const contribution = restored === null
+      ? await reviseVideoCatalogueContribution(lastAccepted, structuredClone(entries))
+      : await validateRestoredContribution(structuredClone(restored));
+    if (!current()) throw new Error("Video catalogue changed during preparation.");
+    return Object.freeze({ isCurrent: current,
+      commit() {
+        if (!current()) throw new Error("Video catalogue changed before publication.");
+        generation++;
+        committedGeneration = generation;
+        const changed = previous.contribution === null || canonicalJson(previous.contribution) !== canonicalJson(contribution);
+        lastAccepted = contribution;
+        publish({ ...previous, revision: previous.revision + (changed ? 1 : 0), pending: false, contribution }, { notify: false });
+        committed = true;
+      },
+      afterCommit() {
+        if (!committed) throw new Error("Publish the catalogue first.");
+        if (projected || committedGeneration !== generation) return;
+        projected = true; for (const listener of listeners) listener(snapshot);
+      },
+    });
+  }
+
   return Object.freeze({
     getSnapshot: () => snapshot,
+    preparePublication,
     replaceEntries,
     restoreContribution,
     withdraw,

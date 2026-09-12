@@ -43,6 +43,24 @@ test("current catalogue withdrawal separates state from notification for prepare
 });
 const utf16FixtureUrl = new URL("./fixtures/research-video-catalogue-utf16-order-v2.json", import.meta.url);
 
+test("prepared current catalogue publishes once only after guarded validation", async () => {
+  let notifications = 0, current = true;
+  const producer = createVideoCatalogueProducer({ onChange: () => notifications++ });
+  const before = producer.getSnapshot(), entries = [entry({ annotationId: "folder_video.mp4" })];
+  const prepared = await producer.preparePublication({ entries }, { isCurrent: () => current });
+  entries[0].durationMs = 1;
+  assert.equal(producer.getSnapshot(), before); assert.equal(notifications, 0);
+  assert.throws(prepared.afterCommit);
+  prepared.commit(); assert.equal(notifications, 0);
+  assert.equal(producer.getSnapshot().contribution.entries[0].durationMs, 12345);
+  assert.throws(prepared.commit); prepared.afterCommit(); prepared.afterCommit(); assert.equal(notifications, 1);
+  const canceled = await producer.preparePublication({ entries: [entry({ annotationId: "folder_video.mp4" })] }, { isCurrent: () => current });
+  current = false; assert.throws(canceled.commit); assert.equal(notifications, 1);
+  current = true;
+  const stale = await producer.preparePublication({ entries: [entry({ annotationId: "folder_video.mp4" })] }, { isCurrent: () => true });
+  producer.withdraw(); assert.throws(stale.commit);
+});
+
 function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annotationId = "folder_video" } = {}) {
   return {
     assetId: assetIdFromSha256(hash),

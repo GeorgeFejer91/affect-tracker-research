@@ -1,4 +1,5 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+import { createPlannerNativeEffects } from "./planner-authoring-native-effects.js";
 
 export function reportPlannerAuthoringStartupFailure() {
   // Fixed startup code only, never an exception, stack or document payload.
@@ -14,11 +15,12 @@ export async function bootPlannerAuthoringNative(root, invoke = tauriInvoke) {
   const session = root.researchUi?.plannerAuthoringSession;
   if (!session) throw new Error("Planner authoring session is unavailable.");
   let disposed = false;
+  let effects = null;
   const pending = new Set();
   let unsubscribe = () => {};
   const destroy = () => {
     if (disposed) return;
-    disposed = true; unsubscribe(); session.destroy();
+    disposed = true; unsubscribe(); effects?.destroy(); session.destroy();
   };
   // Subscribe before awaiting readiness so edits during the handshake are not
   // lost. Keep revision delivery ordered without waiting for active effects.
@@ -37,6 +39,8 @@ export async function bootPlannerAuthoringNative(root, invoke = tauriInvoke) {
     if (disposed) throw new Error("Planner authoring transport is closed.");
   };
   try { await flushRevision(); } catch (error) { destroy(); throw error; }
+  effects = createPlannerNativeEffects({ invoke, sessionId: session.sessionId, beforeDispatch: flushRevision });
+  root.researchUi.connectPlannerNativeEffects?.(effects);
   const run = async () => {
     while (!disposed) {
       const request = await invoke("research_planner_authoring_next");
