@@ -282,8 +282,10 @@ fn launch(
             research_runner_master::commands::research_runner_master_rescan,
             research_runner_master::commands::research_runner_master_preflight,
             research_runner_master::commands::research_runner_master_start,
+            research_runner_master::commands::research_runner_master_start_v2,
             research_runner_master::commands::research_runner_master_status,
             research_runner_master::commands::research_runner_master_action,
+            research_runner_master::commands::research_runner_master_action_v2,
             research_runner_master::commands::research_runner_master_history,
             research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
@@ -387,18 +389,25 @@ fn request_companion_exit(app: &tauri::AppHandle, code: i32) {
 
 /// Main's named Runner collection seam. Runs only on the coordinator worker:
 /// authoring -> Master cancellation -> Package -> Master join -> recorder/input.
-/// Main adds Master calls here; the parent/native actor remain alive throughout.
+/// The parent/native actor remain alive throughout.
 fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
     if let Some(authoring) =
         app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()
     {
         authoring.shutdown();
     }
-    // Reserved Main seam: request Master shutdown before blocking Package cleanup.
+    if let Some(master) = app.try_state::<Arc<research_runner_master::runtime::MasterRuntime>>() {
+        master.shutdown();
+    }
     if let Some(runtime) = app.try_state::<Arc<PackageProtocolRuntime>>() {
         runtime.shutdown();
     }
-    // Reserved Main seam: observe Master is_stopped and require join_stopped here.
+    if let Some(master) = app.try_state::<Arc<research_runner_master::runtime::MasterRuntime>>() {
+        while !master.is_stopped() {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        master.join_stopped().map_err(|_| "master-shutdown-failed")?;
+    }
     if let Some(recorder) = app.try_state::<Arc<research_recorder::RecorderService>>() {
         recorder.shutdown();
     }
