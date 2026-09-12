@@ -138,7 +138,7 @@ function bindPreparedOwner(candidate) {
   const unchanged = () => Object.getOwnPropertyDescriptor(candidate, "snapshot")?.get === getter
     && Object.entries(methods).every(([key, method]) => candidate[key] === method)
     && canonicalJson(validatePlannerContributionSnapshot(getter.call(candidate))) === identity;
-  const invoke = (key) => {
+  const invokePreparedOwnerHook = (key) => {
     if (!unchanged()) throw new TypeError("Prepared Planner owner was substituted.");
     const result = methods[key].call(candidate);
     if (result && typeof result.then === "function") throw new TypeError("Prepared owner publication must be synchronous.");
@@ -148,8 +148,8 @@ function bindPreparedOwner(candidate) {
     snapshot,
     unchanged,
     isCurrent: () => unchanged() && methods.isCurrent.call(candidate) === true && unchanged(),
-    commit: () => invoke("commit"),
-    afterCommit: () => invoke("afterCommit"),
+    commit: () => invokePreparedOwnerHook("commit"),
+    afterCommit: () => invokePreparedOwnerHook("afterCommit"),
   };
 }
 
