@@ -632,6 +632,21 @@ file; follow the integration-owner collection procedure in the workflow.
   clean17b2d24; all eight images inspected, hashes matched and zero errors,
   duplicate IDs or overflow. This is bounded helper/default-UI evidence only;
   current full-master source still needs final populated/Save/error captures.
+- Root independently ran full actual-controller master workflow64 checks each
+  Chrome/Edge at clean63fe416, including real UI edits, disk save, reopen, pending
+  copy, media rebind and reset stale-source regressions. Both output files match;
+  source-bound native732bf88 independently reproduces document/matrix/all six
+  selections exactly. Scope and artifact paths in67; no physical/OS-picker claim.
+- Root takes the isolated scripts/qualification/planner-master.mjs helper seam
+  from main's adc34d2 baseline: actual HTTP completion/PNG lifetime fixes Edge,
+  correct CSS/assets fix blank fixture icons, and expanded receipt hash bindings.
+  Main owns the fixture and all app/native changes and acknowledged this split.
+- Root inspected all18 combined default Layout/Review images at0e492ff and both
+  saved-state images at63fe416. Narrow badge overlap is assigned/resolved in
+  owner6d9cc35 pending collection. Misleading saved Review header text is assigned
+  to integration. Native graph-depth parity mismatch is fixed in owner48318a9;
+  current-directory/link closure remains S1-owned. Final unified checks/delivery
+  stay open while those ready handoffs and remaining fixes are collected.
 
 ### 20260912-runner-companion-separation
 
