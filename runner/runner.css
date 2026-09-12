@@ -48,6 +48,13 @@ html, body { min-width: 0; margin: 0; }
 #run-native-video-host { width: 100%; height: 100%; position: absolute; inset: 0; }
 .runner-presentation .run-feedback-stage { min-width: 0; min-height: 0; position: relative; background: #000; }
 .runner-presentation .research-preview-stage { min-height: 0; height: 100%; background: #000; border: 0; border-radius: 0; }
+.runner-presentation .run-stage.runner-master-layout { display: block; position: relative; }
+.runner-master-layout > .stimulus-stage, .runner-master-layout > .run-feedback-stage { position: absolute; }
+.runner-master-layout .preview-overlay { width: 100%; max-height: none; }
+.runner-questionnaire-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 24px 0; }
+.runner-questionnaire-table th, .runner-questionnaire-table td { padding: 12px 6px; border-bottom: 1px solid #373a34; overflow-wrap: anywhere; text-align: center; font-size: 14px; font-weight: normal; }
+.runner-questionnaire-table th:first-child { width: 42%; text-align: left; }
+.runner-questionnaire-table input { width: 20px; height: 20px; margin: 0; }
 #run-stimulus-placeholder { color: #b4b4ac; text-align: center; }
 .runner-session-menu { position: fixed; right: 16px; bottom: 12px; font-size: 12px !important; opacity: 0; pointer-events: none; }
 .runner-session-menu:focus-visible { opacity: 1; pointer-events: auto; }

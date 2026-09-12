@@ -19,7 +19,7 @@ pub struct RecordStartRequest {
 
 impl RecordStartRequest {
     pub fn validate(&self) -> ResearchResult<String> {
-        let loaded = crate::research_experiment_package::parse_canonical_experiment_package_text(
+        let loaded = crate::research_runner_session::RunnerDocument::read(
             &self.experiment_package_source_text,
         )?;
         if self.stream_keys.len() > 16
@@ -40,10 +40,10 @@ impl RecordStartRequest {
                 "Select own streams and/or up to 16 distinct discovered streams.",
             ));
         }
-        if self.record_own && !loaded.package.settings.advanced.lsl.enabled {
+        if self.record_own && !loaded.lsl_enabled() {
             return Err(CommandError::invalid_contract("This recipe disables LSL output. Choose external streams only, or author a recipe with LSL output enabled."));
         }
-        Ok(loaded.canonical_source_byte_sha256)
+        Ok(loaded.source_hash().into())
     }
 }
 

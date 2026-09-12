@@ -60,12 +60,10 @@ pub async fn research_recorder_start(
     tauri::async_runtime::spawn_blocking(move || {
         runtime.while_idle(|| {
             workspace.with_workspace(&workspace_id, |root, _| {
-                let loaded =
-                    crate::research_experiment_package::parse_canonical_experiment_package_text(
-                        &request.experiment_package_source_text,
-                    )?;
-                let recipe =
-                    crate::research_runner_session::ensure_recipe_directory(root, &loaded)?;
+                let loaded = crate::research_runner_session::RunnerDocument::read(
+                    &request.experiment_package_source_text,
+                )?;
+                let recipe = loaded.ensure_directory(root)?;
                 let recordings =
                     crate::research_run_storage::ensure_checked_run_child(&recipe, "recordings")?;
                 let path = recordings

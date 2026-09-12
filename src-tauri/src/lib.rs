@@ -23,6 +23,7 @@ pub mod research_protocol;
 pub mod research_questionnaire_recipe;
 mod research_recorder;
 mod research_run_storage;
+pub mod research_runner_master;
 mod research_runner_session;
 #[cfg(test)]
 mod research_runtime;
@@ -88,14 +89,19 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             input.set_window_focused(focused);
             if role == DesktopRole::Runner {
                 let recorder = Arc::new(research_recorder::RecorderService::default());
-                app.manage(Arc::new(
+                let package_runtime = Arc::new(
                     PackageProtocolRuntime::with_services(
                         Arc::clone(&workspace),
                         Arc::clone(&native_media),
                         Arc::clone(&input),
                     )
                     .with_recorder(Arc::clone(&recorder)),
-                ));
+                );
+                app.manage(Arc::new(research_runner_master::runtime::MasterRuntime::new(
+                    Arc::clone(&workspace), Arc::clone(&native_media), Arc::clone(&input),
+                    Arc::clone(&recorder), Arc::clone(&package_runtime),
+                )));
+                app.manage(package_runtime);
                 app.manage(recorder);
             }
             app.manage(workspace);
@@ -189,6 +195,13 @@ fn launch(role: DesktopRole, context: tauri::Context<tauri::Wry>) {
             research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_runner_master::commands::research_runner_master_plan,
+            research_runner_master::commands::research_runner_master_rescan,
+            research_runner_master::commands::research_runner_master_preflight,
+            research_runner_master::commands::research_runner_master_start,
+            research_runner_master::commands::research_runner_master_status,
+            research_runner_master::commands::research_runner_master_action,
+            research_runner_master::commands::research_runner_master_history,
             research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
             research_runner_session::research_runner_selection,

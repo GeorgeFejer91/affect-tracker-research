@@ -12,6 +12,7 @@ export function runnerMarkup() {
       <header class="runner-header"><img src="${symbol}" width="36" height="36" alt=""><h1>Experiment Runner</h1></header>
       <button id="runner-open">Load experiment file</button>
       <p id="runner-recipe-status" role="status">No experiment loaded</p>
+      <label id="runner-variant-field" class="field" hidden>Experiment variant<select id="runner-variant"><option value="">Choose variant…</option></select></label>
       <div class="runner-participant-picker">
         <label for="runner-participant">Participant number</label>
         <div class="runner-participant-row"><div class="runner-combobox">
