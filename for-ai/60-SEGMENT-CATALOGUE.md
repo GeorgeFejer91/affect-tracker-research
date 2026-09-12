@@ -321,6 +321,15 @@ non-shipping verification fixtures. No accepted JSON contribution, persistence,
 runtime application or export/reload is implemented, so completion boxes above
 remain unchanged. See the [P4 evidence ledger](./40-ROADMAP.md#p4-screen--layout--non-exportable-design-draft).
 
+**2026-09-12 owner-ready follow-up:** `f8654bf` in the isolated live-geometry
+branch now binds actual P1/P5 producers, preserves the registered P1 workspace
+revision, validates whole-library fit, and supplies atomic internal draft
+restoration/P7 pending snapshots. Automatic largest-reference metric remains
+Q08; neither candidate is silently chosen. Accepted P4 JSON and master recipe
+round-trip remain absent, so the capability boxes stay open. Final evidence is
+563 Node tests, 118 actual Chrome app checks/four inspected captures and both
+frontend closures; see the [live P4 ledger](./40-ROADMAP.md#p4-live-geometry-and-draft-restoration--2026-09-12).
+
 ## P5 — Flubber & Controls
 
 **Purpose:** one persistent editor for Flubber appearance/control, with Advanced

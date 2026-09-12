@@ -64,7 +64,7 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260912-p4-live-geometry
 
-- Owner: **S4**, P4 `layout`; **open**, Backend Verification, P4-02/P4-05/
+- Owner: **S4**, P4 `layout`; **ready**, Backend Verification, P4-02/P4-05/
   P4-06/P4-07. Researcher explicitly resumed paused contribution work through
   root coordination; unchanged stage confirmation is not requested again.
 - Isolated `codex/segment-p4-live-geometry` at
@@ -87,6 +87,24 @@ file; follow the integration-owner collection procedure in the workflow.
 - Evidence planned: actual producer interop; mixed ratios/fixed centres/units;
   missing, pending, changed and malformed dependencies; atomic/stale restore;
   actual boot UI invalidation/selection/reflow; proportional frontend checks.
+- Implemented at clean app source `f8654bf`: live workspace-owned P1 revision
+  projection (producer `5988ce0`), P5 `c143398` bounds/subscriptions, P7 `cc5cc83`
+  registration, deterministic fit/candidates, invalidation and atomic draft API.
+  The study-only/video-change fixture confirms one registered revision domain.
+- Exact API: `getScreenLayoutContributionSnapshot`, `getScreenLayoutProjection`,
+  `getScreenLayoutDraftDocument`, async `restoreScreenLayoutDraft(document,
+  {isCurrent})`, `validateScreenLayoutContribution`. The latter rejects Q08;
+  the internal draft document is never accepted master-recipe data. P7 owns
+  final accepted composition; no consumer invents a producer revision.
+- Evidence: 563 Node / 25 P4 tests, desktop9/Pages196, clean Chrome118 checks in
+  four inspected actual-app images. Receipt and source/image hashes:
+  `D:/GitHub/.affect-preview-checks/p4-live-20260912/final-chrome/receipt.json`.
+  Edge yielded no receipt. No native/physical/runtime/publication qualification.
+- **Owner-ready:** this bounded live draft/validation/restore slice.
+  **Integrated:** only in the isolated branch; canonical collection is pending.
+  **Missing:** Q08 reference metric and final geometry contract, accepted P4
+  JSON, P7 master round trip, native oriented geometry and applicable gates.
+  Source writers stop at the final handoff; integration remains sole merger.
 
 ### 20260912-p7-accepted-master-recipe
 
