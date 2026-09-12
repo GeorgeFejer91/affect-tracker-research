@@ -4558,3 +4558,17 @@ by this build-option change.
 - S3 verified the four caller guards and the regression read-only after the
   fix, with no remaining concrete finding in that bounded review. Syntax and
   diff checks pass; there are no HTML/CSS or layout changes in this pass.
+# Runner build feature wrapper — 2026-09-12
+
+Root allocates a narrow RR build seam, Backend Verification, isolated
+`codex/segment-runner-gstreamer-build` from current Main `2fe9da8`.
+Deliverable: `build-runner-desktop.js` accepts explicit `--native-gstreamer`,
+consumes that wrapper flag and selects exact Cargo features
+`tauri/custom-protocol,native-gstreamer`; default, run and release behavior stay
+unchanged. Focused checks inspect generated commands with spawning stubbed.
+No actual build, runtime staging, application/lifecycle or qualification changes.
+Syntax check and two focused tests pass: all eight run/release/native combinations
+produce the expected command sequence and exact Cargo features, the wrapper flag
+never reaches Cargo, and unsupported arguments remain rejected. Use
+`node scripts/build-runner-desktop.js --native-gstreamer` when an explicitly
+native-feature build is allocated; this option grants no playback qualification.
