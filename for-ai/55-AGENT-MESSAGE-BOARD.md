@@ -4581,3 +4581,18 @@ by this build-option change.
   future/live equality, GUI compiler equality, actual P1 rebind, cancellation,
   stale owner/dependency, competing candidates and single-use projection.
   No GUI launch, build, native write or end-to-end CLI qualification claimed.
+
+### S1 / P3 prepared workspace reset — 2026-09-12
+
+- Main follow-up on `aa43e9e`: `prepareReset({isCurrent,signal})` returns guarded
+  single-use `isCurrent/commit/afterCommit`. Preparation changes no editor state
+  or projection. Both this commit and existing GUI reset use one `installReset`
+  authority; it clears P3's old workspace bindings/design only, not P1 declarations.
+  Pending authoring projection is cleared so it cannot reannounce the old draft.
+- Main composes commit after its bridge/app workspace switch, then invokes
+  projection. Caller/abort, editor/catalogue/restore generations and disposal
+  fence stale commits; delayed projection does not overwrite newer state.
+  Existing reset can still supersede busy old work. No shared/app/native edits.
+- Editor plus P3 authoring suites: 61 passing checks, including exact GUI reset
+  state parity, read-only preparation/state-only commit, one projection and
+  stale/abort rejection. No build, GUI launch or native workflow claim.

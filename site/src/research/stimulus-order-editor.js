@@ -44,6 +44,12 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       dependencyRevisions: catalogue ? [{ segment: "P1", revision: catalogue.revision }]
         : unresolvedP1Revision !== null ? [{ segment: "P1", revision: unresolvedP1Revision }] : [] };
   }
+  function installReset(nextDraft, nextGeneration) {
+    generation = nextGeneration; catalogueOperation++; producerIdentity = null; producerRevision = null;
+    unresolvedP1Revision = null; library = null; catalogue = null; lastCatalogue = null;
+    catalogueExpected = false; confirmed = null; legacy = null; draft = nextDraft; edited = false;
+    authoringPublicationPending = false;
+  }
   function restoreBinding(receipt, next) {
     const binding = checkCatalogue(normalizeVariantCatalogue(Object.hasOwn(receipt, "catalogue") ? receipt.catalogue : catalogue));
     if (binding || catalogueExpected || Object.hasOwn(receipt, "catalogue")) validateVariantCatalogueLibrary(binding, next);
@@ -442,7 +448,36 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       } catch (error) { if (operation === catalogueOperation) report(error.message, true); throw error; }
     },
     getSnapshot: snapshot,
-    reset() { generation++; catalogueOperation++; producerIdentity = null; producerRevision = null; unresolvedP1Revision = null; library = null; catalogue = null; lastCatalogue = null; catalogueExpected = false; confirmed = null; legacy = null; draft = createVariantDraft(); edited = false; render(); notify(); },
+    prepareReset({ isCurrent = () => true, signal } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("Reset requires a current-operation guard.");
+      const token = generation, scan = catalogueOperation, restoreToken = restoreOperation;
+      const nextGeneration = generation + 1, nextDraft = createVariantDraft();
+      let committed = false, projected = false, stale = false;
+      const current = () => {
+        try {
+          if (committed || destroyed || token !== generation || scan !== catalogueOperation
+            || restoreToken !== restoreOperation || signal?.aborted || isCurrent() !== true) stale = true;
+        } catch { stale = true; }
+        return !stale;
+      };
+      const check = () => { if (!current()) throw new Error("The variant editor changed before workspace reset."); };
+      check();
+      if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
+      return Object.freeze({ isCurrent: current,
+        commit() {
+          check();
+          installReset(nextDraft, nextGeneration); committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new Error("Commit the workspace reset before publishing its projection.");
+          if (projected) return;
+          projected = true;
+          if (destroyed || generation !== nextGeneration) return;
+          render(); notify();
+        },
+      });
+    },
+    reset() { installReset(createVariantDraft(), generation + 1); render(); notify(); },
     get document() { return confirmed ? structuredClone(confirmed) : null; },
     get active() { return edited || Boolean(confirmed) || Boolean(legacy); },
     get pending() { return snapshot().pending; },

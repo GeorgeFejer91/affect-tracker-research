@@ -120,6 +120,39 @@ test("prepared confirmation preserves the existing GUI compiler and real P1 sour
   rebound.commit(); assert.deepEqual(ui.editor.getSnapshot(), rebound.snapshot);
 });
 
+test("prepared reset matches GUI reset state without rendering until one projection", async () => {
+  const ui = await confirmationFixture(), gui = await confirmationFixture();
+  const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot(), view = projection(ui);
+  const candidate = ui.editor.prepareReset();
+  assert.deepEqual(ui.editor.captureAuthoringDraft(), before); assert.deepEqual(ui.editor.getSnapshot(), snapshot);
+  assert.deepEqual(projection(ui), view); assert.throws(() => candidate.afterCommit(), /Commit/);
+  candidate.commit(); gui.editor.reset();
+  const actual = ui.editor.captureAuthoringDraft(), expected = gui.editor.captureAuthoringDraft();
+  assert.deepEqual(actual, expected); assert.deepEqual(ui.editor.getSnapshot(), gui.editor.getSnapshot());
+  assert.deepEqual(projection(ui), view); assert.equal(candidate.isCurrent(), false);
+  assert.throws(() => candidate.commit(), /changed/);
+  candidate.afterCommit(); assert.equal(ui.renders, view.renders + 1); assert.equal(ui.notifications, view.notifications + 1);
+  const projected = projection(ui); candidate.afterCommit(); assert.deepEqual(projection(ui), projected);
+});
+
+test("prepared reset rejects stale or aborted candidates and suppresses delayed projection", async () => {
+  for (const mode of ["edit", "dependency", "abort", "caller", "destroy"]) {
+    const ui = await confirmationFixture(), controller = new AbortController(); let current = true;
+    const candidate = ui.editor.prepareReset({ signal: controller.signal, isCurrent: () => current });
+    if (mode === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (mode === "dependency") ui.editor.setCatalogue(null);
+    if (mode === "abort") controller.abort();
+    if (mode === "caller") current = false;
+    if (mode === "destroy") ui.editor.destroy();
+    const before = ui.editor.captureAuthoringDraft(), view = projection(ui);
+    assert.throws(() => candidate.commit(), /changed/);
+    assert.deepEqual(ui.editor.captureAuthoringDraft(), before); assert.deepEqual(projection(ui), view);
+  }
+  const ui = await confirmationFixture(), candidate = ui.editor.prepareReset();
+  candidate.commit(); ui.editor.reset(); const view = projection(ui);
+  candidate.afterCommit(); assert.deepEqual(projection(ui), view);
+});
+
 test("typing invalidates the saved version immediately and cannot save stale cell values", async () => {
   let writes = 0;
   const ui = fixture(async (_operation, { document }) => { writes++; return { library, design: document }; });
