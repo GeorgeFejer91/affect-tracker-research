@@ -119,6 +119,61 @@
   status. Final integration identity, CLI lifecycle/coverage and installed/OS
   picker qualification remain integration-owned; no foreground app was opened.
 
+### 20260912-cli-p4-authoring-adapter
+
+- Owner S4, **CLI-P4**, Backend Verification, explicitly allocated by Chat
+  Orchestrator. Baseline Planner remains complete. Isolated branch
+  `codex/segment-p4-authoring-cli`, base `460f51600298db910a52b25f25e8268dd722569b`,
+  worktree `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-p4-authoring-cli`.
+- Read the frozen shared command interface in Main's Planner CLI worktree and
+  every changed for-ai document in lexical order against the fully read fa64e8d
+  snapshot; unchanged documents retain that complete reading. The companion
+  amendment supersedes historical two-mode/blanket Runner-deferral statements.
+- Baseline P4 had one editor/state owner, strict profile/conversion, complete live
+  P1/P5 geometry and asynchronous restore/preparation; no CLI owner adapter or
+  detached prevalidated synchronous draft commit existed.
+- Deliverable: `planner-authoring-p4.js`, typed ordered field/operation staging,
+  honest readback/validation, explicit owner unit conversion and read-only derived
+  geometry. Minimal P4 editor/state/dependency seams only; no alternate compiler,
+  saved schema, shared app/gateway, native, network or Runner changes.
+- Main owns registration/bootstrap and session-wide edit/dependency invalidation.
+  Root owns CLI capability checklist60/68. Before mutation, 33 existing focused
+  P4 contribution/live/state checks passed on the exact baseline.
+- Evidence now: every writable group read/edit/readback, both methods, fixed-frame
+  unit conversion, incomplete drafts, invalid/unknown/stale/cancelled operations,
+  no staging mutation and dependency drift. Combined native CLI/mock experiment
+  and final session atomicity remain Main's integration evidence.
+- Root subsequently allocated E2E-UI mapping and activated Runner correspondence
+  under `2e6c460`/69. P4 maps all 15 fields and both operations to existing controls
+  and exact JSON paths in `docs/planner-authoring-p4.md`; paired real-controller
+  CLI/UI edits produce the same accepted profile. This pass does not defer the
+  newly allocated Runner goal or implement another owner's consumer.
+- Frozen shared helpers/docs/tests from Main `2310efc` were collected without
+  modifications as `f72d412`. Main accepted the P4 editor injection and a pure
+  staged dependency guard, preflighted before all synchronous owner commits.
+  The required additive `afterCommit()` contract from Main `0138516` was collected
+  unchanged as `e37951b`. All owner state installs before any observer/render work;
+  a notification failure reports an applied/incomplete batch after the revision.
+- **Ready and frozen:** owned implementation `2a99ce8221b339e49b70b5c7d3b231ac62cf3256`
+  contains the adapter, three minimal owner seams, 13 tests and integration/UI/JSON
+  mapping. Main should collect this owned commit on its existing shared foundation,
+  not duplicate the two dependency collection commits. Register exactly
+  `createPlannerAuthoringP4({editor: screenLayoutEditor})`; retain the shared
+  preflight-all, commit-all, safe-afterCommit sequence and publication lock.
+- Final checks: **795/795 Node tests**, including **13 P4 CLI** and **13 shared
+  session** cases; desktop boundary **11 files** and Pages boundary **239 files**.
+  Diff checks pass. Logs and hashes are frozen in
+  `D:/GitHub/.affect-preview-checks/p4-cli-20260912/2a99ce8/receipt.json`.
+  Existing Vite chunk-size advisory remains. Dependencies were reused offline
+  with zero downloads; no Rust changes or fresh native qualification claim.
+- Evidence uses the actual P4 UI controller in minimal DOM doubles and the real
+  shared command session; all 15 settings have paired UI/readback/accepted-JSON
+  evidence, including fresh-editor authoring, both reference methods and units,
+  ordered operations, dependency/cancellation fences and post-commit failure.
+  Main/root retain production hidden CLI, rendered UI and real-media/full-recipe
+  proof. Runner retains its active E2E correspondence allocation. Owned source
+  writers are stopped pending integration; no shared app or Runner files changed.
+
 ### 20260912-p3-native-catalogue-export-command
 
 - Status: **ready**, new command and four focused workflow tests pass; only this
