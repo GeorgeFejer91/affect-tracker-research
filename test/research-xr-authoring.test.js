@@ -15,6 +15,7 @@ import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
 import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url)));
+const feedbackV2 = JSON.parse(await readFile(new URL("fixtures/research-feedback-settings-v2.json", import.meta.url)));
 const profile = createDefaultXrLayoutProfile();
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const snapshot = (contribution, revision) => ({ enabled: true, revision, pending: false, contribution, dependencyRevisions: [] });
@@ -118,6 +119,25 @@ test("changes with a mistakenly reused owner revision still withdraw accepted P6
   await h.authoring.refresh();
   assert.equal(h.state.getSnapshot().contribution, null);
   assert.equal(h.writes.at(-1).feedbackRevision, 20);
+  h.authoring.destroy();
+});
+
+test("successor response and halo edits invalidate live XR using the complete P5 payload", async () => {
+  const h = harness(), value = dependencies(); value.P5.contribution = structuredClone(feedbackV2);
+  h.publish(value); await h.authoring.refresh(); h.state.setEnabled(true); await h.authoring.prepare();
+  const previous = h.writes.at(-1).feedbackEnvelope.configurationKey;
+  const changed = structuredClone(value); changed.P5.revision += 1;
+  changed.P5.contribution.response.repeatDelayMs += 100;
+  changed.P5.contribution.presentation.halo.widthPercent += 40;
+  h.publish(changed); assert.equal(h.state.getSnapshot().pending, true);
+  await h.authoring.refresh();
+  assert.equal(h.writes.at(-1).feedbackEnvelope.algorithmVersion, "feedback-envelope-v2");
+  assert.notEqual(h.writes.at(-1).feedbackEnvelope.configurationKey, previous);
+  assert.equal((await h.authoring.prepare()).dependencyRevisions[1].revision, changed.P5.revision);
+  const invalid = structuredClone(changed); delete invalid.P5.contribution.response;
+  h.publish(invalid); await h.authoring.refresh();
+  await assert.rejects(h.authoring.prepare());
+  assert.equal(h.state.getSnapshot().contribution, null);
   h.authoring.destroy();
 });
 

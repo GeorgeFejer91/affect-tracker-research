@@ -1,7 +1,7 @@
 import { validateWorkspaceContributionV1 } from "./workspace-contribution.js";
 import { projectVideoDisplayGeometryV1 } from "./video-catalogue-contribution.js";
-import { validateFeedbackContributionV1 } from "./feedback-contribution.js";
-import { resolveFeedbackEnvelopeV1 } from "./feedback-envelope.js";
+import { validateFeedbackContribution } from "./feedback-settings.js";
+import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
 import { XR_TARGET_REQUIREMENTS, XrLayoutError, resolveXrCatalogueV1, validateXrLayoutProfileV1 } from "./xr-layout.js";
 
@@ -42,7 +42,7 @@ export async function resolveSavedXrLayoutContribution(profile, {
 }) {
   const validated = checkedProfile(profile, selectedTarget);
   const savedWorkspace = structuredClone(workspaceContribution);
-  const savedFeedback = validateFeedbackContributionV1(feedbackContribution);
+  const savedFeedback = validateFeedbackContribution(feedbackContribution);
   const workspace = await validateWorkspaceContributionV1(savedWorkspace);
   const projection = await projectVideoDisplayGeometryV1(workspace.videoCatalogue);
   if (projection.videos.length === 0) {
@@ -50,6 +50,6 @@ export async function resolveSavedXrLayoutContribution(profile, {
   }
   return resolveXrLayoutContribution(validated, {
     catalogueGeometry: projection.videos,
-    feedbackEnvelope: resolveFeedbackEnvelopeV1(savedFeedback, XR_FEEDBACK_VIEWPORT_CSS_PX),
+    feedbackEnvelope: resolveFeedbackEnvelope(savedFeedback, XR_FEEDBACK_VIEWPORT_CSS_PX),
   }, selectedTarget);
 }
