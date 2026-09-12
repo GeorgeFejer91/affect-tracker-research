@@ -5467,6 +5467,7 @@ function bindResearchInteractions(root, { surface }) {
     validateXrLayoutContribution(profile, options) { return xrLayoutAuthoring.validate(profile, options); },
     restoreXrLayoutContribution(profile, options) { return xrLayoutAuthoring.restore(profile, options); },
     restoreXrLayoutDraft(profile, options) { return xrLayoutAuthoring.restoreDraft(profile, options); },
+    restoreXrLayoutSelection(selection, options) { return xrLayoutAuthoring.restoreSelection(selection, options); },
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
