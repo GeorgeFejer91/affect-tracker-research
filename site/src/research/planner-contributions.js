@@ -252,6 +252,54 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
     collect(snapshot);
     return { dependencies, selectedTarget };
   }
+  async function prepareAcceptance(segment, { selectedTarget = null, isCurrent = () => true, signal } = {}) {
+    segmentId(segment);
+    const owner = owners.get(segment);
+    if (!owner) throw new TypeError(`${segment}: its contribution owner is unavailable.`);
+    const before = read({ format: "contributions" });
+    const problem = before.issues.find((entry) => entry.segment === segment);
+    if (problem) throw new TypeError(problem.message);
+    const snapshot = before.snapshots.find((entry) => entry.segment === segment);
+    const context = validationContext(before, snapshot, selectedTarget);
+    const identity = identityOf(snapshot);
+    const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf({ segment: id, ...value })]);
+    const epochs = [[segment, owner.epoch], ...dependencies.map(([id]) => [id, owners.get(id).epoch])];
+    const generation = acceptanceGeneration;
+    let committed = false, projected = false;
+    const current = () => {
+      if (committed || signal?.aborted || isCurrent() !== true) return false;
+      const after = read({ format: "contributions" });
+      const latest = after.snapshots.find((entry) => entry.segment === segment);
+      return acceptanceGeneration === generation && owners.get(segment) === owner && !!latest
+        && !epochs.some(([id, epoch]) => owners.get(id)?.epoch !== epoch)
+        && identityOf(latest) === identity && !after.issues.some((entry) => entry.segment === segment)
+        && !dependencies.some(([id, value]) => {
+          const dependency = after.snapshots.find((entry) => entry.segment === id);
+          return !dependency || identityOf(dependency) !== value;
+        });
+    };
+    const check = () => { if (!current()) throw new TypeError(`${segment}: its contribution changed during confirmation.`); };
+    check();
+    if (snapshot.enabled) {
+      if (typeof owner.validateContribution !== "function") throw new TypeError(`${segment}: its domain validator is unavailable.`);
+      if (await owner.validateContribution(structuredClone(snapshot.contribution), context) !== true) throw new TypeError(`${segment}: its contribution validation failed.`);
+    }
+    check();
+    return Object.freeze({
+      isCurrent() { try { return current(); } catch { return false; } },
+      commit() {
+        if (committed) return structuredClone(snapshot);
+        check();
+        const receipt = { owner, snapshot: structuredClone(snapshot), identity, dependencies, stale: false };
+        advanceAcceptance(); accepted.set(segment, receipt); committed = true;
+        return structuredClone(snapshot);
+      },
+      afterCommit() {
+        if (!committed) throw new TypeError("Confirm state before projecting acceptance.");
+        if (!projected) { projected = true; notify(); }
+      },
+    });
+  }
   return Object.freeze({
     register(segment, getSnapshot, { validatePackageV1 = null, validateContribution = null } = {}) {
       segmentId(segment);
@@ -269,38 +317,14 @@ export function createPlannerContributionRegistry({ onChange = () => {} } = {}) 
     read,
     readAccepted,
     getAcceptanceGeneration() { return acceptanceGeneration; },
+    prepareAcceptance,
     async accept(segment, { selectedTarget = null } = {}) {
       segmentId(segment);
-      const owner = owners.get(segment);
-      if (!owner) throw new TypeError(`${segment}: its contribution owner is unavailable.`);
-      const before = read({ format: "contributions" });
-      const problem = before.issues.find((entry) => entry.segment === segment);
-      if (problem) throw new TypeError(problem.message);
-      const snapshot = before.snapshots.find((entry) => entry.segment === segment);
-      const context = validationContext(before, snapshot, selectedTarget);
-      const identity = identityOf(snapshot);
-      const dependencies = Object.entries(context.dependencies).map(([id, value]) => [id, identityOf({ segment: id, ...value })]);
-      const epochs = [[segment, owner.epoch], ...dependencies.map(([id]) => [id, owners.get(id).epoch])];
       const sequence = ++acceptanceSequence;
       accepting.set(segment, sequence);
       try {
-        if (snapshot.enabled) {
-          if (typeof owner.validateContribution !== "function") throw new TypeError(`${segment}: its domain validator is unavailable.`);
-          if (await owner.validateContribution(structuredClone(snapshot.contribution), context) !== true) throw new TypeError(`${segment}: its contribution validation failed.`);
-        }
-        const after = read({ format: "contributions" });
-        const latest = after.snapshots.find((entry) => entry.segment === segment);
-        if (accepting.get(segment) !== sequence || owners.get(segment) !== owner || !latest
-          || epochs.some(([id, epoch]) => owners.get(id)?.epoch !== epoch)
-          || identityOf(latest) !== identity || after.issues.some((entry) => entry.segment === segment)
-          || dependencies.some(([id, value]) => {
-            const dependency = after.snapshots.find((entry) => entry.segment === id);
-            return !dependency || identityOf(dependency) !== value;
-          })) throw new TypeError(`${segment}: its contribution changed during confirmation.`);
-        advanceAcceptance();
-        accepted.set(segment, { owner, snapshot: structuredClone(snapshot), identity, dependencies, stale: false });
-        notify();
-        return structuredClone(snapshot);
+        const prepared = await prepareAcceptance(segment, { selectedTarget, isCurrent: () => accepting.get(segment) === sequence });
+        const result = prepared.commit(); prepared.afterCommit(); return result;
       } finally { if (accepting.get(segment) === sequence) accepting.delete(segment); }
     },
     clearAcceptance({ notify: shouldNotify = true } = {}) {

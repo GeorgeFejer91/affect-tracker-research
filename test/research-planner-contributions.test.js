@@ -7,6 +7,38 @@ const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: fal
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
 const validated = { validateContribution: async () => true };
 
+test("prepared confirmation validates without accepting and separates state from projection", async () => {
+  let notifications = 0;
+  const registry = createPlannerContributionRegistry({ onChange: () => notifications++ });
+  registry.register("P2", () => snapshot(), validated);
+  const generation = registry.getAcceptanceGeneration(), before = notifications;
+  const prepared = await registry.prepareAcceptance("P2");
+  assert.equal(registry.getAcceptanceGeneration(), generation);
+  assert.equal(notifications, before);
+  assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }));
+  const first = prepared.commit();
+  assert.equal(typeof first?.then, "undefined"); assert.equal(notifications, before);
+  assert.equal(registry.getAcceptanceGeneration(), generation + 1);
+  assert.deepEqual(prepared.commit(), first);
+  assert.equal(registry.getAcceptanceGeneration(), generation + 1);
+  prepared.afterCommit(); prepared.afterCommit(); assert.equal(notifications, before + 1);
+  assert.equal(registry.assertAccepted({ requiredSegments: ["P2"] }).snapshots.length, 1);
+});
+
+test("prepared confirmation refuses canceled, cleared and changed candidates before commit", async () => {
+  for (const change of ["cancel", "clear", "edit"]) {
+    let value = snapshot();
+    const controller = new AbortController(), registry = createPlannerContributionRegistry();
+    registry.register("P2", () => value, validated);
+    const prepared = await registry.prepareAcceptance("P2", { signal: controller.signal });
+    if (change === "cancel") controller.abort();
+    else if (change === "clear") registry.clearAcceptance();
+    else value = snapshot({ revision: 1, contribution: { accepted: "different" } });
+    assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit());
+    assert.throws(() => registry.assertAccepted({ requiredSegments: ["P2"] }));
+  }
+});
+
 test("acceptance clear can defer projection until the host publication completes", async () => {
   let notifications = 0;
   const registry = createPlannerContributionRegistry({ onChange: () => notifications++ });

@@ -97,6 +97,16 @@ while the original request is in flight. Unknown outcomes require reconciliation
 
 ## Explicit recipe reopen sequence
 
+For section confirmations the contribution registry exposes
+`prepareAcceptance(segment, {selectedTarget, isCurrent, signal})`. It performs
+the existing async domain validation without accepting or notifying. Its returned
+`isCurrent`, synchronous idempotent `commit`, and once-only `afterCommit` preserve
+owner/dependency/clear/cancellation fences. Normal `accept` reuses the same
+preparation, so CLI composition does not implement a second confirmation validator.
+Registry reads still observe stale contributions normally; preparation does not
+promise to conceal already-invalid acceptance. Final P5 capture uses this same
+primitive but remains a save step, not an independent UI confirmation.
+
 Only P7's `openRecipe` descriptor may opt into `publication: "sequence"`.
 Its dispatch receives `publishStep(label, install, afterCommit?)` and
 `finish(result)` instead of `publish`. The host exports the frozen order as

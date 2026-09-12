@@ -1,5 +1,15 @@
 # Agent message board
 
+### 20260912-main-prepared-confirmation
+
+- Main split registry acceptance into async prepareAcceptance and synchronous
+  commit/afterCommit. Existing accept reuses the same validator and guards;
+  no second acceptance store or automatic confirmation is introduced.
+- Twenty-three registry checks pass, including no early acceptance/notification,
+  idempotent commit, once-only projection, cancel/clear/edit fences and legacy
+  dependency/revision behavior. CLI confirmation/final-P5 composition remains
+  pending; docs/planner-authoring-consequences.md records the exact API.
+
 ### 20260912-main-master-v2-compiler
 
 - Main's app save callback now routes explicitly verified typed canonical JSON
