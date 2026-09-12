@@ -24,6 +24,7 @@ import {
 } from "../site/src/research/video-catalogue-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url);
+const utf16FixtureUrl = new URL("./fixtures/research-video-catalogue-utf16-order-v2.json", import.meta.url);
 
 function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annotationId = "folder_video" } = {}) {
   return {
@@ -81,6 +82,20 @@ test("P1 catalogue identity, duration and oriented display geometry are canonica
 test("shared P1 fixture remains an exact canonical consumer boundary", async () => {
   const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
   assert.deepEqual(await validateVideoCatalogueContributionV1(fixture), fixture);
+  const historicalPath = entry({ path: "stimuli/ leading/clip.mp4", annotationId: "historical" });
+  assert.equal(
+    (await createVideoCatalogueContributionV1({ revision: 1, entries: [historicalPath] }))
+      .entries[0].sourceRelativePath,
+    "stimuli/ leading/clip.mp4",
+  );
+});
+
+test("v2 catalogue ordering follows JavaScript UTF-16 code units across runtimes", async () => {
+  const fixture = JSON.parse(await readFile(utf16FixtureUrl, "utf8"));
+  const validated = await validateVideoCatalogueContribution(fixture);
+  assert.deepEqual(validated.entries.map(({ annotationId }) => annotationId), [
+    "😀_clip.mp4", "Ａ_clip.mp4",
+  ]);
 });
 
 test("native GstPlay geometry retains explicit orientation and source pixel aspect metadata", async () => {
@@ -119,6 +134,10 @@ test("v2 path identities are NFC, reversible and distinguish delimiter-like path
   assert.throws(() => videoRelativePathFromAnnotationIdV1("bad%2Fescape.mp4"), /noncanonical escape/u);
   assert.throws(() => videoAnnotationIdFromRelativePathV1("stimuli/e\u0301/clip.mp4"), /NFC/u);
   assert.throws(() => videoAnnotationIdFromRelativePathV1("stimuli/ clip.mp4"), /beneath stimuli/u);
+  const longPath = `stimuli/${"long-folder-name/".repeat(12)}${"descriptive-file-name-".repeat(8)}.mp4`;
+  const longId = videoAnnotationIdFromRelativePathV1(longPath);
+  assert.ok(longId.length > 120);
+  assert.equal(videoRelativePathFromAnnotationIdV1(longId), longPath);
 });
 
 test("v2 keeps byte-identical videos at distinct locations while sharing content identity", async () => {
@@ -140,6 +159,7 @@ test("v2 keeps byte-identical videos at distinct locations while sharing content
     { assetId: first.assetId, displayWidth: 1_920, displayHeight: 1_080 },
   ]);
   assert.deepEqual(await validateVideoCatalogueContribution(catalogue), catalogue);
+  await assert.rejects(createVideoCatalogueContribution({ revision: 1, entries: [] }), /non-empty/u);
 });
 
 test("current workspace projection ignores editable display text and derives location identity", () => {
