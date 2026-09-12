@@ -20,6 +20,25 @@
   and supplies a frozen source for a final rerun; no mutating build is a receipt.
 - Only new P4 qualification runner/fixture and owned evidence/documentation hunks
   are being written. Existing user windows, focus and applications stay untouched.
+- **Owner rendered evidence ready:** frozen harness
+  `ead567ea303af239333a45fc0d26224858f28c61` passes **810 checks in six scenes
+  each** in Chrome152 and Edge153 on clean source. All 12 PNGs inspected;
+  actual 880/417px panes contain all15fields across overview/calibration/placement.
+  Both methods, both units, both operations and all17 mapping rows reproduce
+  identical normalized drafts, derived projections and strict exported P4 bytes.
+- Exact receipts, source/image/profile hashes and independent visual inspection:
+  `D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/`;
+  `final-owner-{chrome,edge}-ead567e` and `visual-review-ead567e.json`.
+  `docs/planner-p4-rendered-cli-evidence.md` states methods and exact remaining
+  native stdin/media/master comparisons. Thirteen P4 baseline tests and final
+  syntax/diff checks pass. No production fix or broad native build was needed.
+- Main's final combined registration/source rerun is pending. Harness accepts a
+  separate clean source root and `--require-integrated`; this requires existing
+  app P4 registration and uses that same session/controller. Current owner
+  receipts explicitly use a separate real DOM-backed P4 comparison owner because
+  base84264ad registered onlyP7; the actual UI path is the full rendered Planner.
+  Main has the source-bound rerun instructions. Do not close global E2E-UI or
+  infer actual native CLI/import/Runner success from these synthetic-media scenes.
 
 ### 20260912-tas-input-resolution — E2E-RECIPE/P2
 

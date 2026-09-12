@@ -1,5 +1,29 @@
 # Research v1 roadmap
 
+## P4 rendered CLI/UI correspondence — 2026-09-12
+
+The allocated E2E-UI/P4 evidence follow-up is frozen at
+`ead567ea303af239333a45fc0d26224858f28c61` on
+`codex/segment-p4-rendered-cli-parity`, base Main84264ad. Two new qualification
+files exercise the actual rendered Planner without app/adapter changes. Chrome152
+and Edge153 each pass **810 checks over six wide/narrow scenes** on clean source.
+All 12 images were inspected. All15fields/2operations have actual control,
+normalized readback, derived geometry/source and strict exported-P4-byte parity;
+both reference/unit modes, invalid/stale rejection and P1/P5 invalidation/recovery
+are covered. Panes are880/417px, with normal vertical scroll and no horizontal
+overflow. Details and exact remaining comparisons are in
+[the rendered evidence ledger](../docs/planner-p4-rendered-cli-evidence.md).
+
+Receipts are in
+`D:/GitHub/.affect-preview-checks/p4-rendered-cli-20260912/final-owner-{chrome,edge}-ead567e/`,
+with independent `visual-review-ead567e.json` in the parent. They explicitly use
+synthetic P1 geometry and a real DOM-backed typed P4 comparison owner; base84264ad
+has no production P4 registry installation. Main received the frozen harness for
+a required `--require-integrated` rerun against its final clean combined source.
+That same-app-session receipt, native stdin/media/full-master comparisons and
+Runner evidence remain pending with their owners. No new native qualification
+or global E2E-UI completion is inferred from these owner renderer checks.
+
 ## P4 CLI authoring and UI mapping — 2026-09-12
 
 Owner-ready **CLI-P4** Backend Verification and owned **E2E-UI** mapping are at
