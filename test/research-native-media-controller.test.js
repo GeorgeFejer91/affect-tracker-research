@@ -17,6 +17,24 @@ const WORKSPACE = "33333333-3333-4333-8333-333333333333";
 const FILE = `wf-${"a".repeat(24)}`;
 const PACKAGE_FILE = `pa-${"c".repeat(64)}`;
 
+test("native serialized Planner summary v2 uses a safe declared location independently of opaque ID", () => {
+  // Rust serializes the actual workspace producer into this same fixture shape,
+  // normalizing only the opaque test ID; no native ID recipe is copied into JS.
+  const summary = JSON.parse(readFileSync(new URL("./fixtures/native-decoded-summary-v2.json", import.meta.url)));
+  assert.deepEqual(validateNativeDecodedStimulusSummaryV2(summary), summary);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1(summary), /malformed/u);
+  for (const relativePath of ["stimuli/group/clip.mp4", "stimuli/grüppe/clip.mp4"]) {
+    assert.equal(validateNativeDecodedStimulusSummaryV2({ ...summary, source: { ...summary.source, relativePath } }).source.relativePath, relativePath);
+  }
+  for (const relativePath of ["../clip.mp4", "stimuli/../clip.mp4", "stimuli//clip.mp4", "stimuli/./clip.mp4",
+    "assets/stimuli/clip.mp4", "C:/clip.mp4", "stimuli/group\\clip.mp4", "stimuli/group /clip.mp4",
+    "stimuli/group./clip.mp4", "stimuli/clip.mp4 ", "stimuli/gru\u0308ppe/clip.mp4", "stimuli/clip\u0000.mp4"]) {
+    assert.throws(() => validateNativeDecodedStimulusSummaryV2({ ...summary, source: { ...summary.source, relativePath } }), /malformed/u);
+  }
+  const historical = decodedSummary();
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1({ ...historical, source: { ...historical.source, relativePath: "stimuli/clip.mp4" } }), /malformed/u);
+});
+
 test("controlled summary v2 is explicit, strict and preserves the complete proof", async () => {
   const fixture = JSON.parse(readFileSync(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url)));
   const geometry = fixture.workspace.videoCatalogue.entries[0].geometry;

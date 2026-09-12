@@ -1,4 +1,4 @@
-import { validateVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { validateVideoDisplayGeometry, videoAnnotationIdFromRelativePathV1 } from "./video-catalogue-contribution.js";
 import { validateControlledVideoDisplayGeometry } from "./video-display-controlled.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -114,6 +114,9 @@ function validateNativeDecodedStimulusSummary(value, version) {
     displayGeometry = version === 2
       ? validateControlledVideoDisplayGeometry(value?.displayGeometry)
       : validateVideoDisplayGeometry(value?.displayGeometry);
+    // Planner scan IDs are opaque, independently of their declared location.
+    // Reuse P1's canonical portable-location parser; never infer a path from ID.
+    if (version === 2) videoAnnotationIdFromRelativePathV1(value?.source?.relativePath);
   } catch {
     throw new TypeError("Native decoded stimulus summary is malformed.");
   }
@@ -132,9 +135,9 @@ function validateNativeDecodedStimulusSummary(value, version) {
     || value.decodedPositionsMs.some((position, index) => index > 0 && position <= value.decodedPositionsMs[index - 1])
     || !exactKeys(value.source, SOURCE_KEYS)
     || value.source.kind !== "workspaceFile"
-    || (value.workspaceFileId.startsWith("wf-")
+    || (version === 1 && (value.workspaceFileId.startsWith("wf-")
       ? value.source.relativePath !== `stimuli/.workspace/${value.workspaceFileId}`
-      : !/^stimuli\/(?!\.workspace\/)[^\\\u0000]+$/u.test(value.source.relativePath))
+      : !/^stimuli\/(?!\.workspace\/)[^\\\u0000]+$/u.test(value.source.relativePath)))
     || value.source.mimeType !== value.mimeType
     || value.source.sha256 !== value.sha256
     || value.source.byteLength !== value.byteLength
