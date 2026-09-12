@@ -9,7 +9,6 @@ import {
   RESEARCH_MODES,
   RESEARCH_UI_EVENTS,
   SETUP_SECTIONS,
-  applySetupSectionConfirmation,
   nextOpenSetupSection,
   normalizeResearchMode,
   normalizeAttemptDisposition,
@@ -113,107 +112,49 @@ test("Setup accordion panels animate open and closed without weakening semantics
   assert.match(css, /data-motion-state="opening"\],[\s\S]*?data-motion-state="closing"\][\s\S]*?will-change:\s*grid-template-rows, opacity;/u);
 });
 
-test("every Setup section requires an explicit sequential review confirmation", async () => {
+test("section confirmations use owner acceptance; Preview and final save are not independent review clicks", async () => {
   const markup = renderResearchUiMarkup();
   const source = await read("site/src/research/app.js");
-  const css = await read("site/research.css");
-
-  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/class="setup-section-confirm-button"/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/data-reviewed="false"/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/data-review-state="pending"/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/data-section-review-status="[^"]+"/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/data-section-review-check="[^"]+" aria-hidden="true" hidden>✓<\/span>/gu) ?? []).length, expectedSections.length);
-  assert.equal((markup.match(/data-section-review-label="[^"]+">Not reviewed<\/span>/gu) ?? []).length, expectedSections.length);
-  assert.ok(markup.includes(`>0 of ${SETUP_SECTIONS.length} reviewed · 0 ready</output>`));
-  assert.match(markup, /data-confirm-section="review"[\s\S]*?>Confirm review<\/button>/u);
-  for (const { id } of SETUP_SECTIONS) {
-    const buttonTag = markup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
-    assert.ok(buttonTag, `${id} must expose its own confirmation button`);
-    assert.match(buttonTag, /\btype="button"/u);
-    assert.match(buttonTag, new RegExp(`aria-describedby="setup-confirmation-status-${id}"`, "u"));
-    assert.match(markup, new RegExp(`data-section-review-check="${id}"`, "u"));
-    assert.match(markup, new RegExp(`data-section-review-label="${id}"`, "u"));
+  const confirmable = ["workspace", "questionnaires", "stimuli", "layout", "xr"];
+  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, 6);
+  assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 5);
+  assert.equal((markup.match(/id="package-generate"/gu) ?? []).length, 1);
+  assert.ok(markup.includes("0 of 5 sections confirmed"));
+  assert.match(markup, /id="package-generate"[\s\S]*?>Save final JSON…<\/button>/u);
+  assert.doesNotMatch(markup, /data-confirm-section="(?:feedback|review)"/u);
+  assert.doesNotMatch(markup, /data-section-review-check="feedback"/u);
+  for (const id of confirmable) {
+    const tag = markup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
+    assert.ok(tag, id);
+    assert.match(tag, /type="button"/u);
+    assert.ok(tag.includes(`aria-describedby="setup-confirmation-status-${id}"`));
   }
-
-  let reviewedSectionIds = [];
-  for (const [index, section] of SETUP_SECTIONS.entries()) {
-    const transition = applySetupSectionConfirmation(reviewedSectionIds, section.id);
-    assert.deepEqual(
-      transition.reviewedSectionIds,
-      SETUP_SECTIONS.slice(0, index + 1).map(({ id }) => id),
-    );
-    assert.equal(transition.nextSectionId, SETUP_SECTIONS[index + 1]?.id ?? null);
-    const repeated = applySetupSectionConfirmation(transition.reviewedSectionIds, section.id);
-    assert.deepEqual(repeated.reviewedSectionIds, transition.reviewedSectionIds);
-    reviewedSectionIds = transition.reviewedSectionIds;
-  }
-  assert.deepEqual(
-    applySetupSectionConfirmation(["feedback"], "workspace").reviewedSectionIds,
-    ["workspace", "feedback"],
-  );
-  const jumpedToReview = applySetupSectionConfirmation([], "review");
-  assert.deepEqual(jumpedToReview.reviewedSectionIds, ["review"]);
-  assert.equal(jumpedToReview.nextSectionId, null);
-  assert.throws(() => applySetupSectionConfirmation([], "unknown"), /Unknown Setup section confirmation/u);
-
-  assert.match(source, /const reviewedSetupSections = new Set\(\);/u);
-  assert.match(source, /checkmark\.hidden = !reviewed/u);
-  assert.match(source, /reviewLabel\.textContent = reviewed \? "Reviewed" : "Not reviewed"/u);
-  assert.match(source, /button\.disabled = reviewed/u);
-  assert.match(source, /button\.dataset\.reviewState = reviewed \? "reviewed" : "pending"/u);
-  assert.doesNotMatch(source, /Confirm again/u);
+  assert.match(source, /await setupConfirmationFlow\.confirm\(sectionId\)/u);
+  assert.match(source, /if \(transition\.status !== "confirmed"\) return/u);
+  assert.match(source, /setupNavigationRevision !== navigationRevision/u);
   assert.match(source, /openSetupSection\(transition\.nextSectionId, \{ focus: true \}\)/u);
-  assert.match(source, /setup-trigger-\$\{sectionId\}[^\n]*\.focus\(\);\s*openSetupSection\(null\)/u);
-  assert.match(source, /reviewedSetupSections\.size === SETUP_SECTIONS\.length/u);
-  assert.match(source, /readySetupSectionCount = readySections;\s*renderSetupReviewState\(\);/u);
-  const preflightStart = source.indexOf("function preflightItems()");
-  const preflightEnd = source.indexOf("function renderPreflight()", preflightStart);
-  assert.ok(preflightStart >= 0 && preflightEnd > preflightStart);
-  assert.doesNotMatch(source.slice(preflightStart, preflightEnd), /reviewedSetupSections/u);
-  const requestStartStart = source.indexOf("function requestStart()");
-  const requestStartEnd = source.indexOf('root.addEventListener("click"', requestStartStart);
-  assert.ok(requestStartStart >= 0 && requestStartEnd > requestStartStart);
-  assert.doesNotMatch(source.slice(requestStartStart, requestStartEnd), /reviewedSetupSections/u);
-  const workspaceReadyStart = source.indexOf("root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady");
-  const workspaceReadyEnd = source.indexOf('root.querySelectorAll("[data-open-section]")', workspaceReadyStart);
-  assert.ok(workspaceReadyStart >= 0 && workspaceReadyEnd > workspaceReadyStart);
-  assert.doesNotMatch(source.slice(workspaceReadyStart, workspaceReadyEnd), /reviewedSetupSections\.(?:add|clear|delete)/u);
-  const openSectionStart = source.indexOf("function openSetupSection(");
-  const openSectionEnd = source.indexOf("function confirmSetupSection(", openSectionStart);
-  assert.doesNotMatch(source.slice(openSectionStart, openSectionEnd), /reviewedSetupSections/u);
-
-  assert.match(css, /\.setup-section-confirmation\s*\{[\s\S]*?justify-content:\s*flex-end;/u);
-  assert.match(css, /\.section-review-status\s*\{[\s\S]*?color:\s*var\(--success\);/u);
-  assert.match(css, /\.section-review-status \[data-section-review-check\]:not\(\[hidden\]\)\s*\{[\s\S]*?border:\s*1px solid currentcolor;[\s\S]*?border-radius:\s*50%;[\s\S]*?background:\s*rgb\(117 189 143 \/ 12%\);/u);
-  assert.match(css, /\.setup-accordion-panel\[data-motion-state="open"\] \.setup-section-confirm-button\[data-review-state="pending"\]::after,[\s\S]*?animation:\s*setup-confirm-attention/u);
-  const reviewedStyleStart = css.indexOf('.setup-section-confirm-button[data-review-state="reviewed"]');
-  const reviewedStyleEnd = css.indexOf("}", reviewedStyleStart);
-  assert.ok(reviewedStyleStart >= 0 && reviewedStyleEnd > reviewedStyleStart);
-  assert.doesNotMatch(css.slice(reviewedStyleStart, reviewedStyleEnd), /animation/u);
-  assert.match(css, /@keyframes setup-confirm-attention[\s\S]*?filter:\s*blur\(1px\);[\s\S]*?opacity:\s*1;[\s\S]*?filter:\s*blur\(4px\);[\s\S]*?opacity:\s*0\.38;/u);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.setup-accordion-panel\[data-motion-state="open"\][\s\S]*?animation:\s*none !important;[\s\S]*?filter:\s*blur\(4px\);/u);
-  const reviewPanelStart = markup.indexOf('id="setup-panel-review"');
-  const reviewPanelEnd = markup.indexOf('<aside class="preview-pane"', reviewPanelStart);
-  const reviewPanel = markup.slice(reviewPanelStart, reviewPanelEnd);
-  assert.ok(reviewPanel.indexOf('data-confirm-section="review"') > reviewPanel.indexOf('class="start-bar"'));
+  assert.match(source, /save\.phase === "saved" && !packageIsStale/u);
+  assert.match(source, /setupConfirmationFlow\.destroy\(\)/u);
+  const navigation = source.slice(source.indexOf("function openSetupSection("), source.indexOf("async function confirmSetupSection("));
+  assert.doesNotMatch(navigation, /reviewedSetupSections|\.accept\(|\.confirm\(/u);
 });
 
-test("every browser and desktop review step ends with one confirmation footer", () => {
+test("both app surfaces end each accordion with one confirmation or final-save footer", () => {
   for (const surface of ["browser", "tauri"]) {
     const markup = renderResearchUiMarkup(surface);
-    for (const { id } of SETUP_SECTIONS) {
-      const start = markup.indexOf(id === "feedback" ? '<aside class="preview-pane"' : `id="setup-panel-${id}"`);
+    for (const { id } of SETUP_SECTIONS.filter(({ id }) => id !== "feedback")) {
+      const start = markup.indexOf(`id="setup-panel-${id}"`);
       const footer = markup.indexOf('class="setup-section-confirmation"', start);
-      const end = markup.indexOf(id === "feedback" ? '</aside>' : '</div></div></div>\n    </section>', footer);
+      const end = markup.indexOf('</div></div></div>\n    </section>', footer);
       assert.ok(start >= 0 && footer > start && end > footer, `${surface}/${id}: footer exists`);
       const panel = markup.slice(start, end);
-      assert.equal((panel.match(/data-confirm-section=/gu) ?? []).length, 1);
-      assert.match(panel, new RegExp(`data-confirm-section="${id}"`, "u"));
-      assert.match(panel, id === "feedback"
-        ? /<\/button>\s*<\/div>\s*<\/div>\s*<\/div>\s*$/u
-        : /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: confirmation ends panel`);
+      const action = id === "review" ? 'id="package-generate"' : `data-confirm-section="${id}"`;
+      assert.ok(panel.includes(action));
+      assert.match(panel, /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: action ends panel`);
     }
+    const preview = markup.slice(markup.indexOf('<aside class="preview-pane"'));
+    assert.doesNotMatch(preview, /data-confirm-section=/u);
+    assert.match(preview, /Live Preview settings are captured with the final JSON in Section 7/u);
   }
 });
 
@@ -328,8 +269,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /workspace\.loadExperimentPackage\(\)/u);
-  assert.match(source, /workspace\.saveExperimentPackage\(sourceText\)/u);
+  assert.match(source, /openBrowserExperimentPackage\(\)/u);
+  assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
   assert.match(source, /const catalogue = await workspace\.rescanPackageVideos\(\)/u);
   assert.match(source, /const importedPaths = await workspace\.importVideoFiles\(files\)[\s\S]*?const relativePath = `stimuli\/\$\{importedPaths\[index\]\}`/u);
@@ -708,7 +649,7 @@ test("programmatic binding, color, and overlay changes invalidate the frozen pro
   assert.match(source, /onPositionChange\(position\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function resetBindingsToPreset\(\)[\s\S]*?resetInputTest\(\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /inputBinding = structuredClone\(result\.binding\);\s*resetInputTest\(\{ notify: false \}\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
-  assert.match(source, /function applyResearchSettings\(settings, \{[\s\S]*?applyFeedbackFields\(\{ input: normalized\.input, visual: normalized\.visual, mappings: normalized\.advanced\.mappings \}\);/u);
+  assert.match(source, /function applyNormalizedResearchSettings\(normalized, \{[\s\S]*?applyFeedbackFields\(\{ input: normalized\.input, visual: normalized\.visual, mappings: normalized\.advanced\.mappings \}\);/u);
   assert.match(source, /function applyFeedbackFields\(normalized\)[\s\S]*?inputBinding = structuredClone\(normalized\.input\);[\s\S]*?resetInputTest\(\);/u);
   assert.match(source, /if \(target\.dataset\.colorReset\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function schedulePlanRefresh\(\)[\s\S]*?settingsSnapshot = null;[\s\S]*?plan = null;[\s\S]*?capabilities\.manifestReady = false;/u);

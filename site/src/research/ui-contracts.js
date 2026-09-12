@@ -103,19 +103,6 @@ export function nextOpenSetupSection(currentSectionId, requestedSectionId) {
   return requested === currentSectionId ? null : requested;
 }
 
-export function applySetupSectionConfirmation(reviewedSectionIds = [], sectionId) {
-  const sectionIndex = SETUP_SECTIONS.findIndex(({ id }) => id === sectionId);
-  if (sectionIndex < 0) throw new RangeError("Unknown Setup section confirmation.");
-  const reviewed = new Set(reviewedSectionIds);
-  reviewed.add(sectionId);
-  return Object.freeze({
-    reviewedSectionIds: Object.freeze(SETUP_SECTIONS
-      .map(({ id }) => id)
-      .filter((id) => reviewed.has(id))),
-    nextSectionId: SETUP_SECTIONS[sectionIndex + 1]?.id ?? null,
-  });
-}
-
 export function normalizeResearchMode(mode) {
   return RESEARCH_MODES.includes(mode) ? mode : "setup";
 }

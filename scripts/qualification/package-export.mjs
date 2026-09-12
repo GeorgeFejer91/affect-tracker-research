@@ -9,7 +9,7 @@ import { build } from "esbuild";
 
 const [browser, destination, width = "1366", renderState = "populated"] = process.argv.slice(2);
 assert.ok(browser && destination && /^\d{3,4}$/u.test(width), "Provide an executable, isolated output folder, and optional viewport width.");
-assert.ok(["populated", "empty", "error", "lower", "legacy", "details"].includes(renderState), "Unknown render state.");
+assert.ok(["populated", "empty", "error", "lower", "legacy", "details", "browser-save"].includes(renderState), "Unknown render state.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));

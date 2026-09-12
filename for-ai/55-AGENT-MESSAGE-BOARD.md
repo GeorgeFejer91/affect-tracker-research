@@ -85,6 +85,30 @@ file; follow the integration-owner collection procedure in the workflow.
   reopen and explicit selected-target rejection. Disabled XR must not block
   desktop. Background app/build checks only; no hardware or runtime claims.
 
+### 20260912-p7-named-file-and-owner-lifecycle
+
+- Owner **S7**, same resumed Backend Verification pass, P7-03/P7-04/P7-07.
+  Composes integration confirmation shell `ff52d54` through `b8095a6`.
+- Browser final save prepares strict canonical bytes, then offers a named file
+  picker from a separate explicit user gesture. Await write/close, read the file
+  back, strictly parse and compare exact bytes before acknowledging. Cancellation,
+  permission/write/close/read failure and stale edits cannot claim current save.
+  Open selects a file directly without requiring the fixed workspace root.
+  Neither path confers asset-root authority. Native OS picker remains unchanged.
+- UI adoption now completes all asynchronous validation before one synchronous
+  settings projection; edits during an open picker preserve the newer design.
+  Registration cleanup preserves getter descriptors, unsubscribes before producer
+  destruction, and cleans partial initialization and repeated teardown.
+- Evidence: 38 focused acceptance/confirmation/save/adapter Node checks, 30 UI and
+  modularity checks, headless Chrome 13 actual browser-mode named-file/lifecycle
+  assertions with synthetic file handles, and 32 existing native-bridge export
+  regression assertions. Evidence under sibling `affect-tracker-research-p7-evidence`
+  (`browser-named-file`, `named-save-native-regression`). No actual OS picker,
+  filesystem persistence, installed native or Edge qualification is claimed.
+- Typed successor master composition remains open, including P4 accepted geometry
+  contract/Q08 and the P1-owned coherent workspace dependency projection. This
+  checkpoint does not mark all P7 or integrated Planner complete.
+
 ### 20260912-p7-accepted-master-recipe
 
 - Owner: **S7**, P7; **open**, resumed by researcher via roadmap/integration.
@@ -110,6 +134,27 @@ file; follow the integration-owner collection procedure in the workflow.
 - Q08 layout, Q10 additional feedback and Q15 optional profile choices remain
   unapproved until answered. Existing serialized feedback only; no Runner,
   hardware, foreground interaction, deployment or research-ready claim.
+
+### 20260912-integration-confirmation-shell
+
+- Owner: **Add segment confirmation flow**, bounded integration/accordion seam,
+  Backend Verification follow-up to `20260912-integration-resume-and-acceptance`.
+  Base `4758abd`, isolated `codex/segment-integration-preview-cleanup`.
+- Confirmation now awaits P7's validated acceptance registry, never a local
+  review click. A detached presentation module handles pending/error/duplicate
+  clicks; navigation retains acceptance, edits and dependencies expire it.
+  Validation completion cannot steal navigation after the user moves elsewhere.
+- P1/P2/P3/P4/P6 have individual footer actions. Persistent P5 has none: its
+  existing serialized settings are captured by P7's final save. The single
+  `package-generate` action is at the Section 7 bottom-right footer, retaining
+  its exact handler ID and breathing edge. P7's marker projects acknowledged
+  current-revision save only; cancel/error/older-revision writes cannot mark it.
+- Evidence: 535 Node tests pass, including four orchestration/registry tests;
+  six accordion footer alignment/breathing checks pass in background Chrome.
+  No current Edge receipt (installed headless process returns empty output).
+  Owner producers and final master/named-save adapters still need collection;
+  this checkpoint does not claim the complete export path or canonical promotion.
+  No Runner/native qualification, foreground reload, push or deployment.
 
 ### 20260912-integration-resume-and-acceptance
 

@@ -24,10 +24,11 @@ await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>Offscreen 
  const rows=[];
  for (const accordion of document.querySelectorAll('[data-setup-section]')) {
   const panel=accordion.querySelector('.setup-accordion-panel');
+  if(!panel) continue; // P5 is captured only by the final Section 7 save.
   if(panel) { panel.hidden=false; panel.inert=false; panel.dataset.motionState='open'; }
   const inner=panel?.querySelector('.setup-accordion-panel-inner') ?? accordion.querySelector('.preview-controls-scroll');
   const footer=inner.lastElementChild;
-  const button=footer.querySelector('[data-confirm-section]');
+  const button=footer.querySelector('[data-confirm-section], #package-generate');
   const animations=button.getAnimations({subtree:true});
   animations.forEach(animation=>{animation.pause();animation.currentTime=0;});
   const peak=getComputedStyle(button,'::after');
@@ -53,6 +54,6 @@ const raw = stdout.match(/<pre id="receipt">([^<]+)<\/pre>/u)?.[1];
 assert.ok(raw, "No offscreen receipt.");
 const receipt = JSON.parse(raw);
 await writeFile(join(output, "receipt.json"), JSON.stringify(receipt, null, 2));
-assert.equal(receipt.length, SETUP_SECTIONS.length);
+assert.equal(receipt.length, SETUP_SECTIONS.length - 1);
 for (const row of receipt) assert.ok(row.footerLast && row.rightAligned && row.contained && row.breathing && row.layered, JSON.stringify(row));
 console.log(JSON.stringify({ pass: true, sections: receipt.length, output }));
