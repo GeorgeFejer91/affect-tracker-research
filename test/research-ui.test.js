@@ -771,7 +771,7 @@ test("Segment 3 prepares variants while Segment 1 owns verified media and the re
   const workspace = markup.slice(workspaceStart, markup.indexOf('data-setup-section="questionnaires"'));
   for (const id of ["video-import", "video-folder-import", "workspace-rescan"]) assert.ok(workspace.includes(`id="${id}"`));
   const source = await read("site/src/research/app.js");
-  assert.match(source, /await stimulusOrderEditor\.prepareContribution\([\s\S]*?return plannerContributions\.accept\(segment\)/u);
+  assert.match(source, /await stimulusOrderEditor\.prepareContribution\([\s\S]*?return plannerContributions\.accept\(segment, /u);
   assert.match(source, /workspaceContributionProducer\.subscribe\(updateStimulusCatalogue\)/u);
   assert.match(source, /unsubscribeStimulusCatalogue\(\)/u);
   assert.doesNotMatch(source, /reviewedSetupSections\.delete/u);

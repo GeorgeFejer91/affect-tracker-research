@@ -140,3 +140,70 @@ reads, orbit isolation and teardown without controlling the user's desktop.
 Detailed test/build counts and P1/P5/P7 integration state are recorded at handoff
 in the message board and evidence ledger. P6 component checks do not close the
 master recipe, headset, WebXR execution, media, LSL, timing or research gates.
+
+## Live authoring continuation — 2026-09-12
+
+The P6-owned `xr-layout-authoring.js` now composes the actual producer snapshots
+and subscriptions. It invokes the P1-owned validating geometry projector and
+P5's `validateFeedbackContributionV1` / `resolveFeedbackEnvelopeV1` at the fixed
+1024 CSS-pixel reference. It never trusts an imported caller-asserted bound.
+P1's `projectWorkspaceVideoDisplayGeometryV1` receives the whole five-key
+workspace snapshot, validates study/layout/catalogue together and preserves the
+registered outer revision. P6 subscribes to that same workspace producer.
+Study-only edits therefore invalidate P6 even when the nested catalogue revision
+and video geometry remain unchanged. A video-only payload is not a substitute.
+The full catalogue must validate; missing or unsupported media does not become
+a shortened set of fitted videos. No valid video means the experiment-layout
+contribution cannot be accepted. Standalone profile interchange remains available.
+
+Changes to either owner withdraw accepted bounds before asynchronous validation.
+An unchanged notification leaves the revision alone. Content changes invalidate
+even if a producer mistakenly reuses its revision; later P7 checks still reject
+that producer error. Generation checks discard older validation results after a
+newer change or teardown. Reopen checks the current dependencies, caller's
+`isCurrent` guard and the XR editor revision before replacing any editable state.
+Invalid, cancelled or stale reopen cannot overwrite a newer layout.
+
+Controller interfaces for P7/integration:
+
+- `waitForXrLayoutDependencies()` settles the current producer projection;
+  `getXrLayoutDependencyStatus()` reports pending state and a bounded issue.
+- `prepareXrLayoutContribution({isCurrent})` validates the enabled current draft
+  against live P1/P5 inputs and returns its five-key domain-prepared snapshot.
+  Disabled XR remains absent. The footer can prepare and then call P7 acceptance
+  in one action; no prior internal layout acceptance is required. Cancellation,
+  edits, dependency changes and teardown fence preparation before any commit.
+  `acceptXrLayoutContribution(options)` remains a compatibility alias.
+- `validateXrLayoutContribution(profile, {dependencies, selectedTarget})`
+  returns asynchronous true or throws without changing the editor.
+- `restoreXrLayoutDraft(profile, {isCurrent})` synchronously validates and renders
+  saved authored content as enabled/pending with no contribution. This is the
+  content-only master reopen path while P1's media declarations are unresolved;
+  it grants no media authority and requires later live preparation/confirmation.
+  Invalid/cancelled calls and teardown cannot replace the draft.
+- `restoreXrLayoutContribution(profile, {dependencies, selectedTarget, isCurrent})`
+  validates before an atomic commit and returns the resulting five-key snapshot.
+  Dependencies are exact P1/P5 owner snapshots. Their outer revisions are bound;
+  embedded catalogue revisions are not substituted. A request superseded while
+  dependencies are still settling rejects and can be retried with current state.
+
+Final validation and restore require `selectedTarget: "webxr-immersive-vr"`.
+Missing, desktop or unknown targets reject. P7 owns selection of the master
+recipe target and calls its acceptance registry separately. Local profile
+acceptance, registry acceptance and acknowledged file save retain distinct
+meanings. This does not finalize Q15's alternative-profile master representation.
+
+Independent parsers use the same pure helpers, without an editor:
+
+```js
+const dependencies = await resolveXrLayoutDependencies(
+  { P1: workspaceSnapshot, P5: feedbackSnapshot },
+  projectWorkspaceVideoDisplayGeometryV1,
+);
+const compiled = resolveXrLayoutContribution(profile, dependencies, selectedTarget);
+```
+
+Both P6 functions are exported from `site/src/research/xr-layout-authoring.js`;
+the projector is P1's `site/src/research/workspace-contribution.js`. The compiled
+result contains `{profile, requirements, videos, feedback}`. Master serialization
+and target selection remain P7-owned; this helper introduces no new saved fields.

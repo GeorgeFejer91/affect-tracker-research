@@ -1,5 +1,48 @@
 # Research v1 roadmap
 
+## P6 live authoring and editable reopen — 2026-09-12
+
+Owner-ready Backend Verification continuation for P6-02/P6-05 on
+`codex/segment-p6-virtual-screen`, tested clean source `b54e403`. This candidate
+composes P1 `5988ce0`, P5 `ccc53a7`/`1a238a5`, P7 `f283de0` and integration's
+narrow progress-wrap fix `ec4bb04` (collected as `b54e403`). Canonical integration
+and the complete P7 master recipe remain separately owned.
+
+The actual editor now consumes validated P1 workspace geometry and P5's entire
+saved animation envelope through live subscriptions. It binds P1's registered
+outer workspace revision; a study-only edit invalidates XR acceptance even if
+the nested video catalogue is unchanged. Missing/invalid media withdraws the
+whole projection immediately. Delayed old projections, cancelled restores and
+newer edits cannot overwrite current state. P7 receives explicit preparation,
+validation and guarded restore APIs; domain preparation is not P7 acceptance or
+a file-save acknowledgement. Content-only reopen renders the saved XR draft
+while media remains unresolved and requires later live validation. Enabled XR
+requires the explicit compatible target; disabled XR remains excluded.
+
+Evidence at `b54e403`:
+
+- `pnpm test`: **572/572**, including **11** focused live-authoring cases and
+  two independent processes reproducing exact canonical profile bytes and
+  all-video geometry through the actual P1/P5 validators without ambient inputs.
+- `pnpm desktop:build`: **9-file** closure; `pnpm build:pages`: **197-file**
+  closure. Vite retains its non-failing chunk-size warning. Logs are
+  `D:/GitHub/.affect-preview-checks/p6-final-{node,desktop,pages}-20260912.log`.
+- Actual app bootstrap in isolated headless Chrome: **28 assertions at each of
+  1440px and 820px**. Covers P1/P5/P6/P7 acceptance and invalidation, unchanged
+  inspection state, mixed media, unresolved-media draft reopen, canonical reopen,
+  cancelled/desktop/absent-target rejection, optional exclusion, teardown and
+  zero horizontal overflow. Both captures inspected. Hash-bound clean-source
+  receipts: `D:/GitHub/.affect-preview-checks/p6-final-app-20260912/` in
+  `chrome-wide` and `chrome-narrow`.
+
+Earlier Edge invocations returned empty output and no completed receipt; Edge
+remains **unverified**, not passed. The narrow shell overflow found on the
+intermediate candidate was fixed by its integration owner and rechecked above.
+The browser fixture supplies typed synthetic catalogue events; it does not
+qualify decoding, filesystem permissions, physical display geometry, installed
+Tauri, native playback, timing, LSL or XR execution. No Rust source changed in
+this continuation. Footer composition and master save/reopen remain P7/integration
+work; no completed master recipe or P6-06 headset claim follows from this receipt.
 ## P2 producer/consumer closure receipt — 2026-09-12
 
 On the isolated P2 branch based at `714b22d`, added a coverage-aware, non-mutating

@@ -1,5 +1,6 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
+import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
 import {
   PARTICIPANT_STATUS_LABELS,
   createDefaultResearchSettings,
@@ -94,6 +95,7 @@ import {
 } from "./video-catalogue-contribution.js";
 import {
   createWorkspaceContributionProducerV1,
+  projectWorkspaceVideoDisplayGeometryV1,
   prepareWorkspaceContentRestoreV1,
   validateWorkspaceContributionV1,
   verifyWorkspaceRestoredVideoEntriesV1,
@@ -185,7 +187,10 @@ export function bootResearchUi({ surface: requestedSurface } = {}) {
 export function initializeResearchUi(root, { surface = "browser" } = {}) {
   const shell = root.querySelector(".research-shell");
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
-  return installPlannerContributions(root, createUiController(root, { surface }));
+  const controller = installPlannerContributions(root, createUiController(root, { surface }));
+  try { controller.initializeXrLayoutAuthoring(); }
+  catch (error) { controller.destroy(); throw error; }
+  return controller;
 }
 
 // Interaction and projection code is kept below the declarative instrument so
@@ -205,6 +210,7 @@ function bindResearchInteractions(root, { surface }) {
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"));
   const announcer = root.querySelector("#research-announcer");
   const xrLayoutHost = root.querySelector("[data-xr-layout-editor]");
+  let xrLayoutAuthoring = null;
   const xrLayoutEditor = xrLayoutHost ? createXrLayoutEditor(xrLayoutHost, {
     onChange: (snapshot) => {
       const summary = root.querySelector('[data-section-summary="xr"]');
@@ -288,8 +294,11 @@ function bindResearchInteractions(root, { surface }) {
     acceptContribution: async (segment, { isCurrent }) => {
       const current = () => isCurrent() && mode === "setup";
       if (segment === "P3") await stimulusOrderEditor.prepareContribution({ isCurrent: current });
+      if (segment === "P6") await xrLayoutAuthoring.prepare({ isCurrent: current });
       if (!current()) throw new Error("Confirmation was cancelled. Review the current section again.");
-      return plannerContributions.accept(segment);
+      return plannerContributions.accept(segment, {
+        selectedTarget: root.researchUi?.getSelectedPlannerTarget?.() ?? null,
+      });
     },
     readAcceptance: () => plannerContributions.readAccepted(),
     onChange: () => renderSetupReviewState(),
@@ -5409,6 +5418,21 @@ function bindResearchInteractions(root, { surface }) {
   return Object.freeze({
     get mode() { return mode; },
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
+    initializeXrLayoutAuthoring() {
+      if (xrLayoutAuthoring || !xrLayoutEditor) return;
+      xrLayoutAuthoring = createXrLayoutAuthoring({ editor: xrLayoutEditor,
+        getDependencies: () => ({ P1: workspaceContributionProducer.getSnapshot(), P5: feedbackContribution.getSnapshot() }),
+        subscribe: [workspaceContributionProducer.subscribe, feedbackContribution.subscribe],
+        projectCatalogue: projectWorkspaceVideoDisplayGeometryV1,
+      });
+    },
+    waitForXrLayoutDependencies() { return xrLayoutAuthoring.refresh(); },
+    getXrLayoutDependencyStatus() { return xrLayoutAuthoring.getStatus(); },
+    prepareXrLayoutContribution(options) { return xrLayoutAuthoring.prepare(options); },
+    acceptXrLayoutContribution(options) { return xrLayoutAuthoring.prepare(options); },
+    validateXrLayoutContribution(profile, options) { return xrLayoutAuthoring.validate(profile, options); },
+    restoreXrLayoutContribution(profile, options) { return xrLayoutAuthoring.restore(profile, options); },
+    restoreXrLayoutDraft(profile, options) { return xrLayoutAuthoring.restoreDraft(profile, options); },
     restoreXrLayoutProfile(source) { xrLayoutEditor?.loadProfile(source); },
     setXrLayoutDependencies(dependencies) { xrLayoutEditor?.setDependencies(dependencies); },
     get openSection() { return openSection; },
@@ -5520,6 +5544,7 @@ function bindResearchInteractions(root, { surface }) {
     destroy() {
       stimulusCatalogueBindingDisposed = true;
       unsubscribeStimulusCatalogue();
+      xrLayoutAuthoring?.destroy();
       setupConfirmationFlow.destroy();
       feedbackContribution.destroy();
       previewLayout.destroy();

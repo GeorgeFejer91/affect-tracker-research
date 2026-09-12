@@ -103,7 +103,7 @@ qualification are deferred unless separately allocated by the researcher.
 | P3 `variants` | Event columns, ISIs and markers | Ordered variants and event definitions; Runner owns allocation | Missing target workflow; explicit-plan predecessor exists |
 | P4 `layout` | Video fitting and centre-relative Flubber layout | Units, reference geometry, offsets, size and fit policy | Missing target workflow; normalized placement exists |
 | P5 `feedback` | Flubber/input/Advanced editor and live preview | Input configuration, visual style and mappings | Partial; old controls distributed across sections |
-| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Missing; authoring target accepted |
+| P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | Spatial profile, alignment and target requirements | Owner-ready authoring and live P1/P5 binding; integration/master round trip pending |
 | P7 `package` | Recipe validation, save/reopen and export | Versioned master JSON, playback/output policy and integrity | Partial; strict v1 compiler/readers exist |
 | R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
 
@@ -379,10 +379,10 @@ retain one anchor per attempt, recenter between attempts, stop on tracking loss.
 rotatable 3D preview. **Consumers:** P7 and later R1 XR adapters.
 
 - [ ] **P6-01 — Pending integration:** strict separate `XrLayoutProfileV1` authoring contribution and explicit WebXR target; P7 successor master embedding remains open.
-- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; P1 live geometry producer remains a dependency.
+- [ ] **P6-02 — Pending integration:** metre/angle controls, plane tilt, rotatable front/side/top inspection and oriented-media fitting; actual P1 workspace geometry/subscription is connected and validated in the owner candidate.
 - [ ] **P6-03 — Pending integration:** declared right/up/back metre frame, world-fixed initial-head-forward policy and rotated local feedback centre; pure JS/Rust transform fixtures pass.
 - [ ] **P6-04 — Answered, pending integration:** Q11 confirmed policies are explicit in the strict profile. Actual alignment/tracking enforcement remains deferred P6-06.
-- [ ] **P6-05 — Pending integration:** canonical authoring export/reopen, invalid/stale/target rejection, full P5 envelope conversion and JS/Rust/browser fixtures pass. Finished master recipe round trip remains P7 work.
+- [ ] **P6-05 — Pending integration:** live P1/P5 dependency binding, atomic canonical profile reopen, invalid/stale/target rejection, full P5 envelope conversion and pure independent-process geometry reproduction pass. Footer preparation is separate from P7 acceptance/save; finished master recipe round trip remains P7 work.
 - [ ] **P6-06 — Deferred:** headset/APK/WebXR execution, LSL recording and physical qualification belong to a separate Runner pass.
 
 **Planner acceptance:** spatial profile round-trips with reproducible transform/

@@ -83,6 +83,50 @@ file; follow the integration-owner collection procedure in the workflow.
   this checkpoint does not claim the complete export path or canonical promotion.
   No Runner/native qualification, foreground reload, push or deployment.
 
+### 20260912-p6-live-authoring-binding
+
+- Owner S6/P6; Backend Verification continuation, P6-05; **open**. Existing
+  branch/worktree `codex/segment-p6-virtual-screen`,
+  `D:/GitHub/affect-tracker-research-p6-virtual-screen` now uses the integration
+  owner's explicitly supplied combined candidate `64da370` (fast-forward from
+  clean P6 handoff `e43f018`). Canonical `ba2110f` was read-only.
+- Deliverable: P1 verified display geometry and P5 saved feedback revisions
+  connected to the existing editor; deterministic optional contribution,
+  validation and atomic dependency-ordered reopen for P7. No new user input,
+  profile field, XR runtime or UI redesign. Q11 remains answered.
+- Current evidence: profile/geometry/producer interop already implemented;
+  live producer APIs and master composition were absent at the prior handoff.
+  Baseline 31 focused P6/P5/registry tests pass on the combined candidate.
+- Allowed seams: new P6 authoring/binding module, P6 editor acceptance/restore,
+  its app initialization/getters/teardown, focused tests and owned docs.
+  P1/P5 own producers and notification APIs; P7 owns master target selection,
+  acceptance registry and persistence. Other handlers are not duplicated.
+- Planned evidence: actual producer changes, malformed/missing geometry,
+  pending/reused revisions, asynchronous replacement/teardown, dependency-bound
+  reopen and explicit selected-target rejection. Disabled XR must not block
+  desktop. Background app/build checks only; no hardware or runtime claims.
+- Final status: **ready for integration**, clean application `b54e403`; P6
+  implementation `53f3537`/`1f76fb9`/`817d52a`/`8e05273`/`298d5f4`/`f51263a`
+  with reviewed P1 `5988ce0`, P5 `ccc53a7`/`1a238a5`, P7 `f283de0` and the
+  integration-owned progress-wrap fix `ec4bb04` collected as `b54e403`.
+- Actual P1 composite/projector and subscription now share one outer revision.
+  Study-only changes and incomplete media invalidate P6 and its P7 acceptance;
+  P5 edits withdraw stale bounds before async projection. Content-only reopen
+  uses `restoreXrLayoutDraft(profile,{isCurrent})`, leaving the draft pending
+  while P1 media is unresolved. Full restore/prepare still requires ready live
+  dependencies. No media authority is synthesized by the restore path.
+- P7/integration APIs and pure parser sequence are documented in
+  `63-P6-XR-LAYOUT.md`. `prepareXrLayoutContribution({isCurrent})` supports one
+  footer action, followed by P7 acceptance with explicit selected target; the
+  integration owner retains the actual footer composition hunk. The P6 helper
+  cannot mark P7 accepted or saved. Master representation/reopen/save remains P7.
+- Final evidence: **572 Node checks**, desktop **9-file** / Pages **197-file**
+  closures; actual Chrome **28 assertions each at 1440/820px**, inspected
+  screenshots and zero horizontal overflow. Full receipts/limits in the P6
+  roadmap entry. Edge produced no receipt and remains unverified. No runtime,
+  installed/native/hardware qualification, canonical merge, push or deployment.
+- Source writers stop at handoff; integration may collect the clean branch.
+
 ### 20260912-p7-named-file-and-owner-lifecycle
 
 - Owner **S7**, same resumed Backend Verification pass, P7-03/P7-04/P7-07.

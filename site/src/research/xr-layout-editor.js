@@ -7,6 +7,27 @@ import {
 import { xrLayoutSceneSvg } from "./xr-layout-view.js";
 import { resolveXrFeedbackFootprintV1 } from "./xr-layout-feedback.js";
 
+function validateRevisions(value) {
+  if (!value || Object.keys(value).sort().join(",") !== "catalogue,feedback"
+      || Object.values(value).some((v) => v !== null && (!Number.isSafeInteger(v) || v < 0))) throw new TypeError("P6 requires explicit catalogue/feedback revisions or null.");
+  return { catalogue: value.catalogue, feedback: value.feedback };
+}
+
+function validateDependencies({ catalogueRevision, feedbackRevision, previewMedia = null,
+  catalogueGeometry = null, feedbackEnvelope = null }, profile = createDefaultXrLayoutProfile()) {
+  validateRevisions({ catalogue: catalogueRevision, feedback: feedbackRevision });
+  if (previewMedia !== null) resolveXrLayoutProfileV1(profile, previewMedia);
+  if (catalogueGeometry !== null) {
+    if (catalogueRevision === null) throw new TypeError("Display geometry requires its P1 catalogue revision.");
+    resolveXrCatalogueV1(profile, catalogueGeometry);
+  }
+  if (feedbackEnvelope !== null) {
+    if (feedbackRevision === null) throw new TypeError("The feedback envelope requires its P5 revision.");
+    resolveXrFeedbackFootprintV1(profile, feedbackEnvelope);
+  }
+  return structuredClone({ catalogueRevision, feedbackRevision, previewMedia, catalogueGeometry, feedbackEnvelope });
+}
+
 // P7 consumes this state, never DOM values or the last valid version of a dirty
 // draft. Inspection-camera changes do not revise or invalidate the contribution.
 export function createXrLayoutState() {
@@ -20,10 +41,16 @@ export function createXrLayoutState() {
     getDraft() { return structuredClone(draft); },
     invalidate() { accepted = null; revision += 1; },
     accept() { accepted = validate(); revision += 1; return structuredClone(accepted); },
-    load(source) { const next = parseXrLayoutProfileV1(source); draft = next; accepted = structuredClone(next); enabled = true; revision += 1; },
+    load(source, revisions = dependencies) {
+      const next = parseXrLayoutProfileV1(source), nextDependencies = validateRevisions(revisions);
+      draft = next; accepted = structuredClone(next); dependencies = nextDependencies; enabled = true; revision += 1;
+    },
+    loadDraft(source) {
+      const next = parseXrLayoutProfileV1(source);
+      draft = next; accepted = null; enabled = true; revision += 1;
+    },
     setDependencyRevisions(value) {
-      if (!value || Object.keys(value).sort().join(",") !== "catalogue,feedback"
-          || Object.values(value).some((v) => v !== null && (!Number.isSafeInteger(v) || v < 0))) throw new TypeError("P6 requires explicit catalogue/feedback revisions or null.");
+      validateRevisions(value);
       if (dependencies.catalogue !== value.catalogue || dependencies.feedback !== value.feedback) {
         dependencies = { catalogue: value.catalogue, feedback: value.feedback }; accepted = null; revision += 1;
       }
@@ -160,7 +187,7 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
         const next = withXrAngularSize(state.getDraft(), Number(q('[data-xr-angle="width"]').value), Number(q('[data-xr-angle="height"]').value));
         fileGeneration += 1; state.setDraft(next); setFields(); notify(); status("Angular size applied to metre dimensions. Accept the layout to export.");
       }
-      if (button.dataset.xrAction === "accept") { state.accept(); notify(); status("Layout accepted. You can download its authoring profile."); }
+      if (button.dataset.xrAction === "accept") acceptLayout();
       if (button.dataset.xrAction === "export") {
         const url = URL.createObjectURL(new Blob([state.serialize()], { type: "application/json;charset=utf-8" }));
         const anchor = host.ownerDocument.createElement("a");
@@ -186,39 +213,63 @@ export function createXrLayoutEditor(host, { onChange = () => {} } = {}) {
       if (!disposed && generation === fileGeneration) status(`Profile was not opened: ${describeError(error)}`);
     } finally { if (!disposed && generation === fileGeneration) q("[data-xr-file]").value = ""; }
   }
+  function acceptLayout() {
+    if (disposed) throw new Error("The XR editor is closed.");
+    if (!state.getSnapshot().enabled) return state.getSnapshot();
+    const draft = state.getDraft();
+    resolveXrLayoutProfileV1(draft, media);
+    if (catalogueGeometry !== null) resolveXrCatalogueV1(draft, catalogueGeometry);
+    if (feedbackEnvelope !== null) resolveXrFeedbackFootprintV1(draft, feedbackEnvelope);
+    state.accept(); render(); notify(); status("Layout accepted. You can download its authoring profile.");
+    return state.getSnapshot();
+  }
+  function projectDependencies(next) {
+    feedbackEnvelope = next.feedbackEnvelope;
+    catalogueGeometry = next.catalogueGeometry;
+    const select = q("[data-xr-media]"), selected = select.value;
+    select.replaceChildren();
+    for (const item of [{ assetId: "", label: "Authored screen" }, ...(catalogueGeometry ?? [])]) {
+      const option = host.ownerDocument.createElement("option");
+      option.value = item.assetId; option.textContent = item.label ?? item.assetId; select.append(option);
+    }
+    select.value = catalogueGeometry?.some(({ assetId }) => assetId === selected) ? selected : "";
+    const item = catalogueGeometry?.find(({ assetId }) => assetId === select.value);
+    media = item ? { displayWidth: item.displayWidth, displayHeight: item.displayHeight } : next.previewMedia;
+  }
   setFields(); render();
   return Object.freeze({
     getSnapshot: () => state.getSnapshot(),
+    getDraft: () => state.getDraft(),
+    acceptLayout,
     loadProfile(source) {
       fileGeneration += 1; state.load(source); setFields(); render(); notify();
       status("Authoring profile reopened. All saved geometry is editable.");
     },
-    setDependencies({ catalogueRevision, feedbackRevision, previewMedia = null,
-      catalogueGeometry: nextCatalogue = null, feedbackEnvelope: nextEnvelope = null }) {
-      if (previewMedia !== null) resolveXrLayoutProfileV1(createDefaultXrLayoutProfile(), previewMedia);
-      if (nextCatalogue !== null) {
-        if (!Number.isSafeInteger(catalogueRevision) || catalogueRevision < 0) throw new TypeError("Display geometry requires its P1 catalogue revision.");
-        resolveXrCatalogueV1(createDefaultXrLayoutProfile(), nextCatalogue);
-      }
-      if (nextEnvelope !== null) {
-        if (!Number.isSafeInteger(feedbackRevision) || feedbackRevision < 0) throw new TypeError("The feedback envelope requires its P5 revision.");
-        resolveXrFeedbackFootprintV1(createDefaultXrLayoutProfile(), nextEnvelope);
-      }
+    restoreContribution(profile, dependencies) {
+      if (disposed) throw new Error("The XR editor is closed.");
+      const source = serializeXrLayoutProfileV1(profile), next = validateDependencies(dependencies, profile);
+      // All untrusted geometry is checked before any editor state is replaced.
+      fileGeneration += 1;
+      projectDependencies(next);
+      state.load(source, { catalogue: next.catalogueRevision, feedback: next.feedbackRevision });
+      setFields(); render(); notify(); status("XR layout reopened with the current video and feedback settings.");
+      return state.getSnapshot();
+    },
+    restoreDraft(profile) {
+      if (disposed) throw new Error("The XR editor is closed.");
+      const source = serializeXrLayoutProfileV1(profile);
+      fileGeneration += 1; state.loadDraft(source); setFields(); render(); notify();
+      status("Saved XR settings reopened. Verify the video library and feedback, then confirm the layout.");
+      return state.getSnapshot();
+    },
+    setDependencies(dependencies) {
+      if (disposed) return;
+      const next = validateDependencies(dependencies);
+      const { catalogueRevision, feedbackRevision } = next;
       state.setDependencyRevisions({ catalogue: catalogueRevision, feedback: feedbackRevision });
-      if (JSON.stringify(feedbackEnvelope) !== JSON.stringify(nextEnvelope)) state.invalidate();
-      if (JSON.stringify(catalogueGeometry) !== JSON.stringify(nextCatalogue)) state.invalidate();
-      feedbackEnvelope = nextEnvelope === null ? null : structuredClone(nextEnvelope);
-      catalogueGeometry = nextCatalogue === null ? null : structuredClone(nextCatalogue);
-      const select = q("[data-xr-media]"), selected = select.value;
-      select.replaceChildren();
-      for (const item of [{ assetId: "", label: "Authored screen" }, ...(catalogueGeometry ?? [])]) {
-        const option = host.ownerDocument.createElement("option");
-        option.value = item.assetId; option.textContent = item.label ?? item.assetId; select.append(option);
-      }
-      select.value = catalogueGeometry?.some(({ assetId }) => assetId === selected) ? selected : "";
-      const item = catalogueGeometry?.find(({ assetId }) => assetId === select.value);
-      if (item) previewMedia = { displayWidth: item.displayWidth, displayHeight: item.displayHeight };
-      media = previewMedia === null ? null : structuredClone(previewMedia); render(); notify();
+      if (JSON.stringify(feedbackEnvelope) !== JSON.stringify(next.feedbackEnvelope)) state.invalidate();
+      if (JSON.stringify(catalogueGeometry) !== JSON.stringify(next.catalogueGeometry)) state.invalidate();
+      projectDependencies(next); render(); notify();
     },
     destroy() { disposed = true; fileGeneration += 1; abort.abort(); },
   });
