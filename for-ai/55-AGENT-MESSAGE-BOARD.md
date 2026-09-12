@@ -3297,6 +3297,14 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   `native-gstplay-startup-timeout` with the same binary as attempt 03 (SHA-256
   `8aa7a5e2d3b154ea90b48ff36760ee6525b6df57b64487f162e3a022a47ce79e`),
   combined source `5c66ce6`, and exited 2 at 124.85 seconds without a supervisor
-  timeout. Hold NM-09 promotion until the separately owned startup diagnostic
-  reaches actor/MediaInfo callbacks; test-only startup phase tracing is in
-  progress to localize initialization versus child-HWND creation.
+  timeout.
+- Attempt 05's test-only phase trace localizes the separate blocker before actor
+  construction: hidden-parent creation, event-loop readiness and fixture
+  verification completed, then the process stalled at `gstreamer-init-start`
+  until `native-gstplay-startup-timeout`; no `actor-started` or MediaInfo event
+  occurred. Its executable SHA-256 was
+  `20c8447c276095ab4fe69154e88a1bc5d53d4ec0c2d6313f1da5d15c0d83e9cf`;
+  it exited 2 after 115.0619164 seconds with supervisor `timedOut=false` and
+  pinned core-module closure observed. This is separate NM-01--03 startup risk,
+  not reducer evidence. Hold NM-09 native qualification and promotion until
+  startup reaches actor/MediaInfo callbacks.
