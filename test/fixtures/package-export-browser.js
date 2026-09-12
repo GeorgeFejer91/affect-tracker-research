@@ -13,7 +13,7 @@ const cases = [];
 const check = (name, condition) => { if (!condition) throw new Error(name); cases.push(name); };
 const root = document.querySelector("main");
 root.id = "research-app";
-root.dataset.researchSurface = "tauri";
+root.dataset.researchSurface = location.hash === "#browser-save" ? "browser" : "tauri";
 bootResearchUi();
 const ui = root.researchUi;
 const query = (selector) => root.querySelector(selector);
@@ -49,6 +49,59 @@ const change = (selector, value) => {
 
 (async () => {
   if (renderState === "empty") { await renderReceipt(); return; }
+  if (renderState === "browser-save") {
+    const source = `${canonicalJson(packageFixture)}\n`;
+    let stored = new TextEncoder().encode(source), releaseClose, picked = 0, writes = 0;
+    const handle = { kind: "file", getFile: async () => ({ size: stored.byteLength, arrayBuffer: async () => stored.slice().buffer }),
+      createWritable: async () => {
+        let staged;
+        return { write: async (bytes) => { staged = bytes.slice(); writes += 1; },
+          close: () => new Promise((resolve) => { releaseClose = () => { stored = staged; resolve(); }; }), abort: async () => {} };
+      } };
+    window.showOpenFilePicker = () => { picked += 1; return Promise.resolve([handle]); };
+    window.showSaveFilePicker = () => { picked += 1; return Promise.resolve(handle); };
+    query("#package-load").click();
+    check("Open calls the file picker in its click handler", picked === 1);
+    await waitFor(() => ui.experimentPackage && !query("#package-generate").disabled);
+    check("named reopen preserves exact bytes without selecting a workspace", ui.experimentPackageSourceText === source && ui.workspace === null);
+    query("#package-generate").click();
+    await waitFor(() => query("#package-save-dialog").open);
+    check("prepared save requests no file until the final button", picked === 1 && ui.packageExportStatus.phase === "saving");
+    query("#package-save-choose").click();
+    check("final save button calls its picker synchronously", picked === 2);
+    await waitFor(() => releaseClose);
+    check("an unclosed file cannot report saved", writes === 1 && ui.packageExportStatus.phase === "saving" && ui.packageExportStatus.saved === null);
+    releaseClose();
+    await waitFor(() => !ui.packageExportStatus.busy);
+    check("readback acknowledgement closes the dialog and marks exact bytes saved", ui.packageExportStatus.phase === "saved"
+      && !query("#package-save-dialog").open && ui.packageExportStatus.saved.sourceText === source);
+    check("selected recipe file does not authorize media or Start", ui.workspace === null && query("#start-experiment").disabled);
+    query("#package-generate").click();
+    await waitFor(() => query("#package-save-dialog").open);
+    query("#package-save-cancel").click();
+    await waitFor(() => !ui.packageExportStatus.busy);
+    check("prepared dialog cancellation performs no write and permits retry", ui.packageExportStatus.phase === "cancelled" && writes === 1 && picked === 2);
+    let releaseOpen;
+    window.showOpenFilePicker = () => new Promise((resolve) => { releaseOpen = () => resolve([handle]); });
+    query("#package-load").click();
+    change("#sampling-frequency", "119"); releaseOpen();
+    await waitFor(() => query("#research-announcer").textContent.includes("Newer edits were preserved"));
+    check("edits during named reopen are preserved", query("#sampling-frequency").value === "119");
+    window.showOpenFilePicker = () => Promise.resolve([handle]);
+    query("#package-load").click();
+    await waitFor(() => Number(query("#sampling-frequency").value) === packageFixture.settings.experiment.samplingFrequencyHz);
+    check("intentional reopen atomically restores the saved recipe", ui.experimentPackageSourceText === source);
+    ui.destroy(); ui.destroy();
+    check("destroy removes the installed root controller exactly once", root.researchUi === undefined);
+    bootResearchUi();
+    const replacement = root.researchUi;
+    check("a second real UI instance has fresh registration and live getters", replacement !== ui && replacement.openSection === "workspace");
+    replacement.openSetupSection("review");
+    check("replacement controller getter remains live", replacement.openSection === "review");
+    replacement.destroy();
+    document.querySelector("#receipt").textContent = JSON.stringify({ passed: true, renderState, cases });
+    return;
+  }
   const definitions = [];
   for (const [language, source] of [["en", english], ["de", german]]) definitions.push((await importQuestionnaireAuthoring(source,
     { logicalName: `maia-2-${language}.csv`, sourceKind: "bundled" })).definition);

@@ -666,6 +666,10 @@ export function renderResearchUiMarkup(surface = "browser") {
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
     <input id="video-folder-input" type="file" accept="video/*" webkitdirectory directory multiple hidden>
     ${stimulusInspirationMarkup()}
+    <dialog id="package-save-dialog" aria-labelledby="package-save-dialog-title" aria-describedby="package-save-dialog-status">
+      <div class="dialog-content"><h2 id="package-save-dialog-title">Save recipe</h2><p id="package-save-dialog-status" role="status" aria-live="polite"></p></div>
+      <div class="dialog-actions"><button id="package-save-cancel" type="button">Cancel</button><button id="package-save-choose" type="button" class="primary-action">Choose file and save</button></div>
+    </dialog>
     <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title">
       <div class="dialog-content"><h2 id="binding-capture-title">Capture custom binding</h2><p id="binding-capture-instruction">Perform one keyboard, mouse, wheel, or gamepad action.</p><div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Waiting for an input edge…</div></div>
       <div class="dialog-actions"><button id="binding-capture-cancel" type="button">Cancel</button></div>
