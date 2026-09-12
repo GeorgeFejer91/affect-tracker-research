@@ -3374,3 +3374,22 @@ boundary or qualification flag changes in this checkpoint.
 - Root approved diagnostic-only30s failed-start teardown observation within
   the unchanged150s supervisor and45s production admission cutoff. Late join
   never changes a failed start into readiness or successful playback.
+- Clean candidate `c87bd95d00cbd884792f809ca34365e27a93d7be` rebuilt and passed
+  all30 focused native tests (one ignored diagnostic). Actual attempt06 passed
+  in59.98557s with three decoded frames, complete254406ms/1920x1080 metadata,
+  five clean Paused/Playing observations, pause/resume/stop, generation2 and
+  stale-fence rejection, and actual actor exit/join before hidden-parent exit.
+  Prepared executable SHA:
+  `c9c7d7c71413e3ed81e13916ba434c9b6ce65925975d0bf6db476460f030b5c4`.
+  Full receipts/limits are in the native audit. Earlier timeouts remain;
+  cold `gst::init` took25.857s this run, explicit scan10ms, child creation4ms.
+- Status: **ready for coordinated source integration**, not application or
+  installed qualification. Main must wire async setup/close/exit together;
+  dropping a pending service on the UI thread violates the lifecycle contract.
+  Root/Main/S1 received actual evidence; RR11 received the changed spawn and
+  constructor/admission seams. No publication or canonical integration here.
+- Final candidate Clippy-specific gate passed, with65 production/3 test
+  dead-code warnings from the unconnected async composition and existing
+  unused code; no suppression and no strict warning-clean claim. Formatting,
+  PowerShell syntax and diff checks passed. Final handoff is documentation-only
+  over tested native source `c87bd95`; Main retains combined integration gates.

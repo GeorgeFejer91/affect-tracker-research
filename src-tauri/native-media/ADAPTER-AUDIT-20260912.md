@@ -246,3 +246,49 @@ It separately records a late actor join or unconfirmed shutdown and still
 exits2. It never prepares media, reopens readiness, or turns timeout into a
 successful lifecycle receipt. This is test evidence, not a production timeout
 extension, cancellation guarantee or forced-exit policy.
+
+### Attempt06: clean real-clip engineering pass
+
+Source `c87bd95d00cbd884792f809ca34365e27a93d7be` rebuilt with the pinned SDK
+in2m13s. All30 focused native tests passed (one opt-in diagnostic ignored),
+including five new lifecycle/deadline regressions. Prepared executable SHA:
+`c9c7d7c71413e3ed81e13916ba434c9b6ce65925975d0bf6db476460f030b5c4`;
+original Cargo test SHA:
+`2e9e5da4d0720ccb78de4c34ff1aad0dc59934fc5cca45eabbc5e9e4d9eba375`.
+
+The separate actual diagnostic exited0 (PID22052) in59.98557s without timeout.
+Runtime verification completed at19696ms, hidden-parent/event-loop readiness
+at20140/20147ms. `gst::init` ran from25399 to51256ms (25.857s); explicit
+registry scan took10ms; required-plugin checks completed; child creation took
+4ms. Actor readiness was observed at51277ms, within the unchanged45s actor
+startup cutoff. Host disk pressure had eased and new broad builds were held;
+RR11 subsequently confirmed its prior Rust tests finished before this run.
+Other host activity was not experimentally controlled. This is not a
+controlled causal comparison with attempts03-05, nor a timing qualification.
+
+Actual clip:254406ms,1920x1080, one audio stream. Three decoded positions:
+250/127203/254156ms; orientation remains missing, pixel aspect1:1. All five
+Paused/Playing observations carried null reason and complete positive metadata.
+Play/Pause/Resume/Stop, generation2, stale-generation rejection, actual actor
+thread exit and repeated join/finish succeeded. The hidden parent remained
+retained through actor completion. Four core DLLs were observed from the pin
+with matching hashes; this is not full transitive plugin/loading closure.
+
+Evidence lives under `D:/GitHub/.affect-native-diagnostic-build/attempt-06`
+(`stdout.log`, `stderr.log`, `process-receipt.json`) and `prepared-06`
+(`artifact-receipt.json`). Earlier failed attempts remain untouched. This
+establishes the corrected state reducer's real-clip case and actor engineering
+lifecycle, not Main's still-separate async service/close coordinator. The
+failed-start grace was not exercised by this passing run; synthetic tests prove
+deadline fencing/retention, not foreign-call cancellation. Installed playback,
+recorder/XDF correspondence, redistribution and research qualification remain
+open and all qualification flags remain false.
+
+Final Clippy-specific gate on the candidate source passed (`-D clippy::all`,
+Windows native feature, lib and tests). It is not strict warning cleanliness:
+the deliberately unconnected production async entrypoint caused65 dead-code
+reachability warnings, while the test target reported3. Main must connect the
+coordinator and rerun combined lint; no warnings were suppressed. Formatting,
+PowerShell parser validation and `git diff --check` passed. This final evidence
+update changes documentation only; the actual tested native source remains
+`c87bd95d00cbd884792f809ca34365e27a93d7be`.
