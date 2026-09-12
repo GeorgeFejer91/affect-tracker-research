@@ -501,6 +501,32 @@ file; follow the integration-owner collection procedure in the workflow.
 
 ### 20260912-integration-planner-completion
 
+- **Canonical source delivered:** the coordinator's continued local-convergence
+  allocation promoted clean `1218c9ebef87111109d784bc2a9bf5827767917f` to
+  `codex/research-unified` in `D:/GitHub/affect-tracker-research`. All branch
+  histories are preserved. Production matches the independently reviewed
+  `875efae`; the intervening native change only removes a test unit expression.
+  Canonical desktop11/Pages235/Runner7 builds and a fresh 65-check actual master
+  workflow pass. Receipt: `canonical-master-1218c9e/receipt.json` below the
+  integration evidence directory named below; worktree status is empty.
+- Normal required-runtime native library tests pass **243**, with **2** explicit
+  opt-in LSL transport checks ignored. No-default native tests pass **235**.
+  Combined all-target no-default Clippy passes with warnings denied and only
+  the existing `dead_code` exception; formatting passes. Both runtime trees
+  independently verify the exact pinned 827 files / 340362958 bytes. Real SDK
+  paths are process-scoped; `DOCS_RS` is absent and the required gate stays on.
+- Canonical native Planner build succeeded from exact clean `1218c9e` using
+  locked `native-gstreamer,tauri/custom-protocol` and the normal SDK. Artifact:
+  `D:/GitHub/affect-tracker-research/src-tauri/target/debug/affect-research.exe`,
+  28512256 bytes, SHA-256
+  `71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca`.
+  Build log: `canonical-1218c9e-native-build.log` in the integration evidence
+  directory below. Three retained workspace dead-code warnings and Cargo's PDB
+  filename-collision warning are not hidden. This is a local linked build, not
+  an installed, self-contained, signed or redistribution-qualified release.
+  No push, installer, foreground launch or physical/Runner qualification occurred.
+  Root owns the final documentation-only catalogue closure after this delivery.
+
 - Complete product candidate `875efae0a852bdcea978e8a12b74c0e81288d51c`
   collects all ready P1–P7 owner changes, Preview badge correction, strict
   browser/native file wiring, P3 catalogue export and isolated companion build
