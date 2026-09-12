@@ -136,11 +136,41 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
     });
   }
 
+  async function prepareConfirmation({ isCurrent, signal } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR confirmation requires a current-request guard.");
+    const captured = read(), dependencyKey = key(captured), capturedGeneration = generation;
+    const ownerRevision = editor.getSnapshot().revision;
+    const current = () => !disposed && !signal?.aborted && isCurrent()
+      && generation === capturedGeneration && key(read()) === dependencyKey;
+    if (!current()) throw stale();
+    if (editor.getSnapshot().enabled) {
+      const profile = editor.getDraft();
+      const resolved = await resolveXrLayoutDependencies(captured, projectCatalogue);
+      resolveXrLayoutContribution(profile, resolved, profile.target);
+      const bound = editor.getAuthoringSnapshot();
+      if (key(bound.dependencyRevisions) !== key([
+        { segment: "P1", revision: resolved.catalogueRevision },
+        { segment: "P5", revision: resolved.feedbackRevision },
+      ]) || key(bound.catalogueGeometry) !== key(resolved.catalogueGeometry)
+        || key(bound.feedbackEnvelope) !== key(resolved.feedbackEnvelope)) throw stale();
+    }
+    // Unlike GUI prepare(), never refresh/mutate producers or the editor here.
+    if (!current() || editor.getSnapshot().revision !== ownerRevision) throw stale();
+    const candidate = editor.prepareConfirmation({ isCurrent: current, signal });
+    return Object.freeze({
+      get snapshot() { return candidate.snapshot; },
+      isCurrent: candidate.isCurrent,
+      commit: candidate.commit,
+      afterCommit: candidate.afterCommit,
+    });
+  }
+
   return Object.freeze({
     refresh,
     getStatus: () => structuredClone(status),
     validate,
     prepare,
+    prepareConfirmation,
     accept: prepare,
     prepareRestoreSelection,
     restoreDraft(profile, { isCurrent = () => true } = {}) {
