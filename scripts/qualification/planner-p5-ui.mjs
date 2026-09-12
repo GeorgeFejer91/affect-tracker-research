@@ -9,8 +9,9 @@ import { join, resolve, extname, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
 
-const [browser, destination, selected = "overview,response,advanced,mappings,color,input"] = process.argv.slice(2);
+const [browser, destination, selected = "overview,response,advanced,mappings,color,input", integratedArgument = ""] = process.argv.slice(2);
 assert.ok(browser && destination, "Supply browser executable and fresh output directory");
+assert.ok(["", "--require-integrated"].includes(integratedArgument), "Unknown integration requirement");
 const scenes = selected.split(",");
 assert.ok(scenes.every(scene => ["overview", "response", "advanced", "mappings", "color", "input"].includes(scene)));
 const source = resolve(import.meta.dirname, "../.."), output = resolve(destination), site = join(source, "site");
@@ -54,7 +55,7 @@ const summary = [];
 try {
   for (const width of [1280, 800]) for (const scene of scenes) {
     const name = `${width}-${scene}`, screenshot = join(output, `${name}.png`), profile = await mkdtemp(join(output, "profile-"));
-    const args = { width, scene, runChecks: scene === "overview" };
+    const args = { width, scene, runChecks: scene === "overview", requireIntegrated: integratedArgument === "--require-integrated" };
     const launcher = await run(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
       `--user-data-dir=${profile}`, "--window-size=1280,1100", "--force-prefers-reduced-motion", "--force-device-scale-factor=1",
       "--virtual-time-budget=20000", `--screenshot=${screenshot}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?case=${encodeURIComponent(JSON.stringify(args))}`],
@@ -70,7 +71,7 @@ try {
     const receipt = { ...capture.receipt, provenance: { ...provenance, htmlSha256: hash(capture.html), screenshotSha256: hash(png) } };
     await writeFile(join(output, `${name}.html`), capture.html);
     await writeFile(join(output, `${name}.json`), JSON.stringify(receipt, null, 2));
-    const row = { name, pass: receipt.pass && !receipt.errors?.length, verified: receipt.verified, unresolved: receipt.unresolved,
+    const row = { name, pass: receipt.pass && !receipt.errors?.length, integrated: receipt.integrated, verified: receipt.verified, unresolved: receipt.unresolved,
       errors: receipt.error ?? receipt.errors, failures: receipt.rows?.filter(row => row.status !== "verified").map(row => ({ id: row.id, error: row.error })) };
     summary.push(row); console.log(JSON.stringify(row));
   }

@@ -4,6 +4,7 @@ import { createPlannerAuthoringP5, P5_AUTHORING_SETTINGS } from "../../site/src/
 import { createInputBindingPreset, INPUT_PRESET_IDS } from "../../site/src/research/contracts.js";
 import { withCustomDigitalAction } from "../../site/src/research/input-controller.js";
 import { MAPPING_FIELDS, UI_PRESET_IDS } from "../../site/src/research/ui-contracts.js";
+import { PLANNER_COMMAND_SCHEMA } from "../../site/src/research/planner-authoring-contract.js";
 import configured from "../../test/fixtures/research-feedback-settings-v2.json";
 
 const direct = {
@@ -40,14 +41,35 @@ function alternative(setting, before) {
   return before === setting.minimum ? setting.maximum : setting.minimum;
 }
 
-export async function checkP5Ui({ scene = "overview", runChecks = true } = {}) {
+export async function checkP5Ui({ scene = "overview", runChecks = true, requireIntegrated = false } = {}) {
   const root = bootResearchUi(), ui = root.researchUi, q = selector => root.querySelector(selector);
   const rows = [], actions = [], checks = [];
   const saved = () => ui.getFeedbackContributionSnapshot().contribution;
   const note = (name, pass) => { checks.push({ name, pass: Boolean(pass) }); assert(pass, name); };
   assert(root.dataset.researchProgram === "planner", "Fixture must use actual Planner program role");
+  const session = ui.plannerAuthoringSession, transcript = [];
+  assert(!requireIntegrated || session?.execute, "Actual production command session is required; no fixture owner registration permitted");
   ui.openSetupSection("feedback");
   await frame();
+  async function command(action, expectedRevision = ["set", "apply"].includes(action.kind) ? session.revision : null) {
+    const request = { schema: PLANNER_COMMAND_SCHEMA, version: 1, sessionId: session.sessionId,
+      requestId: crypto.randomUUID(), expectedRevision, action };
+    const result = await session.execute(request); transcript.push({ request, result }); return result;
+  }
+  if (session && runChecks) {
+    const catalogue = await command({ kind: "catalogue" });
+    note("production session exposes exactly the complete P5 catalogue", catalogue.status === "ok"
+      && equal(catalogue.result.settings.filter(setting => setting.id.startsWith("P5.")), P5_AUTHORING_SETTINGS));
+    note("production session registers all seven actual owners", equal(Object.keys(session.snapshot().owners).sort(), ["P1", "P2", "P3", "P4", "P5", "P6", "P7"]));
+  }
+  function configuredProjection() {
+    const { rendering: r, response: s } = ui.getPreviewInspectionSnapshot();
+    return { renderer: r.displayMode, responseMode: r.responseMode, anchors: r.colorAnchorMode,
+      transparencyPercent: r.transparencyPercent, hideFeedback: r.hideFeedback, colors: r.colors, flubber: r.flubber, grid: r.grid,
+      mappings: [r.frequency, r.edgeSmoothness, r.amplitude, r.pulseSynchrony, r.waveVariation, r.saturation],
+      response: { mode: s.mode, columns: s.tileCount, rows: s.tileRows, duration: s.fullSpanDurationMs, holdRule: s.holdRule, repeatDelayMs: s.repeatDelayMs },
+      preset: q("#input-preset").value, labels: ["up", "right", "down", "left"].map(direction => q(`[data-color-anchor="${direction}"]`).textContent.trim()) };
+  }
 
   async function visible(selector) {
     const element = q(selector); assert(element, `Missing control ${selector}`);
@@ -122,9 +144,24 @@ export async function checkP5Ui({ scene = "overview", runChecks = true } = {}) {
       await action();
       const actual = saved();
       assert(equal(actual, expected), `Complete P5 mismatch for ${id}\nexpected:${canonicalJson(expected)}\nactual:${canonicalJson(actual)}`);
+      const uiProjection = configuredProjection();
       const compatibilityPreserved = Object.keys(compatibility).every(path => path === "input.stepSize" ? true : equal(at(actual, path), at(before, path)));
       assert(compatibilityPreserved, `Compatibility values changed for ${id}`);
-      rows.push({ id, status: "verified", ...detail, actions: actions.slice(actionStart), expected, actual, compatibilityPreserved });
+      let integrated = null;
+      if (session) {
+        const readAfterUi = await command({ kind: "get", field: "P5.contribution" });
+        assert(readAfterUi.status === "ok" && equal(readAfterUi.result.value, actual), `Production command readback differs after UI edit: ${id}`);
+        await restore(before);
+        const revision = session.revision;
+        const applied = await command({ kind: "apply", edits });
+        assert(applied.status === "applied" && applied.revision === revision + 1, `Production edit did not apply once: ${id} ${canonicalJson(applied)}`);
+        const readAfterCommand = await command({ kind: "get", field: "P5.contribution" });
+        const commandSaved = saved(), commandProjection = configuredProjection();
+        assert(readAfterCommand.status === "ok" && equal(readAfterCommand.result.value, expected) && equal(commandSaved, expected), `Production command P5 contribution differs: ${id}`);
+        assert(equal(commandProjection, uiProjection), `Production command preview/control projection differs: ${id}\nUI:${canonicalJson(uiProjection)}\ncommand:${canonicalJson(commandProjection)}`);
+        integrated = { beforeRevision: revision, applied, readAfterUi, readAfterCommand, commandSaved, uiProjection, commandProjection };
+      }
+      rows.push({ id, status: "verified", ...detail, actions: actions.slice(actionStart), expected, actual, compatibilityPreserved, integrated });
     } catch (error) { rows.push({ id, status: "unresolved", ...detail, actions: actions.slice(actionStart), error: error.stack }); }
   }
 
@@ -178,6 +215,23 @@ export async function checkP5Ui({ scene = "overview", runChecks = true } = {}) {
       const analog = structuredClone(configured); analog.input = createInputBindingPreset("pointerGrid", 0.1);
       await restore(analog); await edit("#input-preset", UI_PRESET_IDS.wasd);
       note("analog to digital preset reuses retained UI step", equal(saved(), { ...configured, input: createInputBindingPreset("wasd", 0.1) }));
+      if (session) {
+        await restore(configured);
+        await edit('[data-mapping="edge-smoothness"] [data-mapping-min]', "");
+        const pendingRevision = session.revision;
+        const pendingEdit = await command({ kind: "apply", edits: [set("visual.hideFeedback", true)] });
+        note("actual command preserves invalid GUI text and publishes incomplete once", pendingEdit.status === "incomplete" && pendingEdit.revision === pendingRevision + 1
+          && saved() === null && q("#mapping-edge-smoothness-min").value === "" && q("#visual-hide-feedback").checked);
+        await edit('[data-mapping="edge-smoothness"] [data-mapping-min]', 0);
+        const repaired = await command({ kind: "get", field: "P5.contribution" });
+        note("UI recovery after command edit has exact production command readback", repaired.status === "ok"
+          && equal(repaired.result.value, await typed(configured, [set("visual.hideFeedback", true)])));
+        const beforeReadonly = saved(), readonlyRevision = session.revision;
+        for (const path of Object.keys(compatibility)) {
+          const result = await command({ kind: "set", field: `P5.${path}`, value: at(beforeReadonly, path) });
+          note(`production command rejects disabled compatibility setting ${path}`, result.status === "rejected" && result.revision === readonlyRevision && equal(saved(), beforeReadonly));
+        }
+      }
     } catch (error) { checks.push({ name: "pending, recovery and compatibility sequence", pass: false, error: error.stack }); }
   }
 
@@ -195,7 +249,9 @@ export async function checkP5Ui({ scene = "overview", runChecks = true } = {}) {
   return { pass: rows.every(row => row.status === "verified") && checks.every(row => row.pass) && overflow <= 1,
     scene, program: root.dataset.researchProgram, viewport: { width: innerWidth, height: innerHeight },
     scope: "Production Planner controls/controller with synthetic DOM events; fixture restore used only for preconditions. No native media, real hardware or Runner claim.",
-    oracle: "Actual typed P5 adapter with detached editor hooks; production command-surface comparison awaits combined integration.",
+    integrated: Boolean(session), transcript,
+    oracle: session ? "Actual registered seven-owner production command session compared in both directions with real UI edits, complete P5 contributions and configured preview projections. Detached typed P5 oracle provides an additional comparison."
+      : "Actual typed P5 adapter with detached editor hooks; production command-surface comparison awaits combined integration.",
     writableSettingsExpected: P5_AUTHORING_SETTINGS.filter(setting => setting.writable).length,
     writableSettingsExercised: fieldRows.length, verified: fieldRows.filter(row => row.status === "verified").length,
     modeSpecificNotApplicable: 0, unresolved: fieldRows.filter(row => row.status === "unresolved").length,

@@ -278,6 +278,18 @@
   writers are stopped pending integration; no shared app or Runner files changed.
 ### 20260912-e2e-ui-p5-controls
 
+- Integrated follow-up uses an independent clean materialization of Main's
+  `23e8f3a3671f87e7e73dbfd422847479fd5e5fa7`, branch
+  `codex/segment-p5-ui-integrated`, C: sibling P5 UI worktree. No app or shared
+  harness source changes. Existing fully read instruction baseline plus all
+  changed 40/55/68/69/70 content through this freeze were read in lexical order.
+- The actual seven-owner `researchUi.plannerAuthoringSession` is used without
+  registration shims: full catalogue, UI-to-command readback, command-to-UI
+  complete contribution and configured preview equality, one revision per edit,
+  invalid GUI draft preservation/recovery and read-only compatibility rejection.
+  Probe passes all 61 fields at both widths with zero unresolved/N/A fields;
+  source-bound final captures and handoff follow. Native stdin remains Main's
+  gate; no P5 native, real media, complete file mock or Runner claim follows.
 - Root allocated E2E-UI/P5 on the existing isolated CLI-P5 branch: operate all
   61 writable settings plus preset through actual rendered Planner controls,
   compare complete contributions with the typed owner, and inspect wide/narrow
