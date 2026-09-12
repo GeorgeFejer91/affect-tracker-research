@@ -1,7 +1,9 @@
 import { bootResearchUi } from "../../site/src/research/app.js";
+import { canonicalJson } from "../../site/src/research/canonical.js";
 import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import variants from "./variant-workspace-binding-v1.json";
+import legacyRecipe from "./experiment-package-v1.canonical.json";
 
 // Actual controller and owner modules. Catalogue events are synthetic boundary
 // receipts, not proof of file permissions, decoding, native persistence or Run.
@@ -108,6 +110,23 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   check("rebind preserves editable variant fields without auto-confirming", !!q("[data-order-row]") && !accepted("stimuli"));
   await clickConfirm("stimuli");
   check("restored variants confirm through the same footer cycle", accepted("stimuli") && ui.openSection === "layout");
+  // Existing v1 files remain readable with all current producers connected.
+  // A synthetic file handle verifies the controller seam, not an OS picker.
+  const source = `${canonicalJson(legacyRecipe)}\n`, bytes = new TextEncoder().encode(source);
+  let picks = 0;
+  window.showOpenFilePicker = () => {
+    picks += 1;
+    return Promise.resolve([{ kind: "file", getFile: async () => ({ size: bytes.byteLength, arrayBuffer: async () => bytes.slice().buffer }) }]);
+  };
+  q("#package-load").click();
+  check("legacy recipe picker is requested directly by its click", picks === 1);
+  await until(() => ui.experimentPackage && q("#research-announcer").textContent.startsWith("Loaded "));
+  await wait(100);
+  check("legacy file opens with exact source and restored saved controls", ui.experimentPackageSourceText === source
+    && q("#experiment-title").value === legacyRecipe.settings.experiment.title
+    && Number(q("#sampling-frequency").value) === legacyRecipe.settings.experiment.samplingFrequencyHz);
+  check("legacy projection cannot bypass current contribution or save gates", q("#package-generate").disabled
+    && !accepted("review") && ui.workspace === null);
   ui.openSetupSection("review"); await wait();
   q("#package-generate").scrollIntoView({ block: "end" });
   check("no controller errors", errors.length === 0);

@@ -3830,7 +3830,10 @@ function bindResearchInteractions(root, { surface }) {
       bubbles: true,
       detail: Object.freeze({ settings: parsed.package.settings }),
     }));
-    announce(`Loaded ${parsed.package.packageId}. Its complete ${packageReproductionReceipt.caseCount}-case protocol matrix and canonical re-export passed the local deterministic check. No language was selected; the participant must traverse the package tree before Start.`);
+    // Live producers may invalidate the current design's receipt while these
+    // legacy settings are projected. Report the validated file's local result,
+    // not the mutable current-design receipt; do not re-arm export or Start.
+    announce(`Loaded ${parsed.package.packageId}. Its complete ${reproduction.caseCount}-case protocol matrix and canonical re-export passed the local deterministic check. No language was selected; the participant must traverse the package tree before Start.`);
     if (workspace) void requestWorkspaceRescan().catch((error) => {
       announce(`Recipe loaded; workspace verification still needs attention: ${error instanceof Error ? error.message : String(error)}`);
     });
