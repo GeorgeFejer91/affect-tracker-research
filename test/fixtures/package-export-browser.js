@@ -116,15 +116,15 @@ const change = (selector, value) => {
   check("stale recipe cannot start", query("#start-experiment").disabled);
   await load();
   check("intentional reopen restores the saved sampling value", Number(query("#sampling-frequency").value) === parsed.package.settings.experiment.samplingFrequencyHz);
-  let contribution = { revision: 0, enabled: false, pending: false, contribution: { preview: true }, dependencyRevisions: [] };
-  const unregister = ui.registerPlannerContribution("P6", () => contribution);
   check("disabled optional XR draft leaves v1 available", !query("#package-generate").disabled);
-  contribution = { ...contribution, enabled: true, revision: 1 };
-  ui.plannerContributionChanged("P6");
+  const xrEnabled = query("[data-xr-enabled]");
+  xrEnabled.checked = true;
+  xrEnabled.dispatchEvent(new Event("change", { bubbles: true }));
   check("active unsupported XR blocks export and Start with a routed issue", query("#package-generate").disabled
-    && query("#start-experiment").disabled && query('[data-planner-segment="P6"]')?.textContent.includes("current recipe format"));
+    && query("#start-experiment").disabled && [...root.querySelectorAll('[data-planner-segment="P6"]')].some((item) => item.textContent.includes("current recipe format")));
   if (renderState === "error") { await renderReceipt(); return; }
-  unregister();
+  xrEnabled.checked = false;
+  xrEnabled.dispatchEvent(new Event("change", { bubbles: true }));
   await load();
   const originalP2 = ui.getQuestionnaireContributionSnapshot();
   check("locked questionnaire contribution includes both language definitions and exact nested tree",
@@ -151,6 +151,23 @@ const change = (selector, value) => {
   check("pending questionnaire wording blocks master export", ui.getQuestionnaireContributionSnapshot().pending && query("#package-generate").disabled);
   query('[data-sheet-key="maia-2/en"] [data-sheet-action="save"]').click();
   await waitFor(() => !ui.getQuestionnaireContributionSnapshot().pending);
+  const beforeCode = ui.getQuestionnaireContributionSnapshot();
+  const originalEnglish = beforeCode.contribution.questionnaires.definitions.find((definition) => definition.language === "en");
+  change('[data-sheet-key="maia-2/en"] [data-sheet-cell="0:2"]', "7");
+  const pendingCode = ui.getQuestionnaireContributionSnapshot();
+  check("code-only edit advances P2 revision and blocks export while pending", pendingCode.pending
+    && pendingCode.revision > beforeCode.revision && query("#package-generate").disabled);
+  query('[data-sheet-key="maia-2/en"] [data-sheet-action="save"]').click();
+  await waitFor(() => !ui.getQuestionnaireContributionSnapshot().pending);
+  const afterCode = ui.getQuestionnaireContributionSnapshot();
+  const acceptedEnglish = afterCode.contribution.questionnaires.definitions.find((definition) => definition.language === "en");
+  check("accepted code-only edit preserves labels, IDs, provenance and module hash references", afterCode.revision > pendingCode.revision
+    && acceptedEnglish.items[0].options[0].scoreValue === 7
+    && canonicalJson(acceptedEnglish.items.map(({ itemId, options }) => ({ itemId, options: options.map(({ optionId, label }) => ({ optionId, label })) })))
+      === canonicalJson(originalEnglish.items.map(({ itemId, options }) => ({ itemId, options: options.map(({ optionId, label }) => ({ optionId, label })) })))
+    && canonicalJson(acceptedEnglish.attribution) === canonicalJson(originalEnglish.attribution)
+    && afterCode.contribution.questionnaires.modules.filter(({ questionnaireId }) => questionnaireId === acceptedEnglish.questionnaireId)
+      .every(({ definitionSha256 }) => definitionSha256 === acceptedEnglish.definitionSha256));
   change("#sampling-frequency", "111");
   request = null;
   query("#package-generate").click();
@@ -175,6 +192,16 @@ const change = (selector, value) => {
   root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.experimentPackageLoaded, { detail: { receipt: revised } }));
   await waitFor(() => ui.experimentPackage !== null && !query("#package-generate").disabled);
   check("explicit reopen discards old table drafts even when the accepted definition hash is unchanged", query(englishPrompt).value === "Synthetic fixture wording edit");
+  check("explicit reopen preserves revised option code and complete accepted questionnaire content", canonicalJson(ui.getQuestionnaireContributionSnapshot().contribution.questionnaires) === canonicalJson(revised.package.settings.questionnaires)
+    && ui.getQuestionnaireContributionSnapshot().contribution.questionnaires.definitions.find((definition) => definition.language === "en").items[0].options[0].scoreValue === 7);
+  request = null;
+  query("#package-generate").click();
+  await waitFor(() => request);
+  check("unchanged revised reopen re-exports byte-identically", request.sourceText === revised.canonicalSourceText);
+  request.complete({ status: "cancelled" });
+  await waitFor(() => !ui.packageExportStatus.busy);
+  check("recipe controls precede collapsed optional LSL settings", (query(".package-finalization").compareDocumentPosition(query("#review-lsl")) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    && !query("#review-lsl").open);
   await waitFor(() => query("#preflight-list").textContent.includes("Choose the participant's language to prepare the schedule."));
   check("embedded experiment source passes verification before the explicit language prerequisite", !query("#preflight-list").textContent.includes("sourceByteSha256"));
   if (query("#setup-trigger-review").getAttribute("aria-expanded") !== "true") ui.openSetupSection("review");

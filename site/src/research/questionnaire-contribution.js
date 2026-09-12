@@ -75,6 +75,17 @@ export async function restoreQuestionnaireAuthoring(value) {
     coverage: analyzeQuestionnaireLanguageCoverage({ definitions, modules, languages, requestedFamilyIds: families.map(f => f.id) }) };
 }
 
+/** P7's acceptance callback: validated, editable, complete; no state mutation. */
+export async function validateQuestionnairePlannerContribution(value) {
+  // Editable restoration may report an incomplete imported contribution, but
+  // Planner acceptance must never freeze it as a complete questionnaire set.
+  const restored = await restoreQuestionnaireAuthoring(value);
+  if (!restored.coverage.complete) {
+    throw new TypeError("Supply every questionnaire in every selected language before accepting Section 2.");
+  }
+  return true;
+}
+
 /** Content edits never flatten an imported language tree or reorder its routes. */
 export function reconcileQuestionnaireModuleMappings(tree, definitions, modules) {
   const result = clone(validateLanguageSelectionTreeV1(tree));

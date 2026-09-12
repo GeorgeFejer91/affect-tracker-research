@@ -85,6 +85,32 @@ file; follow the integration-owner collection procedure in the workflow.
   reopen and explicit selected-target rejection. Disabled XR must not block
   desktop. Background app/build checks only; no hardware or runtime claims.
 
+### 20260912-p7-accepted-master-recipe
+
+- Owner: **S7**, P7; **open**, resumed by researcher via roadmap/integration.
+  Backend Verification, P7-03/P7-05/P7-06/P7-07/P7-09 and existing P7-04.
+  Branch `codex/segment-p7-accepted-recipe`, isolated worktree
+  `D:/GitHub/affect-tracker-research-p7-recipe-export`, base `6bac40f`.
+- Goal: accepted owner contributions to one canonical recipe, acknowledged
+  named save, editable reopen and independent reproduction. Existing clean
+  handoff implements v1 acknowledgement/stale/cancel/edit; active successor
+  contributions still reject rather than being omitted. Baseline 20 focused
+  registry/export tests pass. Canonical integration remains separately owned.
+- Inputs: P1 catalogue/study; P2 full definitions/language tree; P3 variants,
+  named ISIs and marker contract; P4 supported layout; P5 saved input/visual/
+  mappings; explicitly optional P6. New envelope preserves frozen v1 readers.
+- Allowed seams: P7 registry/export/codec modules, P7 app bootstrap/API and
+  save/load/edit handlers, named file adapters and their focused tests. Main owns
+  shared accordion Confirm/advance and UIstate projection. Domain owners retain
+  payload validation/restoration; P7 awaits actual owner revisions on restore.
+- Evidence: accepted/stale/dependency-withdrawal guards, async cancellation and
+  write acknowledgement, canonical reopen/re-export, multilingual code/label
+  preservation, variant/occurrence reproduction, mirrored strict contracts and
+  bounded headless composition. No unchanged broad gate repetitions.
+- Q08 layout, Q10 additional feedback and Q15 optional profile choices remain
+  unapproved until answered. Existing serialized feedback only; no Runner,
+  hardware, foreground interaction, deployment or research-ready claim.
+
 ### 20260912-integration-resume-and-acceptance
 
 - Owner: **Add segment confirmation flow**, segment `integration`; **open**.
@@ -481,6 +507,53 @@ file; follow the integration-owner collection procedure in the workflow.
   interfaces do not depend on choosing those policies. No Runner, publication,
   GUI qualification, canonical integration merge, or unrelated UI cleanup is
   included in this pass.
+### 20260912-p2-producer-consumer-closure
+
+- Owner **S2**, P2-04/P2-08 and bounded P2-05 inventory audit; status **ready**.
+  Resumed Backend Verification under the existing Planner allocation, branch
+  `codex/segment-questionnaires-table-catalogue`, isolated worktree
+  `D:\GitHub\affect-tracker-research-questionnaires-table`, base `714b22d`.
+  Canonical observed clean at `ba2110f`; P7 consumer observed at `6bac40f`.
+- Deliverable: focused producer/restore regressions, approved local EN/DE
+  inventory and further-language coverage evidence, then an exact P2 handoff.
+  Allowed seams: questionnaire contribution validator/editor tests and P2 documentation;
+  P7 owns compiler/save call sites and its combined browser fixture. Existing
+  visual handoff and six accepted scrolled captures will not be repeated.
+- Compare actual full-definition snapshot/restore contracts with P7 Edit recipe,
+  persistence acknowledgement and re-export, including numeric codes, module
+  references, language routes and dirty/revision state. No unsupported scoring,
+  placement, missing-answer or presentation semantics will be inferred (Q09).
+  Invalid-draft durability remains Q13; Runner/native acquisition is deferred.
+- User explicitly saved their work and authorized the integration task to merge
+  and reload when ready. Authorization was forwarded to **Add segment
+  confirmation flow**, which remains sole integrator; no local reload claimed.
+- Added `validateQuestionnairePlannerContribution(value)` in
+  `questionnaire-contribution.js`: async `true`/throw callback for P7 acceptance.
+  It validates exact content, editable identity and complete language coverage
+  without mutating state. Existing incomplete-import restoration remains intact.
+  Getter stays five-key `{revision,enabled,pending,contribution,dependencyRevisions}`;
+  P2 dependencies are `[]`. `restoreQuestionnaireContribution(value,{isCurrent})`
+  throws before mutation if stale; successful restore returns the new snapshot.
+- Evidence: 28/28 focused Node tests across contribution, prebuilt, grid,
+  integration and supplied-questionnaire suites; `git diff --check` clean.
+  New synthetic third-language independent-process round-trip preserves codes
+  and requires its own asset. Local preset audit preserves every ready MAIA
+  item's prompt, label, code, identity and source provenance; no assets changed.
+- Independently ran P7's unchanged `package-export.mjs` on clean `6bac40f`
+  (clean before/after): Chrome passed 27/27 at
+  `D:\GitHub\.affect-checks\s2-p7-consumer-chrome-20260912`. Exact wording edit,
+  pending state, full German source, nested route, delayed acknowledged save,
+  and explicit reopen draft reset pass. Edge returned empty stdout/stderr
+  before any fixture result (`s2-p7-consumer-edge-20260912`); not a pass and not
+  evidence of a product assertion failure. The fixture uses a synthetic writer,
+  not actual native persistence or a user window.
+- **Implemented:** coverage-aware acceptance callback and focused regressions.
+  **Owner-ready:** full-content P2 producer/restore plus prior UI at `714b22d`.
+  **Integrated:** prior P2 core through `ae47df6` in canonical `ba2110f`;
+  this callback, accepted UI polish and P7 consumer are not yet canonical.
+  **Missing/deferred:** TAS authorized assets, equivalent computed scoring,
+  Q09/Q13, presentation contract and Runner. S7 owns the additional combined
+  code-only edit/acceptance fixture and master-envelope integration.
 
 ### 20260911-p2-table-first-visual-follow-up
 
