@@ -760,6 +760,22 @@ file; follow the integration-owner collection procedure in the workflow.
   and bind fixture/harness/source hashes. Product and other-owner files stay
   unchanged. Collect fresh Chrome/Edge codec evidence; actual shared UI and
   named OS-picker qualification remain separate integration checks.
+- **Final P7 ready** on clean combined `15f5bfd36750c182a0943223dbcc491de182af60`:
+  product source exactly matches main `875efae`; only P7 harness/docs differ.
+  769 JavaScript and 235 no-default native library tests pass. Actual Planner
+  fresh authoring/save/Open/rebind/recompile passes 65 assertions in each
+  Chrome/Edge, with both final Review PNGs inspected. The rebuilt native reader
+  reproduces both browser-authored files and all 12 selected projections exactly.
+  The 11-case native matrix and 79 codec assertions in each browser also pass
+  on this clean combined source. Evidence and precise boundaries are recorded
+  in `docs/planner-master-recipe-v1.md` under final combined verification.
+- Owned P7-03 through P7-09 implementation and combined software verification
+  are complete for handoff. Main/root retain final all-section qualification,
+  catalogue closure and canonical delivery; no other segment is edited here.
+  Five normal no-default geometry/workspace dead-code warnings (two in tests)
+  are routed to integration, with no P7 warnings observed. OS picker, physical
+  media, installed native and final Runner correspondence remain unqualified.
+  Source writers stop after the documentation receipt for sole-owner collection.
 
 ### 20260912-p3-master-reproduction
 
