@@ -46,6 +46,98 @@
   correspondence remain separate observed gates; existing user windows stay
   untouched. Public questionnaire redistribution remains unapproved.
 
+### 20260912-smoke-progress-and-reassigned-stalled-tasks
+
+- Actual all-owner native CLI and independent earlier synthetic XDF receipts
+  are retained in69. Root independently read the latter with pyxdf 1.17.0:
+  profile hash, 22 contiguous observations, ten occurrence start/end pairs and
+  footer count pass; zero affect samples and no answers/full recipe were present.
+  This is explicitly earlier synthetic evidence, not complete-XDF smoke success.
+- C: reached zero free bytes during builds; failed linker/storage evidence is
+  retained. RR11 moved its own generated target to D:, recovering roughly 3 GB;
+  this is limited headroom. New task build/temp/evidence uses process-scoped D:
+  paths. No broad cleanup or deletion of unbound CLI profiles is authorized.
+- Repeated systemError stopped S2 and S6 progress. Main confirmed S6 → S4
+  transfer of the proposed shared consequential session API, inspecting partial
+  work before writes; S6 receives an explicit stop. S2 receives an explicit stop
+  for installation/new demographics. Main owns actual fixed-source Store install;
+  S3, after its frozen CLI grant helper, owns a read-only typed demographics
+  contract proposal to main/Runner/root. Implementation waits for those owners'
+  exact schema/file agreement, not another user permission question.
+- S4 and S5 completed their allocated integrated browser parity gates with
+  explicit actual-session source bindings. Native imports/export and the new
+  typed demographic form still need their own evidence. Main separately assigned
+  S5 local-preset picker verification, preserving its completed P5 source.
+- Preview localized the actual diagnostic stall before actor start inside
+  GStreamer initialization. Async service/actor lifetime code passes focused
+  software checks; real initialized playback/parent-close evidence remains open.
+  A fake-worker test is not a successful native clip run.
+
+### 20260912-complete-xdf-and-demographics — E2E-DEMOGRAPHICS / E2E-XDF
+
+- Direct user steering requires full real Runner JSON/panels/video/ISI behavior
+  and complete reconstruction from the saved XDF's primary information stream.
+  New shipped EN/DE demographics: full name, age, gender and handedness. Root's
+  exact scope, bounded protocol seam and acceptance requirements are in69;
+  capability rows60 remain open. Use clearly synthetic smoke responses.
+- S2 owns typed bilingual form/Planner contract proposal; main owns shared
+  master/native reader integration; Runner owns participant input and answers,
+  sequenced chunked startup bundle, observations and independent reconstruction.
+  Names/age are not fabricated Likert options. Preserve explicit old-version
+  dispatch. Main and both owners agree exact new contracts before source edits.
+- Root approved Runner's new master-only information envelope on the same marker
+  outlet, bounded startup chunks and integrity commit before acquisition. Actual
+  recipe/selection/definitions/results become reconstructable without sidecars;
+  matching video assets remain external. Actual smoke and qualification remain
+  distinct from the earlier synthetic LSL fixture.
+- Actual native `23e8f3a` seven-owner CLI smoke passed: 155 settings, 32 owner
+  operations, eight commands, exact readback, rejection without revision change,
+  exit0. Root recorded exact executable/transcript receipts in69 and supplied
+  captured descriptors to the About owner. S7 owns the discovered missing
+  explicit presentation-target authoring descriptor.
+- Main requested and root allocated S6 a new isolated shared consequential
+  session/contract lane; exact API proposal before code. Main retains app/wire/
+  native composition; S3 owns grants and S7 effect helper. Earlier P6 is frozen.
+
+### 20260912-maintained-cli-library — CLI-DOCS / CLI-SHARED
+
+- Explicit user follow-up requires a dedicated GitHub Pages About CLI library
+  and maintained `for-ai` documentation. Root owns new71 and central capability
+  allocation; Online Version owns `site/about/` and source-derived public
+  catalogue/navigation in an isolated research worktree. Main integrates and
+  coordinates publication. No duplicate command authority or new CLI ingress.
+- Stage: Backend Verification with documentation/UI evidence for the new About
+  surface. Root records segment inputs/outputs, command workflow, exact timestamp
+  naming, evidence limits and recurring maintenance duties. Public inventory must
+  distinguish internal grant descriptors from public absolute-path operations.
+- Main froze actual P1–P7 app registration at `23e8f3a`; the native binary still
+  represents the older policy-only `680842a` checkpoint. S4/S5 are allocated
+  exact-source integrated-session rendered parity reruns. Source registration is
+  not native command verification or complete mock export.
+- External driver now accepts synchronous action resolvers using detached,
+  validated prior replies. This lets the actual mock use generated occurrence
+  IDs and actual saved basenames without an alternate compiler or guessed IDs.
+  Eight focused driver subprocess tests pass, including resolver identity
+  isolation and rejection of asynchronous/non-object actions before dispatch.
+- CLI-DOCS stays open until the public page, drift/link checks, visual receipts
+  and deployment correspondence exist. E2E-RECIPE/E2E-RUNNER remain open.
+
+### 20260912-native-counterevidence-and-rendered-parity
+
+- Main collected the frozen P1–P7 owner handoffs at `3d94619`; registration,
+  hooks and consequential commands remain in progress. S4 and S5 have bounded
+  actual rendered-control parity follow-ups in their own qualification files;
+  main retains shared app ownership and will bind final candidate reruns.
+- Root independently inspected the actual Gst clip diagnostic. Test exit0 and
+  decoded frames coexist with stale failure reasons in every active snapshot.
+  Do not call it clean playback. Initial S1 terminal latch `9a68e7c` is held for
+  a corrective partial-metadata follow-up and actual combined diagnostic rerun.
+  Evidence and exact artifact identity are in69.
+- S7 retained and hash-verified the six pinned upstream source archives and
+  license texts; full transitive runtime closure and approval remain open.
+  Live Preview next proposes exact production parent/actor lifetime seams;
+  no new unsafe boundary, Start flag or shared edit is implied by a proposal.
+
 ### 20260912-source-closure-and-companion-coordination
 
 - S7's file-writer handoff remains frozen. New isolated RR-04 evidence lane:

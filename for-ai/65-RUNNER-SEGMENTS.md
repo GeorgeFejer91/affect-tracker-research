@@ -1,5 +1,18 @@
 # Experiment Runner agent ledger
 
+## Complete-XDF smoke extension — 2026-09-12
+
+The latest explicit user request activates RR-02/03/04/06/07/08/09/10 seams for
+an actual complete experiment whose saved XDF is independently reconstructable.
+[69](69-CLI-RUNNER-END-TO-END-GOAL.md) records the exact test, newly requested
+shipped bilingual demographics asset and bounded versioned information-stream
+allocation. S2/main provide the typed form/master contract; Runner presents and
+records full-name text, whole-year age and gender/handedness choices alongside
+MAIA-2/TAS-20 answers. Use synthetic test data, preserve old versioned readers.
+The primary marker stream must carry enough canonical recipe/selection,
+definitions/answers and observed identity-bound events to reconstruct from XDF
+alone. Component/synthetic recorder evidence does not close this actual run.
+
 ## Active end-to-end allocation — 2026-09-12
 
 The researcher now explicitly requests CLI-authored master intake and an actual

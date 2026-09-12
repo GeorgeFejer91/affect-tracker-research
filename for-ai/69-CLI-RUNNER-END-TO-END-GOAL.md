@@ -1,5 +1,87 @@
 # CLI → Planner JSON → Runner validation goal
 
+### Current reconstruction prerequisite receipt
+
+Root independently read the earlier Runner synthetic lifecycle XDF with pyxdf
+1.17.0, without a recipe sidecar. Its SHA-256 is
+`92fffaf48cfbd49f4190224e9addc52d71aca8fc78f8452f216f5074d643a0fa`.
+Two streams contain 23 marker messages (one verified profile plus 22 contiguous
+observations), ten matching occurrence start/end pairs and matching footer count;
+the affect stream has zero samples. The actual LSL span is about 0.00624 seconds,
+while test-injected monotonic event positions span about 51 seconds. This is
+deliberately synthetic event sequencing, not actual experiment timing.
+`D:/GitHub/.affect-runner-master-build/root-independent-synthetic-xdf-review.json`
+and its Python script retain the independent checks. Complete source bytes,
+participant answers and demographics are absent from that older profile; the
+new information protocol below is still necessary.
+
+## User amendment: complete Runner smoke and XDF reconstruction — 2026-09-12
+
+The user explicitly requires the actual Runner to read the exact Planner JSON,
+present the participant's questionnaires, play the actual video, preserve its
+leading/trailing ISIs and save an XDF from which the whole experiment can be
+reconstructed. The primary LSL information/marker stream must retain participant
+metadata, complete questionnaire definitions and answers, and observed temporal
+events with unique video, named-ISI and occurrence identities. Separate attempt
+files or the original Planner JSON must not be necessary to interpret the XDF.
+This extends the existing goal; it does not replace the original mock or permit
+fixture-only, parser-only or unqualified native playback claims.
+
+The user's demographic answer activates a **shipped EN/DE demographics asset**:
+full name (text), age (number), gender (male, female, other, prefer not to say),
+and handedness. The stated implementation uses whole years and handedness options
+right-handed, left-handed, ambidextrous and prefer not to say. Put demographics
+first in the mock, followed by MAIA-2 and TAS-20, then named ISI 1750 ms, the exact
+Great Dictator clip, and named ISI 3213 ms. Both complete language routes remain
+available for participant selection. This is a project-authored standard form,
+not a claim of psychometric validation. Smoke responses must be explicitly
+synthetic; no real participant is enrolled by this test.
+
+S2 owns the bilingual asset and explicit typed text/integer/single-choice form
+proposal. Main owns shared master/native reader integration; Runner owns the
+participant controls, typed answers and recording. Preserve existing Likert and
+old master contracts through explicit versioned dispatch. Never encode arbitrary
+names or ages as fabricated Likert options, invent scoring or impose an unasked
+adult-only eligibility rule. CLI and UI must expose the same new form capability,
+and the maintained [CLI library](71-CLI-LIBRARY.md) must describe it after its
+contract is frozen and implementation is verified.
+
+Runner's approved bounded protocol direction uses its existing single marker
+outlet with a new versioned, sequenced information envelope. A startup header,
+indexed chunks and verified commit carry exact canonical Planner bytes, immutable
+selection, the complete execution dictionary, effective output settings and
+participant metadata. Each wire chunk is at most 128 KiB and the startup bundle
+at most 64 MiB; assembled memory and startup duration must also be bounded.
+Attach the recorder before the first envelope and begin acquisition only after
+the committed startup bundle. Later records carry typed draft/submitted answers,
+observed lifecycle transitions and explicit final or interrupted outcome.
+The Runner owner freezes the exact schema and implementation; this paragraph is
+the authorized seam, not a second schema definition or completion receipt.
+
+Preserve actual LSL timestamps and native observation times separately from
+planned offsets. Emit distinct start/end events for every video and named ISI,
+including repeated IDs, consecutive ISIs and zero-duration intervals. Pause,
+resume, errors, cancellation and incomplete recording must remain distinguishable.
+The stream binds recipe, run, attempt, participant, variant, language path,
+definition/item/option IDs and occurrence/execution IDs as appropriate.
+
+Independent verification must begin with **only the saved XDF**. Reconstruct its
+canonical recipe/selection, demographics, exact shown questionnaire definitions,
+typed answers and ordered observed timeline; then compare these reconstructed
+values with the original exported recipe and separately recorded UI/native
+observations. Reject or explicitly report missing profile/chunks/events, duplicate
+or reordered sequences, bad hashes, invalid typed answers and clock reversal.
+Do not repair gaps by inferring events from planned durations. XDF retains media
+identities, locations, hashes and metadata; replaying video pixels still requires
+the matching video asset, not a covert copy of video bytes in LSL markers.
+
+Acceptance includes real participant-panel rendering for both languages, real
+full-clip playback, measured leading/trailing intervals, saved Flubber/input/layout
+behavior, actual LSL capture and independent XDF reconstruction. Synthetic
+transport tests are useful prerequisites with their own receipts. They cannot
+close the actual smoke test. Existing installed/native timing, lifecycle, source
+closure and capability gates remain in force.
+
 ## Explicit allocation — 2026-09-12
 
 The researcher requested an active goal to perform a full test run: create the
@@ -213,3 +295,57 @@ This establishes actual native hidden Planner policy command execution. It does
 not establish all-segment integration, real media import, final recipe export,
 visible UI parity or Runner execution. Main may now rebuild the candidate to
 integrate the ready owner handoffs and consequential file/media operations.
+
+### All seven owners through the actual native CLI
+
+Clean source `23e8f3a3671f87e7e73dbfd422847479fd5e5fa7` produced executable
+SHA-256 `0e10f50d8f364e7e00a9f22f928b4064247d31ffb373fcbea4cd4774d60d138d`.
+Root's production-process driver captured 155 settings and 32 owner operations,
+queried all seven real app owners, applied a seven-owner draft batch and verified
+readback. P2 deliberately retained the actual selected language list; P3 added a
+1750 ms named interval. P1/P4/P5/P6/P7 values were read back from the same session.
+Invalid numeric/read-only commands rejected without changing revision. Eight
+commands completed, revision 0 → 1, owned PID 16768 exited 0.
+
+Evidence: `D:/GitHub/.affect-checks/root-cli-all-owner-23e8f3a/` contains the
+exact `catalogue.json`, initial snapshot, driver receipt, transcript and root
+readback review. Transcript SHA-256:
+`a8e6cb03403a7c3241a964e4a2452bec0dde3136a02982124e2492a1af82db39`.
+The external action script is retained alongside that directory. This proves
+actual registered native command/readback behavior; it imports no media or
+questionnaire files, exports no master and observes no participant execution.
+The public About catalogue can use this exact captured descriptor set as a
+verification reference. Explicit presentation-target authoring was found missing
+from this catalogue and is allocated to S7 before final export integration.
+
+### Actual native clip diagnostic and corrected next action
+
+Live Preview's isolated diagnostic checkpoint is `dffe166`; its first completed
+real-runtime attempt used a test-only copied executable with the required
+Common Controls manifest. The prepared artifact SHA-256 is
+`6a6ec53bf5da70aba680bef7736fc54d0efd9cf3754d20af90a4217ec1f14904`.
+Root independently verified that artifact and inspected
+`D:/GitHub/.affect-native-diagnostic-build/attempt-02/` receipts and stdout.
+The exact Great Dictator clip decoded three sampled positions, reported
+1920×1080 and 254406 ms, and exercised Play/Pause/Resume/Stop/new generation and
+actor-thread exit before parent exit. This native duration differs by1ms from
+the preliminary ffprobe description; the final recipe must use its actual P1
+import receipt, not a hard-coded preliminary duration.
+
+Although the test process exited successfully, all five inspected Paused/Playing
+snapshots retained `gstreamer-media-info-incomplete`. Root classified this as a
+defect-reproducing engineering diagnostic, not clean playback or qualification;
+see its `root-review.json`. Incomplete initial MediaInfo had become Failed,
+then subsequent backend states overwrote that failure. S1's initial terminal
+latch `9a68e7c` would expose this startup failure, so main must wait for its
+corrective follow-up. S1 owns partial metadata readiness versus genuine terminal
+failure in `state.rs`; Live Preview owns the actual combined-candidate rerun.
+Installed bootstrap, source closure, lifecycle and physical acceptance gates
+remain distinct. No Start capability flag has been enabled by this diagnostic.
+
+Root also validated the four real questionnaire source files together through
+the production importer and contribution validator. Both language routes cover
+MAIA-2 then TAS-20, 37+20 items, beforeSession. The external
+`root-bilingual-source-preflight.json` in the TAS source evidence directory
+records the import identities and explicit source-only limitation; no master
+JSON or production CLI session was created by that preflight.
