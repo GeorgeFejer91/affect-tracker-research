@@ -1,5 +1,16 @@
 # Affect Research agent entrypoint
 
+The 2026-09-12 user amendment requires two separate companion programs. Read
+[`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
+Planner authors JSON and retains Flubber previews. Runner alone executes, plays
+participant video, emits LSL and records own/selected external streams to XDF.
+Recording policy belongs to Runner sessions. Runner-only agents use
+[`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md); both apps use
+[`for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md`](./for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md).
+This supersedes earlier single-executable/two-mode and blanket Runner-deferral
+text below. Planner completion does not wait for final runtime correspondence.
+Consult the **Chat Orchestrator** task for uncertain ownership or contracts.
+
 Before inspecting, planning, editing, testing, or publishing this repository,
 every AI agent MUST read every Markdown file in [`for-ai/`](./for-ai/) completely
 and in lexical filename order.

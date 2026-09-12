@@ -18,6 +18,7 @@ mod research_participant;
 mod research_platform;
 pub mod research_planner_recipe_policy;
 pub mod research_protocol;
+pub mod research_questionnaire_recipe;
 mod research_run_storage;
 mod research_runtime;
 mod research_stimulus_order;

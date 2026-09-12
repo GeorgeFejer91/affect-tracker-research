@@ -57,6 +57,46 @@ invalidate a delayed restoration before it can mutate the editor.
 
 ## Explicit P1 compatibility projection
 
+### Location references (P1 catalogue v2, P3 design v2)
+
+The generic workspace validator/projector now dispatches P1 v1 and v2. For v2,
+`createLocationVariantLibrary(catalogue)` in `variant-library.js` derives an
+internal editor view whose ordered videos contain exactly `annotationId`,
+`assetId`, `relativePath` (the package path), `sha256`, `byteLength`, `durationMs`.
+Its library hash covers `{schema:"affect-research-video-library",version:2,videos}`.
+The full validated P1 catalogue is attached for provenance; this view is not a
+second persisted master media authority.
+
+P3 contribution v2 retains the v1 root keys. Each video entry contains exactly
+`{entryId,kind:"video",referenceId,assetId}`; `referenceId` is the exact reversible
+P1 location annotation including extension. ISI entries retain their three v1
+fields. Distinct locations can share bytes and an asset ID. Both identities must
+match P1. Moving or renaming a file invalidates the old cells; there is no asset-
+only fallback or implicit migration. Variant hashes bind the complete video
+projection, including duration. Allocation remains exactly `{kind:"runnerAssigned"}`.
+
+The embedded marker contract is version 2 with added
+`sourceIdentity:"video-location-content-pair-sha256-v1"`. A video's private
+codebook identity hash is canonical SHA-256 of `{annotationId,assetId}`, so repeated
+occurrences share a source while distinct locations remain distinct even with
+identical bytes. Marker event envelopes and Runner behavior are unchanged.
+
+`variant-reproduction-v2.json` adds duplicate-content locations to the full
+reproduction fixture. Its three independently specified sequence durations are
+50646, 37801 and 37035 ms. Both fixture versions are supported by the independent
+assertion/process helpers. Historical P1/P3 v1 readers, hashes and fixtures remain
+unchanged. The internal editable stimulus-order document uses version 3 for P3
+v2; P7 embeds the contribution itself and uses content-only restoration.
+
+P3 v2 clipboard input is TSV as supplied by Excel, including single-column
+blocks with commas in filenames. The shared parser's optional character bound
+is capped at 6144, defaulting to the existing 4000 for P2 and legacy callers;
+P3 additionally enforces 6144 UTF-8 bytes per cell. Full IDs survive CSV/XLSX
+exports. v2 download requests include the validated P1 catalogue for the export
+adapter to verify against the current owned library before generating bytes.
+
+### Historical v1 projection
+
 [`projectVariantCatalogue`](../site/src/research/variant-catalogue-adapter.js)
 consumes the registered `affect-research-workspace-contribution` v1 snapshot
 through P1's `projectWorkspaceVideoCatalogueSnapshotV1`. P1 validates the complete
@@ -91,6 +131,24 @@ binds P1 metadata. Planned offsets are estimates, never measured onset. See the
 [marker specification](planner-marker-contract-v1.md) for reconstruction rules.
 
 ## Reproduction fixtures and limits
+
+- [`variant-reproduction-v1.json`](../test/fixtures/variant-reproduction-v1.json)
+  supplies full P1 declarations, editable P3 input and its accepted contribution
+  for P7 master tests. Authored variant order is 3, 1, 2; lengths are 8, 4, 3;
+  occurrence IDs are deliberately non-contiguous. Repeated/adjacent videos,
+  leading/consecutive/final/zero ISIs, distinct duplicate durations and an unused
+  dictionary definition all survive. Expected per-entry bounds are specified
+  independently; totals are 50646, 37801 and 48146 ms.
+  `scripts/emit-variant-reproduction-fixture.js` regenerates the payload without
+  deriving expected times from the timeline compiler.
+- P7 can reuse `assertVariantReproduction(workspace, contribution,
+  definitionSha256, expected)` from
+  [`assert-variant-reproduction.js`](../test/fixtures/assert-variant-reproduction.js)
+  after strict complete-master parsing. Pass actual `segments.P1`, `segments.P3`
+  and authored-core definition hash; do not replace full master validation with
+  this owner assertion. It checks every boundary, occurrence and embedded marker
+  source against the fixture. The standalone process fixture currently covers
+  P3 domain reproduction only; it does not claim complete-master acceptance.
 
 - [`research-video-catalogue-contribution-v1.json`](../test/fixtures/research-video-catalogue-contribution-v1.json)
   is the exact P1 shared fixture from `3d6a6b2bdf33cc685668e650ca163c39be75c491`.

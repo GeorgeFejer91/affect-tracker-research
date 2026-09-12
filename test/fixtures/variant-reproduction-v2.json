@@ -1,0 +1,510 @@
+{
+  "workspace": {
+    "schema": "affect-research-workspace-contribution",
+    "version": 2,
+    "study": {
+      "schema": "affect-research-study-identity",
+      "version": 1,
+      "id": "study-one",
+      "title": "Study one"
+    },
+    "workspaceLayout": {
+      "assetRoot": "assets",
+      "videoLibrary": "assets/stimuli",
+      "projectFile": "experiment.package.json"
+    },
+    "videoCatalogue": {
+      "schema": "affect-research-video-catalogue-contribution",
+      "version": 2,
+      "revision": 4,
+      "annotationPolicy": "relative-path-reversible-v1",
+      "entries": [
+        {
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "annotationId": "session%5Fa_clip.mp4",
+          "sourceRelativePath": "stimuli/session_a/clip.mp4",
+          "packageRelativePath": "assets/stimuli/session_a/clip.mp4",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "byteLength": 1024,
+          "durationMs": 12345,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080,
+            "displayAspect": {
+              "numerator": 16,
+              "denominator": 9
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        },
+        {
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "annotationId": "session-a_clip.mp4",
+          "sourceRelativePath": "stimuli/session-a/clip.mp4",
+          "packageRelativePath": "assets/stimuli/session-a/clip.mp4",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "byteLength": 1024,
+          "durationMs": 12345,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1920,
+            "displayHeightPx": 1080,
+            "displayAspect": {
+              "numerator": 16,
+              "denominator": 9
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        },
+        {
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "annotationId": "session2_portrait.mp4",
+          "sourceRelativePath": "stimuli/session2/portrait.mp4",
+          "packageRelativePath": "assets/stimuli/session2/portrait.mp4",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "byteLength": 2048,
+          "durationMs": 23456,
+          "geometry": {
+            "status": "verified",
+            "source": "browser-decoder",
+            "displayWidthPx": 1080,
+            "displayHeightPx": 1920,
+            "displayAspect": {
+              "numerator": 9,
+              "denominator": 16
+            },
+            "rotationDegrees": null,
+            "pixelAspectRatio": null,
+            "metadataInterpretation": "decoder-oriented-display"
+          }
+        }
+      ],
+      "integritySha256": "40e4cd2d3424066d7e4f1ae52a393e44e1228b9f20a3d76750537ac106841b23"
+    }
+  },
+  "draft": {
+    "columns": [
+      {
+        "variantId": "variant-3",
+        "title": "Repeated and interval edges"
+      },
+      {
+        "variantId": "variant-1",
+        "title": "Reverse and terminal interval"
+      },
+      {
+        "variantId": "variant-2",
+        "title": "Adjacent videos"
+      }
+    ],
+    "rows": [
+      [
+        "ISI1",
+        "session2_portrait.mp4",
+        "session%5Fa_clip.mp4"
+      ],
+      [
+        "ISI2",
+        "ISI4",
+        "session-a_clip.mp4"
+      ],
+      [
+        "session%5Fa_clip.mp4",
+        "session%5Fa_clip.mp4",
+        "session%5Fa_clip.mp4"
+      ],
+      [
+        "session%5Fa_clip.mp4",
+        "ISI2",
+        ""
+      ],
+      [
+        "ISI3",
+        "",
+        ""
+      ],
+      [
+        "session2_portrait.mp4",
+        "",
+        ""
+      ],
+      [
+        "ISI4",
+        "",
+        ""
+      ],
+      [
+        "ISI1",
+        "",
+        ""
+      ]
+    ],
+    "entryIds": [
+      [
+        "variant-3-entry-11",
+        "variant-1-entry-11",
+        "variant-2-entry-11"
+      ],
+      [
+        "variant-3-entry-13",
+        "variant-1-entry-13",
+        "variant-2-entry-13"
+      ],
+      [
+        "variant-3-entry-15",
+        "variant-1-entry-15",
+        "variant-2-entry-15"
+      ],
+      [
+        "variant-3-entry-17",
+        "variant-1-entry-17",
+        "variant-2-entry-17"
+      ],
+      [
+        "variant-3-entry-19",
+        "variant-1-entry-19",
+        "variant-2-entry-19"
+      ],
+      [
+        "variant-3-entry-21",
+        "variant-1-entry-21",
+        "variant-2-entry-21"
+      ],
+      [
+        "variant-3-entry-23",
+        "variant-1-entry-23",
+        "variant-2-entry-23"
+      ],
+      [
+        "variant-3-entry-25",
+        "variant-1-entry-25",
+        "variant-2-entry-25"
+      ]
+    ],
+    "isiDefinitions": [
+      {
+        "isiId": "ISI1",
+        "durationMs": 0
+      },
+      {
+        "isiId": "ISI2",
+        "durationMs": 500
+      },
+      {
+        "isiId": "ISI3",
+        "durationMs": 500
+      },
+      {
+        "isiId": "ISI4",
+        "durationMs": 1500
+      },
+      {
+        "isiId": "ISI5",
+        "durationMs": 73
+      }
+    ],
+    "nextIsiOrdinal": 6
+  },
+  "contribution": {
+    "schema": "affect-research-variant-design",
+    "version": 2,
+    "librarySha256": "893f53c36fe31c9ab5f4e946f09ed2197f4ac2244851affa23f0c335dc0a6722",
+    "isiDefinitions": [
+      {
+        "isiId": "ISI1",
+        "durationMs": 0
+      },
+      {
+        "isiId": "ISI2",
+        "durationMs": 500
+      },
+      {
+        "isiId": "ISI3",
+        "durationMs": 500
+      },
+      {
+        "isiId": "ISI4",
+        "durationMs": 1500
+      },
+      {
+        "isiId": "ISI5",
+        "durationMs": 73
+      }
+    ],
+    "variants": [
+      {
+        "variantId": "variant-3",
+        "title": "Repeated and interval edges",
+        "entries": [
+          {
+            "entryId": "variant-3-entry-11",
+            "kind": "isi",
+            "referenceId": "ISI1"
+          },
+          {
+            "entryId": "variant-3-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI2"
+          },
+          {
+            "entryId": "variant-3-entry-15",
+            "kind": "video",
+            "referenceId": "session%5Fa_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "entryId": "variant-3-entry-17",
+            "kind": "video",
+            "referenceId": "session%5Fa_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "entryId": "variant-3-entry-19",
+            "kind": "isi",
+            "referenceId": "ISI3"
+          },
+          {
+            "entryId": "variant-3-entry-21",
+            "kind": "video",
+            "referenceId": "session2_portrait.mp4",
+            "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "entryId": "variant-3-entry-23",
+            "kind": "isi",
+            "referenceId": "ISI4"
+          },
+          {
+            "entryId": "variant-3-entry-25",
+            "kind": "isi",
+            "referenceId": "ISI1"
+          }
+        ],
+        "versionSha256": "b0d41acee2391afab1b48a4aa1ef9b332d666bf053fe58d96158e280fab21f80"
+      },
+      {
+        "variantId": "variant-1",
+        "title": "Reverse and terminal interval",
+        "entries": [
+          {
+            "entryId": "variant-1-entry-11",
+            "kind": "video",
+            "referenceId": "session2_portrait.mp4",
+            "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "entryId": "variant-1-entry-13",
+            "kind": "isi",
+            "referenceId": "ISI4"
+          },
+          {
+            "entryId": "variant-1-entry-15",
+            "kind": "video",
+            "referenceId": "session%5Fa_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "entryId": "variant-1-entry-17",
+            "kind": "isi",
+            "referenceId": "ISI2"
+          }
+        ],
+        "versionSha256": "16829e6edff0ae59978ff62e232ec056ee3c48ffa6d03e1376f743469876cccd"
+      },
+      {
+        "variantId": "variant-2",
+        "title": "Adjacent videos",
+        "entries": [
+          {
+            "entryId": "variant-2-entry-11",
+            "kind": "video",
+            "referenceId": "session%5Fa_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "entryId": "variant-2-entry-13",
+            "kind": "video",
+            "referenceId": "session-a_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "entryId": "variant-2-entry-15",
+            "kind": "video",
+            "referenceId": "session%5Fa_clip.mp4",
+            "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          }
+        ],
+        "versionSha256": "882fdaf609083798fc8cbea3ac7d0dc37d085e0b9f44751f80f9923cdef11c4b"
+      }
+    ],
+    "allocation": {
+      "kind": "runnerAssigned"
+    },
+    "markerContract": {
+      "schema": "affect-research-planned-markers",
+      "version": 2,
+      "vocabulary": [
+        "sessionStart",
+        "videoStart",
+        "videoEnd",
+        "isiStart",
+        "isiEnd",
+        "formStart",
+        "formEnd",
+        "pause",
+        "resume",
+        "interruption",
+        "restart",
+        "complete",
+        "partial"
+      ],
+      "identity": "recipe-run-attempt-variant-entry-execution-v1",
+      "clock": "runner-observed-monotonic-v1",
+      "sequence": "strictly-increasing-per-run-v1",
+      "onset": "observed-media-lifecycle-not-qualified-visible-onset-v1",
+      "reconstruction": "embedded-codebook-paired-boundaries-no-gap-repair-v1",
+      "sourceIdentity": "video-location-content-pair-sha256-v1"
+    },
+    "integritySha256": "0179587258e0c5724226f8bf5e4312c1a2e25cc80b60b164767122850871f5ef"
+  },
+  "expected": [
+    {
+      "variantId": "variant-3",
+      "title": "Repeated and interval edges",
+      "entries": [
+        {
+          "entryId": "variant-3-entry-11",
+          "referenceId": "ISI1",
+          "kind": "isi",
+          "startMs": 0,
+          "endMs": 0
+        },
+        {
+          "entryId": "variant-3-entry-13",
+          "referenceId": "ISI2",
+          "kind": "isi",
+          "startMs": 0,
+          "endMs": 500
+        },
+        {
+          "entryId": "variant-3-entry-15",
+          "referenceId": "session%5Fa_clip.mp4",
+          "kind": "video",
+          "startMs": 500,
+          "endMs": 12845,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "entryId": "variant-3-entry-17",
+          "referenceId": "session%5Fa_clip.mp4",
+          "kind": "video",
+          "startMs": 12845,
+          "endMs": 25190,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "entryId": "variant-3-entry-19",
+          "referenceId": "ISI3",
+          "kind": "isi",
+          "startMs": 25190,
+          "endMs": 25690
+        },
+        {
+          "entryId": "variant-3-entry-21",
+          "referenceId": "session2_portrait.mp4",
+          "kind": "video",
+          "startMs": 25690,
+          "endMs": 49146,
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          "entryId": "variant-3-entry-23",
+          "referenceId": "ISI4",
+          "kind": "isi",
+          "startMs": 49146,
+          "endMs": 50646
+        },
+        {
+          "entryId": "variant-3-entry-25",
+          "referenceId": "ISI1",
+          "kind": "isi",
+          "startMs": 50646,
+          "endMs": 50646
+        }
+      ]
+    },
+    {
+      "variantId": "variant-1",
+      "title": "Reverse and terminal interval",
+      "entries": [
+        {
+          "entryId": "variant-1-entry-11",
+          "referenceId": "session2_portrait.mp4",
+          "kind": "video",
+          "startMs": 0,
+          "endMs": 23456,
+          "assetId": "asset-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          "entryId": "variant-1-entry-13",
+          "referenceId": "ISI4",
+          "kind": "isi",
+          "startMs": 23456,
+          "endMs": 24956
+        },
+        {
+          "entryId": "variant-1-entry-15",
+          "referenceId": "session%5Fa_clip.mp4",
+          "kind": "video",
+          "startMs": 24956,
+          "endMs": 37301,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "entryId": "variant-1-entry-17",
+          "referenceId": "ISI2",
+          "kind": "isi",
+          "startMs": 37301,
+          "endMs": 37801
+        }
+      ]
+    },
+    {
+      "variantId": "variant-2",
+      "title": "Adjacent videos",
+      "entries": [
+        {
+          "entryId": "variant-2-entry-11",
+          "referenceId": "session%5Fa_clip.mp4",
+          "kind": "video",
+          "startMs": 0,
+          "endMs": 12345,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "entryId": "variant-2-entry-13",
+          "referenceId": "session-a_clip.mp4",
+          "kind": "video",
+          "startMs": 12345,
+          "endMs": 24690,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "entryId": "variant-2-entry-15",
+          "referenceId": "session%5Fa_clip.mp4",
+          "kind": "video",
+          "startMs": 24690,
+          "endMs": 37035,
+          "assetId": "asset-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        }
+      ]
+    }
+  ]
+}

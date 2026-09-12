@@ -7,6 +7,21 @@ const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: fal
 const included = { validatePackageV1: (pkg, contribution) => pkg.accepted === contribution.accepted };
 const validated = { validateContribution: async () => true };
 
+test("complete P2 recipe getter takes precedence and cannot be reduced to legacy export", async () => {
+  const registry = createPlannerContributionRegistry(); let validatedFull = false;
+  const full = { ...snapshot(), contribution: { schema: "complete-p2", presentation: { repeatLabelsEvery: 5 } } };
+  const unregister = registerAvailablePlannerContributions({
+    registerPlannerContribution: registry.register,
+    getQuestionnaireRecipeContributionSnapshot: () => full,
+    getQuestionnaireContributionSnapshot() { throw Error("Legacy projection must not be used"); },
+    validateQuestionnaireRecipeContribution(value) { assert.deepEqual(value, full.contribution); validatedFull = true; return true; },
+  });
+  await registry.accept("P2"); assert.equal(validatedFull, true);
+  assert.deepEqual(registry.assertAccepted({ requiredSegments: ["P2"] }).snapshots[0].contribution, full.contribution);
+  await assert.rejects(registry.assertPackageV1(), /successor/u);
+  unregister();
+});
+
 test("explicit target invalidation expires active XR acceptance without discarding forms or disabled exclusion", async () => {
   const registry = createPlannerContributionRegistry(); let xr = snapshot();
   registry.register("P2", () => snapshot(), validated);

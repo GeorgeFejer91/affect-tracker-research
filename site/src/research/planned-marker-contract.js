@@ -7,12 +7,13 @@ const CODE = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
 const KEYS = ["schema", "version", "recipeSha256", "runId", "attemptId", "variantId", "variantVersionSha256", "sequence", "eventType", "entryId", "executionId", "sourceCode", "monotonicMs"];
 
 export async function createPlannedMarkerProfile(contribution, variantId, videos, recipeSha256) {
-  const videoIndex = indexVariantVideos(videos);
+  const videoIndex = indexVariantVideos(videos, contribution.version === 2 ? 6144 : 160);
   if (!SHA.test(recipeSha256)) throw new TypeError("A marker profile must bind the final recipe SHA-256.");
   const variant = contribution.variants.find(item => item.variantId === variantId);
   if (!variant) throw new TypeError("Unknown variant.");
   const codebook = [], codes = new Map(), entries = [];
   for (const entry of variant.entries) {
+    if (contribution.version === 2 && entry.kind === "video" && videoIndex.get(entry.referenceId)?.assetId !== entry.assetId) throw new TypeError("Marker video location and content identity do not match Segment 1.");
     const key = `${entry.kind}:${entry.referenceId}`;
     if (!codes.has(key)) {
       const sourceCode = `source-${codebook.length + 1}`;
@@ -20,7 +21,9 @@ export async function createPlannedMarkerProfile(contribution, variantId, videos
         : contribution.isiDefinitions.find(isi => isi.isiId === entry.referenceId);
       if (!source) throw new TypeError("Marker source is missing from the accepted catalogue or dictionary.");
       boundedInteger(source.durationMs, entry.kind === "video" ? 1 : 0, entry.kind === "isi" ? 3600000 : Number.MAX_SAFE_INTEGER, "Marker source duration");
-      const identitySha256 = entry.kind === "video" ? source.sha256 : await canonicalSha256(source);
+      const identitySha256 = entry.kind === "video" ? contribution.version === 2
+        ? await canonicalSha256({ annotationId: source.annotationId, assetId: source.assetId })
+        : source.sha256 : await canonicalSha256(source);
       if (!SHA.test(identitySha256)) throw new TypeError("Marker source requires its exact identity hash.");
       codes.set(key, sourceCode); codebook.push({ sourceCode, kind: entry.kind, identitySha256, durationMs: source.durationMs });
     }

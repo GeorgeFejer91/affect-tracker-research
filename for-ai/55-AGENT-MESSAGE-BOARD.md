@@ -88,6 +88,23 @@ future work in [`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
 - Status: ready for owner handoff, outside frozen convergence intake. Evidence
   and limits are recorded in the roadmap. Center remains disabled pending the
   user's semantic decision; arbitrary custom analog axes remain unsupported.
+### 20260912-p3-location-master-reproduction
+
+- Owner: **S3**, P3-04 through P3-08; Backend Verification continuation of the
+  allocated comprehensive Planner master pass, branch `codex/segment-p3-master-variants`,
+  isolated C: worktree, reviewed base `7946bc6`. Runner execution is deferred.
+- Q04: consume P1 catalogue v2 exact reversible location annotations plus immutable
+  content asset IDs. P3 design v2 carries both identities for each video occurrence;
+  no implicit v1 migration, reassignment, sorting, allocation or hidden intervals.
+- Shared seams: P1 pure catalogue/workspace dependency from `0b7f793`; optional
+  bounded parser argument approved by S2 (default 4000 remains unchanged); P7
+  embeds P3 verbatim. Integration owns app/native bridge/command registration.
+- Evidence now: v1/v2 strict readers, duplicate bytes at distinct paths, rename
+  invalidation, long/comma/formula-leading IDs, CSV/XLSX, all variant timelines,
+  independent reconstruction, content-only reopen and revision binding. Native
+  parity/export awaits P1's typed native catalogue; full master proof awaits P7.
+- G09: include a long nested-path ID in the existing table/catalogue headless
+  render check; retain bounded layout and full editable/copyable IDs.
 
 ### 20260911-preview-palette-halo
 
@@ -230,6 +247,205 @@ file; follow the integration-owner collection procedure in the workflow.
   goal alone. Root coordination records the updated charter/decision authority;
   independent owner work continues. No foreground launch, canonical promotion,
   remote push, deployment, or qualification is authorized by this pass label.
+- Integrated early checkpoints through `451c19a`: Preview popup/reset, complete
+  P5 pure contract, P6 V2-bound saved geometry/explicit exclusion, P7 strict root
+  and accepted capture, Runner boundary docs and root goal/Q04 decision. Combined
+  668 Node checks and 14+14 actual Preview reset checks pass. Full owner UI wiring,
+  master codec, final naming/save/reopen and Planner-only app extraction remain
+  in progress; these component checks do not close the full Planner goal.
+- Shared policy-control seam: `planner-policy-controls.js` delegates all domain
+  validation to P7. `getPlannerRecipePolicy()` reads current controls without a
+  legacy import; `restorePlannerRecipePolicy(policy,{isCurrent})` validates and
+  locates the complete control set before synchronous projection. No inferred
+  allocation/recording policy, manufactured acceptance or input/change events.
+  Two focused strict read/restore checks pass; actual controller coverage added.
+
+### 20260912-root-planner-completion-goal
+
+- Owner **Create segment catalogue**, root roadmap/QA. The user explicitly set
+  a sustained full Planner completion goal, then deferred actual Planner–Runner
+  correspondence validation to the final development step. Stage: Backend
+  Verification; no repeated stage-pause question.
+- Root deliverable: new67 goal/evidence ledger, current60/62 routing and final
+  rendered audit64; no producer edits. S1–S7, Live Preview and integration received
+  bounded new assignments and the clarification; no duplicate tasks created.
+- Baseline `7946bc6` / application `d6acfd1`, plus reviewed docs-only `d83c7a5`. Root isolated
+  branch `codex/planner-completion-roadmap`; sole integration owner uses new
+  `codex/segment-planner-completion`. The previous UI intake is complete; its
+  freeze does not prohibit newly authorized Planner completion.
+- Independent root source review found v1-only generation/import prerequisite,
+  null accepted P4, configured P5 state outside its historical payload and
+  v1-only file adapters. Reuse current lifecycle fixes. G01–G11 in67 require
+  complete Planner authoring/validation/save/reopen and exact-source evidence.
+- Experiment Runner owns16/65/66 and charter/router amendments; root owns
+  60/62/64/67 and this entry. S7 owns successor contracts; integration owns shared
+  app/native composition. Recording policy stays Runner-owned under16.
+- Q04 is now answered: location-derived IDs include the filename/extension and
+  preserve full relative-path distinctions. The collision came from proposed
+  lossy normalization; S1 owns reversible path encoding and P3/P7 reconciliation,
+  not a manual collision workflow. Q05/Q08 remain pending, with no assumed
+  answer or duplicated question. G11 records Planner UI/service/command isolation
+  under amendment16, coordinated through integration and the Runner owner.
+  Independent work continues. Root interprets the latest all-settings goal as
+  saving the current renderer selection, including existing project-authored
+  procedural Face, without restoring historical Face/Photoatlas capabilities.
+  Temporary test/inspection state stays distinct. No Runner/runtime or physical
+  qualification is implied by the Planner goal.
+- Prior cleanup receipt closed: all 29 exact `7946bc6` default Chrome images
+  across seven sections/two viewports/full scroll were inspected; all PNG and
+  harness hashes match, with zero errors/duplicate IDs/pane overflow. P7's compact
+  warning-list fix is verified in combined source. See 64 for paths and limits;
+  this is not G09 populated/full-master evidence for the new completion goal.
+
+### 20260912-runner-companion-separation
+
+- Owner: Experiment Runner; R1 / RR-01–RR-09, Backend Verification. Explicit user
+  allocation: two independent apps, Planner previews/JSON retained; Runner reads
+  that JSON and owns playback/acquisition/LSL and own+selected external XDF.
+  User clarified recording policy belongs solely to Runner.
+- Worktree: `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-runner`;
+  branch `codex/segment-runner-desktop-app`, reviewed base `7946bc6`. Main stays
+  integration-owned. Baseline 53 focused Node checks passed before mutation.
+- Deliverable: docs16/65/66 and charter/routers first; separate desktop entry,
+  native services/command registries, strict recipe intake, existing package
+  execution composition and bounded recorder implementation/evidence.
+- Named shared seams: lib.rs/main/bootstrap, desktop config/build scripts,
+  Planner composition Run extraction only. Retain all P1–P7 producers,
+  confirmation, async load/edit/save guards and persistent P5 preview. P7 owns
+  successor schema; no competing format. Root owns new67 and60/62/64.
+- Evidence: app/command boundary checks, strict intake/canonical rejection,
+  XDF typed/clock/failure fixtures, native software checks and separate frontend
+  closures. Installed playback/native physical/LSL qualification remains open.
+  Actual Planner–Runner correspondence is the last development stage, not a
+  blocker on independently completing the Planner.
+- Status: documentation amendment written before source implementation. No
+  capability completion or successful recording is claimed by this entry.
+
+### 20260912-p7-complete-planner-master
+
+- Owner **S7**, P7-03 through P7-09; Backend Verification. Root explicitly
+  allocated full Planner completion after the bounded UI intake, then clarified
+  that actual Planner–Runner correspondence is the final deferred development
+  stage. Isolated `codex/segment-p7-accepted-recipe`, base `7946bc6`.
+- Goal/deliverable: one complete, strict versioned master JSON with ordered P1–P6
+  contributions, explicit retained policy/target, integrity, acknowledged named
+  saving and editable reopening. Every run-defining owner field is preserved;
+  frozen v1 readers remain unchanged. No alternative draft-as-accepted format.
+- Current source has accepted-snapshot capture, v1 file adapters and standalone
+  policy/language components; complete successor serialization and native read
+  dispatch are missing. This pass owns those contract/persistence modules.
+  Integration owns shared app wiring/confirmation; domain owners retain their
+  validators, complete field capture, projections and mutation APIs.
+- P1 confirms its complete saved workspace content is valid without restoring
+  permissions; Q05-dependent physical-path fields remain absent. P2/P5 own new
+  complete authoring wrappers where existing preview controls need promotion.
+  P6 agrees a strict included/excluded full-profile union. Accepted P4 layout
+  remains required and is never replaced by the internal draft while Q08 is open.
+- Evidence now: canonical strict round trips, tamper/unknown/missing rejection,
+  independent-process reconstruction from only saved data, exact-byte save
+  acknowledgements and asynchronous edit/reopen fencing. Final Planner evidence
+  adds integrated authoring→save→fresh editable reopen→reexport at desktop/narrow
+  widths. Runtime correspondence, recording, media timing and installed Runner
+  qualification are deferred. XDF stream selection is Runner-session policy;
+  authored LSL output and planned markers remain experiment definitions.
+- Complete JS checkpoint now compiles/reads/reproduces real P1/P3 V1 and V2,
+  full P2/P5, chosen accepted P4 and explicit P6 exclusion. Q08 was clarified
+  by the coordinator: both owner methods are accepted explicit per-recipe
+  choices, with no default. Full native mirror and actual-app composition
+  continue; component success does not close the whole Planner allocation.
+- Delivered file/restore seams use exact closed-file readback, strict receipt,
+  caller lifetime fences, dependency-order content restoration and no source
+  adoption after partial failure. The complete P2 registration takes precedence
+  over the legacy getter and cannot be silently reduced for v1 export.
+
+### 20260912-p3-master-reproduction
+
+- Owner **S3**, P3-04 through P3-08, resumed Backend Verification under the
+  researcher's comprehensive Planner completion allocation. Isolated branch
+  `codex/segment-p3-master-variants`, worktree
+  `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-p3-master-variants`,
+  base `7946bc6`. Earlier owner checkpoint `3413865` is preserved and collected
+  in this combined base. Canonical integration remains separately owned.
+- Function/input/contribution: author exact variant columns and named ISIs;
+  consume P1 identities/durations; produce ordered versioned occurrences and
+  planned marker semantics for P7's complete master. No additional researcher
+  input, participant assignment or allocation policy is introduced.
+- Current source has domain validation, actual workspace-revision binding,
+  sidecar-free preparation and editable pending-content restoration. Complete
+  master embedding/reopen and independent all-variant reproduction remain.
+- Allowed files: P3 domain/adapter/editor where demonstrated defects require,
+  P3 fixtures/tests and API/evidence docs. P7 owns master creation/parsing and
+  integration owns shared app/native wiring. S1 owns new Q04 path-derived IDs;
+  the direct decision is acknowledged and any consumer migration is explicit.
+- Baseline: 49 focused P3 Node checks pass on the combined base. Collect a
+  representative multivariant repeated-video/ISI fixture, independently expected
+  ordered boundaries and marker bindings through actual master export/reopen.
+  Background/CLI only. Strict historical readers stay unchanged; Runner
+  execution/correspondence, actual timestamps, recording and qualification are
+  deferred by the researcher's latest instruction, not Planner completion gates.
+- First reusable fixture/checkpoint: three unequal variants in authored order
+  3, 1, 2; 15 non-contiguous occurrence IDs; all accepted ISI placement edges;
+  duplicate durations and an unused dictionary definition. Independently fixed
+  totals are 50646/37801/48146 ms. P7's full reader can reuse the owner assertion
+  against actual P1/P3 payloads and the master's definition hash.
+- Evidence: 54 focused P3 Node tests pass, including two fresh processes with
+  clock/RNG/storage/navigation unavailable, exact editable re-export, pending
+  content restore, current-revision media rebind and zero sidecar writes.
+  This is a reusable P3 component fixture, not yet a complete master receipt.
+  No application/Rust wire or build input changes; no unchanged broad build run.
+- Follow-up found a demonstrated P3 download lifetime defect: delayed library
+  validation dispatched old CSV/XLSX after reset/replacement/teardown; an in-flight
+  export then overwrote the newer recipe's status. Two actual-editor regressions
+  failed first. Download now checks the existing edit/restore epochs before
+  dispatch and before reporting completion/failure. No shared app change.
+- Follow-up evidence: 56 focused P3 and 39 UI/modularity Node checks, syntax and
+  whitespace pass; desktop 9-file and Pages 212-file closure builds pass after
+  the repair. Existing desktop chunk-size warning remains. Rust/wire contracts
+  are unchanged; installed spreadsheet/picker and full-master evidence remain
+  separate. Integration was notified before the P3-only repair.
+
+### 20260912-p2-master-content-and-presentation
+
+- Owner **S2**, P2-04–P2-08, **ready**, Backend Verification under the user's
+  new full-Planner completion allocation. Isolated branch
+  `codex/segment-p2-master-content`, worktree
+  `D:\GitHub\affect-tracker-research-questionnaires-table`, clean combined
+  base `7946bc6b319ddf689bdaa81c07ec8aa6a4b3869d` (application `d6acfd1`).
+- Current gap: label repetition 1/5/10 is editor-only, lacks change notification,
+  blocks the old contribution and disappears on restore. Existing item labels,
+  codes, required flags, definitions, modules and nested languages already have
+  strict legacy preservation. Complete that data flow without changing frozen
+  v1 readers or inventing scoring totals/translations/placement correspondence.
+- Deliverable: a strict versioned P2 presentation/content companion, exact
+  UI-to-contribution coverage, guarded editable restore, multilingual custom
+  fixture and independent-process canonical reproduction. Own P2 model/editor
+  and P2-only app getter/restore hooks, focused tests and owned documentation.
+  S7 owns master embedding/registration/file dispatch; integration owns shared
+  confirmation and final convergence. Coordinate the wrapper before collection.
+- Evidence: malformed/unknown/missing/stale/hash/coverage rejection; every
+  visible questionnaire data field; presentation-only revision changes;
+  delayed restore/edit/teardown fencing; background actual-controller cases.
+  Reuse accepted compact UI; do not repeat settled visual matrices.
+- Deferred: Q09 new scoring/placement/missing-answer policy, Q13 invalid draft
+  durability, unavailable authorized TAS assets, actual Runner correspondence,
+  acquisition, hardware, native permissions and publication. Runner work does
+  not block Planner-owned serialization and editable content validation.
+- Update: pure contract `c489438` sent to S7 with exact module/API/schema and
+  shared fixture digest. UI/native follow-up implements the agreed getters and
+  guarded restore; 654 JS / 202 native library tests pass, Chrome 24 cases at
+  each of 1280/800 px and production closure pass. Native owner seam is one new
+  pure `research_questionnaire_recipe` module plus crate-visible existing tree
+  validator; no native permissions, commands or normalizer algorithm changes.
+  P7 registration/root serde remains exclusively S7-owned. The user authorized
+  integrator merge/reload after readiness and confirmed in-app work saved.
+- Final implementation checkpoint `6654bc2` (parent pure `c489438`): clean
+  source-bound Chrome receipts pass 24/24 each under
+  `D:/GitHub/.affect-checks/s2-recipe-final-chrome-1280-20260912` and
+  `D:/GitHub/.affect-checks/s2-recipe-final-chrome-800-20260912`.
+  Both record stable sources and `dirty: false`. Native fixed shared digest
+  recheck passes 3/3; `cargo clippy --locked --no-default-features --lib -- -D warnings`
+  passes. S2 writers stopped after receipt documentation; collect commits in
+  order. No canonical merge/reload or combined-master completion claimed here.
 
 ### 20260912-integration-contribution-cycle — combined candidate
 

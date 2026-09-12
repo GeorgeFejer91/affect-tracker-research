@@ -1,5 +1,14 @@
 # Central segment roadmap and capability checklist
 
+**Active goal — 2026-09-12:** finish the Planner as a comprehensive JSON authoring
+interface. Every P1–P6 segment, including experiment-defining Flubber/live
+configuration, must contribute to one validated, saveable and editable master.
+See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for current
+assignments, concrete source gaps and evidence. Final Planner–Runner correspondence
+is explicitly deferred to the last development stage. The separate-program and
+Runner-owned recording amendment in [16](16-COMPANION-APP-BOUNDARY.md) supersedes
+older one-program/two-mode wording below.
+
 This is the central **final-state Planner roadmap**, segment contract map and
 capability checklist requested by the researcher on 2026-09-11. Every future
 agent must answer: **What is my segment supposed to do? What does it already
@@ -44,9 +53,13 @@ qualification are deferred unless separately allocated by the researcher.
    experiment recipe**. Researchers do not write or combine JSON by hand. A
    compatible Runner reconstructs the experiment from that JSON and referenced
    media; video bytes need not be embedded in JSON.
-2. P1 owns workspace/library authoring and stable video annotations based on
-   folder and filename, e.g. `calm/forest.mp4` → `calm_forest`. Normalization,
-   collisions and relocation semantics remain explicit decisions.
+2. P1 owns workspace/library authoring and video annotations derived from the
+   full relative file location. The 2026-09-12 Q04 answer explicitly includes
+   filename and extension, e.g. `calm/forest.mp4` → `calm_forest.mp4`. Distinct
+   legal paths must yield distinct IDs; do not introduce collisions by lossy
+   normalization or require manual ID repair. Use an unambiguous reversible
+   encoding for nesting/separators/literal characters when necessary. Immutable
+   byte identity remains separate; relocation authorization remains Q05.
 3. P2 has an extensible language catalogue. English and German are current
    priorities, not the only languages. Each selected language needs complete
    accepted questionnaire content and scoring annotations.
@@ -93,6 +106,15 @@ qualification are deferred unless separately allocated by the researcher.
     acceptance. This records product intent, not an implemented workflow or
     approval to bypass the stage/contract gates. Integration owns confirmation
     orchestration and P7 owns final naming/save semantics.
+12. The 2026-09-12 goal requires complete modular P1–P6 authoring, including active
+    experiment-defining Flubber/live settings, strict JSON export and editable
+    reopen. Temporary test movement/inspection is distinct from configuration.
+    P7 owns the successor wire shape; historical v1 readers remain supported.
+13. Planner completion is the current goal; final correspondence with the
+    still-developing Runner is a later final-stage check. Stream recording policy
+    belongs to Runner sessions under the direct correction adopted in `16`;
+    recorder selection/destination are not missing Planner fields. Authored
+    emission configuration and experiment event/marker meaning remain Planner-owned.
 
 ## Segment map and single owners
 
@@ -187,7 +209,7 @@ presentation/scoring semantics need explicit ownership/versioning.
 - [ ] **P2-04 — Partial:** full-content restore/snapshot from `74e879b`/`ae47df6` is in canonical `ba2110f`; P7's owner branch `6bac40f` consumes it for package load/Edit recipe and acknowledged save (27-case Chrome check on 2026-09-12). Combined canonical integration remains open. Invalid draft durability remains Q13. Historical language-neutral or colliding slots reject editable restoration explicitly; nested language roster editing remains unsupported.
 - [ ] **P2-05 — Partial:** MAIA-2 EN/DE each supply 37 items and six labelled/coded options. Preserve source-specific annotations: supplied EN uses forward codes without subscales; DE includes supplied reverse codes and eight subscales. This is not proof of equivalent computed scoring. TAS EN remains rights-gated, DE is absent; neither catalogue entry is ready. Further-language authoring is verified using a synthetic EN/DE/FR round-trip and missing-FR rejection, not an invented instrument translation.
 - [ ] **P2-06 — Decision:** placement, computed totals/subscale scoring beyond explicit option codes, and missing-answer behavior (Q09). Explicit reverse-coded option values already work.
-- [ ] **P2-07 — Partial:** save approved presentation choices; label repetition5/10 is currently preview-only and blocks Build until reset.
+- [ ] **P2-07 — Owner implementation ready, integration open:** versioned P2 recipe companion preserves label repetition 1/5/10, validates one-to-one definition identity/hash/order, notifies acceptance revisions, supports undo and guarded editable restore. Frozen legacy exports still reject unsupported repetition. P7 owns new master embedding; future Runner correspondence is a separate last-stage gate. See `docs/planner-p2-questionnaire-recipe.md` and the 2026-09-12 roadmap receipt.
 - [ ] **P2-08 — Partial:** EN/DE code edits and synthetic EN/DE/FR contributions survive independent-process byte-identical re-export. P7 `6bac40f` passes 27 Chrome cases including wording edit, delayed acknowledgement, exact German definition/nested routes and explicit reopen draft reset. P7 is extending the combined fixture for code-only edits and acceptance metadata; canonical integration and Runner proof are not implied.
 
 **Acceptance:** each selected language has exact required definitions; labels
@@ -199,6 +221,15 @@ placements remain explicit.
 [coverage](../site/src/research/questionnaire-assets.js),
 [contracts](../site/src/research/questionnaires.js).
 **Boundary:** P2 does not allocate participants, schedule videos or record answers.
+
+2026-09-12 P2-04/P2-08 successor evidence: six pure tests include a shared
+JavaScript/Rust canonical fixture and two independent byte-identical editable
+round-trips. Actual-app Chrome checks cover every EN content field, codes,
+required flags, untouched German content, nested routes, presentation-only
+changes/undo, malformed imports, and stale/concurrent/disposed restore fencing.
+The owner contribution is ready; combined P7 export/reopen remains integration
+work, not an implied complete master or Runner claim. Q09/Q13 and source rights
+remain as listed above.
 
 ## P3 — Versions, Timing & Markers
 
@@ -490,7 +521,7 @@ An open decision blocks only its dependent capability.
 | Q01 | Answered / P3 | One column per version; chronological video/ISI rows. | P3-02 must use this orientation; start/stop events are derived. |
 | Q02 | Answered / P3 | User replied “Yes, use these rules” on 2026-09-11: repeated videos; ISIs anywhere including consecutive/final; unequal lengths via trailing padding; reject interior blanks. | Preserve exact order. No implicit block or questionnaire insertion; Q09 remains open. |
 | Q03 | Answered; revised by Q14 / P3 | Video duration is fixed by the catalogue; ISI durations are milliseconds entered in the dictionary field. | Table cells use names, not raw numbers. Derive boundaries; Runner supplies actual timestamps. |
-| Q04 | Open / P1 | How do duplicate names, nested folders, renames, rescans and non-ASCII names affect IDs? | Readable annotations plus immutable asset identity; collision/rename rule needs agreement. |
+| Q04 | Answered / P1 | User rejected the artificial collision premise: IDs derive from location, e.g. `FOLDERNAME_video.mp4`; one exact path can name only one file. Include the extension and preserve full relative-path distinctions. | Implement injective/reversible readable path IDs; no lossy punctuation/Unicode flattening, arbitrary suffix or required manual collision repair. Byte identity remains separate. Changed locations update the annotation with explicit dependency invalidation. Preserve historical readers. |
 | Q05 | Open / P1/P7 | Original absolute directory, portable root, or both with explicit relocation? | Portable binding recommended; recording directory information is accepted. |
 | Q06 | Answered: owner changed / P3/R1 | Latest direct answer in S3 on 2026-09-11: “Leave allocation policy to Runner.” P3 preserves ordered variants; no participant-assignment UI or Planner allocation algorithm. | Supersedes earlier cyclic/fixed-ordinal Planner proposal. Runner algorithm/retry/skip policy is deferred, not a Planner blocker. |
 | Q07 | Owner answered; details deferred / R1 | Runner owns recording; implementation is outside current Planner scope. Format, receiver/start gate, failure handling and visible-onset evidence remain open. | Planner specifies required event fields/semantics now; no recording implementation. |

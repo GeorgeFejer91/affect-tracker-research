@@ -1,7 +1,8 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { indexVariantVideos } from "./variant-video-catalogue.js";
 import { parseSheetTable } from "./questionnaire-sheet.js";
-import { ORDER_LIMITS, validateVideoLibrary, validateStimulusOrderDocument } from "./stimulus-order.js";
+import { ORDER_LIMITS, validateStimulusOrderDocument } from "./stimulus-order.js";
+import { validateVariantLibrary } from "./variant-library.js";
 
 // Successor Planner contract. Historical numeric/post-video authoring stays in stimulus-order.js.
 export const VARIANT_SCHEMA = "affect-research-variant-design";
@@ -14,6 +15,8 @@ export const MARKER_CONTRACT = Object.freeze({
   reconstruction: "embedded-codebook-paired-boundaries-no-gap-repair-v1",
 });
 export const ALLOCATION = Object.freeze({ kind: "runnerAssigned" });
+export const LOCATION_MARKER_CONTRACT = Object.freeze({ ...MARKER_CONTRACT, version: 2,
+  sourceIdentity: "video-location-content-pair-sha256-v1" });
 const enc = new TextEncoder();
 const clone = value => structuredClone(value);
 export class VariantCellError extends TypeError {
@@ -34,7 +37,7 @@ export function createVariantDraft() {
   return { columns: [{ variantId: "variant-1", title: "Variant 1" }], rows: Array.from({ length: 5 }, () => [""]),
     entryIds: Array.from({ length: 5 }, (_, r) => [`variant-1-entry-${r + 1}`]), isiDefinitions: [], nextIsiOrdinal: 1 };
 }
-export function validateVariantDraft(draft) {
+export function validateVariantDraft(draft, { cellBytes = 6144 } = {}) {
   exactKeys(draft, ["columns", "rows", "entryIds", "isiDefinitions", "nextIsiOrdinal"], "Variant table");
   if (![draft.columns, draft.rows, draft.entryIds, draft.isiDefinitions].every(Array.isArray)) throw new TypeError("Variant table: arrays required.");
   boundedInteger(draft.columns.length, 1, 64, "Variant count");
@@ -52,7 +55,7 @@ export function validateVariantDraft(draft) {
     if (!Array.isArray(row) || row.length !== draft.columns.length || !Array.isArray(draft.entryIds[r]) || draft.entryIds[r].length !== row.length) throw new TypeError("Every row needs one cell and identity per variant.");
     row.forEach((cell, c) => {
       const id = draft.entryIds[r][c], prefix = `${draft.columns[c].variantId}-entry-`;
-      if (typeof cell !== "string" || enc.encode(cell).length > 160 || typeof id !== "string" || !id.startsWith(prefix) || !/^[1-9][0-9]{0,5}$/u.test(id.slice(prefix.length)) || entries.has(id)) throw new TypeError("Invalid cell or repeated occurrence identity.");
+      if (typeof cell !== "string" || enc.encode(cell).length > cellBytes || typeof id !== "string" || !id.startsWith(prefix) || !/^[1-9][0-9]{0,5}$/u.test(id.slice(prefix.length)) || entries.has(id)) throw new TypeError("Invalid cell or repeated occurrence identity.");
       entries.add(id);
     });
   });
@@ -118,7 +121,10 @@ export function pasteVariantTable(draft, r, c, source, library) {
   validateVariantDraft(draft);
   boundedInteger(r, 0, draft.rows.length - 1, "Event position"); boundedInteger(c, 0, draft.columns.length - 1, "Variant position");
   if (typeof source !== "string" || enc.encode(source).length > ORDER_LIMITS.bytes) throw new TypeError("Paste must be at most 4 MiB.");
-  const matrix = parseSheetTable(source, { delimiter: source.includes("\t") ? "\t" : "," });
+  // Spreadsheet clipboard data is TSV, even for one column. A comma can be
+  // part of a v2 filename and must never silently create another variant.
+  const matrix = parseSheetTable(source, { delimiter: library?.version === 2 || source.includes("\t") ? "\t" : ",",
+    maxCellCharacters: library?.version === 2 ? 6144 : 4000 });
   if (!matrix.length || matrix.some(row => row.length !== matrix[0].length)) throw new TypeError("Paste a rectangular block without column headings or the Event column.");
   let next = clone(draft);
   while (next.columns.length < c + matrix[0].length) next = addVariantColumn(next);
@@ -129,10 +135,10 @@ export function pasteVariantTable(draft, r, c, source, library) {
     catch (error) { throw new VariantCellError(error.message, r + dr, c + dc, next.columns[c + dc].title); }
     next.rows[r + dr][c + dc] = value;
   }));
-  validateVariantDraft(next); return next;
+  validateVariantDraft(next, { cellBytes: library?.version === 2 ? 6144 : 160 }); return next;
 }
 export function resolveVariantEntries(draft, library) {
-  validateVariantDraft(draft);
+  validateVariantDraft(draft, { cellBytes: library.version === 2 ? 6144 : 160 });
   if (draft.isiDefinitions.some(isi => library.videos.some(video => video.annotationId === isi.isiId))) throw new TypeError("Video and ISI identities collide.");
   return draft.columns.map((column, c) => {
     let last = draft.rows.findLastIndex(row => row[c] !== "");
@@ -142,14 +148,16 @@ export function resolveVariantEntries(draft, library) {
       try { cell = resolveVariantCell(row[c], library, draft.isiDefinitions); }
       catch (error) { throw new VariantCellError(error.message, r, c, column.title); }
       if (!cell) throw new VariantCellError("fill or remove the interior blank.", r, c, column.title);
-      return { entryId: draft.entryIds[r][c], kind: cell.kind, referenceId: cell.referenceId };
+      const entry = { entryId: draft.entryIds[r][c], kind: cell.kind, referenceId: cell.referenceId };
+      if (library.version === 2 && cell.kind === "video") entry.assetId = library.videos.find(video => video.annotationId === cell.referenceId).assetId;
+      return entry;
     });
     if (!entries.some(entry => entry.kind === "video")) throw new VariantCellError("add at least one video.", 0, c, column.title);
     return { ...column, entries };
   });
 }
 export async function createVariantDesign(draft, library) {
-  await validateVideoLibrary(library);
+  await validateVariantLibrary(library);
   const variants = [];
   for (const variant of resolveVariantEntries(draft, library)) {
     const identities = variant.entries.map(entry => entry.kind === "isi"
@@ -157,18 +165,19 @@ export async function createVariantDesign(draft, library) {
       : library.videos.find(video => video.annotationId === entry.referenceId));
     variants.push({ ...variant, versionSha256: await canonicalSha256({ ...variant, identities }) });
   }
-  const value = { schema: VARIANT_SCHEMA, version: 1, librarySha256: library.integritySha256,
-    isiDefinitions: clone(draft.isiDefinitions), variants, allocation: clone(ALLOCATION), markerContract: clone(MARKER_CONTRACT) };
+  const value = { schema: VARIANT_SCHEMA, version: library.version, librarySha256: library.integritySha256,
+    isiDefinitions: clone(draft.isiDefinitions), variants, allocation: clone(ALLOCATION), markerContract: clone(library.version === 2 ? LOCATION_MARKER_CONTRACT : MARKER_CONTRACT) };
   return { ...value, integritySha256: await canonicalSha256(value) };
 }
 export function variantDesignToDraft(value) {
   exactKeys(value, ["schema", "version", "librarySha256", "isiDefinitions", "variants", "allocation", "markerContract", "integritySha256"], "Variant contribution");
+  if (value.schema !== VARIANT_SCHEMA || ![1, 2].includes(value.version)) throw new TypeError("Unsupported variant contribution schema or version.");
   if (!Array.isArray(value.variants) || !value.variants.length || value.variants.length > 64 || !Array.isArray(value.isiDefinitions)) throw new TypeError("Invalid variant contribution arrays.");
   value.variants.forEach(variant => {
     exactKeys(variant, ["variantId", "title", "entries", "versionSha256"], "Variant");
     if (!Array.isArray(variant.entries) || !variant.entries.length || variant.entries.length > 1024) throw new TypeError("Invalid variant entries.");
     variant.entries.forEach(entry => {
-      exactKeys(entry, ["entryId", "kind", "referenceId"], "Planned entry");
+      exactKeys(entry, value.version === 2 && entry.kind === "video" ? ["entryId", "kind", "referenceId", "assetId"] : ["entryId", "kind", "referenceId"], "Planned entry");
       if (!["video", "isi"].includes(entry.kind)) throw new TypeError("Unknown planned entry kind.");
     });
   });
@@ -180,7 +189,7 @@ export function variantDesignToDraft(value) {
     draft.rows.push(value.variants.map(variant => variant.entries[r]?.referenceId ?? ""));
     draft.entryIds.push(value.variants.map((variant, c) => variant.entries[r]?.entryId ?? `${variant.variantId}-entry-${nextIds[c]++}`));
   }
-  validateVariantDraft(draft); return draft;
+  validateVariantDraft(draft, { cellBytes: value.version === 2 ? 6144 : 160 }); return draft;
 }
 export async function validateVariantDesign(value, library) {
   const expected = await createVariantDesign(variantDesignToDraft(value), library);
@@ -188,9 +197,9 @@ export async function validateVariantDesign(value, library) {
   return expected;
 }
 export async function createVariantDocument(draft, library) {
-  await validateVideoLibrary(library);
+  await validateVariantLibrary(library);
   const contribution = await createVariantDesign(draft, library);
-  const value = { schema: "affect-research-stimulus-order", version: 2, librarySha256: library.integritySha256, draft: clone(draft), contribution };
+  const value = { schema: "affect-research-stimulus-order", version: library.version + 1, librarySha256: library.integritySha256, draft: clone(draft), contribution };
   return { ...value, integritySha256: await canonicalSha256(value) };
 }
 export async function validateVariantDocument(value, library) {
@@ -219,12 +228,13 @@ export function migrateLegacyOrder(value) {
 }
 /** Resolve planned boundaries. No clock reading, synthetic measured onset, or hidden intervals. */
 export function compileVariantTimeline(contribution, variantId, videos) {
-  const videoIndex = indexVariantVideos(videos);
+  const videoIndex = indexVariantVideos(videos, contribution.version === 2 ? 6144 : 160);
   const variant = contribution.variants.find(item => item.variantId === variantId);
   if (!variant) throw new TypeError("Unknown variant.");
   let elapsed = 0;
   const events = [];
   for (const [position, entry] of variant.entries.entries()) {
+    if (contribution.version === 2 && entry.kind === "video" && videoIndex.get(entry.referenceId)?.assetId !== entry.assetId) throw new TypeError("Video location and content identity do not match Segment 1.");
     const durationMs = entry.kind === "isi" ? contribution.isiDefinitions.find(isi => isi.isiId === entry.referenceId)?.durationMs
       : videoIndex.get(entry.referenceId)?.durationMs;
     boundedInteger(durationMs, entry.kind === "video" ? 1 : 0, entry.kind === "video" ? Number.MAX_SAFE_INTEGER : 3600000, `${entry.referenceId} duration from ${entry.kind === "video" ? "Segment 1" : "the dictionary"}`);
