@@ -1,0 +1,343 @@
+{
+  "library": {
+    "integritySha256": "6f661bdf29f989a650fed94a19f06e0b88ef0c3b507c502455a832c693591aa5",
+    "schema": "affect-research-video-library",
+    "version": 1,
+    "videos": [
+      {
+        "annotationId": "video-81f7bab3d03aaa93",
+        "byteLength": 123,
+        "relativePath": "assets/stimuli/one.mp4",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "annotationId": "video-1423e0f44ae99350",
+        "byteLength": 456,
+        "relativePath": "assets/stimuli/two.mp4",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "document": {
+    "schema": "affect-research-stimulus-order",
+    "version": 2,
+    "librarySha256": "6f661bdf29f989a650fed94a19f06e0b88ef0c3b507c502455a832c693591aa5",
+    "draft": {
+      "columns": [
+        {
+          "variantId": "variant-1",
+          "title": "Variant 1"
+        },
+        {
+          "variantId": "variant-2",
+          "title": "Variant 2"
+        }
+      ],
+      "rows": [
+        [
+          "video-81f7bab3d03aaa93",
+          "video-1423e0f44ae99350"
+        ],
+        [
+          "ISI1",
+          "ISI2"
+        ],
+        [
+          "video-1423e0f44ae99350",
+          "video-81f7bab3d03aaa93"
+        ],
+        [
+          "",
+          ""
+        ],
+        [
+          "",
+          ""
+        ]
+      ],
+      "entryIds": [
+        [
+          "variant-1-entry-1",
+          "variant-2-entry-1"
+        ],
+        [
+          "variant-1-entry-2",
+          "variant-2-entry-2"
+        ],
+        [
+          "variant-1-entry-3",
+          "variant-2-entry-3"
+        ],
+        [
+          "variant-1-entry-4",
+          "variant-2-entry-4"
+        ],
+        [
+          "variant-1-entry-5",
+          "variant-2-entry-5"
+        ]
+      ],
+      "isiDefinitions": [
+        {
+          "isiId": "ISI1",
+          "durationMs": 500
+        },
+        {
+          "isiId": "ISI2",
+          "durationMs": 1500
+        },
+        {
+          "isiId": "ISI3",
+          "durationMs": 0
+        }
+      ],
+      "nextIsiOrdinal": 4
+    },
+    "contribution": {
+      "schema": "affect-research-variant-design",
+      "version": 1,
+      "librarySha256": "6f661bdf29f989a650fed94a19f06e0b88ef0c3b507c502455a832c693591aa5",
+      "isiDefinitions": [
+        {
+          "isiId": "ISI1",
+          "durationMs": 500
+        },
+        {
+          "isiId": "ISI2",
+          "durationMs": 1500
+        },
+        {
+          "isiId": "ISI3",
+          "durationMs": 0
+        }
+      ],
+      "variants": [
+        {
+          "variantId": "variant-1",
+          "title": "Variant 1",
+          "entries": [
+            {
+              "entryId": "variant-1-entry-1",
+              "kind": "video",
+              "referenceId": "video-81f7bab3d03aaa93"
+            },
+            {
+              "entryId": "variant-1-entry-2",
+              "kind": "isi",
+              "referenceId": "ISI1"
+            },
+            {
+              "entryId": "variant-1-entry-3",
+              "kind": "video",
+              "referenceId": "video-1423e0f44ae99350"
+            }
+          ],
+          "versionSha256": "49b9057fc0a7d87305578468c058d6c10c07d1748c26062eb3500b8072f570ce"
+        },
+        {
+          "variantId": "variant-2",
+          "title": "Variant 2",
+          "entries": [
+            {
+              "entryId": "variant-2-entry-1",
+              "kind": "video",
+              "referenceId": "video-1423e0f44ae99350"
+            },
+            {
+              "entryId": "variant-2-entry-2",
+              "kind": "isi",
+              "referenceId": "ISI2"
+            },
+            {
+              "entryId": "variant-2-entry-3",
+              "kind": "video",
+              "referenceId": "video-81f7bab3d03aaa93"
+            }
+          ],
+          "versionSha256": "64f84143157120fb224d4681675fee04b390e72de4bee27dec5faab0ed3abe6b"
+        }
+      ],
+      "allocation": {
+        "kind": "runnerAssigned"
+      },
+      "markerContract": {
+        "schema": "affect-research-planned-markers",
+        "version": 1,
+        "vocabulary": [
+          "sessionStart",
+          "videoStart",
+          "videoEnd",
+          "isiStart",
+          "isiEnd",
+          "formStart",
+          "formEnd",
+          "pause",
+          "resume",
+          "interruption",
+          "restart",
+          "complete",
+          "partial"
+        ],
+        "identity": "recipe-run-attempt-variant-entry-execution-v1",
+        "clock": "runner-observed-monotonic-v1",
+        "sequence": "strictly-increasing-per-run-v1",
+        "onset": "observed-media-lifecycle-not-qualified-visible-onset-v1",
+        "reconstruction": "embedded-codebook-paired-boundaries-no-gap-repair-v1"
+      },
+      "integritySha256": "990d37599e753eabe1e392a7154121bd835fa63c1815538257fc1ab6a61f7bed"
+    },
+    "integritySha256": "e0cdbab0a6d3dd35fc360e0e62d0c1a2d5d07a0857cb6311d16be37833fa11fc"
+  },
+  "videos": [
+    {
+      "annotationId": "video-81f7bab3d03aaa93",
+      "byteLength": 123,
+      "relativePath": "assets/stimuli/one.mp4",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "durationMs": 1000
+    },
+    {
+      "annotationId": "video-1423e0f44ae99350",
+      "byteLength": 456,
+      "relativePath": "assets/stimuli/two.mp4",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "durationMs": 2000
+    }
+  ],
+  "timelines": [
+    {
+      "variantId": "variant-1",
+      "versionSha256": "49b9057fc0a7d87305578468c058d6c10c07d1748c26062eb3500b8072f570ce",
+      "plannedDurationMs": 3500,
+      "events": [
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-1",
+          "kind": "video",
+          "referenceId": "video-81f7bab3d03aaa93",
+          "position": 1,
+          "eventId": "variant-1-entry-1-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 0
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-1",
+          "kind": "video",
+          "referenceId": "video-81f7bab3d03aaa93",
+          "position": 1,
+          "eventId": "variant-1-entry-1-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 1000
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI1",
+          "position": 2,
+          "eventId": "variant-1-entry-2-start",
+          "eventType": "isiStart",
+          "plannedOffsetMs": 1000
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI1",
+          "position": 2,
+          "eventId": "variant-1-entry-2-end",
+          "eventType": "isiEnd",
+          "plannedOffsetMs": 1500
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-3",
+          "kind": "video",
+          "referenceId": "video-1423e0f44ae99350",
+          "position": 3,
+          "eventId": "variant-1-entry-3-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 1500
+        },
+        {
+          "variantId": "variant-1",
+          "entryId": "variant-1-entry-3",
+          "kind": "video",
+          "referenceId": "video-1423e0f44ae99350",
+          "position": 3,
+          "eventId": "variant-1-entry-3-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 3500
+        }
+      ]
+    },
+    {
+      "variantId": "variant-2",
+      "versionSha256": "64f84143157120fb224d4681675fee04b390e72de4bee27dec5faab0ed3abe6b",
+      "plannedDurationMs": 4500,
+      "events": [
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-1",
+          "kind": "video",
+          "referenceId": "video-1423e0f44ae99350",
+          "position": 1,
+          "eventId": "variant-2-entry-1-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 0
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-1",
+          "kind": "video",
+          "referenceId": "video-1423e0f44ae99350",
+          "position": 1,
+          "eventId": "variant-2-entry-1-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 2000
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI2",
+          "position": 2,
+          "eventId": "variant-2-entry-2-start",
+          "eventType": "isiStart",
+          "plannedOffsetMs": 2000
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-2",
+          "kind": "isi",
+          "referenceId": "ISI2",
+          "position": 2,
+          "eventId": "variant-2-entry-2-end",
+          "eventType": "isiEnd",
+          "plannedOffsetMs": 3500
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-3",
+          "kind": "video",
+          "referenceId": "video-81f7bab3d03aaa93",
+          "position": 3,
+          "eventId": "variant-2-entry-3-start",
+          "eventType": "videoStart",
+          "plannedOffsetMs": 3500
+        },
+        {
+          "variantId": "variant-2",
+          "entryId": "variant-2-entry-3",
+          "kind": "video",
+          "referenceId": "video-81f7bab3d03aaa93",
+          "position": 3,
+          "eventId": "variant-2-entry-3-end",
+          "eventType": "videoEnd",
+          "plannedOffsetMs": 4500
+        }
+      ]
+    }
+  ]
+}

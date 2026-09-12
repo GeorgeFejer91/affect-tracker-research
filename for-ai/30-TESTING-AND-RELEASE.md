@@ -334,6 +334,35 @@ qualification evidence.
   for native playback, timing, persistence, physical input, LSL,
   accessibility, or scientific qualification.
 
+### Segment 3 variant authoring
+
+- Prove library identity stability across enumeration order and rejection after
+  file/path/size/hash changes. Store annotations and design JSON beside the
+  video-only `assets/stimuli/` closure; require ordinary owned descendants,
+  canonical bytes, readback, bounded counts and stale-workspace rejection.
+- Round-trip the shared two-variant 500/1500 ms example through JS and Rust.
+  Bind exact name/order/ISI to each version; preserve unrelated variants and
+  reject bad versions, unknown IDs, interior gaps, malformed rectangles,
+  oversized input and stale receipts. Successor fixtures accept repeated videos
+  and leading/consecutive/final named ISIs, preserving each occurrence. Keep
+  numeric/post-video version 1 rejection tests under the historical reader.
+- Verify stable ISI names, duplicate durations, referenced-delete rejection and
+  duration-edit invalidation. Check paired planned boundaries with exact catalogue
+  durations; missing duration must remain unavailable. Synthetic marker fixtures
+  must retain interruptions/incomplete sequences without repairing gaps.
+- Exercise explicit paste transactionality, edit invalidation before blur,
+  failed saves, reload, changed-library preservation and delayed responses.
+  No participant assignment may appear in this editor or its document.
+- Verify genuine XLSX ZIP/SpreadsheetML with an independent reader, CSV formula
+  safety, deterministic cross-runtime bytes, and exact annotation values.
+  A background renderer must show semantic cell labels, event rows, variants,
+  downloads, help and confirmation without touching desktop input. Full
+  interactive keyboard/clipboard/accessibility and installed pickers remain
+  separate opt-in gates.
+- Until Runner selection and versioned output/recovery integration lands,
+  active table designs must block new package generation/Start. Do not claim
+  participant records carry variant versions on the strength of authoring tests.
+
 ### Input, visual feedback, and mappings
 
 - Golden-test Arrow, WASD, IJKL, numpad, pointer/trackpad, mouse button/wheel,

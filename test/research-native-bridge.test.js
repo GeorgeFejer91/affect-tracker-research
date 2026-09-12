@@ -1251,7 +1251,10 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
     "research_open_workspace_location",
     "research_store_questionnaire_asset",
     "research_rescan_stimuli",
-    "research_import_stimuli",
+    "research_import_library_videos",
+    "research_video_library",
+    "research_save_stimulus_order",
+    "research_export_video_library",
     "research_native_media_capability",
     "research_native_protocol_capability",
     "research_protocol_preflight",
@@ -1273,7 +1276,7 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   ]) assert.match(source, new RegExp(`"${command}"`, "u"));
   assert.match(source, /const WORKSPACE_LOCATIONS = new Set\(\["workspaceRoot", "videoLibrary", "experimentPackage"\]\)/u);
   assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
-  assert.match(source, /selectionEnabled/u);
+  assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
   assert.match(source, /playbackMode/u);
   assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
   assert.match(source, /decodeQualification = "attestedQualified"/u);

@@ -35,7 +35,9 @@ export function createSetupConfirmationFlow({ acceptContribution, readAcceptance
       errors.delete(sectionId);
       notify();
       try {
-        await acceptContribution(SETUP_CONFIRMATION_SEGMENTS[sectionId]);
+        await acceptContribution(SETUP_CONFIRMATION_SEGMENTS[sectionId], {
+          isCurrent: () => !disposed && pendingSectionId === sectionId,
+        });
         if (disposed) return { status: "disposed" };
         if (!read().find(({ id }) => id === sectionId).confirmed) {
           throw new Error("The section changed during confirmation. Review its current values and try again.");

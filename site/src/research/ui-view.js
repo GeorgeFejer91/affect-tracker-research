@@ -34,7 +34,7 @@ export { COLOR_FIELDS, describeInputToken } from "./feedback-controls-view.js";
 const SECTION_SUMMARIES = Object.freeze({
   xr: "Optional · WebXR screen",
   workspace: "Work folder, videos, project JSON",
-  stimuli: "Externally ordered video protocol",
+  stimuli: "Variants, video order, intervals",
   layout: "Proposed layout · not exportable",
   questionnaires: "Languages, demographics, questionnaires",
   feedback: "Appearance, input and animation",
@@ -341,36 +341,24 @@ function experimentCompatibilityMarkup() {
 
 function stimuliSection() {
   return `
-    <p class="section-lead">Inspect the externally authored protocol. Only freshly verified workspace videos can satisfy its paths; this screen does not edit or randomize the order.</p>
-    <div class="condition-toolbar">
-      <div>
-        <h3>Declared blocks</h3>
-        <p id="pool-mode-summary" class="field-help">Load experiment.json to inspect its blocks.</p>
-      </div>
-      <output class="field-output">external-order-v1</output>
+    <p id="stimulus-order-help" data-order-requires-library class="section-lead">One column per variant. Paste video annotations and ISI names from Excel in their presentation order, without headers.</p>
+    <div class="button-row" data-order-requires-library>
+      <button type="button" data-video-library-export="xlsx" disabled>Download Excel</button>
+      <button type="button" data-video-library-export="csv" disabled>Download CSV</button>
     </div>
-    <div id="condition-pools" class="condition-pools" aria-label="Externally declared experiment blocks"></div>
-    <div id="coverage-message" class="coverage-message" role="status" aria-live="polite">Load experiment.json, select a workspace, and verify every referenced complete video.</div>
-    <details class="inner-disclosure" open>
-      <summary>Authoring contract</summary>
+    <details class="inner-disclosure" data-order-requires-library>
+      <summary>How this works</summary>
       <div class="disclosure-content">
-        <p class="field-help"><code>schedules[].blocks[].videos[]</code> is executed exactly in array order. Every video row requires <code>stimulusId</code> and integer <code>isiAfterMs</code> (0–3,600,000). Even a final nonzero ISI is executed before post-block or post-session questionnaires.</p>
-        <dl class="protocol-facts"><div><dt>Randomization</dt><dd>Completed before import</dd></div><div><dt>Runtime allocation</dt><dd>None</dd></div><div><dt>Recovery</dt><dd>Restarts the interrupted video or ISI from its safe boundary</dd></div></dl>
+        <p>The downloads list every library video with its annotation. The Excel workbook also includes an empty order template. Randomize or counterbalance in Excel, then copy only the variant cells, without headers or the Event column, and paste into the first destination cell.</p>
+        <p>Define pauses by entering comma-separated durations, then use their ISI names in the table. Each cell contains one video annotation or one ISI name. Durations range from 0 to 3,600,000 ms. Leave unused rows at the bottom; empty cells inside a sequence require correction.</p>
+        <p>Segment 1 verifies the video identities. Confirming this table validates its variant IDs and version annotations for the final recipe. Changing a variant's name, video order, or pauses changes its version. Participant allocation belongs to the experiment runner.</p>
+        <p>Video annotations bind file identities; they are not encryption or proof of authorship. The recipe retains each occurrence and its planned start/end events. The Runner chooses the allocation policy and records actual times and the selected variant version.</p>
       </div>
     </details>
-    <details class="inner-disclosure" open>
-      <summary>Resolved participant preview</summary>
-      <div class="disclosure-content">
-        <div class="plan-toolbar">
-          <div class="field-block"><span class="field-label">Resolved experiment plan hash</span><output id="plan-hash" class="hash-value">Pending experiment.json</output></div>
-          <div class="button-row"><button id="plan-window-previous" type="button" disabled>Previous participants</button><button id="plan-window-next" type="button" disabled>Next participants</button><button id="assignment-plan-export" type="button" disabled>Export resolved-plan.csv</button></div>
-        </div>
-        <div class="table-scroll">
-          <table><thead><tr><th>Participant</th><th>Block order</th><th>Complete-video order and ISI</th></tr></thead><tbody id="assignment-preview"><tr><td colspan="3" class="empty-state">The exact schedule appears after every referenced workspace video is verified.</td></tr></tbody></table>
-        </div>
-        <p id="plan-window-status" class="field-help">Showing 0 of 0 participants.</p>
-      </div>
-    </details>`;
+    <p id="stimulus-order-status" class="status-text" role="status" aria-live="polite">Confirm the video library in Segment 1 to begin.</p>
+    <button type="button" data-order-prerequisite data-open-section="workspace">Open Segment 1</button>
+    <div id="stimulus-order-editor"></div>
+    <div id="stimulus-order-versions" aria-label="Variant version annotations"></div>`;
 }
 
 function questionnairesSection() {

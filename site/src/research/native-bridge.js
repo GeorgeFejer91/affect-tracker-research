@@ -1125,7 +1125,6 @@ export class NativeResearchRuntimeBridge {
       clearIntervalObject,
     });
     this.workspace = null;
-    this.sourceCapabilities = null;
     this.nativeMediaCapability = null;
     this.nativeProtocolCapability = null;
     this.nativePackageProtocolCapability = null;
@@ -1161,7 +1160,6 @@ export class NativeResearchRuntimeBridge {
         this.invoke("research_run_status"),
         this.invoke("research_package_run_status"),
       ]);
-      this.sourceCapabilities = sourceCapabilities;
       this.nativeMediaCapability = validateNativeMediaCapabilityV2(nativeMediaCapability);
       this.nativeProtocolCapability = validateNativeProtocolCapabilityV1(nativeProtocolCapability);
       this.nativePackageProtocolCapability = nativePackageProtocolCapability;
@@ -1169,7 +1167,6 @@ export class NativeResearchRuntimeBridge {
       this.nativeTimingReady = (nativeRunStatusHandshake(status)
         || this.nativePackageProtocolCapability.nativeStartReady === true)
         && this.nativeMediaCapability.reasonCode !== INTERFACE_ONLY_PLATFORM_REASON;
-      this.#applySourceCapabilities();
       this.#applyInputCapability();
       this.root.researchUi?.applyNativeInputStatus?.(inputStatus);
       this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
@@ -1222,6 +1219,29 @@ export class NativeResearchRuntimeBridge {
   }
 
   #bind() {
+    this.#listen(this.root, RESEARCH_UI_EVENTS.stimulusAuthoringRequest, (event) => {
+      event.preventDefault();
+      const { operation, payload = {}, complete } = event.detail;
+      const workspaceId = this.workspace?.workspaceId;
+      this.#queue(async () => {
+        try {
+          this.#requireWorkspace();
+          if (!workspaceId || workspaceId !== this.workspace.workspaceId) throw new Error("The workspace changed before video authoring began.");
+          let receipt;
+          if (operation === "confirm-library" || operation === "scan-library") {
+            receipt = await this.invoke("research_video_library", { workspaceId, confirm: operation === "confirm-library" });
+          } else if (operation === "save-order") {
+            receipt = await this.invoke("research_save_stimulus_order", { workspaceId, document: payload.document });
+          } else if (operation === "export-library") {
+            const saved = await this.invoke("research_export_video_library", { workspaceId, librarySha256: payload.librarySha256, format: payload.format });
+            if (!saved) throw new Error("Video library export cancelled.");
+            receipt = { saved };
+          } else throw new Error("Unknown video authoring operation.");
+          if (workspaceId !== this.workspace?.workspaceId) throw new Error("The workspace changed during video authoring.");
+          complete({ ok: true, receipt });
+        } catch (error) { complete({ ok: false, message: messageOf(error) }); }
+      });
+    });
     this.#listen(this.root, RESEARCH_UI_EVENTS.selectWorkspaceRequest, (event) => {
       event.preventDefault();
       this.#queue(() => this.#chooseWorkspace());
@@ -1236,7 +1256,8 @@ export class NativeResearchRuntimeBridge {
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.importVideosRequest, (event) => {
       event.preventDefault();
-      this.#queue(() => this.#importStimuli(event.detail?.recursiveDirectory === true ? "folder" : "videos"));
+      const workspaceId = this.workspace?.workspaceId;
+      this.#queue(() => this.#importStimuli(event.detail?.recursiveDirectory === true ? "folder" : "videos", workspaceId));
     });
     this.#listen(this.root, RESEARCH_UI_EVENTS.loadSettingsRequest, (event) => {
       event.preventDefault();
@@ -1371,27 +1392,6 @@ export class NativeResearchRuntimeBridge {
       }
     });
 
-  }
-
-  #applySourceCapabilities() {
-    const controls = [
-      ["#stimulus-add-repository", "repositoryAsset", "repository"],
-      ["#stimulus-add-youtube", "youtube", "youtube"],
-    ];
-    const sourceSelect = this.root.querySelector?.("#stimulus-source");
-    for (const [selector, capabilityKey, optionValue] of controls) {
-      const selectable = this.sourceCapabilities?.[capabilityKey]?.selectionEnabled === true;
-      const button = this.root.querySelector?.(selector);
-      if (button) {
-        button.hidden = !selectable;
-        button.disabled = !selectable;
-      }
-      const option = sourceSelect?.querySelector?.(`option[value="${optionValue}"]`);
-      if (option) {
-        option.hidden = !selectable;
-        option.disabled = !selectable;
-      }
-    }
   }
 
   #applyInputCapability(binding = this.root.researchUi?.inputBinding) {
@@ -1666,12 +1666,14 @@ export class NativeResearchRuntimeBridge {
     await this.#catalogue(result);
   }
 
-  async #importStimuli(selectionKind) {
+  async #importStimuli(selectionKind, workspaceId) {
     this.#requireWorkspace();
+    if (!workspaceId || workspaceId !== this.workspace.workspaceId) throw new Error("The workspace changed before video import began.");
     const result = await this.invoke("research_import_stimuli", {
-      workspaceId: this.workspace.workspaceId,
+      workspaceId,
       selectionKind,
     });
+    if (workspaceId !== this.workspace?.workspaceId) throw new Error("The workspace changed during video import.");
     if (result) await this.#catalogue(result);
   }
 

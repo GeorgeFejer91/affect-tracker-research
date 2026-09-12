@@ -297,7 +297,13 @@ confirmation in the open section alone has a breathing, outward-fading edge
 glow. A reviewed header uses a green circled check plus its text alternative,
 and its confirmation control becomes a disabled **Reviewed** receipt. Header
 chevrons continue to open and close reviewed sections without clearing review
-state or requiring confirmation again.
+state or requiring confirmation again. Editing a saved Segment 3 order, changing
+its library, or selecting another workspace clears the affected review receipt;
+the researcher must confirm the new content. In the successor master flow,
+Segment 3 prepares its validated domain contribution before P7 registry
+acceptance and shared confirmation advance. Preparation does not require an
+authoring sidecar write; final recipe persistence remains a separately
+acknowledged P7 operation. Explicit legacy authoring storage remains compatible.
 
 ### 1. Workspace & Libraries
 
@@ -439,19 +445,59 @@ builds one finite, acyclic package language tree with an explicit root and exact
 ordered module list per terminal; Review & Start still requires explicit
 participant traversal and package load never selects the first route.
 
-### 3. Experiment Plan & Stimuli
+### 3. Stimulus Presentation Order
 
-The Designer target authors a video library and manual block/participant plan
-through UI, then compiles the package-owned asset, block, and assignment
-sections. Scientific randomization/counterbalancing decisions remain the
-researcher's responsibility; the application performs no allocation. Current
-read-only external-plan controls are an implementation gap recorded for a
-future section pass, not a requirement to create JSON outside the app.
-Each stimulus declaration binds one unique complete video
-under `assets/stimuli/` by safe relative path, SHA-256, byte length, and
-duration. Each canonical participant entry contains the exact ordered blocks
-and exact ordered videos within each block, and every occurrence contains its
-explicit `isiAfterMs`.
+The researcher defines counterbalanced experiment variants as spreadsheet
+columns, with fixed Event 1, Event 2, … row labels. Cells hold a library video
+annotation or a named ISI. The researcher enters whole millisecond durations
+in a reusable ISI dictionary. Excel/CSV rectangles are pasted
+only through an explicit paste gesture; external randomization remains the
+researcher's responsibility. Add/remove controls determine the number of
+variants and events. This segment has no participant IDs or assignments.
+Per the researcher's 2026-09-11 clarification, participant-to-variant selection
+and binding the selected version to recorded participant data belong to the
+Runner, not Segment 3 or Segment 4. This is a future Runner contract change;
+it does not authorize hidden runtime randomization or reinterpret old records.
+
+P1 owns the verified workspace/video catalogue. P3 consumes its validated
+projection on the registered P1 workspace revision. The compatibility video
+library binds safe relative path, complete-file SHA-256, and byte length; its `video-<16 hex>` ID
+maps back to that identity, with collisions rejected. This hash binding is not
+encryption, a digital signature, proof of authorship, or decode qualification.
+The explicit legacy storage API retains `assets/video-library.annotations.json`
+beside `assets/stimuli/`, preserving the video-only package closure; the successor
+master flow does not require that sidecar. CSV and genuine XLSX downloads list current video annotations;
+XLSX also contains an empty order template. Spreadsheet text is escaped and
+never emitted as formulas.
+
+Confirming Segment 3 prepares a canonical domain contribution, then P7 accepts
+the exact current snapshot before shared confirmation advances. The explicit
+legacy API can persist `assets/stimulus-order.design.json`; preparation for the
+final master JSON does not write that file. Stable variant IDs and SHA-256 version
+annotations bind each variant's name, exact video/ISI sequence, occurrence IDs,
+and referenced definitions. The successor authoring document is version 2;
+its embedded `affect-research-variant-design` contribution is version 1.
+Changing one variant changes its version; unrelated library additions do not.
+A variant requires at least one video and permits repeated videos. ISIs may
+appear anywhere, including consecutive and final positions; their dictionary
+durations are integers from 0 to 3,600,000 ms. No implicit interval is inserted
+between adjacent videos. Trailing padding permits unequal column lengths;
+interior blanks reject. Stable ISI names are not renumbered, duplicate durations
+are allowed, and a used definition cannot be deleted. Duration edits invalidate
+confirmation. These Q02/Q14 rules were explicitly accepted on 2026-09-11.
+The authoring projection is bounded to 64 variants, 1,024 rows and 32,000 cells.
+
+Historical numeric/post-video version 1 designs retain their original reader
+and require explicit conversion/reconfirmation; no old records are reinterpreted.
+
+These are authoring records, not `ExperimentPackageV1` or Run authority. The
+finalizer must embed these ordered variants in the successor recipe. Runner
+owns allocation policy and must freeze selected version bindings in its output
+contract before acquisition; no participant schedule is authored by P3.
+Until that integration exists, an active variant draft or saved design blocks
+package generation and new Start so stale imported schedules cannot be run as
+though they represented the new table. Historical package parsing and runtime
+contracts retain their exact complete-video identity/duration and ISI rules.
 
 The current downloadable
 [`site/experiment-template.json`](../site/experiment-template.json) is a

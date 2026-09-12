@@ -37,7 +37,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 const expectedSections = [
   ["workspace", "Workspace & Libraries"],
   ["questionnaires", "Languages & Study Assets"],
-  ["stimuli", "Experiment Plan & Stimuli"],
+  ["stimuli", "Stimulus Presentation Order"],
   ["layout", "Screen & Layout"],
   ["feedback", "Flubber & Controls"],
   ["xr", "VR screen layout"],
@@ -251,7 +251,7 @@ test("Workspace exposes one selected root and three fixed project locations", as
   }
   assert.doesNotMatch(workspacePanel, /data-open-section="stimuli"[^>]*>Manage videos</u);
   const stimuliPanelStart = markup.indexOf('id="setup-panel-stimuli"');
-  const stimuliPanelEnd = markup.indexOf('data-setup-section="experiment"', stimuliPanelStart);
+  const stimuliPanelEnd = markup.indexOf('data-setup-section="layout"', stimuliPanelStart);
   const stimuliPanel = markup.slice(stimuliPanelStart, stimuliPanelEnd);
   assert.doesNotMatch(stimuliPanel, /id="(?:video-drop-zone|stimulus-library-table|video-import|video-folder-import|workspace-rescan)"/u);
 
@@ -301,10 +301,11 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(markup, /id="participant-count"[^>]*readonly/u);
   assert.match(markup, /Continuous rating is always enabled/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
-  assert.match(markup, /external-order-v1/u);
-  assert.match(markup, /<code>schedules\[\]\.blocks\[\]\.videos\[\]<\/code> is executed exactly in array order/u);
-  assert.match(markup, /isiAfterMs/u);
-  assert.match(markup, /Export resolved-plan\.csv/u);
+  assert.match(markup, /Stimulus Presentation Order/u);
+  assert.match(markup, /Participant allocation belongs to the experiment runner/u);
+  assert.match(markup, /Durations range from 0 to 3,600,000 ms/u);
+  assert.match(markup, /one video annotation or one ISI name/u);
+  assert.match(markup, /Download Excel/u);
   assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
 });
 
@@ -486,12 +487,14 @@ test("external experiment plan export uses the canonical source-identity and ISI
   ]);
   assert.match(source, /import \{ externalExperimentPlanToCsv \} from "\.\/tabular\.js"/u);
   assert.match(source, /csv = await externalExperimentPlanToCsv\(plan\)/u);
-  assert.match(view, /resolved-plan\.csv/u);
+  assert.doesNotMatch(view, /id="assignment-preview"/u);
   assert.doesNotMatch(source, /assignmentPlanToCsv\(plan\)/u);
 });
 
 test("the UI bridge names are explicit and stable", () => {
   assert.deepEqual(RESEARCH_UI_EVENTS, {
+    stimulusAuthoringRequest: "affect-research:stimulus-authoring-request",
+    videoLibraryChanged: "affect-research:video-library-changed",
     selectWorkspaceRequest: "affect-research:select-workspace",
     openWorkspaceLocationRequest: "affect-research:open-workspace-location",
     rescanWorkspaceRequest: "affect-research:rescan-workspace",
@@ -753,4 +756,25 @@ test("Run feedback projection owns its visible coordinate receipt as well as the
   const source = await read("site/src/research/app.js");
   assert.match(source, /createResearchPreview\(root\.querySelector\('\[data-mode-panel="run"\]'\)/u);
   assert.doesNotMatch(source, /createResearchPreview\(root\.querySelector\("\.run-feedback-stage"\)/u);
+});
+
+
+test("Segment 3 prepares variants while Segment 1 owns verified media and the registry owns confirmation", async () => {
+  const markup = renderResearchUiMarkup();
+  const start = markup.indexOf('data-setup-section="stimuli"');
+  const section = markup.slice(start, markup.indexOf('data-setup-section="layout"', start));
+  for (const id of ["stimulus-order-editor", "stimulus-order-status", "stimulus-order-help", "stimulus-order-versions"]) assert.ok(section.includes(`id="${id}"`));
+  assert.match(section, /data-video-library-export="xlsx"/u);
+  assert.match(section, /data-video-library-export="csv"/u);
+  assert.doesNotMatch(section, /id="assignment-preview"|id="participant-count"|id="video-import"/u);
+  const workspaceStart = markup.indexOf('data-setup-section="workspace"');
+  const workspace = markup.slice(workspaceStart, markup.indexOf('data-setup-section="questionnaires"'));
+  for (const id of ["video-import", "video-folder-import", "workspace-rescan"]) assert.ok(workspace.includes(`id="${id}"`));
+  const source = await read("site/src/research/app.js");
+  assert.match(source, /await stimulusOrderEditor\.prepareContribution\([\s\S]*?return plannerContributions\.accept\(segment\)/u);
+  assert.match(source, /workspaceContributionProducer\.subscribe\(updateStimulusCatalogue\)/u);
+  assert.match(source, /unsubscribeStimulusCatalogue\(\)/u);
+  assert.doesNotMatch(source, /reviewedSetupSections\.delete/u);
+  assert.match(source, /await workspace\.importVideoFiles\(files\)/u);
+  assert.match(source, /if \(target\.id === "workspace-rescan"\) void requestWorkspaceRescan\(\)/u);
 });

@@ -938,6 +938,251 @@ file; follow the integration-owner collection procedure in the workflow.
   shared mounts with P5/P7. Physical calibration, interactive accessibility,
   native/Runner, real-media composition and publication gates remain unverified.
   Canonical checkout was not modified; writers stop after the ready handoff.
+### 20260912-p3-catalogue-consumer-continuation
+
+- Owner **S3**, P3-03 through P3-08, Backend Verification continuation explicitly
+  authorized through **Create segment catalogue**. Branch
+  `codex/segment-stimuli-order-table`, isolated worktree
+  `D:/GitHub/affect-tracker-research-stimuli-order`, clean base `4a2389c`.
+- Bounded deliverable: fix demonstrated catalogue withdrawal/reused-revision
+  stale acceptance, bind reopen atomically to the actual P1 revision, and make
+  timeline/marker consumers use one explicit video reference projection.
+  Prior named-ISI/versioned contribution/UI remains the implementation baseline.
+- Shared seams: P1 supplies immutable catalogue identity/duration snapshots;
+  P3 owns its consumers and accepted contribution; P7 awaits owned restoration
+  and composes the final recipe. Exact current producer APIs requested directly
+  from both owners. Integration alone collects the checkpoint.
+- Baseline: 29 focused Node tests pass (variant design, marker profiles,
+  editor and stored stimulus-order contracts). Collect failing reproductions,
+  repair regressions and an exact API/fixture handoff. No repeated unchanged UI
+  matrix, Runner allocation, clocks, LSL emission, device or release claims.
+
+#### Owner-ready consumer repair and shared fixture — 2026-09-12
+
+- Reproduced both root findings before fixing: withdrawal/reused-revision input
+  retained acceptance; restore reported P1 revision 8 after binding actual 7.
+  The repair clears acceptance on invalid/withdrawn/pending dependencies,
+  rejects reused revisions with changed content and revision regression,
+  clones inputs, fences delayed projections/reopen/save, and preserves an
+  identical accepted snapshot without fabricating a new dependency revision.
+- P1 explicitly approved P3's compatibility adapter. Dependency checkpoint
+  `3242fa6` imports only the unchanged catalogue module, its tests and shared
+  fixture from P1 `3d6a6b2bdf33cc685668e650ca163c39be75c491`; P1 app wiring and
+  other integration work are not copied into this owner branch.
+- The adapter validates the exact P1 five-key snapshot and P1 domain payload,
+  matches path/SHA/length to retain stored P3 v1 references, then attaches P1
+  asset identity/duration. Timing and marker generation share explicit
+  annotation resolution and reject duplicate aliases or asset-only geometry
+  records. No stored-ID migration or serialized Rust/P3 type change.
+- Public API and composition instructions:
+  [`docs/planner-p3-contribution-api.md`](../docs/planner-p3-contribution-api.md).
+  P7 confirmed `dependencies.P1` carries the exact five-key owner snapshot;
+  async restore returns the final five-key P3 snapshot and needs no sidecar.
+  Integration owns the one P1 subscription into `setStimulusOrderCatalogue`;
+  P7 owns registration, acceptance and master composition.
+- Shared valid/invalid fixture:
+  `test/fixtures/variant-catalogue-binding-v1.json`; P3 integrity
+  `ebc3bee014e02ca51308b7ffb7dc1c2f870ffa3e421fbf4a2563ba118f558920`.
+  It uses the exact P1 shared fixture through both timeline/marker consumers,
+  with owner revision 11 distinct from domain revision 1.
+- Final repair checks: **84/84** targeted Node tests (P3, P1 module, UI and
+  modular boundaries); Pages **178** files and desktop **8** files pass build
+  closure; whitespace check passes. Existing desktop >500 kB chunk warning
+  remains. Prior accepted P3 UI is preserved; no new visual or native/Rust
+  qualification claimed. The combined live subscription and master export
+  remain integration/P7 work, not implied by this component receipt.
+
+#### Composite P1 revision follow-up — 2026-09-12
+
+- Root supplied a concrete dependency mismatch after `dcaa60c`: P1's new
+  workspace composite has a different owner revision from its inner video
+  producer. Root clarified that P7 `cc5cc83` still registers the compatible
+  video-only chain; switching to the composite is the upcoming integration
+  risk, not an existing regression at that fixed tip. This is an in-scope P3-03/P3-08
+  continuation, with the accepted UI and serialized variant model unchanged.
+- P1 owns the validated catalogue projection from its registered workspace
+  snapshot. P3 will preserve that snapshot's revision and bind the full owner
+  content; P7 restore, validation and the live subscription must use the same
+  registered snapshot. No consumer will invent or independently remap revisions.
+- Evidence to collect: study-only changes with unchanged videos, video changes,
+  stale or mismatched projections, and canonical restore/acceptance in both
+  cases. Root, S1, S7 and integration notified before implementation. The prior
+  video-only handoff is held for this shared-seam correction.
+
+#### Composite dependency and preparation ready — 2026-09-12
+
+- P1 froze its one-argument validated
+  `projectWorkspaceVideoCatalogueSnapshotV1` at
+  `5988ce04a6ec253d5512c31770193b88bb3c33dc`. Dependency commit `bc2efb1`
+  collects its unchanged study/workspace/video modules and their focused tests,
+  without copying P1 app handlers. P3 now consumes the registered workspace
+  snapshot, preserves its outer revision, and fingerprints its full validated
+  content. Nested video revision/hash remain unchanged. The former video-only
+  projection is explicitly named `projectLegacyVariantCatalogue` and cannot
+  substitute for the production workspace dependency.
+- `variant-workspace-binding-v1.json` and focused tests cover workspace 30→31
+  for a study-only edit (videos unchanged), then workspace 31→32 with video
+  catalogue 1→2, including coherent pending/prepared states, duration changes,
+  canonical reopen, exact returned dependencies and rejection of revision reuse.
+- Integration requested `prepareStimulusVariantContribution({isCurrent?})`:
+  it validates the current table and actual P1 durations, checks generation and
+  caller freshness, performs **no storage write**, and returns the prepared
+  five-key P3 snapshot. Failure rejects; shared confirmation must not advance.
+  Main awaits preparation, then P7 registry acceptance, then advances its shared
+  confirmation. Prepared domain data is neither registry acceptance nor final
+  acknowledged persistence. The help/charter now make that distinction.
+- Explicit integration decisions: retain S1's single browser import, actual
+  decoder metadata and producer-refresh path; discard P3's superseded
+  `ingestBrowserFiles` replacement. No duplicate import or fabricated geometry.
+  Main may omit the one empty-library CSS rule hiding the bottom confirmation,
+  as requested by the researcher; preserve the prerequisite and truthful error.
+  Main owns the shared confirmation handler and the one **workspace** snapshot
+  subscription to P3. Do not wire its legacy video-only getter as registered P1.
+- Final follow-up checks: **96/96** targeted P3/P1/UI/modularity tests pass,
+  including two no-sidecar-write/stale-preparation cases; Pages **180** files
+  and desktop **8** files pass build closure. Existing chunk-size warning
+  remains. No Rust wire change, full live composition, native/physical or new
+  visual qualification is claimed. The API document contains the final exact
+  signatures and separate current/legacy fixtures.
+
+### 20260911-variants-final-planner
+
+- Owner **S3**, P3 `variants`; component ready, Backend Verification continuation authorized
+  by the user's “finish segment 3” request and registered by integration.
+- Branch `codex/segment-stimuli-order-table`, worktree
+  `D:/GitHub/affect-tracker-research-stimuli-order`, predecessor `01444a7`.
+  Current canonical working-tree `for-ai/` amendment and catalogue/closure plan
+  were read completely; their uncommitted documentation is preserved.
+- P3-02/03/05/06/07/08/09/10: named ISI dictionary, chronological typed entries,
+  persistent occurrence IDs, planned boundary specification, colors, authoring
+  save/reopen and typed P7 contribution. Historical numeric v1 reader preserved.
+- User answered allocation question: **Leave allocation policy to Runner**.
+  This supersedes the catalogue's earlier cyclic allocation direction for P3-04
+  and Q06. P3 stores ordered variants with version hashes and runner ownership,
+  without participant controls or a cyclic algorithm.
+- User subsequently confirmed Q02/Q14: repeated videos and leading/consecutive/
+  terminal ISIs are allowed in exact order; unequal lengths use trailing padding,
+  interior blanks reject; ISI names stay stable, duplicate durations are allowed,
+  referenced definitions cannot be deleted, and duration edits invalidate acceptance.
+- Producer P1 owns verified video IDs, duration and future readable annotations.
+  P3 owns dictionary/sequence/event meaning; P7 owns final composition, shared
+  stale-export guards and save acknowledgement. Agreed snapshot registry seam:
+  revision, enabled, pending, contribution and dependencyRevisions; P7 rechecks
+  before/after asynchronous work. P1 successor owner being allocated separately.
+- Allowed seams: stimulus-order editor/model/workbook tests, new bounded variant
+  contract and Rust mirror, stored-document dispatch, P3 UI/CSS; app.js exposes
+  the editor snapshot only. No P7 finalizer, other segment controls or Runner edits.
+- Baseline: existing 15/15 P3 Node tests pass. Collect successor contract/parity,
+  unknown/numeric/collision/revision/save-failure tests and background rendering;
+  combined checks at handoff. Physical/installed/recording qualification deferred.
+
+#### Successor component checkpoint — 2026-09-11
+
+- User's exact Q02/Q14 reply: **“Yes, use these rules”**. The rules above are
+  accepted, not proposals. Allocation reply remains **“Leave allocation policy
+  to Runner”**. Other catalogue decisions remain with their owners.
+- Implemented named-ISI ordered variants, exact occurrence IDs, contribution
+  hashes, explicit v1 migration, v2 browser/native authoring save/reopen, and
+  the pure planned marker/reconstruction specification. No runtime recorder,
+  allocation algorithm or actual clock is implemented by this slice.
+- Removed unreachable S3 predecessor add-video/pool/dialog handlers and their
+  absent-control bridge projection after the user requested redundancy cleanup.
+  Retained active catalogue rendering, verification and historical readers.
+- Checks: 452/452 Node tests; 192/192 locked no-default Rust tests; no-default
+  all-target clippy with warnings denied; format and whitespace checks pass.
+  Pages/desktop closure builds passed (175/8 files), with the existing large
+  desktop chunk warning. No dependency or unsafe-boundary changes.
+- Actual `bootResearchUi` renders: empty, populated and invalid stored design
+  at 1600 and 800 px; no page errors. Empty state is one prerequisite/action;
+  populated table scrolls inside its 400 px pane. Inspected screenshots and
+  machine-readable `segment3-ui-receipt.json` are in this worktree's ignored
+  `src-tauri/target/segment3-verification/` directory.
+- P1's new immutable assetId/readable annotation catalogue remains an explicit
+  producer dependency: this checkpoint still uses the predecessor hash-bound
+  library. P7 owns registry/final recipe composition. Do not claim the successor
+  complete or ready for recording until these source seams are integrated.
+
+#### Final P3 UI and contract handoff — 2026-09-11
+
+- Canonical checkpoint `6be0a7` merged into the own worktree in `bc8921d`;
+  both message-board histories retained and the obsolete checklist language
+  reconciled with accepted Runner allocation ownership. No canonical writes.
+- Q02/Q14 acceptance is recorded in the central catalogue; capability boxes
+  remain unchecked until integration verifies them. P1's current `3df60fa`
+  relocation keeps automatic IDs and one visible catalogue in Workspace.
+  Any future P1 identity schema must be adapted explicitly; verified durations
+  remain unavailable in the current v1 catalogue. P7's `b6647c0` registry sees
+  P3 but intentionally blocks legacy master save/Start for its active successor
+  contribution. The new master composer is a separate pending allocation.
+- Independent UI review requested actual invalid-cell evidence and stable
+  colors. Confirmation now focuses and reveals the first invalid cell, including
+  a horizontally hidden sixth variant, with row/column text and aria-invalid.
+  Colors derive directly from video identity across a continuous non-red hue
+  range; adding/removing/reordering the catalogue does not recolor existing IDs.
+  An 80-video regression checks stability; text remains authoritative where
+  large libraries have perceptually similar colors.
+- The headless script now saves immutable commit/timestamp capture directories
+  with exact served-source SHA-256 manifest, clean/dirty state and semantic
+  checks. Its invalid case restores six valid variants, accepts a valid P1
+  rescan that removes one referenced video, then invokes the actual editor's
+  confirmation method. Both wide/narrow checks reveal/focus Event 1, Variant 6;
+  there is no injected error string, keyboard, pointer or clipboard input.
+- These changes are scoped P3 finalization; the integration owner is holding
+  shared composition on its separate confirmation-stage question. Source is
+  handed off for collection when that stage resumes, not merged by this owner.
+- Final reconciled JavaScript suite: 456/456 passed. Rust source is unchanged
+  since the 192/192 locked no-default and clippy/format receipt above; no
+  unnecessary native rerun or new runtime qualification is claimed.
+
+### 20260911-stimuli-order-table
+
+- Owner: **Segment 3**, segment `stimuli`; status **ready**. Backend Verification,
+  bounded to video-order authoring and the required Workspace confirmation seam.
+- Branch: `codex/segment-stimuli-order-table`; worktree
+  `D:\GitHub\affect-tracker-research-stimuli-order`; base
+  `954f38ff0ac0368989c6cede40c839817c88d380`. Migration verified by S2; resumed
+  at the user's request. Integration checkout remains reserved.
+- Deliverable: event-row/variant-column editor, explicit spreadsheet paste,
+  CSV/XLSX library exports, hash-bound video annotations and confirmed design
+  persistence. No randomization or participant allocation. The researcher
+  clarified that the Runner owns participant-to-variant selection and recording
+  its version; Segment 4 has no assignment responsibility. Package/Run contracts
+  remain unchanged, and active variant designs block stale package use.
+- Shared seams: Workspace import/confirmation, Section 3 markup, app composition,
+  typed bridge requests, bounded workspace methods, documentation and tests.
+  Annotation metadata is stored alongside `assets/stimuli/`, not inside the
+  immutable video-only closure. No new unsafe code or broad capability.
+- Baseline: 36 focused UI/package tests passed before the failed C: checkout.
+  Planned checks: authoring validation, storage/IPC parity, exports, background
+  rendering, independent-process reproduction and frontend build closures.
+  No GUI interaction, push, deployment, or research qualification authorized.
+
+#### Segment 3 verification and integration handoff — 2026-09-11
+
+- Ready for integration-owner collection. The bounded authoring slice is complete;
+  this does not mark the entire Backend Verification stage or Runner complete.
+- `pnpm test`: 439/439, including 15 new authoring/model/editor/storage checks
+  and shared fixture tests. Pages boundary: 173 files; desktop boundary: 8 files.
+  Frozen pnpm install and moderate-level audit pass (no new dependencies).
+- Rust locked no-default tests: 190/190 plus bin/doc targets. Shared fixture
+  validates identical library/order hashes and CSV/XLSX bytes; native tests cover
+  confirmation/save/reload, file-change rejection, and idempotent owned imports.
+  No-default clippy with warnings denied and format check pass.
+- Background `scripts/verify-stimulus-order-ui.cjs` initializes the real UI and
+  renders the saved two-variant fixture at 1600 and 800 px, with correct cells,
+  semantic labels, no assignments, accepted save receipt, and no page errors.
+  An independent openpyxl reader verifies both sheets, IDs, frozen header, no
+  formulas, and ZIP CRC. Artifacts: own `src-tauri/target/segment3-verification/`.
+  No desktop pointer/keyboard/clipboard or existing browser was controlled.
+- All-feature check fails at `glib-sys` because `pkg-config`/the GStreamer
+  development SDK are unavailable. All-feature tests/clippy, installed dialogs,
+  physical clipboard/keyboard, full accessibility, native media/timing/LSL,
+  acquisition/output version binding, CI and deployment remain open. The
+  existing desktop >500 kB chunk warning remains non-failing.
+- Integration base has since advanced to `305d3ac`; do not replace its newer
+  accordion/preview/S2 work with this branch. Reconcile the named shared seams,
+  retain both board histories, and collect the Runner follow-up from
+  `45-FUTURE-AGENT-CHECKLIST.md`. S3 does not own the integration checkout.
 
 ### 20260911-roadmap-agent-coordination-audit
 

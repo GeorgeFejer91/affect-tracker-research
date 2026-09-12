@@ -361,6 +361,57 @@ under `D:/GitHub/.affect-preview-checks/p4-compact-20260911/final`; reproduce wi
 `scripts/qualification/screen-layout-compact.mjs`. Scroll remains necessary,
 with all controls and confirmation reachable. No geometry semantics, accepted
 contribution, runtime authority or qualification status changed.
+## Segment 3 video-order authoring — bounded backend verification
+
+Successor component `ae5cecd`, reconciled with the canonical baseline in
+`bc8921d`, replaces numeric cells with a named ISI dictionary and ordered typed
+entries. User Q02/Q14 acceptance allows repeats and ISIs anywhere, forbids
+interior blanks, and fixes stable-name/duplicate/delete behavior. New occurrence
+IDs and per-variant hashes survive editable reopen. Version 2 authoring documents
+dispatch alongside the preserved numeric v1 reader in browser and Rust storage.
+P7 receives a typed accepted contribution; participant policy is `runnerAssigned`.
+
+Component evidence: 452 Node tests and 192 locked no-default Rust tests pass,
+as do no-default all-target clippy with warnings denied and format/whitespace
+checks. Actual boot screenshots cover empty/populated/error at 1600/800 px;
+empty state has one prerequisite and the populated 400 px pane contains its
+horizontal table scroll. Marker reconstruction tests use synthetic streams only.
+Final reconciled suite: 456/456 JavaScript tests. Follow-up rendering uses an
+actual removed-library-reference error in offscreen Variant 6 and verifies
+focus/reveal; identity-derived colors stay stable across catalogue changes.
+Receipt and screenshots: immutable commit/timestamp subdirectories of the own
+`src-tauri/target/segment3-verification/`, including served-source SHA-256 hashes.
+Current v1 library lacks verified durations and the future readable/immutable-ID
+split; these remain P1 dependencies. P7 successor master composition and Runner
+recording are separate allocated work. Central items remain unchecked pending
+source integration. The earlier numeric-authoring evidence follows.
+
+The `codex/segment-stimuli-order-table` slice adds a minimal event/variant table,
+explicit TSV/CSV paste, add/remove controls, CSV/XLSX library downloads, help,
+and confirmed variant versions. Segment 1 owns video imports and confirmation
+of `assets/video-library.annotations.json`; Segment 3 persists
+`assets/stimulus-order.design.json`. Both adapters validate exact current video
+identities and saved canonical bytes; Rust owns native hashing and export.
+Typing invalidates the saved version immediately, and stale/failed receipts
+cannot confirm a different workspace or old cell values.
+
+No participant assignment is authored in Segment 3 or Segment 4. The Runner
+selection and version-to-participant output/recovery binding are deferred in
+`45-FUTURE-AGENT-CHECKLIST.md`. Active table designs currently block package
+generation and new Start; the existing package and research-record contracts
+are unchanged. The historical read-only participant preview was removed from
+Segment 3. This slice is not Runner completion or whole-stage qualification.
+
+Evidence: focused domain/editor/browser-storage tests, shared Rust/JS canonical
+and CSV/XLSX hashes, native save/reload/reject tests, an independent openpyxl
+read and ZIP CRC check, and a background renderer that initializes the real UI
+and projects saved variants. Full candidate Node/Rust counts and build closures
+are recorded in message `20260911-stimuli-order-table`. No desktop input or
+clipboard was synthesized; installed dialogs, physical keyboard/paste, full
+accessibility, Runner recording, and native media/timing/LSL remain unverified.
+The all-feature Rust check is unavailable because `pkg-config` and a usable
+GStreamer development SDK are absent in this shell; no-default software checks
+are separate evidence.
 
 ## Repository transition — verified
 
@@ -399,9 +450,9 @@ The current `research/video-protocol-v1` working candidate contains:
   This pre-package path preserves exact authored participant/block/video/ISI
   order and invokes no allocator, but it is not `ExperimentPackageV1`;
 - exactly two UI modes, eight ordered Setup accordions—Workspace, Languages &
-  Study Assets, Plan & Stimuli, Experiment, Input, Visual, Advanced, and
+  Study Assets, Stimulus Presentation Order, Experiment, Input, Visual, Advanced, and
   Review—persistent preview, external experiment load/summary, participant
-  schedule preview, input
+  schedule resolution, input
   configuration, visual/color/mapping controls, aggregate preflight, and
   restricted Run presentation. Every accordion now has a session-local review
   confirmation that marks it Reviewed, collapses it, and advances in order;

@@ -56,6 +56,9 @@ import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration
 import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "./questionnaire-contribution.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
+import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
+import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
+import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
 import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
@@ -96,7 +99,6 @@ import {
 import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
-  normalizeWorkspaceRelativePath,
   parseStrictJson,
   parseExperimentalYouTubeUrl,
   probeVideoFile,
@@ -283,7 +285,12 @@ function bindResearchInteractions(root, { surface }) {
     schedulePlanRefresh();
   } });
   const setupConfirmationFlow = createSetupConfirmationFlow({
-    acceptContribution: (segment) => plannerContributions.accept(segment),
+    acceptContribution: async (segment, { isCurrent }) => {
+      const current = () => isCurrent() && mode === "setup";
+      if (segment === "P3") await stimulusOrderEditor.prepareContribution({ isCurrent: current });
+      if (!current()) throw new Error("Confirmation was cancelled. Review the current section again.");
+      return plannerContributions.accept(segment);
+    },
     readAcceptance: () => plannerContributions.readAccepted(),
     onChange: () => renderSetupReviewState(),
   });
@@ -339,9 +346,6 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
   let manifestReadinessMessage = "Output manifests have not been scanned.";
-  // Retained only as an inert compatibility collection for historical dialog
-  // handlers. Active v1 Research planning is owned by experimentDocument.blocks.
-  const pools = [];
   const stimuli = [];
   const questionnaireDefinitions = [];
   const questionnaireModules = [];
@@ -375,6 +379,16 @@ function bindResearchInteractions(root, { surface }) {
     onAdoptImportedFamily: adoptImportedQuestionnaireFamily,
   });
   const participantStates = new Map();
+  let authoringWorkspaceKey = null;
+  const stimulusOrderEditor = createStimulusOrderEditor({
+    root,
+    operate: operateStimulusAuthoring,
+    announce,
+    onChange() {
+      renderSetupReviewState();
+      schedulePlanRefresh();
+    },
+  });
   const participantRecoverability = new Map();
   const participantFinalizationPending = new Map();
   const participantFinalizationBindings = new Map();
@@ -1624,6 +1638,10 @@ function bindResearchInteractions(root, { surface }) {
         { id: "lsl", result: "warning", label: "LSL", message: "Outlets are not started for reload-only finalization" },
       ];
     }
+    if (stimulusOrderEditor.active) return [{
+      id: "variant-design", result: "block", label: "Variant design",
+      message: "Variant-table designs require Runner integration for participant allocation and recording their version annotations.",
+    }];
     const experimentValid = Boolean(experimentDocument)
       && /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value("experiment-id"))
       && value("experiment-title").trim().length > 0
@@ -2672,22 +2690,6 @@ function bindResearchInteractions(root, { surface }) {
     schedulePlanRefresh();
   }
 
-  async function verifyRepositoryStimulus(stimulus) {
-    try {
-      const relativePath = normalizeWorkspaceRelativePath(stimulus.location, "repository asset path");
-      stimulus.location = relativePath;
-      const response = await fetch(new URL(relativePath, document.baseURI), { cache: "no-store" });
-      if (!response.ok) throw new Error(`Repository asset returned HTTP ${response.status}.`);
-      stimulus.file = await response.blob();
-      await verifyLocalFile(stimulus, { relativePath });
-    } catch (error) {
-      stimulus.verification = "failed";
-      stimulus.error = error instanceof Error ? error.message : String(error);
-      renderPools();
-      schedulePlanRefresh();
-    }
-  }
-
   async function preflightYouTubeStimulus(stimulus) {
     if (!stimulus || stimulus.source !== "youtube") return;
     const panel = query("#youtube-preflight-panel");
@@ -2847,6 +2849,7 @@ function bindResearchInteractions(root, { surface }) {
     const previous = query("#plan-window-previous");
     const next = query("#plan-window-next");
     const exportButton = query("#assignment-plan-export");
+    if (reviewHash) reviewHash.textContent = plan?.planHashSha256 ?? planError ?? "Pending valid allocation";
     if (!(table instanceof HTMLElement)) return;
     if (!plan) {
       table.innerHTML = '<tr><td colspan="3" class="empty-state">The exact schedule appears after experiment.json and every referenced workspace video pass validation.</td></tr>';
@@ -3018,6 +3021,40 @@ function bindResearchInteractions(root, { surface }) {
       announce(error instanceof Error ? error.message : String(error));
       refreshProjection();
     }
+  }
+
+  async function operateStimulusAuthoring(operation, payload = {}) {
+    if (mode !== "setup") throw new Error("Open Setting Up the Experiment to edit the video design.");
+    if (surface === "tauri") return requestStimulusAuthoring(root, operation, payload);
+    const selected = workspace;
+    if (!selected) throw new Error("Set the work directory in Segment 1 first.");
+    let receipt;
+    if (operation === "confirm-library" || operation === "scan-library") {
+      receipt = await selected.videoLibrary({ confirm: operation === "confirm-library" });
+    } else if (operation === "save-order") {
+      receipt = await selected.saveStimulusOrder(payload.document);
+    } else if (operation === "export-library") {
+      const current = await selected.videoLibrary();
+      if (current.library.integritySha256 !== payload.librarySha256) throw new Error("The video library changed. Confirm Segment 1 again before exporting.");
+      if (selected !== workspace) throw new Error("The workspace changed during export.");
+      const mime = payload.format === "csv" ? "text/csv;charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      const url = URL.createObjectURL(new Blob([payload.bytes], { type: mime }));
+      const link = document.createElement("a");
+      link.href = url; link.download = `video-library.${payload.format}`;
+      root.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      receipt = { exported: true };
+    } else throw new Error("Unknown video authoring operation.");
+    if (selected !== workspace) throw new Error("The workspace changed during video authoring.");
+    return receipt;
+  }
+
+  async function acceptVideoLibrary(receipt) {
+    await stimulusOrderEditor.adopt(receipt);
+    renderSetupReviewState();
+    const status = query("#workspace-status");
+    if (status) status.textContent = `${receipt.library.videos.length} legacy video declarations loaded. Current verified media is still required.`;
+    announce(status?.textContent ?? "Legacy video declarations loaded.");
   }
 
   async function requestWorkspaceRescan() {
@@ -4000,26 +4037,6 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
-  function openStimulusDialog(source) {
-    const dialog = query("#stimulus-dialog");
-    const sourceSelect = query("#stimulus-source");
-    if (sourceSelect instanceof HTMLSelectElement) sourceSelect.value = source;
-    updateStimulusDialogSource();
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
-  }
-
-  function updateStimulusDialogSource() {
-    const source = value("stimulus-source", "workspace");
-    const label = query("#stimulus-location-label");
-    const help = query("#stimulus-dialog-help");
-    if (label) label.textContent = source === "youtube" ? "YouTube URL" : source === "repository" ? "Repository asset path" : "Workspace catalogue item";
-    if (help) help.textContent = source === "youtube"
-      ? "This source is explicitly unverified and noncanonical; no byte hash is claimed."
-      : source === "repository"
-        ? "Repository media is only for small demos beneath GitHub's regular-file limit. Hash, size, duration, and decode are verified before Start."
-        : "Complete-file duration, byte identity, and decode verification are required before Start.";
-  }
-
   function updateInputPoint(x, y, receipt, { fromInput = false, inputActive = false, source = null } = {}) {
     inputPoint = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) };
     const simulatorOwnsDesignProjection = mode === "setup" && previewResponseSimulator !== null;
@@ -4702,10 +4719,9 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "settings-load") requestSettingsLoad();
     if (target.id === "settings-save") requestSettingsSave();
     if (target.id === "workspace-renew") renewWorkspacePermission();
-    if (target.id === "workspace-rescan") requestWorkspaceRescan();
+    if (target.id === "workspace-rescan") void requestWorkspaceRescan();
+    if (target.dataset.videoLibraryExport) void stimulusOrderEditor.download(target.dataset.videoLibraryExport);
     if (target.id === "stimulus-add-workspace") requestVideoImport();
-    if (target.id === "stimulus-add-repository") openStimulusDialog("repository");
-    if (target.id === "stimulus-add-youtube") openStimulusDialog("youtube");
     if (target.id === "study-language-add-button") addStudyLanguage();
     if (target.dataset.studyLanguageRemove) removeStudyLanguage(target.dataset.studyLanguageRemove);
     if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
@@ -4714,29 +4730,6 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
-    if (target.id === "condition-add") {
-      const index = pools.length + 1;
-      pools.push({ id: `condition-${index}-${Date.now()}`, label: `Condition ${index}`, videosPerParticipant: 1 });
-      renderPools();
-      schedulePlanRefresh();
-    }
-    if (target.matches("[data-pool-remove]")) {
-      const section = target.closest("[data-pool-id]");
-      const poolId = section?.getAttribute("data-pool-id");
-      const index = pools.findIndex(({ id }) => id === poolId);
-      if (index > -1 && pools.length > 1) {
-        const [removed] = pools.splice(index, 1);
-        for (const stimulus of stimuli) if (stimulus.poolId === removed.id) stimulus.poolId = pools[0].id;
-        for (const module of questionnaireModules) {
-          if (module.placement.poolId === removed.id) {
-            module.placement = { kind: module.placement.kind, poolId: pools[0].id };
-          }
-        }
-        renderPools();
-        renderQuestionnaires();
-        schedulePlanRefresh();
-      }
-    }
     if (target.dataset.bindingDirection) {
       const direction = target.dataset.bindingDirection;
       const title = query("#binding-capture-title");
@@ -4769,18 +4762,6 @@ function bindResearchInteractions(root, { surface }) {
       }
     }
     if (target.dataset.colorAnchor) openPreviewColorDialog(target.dataset.colorAnchor);
-    if (target.id === "stimulus-dialog-cancel") closeDialog("stimulus-dialog");
-    if (target.id === "stimulus-dialog-add") {
-      const source = value("stimulus-source", "workspace");
-      const stimulus = addStimulus({ title: value("stimulus-title") || value("stimulus-location"), source, location: value("stimulus-location") });
-      if (stimulus && pools.some(({ id }) => id === value("stimulus-condition"))) {
-        stimulus.poolId = value("stimulus-condition");
-        renderPools();
-        schedulePlanRefresh();
-      }
-      if (stimulus?.source === "repository") verifyRepositoryStimulus(stimulus);
-      if (stimulus?.verification !== "failed") closeDialog("stimulus-dialog");
-    }
     if (target.dataset.youtubePreflight) {
       const stimulus = stimuli.find(({ id }) => id === target.dataset.youtubePreflight);
       if (stimulus) void preflightYouTubeStimulus(stimulus);
@@ -4940,22 +4921,6 @@ function bindResearchInteractions(root, { surface }) {
     }
     if (target instanceof HTMLInputElement && target.name === "attemptDisposition") {
       clearParticipantLanguageSelection();
-    }
-    if (target instanceof HTMLSelectElement && target.id === "stimulus-source") updateStimulusDialogSource();
-    if (target instanceof HTMLSelectElement && target.dataset.stimulusPool) {
-      const stimulus = stimuli.find(({ id }) => id === target.dataset.stimulusPool);
-      if (stimulus) stimulus.poolId = target.value;
-      renderPools();
-    }
-    if (target instanceof HTMLInputElement && target.matches("[data-pool-label]")) {
-      const pool = pools.find(({ id }) => id === target.closest("[data-pool-id]")?.getAttribute("data-pool-id"));
-      if (pool) pool.label = target.value.trim() || pool.label;
-      renderPools();
-    }
-    if (target instanceof HTMLInputElement && target.matches("[data-pool-count]")) {
-      const pool = pools.find(({ id }) => id === target.closest("[data-pool-id]")?.getAttribute("data-pool-id"));
-      if (pool) pool.videosPerParticipant = Math.max(1, Math.trunc(Number(target.value) || 1));
-      renderPools();
     }
     if (isValidationControl(target)) syncControlValidation(target);
     if (target instanceof Element && target.closest("#research-settings-form")) {
@@ -5333,6 +5298,12 @@ function bindResearchInteractions(root, { surface }) {
   });
 
   root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
+    const workspaceKey = surface === "tauri" ? event.detail?.workspaceId : workspace;
+    if (workspaceKey !== authoringWorkspaceKey) {
+      authoringWorkspaceKey = workspaceKey;
+      stimulusOrderEditor.reset();
+      renderSetupReviewState();
+    }
     root.dataset.nativeWorkspaceReady = "true";
     const directoryPermission = event.detail?.directoryPermission !== false;
     capabilities.directoryPermission = directoryPermission;
@@ -5356,6 +5327,10 @@ function bindResearchInteractions(root, { surface }) {
     refreshProjection();
   });
 
+  root.addEventListener(RESEARCH_UI_EVENTS.videoLibraryChanged, (event) => {
+    void acceptVideoLibrary(event.detail).catch((error) => announce(error.message));
+  });
+
   root.querySelectorAll("[data-open-section]").forEach((button) => button.addEventListener("keydown", (event) => {
     const index = SETUP_SECTIONS.findIndex(({ id }) => id === button.dataset.openSection);
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
@@ -5373,6 +5348,16 @@ function bindResearchInteractions(root, { surface }) {
   refreshProjection();
   schedulePlanRefresh();
 
+  let stimulusCatalogueBindingDisposed = false;
+  const updateStimulusCatalogue = (snapshot) => {
+    if (stimulusCatalogueBindingDisposed) return;
+    void stimulusOrderEditor.setCatalogueSource(snapshot).catch((error) => {
+      if (!stimulusCatalogueBindingDisposed) announce(`Video-order dependency: ${error.message}`);
+    });
+  };
+  const unsubscribeStimulusCatalogue = workspaceContributionProducer.subscribe(updateStimulusCatalogue);
+  updateStimulusCatalogue(getWorkspaceContributionSnapshot());
+
   return Object.freeze({
     get mode() { return mode; },
     getXrLayoutContribution() { return xrLayoutEditor?.getSnapshot() ?? null; },
@@ -5381,6 +5366,14 @@ function bindResearchInteractions(root, { surface }) {
     get openSection() { return openSection; },
     get reviewedSetupSections() { return Object.freeze([...reviewedSetupSections]); },
     get workspace() { return workspace; },
+    get stimulusOrder() { return stimulusOrderEditor.document; },
+    getStimulusOrderSnapshot: () => stimulusOrderEditor.getSnapshot(),
+    prepareStimulusVariantContribution: (options) => stimulusOrderEditor.prepareContribution(options),
+    setStimulusOrderCatalogue: (snapshot) => stimulusOrderEditor.setCatalogueSource(snapshot),
+    validateStimulusVariantContribution,
+    confirmStimulusOrder: () => stimulusOrderEditor.confirm(),
+    restoreStimulusOrder: (document, receipt) => stimulusOrderEditor.restore(document, receipt),
+    restoreStimulusVariantContribution: (contribution, receipt) => stimulusOrderEditor.restoreContribution(contribution, receipt),
     get settings() { return settingsSnapshot; },
     get plan() { return plan; },
     get experimentPackage() { return experimentPackageDocument?.package ?? null; },
@@ -5477,6 +5470,8 @@ function bindResearchInteractions(root, { surface }) {
       root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.participantStates, { detail: states }));
     },
     destroy() {
+      stimulusCatalogueBindingDisposed = true;
+      unsubscribeStimulusCatalogue();
       setupConfirmationFlow.destroy();
       feedbackContribution.destroy();
       previewLayout.destroy();
@@ -5488,6 +5483,7 @@ function bindResearchInteractions(root, { surface }) {
       layoutDraftEditor.destroy();
 
       xrLayoutEditor?.destroy();
+      stimulusOrderEditor.destroy();
       youtubePreflightAdapter?.destroy();
       youtubePreflightAdapter = null;
       setupPreview.destroy();

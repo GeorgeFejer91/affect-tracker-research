@@ -206,8 +206,9 @@ placements remain explicit.
 and a complete planned event/marker contract.
 **User input:** comma-separated ISI durations in milliseconds, creating a named
 dictionary; one Excel column per variant with video IDs and ISI names in
-chronological rows. Videos have fixed catalogue durations. Blocks, blanks,
-repeats and questionnaire placement remain Q02/Q09; the basic grammar is confirmed.
+chronological rows. Videos have fixed catalogue durations. Q02 now accepts
+repeated videos, leading/consecutive/terminal ISIs and unequal column lengths
+with trailing padding; interior blanks reject. Questionnaire placement remains Q09.
 **Receives:** P1 catalogue/durations and P2 module references.
 **Produces:** embedded ISI dictionary, ordered variants with named references,
 occurrence IDs, timing requirements and semantic marker definitions.
@@ -235,18 +236,18 @@ researcher need not type marker names or manually enter video duration. Raw
 numeric table cells must report that an ISI dictionary reference is required.
 Diagnose unknown or colliding video/ISI identities instead of guessing. Existing
 integer timing limits remain the baseline unless explicitly changed. Define
-blank, repeated, consecutive or terminal entry behavior before repairing input.
+the accepted exact-order grammar; do not repair or randomize input.
 
 The master recipe embeds the ISI dictionary and every version's references;
 no external dictionary file becomes Runner authority. P3 owns both. Q14 records
 the accepted named-only rule, which supersedes the earlier numeric-cell proposal.
 
-Recommended behavior: preserve accepted ISI IDs when the duration list is edited;
+Accepted Q14 behavior: preserve ISI IDs when the duration list is edited;
 never silently renumber a referenced entry. A changed duration invalidates every
 referencing version/compiled recipe; deletion with live references must be
 resolved explicitly. All ISI cells remain red and show their resolved millisecond
-value alongside the ID. Video/ISI identity collisions, duplicate durations and
-comma-list validation need explicit rules before implementation.
+value alongside the ID. Duplicate durations are allowed under distinct names;
+video/ISI identity collisions and malformed comma-list values reject.
 
 The later Q06 answer leaves allocation policy to Runner. Preserve each variant's
 identity and authored order without selecting a participant or defining a cyclic
@@ -254,20 +255,29 @@ policy in Planner. The successor contract must explicitly identify this boundary
 its exact wire representation is owned by P3/P7, not fixed by this document.
 
 - [x] **P3-01 — Implemented predecessor:** strict imported block/video schedules, per-video ISIs and deterministic protocol resolution exist; no variant allocation is implied.
-- [ ] **P3-02 — Missing in baseline:** variant-column/video-ID-or-ISI-name editor/paste, precise cell errors and derived timeline preview (Q01/Q03/Q14 answered). Related S3 work is pending integration.
-- [ ] **P3-03 — Missing:** derive paired events from full-video duration and referenced dictionary durations; validate boundary ordering, unknown/colliding IDs and repeat/block/blank rules (Q02).
-- [ ] **P3-04 — Missing:** authored variants and stable identities in the recipe, with an explicit Runner-owned selection boundary and no Planner assignment UI/algorithm (latest Q06 answer).
-- [ ] **P3-05 — Missing:** unique occurrence IDs distinguish repeated/restarted presentations of the same video.
-- [ ] **P3-06 — Missing:** versioned marker vocabulary/envelope with run, variant, video, occurrence, event, sequence and actual-timestamp meaning.
-- [ ] **P3-07 — Missing:** reconstruction contract for video/ISI, pauses, forms, interruptions and restarts from recorded stream data alone, including incomplete sequences (Q07).
-- [ ] **P3-08 — Missing:** deterministic compile/reopen fixtures for each variant, without invented counterbalance orders or silent cell repair.
-- [ ] **P3-09 — Missing:** consistent distinct video-ID colors across columns and red ISI cells, plus readable type/ID/duration cues so color is not the sole meaning. These are authoring feedback, not stimulus condition codes.
-- [ ] **P3-10 — Missing:** reusable ISI dictionary from comma-separated millisecond values; named-only version cells and embedded dictionary/references (Q14 accepted). Finalize stable ID, duplicate-value and deletion semantics before implementation.
+- [ ] **P3-02 — Component ready, integration pending:** named-ISI/video-column editor and atomic paste with precise errors; compact actual-boot empty/populated/error renders. Planned offsets wait for P1 verified durations.
+- [ ] **P3-03 — Component ready, integration pending:** pure paired-boundary derivation and accepted Q02 validation exist; the P1-owned workspace projection now binds identity/duration and the registered workspace revision, with study-only/video-change fixtures. Missing durations reject rather than invent timing; combined live subscription remains the composition owner's handoff.
+- [ ] **P3-04 — Component ready, P7 integration pending:** typed contribution embeds versioned ordered variants and `runnerAssigned` ownership; no participant controls or allocation algorithm.
+- [ ] **P3-05 — Component ready, integration pending:** unique entry IDs preserve repeated occurrences; marker execution IDs distinguish restarts.
+- [ ] **P3-06 — Specification ready, integration pending:** versioned marker envelope defines recipe/run/attempt/variant/version/entry/execution identities, sequence and observed monotonic time. Runner emission is deferred.
+- [ ] **P3-07 — Specification ready, integration pending:** synthetic reconstruction fixtures cover video/ISI/forms, pauses, interruptions/restarts and incomplete streams; no recorded-stream qualification claim.
+- [ ] **P3-08 — Component ready, integration pending:** JS/Rust canonical fixtures, native/browser save/reopen and standalone contribution validation preserve exact order without randomization or cell repair. Async P7 restoration accepts the canonical payload plus registered P1 workspace snapshot, returns its exact dependency revision, and fences withdrawal/revision reuse/cancellation. Current-table preparation requires no authoring sidecar write; P7 registry acceptance and final persistence remain separate. See `docs/planner-p3-contribution-api.md` and the workspace-binding fixture.
+- [ ] **P3-09 — Component ready, integration pending:** distinct consistent video colors, red ISIs and textual type/ID/duration cues; actual narrow-pane rendering inspected.
+- [ ] **P3-10 — Component ready, integration pending:** comma-separated whole milliseconds create stable names; duplicate values allowed, referenced deletion blocked, edits invalidate acceptance. Q14 lifecycle rules accepted.
+
+Component checkpoint `ae5cecd`, reconciled with canonical base in `bc8921d`.
+Keep these unchecked until collected and verified on the integration branch.
+Current implementation consumes the v1 hash-bound video library; P1's future
+immutable assetId/readable-name schema is not silently inferred. See
+[variant model](../site/src/research/variant-design.js),
+[native mirror](../src-tauri/src/research_stimulus_order/variants.rs), and
+[marker contract](../docs/planner-marker-contract-v1.md).
 
 **Marker boundary:** Planner owns definitions/expected sequence; Runner owns
 actual timestamps/recording. Predicted duration or Play request is not measured
 visible onset. Events must be identifiable without the source spreadsheet.
-Recommended shared vocabulary and variant/occurrence IDs still need bounded encoding.
+The bounded planned profile is specified in the linked contract; an implemented
+Planner contract does not change the existing runtime marker payload.
 
 Current native package markers contain only `event:<eventType>`; richer local
 records are not carried in the payload. Existing LSL outlets therefore do not
@@ -469,7 +479,7 @@ An open decision blocks only its dependent capability.
 | ID | Status / owner | Question or answer | Recommendation / consequence |
 | --- | --- | --- | --- |
 | Q01 | Answered / P3 | One column per version; chronological video/ISI rows. | P3-02 must use this orientation; start/stop events are derived. |
-| Q02 | Basic grammar answered; edge cases open / P3 | Video-ID and named-ISI cells are confirmed. How should blocks, blanks, unequal lengths, repeats and consecutive/terminal entries work? | No manual event-name grammar is required; diagnose ambiguity and do not silently repair rows. |
+| Q02 | Answered / P3 | User replied “Yes, use these rules” on 2026-09-11: repeated videos; ISIs anywhere including consecutive/final; unequal lengths via trailing padding; reject interior blanks. | Preserve exact order. No implicit block or questionnaire insertion; Q09 remains open. |
 | Q03 | Answered; revised by Q14 / P3 | Video duration is fixed by the catalogue; ISI durations are milliseconds entered in the dictionary field. | Table cells use names, not raw numbers. Derive boundaries; Runner supplies actual timestamps. |
 | Q04 | Open / P1 | How do duplicate names, nested folders, renames, rescans and non-ASCII names affect IDs? | Readable annotations plus immutable asset identity; collision/rename rule needs agreement. |
 | Q05 | Open / P1/P7 | Original absolute directory, portable root, or both with explicit relocation? | Portable binding recommended; recording directory information is accepted. |
@@ -481,8 +491,8 @@ An open decision blocks only its dependent capability.
 | Q11 | Answered / P6 | Direct S6 answer on 2026-09-11: “Yes, use these alignment rules.” Head-forward with no eye tracking, world anchor throughout each attempt, stop on tracking loss, recenter only before the next attempt. | Profile encodes requirements; physical enforcement is later Runner work. |
 | Q12 | Open / P1/P7 | Accept proposed homes/exposure for study identity, any retained participant-count metadata, sample rate and stream/output settings? | Remove redundant sections while retaining required recipe values; participant allocation is Runner-owned under updated Q06. |
 | Q13 | Open / P7 | Does final JSON restore only accepted runnable design or also drafts/provenance; how are edits to used recipes versioned? | Separate editable drafts from immutable run evidence. |
-| Q14 | Named-only/user-defined values answered; lifecycle details open / P3 | Researcher-supplied durations create named ISI entries; the sample names/times/count are illustrative. Version cells use names only, excluding raw numeric values. | Embed dictionary/references. Stable IDs and dependency invalidation are recommended; naming/duplicate/delete details remain open. |
 | Q15 | Initial screen scope clarified; master selection open / P6/P7 | Researcher described a video screen inside a future WebXR headset with precise distance, size and viewing angles. P6 implements a flat monoscopic screen with yaw/pitch/roll, coplanar local feedback and explicit WebXR requirement. Combining desktop/XR alternatives in one master recipe remains P7 work. | No silent desktop fallback. Rotatable inspection remains separate from saved screen rotation. |
+| Q14 | Answered / P3 | User replied “Yes, use these rules”: stable ISI names, duplicate durations allowed, deletion blocked while used, edits invalidate acceptance. User-supplied times/count remain illustrative. | Embed dictionary/references; named-only version cells. No renumbering existing definitions or silent conversion of numeric cells. |
 
 ## Recommended order and completion criteria
 

@@ -39,13 +39,13 @@ attach concrete receipts in `40-ROADMAP.md` when resolving an item.
   `experiment.json` or an existing package. Provide an explicit final design
   output action and a distinct finished-package intake in the Runner without
   adding a third mode or exposing raw JSON editing.
-- **Make video-library and manual-plan authoring possible through UI.**
-  Current Section 3/4 documentation and implementation have transitional
-  load/read-only plan controls. Researchers need to define the video library,
-  blocks, participant schedules, and exact per-video ISIs in the Designer.
-  Preserve explicit authored order, safe closed asset identities, and the
-  existing no-randomization rule; do not invent allocation methods or silently
-  fill package fields from ambient state.
+- **Connect authored variants to the final recipe and later Runner.** P3's
+  successor component preserves exact named-ISI sequences, variant versions and
+  occurrence identities. P1 owns the confirmed video catalogue; P7 owns final
+  recipe composition. The user's accepted Q06 leaves all participant allocation
+  policy to Runner. Preserve historical schedule readers and no-randomization
+  semantics; do not claim old records carry successor versions. Runner output,
+  retries and recovery must explicitly retain the selected variant identity.
 - **Decide which feedback-design controls become runnable.** The current
   Flubber/Grid/procedural-Face selector, halo-size draft, and continuous/
   stepwise timing/hold controls are deliberately preview-only and absent from
