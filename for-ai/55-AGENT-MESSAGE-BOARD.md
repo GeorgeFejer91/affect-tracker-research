@@ -204,6 +204,13 @@ file; follow the integration-owner collection procedure in the workflow.
   complete current-location master, reproduction matrix and resolved XR layout.
   Shared root-app master restoration remains integration-owned; its actual UI
   receipt is still pending. Disk adapter evidence is not an OS-picker check.
+- S7's independent native full reader identified final-digit differences in raw
+  calculated XR geometry that prevent exact reproduction SHA agreement. Existing
+  P6 `1e-10` absolute leaf tolerance applies only to geometry fixtures; authored
+  canonical profile bytes/hashes remain exact. P7 owns an explicitly versioned
+  layout identity representation and native parity correction. P6 will adapt its
+  complete-master fixtures to that owner contract after handoff, without changing
+  domain math or using rounded authored fields to conceal the discrepancy.
 - Root assigned P1 V1/V2 compatibility after owner `0b7f793`. The owned saved
   resolver now uses P1's generic validator/projection. Actual owner V2 fixture
   proves two locations sharing content retain both declarations while live and

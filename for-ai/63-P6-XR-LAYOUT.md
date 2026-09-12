@@ -133,7 +133,14 @@ Shared canonical and geometry fixtures cover centred, offset/tilted, roll,
 mixed-aspect and small/distant screens plus malformed profiles. Independent
 Node processes forbid ambient clock/RNG/storage/navigator reads and compare exact
 bytes and geometry. Dense-edge sampling checks analytic angular extrema.
-Rust mirrors validate bytes/hash and transforms within explicit float tolerance.
+Authored profile canonical bytes and SHA-256 must match exactly in Rust and JS.
+Calculated geometry fixtures use strict absolute error below `1e-10` for each
+numeric leaf; array lengths, object fields and nonnumeric values match exactly.
+This is a geometry-test tolerance, not runtime rounding or permission to alter
+authored fields. Independently calculated floating-point geometry can differ in
+its final digits across runtimes, so hashing its raw JSON does not inherit that
+tolerance. P7 must explicitly version any cross-runtime layout identity/hash
+representation; P6 profile serialization and domain geometry remain unchanged.
 The offscreen DOM fixture checks dirty/accepted state, reflow, focus, stale file
 reads, orbit isolation and teardown without controlling the user's desktop.
 
