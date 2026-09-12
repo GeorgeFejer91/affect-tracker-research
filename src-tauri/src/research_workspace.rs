@@ -20,7 +20,9 @@ use tauri::http::{header, Method, Request, Response, StatusCode};
 use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
+mod controlled_geometry;
 mod stimulus_authoring;
+pub(crate) use controlled_geometry::RunnerVideoBindingV3;
 
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
@@ -50,7 +52,7 @@ pub enum WorkspaceLocation {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ScannedStimulusSummary {
+pub struct ScannedStimulusSummary<G = NativeDisplayGeometryV1> {
     pub workspace_file_id: String,
     pub display_name: String,
     pub sha256: String,
@@ -61,7 +63,7 @@ pub struct ScannedStimulusSummary {
     pub decode_backend: Option<DecodeBackend>,
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
-    pub display_geometry: Option<NativeDisplayGeometryV1>,
+    pub display_geometry: Option<G>,
     pub source: Option<WorkspaceSourceContract>,
 }
 
@@ -97,6 +99,7 @@ pub enum DecodeBackend {
 pub enum DecodeEvidence {
     RepresentativeFramesV1,
     NativeDecodedSnapshotsV1,
+    NativeDecodedSnapshotsV2,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -227,6 +230,7 @@ pub(crate) struct ScannedStimulus {
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
     pub display_geometry: Option<NativeDisplayGeometryV1>,
+    pub native_decode_receipt_v2: Option<crate::research_native_media::NativeMediaDecodeReceiptV2>,
 }
 
 #[derive(Debug, Clone)]
@@ -992,6 +996,7 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
         candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
         candidate.display_geometry = Some(display_geometry);
+        candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
@@ -1100,6 +1105,7 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::RepresentativeFramesV1);
         candidate.decoded_positions_ms = request.decoded_positions_ms;
         candidate.display_geometry = None;
+        candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
@@ -1689,6 +1695,7 @@ fn scan_package_videos(
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1774,6 +1781,7 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1843,6 +1851,7 @@ fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<Scanned
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                native_decode_receipt_v2: None,
             });
         }
     }

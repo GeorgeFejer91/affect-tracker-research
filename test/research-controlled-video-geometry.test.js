@@ -7,12 +7,30 @@ import { createVideoCatalogueContributionV3, validateVideoCatalogueContributionV
   createSupportedVideoCatalogueProducer, validateVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
 import { createWorkspaceContributionV3, validateWorkspaceContributionV3, validateWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
 import { createLocationVariantLibrary, createLocationVariantLibraryV3, validateVariantLibrary } from "../site/src/research/variant-library.js";
+import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
+import { projectSupportedWorkspaceVideoDisplayGeometry, prepareSupportedWorkspaceContentRestore, verifySupportedWorkspaceRestoredVideoEntries } from "../site/src/research/workspace-contribution.js";
 const old = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url), "utf8"));
 test("shared canonical vectors bind exact JS geometry and P1 bytes", async () => {
   const bytes = await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"), fixture = JSON.parse(bytes);
   assert.equal(bytes, canonicalJson(fixture) + "\n");
   for (const vector of fixture.vectors) assert.deepEqual(deriveControlledVideoDisplayGeometry(vector.metadata), vector.geometry);
   assert.deepEqual(await validateWorkspaceContributionV3(fixture.workspace), fixture.workspace);
+});
+test("actual P3 owner restores and confirms catalogue3 while P1 restore/rebind retains the proof", async () => {
+  const f = JSON.parse(await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"));
+  const source = { revision: 7, enabled: true, pending: false, contribution: f.workspace, dependencyRevisions: [] };
+  const editor = createStimulusOrderEditor({ root: { querySelector: () => null, querySelectorAll: () => [] },
+    operate: () => { throw Error("No native write in owner confirmation."); } });
+  await editor.restoreContribution(f.contribution, { dependencies: { P1: source } });
+  const prepared = await editor.prepareConfirmation();
+  assert.deepEqual(prepared.snapshot.contribution, f.contribution);
+  prepared.commit(); assert.deepEqual(editor.getSnapshot(), prepared.snapshot);
+  assert.equal(editor.captureAuthoringDraft().library.catalogueContextVersion, 3);
+  const geometry = await projectSupportedWorkspaceVideoDisplayGeometry(source);
+  assert.equal(geometry.revision, 7); assert.equal(geometry.pending, false);
+  assert.equal((await prepareSupportedWorkspaceContentRestore(f.workspace)).requiresVideoLibraryRebind, true);
+  assert.deepEqual(await verifySupportedWorkspaceRestoredVideoEntries(f.workspace, f.workspace.videoCatalogue.entries), f.workspace.videoCatalogue);
+  editor.destroy();
 });
 export const proof = () => ({ schema: "affect-research-native-display-metadata-receipt", version: 2,
   encodedWidthPx: 1920, encodedHeightPx: 1080, pixelAspectRatio: { numerator: 1, denominator: 1 },

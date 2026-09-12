@@ -7,7 +7,7 @@ import {
   estimateResearchStorageUse,
 } from "./ui-contracts.js";
 import { probeVideoElement } from "./workspace.js";
-import { attestNativeGstCatalogue, NativeCatalogueFailure } from "./native-media-catalogue.js";
+import { attestNativeGstCatalogueV2 as attestNativeGstCatalogue, NativeCatalogueFailure } from "./native-media-catalogue.js";
 import { NativeMediaController } from "./native-media-controller.js";
 import { NativePackageProtocolAdapter } from "./native-package-protocol.js";
 import { NativeRunMedia, nativeRunMediaEdge } from "./native-run-media.js";
@@ -1893,7 +1893,7 @@ export class NativeResearchRuntimeBridge {
         check();
         const validNative = summary.decodeStatus === "attestedQualified"
           && summary.decodeBackend === "nativeGstPlay"
-          && summary.decodeAttestation === "nativeDecodedSnapshotsV1";
+          && summary.decodeAttestation === "nativeDecodedSnapshotsV2";
         const validFallback = summary.decodeStatus === "attestedUnqualified"
           && summary.decodeBackend === "webviewVideoFrameCallback"
           && summary.decodeAttestation === "representativeFramesV1";
