@@ -1405,6 +1405,16 @@ test("workspace imports preserve safe relative subfolders beneath the package as
     root.children.get("assets").children.get("stimuli").children.has("Pool One"),
     true,
   );
+  for (const name of [" clip.mp4", "e\u0301/clip.mp4"]) {
+    const unsupported = new File(["1234"], "clip.mp4", { type: "video/mp4" });
+    Object.defineProperty(unsupported, "webkitRelativePath", { value: name });
+    await assert.rejects(
+      workspace.importVideoFiles([unsupported]),
+      (error) => error.code === "unsafe-video-location"
+        && /NFC Unicode/u.test(error.message)
+        && /whitespace/u.test(error.message),
+    );
+  }
   assert.throws(() => normalizeWorkspaceRelativePath("../escape.mp4"), /unsafe/u);
   assert.equal(isSupportedVideoName("example.WEBM"), true);
   assert.equal(isSupportedVideoName("example.csv"), false);

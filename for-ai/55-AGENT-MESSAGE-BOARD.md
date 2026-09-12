@@ -982,6 +982,38 @@ file; follow the integration-owner collection procedure in the workflow.
   orientation metadata or a proven rendered-snapshot pipeline, followed by
   installed-runtime fixtures/qualification. No new FFI appears necessary, but
   raw dimensions must not be promoted as display geometry.
+- Native P1-06 follow-up is active on branch
+  `codex/p1-native-display-geometry` at base `e4562d950ae2a378b49c714370e042220989ed3a`.
+  This bounded Backend Verification pass will accept only a safe, versioned
+  GstPlay receipt with explicit orientation metadata, verified pixel aspect,
+  and stable square-pixel snapshot caps. Missing, reflective, custom, or
+  otherwise ambiguous orientation remains pending. Installed-runtime and
+  foreground/device qualification remain deferred.
+- P1 follow-up is **owner-ready** on the combined base `7946bc6`. Pure JS v2
+  identity/workspace checkpoint `0b7f793` preserves v1 readers and freezes the
+  exact Q04 pair: repeating `assetId=asset-<full SHA-256>` is content identity;
+  injective `annotationId` is the automatic relative-location identity. Equal
+  bytes at distinct paths remain distinct entries. The codec rejects rather
+  than normalizes non-NFC/trim-edge names, reversibly escapes `%`/`_`, and
+  escapes root-leading spreadsheet formula characters. P3/P7 received the
+  exact 6144-byte ID boundary and generic v1/v2 JS signatures.
+- Native Planner import/rescan now preserves nested paths under
+  `assets/stimuli/`, never hash-renames or collapses equal content, and rejects
+  links, nonportable paths and conflicting existing targets. The default
+  app-data workspace is still created and selected at launch; a user-selected
+  replacement remains session-local. P1 JSON contains only logical roots and
+  relative declarations, with fresh explicit rebind plus exact rehash/reprobe;
+  it stores no absolute path or permission authority.
+- Safe GstPlay source metadata plus stable RawBgrx snapshot caps now derives a
+  versioned oriented display geometry receipt. Explicit identity/90/180/270
+  orientation and canonical PAR can qualify; missing, conflicting, reflected,
+  custom or inconsistent metadata fails pending. No new unsafe/FFI was added.
+  Evidence: 654/654 JavaScript tests, 209/209 Rust no-default tests, desktop and
+  Pages build closures, formatting and diff checks pass. A source-only native
+  feature typecheck also passes with dependency build scripts deliberately in
+  docs mode; ordinary runtime detection remains unavailable because this shell
+  lacks `pkg-config`/GStreamer development metadata. Installed native
+  media/runtime and foreground qualification remain deferred.
 
 ### 20260911-integration-authoring-cleanup-receipt
 
