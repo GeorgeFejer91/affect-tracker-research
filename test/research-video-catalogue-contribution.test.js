@@ -24,6 +24,7 @@ import {
 } from "../site/src/research/video-catalogue-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url);
+const utf16FixtureUrl = new URL("./fixtures/research-video-catalogue-utf16-order-v2.json", import.meta.url);
 
 function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annotationId = "folder_video" } = {}) {
   return {
@@ -87,6 +88,14 @@ test("shared P1 fixture remains an exact canonical consumer boundary", async () 
       .entries[0].sourceRelativePath,
     "stimuli/ leading/clip.mp4",
   );
+});
+
+test("v2 catalogue ordering follows JavaScript UTF-16 code units across runtimes", async () => {
+  const fixture = JSON.parse(await readFile(utf16FixtureUrl, "utf8"));
+  const validated = await validateVideoCatalogueContribution(fixture);
+  assert.deepEqual(validated.entries.map(({ annotationId }) => annotationId), [
+    "😀_clip.mp4", "Ａ_clip.mp4",
+  ]);
 });
 
 test("native GstPlay geometry retains explicit orientation and source pixel aspect metadata", async () => {
