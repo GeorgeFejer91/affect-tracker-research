@@ -4558,3 +4558,14 @@ by this build-option change.
 - S3 verified the four caller guards and the regression read-only after the
   fix, with no remaining concrete finding in that bounded review. Syntax and
   diff checks pass; there are no HTML/CSS or layout changes in this pass.
+
+### 20260912-p2-prepared-authoring-import
+
+- Main allocated S3 P2-03/P2-04 Backend Verification in isolated branch
+  codex/segment-p2-import, D:/GitHub/affect-tracker-research-p2-import,
+  base2fe9da8. Main owns app/native; no other-owner edits.
+- prepareAuthoringImport validates exact importer result/source bytes and an
+  existing pristine family/language slot, then separates state install from
+  render/notify. Existing loadDefinition shares the private state authority.
+- Baseline13/13; focused completion29/29 including9 new import cases. Exact
+  API/limits: docs/planner-p2-prepared-import.md. No broad/native/build claim.
