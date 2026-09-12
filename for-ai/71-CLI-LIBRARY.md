@@ -126,7 +126,16 @@ verified one seven-owner draft batch with readback and rejection/EOF checks.
 The exact executable/transcript identities and captured catalogue are recorded
 in [69](69-CLI-RUNNER-END-TO-END-GOAL.md). This establishes a seven-owner native
 smoke, not every field or native import/file action. Browser parity has separate
-source-bound receipts. Consequential operations are being integrated. The full
+source-bound receipts. The later `e439018` embedded CLI verified the actual
+installed German TAS preset with native importer readback in two owned fresh
+WebView profiles (156 settings/32 internal operations). Earlier build/profile
+claims are subject to the retrospective audit noted in 69; a readiness commit
+string alone does not prove embedded frontend identity or profile isolation.
+Consequential coordinator `e511931` passed 152 all-owner checks and is collected
+for Main's real operation composition. Its optional `consequences` catalogue is
+separate from internal `operations`, even where names match. Never combine those
+namespaces. The public reference compatibility patch is ready at `c7bcab1`;
+final actual catalogue recapture and deployment are pending. The full
 bilingual mock export, new typed demographics asset and XDF reconstruction
 requirement, and actual Runner correspondence
 remain open. Never infer their completion from the documentation or catalogue.
