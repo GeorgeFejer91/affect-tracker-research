@@ -75,9 +75,35 @@ Evidence is separate from synthetic UI tests:
 Binary SHA-256 is
 `4e5949586b2e1b284af9ec54e6c0d7a9229a36bc61fe2f42b01b3ebeba2f0a0b`.
 This build omits native-gstreamer; it proves neither playback nor a complete run.
-Private instrument text is not committed or reproduced in these receipts.
+Private instrument text is not committed. Local command transcripts can contain
+the imported definitions and must remain researcher-local.
 
 Actual-app headless Chrome adds GUI reopening of the generated typed master and
 an exact-byte unchanged GUI Save: 44 checks in
 `D:/GitHub/.affect-checks/main-gui-supported-core9-20260912/receipt.json`.
 Its native file adapter is synthetic; it does not exercise OS file dialogs.
+
+## Collected consumer and native integration checkpoint
+
+Main collected Runner prerequisites and the complete owner chain through
+`acac539`, plus hidden ISI projection `bfc3746`, supported GUI native files
+`3c79d50`, native lifecycle `70ca706` and external mock driver `963f56e`.
+The integrated branch at `7e5063e` preserves original V1 entrypoints and native
+qualification flags. Main registered v2 Start/actions and placed Master cancel
+before Package cleanup, then Master join before recorder/input/native teardown.
+The dedicated coordinator remains off the UI thread and retains the parent.
+
+38 focused Runner/driver Node checks pass. The assembled no-default-feature
+library compiled, but its original Cargo test executable exited before the
+harness with Windows `0xc0000139`: its import of `TaskDialogIndirect` needs the
+Common Controls v6 activation manifest. The existing owner copy-only diagnostic
+preparation script embedded that manifest in a separate test executable; original
+bytes were preserved. The prepared copy passed all 22 Runner master tests and
+both coordinator tests. Exact original/prepared hashes and logs:
+`D:/GitHub/.affect-checks/main-runner-collected-tests-7e5063e/`.
+This is an explicitly prepared software test, not a production binary run.
+
+Remaining active seams: bounded native startup readiness before real media
+effects, exceptional setup failure ordering, Runner typed app mounting, fresh
+combined native-feature build and complete external mock. Native physical timing,
+same-master screenshots and independently reconstructed actual XDF remain open.
