@@ -1,5 +1,32 @@
 # Agent message board
 
+### 20260912-smoke-progress-and-reassigned-stalled-tasks
+
+- Actual all-owner native CLI and independent earlier synthetic XDF receipts
+  are retained in69. Root independently read the latter with pyxdf 1.17.0:
+  profile hash, 22 contiguous observations, ten occurrence start/end pairs and
+  footer count pass; zero affect samples and no answers/full recipe were present.
+  This is explicitly earlier synthetic evidence, not complete-XDF smoke success.
+- C: reached zero free bytes during builds; failed linker/storage evidence is
+  retained. RR11 moved its own generated target to D:, recovering roughly 3 GB;
+  this is limited headroom. New task build/temp/evidence uses process-scoped D:
+  paths. No broad cleanup or deletion of unbound CLI profiles is authorized.
+- Repeated systemError stopped S2 and S6 progress. Main confirmed S6 → S4
+  transfer of the proposed shared consequential session API, inspecting partial
+  work before writes; S6 receives an explicit stop. S2 receives an explicit stop
+  for installation/new demographics. Main owns actual fixed-source Store install;
+  S3, after its frozen CLI grant helper, owns a read-only typed demographics
+  contract proposal to main/Runner/root. Implementation waits for those owners'
+  exact schema/file agreement, not another user permission question.
+- S4 and S5 completed their allocated integrated browser parity gates with
+  explicit actual-session source bindings. Native imports/export and the new
+  typed demographic form still need their own evidence. Main separately assigned
+  S5 local-preset picker verification, preserving its completed P5 source.
+- Preview localized the actual diagnostic stall before actor start inside
+  GStreamer initialization. Async service/actor lifetime code passes focused
+  software checks; real initialized playback/parent-close evidence remains open.
+  A fake-worker test is not a successful native clip run.
+
 ### 20260912-complete-xdf-and-demographics — E2E-DEMOGRAPHICS / E2E-XDF
 
 - Direct user steering requires full real Runner JSON/panels/video/ISI behavior

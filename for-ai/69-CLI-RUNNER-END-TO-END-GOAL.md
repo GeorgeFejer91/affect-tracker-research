@@ -1,5 +1,20 @@
 # CLI → Planner JSON → Runner validation goal
 
+### Current reconstruction prerequisite receipt
+
+Root independently read the earlier Runner synthetic lifecycle XDF with pyxdf
+1.17.0, without a recipe sidecar. Its SHA-256 is
+`92fffaf48cfbd49f4190224e9addc52d71aca8fc78f8452f216f5074d643a0fa`.
+Two streams contain 23 marker messages (one verified profile plus 22 contiguous
+observations), ten matching occurrence start/end pairs and matching footer count;
+the affect stream has zero samples. The actual LSL span is about 0.00624 seconds,
+while test-injected monotonic event positions span about 51 seconds. This is
+deliberately synthetic event sequencing, not actual experiment timing.
+`D:/GitHub/.affect-runner-master-build/root-independent-synthetic-xdf-review.json`
+and its Python script retain the independent checks. Complete source bytes,
+participant answers and demographics are absent from that older profile; the
+new information protocol below is still necessary.
+
 ## User amendment: complete Runner smoke and XDF reconstruction — 2026-09-12
 
 The user explicitly requires the actual Runner to read the exact Planner JSON,
