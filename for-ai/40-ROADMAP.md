@@ -8,7 +8,7 @@ The allocated E2E-UI/P4 evidence follow-up is frozen at
 `D:\GitHub\affect-tracker-research-planner-cli`. Two new qualification
 files exercise the actual rendered Planner without app/adapter changes. Chrome152
 and Edge153 each pass **816 checks over six wide/narrow scenes** on clean source.
-All 12 images were inspected. All15fields/2operations have actual control,
+All 12 images were captured. All15fields/2operations have actual control,
 normalized readback, derived geometry/source and strict exported-P4-byte parity;
 both reference/unit modes, invalid/stale rejection and P1/P5 invalidation/recovery
 are covered. Panes are880/417px, with normal vertical scroll and no horizontal

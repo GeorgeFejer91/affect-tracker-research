@@ -35,9 +35,8 @@ bounds/recovery. No last-valid reference or accepted contribution fills a gap.
 Each browser passes **816 checks in six scenes**, with 17 field/operation
 correspondence rows per scene. The app viewports are 1440 × 900 and 820 × 900;
 measured P4 panes are 880 and 417 CSS px. Overview, calibration and placement
-captures together show all writable controls. All 12 PNGs were inspected: labels,
-controls and reference readout remain contained; normal vertical scrolling is
-required, and the confirmation footer was separately checked reachable.
+captures together show all writable controls. All 12 PNGs were captured with labels,
+controls and confirmation footer present; normal vertical scrolling is required.
 
 Local observed browser versions: Chrome `152.0.7977.83`, Edge `153.0.4234.32`.
 Both clean-source integrated receipts and their emitted profile files are under:

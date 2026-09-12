@@ -41,7 +41,7 @@
   `79e073bdcfc0b1e93ab0b7ed5d975e4a58bf95b5` adds the explicit companion-role
   fixture attribute/assertion. Earlier ead567e renders the shared Setup surface;
   retain those receipts with that limit. Final exact Experiment Planner Chrome/
-  Edge each pass **816 checks**, and all12 new PNGs are inspected, at
+  Edge each pass **816 checks**, and all12 new PNGs were captured, at
   `final-planner-{chrome,edge}-integrated` in the same evidence root. UI/CLI
   profile files remain byte-identical. Main/root received the rerun.
 
