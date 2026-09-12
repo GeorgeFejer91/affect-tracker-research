@@ -29,7 +29,8 @@
     "runner:dev": "vite --config runner/vite.config.js",
     "runner:build": "vite build --config runner/vite.config.js && node scripts/verify-runner-build.js",
     "runner:check": "cargo check --manifest-path src-tauri/Cargo.toml --locked --bin affect-runner",
-    "runner:desktop": "cargo run --manifest-path src-tauri/Cargo.toml --locked --bin affect-runner"
+    "runner:desktop": "node scripts/build-runner-desktop.js --run",
+    "runner:desktop:build": "node scripts/build-runner-desktop.js"
   },
   "engines": {
     "node": ">=22.12.0"

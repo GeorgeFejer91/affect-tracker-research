@@ -3110,3 +3110,26 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Fixed the progress label overflowing a 432px setup pane after the contribution-cycle wording was introduced. The intro now wraps without squeezing its instruction into a narrow column. The eight-case headless Chrome layout harness also asserts intro-child containment and passes with zero horizontal overflow; the 432px-pane capture was inspected.
 - Current preceding evidence: 545 Node tests at `dc69e72`, 350 P5 Chrome assertions, 31 retained-settings/confirmation assertions, and both frontend builds at `4f505c3`. These are scoped evidence, not final master-JSON or installed/native qualification.
 - Intake continues for the single registered workspace revision, pure P3/P6 preparation and named-file save. P1 async restore fencing needs the owner repair. Q05 relocation policy and Q08 automatic reference metric remain unanswered; no complete master-save/reopen claim or canonical promotion is made.
+
+
+### 20260912-runner-desktop-xdf-handoff — RR-01–RR-09/shared G11
+
+- Owner: Experiment Runner, `codex/segment-runner-desktop-app`. Desktop Runner
+  source `b7d3356`, separate legacy compilation cleanup `8ed7abd`; previous
+  desktop/static Planner boundary and visible-error/cleanup fixes were handed to
+  integration independently (`a0283d9`, `7e4b719`, `17b2d24`, `f48e654`).
+- Runner owns recorder policy and own plus explicitly selected external LSL XDF.
+  Canonical Planner recipe bytes remain unchanged. Native protocol input/timing
+  and qualified-player gates retain authority. No new unsafe boundary.
+- 653 Node/210 Rust tests, default/no-default strict Clippy, frontend closures,
+  headless Planner/Runner startup, synthetic selected LSL transport and independent
+  pyxdf format/timestamp/footer/Int64/marker checks passed. See ledger 65 and
+  `runner/README.md` for limits, receipts and build commands.
+- P7 supplied JS master `828fff7` and native reader/load dispatch `70b30a4`.
+  Intake/execution correspondence is a later allocated stage. This Runner currently executes only the existing strict
+  complete package-v1 contract. Successor option/layout correspondence is RR-10,
+  the final development stage; it does not block Planner authoring completion.
+- All-feature native-media compilation is unavailable here because pkg-config/
+  the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
+  accessibility and full correspondence qualification remain open. No publication
+  or foreground native application interaction was performed.
