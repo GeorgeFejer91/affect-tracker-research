@@ -25,9 +25,16 @@ accepted contribution until Q08 is answered. Q05 relocation remains unanswered.
 The new producers cannot be silently omitted into a legacy v1 file; its earlier
 available-export fixture is therefore not combined save evidence. Final master
 construction, named save/reopen and successor independent reproduction stay open.
-P7 issue-list presentation and the final root visual audit are still being
-collected. Canonical `ba2110f`, foreground applications and remote state are
-unchanged; no Runner, Edge or installed/native qualification claim is made.
+P7 issue-list presentation and root's 30-image default-state audit are collected
+in final application `d6acfd1`; only test-helper changes follow as `5e89fd5`.
+Final combined checks pass 648 Node, 32 actual-controller cycle/reopen, 124 P7
+issue/focus/navigation assertions, 31 retained controls and six footer/glow cases.
+Desktop nine-file / Pages 212-file closures pass. Four affected P5 modal/long-label
+captures pass 204 checks after a diagnosed helper-only frame-await correction;
+the standard P5 350-check receipt remains separately bound to `77b5840`.
+See the board's final supplement for exact hashes and receipt locations.
+Canonical `ba2110f`, foreground applications and remote state are unchanged;
+no complete master, Runner, Edge or installed/native qualification claim is made.
 
 ## P6 live authoring and editable reopen — 2026-09-12
 

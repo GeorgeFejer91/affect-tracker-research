@@ -103,6 +103,30 @@ file; follow the integration-owner collection procedure in the workflow.
   input/playback, Runner, and complete master reproduction remain unqualified.
   No canonical promotion, foreground launch, push or deployment is claimed.
 
+- **Final source collection:** application `d6acfd1`, with test-helper-only
+  follow-up `5e89fd5`; application tree `e84b6c91fa59ae21748847fc1ea5883287011b62`.
+  P7's compact issue presentation `86ce56b` and root's full default-state audit
+  `620a811` are collected. Later load guards also reject responses after teardown.
+  No application source writer remains in this bounded intake.
+- Final combined checks: **648 Node**, **32 actual-controller** cycle/reopen
+  assertions, **124 actual P7 issue/navigation/focus** assertions across four
+  desktop/narrow compact/expanded captures, **31 retained controls**, and
+  **six footer/glow cases**. Desktop **9-file** / Pages **212-file** closures
+  passed at clean `5e89fd5` (same application). Current logs/receipts use the
+  `collected-final-*` prefix in the integration evidence directory above.
+- Standard P5 suite passed **350 checks** at clean `77b5840`. The expanded modal
+  harness had waited on an animation frame never delivered by the virtual-time
+  process; S5 diagnosed this read-only, without finding a product failure.
+  `5e89fd5` replaces only that helper await with a task yield, keeps the geometry
+  assertion, and claims no frame ran. Four affected clean-source color/long-label
+  captures pass **204 checks** (`final-p5-modal-chrome`); the narrow modal was
+  inspected. No absent receipt is counted as a pass.
+- Complete master export still requires Q08/P4, with Q05 also open. Ready Preview
+  popup `8dde23f`, the new native-oriented-geometry pass, and proposed Runner
+  program separation are separate follow-ups, not silently collected here.
+  Canonical source and remote state remain unchanged. This handoff is bounded
+  software/UI evidence, not a full Planner, installed app or research release.
+
 ### 20260912-p7-review-issue-presentation
 
 - Owner **S7**, P7-06 and visual V23/V25, Backend Verification follow-up
