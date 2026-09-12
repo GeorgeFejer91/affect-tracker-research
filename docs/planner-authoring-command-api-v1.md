@@ -30,7 +30,8 @@ Each owner supplies an object to `createPlannerAuthoringSession`:
     // NO mutation, native side effect, publication or manufactured acceptance.
     return {
       isCurrent() { return true; }, // bind actual owner/dependency revisions
-      commit() { /* synchronous, prevalidated, nonthrowing owner projection */ }
+      commit() { /* synchronous, prevalidated, nonthrowing owner state install */ },
+      afterCommit() { /* optional synchronous notifications/render, after ALL commits */ }
     };
   },
   validate() { return []; }
@@ -55,6 +56,10 @@ cancellation before committing any owner. `dependenciesChanged()` invalidates
 the shared operation generation without inventing an authored edit.
 Incomplete but syntactically valid drafts may be committed; validation issues
 block confirmation/export. Unsupported operations reject, not silently no-op.
+Optional staged `afterCommit()` holds existing owner notifications and render
+work; it runs safely after every candidate's state installation. Exceptions here
+are reported as post-publication issues, never as rejected-with-no-change. Both
+commit phases are synchronous; no native side effect belongs in either phase.
 
 Native imports, media preparation, confirmation and final file writes are
 separate consequential commands, not members of an atomic field-edit batch.

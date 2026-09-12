@@ -141,6 +141,10 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
       const ids = [...grouped.keys()];
       for (const [index, candidate] of staged.entries()) { candidate.commit(); updatedOwners.push(ids[index]); }
       const issues = [];
+      for (const [index, candidate] of staged.entries()) {
+        try { candidate.afterCommit?.(); }
+        catch { issues.push({ owner: ids[index], field: null, code: "projection_failed", message: "Settings changed, but the owner could not refresh its projection." }); }
+      }
       try { onCommit({ owners: ids, revision }); }
       catch { issues.push({ owner: null, field: null, code: "projection_failed", message: "Settings changed, but a post-commit projection failed." }); }
       for (const id of ids) {
