@@ -30,7 +30,7 @@
   P5 three tests include thirteen JS/Rust complete-envelope comparisons; locked
   no-default all-target Clippy with warnings denied passes. Formatting only
   reorders adjacent native module declarations; validator visibility is crate-local.
-- Final owner candidate: clean application `38684c37a639cb67528a4199b3da3ebbaffa9cc8`,
+- Full-suite owner candidate: clean application `38684c37a639cb67528a4199b3da3ebbaffa9cc8`,
   site tree `1d798b8a41d19a4d8c5027de97a213a999d7d749`. Normal collection includes
   Preview's real restore fixture `13e9551` and narrow-label CSS/fixture `d711fb4`;
   P5's version-aware saved placement/label copy is `4b7ff6f`.
@@ -45,6 +45,13 @@
   is verified and ready; source writers are stopped. P7 master save/reopen and
   P4/P6 combined acceptance remain integration gates. No Runner, installed,
   physical, Edge or complete-Planner qualification is claimed.
+- Final root-allocated Preview follow-up `9237279` is normally collected in
+  clean `5c0ad7a55e8ffd28ca999524b62b7297070a5fbd`, site tree
+  `ad2fbacdce30eada866609d6b3cbb21155bf856f`. The three-line narrow side-caption
+  cap preserves full accessible/hover/editor/saved labels. Combined 38 focused,
+  258 actual restore and 122 expanded label checks pass; desktop11/Pages219 pass.
+  Both axis captures inspected. Evidence uses sibling `master-v2-capped-*` paths;
+  full-suite/native receipts retain their earlier exact bindings. Writers stopped.
 
 Coordination for the single-segment workflow in
 [`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md). This is not product authority,

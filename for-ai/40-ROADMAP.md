@@ -9,7 +9,7 @@ bounds to the P4/P6 layout owners. Preview test movement remains transient.
 
 New Planner completion allocation, P5-05 through P5-08. Pure contract `95b2e9`,
 editor/native wiring `781886c`, and Preview dependencies `d996ddd`, `13e9551`
-and `d711fb4` are composed in clean application checkpoint
+and `d711fb4` are composed in the full-suite verified application checkpoint
 `38684c37a639cb67528a4199b3da3ebbaffa9cc8` on isolated
 `codex/segment-p5-master-settings`, application tree
 `1d798b8a41d19a4d8c5027de97a213a999d7d749`. The sole integration owner collects
@@ -31,7 +31,7 @@ saved colors. Native and JS validators preserve the complete canonical fixture.
 The full envelope dispatch includes the finite halo filter region and all three
 selected renderers; no caller-supplied or current-phase footprint is trusted.
 
-Current source-bound evidence:
+Full-suite candidate evidence:
 
 - **668/668 Node checks** at clean application `38684c3`, including strict nested
   field rejection, revisions/pending, every input preset, independent-process
@@ -60,9 +60,21 @@ Current source-bound evidence:
   resolves the observed one-character corner-label columns; it does not qualify
   the entire application split layout. V2 placement/label help now says saved.
 
-All final browser receipts bind the clean application commit/tree above and
+These browser receipts bind the clean application commit/tree above and
 include browser, fixture and screenshot hashes. These use fresh-profile headless
 Chrome with synthetic input; they are not physical input or timing measurements.
+
+Final bounded Preview follow-up `9237279` is collected in clean application
+`5c0ad7a55e8ffd28ca999524b62b7297070a5fbd`, site tree
+`ad2fbacdce30eada866609d6b3cbb21155bf856f`. Only narrow axis-editor left/right
+captions are capped at three lines; full DOM/accessibility text, hover titles,
+dialog editing and saved labels remain intact. Participant labels are unchanged.
+This follow-up passes **38 focused P5/Preview tests**, **258 actual restore checks**,
+**122 expanded label checks**, and desktop11/Pages219 closures. Both axis PNGs
+were inspected; the 280px side captions now stay compact beside the map.
+Receipts/logs: `master-v2-capped-{axes,corners,restore}/{1280,800}.{json,png}` and
+`master-v2-capped-{focused,desktop,pages}.log`. The 668-test and native receipts
+above remain bound to their stated source; they are not relabelled as new runs.
 
 Evidence root:
 `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-feedback-checks/`.
