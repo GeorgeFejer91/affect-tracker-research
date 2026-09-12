@@ -9,6 +9,7 @@ import { deriveParticipantRecord } from "../../site/src/research/identity.js";
 import { validateQuestionnaireAnswers } from "../../site/src/research/questionnaires.js";
 import { createRunnerPresentation } from "./presentation.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
+import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 
 const messageOf = (error) => error?.message ?? String(error);
 
@@ -25,7 +26,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
-  let queue = Promise.resolve(), polling = false, timer = null;
+  let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   const preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
@@ -43,11 +44,20 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       } finally {
         renderRecorder();
         await presentation.leave();
+        try { await refreshParticipantHistory(); } catch (error) { fail(error); }
       }
     },
   });
   const presentation = createRunnerPresentation(root, { invoke, windowObject, isActive: () => protocol.active });
   const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
+  const participantPicker = createParticipantPicker(root, { onChange: commit => {
+    invalidate(); refreshTimeline();
+    if (commit && participantPicker.participantId) retainParticipant().catch(fail);
+  } });
+  const participantId = () => {
+    if (!participantPicker.participantId) throw new Error("Choose a participant number with a schedule in this JSON.");
+    return participantPicker.participantId;
+  };
   // A terminal native status returns to preparation in this same Runner app.
   root.researchUi = { setMode: () => renderControls() };
 
@@ -71,7 +81,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }
   function destroy() {
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
-    listeners.forEach((remove) => remove()); controllerSettings.destroy(); protocol.destroy(); preview.destroy(); delete root.researchUi;
+    listeners.forEach((remove) => remove()); participantPicker.destroy(); controllerSettings.destroy(); protocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
@@ -79,39 +89,88 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
     // must not prevent the participant from completing the first form.
-    for (const id of ["runner-participant", "runner-language-reset"]) query(id).disabled = busy || protocol.active;
+    query("runner-language-reset").disabled = busy || protocol.active;
+    participantPicker.lock(busy || protocol.active || !recipe);
     root.querySelectorAll("[data-language-option]").forEach(element => { element.disabled = busy || protocol.active; });
     query("runner-language-reset").disabled ||= !recipe;
-    query("runner-launch").disabled = busy || protocol.active || !recipe;
+    query("runner-launch").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
+    query("runner-sequence-preview").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
+    query("runner-preview-language-reset").disabled = busy || protocol.active || !recipe;
     query("runner-prepare").disabled = busy || protocol.active || !recipe;
     for (const id of ["runner-professor", "runner-controller", "runner-remote", "runner-settings", "runner-preparation-settings", "runner-back"]) query(id).disabled = busy || protocol.active;
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
     query("runner-test").disabled = busy || protocol.active || !recipe || controllerSettings.overridden;
     query("runner-stop").disabled = busy || !protocol.active;
-    query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || recorder?.available !== true;
+    query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
     query("runner-demographics").hidden = value("runner-attempt") !== "new-attempt";
   }
   function renderLanguage() {
-    const host = query("runner-language"); host.replaceChildren();
+    for (const id of ["runner-language", "runner-preview-language"]) {
+    const host = query(id); host.replaceChildren();
     if (!recipe) return;
     const step = resolveLanguageSelectionTraversalStepV1(recipe.package.languageSelection, path);
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); }); host.append(button);
+    }
     }
     renderControls();
+  }
+  async function refreshTimeline() {
+    const host = query("runner-sequence-timeline"); host.replaceChildren();
+    if (!query("runner-sequence-dialog").open || !recipe) return;
+    const generation = revision;
+    text("runner-sequence-status", "Choose a language to preview the exact sequence.");
+    if (resolveLanguageSelectionTraversalStepV1(recipe.package.languageSelection, path).kind !== "terminal") return;
+    try {
+      const timeline = await participantTimeline(recipe, participantId(), path);
+      if (destroyed || generation !== revision || !query("runner-sequence-dialog").open) return;
+      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. Demographics come first for a new attempt. Questionnaire durations depend on responses.`);
+      for (const event of timeline.events) {
+        const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
+        row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition;
+        title.textContent = `${event.label} · ${event.title}`;
+        detail.textContent = `${event.durationMs === null ? `${event.itemCount} items · Self-paced` : `${Number((event.durationMs / 1000).toFixed(3))} seconds`} · Block ${event.blockId}${event.moduleId ? ` · ${event.moduleId}` : ""}`;
+        row.append(title, detail); host.append(row);
+      }
+    } catch (error) { if (!destroyed && generation === revision) text("runner-sequence-status", messageOf(error)); }
+  }
+  async function selectionReceipt(id = null, currentRecipe = recipe, currentWorkspace = workspace) {
+    if (!currentRecipe || !currentWorkspace?.selected) throw new Error("Select the experiment’s project folder to retain its participant number.");
+    const result = await invoke("research_runner_selection", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText, participantId: id });
+    if (result?.schema !== "affect-runner-selection" || result.version !== 1 || result.packageSourceByteSha256 !== currentRecipe.canonicalSourceByteSha256 || (id !== null && result.participantId !== id)) throw new Error("Native participant receipt does not match this JSON and selection.");
+    if (!destroyed && recipe === currentRecipe && workspace === currentWorkspace) text("runner-output-directory", `Experiment output folder: ${result.outputDirectory}`);
+    return result;
+  }
+  function retainParticipant() {
+    const id = participantId(), currentRecipe = recipe, currentWorkspace = workspace;
+    retentionQueue = retentionQueue.catch(() => {}).then(() => destroyed ? null : selectionReceipt(id, currentRecipe, currentWorkspace));
+    return retentionQueue;
+  }
+  async function refreshParticipantHistory(restore = false) {
+    participantPicker.history(null);
+    if (!recipe || !workspace?.selected) return;
+    const generation = revision;
+    const result = await selectionReceipt();
+    if (destroyed || generation !== revision) return;
+    if (restore) participantPicker.restore(result.participantId);
+    const listing = await protocol.refreshRecoveries(workspace.workspaceId, recipe.canonicalSourceText);
+    if (destroyed || generation !== revision) return;
+    participantPicker.history(listing.participants); renderControls();
   }
   async function adoptRecipe(bytes) {
     if (protocol.active || recorder?.active) throw new Error("Stop the current session and recorder before changing recipe.");
     const generation = ++revision;
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
-    selection = null; preflight = null; inputReceipt = null; renderControls();
+    selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
+    participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
     const candidate = await readRunnerRecipe(bytes);
     if (destroyed || generation !== revision) return false;
     recipe = candidate; path = [];
+    participantPicker.adopt(candidate);
     text("runner-recipe-status", `${candidate.package.settings.experiment.title} · package v1`);
     const details = query("runner-recipe-details"); details.replaceChildren();
     for (const [label, detail] of [
@@ -121,16 +180,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     ]) { const dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = label; dd.textContent = detail; details.append(dt, dd); }
     preview.update(runnerFeedbackState(candidate.package.settings));
     controllerSettings.adopt(candidate.package.settings.input);
-    renderLanguage(); renderControls(); return true;
+    renderLanguage(); renderControls();
+    try { await refreshParticipantHistory(true); } catch (error) { fail(error); }
+    return true;
   }
   async function checkSession() {
     if (controllerSettings.overridden) throw new Error("Controller override execution is not connected yet. Restore the file settings in Set controller to run this recipe.");
     if (!recipe || !workspace?.selected) throw new Error("Open a recipe and select its project folder.");
     const generation = revision, currentRecipe = recipe, currentWorkspace = workspace;
     preflight = null; inputReceipt = null;
-    const candidate = await resolveRunnerSelection(currentRecipe, value("runner-participant"), path);
+    const candidate = await resolveRunnerSelection(currentRecipe, participantId(), path);
     const listing = await protocol.refreshRecoveries(currentWorkspace.workspaceId, currentRecipe.canonicalSourceText);
     if (destroyed || generation !== revision) return;
+    participantPicker.history(listing.participants);
     if (value("runner-attempt") === "finalize") {
       const recovery = listing.recoveries.find((item) => item.participantId === candidate.detail.participantId && item.finalizationPending);
       if (!recovery) throw new Error("No pending finalization exists for this participant and package.");
@@ -213,12 +275,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }));
   listen(query("runner-launch"), "click", () => action(async () => {
     if (!recipe || protocol.active) throw new Error("Load an experiment file first.");
+    await retainParticipant();
+    text("runner-selected-participant", `Participant ${participantLabel(participantId())}`);
     invalidate(); await invoke("research_input_cancel_setup");
     await presentation.enter();
   }));
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   listen(query("runner-prepare"), "click", () => action(async () => {
-    await resolveRunnerSelection(recipe, value("runner-participant"), path);
+    await resolveRunnerSelection(recipe, participantId(), path);
     if (value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
@@ -239,9 +303,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
     if (recipe?.canonicalSourceByteSha256 !== receipt.canonicalSourceByteSha256) { invalidate(); recipe = null; throw new Error("Native and frontend package bytes disagree."); }
   }));
-  listen(query("runner-folder"), "click", () => action(async () => { invalidate(); workspace = await invoke("research_choose_workspace"); text("runner-workspace-status", workspace.selected ? workspace.displayName : "No project folder selected."); }));
-  listen(query("runner-language-reset"), "click", () => { path = []; invalidate(); renderLanguage(); });
-  listen(query("runner-participant"), "input", invalidate);
+  listen(query("runner-folder"), "click", () => action(async () => { invalidate(); workspace = await invoke("research_choose_workspace"); text("runner-workspace-status", workspace.selected ? workspace.displayName : "No project folder selected."); text("runner-output-directory", ""); await refreshParticipantHistory(true); }));
+  for (const id of ["runner-language-reset", "runner-preview-language-reset"]) listen(query(id), "click", () => { path = []; invalidate(); renderLanguage(); refreshTimeline(); });
+  listen(query("runner-sequence-preview"), "click", () => { query("runner-sequence-dialog").showModal(); renderLanguage(); refreshTimeline(); });
   listen(query("runner-attempt"), "change", invalidate);
   listen(query("runner-check"), "click", () => action(checkSession));
   listen(query("runner-test"), "click", () => action(async () => {
@@ -296,7 +360,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!discovery.streams.length) host.textContent = "No external streams found. Start the source application, then search again.";
   }));
   listen(query("runner-record-start"), "click", () => action(async () => {
-    const result = await invoke("research_recorder_start", { request: { experimentPackageSourceText: recipe.canonicalSourceText,
+    const result = await invoke("research_recorder_start", { workspaceId: workspace.workspaceId, request: { experimentPackageSourceText: recipe.canonicalSourceText,
       recordOwn: query("runner-record-own").checked, discoveryRevision: discovery?.revision ?? null,
       streamKeys: [...root.querySelectorAll("[data-stream-key]:checked")].map((item) => item.dataset.streamKey) } });
     if (result) recorder = result; renderRecorder();

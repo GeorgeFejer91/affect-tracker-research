@@ -129,6 +129,48 @@ pub(super) fn prepare_attempt(
 }
 
 impl PackageRunStorage {
+    pub(super) fn effective_lsl(
+        &self,
+        authored: &crate::research_contracts::ResearchLslSettingsV1,
+    ) -> ResearchResult<crate::research_contracts::ResearchLslSettingsV1> {
+        let key = crate::research_runner_session::recipe_directory_name(
+            &self.journal.package.canonical_source_byte_sha256,
+        )?;
+        let is_recipe_folder = self
+            .session_dir
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::file_name)
+            .and_then(|name| name.to_str())
+            == Some(key.as_str());
+        if !is_recipe_folder {
+            return Ok(authored.clone());
+        }
+        let expected = crate::research_runner_session::RunnerSessionV1::new(
+            &self.journal.package.canonical_source_byte_sha256,
+            &self.journal.run_id,
+            &self.journal.participant_id,
+            authored,
+        )?;
+        let bytes = crate::research_runner_session::read_ordinary(
+            &self
+                .session_dir
+                .join(crate::research_runner_session::SESSION_FILE),
+            &self.session_dir,
+            16 * 1024,
+        )?;
+        let saved: crate::research_runner_session::RunnerSessionV1 = serde_json::from_slice(&bytes)
+            .map_err(|_| {
+                CommandError::invalid_contract("Runner session naming receipt is invalid.")
+            })?;
+        if saved != expected {
+            return Err(CommandError::invalid_contract(
+                "Runner session naming receipt does not match this attempt.",
+            ));
+        }
+        crate::research_runner_session::participant_lsl(authored, &self.journal.participant_id)
+    }
+
     pub(super) fn create(
         prepared: PreparedAttempt,
         request: NewStorageRequest<'_>,
@@ -162,6 +204,34 @@ impl PackageRunStorage {
         )?;
         write_new_synced(&session_dir.join(PACKAGE_FILE), request.package_source)?;
         write_new_synced(&session_dir.join(PROTOCOL_PLAN_FILE), request.protocol_plan)?;
+        if prepared
+            .directories
+            .experiment
+            .path
+            .file_name()
+            .and_then(|name| name.to_str())
+            == Some(
+                crate::research_runner_session::recipe_directory_name(
+                    &request.journal.package.canonical_source_byte_sha256,
+                )?
+                .as_str(),
+            )
+        {
+            let settings: crate::research_protocol::ResearchSettingsV3 =
+                serde_json::from_slice(request.settings).map_err(|_| {
+                    CommandError::invalid_contract("Runner session settings are invalid.")
+                })?;
+            let receipt = crate::research_runner_session::RunnerSessionV1::new(
+                &request.journal.package.canonical_source_byte_sha256,
+                &request.journal.run_id,
+                &request.journal.participant_id,
+                &settings.advanced.lsl,
+            )?;
+            write_new_synced(
+                &session_dir.join(crate::research_runner_session::SESSION_FILE),
+                &canonical_json(&receipt, &[])?,
+            )?;
+        }
 
         let ratings_csv = request
             .csv
@@ -205,7 +275,7 @@ impl PackageRunStorage {
         }
         let directories = RunOutputDirectories::prepare(
             request.workspace_root,
-            &request.journal.experiment_id,
+            &attempt_output_identity(request.workspace_root, &request.journal)?,
             &request.journal.participant_id,
         )?;
         let attempt_lock = acquire_attempt_lock(&directories.participant.path)?;
@@ -899,6 +969,42 @@ pub(super) fn read_latest_journal(path: &Path) -> ResearchResult<Option<PackageR
     Ok(latest)
 }
 
+fn attempt_output_identity(
+    root: &Path,
+    journal: &PackageRecoveryJournalV1,
+) -> ResearchResult<String> {
+    let key = crate::research_runner_session::recipe_directory_name(
+        &journal.package.canonical_source_byte_sha256,
+    )?;
+    let outputs = checked_run_child(&checked_run_root(root)?, "outputs")?;
+    if outputs
+        .path
+        .join(&key)
+        .try_exists()
+        .map_err(CommandError::io)?
+    {
+        let recipe = checked_run_child(&outputs, &key)?;
+        if recipe
+            .path
+            .join(&journal.participant_id)
+            .try_exists()
+            .map_err(CommandError::io)?
+        {
+            let participant = checked_run_child(&recipe, &journal.participant_id)?;
+            if participant
+                .path
+                .join(&journal.session_stem)
+                .try_exists()
+                .map_err(CommandError::io)?
+            {
+                checked_run_child(&participant, &journal.session_stem)?;
+                return Ok(key);
+            }
+        }
+    }
+    Ok(journal.experiment_id.clone())
+}
+
 pub(super) fn finalize_pending_storage(
     request: FinalizePendingStorageRequest<'_>,
 ) -> ResearchResult<Vec<FinalFileReceipt>> {
@@ -913,7 +1019,7 @@ pub(super) fn finalize_pending_storage(
         })?;
     let directories = RunOutputDirectories::prepare(
         request.workspace_root,
-        &request.journal.experiment_id,
+        &attempt_output_identity(request.workspace_root, request.journal)?,
         &request.journal.participant_id,
     )?;
     let _attempt_lock = acquire_attempt_lock(&directories.participant.path)?;
@@ -1582,6 +1688,97 @@ mod tests {
             },
             pending_finalization: None,
         }
+    }
+
+    #[test]
+    fn recipe_attempt_keeps_immutable_names_across_resume_and_rejects_tampering() {
+        use crate::research_experiment_package::parse_canonical_experiment_package_text;
+        use crate::research_runner_session::{
+            ensure_recipe_directory, recipe_directory_name, SESSION_FILE,
+        };
+        let root = std::env::temp_dir().join(format!("runner-attempt-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        fs::create_dir(root.join("recovery")).unwrap();
+        let root = root.canonicalize().unwrap();
+        let source = include_bytes!("../../../test/fixtures/experiment-package-v1.canonical.json");
+        let loaded =
+            parse_canonical_experiment_package_text(std::str::from_utf8(source).unwrap()).unwrap();
+        let selected = crate::research_native_protocol::compiler::compile_package_selection(
+            &loaded.package,
+            &loaded.canonical_source_byte_sha256,
+            "en",
+            &["en".into()],
+            "P001",
+        )
+        .unwrap();
+        let settings = canonical_json(&selected.settings, &[]).unwrap();
+        let experiment_source =
+            canonical_json(&selected.settings.external_protocol.definition, &[]).unwrap();
+        let experiment_plan = canonical_json(&selected.experiment_plan, &[]).unwrap();
+        let protocol_plan = canonical_json(&selected.protocol_plan, &[]).unwrap();
+        let mut journal = journal(0);
+        journal.package.canonical_source_byte_sha256 = loaded.canonical_source_byte_sha256.clone();
+        ensure_recipe_directory(&root, &loaded).unwrap();
+        let key = recipe_directory_name(&loaded.canonical_source_byte_sha256).unwrap();
+        let prepared = prepare_attempt(&root, &key, "P001", false).unwrap();
+        let storage = PackageRunStorage::create(
+            prepared,
+            NewStorageRequest {
+                workspace_root: &root,
+                session_stem: &journal.session_stem,
+                package_source: source,
+                settings: &settings,
+                experiment_source: &experiment_source,
+                experiment_plan: &experiment_plan,
+                protocol_plan: &protocol_plan,
+                journal: journal.clone(),
+                csv: true,
+                tsv: false,
+            },
+        )
+        .unwrap();
+        assert!(storage
+            .session_dir
+            .starts_with(root.join("outputs").join(&key)));
+        let effective = storage
+            .effective_lsl(&selected.settings.advanced.lsl)
+            .unwrap();
+        assert!(effective.state_stream.starts_with("P01_"));
+        assert!(effective.marker_stream.starts_with("P01_"));
+        let receipt_path = storage.session_dir.join(SESSION_FILE);
+        let exact_receipt = fs::read(&receipt_path).unwrap();
+        fs::write(&receipt_path, b"{}").unwrap();
+        assert!(storage
+            .effective_lsl(&selected.settings.advanced.lsl)
+            .is_err());
+        fs::write(&receipt_path, &exact_receipt).unwrap();
+        drop(storage);
+        assert!(prepare_attempt(&root, &key, "P001", false).is_err());
+        let resumed = PackageRunStorage::resume(ResumeStorageRequest {
+            workspace_root: &root,
+            package_source: source,
+            settings: &settings,
+            experiment_source: &experiment_source,
+            experiment_plan: &experiment_plan,
+            protocol_plan: &protocol_plan,
+            journal: journal.clone(),
+            csv: true,
+            tsv: false,
+        })
+        .unwrap();
+        assert_eq!(
+            resumed
+                .effective_lsl(&selected.settings.advanced.lsl)
+                .unwrap(),
+            effective
+        );
+        assert_eq!(fs::read(receipt_path).unwrap(), exact_receipt);
+        let mut legacy_journal = journal;
+        legacy_journal.session_stem = "P001_EF_A27_GW_HR_20260909T120000000Z_R01".into();
+        assert_eq!(
+            attempt_output_identity(&root, &legacy_journal).unwrap(),
+            legacy_journal.experiment_id
+        );
     }
 
     #[test]

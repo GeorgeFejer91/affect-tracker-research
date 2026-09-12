@@ -12,6 +12,14 @@ export function runnerMarkup() {
       <header class="runner-header"><img src="${symbol}" width="36" height="36" alt=""><h1>Experiment Runner</h1></header>
       <button id="runner-open">Load experiment file</button>
       <p id="runner-recipe-status" role="status">No experiment loaded</p>
+      <div class="runner-participant-picker">
+        <label for="runner-participant">Participant number</label>
+        <div class="runner-participant-row"><div class="runner-combobox">
+          <div class="runner-number-input"><input id="runner-participant" role="combobox" aria-autocomplete="none" aria-expanded="false" aria-controls="runner-participant-list" aria-describedby="runner-participant-status" placeholder="P01" maxlength="7" autocomplete="off" spellcheck="false"><button id="runner-participant-arrow" aria-label="Choose participant number" aria-expanded="false" aria-controls="runner-participant-list">▾</button></div>
+          <div id="runner-participant-list" role="listbox" aria-label="Participant numbers" hidden></div>
+        </div><button id="runner-sequence-preview" aria-haspopup="dialog" disabled>Preview sequence</button></div>
+        <p id="runner-participant-status" role="status">Load an experiment first.</p>
+      </div>
       <button id="runner-launch" class="primary-action runner-launch-action" disabled><img src="${symbol}" width="64" height="64" alt=""><span>Start experiment</span></button>
       <div class="runner-tools">
         <button id="runner-professor" aria-haspopup="dialog"><img src="${professorWidget}" width="64" height="64" alt=""><span>Absent-minded professor</span></button>
@@ -26,7 +34,7 @@ export function runnerMarkup() {
       <section id="runner-preparation" class="runner-participant-page" aria-labelledby="runner-preparation-title">
         <div id="runner-participant-details">
           <h1 id="runner-preparation-title" tabindex="-1">Participant details</h1>
-          <label class="field">Participant ID<input id="runner-participant" placeholder="P001" pattern="P[0-9]{3,6}" maxlength="7" autocomplete="off"></label>
+          <p id="runner-selected-participant"></p>
           <div id="runner-language"><p>Load an experiment to choose your language.</p></div>
           <button id="runner-language-reset" class="runner-text-button" disabled>Change language</button>
           <fieldset id="runner-demographics"><legend>About you</legend><div class="runner-fields">
@@ -46,11 +54,12 @@ export function runnerMarkup() {
       <button id="runner-session-menu" class="runner-session-menu" aria-haspopup="dialog" hidden>Session controls</button>
     </main>
     <div id="runner-error-host"><p id="runner-error" role="alert" hidden></p></div>
+    <dialog id="runner-sequence-dialog" class="runner-dialog" aria-labelledby="runner-sequence-title"><header class="runner-dialog-header"><h2 id="runner-sequence-title">Experiment sequence</h2><button data-close-dialog="runner-sequence-dialog">Done</button></header><div id="runner-preview-language"></div><button id="runner-preview-language-reset" class="runner-text-button">Change language</button><p id="runner-sequence-status" role="status"></p><ol id="runner-sequence-timeline"></ol></dialog>
     <dialog id="runner-settings-dialog" class="runner-dialog runner-sidebar" aria-labelledby="runner-settings-title">
       <header class="runner-dialog-header"><h2 id="runner-settings-title">Session &amp; recording</h2><button data-close-dialog="runner-settings-dialog">Done</button></header>
-      <section><h3>Experiment files</h3><button id="runner-folder">Choose project folder</button><p id="runner-workspace-status">No project folder selected.</p><details><summary>Experiment details</summary><dl id="runner-recipe-details"></dl></details></section>
+      <section><h3>Experiment files</h3><button id="runner-folder">Choose project folder</button><p id="runner-workspace-status">No project folder selected.</p><p id="runner-output-directory"></p><details><summary>Experiment details</summary><dl id="runner-recipe-details"></dl></details></section>
       <section><h3>Readiness</h3><output id="runner-capability" role="status">Checking native capabilities…</output><p id="runner-preflight" role="status">Checks run automatically before the first questionnaire.</p><button id="runner-check" disabled>Check media &amp; session</button><button id="runner-test" disabled>Test configured input</button><div id="runner-test-region" tabindex="0" role="group" aria-label="Test all four configured input directions" hidden><p id="runner-input-status" role="status">Focus here and test all four directions.</p></div></section><section><h3>Attempt</h3><label class="field">Action<select id="runner-attempt"><option value="new-attempt">New attempt</option><option value="resume-compatible">Resume interrupted attempt</option><option value="finalize">Finalize pending output</option></select></label><label class="check-field"><input id="runner-rerun" type="checkbox"><span>Confirm a new attempt for a completed participant</span></label></section>
-      <section><h3>Stream recording</h3><label class="check-field"><input id="runner-record-own" type="checkbox" checked><span>Record this experiment's affect and marker streams</span></label><button id="runner-discover">Find external LSL streams</button><div id="runner-streams"><p>No stream discovery requested.</p></div><div class="button-row"><button id="runner-record-start" disabled>Choose XDF file &amp; record</button><button id="runner-record-stop" disabled>Stop recording</button></div><p id="runner-record-status" role="status">Recorder stopped.</p></section>
+      <section><h3>Stream recording</h3><label class="check-field"><input id="runner-record-own" type="checkbox" checked><span>Record this experiment's affect and marker streams</span></label><button id="runner-discover">Find external LSL streams</button><div id="runner-streams"><p>No stream discovery requested.</p></div><div class="button-row"><button id="runner-record-start" disabled>Record XDF in experiment folder</button><button id="runner-record-stop" disabled>Stop recording</button></div><p id="runner-record-status" role="status">Recorder stopped.</p></section>
     </dialog>
     <dialog id="runner-controller-dialog" class="runner-dialog" aria-labelledby="runner-controller-title"><header class="runner-dialog-header"><h2 id="runner-controller-title">Set controller</h2><button data-close-dialog="runner-controller-dialog">Done</button></header><p id="runner-controller-status">Load an experiment to see its configured input.</p><label class="field">Controller preset<select id="runner-controller-preset"></select></label><label class="field">Digital step size<input id="runner-controller-step" type="number" min="0.001" max="1" step="0.001" value="0.1"></label><div class="button-row"><button id="runner-controller-apply">Keep override draft</button><button id="runner-controller-reset">Use settings from file</button></div><p id="runner-controller-note" role="status"></p></dialog>
     <dialog id="runner-professor-dialog" class="runner-dialog" aria-labelledby="runner-professor-title"><header class="runner-dialog-header"><h2 id="runner-professor-title">Absent-minded professor</h2><button data-close-dialog="runner-professor-dialog">Done</button></header><p>Browser access to the whole Runner.</p><img class="runner-qr" src="${professorQr}" width="264" height="264" alt="Preview QR for the planned professor browser companion"><p class="runner-qr-status">Preview only — remote access is not connected yet.</p><p class="runner-qr-address">Reserved address, not live:<br>https://GeorgeFejer91.github.io/affect-tracker-research/runner/professor/</p></dialog>

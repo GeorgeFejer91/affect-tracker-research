@@ -16,6 +16,7 @@ await mkdir(output, { recursive: true });
 const entry = `
 import { bootRunner } from './runner/src/app.js';
 import { NativePackageProtocolAdapter } from './site/src/research/native-package-protocol.js';
+import { createParticipantPicker } from './runner/src/participants.js';
 const mode=new URL(location.href).searchParams.get('program');
 const errors=[],calls=[],checks=[];let protocol,fullscreen=false,failFullscreen=mode==='fullscreen-error';
 const check=(condition,label)=>{if(!condition)throw new Error(label);checks.push(label);};
@@ -24,7 +25,7 @@ addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledr
 const initialize=NativePackageProtocolAdapter.prototype.initialize;
 NativePackageProtocolAdapter.prototype.initialize=async function(){protocol=this;return initialize.call(this);};
 // These overrides exist only in this isolated, non-shipping UI fixture.
-NativePackageProtocolAdapter.prototype.refreshRecoveries=async()=>({recoveries:[]});
+NativePackageProtocolAdapter.prototype.refreshRecoveries=async()=>({recoveries:[],participants:[{participantId:'P001',state:mode==='participant-used'?'partial':'available'},{participantId:'P002',state:'available'}]});
 NativePackageProtocolAdapter.prototype.preflight=async()=>({nativeStartReady:true});
 NativePackageProtocolAdapter.prototype.start=async function(detail){
  this.run={};this.onRunActivated();this.dispatch('affect-research:run-started',{participantId:'P001',attemptNumber:1});
@@ -43,6 +44,7 @@ try{
  case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return {playerActorReady:true};
  case 'research_workspace_status':return {selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic fixture (no files)'};
+ case 'research_runner_selection':return {schema:'affect-runner-selection',version:1,packageSourceByteSha256:root.runner.recipe.canonicalSourceByteSha256,participantId:args.participantId??(mode==='unselected'?null:'P001'),outputDirectory:'outputs/recipe-synthetic'};
  case 'research_recorder_status':return {available:false,active:false,phase:'idle'};
  case 'research_input_cancel_setup':return {receipt:null,remainingDirections:[]};
  case 'research_input_status':return {receipt:{receiptId:'synthetic-input-receipt'},remainingDirections:[]};
@@ -75,6 +77,31 @@ try{
   check(q('runner-controller-note').textContent.includes('Session override draft: WASD'),'override draft visible');
   check(app.recipe.canonicalSourceText===original,'override never rewrites source');check(!q('runner-start'),'no second Start screen');
   await click('runner-controller-reset');check(q('runner-controller-note').textContent.includes('Using the experiment'),'restore file binding');
+ } else if(mode==='unselected') {
+  check(q('runner-participant').value===''&&q('runner-launch').disabled,'new JSON requires explicit participant');
+  q('runner-participant').value='P999';q('runner-participant').dispatchEvent(new Event('input'));await tick();
+  check(q('runner-launch').disabled&&q('runner-participant').getAttribute('aria-invalid')==='true','undeclared number cannot start');
+ } else if(mode==='participant-used') {
+  check(q('runner-participant').value==='P01','retained native ID displayed as P01');
+  check(q('runner-participant').classList.contains('is-used')&&q('runner-participant-status').textContent.includes('Used'),'typed used number red plus text');
+  await click('runner-participant-arrow');check(q('runner-participant-list').querySelector('[data-participant-id="P001"]').classList.contains('is-used'),'used dropdown row red');
+  q('runner-participant').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',cancelable:true}));q('runner-participant').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',cancelable:true}));await tick();
+  check(q('runner-participant').value==='P02'&&!q('runner-participant').classList.contains('is-used'),'keyboard chooses unused P02');
+  check(calls.some(c=>c.command==='research_runner_selection'&&c.args.participantId==='P002'),'retention writes original native ID');
+ } else if(mode==='sequence') {
+  await click('runner-sequence-preview');check(q('runner-sequence-dialog').open,'sequence popup opens');
+  check(q('runner-sequence-timeline').children.length===0,'no assumed language schedule');
+  q('runner-preview-language').querySelector('[data-language-option="en"]').click();await tick();await tick();
+  check([...q('runner-sequence-timeline').children].map(e=>e.dataset.eventKind).join(',')==='stimulus,questionnaire,questionnaire,interval,questionnaire,stimulus,interval','preview retains exact authored hooks');
+  check(!calls.some(c=>/start_run|recorder_start|rescan|fullscreen/.test(c.command)),'preview creates no run or media acquisition');
+ } else if(mode==='picker-large') {
+  app.destroy();const picker=createParticipantPicker(root,{onChange:()=>{}});
+  picker.adopt({package:{settings:{externalProtocol:{definition:{schedules:Array.from({length:100000},(_,i)=>({participantId:'P'+String(i+1).padStart(3,'0')}))}}}}});picker.history([{participantId:'P100000',state:'complete'}]);picker.lock(false);
+  await click('runner-participant-arrow');q('runner-participant').dispatchEvent(new KeyboardEvent('keydown',{key:'End',cancelable:true}));await tick();
+  check(q('runner-participant-list').querySelectorAll('[role="option"]').length<=14,'large picker keeps bounded DOM');
+  check(q('runner-participant-list').querySelector('[data-participant-id="P100000"]').classList.contains('is-used'),'final declared number reachable and marked used');
+  q('runner-participant').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',cancelable:true}));check(picker.participantId==='P100000','keyboard selects final number');
+  picker.destroy();
  } else if(!['empty','launcher'].includes(mode)){
   await click('runner-launch');
   if(mode==='fullscreen-error'){
@@ -121,7 +148,7 @@ const server=createServer(async(req,res)=>{try{
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const rows=[];
-try {for(const program of ['empty','launcher','professor','remote','controller','settings','override','demographics','fullscreen-error','escape','questionnaire','video','stop']){
+try {for(const program of ['empty','launcher','professor','remote','controller','settings','override','demographics','fullscreen-error','escape','questionnaire','video','stop','unselected','participant-used','sequence','picker-large']){
  const profile=await mkdtemp(join(output,'profile-'));
  const {stdout}=await execute(browser,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--window-size=${viewport}`,'--force-prefers-reduced-motion','--force-device-scale-factor=1','--virtual-time-budget=5000',`--screenshot=${join(output,program+'.png')}`,'--dump-dom',`http://127.0.0.1:${server.address().port}/?program=${program}`],{windowsHide:true,timeout:30000,maxBuffer:4_000_000});
  await writeFile(join(output,program+'.html'),stdout);

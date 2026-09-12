@@ -297,3 +297,54 @@ at 800px and 600px; the latter explicitly decodes all four SVG images and checks
 containment and decorative accessibility. Launcher screenshot was inspected.
 Receipts: D:/GitHub/.affect-runner-build/widget-audit and widget-small-audit.
 Native rebuild/open is the same UI-only handoff, not a remote or research-run claim.
+
+### Participant selection and output isolation — user amendment 2026-09-12
+
+RR-03 owns a launcher P01/P02 number input with a scrolling picker, red plus text
+for numbers used in this exact loaded JSON, retained selection and resolved sequence
+preview. V1 continues to require an explicitly declared schedule: P01 is a display
+alias for P001, never a new allocation algorithm. Preview follows the chosen
+language and exact compiled protocol, including questionnaires, videos and ISIs.
+
+RR-09 creates outputs/recipe-<full canonical-source SHA-256>/ per JSON, preserving
+an immutable experiment.package.json there. Byte-identical canonical recipes share
+their folder; changed JSON gets another. Participant attempts and Runner XDFs live
+inside that folder. Existing legacy attempts remain in place and recoverable.
+
+RR-07 new attempts use Runner session naming v1: <display participant>_<authored
+stream name> for both affect and markers, e.g. P01_AffectState. Types, channels,
+source IDs, sampling and LSL timestamps are unchanged. A separate immutable
+runner-session.v1.json binds exact recipe, run, native participant and effective
+names; frozen package/manifest schemas remain unchanged. Legacy recovery retains
+its original names. Recording policy continues to belong exclusively to Runner.
+This direct user amendment authorizes these named output/naming changes only.
+Implementation/evidence pending in this pass; qualification gates remain open.
+
+### Participant launcher handoff — 2026-09-12
+
+- [x] RR-03 launcher P01 input, original-ID alias validation, retained selection,
+  keyboard-accessible virtual number list, red/text used history for exact JSON,
+  and participant/language-specific read-only protocol timeline.
+- [x] RR-07 new-attempt affect and marker names use the P01_ prefix; immutable
+  session-v1 receipt, exact receipt verification on resume, original legacy names.
+- [x] RR-08/RR-09 new JSON-scoped attempt and XDF folders; full SHA-256 identity,
+  exact immutable recipe copy, no-overwrite files, legacy history/recovery retained,
+  rerun confirmation and attempt numbering also account for historical attempts.
+- [ ] RR-03/RR-10 comprehensive master intake/allocator and final per-option
+  execution correspondence remain the separately allocated integration stage.
+
+Evidence: 656 Node checks; 216 Rust checks (2 explicit transport exercises remain
+ignored); default all-target Clippy with -D warnings; Runner production asset and
+Planner/Runner boundary checks; 17 synthetic headless Chrome scenarios at 800px
+and 600px. Screenshots inspected for launcher and exact sequence popup. A 100,000-ID
+list keeps at most 14 option elements and reaches its last number with keyboard.
+Native tests cover changed JSON with the same experiment ID, retained/rejected IDs,
+interrupted and legacy usage, immutable naming/resume, tampering and stream metadata.
+Independent pyxdf 1.17.0 reads P01_AffectResearch and P01_AffectResearchMarkers,
+8 unchanged channels, exact synthetic samples and timestamps 20/20.125/20.25.
+No network transport or physical experiment is claimed by this fixture.
+Receipts: D:/GitHub/.affect-runner-build/participant-{node-tests.log,rust-tests.log,
+xdf-reader.json}; participant-audit, participant-small-audit and participant-boundary.
+Desktop rebuild/open follows these checks. Native playback qualification, installed
+input, actual participant/physiology recording, remote apps and master correspondence
+remain open. No Planner code, frozen recipe or manifest fields were changed.

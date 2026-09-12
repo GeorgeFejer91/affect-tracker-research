@@ -66,3 +66,25 @@ html, body { min-width: 0; margin: 0; }
 .runner-qr { display: block; width: min(264px, 100%); height: auto; margin: 24px auto; background: #fff; }
 .runner-qr-status { text-align: center; }
 .runner-qr-address { font-size: 12px !important; color: #b4b4ac; }
+
+.runner-participant-picker { margin: 0 0 20px; }
+.runner-participant-picker > label { display: block; font-size: 14px; margin-bottom: 8px; }
+.runner-participant-row { display: flex; align-items: start; gap: 12px; }
+.runner-combobox { position: relative; flex: 1; min-width: 0; }
+.runner-number-input { display: flex; }
+#runner-participant { width: 100%; min-width: 0; height: 44px; background: #191b18; border: 1px solid #656c5c; border-radius: 6px 0 0 6px; color: #efeee7; padding: 8px 12px; font: inherit; }
+.runner-shell #runner-participant-arrow { min-width: 42px; height: 44px; padding: 0; border-radius: 0 6px 6px 0; border-left: 0; }
+#runner-sequence-preview { font-size: 14px; min-height: 44px; }
+#runner-participant-list { position: absolute; z-index: 5; top: 48px; left: 0; right: 0; max-height: 240px; overflow-y: auto; overscroll-behavior: contain; background: #191b18; border: 1px solid #656c5c; }
+.runner-number-option { position: absolute; left: 0; right: 0; height: 40px; display: flex; align-items: center; padding: 0 12px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.runner-number-option:hover, .runner-number-option.is-active { background: #33382e; }
+.runner-number-option[aria-selected="true"] { font-weight: 700; }
+.runner-shell .is-used, .runner-shell #runner-participant.is-used { color: #ff9696; }
+#runner-participant.is-used { border-color: #ff9696; }
+#runner-participant-status { font-size: 12px; line-height: 1.5; margin: 8px 0 0; min-height: 18px; }
+#runner-sequence-timeline { margin: 24px 0 0; padding-left: 30px; }
+#runner-sequence-timeline li { padding: 0 0 18px 8px; border-left: 1px solid #656c5c; }
+#runner-sequence-timeline li::marker { color: #d6c597; }
+#runner-sequence-timeline strong { font-size: 15px; font-weight: 600; }
+#runner-sequence-timeline p { font-size: 13px; color: #bbbdb4; margin: 6px 0 0; }
+@media (max-width: 400px) { .runner-participant-row { flex-direction: column; } .runner-combobox { width: 100%; } }

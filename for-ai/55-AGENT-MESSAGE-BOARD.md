@@ -4760,3 +4760,30 @@ Only launcher image/layout and asset-closure seams change; button labels and
 popups remain. Check SVG external-resource/script absence, actual headless image
 loading/containment at desktop widths, existing popup behavior, frontend closure
 and native rebuild. No new remote, controller override or execution authority.
+
+### 20260912-runner-participant-launcher — R1/RR-03 Backend Verification
+
+Owner: Experiment Runner, codex/segment-runner-minimal-launcher, isolated Runner
+worktree, base d7871ae. Direct user allocation: launcher participant number,
+retention, used-number list, exact sequence preview and participant-prefixed LSL.
+Clarification: used history is scoped to loaded JSON; each JSON has its own output
+folder. Use full canonical-source SHA-256 as folder identity; identical canonical
+JSON reopens the same folder. Original package IDs and bytes remain unchanged.
+Current source: fullscreen-only P001 input, no retained selection or timeline;
+outputs grouped by experiment ID, LSL names directly from settings. Named shared
+seams: RR-07 native outlet names, RR-08 XDF destination, RR-09 storage/recovery,
+Runner-only command registration and launcher composition. No Planner edits or
+successor allocation algorithm. Preserve declared v1 schedules and legacy recovery.
+Baseline: four focused Runner Node checks pass. Collect alias/order/history tests,
+folder isolation/recovery/naming tests, headless interaction and native build.
+Native playback/input/transport qualification and master correspondence remain open.
+
+Participant follow-up handoff: RR-03 input/retention/history/virtual picker/exact
+sequence preview implemented, with named RR-07 naming and RR-08/09 per-JSON output
+seams. User confirmed loaded-JSON history scope and dedicated output folders.
+Ledger65 and Runner README describe the naming-v1 sidecar, full-hash folder key,
+legacy recovery compatibility and exact tests. 656 Node/216 Rust tests, Clippy,
+17 synthetic Chrome scenarios at two widths and independent pyxdf name/timestamp
+checks passed. This continues d7871ae on the isolated Runner branch; canonical
+integration remains owner-controlled. No master allocation, phone app, native
+playback qualification or Planner authoring changes are included.

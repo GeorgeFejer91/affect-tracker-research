@@ -99,7 +99,7 @@ pub fn validate_marker(marker: &str) -> ResearchResult<()> {
 }
 
 #[cfg(all(feature = "lsl-streaming", any(target_os = "windows", test)))]
-fn build_stream_descriptions(
+pub(crate) fn build_stream_descriptions(
     settings: &ResearchLslSettingsV1,
     sample_rate_hz: u16,
     run_id: &str,
@@ -404,6 +404,32 @@ mod tests {
         assert!(!readiness.ready);
         assert!(readiness.enabled);
         assert_eq!(readiness.channel_labels, CHANNEL_LABELS);
+    }
+
+    #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
+    #[test]
+    fn runner_names_reach_stream_descriptions_without_changing_sample_contract() {
+        let authored = ResearchLslSettingsV1 {
+            enabled: true,
+            state_stream: "AffectState".into(),
+            marker_stream: "AffectMarkers".into(),
+            stream_type: "Affect".into(),
+            source_id: "runner-test".into(),
+        };
+        let effective = crate::research_runner_session::participant_lsl(&authored, "P001").unwrap();
+        let (state, marker) = build_stream_descriptions(&effective, 130, "test-run").unwrap();
+        assert_eq!(state.name(), "P01_AffectState");
+        assert_eq!(marker.name(), "P01_AffectMarkers");
+        let (original_state, original_marker) =
+            build_stream_descriptions(&authored, 130, "test-run").unwrap();
+        assert_eq!(state.channels(), original_state.channels());
+        assert_eq!(marker.channels(), original_marker.channels());
+        assert_eq!(state.source_id(), original_state.source_id());
+        assert_eq!(marker.source_id(), original_marker.source_id());
+        assert_eq!(state.rate(), original_state.rate());
+        assert_eq!(marker.rate(), original_marker.rate());
+        assert_eq!(state.format(), original_state.format());
+        assert_eq!(marker.format(), original_marker.format());
     }
 
     #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]

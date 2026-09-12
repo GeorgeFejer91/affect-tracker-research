@@ -135,3 +135,16 @@ stage and confirmed it must not delay Planner completion or this backend handoff
 Do not convert the master into an older package by dropping P1–P6 options, infer
 an allocator, reinterpret questionnaire label repetition as pagination, or claim
 XR/native player qualification from successful document reconstruction.
+
+### Runner participant/session consumption — 2026-09-12
+
+Current v1 Runner resolves P01 display input to the declared P001 schedule. Its
+preview uses the same strict participant/language compiler as actual preparation;
+unknown numbers reject, and questionnaire hooks/ISIs keep their saved positions.
+This is not a successor participant allocator. Runner retains the selection and
+history per exact canonical JSON, with outputs/recipe-<full SHA-256>/ isolation.
+New-attempt LSL names use Runner session naming v1 (P01_<authored base name>), with
+an immutable naming receipt; Planner emission base names and original JSON remain
+intact. XDF policy/destination belong to Runner. Ledger65 binds software evidence
+and remaining native/master qualification. Frozen legacy recoveries preserve names
+and paths; nothing is silently migrated or overwritten.

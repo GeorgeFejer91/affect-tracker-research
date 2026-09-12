@@ -104,3 +104,11 @@ the researcher. No independent agent may silently merge the integration checkout
   listener, live pairing token, remote WebView or hosted page is implemented by
   displaying these static QRs. Reserved /runner/professor/ and /runner/controller/
   Pages destinations are not deployed or claimed to be live.
+
+### Participant/session naming amendment — 2026-09-12
+
+The user explicitly allocates Runner participant selection/retention, per-JSON
+output folders and participant prefixes on both LSL stream names. Runner naming v1
+and folder identity are specified in ledger 65. These are Runner session behavior;
+Planner stores the authored base names and exact recipe. Do not rewrite the JSON,
+change stream types/channels/timestamps, or invent undeclared v1 schedules.

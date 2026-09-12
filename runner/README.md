@@ -31,6 +31,30 @@ The opening window has Load experiment file, a large Start experiment control,
 Absent-minded professor, Set controller and Remote controller connection.
 Session, media/recovery and XDF controls are in Session & recording settings.
 
+Enter a participant number such as P01 or choose it from the scrolling list.
+The native Runner remembers the last selection for that exact JSON in the selected
+project folder. Previously used numbers are red and labelled Used, including
+interrupted attempts. The list virtualizes up to all 100,000 supported declared
+participants. Existing v1 JSON must declare a schedule: P01 resolves to its original
+P001 ID; numbers outside the file are not allocated. Preview sequence beside the
+input shows the exact selected-language video, questionnaire and interval order
+without starting media, outlets or a recording. Self-paced forms have no invented
+duration. Start uses that same participant and language selection.
+
+Each canonical JSON owns `outputs/recipe-<full SHA-256>/`, containing the exact
+`experiment.package.json`, retained `participant.selection.json`, participant
+attempt folders and a `recordings/` folder. Reopening identical canonical bytes
+reuses the folder; changed JSON gets another. Legacy attempts remain in place and
+are included in exact-JSON history/recovery. The internal UUID/hash-bound recovery
+index remains in the workspace recovery library.
+
+For new attempts, both LSL names use the displayed participant prefix, such as
+`P01_AffectState` and `P01_AffectMarkers`. A separate immutable
+`runner-session.v1.json` binds the effective names to the native participant, run
+and recipe hash. Channel metadata, source IDs and timestamps retain their existing
+contracts. Legacy resumed attempts keep their original names; new resumed attempts
+verify their saved naming receipt. The Planner JSON and manifest-v4 shape are unchanged.
+
 Start enters native fullscreen with a solid black background, then presents
 participant identity, language and demographics. Continue automatically verifies
 the selection and proceeds into the recipe's questionnaire/video protocol; there
@@ -65,8 +89,9 @@ labels/codes, required-answer checks and final validation.
 Recording policy belongs to **Runner session state**, independently of the
 Planner recipe's LSL emission settings. Select own affect/marker streams and/or
 up to 16 explicitly discovered external streams. Own recording requires the
-recipe to enable LSL output. Choose a new `.xdf` destination; existing files are
-never replaced. Start recording before the attempt to capture its first markers.
+recipe to enable LSL output. Record XDF in experiment folder creates a uniquely
+named file inside this JSON's `recordings/` folder; existing files are never
+replaced. Start recording before the attempt to capture its first markers.
 Finish the attempt before manually stopping the recorder. Normal attempt
 completion stops and drains recording automatically; application shutdown stops
 the native attempt before finalizing recording.
