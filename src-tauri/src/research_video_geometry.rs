@@ -1,5 +1,5 @@
 use crate::research_error::{CommandError, ResearchResult};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub(crate) const NATIVE_DISPLAY_METADATA_SCHEMA: &str =
     "affect-research-native-display-metadata-receipt";
@@ -7,11 +7,158 @@ pub(crate) const NATIVE_DISPLAY_METADATA_SCHEMA: &str =
 const MAX_VIDEO_DIMENSION_PX: u32 = 32_768;
 const MAX_RATIO_TERM: u32 = 65_535;
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct VideoRatioV1 {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VideoRatioV1 {
     pub numerator: u32,
     pub denominator: u32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "status", rename_all = "camelCase", deny_unknown_fields)]
+pub enum SourceOrientationTagV2 {
+    Absent {},
+    Explicit {
+        #[serde(rename = "rotationDegrees")]
+        rotation_degrees: u16,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SourceOrientationV2 {
+    pub stream: SourceOrientationTagV2,
+    pub media: SourceOrientationTagV2,
+}
+
+impl SourceOrientationV2 {
+    pub(crate) fn controlled_rotation(&self) -> ResearchResult<u16> {
+        let degrees = |tag| match tag {
+            SourceOrientationTagV2::Absent {} => Ok(None),
+            SourceOrientationTagV2::Explicit {
+                rotation_degrees: value @ (0 | 90 | 180 | 270),
+            } => Ok(Some(value)),
+            _ => Err(CommandError::native_media_unavailable(
+                "native-display-orientation-unsupported",
+            )),
+        };
+        match (degrees(self.stream)?, degrees(self.media)?) {
+            (Some(left), Some(right)) if left != right => Err(
+                CommandError::native_media_unavailable("native-display-orientation-conflicting"),
+            ),
+            (Some(value), _) | (_, Some(value)) => Ok(value),
+            (None, None) => Ok(0),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ControlledRendererV2 {
+    pub sink_factory: String,
+    pub configured_rotation_degrees: u16,
+    pub readback_rotation_degrees: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeDisplayMetadataReceiptV2 {
+    pub schema: String,
+    pub version: u32,
+    pub encoded_width_px: u32,
+    pub encoded_height_px: u32,
+    pub pixel_aspect_ratio: VideoRatioV1,
+    pub source_orientation: SourceOrientationV2,
+    pub snapshot_width_px: u32,
+    pub snapshot_height_px: u32,
+    pub snapshot_pixel_aspect_ratio: VideoRatioV1,
+    pub snapshot_interpretation: String,
+    pub renderer: ControlledRendererV2,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeDisplayGeometryV2 {
+    pub status: String,
+    pub source: String,
+    pub display_width_px: u32,
+    pub display_height_px: u32,
+    pub display_aspect: VideoRatioV1,
+    pub rotation_degrees: u16,
+    pub pixel_aspect_ratio: VideoRatioV1,
+    pub metadata_interpretation: String,
+    pub native_display_metadata: NativeDisplayMetadataReceiptV2,
+}
+
+pub(crate) fn derive_native_display_geometry_v2(
+    receipt: &NativeDisplayMetadataReceiptV2,
+) -> ResearchResult<NativeDisplayGeometryV2> {
+    if receipt.schema != NATIVE_DISPLAY_METADATA_SCHEMA
+        || receipt.version != 2
+        || receipt.snapshot_interpretation != "pre-renderer-square-pixel"
+        || receipt.renderer.sink_factory != "d3d11videosink"
+    {
+        return Err(CommandError::invalid_contract(
+            "Controlled native display metadata is unsupported.",
+        ));
+    }
+    for dimension in [
+        receipt.encoded_width_px,
+        receipt.encoded_height_px,
+        receipt.snapshot_width_px,
+        receipt.snapshot_height_px,
+    ] {
+        validate_dimension(dimension)?;
+    }
+    validate_ratio(receipt.pixel_aspect_ratio)?;
+    validate_ratio(receipt.snapshot_pixel_aspect_ratio)?;
+    let rotation = receipt.source_orientation.controlled_rotation()?;
+    if receipt.renderer.configured_rotation_degrees != rotation
+        || receipt.renderer.readback_rotation_degrees != rotation
+    {
+        return Err(CommandError::native_media_unavailable(
+            "native-display-renderer-policy-mismatch",
+        ));
+    }
+    if receipt.snapshot_pixel_aspect_ratio
+        != (VideoRatioV1 {
+            numerator: 1,
+            denominator: 1,
+        })
+    {
+        return Err(CommandError::native_media_unavailable(
+            "native-display-snapshot-not-square-pixel",
+        ));
+    }
+    let encoded_aspect = reduce_ratio(
+        u64::from(receipt.encoded_width_px) * u64::from(receipt.pixel_aspect_ratio.numerator),
+        u64::from(receipt.encoded_height_px) * u64::from(receipt.pixel_aspect_ratio.denominator),
+    )?;
+    let snapshot_aspect = reduce_ratio(
+        u64::from(receipt.snapshot_width_px),
+        u64::from(receipt.snapshot_height_px),
+    )?;
+    if encoded_aspect != snapshot_aspect {
+        return Err(CommandError::native_media_unavailable(
+            "native-display-metadata-inconsistent",
+        ));
+    }
+    let (width, height) = if matches!(rotation, 90 | 270) {
+        (receipt.snapshot_height_px, receipt.snapshot_width_px)
+    } else {
+        (receipt.snapshot_width_px, receipt.snapshot_height_px)
+    };
+    Ok(NativeDisplayGeometryV2 {
+        status: "verified".into(),
+        source: "native-gstplay-controlled-renderer".into(),
+        display_width_px: width,
+        display_height_px: height,
+        display_aspect: reduce_ratio(u64::from(width), u64::from(height))?,
+        rotation_degrees: rotation,
+        pixel_aspect_ratio: receipt.pixel_aspect_ratio,
+        metadata_interpretation: "controlled-renderer-and-pre-sink-square-pixel-snapshot".into(),
+        native_display_metadata: receipt.clone(),
+    })
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -212,6 +359,129 @@ fn greatest_common_divisor(mut left: u64, mut right: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn controlled_receipt(rotation: Option<u16>) -> NativeDisplayMetadataReceiptV2 {
+        let degrees = rotation.unwrap_or(0);
+        NativeDisplayMetadataReceiptV2 {
+            schema: NATIVE_DISPLAY_METADATA_SCHEMA.into(),
+            version: 2,
+            encoded_width_px: 1920,
+            encoded_height_px: 1080,
+            pixel_aspect_ratio: VideoRatioV1 {
+                numerator: 1,
+                denominator: 1,
+            },
+            source_orientation: SourceOrientationV2 {
+                stream: rotation.map_or(SourceOrientationTagV2::Absent {}, |rotation_degrees| {
+                    SourceOrientationTagV2::Explicit { rotation_degrees }
+                }),
+                media: SourceOrientationTagV2::Absent {},
+            },
+            snapshot_width_px: 1920,
+            snapshot_height_px: 1080,
+            snapshot_pixel_aspect_ratio: VideoRatioV1 {
+                numerator: 1,
+                denominator: 1,
+            },
+            snapshot_interpretation: "pre-renderer-square-pixel".into(),
+            renderer: ControlledRendererV2 {
+                sink_factory: "d3d11videosink".into(),
+                configured_rotation_degrees: degrees,
+                readback_rotation_degrees: degrees,
+            },
+        }
+    }
+
+    #[test]
+    fn controlled_absence_keeps_evidence_distinct_from_explicit_identity() {
+        let absent = derive_native_display_geometry_v2(&controlled_receipt(None)).unwrap();
+        let explicit = derive_native_display_geometry_v2(&controlled_receipt(Some(0))).unwrap();
+        assert_eq!(absent.rotation_degrees, explicit.rotation_degrees);
+        assert_ne!(
+            absent.native_display_metadata,
+            explicit.native_display_metadata
+        );
+        let value = serde_json::to_value(&absent).unwrap();
+        assert_eq!(value.as_object().unwrap().len(), 9);
+        assert_eq!(
+            value["nativeDisplayMetadata"].as_object().unwrap().len(),
+            11
+        );
+        assert_eq!(
+            serde_json::from_value::<NativeDisplayGeometryV2>(value).unwrap(),
+            absent
+        );
+    }
+
+    #[test]
+    fn controlled_rotations_apply_once_to_unrotated_snapshot() {
+        for rotation in [0, 90, 180, 270] {
+            let receipt = controlled_receipt(Some(rotation));
+            let geometry = derive_native_display_geometry_v2(&receipt).unwrap();
+            let expected = if matches!(rotation, 90 | 270) {
+                (1080, 1920)
+            } else {
+                (1920, 1080)
+            };
+            assert_eq!(
+                (geometry.display_width_px, geometry.display_height_px),
+                expected
+            );
+        }
+        let mut already_rotated = controlled_receipt(Some(90));
+        already_rotated.snapshot_width_px = 1080;
+        already_rotated.snapshot_height_px = 1920;
+        assert!(derive_native_display_geometry_v2(&already_rotated).is_err());
+    }
+
+    #[test]
+    fn controlled_metadata_rejects_policy_conflict_and_noncanonical_evidence() {
+        for mutation in 0..7 {
+            let mut receipt = controlled_receipt(Some(90));
+            match mutation {
+                0 => receipt.renderer.readback_rotation_degrees = 0,
+                1 => receipt.renderer.sink_factory = "autovideosink".into(),
+                2 => {
+                    receipt.source_orientation.media = SourceOrientationTagV2::Explicit {
+                        rotation_degrees: 180,
+                    }
+                }
+                3 => {
+                    receipt.source_orientation.stream = SourceOrientationTagV2::Explicit {
+                        rotation_degrees: 45,
+                    }
+                }
+                4 => {
+                    receipt.snapshot_pixel_aspect_ratio = VideoRatioV1 {
+                        numerator: 2,
+                        denominator: 1,
+                    }
+                }
+                5 => {
+                    receipt.pixel_aspect_ratio = VideoRatioV1 {
+                        numerator: 2,
+                        denominator: 2,
+                    }
+                }
+                _ => receipt.version = 1,
+            }
+            assert!(derive_native_display_geometry_v2(&receipt).is_err());
+        }
+    }
+
+    #[test]
+    fn controlled_wire_rejects_unknown_fields_and_forged_absence() {
+        let baseline = serde_json::to_value(controlled_receipt(None)).unwrap();
+        for mutation in 0..3 {
+            let mut value = baseline.clone();
+            match mutation {
+                0 => value["sourceOrientation"]["stream"]["rotationDegrees"] = 0.into(),
+                1 => value["renderer"]["observedPixels"] = true.into(),
+                _ => value["unknown"] = true.into(),
+            }
+            assert!(serde_json::from_value::<NativeDisplayMetadataReceiptV2>(value).is_err());
+        }
+    }
 
     fn receipt(orientation: NativeVideoOrientationV1) -> NativeDisplayMetadataReceiptV1 {
         NativeDisplayMetadataReceiptV1 {

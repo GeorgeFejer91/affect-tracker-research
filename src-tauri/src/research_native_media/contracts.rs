@@ -4,13 +4,33 @@
 )]
 
 use crate::research_error::{CommandError, ResearchResult};
-use crate::research_video_geometry::NativeDisplayMetadataReceiptV1;
+use crate::research_video_geometry::{
+    NativeDisplayMetadataReceiptV1, NativeDisplayMetadataReceiptV2,
+};
 use serde::{Deserialize, Serialize};
 
 pub const NATIVE_MEDIA_CAPABILITY_SCHEMA: &str = "affect-research-native-media-capability";
 pub const NATIVE_MEDIA_STATUS_SCHEMA: &str = "affect-research-native-media-status";
 pub const NATIVE_MEDIA_PREPARE_SCHEMA: &str = "affect-research-native-media-prepare-receipt";
 pub const NATIVE_MEDIA_DECODE_SCHEMA: &str = "affect-research-native-media-decode-receipt";
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeMediaDecodeReceiptV2 {
+    pub schema: &'static str,
+    pub version: u32,
+    pub session_id: String,
+    pub generation: u64,
+    pub media_grant_id: String,
+    pub workspace_file_id: String,
+    pub duration_ms: f64,
+    pub video_width: u32,
+    pub video_height: u32,
+    pub audio_stream_count: u32,
+    pub decoded_snapshot_count: u32,
+    pub decoded_positions_ms: Vec<f64>,
+    pub display_metadata: NativeDisplayMetadataReceiptV2,
+}
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
