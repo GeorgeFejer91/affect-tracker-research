@@ -9,4 +9,11 @@ test("least used across participants ties in saved order and participant fills f
 test("unknown, stale and malformed inventory cannot provide a default",()=>{
  for(const mutate of [u=>u.version=2,u=>u.recipeSourceByteSha256="other",u=>u.basis="completed",u=>u.variants.reverse(),u=>u.variants[0].recordingCount=-1,u=>u.variants[1].participantCount=2,u=>u.usedParticipantIds.push("P001"),u=>u.usedParticipantIds=["P01"]]){const u=fixture();mutate(u);assert.throws(()=>validateVariantUsage(u,"hash",variants));}
 });
-test("usage colors slide continuously against current maximum and zero is green",()=>{assert.equal(usageColor(0,0),"hsl(120 55% 52%)");assert.equal(usageColor(1,2),"hsl(60 55% 52%)");assert.equal(usageColor(2,2),"hsl(0 55% 52%)");});
+test("usage colors adapt to observed minimum and maximum, with neutral ties",()=>{
+ for(const [min,max] of [[0,9],[5,9],[8,9],[100,200]]){
+  assert.equal(usageColor(min,min,max),"hsl(120 55% 52%)");
+  assert.equal(usageColor((min+max)/2,min,max),"hsl(60 55% 52%)");
+  assert.equal(usageColor(max,min,max),"hsl(0 55% 52%)");
+ }
+ for(const count of [0,5,200000]) assert.equal(usageColor(count,count,count),"hsl(0 0% 65%)");
+});

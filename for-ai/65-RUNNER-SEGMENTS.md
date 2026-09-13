@@ -1,5 +1,20 @@
 # Experiment Runner agent ledger
 
+## Adaptive version color bounds — user follow-up
+
+R1 RR-03/10: colors use the current minimum and maximum matching XDF counts
+across this loaded experiment's versions: green at minimum, red at maximum,
+linear hue interpolation between them. Equal counts, including all-zero and
+single-version lists, use neutral gray and an explicit equal-usage legend.
+The picker and every menu row share this scale and refresh it with inventory.
+Bar lengths remain count/max so nonzero minimum counts stay visible. Counts,
+least-used preselection, manual overrides and XDF naming semantics are unchanged.
+
+Evidence: 3 focused logic tests, 129 synthetic-native production UI assertions,
+and Runner frontend build/boundary pass. Receipts under
+`D:/GitHub/.affect-runner-master-build/adaptive-colors-ui-02/`.
+Root collects the isolated color change into its single current desktop build.
+
 ## Complete-XDF smoke extension — 2026-09-12
 
 The latest explicit user request activates RR-02/03/04/06/07/08/09/10 seams for

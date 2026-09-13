@@ -24,7 +24,10 @@ export function nextParticipant(ids) {
   for (let n=1;n<=100000;n++) { const id=`P${String(n).padStart(3,"0")}`; if (!used.has(id)) return id; }
   return null;
 }
-export function usageColor(count, maximum) { return `hsl(${maximum ? Math.round(120*(1-count/maximum)) : 120} 55% 52%)`; }
+export function usageColor(count, minimum, maximum) {
+  if (minimum === maximum) return "hsl(0 0% 65%)";
+  return `hsl(${Math.round(120*(1-(count-minimum)/(maximum-minimum)))} 55% 52%)`;
+}
 
 export function createVariantPicker(root, {onChange}) {
   const q=id=>root.querySelector(`#${id}`), select=q("runner-variant"), button=q("runner-variant-button"), popup=q("runner-variant-popup"), list=q("runner-variant-options"), status=q("runner-variant-status");
@@ -36,19 +39,24 @@ export function createVariantPicker(root, {onChange}) {
     const index=variants.findIndex(v=>v.variantId===select.value), current=usage?.variants[index];
     q("runner-variant-label").textContent=index<0?"Choose version":`V${index+1} · ${variants[index].title}`;
     q("runner-variant-count").textContent=current?`${current.recordingCount} XDF · ${current.participantCount} participant${current.participantCount===1?"":"s"}`:"Usage unavailable";
-    const max=usage?Math.max(0,...usage.variants.map(v=>v.recordingCount)):0;
-    button.style.setProperty("--version-color",current?usageColor(current.recordingCount,max):"#777");
+    const counts=usage?.variants.map(v=>v.recordingCount)??[];
+    const min=counts.length?Math.min(...counts):0, max=counts.length?Math.max(...counts):0;
+    button.style.setProperty("--version-color",current?usageColor(current.recordingCount,min,max):"#777");
     status.textContent=usage?`${manual?"Manual selection":"Automatic: least-used version"}. Counts use every matching XDF, including stopped runs.${usage.ignoredXdfFiles?` ${usage.ignoredXdfFiles} older or unrecognized XDF files excluded.`:""}`:"Recording inventory unavailable. You can select a version manually.";
     list.replaceChildren();
     for(let i=0;i<variants.length;i++){
       const variant=variants[i], count=usage?.variants[i], option=document.createElement("div");
       option.id=`runner-version-${i}`;option.role="option";option.dataset.variantIndex=String(i);option.setAttribute("aria-selected",String(select.value===variant.variantId));option.className="runner-version-option";
-      option.style.setProperty("--version-color",count?usageColor(count.recordingCount,max):"#777");
+      option.style.setProperty("--version-color",count?usageColor(count.recordingCount,min,max):"#777");
       const label=document.createElement("span"), number=document.createElement("span"), track=document.createElement("span"), bar=document.createElement("span");
       label.textContent=`V${i+1} · ${variant.title}`;number.textContent=count?`${count.recordingCount} XDF · ${count.participantCount} participant${count.participantCount===1?"":"s"}`:"Unknown";
       track.className="runner-version-track";bar.style.width=`${count&&max?count.recordingCount/max*100:0}%`;track.append(bar);option.append(label,number,track);list.append(option);
     }
-    q("runner-variant-scale").textContent=usage?`Green: 0 XDF · Red: ${max} XDF (current maximum)`:"Recording counts unavailable";
+    q("runner-variant-scale").textContent=usage
+      ? min===max ? `Equal usage: ${min} XDF per version · Neutral color`
+        : `Green: ${min} XDF (minimum) · Red: ${max} XDF (maximum)`
+      : "Recording counts unavailable";
+    root.querySelector(".runner-version-legend").hidden=!usage||min===max;
   }
   function changed(previous){render();if(select.value!==previous)onChange();}
   function choose(index){if(locked||!variants[index])return;manual=true;select.value=variants[index].variantId;close();render();button.focus();onChange();}
