@@ -99,10 +99,9 @@ LSL, timing, installed workflow, or research qualification.
 
 The checked-in code can stage and verify the integration tree and report its
 status without exposing paths. It cannot package that tree for distribution.
-It does not yet contain the GstPlay player actor or the renderer-to-application-
-window handle adapter. The latter contains a small unavoidable native-handle
-`unsafe` boundary and requires explicit user approval and audit before
-implementation. A future native build must also solve and test safe pre-`main`
+The GstPlay actor and application-window adapter are implemented behind the two
+Windows FFI boundaries approved on 2026-09-10. Their focused audit and installed
+qualification remain open. The native build must also solve and test safe pre-`main`
 Windows DLL resolution; a nested Tauri resource directory or CI development
 `PATH` is not a production loader design.
 

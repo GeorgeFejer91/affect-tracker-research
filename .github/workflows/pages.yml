@@ -31,7 +31,7 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Run Research contract and browser tests
-        run: pnpm test
+        run: pnpm surveyjs:check && pnpm test
       - name: Build the shared desktop WebView
         run: pnpm desktop:build
       - name: Build the isolated Research Pages artifact

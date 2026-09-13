@@ -15,6 +15,9 @@ supersedes older blanket no-CLI wording. The new extension is not yet complete.
 
 Capability status remains in [60](60-SEGMENT-CATALOGUE.md), CLI-P1 through
 CLI-P7 and CLI-SHARED. This file holds the scope, example and evidence ledger.
+The maintained command library and About-page documentation requirement are in
+[71](71-CLI-LIBRARY.md); every future command change must update that reference
+and its public source-derived catalogue.
 
 ## Scope and authority
 
@@ -51,7 +54,8 @@ saved state; cancellation cannot undo a file that was already written.
 
 Every new export receives a readable prefix and Windows-safe UTC creation
 timestamp with subsecond precision. Exact spelling belongs to the shared helper;
-an example is `great-dictator-mock--20260912T153045123Z.json`. Clock time belongs
+the implemented form is `great-dictator-mock_2026-09-12_15-30-45-123Z.json`,
+with a collision suffix when needed. Clock time belongs
 only in the filename, never in canonical content, identity, integrity hashes or
 reproduction. Editing a loaded file exports a new version, preserving the old.
 
@@ -84,9 +88,13 @@ Preliminary identification: 86,870,779 bytes, SHA-256
 1920×1080, duration 254405 ms. These checks are not native P1 decode/closure
 attestation. Record the actual CLI import receipt before declaring readiness.
 
-At baseline `460f516`, MAIA-2 EN/DE content is present. The retained English
-TAS-20 source requires an authorized copy; German TAS-20 content is absent.
-The user was asked for the applicable EN/DE files. Do not invent translations,
+At baseline `460f516`, MAIA-2 EN/DE content is present and German TAS-20
+content is absent. On 2026-09-12 the researcher explicitly authorized use of
+the retained English TAS-20 for this local experiment and requested an online
+German source. This resolves the English authorization question for the mock;
+it does not change public redistribution flags. The German source and import
+verification are tracked in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+Do not invent translations,
 substitute blank items, alter supplied coding or call an English-only fixture
 the requested bilingual experiment. Preserve source attribution and codes;
 successful JSON export does not establish scoring validity or permission.

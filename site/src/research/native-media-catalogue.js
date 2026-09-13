@@ -6,17 +6,28 @@
  * into one bounded catalogue operation and guarantees an attempted actor stop
  * after every stimulus.
  */
-export async function attestNativeGstCatalogue({
+import { NativeCatalogueFailure } from "./media-catalogue-error.js";
+export { NativeCatalogueFailure };
+
+export async function attestNativeGstCatalogue(options) {
+  return attestCatalogue(options, "attestDecode");
+}
+
+export async function attestNativeGstCatalogueV2(options) {
+  return attestCatalogue(options, "attestDecodeV2");
+}
+
+async function attestCatalogue({
   controller,
   workspaceId,
   stimuli,
   viewportHost,
   onProgress = () => {},
-} = {}) {
+} = {}, attestMethod) {
   if (!controller
     || typeof controller.prepare !== "function"
     || typeof controller.awaitPrepared !== "function"
-    || typeof controller.attestDecode !== "function"
+    || typeof controller[attestMethod] !== "function"
     || typeof controller.stop !== "function"
     || typeof workspaceId !== "string"
     || !Array.isArray(stimuli)
@@ -31,18 +42,21 @@ export async function attestNativeGstCatalogue({
     const scanned = stimuli[index];
     onProgress(Object.freeze({ index, total: stimuli.length, scanned }));
     let operationError = null;
+    let phase = "prepare";
     try {
       await controller.prepare({ workspaceId, summary: scanned, host: viewportHost });
+      phase = "awaitPrepared";
       await controller.awaitPrepared({ attempts: 600, intervalMs: 25 });
-      qualified.push(await controller.attestDecode({ workspaceId, summary: scanned }));
+      phase = "attestDecode";
+      qualified.push(await controller[attestMethod]({ workspaceId, summary: scanned }));
     } catch (error) {
       operationError = error;
-      failures.push(Object.freeze({ scanned, error }));
+      failures.push(Object.freeze({ scanned, error, phase }));
     } finally {
       try {
         await controller.stop();
       } catch (stopError) {
-        if (!operationError) failures.push(Object.freeze({ scanned, error: stopError }));
+        if (!operationError) failures.push(Object.freeze({ scanned, error: stopError, phase: "stop" }));
       }
     }
   }

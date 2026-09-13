@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { canonicalJson } from "../site/src/research/canonical.js";
 import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
 import { capturePlannerRecipeInputV1 } from "../site/src/research/planner-recipe-capture.js";
-import { readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, boundPlannerRecipeMatrix, PLANNER_RECIPE_SEGMENTS,
+import { readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3, boundPlannerRecipeMatrix, PLANNER_RECIPE_SEGMENTS,
   MAX_PLANNER_RECIPE_BYTES, MAX_PLANNER_RECIPE_DEPTH } from "../site/src/research/planner-recipe-wire.js";
 
 const policy = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url), "utf8"));
@@ -14,6 +14,19 @@ const bytes = text => new TextEncoder().encode(text);
 const core = () => ({ schema: "affect-research-planner-recipe", version: 1, recipeId: "wire-test",
   presentationTarget: "desktop-screen", policy: structuredClone(policy),
   segments: { P1: {}, P2: {}, P3: {}, P4: {}, P5: {}, P6: { status: "excluded" } } });
+
+test("master3 root and algorithm are explicit and rejected by frozen root readers", () => {
+  const value = core(); value.version = 3;
+  const digest = "a".repeat(64);
+  value.integrity = { algorithmVersion: "planner-recipe-reproduction-v4", definitionSha256: digest,
+    reproductionSha256: digest, segmentSha256: Object.fromEntries(PLANNER_RECIPE_SEGMENTS.map(id => [id, digest])) };
+  assert.equal(validatePlannerRecipeStructureV3(value).version, 3);
+  assert.throws(() => validatePlannerRecipeStructureV1(value));
+  assert.throws(() => validatePlannerRecipeStructureV2(value));
+  for (const algorithm of ["planner-recipe-reproduction-v1", "planner-recipe-reproduction-v2", "planner-recipe-reproduction-v3"]) {
+    assert.throws(() => validatePlannerRecipeStructureV3({ ...value, integrity: { ...value.integrity, algorithmVersion: algorithm } }));
+  }
+});
 
 test("recipe transport rejects duplicate keys, malformed UTF-8, non-finite, noncanonical and deep JSON", () => {
   const source = `${canonicalJson(core())}\n`;

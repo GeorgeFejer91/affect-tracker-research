@@ -77,15 +77,22 @@ try {
   ui.openSetupSection("review");
   check("Preview is captured only at final save", !ui.getPlannerAcceptanceReview().entries.some(x => x.segment === "P5" && x.status === "accepted")
     && !q('[data-confirm-section="feedback"]'));
-  const handle = { kind: "file", async createWritable() { return {
-    async write(bytes) { const response = await fetch("/saved-file", { method: "POST", body: bytes }); if (!response.ok) throw Error("disk write"); },
+  const diskHandle = id => ({ kind: "file", async createWritable() { return {
+    async write(bytes) { const response = await fetch(`/saved-file?id=${id}`, { method: "POST", body: bytes }); if (!response.ok) throw Error("disk write"); },
     async close() {}, async abort() {},
   }; }, async getFile() {
-    const bytes = new Uint8Array(await (await fetch("/saved-file")).arrayBuffer());
+    const response = await fetch(`/saved-file?id=${id}`); if (!response.ok) throw Error("disk read");
+    const bytes = new Uint8Array(await response.arrayBuffer());
     return { size: bytes.length, arrayBuffer: async () => bytes.slice().buffer };
-  } };
+  } });
   let picks = 0;
-  window.showSaveFilePicker = options => { picks++; check("save suggests a named JSON", options.suggestedName.endsWith(".json")); return Promise.resolve(handle); };
+  window.showSaveFilePicker = options => {
+    picks++; check("save suggests a named JSON", options.suggestedName.endsWith(".json"));
+    return fetch("/select-save-file", { method: "POST" }).then(async response => {
+      if (!response.ok) throw Error("new disk destination");
+      return diskHandle((await response.json()).id);
+    });
+  };
   check("complete current design can save", !q("#package-generate").disabled);
   q("#package-generate").click();
   await until(() => q("#package-save-dialog").open, "prepared named-save dialog");

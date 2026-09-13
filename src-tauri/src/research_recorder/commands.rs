@@ -3,8 +3,7 @@ use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
 use std::sync::Arc;
-use tauri::{AppHandle, Manager, State, WebviewWindow};
-use tauri_plugin_dialog::DialogExt;
+use tauri::{Manager, State, WebviewWindow};
 
 fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
     if window.label() != "research"
@@ -46,31 +45,33 @@ pub async fn research_recorder_discover(
 #[tauri::command]
 pub async fn research_recorder_start(
     window: WebviewWindow,
-    app: AppHandle,
+    workspace: State<'_, Arc<crate::research_workspace::WorkspaceService>>,
     service: State<'_, Arc<RecorderService>>,
     runtime: State<'_, Arc<PackageProtocolRuntime>>,
     request: RecordStartRequest,
+    workspace_id: String,
 ) -> ResearchResult<Option<RecorderStatus>> {
     authorize(&window)?;
     idle(&runtime)?;
     request.validate()?;
-    let Some(selection) = app
-        .dialog()
-        .file()
-        .add_filter("XDF recording", &["xdf"])
-        .set_file_name("experiment-recording.xdf")
-        .blocking_save_file()
-    else {
-        return Ok(None);
-    };
-    let path = selection
-        .into_path()
-        .map_err(|_| CommandError::forbidden("Select a local XDF destination."))?;
-    idle(&runtime)?;
     let service = Arc::clone(&service);
     let runtime = Arc::clone(&runtime);
+    let workspace = Arc::clone(&workspace);
     tauri::async_runtime::spawn_blocking(move || {
-        runtime.while_idle(|| service.start_path(request, path).map(Some))
+        runtime.while_idle(|| {
+            workspace.with_workspace(&workspace_id, |root, _| {
+                let loaded = crate::research_runner_session::RunnerDocument::read(
+                    &request.experiment_package_source_text,
+                )?;
+                let recipe = loaded.ensure_directory(root)?;
+                let recordings =
+                    crate::research_run_storage::ensure_checked_run_child(&recipe, "recordings")?;
+                let path = recordings
+                    .path
+                    .join(format!("recording-{}.xdf", uuid::Uuid::new_v4()));
+                service.start_path(request, path).map(Some)
+            })
+        })
     })
     .await
     .map_err(|_| CommandError::new("recorder_worker", "The recorder could not start."))?
@@ -88,4 +89,60 @@ pub async fn research_recorder_stop(
     tauri::async_runtime::spawn_blocking(move || runtime.while_idle(|| service.stop()))
         .await
         .map_err(|_| CommandError::new("recorder_worker", "The recorder did not finish."))?
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NamedRecordStartRequest {
+    version: u8,
+    participant_id: String,
+    variant_id: String,
+    recording: RecordStartRequest,
+}
+#[tauri::command]
+pub async fn research_recorder_start_v2(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<crate::research_workspace::WorkspaceService>>,
+    service: State<'_, Arc<RecorderService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    request: NamedRecordStartRequest,
+    workspace_id: String,
+) -> ResearchResult<Option<RecorderStatus>> {
+    authorize(&window)?;
+    idle(&runtime)?;
+    if request.version != 2 {
+        return Err(CommandError::invalid_contract(
+            "Named recording requires request version 2.",
+        ));
+    }
+    request.recording.validate()?;
+    let ordinal = super::naming::variant_number(
+        &request.recording.experiment_package_source_text,
+        &request.variant_id,
+    )?;
+    let file_name = super::naming::file_name(
+        &request.participant_id,
+        ordinal,
+        time::OffsetDateTime::now_utc(),
+    )?;
+    let service = Arc::clone(&service);
+    let runtime = Arc::clone(&runtime);
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.while_idle(|| {
+            workspace.with_workspace(&workspace_id, |root, _| {
+                let document = crate::research_runner_session::RunnerDocument::read(
+                    &request.recording.experiment_package_source_text,
+                )?;
+                let recipe = document.ensure_directory(root)?;
+                let recordings =
+                    crate::research_run_storage::ensure_checked_run_child(&recipe, "recordings")?;
+                service
+                    .start_path(request.recording, recordings.path.join(file_name))
+                    .map(Some)
+            })
+        })
+    })
+    .await
+    .map_err(|_| CommandError::new("recorder_worker", "The named recorder could not start."))?
 }

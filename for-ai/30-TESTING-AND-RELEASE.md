@@ -1,5 +1,22 @@
 # Testing and release gates
 
+## SurveyJS validation — 2026-09-13
+
+Run `pnpm surveyjs:check` before tests/builds. Generated full browser assets,
+embedded native engine, license notices and master4 parity fixtures must match
+the locked dependencies. `research-surveyjs.test.js` covers schema/content
+preservation, conditions, mandatory answers, nested values and preset adapters;
+the native `surveyjs` test filter exercises the actual Boa core, JS/Rust master
+parity and durable worker submission. Information-stream tests independently
+replay input data using the saved evaluation clock and random seed.
+
+Use `scripts/qualification/surveyjs-rendered.mjs` for rendered Planner/preset
+checks, `runner-surveyjs-ui.mjs <Chrome> <new evidence dir> all <2|3|4>` for
+the actual Runner app, and `planner-surveyjs-cli.mjs <clean-build CLI> <new dir>`
+for real native import/save/Open. Browser native replies are synthetic; they do
+not qualify live native playback, XDF or hardware. Final consolidation retains
+those checks. See [the integration documentation](../docs/surveyjs-questionnaires.md).
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and

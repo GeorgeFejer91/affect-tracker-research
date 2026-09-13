@@ -54,3 +54,21 @@ export function restorePlannerPolicyControls(root, policy, { isCurrent } = {}) {
   fields["lsl-source-id"].value = normalized.lsl.sourceId;
   return normalized;
 }
+
+export function preparePlannerPolicyControls(root, policy, { isCurrent, signal } = {}) {
+  if (typeof isCurrent !== "function") throw new TypeError("Policy preparation requires a current-request guard.");
+  const normalized = validatePlannerRecipePolicyV1(structuredClone(policy));
+  const fields = controls(root);
+  const before = Object.fromEntries(Object.entries(fields).map(([id, field]) => [id, { value: field.value, checked: field.checked }]));
+  let committed = false;
+  const current = () => !committed && !signal?.aborted && isCurrent() && Object.entries(fields).every(([id, field]) =>
+    root.querySelector(`#${id}`) === field && field.value === before[id].value && field.checked === before[id].checked);
+  if (!current()) throw new Error("Policy preparation is no longer current.");
+  return Object.freeze({ isCurrent: current, commit() {
+    if (!current()) throw new Error("Policy restoration was superseded.");
+    const result = restorePlannerPolicyControls(root, normalized, { isCurrent: current });
+    if (result === false) throw new Error("Policy restoration was superseded.");
+    committed = true;
+    return result;
+  } });
+}

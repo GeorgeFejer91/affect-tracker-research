@@ -13,8 +13,9 @@ use std::path::{Path, PathBuf};
 pub(crate) mod runtime_manifest;
 
 use runtime_manifest::{
-    verify_runtime_tree, PINNED_BINDINGS_SERIES, PINNED_GSTREAMER_VERSION, PINNED_INSTALLER_SHA256,
-    PINNED_RUNTIME_MANIFEST_SHA256, PINNED_TARGET, RUNTIME_RELATIVE_ROOT,
+    verify_runtime_tree_cancellable, RuntimeManifestErrorCode, PINNED_BINDINGS_SERIES,
+    PINNED_GSTREAMER_VERSION, PINNED_INSTALLER_SHA256, PINNED_RUNTIME_MANIFEST_SHA256,
+    PINNED_TARGET, RUNTIME_RELATIVE_ROOT,
 };
 
 pub(crate) struct InspectedCapability {
@@ -31,11 +32,6 @@ impl InspectedCapability {
         &self.runtime_root
     }
 
-    pub(crate) fn mark_actor_ready(&mut self) {
-        self.public.player_actor_ready = true;
-        self.public.reason_code = "native-qualification-evidence-incomplete".to_owned();
-    }
-
     pub(crate) fn mark_actor_failed(&mut self, reason_code: &str) {
         self.public.player_actor_ready = false;
         self.public.qualified_start_available = false;
@@ -47,9 +43,48 @@ impl InspectedCapability {
     }
 }
 
+/// Immediate fail-closed projection while the worker verifies the pinned tree.
+/// NotStaged here makes no positive claim about a not-yet-inspected bundle;
+/// the explicit pending reason distinguishes it from a completed absent check.
+pub(crate) fn pending_capability() -> NativeMediaCapability {
+    NativeMediaCapability {
+        schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
+        version: 2,
+        backend: "gstreamer-gstplay",
+        api: "gstplay",
+        pinned_runtime_version: PINNED_GSTREAMER_VERSION,
+        bindings_version: PINNED_BINDINGS_SERIES,
+        target: PINNED_TARGET,
+        runtime_installer_sha256: PINNED_INSTALLER_SHA256,
+        runtime_tree_manifest_sha256: PINNED_RUNTIME_MANIFEST_SHA256,
+        default_playback_mode: PlaybackMode::NativeGstPlay,
+        unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
+        runtime_bundle_state: RuntimeBundleState::NotStaged,
+        runtime_integrity_verified: false,
+        runtime_file_count: None,
+        runtime_byte_length: None,
+        player_actor_ready: false,
+        qualified_start_available: false,
+        qualified_format_matrix_ready: false,
+        redistribution_review_ready: false,
+        ambient_runtime_allowed: false,
+        required_for_qualified_run: true,
+        renderer_receives_filesystem_paths: false,
+        reason_code: "native-runtime-verification-pending".to_owned(),
+    }
+}
+
 pub(crate) fn inspect_capability(
     resource_dir: &Path,
     native_acquisition_supported: bool,
+) -> InspectedCapability {
+    inspect_capability_cancellable(resource_dir, native_acquisition_supported, &|| false)
+}
+
+pub(crate) fn inspect_capability_cancellable(
+    resource_dir: &Path,
+    native_acquisition_supported: bool,
+    canceled: &impl Fn() -> bool,
 ) -> InspectedCapability {
     let runtime_root = resource_dir.join(RUNTIME_RELATIVE_ROOT);
     let (runtime_bundle_state, runtime_integrity_verified, file_count, byte_length, reason) =
@@ -62,7 +97,7 @@ pub(crate) fn inspect_capability(
                 NATIVE_ACQUISITION_UNSUPPORTED_REASON.to_owned(),
             )
         } else {
-            match verify_runtime_tree(&runtime_root) {
+            match verify_runtime_tree_cancellable(&runtime_root, canceled) {
                 Ok(verified) => (
                     RuntimeBundleState::Verified,
                     true,
@@ -71,7 +106,11 @@ pub(crate) fn inspect_capability(
                     "native-gstplay-actor-not-started".to_owned(),
                 ),
                 Err(error) => {
-                    let state = if error.code.as_str() == "runtime-not-staged" {
+                    let state = if matches!(
+                        error.code,
+                        RuntimeManifestErrorCode::RuntimeMissing
+                            | RuntimeManifestErrorCode::VerificationCanceled
+                    ) {
                         RuntimeBundleState::NotStaged
                     } else {
                         RuntimeBundleState::Invalid
@@ -83,29 +122,12 @@ pub(crate) fn inspect_capability(
 
     InspectedCapability {
         public: NativeMediaCapability {
-            schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
-            version: 2,
-            backend: "gstreamer-gstplay",
-            api: "gstplay",
-            pinned_runtime_version: PINNED_GSTREAMER_VERSION,
-            bindings_version: PINNED_BINDINGS_SERIES,
-            target: PINNED_TARGET,
-            runtime_installer_sha256: PINNED_INSTALLER_SHA256,
-            runtime_tree_manifest_sha256: PINNED_RUNTIME_MANIFEST_SHA256,
-            default_playback_mode: PlaybackMode::NativeGstPlay,
-            unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
             runtime_bundle_state,
             runtime_integrity_verified,
             runtime_file_count: file_count,
             runtime_byte_length: byte_length,
-            player_actor_ready: false,
-            qualified_start_available: false,
-            qualified_format_matrix_ready: false,
-            redistribution_review_ready: false,
-            ambient_runtime_allowed: false,
-            required_for_qualified_run: true,
-            renderer_receives_filesystem_paths: false,
             reason_code: reason,
+            ..pending_capability()
         },
         runtime_root,
     }
@@ -121,5 +143,26 @@ fn safe_reason(reason_code: &str) -> String {
         reason_code.to_owned()
     } else {
         "native-gstplay-actor-failed".to_owned()
+    }
+}
+
+#[cfg(test)]
+mod cancellation_tests {
+    use super::*;
+
+    #[test]
+    fn canceled_inspection_publishes_no_partial_integrity_or_counts() {
+        let capability =
+            inspect_capability_cancellable(Path::new("not-opened"), true, &|| true).into_public();
+        assert_eq!(capability.reason_code, "runtime-verification-canceled");
+        assert_eq!(
+            capability.runtime_bundle_state,
+            RuntimeBundleState::NotStaged
+        );
+        assert!(!capability.runtime_integrity_verified);
+        assert!(!capability.player_actor_ready);
+        assert!(!capability.qualified_start_available);
+        assert_eq!(capability.runtime_file_count, None);
+        assert_eq!(capability.runtime_byte_length, None);
     }
 }

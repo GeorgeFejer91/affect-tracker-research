@@ -1,5 +1,37 @@
 # Research v1 roadmap
 
+## P4 CLI authoring and UI mapping — 2026-09-12
+
+Owner-ready **CLI-P4** Backend Verification and owned **E2E-UI** mapping are at
+`2a99ce8221b339e49b70b5c7d3b231ac62cf3256` on
+`codex/segment-p4-authoring-cli`, based on the completed Planner `460f516` and
+Main's frozen shared command foundation `2310efc` plus `0138516` afterCommit hook.
+Main owns registration with `createPlannerAuthoringP4({editor: screenLayoutEditor})`.
+
+The existing P4 editor/state owns all 15 writable settings and both ordered
+operations, unit conversion and calibration clearing. Five geometry/source/
+convention projections remain read-only. Staging uses detached candidates and
+pure revision/dependency guards; the shared session preflights every candidate,
+installs all owner states, then safely publishes notifications and UI updates.
+No batch manufactures preparation/acceptance. The complete
+[CLI → UI → JSON mapping and integration contract](../docs/planner-authoring-p4.md)
+preserves existing schema, fixed reference geometry and P1/P5 authority.
+
+Final checks pass **795/795 Node tests**, including **13 P4 CLI** cases and
+**13 shared session** cases, plus desktop **11-file** and Pages **239-file**
+boundary checks. Every writable setting has paired actual UI event-handler and
+CLI readback/accepted-profile evidence, including complete authoring from a
+fresh editor, both methods and units, ordered operations, atomic staging,
+stale/cancelled rejection and truthful observer failure after publication.
+Logs/source/hash receipt:
+`D:/GitHub/.affect-preview-checks/p4-cli-20260912/2a99ce8/receipt.json`.
+
+These are component/controller checks using minimal DOM doubles, not rendered
+UI, production hidden native CLI, real-media import or Runner execution evidence.
+Main/root own the combined transport/full-recipe proof; the Runner owner retains
+the active E2E correspondence allocation. Existing Vite chunk-size advisory
+remains; this slice changes no Rust and makes no new native qualification claim.
+
 ## P3 native catalogue download command — 2026-09-12
 
 Explicitly delegated P3-08 shared seam on isolated `codex/segment-p3-native-export`
@@ -1560,3 +1592,9 @@ qualification; `ExperimentPackageV1` rejects it.
 Until all applicable receipts exist, retain `0.4.0-alpha.1` and do not publish a
 stable/signed installer, GitHub Release, updater, store build, or research-ready
 claim.
+
+## User-approved local validation sessions — 2026-09-13
+
+The user explicitly approved local validation sessions to break the installed-qualification/Start dependency. Master3 has a separate, explicit acknowledgement and native command path. Verified runtime, live actor, exact recipe/assets/viewport, input test, native acquisition, response validation and durable recording rules remain enforced. Normal research Start is unchanged. Validation attempt receipts carry `executionQualification` with `researchQualified:false`; the primary information stream uses a versioned `affect-runner-validation-startup` envelope around the unchanged startup3 record, carrying the same permanent unqualified designation. Reconstruction must preserve that designation and reject attempts to promote it. This is permission to test the actual software, not a qualification or installer release claim.
+
+The user also prioritizes functional pipeline validation first and installer verification last. Keep one authoritative current Planner/Runner test distribution on the PC. Before testing, compare its source commit and executable hashes to the integration receipt; segment agents may develop in isolated worktrees but must not leave competing user-launchable app copies or qualify stale binaries. Consolidate accepted changes into the root-owned build, stop stale test processes, and replace old launch targets deliberately. Keep historical evidence in non-launchable evidence archives, without deleting experiments, participant output or user assets. Commit validated milestones and push them regularly to the integration branch; pushing work is not evidence of successful execution or permission to publish an installer.

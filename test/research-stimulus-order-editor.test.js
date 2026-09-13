@@ -11,7 +11,7 @@ const { library, document: design, videos } = JSON.parse(await readFile(new URL(
 const contentFixture = JSON.parse(await readFile(new URL("./fixtures/variant-workspace-binding-v1.json", import.meta.url), "utf8"));
 function fixture(operate) {
   const handlers = new Map();
-  let renders = 0, markup = "";
+  let renders = 0, markup = "", notifications = 0, announcements = 0;
   const host = {
     set innerHTML(value) { renders++; markup = value; },
     querySelector() { return null; },
@@ -23,12 +23,135 @@ function fixture(operate) {
     querySelector(selector) { return selector === "#stimulus-order-editor" ? host : selector === "#stimulus-order-status" ? status : versions; },
     querySelectorAll() { return []; },
   };
-  const editor = createStimulusOrderEditor({ root, operate });
-  return { editor, handlers, status, versions, get renders() { return renders; }, get markup() { return markup; } };
+  const editor = createStimulusOrderEditor({ root, operate, onChange() { notifications++; }, announce() { announcements++; } });
+  return { editor, handlers, status, versions, get renders() { return renders; }, get markup() { return markup; },
+    get notifications() { return notifications; }, get announcements() { return announcements; } };
 }
 function cell(value) {
   return { dataset: { orderRow: "1", orderColumn: "0" }, value, removeAttribute() {}, setAttribute() {} };
 }
+
+async function confirmationFixture() {
+  const ui = fixture(async () => { throw Error("Prepared confirmation must not write."); });
+  await ui.editor.adopt({ library, design }, { loadSaved: true });
+  ui.editor.setCatalogue({ revision: 7, videos });
+  return ui;
+}
+const projection = ui => ({ renders: ui.renders, notifications: ui.notifications,
+  announcements: ui.announcements, status: ui.status.textContent, versions: ui.versions.innerHTML });
+
+test("prepared confirmation is read-only and its detached future snapshot equals the committed real owner", async () => {
+  const ui = await confirmationFixture(), before = ui.editor.getSnapshot(), view = projection(ui);
+  const candidate = await ui.editor.prepareConfirmation();
+  assert.deepEqual(ui.editor.getSnapshot(), before);
+  assert.deepEqual(projection(ui), view);
+  assert.equal(candidate.isCurrent(), true);
+  const future = candidate.snapshot;
+  assert.deepEqual(Object.keys(future), Object.keys(before));
+  assert.equal(future.revision, before.revision + 1);
+  assert.equal(future.enabled, true); assert.equal(future.pending, false);
+  assert.deepEqual(future.dependencyRevisions, [{ segment: "P1", revision: 7 }]);
+  const detached = candidate.snapshot; detached.contribution.variants[0].title = "caller mutation";
+  assert.deepEqual(candidate.snapshot, future);
+  assert.throws(() => candidate.afterCommit(), /Commit/);
+  candidate.commit();
+  assert.deepEqual(ui.editor.getSnapshot(), future);
+  assert.deepEqual(projection(ui), view, "Commit does not render or notify");
+  assert.equal(candidate.isCurrent(), false);
+  assert.throws(() => candidate.commit(), /changed/);
+  candidate.afterCommit();
+  assert.equal(ui.renders, view.renders + 1);
+  assert.equal(ui.notifications, view.notifications + 1);
+  assert.equal(ui.announcements, view.announcements + 1);
+  const projected = projection(ui); candidate.afterCommit(); assert.deepEqual(projection(ui), projected);
+});
+
+for (const mode of ["edit", "reset", "withdraw", "destroy", "abort", "caller"]) {
+  test(`prepared confirmation rejects ${mode} without altering newer state or projection`, async () => {
+    const ui = await confirmationFixture(), controller = new AbortController();
+    let current = true;
+    const candidate = await ui.editor.prepareConfirmation({ isCurrent: () => current, signal: controller.signal });
+    if (mode === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (mode === "reset") ui.editor.reset();
+    if (mode === "withdraw") ui.editor.setCatalogue(null);
+    if (mode === "destroy") ui.editor.destroy();
+    if (mode === "abort") controller.abort();
+    if (mode === "caller") current = false;
+    const before = ui.editor.getSnapshot(), view = projection(ui);
+    assert.equal(candidate.isCurrent(), false);
+    if (mode === "caller") current = true;
+    assert.throws(() => candidate.commit(), /changed/);
+    assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+  });
+}
+
+test("confirmation rejects invalid input or cancellation during compilation without presentation effects", async () => {
+  for (const mode of ["invalid", "abort", "withdraw"]) {
+    const ui = await confirmationFixture(), controller = new AbortController();
+    if (mode === "invalid") ui.handlers.get("input")({ target: cell("unknown") });
+    const pending = ui.editor.prepareConfirmation({ signal: controller.signal });
+    if (mode === "abort") controller.abort();
+    if (mode === "withdraw") ui.editor.setCatalogue(null);
+    const before = ui.editor.getSnapshot(), view = projection(ui);
+    await assert.rejects(pending);
+    assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+  }
+});
+
+test("competing confirmations reserve no state and a delayed projection cannot overwrite newer edits", async () => {
+  const ui = await confirmationFixture();
+  const [a, b] = await Promise.all([ui.editor.prepareConfirmation(), ui.editor.prepareConfirmation()]);
+  assert.deepEqual(a.snapshot, b.snapshot);
+  a.commit(); assert.throws(() => b.commit(), /changed/);
+  ui.handlers.get("input")({ target: cell("ISI2") });
+  const before = ui.editor.getSnapshot(), view = projection(ui);
+  a.afterCommit(); assert.deepEqual(ui.editor.getSnapshot(), before); assert.deepEqual(projection(ui), view);
+});
+
+test("prepared confirmation preserves the existing GUI compiler and real P1 source binding", async () => {
+  const ui = await confirmationFixture(), gui = await confirmationFixture();
+  const candidate = await ui.editor.prepareConfirmation();
+  assert.deepEqual(candidate.snapshot, await gui.editor.prepareContribution());
+  await ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 42 });
+  const rebound = await ui.editor.prepareConfirmation();
+  assert.deepEqual(rebound.snapshot.contribution, contentFixture.contribution);
+  assert.deepEqual(rebound.snapshot.dependencyRevisions, [{ segment: "P1", revision: 42 }]);
+  rebound.commit(); assert.deepEqual(ui.editor.getSnapshot(), rebound.snapshot);
+});
+
+test("prepared reset matches GUI reset state without rendering until one projection", async () => {
+  const ui = await confirmationFixture(), gui = await confirmationFixture();
+  const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot(), view = projection(ui);
+  const candidate = ui.editor.prepareReset();
+  assert.deepEqual(ui.editor.captureAuthoringDraft(), before); assert.deepEqual(ui.editor.getSnapshot(), snapshot);
+  assert.deepEqual(projection(ui), view); assert.throws(() => candidate.afterCommit(), /Commit/);
+  candidate.commit(); gui.editor.reset();
+  const actual = ui.editor.captureAuthoringDraft(), expected = gui.editor.captureAuthoringDraft();
+  assert.deepEqual(actual, expected); assert.deepEqual(ui.editor.getSnapshot(), gui.editor.getSnapshot());
+  assert.deepEqual(projection(ui), view); assert.equal(candidate.isCurrent(), false);
+  assert.throws(() => candidate.commit(), /changed/);
+  candidate.afterCommit(); assert.equal(ui.renders, view.renders + 1); assert.equal(ui.notifications, view.notifications + 1);
+  const projected = projection(ui); candidate.afterCommit(); assert.deepEqual(projection(ui), projected);
+});
+
+test("prepared reset rejects stale or aborted candidates and suppresses delayed projection", async () => {
+  for (const mode of ["edit", "dependency", "abort", "caller", "destroy"]) {
+    const ui = await confirmationFixture(), controller = new AbortController(); let current = true;
+    const candidate = ui.editor.prepareReset({ signal: controller.signal, isCurrent: () => current });
+    if (mode === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (mode === "dependency") ui.editor.setCatalogue(null);
+    if (mode === "abort") controller.abort();
+    if (mode === "caller") current = false;
+    if (mode === "destroy") ui.editor.destroy();
+    const before = ui.editor.captureAuthoringDraft(), view = projection(ui);
+    assert.throws(() => candidate.commit(), /changed/);
+    assert.deepEqual(ui.editor.captureAuthoringDraft(), before); assert.deepEqual(projection(ui), view);
+  }
+  const ui = await confirmationFixture(), candidate = ui.editor.prepareReset();
+  candidate.commit(); ui.editor.reset(); const view = projection(ui);
+  candidate.afterCommit(); assert.deepEqual(projection(ui), view);
+});
 
 test("typing invalidates the saved version immediately and cannot save stale cell values", async () => {
   let writes = 0;
@@ -373,4 +496,64 @@ test("an in-flight library export cannot announce success over a newer reopened 
   release(); await downloading;
   assert.equal(ui.status.textContent, status);
   assert.equal(ui.editor.getSnapshot().contribution, null);
+});
+
+test("prepared content reopen leaves state and projections untouched until separate synchronous publication", async () => {
+  let writes = 0;
+  const ui = fixture(async () => { writes++; });
+  await ui.editor.restore(design, { library, catalogue: { revision: 7, videos } });
+  const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot();
+  const renders = ui.renders, message = ui.status.textContent;
+  const content = structuredClone(contentFixture.contribution), options = contentOptions();
+  const pending = ui.editor.prepareRestoreContent(content, options);
+  content.variants[0].title = "Caller mutation after dispatch";
+  const prepared = await pending;
+  assert.deepEqual(ui.editor.captureAuthoringDraft(), before);
+  assert.deepEqual(ui.editor.getSnapshot(), snapshot);
+  assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
+  assert.throws(() => prepared.afterCommit());
+  assert.equal(prepared.commit(), undefined);
+  assert.equal(prepared.isCurrent(), false);
+  assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
+  assert.equal(ui.editor.getSnapshot().contribution, null);
+  assert.equal(ui.editor.getSnapshot().pending, true);
+  assert.deepEqual(ui.editor.getSnapshot().dependencyRevisions, [{ segment: "P1", revision: 41 }]);
+  assert.throws(() => prepared.commit());
+  prepared.afterCommit(); const published = ui.renders;
+  prepared.afterCommit(); assert.equal(ui.renders, published);
+  assert.ok(published > renders); assert.equal(writes, 0);
+  await assert.rejects(ui.editor.prepareContribution(), /Segment 1/);
+  await ui.editor.setCatalogueSource({ ...contentFixture.initialSnapshot, revision: 42 });
+  const restored = await ui.editor.prepareContribution();
+  assert.deepEqual(restored.contribution, contentFixture.contribution);
+});
+
+for (const change of ["edit", "reset", "destroy", "dependency", "callerDependency", "cancel"]) {
+  test(`prepared content commit rejects ${change} without replacing newer owner state`, async () => {
+    const ui = fixture(async () => {}), options = contentOptions();
+    let current = true; options.isCurrent = () => current;
+    await ui.editor.restoreContent(contentFixture.contribution, contentOptions());
+    const prepared = await ui.editor.prepareRestoreContent(contentFixture.contribution, options);
+    if (change === "edit") ui.handlers.get("input")({ target: cell("ISI2") });
+    if (change === "reset") ui.editor.reset();
+    if (change === "destroy") ui.editor.destroy();
+    if (change === "dependency") await ui.editor.setCatalogueSource(unresolvedP1(42));
+    if (change === "callerDependency") options.dependencies.P1 = unresolvedP1(42);
+    if (change === "cancel") current = false;
+    const before = ui.editor.captureAuthoringDraft(), snapshot = ui.editor.getSnapshot(), renders = ui.renders;
+    assert.equal(prepared.isCurrent(), false);
+    assert.throws(() => prepared.commit(), /changed while reopening/);
+    assert.deepEqual(ui.editor.captureAuthoringDraft(), before);
+    assert.deepEqual(ui.editor.getSnapshot(), snapshot); assert.equal(ui.renders, renders);
+  });
+}
+
+test("two read-only preparations do not reserve state and only the first committed candidate can publish", async () => {
+  const ui = fixture(async () => {});
+  const a = await ui.editor.prepareRestoreContent(contentFixture.contribution, contentOptions());
+  const b = await ui.editor.prepareRestoreContent(contentFixture.contribution, contentOptions());
+  assert.equal(a.isCurrent(), true); assert.equal(b.isCurrent(), true);
+  a.commit(); assert.equal(b.isCurrent(), false); assert.throws(() => b.commit());
+  ui.editor.reset(); const renders = ui.renders, message = ui.status.textContent;
+  a.afterCommit(); assert.equal(ui.renders, renders); assert.equal(ui.status.textContent, message);
 });

@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   NativeMediaController,
   nativeMediaViewportCssV1,
   validateNativeDecodedStimulusSummaryV1,
+  validateNativeDecodedStimulusSummaryV2,
   validateNativeMediaPrepareReceiptV1,
   validateNativeMediaStatusV1,
 } from "../site/src/research/native-media-controller.js";
@@ -14,6 +16,53 @@ const GRANT = "22222222-2222-4222-8222-222222222222";
 const WORKSPACE = "33333333-3333-4333-8333-333333333333";
 const FILE = `wf-${"a".repeat(24)}`;
 const PACKAGE_FILE = `pa-${"c".repeat(64)}`;
+
+test("native serialized Planner summary v2 uses a safe declared location independently of opaque ID", () => {
+  // Rust serializes the actual workspace producer into this same fixture shape,
+  // normalizing only the opaque test ID; no native ID recipe is copied into JS.
+  const summary = JSON.parse(readFileSync(new URL("./fixtures/native-decoded-summary-v2.json", import.meta.url)));
+  assert.deepEqual(validateNativeDecodedStimulusSummaryV2(summary), summary);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1(summary), /malformed/u);
+  for (const relativePath of ["stimuli/group/clip.mp4", "stimuli/grüppe/clip.mp4"]) {
+    assert.equal(validateNativeDecodedStimulusSummaryV2({ ...summary, source: { ...summary.source, relativePath } }).source.relativePath, relativePath);
+  }
+  for (const relativePath of ["../clip.mp4", "stimuli/../clip.mp4", "stimuli//clip.mp4", "stimuli/./clip.mp4",
+    "assets/stimuli/clip.mp4", "C:/clip.mp4", "stimuli/group\\clip.mp4", "stimuli/group /clip.mp4",
+    "stimuli/group./clip.mp4", "stimuli/clip.mp4 ", "stimuli/gru\u0308ppe/clip.mp4", "stimuli/clip\u0000.mp4"]) {
+    assert.throws(() => validateNativeDecodedStimulusSummaryV2({ ...summary, source: { ...summary.source, relativePath } }), /malformed/u);
+  }
+  const historical = decodedSummary();
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1({ ...historical, source: { ...historical.source, relativePath: "stimuli/clip.mp4" } }), /malformed/u);
+});
+
+test("controlled summary v2 is explicit, strict and preserves the complete proof", async () => {
+  const fixture = JSON.parse(readFileSync(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url)));
+  const geometry = fixture.workspace.videoCatalogue.entries[0].geometry;
+  const summary = decodedSummary({ decodeAttestation: "nativeDecodedSnapshotsV2", displayGeometry: geometry });
+  assert.deepEqual(validateNativeDecodedStimulusSummaryV2(summary).displayGeometry, geometry);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV1(summary), /malformed/u);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV2(decodedSummary()), /malformed/u);
+  assert.throws(() => validateNativeDecodedStimulusSummaryV2({ ...summary, extra: true }), /malformed/u);
+  const malformed = structuredClone(summary);
+  malformed.displayGeometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90;
+  assert.throws(() => validateNativeDecodedStimulusSummaryV2(malformed), /malformed/u);
+  const calls = [];
+  const controller = new NativeMediaController({ invoke: async (command, payload) => {
+    calls.push([command, payload]);
+    return command === "research_native_media_prepare" ? receipt() : summary;
+  } });
+  await controller.prepare({ workspaceId: WORKSPACE, summary, host: {
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 360 }),
+  } });
+  assert.deepEqual(await controller.attestDecodeV2({ workspaceId: WORKSPACE, summary }), summary);
+  assert.equal(calls.at(-1)[0], "research_native_media_attest_decode_v2");
+  assert.deepEqual(calls.at(-1)[1].request.fence, { sessionId: SESSION, generation: 1 });
+  controller.invoke = async () => {
+    controller.fence = { sessionId: SESSION, generation: 2 };
+    return summary;
+  };
+  await assert.rejects(() => controller.attestDecodeV2({ workspaceId: WORKSPACE, summary }), /generation fence/u);
+});
 
 function viewport() {
   return { leftPx: 10, topPx: 20, widthPx: 640, heightPx: 360, layoutRevision: 1 };

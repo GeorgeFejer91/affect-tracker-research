@@ -188,7 +188,9 @@ test("Section 2 uses multilingual questionnaire tables and hides backend documen
   for (const retired of ["questionnaire-file-input", "questionnaire-preview-dialog", "questionnaire-inspiration-dialog", "questionnaire-definition-list", "questionnaire-module-list"]) {
     assert.ok(!markup.includes(`id="${retired}"`), `Retired questionnaire surface: ${retired}`);
   }
-  assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|JSON|sourceSha256/u);
+  assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|sourceSha256/u);
+  assert.match(section, /id="questionnaire-survey-json"/u);
+  assert.match(section, /Import SurveyJS questionnaire/u);
   assert.match(section, /Paste items, answer labels and recorded values together from Excel/u);
   assert.match(section, /before the video task/u);
   assert.match(editor, /event\.clipboardData\.getData\("text\/plain"\)/u);
@@ -270,7 +272,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /openBrowserPlannerRecipeFile\(options\)/u);
+  assert.match(source, /openSupportedBrowserPlannerRecipeFile\(options\)/u);
+  assert.match(source, /documentAdapter: \{\s*parseDocument: parseSupportedPlannerRecipe/u);
   assert.match(source, /openLegacy: applyExperimentPackageReceipt/u);
   assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);
   assert.match(source, /workspace\.attestExperimentPackageRoot/u);
@@ -280,7 +283,8 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.match(source, /if \(target\.id === "video-folder-import"\) requestVideoImport\(\{ directory: true \}\)/u);
   assert.match(source, /const dropZone = query\("#video-drop-zone"\)/u);
   assert.match(source, /const canOpen = surface === "tauri" && capabilities\.directoryPermission/u);
-  assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady,[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
+  assert.match(source, /root\.addEventListener\(RESEARCH_UI_EVENTS\.workspaceReady, event => projectWorkspaceReady\(event\.detail\)\)/u);
+  assert.match(source, /function projectWorkspaceReady\(detail\)[\s\S]*?refreshWorkspaceLocationButtons\(\);/u);
   assert.match(source, /directoryPermission \? "ready" : "warning"/u);
   assert.match(source, /Work directory access is unavailable\. Restore access or select it again\./u);
   assert.match(markup, /Package reproduction matrix/u);

@@ -3,7 +3,7 @@ import { compileVariantTimeline } from "./variant-design.js";
 import { createPlannedMarkerProfile } from "./planned-marker-contract.js";
 import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 import { boundPlannerRecipeMatrix, freezeRecipeValue } from "./planner-recipe-wire.js";
-import { projectVideoDisplayGeometry } from "./video-catalogue-contribution.js";
+import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "./video-catalogue-contribution.js";
 
 /** A versioned identity of every validated input to the layout algorithms.
  * Raw derived trigonometric floats cannot be hashed portably. Geometry itself
@@ -39,7 +39,7 @@ export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha25
   for (const route of questionnaireRoutes) languages.push({ languageId: route.languageId,
     languageSelectionPath: [...route.optionIds], questionnaireSha256: await canonicalSha256(route) });
   const presentations = [];
-  const media = (await projectVideoDisplayGeometry(core.segments.P1.videoCatalogue)).videos;
+  const media = (await (core.version >= 3 ? projectSupportedVideoDisplayGeometry : projectVideoDisplayGeometry)(core.segments.P1.videoCatalogue)).videos;
   for (const value of profileValues) presentations.push(algorithmVersion === "planner-recipe-reproduction-v1"
     ? { presentationTarget: value.presentationTarget, layoutSha256: await canonicalSha256(value.layout) }
     : { presentationTarget: value.presentationTarget, layoutIdentitySha256: await canonicalSha256(plannerLayoutIdentityV1(
@@ -66,6 +66,25 @@ export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha25
 /** A selected-content projection for Planner inspection/export tooling. It is
  * not a Runner start request and never substitutes another presentation target. */
 export function reconstructPreparedPlannerRecipeSelectionV1(prepared, reproduction, definitionSha256, selector) {
+  if (prepared.core.version !== 1) throw new TypeError("Expected Planner recipe v1.");
+  return reconstructSelection(prepared, reproduction, definitionSha256, selector, 1);
+}
+
+export function reconstructPreparedPlannerRecipeSelectionV2(prepared, reproduction, definitionSha256, selector) {
+  if (prepared.core.version !== 2) throw new TypeError("Expected Planner recipe v2.");
+  return reconstructSelection(prepared, reproduction, definitionSha256, selector, 2);
+}
+
+export function reconstructPreparedPlannerRecipeSelectionV3(prepared, reproduction, definitionSha256, selector) {
+  if (prepared.core.version !== 3) throw new TypeError("Expected Planner recipe v3.");
+  return reconstructSelection(prepared, reproduction, definitionSha256, selector, 3);
+}
+export function reconstructPreparedPlannerRecipeSelectionV4(prepared, reproduction, definitionSha256, selector) {
+  if (prepared.core.version !== 4) throw new TypeError("Expected Planner recipe v4.");
+  return reconstructSelection(prepared, reproduction, definitionSha256, selector, 4);
+}
+
+function reconstructSelection(prepared, reproduction, definitionSha256, selector, version) {
   if (!selector || Object.keys(selector).sort().join(",") !== "languageId,languageSelectionPath,presentationTarget,variantId"
     || !Array.isArray(selector.languageSelectionPath) || selector.presentationTarget !== prepared.core.presentationTarget) {
     throw new PlannerRecipeIssue("P7", "selection", "selection-invalid", "Select an explicit saved variant, language path and the recipe's presentation target.");
@@ -77,7 +96,7 @@ export function reconstructPreparedPlannerRecipeSelectionV1(prepared, reproducti
   if (!route) throw new PlannerRecipeIssue("P2", "languageSelectionPath", "language-route-invalid", "Choose the exact terminal language path stored in the recipe.");
   const presentation = reproduction.profileValues.find(value => value.presentationTarget === selector.presentationTarget);
   if (!presentation) throw new PlannerRecipeIssue("P6", "presentationTarget", "presentation-missing", "The selected presentation profile is absent.");
-  return freezeRecipeValue(structuredClone({ schema: "affect-research-planner-selection", version: 1,
+  return freezeRecipeValue(structuredClone({ schema: "affect-research-planner-selection", version,
     recipeId: prepared.core.recipeId, definitionSha256, presentationTarget: selector.presentationTarget,
     study: prepared.core.segments.P1.study, assets: prepared.core.segments.P1.videoCatalogue.entries,
     policy: prepared.core.policy, feedback: prepared.core.segments.P5,

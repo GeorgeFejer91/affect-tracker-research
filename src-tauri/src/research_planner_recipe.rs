@@ -1,6 +1,6 @@
 //! Complete Planner master. Independent Rust validation and reconstruction;
 //! content validity never restores media authority or establishes Runner support.
-mod owners;
+pub(crate) mod owners;
 use crate::research_contracts::{canonical_json, validate_sha256};
 use crate::research_desktop_layout::DesktopLayoutContributionV1;
 use crate::research_error::{CommandError, ResearchResult};
@@ -147,6 +147,9 @@ impl PlannerRecipeV1 {
         self.policy.validate()?;
         self.segments.p2.validate()?;
         self.segments.p5.validate()?;
+        if !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
+            return Err(CommandError::invalid_contract("Planner recipe v1 requires workspace v1/v2."));
+        }
         let workspace = validate_workspace_contribution(&self.segments.p1)?;
         let route_count = owners::route_count(&self.segments.p2.language_selection)?;
         let variant_count = self
@@ -333,7 +336,7 @@ impl PlannerRecipeV1 {
 
 /// Check resource bounds before recursive JSON deserialization. Comparing exact
 /// canonical bytes rejects duplicate keys even inside Value-dispatched owners.
-fn read_value(bytes: &[u8]) -> ResearchResult<Value> {
+pub(crate) fn read_value(bytes: &[u8]) -> ResearchResult<Value> {
     if bytes.is_empty() || bytes.len() > MAX_BYTES {
         return Err(invalid("Recipe must contain 1 byte to 16 MiB."));
     }

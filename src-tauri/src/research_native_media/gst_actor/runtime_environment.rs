@@ -64,14 +64,24 @@ impl PrivateRuntimeEnvironment {
         // Windows loader still searches the application directory and
         // System32. The previous process value is restored immediately after.
         let _path_scope = ScopedEnvironmentValue::replace("PATH", self.runtime_bin.as_os_str());
+        #[cfg(test)]
+        super::diagnostic::actor_phase("gst-init-call-start");
         gstreamer::init().map_err(|_| "gstreamer-init-failed")?;
+        #[cfg(test)]
+        super::diagnostic::actor_phase("gst-init-call-done");
         let registry = gstreamer::Registry::get();
+        #[cfg(test)]
+        super::diagnostic::actor_phase("registry-scan-start");
         let _ = registry.scan_path(&self.plugin_dir);
+        #[cfg(test)]
+        super::diagnostic::actor_phase("registry-scan-done");
         for required in ["playbin3", "d3d11videosink"] {
             if gstreamer::ElementFactory::find(required).is_none() {
                 return Err("gstreamer-required-plugin-missing");
             }
         }
+        #[cfg(test)]
+        super::diagnostic::actor_phase("required-plugins-checked");
         Ok(())
     }
 }

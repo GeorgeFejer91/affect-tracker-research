@@ -212,26 +212,39 @@ fn participant_states(
         .map(|schedule| schedule.participant_id.clone())
         .collect::<Vec<_>>();
     let outputs_root = checked_run_child(&checked_run_root(workspace_root)?, "outputs")?;
-    let experiment_path = outputs_root
-        .path
-        .join(&loaded.package.settings.experiment.id);
-    let experiment_root = if experiment_path.exists() {
-        Some(checked_run_child(
-            &outputs_root,
-            &loaded.package.settings.experiment.id,
-        )?)
-    } else {
-        None
-    };
+    // New JSON-scoped output folders and preserved historical attempts.
+    let mut experiment_roots = Vec::new();
+    for key in [
+        crate::research_runner_session::recipe_directory_name(
+            &loaded.canonical_source_byte_sha256,
+        )?,
+        loaded.package.settings.experiment.id.clone(),
+    ] {
+        if outputs_root
+            .path
+            .join(&key)
+            .try_exists()
+            .map_err(CommandError::io)?
+        {
+            experiment_roots.push(checked_run_child(&outputs_root, &key)?);
+        }
+    }
     let mut participants = Vec::with_capacity(participant_ids.len());
+    let mut observed_attempts = 0usize;
     for participant_id in participant_ids {
         let mut state = PackageParticipantStateV1::Available;
         let mut latest_attempt = None;
-        if let Some(experiment_root) = &experiment_root {
+        for experiment_root in &experiment_roots {
             let participant_path = experiment_root.path.join(&participant_id);
             if participant_path.exists() {
                 let participant_root = checked_run_child(experiment_root, &participant_id)?;
                 for entry in fs::read_dir(&participant_root.path).map_err(CommandError::io)? {
+                    observed_attempts += 1;
+                    if observed_attempts > MAX_RECOVERY_FILES {
+                        return Err(CommandError::forbidden(
+                            "The participant history exceeds its bounded entry count.",
+                        ));
+                    }
                     let entry = entry.map_err(CommandError::io)?;
                     let metadata = fs::symlink_metadata(entry.path()).map_err(CommandError::io)?;
                     if !metadata.is_dir() || metadata.file_type().is_symlink() {
@@ -240,15 +253,45 @@ fn participant_states(
                     let Some(stem) = entry.file_name().to_str().map(str::to_owned) else {
                         continue;
                     };
-                    let package_path = entry.path().join("experiment.package.json");
-                    let owns_package = fs::read(&package_path)
-                        .ok()
-                        .is_some_and(|bytes| bytes == loaded.canonical_source_text.as_bytes());
+                    let session = checked_run_child(&participant_root, &stem)?;
+                    let package_path = session.path.join("experiment.package.json");
+                    let owns_package = crate::research_runner_session::read_ordinary(
+                        &package_path,
+                        &session.path,
+                        64 * 1024 * 1024,
+                    )
+                    .ok()
+                    .is_some_and(|bytes| bytes == loaded.canonical_source_text.as_bytes());
                     if !owns_package {
+                        if experiment_root
+                            .path
+                            .file_name()
+                            .and_then(|name| name.to_str())
+                            == Some(
+                                crate::research_runner_session::recipe_directory_name(
+                                    &loaded.canonical_source_byte_sha256,
+                                )?
+                                .as_str(),
+                            )
+                        {
+                            // An unreadable/unfinished attempt in this exact recipe's
+                            // folder must never make a used number look available.
+                            quarantined = quarantined.saturating_add(1);
+                            latest_attempt = Some(
+                                latest_attempt
+                                    .unwrap_or(0)
+                                    .max(attempt_from_stem(&stem).unwrap_or(1)),
+                            );
+                            state = PackageParticipantStateV1::Partial;
+                        }
                         continue;
                     }
                     let attempt = attempt_from_stem(&stem).unwrap_or(1);
-                    let observed_state = match fs::read(entry.path().join("manifest.json")) {
+                    let observed_state = match crate::research_runner_session::read_ordinary(
+                        &session.path.join("manifest.json"),
+                        &session.path,
+                        8 * 1024 * 1024,
+                    ) {
                         Ok(bytes) if bytes.len() <= 8 * 1024 * 1024 => {
                             match serde_json::from_slice::<ResearchRunManifestV4>(&bytes) {
                                 Ok(manifest) => {
@@ -367,4 +410,59 @@ fn validate_recovery_provenance(journal: &PackageRecoveryJournalV1) -> ResearchR
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod participant_history_tests {
+    use super::*;
+    use crate::research_experiment_package::parse_canonical_experiment_package_text;
+    use crate::research_runner_session::ensure_recipe_directory;
+
+    #[test]
+    fn used_numbers_are_json_scoped_and_include_interrupted_and_legacy_attempts() {
+        let root = std::env::temp_dir().join(format!("runner-history-{}", Uuid::new_v4()));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        fs::create_dir(root.join("recovery")).unwrap();
+        let source = include_str!("../../../test/fixtures/experiment-package-v1.canonical.json");
+        let loaded = parse_canonical_experiment_package_text(source).unwrap();
+        let folder = ensure_recipe_directory(&root, &loaded).unwrap();
+        fs::create_dir_all(folder.path.join("P001").join("interrupted_R01")).unwrap();
+        // Even a crash before the package copy finishes must mark this number used.
+        let first = list_bound_recoveries(&root, &loaded).unwrap();
+        assert_eq!(
+            first.participants[0].state,
+            PackageParticipantStateV1::Partial
+        );
+        assert_eq!(
+            first.participants[1].state,
+            PackageParticipantStateV1::Available
+        );
+        let mut other = loaded.package.clone();
+        other.package_id = "another-json".into();
+        other.integrity.package_definition_sha256 = other.package_definition_sha256().unwrap();
+        let other_source = String::from_utf8(other.canonical_file_bytes().unwrap()).unwrap();
+        let other = parse_canonical_experiment_package_text(&other_source).unwrap();
+        ensure_recipe_directory(&root, &other).unwrap();
+        assert!(list_bound_recoveries(&root, &other)
+            .unwrap()
+            .participants
+            .iter()
+            .all(|p| p.state == PackageParticipantStateV1::Available));
+        let legacy = root
+            .join("outputs")
+            .join(&loaded.package.settings.experiment.id)
+            .join("P002")
+            .join("legacy_R01");
+        fs::create_dir_all(&legacy).unwrap();
+        fs::write(legacy.join("experiment.package.json"), source).unwrap();
+        assert_eq!(
+            list_bound_recoveries(&root, &loaded).unwrap().participants[1].state,
+            PackageParticipantStateV1::Partial
+        );
+        assert!(list_bound_recoveries(&root, &other)
+            .unwrap()
+            .participants
+            .iter()
+            .all(|p| p.state == PackageParticipantStateV1::Available));
+    }
 }

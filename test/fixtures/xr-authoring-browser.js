@@ -170,6 +170,7 @@ const rejected = async (action) => { try { await action(); return false; } catch
   window.showSaveFilePicker = async () => ({ kind: "file", async createWritable() {
     return { async write(bytes) { fileBytes = new Uint8Array(bytes); }, async close() { closed = true; }, async abort() {} };
   }, async getFile() {
+    if (fileBytes === null) return { size: 0, arrayBuffer: async () => new ArrayBuffer(0) };
     if (!closed) throw new Error("Readback preceded close"); readbacks += 1;
     return { size: fileBytes.byteLength, arrayBuffer: async () => fileBytes.slice().buffer };
   } });

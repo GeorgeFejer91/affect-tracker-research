@@ -12,6 +12,21 @@ The existing JavaScript editors retain their sole drafts. The shared session
 holds only identity, authored revision, operation/cancellation and retry metadata.
 Rust retains file selection, media verification and strict final-file authority.
 
+`affect-planner-cli jsonl` is the only enabled ingress. The window is configured
+hidden and unfocused before creation, retaining the normal nonzero geometry and
+native parent handle. Each invocation uses a new isolated temporary WebView/app
+profile and begins with no selected workspace. No ordinary GUI or Runner process
+is attached or controlled. Temporary profiles currently remain on disk after
+exit; no user workspace or recipe is deleted during shutdown.
+
+The native broker admits at most four queued/in-flight commands and four output
+frames, each limited to 16 MiB including line framing. Startup and in-flight
+commands have 120-second deadlines; idle sessions have a 300-second deadline.
+EOF drains queued work and flushed replies before exit 0. Framing overflow,
+unconsumed output, I/O failure or a deadline closes only this owned process with
+exit 2 and a fixed diagnostic code. A startup failure emits a fixed JSON error.
+After a nonzero exit, no assumption about an unacknowledged edit is permitted.
+
 ## Owner interface (frozen for this pass)
 
 Each owner supplies an object to `createPlannerAuthoringSession`:
@@ -63,8 +78,10 @@ commit phases are synchronous; no native side effect belongs in either phase.
 
 Native imports, media preparation, confirmation and final file writes are
 separate consequential commands, not members of an atomic field-edit batch.
-Their later adapters must use the same current-operation guard and return exact
-side-effect receipts; cancellation cannot undo an already written file.
+Their adapters use the same current-operation guard and return exact
+side-effect receipts; cancellation cannot undo an already written file. The
+optional owner interface and result/lifetime rules are specified in
+[`planner-authoring-consequences.md`](planner-authoring-consequences.md).
 
 ## Wire envelope
 
@@ -81,7 +98,8 @@ side-effect receipts; cancellation cannot undo an already written file.
 
 Queries use `expectedRevision:null`. First-slice actions are `catalogue`,
 `snapshot`, `get` (`field`), `validate` (`owner` or null), `set`, `apply`
-(`edits`), and `cancel` (`requestId` of the operation to cancel).
+(`edits`), `perform` (`operation`, `arguments`), and `cancel` (`requestId` of the
+operation to cancel).
 Mutation revisions are required. JSON objects have exact keys; duplicate keys,
 prototype-sensitive keys, invalid UTF-8/JSON, trailing input, nonfinite values,
 oversized input and unknown actions fail closed.
@@ -108,6 +126,10 @@ Identical completed mutations return the original result. Changed reuse rejects.
 Entries are retained for the process generation: capacity exhaustion rejects new
 mutations, never evicts an old ID and reapplies it. Session destruction aborts
 pending preparation, wakes observers and prevents any later commit.
+Retained mutation metadata is capped at 1,024 entries / 8 MiB. Admission accounts
+for the escaped request fingerprint plus a 512 KiB result reservation. Results
+retain at most 64 bounded issues; no raw exception or arbitrary owner object is
+stored in an issue. Queries do not consume retained mutation identities.
 
 ## Ownership and verification
 

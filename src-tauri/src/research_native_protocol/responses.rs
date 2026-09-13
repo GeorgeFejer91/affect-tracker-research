@@ -67,10 +67,10 @@ pub fn derive_questionnaire_responses_v3(
             && definition
                 .items
                 .iter()
-                .any(|item| item.required && !by_item.contains_key(item.item_id.as_str())))
+                .any(|item| !by_item.contains_key(item.item_id.as_str())))
     {
         return Err(CommandError::invalid_contract(
-            "A submitted questionnaire must answer every required frozen item.",
+            "A submitted questionnaire must answer every frozen item.",
         ));
     }
     let known_items = definition
@@ -149,7 +149,7 @@ mod tests {
             "../../../test/fixtures/experiment-package-v1.canonical.json"
         ))
         .unwrap();
-        let selected = compile_package_selection(
+        let mut selected = compile_package_selection(
             &loaded.package,
             &loaded.source_byte_sha256,
             "en",
@@ -157,6 +157,29 @@ mod tests {
             "P001",
         )
         .unwrap();
+        // Author an optional metadata flag in a cloned, validated settings
+        // projection, then use the owners to regenerate its exact protocol.
+        let definition = &mut selected.settings.questionnaires.definitions[0];
+        definition.items.last_mut().unwrap().required = false;
+        definition.definition_sha256 =
+            crate::research_contracts::canonical_sha256(definition, &["definitionSha256"]).unwrap();
+        for module in &mut selected.settings.questionnaires.modules {
+            if module.questionnaire_id == definition.questionnaire_id {
+                module.definition_sha256 = definition.definition_sha256.clone();
+            }
+        }
+        selected.settings = selected.settings.normalize_and_validate().unwrap();
+        let (_, experiment_hash) =
+            crate::research_experiment_package::resolved_experiment_plan(&selected.settings)
+                .unwrap();
+        let (protocol, _) = crate::research_experiment_package::resolved_protocol_plan(
+            &selected.settings,
+            &experiment_hash,
+            "P001",
+        )
+        .unwrap();
+        selected.protocol_plan = serde_json::from_value(protocol).unwrap();
+        selected.protocol_plan.validate_self().unwrap();
         let questionnaire_position = selected
             .protocol_plan
             .steps
@@ -192,6 +215,38 @@ mod tests {
         )
         .unwrap();
         assert_eq!(responses.len(), definition.items.len());
+        let optional_item = definition
+            .items
+            .iter()
+            .find(|item| !item.required)
+            .expect("fixture includes an older optional item");
+        let incomplete = answers
+            .iter()
+            .filter(|answer| answer.item_id != optional_item.item_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        for (status, accepted) in [
+            (QuestionnaireResponseStatusV1::Draft, true),
+            (QuestionnaireResponseStatusV1::Submitted, false),
+        ] {
+            let result = derive_questionnaire_responses_v3(
+                &selected.settings,
+                &selected.protocol_plan,
+                questionnaire_position,
+                &incomplete,
+                status,
+                1,
+                "00000000-0000-4000-8000-000000000000",
+                1,
+                "2026-09-10T12:00:00.000Z",
+                "1",
+            );
+            assert_eq!(
+                result.is_ok(),
+                accepted,
+                "only drafts may omit the older optional item"
+            );
+        }
         assert_eq!(
             responses[0].response_label,
             definition.items[0].options[0].label

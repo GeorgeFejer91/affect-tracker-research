@@ -22,7 +22,7 @@ function showBootstrapFailure(error) {
  * The sole frontend bootstrap sequence. Platform entry modules provide one
  * typed runtime initializer; they do not race independent DOM side effects.
  */
-export function bootstrapResearchSurface({ surface, initializeRuntime }) {
+export function bootstrapResearchSurface({ surface, initializeRuntime, onFailure = () => {} }) {
   if (surface !== "browser" && surface !== "tauri") {
     throw new TypeError("Research surface must be browser or tauri.");
   }
@@ -34,7 +34,7 @@ export function bootstrapResearchSurface({ surface, initializeRuntime }) {
     if (!root) return;
     await initializeRuntime(root);
   };
-  const startSafely = () => void start().catch(showBootstrapFailure);
+  const startSafely = () => void start().catch(error => { showBootstrapFailure(error); onFailure(error); });
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startSafely, { once: true });
   } else {

@@ -8,14 +8,15 @@ import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-const [browser, destination] = process.argv.slice(2);
+const [browser, destination, scenario = "cycle"] = process.argv.slice(2);
 assert.ok(browser && destination);
+assert.ok(["cycle", "core9"].includes(scenario));
 const output = resolve(destination); await mkdir(output, { recursive: true });
 const run = promisify(execFile), profile = await mkdtemp(join(output, "isolated-profile-"));
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const git = async args => (await run("git", args, { windowsHide: true })).stdout.trim();
 const commit = await git(["rev-parse", "HEAD"]);
-const bundle = await build({ entryPoints: ["test/fixtures/setup-contribution-cycle-browser.js"], bundle: true,
+const bundle = await build({ entryPoints: [scenario === "core9" ? "test/fixtures/planner-core9-browser.js" : "test/fixtures/setup-contribution-cycle-browser.js"], bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent", metafile: true,
   define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
 const inputSha256 = {};

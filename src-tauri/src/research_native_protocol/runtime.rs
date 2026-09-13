@@ -50,6 +50,7 @@ use crate::research_workspace::WorkspaceService;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{self, JoinHandle};
@@ -267,6 +268,7 @@ impl PackageRunStatus {
 }
 
 pub struct PackageProtocolRuntime {
+    companion_reserved: Arc<AtomicBool>,
     recorder: Option<Arc<crate::research_recorder::RecorderService>>,
     workspace: Arc<WorkspaceService>,
     native_media: Arc<NativeMediaService>,
@@ -281,6 +283,13 @@ struct ActivePackageRun {
     status: Arc<Mutex<PackageRunStatus>>,
     worker: Option<JoinHandle<()>>,
     input_authority_id: String,
+}
+
+pub(crate) struct CompanionLease(Arc<AtomicBool>);
+impl Drop for CompanionLease {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 
 enum WorkerMessage {
@@ -318,6 +327,7 @@ impl PackageProtocolRuntime {
         input: Arc<ResearchInputService>,
     ) -> Self {
         Self {
+            companion_reserved: Arc::new(AtomicBool::new(false)),
             recorder: None,
             workspace,
             native_media,
@@ -341,16 +351,29 @@ impl PackageProtocolRuntime {
         operation: impl FnOnce() -> ResearchResult<T>,
     ) -> ResearchResult<T> {
         let active = self.lock_active();
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         operation()
     }
 
+    /// A complete-master worker shares the same native input/media/recorder.
+    /// Reserve those services under the legacy Start mutex until worker teardown.
+    pub(crate) fn begin_companion<T>(
+        &self,
+        operation: impl FnOnce(CompanionLease) -> ResearchResult<T>,
+    ) -> ResearchResult<T> {
+        let active = self.lock_active();
+        if active.is_some() || self.companion_reserved.swap(true, Ordering::AcqRel) {
+            return Err(CommandError::run_active());
+        }
+        operation(CompanionLease(Arc::clone(&self.companion_reserved)))
+    }
+
     pub fn start(&self, request: StartPackageRunRequest) -> ResearchResult<PackageStartRunReceipt> {
         require_native_acquisition(self.native_acquisition_supported)?;
         let mut active = lock(&self.active);
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {
@@ -382,9 +405,13 @@ impl PackageProtocolRuntime {
         let asset_bindings_sha256 = canonical_sha256(&selection.asset_bindings, &[])?;
         let package_receipt = package_receipt(&selection, asset_bindings_sha256);
         let run_id = Uuid::new_v4().to_string();
-        let lsl = if selection.settings.advanced.lsl.enabled {
+        let effective_lsl = crate::research_runner_session::participant_lsl(
+            &selection.settings.advanced.lsl,
+            &selection.participant_id,
+        )?;
+        let lsl = if effective_lsl.enabled {
             Some(LslService::start(
-                &selection.settings.advanced.lsl,
+                &effective_lsl,
                 selection.settings.experiment.sampling_frequency_hz,
                 &run_id,
             )?)
@@ -418,12 +445,24 @@ impl PackageProtocolRuntime {
         let (receipt, storage, participant) =
             self.workspace
                 .with_workspace(&request.workspace_id, |workspace_root, _| {
-                    let prepared = prepare_attempt(
+                    crate::research_runner_session::ensure_recipe_directory(
                         workspace_root,
-                        &selection.settings.experiment.id,
+                        &loaded,
+                    )?;
+                    let history = list_bound_recoveries(workspace_root, &loaded)?;
+                    let previous_attempt = history.participants.iter().find(|row| row.participant_id == participant.id).and_then(|row| row.latest_attempt_number).unwrap_or(0);
+                    if previous_attempt > 0 && !request.rerun_confirmed {
+                        return Err(CommandError::forbidden("This participant already has an attempt in this JSON; confirm a new attempt in Session settings."));
+                    }
+                    let mut prepared = prepare_attempt(
+                        workspace_root,
+                        &crate::research_runner_session::recipe_directory_name(
+                            &selection.package_source_byte_sha256,
+                        )?,
                         &participant.id,
                         request.rerun_confirmed,
                     )?;
+                    prepared.attempt_number = prepared.attempt_number.max(previous_attempt.checked_add(1).filter(|number| *number <= 999_999).ok_or_else(|| CommandError::forbidden("The participant attempt counter exceeds the supported range."))?);
                     let mut participant = participant.clone();
                     participant.attempt_number = prepared.attempt_number;
                     let session_stem = format!(
@@ -645,7 +684,7 @@ impl PackageProtocolRuntime {
     ) -> ResearchResult<PackageStartRunReceipt> {
         require_native_acquisition(self.native_acquisition_supported)?;
         let mut active = lock(&self.active);
-        if active.is_some() {
+        if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {
@@ -739,9 +778,10 @@ impl PackageProtocolRuntime {
                     tsv: selection.settings.output.tsv,
                 })
             })?;
-        let lsl = if selection.settings.advanced.lsl.enabled {
+        let effective_lsl = storage.effective_lsl(&selection.settings.advanced.lsl)?;
+        let lsl = if effective_lsl.enabled {
             Some(LslService::start(
-                &selection.settings.advanced.lsl,
+                &effective_lsl,
                 selection.settings.experiment.sampling_frequency_hz,
                 &journal.run_id,
             )?)

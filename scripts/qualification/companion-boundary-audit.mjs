@@ -76,7 +76,7 @@ try {
   plannerErrorVisible:(()=>{const status=root.querySelector('#planner-status:not([hidden])');if(!status)return false;const rect=status.getBoundingClientRect();return rect.height>0&&rect.top>=0&&rect.bottom<=innerHeight;})(),
   previewCount:root.querySelectorAll('.research-preview-stage').length,
   sections:root.querySelectorAll('[data-setup-section]').length,
-  startDisabled:root.querySelector('#runner-start')?.disabled,
+  startDisabled:root.querySelector('#runner-launch')?.disabled,
   recipeLoaded:!!root.runner?.recipe,
   plannerEditors:root.querySelectorAll('[data-setup-section],#settings-form').length};
  const pre=document.createElement('pre'); pre.id='receipt'; pre.hidden=true; pre.textContent=JSON.stringify(receipt);document.body.append(pre);

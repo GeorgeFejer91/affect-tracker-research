@@ -25,17 +25,56 @@ experiment. The pinned GStreamer runtime/SDK, redistribution review, installed
 player/input/timing tests and complete Planner–Runner option correspondence have
 their own outstanding gates in `for-ai/30` and `for-ai/40`.
 
-## Preparing an experiment
+## Launcher and participant flow
 
-1. Open a supported complete Planner recipe and choose its video project folder.
-2. Enter its participant ID, explicitly traverse the language choices and choose
-   a new attempt, compatible recovery or pending-output finalization.
-3. Check the recipe, files and native decoder. Test the recipe's configured input
-   in the focused test region. Changing participant, route or test geometry
-   invalidates the relevant readiness.
-4. Optionally configure recording, then start when the native capability permits.
-   The Rust protocol owns timing, video transitions, ISIs, neutral resets,
-   questionnaire drafts/submissions, sampling, LSL timestamps and attempt files.
+The opening window has Load experiment file, a large Start experiment control,
+Absent-minded professor, Set controller and Remote controller connection.
+Session, media/recovery and XDF controls are in Session & recording settings.
+
+Enter a participant number such as P01 or choose it from the scrolling list.
+The native Runner remembers the last selection for that exact JSON in the selected
+project folder. Previously used numbers are red and labelled Used, including
+interrupted attempts. The list virtualizes up to all 100,000 supported declared
+participants. Existing v1 JSON must declare a schedule: P01 resolves to its original
+P001 ID; numbers outside the file are not allocated. Preview sequence beside the
+input shows the exact selected-language video, questionnaire and interval order
+without starting media, outlets or a recording. Self-paced forms have no invented
+duration. Start uses that same participant and language selection.
+
+Each canonical JSON owns `outputs/recipe-<full SHA-256>/`, containing the exact
+`experiment.package.json`, retained `participant.selection.json`, participant
+attempt folders and a `recordings/` folder. Reopening identical canonical bytes
+reuses the folder; changed JSON gets another. Legacy attempts remain in place and
+are included in exact-JSON history/recovery. The internal UUID/hash-bound recovery
+index remains in the workspace recovery library.
+
+For new attempts, both LSL names use the displayed participant prefix, such as
+`P01_AffectState` and `P01_AffectMarkers`. A separate immutable
+`runner-session.v1.json` binds the effective names to the native participant, run
+and recipe hash. Channel metadata, source IDs and timestamps retain their existing
+contracts. Legacy resumed attempts keep their original names; new resumed attempts
+verify their saved naming receipt. The Planner JSON and manifest-v4 shape are unchanged.
+
+Start enters native fullscreen with a solid black background, then presents
+participant identity, language and demographics. Continue automatically verifies
+the selection and proceeds into the recipe's questionnaire/video protocol; there
+is no second Begin experiment screen. Existing native media/input readiness still
+must pass. Operator checks and the configured-input test are available in session
+settings. Escape before acquisition returns to the launcher; during an attempt it
+opens session controls without stopping silently. Completing or explicitly stopping
+the attempt returns to the windowed launcher. Questionnaire labels, codes and
+hook order continue to come from the frozen recipe.
+
+The two QR popups are previews. Their distinct reserved GitHub Pages destinations
+are not deployed and do not create a connection. The professor companion will
+mirror the whole Runner; the phone/tablet companion will expose a fullscreen 2D
+affect pad. Both are future browser work recorded in `for-ai/65`.
+
+Set controller currently edits an in-memory override draft (preset and digital
+step size). Restoring the file settings discards it. Applying an override to actual
+acquisition requires a native override/attempt-evidence contract and is not yet
+connected: a changed draft blocks execution explicitly, and never rewrites the
+loaded JSON or runs under its old input hash. No custom-key capture is added here.
 
 The current executable accepts canonical `affect-research-experiment-package`
 version 1 without changing its bytes, hashes or frozen readers. It consumes the
@@ -50,8 +89,9 @@ labels/codes, required-answer checks and final validation.
 Recording policy belongs to **Runner session state**, independently of the
 Planner recipe's LSL emission settings. Select own affect/marker streams and/or
 up to 16 explicitly discovered external streams. Own recording requires the
-recipe to enable LSL output. Choose a new `.xdf` destination; existing files are
-never replaced. Start recording before the attempt to capture its first markers.
+recipe to enable LSL output. Record XDF in experiment folder creates a uniquely
+named file inside this JSON's `recordings/` folder; existing files are never
+replaced. Start recording before the attempt to capture its first markers.
 Finish the attempt before manually stopping the recorder. Normal attempt
 completion stops and drains recording automatically; application shutdown stops
 the native attempt before finalizing recording.

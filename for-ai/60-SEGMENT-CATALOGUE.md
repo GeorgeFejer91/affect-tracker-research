@@ -1,5 +1,17 @@
 # Central segment roadmap and capability checklist
 
+## P2 / Runner SurveyJS extension — 2026-09-13
+
+User explicitly allocated the full standard SurveyJS questionnaire pipeline.
+P2 retains its table builder and prebuilt selectors, adds the online builder
+link and raw JSON import/paste, and preserves imported definitions through
+native source save and editable master4 reopen. MAIA-2 EN/DE and the installed
+researcher-local German TAS retain their wording, codes and language routing.
+Uninstalled translations remain unavailable. Runner renders all master forms
+through SurveyJS and validates custom survey submissions natively before durable
+write/advance. Full contract, scope and qualification boundaries are in
+[SurveyJS questionnaires](../docs/surveyjs-questionnaires.md).
+
 **Planner authoring goal completed — 2026-09-12:** every required P1–P6 segment,
 including experiment-defining Flubber/live configuration, contributes to one
 validated, saveable and editable master. Canonical source, local build and
@@ -45,6 +57,10 @@ remain open until integrated and verified. Scope, example and evidence are in
 - [ ] **CLI-SHARED:** one typed gateway, complete setting registry, revision and
   lifecycle fences, bounded transport, truthful results and the requested real
   mock experiment with full end-to-end setting coverage.
+- [ ] **CLI-DOCS:** maintained About → CLI library on GitHub Pages and matching
+  [for-ai reference](71-CLI-LIBRARY.md), source-derived command inventory and
+  drift check, exact input/output/UI/JSON mappings, examples and verification
+  status; rendered and deployed documentation checked against integrated source.
 
 ### CLI-to-Runner validation goal — 2026-09-12
 
@@ -59,6 +75,14 @@ rows; they do not reopen the completed baseline authoring goal.
 - [ ] **E2E-RUNNER:** RR-02/RR-10 load that exact artifact, bind actual media and
   verify observed behavior for both routes, video/ISIs, feedback/layout/input and
   authored outputs. Parsing or synthetic execution alone does not close this row.
+- [ ] **E2E-DEMOGRAPHICS:** shipped project-authored English/German form for full
+  name, whole-year age, gender and handedness, typed UI/CLI authoring and Runner
+  answers with explicit versioned compatibility; synthetic smoke responses only.
+- [ ] **E2E-XDF:** the actual smoke's saved XDF independently reconstructs the
+  complete canonical recipe/selection, demographics, questionnaire definitions
+  and typed answers, plus observed identified video/ISI/form events and outcomes
+  from its single primary information stream. Missing/corrupt/duplicate/out-of-order
+  data fails explicitly. Scope and evidence requirements are in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
 
 ### Baseline evidence rules
 
@@ -649,3 +673,7 @@ Pending branches observed 2026-09-11 are not integrated completion evidence:
 Refresh HEAD/status and the integration board before each pass. Re-audit pending
 work on collection rather than reimplementing it. Update only affected rows with
 exact evidence; this 2026-09-11 baseline is not a perpetual live audit.
+
+## Current user amendment — 2026-09-13
+
+The latest user requires the canonical JSON to contain every segment's experiment-defining metadata and explicit asset identities/locations; Runner must reconstruct without a shared default-folder dependency. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for the current owner-by-owner contract inventory and evidence checklist. Existing Planner authoring completion does not prove complete Runner execution.

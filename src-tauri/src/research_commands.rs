@@ -22,10 +22,12 @@ use crate::research_native_media::{
 };
 #[cfg(test)]
 use crate::research_participant::TransientParticipant;
-use crate::research_planner_recipe::{
-    parse_planner_recipe_bytes, parse_planner_recipe_file, SavedPlannerRecipeReceipt,
-    MAX_BYTES as MAX_PLANNER_RECIPE_BYTES,
+use crate::research_planner_recipe::SavedPlannerRecipeReceipt;
+use crate::research_planner_recipe_file::{
+    planner_recipe_filename, read_supported_planner_recipe_path,
+    write_selected_supported_planner_recipe,
 };
+use crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes;
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 #[cfg(test)]
 use crate::research_protocol::{
@@ -51,11 +53,18 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use tauri::{AppHandle, State, WebviewWindow};
+use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use uuid::Uuid;
 
 const MAX_SETTINGS_DOCUMENT_BYTES: usize = 5 * 1024 * 1024;
+
+#[tauri::command]
+pub async fn research_open_surveyjs_builder(window: WebviewWindow) -> ResearchResult<()> {
+    authorize(&window)?;
+    tauri_plugin_opener::open_url("https://surveyjs.io/create-free-survey", None::<&str>)
+        .map_err(CommandError::io)
+}
 
 #[tauri::command]
 pub async fn research_video_library(
@@ -585,6 +594,35 @@ pub fn research_native_media_play(
 }
 
 #[tauri::command]
+pub fn research_native_media_attest_decode_v2(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    native_media: State<'_, Arc<NativeMediaService>>,
+    request: NativeMediaDecodeAttestationRequestV1,
+) -> ResearchResult<ScannedStimulusSummary<crate::research_video_geometry::NativeDisplayGeometryV2>>
+{
+    authorize(&window)?;
+    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
+    let expected_fence = request.fence.clone();
+    let receipt = native_media.attest_decode_v2(request.fence)?;
+    if receipt.workspace_file_id != request.workspace_file_id
+        || receipt.session_id != expected_fence.session_id
+        || receipt.generation != expected_fence.generation
+    {
+        return Err(CommandError::forbidden(
+            "Native controlled decode evidence returned a different workspace or generation identity.",
+        ));
+    }
+    workspace.attest_native_decode_v2(
+        &request.workspace_id,
+        &request.sha256,
+        request.byte_length,
+        &request.mime_type,
+        &receipt,
+    )
+}
+
+#[tauri::command]
 pub fn research_native_media_attest_decode(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
@@ -710,6 +748,13 @@ pub fn research_input_begin_test(
     binding: InputBindingV1,
 ) -> ResearchResult<NativeInputStatus> {
     authorize(&window)?;
+    // Reconcile startup/WebView focus before granting a test. The native
+    // window query is authoritative; the renderer cannot assert focus.
+    let focused = window.is_focused().map_err(CommandError::io)?;
+    input.set_window_focused(focused);
+    if !focused {
+        return Err(CommandError::forbidden("Focus the experiment window before testing input."));
+    }
     input.begin_test(binding)
 }
 
@@ -922,8 +967,10 @@ pub async fn research_save_experiment_package(
 pub async fn research_load_planner_recipe(
     window: WebviewWindow,
     app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
 ) -> ResearchResult<Option<serde_json::Value>> {
     authorize(&window)?;
+    let remember_candidate = *role == crate::research_desktop::DesktopRole::Runner;
     tauri::async_runtime::spawn_blocking(move || {
         let Some(selection) = app
             .dialog()
@@ -936,12 +983,81 @@ pub async fn research_load_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe file."))?;
-        Ok(Some(parse_planner_recipe_file(&read_selected_recipe(
-            &path,
-        )?)?))
+        let mut document = read_supported_planner_recipe_path(&path)?;
+        if remember_candidate {
+            app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
+                .selected(&path, &document)?;
+            attach_runner_project(&app, &mut document)?;
+        }
+        Ok(Some(document))
     })
     .await
     .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_runner_previous_experiment(
+    window: WebviewWindow,
+    app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
+    action: String,
+    source_sha256: Option<String>,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if *role != crate::research_desktop::DesktopRole::Runner {
+        return Err(CommandError::forbidden(
+            "Previous experiment loading belongs to Runner.",
+        ));
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
+        match (action.as_str(), source_sha256.as_deref()) {
+            ("status", None) => Ok(recent.status()),
+            ("load", None) => {
+                let mut document = recent.load()?;
+                attach_runner_project(&app, &mut document)?;
+                Ok(document)
+            }
+            ("confirm", Some(hash)) => recent.confirm(hash),
+            _ => Err(CommandError::invalid_contract(
+                "Unknown previous experiment action.",
+            )),
+        }
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub async fn research_runner_recent_experiments(
+    window: WebviewWindow,
+    app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
+    action: String,
+    entry_id: Option<String>,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if *role != crate::research_desktop::DesktopRole::Runner { return Err(CommandError::forbidden("Recent experiment loading belongs to Runner.")); }
+    tauri::async_runtime::spawn_blocking(move || {
+        let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
+        match (action.as_str(), entry_id.as_deref()) {
+            ("list", None) => recent.list(),
+            ("load", Some(id)) => { let mut document = recent.load_id(id)?; attach_runner_project(&app, &mut document)?; Ok(document) },
+            _ => Err(CommandError::invalid_contract("Unknown recent experiment action.")),
+        }
+    }).await.map_err(CommandError::io)?
+}
+
+fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {
+    let directory = app
+        .state::<crate::research_runner_recent::RunnerRecentExperiment>()
+        .selected_directory()?;
+    let workspace = app.state::<Arc<WorkspaceService>>();
+    let runtime =
+        app.state::<Arc<crate::research_native_protocol::runtime::PackageProtocolRuntime>>();
+    let status = runtime.while_idle(|| workspace.select(directory))?;
+    document["workspace"] = serde_json::to_value(status).map_err(CommandError::io)?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -958,12 +1074,15 @@ pub async fn research_save_planner_recipe(
         ));
     }
     tauri::async_runtime::spawn_blocking(move || {
-        let document = parse_planner_recipe_bytes(source_text.as_bytes())?;
+        let document = parse_supported_planner_recipe_bytes(source_text.as_bytes())?;
         let Some(selection) = app
             .dialog()
             .file()
             .add_filter("Experiment recipe", &["json"])
-            .set_file_name(format!("{}.json", document.recipe.recipe_id))
+            .set_file_name(planner_recipe_filename(
+                document.recipe.recipe_id(),
+                time::OffsetDateTime::now_utc(),
+            )?)
             .blocking_save_file()
         else {
             return Ok(None);
@@ -971,50 +1090,13 @@ pub async fn research_save_planner_recipe(
         let path = selection
             .into_path()
             .map_err(|_| CommandError::forbidden("Select a local recipe destination."))?;
-        Ok(Some(write_selected_planner_recipe(&path, &source_text)?))
+        Ok(Some(
+            write_selected_supported_planner_recipe(&path, &source_text)
+                .map_err(|error| error.into_command_error())?,
+        ))
     })
     .await
     .map_err(CommandError::io)?
-}
-
-fn read_selected_recipe(path: &Path) -> ResearchResult<Vec<u8>> {
-    let file = File::open(path).map_err(CommandError::io)?;
-    let metadata = file.metadata().map_err(CommandError::io)?;
-    if !metadata.is_file()
-        || metadata.len() == 0
-        || metadata.len() > MAX_PLANNER_RECIPE_BYTES as u64
-    {
-        return Err(CommandError::invalid_contract(
-            "Recipe must be a regular file containing 1 byte to 16 MiB.",
-        ));
-    }
-    let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    file.take((MAX_PLANNER_RECIPE_BYTES + 1) as u64)
-        .read_to_end(&mut bytes)
-        .map_err(CommandError::io)?;
-    if bytes.len() as u64 != metadata.len() {
-        return Err(CommandError::invalid_contract(
-            "Recipe changed while reading its bytes.",
-        ));
-    }
-    Ok(bytes)
-}
-
-fn write_selected_planner_recipe(
-    path: &Path,
-    source_text: &str,
-) -> ResearchResult<SavedPlannerRecipeReceipt> {
-    let expected = parse_planner_recipe_bytes(source_text.as_bytes())?;
-    write_selected_package(path, expected.canonical_source_text.as_bytes())?;
-    let observed = parse_planner_recipe_bytes(&read_selected_recipe(path)?)?;
-    if observed.canonical_source_text != expected.canonical_source_text
-        || observed.canonical_source_byte_sha256 != expected.canonical_source_byte_sha256
-    {
-        return Err(CommandError::invalid_contract(
-            "Saved bytes do not match the prepared recipe.",
-        ));
-    }
-    Ok(SavedPlannerRecipeReceipt::from_loaded(&observed))
 }
 
 fn write_selected_package(path: &Path, bytes: &[u8]) -> ResearchResult<()> {
@@ -1837,53 +1919,6 @@ mod tests {
         assert!(decode_settings_bytes(malformed_research).is_err());
         assert!(decode_settings_bytes(&[]).is_err());
         assert!(decode_settings_bytes(&vec![b' '; MAX_SETTINGS_DOCUMENT_BYTES + 1]).is_err());
-    }
-
-    #[test]
-    fn selected_planner_writer_validates_before_replace_and_acknowledges_readback() {
-        let root = std::env::temp_dir().join(format!("affect-planner-writer-{}", Uuid::new_v4()));
-        fs::create_dir(&root).unwrap();
-        let target = root.join("chosen-recipe.json");
-        let source =
-            include_str!("../../test/fixtures/planner-recipe-xr-current-v1.canonical.json");
-        let receipt = write_selected_planner_recipe(&target, source).unwrap();
-        let reopened = parse_planner_recipe_bytes(&read_selected_recipe(&target).unwrap()).unwrap();
-        assert_eq!(receipt, SavedPlannerRecipeReceipt::from_loaded(&reopened));
-        assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-        assert!(write_selected_planner_recipe(&target, "{}\n").is_err());
-        assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-        assert!(
-            write_selected_planner_recipe(&root.join("missing").join("recipe.json"), source)
-                .is_err()
-        );
-        let directory = root.join("folder.json");
-        fs::create_dir(&directory).unwrap();
-        assert!(write_selected_planner_recipe(&directory, source).is_err());
-        assert!(read_selected_recipe(&directory).is_err());
-        let oversized = root.join("large.json");
-        File::create(&oversized)
-            .unwrap()
-            .set_len(MAX_PLANNER_RECIPE_BYTES as u64 + 1)
-            .unwrap();
-        assert!(read_selected_recipe(&oversized).is_err());
-        #[cfg(target_os = "windows")]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            let locked = OpenOptions::new()
-                .read(true)
-                .share_mode(0)
-                .open(&target)
-                .unwrap();
-            assert!(write_selected_planner_recipe(&target, source).is_err());
-            drop(locked);
-            assert_eq!(fs::read(&target).unwrap(), source.as_bytes());
-            assert!(fs::read_dir(&root).unwrap().all(|e| !e
-                .unwrap()
-                .file_name()
-                .to_string_lossy()
-                .ends_with(".staging")));
-        }
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

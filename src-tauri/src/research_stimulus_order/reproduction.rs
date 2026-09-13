@@ -96,6 +96,46 @@ pub fn reconstruct_variant(
     recipe_sha256: &str,
 ) -> ResearchResult<Value> {
     let videos = validated_videos(contribution, catalogue)?;
+    reconstruct_with_videos(contribution, variant_id, &videos, recipe_sha256)
+}
+
+pub fn validate_and_reproduce_saved_variants_v3(
+    workspace: &crate::research_workspace_contribution::v3::WorkspaceContributionV3,
+    contribution: &Value,
+    definition_sha256: &str,
+) -> ResearchResult<Value> {
+    crate::research_workspace_contribution::v3::validate_workspace_contribution_v3(
+        &serde_json::to_value(workspace).map_err(|_| invalid("Cannot encode workspace v3."))?,
+    )?;
+    let design: VariantDesignV2 = serde_json::from_value(contribution.clone())
+        .map_err(|_| invalid("Invalid P3 v2 contribution."))?;
+    design.validate_v3(&workspace.video_catalogue)?;
+    let videos = LocationLibrary::from_catalogue_v3(&workspace.video_catalogue)?.videos;
+    let variants = design
+        .variants
+        .iter()
+        .map(|variant| {
+            let projection = reconstruct_with_videos(
+                contribution,
+                &variant.variant_id,
+                &videos,
+                definition_sha256,
+            )?;
+            Ok(
+                json!({"variantId":variant.variant_id,"versionSha256":variant.version_sha256,
+            "timeline":projection["timeline"],"markerProfile":projection["profile"]}),
+            )
+        })
+        .collect::<ResearchResult<Vec<_>>>()?;
+    Ok(json!({"variants":variants}))
+}
+
+fn reconstruct_with_videos(
+    contribution: &Value,
+    variant_id: &str,
+    videos: &[LocationVideo],
+    recipe_sha256: &str,
+) -> ResearchResult<Value> {
     if recipe_sha256.len() != 64
         || !recipe_sha256
             .bytes()

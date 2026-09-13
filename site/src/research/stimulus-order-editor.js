@@ -1,12 +1,19 @@
 import { canonicalJson } from "./canonical.js";
+import { applyVariantAuthoringOperation, validateVariantAuthoringDraft } from "./planner-authoring-p3.js";
 import { videoLibraryCsv } from "./stimulus-order.js";
 import { validateVariantLibrary as validateVideoLibrary } from "./variant-library.js";
 import { videoLibraryWorkbook } from "./stimulus-workbook.js";
 import { normalizeVariantCatalogue, validateVariantCatalogueLibrary } from "./variant-video-catalogue.js";
-import { normalizeVariantCatalogueSource, projectSavedVariantCatalogue, projectVariantCatalogue } from "./variant-catalogue-adapter.js";
+import { normalizeVariantCatalogueSource, projectSupportedSavedVariantCatalogue as projectSavedVariantCatalogue, projectSupportedVariantCatalogue as projectVariantCatalogue } from "./variant-catalogue-adapter.js";
 import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, resolveVariantCell, resolveVariantEntries, validateStoredVariantDocument, validateVariantDraft, validateVariantDesign, variantDesignToDraft, videoColorMap } from "./variant-design.js";
 
 const escape = value => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+const durationInput = value => value.trim() !== "" && Number.isFinite(Number(value)) ? Number(value) : value;
+const moveControls = (kind, index, length, locked, label) => [-1, 1].map(direction => {
+  const position = kind === "variant" ? direction < 0 ? "left" : "right" : direction < 0 ? "up" : "down";
+  const arrow = kind === "variant" ? direction < 0 ? "←" : "→" : direction < 0 ? "↑" : "↓";
+  return `<button type="button" data-order-move="${kind}" data-order-index="${index}" data-order-direction="${direction}" aria-label="Move ${escape(label)} ${position}" ${locked || index + direction < 0 || index + direction >= length ? "disabled" : ""}>${arrow}</button>`;
+}).join("");
 
 /** P3 presentation owner. P1 supplies library receipts; P7 consumes accepted snapshots. */
 export function createStimulusOrderEditor({ root, operate, onChange = () => {}, announce = () => {} }) {
@@ -14,6 +21,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   let catalogue = null, lastCatalogue = null, catalogueExpected = false, legacy = null, colors = new Map();
   let catalogueOperation = 0, restoreOperation = 0, producerIdentity = null, producerRevision = null;
   let unresolvedP1Revision = null;
+  let destroyed = false, authoringPublicationPending = false;
   const host = root.querySelector("#stimulus-order-editor"), status = root.querySelector("#stimulus-order-status"), versions = root.querySelector("#stimulus-order-versions");
   const report = (message, failed = false) => {
     if (status) { status.textContent = message; status.dataset.state = failed ? "error" : "ready"; }
@@ -35,6 +43,12 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       contribution: confirmed ? structuredClone(confirmed.contribution) : null,
       dependencyRevisions: catalogue ? [{ segment: "P1", revision: catalogue.revision }]
         : unresolvedP1Revision !== null ? [{ segment: "P1", revision: unresolvedP1Revision }] : [] };
+  }
+  function installReset(nextDraft, nextGeneration) {
+    generation = nextGeneration; catalogueOperation++; producerIdentity = null; producerRevision = null;
+    unresolvedP1Revision = null; library = null; catalogue = null; lastCatalogue = null;
+    catalogueExpected = false; confirmed = null; legacy = null; draft = nextDraft; edited = false;
+    authoringPublicationPending = false;
   }
   function restoreBinding(receipt, next) {
     const binding = checkCatalogue(normalizeVariantCatalogue(Object.hasOwn(receipt, "catalogue") ? receipt.catalogue : catalogue));
@@ -89,10 +103,10 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     root.querySelectorAll("[data-order-requires-library]").forEach(element => { element.hidden = !library; });
     root.querySelectorAll("[data-order-prerequisite]").forEach(element => { element.hidden = Boolean(library); });
     const locked = busy || !library;
-    host.innerHTML = `<div class="isi-definitions"><label for="isi-duration-list">ISI durations (ms)</label><div class="isi-create-row"><input id="isi-duration-list" data-isi-list placeholder="e.g. 500, 1500" aria-describedby="isi-list-help" ${locked ? "disabled" : ""}><button type="button" data-isi-add ${locked ? "disabled" : ""}>Add ISIs</button></div><p id="isi-list-help" class="field-help">Enter comma-separated whole milliseconds. Use the generated names in the table.</p><div class="isi-dictionary">${draft.isiDefinitions.map(isi => {
+    host.innerHTML = `<div class="isi-definitions"><label for="isi-duration-list">ISI durations (ms)</label><div class="isi-create-row"><input id="isi-duration-list" data-isi-list placeholder="e.g. 500, 1500" aria-describedby="isi-list-help" ${locked ? "disabled" : ""}><button type="button" data-isi-add ${locked ? "disabled" : ""}>Add ISIs</button></div><p id="isi-list-help" class="field-help">Enter comma-separated whole milliseconds. Use the generated names in the table.</p><div class="isi-dictionary">${draft.isiDefinitions.map((isi, i) => {
       const count = draft.rows.reduce((total, row) => total + row.filter(cell => cell === isi.isiId).length, 0);
-      return `<div class="isi-definition"><label for="duration-${isi.isiId}">${isi.isiId}</label><input id="duration-${isi.isiId}" data-isi-id="${isi.isiId}" type="number" min="0" max="3600000" step="1" value="${isi.durationMs}" aria-label="${isi.isiId} duration in milliseconds" ${locked ? "disabled" : ""}><span data-isi-usage="${isi.isiId}">ms · ${count} use${count === 1 ? "" : "s"}</span><button type="button" data-isi-remove="${isi.isiId}" aria-label="Remove ${isi.isiId}" ${locked || count ? "disabled" : ""}>×</button></div>`;
-    }).join("")}</div></div><div class="table-scroll stimulus-order-scroll" tabindex="0" role="region" aria-label="Stimulus presentation order"><table class="stimulus-order-table"><caption class="sr-only">Each column is a variant. Enter video annotations or named ISIs.</caption><thead><tr><th scope="col">Event</th>${draft.columns.map((column, c) => `<th scope="col"><div class="variant-heading"><input data-order-title="${c}" aria-label="Variant ${c + 1} name" maxlength="120" value="${escape(column.title)}" ${locked ? "disabled" : ""}><button type="button" data-order-remove-column="${c}" aria-label="Remove ${escape(column.title)}" ${locked || draft.columns.length === 1 ? "disabled" : ""}>×</button></div></th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${draft.rows.map((row, r) => `<tr><th scope="row">Event ${r + 1}</th>${row.map((cell, c) => cellMarkup(cell, r, c, locked)).join("")}<td><button type="button" data-order-remove-row="${r}" aria-label="Remove Event ${r + 1}" ${locked || draft.rows.length === 1 ? "disabled" : ""}>×</button></td></tr>`).join("")}</tbody></table></div><div class="button-row"><button type="button" data-order-add-row ${locked ? "disabled" : ""}>Add event</button><button type="button" data-order-add-column ${locked ? "disabled" : ""}>Add variant</button></div><datalist id="video-annotation-options">${(library?.videos ?? []).map(video => `<option value="${escape(video.annotationId)}">${escape(video.relativePath.slice("assets/stimuli/".length))}</option>`).join("")}${draft.isiDefinitions.map(isi => `<option value="${isi.isiId}">ISI · ${isi.durationMs} ms</option>`).join("")}</datalist>`;
+      return `<div class="isi-definition"><label for="duration-${isi.isiId}">${isi.isiId}</label><input id="duration-${isi.isiId}" data-isi-id="${isi.isiId}" type="number" min="0" max="3600000" step="1" value="${escape(isi.durationMs ?? "")}" aria-label="${isi.isiId} duration in milliseconds" ${locked ? "disabled" : ""}><span data-isi-usage="${isi.isiId}">ms · ${count} use${count === 1 ? "" : "s"}</span><div class="button-row">${moveControls("isi", i, draft.isiDefinitions.length, locked, isi.isiId)}<button type="button" data-isi-remove="${isi.isiId}" aria-label="Remove ${isi.isiId}" ${locked || count ? "disabled" : ""}>×</button></div></div>`;
+    }).join("")}</div></div><div class="table-scroll stimulus-order-scroll" tabindex="0" role="region" aria-label="Stimulus presentation order"><table class="stimulus-order-table"><caption class="sr-only">Each column is a variant. Enter video annotations or named ISIs.</caption><thead><tr><th scope="col">Event</th>${draft.columns.map((column, c) => `<th scope="col"><div class="variant-heading"><input data-order-title="${c}" aria-label="Variant ${c + 1} name" maxlength="120" value="${escape(column.title)}" ${locked ? "disabled" : ""}>${moveControls("variant", c, draft.columns.length, locked, column.title)}<button type="button" data-order-remove-column="${c}" aria-label="Remove ${escape(column.title)}" ${locked || draft.columns.length === 1 ? "disabled" : ""}>×</button></div></th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${draft.rows.map((row, r) => `<tr><th scope="row">Event ${r + 1}</th>${row.map((cell, c) => cellMarkup(cell, r, c, locked)).join("")}<td><div class="button-row">${moveControls("row", r, draft.rows.length, locked, `Event ${r + 1}`)}<button type="button" data-order-remove-row="${r}" aria-label="Remove Event ${r + 1}" ${locked || draft.rows.length === 1 ? "disabled" : ""}>×</button></div></td></tr>`).join("")}</tbody></table></div><div class="button-row"><button type="button" data-order-add-row ${locked ? "disabled" : ""}>Add event</button><button type="button" data-order-add-column ${locked ? "disabled" : ""}>Add variant</button><button type="button" data-order-reset ${locked ? "disabled" : ""}>Reset table</button></div><datalist id="video-annotation-options">${(library?.videos ?? []).map(video => `<option value="${escape(video.annotationId)}">${escape(video.relativePath.slice("assets/stimuli/".length))}</option>`).join("")}${draft.isiDefinitions.map(isi => `<option value="${isi.isiId}">ISI · ${isi.durationMs} ms</option>`).join("")}</datalist>`;
     root.querySelectorAll("[data-video-library-export]").forEach(button => { button.disabled = locked || !library?.videos.length; });
     root.querySelectorAll('[data-confirm-section="stimuli"]').forEach(button => { if (button.dataset.reviewState !== "reviewed") button.disabled = locked; });
     renderVersions();
@@ -163,6 +177,50 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     finally { busy = false; render(); notify(); if (issue && token === generation && restoreToken === restoreOperation) revealIssue(issue); }
     return snapshot();
   }
+  /** CLI confirmation validates detached content without publishing readiness.
+   * The registry consumes the future snapshot; the coordinator owns commit. */
+  async function prepareConfirmation({ isCurrent = () => true, signal } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("Confirmation requires a current-operation guard.");
+    const token = generation, scan = catalogueOperation, restoreToken = restoreOperation;
+    const nextGeneration = generation + 1;
+    let committed = false, projected = false, stale = false;
+    const current = () => {
+      try {
+        if (destroyed || busy || committed || token !== generation || scan !== catalogueOperation
+          || restoreToken !== restoreOperation || signal?.aborted || isCurrent() !== true) stale = true;
+      } catch { stale = true; }
+      return !stale;
+    };
+    const check = () => { if (!current()) throw new Error("The table or catalogue changed during confirmation. Confirm the current table again."); };
+    check();
+    if (!library) throw new Error("Confirm the video catalogue in Segment 1 first.");
+    if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
+    validateVariantCatalogueLibrary(catalogue, library);
+    const pendingDraft = structuredClone(draft), pendingLibrary = structuredClone(library), pendingCatalogue = structuredClone(catalogue);
+    const document = await createVariantDocument(pendingDraft, pendingLibrary);
+    for (const variant of document.contribution.variants) compileVariantTimeline(document.contribution, variant.variantId, pendingCatalogue.videos);
+    check();
+    const future = { revision: nextGeneration, enabled: true, pending: false,
+      contribution: structuredClone(document.contribution),
+      dependencyRevisions: [{ segment: "P1", revision: pendingCatalogue.revision }] };
+    return Object.freeze({
+      get snapshot() { return structuredClone(future); },
+      isCurrent: current,
+      commit() {
+        check();
+        confirmed = document; edited = false; legacy = null; generation = nextGeneration;
+        authoringPublicationPending = false; committed = true;
+      },
+      afterCommit() {
+        if (!committed) throw new Error("Commit the confirmed table before publishing its projection.");
+        if (projected) return;
+        projected = true;
+        if (destroyed || generation !== nextGeneration) return;
+        render(); notify();
+        report(`${document.contribution.variants.length} variants ready for review.`);
+      },
+    });
+  }
   function revealIssue(error) {
     const isiId = /^(ISI[1-9][0-9]*) duration/u.exec(error.message)?.[1];
     const selector = Number.isInteger(error.row) && Number.isInteger(error.column)
@@ -199,7 +257,7 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     if (busy || (control.dataset.orderRow === undefined && control.dataset.orderTitle === undefined && control.dataset.isiId === undefined)) return;
     if (control.dataset.orderRow !== undefined) draft.rows[Number(control.dataset.orderRow)][Number(control.dataset.orderColumn)] = control.value;
     else if (control.dataset.orderTitle !== undefined) draft.columns[Number(control.dataset.orderTitle)].title = control.value;
-    else draft.isiDefinitions.find(isi => isi.isiId === control.dataset.isiId).durationMs = control.value === "" ? null : Number(control.value);
+    else draft.isiDefinitions.find(isi => isi.isiId === control.dataset.isiId).durationMs = durationInput(control.value);
     changed(); refreshCues(); control.removeAttribute("aria-invalid");
   };
   const onEdit = event => {
@@ -210,7 +268,11 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
         const r = Number(control.dataset.orderRow), c = Number(control.dataset.orderColumn); draft.rows[r][c] = control.value;
         resolveVariantCell(control.value.trim(), library, draft.isiDefinitions); draft.rows[r][c] = control.value.trim(); control.value = draft.rows[r][c];
       } else if (control.dataset.orderTitle !== undefined) draft.columns[Number(control.dataset.orderTitle)].title = control.value;
-      else draft = editIsi(draft, control.dataset.isiId, control.value === "" ? null : Number(control.value));
+      else {
+        const durationMs = durationInput(control.value);
+        draft.isiDefinitions.find(isi => isi.isiId === control.dataset.isiId).durationMs = durationMs;
+        draft = editIsi(draft, control.dataset.isiId, durationMs);
+      }
       changed(); refreshCues(); validatePending();
     } catch (error) { changed(); control.setAttribute("aria-invalid", "true"); report(error.message, true); }
   };
@@ -225,7 +287,18 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
     const button = event.target.closest?.("button");
     if (!button || busy || !library) return;
     try {
-      if (button.hasAttribute("data-isi-add")) use(addIsiDurations(draft, host.querySelector("[data-isi-list]")?.value ?? ""), "[data-isi-list]");
+      if (button.dataset.orderMove) {
+        const kind = button.dataset.orderMove, index = Number(button.dataset.orderIndex), direction = Number(button.dataset.orderDirection);
+        const list = kind === "variant" ? draft.columns : kind === "isi" ? draft.isiDefinitions : draft.rows;
+        if (![-1, 1].includes(direction) || index < 0 || index + direction < 0 || index + direction >= list.length) return;
+        const beforeIndex = direction < 0 ? index - 1 : index + 2;
+        const args = kind === "variant" ? { variantId: draft.columns[index].variantId, beforeVariantId: draft.columns[beforeIndex]?.variantId ?? null }
+          : kind === "isi" ? { isiId: draft.isiDefinitions[index].isiId, beforeIsiId: draft.isiDefinitions[beforeIndex]?.isiId ?? null }
+            : { entryId: draft.entryIds[index][0], beforeEntryId: draft.entryIds[beforeIndex]?.[0] ?? null };
+        use(applyVariantAuthoringOperation(draft, `${kind}.move`, args, library), `[data-order-move="${kind}"][data-order-index="${index + direction}"][data-order-direction="${direction}"]`);
+      }
+      else if (button.hasAttribute("data-order-reset")) use(applyVariantAuthoringOperation(draft, "table.reset", {}, library), "[data-order-add-row]");
+      else if (button.hasAttribute("data-isi-add")) use(addIsiDurations(draft, host.querySelector("[data-isi-list]")?.value ?? ""), "[data-isi-list]");
       else if (button.dataset.isiRemove) use(removeIsi(draft, button.dataset.isiRemove), "[data-isi-list]");
       else if (button.hasAttribute("data-order-convert-legacy") && legacy) { const next = migrateLegacyOrder(legacy); legacy = null; use(next); report("Legacy order converted to named ISIs. Original file is preserved until you confirm this revision."); }
       else if (button.hasAttribute("data-order-add-row")) use(addVariantRow(draft), `[data-order-row="${draft.rows.length}"][data-order-column="0"]`);
@@ -237,7 +310,41 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
   host?.addEventListener("input", onInput); host?.addEventListener("change", onEdit); host?.addEventListener("paste", onPaste); host?.addEventListener("click", onClick);
   versions?.addEventListener?.("click", onClick); render();
   return {
-    confirm, confirmLibrary, adopt, prepareContribution,
+    confirm, confirmLibrary, adopt, prepareContribution, prepareConfirmation,
+    // Command adapters project the existing owner draft. No second state store
+    // or accepted contribution is created by an atomic authoring edit.
+    captureAuthoringDraft() {
+      return structuredClone({ draft, library, catalogue, legacy,
+        contribution: confirmed?.contribution ?? null, busy, destroyed });
+    },
+    stageAuthoringDraftRestore(rawDraft, guard) {
+      return this.stageAuthoringDraft(() => validateVariantAuthoringDraft(rawDraft), guard);
+    },
+    stageAuthoringDraft(project, { isCurrent = () => true, signal } = {}) {
+      if (destroyed || busy || legacy) throw new Error("The variant editor is unavailable, busy or awaiting legacy conversion.");
+      const token = generation, scan = catalogueOperation, restoreToken = restoreOperation;
+      const nextGeneration = generation + 1;
+      if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
+      const current = () => !destroyed && !busy && token === generation && scan === catalogueOperation
+        && restoreToken === restoreOperation && !signal?.aborted && isCurrent();
+      if (!current()) throw new Error("The variant authoring operation is no longer current.");
+      // The owner adapter validates its entire ordered batch on this detached
+      // capture. Clone before returning so commit cannot depend on caller data.
+      const next = structuredClone(project(this.captureAuthoringDraft()));
+      if (!current()) throw new Error("The variant authoring operation is no longer current.");
+      return { isCurrent: current, commit() {
+        draft = next; confirmed = null; legacy = null; edited = true;
+        generation = nextGeneration; catalogueOperation++; restoreOperation++;
+        authoringPublicationPending = true;
+      } };
+    },
+    publishAuthoringDraft() {
+      if (!authoringPublicationPending || destroyed) return;
+      authoringPublicationPending = false;
+      render(); notify();
+      try { validateVariantDraft(draft); if (library) validatePending(); else report("Confirm the video library in Segment 1 before confirming this table."); }
+      catch (error) { report(error.message, true); }
+    },
     async restore(document, receipt) {
       const token = generation, operation = beginRestore();
       receipt = await restoreReceipt(receipt);
@@ -260,18 +367,55 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       if (token !== generation || operation !== restoreOperation || receipt.isCurrent?.() === false) throw new Error("The design changed while reopening.");
       return commitRestore(document, next, binding, receipt);
     },
-    async restoreContent(contribution, { savedWorkspaceContribution, dependencies, isCurrent = () => true }) {
-      const token = generation, operation = beginRestore(), source = normalizeVariantCatalogueSource(dependencies?.P1);
+    async prepareRestoreContent(contribution, { savedWorkspaceContribution, dependencies, isCurrent = () => true }) {
+      const token = generation, operation = restoreOperation, scan = catalogueOperation;
+      const source = normalizeVariantCatalogueSource(dependencies?.P1), identity = canonicalJson(source);
+      const nextGeneration = generation + 1;
+      let committed = false, projected = false;
+      const current = () => {
+        try { return !committed && !destroyed && token === generation && operation === restoreOperation
+          && scan === catalogueOperation && isCurrent()
+          && canonicalJson(normalizeVariantCatalogueSource(dependencies?.P1)) === identity; }
+        catch { return false; }
+      };
+      const check = () => { if (!current()) throw new Error("The design changed while reopening."); };
+      check();
+      if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
       if (producerRevision !== null && source.revision < producerRevision) throw new TypeError("The Segment 1 catalogue revision is stale.");
-      const declared = await projectSavedVariantCatalogue(savedWorkspaceContribution);
-      const accepted = await validateVariantDesign(contribution, declared.library);
-      const restoredDraft = variantDesignToDraft(accepted);
-      if (token !== generation || operation !== restoreOperation || !isCurrent()) throw new Error("The design changed while reopening.");
-      catalogueOperation++; producerIdentity = canonicalJson(source); producerRevision = source.revision;
-      unresolvedP1Revision = source.revision; catalogueExpected = true; catalogue = null;
-      library = declared.library; colors = videoColorMap(library); draft = structuredClone(restoredDraft);
-      confirmed = null; legacy = null; edited = true; generation++; render(); notify();
-      report("Variant table reopened. Confirm the video library in Segment 1 before confirming this table.");
+      // Snapshot caller content before the first await; the live dependency is
+      // intentionally reread by the guard, never replaced by saved readiness.
+      const saved = structuredClone(savedWorkspaceContribution), content = structuredClone(contribution);
+      const declared = await projectSavedVariantCatalogue(saved);
+      const accepted = await validateVariantDesign(content, declared.library);
+      const restoredDraft = variantDesignToDraft(accepted), restoredColors = videoColorMap(declared.library);
+      check();
+      return {
+        isCurrent: current,
+        commit() {
+          check();
+          catalogueOperation++; restoreOperation++;
+          producerIdentity = identity; producerRevision = source.revision;
+          unresolvedP1Revision = source.revision; catalogueExpected = true; catalogue = null;
+          library = declared.library; colors = restoredColors; draft = restoredDraft;
+          confirmed = null; legacy = null; edited = true; generation = nextGeneration;
+          authoringPublicationPending = false; committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new Error("Commit the reopened design before publishing its projection.");
+          if (projected) return;
+          projected = true;
+          if (destroyed || generation !== nextGeneration) return;
+          render(); notify();
+          report("Variant table reopened. Confirm the video library in Segment 1 before confirming this table.");
+        },
+      };
+    },
+    async restoreContent(contribution, options) {
+      // GUI reopen retains immediate supersession of earlier saves/restores.
+      // The separately exposed preparation method itself makes no reservation.
+      beginRestore();
+      const prepared = await this.prepareRestoreContent(contribution, options);
+      prepared.commit(); prepared.afterCommit();
       return snapshot();
     },
     setCatalogue(snapshot) {
@@ -304,7 +448,36 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       } catch (error) { if (operation === catalogueOperation) report(error.message, true); throw error; }
     },
     getSnapshot: snapshot,
-    reset() { generation++; catalogueOperation++; producerIdentity = null; producerRevision = null; unresolvedP1Revision = null; library = null; catalogue = null; lastCatalogue = null; catalogueExpected = false; confirmed = null; legacy = null; draft = createVariantDraft(); edited = false; render(); notify(); },
+    prepareReset({ isCurrent = () => true, signal } = {}) {
+      if (typeof isCurrent !== "function") throw new TypeError("Reset requires a current-operation guard.");
+      const token = generation, scan = catalogueOperation, restoreToken = restoreOperation;
+      const nextGeneration = generation + 1, nextDraft = createVariantDraft();
+      let committed = false, projected = false, stale = false;
+      const current = () => {
+        try {
+          if (committed || destroyed || token !== generation || scan !== catalogueOperation
+            || restoreToken !== restoreOperation || signal?.aborted || isCurrent() !== true) stale = true;
+        } catch { stale = true; }
+        return !stale;
+      };
+      const check = () => { if (!current()) throw new Error("The variant editor changed before workspace reset."); };
+      check();
+      if (!Number.isSafeInteger(nextGeneration)) throw new Error("The variant editor revision is exhausted.");
+      return Object.freeze({ isCurrent: current,
+        commit() {
+          check();
+          installReset(nextDraft, nextGeneration); committed = true;
+        },
+        afterCommit() {
+          if (!committed) throw new Error("Commit the workspace reset before publishing its projection.");
+          if (projected) return;
+          projected = true;
+          if (destroyed || generation !== nextGeneration) return;
+          render(); notify();
+        },
+      });
+    },
+    reset() { installReset(createVariantDraft(), generation + 1); render(); notify(); },
     get document() { return confirmed ? structuredClone(confirmed) : null; },
     get active() { return edited || Boolean(confirmed) || Boolean(legacy); },
     get pending() { return snapshot().pending; },
@@ -323,6 +496,6 @@ export function createStimulusOrderEditor({ root, operate, onChange = () => {}, 
       } catch (error) { if (isCurrent()) report(error.message, true); }
       finally { busy = false; render(); notify(); }
     },
-    destroy() { generation++; catalogueOperation++; host?.removeEventListener("input", onInput); host?.removeEventListener("change", onEdit); host?.removeEventListener("paste", onPaste); host?.removeEventListener("click", onClick); versions?.removeEventListener?.("click", onClick); },
+    destroy() { destroyed = true; authoringPublicationPending = false; generation++; catalogueOperation++; host?.removeEventListener("input", onInput); host?.removeEventListener("change", onEdit); host?.removeEventListener("paste", onPaste); host?.removeEventListener("click", onClick); versions?.removeEventListener?.("click", onClick); },
   };
 }

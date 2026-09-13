@@ -15,7 +15,7 @@ use std::time::Instant;
 
 const DIGITAL_CAPACITY: usize = 128;
 
-pub(super) struct ProtocolInputMailbox {
+pub(crate) struct ProtocolInputMailbox {
     expected_kind: InputKindV1,
     state: Mutex<MailboxState>,
 }
@@ -35,21 +35,21 @@ struct MailboxFailure {
 }
 
 #[derive(Debug, Default)]
-pub(super) struct InputDrain {
-    pub(super) digital: VecDeque<NativeDigitalInput>,
-    pub(super) continuous: Option<NativeContinuousInput>,
-    pub(super) coalesced_count: u64,
+pub(crate) struct InputDrain {
+    pub(crate) digital: VecDeque<NativeDigitalInput>,
+    pub(crate) continuous: Option<NativeContinuousInput>,
+    pub(crate) coalesced_count: u64,
 }
 
 impl ProtocolInputMailbox {
-    pub(super) fn new(expected_kind: InputKindV1) -> Self {
+    pub(crate) fn new(expected_kind: InputKindV1) -> Self {
         Self {
             expected_kind,
             state: Mutex::new(MailboxState::default()),
         }
     }
 
-    pub(super) fn push(&self, update: NativeInputUpdate) {
+    pub(crate) fn push(&self, update: NativeInputUpdate) {
         let mut state = lock(&self.state);
         match update {
             NativeInputUpdate::AuthorityLost(NativeInputAuthorityLoss {
@@ -83,7 +83,7 @@ impl ProtocolInputMailbox {
         }
     }
 
-    pub(super) fn drain(&self) -> ResearchResult<InputDrain> {
+    pub(crate) fn drain(&self) -> ResearchResult<InputDrain> {
         let mut state = lock(&self.state);
         if let Some(failure) = state.failure.take() {
             state.digital.clear();
@@ -104,7 +104,7 @@ impl ProtocolInputMailbox {
         })
     }
 
-    pub(super) fn clear(&self) {
+    pub(crate) fn clear(&self) {
         let mut state = lock(&self.state);
         state.digital.clear();
         state.continuous = None;

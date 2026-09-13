@@ -1,5 +1,1157 @@
 # Agent message board
 
+## 20260913 root consolidated SurveyJS Runner validation
+
+Root resumes the user-authorized R1 integration pass (RR-02/03/06/07/08 and
+P2/P7 compatibility seams) in `D:/GitHub/affect-tracker-research-master-v3`,
+`codex/final-release-validation`, from `e3405b8`. All owning tasks report their
+work complete. SurveyJS commits `5d3329b` and `0e92179` were collected as
+`762f063` and `4ad9249`. Merge resolutions preserve recent-file autoload,
+participant/version selection and the explicit unqualified master3 validation
+path alongside master4 normal dispatch. The retired handwritten-form harness
+entrypoints delegate to SurveyJS; its native fixture also needs the new launcher
+history/variant replies. Collect focused combined JS/native/UI evidence before
+rebuilding the one `current-apps` distribution. Actual session, geometry,
+neutral-ISI and independent XDF reconstruction remain unproven; installer work
+follows functional completion. No additional task delegation or parallel build
+distribution is authorized by this pass.
+
+## 20260913 SurveyJS pipeline — user-allocated P2, P7 and RR-06
+
+Direct user goal: retain the basic table builder and MAIA-2/TAS EN/DE presets;
+link the online SurveyJS builder; import its or Node.js-generated native JSON;
+embed the complete questionnaire in the master and use the full Form Library
+in Runner. Backend Verification then UI integration, isolated
+`codex/segment-p2-surveyjs`, `D:/GitHub/affect-tracker-research-surveyjs`,
+base `9f65cfc`. Chat Orchestrator retains sole final release/integration ownership;
+its dirty worktree and existing executables are untouched. Runner owner informed.
+
+Owned seams: P2 import/editor/definition/presentation; explicit P2v3/master4
+producer/readers; RR-06 renderer, native SurveyJS validation and versioned data
+records; named RR-02/03/07/08 consumer dispatch. Frozen legacy readers and
+self-contained master XDF remain. All visible input questions remain mandatory.
+SurveyJS owns expressions, visibility and built-in validators; no replacement
+questionnaire logic engine. The complete MIT core/UI 3.0.4 is bundled locally.
+Native pure-Rust Boa avoids a new authored unsafe/FFI boundary.
+
+Software implementation delivered in `5d3329bc0f080880b7cb8f65e42845b65bc30169`
+plus the follow-up verification/qualification commit containing this update.
+The maintained contract is [SurveyJS questionnaires](../docs/surveyjs-questionnaires.md).
+The source is ready for Chat Orchestrator to consolidate and resume full Runner
+execution validation. No integration checkout or current-app executable was changed.
+
+Evidence root: `D:/GitHub/.affect-surveyjs-build/` (local diagnostic receipts).
+
+- `js-all-final-3.log`: 1,192/1,192 JS tests.
+- `native-all-final.log`: 374 passed, one existing ignored native test. The final
+  `native-complex-final.log` adds four passing SurveyJS cases, including the new
+  actual-Boa nested panel/calculation/matrix/ranking/inline-file case (375 unique
+  native tests exercised in total). Windows test executables are manifest-adjusted
+  copies, explicitly unqualified artifacts.
+- `browser-final-1/receipt.json`: 26 actual Planner/preset/renderer checks,
+  including MAIA-2 EN/DE, five-item labels, and the installed German TAS source.
+  Source-save callbacks in this browser fixture are synthetic.
+- `runner-browser-v2-final-2`, `runner-browser-v3-final-1`,
+  `runner-browser-v4-final-1`: eight actual Runner app scenarios each (EN/DE form,
+  flow/rejected-submit correction, Stop and disposal), with synthetic native IPC.
+- `keyboard-wrapper-final-3/receipt.json`: 410 checks across eight EN/DE Runner
+  scenarios, including trusted browser arrow-key interaction; native IPC remains
+  synthetic. The harness owns isolated headless Chrome and records UI scope.
+- `planner-cli-2/process/receipt.json`: all nine real hidden production CLI steps
+  pass, clean build identity `5d3329bc0f080880b7cb8f65e42845b65bc30169`, executable
+  SHA-256 `02864cd4ca49de1eb169abb66c2c32fdbe4175f0073dc50916b0315462942fa0`.
+  Includes raw Node-generated JSON import, durable source save in both languages
+  and native master4 Open restoring complete editable JSON.
+- `runner-native-lsl-check.log`: native Runner compiles with `lsl-streaming` and
+  `tauri/custom-protocol` (other default features disabled). Frontend desktop,
+  Runner, Pages builds and committed vendor/fixture checks pass.
+- `native-integration-compile.log`: all native test targets compile after adding
+  the missing explicit source-module registrations to the three standalone test
+  crates (SurveyJS/master4 and their existing master3/geometry/shutdown dependencies).
+- `integration-authoring-final.log`, `integration-effects-final.log`, and
+  `integration-recipes-final.log`: affected standalone native suites pass
+  218/218, 176/176, and 87/87 tests respectively. Prepared copies retain their
+  original integration-test names and record original/prepared executable hashes.
+
+Keep the qualification boundary explicit: no installed app, real video or live
+XDF acquisition is qualified by these fixtures. Full definitions and responses
+remain in the existing XDF information stream; independent JS replay tests pass.
+Strict all-target Clippy is not clean at this base: pre-existing feature-gated
+dead code, unused imports in source-including integration tests and the
+`controlled_geometry` items-after-test-module layout remain. New SurveyJS Clippy
+findings were corrected; do not report the repository lint gate as passed.
+
+Migration/integration: use master4/P2v3/presentation3/response3 only for SurveyJS;
+keep older readers strict and preserve complete JSON. The updated legacy UI
+qualification entrypoints delegate to the SurveyJS harness. Keyboard interaction
+uses upstream/browser controls; do not restore the retired handwritten form DOM
+or its Enter-to-next-field policy over arbitrary surveys. About is absent from
+this feature base: the root-owned About/CLI page should link the new public doc.
+Available presets remain MAIA-2 EN/DE and researcher-local German TAS; unavailable
+TAS translations are not fabricated or redistributed. Custom JS/widgets and
+external services require separate adapters; paid Creator/Dashboard/PDF products
+are not included in the Form Library integration.
+
+## S1 P1 controlled geometry successor — 2026-09-12
+
+Root freeze02 allocates P1-06/P1-07 and named P3 geometry-free adapters from
+Main53d818a, isolated `codex/p1-controlled-geometry` worktree on D:. Stage Backend
+Verification. Exact contract: `docs/controlled-video-geometry-v3.md`. Native owner
+owns metadata2 Rust validation/derive and actual controlled sink lifecycle;
+S1 independently mirrors JS and owns strict P1 catalogue3/workspace3 readers.
+Old geometry/catalogue/workspace readers remain strict. Main owns master3,
+P4/P6/selection integration and Runner owns execution correspondence. No output
+observation, qualification flag, source reencoding or foreground work is implied.
+
+First JS handoff: explicit supported producer/reader names preserve historical
+entrypoints; catalogue3 context retains full provenance while P3 core stays2.
+27 focused JS checks passed before shared-vector addition; vector and Rust parity
+are the next evidence, not yet claimed by this first checkpoint. Native helper
+57b9a4 is collected as d014a6d; it remains separately owned and tested. No native
+build or installed/runtime qualification is included in this receipt.
+
+### 20260912-main-master3-controlled-renderer-integration
+
+- Root allocates P7-03/P7-04/P7-05 shared master/reproduction/selection and
+  named P4/P6 dependency dispatch seams, Backend Verification. Isolated
+  codex/segment-p7-master-v3 from frozen53d818a. Native owns actor/receipt2;
+  S1 owns catalogue3/workspace3 and named P3 adapter. No overlapping edits.
+- Bounded deliverable: explicit master3 requires P1v3 and mixed P2v2,
+  reproduction-v4 and selection3. Preserve strict master1/2 P1 version fences,
+  unchanged golden bytes/hashes and rejection sets. No lossy downconversion or
+  automatic rewrite of older sources. Controlled renderer provenance is not
+  independent observed pixels or playback qualification.
+- Collect JS/Rust canonical reproduction, cross-version rejection, supported
+  file capture/open/save and P4/P6 fixtures after S1 fields/helpers are fixed.
+  Actual native clip rebind/master export and Runner/XDF remain final gates;
+  no current artifact or foreground app change in this source pass.
+- Native f44170b compilation passes; desktop selection hashes and both master
+  bytes/reproduction matrices match JS. New XR whole-selection hash assertion
+  exposed the established P6 trig-float tolerance boundary. Test-only adjustment
+  compares a JS-locked layout at existing absolute 1e-10 and exact remaining
+  selection bytes; native rerun pending, no product/hash/reader rule change.
+  All 16 file tests pass on D: TEMP/TMP; initial C: StorageFull failures retained.
+  C: has zero free bytes; no cleanup authorized/performed. Native/Runner/S1/root
+  notified to retain new scratch on D: and preserve the foreground app.
+- Follow-up 078a89d native compilation and all 24 Planner tests pass, including
+  six desktop exact selection hashes and six XR geometry/remaining-payload
+  comparisons. Native fba218b and first-freeze fence 54d2521 collected. S1 9f2dc75
+  composition collected next; Main registers additive attest_decode_v2 in both
+  handlers and requires the exact new chain in the actual-mock driver. 58 focused
+  JS checks pass. Actual native rescan/master export and Runner/XDF still pending.
+- Actual native148a806 from-scratch mock failed at attestDecode with
+  decoded-summary-invalid after acknowledged import; unpublished revision2,
+  no master. Graceful EOF exit0/no force. S1 confirms summary2 real logical path
+  versus inherited summary1 wf-placeholder check and owns strict versioned fix.
+  Preserve attempt evidence; no blind reimport. See docs/planner-master-v3.md.
+  Runner12c0395 collected as17629d8; Main registers Start3/action3, compilation
+  pending Root's safe SDK relocation. No opaque-ID recreation or mixed runtime
+  support claim; all-controlled3 remains the next actual integration gate.
+
+### S1 Rust reader and P3 follow-up
+
+Rust reader/P3 follow-up: shared native proof recomputation and exact outer
+geometry equality are enforced through the native owner's derive helper.
+Explicit `research_workspace_contribution::v3` types/readers preserve historical
+dispatch; P3's `validate_and_reproduce_saved_variants_v3` projects immutable
+geometry-free location data through the existing v2 compiler/timeline code.
+Shared canonical JS fixtures reproduce all controlled rotations, absence and
+anamorphic source geometry, workspace bytes and P3 timeline/marker output.
+28 focused JS and 31 standalone Rust checks pass, including historical fixtures.
+The first harness incorrectly selected a cached serde_json without float_roundtrip;
+corrected to the repository-required feature plus matching serde, then all checks
+passed. No product parser relaxation or Cargo/native build was used. Main still
+owns full source-bound combined builds and actual native/application execution.
+
+### 20260912-native-controlled-orientation
+
+- Root allocated P1-06/Runner native media, Backend Verification; isolated
+  codex/native-controlled-orientation from agreed Main53d818a. Native owns
+  actor/strict receipt2 geometry and additive service method; S1 owns catalogue3/
+  workspace3 readers, Main master3/consumer composition. Root schema freeze02
+  requires nine-key controlled geometry with complete nativeDisplayMetadata2.
+- Preserve absent versus explicit tags, reject malformed/conflicting/reflection,
+  configure pinned d3d11videosink through safe property APIs before Play creation,
+  set/readback quarter-turns and fence generation/metadata. Pre-sink snapshots
+  must match raw source/PAR before applying controlled rotation once. No new
+  unsafe, qualification flags, auto fallback or silent later reconfiguration.
+- Pure receipt/derive checkpoint: 11 standalone Rust checks pass (including old
+  geometry and error tests). Tagged absence is an empty struct variant so extra
+  keys reject. No actor wiring/native build or actual playback claim yet.
+  Cancellation and lifecycle handoffs remain unchanged.
+- Actor continuation: safe explicit d3d11 sink installed before Play creation;
+  per-generation policy freezes selected stream ID, metadata revision and typed
+  rotation readback. Later drift fails closed and hides/pauses the child, never
+  reconfigures a frozen policy. Raw tag cardinality is checked before parsing;
+  absent/explicit provenance remains separate. Attestation2 requires paused
+  media and validates raw snapshot aspect before the single geometry transform.
+- Native lib compile passes with the real SDK and verified 827-file pinned
+  runtime. 51 native-media, 9 geometry and 5 shutdown tests pass; one foreground
+  diagnostic remains ignored. Five dead-code warnings include the not-yet-wired
+  additive service and retained legacy types. Evidence: D:/GitHub/.affect-checks/
+  native-controlled-orientation-build-04.log and native-controlled-orientation-tests-01/.
+  Shared Cargo hold released; no production build or foreground launch performed.
+- GStreamer 1.28.6 source basis: gstd3d11videosink.cpp rotate-method getter reads
+  configured method; GstPlay video_snapshot uses playsink convert-sample from
+  pre-sink buffers. This proves configuration, not independently observed pixels.
+  RR11 snapshots remain pre-sink and are not claimed to match rotated display.
+  S1 owns workspace attest/cache/binding, commands and JS bridge; Main registers
+  and composes. Root retains actual rescan and rotated-fixture qualification.
+- Root review follow-up: first configuration now drops the policy mutex guard
+  and revalidates the newly frozen policy before returning to show/play. A pure
+  observation helper rejects changed/missing current track even when old metadata
+  and rotation match, plus metadata/readback drift. Four standalone helper tests
+  pass with D: temporary storage (initial default C: linker temporary write failed).
+  Formatting/diff checks pass; assembled native compilation of this small follow-up
+  belongs to Main/S1. This prevents a source-level first-play race, not an observed
+  playback defect; no EOS or runtime lifecycle behavior is changed.
+
+### 20260912-main-bounded-sink-diagnostic
+
+- Root allocated one external GST_DEBUG observation using frozen1ccd756,
+  exact categories autodetect:5,playsink:5,GST_ELEMENT_FACTORY:4, no color,
+  a new D: log and fresh workspace clone. No production mutation or retry.
+- main-sink-1ccd756-evidence-01 under D:/GitHub/.affect-checks records2/4
+  steps; rescan rejected owner_failed, revision1. Owned42144 exits0 after EOF,
+  without forced termination. The requested GStreamer log exists but is empty;
+  actual selected sink is NOT observed. Do not infer selection from other runs.
+- Runtime verification completes35840ms, actor retained35840ms; EOF61352ms,
+  cleanup61701ms. Timing does not independently prove the rejection cause.
+  Root informed; orientation interpretation and strict readers unchanged.
+- Main separately collected Runner borderfix ca8d8dc. Four headless cases348
+  checks pass in main-runner-border-01; all four screenshots inspected. Evidence
+  is synthetic native/timer rendering only, not the real-video master workflow.
+
+### 20260912-main-exact-missing-orientation-observation
+
+- Frozen native CLI1ccd756, SHA c341b79a3d83e164a757e55f209bc0190a0c610ca05b88f3025ee2e925248a4d,
+  build1m20s and artifact-local runtime827-file verification pass. Actual fresh
+  clone rescan fails attestDecode/native-display-orientation-missing. The native
+  effect is acknowledged but catalogue is unpublished, revision1; no master.
+- Evidence D:/GitHub/.affect-checks/main-catalogue-rescan-1ccd756-evidence-01,
+  transcript SHA a189bc62127a97ab55c55d66d1546e99c1e5dcaa05a2cf94ea93b82a1e6029fd.
+  Owned process3480 exits0. VerificationCompleted20721ms, ActorRetained20722ms;
+  EOF56413ms and NativeJoined/CleanupCompleted56444ms. This is one actual
+  diagnostic lifecycle observation, not playback/physical-timing qualification.
+- Root is reviewing pinned-source absent-orientation semantics. Main has not
+  changed the rejecting geometry rule. Current JS/Rust catalogue readers require
+  explicit-orientation-and-square-pixel-snapshot provenance, so a default-tag
+  interpretation needs an explicit compatibility decision across that seam.
+- Source0ccc7ec additionally retains safe cleanup-failure logging; standalone
+  five-test Rust suite passes. It postdates the frozen1ccd756 executable. Shared
+  Cargo hold released; foreground apps, original workspace and evidence preserved.
+
+### 20260912-native-runtime-verification-cancellation
+
+- Root allocated CLI-SHARED/P1 native lifecycle, Backend Verification; isolated
+  codex/native-verification-cancel from agreed Main0ccc7ec. Actual earlyEOF trace
+  localizes wait before runtime verification completes, not actor teardown.
+- Runtime-only cancellation predicate checks traversal/files and64KiB hash
+  chunks. Existing complete-verification wrapper/build pins stay unchanged.
+  Canceled capability is failclosed/nullcounts, no partial receipt, actual joins
+  and parent retention preserved. No timeout/unsafe/qualification changes.
+- Ten direct-rustc verifier tests pass; capability regression awaits assembled
+  Main test. No Cargo build/processlaunch; original10s failure intact. Details:
+  src-tauri/native-media/VERIFICATION-CANCELLATION-20260912.md. Main owns combined
+  build and root exact hiddenEOF repro; orientation remains separately gated.
+
+### 20260912-main-attestation-reason-refinement
+
+- Main continues CLI-P1/P1 media catalogue Backend Verification, bounded to
+  diagnostics and a preserved-workspace rescan. Actual f81921d rescan completed
+  native effect but remained unpublished at attestDecode/native_media_unavailable.
+  Four driver steps and graceful exit0 are transport evidence only; no master.
+- The error code also originates in workspace display-geometry derivation, not
+  only service admission. Extend fixed reason vocabulary for its four metadata
+  failures and service/actor lifecycle failures; do not change their semantics.
+  Seven focused catalogue/core9 tests pass, including unknown/private-text rejection.
+- Frozen failed evidence is main-catalogue-rescan-f81921d-evidence-01 under
+  D:/GitHub/.affect-checks. Next diagnostic uses a fresh clone and binary. No
+  repeated import, canonical promotion, foreground launch or qualification claim.
+
+### 20260912-native-cli-lifecycle-observations
+
+- Root allocated CLI-SHARED/P1 native lifecycle/R1 close shared seam, Backend
+  Verification. Isolated codex/native-lifecycle-observation from Main c93c4b2.
+  Bounded deliverable: diagnose ten-second EOF cleanup failure without changing
+  cleanup behavior, timeout, actor/input authority or qualification flags.
+- CLI-only fixed enum stderr observations are once per phase, max20 lines,
+  elapsed monotonic milliseconds only; one stalled summary. EOF/drain, exit,
+  cleanup boundaries, verification/initializer and retained actor shutdown are
+  distinguished. Existing Main Master hooks preserved, no actor/input edits.
+- Five standalone std-only Rust tests pass, including best-effort broken-stderr
+  regression requested by Main review; no Cargo hold/build or actual process
+  launch. Main's attestDecode diagnosis has priority; Main owns assembled build
+  and root's improved external driver owns exact hidden repro. Original10s
+  receipt and immutable binaries remain untouched. Details:
+  src-tauri/native-media/LIFECYCLE-OBSERVATIONS-20260912.md.
+
+### 20260912-main-first-native-mock-and-catalogue-diagnosis
+
+- Exact clean356cba7 native-enabled CLI build passes; frozen executable SHA
+  673ea9b7acce68e9c8073359d603a31de596c26c87bd1608660f7a9f35125c5e.
+  First full mock imports the real clip natively but app adoption fails with
+  owner_failed. Effect acknowledged1stimulus, publishedfalse, revision2. No
+  master generated. Evidence/workspace preserved under main-fullmock-356cba7
+  in D:/GitHub/.affect-checks. Driver failure teardown SIGTERM is not clean exit.
+- Root/Main allocate fixed phase/reason diagnostics within existing native_failed
+  issue shape. No raw exception text, paths, stacks or source content forwarded;
+  native receipt and no-publication state remain.44 focused tests pass, including
+  unknown/private-text rejection and actual session effect retention.
+- Next diagnostic selects a copy of failed workspace and rescans existing media;
+  no repeated import/copy mutation and no attribution to incidental plugin warning.
+  This is diagnosis, separate from a new final from-scratch mock. Root owns
+  bounded graceful driver failure cleanup. Native/Runner qualification stays open.
+
+### 20260912-main-unified-consumer-checkpoint
+
+- Main collected Runner baseline and owner chain through acac539, hidden ISI
+  bfc3746, native lifecycle70ca706, supported GUI files3c79d50 and driver963f56e.
+  Main added versioned Runner commands and exact Master cancel/Package/Master
+  join ordering in the off-UI shutdown hook. Clean integration7e5063e.
+- 38 focused Node checks pass. Assembled no-default-feature lib compiles;
+  original test EXE has Common Controls loader failure, retained unchanged.
+  Existing copy-only manifest preparation yields22 Runner +2 coordinator tests
+  passing. Evidence: D:/GitHub/.affect-checks/main-runner-collected-tests-7e5063e.
+- Native owner owns startup-only readiness and exceptional setup ordering;
+  Runner owns remaining typed app mounting. Main retains full production mock
+  and final integration. Cargo hold released. No actual playback, physical
+  timing, final XDF/viewport, canonical promotion or release claim.
+
+### 20260912-root-cli-early-eof-observed
+
+- Root external CLI driver continuation, Backend Verification. Actual immutable
+  native CLI `356cba7` and phase-enabled `1ccd756` both exceeded the unchanged
+  ten-second cleanup grace after a read-only snapshot and deliberate driver
+  assertion; the original failures remain retained, not promoted to passes.
+- `1ccd756` reaches native shutdown at 1009 ms and NativeStalled at 6028 ms,
+  before any observed verification completion or actor retention. Native owner
+  owns cancellation-aware runtime verification from agreed Main `0ccc7ec`.
+- Exact artifact, transcript and phase evidence are documented in
+  `docs/planner-mock-readiness-checks.md`. No runtime setting, qualification flag,
+  master JSON, participant presentation or timing claim changed in this pass.
+
+### 20260912-root-cli-driver-failure-cleanup
+
+- Root, CLI-P7/RR-10 external diagnostic driver, Backend Verification; isolated
+  `codex/segment-cli-driver-cleanup` from `963f56e`. Own driver/test/docs only.
+- Actual native mock attempt at `356cba7` copied the video but failed app
+  publication; the old driver immediately terminated its owned process on the
+  failed assertion. Preserve that failed attempt and do not retry its write.
+- Give subsequent failed runs bounded EOF cleanup before any forced termination,
+  without changing their failed result or issuing another command. Baseline
+  fifteen driver/mock checks pass. Production owners, native coordinator and
+  catalogue diagnosis remain Main's separate lane.
+- Ready: 18 focused checks pass, including orderly EOF cleanup, stalled-child
+  termination and a thrown termination request that still retains the original
+  failure. S5 independent source review found no remaining issues. Final log:
+  `D:/GitHub/.affect-checks/root-cli-driver-cleanup-final.log`.
+  This is external driver verification, not an actual native cleanup claim.
+### 20260912-runner-app-v2-mounting
+
+- Runner / RR-06 and RR-10, named RR-02/03 presentation seams, Backend
+  Verification. Main/root explicitly allocated production `runner/src/app.js`
+  mounting in isolated `codex/segment-runner-app-v2`, base `f590511`.
+- Bounded deliverable: supported master2 uses participantId-only Start; the
+  existing typed presenter survives polling, supplies tagged draft/submitted
+  answers, disables controls while pending and is destroyed on occurrence
+  change, terminal return or disposal. V1 remains separately dispatched.
+- Evidence planned: actual app module in headless Chromium with explicitly
+  synthetic native replies, bilingual required-answer and lifecycle checks,
+  plus existing v1 app checks. Preserve the `bfc3746` neutral hidden-ISI update.
+  No native builds, installed playback, actual XDF or qualification claim.
+- Ready: app2 eight EN/DE cases / 254 assertions pass; existing master1 five
+  cases / 68 assertions pass. Typed values, mandatory completion, rejection
+  correction, pending controls, occurrence identity and disposal are covered.
+  `docs/runner-app-v2-mounting.md` records exact receipts and screenshot limits;
+  cloned verified DOM snapshots are not live native/fullscreen evidence, and
+  German command-line compositor gaps remain outside accepted visual evidence.
+  Main/root own final collection and installed execution/XDF checks.
+
+### 20260912-root-cli-driver-readiness
+
+- Root, CLI-P7 / RR-10 external production mock driver, Backend Verification.
+  Isolated `codex/segment-cli-driver-readiness`, base `f0cdfb1`, worktree
+  `D:/GitHub/affect-tracker-research-cli-driver-readiness-root`.
+- Main actual app composition establishes that published workspace selection can
+  remain media_pending and intermediate P2 imports/saves retain unsaved language
+  drafts. Driver must verify actual native acknowledgement and adoption while
+  allowing only those named domain-readiness issues. Final Save stays strict.
+- Own external driver/mock/tests and handoff docs only; no production owner,
+  compiler, app or native changes. Baseline eight subprocess checks pass.
+  Query settling must use observable readiness; no arbitrary delay as proof,
+  repeat of mutations or fabricated acceptance. Actual native mock is pending.
+- Ready component: 15 focused subprocess/mock checks pass; S5 independent
+  source review and actual native-I/O transcript follow-up report no findings.
+  Actual import can retain `invalid_draft` in other still-empty language slots;
+  allowed only during import, never any save or confirmation. All imports run
+  before the first save. Log: `D:/GitHub/.affect-checks/root-cli-driver-readiness-final.log`.
+  See `docs/planner-mock-readiness-checks.md`. Collect after `f0cdfb1`; this is
+  driver preparation, not a completed production mock or Runner/XDF run.
+
+### 20260912-root-production-mock-driver-preparation
+
+- Root, E2E-RECIPE external driver seam, Backend Verification, roadmap worktree.
+  Added production-only mock driver and strict artifact-semantic comparisons;
+  no app, native, schema or source-asset edits. Full input/command flow and
+  pending executable requirement are in 69/71. No master has been generated.
+- S5 independently identified insufficient final semantic comparison and a
+  missing observed executable-hash check; both fixed. Ten focused driver and
+  comparison checks pass, including thirteen event/routing/layout/input/policy
+  counterexamples; syntax/diff checks pass. This is verification tooling only.
+- Main approved P5 final-save capture exception is now explicit in71. Main owns
+  guarded stepwise reopen and real owner/native composition. Root independently
+  confirmed the reviewed transitional-validation issue is fixed in Main's
+  current coordinator; its complete ten-step fresh-target test yields applied.
+- S1's resumed independent typed-definition review found language/sparse-array
+  defects; S3 aa8717b fixes both and S1's10focused checks pass. S4's native
+  5f786f0 aligns16MiB/80-character/und constraints with62JS parity vectors and
+  22native checks. Main/Runner retain integration ownership. The earlier usage
+  error was terminal, but the fresh usage check permitted resuming the review;
+  no reset/purchase was requested or performed.
+
+### 20260912-native-cli-composition
+
+- Live Preview, CLI-SHARED/P1 real-media and R1/RR-04 named native composition,
+  Backend Verification; root/Main allocated new isolated
+  `codex/native-cli-composition`, base Main `05b8c18`.
+- Collect contextual c87/b348/NM04 native changes while preserving Main's
+  current contract/geometry and strict terminal/partial-metadata corrections.
+  Own named lib native setup/close seams and one off-UI close coordinator.
+  Main retains Runner collection, including its Master shutdown/join hook.
+- Deliver clean production native-Gst CLI build and local verified827-file
+  resource staging. Existing native lifecycle retains parent/event loop through
+  actual initializer/actor exit and successful join; errors/panics keep exit
+  vetoed. No new command/JSON semantics or unsafe boundary.
+- Evidence: focused lifecycle/native tests, embedded frontend/build closure,
+  real SDK/pkg-config native CLI artifact and exact source/resource identities.
+  Actual CLI mock, Runner Start, installed playback, source/redistribution
+  approval, screenshot/physical timing and publication remain separately gated.
+- Native library compile,45 focused media/coordinator tests (one diagnostic
+  ignored),Clippy-specific gate and focused format/diff checks pass. Verified
+  runtime staged at both worktree build input and Windows executable-parent
+  resource path. Clean production native CLI build follows this checkpoint.
+  Main confirmed the reserved Master cancel-before-Package/join-after-Package
+  hook. No CLI process/window or real-media import has been launched here.
+
+### 20260912-main-core9-app-composition
+
+- Main integrates all nine operations with actual app owners, native effect
+  connection/revision barrier, prepared P1 catalogue, P2 source/typed restore,
+  P3/P4/P6 registry confirmation and P7 ordered Open/final prepared Save.
+- Uninstrumented actual Chrome app test passes 40 checks with synthetic native
+  receipts; all nine handlers exercised, including fresh master v2 compilation.
+  Source/disk/native/Runner/physical qualification are explicitly separate.
+- S3 independent review and actual tests drove the P2 context/array/routing/
+  pristine fixes and GUI-compatible prepared P3 reset. GUI typed file adapter
+  parity remains S7/Main work, not silently asserted complete.
+- Exact composition and evidence limits: docs/planner-core9-app-composition.md.
+
+### 20260912-p7-supported-gui-files
+
+- S7, CLI-P7 / P7-03/P7-04/P7-07 GUI/CLI parity seam, Backend Verification.
+  Root/Main allocation, clean base `1747784`, isolated branch
+  `codex/segment-p7-gui-supported`, D:/GitHub/affect-tracker-research-p7-gui-supported.
+- Main approved optional workflow documentAdapter {parseDocument,compileDocument,
+  captureInput}, explicit-version accepted capture and named supported browser
+  open/save helpers. Strict-v1 defaults and existing legacy package dispatch stay.
+- Scope only workflow, browser file helper, accepted capture, focused tests/docs.
+  Main owns app injection, P2 version selection and native GUI registration.
+  No control/schema/compiler/native/publication changes.
+- Baseline26 GUI workflow/browser-file/prepared-save tests pass. Collect exact
+  mixed typed-v2/v1 bytes, stale and failure guards, unchanged-copy handling,
+  browser no-replacement checks and existing receipt/metadata semantics.
+- Ready: 47 focused legacy/supported GUI, capture, prepared-save and architecture
+  checks pass, plus diff check. Log `D:/GitHub/.affect-checks/p7-gui-supported-final.log`.
+  Actual canonical mixed-v2/v1 fixtures use real registry/compiler/readers with
+  typed picker/restore doubles. No installed GUI/native/Runner claim.
+- Exact Main-approved injection and helper contract:
+  `docs/planner-supported-gui-files.md`. Main selects the actual P2 version,
+  injects all three hooks and owns native GUI registration; this worktree stops
+  after the clean handoff. Existing browser concurrency limits remain explicit.
+
+
+### 20260912-p4-prepared-confirmation
+
+- Root/Main allocated CLI-P4 confirmation, Backend Verification, isolated
+  `codex/p4-prepared-confirmation` from Main `2fe9da8`. Own P4 editor/state,
+  focused tests/docs only; no app/native/shared registry or P6 changes.
+- `prepareConfirmation({isCurrent,signal})` returns detached future snapshot
+  getter plus guarded single-use synchronous commit and once-only projection.
+  Existing GUI preparation remains unchanged. Main/S7 received the exact five-key
+  snapshot contract; S7 confirmed compatibility with preparedOwner acceptance.
+- All 70 focused P4 checks and diff checks pass. They cover read-only preparation, actual future/live snapshot parity,
+  abort/edit/reset/dispose/dependency fences, unchanged revision, competing
+  candidates and projection errors. API: `docs/p4-prepared-confirmation.md`.
+  Actual core9 confirmation and real mock remain Main/root integration gates.
+
+### 20260912-p7-registry-prepared-owner
+
+- S7, CLI-P7 / P7-07 named registry confirmation seam, Backend Verification,
+  Root/Main allocation from `2fe9da8`. Isolated `codex/segment-p7-prepared-owner`,
+  `D:/GitHub/affect-tracker-research-p7-prepared-owner`.
+- Optional trusted preparedOwner supplies exact raw five-key future snapshot,
+  isCurrent, synchronous state-only commit and separate afterCommit projection.
+  Registry validates through existing owner validator/dependencies before owner
+  publication, then requires exact future/live equality before acceptance.
+- Existing API and P5 final-save behavior remain. No owner/app/native/schema edits.
+  P3/P4/P6 own detached candidates; Main owns actual command composition.
+- Baseline23 registry tests pass. Collect no early mutation/projection, stale,
+  abort, substitution, future/live equality and dependency rejection evidence.
+- Ready: 41 focused tests pass (23 existing registry, eight prepared-owner,
+  ten existing P5 final-save). Diff checks pass; log
+  `D:/GitHub/.affect-checks/p7-prepared-owner.log`. Snapshot/method substitution,
+  replaced dependency owners, partial/async commits and both projection errors
+  are covered without owner rollback or fake acceptance.
+- P3/P4/P6 owners confirmed exact five-key snapshot, state-only single-use commit
+  and stable detached getter after commit. Their source remains separate;
+  Main owns combined actual-editor/native composition and independent review.
+  Exact contract: `docs/planner-prepared-owner-acceptance.md`.
+
+
+### 20260912-main-app-p1-prepared-restore
+
+- App P5/policy/target prepared hooks now reuse existing control authorities
+  with separate projection; P5 remains unaccepted until final Save. Twenty-six
+  registry/policy checks and 44 actual Planner Chrome checks pass. A prior
+  harness attempt correctly rejected its intentionally invalid sampling draft;
+  fixture setup was corrected and both receipts retained. P2 owner preparation
+  is separately allocated; Main retains app/core9 composition.
+- Main split actual app workspace restoration into read-only preparation,
+  synchronous unverified state install and deferred producer/UI notification.
+  Current producer default behavior and immediate GUI restore reservation remain.
+- Twenty-three catalogue/workspace tests pass; actual Planner headless Chrome
+  controller passes 38 checks including new preparation/notification assertions
+  and prior confirmation/media-rebind races. Exact source/evidence/limits:
+  docs/planner-app-prepared-restoration.md. No foreground app/native/media claim.
+
+### 20260912-main-native-effect-js-adapter
+
+- Added exact nine-command metadata/delegation wrapper with P5 final_capture
+  enforcement. Seven wrapper/transport checks pass. App installation is pending
+  actual preparation handlers, not inferred from catalogue metadata.
+- Main implemented the frozen closed native effect RPC adapter, bound to the
+  coordinator's command identity, opaque grant IDs and original public operation.
+  Unknown dispatch and late actual receipts survive stale/cancel rejection.
+  Five injected-transport tests pass; actual boot/core9 registration remains open.
+- Native broker is root's separate allocated lane; S7 owns supported file write
+  and the exact additive WriteSupportedRecipe native-effect variant. No duplicate
+  native filesystem or mutable editor authority was introduced. API/evidence:
+  docs/planner-native-effects-adapter.md.
+
+### 20260912-p7-supported-native-files
+
+- S7, CLI-P7 / P7-04 / P7-05 named supported-v2 file seam, Backend Verification.
+  Root/Main allocated isolated `codex/segment-p7-supported-files`, base `1fc6cdd`,
+  worktree `D:/GitHub/affect-tracker-research-p7-supported-files`.
+- Add supported strict read/write entrypoints sharing existing native filesystem
+  machinery and unchanged compact save receipts. Legacy file APIs retain their
+  accepted versions. Main additionally allocated only WriteSupportedRecipe in
+  native effects; existing WriteRecipe remains strict v1.
+- Main approved signatures without guard arguments. Broker/effect pre/late
+  guards, command dispatch/lib/app/Runner changes remain integration-owned.
+  Standalone test harness needs the four supported native reader dependencies.
+- Baseline: ten existing native recipe-file tests pass at the clean base.
+  Collect exact V1/V2 bytes, malformed/unknown/hash/size rejection, old-reader
+  rejection, collision/no-clobber, linked-path rejection and late-ack evidence.
+  No unsafe, schema/receipt change, source substitution or runtime claim.
+- Ready: 14 native file tests and nine native effect tests pass; rustfmt and
+  diff checks pass. Logs: `D:/GitHub/.affect-checks/p7-supported-baseline.log`,
+  `p7-supported-files.log`, `p7-supported-effects.log`. D temporary directories
+  were used; Main's integration-preview Cargo target hold is released.
+- Library tests retain two baseline warnings. The effect harness build reports
+  14 unused-code warnings in the not-yet-wired production library and one existing
+  unused native-media re-export warning in the subset harness; none suppressed.
+  Exact API and dependency handoff: `docs/planner-supported-recipe-files.md`.
+  Root/Main owns supported dispatch and source adoption; no actual CLI mock,
+  runtime, packaging, qualification or publication claim is made.
+
+
+### 20260912-main-native-v2-registration
+
+- Main collected S4 form/corrections/master2 as 197b91c/2856785/a071506/d60ce66
+  and registered the four native typed-form/P2/master/support modules in lib.rs.
+  Combined cargo check --no-default-features --lib passes (20.96 seconds,
+  ten existing unused-code warnings retained). No native features or runtime
+  command qualification follows from this compilation check.
+- P4 e13643f and P6 daf4fd9 collected as 5b6a8f2/c6e3505; Main's 19 P4 owner
+  plus 21 P4-state/P6-restore checks pass. P3 collection df8cdc4 passed 49.
+  Additive board histories retained; conflict-marker/whitespace checks pass.
+- Actual core9/native file dispatch, real owner registration, unified executable
+  and final mock/Runner/XDF remain open. Shared build-target hold is released.
+
+### 20260912-main-prepared-confirmation
+
+- Main split registry acceptance into async prepareAcceptance and synchronous
+  commit/afterCommit. Existing accept reuses the same validator and guards;
+  no second acceptance store or automatic confirmation is introduced.
+- Twenty-three registry checks pass, including no early acceptance/notification,
+  idempotent commit, once-only projection, cancel/clear/edit fences and legacy
+  dependency/revision behavior. CLI confirmation/final-P5 composition remains
+  pending; docs/planner-authoring-consequences.md records the exact API.
+
+### 20260912-p4-prepared-content-restore
+
+- Root-allocated CLI-P4 / P7 Open seam, Backend Verification, isolated
+  `codex/p4-prepared-restore` from Main `928b395`. Own editor/state, focused P4
+  tests and docs only. P5 remains frozen; Main owns actual registration.
+- Added `prepareRestoreContent(value,{savedWorkspaceContribution,
+  savedFeedbackContribution,isCurrent})` returning read-only guard, synchronous
+  state commit and separate synchronous projection. Existing `restoreContent`
+  reuses it. Actual dependency readiness stays unresolved and acceptance cleared.
+- Evidence and exact API: `docs/p4-prepared-content-restoration.md`. Focused
+  real-owner tests pass 65/65, and diff checks pass. They cover immutability, stale/lifecycle/dependency guards,
+  competing preparation and partial projection failures. No native/UI/Runner
+  or integrated Open claim; Main receives a clean stopped handoff.
+
+### 20260912-main-master-v2-compiler
+
+- Main's app save callback now routes explicitly verified typed canonical JSON
+  through existing workspace storage with exact source-byte hash and no fabricated
+  CSV receipt. Eight source/prepared-save/P2 checks pass; actual native invocation
+  and source/adoption composition remain unqualified. Registry projection split
+  f933037 separately passes 21 tests and is allocated to root's prepared Open.
+- Main added explicit master2/reproduction3/selection2 JS APIs, reusing existing
+  non-P2 algorithms and preserving strict V1 entrypoints and canonical fixtures.
+  Fifteen focused old/new compiler/file tests pass. API and synthetic mixed
+  EN/DE parity fixture factory: docs/planner-recipe-v2-integration.md.
+- Root explicitly requested parallel composition: S4 owns new native P2/master2
+  decoder/support-dispatch files, Runner owns worker/presenter/versioned answer
+  integration, root owns P7 prepared restore/file-workflow seam. Main retains
+  shared app/lib/native CLI and final registration. No owner test is a full
+  native CLI/Runner/XDF completion claim.
+
+### 20260912-cli-open-sequence-coordinator
+
+- Root review found intermediate P7 validation could retain a missing-target
+  issue after successful full restoration. Main defers sequence validation to
+  finish, preserves projection/observer errors, and adds a final-target regression.
+  The focused consequence/session gate now passes 55 tests.
+- Root approved Main's openRecipe-only sequence extension with fixed ten-step
+  order and explicit terminal finish. Revision advances before real synchronous
+  installs; attempted/completed progress survives partial throws and late cancel.
+  All other consequences retain one publish and their original result shape.
+- Main's 54 consequence/session checks pass, covering retry/no redispatch,
+  cancel/stale between awaits, busy reads, missing/duplicate steps, partial owner
+  and final source-adoption failures, and projection completion retention.
+  Documentation: docs/planner-authoring-consequences.md. This coordinator is not
+  yet connected to native Open or the actual prepared owner restore boundaries.
+
+### 20260912-p2-typed-main-collection
+
+- Main collected S3 ffe11d8/b5e93dc/51ef031 as 9b2b127/c21443f/3c161a5.
+  The 20 focused form, typed-authoring and legacy P2 owner tests pass on the
+  combined integration source. Both additive board histories were retained;
+  conflict-marker scan and diff whitespace checks pass.
+- This is source integration, not native source-save, master v2 export or
+  Runner qualification. S3 owns the approved detached prepared-save follow-up;
+  Main retains native persistence and state-only publication composition.
+- The existing German TAS local preset remains unchanged. No foreground app,
+  canonical worktree, publication or research source text was modified.
+
+### 20260912-core-consequence-composition
+
+- Main collected root's e511931 coordinator as5039344. Combined owner/adapter/
+  driver gate passes163; added frozen detached native request identity context
+  passes49 consequence/session checks. Native grants/effects remain unregistered
+  until original-request binding and native acknowledgement retention are wired.
+- Root confirmed P5 final-save-only: confirmSegment(P5) reports final_capture;
+  the driver confirms P1/P2/P3/P4/P6 and final save accepts current Live Preview.
+- Existing async multi-owner Open cannot be labelled one synchronous adoption.
+  Root approved a narrowly explicit multi-step Open protocol preserving partial
+  restore evidence; concrete API is pending. All other consequences retain the
+  one synchronous publish rule. S3 owns the requested staged questionnaire-save
+  seam; Main retains its native write and definition/module composition.
+- S4 owns the new standalone native FormDefinition validator; Main stays on
+  core9 integration. No source duplication or v1 reader widening is permitted.
+
+### 20260912-native-master-v2-decoder
+
+- Main/root allocated S4 the new native P2/master2/supported-dispatch lane from
+  `5f786f0`; Backend Verification, `codex/segment-native-master-v2`. Main/Runner
+  agreed the typed supported API plus existing typed policy accessor before use.
+- Explicit mixed LikertV1/FormV1 P2, reproduction-v3 and selection2; no v2-as-v1
+  rewriting. Existing non-P2 algorithms are reused; old master edits are only
+  visibility for shared helpers. Main owns lib/file-service; Runner execution.
+- Exact JS30291fc detached-generated desktop/XR/location fixtures bind native
+  master/matrix and selection checks. Existing P6 derived geometry alone retains
+  its strict absolute1e-10 tolerance; authored content and identities stay exact.
+- Final focused native gate passes71/71; rustfmt/diff checks pass. Initial
+  test-only numeric equality and XR projection failures are retained; exact
+  identities/limits and handoff are in `docs/native-planner-recipe-v2.md`.
+### 20260912-runner-typed-form-component
+
+- Root allocated RR-06/RR-10 typed answer validation/presentation after stopped
+  information commit `388399e`. Isolated `codex/segment-runner-typed-forms`;
+  complete dependency chain includes frozen `7da84a9`, S3 `ffe11d8`/`b5e93dc`/
+  `aa8717b`, and S4 `c4237b2`/`2deaf4a`/`5f786f0`. Main retains production
+  lib/P2/master-v2 composition. Runner did not add a duplicate definition reader.
+- Native closed typed values, atomic draft/submit replacement, every-field
+  completion, exact text/whole-number/choice checks, native latency retention
+  and definition-derived response rows are verified independently. Three focused
+  native tests and twelve focused Node tests pass. Native EN/DE output matches
+  the JS row reader with exact values, labels and calculated latencies.
+- Actual headless EN/DE forms each pass 22 controls/layout checks at 1920×1080;
+  source-derived prompts/options, no default answers, whitespace/missing/invalid
+  rejection and explicit Prefer not to say are covered. Evidence and exact API
+  handoff: `docs/runner-typed-form-component.md`.
+- This is a component checkpoint with fictitious values/synthetic elapsed times.
+  Production master-v2 Start/worker/stream integration, actual CLI-created EN/DE
+  execution and final saved-XDF acceptance remain open. The presenter is not
+  mounted and the native component is included only through its standalone test
+  harness until Main's master reader APIs are ready. User-opened apps are intact.
+
+### 20260912-p2-native-form-validator
+
+- Language follow-up: max80 characters and case-insensitive `und` rejection,
+  matching S3 `aa8717b`. Final focused native suite passes 22/22 with 62 pinned
+  JS parity cases (21 accepted / 41 rejected); 16 MiB correction stays intact.
+
+- Follow-up from Runner/S3: align the initial JS/native 4 MiB cap to the frozen
+  contract's 16 MiB bound. Focused regression accepts >4 MiB and rejects >16 MiB
+  while preserving all individual field limits. Corrected suite passes 22/22
+  through the exact-source external standalone harness. Main/Runner collect this fix.
+
+- Main/root allocated S4 the standalone P2 / E2E-DEMOGRAPHICS native validator,
+  focused tests and docs only; Backend Verification, isolated branch
+  `codex/segment-p2-native-form`, Main base `f3a2bc2`. Previous P4 work is frozen.
+- Main/Runner agreed the exact public typed API before edits. The module reuses
+  existing canonical JSON/hash authority, admits whole-float JSON integers while
+  rejecting negative zero/coercion/unsafe values, and preserves text exactly.
+- Evidence: final native suite 22/22, both frozen EN/DE byte/hash fixtures,
+  malformed contracts and 62 production-JS-reference acceptance/canonical
+  vectors; rustfmt/diff checks pass. See `docs/native-form-definition-v1.md`.
+- Main owns lib/master/app integration; Runner owns answers/mandatory submission,
+  participant controls and XDF. No historical reader, integration or other-segment
+  source changed, and no runtime/qualification claim follows from these checks.
+
+### 20260912-cli-helper-collection-and-target
+
+- Main, CLI-SHARED / CLI-P7 bounded integration pass. Collected native selection
+  grants0cdfde9 as20012c8, native effects163946e asa8589ef and explicit P7 target
+  3308468 asb0e4c6b. Native modules are source-collected, not yet registered or
+  exposed through stdin. Their existing receipt/authority contracts are retained.
+- Target edits now use the same GUI acceptance/export invalidation path after
+  shared-session publication, only if the target actually changed. Policy-only
+  changes do not invalidate target-dependent P6 acceptance through this hook.
+  Eighteen session, four native adapter and seven architecture tests pass.
+- Both sides of additive board conflicts are retained. A second trailing board
+  conflict block was missed in b0e4c6b and removed immediately in this follow-up;
+  no source conflict or owner receipt content was discarded. Native helper gates
+  wait for Preview's short timing-sensitive attempt07 build hold to finish.
+
+### 20260912-local-preset-native-readback-passed
+
+- Main completed the local German TAS vertical slice: exact-source installation
+  and reopening, eight source-bound full-Planner C/E UI cases, then two actual
+  embedded native CLI sessions at e439018. Both returned installed/ready through
+  native IPC + production importer, rejected metadata edits, retained revision0
+  and exited0. Distinct owned browser PIDs/fresh profiles were observed.
+- The earlier609/827 wrong-build/profile startup failures and first embedded
+  harness leaf-path mismatch remain retained. Final receipts, binary/transcript
+  identities, OS namespace and limits are in docs/questionnaire-local-presets.md.
+- Native study-copy persistence, unpackaged-app visibility, master/Runner and
+  current-user-window reopening remain separate gates. No public TAS wording,
+  process takeover, workspace migration, canonical promotion or publication.
+- Root owns consequential coordinator; S3 now owns bounded P2 typed-form JS/editor
+  implementation from e439018 plus frozen7da84a9 fixtures. Main retains app and
+  native/master dispatch. Other frozen native/Runner/P7/About handoffs remain
+  ready for the next named integration passes, not silently declared collected.
+
+### 20260912-p2-typed-demographics-authoring
+
+- Root allocated S3 P2 / E2E-DEMOGRAPHICS production JS/assets/editor/shared
+  owner authoring, Backend Verification, after frozen contract7da84a9. Isolated
+  D:/GitHub/affect-tracker-research-p2-typed, codex/segment-p2-typed-demographics,
+  Main-agreed base e439018; fixture collection5dcaf25 preserves both board entries.
+- Standalone form validator ffe11d8 is frozen for Runner consumption/independent
+  S1 review. Main approved new explicit P2 v2 dispatcher, preserving strict v1
+  generic APIs, and typed save sourceFormat:formDefinitionV1. Main retains
+  app/native source-save and Rust/master integration; Runner owns execution.
+- Actual editor shares typed sheet state with CLI. New addDemographics/updateForm/
+  setFormItem plus existing reorder/modules/routes; exact public EN/DE assets.
+  Main explicitly allocated only the two asset-copy/allowlist build hunks.
+  Scope, API, checks and limits: docs/p2-typed-demographics-authoring.md.
+- Pre-edit baseline15 passed; validator/fixture8 passed; Research regression915
+  passed before final raw-draft refinement. Desktop11/Pages256 closure passes.
+  Chrome and Edge HTTP component receipts use actual editor/shared JS session
+  and explicitly synthetic source-save callbacks. No native/whole-app/Runner
+  completion claim; final checkpoint receipts follow. The follow-up prepared
+  P2 save/publish seam is a separate Main allocation after this checkpoint.
+
+### 20260912-cli-webview-profile-correction
+
+- Main, CLI-SHARED lifecycle seam, Backend Verification. Actual6098972 preset
+  readback exited2 on native startup deadline before ready; failure evidence is
+  retained. Read-only process evidence showed its renderer used the default
+  shared EBWebView profile, not its fresh D: profile.
+- Pinned tauri-runtime2.11.3 `WebviewAttributes::from(WindowConfig)` omits
+  data_directory. Main now builds exactly one fixed CLI research window through
+  the native builder's explicit data_directory setter, hidden/unfocused; normal
+  Planner/Runner creation is unchanged. No existing process/profile is touched.
+- Twelve focused adapter/driver checks pass. Actual rebuilt process/profile
+  and preset IPC readback remain pending. Earlier transport/readback receipts
+  remain valid for their observed commands, but did not prove profile isolation.
+- The609/827 verification builds also omitted tauri/custom-protocol and could
+  load a dev URL. Neither produced ready/readback; they are retained failures.
+  CLI now rejects tauri::is_dev() before any profile/window, and the dedicated
+  build helper explicitly enables embedded assets. Audit earlier receipts using
+  their exact commands. Profile proof now inspects only the owned child's browser.
+### 20260912-runner-information-field-hardening
+
+- Root independently verified XDF02 using pyxdf and independent Python, without
+  production reconstruction imports or producer JSON. Its review passed all
+  78 frames/26 transfers, complete embedded source, two complete frozen answer
+  records (including older optional metadata), all ten ordered occurrence pairs,
+  affect bounds and both actual footers. Synthetic timing/coded demographics and
+  dirty-build limitations remain explicit in the independent report under
+  `D:/GitHub/.affect-runner-master-build/root-independent-information-xdf-02-review.json`.
+- Root identified comma-joined property-name checks as ambiguous. The Runner
+  information and prior dictionary readers now compare actual property count
+  plus every required key. A focused comma-collision negative and old dictionary
+  compatibility assertion accompany the change. No schema or accepted source
+  semantics change. This small hardening commit is independently collectible
+  from the active typed-form branch; typed implementation remains separate.
+
+### 20260912-p2-demographics-contract-fixtures
+
+- Root allocated S3 a bounded P2 / E2E-DEMOGRAPHICS fixture/contract pass after
+  Main and Runner agreement. Backend Verification, new isolated
+  `D:/GitHub/affect-tracker-research-demographics-contract`, branch
+  `codex/segment-p2-demographics-contract`, Main-agreed base `6098972`.
+- Scope: new contract doc, two small canonical public EN/DE project-authored
+  form definitions, hash manifest and focused fixture assertions. No production
+  editor/master/Runner implementation or capability closure. Exact schema,
+  provenance, presentation and typed-answer handoff is in
+  `docs/demographics-form-contract-v1.md`.
+- All new Runner submissions require every displayed item, including new
+  execution of old packages; original required metadata and historical readers
+  remain preserved. The exact user quotation/date/Runner task reference is in
+  the contract. V2 Start uses participantId; demographics answers never allocate
+  participants/variants. Main owns collection and future implementation scope.
+- Fixture handoff ready: existing canonical P2 baseline 1/1, new fixture checks
+  4/4 and diff check pass. Manifest binds exact 1329-byte EN and 1359-byte DE
+  files and definition hashes. Native canonical parity, actual UI/CLI authoring,
+  Runner controls and XDF reconstruction remain explicitly unimplemented here.
+
+### 20260912-local-preset-installation-namespace
+
+- Main now owns S2's released actual installation. Windows packaged-process
+  AppData virtualization exposed an initialization-only path mismatch; resolve
+  the fixed ordinary namespace once and pin it, retaining every source/reparse/
+  identity/no-clobber guard. Native gate 9 passed, 2 ignored; explicit actual
+  installation plus fresh-store exact reread 1 passed. No personal data moved.
+- S5 completed eight actual full-Planner Chrome/Edge saved/draft cases at90e69d2,
+  with injected reader/writer receipt limits and reviewed screenshots. Native
+  readback of the rebuilt candidate remains separate. See the local-preset doc.
+- Root owns the consequential session/contract in its isolated D worktree;
+  S6's late-recovered canonical partial diff is preserved externally and must
+  not be silently discarded or overlaid onto the newer integration session.
+
+### 20260912-local-preset-native-composition
+
+- Main, P2 named native/picker seams, Backend Verification. Collected the
+  isolated fixed-source store/helper as `79e073b`. Native Planner now owns one
+  optional real app-data preset store (including private CLI sessions), two
+  fixed-ID read/install commands, and the existing picker's local choices.
+  Source installation accepts bounded bytes, not renderer-selected paths.
+- Adding the local preset uses the existing pristine table loader and guarded
+  source-save flow. A work-folder receipt precedes accepted definition adoption;
+  missing workspace leaves an explicitly unsaved draft. No automatic Section 2
+  confirmation, public item text, scoring or redistribution claim is added.
+- The first full combined Node run passed 913/914: the prior CLI native adapter
+  was missing from the explicit native-adapter architecture allow-list. Added
+  that one named adapter, not a general invocation exception; the platform
+  bridge remains the owning mirror-map row. Failure log is retained in
+  `D:/GitHub/.affect-checks/local-preset-main-20260912/node-regression.log`.
+- Native command checks, corrected full regression and actual preset picker /
+  workspace-save evidence remain in progress. S2 owns the explicitly authorized
+  one-root private installation receipt; Main owns native IPC verification.
+- Composition validation now passes 914/914 Node tests and 7 focused native
+  tests (one explicitly external-source test ignored). C: was full: preserve
+  the ENOSPC/linker failures, use only process-scoped D: scratch, and retain the
+  real user app-data root for the preset. Exact receipt paths and limitations
+  are recorded in `docs/questionnaire-local-presets.md`.
+
+### 20260912-p7-native-effects
+
+- S7, CLI-P7 / CLI-SHARED named native seam, Backend Verification, allocated by
+  Main. Branch `codex/segment-p7-native-effects`, base `23e8f3a`, isolated worktree
+  `D:/GitHub/affect-tracker-research-p7-native-effects`.
+- New native helper consumes owned typed effects, checks current before entry,
+  and preserves the actual owner receipt/failure alongside late supersession.
+  Existing workspace and create-new recipe writer retain filesystem authority.
+- Only helper, tests and handoff documentation; Main owns lib registration,
+  broker/grants, wire receipts, app/compiler/adoption. No new unsafe boundary,
+  media attestation, questionnaire source substitution or runtime qualification.
+- Evidence: focused real temporary workspace/source/recipe operations, early
+  guard no-effect, late guard receipt retention and truthful error categories.
+- Ready for Main collection: eight focused native-effect tests pass using actual
+  owner modules. Rustfmt and diff checks pass. Log:
+  `D:/GitHub/.affect-checks/p7-native-effects-test.log`. Existing library has ten
+  dead-code warnings; the subset harness has one unused-import warning from
+  existing native-media exports. No production warnings were suppressed.
+- Planner/Runner prerequisite asset builds and their boundary checks pass.
+  The first harness compile failed on module resolution, corrected in the test
+  harness only. Production registration, broker integration, native stdin,
+  physical media and runtime qualification remain Main/Runner-owned.
+
+
+### 20260912-root-cli-consequences-coordinator
+
+- Owner: Chat Orchestrator, isolated branch `codex/segment-cli-consequences-root`
+  in `D:/GitHub/affect-tracker-research-cli-consequences-root`, base `23e8f3a`.
+  Main explicitly transferred this unfinished shared seam from S6/S4 to root.
+  Stage: Backend Verification; catalogue CLI-SHARED, with named CLI-P1/P2/P7
+  dependencies for file/import/confirmation operations and E2E-RECIPE.
+- The existing session had atomic settings and list edits but no `perform`
+  coordinator. Added optional consequential descriptors/preparation/dispatch,
+  one guarded synchronous adoption, retained effects, compact results and shared
+  cancellation/CAS/retry admission. Existing owner methods remain required and
+  unchanged; no second editor state or native filesystem authority was added.
+- Exact API and constraints: `docs/planner-authoring-consequences.md`. Main owns
+  Rust wire/grants/effects, app registration/services and production adoption.
+  This pass changes only contract/session, their focused tests and these docs.
+- Initial 43 focused tests passed. Expanded all-owner run exposed a missing
+  worktree dependency and a changed P1 rejection code. Reused the exact lock-
+  matching installed dependency tree and preserved `consequential_operation`.
+  The subsequent all-owner session/native-adapter regression passed 151 tests. The 29
+  new coordinator cases include late acknowledgements after cancellation,
+  destruction or stale dependencies and exact no-redispatch retries. No native
+  filesystem, rendered UI or actual Runner execution is implied by these tests.
+- Additional proven fixes: reentrant query rejection cannot release an outer
+  publication lock; comma-joined property names cannot spoof exact argument keys.
+  S4's independent read-only review reproduced an owner-only drift omission in
+  dispatch's guard. It now composes the owner guard until adoption, then follows
+  its own adopted session revision. A focused regression covers both outcomes.
+  Final post-review all-owner gate: 152 tests passed, including 30 new
+  consequential coordinator cases; `git diff --check` passed.
+  No capability checkbox is newly completed. Full production operation
+  registration, CLI-authored timestamped mock JSON, saved-file reopen/versioning,
+  real Runner execution and independent XDF reconstruction remain outstanding.
+- Canonical S6 partial changes were preserved separately, not overwritten here;
+  Main is the sole integration owner and must reconcile that historical diff.
+
+### 20260912-cli-integrated-owner-registration
+
+- Main, CLI-SHARED named composition seam, Backend Verification. All seven
+  isolated owner adapters are collected into `codex/segment-planner-cli-shared`;
+  the pre-composition focused gate passed 123 tests at `3d94619`. P5's prepared
+  fixed-control helper is collected as `8b091d3`.
+- Register actual P1–P7 editors in one session, mount P2 routing on that same
+  session, fence disposed UI gestures, and return the real P2 source-store
+  acknowledgement. No second draft/compiler, automatic confirmation, file-path
+  setting or native media readiness is introduced.
+- Frozen core consequential operation names/arguments live in
+  `docs/planner-cli-consequential-commands-v1.md`. They are implementation scope,
+  not evidence of working native file/media commands. S3 owns new-only native
+  path grants, S7 proposes native effect normalization, S2 owns a new-only local
+  German TAS preset store/helper. Main retains actual app/native composition.
+- Evidence now: focused owner/session tests, actual rendered full-app owner
+  registration and parity, then clean native executable read/edit/readback.
+  Real media import, final bilingual mock, local preset installation and Runner
+  correspondence remain separate observed gates; existing user windows stay
+  untouched. Public questionnaire redistribution remains unapproved.
+
+### 20260912-smoke-progress-and-reassigned-stalled-tasks
+
+- Actual all-owner native CLI and independent earlier synthetic XDF receipts
+  are retained in69. Root independently read the latter with pyxdf 1.17.0:
+  profile hash, 22 contiguous observations, ten occurrence start/end pairs and
+  footer count pass; zero affect samples and no answers/full recipe were present.
+  This is explicitly earlier synthetic evidence, not complete-XDF smoke success.
+- C: reached zero free bytes during builds; failed linker/storage evidence is
+  retained. RR11 moved its own generated target to D:, recovering roughly 3 GB;
+  this is limited headroom. New task build/temp/evidence uses process-scoped D:
+  paths. No broad cleanup or deletion of unbound CLI profiles is authorized.
+- Repeated systemError stopped S2 and S6 progress. Main confirmed S6 → S4
+  transfer of the proposed shared consequential session API, inspecting partial
+  work before writes; S6 receives an explicit stop. S2 receives an explicit stop
+  for installation/new demographics. Main owns actual fixed-source Store install;
+  S3, after its frozen CLI grant helper, owns a read-only typed demographics
+  contract proposal to main/Runner/root. Implementation waits for those owners'
+  exact schema/file agreement, not another user permission question.
+- S4 and S5 completed their allocated integrated browser parity gates with
+  explicit actual-session source bindings. Native imports/export and the new
+  typed demographic form still need their own evidence. Main separately assigned
+  S5 local-preset picker verification, preserving its completed P5 source.
+- Preview localized the actual diagnostic stall before actor start inside
+  GStreamer initialization. Async service/actor lifetime code passes focused
+  software checks; real initialized playback/parent-close evidence remains open.
+  A fake-worker test is not a successful native clip run.
+
+### 20260912-complete-xdf-and-demographics — E2E-DEMOGRAPHICS / E2E-XDF
+
+- Direct user steering requires full real Runner JSON/panels/video/ISI behavior
+  and complete reconstruction from the saved XDF's primary information stream.
+  New shipped EN/DE demographics: full name, age, gender and handedness. Root's
+  exact scope, bounded protocol seam and acceptance requirements are in69;
+  capability rows60 remain open. Use clearly synthetic smoke responses.
+- S2 owns typed bilingual form/Planner contract proposal; main owns shared
+  master/native reader integration; Runner owns participant input and answers,
+  sequenced chunked startup bundle, observations and independent reconstruction.
+  Names/age are not fabricated Likert options. Preserve explicit old-version
+  dispatch. Main and both owners agree exact new contracts before source edits.
+- Root approved Runner's new master-only information envelope on the same marker
+  outlet, bounded startup chunks and integrity commit before acquisition. Actual
+  recipe/selection/definitions/results become reconstructable without sidecars;
+  matching video assets remain external. Actual smoke and qualification remain
+  distinct from the earlier synthetic LSL fixture.
+- Actual native `23e8f3a` seven-owner CLI smoke passed: 155 settings, 32 owner
+  operations, eight commands, exact readback, rejection without revision change,
+  exit0. Root recorded exact executable/transcript receipts in69 and supplied
+  captured descriptors to the About owner. S7 owns the discovered missing
+  explicit presentation-target authoring descriptor.
+- Main requested and root allocated S6 a new isolated shared consequential
+  session/contract lane; exact API proposal before code. Main retains app/wire/
+  native composition; S3 owns grants and S7 effect helper. Earlier P6 is frozen.
+
+### 20260912-maintained-cli-library — CLI-DOCS / CLI-SHARED
+
+- Explicit user follow-up requires a dedicated GitHub Pages About CLI library
+  and maintained `for-ai` documentation. Root owns new71 and central capability
+  allocation; Online Version owns `site/about/` and source-derived public
+  catalogue/navigation in an isolated research worktree. Main integrates and
+  coordinates publication. No duplicate command authority or new CLI ingress.
+- Stage: Backend Verification with documentation/UI evidence for the new About
+  surface. Root records segment inputs/outputs, command workflow, exact timestamp
+  naming, evidence limits and recurring maintenance duties. Public inventory must
+  distinguish internal grant descriptors from public absolute-path operations.
+- Main froze actual P1–P7 app registration at `23e8f3a`; the native binary still
+  represents the older policy-only `680842a` checkpoint. S4/S5 are allocated
+  exact-source integrated-session rendered parity reruns. Source registration is
+  not native command verification or complete mock export.
+- External driver now accepts synchronous action resolvers using detached,
+  validated prior replies. This lets the actual mock use generated occurrence
+  IDs and actual saved basenames without an alternate compiler or guessed IDs.
+  Eight focused driver subprocess tests pass, including resolver identity
+  isolation and rejection of asynchronous/non-object actions before dispatch.
+- CLI-DOCS stays open until the public page, drift/link checks, visual receipts
+  and deployment correspondence exist. E2E-RECIPE/E2E-RUNNER remain open.
+
+### 20260912-native-counterevidence-and-rendered-parity
+
+- Main collected the frozen P1–P7 owner handoffs at `3d94619`; registration,
+  hooks and consequential commands remain in progress. S4 and S5 have bounded
+  actual rendered-control parity follow-ups in their own qualification files;
+  main retains shared app ownership and will bind final candidate reruns.
+- Root independently inspected the actual Gst clip diagnostic. Test exit0 and
+  decoded frames coexist with stale failure reasons in every active snapshot.
+  Do not call it clean playback. Initial S1 terminal latch `9a68e7c` is held for
+  a corrective partial-metadata follow-up and actual combined diagnostic rerun.
+  Evidence and exact artifact identity are in69.
+- S7 retained and hash-verified the six pinned upstream source archives and
+  license texts; full transitive runtime closure and approval remain open.
+  Live Preview next proposes exact production parent/actor lifetime seams;
+  no new unsafe boundary, Start flag or shared edit is implied by a proposal.
+
+### 20260912-source-closure-and-companion-coordination
+
+- S7's file-writer handoff remains frozen. New isolated RR-04 evidence lane:
+  corresponding-source/runtime provenance audit, additive source-provenance
+  document and receipts only. Verify primary upstream facts and exact mapping;
+  do not change pin approvals, capabilities, package layout or product code.
+- Root verified the separate researcher request in **Match landing page app
+  icons** for an experimenter browser companion. Reserved RR-11 for that task;
+  it owns the bounded amendment and isolated companion modules, coordinating
+  shared hooks with Runner and main. Participant input/recording remain local.
+  That separate feature does not enlarge this local CLI/mock validation goal.
+- German TAS local input is ready and root reproduced its production import;
+  exact hashes and source limits are in69. The missing-source question is
+  resolved for the local mock; actual CLI import and final export remain open.
+
+### 20260912-native-terminal-repair — RR-04/E2E-RUNNER
+
+- Root independently reproduced the NM-09 source finding: matching-generation
+  nonterminal callbacks can replace Failed/Ended in native `state.rs`.
+- S1's P1 handoff remains frozen. S1 has a new isolated RR-04 allocation owning
+  only `research_native_media/state.rs`, focused module tests and handoff docs.
+  Preserve new-generation preparation and inspect explicit seek callsites;
+  delayed events must not reopen terminal playback or turn failure into success.
+- Live Preview retains the actual actor diagnostic and adapter audit; main is
+  sole integrator. No new unsafe boundary, qualification flag or platform change.
+  Production fixes and diagnostic execution remain pending their receipts.
+
+### 20260912-cli-native-selection-grants
+
+- Owner S3, explicitly reassigned by main/root after frozen P3 completion to
+  the bounded CLI-SHARED native I/O helper; Backend Verification. Isolated
+  `codex/segment-planner-cli-io`, C: `affect-tracker-research-planner-cli-io`
+  worktree, main base `3d94619`. Prior P3 branch remains frozen/collected.
+- Read all instruction changes through this base, plus main's frozen
+  `docs/planner-cli-consequential-commands-v1.md`. Main retains broker, wire,
+  registration, wrappers, app/native composition and active-request authority.
+- Allowed implementation: new `research_planner_cli_io.rs`, its own tests and
+  API documentation only. Retain native paths behind bounded purpose/request/
+  session/fingerprint grants; renderer sees opaque IDs and bounded questionnaire
+  source bytes/hash/basename/format. Existing Workspace/S7 own import, media
+  verification and writes. No compiler, editor, native actor or unsafe changes.
+- Main approved the exact proposed API, one-use claims and limits before
+  implementation. Implemented six purposes with session/request/full-request and
+  ordered-selection fingerprints, original admission/error retention, no eviction,
+  consumption before revalidation/read, cancellation/close and path-free errors.
+- Questionnaire source is at most 4 MiB, preserved byte-for-byte as bounded
+  `bytesHex` with length/SHA-256/basename/format/grant ID. This fits the broker's
+  16 MiB frame for arbitrary bytes; the existing importer still owns compilation.
+- Windows focused harness: 17/17 passed (15 new module tests, 2 existing error
+  tests). Includes actual junctions/replaced ancestors, file-type substitution,
+  existing-writer rejection, exact source snapshot timing, identity/purpose/replay,
+  revoked/closed sessions, byte/count/path and retained-capacity limits. Scoped
+  Clippy `--test planner_cli_io --no-default-features -- -D warnings -A dead_code`
+  passed; the allowance covers unused existing APIs in the standalone harness and
+  no-default-feature library. Existing `research_planner_recipe_file::tests`
+  baseline passed 10/10. Rustfmt and diff checks passed. Logs/source hashes are in
+  `D:/GitHub/.affect-preview-checks/cli-native-io-20260912/`.
+- Integration contract: `docs/planner-cli-native-selection-grants.md`. Main owns
+  registration, active request/CAS/lifetime checks, wrappers, downstream service
+  calls and retained external-effect/adoption receipts. Ancestor checks are not
+  handle-pinned against adversarial concurrent directory namespace replacement;
+  this limitation is explicit. No new dependency/unsafe, file writes or existing
+  source edits. Production CLI integration and native E2E proof remain with Main.
+
+### 20260912-tas-input-resolution — E2E-RECIPE/P2
+
+- Researcher authorized retained English TAS-20 for the local mock and asked
+  root to search for German. No further English permission question is pending.
+- Root downloaded and visually checked Handrack's university-hosted appendix
+  A8 (20 items, five anchors); exact URL/hash/source limits are in69. S2 owns
+  external localmock CSV preparation, production importer validation and
+  independent prompt/anchor comparison. No public bundled-asset change.
+- All P1–P7 owner adapters now have ready handoffs. Main reported an actual
+  hidden CLI nine-command policy smoke pass on a dirty candidate; clean build
+  and root independent production-driver evidence are still pending.
+- Runner may publish a bounded versioned initial profile message on its new
+  master marker stream, with recording attached first, followed by observed
+  event envelopes. Preserve v1, exact source/selection identities and actual
+  clock timestamps; subscribers missing the profile report incomplete evidence.
+  This supports stream-only reconstruction without an unsafe metadata API.
+
+### 20260912-cli-ui-parity-followup — E2E-UI
+
+- Root read-only owner/source audit identified missing direct P2 graph/route and
+  module-placement controls, and P3 stable-identity reorder controls. Existing
+  S2/S3 owners allocated local UI follow-ups; main keeps shared composition.
+- P5 dormant compatibility values stay read-only under V2, matching disabled
+  UI and preserving bytes. P3 internal allocator/identity draft stays read-only
+  publicly; closed user operations and strict Open/recovery retain authority.
+- Shared2310efc session tests independently rerun:13 pass. Current isolated main
+  candidate178d453, canonical460f516. No production native CLI/mock/Runner
+  execution success yet. See69 for exact evidence limits and pending inputs.
+
+
+### 20260912-p7-cli-target-native-effects
+
+- S7, CLI-P7 / P7-05 / P7-07, Backend Verification continuation allocated by Main.
+  Isolated branch `codex/segment-p7-cli-target`, base `0b9da49`, worktree
+  `D:/GitHub/affect-tracker-research-p7-cli-target`.
+- Current owner projects policy controls but omits the explicit Review target.
+  Deliverable: P7 target control projection and focused command/restore tests.
+  Shared session, app composition and native registration remain Main-owned.
+  Native helper boundary is being recovered with Main before implementation.
+- Baseline: 13 authoring-session tests pass. No schema, compiler, provenance,
+  source questionnaire, runtime or qualification changes are allocated here.
+
+
 ### 20260912-p6-cli-owner-adapter
 
 - Owner S6, CLI-P6, Backend Verification, explicitly allocated by Chat
@@ -86,6 +1238,412 @@
 - Integration owner: Add segment confirmation flow. Owner interface resides in
   its CLI worktree at `docs/planner-authoring-command-api-v1.md`; all owner tasks
   receive exact interface/file boundaries before implementation.
+
+### 20260912-p7-cli-file-versions
+
+- Owner S7, P7-03/P7-04 shared file adapter; Backend Verification continuation
+  explicitly allocated by integration after the user's local CLI/version naming
+  request. Branch `codex/segment-p7-cli-files`, isolated existing P7 worktree,
+  base `460f51600298db910a52b25f25e8268dd722569b`.
+- Deliverable: strict bounded native recipe intake, native new-file saves with
+  UTC timestamp names and collision handling, matching browser name suggestions.
+  Extract only the Planner file helpers/command adapters; preserve the legacy
+  experiment-package writer. No authoring/compiler, session, bootstrap or Runner
+  changes. Integration subsequently allocated the one module-registration line
+  in `lib.rs` to this branch; integration retains all CLI routing/lifecycle.
+- Existing source has strict parse/readback but replaces a selected native file
+  and suggests only recipe ID. New native saves must refuse existing targets;
+  filenames never change scientific JSON or hashes. Evidence covers canonical
+  bytes, malformed/oversized input, collisions, regular-file/link policy,
+  cancellation/staleness and shared native/browser filename fixtures.
+- Browser selected handles cannot establish atomic create-new exclusivity.
+  The adapter now rejects nonempty files before opening a writable stream.
+  Existing empty files and concurrent browser writers cannot be distinguished
+  atomically; timestamp suggestions do not close that parity limitation.
+- Native filenames are `<recipeId>_YYYY-MM-DD_HH-mm-ss-SSSZ.json` in UTC, with
+  `_001` through `_999` for collisions. The native writer creates a random
+  sibling staging file with `create_new`, flushes and strictly reads it, then
+  publishes a hard link without replacing any destination and verifies final
+  bytes. A destination filesystem must support hard links (exFAT cannot use
+  this writer); there is no weaker replacement fallback. Existing selected
+  files, directories, dangling links and linked/reparse parent paths are denied.
+  Ancestor checks do not claim handle-pinned protection against an adversary
+  concurrently replacing the directory namespace. No unsafe boundary is added.
+- Every returned save receipt binds exact canonical bytes/hashes. If final
+  verification fails after publication, the file may already exist and must
+  be reported as written but unverified, never acknowledged Saved or treated
+  as a no-write rejection. Integration approved `PlannerRecipeWriteError`
+  `{error: CommandError, publishedBasename: string|null}`; both native writers
+  return this error, while the GUI adapter preserves its stable error envelope
+  with `recipe_file_written_unverified` and only the safe basename.
+- Integration additionally allocated existing XR/full-Planner file test fixtures
+  to model a newly selected empty file on each Save. The full-Planner HTTP
+  helper creates each file with `wx`, bounds incoming bytes and verifies all
+  previous saved versions remain unchanged. No recipe/geometry behavior changes.
+- Status: **ready for integration**. `npm test`: **773 pass**. Native
+  `cargo test --locked --no-default-features --lib`: **244 pass**, including
+  **10** focused file tests. Clippy `--no-default-features --all-targets --
+  -D warnings -A dead_code`, formatting and diff checks pass.
+- Background Chrome/Edge actual Planner Save/Open/rebind cycles each pass
+  **65 checks**, with three separate disk files per browser, all exact SHA-256
+  `09dfedfee8309e4813fb3383bbdc7f6326d1be30bee55f2bd14fef89f1a0d948`.
+  Both final Review PNGs were inspected. The amended XR master fixture passes
+  **19** Chrome checks. Its older Edge `--dump-dom` harness returns empty stdout
+  despite a PNG; no completed Edge XR receipt is claimed. Both XR PNGs were
+  inspected, but images do not substitute for that missing receipt.
+- Evidence is under `D:/GitHub/.affect-checks/p7-cli-file-versions-{chrome,edge}`,
+  `p7-cli-file-xr-chrome` and `p7-cli-files-{js-suite,native-suite,clippy}.log`.
+  Receipts bind base `460f516` plus exact changed source hashes/working-tree
+  status. Final integration identity, CLI lifecycle/coverage and installed/OS
+  picker qualification remain integration-owned; no foreground app was opened.
+
+### 20260912-cli-p4-authoring-adapter
+
+- Owner S4, **CLI-P4**, Backend Verification, explicitly allocated by Chat
+  Orchestrator. Baseline Planner remains complete. Isolated branch
+  `codex/segment-p4-authoring-cli`, base `460f51600298db910a52b25f25e8268dd722569b`,
+  worktree `C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-p4-authoring-cli`.
+- Read the frozen shared command interface in Main's Planner CLI worktree and
+  every changed for-ai document in lexical order against the fully read fa64e8d
+  snapshot; unchanged documents retain that complete reading. The companion
+  amendment supersedes historical two-mode/blanket Runner-deferral statements.
+- Baseline P4 had one editor/state owner, strict profile/conversion, complete live
+  P1/P5 geometry and asynchronous restore/preparation; no CLI owner adapter or
+  detached prevalidated synchronous draft commit existed.
+- Deliverable: `planner-authoring-p4.js`, typed ordered field/operation staging,
+  honest readback/validation, explicit owner unit conversion and read-only derived
+  geometry. Minimal P4 editor/state/dependency seams only; no alternate compiler,
+  saved schema, shared app/gateway, native, network or Runner changes.
+- Main owns registration/bootstrap and session-wide edit/dependency invalidation.
+  Root owns CLI capability checklist60/68. Before mutation, 33 existing focused
+  P4 contribution/live/state checks passed on the exact baseline.
+- Evidence now: every writable group read/edit/readback, both methods, fixed-frame
+  unit conversion, incomplete drafts, invalid/unknown/stale/cancelled operations,
+  no staging mutation and dependency drift. Combined native CLI/mock experiment
+  and final session atomicity remain Main's integration evidence.
+- Root subsequently allocated E2E-UI mapping and activated Runner correspondence
+  under `2e6c460`/69. P4 maps all 15 fields and both operations to existing controls
+  and exact JSON paths in `docs/planner-authoring-p4.md`; paired real-controller
+  CLI/UI edits produce the same accepted profile. This pass does not defer the
+  newly allocated Runner goal or implement another owner's consumer.
+- Frozen shared helpers/docs/tests from Main `2310efc` were collected without
+  modifications as `f72d412`. Main accepted the P4 editor injection and a pure
+  staged dependency guard, preflighted before all synchronous owner commits.
+  The required additive `afterCommit()` contract from Main `0138516` was collected
+  unchanged as `e37951b`. All owner state installs before any observer/render work;
+  a notification failure reports an applied/incomplete batch after the revision.
+- **Ready and frozen:** owned implementation `2a99ce8221b339e49b70b5c7d3b231ac62cf3256`
+  contains the adapter, three minimal owner seams, 13 tests and integration/UI/JSON
+  mapping. Main should collect this owned commit on its existing shared foundation,
+  not duplicate the two dependency collection commits. Register exactly
+  `createPlannerAuthoringP4({editor: screenLayoutEditor})`; retain the shared
+  preflight-all, commit-all, safe-afterCommit sequence and publication lock.
+- Final checks: **795/795 Node tests**, including **13 P4 CLI** and **13 shared
+  session** cases; desktop boundary **11 files** and Pages boundary **239 files**.
+  Diff checks pass. Logs and hashes are frozen in
+  `D:/GitHub/.affect-preview-checks/p4-cli-20260912/2a99ce8/receipt.json`.
+  Existing Vite chunk-size advisory remains. Dependencies were reused offline
+  with zero downloads; no Rust changes or fresh native qualification claim.
+- Evidence uses the actual P4 UI controller in minimal DOM doubles and the real
+  shared command session; all 15 settings have paired UI/readback/accepted-JSON
+  evidence, including fresh-editor authoring, both reference methods and units,
+  ordered operations, dependency/cancellation fences and post-commit failure.
+  Main/root retain production hidden CLI, rendered UI and real-media/full-recipe
+  proof. Runner retains its active E2E correspondence allocation. Owned source
+  writers are stopped pending integration; no shared app or Runner files changed.
+### 20260912-e2e-ui-p5-controls
+
+- Root allocated E2E-UI/P5 on the existing isolated CLI-P5 branch: operate all
+  61 writable settings plus preset through actual rendered Planner controls,
+  compare complete contributions with the typed owner, and inspect wide/narrow
+  captures. Record each setting as verified, mode-specific N/A or unresolved.
+- Main additionally allocated the new `planner-authoring-p5-controls.js` seam
+  over fixed DOM controls and injected closure model hooks. Main retains all
+  `app.js`, bootstrap, native bridge and shared harness edits. The exact model
+  proposal was sent before implementation. The existing owner draft remains sole
+  authority; commit installs prepared values, afterCommit projects observers.
+- Stage: Backend Verification. New helper tests and a P5-only rendered harness
+  collect evidence now; final combined-source native CLI/UI and real-media mock
+  are integration-owned. Runner correspondence is active with its separate owner.
+  User windows/focus are preserved; only fresh-profile headless browsers run here.
+
+### 20260912-cli-p5-owner-adapter
+
+- Owner **Implement segment 5**, CLI-P5; explicitly allocated by Chat Orchestrator,
+  Backend Verification. Baseline Planner is complete. Isolated
+  `codex/segment-p5-cli-adapter` starts at canonical `460f516` in the C: P5 CLI
+  worktree; earlier feedback work and canonical source remain unchanged.
+- Deliverable: closed typed setting catalogue and read/ordered-edit/readback for
+  every saved P5 group and inactive alternative. Existing editor stays sole owner;
+  raw invalid draft text is exposed with issues. Staging is detached and has no
+  mutation or native effects; one prevalidated synchronous commit projects state.
+- Source comparison: complete P5 V2 getter currently validates immediately and
+  returns no raw invalid draft. Existing restore is asynchronous and resets test
+  state, so it cannot substitute for the atomic command commit. Main owns the
+  exact raw-reader/prepared-projector app hooks and shared session invalidation.
+- Scope: new `site/src/research/planner-authoring-p5.js`, focused owner tests and
+  owner API/evidence documentation. No app.js, native bridge/contracts, shared
+  gateway, recipe schema, acceptance/export, transient settings or Runner changes.
+- Frozen interface read from shared CLI worktree's
+  `docs/planner-authoring-command-api-v1.md`; required instruction deltas since
+  the prior fully read checkpoint were reviewed in lexical order. Baseline 13
+  feedback contract/envelope tests pass. Evidence will cover all writable groups,
+  inactive alternatives, invalid raw reads, ordered nonmutating staging, stale/
+  cancellation/dependency drift and unchanged canonical contribution semantics.
+- Ready owner implementation: `88a5df2` plus the current compatibility/session
+  follow-up. Shared dependency `2310efc` is collected separately, with no edits
+  to its files. Catalogue: **70** entries, **61 writable**, **7 compatibility
+  read-only**, **2 derived read-only**; two closed operations. All active saved
+  alternatives remain writable. Every writable entry passes both direct owner
+  and actual shared-session set/readback, with canonical contribution equality.
+- Root's E2E-UI decision keeps dormant geometry/visibility/step values read-only,
+  matching V2 UI. Whole input/preset commands cannot bypass that restriction.
+  `inputPreset` takes only `{preset}` and reuses the pure `readDigitalStep` hook
+  for the existing editor's retained value, including analog-to-digital changes.
+  Legacy CLI is unchanged read plus explicit V2 initialization, not a separate
+  legacy editing mode. No dormant UI controls are re-enabled.
+- Final hooks: `createPlannerAuthoringP5({readDraft,readDigitalStep,prepareCommit})`;
+  staged `isCurrent/commit/afterCommit` separates atomic installation from later
+  owner rendering/notifications. Exact field/operation-to-control/model-to-JSON
+  mapping and projection rules are in `docs/planner-authoring-p5.md`.
+- **42 focused checks pass**: 16 P5 adapter, 13 shared foundation and 13 existing
+  P5 contract/envelope checks. Prepared owner hooks are test doubles here; actual
+  combined UI parity/native CLI/file execution remains Main's shared seam. The
+  user's new goal69 activates Runner correspondence under its own owner; this
+  adapter receipt does not claim that wider goal complete or defer its allocation.
+- Final clean software checkpoint `c6b9912a1f23c6ccc70fb511cad10d4e1d149928`,
+  site tree `c9c66b8fa17d3c7451474d3a332eafa75bf6f7df`, passes **798/798 full Node
+  tests**. Log: sibling feedback-checks
+  `cli-p5/full-node-c6b9912.log`. Collect owner `88a5df2` and `c6b9912` onto shared
+  `2310efc`; the intervening `dddd646` is its unchanged dependency cherry-pick.
+  Source writers are stopped. Entry/build/native/UI-parity and real media/file
+  checks follow Main's actual hook installation, not this unregistered adapter.
+- Shared post-publication dependency `0138516` collected as unchanged `70c900e`.
+  **43 focused tests pass**, including the new actual shared-session P5/P7
+  observer-order test: all states install before notifications, publication
+  readback stays busy, P5 render failure reports incomplete at the applied
+  revision, other notifications continue and identical retries do not reapply.
+  No P5 production change in this follow-up; the 798-test receipt retains its
+  earlier exact source binding. Native/real editor evidence remains Main's work.
+
+### 20260912-p3-cli-authoring
+
+- **Ready for sole-owner collection:** application `7851424`, fixture-only
+  framing refinement `cc56fc6`; source writers stopped. Final **800/800 Node**
+  tests pass, including 18 P3 command-owner checks. Desktop11/Pages239 builds
+  pass; no Rust/native source changed. The earlier counts below are checkpoints.
+- Final six inspected browser scenes: Chrome wide/narrow populated and narrow
+  row actions, Edge wide populated (**128 checks each**) at clean `7851424`;
+  Chrome/Edge narrow invalid duration (**133 each**) at clean `cc56fc6`. The
+  final invalid images show both the existing error text and focused field.
+  All 14 operations compare real UI fields and compiled values; all applicable
+  canonical contributions and retained occurrence IDs agree. No browser errors
+  or outer horizontal overflow; intentional table scrolling remains usable.
+- Receipts/logs: `D:/GitHub/.affect-preview-checks/p3-cli-20260912/`.
+  Use `final-{chrome-wide,chrome-narrow,chrome-actions,edge-wide}-7851424` and
+  `final-{chrome,edge}-invalid-cc56fc6`; each receipt binds all 100 served inputs,
+  exact source, browser executable, harness, HTML and inspected PNG hashes.
+  Browser reported versions: Chrome152 and Edge153. Final full-suite log is
+  `node-all-cc56fc6.log`; frontend logs are `desktop-build.log`/`pages-build.log`.
+- Registration is `createPlannerVariantCommandOwner({editor: stimulusOrderEditor})`.
+  No extra shared publish hook: staged `afterCommit()` handles it. Integration
+  owns shared GUI-intent/file invalidation wiring and actual native CLI E2E;
+  root owns CLI-P3/E2E checklist closure. These synthetic P1 boundary/browser
+  receipts do not claim actual media, OS picker, Runner or installed qualification.
+
+- Implementation checkpoint: all 14 closed operations, all nine readback groups,
+  internal exact draft recovery and minimal matching GUI reorder/reset controls
+  are implemented. Public raw draft and all generated identities are read-only.
+  Shared `2310efc` / `0138516` dependencies collected unchanged as `8639b10` /
+  `d47a2b2`; pure `isCurrent`, notification-free `commit`, then `afterCommit`.
+- Root `2e6c460` explicitly adds P3's E2E-UI mapping and comparison; Runner
+  correspondence is now allocated to its separate owner. No P3 Runner edits.
+  Exact hooks, operation/UI/JSON mapping and evidence method:
+  `docs/planner-p3-cli-authoring.md`.
+- Checks before final clean captures: 797 full Node tests at the initial shared
+  foundation; 54 focused P3/editor/shared tests after the observer-phase update
+  and three added regressions. Desktop11/Pages239 closures pass (existing Vite
+  chunk-size warning). Actual Chrome UI/shared-session parity passes all 14
+  operations, 128 assertions at each 1280/800; both development PNGs inspected.
+  Final clean-source browser receipts follow; no native CLI/media/Runner claim.
+
+- Owner S3, CLI-P3 Backend Verification, explicitly allocated by Chat Orchestrator
+  and main. Branch `codex/segment-p3-cli-authoring`, isolated C: P3 CLI worktree,
+  base `460f516`. Required baseline Planner work is already delivered.
+- Existing editor owns named ISIs, variant columns, occurrence IDs and exact raw
+  cells. Existing P3 compiler owns contribution/version hashes, timelines and
+  marker contracts; Runner owns allocation. No new saved schema or compiler.
+- Deliverable: new `planner-authoring-p3.js`, minimal editor capture/stage/publish
+  methods and focused tests. Stable ISI/variant/occurrence IDs address typed list
+  operations; raw draft read/restore retains padding and identity cursor.
+- Read frozen shared command API and root `80b5afa` CLI amendment/68. Baseline
+  46 focused editor/model/catalogue/location checks pass. Collect all writable
+  groups, ordered/invalid/stale staging, exact incomplete readback and unchanged
+  scientific reproduction. Shared contract/session dependency remains main-owned.
+- Main receives exact registration/publication hooks and owns app/native wiring,
+  combined atomicity and real hidden-native CLI evidence. No app.js, bridge,
+  shared gateway, native or Runner edits; no network, foreground or release claim.
+### 20260912-p2-researcher-local-preset
+
+- Owner implementation ready for Main collection: new native store and metadata-
+  only JS owner/picker helpers; no lib/Cargo/shared composition edits. Full JS
+  **806/806**, native harness **8 passed + 1 intentionally ignored**, separate
+  explicitly supplied actual German CSV native test **1/1 passed**. Real CSV
+  production importer/editor proof preserves exact definition and original bytes
+  at the guarded save callback; the reader/save callback are injected, not IPC.
+  Main retains actual installation, picker, workspace-copy and native/UI gates.
+  See `docs/questionnaire-local-presets.md` for API, evidence and limitations.
+- Owner S2, P2 local-preset continuation explicitly allocated by main/root under
+  user amendment `fa07d1c` (read). Stage: Backend Verification followed by owner
+  UI seam verification. Isolated `codex/segment-p2-local-preset` starts at frozen
+  `7b36f06`; prior CLI/UI commits remain independently collectable.
+- Root clarified that one local installation must be reusable across new work
+  folders. This supersedes the initial selected-workspace-only proposal. Main
+  reallocated a new P2-owned `research_local_questionnaire_presets.rs` service
+  under established native app user-data; do not edit existing workspace code.
+  The study receives its own copy through the existing content-addressed
+  workspace store, so the global preset is never an experiment runtime dependency.
+- Main owns app.js, native bridge/commands/registration and native file grants
+  for installation. Exact new/read/install API and path-free receipt proposal
+  sent before native edits. P2 owns only the new native service, metadata registry,
+  production importer/picker hooks and focused tests. Do not edit lib/Cargo/
+  research_commands or P1's Runner workspace method. No live window, public item
+  text, new unsafe boundary, licence claim or clinical/scoring inference.
+- Evidence to collect: exact hash/size/source identity; bounded fresh reads;
+  unknown IDs, stale owner context, symlink/reparse, missing/corrupt/changed
+  source; user/CLI same owner loader; stale slot/language/cancellation guards;
+  unchanged public preset eligibility. Installed command/UI integration remains
+  main's gate, not a claim from injected tests. Exact Handrack appendix source and
+  local-only attribution are preserved; no additional local-use approval pending.
+
+### 20260912-p2-cli-checkpoint-and-ui-parity
+
+- UI/save follow-up status: implemented, owner verification passing; main's
+  approved app mount and native save/session wiring are still integration work.
+  New P2-local routing editor uses the actual adapter/context, compact existing
+  details controls, no alternate store or raw JSON. Graph topology, prompts/IDs/
+  labels, terminal order, module references/order and before/afterSession controls
+  are direct UI gestures. Existing sheet adds version, item/option IDs, subscale,
+  item/option order and per-item option count controls under advanced settings.
+- Guarded consequential `saveAuthoringQuestionnaire` checks before preparation,
+  native dispatch and adoption, returns the callback's real receipt and retains
+  a returned receipt on late cancellation. Main forwards the guard and actual
+  native acknowledgement. Routing `applyEdits(edits,guard)` must honor teardown
+  cancellation in addition to session revision; no callback contains a file write
+  inside an atomic edit batch.
+- Observed full JS suite **800/800**, focused owner/shared **31/31**, existing
+  actual-app questionnaire recipe **24/24**, desktop build/boundary pass (existing
+  chunk-size warning). New actual-control Chrome harness passes at 800/1280;
+  inspected focused routing and metadata screenshots under
+  `D:/GitHub/.affect-checks/p2-routing-ui-20260912-*`. These snapshots isolate the
+  new controls after full live-view containment checks, not whole-app screenshots.
+  Edge headless twice returned empty DOM/stdout/stderr; no Edge UI claim. Main
+  must use its known Edge/native harness for integrated evidence.
+- Root relayed the user's explicit English TAS authorization for the requested
+  local mock on 2026-09-12. It does not prove public redistribution permission.
+  Root is locating an authorized German TAS-20 source; no fabricated translation,
+  TAS-26 substitution or global public-preload-ready relabelling in this pass.
+
+- Owner S2, CLI-P2 / allocated E2E-UI P2 continuation; isolated
+  `codex/segment-p2-cli-adapter` at canonical `460f516` with main's frozen
+  shared foundation `2310efc` cherry-picked as `05795af`. Main owns app.js,
+  shared session/native bridge and canonical integration. Do not collect that
+  shared cherry-pick twice; collect P2 `28725c8` and its follow-up only.
+- Adapter checkpoint: seven registered groups (five authored), ten closed
+  operations over actual owner drafts; raw invalid values, detached atomic
+  staging, dependency/current guards, provenance and coverage retained.
+  Installation is synchronous; additive afterCommit renders only after the
+  whole shared batch. No source/native save or acceptance inside a field edit.
+- Observed evidence before final checkpoint: 23/23 focused adapter/shared tests
+  and 24/24 existing real-browser recipe checks at 800 px. These are not native
+  CLI or actual Runner correspondence claims. Integration owns those gates.
+- Next bounded deliverable explicitly allocated by Chat Orchestrator: compact
+  P2-local UI for language graph/terminal module order and before/afterSession
+  placement, plus direct metadata identity/subscale parity. Proposed hooks sent
+  to main before UI edits. Preserve Excel table as primary UI, no JSON textarea.
+  Read uncodixfy and Tauri interface-quality reference; reuse existing styling.
+- Source save needs a guarded consequential owner hook and actual storage
+  receipt; existing editor.save alone is not a CLI result. TAS translations and
+  permissions remain independently source-gated. Runner is allocated separately,
+  not a P2 mutation target. No scientific schema/scoring or runtime policy change.
+### 20260912-runner-information-and-mandatory-submission-handoff
+
+- RR-07/RR-08/RR-10, Backend Verification, isolated information-stream branch
+  based on stopped core `0aab279`. Implements the approved bounded primary
+  information envelope, startup before acquisition, full source/selection and
+  native response/observation/outcome records, with independent XDF-only readback.
+  Exact schema and analysis bounds: `docs/runner-information-stream-v1.md`.
+- Direct user requirement on 2026-09-12: “importantly, the questionnaire data is
+  always mandatory to fill out, aprticipants cannot ever leave them empty!”
+  Every new Runner submission now requires every displayed item. This includes
+  older optional metadata, with native master/package guards and UI validation;
+  source bytes/hashes and historical artifact readers are unchanged. Partial
+  drafts never complete forms. Main/S3/root were notified of the shared native
+  `research_native_protocol/responses.rs` guard and exact policy boundary.
+- Evidence: 261 native tests pass, two explicit ignored; eight focused Node
+  checks; five master and 17 legacy headless cases; Runner build and boundary
+  verification. The synthetic XDF `information-synthetic-stream-02.xdf` under
+  `D:/GitHub/.affect-runner-master-build` has SHA-256
+  `9f545514672115d0ac50a82946d31b1123f8a0268b1d8b6fdc4c26a45910d865`.
+  Independent pyxdf 1.17.0 verifies both actual footers and reads 78 information
+  frames plus three affect samples. XDF-only reconstruction recovers all ten
+  synthetic occurrences, complete source/plan, two complete response records and
+  outcome. Actual LSL span is 0.0118323 seconds; synthetic native observation
+  span is about 51 seconds. These clocks must never be conflated.
+- Missing/duplicate/reordered/corrupt/oversized frames, reversed clocks, missing
+  or forged answers and a truncated actual XDF footer reject or remain incomplete.
+  `information-synthetic-stream-02.reconstruction.json`, focused logs and
+  `information-master-ui-01` / `information-legacy-ui-01` hold the evidence.
+- Typed demographics contract `7da84a9` was read in full and agreed. This commit
+  still carries the existing coded master participant preparation and Likert
+  response version 1. Main/P2 own the new schema dispatch; Runner's typed consumer
+  follows separately. No producer CLI mock or actual native video execution was
+  claimed, no qualified capability changed, and user-opened apps remain intact.
+
+### 20260912-runner-master-core-handoff
+
+- Core master consumer is being frozen independently of the newly allocated
+  self-contained information stream/typed-demographics follow-up. See RR ledger
+  65 and `docs/runner-master-execution-v1.md` for implementation and evidence.
+- Main owns shared startup/close orchestration. New `MasterRuntime` exposes
+  nonblocking `shutdown()`, actual thread `is_stopped()`, and `join_stopped()`;
+  the native input fence precedes worker/recorder completion, then actor teardown
+  and parent release. Pending foreign calls retain the parent; no force-exit or
+  qualification bypass is introduced. Runner lib edits are additive modules,
+  state construction and handlers only.
+- RR-11 owner reserves the v1 adapter optional start/finish executor seam and
+  native sample monitor publication after successful storage. Master uses its
+  separate adapter and will publish through the agreed typed monitor projection.
+- Root's new information protocol direction and demographic fields are explicit
+  user allocations. Await S2/main's versioned field contract before consumer
+  changes; preserve every old reader. New work proceeds in a separate follow-up
+  worktree so main can collect the stopped core commit.
+
+### 20260912-runner-master-consumer
+
+- Owner **Experiment Runner**, RR-02/RR-10 and named RR-03–07 consumer seams.
+  Backend Verification, explicitly allocated by Chat Orchestrator for the user's
+  production Planner CLI → exact saved master → desktop Runner test. This bounded
+  allocation supersedes the earlier Runner correspondence deferral.
+- Isolated `codex/segment-runner-master-consumer`, worktree
+  `D:/GitHub/affect-tracker-research-runner-master`, clean baseline `3301440`
+  explicitly merges canonical `460f516` with stopped Runner candidate `f0eab61`.
+- Deliverable: strict complete master intake, explicit variant/language selection,
+  native reconstruction and supported desktop consumer mappings, exact artifact
+  correspondence evidence. Preserve frozen v1 and every complete P1–P6 field.
+  No allocator, questionnaire translation, recording policy in Planner, new unsafe
+  adapter or qualification bypass. TAS-DE source remains producer/coordinator work.
+- Main owns Planner CLI, shared integration and its Planner-only lib.rs changes;
+  S7 owns Planner file extraction. Runner may add its module declarations and
+  Runner-only handlers/state. Workspace/command shared symbols require agreement.
+- Baseline inspection: Runner still dispatches v1 only. Native master reader and
+  complete owner projections exist. Gst capability deliberately reports Start,
+  format qualification and redistribution review false even when actor is ready.
+  Linked builds, previews and parser tests cannot establish actual execution.
+- Evidence now: strict source/hash/selection and per-field projection tests;
+  real supported desktop path against the producer's eventual exact artifact.
+  Preserve open app processes and their binaries; use a new candidate/output root.
+  Installed/physical qualification remains its own evidence gate.
 
 ### 20260912-p3-native-catalogue-export-command
 
@@ -504,6 +2062,23 @@ ask the owner/integrator to reconcile it. Git worktrees do not live-sync this
 file; follow the integration-owner collection procedure in the workflow.
 
 ## Messages
+
+### 20260912-p2-cli-owner-adapter
+
+- Owner S2, CLI-P2, Backend Verification; explicitly allocated by Chat
+  Orchestrator for the user's local Planner CLI extension. Isolated branch
+  `codex/segment-p2-cli-adapter`, questionnaire worktree, base `460f516`.
+- Deliverable: `planner-authoring-p2.js`, focused owner tests and minimal sheet/
+  editor state methods. Frozen shared interface read completely from integration's
+  `docs/planner-authoring-command-api-v1.md`. No shared app/native/gateway edits.
+- Reuse actual editor drafts and language/module contracts; detached ordered
+  staging, honest invalid raw fields, synchronous prevalidated projection with
+  no native save/import/acceptance. Main injects current app context and commits
+  existing arrays; no second durable questionnaire store or compiler.
+- Verify every writable group, list identities/order, scientific provenance,
+  incomplete drafts and invalid/stale/cancelled staging without live mutation.
+  Source import is a separate consequential command. TAS rights/content and all
+  Runner behavior stay outside this adapter; they do not block implementation.
 
 ### 20260912-p6-master-completion
 
@@ -3355,3 +4930,755 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - Evidence now: typed success/invalid/CAS/cancel/retry and same-session native
   readback. Deferred: complete owner coverage, fresh real-media mock, final
   export integration, installed/physical Runner qualification and publication.
+- First real hidden native smoke passed at `0138516-dirty`: nine commands,
+  current-session P7 read/set/readback, retry, stale/invalid rejection and EOF.
+  Receipt: `D:/GitHub/.affect-preview-checks/planner-cli-unselected-workspace-smoke/receipt.json`.
+  This deliberately no-GStreamer slice proves neither media nor Runner behavior.
+- Follow-up checkpoint hardens returned exit codes, bounded output/retained
+  issues, one-time concurrent completion, EOF drain and safe P7 afterCommit.
+  Eight native broker/wire tests and 18 JS session/bridge tests passed, including
+  the bounded-issue regression. Desktop 11-file closure passed. The clean
+  artifact smoke is still pending at this source checkpoint. No canonical
+  promotion or foreground app launch.
+- Clean first-slice application `680842aee1e01e0c75500c64250dba10130e0663`
+  now passes the actual nine-command policy smoke and three fresh-process
+  lifecycle cases: empty EOF, strict malformed-frame recovery and overflow exit2.
+  Windows returned0 despite Tauri `app.exit(2)` in the prior candidate; the
+  native broker now independently retains a fail-closed terminal outcome.
+  Failed prior receipts remain under `planner-cli-lifecycle-d988f3e`.
+- Final first-slice receipts are in `D:/GitHub/.affect-preview-checks/`,
+  `planner-cli-680842a/receipt.json` and `planner-cli-lifecycle-680842a/receipt.json`.
+  Executable `affect-tracker-research-integration-preview/src-tauri/target/debug/affect-planner-cli.exe`
+  SHA-256 `0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
+  Its readiness frame binds the exact clean commit. Root is cleared for its
+  independent production-driver check. This no-GStreamer policy-only build is
+  not final owner integration, media verification or Runner evidence.
+- Next in the same confirmed shared-integration allocation: collect frozen
+  P1–P7 owner adapters and file service, then install existing editor hooks and
+  separate native consequential commands. Preserve this milestone executable
+  until root finishes the independent driver. Canonical remains `460f516`.
+
+
+- 20260912-p7-cli-target handoff: 26/26 focused authoring-session, recipe-component
+  and recipe-file tests pass; git diff --check passes. Main approved the exact
+  target enum. Existing factory signature remains createPlannerPolicyCommandOwner
+  ({root,onCommit}); target control is planner-presentation-target. Main owns
+  target-change invalidation and current target selection in composition.
+
+### 20260912-p2-prepared-save-owner
+
+P2 follow-up allocated by Main: read-only preparation and synchronous state-only
+save commit, retaining normal-save converter parity. Implemented in isolated
+`codex/segment-p2-prepared-save` from `51ef031`. Main owns native write and
+module/definition adoption; no app.js, Rust, shared CSS, Runner or P3 changes.
+API and receipt/stale rules: `docs/p2-typed-demographics-authoring.md`.
+Evidence: 920 Research tests pass, including preparation/no-write, detached
+payload, stale edit/reset/cancel, and legacy callback receipt regressions.
+Native and full composition evidence deferred to Main. Validator correction
+`aa8717b` separately closes S1's language/sparse-array findings (10/10 focused).
+
+### 20260912-root-p7-ordered-reopen-preparation
+
+- Root allocation confirmed by Main: P7-03/P7-04/P7-07 and CLI load/edit,
+  Backend Verification in `codex/segment-p7-recipe-restore`, isolated
+  `D:/GitHub/affect-tracker-research-recipe-restore-root`, base `3b6c4f0`.
+- Own only `planner-recipe-restore.js`, `planner-file-workflow.js`, focused
+  tests and documentation. Current reopen validates the full v1 source then
+  invokes asynchronous owner restorations; that is not atomic CLI publication.
+- Add explicit supported-reader injection without broadening the legacy v1
+  entrypoint. Prepare owner changes in dependency order and publish their
+  actual synchronous state boundaries through the established ten-step P7
+  sequence. Partial failure preserves current state and denies saved-source
+  adoption; no rollback, native effects or invented media readiness.
+- Main owns supported v2 parsing, real owner prepare/commit adapters, native
+  source reads, app registration, contribution notification seam and final
+  source adoption projection. Collect focused old-reader, sequencing, stale,
+  cancellation, malformed adapter and partial-progress evidence here. Actual
+  production CLI master export/reopen and Runner execution remain separate.
+- Ready coordination seam: explicit reader injection, single-use prepared Open,
+  asynchronous owner preparation and actual synchronous publication/adoption.
+  [API and integration cautions](../docs/planner-recipe-restoration.md).
+- Sixty-four focused sequence/file checks pass, including eleven new publication
+  tests with real session/registry and synthetic owner adapters. S1 independently
+  reviewed both source modules and reran all eleven checks with no findings.
+  The wider Planner/variant pass initially lacked local `@tauri-apps/api`; the
+  matching Main dependencies were reused without an install or dependency edit,
+  and all 261 checks then passed. Exact log:
+  `D:/GitHub/.affect-checks/root-recipe-restoration-20260912/planner-focused.log`.
+  Main's deferred acceptance notification dependency is `f933037` (local
+  cherry-pick `7894025`). No actual native invocation or final mock claim.
+
+### 20260912-p3-prepared-content-restoration
+
+- Owner S3, root-allocated Backend Verification follow-up, P3-08/P3-03.
+  Branch codex/segment-p3-restore, D:/GitHub/affect-tracker-research-p3-restore,
+  clean Main base 928b395. Prior P2 source remains frozen.
+- Added read-only prepareRestoreContent with synchronous state-only commit and
+  separate projection. Saved content remains unconfirmed pending real media.
+  Existing GUI restore reuses the seam while preserving immediate supersession;
+  existing CLI draft staging is unchanged. Main owns app/native Open integration.
+- Pre-edit baseline 41/41; focused completion 49/49. See
+  docs/planner-p3-prepared-restoration.md for API, current P1 requirements,
+  lifetime guards and evidence limits. No schema, allocation or Runner changes.
+
+## P6-RESTORE-SELECTION-20260912 — prepared optional XR reopening
+
+- Allocation: Chat Orchestrator, P6-04/P6-05 shared CLI openRecipe restoration seam; Backend Verification.
+- Isolated branch `codex/segment-p6-restore-selection`, worktree `D:/GitHub/affect-tracker-research-p6-restore-selection`, base Main `928b395`.
+- Owner scope: xr-layout-authoring.js, xr-layout-editor.js, focused P6 tests and docs. Canonical checkout and old partial coordinator patch untouched.
+- Prepared exact included/excluded selection is read-only; synchronous commit installs pending/unaccepted content, afterCommit projects/notifies separately. Existing restoreSelection uses the same seam. Request, dependency, revision and disposal guards reject stale adoption.
+- API and evidence boundaries: `docs/p6-prepared-selection-restoration.md`. Baseline authoring 13/13 passed. Focused restoration checks 12/12 passed; existing P6 compatibility checks passed before the fixture-only correction (the first new fixture overlapped feedback and correctly rejected, then its authored offset was fixed).
+- Main owns actual application wiring and independent integration review. No runtime, acceptance, native, foreground, deployment or other segment changes.
+- Final combined gate: 75/75 tests passed across research-xr-selection-restoration, research-xr-authoring, research-planner-xr-roundtrip, research-planner-authoring-p6 and research-xr-layout; git diff --check passed. Ready for Main review; no integration or runtime qualification claim.
+
+### 20260912-root-p7-prepared-final-save
+
+- Main confirmed root's continuation on P7-03/P7-04/P7-07 and CLI final Save:
+  Backend Verification, `codex/segment-p7-prepared-save`, isolated
+  `D:/GitHub/affect-tracker-research-prepared-save-root`, base `a18768c`.
+- Scope: `planner-file-workflow.js`, `planner-recipe-capture.js`, focused tests
+  and documentation. Prepare P5 final acceptance without publishing it; compile
+  detached complete owner content through the existing versioned compiler;
+  reuse the export lifecycle and publish P5 acceptance plus exact saved-source
+  association only after the writer acknowledges matching bytes.
+- Main provides prepared acceptance and its detached validated snapshot, native
+  writes/effect receipts, actual app state/projection adapters and CLI registration.
+  Root must preserve actual accepted state for other owners, unchanged-source
+  reexport, cancellation/stale guards and late-write evidence. No second compiler,
+  fake accepted registry, native write path or user-interface redesign.
+- Collect read-only preparation, v1/v2 capture, exact-acknowledgement, late write,
+  failed adoption, stale/cancel/retry and projection checks. Production CLI mock,
+  actual Runner and XDF acceptance remain required after integration.
+- Prepared final-save/capture implementation is ready. The ten new focused
+  tests use the actual session, registry, v1/v2 compilers and a synthetic writer;
+  all pass. S1 independently reviewed the two source seams and reran these ten
+  tests without findings. The wider Planner/variant gate passes 276 checks.
+  Log: `D:/GitHub/.affect-checks/root-prepared-save-20260912/planner-focused.log`.
+  Existing GUI save/reopen behavior remains covered. No native persistence,
+  rendered final app, mock export, participant run or XDF completion is claimed.
+  [Exact API and handoff](../docs/planner-prepared-save.md).
+
+### 20260912-p2-prepared-recipe-restoration
+
+Main integration follow-up: collected P2 checkpoint b44d8e0 as 5b1afe7 and
+native broker ab22b5e as 107cdc3. Registered the two existing native grant/effect
+modules and the fixed effect/revision IPC commands in the composition root.
+Production library cargo check passes (seven unused-code warnings); focused
+P2 restoration plus architecture gate passes 17/17. The fixed native-effect
+adapter allowlist omission is corrected without widening its IPC endpoint.
+This is Backend Verification of the named P2/P7 shared seam, not end-to-end
+native Open/Save or a rebuilt current-app qualification. Main still owns app
+operation composition and boot wiring; root owns the allocated bridge helper.
+
+- Main-allocated S3 Backend Verification, P2-04/P2-07/P2-08 and P2-02.
+  Isolated codex/segment-p2-restore in D:/GitHub/affect-tracker-research-p2-restore,
+  base342026a. Own editor/helper/tests/docs only; Main owns app/native wiring.
+- Read-only prepareRestoreRecipe validates explicit v1/v2 and builds fresh
+  definitions/presentation entries. Sync single-use state commit and separate
+  once-only projection preserve real owner state without inherited source bytes.
+- Baseline18/18; final focused28/28. Broader1029/1030; sole unchanged native-effects
+  invocation allowlist failure routed to Main. API and evidence limits in
+  docs/planner-p2-prepared-restoration.md. No other owner or schema changes.
+
+### 20260912-root-core9-native-broker
+
+- Main allocated native core-nine CLI operation binding to root, Backend
+  Verification on `codex/segment-cli-native-broker`, isolated
+  `D:/GitHub/affect-tracker-research-cli-native-broker-root`, base `a66c189`.
+- Own `research_planner_authoring.rs`, its wire/operation submodules, focused
+  native tests and documentation. Main retains lib command registration,
+  frontend bridge and app wiring; S7 owns additive supported file reads/writes
+  and the exact `NativeEffect::WriteSupportedRecipe` service variant.
+- Keep the complete original external request identity before replacing CLI
+  paths with one-use purpose-bound grants. Bind native effects to the exact
+  pending request, purpose, non-path IDs, revision and cancellation. Closed
+  native effect/revision IPC uses existing role/window authorization.
+- Reuse the collected grant and effect services; never hold the broker state
+  lock during filesystem work. Retain compact possibly-changed/acknowledged
+  outcomes separately from bounded pending payloads. Changed request reuse
+  rejects, exact retry never repeats a native effect, and lost output does not
+  imply that no file/workspace change occurred.
+- Verify actual temporary-directory effects, denied/malformed/canceled/stale
+  calls, concurrency/retention/admission and original identity preservation.
+  No new unsafe boundary, remote listener, schema/compiler authority, native
+  playback qualification or completed user mock is implied by this pass.
+- Result: all 27 actual-broker focused checks pass, including real temporary
+  workspace/source/media storage, typed master file save/reopen, pending/exact
+  retries, grant/ID/revision checks, capacity and late saved-file outcomes.
+  Synthetic media checks assert storage only. Log:
+  `D:/GitHub/.affect-checks/root-native-broker-final.log`.
+- S3 independently reviewed read-only and identified cancellation starvation
+  under a full four-command work queue. Fixed with one bounded cancellation
+  slot and matching output capacity; exact regression passes. S3 verified the
+  fix in source with no remaining finding from this bounded review.
+- Main approved two temporary test-only module declarations in `lib.rs` because
+  Cargo also compiles the production library. They are excluded from this
+  owner deliverable. Main still owns real registration of the CLI grant/effect
+  modules and both IPC commands. Do not claim final native CLI or mock export
+  from this source-level/service verification.
+- Exact internal IPC, public-operation mapping, returned basename/receipts,
+  retention limits and process-loss caveats:
+  [native CLI broker](../docs/planner-native-cli-broker.md).
+- Final rustfmt/diff checks and focused Clippy `-D clippy::all` pass. The
+  unregistered production effect commands account for unused-code warnings;
+  the subset harness retains one existing native-media import warning. No
+  warnings were suppressed in production source. Clippy log:
+  `D:/GitHub/.affect-checks/root-native-broker-clippy.log`.
+- Excluded test composition is
+  `D:/GitHub/.affect-checks/root-native-broker-test-composition.patch`, SHA-256
+  `f2cc3efbefe55315bf2db9457ef84649e02687117e0d2109edae2f3105f21cd0`.
+
+### 20260912-root-native-workspace-publication
+
+Main collected the frozen bridge as d4b8292; focused bridge tests pass 38/38.
+The native authoring boot now subscribes before its readiness acknowledgement,
+orders revision notices and flushes them before dispatch/replies without
+serializing active commands. The effect adapter accepts a beforeDispatch
+revision barrier and rechecks cancellation afterward. App composition must
+connect that barrier; this does not claim that core9 is already installed.
+Final qualification additionally requires the same saved master in actual
+Runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
+Both final executables require explicit pinned native-gstreamer build support;
+the current builder defaults alone do not establish that capability.
+Planner builder now accepts explicit --native-gstreamer, combining it with
+mandatory tauri/custom-protocol and not forwarding the custom flag to Cargo.
+This does not alter capability flags: qualified_start_available,
+qualified_format_matrix_ready and redistribution_review_ready remain false.
+Runner Start is blocked pending the separately owned claim-specific review.
+No native build, runtime staging, research qualification or capture is claimed
+by this build-option change.
+
+- Main explicitly allocated the P1-03/P1-06/P1-07 shared native bridge seam,
+  Backend Verification, base `13ea36e`, isolated
+  `D:/GitHub/affect-tracker-research-native-workspace-root` on
+  `codex/segment-native-workspace-publication`.
+- Own native-bridge workspace/catalogue prepare and publication only, focused
+  tests and documentation. Main owns matching app state, CLI boot/composition,
+  native command registration and final binary. Prepare runs existing decode
+  authority and returns detached projection data; commit changes bridge state
+  synchronously without UI events. Main composes actual P1 app state alongside
+  that commit, then renders. Legacy GUI retains its event path through the same
+  preparation authority. No new decode engine, settings or qualification claim.
+- Verify withheld publication, exact workspace/catalogue/settings/caller
+  lifetime, cancellation, decode failure, legacy behavior and connector order.
+  No actual native clip playback, production mock export or Runner/XDF result
+  is implied by connector tests with synthetic controller responses.
+- Result: native bridge/catalogue focused checks pass 40/40, including nine new
+  prepared-publication and late-receipt cases. The actual bridge reuses the
+  existing decoder orchestration with synthetic controller responses in these
+  tests; no native playback or final rendered app is claimed. Node dependencies
+  reuse Main's installed tree after matching package.json/pnpm-lock.yaml hashes.
+- S3's independent read-only review identified a late native scan receipt that
+  could adopt the newer workspace as its baseline and clear/overwrite newer
+  content. Fixed all four native scan/import callers to capture their guard
+  before awaiting I/O. Regression covers a workspace change and a newer
+  publication in the same workspace. No partial catalogue is published on
+  decode failure. Log: `D:/GitHub/.affect-checks/root-native-workspace-focused.log`.
+- Frozen connector and combined commit order:
+  [native workspace publication](../docs/planner-native-workspace-publication.md).
+  Main must commit bridge state before P1 app state, then render; projection is
+  detached data, not an event callback. Main's app/boot/lib files are untouched.
+- S3 verified the four caller guards and the regression read-only after the
+  fix, with no remaining concrete finding in that bounded review. Syntax and
+  diff checks pass; there are no HTML/CSS or layout changes in this pass.
+
+### 20260912-p2-prepared-authoring-import
+
+- Main allocated S3 P2-03/P2-04 Backend Verification in isolated branch
+  codex/segment-p2-import, D:/GitHub/affect-tracker-research-p2-import,
+  base2fe9da8. Main owns app/native; no other-owner edits.
+- prepareAuthoringImport validates exact importer result/source bytes and an
+  existing pristine family/language slot, then separates state install from
+  render/notify. Existing loadDefinition shares the private state authority.
+- Baseline13/13; focused completion29/29 including9 new import cases. Exact
+  API/limits: docs/planner-p2-prepared-import.md. No broad/native/build claim.
+
+### S1 / P3 prepared confirmation owner seam — 2026-09-12
+
+- Root/Main allocation: P3-03/P3-08 and CLI-P3 confirmation publication only,
+  Backend Verification. Base `2fe9da8`, isolated branch
+  `codex/p3-prepared-confirmation`. Existing `prepareContribution` compiled and
+  installed confirmation/rendered before coordinator publication. It remains
+  unchanged for GUI callers; the new `prepareConfirmation({isCurrent,signal})`
+  uses the same document/timeline validators without changing state or views.
+- Candidate: detached `snapshot` getter in exact `getSnapshot()` shape
+  `{revision,enabled,pending,contribution,dependencyRevisions}` (no segment key),
+  representing generation+1, enabled/nonpending compiled contribution and the
+  actual P1 revision. `isCurrent` fences owner/catalogue/restore generations,
+  busy/disposed state, caller and abort. Guarded synchronous `commit` installs
+  only once; `afterCommit` renders/notifies once and suppresses stale projection.
+- Main and S7 received the shape before implementation. S7 owns prepared-owner
+  registry composition; Main owns actual app/CLI registration. No app, native,
+  shared registry, P6, persistence or scientific wire changes are included.
+- Evidence: 31 existing editor baseline tests passed. Final focused editor and
+  P3 authoring suites pass 59 checks, including read-only preparation, detached
+  future/live equality, GUI compiler equality, actual P1 rebind, cancellation,
+  stale owner/dependency, competing candidates and single-use projection.
+  No GUI launch, build, native write or end-to-end CLI qualification claimed.
+
+## P6-PREPARED-CONFIRMATION-20260912 — CLI publication boundary
+
+- Root/Main allocation: P6-04/P6-05 Backend Verification, prepared real-owner confirmation for CLI mock completion. Main and S7 received exact API early; S7 confirmed five-key snapshot compatibility.
+- Isolated branch `codex/segment-p6-prepared-confirmation`, worktree `D:/GitHub/affect-tracker-research-p6-prepared-confirmation`, base clean Main `2fe9da8`.
+- Scope: xr-layout-authoring.js, xr-layout-editor.js, focused confirmation tests and docs only. No app/native/registry or other segment edits.
+- API: `authoring.prepareConfirmation({isCurrent,signal})` resolves live P1/P5 without refreshing or mutating, delegates to synchronous editor seam, returns detached future snapshot getter plus guarded single-use commit and afterCommit. Included future has exact validated profile, revision+1 and pending=false; excluded preserves the existing disabled no-op snapshot. GUI prepare remains immediate.
+- Caller/abort, editor revision/file lifecycle and full dependency identities fence both preparation and commit. Postcommit projection is separate and once-only; owner state survives observer failure. Details: `docs/p6-prepared-confirmation.md`.
+- Baseline: 42 existing P6 tests passed. New actual-owner confirmation tests: 13/13 passed. Main owns integration/independent review; S7 owns registry preparedOwner composition. No runtime, native, foreground or research qualification claim.
+- Final combined P6 gate: 88/88 passed (confirmation, restoration, authoring, full-master roundtrip/reproduction, CLI P6 and geometry); git diff --check passed. Candidate ready for Main review; owner work stopped at clean commit.
+
+### S1 / P3 prepared workspace reset — 2026-09-12
+
+- Main follow-up on `aa43e9e`: `prepareReset({isCurrent,signal})` returns guarded
+  single-use `isCurrent/commit/afterCommit`. Preparation changes no editor state
+  or projection. Both this commit and existing GUI reset use one `installReset`
+  authority; it clears P3's old workspace bindings/design only, not P1 declarations.
+  Pending authoring projection is cleared so it cannot reannounce the old draft.
+- Main composes commit after its bridge/app workspace switch, then invokes
+  projection. Caller/abort, editor/catalogue/restore generations and disposal
+  fence stale commits; delayed projection does not overwrite newer state.
+  Existing reset can still supersede busy old work. No shared/app/native edits.
+- Editor plus P3 authoring suites: 61 passing checks, including exact GUI reset
+  state parity, read-only preparation/state-only commit, one projection and
+  stale/abort rejection. No build, GUI launch or native workflow claim.
+
+### 20260912-main-supported-gui-and-native-io
+
+- Main shared P1–P7 composition: actual embedded CLI05b8c18 selects workspace,
+  saves demographics EN/DE and imports/saves all 124,978 local German TAS bytes
+  unchanged. Nine external steps, actual effect/publication receipts, exit zero.
+  Evidence: `D:/GitHub/.affect-checks/main-core9-native-io-run-05b8c18`.
+- Supported GUI helper9843efc is wired into app Open/Save and actual P2 restore;
+  actual-app synthetic-boundary core9 plus GUI typed-copy checks44 PASS.
+  P7 owns additive native GUI reader/selected-writer follow-up; old V1 helpers
+  remain strict. Main retains app integration and Runner collection.
+- Native owner holds shared D Cargo target for pinned runtime composition/build.
+  No native playback, physical ISI, complete mock, Runner/XDF or viewport claim.
+### 20260912-native-startup-readiness-follow-up
+
+- Allocated native/P1 import shared seam, Backend Verification follow-up to
+  70ca706. Root requested setup-error ordering correction; Main approved shared
+  startup-only readiness gate. No other segment or public schema changes.
+- Fallible setup now precedes native actor creation. GUI import/rescan and CLI
+  video effects wait for validated integrity+actor capability before mutation;
+  only two startup-pending reasons poll. Strict local 60s budget does not replace
+  or extend native broker120s; guards and revision ordering remain enforced.
+- 60 focused JS checks, desktop build and 11-file boundary pass. No Rust rebuild
+  or actual-app follow-up claim; immutable70ca artifact untouched. Details in
+  `src-tauri/native-media/STARTUP-READINESS-20260912.md`. Main collects and validates
+  assembled lifecycle/Runner seams. Playback qualification remains open.
+
+### 20260912-p2-import-cli-default-slot-fix
+
+- Main actual-app repro exposed dirty-default slots losing pristine eligibility
+  in prepareAuthoringEntries. Owner staging now carries internal pristine state
+  separately; explicit draft/per-questionnaire edits consume it. No overwrite
+  exception or public schema change. Same isolated import lane, parent e8d0384.
+- Actual P2 allocator -> prepared import -> exact saved bytes passes, while
+  add+edit same batch rejects import. Focused P2/import/save/restore39/39.
+
+### 20260912-runner-minimal-launcher — R1/RR-01, RR-03/06 presentation seams
+
+User requests UI Finalization: minimal first window with Load experiment file,
+a large Start experiment control, Absent-minded professor, Set controller and
+Remote controller connection. Start enters fullscreen on solid black before
+demographics and recipe-ordered questionnaires. Preparation is not acquisition;
+all native Start/input/media gates remain. Recording policy remains Runner-owned.
+Owner: Experiment Runner; isolated Runner worktree, branch
+`codex/segment-runner-minimal-launcher`, base `6377df4`. Current source exposes
+a permanent sidebar/video preview with demographics in the sidebar. This pass
+moves operator details into secondary panels and participant details into the
+fullscreen presentation; adds only a role-gated native fullscreen window command.
+No recipe/record/schema semantics change. Professor/controller meanings are
+pending user clarification; Orchestrator confirms no earlier accepted semantics
+or competing Runner owner. Remote transport is not inferred from a button.
+Baseline: 10 focused Node checks pass. Collect focused UI/lifecycle/error checks,
+black participant captures and frontend/native builds. New-master correspondence,
+physical native execution, device/recording qualification and remote transport
+remain deferred; Planner completion is independent.
+
+
+#### 20260912-runner-minimal-launcher handoff clarification
+
+User clarified future RR-11 full-app professor control versus RR-12 smartphone
+2D affect pad; only preview QR popups are allocated now. RR-07 allows future
+Runner controller overrides; this UI drafts presets/step size and blocks changed
+binding execution pending a native override receipt. User explicitly requires
+large Start -> demographics/questionnaires -> video, without a second start
+screen. Native gates remain. A named RR-04/07 shared adapter seam awaits visible
+input-region preparation before each stimulus after hidden questionnaire layout;
+no Planner authority is changed. Ledger65 records 13 synthetic UI scenarios,
+small-width captures, QR decoding and build/check evidence.
+
+
+### 20260912-runner-launcher-artwork — RR-01 UI Finalization
+
+Direct user follow-up allocates integration of the existing professor, input
+selector and remote SVG widgets from Create professor SVG icon. Continue the
+isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
+approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
+artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+Only launcher image/layout and asset-closure seams change; button labels and
+popups remain. Check SVG external-resource/script absence, actual headless image
+loading/containment at desktop widths, existing popup behavior, frontend closure
+and native rebuild. No new remote, controller override or execution authority.
+
+### 20260912-runner-participant-launcher — R1/RR-03 Backend Verification
+
+Owner: Experiment Runner, codex/segment-runner-minimal-launcher, isolated Runner
+worktree, base d7871ae. Direct user allocation: launcher participant number,
+retention, used-number list, exact sequence preview and participant-prefixed LSL.
+Clarification: used history is scoped to loaded JSON; each JSON has its own output
+folder. Use full canonical-source SHA-256 as folder identity; identical canonical
+JSON reopens the same folder. Original package IDs and bytes remain unchanged.
+Current source: fullscreen-only P001 input, no retained selection or timeline;
+outputs grouped by experiment ID, LSL names directly from settings. Named shared
+seams: RR-07 native outlet names, RR-08 XDF destination, RR-09 storage/recovery,
+Runner-only command registration and launcher composition. No Planner edits or
+successor allocation algorithm. Preserve declared v1 schedules and legacy recovery.
+Baseline: four focused Runner Node checks pass. Collect alias/order/history tests,
+folder isolation/recovery/naming tests, headless interaction and native build.
+Native playback/input/transport qualification and master correspondence remain open.
+
+Participant follow-up handoff: RR-03 input/retention/history/virtual picker/exact
+sequence preview implemented, with named RR-07 naming and RR-08/09 per-JSON output
+seams. User confirmed loaded-JSON history scope and dedicated output folders.
+Ledger65 and Runner README describe the naming-v1 sidecar, full-hash folder key,
+legacy recovery compatibility and exact tests. 656 Node/216 Rust tests, Clippy,
+17 synthetic Chrome scenarios at two widths and independent pyxdf name/timestamp
+checks passed. This continues d7871ae on the isolated Runner branch; canonical
+integration remains owner-controlled. No master allocation, phone app, native
+playback qualification or Planner authoring changes are included.
+# Runner master-v2 integration allocation — 2026-09-12
+
+RR-06/RR-10 Backend Verification: Main/root allocated the Runner worker,
+presenter and information-reader integration on `codex/segment-runner-v2-integration`
+in `D:/GitHub/affect-tracker-research-runner-v2`, based on frozen `b06990b`.
+Consume S4's supported master parser and exact mixed definitions; preserve v1
+execution/readers. Deliver versioned Start/actions/status/responses and typed
+presentation, with focused native/JS correspondence and hostile submission
+checks. Main owns lib/command/app registration; S4 owns P2/master parsing.
+Actual installed EN/DE execution and independent XDF acceptance remain open.
+# Runner supported session intake allocation — 2026-09-12
+
+Main/root allocate RR-02/RR-03 shared `research_runner_session.rs` composition
+to Runner on isolated `codex/segment-runner-session-v2`, base `67ed319`.
+Backend Verification deliverable: supported master1/2 intake through S4's exact
+parser, unchanged PackageV1 reader and per-source directory/participant semantics.
+Evidence: focused supported-source, hostile-version, source-snapshot and selection
+isolation tests; no lib/app/CLI/lifecycle edits in the handoff. Main retains final
+registration and ordered integration; no installed execution claim follows.
+# Runner neutral-before-ISI invariant — 2026-09-12
+
+Root allocates RR-04/RR-05 native transition seam on isolated
+`codex/segment-runner-isi-neutral` from `893f320`. Backend Verification:
+reset authoritative response and displayed status to neutral, withdraw input and
+clear queued/held/repeat state before every interval admission and IsiStart.
+Verify first/consecutive/video-to-ISI and stale input ordering. Preserve current
+ISI input-disabled behavior; no animation freeze, playback strategy or marker
+schema change. XDF's existing markers do not independently attest reset values
+or physical paint; report that separate contract/evidence gap to root/Main.
+# Runner hidden ISI preview reset — 2026-09-12
+
+Root allocates R1/RR-10 Backend Verification continuation from `acac539` on
+isolated `codex/segment-runner-isi-preview`. Apply the native neutral status
+through the existing P5 preview mapping before hiding each interval, so cached
+geometry is reset before Presented. Preserve hidden/input-disabled ISIs and
+existing clocks/markers/sampling. Verify first/consecutive/video-following/next
+video presentation in the headless app harness. No physical paint/timing claim.
+### 20260912-s7-native-gui-supported-files
+
+- Main allocated P7-03/P7-04/P7-05/CLI-P7 native GUI file seam at 9843efc;
+  isolated branch codex/segment-p7-native-gui. Backend Verification compares
+  old GUI v1-only routing with supported master-v1/v2 intake and exact save.
+- Added explicit supported path dispatcher and selected-destination writer;
+  old v1 functions remain strict. Existing load/save commands use supported
+  parsing, retain legacy-package Open, Planner save role and dialog cancellation.
+  Shared staging/atomic no-clobber/readback authority and receipt are unchanged.
+- 16 native file tests and 22 focused browser/architecture tests pass; rustfmt
+  and diff checks pass. Two existing geometry dead-code warnings remain.
+  Log D:/GitHub/.affect-checks/p7-native-gui-files.log. Cargo target released.
+- Main owns integration/app adapters and final picker/installed qualification;
+  no lib.rs, Runner, media or runtime authority changes. No release claim.
+
+# Runner feedback container border — 2026-09-12
+
+Root allocates R1/RR-10 presentation correction on isolated
+`codex/segment-runner-feedback-border`, base bc03f75. Remove inherited 1 px
+container chrome via Runner-only CSS; preserve P5 outline and authored geometry.
+Four representative headless cases pass 348 checks: neutral, strong, hidden ISI,
+next neutral. Visible outer/inner/SVG dimensions now agree at 87.46875 px.
+All four screenshots inspected. Synthetic native/frame-scheduler evidence only;
+Main retains full native mock and collection. See docs/runner-feedback-border.md.
+
+## P1 controlled geometry app wiring — 2026-09-12
+
+S1 continues P1-06/P1-07 Backend Verification on the allocated P1/P3 shared
+seams. App producers, restore/rebinding, geometry projection, and P3 editor
+intake now explicitly select supported-version helpers. Historical public
+readers remain strict; P3 keeps its unchanged geometry-free contribution.
+All 90 focused P1/P3 JavaScript tests pass, including actual editor restore and
+confirmation with workspace-v3. Main owns P7 app wiring and integration.
+Native attest-v2/cache/livebinding and native bridge are the next allocated
+seam; this checkpoint does not claim installed playback or release readiness.
+
+## P1 controlled geometry native composition — 2026-09-12
+
+Main explicitly allocated S1 the P1-06/P1-07 workspace attest-v2/cache,
+Planner/Runner exact v3 livebinding, additive command, and JS controller/bridge
+seams. Implemented on the isolated controlled-geometry worktree. Full outer
+receipt2 remains Rust-owned; portable geometry retains all nested provenance.
+Current files are rehashed and matched by location, identity, duration and full
+geometry. Historical readers and commands stay strict. Main owns lib.rs command
+registration; Runner owns per-entry historical1/controlled2 fresh qualification.
+Historical browser geometry does not silently acquire exact native provenance.
+
+139 focused JS checks pass. Native real-SDK lib compile passes with actor
+54d2521 first-freeze follow-up; all 32 workspace tests pass using a copied test
+executable with the diagnostic manifest. Evidence artifact receipt:
+D:/GitHub/.affect-checks/p1-controlled-workspace-tests-01/artifact-receipt.json.
+Runtime pin verifies 827 files / 340362958 bytes. Eight build warnings include
+unwired integration seams, not a launch/readiness claim. Mixed-native proof
+test extension remains next; Main retains integrated CLI/live/installed checks.
+
+### P1/P3 export compatibility follow-up
+
+Main review of 9f2dc75 identifies an existing closed-v2 consumer:
+research_commands.rs export_video_catalogue_with_picker calls the historical
+validate_planner_video_catalogue before/after its picker and serializes through
+the historical catalogue_bytes type. It therefore cannot export catalogue3.
+The explicit validate_planner_video_catalogue_v3 wrapper exists, but this picker
+has not been allocated for migration in this pass. Keep the failure explicit;
+do not downconvert or silently treat the existing picker as v3-capable. Main
+owns allocation/priority of the P1/P3 export seam after the current integration
+gate. This is separate from supported full-project save and native attestation.
+
+### Mixed catalogue3 routing gate
+
+Root forbids reimplementing the opaque native workspace-file ID algorithm in
+Runner. Fresh RescanResult has workspaceId and summaries with opaque ID, name,
+hash, bytes and MIME, but source is null before attestation. No adequate current
+location mapping helper was found. Mixed-native backend proof equality can be
+tested with direct owner receipts; it is not evidence of mixed Runner support.
+Mixed catalogue3 runtime remains pending/rejected until a versioned native
+registration/location mapping is approved. All-controlled catalogue3 can use
+the uniform explicit attest-v2 loop independently. S1 sent Root a read-only
+registration proposal with native-issued IDs, exact declared content/location
+closure, workspace/scan-revision binding and real prepare fences; no mapping
+or opaque-ID reconstruction was implemented.
+
+Final S1 test extension: real-SDK native lib compiles (7 known unwired/dead-code
+warnings); 33 workspace + 5 P1 contribution + 9 geometry + 4 historical export
+tests pass. Mixed native proof test accepts independently attested old/new
+entries, rejects schema-valid browser substitution and wrong attestation
+version despite matching dimensions. JS controller additionally rejects an
+attestation returned across a changed active generation fence; 49 focused
+bridge/controller/catalogue tests pass. Latest copied diagnostic receipt:
+D:/GitHub/.affect-checks/p1-controlled-workspace-tests-03/artifact-receipt.json.
+The mixed runtime routing and old export limitations above remain unresolved;
+these test results do not promote either capability. Cargo target released.
+
+# Runner master3 intake allocation — 2026-09-12
+
+Root/Main allocate R1 RR-02/RR-03/RR-04/RR-07/RR-10 on isolated
+`codex/segment-runner-v3-intake`, base53d818a. Main owns master3 readers and
+lib registration; S1/native own controlled geometry9, metadata2 and live binding.
+Runner owns plan/session/runtime/protocol/presenter and exact startup3 dispatch.
+Root freezes explicit Start3 request3 and action3 request3, with strict old1/2
+entrypoints; plan/selection/preflight/attempt/status/startup3, typed responses/file2,
+other profile/sample/event/outcome/information1. No timing/reset fields.
+Collect owner dependencies separately from final Runner delta. Verify exact
+native/JS plans, typed mandatory forms, startup/response version hostility and
+per-source history; fresh native attest2 plus exact proof correspondence remain
+required before Start. Synthetic component evidence is not actual execution.
+
+
+Runner master3 component complete: explicit Start3/action3, exact version matrix,
+full owner native proof binding, mandatory typed2 answers for plan2/3 and separate
+source history. 22 Node,350 synthetic actual-app checks,26 native master,
+6 session,37 workspace/contribution checks and six exact native/JS plans pass.
+Runner build/boundary passes. No actual video/XDF/timing qualification claimed.
+Dependencies separately staged through e6f9aa2. Main owns lib registrations and
+integration. Root rejects opaque-ID duplication: mixed native proof routing is
+blocked pending S1 native map; wholly controlled3 uses explicit attest2. See
+[handoff](../docs/runner-master-v3-intake.md). No Cargo target currently held.
+
+## P1 summary2 declared-location correction — 2026-09-12
+
+Main's actual native 148a806 fullmock retained an acknowledged import but failed
+publication at attestDecode(decoded-summary-invalid). Read-only diagnosis found
+summary2 had inherited summary1's wf-ID pseudo-path requirement, contradicting
+scan_planner_videos / attest_native_decode_v2, which return the declared logical
+stimuli/<relative> location independently of the opaque ID.
+
+Main allocated the narrow correction: summary2 now reuses P1's strict canonical
+portable-location parser. Summary1 and its existing rejection set are unchanged.
+No native-ID algorithm, path inference, geometry relaxation or repeated import
+was added. Shared native-decoded-summary-v2.json covers the complete serialized
+producer shape, normalizing only the opaque test ID; Rust's actual workspace
+producer is compared through canonical serialization, while JS consumes that
+same fixture. Unsafe paths, non-NFC names, and legacy-reader crossover reject.
+Direct execution of the original 9f2dc75 validator rejects that fixture; the
+corrected validator accepts it. All 147 focused JS/modularity checks pass.
+
+The added Rust serialization assertion is PENDING compilation: Root paused all
+SDK/Cargo usage for preserved SDK relocation from full C: to D:. Main will
+collect this checkpoint and compile combined source only after Root verifies
+the new SDK path. Existing native results above predate this test addition;
+do not claim a successful native rerun or live import for this correction.
+
+### 2026-09-13 — Root owns final release; delegation stopped
+
+The user has stopped orchestration. Chat Orchestrator is the sole release and
+validation owner on `codex/final-release-validation`, using the transferred
+`affect-tracker-research-master-v3` worktree. Other tasks remain idle.
+
+Pass: P7 export and named P1/P4 composition seams, then R1 intake/execution.
+Run one complete production CLI authoring/save/reopen scenario; proceed to the
+exact saved JSON in Runner only after export passes. Reuse existing component
+checks. Fix observed blockers, retain failures, and avoid unrelated redesign or
+repeated broad suites. Compact UI and JSON remain requirements; strict versioned
+readers and required reconstruction content must be preserved.
+
+At aad1a82, native summary regression passed. Frozen CLI SHA256
+2c9268c84cbb10d74a3eebbcbde3a4447b4fcdca4fb32e6bcded07fb2fbd4062.
+Bundled runtime verification passed 827 files / 340362958 bytes. A wrapper wrongly
+checked LASTEXITCODE after a PowerShell verifier; the verifier itself passed.
+The first launch lacked pre-main DLL resolution and exited 0xC0000135 before any
+command. The next process used its frozen runtime bin on process PATH (no global
+change), imported and natively decoded the real clip, then stopped at P4's old
+workspace reader. Evidence: `.affect-checks/root-release-fullmock-evidence-01`
+and `-02`; neither saved a master. Installed loader qualification remains open.
+
+Root fixes current screen-layout composition AND prepare/restore validation to
+use existing explicit supported workspace/catalogue readers. Historical readers
+remain unchanged. Two focused regressions cover actual producer wiring, full
+proof rejection, and old-reader rejection. All 26 P4 checks pass in
+`.affect-checks/root-release-p4-composition-test-03.log`. The initial new test
+used an unrelated automatic-reference fixture; corrected to derive the reference
+from its actual catalogue. No layout arithmetic or saved schema changed.
+
+Planner JSON export, actual Runner execution/XDF, installed distribution and
+physical display timing remain unclosed. Do not enable qualified Start flags
+from component checks. No FFmpeg rendering capability was selected or added.
+
+Root continuation: the 7e5752e production run reached 31/55 steps, saved all six
+EN/DE questionnaire assets, and rejected the ordered layout edit because setting
+already-selected relative units attempted an unnecessary conversion before a
+reference method was chosen. The shared UI/CLI conversion seam now returns an
+unchanged clone for a supported, already-selected unit; real conversions retain
+all geometry/calibration checks. All 51 focused P4 authoring/layout tests pass.
+Evidence remains at root-release-fullmock-evidence-03 and
+root-release-p4-units-test-01.log. No master was saved in that failed attempt.
+
+The mock's 24% Flubber viewport failed the real maximum-animation fit check:
+its conservative maximum side was 531.3888 px. The mock now requests 12% through
+P4, retaining the same centre; this is a test experiment setting, not relaxed
+validation. Five driver comparison tests pass. The next cold run failed before
+any import effect: runtime verification took 43028 ms, the command ended at
+62393 ms, and owned cleanup required forced termination after its unchanged
+10-second grace. This is consistent with the 60-second startup sub-budget being
+exhausted; the exact GStreamer-internal delay is unmeasured. The startup allowance
+is now 90 seconds within the unchanged 120-second broker deadline, with absolute
+deadline/cancellation checks retained. Fourteen focused startup/transport checks
+pass. This allowance change does not resolve or qualify the stalled native
+shutdown; retain root-release-fullmock-evidence-05 as a release blocker.
+
+Root result: production CLI scenario 55/55 PASS at a1d9110; both timestamped
+77,746-byte master3 files validated and original preserved. Native/JS Runner
+interpretations PASS for EN and DE, six steps each, same exact primary JSON.
+Details and next native gate: [release validation](../docs/release-validation.md).
+No final release, actual playback/XDF or physical screenshot claim. No further
+delegation; root owns the remaining work.
+
+## Root / R1 RR-01 previous-file shortcut — 2026-09-13
+
+Explicit user follow-up; sole-owner implementation and backend/UI verification,
+with no delegation. Added the previous experiment button and Runner-only native
+bookmark command; shared picker only stages a candidate in the Runner role.
+Durable confirmation follows exact source acceptance. Existing JSON unchanged.
+Three native tests and 34 browser assertions pass; desktop/narrow screenshots
+inspected and frontend build/boundary check passed. Scope and evidence are in
+[release validation](../docs/release-validation.md). Packaging and actual execution
+qualification remain the next gate, not a claim of this pass.
+
+## Native-enabled Runner build correction — 2026-09-13
+
+The previously opened developer executable lacked native-gstreamer, causing
+"Native video inspection is unavailable in this build". The Runner desktop
+build script now accepts `--native-gstreamer`, matching the Planner CLI option.
+Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
+default features also include LSL and Windows acquisition.
+
+Built and opened the native-enabled dev executable with its pinned runtime at
+`D:/GitHub/.affect-checks/runner-current-native-2026-09-13/`. Its build receipt
+records SHA256 and scope; use **Launch Experiment Runner.cmd**, which scopes the
+bundled DLL path to the launched process. Direct EXE loader/installed packaging
+qualification remains open. This does not lift the qualified Start gate.
+
+Nine focused Runner reader/master tests passed. All eight English/German
+production-app questionnaire cases passed (350 assertions), using synthetic
+native replies. Evidence: `runner-current-questionnaire-ui-01/receipt.json`
+under the same checks root. Includes typed demographics, Likert presentation,
+answer validation/drafts/submission, transitions and disposal; does not prove
+actual video or real XDF execution. Current build includes the previous-file
+button and questionnaire module.
+
+## Runner readiness refresh — 2026-09-13
+
+R1/RR-01/RR-02: Continue previously reused the launch-time native media
+capability. Because native initialization is asynchronous, a pending snapshot
+could falsely report that video support was absent indefinitely. Both master
+and legacy checks now request current native capability after their media scan,
+reject stale/disposed UI revisions, distinguish startup pending from failure,
+and retain the native failure reason. No Start qualification gate was relaxed.
+
+The production-app en-flow scenario passes 77 assertions with native capability
+pending at boot and ready on the next request. Runner build/boundary checks pass.
+Evidence: `D:/GitHub/.affect-checks/runner-readiness-refresh-ui-01/receipt.json`.
+This fixes stale frontend state; actual native startup success remains a separate
+claim and is not inferred from the synthetic transport test.
+
+## Current user amendment — 2026-09-13
+
+Root continues R1/RR-01/02/06 plus named P1/shared native loading seams: keyboard navigation, loaded-JSON project root and standardized metadata completeness. User clarified that PyAutoGUI belongs only in for-ai as a test utility. [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) records requirements and checked versus pending evidence. No other task is being delegated work.
+
+
+## Runner version and participant preselection — 2026-09-13
+
+Direct user allocation R1 RR-03/RR-08/RR-09/RR-10, Backend Verification on
+codex/segment-runner-version-usage, base468de36,
+D:/GitHub/affect-tracker-research-runner-version-usage. Latest user decisions:
+least-used version across all participants; first unused participant number;
+EVERY matching existing XDF counts, including stopped/partial recordings.
+Defaults are advisory and manually overridable; repeat sessions remain allowed.
+New names P01_V1_UTCtimestamp.xdf use the one-based saved variant order. Native
+usage scans this exact JSON's recordings folder, not completion receipts. Unknown
+legacy names are excluded and counted visibly. No existing files are renamed.
+New named recorder command v2 preserves old recording command/request/status and
+XDF/LSL data contracts. Native Start rejects participant/version changes against
+an armed named recording. Main/root owns integration with concurrent keyboard
+and recipe-root changes; edits to app/view/lib are bounded. See
+[version preselection](../docs/runner-version-preselection.md) for behavior and
+component evidence. Installed execution/release qualification remains separate.
+
+
+## Runner recent-file list and autoload — 2026-09-13
+
+Direct user allocation R1 RR-01/RR-02, Backend Verification on isolated
+codex/segment-runner-recent-list, base3e69d1e plus owned preselection dependency
+05c6307 (equivalentd3ae312). Preserve root keyboard/project-root changes.
+Autoload last accepted JSON once at startup; provide Load new experiment and
+all saved recent-file choices. Native keeps paths, validates selected file and
+sets its project root; durable history advances only after exact frontend
+acceptance. Existing single bookmark migrates without loss. Verify persistence,
+missing/rejected/cancelled files, selection locking and startup/UI behavior.
+No playback, recording, Planner or installed-release claims in this pass.
+
+
+Recent/autoload component ready:4 native persistence,52 production recent UI,
+69 prior version/participant UI,89 English keyboard-flow and5 logic checks pass;
+Runner build/boundary pass. History2 retains old bookmark1 and all accepted paths;
+new native list/load endpoint exposes opaque IDs and labels only. Auto-load uses
+existing exactaccept/projectroot/confirm and never starts playback/recording.
+[Handoff](../docs/runner-recent-files.md). No Cargo/SDK hold. Root owns installed
+collection; this branch includes preselection dependency05c6307.

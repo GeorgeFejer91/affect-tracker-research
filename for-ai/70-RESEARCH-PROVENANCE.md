@@ -11,6 +11,34 @@ at pre-split commit `5df1e5365aacd2e59cd36347d752b003f1af432d` and in this
 repository's Git history. It is not active Research scope or qualification
 evidence.
 
+## 2026-09-12 amendment: researcher-installed TAS-20 preset
+
+The researcher explicitly authorized TAS-20 use for the local mock in Chat
+Orchestrator, then requested German TAS as a preconfigured Planner asset in
+**Add segment confirmation flow**. This authorizes preparing an installed local
+researcher preset from the identified German source, beyond a one-time mock
+import. S2 owns the preset interface and main owns agreed native storage hooks.
+Preserve the exact source, attribution, raw response codes and content hashes.
+The local preset must use the existing questionnaire import/validation authority
+and must remain available through the corresponding user and CLI operations.
+
+This bounded instruction supersedes the earlier requirement to re-upload the
+same local source for each study. It does not establish a public redistribution
+license or authorize copying full item text into public web/build assets. Keep
+public reusable-preload eligibility separate from the researcher-installed
+preset and retain the existing release gates. No additional local-use approval
+is pending. Deployment or clinical/scoring validity must not be inferred.
+
+The German source is Handrack (2016), appendix A8, PDF page 142, from the
+[University of Giessen repository](https://jlupub.ub.uni-giessen.de/bitstreams/0b9557df-78c8-4bab-96e5-d84f3b94f9a5/download).
+It contains 20 items and 5 anchors and cites Bach et al. (1996). This is the exact
+appendix version, not an independently verified original translation master.
+[69](69-CLI-RUNNER-END-TO-END-GOAL.md) records the source PDF/CSV/definition
+hashes, visual comparison and independently reproduced production import.
+The complete content stays in the local researcher's asset store; provenance
+metadata here contains no item text. Numeric 1–5 positions are retained response
+codes, without inferred reverse scoring, subscales, totals or thresholds.
+
 | ID | Source | Adopted decision | Reuse, license, and qualification boundary |
 | --- | --- | --- | --- |
 | `AFFECTTRACKER` | Fourcade et al., *AffectTracker: real-time continuous rating of affective experience in immersive virtual reality*; [paper](https://doi.org/10.3389/frvir.2025.1567854), [BSD-3-Clause repository at the adopted revision](https://github.com/afourcade/AffectTracker/tree/0002526239e154151bd9cd13f38cd92cbf064e1a) | Continuous two-dimensional valence/arousal input and the original Flubber projection mapping motivate the Research visualization. Package authoring suggestions retain arousal `0.5–2.5 Hz`, projection amplitude `0.2–0.4`, valence smoothness `0–1`, and reversed wave-size variation `0.8–0`; runnable packages store them explicitly. | Active JavaScript/Rust contracts and geometry are independently implemented. BSD attribution is retained. The implementation is not an empirical validation of this new protocol, UI, media path, or hardware. |

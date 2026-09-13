@@ -1,5 +1,37 @@
 # Planner JSON and Runner compatibility contract
 
+## SurveyJS producer/consumer extension — 2026-09-13
+
+Master v4 explicitly accepts P2 v3 (full SurveyJS definitions, hooks v4,
+presentation v3) with existing P1 v1/v2/v3 semantics. Its identity algorithm is
+`planner-recipe-reproduction-v5`; native Start/Action v4 and master-sequence-v4
+consume the complete recipe. Old dispatch/strict-reader behavior is retained.
+Master4 responses use record v3 and `master-responses.v3.jsonl`, including full
+input and processed data, locale, completion policy, random seed, evaluation
+clock, visible questions and occurrence timing. Full records and definitions
+continue through the information stream. See [SurveyJS contracts](../docs/surveyjs-questionnaires.md)
+for all fields, limits and software-vs-live-XDF qualification boundaries.
+
+## Typed demographics and independent XDF reconstruction — 2026-09-12
+
+The researcher now explicitly requests a shipped EN/DE demographic form and a
+full actual Runner smoke whose saved XDF alone reconstructs participant metadata,
+questionnaires/answers and every identified video/ISI transition. See [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+S2 owns bilingual text/integer/single-choice definitions, main the explicit
+versioned producer/native reader seam, and Runner presentation/typed answers and
+the new versioned primary information stream. Existing Likert/master/legacy LSL
+contracts retain exact dispatch and must not silently accept a new payload.
+
+The XDF must retain exact canonical Planner content and immutable session
+selection, complete definitions and typed answers, and observed occurrence
+markers with actual clock timestamps. This is additional run evidence; Planner
+still does not own XDF stream selection or capture policy. Reconstruction uses
+the saved stream alone before comparison with original JSON/UI/native evidence.
+Media bytes remain external hash-bound assets. Startup bundle fragmentation is
+explicit, bounded and integrity checked, and missing chunks/events are reported
+instead of repaired from expected timings. Current synthetic streams are not
+evidence that the full requested real playback run has succeeded.
+
 ## Correspondence goal activated — 2026-09-12
 
 The direct request now activates the formerly deferred end-to-end test: author
@@ -7,6 +39,13 @@ from production CLI, verify UI parity, load the exact exported master and observ
 Runner actions. See [69](69-CLI-RUNNER-END-TO-END-GOAL.md) for allocation,
 evidence and remaining inputs. Earlier deferral text below does not block this
 newly authorized work, and completed Planner authoring remains independently true.
+The 2026-09-12 correspondence pass now consumes P7's complete
+`affect-research-planner-recipe` v1 with `planner-recipe-reproduction-v2` identity.
+This is a separately allocated desktop test, superseding the earlier blanket
+deferral. The existing strict native/browser master readers and owner projections
+are the authority; no conversion to a reduced v1 package is permitted. Validity,
+selected-content interpretation and actual execution remain separate claims.
+The source at pass start is `3301440`; implementation/evidence follows below.
 
 This is the producer/consumer inventory, not another recipe schema. P7 owns
 complete canonical recipe formats. Runner derives requirements after strict
@@ -115,3 +154,32 @@ stage and confirmed it must not delay Planner completion or this backend handoff
 Do not convert the master into an older package by dropping P1–P6 options, infer
 an allocator, reinterpret questionnaire label repetition as pagination, or claim
 XR/native player qualification from successful document reconstruction.
+
+### Runner participant/session consumption — 2026-09-12
+
+Current v1 Runner resolves P01 display input to the declared P001 schedule. Its
+preview uses the same strict participant/language compiler as actual preparation;
+unknown numbers reject, and questionnaire hooks/ISIs keep their saved positions.
+This is not a successor participant allocator. Runner retains the selection and
+history per exact canonical JSON, with outputs/recipe-<full SHA-256>/ isolation.
+New-attempt LSL names use Runner session naming v1 (P01_<authored base name>), with
+an immutable naming receipt; Planner emission base names and original JSON remain
+intact. XDF policy/destination belong to Runner. Ledger65 binds software evidence
+and remaining native/master qualification. Frozen legacy recoveries preserve names
+and paths; nothing is silently migrated or overwritten.
+
+## Current user amendment — 2026-09-13
+
+The JSON is the complete experiment authority; a common default folder must not be required. Use declared IDs, relative asset locations, hashes and owner metadata, with explicit versioned rules for any new locator semantics. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for current portable-path rules and consumer verification gaps.
+
+
+## Runner convenience selection — 2026-09-13 amendment
+
+The user allocates XDF-filename-based participant/version defaults to Runner.
+The Planner's exact P3 variants/order/IDs remain unchanged. Runner displays V1,
+V2 by the saved array order, chooses the least-used according to matching local
+XDF files and passes the actual selected variant ID to existing native plan
+reconstruction. The experimenter can override both version and participant.
+Named XDF recordings and their inventory belong to Runner session behavior;
+see [the exact contract](../docs/runner-version-preselection.md). This is not a
+new Planner allocator, a changed selected-order hash, or execution qualification.

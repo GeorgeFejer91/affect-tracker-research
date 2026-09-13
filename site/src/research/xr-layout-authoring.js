@@ -114,22 +114,73 @@ export function createXrLayoutAuthoring({ editor, getDependencies, subscribe, pr
     return commit(profile, { selectedTarget: profile.target, isCurrent }, false);
   }
 
+  function prepareRestoreSelection(selection, { isCurrent } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
+    const captured = validateXrLayoutSelection(selection);
+    if (disposed || !isCurrent()) throw stale();
+    const dependencyKey = key(read()), capturedGeneration = generation;
+    const current = () => !disposed && isCurrent() && generation === capturedGeneration && key(read()) === dependencyKey;
+    // Reopening authored content needs no ready media. Do not refresh here:
+    // refresh mutates dependency state and publishes projections.
+    const candidate = editor.prepareRestoreSelection(captured, { isCurrent: current });
+    return Object.freeze({
+      isCurrent: () => current() && candidate.isCurrent(),
+      commit() {
+        if (!current() || !candidate.isCurrent()) throw stale();
+        return candidate.commit();
+      },
+      afterCommit() {
+        if (!current()) throw stale();
+        return candidate.afterCommit();
+      },
+    });
+  }
+
+  async function prepareConfirmation({ isCurrent, signal } = {}) {
+    if (typeof isCurrent !== "function") throw new TypeError("XR confirmation requires a current-request guard.");
+    const captured = read(), dependencyKey = key(captured), capturedGeneration = generation;
+    const ownerRevision = editor.getSnapshot().revision;
+    const current = () => !disposed && !signal?.aborted && isCurrent()
+      && generation === capturedGeneration && key(read()) === dependencyKey;
+    if (!current()) throw stale();
+    if (editor.getSnapshot().enabled) {
+      const profile = editor.getDraft();
+      const resolved = await resolveXrLayoutDependencies(captured, projectCatalogue);
+      resolveXrLayoutContribution(profile, resolved, profile.target);
+      const bound = editor.getAuthoringSnapshot();
+      if (key(bound.dependencyRevisions) !== key([
+        { segment: "P1", revision: resolved.catalogueRevision },
+        { segment: "P5", revision: resolved.feedbackRevision },
+      ]) || key(bound.catalogueGeometry) !== key(resolved.catalogueGeometry)
+        || key(bound.feedbackEnvelope) !== key(resolved.feedbackEnvelope)) throw stale();
+    }
+    // Unlike GUI prepare(), never refresh/mutate producers or the editor here.
+    if (!current() || editor.getSnapshot().revision !== ownerRevision) throw stale();
+    const candidate = editor.prepareConfirmation({ isCurrent: current, signal });
+    return Object.freeze({
+      get snapshot() { return candidate.snapshot; },
+      isCurrent: candidate.isCurrent,
+      commit: candidate.commit,
+      afterCommit: candidate.afterCommit,
+    });
+  }
+
   return Object.freeze({
     refresh,
     getStatus: () => structuredClone(status),
     validate,
     prepare,
+    prepareConfirmation,
     accept: prepare,
+    prepareRestoreSelection,
     restoreDraft(profile, { isCurrent = () => true } = {}) {
       const capturedProfile = validateXrLayoutProfileV1(profile);
       if (disposed || !isCurrent()) throw stale();
       return editor.restoreDraft(capturedProfile);
     },
     restoreSelection(selection, { isCurrent } = {}) {
-      if (typeof isCurrent !== "function") throw new TypeError("XR selection restore requires a current-request guard.");
-      const captured = validateXrLayoutSelection(selection);
-      if (disposed || !isCurrent()) throw stale();
-      return captured.status === "included" ? editor.restoreDraft(captured.profile) : editor.restoreExcluded();
+      const candidate = prepareRestoreSelection(selection, { isCurrent });
+      const snapshot = candidate.commit(); candidate.afterCommit(); return snapshot;
     },
     restore(profile, options = {}) { return commit(profile, options, true); },
     destroy() {

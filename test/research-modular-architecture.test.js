@@ -80,6 +80,8 @@ test("raw Tauri invocation remains confined to explicit native adapter modules",
     "site/src/research/native-bridge.js",
     "site/src/research/native-media-controller.js",
     "site/src/research/native-package-protocol.js",
+    "site/src/research/planner-authoring-native.js",
+    "site/src/research/planner-authoring-native-effects.js",
   ]);
   const offenders = [];
   for (const relativePath of await javascriptFiles("site/src/research/")) {
@@ -89,6 +91,8 @@ test("raw Tauri invocation remains confined to explicit native adapter modules",
     }
   }
   assert.deepEqual(offenders, []);
+  const effects = await readFile(new URL("site/src/research/planner-authoring-native-effects.js", root), "utf8");
+  assert.deepEqual([...effects.matchAll(/\binvoke\("([^"]+)"/gu)].map(match => match[1]), ["research_planner_authoring_effect"]);
 });
 
 test("frontend feature modules form an acyclic graph below the UI composition root", async () => {

@@ -1,9 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { readPlannerPolicyControls, restorePlannerPolicyControls } from "../site/src/research/planner-policy-controls.js";
+import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "../site/src/research/planner-policy-controls.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url)));
+
+test("prepared policy is detached and read-only, and rejects changed control identity or values", () => {
+  const h = harness(), before = h.snapshot(), input = structuredClone(fixture);
+  const prepared = preparePlannerPolicyControls(h.root, input, { isCurrent: () => true });
+  input.participantCount = 77;
+  assert.deepEqual(h.snapshot(), before);
+  assert.deepEqual(prepared.commit(), fixture); assert.deepEqual(readPlannerPolicyControls(h.root), fixture);
+  assert.throws(() => prepared.commit());
+  for (const replace of [false, true]) {
+    const next = preparePlannerPolicyControls(h.root, fixture, { isCurrent: () => true });
+    if (replace) h.fields.set("participant-count", { value: h.fields.get("participant-count").value });
+    else h.fields.get("participant-count").value = "12";
+    assert.equal(next.isCurrent(), false); assert.throws(() => next.commit());
+  }
+});
 function harness() {
   const fields = new Map([
     ["participant-count", { value: "42" }], ["sampling-frequency", { value: "100" }],

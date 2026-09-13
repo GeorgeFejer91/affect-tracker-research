@@ -1,5 +1,15 @@
 import { preparePlannerSurface } from "./planner-surface.js";
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
+import { SURVEYJS_DEFINITION_SCHEMA, importSurveyJson, verifySurveySupportedDefinition as verifyP2Definition } from "./surveyjs-definition.js";
+import { prepareSurveySourceStorage } from "./surveyjs-sheet.js";
+import { QUESTIONNAIRE_HOOKS_V4_ALGORITHM_VERSION } from "./questionnaire-recipe-v2.js";
+import { compilePlannerRecipeV4 } from "./planner-recipe.js";
+import { prepareFormSourceStorage } from "./form-source-storage.js";
+import { withPlannerCore9 } from "./planner-authoring-core9.js";
+import { createPlannerCore9Composition } from "./planner-core9-composition.js";
+import { QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION, verifySupportedQuestionnaireRecipeContribution } from "./questionnaire-recipe-v2.js";
+import { capturePlannerRecipeInputPreparedFeedback, capturePlannerRecipeInputVersion, plannerRecipeVersionForContributions } from "./planner-recipe-capture.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
 import { createXrLayoutAuthoring } from "./xr-layout-authoring.js";
 import {
@@ -60,11 +70,13 @@ import {
 import { QUESTIONNAIRE_INSPIRATION_CATALOGUE } from "./questionnaire-inspiration.js";
 import { createQuestionnaireEditor } from "./questionnaire-editor.js";
 import { restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "./questionnaire-contribution.js";
-import { QUESTIONNAIRE_RECIPE_SCHEMA, validateQuestionnaireRecipeContributionV1,
+import { QUESTIONNAIRE_RECIPE_SCHEMA,
   validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
 import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "./questionnaire-prebuilt.js";
+import { createResearcherLocalQuestionnairePresets, RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS,
+  mergeQuestionnairePresetChoices, researcherLocalQuestionnaireAvailability } from "./questionnaire-local-presets.js";
 import { createStimulusOrderEditor } from "./stimulus-order-editor.js";
-import { validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
+import { validateSupportedStimulusVariantContribution as validateStimulusVariantContribution } from "./variant-catalogue-adapter.js";
 import { requestStimulusAuthoring } from "./stimulus-authoring-request.js";
 import { prepareVerifiedCatalogueExport } from "./planner-catalogue-export.js";
 import { requestQuestionnaireAssetStorage } from "./questionnaire-storage-request.js";
@@ -72,12 +84,23 @@ import { requestExperimentPackageSave } from "./package-save-request.js";
 import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { prepareBrowserPackageSave } from "./package-file-picker.js";
-import { openBrowserPlannerRecipeFile, prepareBrowserPlannerRecipeSave } from "./planner-recipe-file.js";
-import { parsePlannerRecipeFile } from "./planner-recipe.js";
+import { openSupportedBrowserPlannerRecipeFile, prepareSupportedBrowserPlannerRecipeSave } from "./planner-recipe-file.js";
+import { parseSupportedPlannerRecipe, compilePlannerRecipeV1, compilePlannerRecipeV2, compilePlannerRecipeV3 } from "./planner-recipe.js";
 import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
 import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
-import { readPlannerPolicyControls, restorePlannerPolicyControls } from "./planner-policy-controls.js";
+import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "./planner-policy-controls.js";
+import { createPlannerAuthoringSession } from "./planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA, commandFailure } from "./planner-authoring-contract.js";
+import { createPlannerWorkspaceCommandOwner } from "./planner-authoring-p1.js";
+import { createPlannerAuthoringP2 } from "./planner-authoring-p2.js";
+import { createQuestionnaireRoutingEditor } from "./questionnaire-routing-editor.js";
+import { createPlannerVariantCommandOwner } from "./planner-authoring-p3.js";
+import { createPlannerAuthoringP4 } from "./planner-authoring-p4.js";
+import { createPlannerAuthoringP5 } from "./planner-authoring-p5.js";
+import { createPlannerAuthoringP5Controls } from "./planner-authoring-p5-controls.js";
+import { createPlannerAuthoringP6 } from "./planner-authoring-p6.js";
+import { createPlannerPolicyCommandOwner } from "./planner-authoring-p7.js";
 import { renderPlannerContributionIssues } from "./planner-issue-view.js";
 import { createPlannerContributionRegistry, installPlannerContributions, PLANNER_SEGMENT_SECTIONS } from "./planner-contributions.js";
 import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "./setup-confirmation-flow.js";
@@ -103,18 +126,18 @@ import { externalExperimentPlanToCsv } from "./tabular.js";
 import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity.js";
 import {
   browserDisplayGeometry,
-  createVideoCatalogueProducer,
-  validateVideoCatalogueContribution,
+  createSupportedVideoCatalogueProducer as createVideoCatalogueProducer,
+  validateSupportedVideoCatalogueContribution as validateVideoCatalogueContribution,
   videoAnnotationIdFromRelativePathV1,
-  workspaceStimuliToVideoCatalogueEntries,
+  workspaceStimuliToSupportedVideoCatalogueEntries as workspaceStimuliToVideoCatalogueEntries,
   workspaceStimuliToVideoCatalogueEntriesV1,
 } from "./video-catalogue-contribution.js";
 import {
-  createWorkspaceContributionProducer,
-  projectWorkspaceVideoDisplayGeometry,
-  prepareWorkspaceContentRestore,
-  validateWorkspaceContribution,
-  verifyWorkspaceRestoredVideoEntries,
+  createSupportedWorkspaceContributionProducer as createWorkspaceContributionProducer,
+  projectSupportedWorkspaceVideoDisplayGeometry as projectWorkspaceVideoDisplayGeometry,
+  prepareSupportedWorkspaceContentRestore as prepareWorkspaceContentRestore,
+  validateSupportedWorkspaceContribution as validateWorkspaceContribution,
+  verifySupportedWorkspaceRestoredVideoEntries as verifyWorkspaceRestoredVideoEntries,
 } from "./workspace-contribution.js";
 import {
   BrowserResearchWorkspace,
@@ -247,6 +270,15 @@ function bindResearchInteractions(root, { surface }) {
   let setupNavigationRevision = 0;
   let readySetupSectionCount = 0;
   const reviewedSetupSections = new Set();
+  let plannerAuthoringSession = null;
+  let plannerNativeWorkspace = null, plannerNativeEffects = null, nativeOperation = null;
+  let questionnaireRoutingEditor = null;
+  let researcherLocalPresets = null;
+  let installLocalPresetSource = null;
+  let localPresetChoices = [];
+  let localPresetInspection = 0;
+  let localPresetLoad = 0;
+  const localPresetLifetime = new AbortController();
   let mode = "setup";
   let selectedParticipant = "P001";
   let inputPoint = { x: 0, y: 0 };
@@ -299,8 +331,8 @@ function bindResearchInteractions(root, { surface }) {
   let plannerFileWorkflow = null;
   const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root, {
     prepareSave: async (sourceText, options) => {
-      const parsed = await parsePlannerRecipeFile(new TextEncoder().encode(sourceText));
-      return parsed.kind === "planner-recipe-v1" ? prepareBrowserPlannerRecipeSave(sourceText, options)
+      const schema = JSON.parse(sourceText).schema;
+      return schema === "affect-research-planner-recipe" ? prepareSupportedBrowserPlannerRecipeSave(sourceText, options)
         : prepareBrowserPackageSave(sourceText, options);
     },
   }) : null;
@@ -323,6 +355,7 @@ function bindResearchInteractions(root, { surface }) {
     const next = plannerContributions.read({ format: "contributions" }).fingerprint;
     if (next === observedContributions) return;
     observedContributions = next;
+    plannerAuthoringSession?.dependenciesChanged();
     packageEditRevision += 1;
     if (!plannerFileWorkflow?.canCopy()) packageExport.invalidate();
     if (experimentPackageDocument && !plannerFileWorkflow?.canCopy()) {
@@ -348,8 +381,17 @@ function bindResearchInteractions(root, { surface }) {
   });
   plannerFileWorkflow = createPlannerFileWorkflow({
     registry: plannerContributions, exporter: packageExport,
+    documentAdapter: {
+      parseDocument: parseSupportedPlannerRecipe,
+      compileDocument: compileSupportedRecipeDocument,
+      captureInput: (registry, options) => capturePlannerRecipeInputVersion(registry, {
+        ...options, version: plannerRecipeVersionForContributions(getWorkspaceContributionSnapshot().contribution,
+          getQuestionnaireRecipeContributionSnapshot().contribution),
+      }),
+    },
     getDocument: () => experimentPackageDocument,
-    canOperate: () => !researchUiDisposed && mode === "setup",
+    canOperate: () => !researchUiDisposed && mode === "setup" && (!plannerAuthoringSession?.publishing
+      || ["openRecipe", "saveRecipe"].includes(nativeOperation)),
     getRecipeOptions: () => ({
       recipeId: `${getStudyIdentity().id.slice(0, 121)}-recipe`,
       presentationTarget: getSelectedPlannerTarget(), policy: readPlannerPolicyControls(root),
@@ -471,6 +513,7 @@ function bindResearchInteractions(root, { surface }) {
   let questionnaireContributionRevision = 0;
   let questionnaireContributionFingerprint = null;
   let questionnaireRestoreGeneration = 0;
+  let questionnaireSyncFingerprint = null;
   const questionnaireEditor = createQuestionnaireEditor({
     root,
     onChange: () => {
@@ -1594,6 +1637,13 @@ function bindResearchInteractions(root, { surface }) {
     return parsePlannerTargetSelection(value("planner-presentation-target"));
   }
 
+  function plannerPresentationTargetChanged() {
+    plannerContributions.invalidateAcceptance("P6");
+    packageExport.invalidate();
+    observePackageDraft();
+    renderPackageExportReview();
+  }
+
   function restorePlannerPresentationTarget(target, { isCurrent } = {}) {
     if (typeof isCurrent !== "function") throw new TypeError("Target restoration requires a current operation guard.");
     if (parsePlannerTargetSelection(target) === null) throw new TypeError("A saved recipe needs an explicit target.");
@@ -1613,6 +1663,42 @@ function bindResearchInteractions(root, { surface }) {
     packageExport.invalidate();
     schedulePlanRefresh();
     return restored;
+  }
+
+  function preparePlannerPolicyRestoration(policy, { isCurrent, signal } = {}) {
+    const guard = () => !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent();
+    const prepared = preparePlannerPolicyControls(root, policy, { isCurrent: guard, signal });
+    let committed = false, projected = false;
+    return Object.freeze({ isCurrent: prepared.isCurrent,
+      commit() { prepared.commit(); outputFormatsTouched = true; committed = true; },
+      afterCommit() {
+        if (!committed || !guard()) throw new Error("Policy projection is no longer current.");
+        if (projected) return; projected = true;
+        syncOutputFormatValidation(); packageExport.invalidate(); schedulePlanRefresh();
+      },
+    });
+  }
+
+  function preparePlannerTargetRestoration(target, { isCurrent, signal } = {}) {
+    if (parsePlannerTargetSelection(target) === null) throw new TypeError("A saved recipe needs an explicit target.");
+    const control = query("#planner-presentation-target"), before = control.value;
+    let committed = false, projected = false;
+    const guard = () => !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent();
+    const current = () => !committed && guard() && query("#planner-presentation-target") === control && control.value === before;
+    if (!current()) throw new Error("Target preparation is no longer current.");
+    return Object.freeze({ isCurrent: current,
+      commit() {
+        if (!current()) throw new Error("Target restoration was superseded.");
+        control.value = target;
+        plannerContributions.invalidateAcceptance("P6", { notify: false });
+        committed = true;
+      },
+      afterCommit() {
+        if (!committed || !guard()) throw new Error("Target projection is no longer current.");
+        if (projected) return; projected = true;
+        plannerContributions.notifyAcceptanceChange(); renderPackageExportReview();
+      },
+    });
   }
 
   function observePackageDraft() {
@@ -1713,6 +1799,30 @@ function bindResearchInteractions(root, { surface }) {
     return feedbackContribution.getSnapshot();
   }
 
+  function prepareFeedbackRestoration(contribution, { isCurrent = () => true, signal } = {}) {
+    const normalized = validateFeedbackContribution(structuredClone(contribution));
+    const initial = canonicalJson(feedbackAuthoringControls.readDraft());
+    let committed = false, projected = false;
+    const current = () => !committed && !researchUiDisposed && mode === "setup" && !signal?.aborted && isCurrent()
+      && canonicalJson(feedbackAuthoringControls.readDraft()) === initial;
+    if (!current()) throw new Error("Feedback restoration is no longer current.");
+    const prepared = feedbackAuthoringControls.prepareCommit(normalized, {
+      contribution: normalized, issues: [], isCurrent: current, signal,
+    });
+    return Object.freeze({ isCurrent: () => current() && prepared.isCurrent(),
+      commit() {
+        if (!current() || !prepared.isCurrent()) throw new Error("Feedback restoration was superseded.");
+        prepared.commit(); committed = true;
+      },
+      afterCommit() {
+        if (!committed || researchUiDisposed || signal?.aborted || !isCurrent()) throw new Error("Feedback restore projection is no longer current.");
+        if (projected) return;
+        projected = true;
+        prepared.afterCommit(); resetPreviewInspection(); schedulePlanRefresh();
+      },
+    });
+  }
+
   async function initializeFeedbackAuthoringV2(options) {
     const result = await restoreFeedbackContribution(createFeedbackAuthoringSettingsV2(legacyFeedbackFromUi()), options);
     if (result) announce("Current feedback authoring initialized: Flubber, axes, 21 × 21 stepwise grid, separate presses, 2-second travel and 150% fading halo. Review these new settings before saving.");
@@ -1729,7 +1839,7 @@ function bindResearchInteractions(root, { surface }) {
     packageProjection = false,
   } = {}) {
     if (typeof guard === "function" && !guard()) return false;
-    if (packageProjection) questionnaireEditor.reset();
+    if (packageProjection) { questionnaireEditor.reset(); questionnaireSyncFingerprint = null; }
     const preservedSourceText = experimentDocument
       && experimentDocument.sourceByteSha256 === normalized.externalProtocol.sourceByteSha256
       && experimentDocument.definitionSha256 === normalized.externalProtocol.definitionSha256
@@ -2363,13 +2473,18 @@ function bindResearchInteractions(root, { surface }) {
   function renderQuestionnaires() {
     renderStudyLanguages();
     const source = coverageSource();
-    questionnaireEditor.sync({
+    const nextContext = {
       families: requestedQuestionnaireFamilies.map((id) => ({ id, label: questionnaireFamilyLabel(id) })),
       languages: studyLanguages,
       definitions: source.definitions,
       familyForDefinition: familyIdForDefinition,
       locked: languageEditorLocked,
-    });
+    };
+    const nextFingerprint = JSON.stringify(nextContext);
+    if (nextFingerprint !== questionnaireSyncFingerprint) {
+      questionnaireEditor.sync(nextContext); questionnaireSyncFingerprint = nextFingerprint;
+    }
+    questionnaireRoutingEditor?.sync();
     renderQuestionnaireCoverage();
     renderProtocolPreview();
     const add = query("#questionnaire-add-blank");
@@ -2394,7 +2509,7 @@ function bindResearchInteractions(root, { surface }) {
     throw new RangeError(`No module identifier remains available for ${questionnaireId}.`);
   }
 
-  function addQuestionnaireModule(definition) {
+  function prepareQuestionnaireModule(definition) {
     const familyId = familyIdForDefinition(definition);
     const familyIndexes = questionnaireModules
       .map((candidate, index) => ({ candidate, index }))
@@ -2413,16 +2528,19 @@ function bindResearchInteractions(root, { surface }) {
       definitionSha256: definition.definitionSha256,
       placement,
     }, {
-      definition,
+      definition: [FORM_DEFINITION_SCHEMA, SURVEYJS_DEFINITION_SCHEMA].includes(definition.schema) ? null : definition,
       blockIds: protocolBlockIds(),
       stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     });
     const insertAt = familyIndexes.length
       ? familyIndexes.at(-1).index + 1
       : questionnaireModules.length;
+    return { module, insertAt };
+  }
+  function addQuestionnaireModule(definition, { project = true } = {}) {
+    const { module, insertAt } = prepareQuestionnaireModule(definition);
     questionnaireModules.splice(insertAt, 0, structuredClone(module));
-    renderQuestionnaires();
-    schedulePlanRefresh();
+    if (project) { renderQuestionnaires(); schedulePlanRefresh(); }
     announce(`${definition.title} added to the questionnaire sequence. Choose another hook if needed.`);
   }
 
@@ -2451,6 +2569,11 @@ function bindResearchInteractions(root, { surface }) {
       sourceSha256: authoringReceipt.original.sha256,
       bytes: new Uint8Array(bytes instanceof ArrayBuffer ? bytes.slice(0) : bytes),
     };
+    return storeQuestionnairePayload(payload);
+  }
+
+  async function storeQuestionnairePayload(payload) {
+    if (!capabilities.directoryPermission) throw new Error("Select the parent work directory before adding questionnaire assets.");
     if (surface === "browser") {
       if (!workspace || typeof workspace.saveQuestionnaireAsset !== "function") {
         throw new Error("The browser questionnaire asset store is not available.");
@@ -2460,24 +2583,41 @@ function bindResearchInteractions(root, { surface }) {
     return requestQuestionnaireAssetStorage(root, payload);
   }
 
-  async function saveEditedQuestionnaire({ familyId, language, definition, sourceBytes, authoringReceipt, expectedPresetToken }) {
+  async function saveEditedQuestionnaire({ familyId, language, definition, sourceBytes, authoringReceipt, expectedPresetToken, sourceFormat }, guard = {}) {
+    const current = () => !researchUiDisposed && !guard.signal?.aborted
+      && (guard.isCurrent === undefined || guard.isCurrent());
+    if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
     if (languageEditorLocked || mode !== "setup") throw new Error("This experiment is locked for editing.");
     if (questionnaireEditor.presetToken(familyId, language) !== expectedPresetToken
       || !requestedQuestionnaireFamilies.includes(familyId)
       || !studyLanguages.some(({ languageTag }) => languageTag === language)) {
       throw new Error("This questionnaire or language is no longer included.");
     }
-    validateQuestionnaireDefinitionV1(definition);
+    definition = await verifyP2Definition(definition);
+    if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
     if (definition.language !== language || familyIdForDefinition(definition) !== familyId) {
       throw new TypeError("The edited questionnaire does not match its language table.");
     }
-    if (sourceBytes && authoringReceipt) await storeQuestionnaireSource(sourceBytes, definition, authoringReceipt);
+    let sourceReceipt = null;
+    if (definition.schema === SURVEYJS_DEFINITION_SCHEMA) {
+      if (sourceFormat !== "surveyJsDefinitionV1") throw new TypeError("SurveyJS save requires its explicit source format.");
+      const payload = await prepareSurveySourceStorage(sourceBytes, definition);
+      if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
+      sourceReceipt = await storeQuestionnairePayload(payload);
+    } else if (definition.schema === FORM_DEFINITION_SCHEMA) {
+      if (sourceFormat !== "formDefinitionV1") throw new TypeError("Typed form save requires its explicit source format.");
+      const payload = await prepareFormSourceStorage(sourceBytes, definition);
+      if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
+      sourceReceipt = await storeQuestionnairePayload(payload);
+    } else if (sourceBytes && authoringReceipt) sourceReceipt = await storeQuestionnaireSource(sourceBytes, definition, authoringReceipt);
     else if (!questionnaireDefinition(definition.questionnaireId)) throw new Error("The questionnaire source is missing; import or edit the table and save again.");
     // A storage receipt cannot adopt an asset into a slot removed while saving.
-    if (languageEditorLocked || questionnaireEditor.presetToken(familyId, language) !== expectedPresetToken
+    if (!current() || languageEditorLocked || questionnaireEditor.presetToken(familyId, language) !== expectedPresetToken
       || !requestedQuestionnaireFamilies.includes(familyId)
       || !studyLanguages.some(({ languageTag }) => languageTag === language)) {
-      throw new Error("The setup changed while saving. The source is retained; the questionnaire was not added.");
+      const error = new Error("The setup changed while saving. The source is retained; the questionnaire was not added.");
+      error.sourceReceipt = sourceReceipt;
+      throw error;
     }
     const existingIndex = questionnaireDefinitions.findIndex(({ questionnaireId }) => questionnaireId === definition.questionnaireId);
     if (existingIndex < 0) questionnaireDefinitions.push(structuredClone(definition));
@@ -2488,6 +2628,7 @@ function bindResearchInteractions(root, { surface }) {
         ...updateQuestionnaireDefinitionReferences(questionnaireModules, definition));
     } else addQuestionnaireModule(definition);
     announce(`${definition.title} in ${language} saved. Existing protocol placements were preserved.`);
+    return sourceReceipt;
   }
 
   function addBlankQuestionnaire() {
@@ -2535,11 +2676,12 @@ function bindResearchInteractions(root, { surface }) {
   function renderPrebuiltQuestionnaires() {
     const list = query("#questionnaire-prebuilt-list");
     if (!list) return;
-    list.replaceChildren(...PREBUILT_QUESTIONNAIRE_ASSETS.map((asset) => {
+    list.replaceChildren(...mergeQuestionnairePresetChoices(PREBUILT_QUESTIONNAIRE_ASSETS, localPresetChoices).map((asset) => {
       const row = document.createElement("section"); row.className = "questionnaire-prebuilt-row";
       const heading = document.createElement("h3"); heading.textContent = `${asset.title} · ${asset.languageLabel}`;
       const description = document.createElement("p"); description.textContent = asset.description;
-      const state = prebuiltQuestionnaireAvailability(asset, {
+      const availability = asset.usageScope === "researcherLocal" ? researcherLocalQuestionnaireAvailability : prebuiltQuestionnaireAvailability;
+      const state = availability(asset, {
         languages: studyLanguages.map((l) => l.languageTag), locked: languageEditorLocked,
         occupied: familyIsIncluded(asset.familyId) && !questionnaireEditor.canLoadPreset(asset.familyId, asset.language),
       });
@@ -2550,6 +2692,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function addPrebuiltQuestionnaire(assetId) {
+    if (localPresetChoices.some(asset => asset.id === assetId)) return addLocalQuestionnairePreset(assetId);
     const asset = PREBUILT_QUESTIONNAIRE_ASSETS.find((a) => a.id === assetId);
     if (!asset || !asset.ready || languageEditorLocked || !studyLanguages.some((l) => l.languageTag === asset.language)) return;
     const status = query("#questionnaire-prebuilt-status");
@@ -2558,6 +2701,76 @@ function bindResearchInteractions(root, { surface }) {
     await prepareQuestionnairePreset(asset.familyId, asset.language);
     status.textContent = query("#questionnaire-import-status").textContent;
     renderPrebuiltQuestionnaires();
+  }
+
+  async function refreshLocalQuestionnairePresets() {
+    if (!researcherLocalPresets) return;
+    const generation = ++localPresetInspection;
+    const guard = { signal: localPresetLifetime.signal,
+      isCurrent: () => !researchUiDisposed && generation === localPresetInspection };
+    try {
+      const choices = await researcherLocalPresets.inspect(guard);
+      if (!guard.isCurrent()) return;
+      localPresetChoices = choices;
+      renderPrebuiltQuestionnaires();
+    } catch (error) {
+      if (guard.isCurrent()) query("#questionnaire-prebuilt-status").textContent = error.message;
+    }
+  }
+
+  async function addLocalQuestionnairePreset(presetId) {
+    const asset = localPresetChoices.find(choice => choice.id === presetId);
+    if (!researcherLocalPresets || !asset?.ready || languageEditorLocked || mode !== "setup"
+      || !studyLanguages.some(language => language.languageTag === asset.language)) return;
+    requestQuestionnaireFamily(asset.familyId);
+    renderQuestionnaires();
+    const generation = ++localPresetLoad, revision = plannerAuthoringSession.revision;
+    const workspaceKey = authoringWorkspaceKey;
+    const guard = { signal: localPresetLifetime.signal, isCurrent: () => !researchUiDisposed
+      && mode === "setup" && generation === localPresetLoad && plannerAuthoringSession.revision === revision
+      && authoringWorkspaceKey === workspaceKey };
+    const status = query("#questionnaire-prebuilt-status");
+    status.textContent = `Opening local ${asset.title} · ${asset.languageLabel}…`;
+    root.querySelectorAll("[data-questionnaire-prebuilt-asset]").forEach(button => { button.disabled = true; });
+    try {
+      const loaded = await researcherLocalPresets.loadIntoEditor(presetId, {
+        editor: questionnaireEditor,
+        readContext: () => ({ languages: studyLanguages.map(language => language.languageTag),
+          families: [...requestedQuestionnaireFamilies], locked: languageEditorLocked }),
+      }, guard);
+      if (capabilities.directoryPermission) {
+        const saved = await questionnaireEditor.saveAuthoringQuestionnaire(loaded.questionnaireId, guard);
+        if (!saved.sourceReceipt) throw new Error("The local questionnaire loaded, but its work-folder source copy was not acknowledged.");
+        status.textContent = `${asset.title} loaded and copied into this work folder. Review the table and confirm Section 2 when finished.`;
+      } else {
+        status.textContent = `${asset.title} loaded as a draft. Select a work directory, then save its table before confirming Section 2.`;
+      }
+      questionnaireImportStatus(status.textContent);
+    } catch (error) {
+      status.textContent = error.message;
+      questionnaireImportStatus(error.message, "error");
+    } finally { if (!researchUiDisposed) { renderPrebuiltQuestionnaires(); schedulePlanRefresh(); } }
+  }
+
+  async function installLocalQuestionnairePreset(file) {
+    if (!installLocalPresetSource || !file) return;
+    const asset = RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS[0];
+    const status = query("#questionnaire-prebuilt-status");
+    try {
+      if (file.size !== asset.byteLength) throw new Error("Choose the verified German TAS local CSV source; its file size must match exactly.");
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (researchUiDisposed) return;
+      status.textContent = "Installing the authorized source on this computer…";
+      // Native authority accepts only the fixed source hash; no path crosses IPC.
+      await installLocalPresetSource({ presetId: asset.id, bytes: [...bytes] });
+      if (researchUiDisposed) return;
+      await refreshLocalQuestionnairePresets();
+      const installed = localPresetChoices.find(choice => choice.id === asset.id && choice.ready);
+      if (!installed) throw new Error("The installation was not verified. Reopen the preset picker to check its current state.");
+      status.textContent = "German TAS is installed locally and reusable in new work folders. Add its German version above to include it in this experiment.";
+    } catch (error) {
+      if (!researchUiDisposed) status.textContent = `${error.message} No experiment table was replaced. Reopen this picker to check the local installation.`;
+    }
   }
 
   async function prepareQuestionnairePreset(familyId, selectedLanguage = null) {
@@ -3469,8 +3682,10 @@ function bindResearchInteractions(root, { surface }) {
     let pending = !languageEditorLocked && questionnaireEditor.pendingKeys().length > 0;
     try {
       const source = coverageSource();
-      contribution = { schema: QUESTIONNAIRE_RECIPE_SCHEMA, version: 1,
-        questionnaires: { algorithmVersion: QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
+      const typed = source.definitions.some(definition => definition.schema === FORM_DEFINITION_SCHEMA);
+      const surveyjs = source.definitions.some(definition => definition.schema === SURVEYJS_DEFINITION_SCHEMA);
+      contribution = { schema: QUESTIONNAIRE_RECIPE_SCHEMA, version: surveyjs ? 3 : typed ? 2 : 1,
+        questionnaires: { algorithmVersion: surveyjs ? QUESTIONNAIRE_HOOKS_V4_ALGORITHM_VERSION : typed ? QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION : QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
           definitions: structuredClone(source.definitions), modules: structuredClone(source.modules) },
         languageSelection: structuredClone(languageTreeFromUi({ allowPresentation: true })),
         presentation: questionnaireEditor.getPresentation(source.definitions) };
@@ -3546,7 +3761,7 @@ function bindResearchInteractions(root, { surface }) {
     return getStudyIdentity();
   }
 
-  async function restoreWorkspaceContribution(contribution, {
+  async function prepareWorkspaceRestoration(contribution, {
     isCurrent = () => true,
     dependencies = {},
   } = {}) {
@@ -3557,28 +3772,18 @@ function bindResearchInteractions(root, { surface }) {
     if (typeof isCurrent !== "function" || !emptyDependencies) {
       throw new TypeError("Workspace restore options are malformed.");
     }
-    const previousRestoreGeneration = activeWorkspaceRestoreGeneration;
-    const operation = ++workspaceRestoreGeneration;
-    activeWorkspaceRestoreGeneration = operation;
-    let restored;
-    let restorePlan;
-    try {
-      restored = await validateWorkspaceContribution(contribution);
-      restorePlan = await prepareWorkspaceContentRestore(restored);
-    } catch (error) {
-      if (activeWorkspaceRestoreGeneration === operation) {
-        activeWorkspaceRestoreGeneration = previousRestoreGeneration;
-      }
-      throw error;
-    }
-    if (activeWorkspaceRestoreGeneration !== operation) {
-      throw new Error("Workspace restoration was superseded; no declarations were replaced.");
-    }
-    if (!isCurrent() || mode !== "setup") throw new Error("Workspace restoration was superseded; no declarations were replaced.");
-    pendingWorkspaceRestore = Object.freeze({ generation: operation, contribution: restored });
-    setInputValue("experiment-id", restorePlan.study.id);
-    setInputValue("experiment-title", restorePlan.study.title);
-    stimuli.splice(0, stimuli.length, ...restorePlan.videoDeclarations.map((entry) => ({
+    const generation = workspaceRestoreGeneration, catalogue = videoCatalogueProducer.getSnapshot();
+    const studyDraft = [value("experiment-id"), value("experiment-title")];
+    let committed = false, projected = false, committedGeneration = null;
+    const current = () => !committed && !researchUiDisposed && isCurrent() && mode === "setup"
+      && generation === workspaceRestoreGeneration && catalogue === videoCatalogueProducer.getSnapshot()
+      && studyDraft[0] === value("experiment-id") && studyDraft[1] === value("experiment-title");
+    const check = () => { if (!current()) throw new Error("Workspace restoration was superseded; no declarations were replaced."); };
+    check();
+    const restored = await validateWorkspaceContribution(structuredClone(contribution));
+    const restorePlan = await prepareWorkspaceContentRestore(restored);
+    check();
+    const declarations = restorePlan.videoDeclarations.map((entry) => ({
       id: entry.assetId,
       title: entry.annotationId,
       source: "workspace",
@@ -3589,14 +3794,44 @@ function bindResearchInteractions(root, { surface }) {
       contractSource: null,
       displayGeometry: null,
       youtubePreflight: null,
-    })));
-    videoCatalogueProducer.withdraw();
-    for (const listener of studyIdentityListeners) listener(restorePlan.study);
-    notifyWorkspaceContributionChanged();
-    renderPools();
-    refreshProjection();
-    schedulePlanRefresh();
-    return getWorkspaceContributionSnapshot();
+    }));
+    return Object.freeze({ isCurrent: current,
+      commit() {
+        check();
+        committedGeneration = ++workspaceRestoreGeneration;
+        activeWorkspaceRestoreGeneration = committedGeneration;
+        pendingWorkspaceRestore = Object.freeze({ generation: committedGeneration, contribution: restored });
+        setInputValue("experiment-id", restorePlan.study.id);
+        setInputValue("experiment-title", restorePlan.study.title);
+        stimuli.splice(0, stimuli.length, ...declarations);
+        videoCatalogueProducer.withdraw({ notify: false });
+        committed = true;
+      },
+      afterCommit() {
+        if (!committed || researchUiDisposed || !isCurrent() || committedGeneration !== workspaceRestoreGeneration) throw new Error("Workspace restore projection is no longer current.");
+        if (projected) return;
+        projected = true;
+        videoCatalogueProducer.notifyChange();
+        for (const listener of studyIdentityListeners) listener(restorePlan.study);
+        notifyWorkspaceContributionChanged();
+        renderPools(); refreshProjection(); schedulePlanRefresh();
+      },
+    });
+  }
+
+  async function restoreWorkspaceContribution(contribution, options = {}) {
+    // GUI Open still reserves its lifetime immediately; public preparation does not.
+    const previous = activeWorkspaceRestoreGeneration;
+    const operation = ++workspaceRestoreGeneration;
+    activeWorkspaceRestoreGeneration = operation;
+    try {
+      const prepared = await prepareWorkspaceRestoration(contribution, options);
+      prepared.commit(); prepared.afterCommit();
+      return getWorkspaceContributionSnapshot();
+    } catch (error) {
+      if (activeWorkspaceRestoreGeneration === operation) activeWorkspaceRestoreGeneration = previous;
+      throw error;
+    }
   }
 
   /** P7 calls after validated recipe settings are applied; no source file is needed. */
@@ -3613,20 +3848,17 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function restoreQuestionnaireRecipeContribution(value, { isCurrent = () => true } = {}) {
-    const generation = ++questionnaireRestoreGeneration;
-    const revision = observeQuestionnaireRevision();
-    const contribution = await validateQuestionnaireRecipeContributionV1(value);
-    const restored = await restoreQuestionnaireAuthoring({ questionnaires: contribution.questionnaires,
-      languageSelection: contribution.languageSelection });
-    if (researchUiDisposed || generation !== questionnaireRestoreGeneration
-      || revision !== observeQuestionnaireRevision() || !isCurrent() || mode !== "setup") {
-      throw new Error("Questionnaire restoration was superseded; no tables were replaced.");
-    }
-    commitQuestionnaireRestoration(restored, contribution.presentation);
+    const prepared = await prepareQuestionnaireRestoration(value, {
+      isCurrent: () => !researchUiDisposed && mode === "setup" && isCurrent(),
+      signal: new AbortController().signal,
+    });
+    prepared.commit();
+    prepared.afterCommit();
     return getQuestionnaireRecipeContributionSnapshot();
   }
 
   function commitQuestionnaireRestoration(restored, presentation = null) {
+    questionnaireSyncFingerprint = null;
     questionnaireEditor.reset();
     questionnaireDefinitions.splice(0, questionnaireDefinitions.length, ...restored.contribution.questionnaires.definitions);
     questionnaireModules.splice(0, questionnaireModules.length, ...restored.contribution.questionnaires.modules);
@@ -4115,7 +4347,7 @@ function bindResearchInteractions(root, { surface }) {
     // carries no authorization for its declared media or local root.
     void plannerFileWorkflow.open(options => surface === "tauri"
       ? requestPlannerFile(root, PLANNER_LOAD_REQUEST)
-      : openBrowserPlannerRecipeFile(options), { openLegacy: applyExperimentPackageReceipt })
+      : openSupportedBrowserPlannerRecipeFile(options), { openLegacy: applyExperimentPackageReceipt })
       .then(result => {
         if (result === null) announce("Open cancelled. The current design is preserved.");
         else if (result && experimentPackageDocument?.recipe) announce("Recipe opened for editing. Rebind and verify its video folder before changing and confirming media-dependent sections. An unchanged copy can be saved without granting media access.");
@@ -5034,7 +5266,8 @@ function bindResearchInteractions(root, { surface }) {
     }
   }
 
-  function markPlannerEdit() {
+  function markPlannerEdit({ notifyAuthoring = true } = {}) {
+    if (notifyAuthoring) plannerAuthoringSession?.edited();
     if (experimentPackageDocument?.recipe) packageIsStale = true;
     plannerFileWorkflow.edited({ deferNotification: true });
   }
@@ -5043,7 +5276,7 @@ function bindResearchInteractions(root, { surface }) {
   // later reverted. Disclosure, confirmation and preview inspection are not edits.
   for (const type of ["input", "change", "paste"]) root.addEventListener(type, event => {
     const target = event.target;
-    if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label")) return;
+    if (!(target instanceof Element) || target.matches("[data-xr-camera], [data-xr-media], [data-layout-video], #preview-color-hex, #preview-color-label, #questionnaire-local-preset-file")) return;
     markPlannerEdit();
   }, { capture: true, signal: authoringIntents.signal });
   root.addEventListener("click", event => {
@@ -5051,7 +5284,7 @@ function bindResearchInteractions(root, { surface }) {
     if (!button || button.disabled) return;
     const sheetMutation = ["reverse", "delete-row", "add-row", "upload", "undo", "move-up", "move-down", "remove"].includes(button.dataset.sheetAction);
     const xrMutation = ["angles", "import"].includes(button.dataset.xrAction);
-    if (sheetMutation || xrMutation || button.closest("#stimulus-order-editor")
+    if (sheetMutation || xrMutation || button.closest("#stimulus-order-editor") || button.matches("[data-routing-action]")
       || button.matches("[data-feedback-preview-mode], [data-response-preview-mode], [data-study-language-remove], [data-questionnaire-prebuilt-asset], [data-screen-layout-convert], [data-layout-reset], [data-color-reset]")
       || ["feedback-upgrade-v2", "preview-color-apply", "preview-response-reset", "preview-recolor", "binding-reset", "workspace-choose", "video-import", "video-folder-import", "study-language-add-button", "questionnaire-add-blank"].includes(button.id)) markPlannerEdit();
   }, { capture: true, signal: authoringIntents.signal });
@@ -5191,6 +5424,10 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "questionnaire-add-blank") addBlankQuestionnaire();
     if (target.id === "questionnaire-prebuilt-open") {
       renderPrebuiltQuestionnaires(); query("#questionnaire-prebuilt-dialog").showModal();
+      void refreshLocalQuestionnairePresets();
+    }
+    if (target.id === "questionnaire-local-preset-install") {
+      const file = query("#questionnaire-local-preset-file"); file.value = ""; file.click();
     }
     if (target.id === "questionnaire-prebuilt-close") closeDialog("questionnaire-prebuilt-dialog");
     if (target.dataset.questionnairePrebuiltAsset) void addPrebuiltQuestionnaire(target.dataset.questionnairePrebuiltAsset);
@@ -5381,10 +5618,7 @@ function bindResearchInteractions(root, { surface }) {
       inputController.resetNeutral("preset-change");
     }
     if (target instanceof HTMLSelectElement && target.id === "planner-presentation-target") {
-      plannerContributions.invalidateAcceptance("P6");
-      packageExport.invalidate();
-      observePackageDraft();
-      renderPackageExportReview();
+      plannerPresentationTargetChanged();
     }
     if (target instanceof HTMLInputElement && target.name === "attemptDisposition") {
       clearParticipantLanguageSelection();
@@ -5584,23 +5818,23 @@ function bindResearchInteractions(root, { surface }) {
     refreshProjection();
   });
 
-  root.addEventListener(RESEARCH_UI_EVENTS.stimuliCatalogued, (event) => {
-    try {
-      const entries = Array.isArray(event.detail?.items) ? event.detail.items : [];
+  function catalogueRecords(detail) {
+      const nextStimuli = structuredClone(stimuli);
+      const entries = Array.isArray(detail?.items) ? detail.items : [];
       const historicalAnnotationsByPath = new Map();
       if (pendingWorkspaceRestore?.contribution.version === 1) {
         for (const saved of pendingWorkspaceRestore.contribution.videoCatalogue.entries) {
           historicalAnnotationsByPath.set(saved.sourceRelativePath, saved.annotationId);
         }
       }
-      if (event.detail?.replace === true) {
-        for (let index = stimuli.length - 1; index >= 0; index -= 1) {
-          if (stimuli[index].source === "workspace") stimuli.splice(index, 1);
+      if (detail?.replace === true) {
+        for (let index = nextStimuli.length - 1; index >= 0; index -= 1) {
+          if (nextStimuli[index].source === "workspace") nextStimuli.splice(index, 1);
         }
       }
       for (const entry of entries) {
         const item = validateStimulusV1(entry.stimulus ?? entry);
-        const existing = stimuli.find(({ id }) => id === item.stimulusId);
+        const existing = nextStimuli.find(({ id }) => id === item.stimulusId);
         const poolId = null;
         const title = item.source.kind === "workspaceFile"
           ? historicalAnnotationsByPath.get(item.source.relativePath)
@@ -5621,8 +5855,14 @@ function bindResearchInteractions(root, { surface }) {
           youtubePreflight: null,
         };
         if (existing) Object.assign(existing, next);
-        else stimuli.push(next);
+        else nextStimuli.push(next);
       }
+      return nextStimuli;
+  }
+  root.addEventListener(RESEARCH_UI_EVENTS.stimuliCatalogued, (event) => {
+    try {
+      const next = catalogueRecords(event.detail);
+      stimuli.splice(0, stimuli.length, ...next);
       renderPools();
       void refreshVideoCatalogueContribution();
       schedulePlanRefresh();
@@ -5776,7 +6016,8 @@ function bindResearchInteractions(root, { surface }) {
     renderReview();
   });
 
-  root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, (event) => {
+  function projectWorkspaceReady(detail) {
+    const event = { detail };
     const workspaceKey = surface === "tauri" ? event.detail?.workspaceId : workspace;
     if (workspaceKey !== authoringWorkspaceKey) {
       authoringWorkspaceKey = workspaceKey;
@@ -5804,7 +6045,8 @@ function bindResearchInteractions(root, { surface }) {
     }
     refreshWorkspaceLocationButtons();
     refreshProjection();
-  });
+  }
+  root.addEventListener(RESEARCH_UI_EVENTS.workspaceReady, event => projectWorkspaceReady(event.detail));
 
   root.addEventListener(RESEARCH_UI_EVENTS.videoLibraryChanged, (event) => {
     void acceptVideoLibrary(event.detail).catch((error) => announce(error.message));
@@ -5837,7 +6079,286 @@ function bindResearchInteractions(root, { surface }) {
   const unsubscribeStimulusCatalogue = workspaceContributionProducer.subscribe(updateStimulusCatalogue);
   updateStimulusCatalogue(getWorkspaceContributionSnapshot());
 
+  function readQuestionnaireAuthoringContext() {
+    return structuredClone({
+      families: requestedQuestionnaireFamilies.map(id => ({ id, label: questionnaireFamilyLabel(id) })),
+      languages: studyLanguages, definitions: questionnaireDefinitions, modules: questionnaireModules,
+      languageSelection: loadedLanguageSelection, locked: languageEditorLocked,
+    });
+  }
+  function withLocalPresetReadback(owner) {
+    // Optional authoring-library metadata only; no source bytes or runtime input.
+    return Object.freeze({ ...owner,
+      settings: [...owner.settings, { id: "P2.localPresets", type: "json", classification: "derived", writable: false,
+        label: "Researcher-local questionnaire presets", uiControl: "#questionnaire-prebuilt-list", recipePath: null }],
+      read() {
+        const current = owner.read();
+        return { ...current, values: { ...current.values, "P2.localPresets": structuredClone(localPresetChoices) } };
+      },
+    });
+  }
+  function withPlannerTargetInvalidation(owner) {
+    return Object.freeze({ ...owner,
+      async stage(edits, context) {
+        const previous = getSelectedPlannerTarget();
+        const prepared = await owner.stage(edits, context);
+        return { ...prepared, afterCommit() {
+          prepared.afterCommit?.();
+          if (getSelectedPlannerTarget() !== previous) plannerPresentationTargetChanged();
+        } };
+      },
+    });
+  }
+  const feedbackAuthoringControls = createPlannerAuthoringP5Controls({
+    root, isCurrent: () => !researchUiDisposed && mode === "setup",
+    getModel: () => ({ feedbackSettingsVersion, inputBinding, feedbackPreviewMode, responsePreviewMode,
+      previewAxisLabels, previewCornerLabels, restoredTransparency }),
+    commitModel(model) {
+      feedbackSettingsVersion = model.feedbackSettingsVersion;
+      inputBinding = model.inputBinding;
+      feedbackPreviewMode = model.feedbackPreviewMode;
+      responsePreviewMode = model.responsePreviewMode;
+      restoredTransparency = model.restoredTransparency;
+      for (const [target, prepared] of [[previewAxisLabels, model.previewAxisLabels], [previewCornerLabels, model.previewCornerLabels]]) {
+        target.clear(); for (const [key, label] of prepared) target.set(key, label);
+      }
+    },
+    onProjection({ contribution }) {
+      resetInputTest({ notify: false });
+      if (contribution) {
+        inputController?.setBinding(contribution.input);
+        if (contribution.version === 2) configurePreviewResponseSimulator();
+        renderBindings();
+      }
+      refreshProjection();
+    },
+  });
+  function adoptPreparedPlannerDocument(document) {
+    experimentPackageDocument = document; packageIsStale = false;
+    packageReproductionReceipt = null; languageEditorLocked = false;
+    observedPackageDraft = packageDraftFingerprint();
+    packageContributionFingerprint = plannerContributions.read({ format: "contributions" }).fingerprint;
+    observedContributions = packageContributionFingerprint;
+  }
+  async function compileSupportedRecipeDocument(input) {
+    const compile = ({ 1: compilePlannerRecipeV1, 2: compilePlannerRecipeV2, 3: compilePlannerRecipeV3, 4: compilePlannerRecipeV4 })[input.version];
+    if (!compile) throw new TypeError("Unsupported Planner recipe version.");
+    const recipe = await compile(input);
+    return parseSupportedPlannerRecipe(new TextEncoder().encode(`${canonicalJson(recipe)}\n`));
+  }
+  async function prepareQuestionnaireRestoration(contribution, context) {
+    const prepared = await questionnaireEditor.prepareRestoreRecipe(contribution, context);
+    const restored = prepared.restored;
+    return { isCurrent: prepared.isCurrent, commit() {
+      if (!prepared.isCurrent()) throw new Error("Questionnaire restoration changed.");
+      // The old editor context can reference these app arrays. Commit its
+      // guarded replacement before changing those shared array contents.
+      prepared.commit();
+      questionnaireDefinitions.splice(0, questionnaireDefinitions.length, ...restored.contribution.questionnaires.definitions);
+      questionnaireModules.splice(0, questionnaireModules.length, ...restored.contribution.questionnaires.modules);
+      questionnaireAuthoringReceipts.clear(); studyLanguages = restored.languages;
+      requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length, ...restored.families.map(f => f.id));
+      loadedLanguageSelection = restored.contribution.languageSelection; languageEditorLocked = false;
+      questionnaireContributionRevision++;
+    }, afterCommit() { prepared.afterCommit(); clearParticipantLanguageSelection(); renderQuestionnaires(); } };
+  }
+  const prepareCore9 = createPlannerCore9Composition({
+    nativeEffects: () => plannerNativeEffects, nativeWorkspace: () => plannerNativeWorkspace,
+    async prepareWorkspace(detail, { isCurrent, signal }) {
+      const before = authoringWorkspaceKey, oldCatalogue = videoCatalogueProducer.getSnapshot();
+      const reset = before !== detail.workspaceId ? stimulusOrderEditor.prepareReset({ isCurrent, signal }) : null;
+      let committed = false;
+      const current = () => !committed && isCurrent() && authoringWorkspaceKey === before
+        && videoCatalogueProducer.getSnapshot() === oldCatalogue && (reset === null || reset.isCurrent());
+      return { isCurrent: current, result: { selected: true }, commit() {
+        if (!current()) throw new Error("Workspace selection changed before publication.");
+        reset?.commit();
+        authoringWorkspaceKey = detail.workspaceId;
+        capabilities.directoryPermission = detail.directoryPermission;
+        root.dataset.nativeWorkspaceReady = "true";
+        videoCatalogueProducer.withdraw({ notify: false }); committed = true;
+      }, afterCommit() { reset?.afterCommit(); videoCatalogueProducer.notifyChange(); projectWorkspaceReady(detail); } };
+    },
+    async prepareCatalogue(detail, { isCurrent }) {
+      const before = JSON.stringify(stimuli), pending = pendingWorkspaceRestore;
+      let committed = false;
+      const current = () => !committed && isCurrent() && JSON.stringify(stimuli) === before && pendingWorkspaceRestore === pending;
+      const next = catalogueRecords(detail);
+      const entries = pending?.contribution.videoCatalogue.version === 1
+        ? workspaceStimuliToVideoCatalogueEntriesV1(next) : workspaceStimuliToVideoCatalogueEntries(next);
+      const restored = pending ? await verifyWorkspaceRestoredVideoEntries(pending.contribution, entries) : null;
+      const prepared = await videoCatalogueProducer.preparePublication({ entries, restored }, { isCurrent: current });
+      return { isCurrent: () => current() && prepared.isCurrent(), result: { count: entries.length }, commit() {
+        if (!current()) throw new Error("Workspace media changed before publication.");
+        prepared.commit(); stimuli.splice(0, stimuli.length, ...next);
+        videoCatalogueRefreshGeneration++; pendingWorkspaceRestore = null; committed = true;
+      }, afterCommit() { prepared.afterCommit(); renderPools(); refreshProjection(); schedulePlanRefresh(); } };
+    },
+    async prepareQuestionnaireImport(source, args, context) {
+      if (!/^(?:[0-9a-f]{2})+$/u.test(source.bytesHex)) throw new TypeError("Malformed questionnaire source bytes.");
+      const bytes = Uint8Array.from(source.bytesHex.match(/../gu), byte => Number.parseInt(byte, 16));
+      if (bytes.byteLength !== source.byteLength || await sha256Hex(bytes) !== source.sha256) throw new TypeError("Questionnaire source receipt mismatch.");
+      const isJson = source.logicalName.toLowerCase().endsWith(".json");
+      const jsonSource = isJson ? JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) : null;
+      const imported = isJson && (!jsonSource.schema || jsonSource.schema === SURVEYJS_DEFINITION_SCHEMA)
+        ? await importSurveyJson(bytes, { questionnaireId: `${args.familyId}-${args.language}`, language: args.language, basename: source.logicalName })
+        : await importQuestionnaireAuthoring(bytes, { logicalName: source.logicalName });
+      return questionnaireEditor.prepareAuthoringImport(imported, { ...context, familyId: args.familyId,
+        language: args.language, sourceBytes: bytes });
+    },
+    async prepareQuestionnaireSave(id, context) {
+      const prepared = await questionnaireEditor.prepareAuthoringQuestionnaireSave(id, context);
+      const payload = prepared.payload, definition = await verifyP2Definition(payload.definition);
+      const before = canonicalJson(readQuestionnaireAuthoringContext());
+      const current = () => prepared.isCurrent() && canonicalJson(readQuestionnaireAuthoringContext()) === before;
+      let storage;
+      if (definition.schema === SURVEYJS_DEFINITION_SCHEMA) storage = await prepareSurveySourceStorage(payload.sourceBytes, definition);
+      else if (definition.schema === FORM_DEFINITION_SCHEMA) storage = await prepareFormSourceStorage(payload.sourceBytes, definition);
+      else {
+        const format = { "questionnaire-csv-v1": "csv", "questionnaire-txt-v1": "txt", "questionnaire-json-v1": "json" }[payload.authoringReceipt?.original.formatVersion];
+        if (!format || !(payload.sourceBytes instanceof Uint8Array)) throw new TypeError("Questionnaire source is unavailable.");
+        storage = { familyId: payload.familyId, languageTag: payload.language, format,
+          sourceSha256: payload.authoringReceipt.original.sha256, bytes: payload.sourceBytes };
+      }
+      if (!current()) throw new Error("Questionnaire changed while preparing its source.");
+      const { bytes, ...metadata } = storage;
+      const definitions = structuredClone(questionnaireDefinitions);
+      const index = definitions.findIndex(item => item.questionnaireId === id);
+      if (index < 0) definitions.push(definition); else definitions[index] = definition;
+      let modules = structuredClone(questionnaireModules);
+      if (modules.some(item => item.questionnaireId === id)) modules = updateQuestionnaireDefinitionReferences(modules, definition);
+      else { const { module, insertAt } = prepareQuestionnaireModule(definition); modules.splice(insertAt, 0, module); }
+      const languageSelection = loadedLanguageSelection
+        ? reconcileQuestionnaireModuleMappings(loadedLanguageSelection, definitions, modules) : null;
+      return { isCurrent: current, storage: { ...metadata, questionnaireId: id,
+        bytesHex: Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("") },
+      commit(receipt) {
+        if (!current()) throw new Error("Questionnaire changed before source adoption.");
+        prepared.commit(receipt);
+        questionnaireDefinitions.splice(0, questionnaireDefinitions.length, ...definitions);
+        questionnaireModules.splice(0, questionnaireModules.length, ...modules);
+        loadedLanguageSelection = languageSelection;
+        if (payload.authoringReceipt) questionnaireAuthoringReceipts.set(id, payload.authoringReceipt);
+      }, afterCommit() { prepared.afterCommit(); renderQuestionnaires(); schedulePlanRefresh(); } };
+    },
+    async prepareConfirmation(segment, context) {
+      let preparedOwner;
+      if (segment === "P3") preparedOwner = await stimulusOrderEditor.prepareConfirmation(context);
+      if (segment === "P4") preparedOwner = await layoutDraftEditor.prepareConfirmation(context);
+      if (segment === "P6") preparedOwner = await xrLayoutAuthoring.prepareConfirmation(context);
+      return plannerContributions.prepareAcceptance(segment, { ...context, preparedOwner, selectedTarget: getSelectedPlannerTarget() });
+    },
+    prepareSave(context) {
+      return plannerFileWorkflow.prepareSave({ ...context, parseDocument: parseSupportedPlannerRecipe,
+        captureInput: capturePlannerRecipeInputPreparedFeedback,
+        compileDocument: compileSupportedRecipeDocument,
+        adoptDocument: adoptPreparedPlannerDocument, afterAdoptDocument: renderPackageReceipt });
+    },
+    prepareOpen(sourceText, context) {
+      return plannerFileWorkflow.prepareOpen(sourceText, { ...context, parseDocument: parseSupportedPlannerRecipe, prepareOwners: {
+        begin() { experimentPackageDocument = null; editablePackageDefaults = null; browserPackageRoot = null;
+          packageAssetClosureSha256 = null; packageReproductionReceipt = null; packageIsStale = true; languageEditorLocked = false; },
+        afterBegin: clearParticipantLanguageSelection,
+        P1: (value, guard) => prepareWorkspaceRestoration(value, guard),
+        P2: (value, guard) => prepareQuestionnaireRestoration(value, { ...guard, signal: context.signal }),
+        P5: (value, guard) => prepareFeedbackRestoration(value, guard),
+        P3: (value, guard) => stimulusOrderEditor.prepareRestoreContent(value, { savedWorkspaceContribution: guard.workspace,
+          dependencies: { P1: getWorkspaceContributionSnapshot() }, isCurrent: guard.isCurrent }),
+        P4: (value, guard) => layoutDraftEditor.prepareRestoreContent(value, { savedWorkspaceContribution: guard.workspace,
+          savedFeedbackContribution: guard.feedback, isCurrent: guard.isCurrent }),
+        P6: (value, guard) => xrLayoutAuthoring.prepareRestoreSelection(value, guard),
+        policy: preparePlannerPolicyRestoration, presentationTarget: preparePlannerTargetRestoration,
+        adoptDocument: adoptPreparedPlannerDocument, afterAdoptDocument: renderPackageReceipt,
+      } });
+    },
+  });
+  async function prepareNativeOperation(operation, args, context) {
+    const prepared = await prepareCore9(operation, args, context);
+    return { ...prepared, async dispatch(publication) {
+      nativeOperation = operation;
+      try { return await prepared.dispatch(publication); }
+      finally { nativeOperation = null; }
+    } };
+  }
+  plannerAuthoringSession = createPlannerAuthoringSession({
+    owners: [
+      createPlannerWorkspaceCommandOwner({
+        readStudyDraft: () => ({ id: value("experiment-id"), title: value("experiment-title") }),
+        commitStudyDraft: draft => { setInputValue("experiment-id", draft.id); setInputValue("experiment-title", draft.title); },
+        afterCommitStudyDraft() {
+          let identity = null;
+          try { identity = getStudyIdentity(); } catch { /* Preserve an invalid authored draft. */ }
+          for (const listener of studyIdentityListeners) listener(identity);
+          notifyWorkspaceContributionChanged();
+          refreshProjection();
+        },
+        readWorkspaceSelection: () => ({ selected: capabilities.directoryPermission,
+          label: capabilities.directoryPermission ? query("#workspace-root").textContent : null }),
+        getWorkspaceContributionSnapshot,
+        performWorkspaceOperation: () => commandFailure("operation_unavailable", "Native workspace commands are not connected yet.", "P1"),
+      }),
+      withLocalPresetReadback(createPlannerAuthoringP2({ editor: questionnaireEditor, readContext: readQuestionnaireAuthoringContext,
+        commitContext(context) {
+          requestedQuestionnaireFamilies.splice(0, requestedQuestionnaireFamilies.length, ...context.families.map(family => family.id));
+          studyLanguages = context.languages;
+          questionnaireDefinitions.splice(0, questionnaireDefinitions.length, ...context.definitions);
+          questionnaireModules.splice(0, questionnaireModules.length, ...context.modules);
+          loadedLanguageSelection = context.languageSelection;
+          languageEditorLocked = context.locked;
+          for (const id of questionnaireAuthoringReceipts.keys()) {
+            if (!context.definitions.some(definition => definition.questionnaireId === id)) questionnaireAuthoringReceipts.delete(id);
+          }
+        },
+        onCommit() { clearParticipantLanguageSelection(); renderQuestionnaires(); },
+      })),
+      createPlannerVariantCommandOwner({ editor: stimulusOrderEditor }),
+      createPlannerAuthoringP4({ editor: layoutDraftEditor }),
+      createPlannerAuthoringP5(feedbackAuthoringControls),
+      ...(xrLayoutEditor ? [createPlannerAuthoringP6({ editor: xrLayoutEditor })] : []),
+      withPlannerTargetInvalidation(createPlannerPolicyCommandOwner({ root })),
+    ].map(owner => withPlannerCore9(owner, prepareNativeOperation)),
+    onBeforeCommit: ({ operation }) => {
+      if (!["saveRecipe", "openRecipe", "confirmSegment"].includes(operation)) markPlannerEdit({ notifyAuthoring: false });
+    },
+    onCommit({ owners, operation }) {
+      if (owners.includes("P7")) { outputFormatsTouched = true; syncOutputFormatValidation(); }
+      if (!["saveRecipe", "openRecipe"].includes(operation)) packageExport.invalidate();
+      schedulePlanRefresh();
+    },
+  });
+  const routingHost = query("#questionnaire-routing-editor");
+  if (routingHost) questionnaireRoutingEditor = createQuestionnaireRoutingEditor({
+    root: routingHost, readContext: readQuestionnaireAuthoringContext,
+    applyEdits: (edits, guard) => plannerAuthoringSession.execute({
+      schema: PLANNER_COMMAND_SCHEMA, version: 1, sessionId: plannerAuthoringSession.sessionId,
+      requestId: crypto.randomUUID(), expectedRevision: plannerAuthoringSession.revision,
+      action: { kind: "apply", edits },
+    }, guard),
+  });
+  query("#questionnaire-local-preset-file")?.addEventListener("change", event => {
+    void installLocalQuestionnairePreset(event.target.files?.[0]);
+  }, { signal: localPresetLifetime.signal });
+
   return Object.freeze({
+    plannerAuthoringSession,
+    connectPlannerNativeWorkspace(connection) {
+      if (surface !== "tauri" || plannerNativeWorkspace || ["getWorkspaceId", "prepareWorkspace", "prepareCatalogue"].some(key => typeof connection?.[key] !== "function")) throw new TypeError("One native workspace owner is required.");
+      plannerNativeWorkspace = connection;
+    },
+    connectPlannerNativeEffects(connection) {
+      if (surface !== "tauri" || plannerNativeEffects || typeof connection?.execute !== "function") throw new TypeError("One native effect connection is required.");
+      plannerNativeEffects = connection;
+    },
+    async connectResearcherLocalPresets({ readSource, installSource }) {
+      if (surface !== "tauri" || researcherLocalPresets || typeof installSource !== "function") {
+        throw new TypeError("Researcher-local presets require one native Planner connection.");
+      }
+      researcherLocalPresets = createResearcherLocalQuestionnairePresets({ surface, readSource });
+      installLocalPresetSource = installSource;
+      query("[data-local-questionnaire-install]").hidden = false;
+      await refreshLocalQuestionnairePresets();
+    },
+    getResearcherLocalPresetChoices: () => structuredClone(localPresetChoices),
     get mode() { return mode; },
     connectScreenLayoutProducers() { disconnectScreenLayout(); disconnectScreenLayout = connectScreenLayoutProducers(root.researchUi); },
     connectScreenLayoutDependencies(owners) { return layoutDraftEditor.connectDependencies(owners); },
@@ -5890,7 +6411,10 @@ function bindResearchInteractions(root, { surface }) {
     get plannerRecipeSourceText() { return experimentPackageDocument?.recipe ? experimentPackageDocument.canonicalSourceText : null; },
     get canSaveUnchangedPlannerRecipe() { return Boolean(plannerFileWorkflow.canCopy()); },
     async restorePlannerRecipe(sourceText, options = {}) {
-      return plannerFileWorkflow.open(async () => ({ kind: "planner-recipe-v1", document: { canonicalSourceText: sourceText } }), options);
+      return plannerFileWorkflow.open(async () => {
+        const document = await parseSupportedPlannerRecipe(new TextEncoder().encode(sourceText));
+        return { kind: `planner-recipe-v${document.recipe.version}`, document };
+      }, options);
     },
     savePlannerRecipe() { return plannerFileWorkflow.save(); },
     get experimentPackageSelection() {
@@ -5923,6 +6447,8 @@ function bindResearchInteractions(root, { surface }) {
     getPlannerRecipePolicy() { return readPlannerPolicyControls(root); },
     restorePlannerRecipePolicy: authoredMutation(restorePlannerRecipePolicy),
     restorePlannerPresentationTarget: authoredMutation(restorePlannerPresentationTarget),
+    preparePlannerTargetRestoration,
+    preparePlannerPolicyRestoration,
     getPlannerContributionReview() { return plannerContributions.read(); },
     acceptPlannerContribution(segment, options) { return plannerContributions.accept(segment, options); },
     getPlannerAcceptanceReview(options) { return plannerContributions.readAccepted(options); },
@@ -5935,6 +6461,7 @@ function bindResearchInteractions(root, { surface }) {
     },
     getWorkspaceContributionSnapshot,
     restoreWorkspaceContribution: authoredMutation(restoreWorkspaceContribution),
+    prepareWorkspaceRestoration,
     subscribeWorkspaceContributionChanges(listener) {
       return workspaceContributionProducer.subscribe(listener);
     },
@@ -5952,7 +6479,7 @@ function bindResearchInteractions(root, { surface }) {
     restoreQuestionnaireContribution,
     getQuestionnaireRecipeContributionSnapshot,
     restoreQuestionnaireRecipeContribution: authoredMutation(restoreQuestionnaireRecipeContribution),
-    validateQuestionnaireRecipeContribution,
+    validateQuestionnaireRecipeContribution: verifySupportedQuestionnaireRecipeContribution,
     get storageEstimate() { return estimateResearchStorageUse(settingsSnapshot, plan); },
     get inputController() { return inputController; },
     get inputBinding() { return structuredClone(inputBinding); },
@@ -5963,6 +6490,7 @@ function bindResearchInteractions(root, { surface }) {
     getFeedbackLayoutSnapshot: feedbackContribution.getLayoutSnapshot,
     subscribeFeedbackChanges: feedbackContribution.subscribe,
     restoreFeedbackContribution: authoredMutation(restoreFeedbackContribution),
+    prepareFeedbackRestoration,
     getYouTubePreflight(stimulusId) {
       const record = stimuli.find(({ id }) => id === stimulusId)?.youtubePreflight;
       return record ? structuredClone(record) : null;
@@ -6005,6 +6533,10 @@ function bindResearchInteractions(root, { surface }) {
     },
     destroy() {
       researchUiDisposed = true;
+      localPresetLifetime.abort();
+      researcherLocalPresets?.destroy();
+      plannerAuthoringSession.destroy();
+      questionnaireRoutingEditor?.destroy();
       packageLoadGeneration += 1;
       stimulusCatalogueBindingDisposed = true;
       unsubscribeStimulusCatalogue();
