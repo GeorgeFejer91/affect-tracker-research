@@ -40,7 +40,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recentExperiments = null, participantManual = false;
   let focusAfterAction = null;
   let setupScrollQuietUntil = 0;
-  let questionnairePreview = null;
+  let questionnairePreview = null, validationPreview = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -127,6 +127,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }
   function invalidate() {
     revision += 1; preflight = null; selection = null; inputReceipt = null;
+    questionnairePreview = null; validationPreview = null;
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
   }
   function clearQuestionnaire() {
@@ -191,21 +192,32 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-variant").value = first;
     return first;
   }
-  async function ensurePreviewPlan() {
+  async function ensureResolvedPreviewPlan() {
+    if (protocol.active) throw new Error("Stop the active recorded attempt before using hidden validation traversal.");
     if (!recipe) await loadExperiment(true);
     if (!recipe?.recipe) throw new Error("Load a master experiment JSON first.");
     if (!participantPicker.participantId) {
-      participantPicker.restore("P001");
-      participantManual = true;
+      try { await refreshParticipantHistory(true); } catch { /* fall back to the first canonical participant */ }
+      if (!participantPicker.participantId) participantPicker.restore("P001");
+      participantManual = false;
       variantPicker.participant(participantPicker.participantId);
     }
     path = currentLanguagePath();
     renderLanguage(); refreshTimeline();
     const plan = await resolveRunnerSelection(recipe, participantId(), path, selectedVariantId());
+    selection = plan;
+    return plan;
+  }
+  async function ensurePreviewPlan() {
+    const plan = await ensureResolvedPreviewPlan();
     const steps = plan.steps.filter(step => step.kind === "questionnaire");
     if (!steps.length) throw new Error("This experiment has no questionnaire steps to preview.");
-    selection = plan;
     return { plan, steps };
+  }
+  async function ensureValidationPlan() {
+    const plan = await ensureResolvedPreviewPlan();
+    if (!plan.steps.length) throw new Error("This experiment has no runnable steps.");
+    return { plan, steps: plan.steps };
   }
   async function showQuestionnairePreview(index = 0) {
     const previewPlan = questionnairePreview?.plan ? questionnairePreview : await ensurePreviewPlan();
@@ -238,6 +250,87 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-questionnaire-next").hidden = true;
     query("runner-questionnaire-submit").hidden = true;
     renderControls();
+  }
+  function stepTitle(step) {
+    return step.kind === "questionnaire" ? step.payload.definition.title : step.kind === "interval"
+      ? step.payload.definition.isiId : step.payload.entry?.referenceId ?? step.payload.asset.annotationId ?? step.payload.asset.sourceRelativePath ?? "Video";
+  }
+  function stepLabel(step) {
+    return step.kind === "questionnaire" ? "questionnaire" : step.kind === "interval" ? "ISI" : "video";
+  }
+  function stepDetail(step) {
+    const duration = Number.isFinite(step.durationMs) ? `${Number((step.durationMs / 1000).toFixed(3))} s` : "self-paced";
+    if (step.kind === "questionnaire") return `${step.payload.definition.items?.length ?? 0} items · ${duration}`;
+    if (step.kind === "interval") return `${step.payload.definition.isiId} · ${duration}`;
+    const asset = step.payload.asset;
+    return `${asset.annotationId ?? step.payload.entry?.referenceId ?? "video"} · ${duration}`;
+  }
+  function moveQuestionnairePage(delta) {
+    const presenter = questionnaire?.presenter, model = presenter?.model;
+    if (!model || typeof model.currentPageNo !== "number") return false;
+    fillVisibleQuestionnairePage();
+    const count = Number(model.visiblePageCount ?? model.visiblePages?.length ?? model.pages?.length ?? 1);
+    const next = Math.max(0, Math.min(Math.max(0, count - 1), model.currentPageNo + delta));
+    if (next === model.currentPageNo) return false;
+    model.currentPageNo = next;
+    if (presenter.progress) text("runner-questionnaire-progress", presenter.progress().text);
+    query("runner-questionnaire").scrollTo({ top: 0, behavior: "auto" });
+    return true;
+  }
+  async function showValidationPreview(index = 0) {
+    const previewPlan = validationPreview?.plan ? validationPreview : await ensureValidationPlan();
+    const nextIndex = Math.max(0, Math.min(previewPlan.steps.length - 1, index));
+    validationPreview = { ...previewPlan, index: nextIndex };
+    const step = validationPreview.steps[nextIndex];
+    if (!presentation.active) await presentation.enter();
+    clearQuestionnaire();
+    const title = stepTitle(step), label = stepLabel(step);
+    text("runner-session", `${participantLabel(participantId())} · validation step ${nextIndex + 1}/${validationPreview.steps.length}`);
+    text("runner-stimulus", title);
+    text("runner-timing", "Hidden validation traversal · timers not waited");
+    text("runner-write", "No recording");
+    text("runner-lsl", "No LSL markers emitted");
+    query("runner-pause").disabled = true;
+    if (step.kind === "questionnaire") {
+      presentation.showPage("questionnaire"); preview.update({ hideFeedback: true });
+      questionnaire = { definition: step.payload.definition, position: step.position, answers: {}, master: false, preview: true, validationPreview: true, version: validationPreview.plan.version };
+      query("runner-questionnaire").lang = questionnaire.definition.language;
+      renderQuestionnaireParticipantCopy(questionnaire.definition);
+      text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
+      const current = questionnaire;
+      questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
+        version: validationPreview.plan.version,
+        randomSeed: surveyRandomSeed(validationPreview.plan.planIdentitySha256, step.position),
+        onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
+        onComplete: () => action(() => showValidationPreview(nextIndex + 1)),
+      });
+      text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
+      if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
+      query("runner-questionnaire-previous").hidden = true;
+      query("runner-questionnaire-next").hidden = true;
+      query("runner-questionnaire-submit").hidden = true;
+    } else {
+      presentation.showPage("run");
+      const stage = root.querySelector(".stimulus-stage"), feedback = root.querySelector(".run-feedback-stage");
+      query("run-native-video-host").hidden = true;
+      clearMasterDesktopLayout(root);
+      let layoutStatus = "";
+      try { applyMasterDesktopLayout(root, validationPreview.plan, windowObject); }
+      catch (error) { layoutStatus = `\nLayout preview unavailable at this window size: ${messageOf(error)}`; }
+      stage.hidden = false;
+      feedback.hidden = step.kind !== "video";
+      query("run-stimulus-placeholder").textContent = `${label.toUpperCase()}\n${title}\n${stepDetail(step)}${layoutStatus}`;
+      preview.update(step.kind === "video"
+        ? runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0)
+        : { ...runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0), hideFeedback: true });
+    }
+    renderControls();
+  }
+  async function traverseValidationPreview(delta) {
+    if (delta > 0 && moveQuestionnairePage(1)) return;
+    if (delta < 0 && moveQuestionnairePage(-1)) return;
+    const base = validationPreview?.index ?? (delta > 0 ? -1 : 0);
+    await showValidationPreview(base + delta);
   }
   function sampleSurveyValue(question) {
     const choice = (question.visibleChoices ?? question.choices ?? question.rateValues ?? [])
@@ -388,6 +481,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const generation = ++revision;
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
     selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
+    questionnairePreview = null; validationPreview = null;
     clearQuestionnaire();
     participantManual = false; variantPicker.adopt(null); participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
     const candidate = await readRunnerRecipe(bytes);
@@ -622,6 +716,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await invoke("research_input_cancel_setup");
   }));
   listen(windowObject, "keydown", event => {
+    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.repeat && !event.isComposing) {
+      const key = event.key.toLowerCase();
+      if (["n", "b"].includes(key)) {
+        event.preventDefault();
+        action(() => traverseValidationPreview(key === "n" ? 1 : -1));
+        return;
+      }
+    }
     if (event.ctrlKey && event.altKey && event.shiftKey && !event.repeat && !event.isComposing) {
       const key = event.key.toLowerCase();
       if (["q", "n", "p", "f"].includes(key)) {
