@@ -43,6 +43,21 @@ try{
  const bytes=new Uint8Array(await(await fetch('/test/fixtures/runner-master-v3-owner.canonical.json')).arrayBuffer());
  await app.adoptRecipe(bytes);await tick();
  check(q('runner-participant').value==='P01','empty data prefills P01');check(q('runner-variant').value==='variant-3','empty data prefills first saved version');check(!q('runner-launch').disabled,'no explicit version selection needed');
+ check(q('runner-variant-scale').textContent.includes('Equal usage: 0 XDF'),'zero inventory has neutral equal-usage legend');
+ const color=i=>q('runner-version-'+i).style.getPropertyValue('--version-color');
+ for(const distribution of [[0,4,9],[5,7,9],[9,9,9]]){
+  files=distribution.flatMap((n,i)=>Array.from({length:n},()=>({p:'P001',v:i+1})));await app.adoptRecipe(bytes);await tick();
+  if(distribution[0]===distribution[2]){
+   check([0,1,2].every(i=>color(i)==='hsl(0 0% 65%)'),'equal nonzero counts share neutral color');
+   check(q('runner-variant-scale').textContent.includes('Equal usage: 9 XDF'),'balanced nonzero legend');
+  }else{
+   check(color(0)==='hsl(120 55% 52%)'&&color(2)==='hsl(0 55% 52%)','observed minimum green and maximum red: '+distribution);
+   check(q('runner-variant-scale').textContent.includes('Green: '+distribution[0]+' XDF (minimum)'),'legend uses observed minimum: '+distribution);
+   if(distribution[0]===5)check(color(1)==='hsl(60 55% 52%)','nonzero-range midpoint is yellow');
+  }
+  check(q('runner-variant-button').style.getPropertyValue('--version-color')===color(0),'selected button matches menu color: '+distribution);
+  check(root.querySelector('.runner-version-legend').hidden===(distribution[0]===distribution[2]),'gradient legend only shown for unequal counts: '+distribution);
+ }
  files=[{p:'P001',v:1},{p:'P001',v:1},{p:'P003',v:2}];await app.adoptRecipe(bytes);await tick();
  check(q('runner-participant').value==='P02','participant fills first unused XDF number');check(q('runner-variant').value==='variant-2','least-used version across all participants');
  q('runner-variant-button').click();check(!q('runner-variant-popup').hidden,'arrow opens frequency chart');

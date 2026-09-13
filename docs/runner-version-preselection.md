@@ -23,8 +23,11 @@ The user selected least-used across all participants, every existing XDF
   remain. New XDF participant names also appear as used even if attempt records
   are absent. A repeat stays possible through the existing confirmation flow.
 - The dropdown lists recording count and distinct participant count for each
-  version with proportional bars. Color moves from green at zero to red at the
-  current largest count; numbers and selected/focused states remain independent
+  version with proportional bars. Color moves from green at the current minimum
+  to red at the current maximum, using `(count-min)/(max-min)`. Equal counts
+  (including all zero or a single version) use neutral gray with an explicit
+  equal-usage legend. The dropdown names the actual endpoints. Bar lengths
+  still represent count/max; numbers and selected/focused states remain independent
   of color. Arrow/Home/End/Enter/Escape/Tab and mouse selection work.
 - Failed/unavailable inventory never becomes a zero-count claim or an automatic
   allocation. Manual selection remains available with an explicit status.

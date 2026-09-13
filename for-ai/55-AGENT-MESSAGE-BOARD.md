@@ -1,5 +1,6 @@
 # Agent message board
 
+
 ## 20260913 contracts file-size guidance correction
 
 The user clarified that this pass removes arbitrary file-size restrictions from
@@ -46,6 +47,28 @@ patched. Evidence: `.affect-checks/runner-preview-video-links-04` and
 `.affect-checks/runner-preview-video-location-native-01` under the GitHub root.
 Native tests resolve paths without opening Explorer; actual installed click
 verification follows root integration/rebuild. No acquisition/recording claim.
+
+## Runner adaptive version colors — user follow-up
+
+R1 RR-03/10, UI Finalization: use the observed minimum and maximum XDF
+recording counts for the version picker colors, with neutral equal-count state.
+Branch `codex/segment-runner-usage-colors`, isolated worktree
+`D:/GitHub/affect-tracker-research-runner-usage-colors`, base `32c7c2d`.
+Scope: variant-picker color/legend, existing focused checks and owned docs.
+Existing code uses zero as the lower color bound; native inventory is already
+the correct producer. No JSON contribution, count/selection/native changes.
+Collect focused logic/UI checks and frontend build; root retains consolidated
+native distribution and experiment qualification. Orchestrator notified.
+
+Ready: 3 focused Node tests and 129 production-UI assertions pass (synthetic
+native replies; desktop/narrow/open/closed). Receipt:
+`D:/GitHub/.affect-runner-master-build/adaptive-colors-ui-02/receipt.json`.
+The narrow menu screenshot was inspected in the preceding UI run; final checks
+also hide the gradient strip for equal/unavailable counts. Frontend build and
+12-file/73-input Runner boundary pass, with the existing bundle-size warning.
+Vite was invoked through its installed Node entrypoint because this checkout's
+dependency junction has no npm executable shim. No native build/app launch.
+
 
 ## 20260913 root consolidated SurveyJS Runner validation
 
