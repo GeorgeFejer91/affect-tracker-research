@@ -1,0 +1,12 @@
+[package]
+name = "affect-runner-launcher"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+[dependencies]
+sha2 = "=0.10.9"
+
+[profile.release]
+panic = "abort"
+strip = true
