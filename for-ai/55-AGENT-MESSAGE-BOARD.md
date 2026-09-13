@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20260913 root consolidated SurveyJS Runner validation
+
+Root resumes the user-authorized R1 integration pass (RR-02/03/06/07/08 and
+P2/P7 compatibility seams) in `D:/GitHub/affect-tracker-research-master-v3`,
+`codex/final-release-validation`, from `e3405b8`. All owning tasks report their
+work complete. SurveyJS commits `5d3329b` and `0e92179` were collected as
+`762f063` and `4ad9249`. Merge resolutions preserve recent-file autoload,
+participant/version selection and the explicit unqualified master3 validation
+path alongside master4 normal dispatch. The retired handwritten-form harness
+entrypoints delegate to SurveyJS; its native fixture also needs the new launcher
+history/variant replies. Collect focused combined JS/native/UI evidence before
+rebuilding the one `current-apps` distribution. Actual session, geometry,
+neutral-ISI and independent XDF reconstruction remain unproven; installer work
+follows functional completion. No additional task delegation or parallel build
+distribution is authorized by this pass.
+
 ## 20260913 SurveyJS pipeline — user-allocated P2, P7 and RR-06
 
 Direct user goal: retain the basic table builder and MAIA-2/TAS EN/DE presets;
