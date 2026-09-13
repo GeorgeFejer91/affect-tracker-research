@@ -7,7 +7,6 @@ import { mkdir, open, readFile, stat, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const MAX_FRAME = 16 * 1024 * 1024;
 const MAX_STEPS = 4096;
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const uuid = value => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(value);
@@ -50,7 +49,6 @@ function frames(stream) {
     for (;;) {
       const end = buffer.indexOf(10);
       if (end < 0) break;
-      if (end + 1 > MAX_FRAME) { fail(new Error("CLI stdout frame exceeds 16 MiB")); return; }
       const bytes = buffer.subarray(0, end);
       buffer = buffer.subarray(end + 1);
       try {
@@ -59,7 +57,6 @@ function frames(stream) {
         else { queued.push(value); if (queued.length > 4) throw new Error("Unexpected CLI output queue overflow"); }
       } catch (error) { fail(error); return; }
     }
-    if (buffer.length > MAX_FRAME) fail(new Error("CLI stdout frame exceeds 16 MiB"));
   });
   stream.on("error", fail);
   stream.on("end", () => {
@@ -230,7 +227,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     const [executable, actionPath, outputDirectory, ...extra] = process.argv.slice(2);
     assert.ok(executable && actionPath && outputDirectory && !extra.length,
       "Usage: planner-cli-driver.mjs <CLI.exe> <actions.json> <new-evidence-directory>");
-    assert.ok((await stat(actionPath)).size <= MAX_FRAME, "Action script exceeds 16 MiB");
     const steps = JSON.parse(await readFile(actionPath, "utf8"));
     const receipt = await runPlannerCli({ executable, steps, outputDirectory });
     console.log(JSON.stringify(receipt));

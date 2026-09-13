@@ -15,7 +15,8 @@ Rendering does not require a CDN or a SurveyJS account.
    generate exactly the same object; no Node.js runtime is needed on participants'
    computers.
 4. Preview the questionnaire, then **Save questionnaire**. Add each required
-   language version, its placement and routing as usual, and save the experiment.
+   language version and route. Use `beforeSession` to administer it before the
+   first video, in the saved module order, then save the experiment.
 
 The original survey object stays intact inside the final experiment JSON.
 Pages, conditions, validators, expressions, nested forms, choices and localized
@@ -50,11 +51,12 @@ retain their SurveyJS behavior. Native validation must succeed before completion
 JSON cannot install custom JavaScript, plugins, custom widgets or event handlers.
 Unknown question types, invalid schemas, REST choice services, external upload
 handlers and completion redirects are rejected at import. File answers use inline
-data (`storeDataAsText: true`) and share the answer-size limit. HTML is sanitized
+data (`storeDataAsText: true`). HTML is sanitized
 with DOMPurify. Remote media references require reachable permitted resources;
 they are not downloaded into the experiment. For offline use, include resources
-as supported inline data. Large attachments may exceed the bounded experiment
-transport, so preview and test the intended content before data collection.
+as supported inline data. There is no application byte ceiling for SurveyJS
+definitions, inline resources, answers or master recipes. Available memory and
+engine execution time still determine what a machine can process.
 
 This integration contains the Form Library and a link to the online builder.
 It does not embed the separately licensed Creator editor, Dashboard analytics
@@ -83,11 +85,24 @@ current occurrence. Existing typed and Likert answer contracts remain intact.
 Rust re-evaluates the pinned SurveyJS core in the safe Rust Boa 0.22 engine, on
 a dedicated bounded worker. A renderer's assertion that a survey is complete is
 not authoritative. Imported content is JSON data, never executable source. The VM
-has no filesystem, network or DOM bindings. Import/answer objects are bounded to
-4 MiB each, depth 48, 100,000 nodes and 2,048 questions; the native queue, execution
+has no filesystem, network or DOM bindings. Import/answer objects retain depth
+48, 100,000 nodes and 2,048 questions; the native queue, execution
 deadline, loop/recursion/stack limits bound evaluation. There is no claimed hard
 heap quota. Survey definitions and supported behavior are pinned to 3.0.4; a
 future library upgrade requires new compatibility validation.
+
+The 2026-09-13 user amendment removes the former 4 MiB SurveyJS, 5 MiB
+source/handoff, 16 MiB master/CLI and 64 MiB assembled-information ceilings.
+Browser and native import, storage, reopening, validation and CLI readback share
+this policy. Native operation leases and compact retry receipts remain bounded;
+they do not limit survey content. Information records retain 64 KiB chunks and
+128 KiB frames, integrity checks and ordered commits. A header never allocates
+its declared total size before actual chunks arrive. Older consumers with the
+former ceilings may reject larger files and recordings; use updated consumers.
+
+Runner accepts master4 in its explicit local validation path, including native
+SurveyJS draft/submit and independent recording reconstruction. These attempts
+keep `researchQualified: false`. Normal production qualification is unchanged.
 
 Master v4 writes `master-responses.v3.jsonl`. Survey responses contain exactly
 `engineVersion`, `language`, `completionPolicy`, `randomSeed`, `evaluatedAtUnixMs`,

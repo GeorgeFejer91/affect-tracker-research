@@ -20,9 +20,9 @@ is attached or controlled. Temporary profiles currently remain on disk after
 exit; no user workspace or recipe is deleted during shutdown.
 
 The native broker admits at most four queued/in-flight commands and four output
-frames, each limited to 16 MiB including line framing. Startup and in-flight
+frames. Survey-bearing frames have no fixed byte ceiling. Startup and in-flight
 commands have 120-second deadlines; idle sessions have a 300-second deadline.
-EOF drains queued work and flushed replies before exit 0. Framing overflow,
+EOF drains queued work and flushed replies before exit 0. Malformed commands reject;
 unconsumed output, I/O failure or a deadline closes only this owned process with
 exit 2 and a fixed diagnostic code. A startup failure emits a fixed JSON error.
 After a nonzero exit, no assumption about an unacknowledged edit is permitted.

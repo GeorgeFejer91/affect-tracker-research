@@ -94,9 +94,9 @@ dispatch it exactly once. No generic renderer filesystem command is introduced.
 | Video paths per selection | 1–256; other purposes require exactly one path by type |
 | Each external path | 1–4096 UTF-8 bytes, no control characters |
 | Aggregate retained path payload charge | 1 MiB; conservative charge of twice each canonical `OsStr` encoded byte length |
-| Questionnaire file | 1 byte–4 MiB, checked on issue and claim |
+| Questionnaire file | Nonempty ordinary file; stable exact bytes checked on issue and claim |
 | Questionnaire logical basename | 1–1024 UTF-8 bytes, no controls |
-| Questionnaire public source encoding | at most 8 MiB hex plus bounded metadata; below the 16 MiB wire frame |
+| Questionnaire public source encoding | Exact hex bytes plus metadata; no total payload byte ceiling |
 
 Record/vector overhead is additionally bounded by the fixed request/path
 counts. Claim/revocation releases retained path payload, but request records

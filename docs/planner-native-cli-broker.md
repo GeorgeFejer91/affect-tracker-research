@@ -106,15 +106,13 @@ an effect under an existing identity. No timed retry evicts retained identities.
 
 There are at most 1,024 retained mutation identities and 8 MiB of compact
 retention, with 64 KiB reserved for a native acknowledgement before dispatch.
-Pending native result payload capacity is reserved before I/O, capped at
-32 MiB overall. The entire encoded IPC envelope, including JSON escaping or
-hex expansion, must fit 16 MiB before a write may be invoked. A raw 16 MiB
-source is therefore not a guarantee of transport eligibility. Source reads
-retain the grant helper's 4 MiB input limit; source stores retain the workspace
-service's 5 MiB limit. Grant/path limits remain those of the existing helper.
-An oversized read/result loses bulk delivery and returns `native_result_limit`
-while preserving its compact actual effect. Native work does not accept
-another mutation when receipt retention has no capacity.
+The operation lease permits one native payload at a time. Payloads have no
+fixed byte ceiling and are released at command completion or shutdown; only the
+compact receipt survives. Source reads retain stable-file and exact-byte checks.
+Source storage, encoded IPC and master files have no byte ceilings. Grant/path
+limits remain those of the existing helper. Native work does not accept another
+mutation when compact receipt retention has no capacity. The JS coordinator
+retains a SHA-256 command fingerprint instead of a second survey-sized string.
 
 Known and still-unknown effects remain in this broker instance on shutdown or
 output failure. This is not a disk recovery journal. Process death or lost

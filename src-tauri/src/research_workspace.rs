@@ -2715,10 +2715,10 @@ mod tests {
             assert_eq!(error.code, "invalid_research_contract");
         }
 
-        // Invalid content still rejects even after removing the storage ceiling.
+        // The source store preserves bytes; format semantics belong to import.
         let oversized = vec![b'x'; 5 * 1024 * 1024 + 1];
         let oversized_sha256 = format!("{:x}", Sha256::digest(&oversized));
-        let error = service
+        let stored = service
             .store_questionnaire_asset(
                 &workspace_id,
                 "maia-2",
@@ -2727,13 +2727,14 @@ mod tests {
                 &oversized_sha256,
                 &oversized,
             )
-            .unwrap_err();
-        assert_eq!(error.code, "invalid_research_contract");
+            .unwrap();
+        assert_eq!(stored.byte_length, oversized.len() as u64);
+        assert_eq!(fs::read(workspace.join(&stored.relative_path)).unwrap(), oversized);
         assert_eq!(
             fs::read_dir(workspace.join("assets").join("questionnaires"))
                 .unwrap()
                 .count(),
-            0
+            1
         );
         fs::remove_dir_all(base).unwrap();
     }

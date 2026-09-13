@@ -16,7 +16,6 @@ const close = new Promise((resolveClose, reject) => {
 });
 child.stdout.on("data", data => {
   partial += data.toString("utf8");
-  if (partial.length > 16 * 1024 * 1024) { child.kill(); return; }
   let end;
   while ((end = partial.indexOf("\n")) >= 0) {
     const line = partial.slice(0, end); partial = partial.slice(end + 1); stdout.push(line);

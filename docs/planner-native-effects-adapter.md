@@ -10,8 +10,8 @@ one-use grants, cancellation, effect leases, CAS, source bytes and file writes.
 The only RPC is `research_planner_authoring_effect({request:{context,action}})`.
 Closed actions are selectWorkspace, importVideos, importVideoFolder,
 rescanVideoLibrary, readQuestionnaire, storeQuestionnaire, writeRecipe and
-readRecipe. Paths cannot replace opaque grant UUIDs. Encoded request size,
-including its wrapper and final LF allowance, is bounded to 16 MiB.
+readRecipe. Paths cannot replace opaque grant UUIDs. Survey-bearing requests and
+replies have no fixed byte ceiling; the operation lease limits concurrent work.
 
 The reply is the agreed closed native-result envelope with original public
 perform operation, effect, payload, error and superseded. Private action names

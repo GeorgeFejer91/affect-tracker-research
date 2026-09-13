@@ -55,7 +55,8 @@ these remain incomplete drafts and cannot become accepted source definitions.
 
 The sheet owner enforces 256 language slots, 1,024 items, 2–64 options, finite
 codes in ±1,000,000,000, bounded text and 4 MiB per sheet. Batches retain the
-shared 256 edit / 16 MiB limit. No source bytes, provenance hash or acceptance
+shared 256-edit count. SurveyJS import and recipe transport have no byte ceiling.
+No source bytes, provenance hash or acceptance
 receipt is writable through an authored setting.
 
 Whole questionnaire replacement orders families by first appearance, then

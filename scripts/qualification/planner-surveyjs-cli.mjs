@@ -4,13 +4,15 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { runPlannerCli } from "./planner-cli-driver.mjs";
 
-const [executable, destination] = process.argv.slice(2);
+const [executable, destination, sizeMiB = "0"] = process.argv.slice(2);
 assert.ok(executable && destination);
+assert.ok(["0", "5"].includes(sizeMiB), "Use the ordinary or 5 MiB regression fixture.");
 const root = resolve(destination); await mkdir(root);
 const workspace = join(root, "workspace"); await mkdir(workspace);
 const surveyJson = { title: { default: "CLI Survey", de: "CLI Fragebogen" }, elements: [
   { type: "boolean", name: "details" }, { type: "text", name: "answer", visibleIf: "{details} = true" },
 ] };
+if (sizeMiB === "5") surveyJson.elements.unshift({ type: "html", name: "largeInstructions", html: "x".repeat(5 * 1024 * 1024) });
 const source = join(root, "generated-survey.json"); await writeFile(source, JSON.stringify(surveyJson, null, 2));
 const perform = (operation, args) => ({ kind: "perform", operation, arguments: args });
 const get = field => ({ kind: "get", field });

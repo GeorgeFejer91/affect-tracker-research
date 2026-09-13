@@ -75,9 +75,12 @@ try {
     assert.equal(response.requestId, command.requestId); assert.equal(response.status, "ok");
     assert.equal(response.revision, ready.revision); child.stdin.end();
   }, 0);
-  await runCase("oversized-frame-exit", async ({ child }) => {
-    child.stdin.end(Buffer.alloc(16 * 1024 * 1024 + 1, 32));
-  }, 2);
+  await runCase("large-malformed-frame-rejection", async ({ child, next }) => {
+    child.stdin.end(" ".repeat(17 * 1024 * 1024) + "\n");
+    const result = await next();
+    assert.equal(result.status, "rejected");
+    assert.equal(result.issues[0].code, "malformed_command");
+  }, 0);
 } catch { status = "failed"; process.exitCode = 1; }
 const receipt = { status, executableSha256, cases: cases.map(({ frames, stderr, ...result }) => result),
   limits: ["Actual owned hidden CLI lifecycle only. No media, full recipe, UI parity or Runner execution claim."] };

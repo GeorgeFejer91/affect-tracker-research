@@ -21,8 +21,9 @@ cannot change. Payload is one of these closed objects:
 One transfer is active at a time. IDs are fresh `transfer-<UUID>` codes. Transfer
 data is canonical JSON; header and commit hashes bind its exact bytes. Raw chunks
 are 64 KiB except the final remainder; no frame exceeds 128 KiB of UTF-8 JSON.
-An assembled transfer is at most 64 MiB (1024 chunks), one assembler buffer is
-allocated only after validating the header, and the stream has at most one
+There is no assembled-transfer byte ceiling. The assembler stores received
+chunks before allocating the complete verified-length buffer; a header alone
+never allocates its declared total size. The stream has at most one
 million frames. The native writer checks a 30-second transfer deadline before
 and after each publication; failure permanently closes its information writer.
 Foreign calls cannot be force-terminated; pending native teardown retains its
@@ -65,8 +66,8 @@ typed responses reject or report incomplete; no consumer synthesizes missing
 events or fills actual timing from planned offsets.
 
 The incremental JS assembler retains one validated transfer at a time. Its
-convenience reconstruction collector rejects more than 256 MiB of cumulative
-decoded records; the independent pyxdf qualification command accepts XDF files
+convenience reconstruction collector has no cumulative byte ceiling. The
+independent pyxdf qualification command accepts XDF files
 up to 512 MiB. These are explicit analysis-tool bounds, not additional wire
 formats. Larger recordings require incremental analysis. Both readers preserve
 raw LSL timestamps; no clock synchronization or sample dejittering is enabled.
