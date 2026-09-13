@@ -5843,3 +5843,19 @@ runtime event markers, neutral-reset markers, and original observed timestamps
 for physical input edges rather than only marker push time. This pass implements
 only the frontend draft/capture surface and records the native marker contract
 gap for the backend verification pass.
+
+## Unified questionnaire integration — 2026-09-13
+
+User-authorized integration completed in the isolated questionnaire-assets
+branch, collecting current Planner and Runner work and retaining the active
+controller task's f5e9e7a checkpoint. Source milestone d45af0d combines master5
+assets, minimal P2 builder, abort/traversal, controller capture, preview file
+links, usage colors, correspondence audit and current file-size guidance.
+Older duplicate branch histories are reconciled with no content changes; the
+experimental cap-removal branch remains separate by explicit owner handoff.
+Canonical continuation is codex/research-unified; agents start from its current
+HEAD in isolated segment worktrees and route cross-owner changes through this
+board. Do not restore superseded branch snapshots over the unified tree.
+Software checks and exact evidence are in docs/planner-questionnaire-assets.md.
+Installed distribution remains governed by73/current-build.json and is not
+claimed updated merely because source was merged.

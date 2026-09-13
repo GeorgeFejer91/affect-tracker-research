@@ -104,3 +104,32 @@ builder-final-ui-02 has 15 checks including the installed local TAS source;
 builder-final-popup-02 has 14 checks at 800px. Both screenshot layouts inspected.
 questionnaire-builder-native-03 uses the documented prepared diagnostic copy:
 all three engine tests pass with the existing execution deadline unchanged.
+
+## Unified integration evidence
+
+Source tree d45af0d includes the asset/builder work, current Runner controller
+capture and traversal, controlled abort, video-file links, usage colors, current
+correspondence audit and file-size guidance. Earlier SurveyJS/recent-file/version
+branches were reconciled without content changes after comparing their overlaps
+with the newer implementation. Experimental survey-cap-removal3ed53ef remains
+separate per its owner's clarified handoff; no history was deleted.
+
+Combined verification in D:/GitHub/.affect-checks:
+- questionnaire-unified-complete-node.log: all 1215 tests pass.
+- questionnaire-unified-builder-ui-01 and questionnaire-unified-popup-ui-01:
+  29 checks; desktop and 800px participant popup.
+- questionnaire-unified-runner-manifest5: eight EN/DE production-app cases,
+  444 checks with synthetic native replies, exact asset transport and responses.
+- questionnaire-unified-final-launcher: 17 cases, 298 checks; controller capture.
+- questionnaire-unified-final-hotkeys: 11 checks, including abort/reopen.
+- questionnaire-unified-version-preview-final: 221 checks at 900/600px;
+  least-used version colors and native reveal command dispatch.
+- Both frontend builds/boundaries and SurveyJS generated-content checks pass.
+
+Native tests use the existing copy-only diagnostic manifest described above;
+questionnaire-unified-native-final retains the source/prepared binary hashes.
+All 32 focused native tests pass:25 input,1 video-location,3 SurveyJS engine
+and3 manifest/file tests. Existing execution deadlines are unchanged.
+The installed current-app receipt was not replaced. This integration does not
+claim native playback, physical keys, device geometry, timing or actual XDF
+acquisition qualification.
