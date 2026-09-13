@@ -12,6 +12,25 @@ demographics save as SurveyJS. A minimal element arrangement box retains Excel
 table paste and opens an interactive participant-preview popup. No free-position
 canvas, changed instrument wording or new computed scoring is requested.
 
+## File-size guidance amendment — 2026-09-13
+
+The researcher removes arbitrary whole-file and assembled-document byte ceilings
+from the AI guidance. Do not prescribe fixed size caps for questionnaire sources,
+SurveyJS definitions or responses, segment contributions, Planner recipes,
+experiment packages, or the complete startup information bundle.
+Earlier references to such caps as frozen
+requirements are superseded. File size alone is not a product-validity rule.
+
+Exact byte lengths and hashes still identify content. Schema/field validation,
+path authority, integrity checks and transport framing remain separate concerns;
+a per-frame limit does not justify limiting the complete document. Any actual
+platform or resource limit must be described with its technical cause and scope,
+not promoted to an arbitrary product ceiling.
+
+This is a guidance change only. Limits still present in source are implementation
+limitations to assess, not proof of unlimited support or instructions to preserve
+them. Runtime changes and support claims require their own implementation evidence.
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and
@@ -445,7 +464,7 @@ while only the derived participant code, age, and closed gender/handedness
 codes may be frozen for a run. Localizing that form is a future checklist item,
 not part of this questionnaire-editor pass.
 
-Secondary file-import actions accept bounded strict UTF-8 CSV, tab-delimited
+Secondary file-import actions accept strict UTF-8 CSV, tab-delimited
 TXT, or JSON questionnaire documents and populate the same table editor.
 Downloadable templates define all three
 representations. CSV retains the exact 14-column `questionnaire-csv-v1`
@@ -454,8 +473,8 @@ tab-delimited row per option; JSON uses the closed `questionnaire-json-v1` neste
 representation. TXT and JSON are adapters only: each is deterministically
 converted into canonical Questionnaire CSV v1, then passed through the same
 strict definition importer. Unknown/duplicate fields, malformed encoding,
-invalid limits, or ambiguous format identity reject. Direct edits and pasted
-tables also compile through this canonical definition boundary. No master JSON
+invalid field constraints, or ambiguous format identity reject. Direct edits and
+pasted tables also compile through this canonical definition boundary. No master JSON
 editor is needed or exposed by this flow.
 
 The authoring receipt separately binds the original source bytes, canonical CSV

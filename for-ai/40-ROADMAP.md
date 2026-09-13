@@ -1315,7 +1315,9 @@ but they no longer constitute the target runtime authority on their own. A
 browser package attempt is authorized only through the canonical package Run
 binding that reproduces this embedded V3 settings/plan/protocol tuple.
 Tauri's no-argument `research_load_experiment` owns its native picker and
-strictly returns a path-free receipt for files no larger than 5 MiB. Separate
+returns a path-free receipt. This historical implementation imposed a 5 MiB
+file ceiling; that ceiling is not a product requirement under the
+[2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13). Separate
   native package load/save commands and the package-only native runtime now
   exist. Transitional-V3 native Start remains retired; package Start reaches
   the Rust preflight but remains fail-closed before mutation until media

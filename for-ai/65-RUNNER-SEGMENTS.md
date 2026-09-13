@@ -191,9 +191,10 @@ directory rerun passes all 258 tests with two explicitly ignored, recorded in
 The later user expansion (root amendment `f877b8a`, full goal ledger 69) allocates
 a self-contained primary XDF information stream and shipped typed EN/DE
 demographics. It is a subsequent checkpoint: ≤128 KiB indexed wire frames,
-≤64 MiB committed startup bundle, exact source/selection/definitions/answers,
-observed lifecycle/outcome and strict independent reconstruction. S2/main own the
-new P2/master dispatch; Runner must not invent text/age-as-Likert data or claim
+a committed startup bundle with exact source/selection/definitions/answers,
+observed lifecycle/outcome and strict independent reconstruction. Whole-bundle
+size follows the [charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+S2/main own the new P2/master dispatch; Runner must not invent text/age-as-Likert data or claim
 the first-generation dictionary-only marker receipt satisfies the expansion.
 
 ## Current correspondence allocation — 2026-09-12

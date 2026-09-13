@@ -104,7 +104,7 @@ successful JSON export does not establish scoring validity or permission.
 Stage: Backend Verification. Main integration owns shared commands/session,
 native lifecycle and composition seams. P1–P6 own typed adapters against the
 frozen `docs/planner-authoring-command-api-v1.md` interface. S7 owns timestamp
-naming and bounded native recipe-file service. Chat Orchestrator owns this
+naming and the native recipe-file service. Chat Orchestrator owns this
 roadmap, capability allocation and independent example/reproduction audit.
 Use isolated branches and exact file boundaries; main is sole integrator.
 
