@@ -6,7 +6,9 @@ use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_planner_recipe_v2::PlannerRecipeV2;
 use crate::research_planner_recipe_v3::PlannerRecipeV3;
 use crate::research_planner_recipe_v4::PlannerRecipeV4;
-use crate::research_planner_recipe_v5::{PlannerRecipeV5, QuestionnaireAssetSnapshot, BUNDLE_SCHEMA};
+use crate::research_planner_recipe_v5::{
+    PlannerRecipeV5, QuestionnaireAssetSnapshot, BUNDLE_SCHEMA,
+};
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -45,7 +47,8 @@ impl LoadedSupportedPlannerRecipe {
         }
     }
     pub fn wire_document(&self) -> ResearchResult<Value> {
-        let mut value = serde_json::to_value(self).map_err(|_| CommandError::invalid_contract("Invalid recipe document."))?;
+        let mut value = serde_json::to_value(self)
+            .map_err(|_| CommandError::invalid_contract("Invalid recipe document."))?;
         if let SupportedPlannerRecipe::V5(r) = &self.recipe {
             value["questionnaireAssets"] = serde_json::json!(r.assets);
             value["resolvedRecipe"] = serde_json::json!(r.content);
@@ -139,10 +142,24 @@ pub fn parse_supported_planner_recipe_bytes(
     if value["schema"] == BUNDLE_SCHEMA {
         #[derive(serde::Deserialize)]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
-        struct Bundle { schema: String, version: u32, recipe_source_text: String, questionnaire_assets: Vec<QuestionnaireAssetSnapshot> }
-        let bundle: Bundle = serde_json::from_value(value).map_err(|_| CommandError::invalid_contract("Invalid questionnaire asset transport."))?;
-        if bundle.schema != BUNDLE_SCHEMA || bundle.version != 1 { return Err(CommandError::invalid_contract("Unsupported questionnaire asset transport.")); }
-        return parse_planner_recipe_asset_bytes(bundle.recipe_source_text.as_bytes(), bundle.questionnaire_assets);
+        struct Bundle {
+            schema: String,
+            version: u32,
+            recipe_source_text: String,
+            questionnaire_assets: Vec<QuestionnaireAssetSnapshot>,
+        }
+        let bundle: Bundle = serde_json::from_value(value).map_err(|_| {
+            CommandError::invalid_contract("Invalid questionnaire asset transport.")
+        })?;
+        if bundle.schema != BUNDLE_SCHEMA || bundle.version != 1 {
+            return Err(CommandError::invalid_contract(
+                "Unsupported questionnaire asset transport.",
+            ));
+        }
+        return parse_planner_recipe_asset_bytes(
+            bundle.recipe_source_text.as_bytes(),
+            bundle.questionnaire_assets,
+        );
     }
     if value["schema"] != "affect-research-planner-recipe" {
         return Err(CommandError::invalid_contract(
@@ -186,11 +203,15 @@ pub fn parse_supported_planner_recipe_bytes(
     })
 }
 
-pub fn parse_planner_recipe_asset_bytes(bytes: &[u8], assets: Vec<QuestionnaireAssetSnapshot>) -> ResearchResult<LoadedSupportedPlannerRecipe> {
+pub fn parse_planner_recipe_asset_bytes(
+    bytes: &[u8],
+    assets: Vec<QuestionnaireAssetSnapshot>,
+) -> ResearchResult<LoadedSupportedPlannerRecipe> {
     let recipe = PlannerRecipeV5::read(bytes, assets)?;
     Ok(LoadedSupportedPlannerRecipe {
         recipe: SupportedPlannerRecipe::V5(recipe),
-        canonical_source_text: String::from_utf8(bytes.to_vec()).map_err(|_| CommandError::invalid_contract("Invalid UTF-8."))?,
+        canonical_source_text: String::from_utf8(bytes.to_vec())
+            .map_err(|_| CommandError::invalid_contract("Invalid UTF-8."))?,
         canonical_source_byte_sha256: format!("{:x}", Sha256::digest(bytes)),
     })
 }

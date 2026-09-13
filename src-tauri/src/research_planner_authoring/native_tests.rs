@@ -473,8 +473,16 @@ fn large_recipe_source_reaches_native_validation_without_transport_rejection() {
     let command = f.command("saveRecipe", json!({"directory":f.root}));
     let forward = f.dispatch(&command);
     let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":"\n".repeat(17 * 1024 * 1024)}));
-    assert_eq!(error(f.broker.native_effect(&f.workspace, request)), "invalid_research_contract");
-    assert!(f.broker.lock().unwrap().native.has_call(&command.request_id));
+    assert_eq!(
+        error(f.broker.native_effect(&f.workspace, request)),
+        "invalid_research_contract"
+    );
+    assert!(f
+        .broker
+        .lock()
+        .unwrap()
+        .native
+        .has_call(&command.request_id));
     assert_eq!(fs::read_dir(&f.root).unwrap().count(), 1); // app directory only
 }
 

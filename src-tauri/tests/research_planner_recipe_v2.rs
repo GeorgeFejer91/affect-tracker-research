@@ -74,16 +74,15 @@ mod research_runner_master {
                 ));
             }
             let selected = canonical_json(&selector, &[])?;
-            let plans: Vec<MasterPlan> =
-                serde_json::from_str(include_str!("../../test/fixtures/planner-recipe-v5.plans.json"))
-                    .unwrap();
+            let plans: Vec<MasterPlan> = serde_json::from_str(include_str!(
+                "../../test/fixtures/planner-recipe-v5.plans.json"
+            ))
+            .unwrap();
             plans
                 .into_iter()
                 .find(|plan| canonical_json(&plan.selector, &[]).unwrap() == selected)
                 .map(|plan| Self { plan })
-                .ok_or_else(|| {
-                    research_error::CommandError::invalid_contract("Missing test plan.")
-                })
+                .ok_or_else(|| research_error::CommandError::invalid_contract("Missing test plan."))
         }
     }
 }

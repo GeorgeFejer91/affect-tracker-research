@@ -753,7 +753,9 @@ pub fn research_input_begin_test(
     let focused = window.is_focused().map_err(CommandError::io)?;
     input.set_window_focused(focused);
     if !focused {
-        return Err(CommandError::forbidden("Focus the experiment window before testing input."));
+        return Err(CommandError::forbidden(
+            "Focus the experiment window before testing input.",
+        ));
     }
     input.begin_test(binding)
 }
@@ -1037,15 +1039,27 @@ pub async fn research_runner_recent_experiments(
     entry_id: Option<String>,
 ) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
-    if *role != crate::research_desktop::DesktopRole::Runner { return Err(CommandError::forbidden("Recent experiment loading belongs to Runner.")); }
+    if *role != crate::research_desktop::DesktopRole::Runner {
+        return Err(CommandError::forbidden(
+            "Recent experiment loading belongs to Runner.",
+        ));
+    }
     tauri::async_runtime::spawn_blocking(move || {
         let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
         match (action.as_str(), entry_id.as_deref()) {
             ("list", None) => recent.list(),
-            ("load", Some(id)) => { let mut document = recent.load_id(id)?; attach_runner_project(&app, &mut document)?; Ok(document) },
-            _ => Err(CommandError::invalid_contract("Unknown recent experiment action.")),
+            ("load", Some(id)) => {
+                let mut document = recent.load_id(id)?;
+                attach_runner_project(&app, &mut document)?;
+                Ok(document)
+            }
+            _ => Err(CommandError::invalid_contract(
+                "Unknown recent experiment action.",
+            )),
         }
-    }).await.map_err(CommandError::io)?
+    })
+    .await
+    .map_err(CommandError::io)?
 }
 
 fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {

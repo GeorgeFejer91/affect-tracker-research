@@ -552,10 +552,7 @@ fn read_questionnaire_bytes(path: &Path) -> ResearchResult<Vec<u8>> {
     }
     let mut file = options.open(path).map_err(CommandError::io)?;
     let before = file.metadata().map_err(CommandError::io)?;
-    if is_link(&before)
-        || !before.is_file()
-        || before.len() == 0
-    {
+    if is_link(&before) || !before.is_file() || before.len() == 0 {
         return Err(failure(
             "invalid_selection",
             "Questionnaire source must remain an ordinary nonempty file.",
@@ -1114,10 +1111,7 @@ mod tests {
     fn questionnaire_sources_can_exceed_old_limits_but_must_be_nonempty_and_stable() {
         let temp = TestDirectory::new();
         let (mut grants, initial) = store();
-        for (name, size) in [
-            ("empty.csv", 0),
-            ("wrong.pdf", 1),
-        ] {
+        for (name, size) in [("empty.csv", 0), ("wrong.pdf", 1)] {
             let path = temp.file(name, &vec![b'x'; size]);
             let request = binding(initial.session_id);
             assert!(grants

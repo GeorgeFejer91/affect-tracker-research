@@ -278,11 +278,14 @@ fn exercise(
                 if samples < 100 || last_position < 250_000.0 {
                     return Err("full-clip-ended-before-observed-playback".into());
                 }
-                trace("full-clip-ended", serde_json::json!({
-                    "elapsedMs": started.elapsed().as_millis(),
-                    "lastPositionMs": last_position, "observations": samples,
-                    "audioMuted": true, "physicalTimingQualified": false
-                }));
+                trace(
+                    "full-clip-ended",
+                    serde_json::json!({
+                        "elapsedMs": started.elapsed().as_millis(),
+                        "lastPositionMs": last_position, "observations": samples,
+                        "audioMuted": true, "physicalTimingQualified": false
+                    }),
+                );
                 break;
             }
             if status.state == NativeMediaStateV1::Failed || Instant::now() >= deadline {

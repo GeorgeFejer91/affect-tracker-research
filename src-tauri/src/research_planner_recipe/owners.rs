@@ -19,7 +19,11 @@ fn invalid(message: impl Into<String>) -> CommandError {
 fn desktop_layout_warning(code: &str) -> bool {
     matches!(
         code,
-        "reference-clips" | "footprint-clips" | "envelope-clips" | "video-overlap" | "gap-too-small"
+        "reference-clips"
+            | "footprint-clips"
+            | "envelope-clips"
+            | "video-overlap"
+            | "gap-too-small"
     )
 }
 

@@ -7,7 +7,8 @@ use crate::research_planner_recipe::{
     SavedPlannerRecipeReceipt,
 };
 use crate::research_planner_recipe_supported::{
-    parse_supported_planner_recipe_bytes, parse_planner_recipe_asset_bytes, LoadedSupportedPlannerRecipe, SupportedPlannerRecipe,
+    parse_planner_recipe_asset_bytes, parse_supported_planner_recipe_bytes,
+    LoadedSupportedPlannerRecipe, SupportedPlannerRecipe,
 };
 use crate::research_planner_recipe_v5::{PlannerAssetManifestV5, QuestionnaireAssetSnapshot};
 use serde::Serialize;
@@ -140,10 +141,7 @@ fn read_recipe_bytes(path: &Path) -> ResearchResult<Vec<u8>> {
     }
     let file = options.open(path).map_err(CommandError::io)?;
     let metadata = file.metadata().map_err(CommandError::io)?;
-    if is_link(&metadata)
-        || !metadata.is_file()
-        || metadata.len() == 0
-    {
+    if is_link(&metadata) || !metadata.is_file() || metadata.len() == 0 {
         return Err(CommandError::invalid_contract(
             "Recipe must be a regular nonempty file.",
         ));
@@ -199,57 +197,98 @@ fn parse_supported_at(path: &Path, bytes: &[u8]) -> ResearchResult<LoadedSupport
         return parse_supported_planner_recipe_bytes(bytes);
     }
     let manifest = PlannerAssetManifestV5::read(bytes)?;
-    let directory = path.parent().ok_or_else(|| CommandError::invalid_contract("Manifest requires a containing directory."))?;
+    let directory = path.parent().ok_or_else(|| {
+        CommandError::invalid_contract("Manifest requires a containing directory.")
+    })?;
     let mut snapshots = Vec::new();
     for entry in manifest.references()? {
         let target = directory.join(&entry.relative_path);
         let metadata = require_unlinked_path(&target)?;
         if !metadata.is_file() || metadata.len() != entry.byte_length {
-            return Err(CommandError::invalid_contract("Questionnaire file is missing or its size changed."));
+            return Err(CommandError::invalid_contract(
+                "Questionnaire file is missing or its size changed.",
+            ));
         }
-        let source_text = String::from_utf8(read_recipe_bytes(&target)?).map_err(|_| CommandError::invalid_contract("Invalid questionnaire UTF-8."))?;
-        snapshots.push(QuestionnaireAssetSnapshot { relative_path: entry.relative_path, source_text });
+        let source_text = String::from_utf8(read_recipe_bytes(&target)?)
+            .map_err(|_| CommandError::invalid_contract("Invalid questionnaire UTF-8."))?;
+        snapshots.push(QuestionnaireAssetSnapshot {
+            relative_path: entry.relative_path,
+            source_text,
+        });
     }
     parse_planner_recipe_asset_bytes(bytes, snapshots)
 }
 
 /// Persist verified snapshots before publishing the referencing manifest. An
 /// interrupted save may leave reusable assets, never a falsely complete recipe.
-pub(crate) fn store_questionnaire_snapshots(directory: &Path, snapshots: &[QuestionnaireAssetSnapshot]) -> ResearchResult<()> {
+pub(crate) fn store_questionnaire_snapshots(
+    directory: &Path,
+    snapshots: &[QuestionnaireAssetSnapshot],
+) -> ResearchResult<()> {
     require_directory(directory)?;
     for snapshot in snapshots {
         let parts: Vec<_> = snapshot.relative_path.split('/').collect();
-        if parts.len() != 5 || parts[0] != "assets" || parts[1] != "questionnaires"
-            || parts.iter().any(|part| part.is_empty() || *part == "." || *part == ".." || part.contains(['\\', ':'])) { return Err(CommandError::invalid_contract("Invalid questionnaire snapshot path or size.")); }
+        if parts.len() != 5
+            || parts[0] != "assets"
+            || parts[1] != "questionnaires"
+            || parts.iter().any(|part| {
+                part.is_empty() || *part == "." || *part == ".." || part.contains(['\\', ':'])
+            })
+        {
+            return Err(CommandError::invalid_contract(
+                "Invalid questionnaire snapshot path or size.",
+            ));
+        }
         let mut parent = directory.to_path_buf();
         for part in &parts[..4] {
             require_directory(&parent)?;
             parent.push(part);
-            match fs::create_dir(&parent) { Ok(()) => (), Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (), Err(e) => return Err(CommandError::io(e)) }
+            match fs::create_dir(&parent) {
+                Ok(()) => (),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
+                Err(e) => return Err(CommandError::io(e)),
+            }
             require_directory(&parent)?;
         }
         let target = parent.join(parts[4]);
         if !destination_exists(&target)? {
-            let staged = StagedRecipe(parent.join(format!(".affect-questionnaire-{}.staging", Uuid::new_v4())));
-            let mut file = OpenOptions::new().write(true).create_new(true).open(&staged.0).map_err(CommandError::io)?;
-            file.write_all(snapshot.source_text.as_bytes()).map_err(CommandError::io)?;
+            let staged = StagedRecipe(
+                parent.join(format!(".affect-questionnaire-{}.staging", Uuid::new_v4())),
+            );
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&staged.0)
+                .map_err(CommandError::io)?;
+            file.write_all(snapshot.source_text.as_bytes())
+                .map_err(CommandError::io)?;
             file.sync_all().map_err(CommandError::io)?;
             drop(file);
             require_directory(&parent)?;
             publish_new(&staged, &target)?;
         }
-        if read_recipe_bytes(&target)? != snapshot.source_text.as_bytes() { return Err(CommandError::invalid_contract("Existing questionnaire asset differs; it was not replaced.")); }
+        if read_recipe_bytes(&target)? != snapshot.source_text.as_bytes() {
+            return Err(CommandError::invalid_contract(
+                "Existing questionnaire asset differs; it was not replaced.",
+            ));
+        }
     }
     Ok(())
 }
 
-pub(crate) fn verify_loaded_questionnaire_assets(directory: &Path, loaded: &LoadedSupportedPlannerRecipe) -> ResearchResult<()> {
+pub(crate) fn verify_loaded_questionnaire_assets(
+    directory: &Path,
+    loaded: &LoadedSupportedPlannerRecipe,
+) -> ResearchResult<()> {
     if let SupportedPlannerRecipe::V5(recipe) = &loaded.recipe {
         for snapshot in &recipe.assets {
             let path = directory.join(&snapshot.relative_path);
             if require_unlinked_path(&path)?.len() != snapshot.source_text.len() as u64
-                || read_recipe_bytes(&path)? != snapshot.source_text.as_bytes() {
-                return Err(CommandError::invalid_contract("A questionnaire asset changed after the experiment was loaded."));
+                || read_recipe_bytes(&path)? != snapshot.source_text.as_bytes()
+            {
+                return Err(CommandError::invalid_contract(
+                    "A questionnaire asset changed after the experiment was loaded.",
+                ));
             }
         }
     }
@@ -260,8 +299,12 @@ pub(crate) fn verify_loaded_questionnaire_assets(directory: &Path, loaded: &Load
 /// This private trait does not let callers inject a parser or bypass validation.
 trait FileRecipeDocument: Sized {
     fn parse(bytes: &[u8]) -> ResearchResult<Self>;
-    fn parse_at(_path: &Path, bytes: &[u8]) -> ResearchResult<Self> { Self::parse(bytes) }
-    fn prepare_assets(&self, _directory: &Path) -> ResearchResult<()> { Ok(()) }
+    fn parse_at(_path: &Path, bytes: &[u8]) -> ResearchResult<Self> {
+        Self::parse(bytes)
+    }
+    fn prepare_assets(&self, _directory: &Path) -> ResearchResult<()> {
+        Ok(())
+    }
     fn source_text(&self) -> &str;
     fn save_receipt(&self) -> SavedPlannerRecipeReceipt;
 }
@@ -282,9 +325,13 @@ impl FileRecipeDocument for LoadedSupportedPlannerRecipe {
     fn parse(bytes: &[u8]) -> ResearchResult<Self> {
         parse_supported_planner_recipe_bytes(bytes)
     }
-    fn parse_at(path: &Path, bytes: &[u8]) -> ResearchResult<Self> { parse_supported_at(path, bytes) }
+    fn parse_at(path: &Path, bytes: &[u8]) -> ResearchResult<Self> {
+        parse_supported_at(path, bytes)
+    }
     fn prepare_assets(&self, directory: &Path) -> ResearchResult<()> {
-        if let SupportedPlannerRecipe::V5(recipe) = &self.recipe { store_questionnaire_snapshots(directory, &recipe.assets)?; }
+        if let SupportedPlannerRecipe::V5(recipe) = &self.recipe {
+            store_questionnaire_snapshots(directory, &recipe.assets)?;
+        }
         Ok(())
     }
     fn source_text(&self) -> &str {
@@ -514,19 +561,35 @@ mod tests {
         let path = root.0.join("experiment.json");
         let receipt = write_selected_supported_planner_recipe(&path, source).unwrap();
         assert_eq!(receipt, expected.save_receipt());
-        assert_eq!(fs::read_to_string(&path).unwrap(), expected.canonical_source_text);
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            expected.canonical_source_text
+        );
         let loaded = read_supported_planner_recipe_file(&path).unwrap();
         assert_eq!(loaded.transport_text().unwrap(), source);
-        assert_eq!(read_supported_planner_recipe_path(&path).unwrap()["kind"], "planner-recipe-v5");
+        assert_eq!(
+            read_supported_planner_recipe_path(&path).unwrap()["kind"],
+            "planner-recipe-v5"
+        );
         verify_loaded_questionnaire_assets(&root.0, &loaded).unwrap();
-        let assets = match &loaded.recipe { SupportedPlannerRecipe::V5(v) => &v.assets, _ => panic!() };
-        for asset in assets { assert_eq!(fs::read_to_string(root.0.join(&asset.relative_path)).unwrap(), asset.source_text); }
+        let assets = match &loaded.recipe {
+            SupportedPlannerRecipe::V5(v) => &v.assets,
+            _ => panic!(),
+        };
+        for asset in assets {
+            assert_eq!(
+                fs::read_to_string(root.0.join(&asset.relative_path)).unwrap(),
+                asset.source_text
+            );
+        }
         write_selected_supported_planner_recipe(&root.0.join("copy.json"), source).unwrap();
         let changed = root.0.join(&assets[0].relative_path);
         fs::write(&changed, b"changed").unwrap();
         assert!(read_supported_planner_recipe_file(&path).is_err());
         assert!(verify_loaded_questionnaire_assets(&root.0, &loaded).is_err());
-        assert!(write_selected_supported_planner_recipe(&root.0.join("rejected.json"), source).is_err());
+        assert!(
+            write_selected_supported_planner_recipe(&root.0.join("rejected.json"), source).is_err()
+        );
         assert!(!root.0.join("rejected.json").exists());
         assert_eq!(fs::read(&changed).unwrap(), b"changed");
         fs::remove_file(&changed).unwrap();

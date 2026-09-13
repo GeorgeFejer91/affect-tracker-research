@@ -21,8 +21,8 @@ use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 mod controlled_geometry;
-mod video_location;
 mod stimulus_authoring;
+mod video_location;
 pub(crate) use controlled_geometry::RunnerVideoBindingV3;
 
 const MAX_SCAN_DEPTH: usize = 16;

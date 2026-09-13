@@ -1,9 +1,9 @@
-use super::runtime::{MasterStartRequestV5, MasterActionRequestV5};
 use super::runtime::{
     MasterAction, MasterActionRequestV3, MasterActionRequestV4, MasterActionV2, MasterActionV4,
     MasterRuntime, MasterStartRequest, MasterStartRequestV2, MasterStartRequestV3,
     MasterStartRequestV4, MasterStatus,
 };
+use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
 use super::{MasterPlan, MasterSelector, PreparedMaster};
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
@@ -192,7 +192,7 @@ pub async fn research_runner_master_validation_start(
     window: WebviewWindow,
     runtime: State<'_, Arc<MasterRuntime>>,
     request: super::runtime::MasterValidationStartRequest,
- ) -> ResearchResult<serde_json::Value> {
+) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
     if !window.is_fullscreen().map_err(CommandError::io)? {
         return Err(CommandError::forbidden("Enter fullscreen before starting."));
@@ -211,7 +211,7 @@ pub async fn research_runner_master_validation_start_v5(
     window: WebviewWindow,
     runtime: State<'_, Arc<MasterRuntime>>,
     request: super::runtime::MasterValidationStartRequestV5,
- ) -> ResearchResult<serde_json::Value> {
+) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
     if !window.is_fullscreen().map_err(CommandError::io)? {
         return Err(CommandError::forbidden("Enter fullscreen before starting."));

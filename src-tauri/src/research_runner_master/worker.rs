@@ -104,7 +104,9 @@ impl MasterWorker {
         let startup = if let Some(qualification) = storage.receipt.get("executionQualification") {
             json!({"schema":"affect-runner-validation-startup","version":1,
                 "executionQualification":qualification,"startup":startup})
-        } else { startup };
+        } else {
+            startup
+        };
         let startup = PreparedTransfer::new(&startup)?;
         let lsl = if settings.enabled {
             Some(MasterLslService::start(

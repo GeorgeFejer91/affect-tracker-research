@@ -160,8 +160,14 @@ mod tests {
             {"type":"radiogroup","name":"choice","choices":["yes","no"],"affectResearchResponseCodes":{"yes":0,"no":1}}]});
         assert_eq!(inspect_survey_json(&schema).unwrap()["questionCount"], 2);
         let data = json!({"name":"🌻🌻","choice":"yes"});
-        assert_eq!(validate_survey_data(&schema, "en", &data, true).unwrap()["data"], data);
-        assert!(validate_survey_data(&schema, "en", &json!({"name":"🌻🌻a","choice":"yes"}), true).is_err());
+        assert_eq!(
+            validate_survey_data(&schema, "en", &data, true).unwrap()["data"],
+            data
+        );
+        assert!(
+            validate_survey_data(&schema, "en", &json!({"name":"🌻🌻a","choice":"yes"}), true)
+                .is_err()
+        );
     }
     #[test]
     fn native_surveyjs_accepts_large_definitions_and_answers() {
@@ -170,7 +176,10 @@ mod tests {
             {"type":"comment","name":"answer","maxLength":0}]});
         assert_eq!(inspect_survey_json(&schema).unwrap()["questionCount"], 2);
         let data = json!({"answer":text});
-        assert_eq!(validate_survey_data(&schema, "en", &data, true).unwrap()["data"], data);
+        assert_eq!(
+            validate_survey_data(&schema, "en", &data, true).unwrap()["data"],
+            data
+        );
     }
     #[test]
     fn native_surveyjs_retains_nested_calculations_matrices_and_inline_files() {

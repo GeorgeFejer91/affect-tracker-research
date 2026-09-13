@@ -68,7 +68,9 @@ pub struct MasterActionRequestV5 {
     pub action: MasterActionV4,
 }
 impl MasterActionRequestV5 {
-    pub(crate) fn validate(&self) -> ResearchResult<()> { require_wire_version(self.version, 5) }
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
+        require_wire_version(self.version, 5)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -407,7 +409,11 @@ impl MasterRuntime {
         require_wire_version(request.0.version, 4)?;
         self.start_typed(request.0, window)
     }
-    pub fn start_v5(&self, request: MasterStartRequestV5, window: (u32, u32, f64)) -> ResearchResult<Value> {
+    pub fn start_v5(
+        &self,
+        request: MasterStartRequestV5,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
         require_wire_version(request.0.version, 5)?;
         self.start_typed(request.0, window)
     }
@@ -419,29 +425,42 @@ impl MasterRuntime {
         self.start_typed_mode(request, window, false)
     }
     pub fn start_validation(
-        &self, request: MasterValidationStartRequest, window: (u32, u32, f64),
+        &self,
+        request: MasterValidationStartRequest,
+        window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         if ![3, 4].contains(&request.experiment.version) {
-            return Err(CommandError::invalid_contract("Validation sessions require master3 or master4."));
+            return Err(CommandError::invalid_contract(
+                "Validation sessions require master3 or master4.",
+            ));
         }
         if !request.acknowledge_unqualified {
-            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+            return Err(CommandError::forbidden(
+                "Explicit unqualified validation acknowledgement is required.",
+            ));
         }
         self.start_typed_mode(request.experiment, window, true)
     }
     pub fn start_validation_v5(
-        &self, request: MasterValidationStartRequestV5, window: (u32, u32, f64),
+        &self,
+        request: MasterValidationStartRequestV5,
+        window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         require_wire_version(request.experiment.0.version, 5)?;
         if !request.acknowledge_unqualified {
-            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+            return Err(CommandError::forbidden(
+                "Explicit unqualified validation acknowledgement is required.",
+            ));
         }
         self.start_typed_mode(request.experiment.0, window, true)
     }
     fn start_typed_mode(
-        &self, request: MasterStartRequestV2, window: (u32, u32, f64), validation: bool,
+        &self,
+        request: MasterStartRequestV2,
+        window: (u32, u32, f64),
+        validation: bool,
     ) -> ResearchResult<Value> {
         super::validate_master_participant(&request.participant_id)?;
         self.start_input(
@@ -491,9 +510,13 @@ impl MasterRuntime {
                 ));
             }
             let viewport = native_viewport(&prepared, window)?;
-            self.workspace.with_workspace(&request.workspace_id, |root, _| {
-                crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(root, &prepared.loaded)
-            })?;
+            self.workspace
+                .with_workspace(&request.workspace_id, |root, _| {
+                    crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(
+                        root,
+                        &prepared.loaded,
+                    )
+                })?;
             let bindings = super::bindings::bind_master_media(
                 &self.workspace,
                 &request.workspace_id,
@@ -751,9 +774,13 @@ mod v3_ingress_tests {
 }
 
 /// Validation admits a functioning verified player, never a qualified claim.
-pub(crate) fn require_validation_media(capability: &crate::research_native_media::NativeMediaCapability) -> ResearchResult<()> {
+pub(crate) fn require_validation_media(
+    capability: &crate::research_native_media::NativeMediaCapability,
+) -> ResearchResult<()> {
     if !capability.runtime_integrity_verified || !capability.player_actor_ready {
-        return Err(CommandError::native_media_unavailable(&capability.reason_code));
+        return Err(CommandError::native_media_unavailable(
+            &capability.reason_code,
+        ));
     }
     Ok(())
 }
