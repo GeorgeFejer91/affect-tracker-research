@@ -29,8 +29,8 @@ Before inspecting source, planning, editing, testing, or publishing:
 
 1. locate the Git root with `git rev-parse --show-toplevel`;
 2. read the root `AGENTS.md`;
-3. read every Markdown file in `for-ai/` completely and in lexical order, then
-   read `for-ai/references.bib` when provenance is relevant;
+3. follow the complete core reading and relevant owner routes in
+   `for-ai/00-READ-FIRST.md`; read `for-ai/references.bib` when provenance matters;
 4. inspect branch, remotes, recent relevant history, and `git status --short`;
 5. preserve unrelated user/agent changes and identify contract mismatches;
 6. inspect the relevant manifests, lockfiles, entrypoints, capabilities,
@@ -43,9 +43,9 @@ target; the roadmap and exact test/qualification receipts describe reality.
 The charter's final-state amendment delegates segment capabilities and current
 checkboxes to [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md);
 `40-ROADMAP.md` retains receipts and `61-IMPLEMENTATION-AUDIT.md` the dated source
-audit. Old Section 2 pass allocations are
-historical. The current priority is Planner completion, with Runner recording
-and runtime implementation deferred unless separately allocated.
+audit. Old Section 2 pass allocations and blanket Runner deferral are
+historical. Baseline Planner completion is recorded in 67; the correspondence
+allocation is active under 69/72. Current support and open gaps are mapped in 66.
 
 ## Pass intent and staged verification
 

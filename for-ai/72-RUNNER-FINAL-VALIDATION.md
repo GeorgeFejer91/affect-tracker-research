@@ -15,7 +15,7 @@ without consulting Planner memory or inventing settings from defaults.
 | --- | --- | --- |
 | P1 | Study identity; explicit video IDs and asset paths; file identity, duration and display geometry | `segments.P1.study`, `workspaceLayout`, `videoCatalogue.entries`: `annotationId`, `assetId`, `sourceRelativePath`, `packageRelativePath`, `sha256`, `byteLength`, `durationMs`, `geometry` |
 | P2 | Full questionnaire/form definitions, item order, response choices/types, authored scoring, exact language routes and presentation | `segments.P2.questionnaires`, `languageSelection`, `presentation`; EN/DE demographics, 37-item MAIA-2 and 20-item TAS are embedded in the current mock |
-| P3 | Named user-defined ISIs, version columns/chronology, repeating participant allocation, and marker identities | `segments.P3.isiDefinitions`, `variants`, `allocation`, `markerContract`, library identity |
+| P3 | Named user-defined ISIs, version columns/chronology, Runner-owned participant allocation, and marker identities | `segments.P3.isiDefinitions`, `variants`, `allocation: {kind:"runnerAssigned"}`, `markerContract`, library identity; no repeating algorithm is stored |
 | P4 | Screen units, viewport/calibration, reference-video fit and centre-relative video/Flubber geometry | `segments.P4.viewport`, `units`, `calibration`, `coordinateSystem`, `reference`, `fit`, `feedback` |
 | P5 | Flubber appearance, neutral response, mapping, animation and input configuration | `segments.P5.visual`, `presentation`, `input`, `response`, `mappings` |
 | P6 | Explicit optional XR inclusion and world-fixed layout when supported | `segments.P6.status`; current mock explicitly omits XR; do not imply desktop Runner supports XR |
@@ -109,9 +109,11 @@ do not add duplicate convenience copies of whole segment projections.
 - [ ] Leave a current locally runnable companion build and retained evidence;
   compile success and a visible launcher are not final research qualification.
 
-Current source work is in `D:/GitHub/affect-tracker-research-master-v3`, branch
-`codex/final-release-validation`. See `docs/release-validation.md` for prior
-artifact identities and gates. Keep pending work explicit after every pass.
+The earlier source work was in `D:/GitHub/affect-tracker-research-master-v3`
+on `codex/final-release-validation`. By audit base `32c7c2d`, source had converged
+on canonical `codex/research-unified`. Check Git and the current build receipt
+instead of assuming either historical location is still active. See
+`docs/release-validation.md` for prior artifact identities and gates.
 
 ## Participant layout amendment — 2026-09-13
 

@@ -1,0 +1,70 @@
+{
+  "sourceCommit": "32c7c2d141655a7af258777deb1357e650d3499c",
+  "probeSha256": "528f0d4461c682cadc5bd2017fc5e5804e9acd4550d788fde5c60c936a5a5d6b",
+  "evidence": "JavaScript software probes; no native execution, network, media, or XDF",
+  "versions": [
+    {
+      "version": 1,
+      "bytes": 12647,
+      "selections": 6,
+      "roundTrip": true,
+      "missingSegmentRejected": true,
+      "staleIntegrityRejected": true,
+      "elapsedMs": 134
+    },
+    {
+      "version": 2,
+      "bytes": 16189,
+      "selections": 6,
+      "roundTrip": true,
+      "missingSegmentRejected": true,
+      "staleIntegrityRejected": true,
+      "elapsedMs": 106
+    },
+    {
+      "version": 3,
+      "bytes": 19357,
+      "selections": 6,
+      "roundTrip": true,
+      "missingSegmentRejected": true,
+      "staleIntegrityRejected": true,
+      "elapsedMs": 136
+    },
+    {
+      "version": 4,
+      "bytes": 18114,
+      "selections": 6,
+      "roundTrip": true,
+      "missingSegmentRejected": true,
+      "staleIntegrityRejected": true,
+      "elapsedMs": 171
+    }
+  ],
+  "limitations": [
+    {
+      "id": "remote-resource",
+      "accepted": true,
+      "retainedUrl": "https://example.invalid/stimulus.png",
+      "embeddedImageBytes": false
+    },
+    {
+      "id": "shallow-plan-freeze",
+      "planFrozen": true,
+      "stepsFrozen": false,
+      "firstStepFrozen": false,
+      "selectorFrozen": false
+    },
+    {
+      "id": "master4-validation",
+      "reason": "Validation sessions require master3.",
+      "nativeInvocations": 0
+    },
+    {
+      "id": "owner-size-mismatch",
+      "validMasterBytes": 5616674,
+      "definitions": 4,
+      "p2Bytes": 5605335,
+      "ownerRejection": "Planner contribution exceeds the bounded handoff size."
+    }
+  ]
+}
