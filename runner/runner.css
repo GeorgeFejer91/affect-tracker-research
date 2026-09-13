@@ -29,6 +29,19 @@ html, body { min-width: 0; margin: 0; }
 .runner-dialog dd { margin: 4px 0 12px; overflow-wrap: anywhere; }
 .runner-dialog details { margin-top: 16px; }
 .runner-dialog .check-field { align-items: start; margin: 12px 0; }
+.runner-controller-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: ". up ." "left neutral right" ". down ."; gap: 8px; margin: 18px 0; }
+.runner-controller-cell { min-width: 0; min-height: 96px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid #596051; background: #10120f; color: #efeee7; text-align: center; }
+.runner-controller-cell span { font-size: 26px; line-height: 1; }
+.runner-controller-cell strong { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.runner-controller-cell output { max-width: 100%; min-height: 18px; color: #c8cabc; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
+.runner-controller-cell[data-listening] { border-color: #f3c96d; background: #242417; box-shadow: inset 0 0 0 1px #f3c96d; }
+.runner-controller-cell:disabled { color: #878b80; background: #171914; border-color: #3b4039; }
+.runner-controller-cell:disabled output { color: #777b72; }
+.runner-controller-up { grid-area: up; }
+.runner-controller-down { grid-area: down; }
+.runner-controller-left { grid-area: left; }
+.runner-controller-right { grid-area: right; }
+.runner-controller-neutral { grid-area: neutral; }
 .runner-shell .field { margin: 12px 0; }
 .runner-shell .field input, .runner-shell .field select { width: 100%; min-width: 0; }
 .runner-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
@@ -76,7 +89,7 @@ html, body { min-width: 0; margin: 0; }
 .is-presenting > #runner-error-host:has(#runner-error:not([hidden])) { position: fixed; bottom: 0; left: 0; right: 0; }
 #runner-receipt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; margin-top: 20px; }
 @media (max-width: 640px) { .runner-launcher { padding: 28px 24px; } .runner-participant-page { padding: 28px 24px 72px; } }
-@media (max-width: 400px) { .runner-tools { grid-template-columns: 1fr; } .runner-tools button { min-height: 42px; } .runner-fields { grid-template-columns: 1fr; } }
+@media (max-width: 400px) { .runner-tools { grid-template-columns: 1fr; } .runner-tools button { min-height: 42px; } .runner-fields { grid-template-columns: 1fr; } .runner-controller-cell { min-height: 82px; padding: 8px 5px; } .runner-controller-cell span { font-size: 22px; } }
 
 .runner-qr { display: block; width: min(264px, 100%); height: auto; margin: 24px auto; background: #fff; }
 .runner-qr-status { text-align: center; }

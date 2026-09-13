@@ -627,3 +627,19 @@ recording. Existing participant/version defaults and manual overrides remain.
 [Recent-file contract and receipts](../docs/runner-recent-files.md):4 native,
 52 recent UI,69 preselection UI,89 English keyboard-flow and5 logic checks pass,
 plus compilation/build boundary. Root owns current installed integration.
+
+### Controller capture display and neutral reset markers — 2026-09-13
+
+User allocates R1/RR-07 for the main Runner controller surface. The visible
+dialog is a five-target capture pad only: up, down, left, right, and a neutral
+center dot. Direction captures are Runner-only session drafts for the next
+supported discrete physical input (keyboard, mouse button, wheel, gamepad
+button). Other movement settings remain Planner-authored. The neutral target is
+a reset-to-neutral hotkey, not a movement direction.
+
+Runtime contract still pending: neutral hotkey execution must be blocked while a
+video is actively playing, a neutral reset must fire automatically when a video
+ends, and LSL/XDF output must include affect samples, all event markers,
+input-edge markers using original observed physical-input timestamps, and
+neutral-reset markers. Frontend draft UI must continue to fail closed until the
+native override receipt and recovery/evidence binding exist.

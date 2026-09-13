@@ -5782,3 +5782,20 @@ master3/master4 16 EN/DE production-app cases and legacy stop 26 assertions pass
 SurveyJS checks and Runner frontend boundary pass. Existing monio listen-only
 hook uses a fullscreen-scoped empty Channel; no added unsafe, dependencies or
 recipe fields. Root owns canonical collection and the single current-app build.
+## Runner controller capture display and neutral reset markers — 2026-09-13
+
+Direct user allocation R1/RR-07. The Runner controller dialog should be a
+five-target capture display: up/down/left/right arrows plus a neutral center dot.
+Movement target clicks listen for the next supported discrete physical action
+and draft a Runner-only override; Planner remains the only place to change other
+input settings. The neutral target is a reset-to-neutral hotkey, separate from
+movement. Native execution still needs a versioned override receipt before runs
+may proceed under those drafts.
+
+Neutral reset semantics are runtime-owned: manual neutral reset is blocked while
+participant video is actively playing, and a neutral reset is triggered
+automatically at video end. LSL/XDF evidence must include affect samples, all
+runtime event markers, neutral-reset markers, and original observed timestamps
+for physical input edges rather than only marker push time. This pass implements
+only the frontend draft/capture surface and records the native marker contract
+gap for the backend verification pass.
