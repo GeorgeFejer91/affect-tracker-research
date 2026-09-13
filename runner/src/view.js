@@ -10,7 +10,7 @@ export function runnerMarkup() {
   return `<div class="runner-shell">
     <main id="runner-launcher" class="runner-launcher">
       <header class="runner-header"><img src="${symbol}" width="36" height="36" alt=""><h1>Experiment Runner</h1></header>
-      <div class="runner-load-actions"><button id="runner-open">Load experiment file</button><button id="runner-load-previous" disabled>Load previous experiment</button></div>
+      <div class="runner-load-actions"><button id="runner-open">Load new experiment</button><select id="runner-recent-files" aria-label="Previously used experiment JSON files" disabled><option value="">No previous files</option></select></div>
       <p id="runner-recipe-status" role="status">No experiment loaded</p>
       <div id="runner-variant-field" class="runner-version-picker" hidden>
         <label id="runner-variant-heading">Experiment version</label><select id="runner-variant" hidden aria-hidden="true" tabindex="-1"></select>

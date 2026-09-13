@@ -1014,6 +1014,26 @@ pub async fn research_runner_previous_experiment(
     .map_err(CommandError::io)?
 }
 
+#[tauri::command]
+pub async fn research_runner_recent_experiments(
+    window: WebviewWindow,
+    app: AppHandle,
+    role: State<'_, crate::research_desktop::DesktopRole>,
+    action: String,
+    entry_id: Option<String>,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if *role != crate::research_desktop::DesktopRole::Runner { return Err(CommandError::forbidden("Recent experiment loading belongs to Runner.")); }
+    tauri::async_runtime::spawn_blocking(move || {
+        let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
+        match (action.as_str(), entry_id.as_deref()) {
+            ("list", None) => recent.list(),
+            ("load", Some(id)) => { let mut document = recent.load_id(id)?; attach_runner_project(&app, &mut document)?; Ok(document) },
+            _ => Err(CommandError::invalid_contract("Unknown recent experiment action.")),
+        }
+    }).await.map_err(CommandError::io)?
+}
+
 fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {
     let directory = app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
         .selected_directory()?;

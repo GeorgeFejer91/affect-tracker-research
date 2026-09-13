@@ -5568,3 +5568,25 @@ an armed named recording. Main/root owns integration with concurrent keyboard
 and recipe-root changes; edits to app/view/lib are bounded. See
 [version preselection](../docs/runner-version-preselection.md) for behavior and
 component evidence. Installed execution/release qualification remains separate.
+
+
+## Runner recent-file list and autoload — 2026-09-13
+
+Direct user allocation R1 RR-01/RR-02, Backend Verification on isolated
+codex/segment-runner-recent-list, base3e69d1e plus owned preselection dependency
+05c6307 (equivalentd3ae312). Preserve root keyboard/project-root changes.
+Autoload last accepted JSON once at startup; provide Load new experiment and
+all saved recent-file choices. Native keeps paths, validates selected file and
+sets its project root; durable history advances only after exact frontend
+acceptance. Existing single bookmark migrates without loss. Verify persistence,
+missing/rejected/cancelled files, selection locking and startup/UI behavior.
+No playback, recording, Planner or installed-release claims in this pass.
+
+
+Recent/autoload component ready:4 native persistence,52 production recent UI,
+69 prior version/participant UI,89 English keyboard-flow and5 logic checks pass;
+Runner build/boundary pass. History2 retains old bookmark1 and all accepted paths;
+new native list/load endpoint exposes opaque IDs and labels only. Auto-load uses
+existing exactaccept/projectroot/confirm and never starts playback/recording.
+[Handoff](../docs/runner-recent-files.md). No Cargo/SDK hold. Root owns installed
+collection; this branch includes preselection dependency05c6307.

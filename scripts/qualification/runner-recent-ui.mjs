@@ -15,59 +15,49 @@ await mkdir(output);
 const entry=String.raw`
 import {bootRunner} from './runner/src/app.js';
 import {readRunnerRecipe} from './runner/src/recipe.js';
-const checks=[],errors=[],calls=[];
-const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
-const tick=()=>new Promise(resolve=>setTimeout(resolve,50));
-const until=async(fn,label)=>{for(let i=0;i<80;i++){if(fn())return;await tick();}throw Error('Timeout: '+label);};
+const checks=[],errors=[],calls=[],check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
+const tick=()=>new Promise(r=>setTimeout(r,50));
+const until=async(f,s)=>{for(let i=0;i<100;i++){if(f())return;await tick();}throw Error('Timeout '+s);};
 const bytes=new Uint8Array(await(await fetch('/test/fixtures/runner-master-v3-owner.canonical.json')).arrayBuffer());
-const documentReceipt=await readRunnerRecipe(bytes),loaded={document:documentReceipt};
-let remembered=false,cancel=false,invalid=false,missing=false,held=false,release,recording=false,app;
-const root=document.createElement('div');document.body.append(root);
-const q=id=>root.querySelector('#'+id);
-const invoke=async(command,args)=>{
- calls.push({command,args});
- switch(command){
+const receipt=await readRunnerRecipe(bytes),ids=['recent-'+'a'.repeat(64),'recent-'+'b'.repeat(64)];
+let entries=[],pending=null,next=0,cancel=false,invalid=false,missing=false,held=false,release,recording=false,app;
+const root=document.createElement('div');document.body.append(root);const q=id=>root.querySelector('#'+id);
+const load=async id=>{if(held)await new Promise(r=>release=r);if(missing&&id===ids[0])throw Error('Previous experiment missing. Load a new experiment.');pending=id;return{document:receipt,workspace:{selected:true,workspaceId:id,displayName:id===ids[0]?'Study one':'Study two'}};};
+const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'not-qualified'};
- case 'research_native_media_capability':return{playerActorReady:true};
+ case 'research_native_media_capability':return{playerActorReady:false};
  case 'research_workspace_status':return{selected:false};
  case 'research_input_cancel_setup':return{};
  case 'research_recorder_status':return{available:true,active:recording,phase:recording?'recording':'idle'};
- case 'research_load_planner_recipe':return cancel?null:invalid?{document:{canonicalSourceText:'invalid'}}:loaded;
+ case 'research_load_planner_recipe':return cancel?null:invalid?{document:{canonicalSourceText:'invalid'}}:load(ids[next]);
+ case 'research_runner_selection':return{schema:'affect-runner-selection',version:1,packageSourceByteSha256:receipt.canonicalSourceByteSha256,participantId:args.participantId??'P001',outputDirectory:'outputs/test'};
+ case 'research_runner_master_history':return{schema:'affect-runner-master-history',version:1,recipeSourceByteSha256:receipt.canonicalSourceByteSha256,participants:[]};
+ case 'research_runner_variant_usage':return{schema:'affect-runner-variant-usage',version:1,basis:'xdf-file-names-v1',recipeSourceByteSha256:receipt.canonicalSourceByteSha256,usedParticipantIds:[],ignoredXdfFiles:0,variants:receipt.recipe.segments.P3.variants.map(v=>({variantId:v.variantId,recordingCount:0,participantCount:0}))};
+ case 'research_runner_recent_experiments':
+  if(args.action==='list')return{schema:'affect-runner-recent-experiments',version:1,entries:entries.map(id=>({id,basename:'experiment.json',folderName:id===ids[0]?'Study one':'Study two',available:!(missing&&id===ids[0])}))};
+  if(args.action==='load')return load(args.entryId);break;
  case 'research_runner_previous_experiment':
-  if(args.action==='status')return{available:remembered,basename:remembered?'experiment.json':null};
-  if(args.action==='confirm'){check(args.sourceSha256===documentReceipt.canonicalSourceByteSha256,'confirmation binds source');remembered=true;return{available:true,basename:'experiment.json'};}
-  if(args.action==='load'){if(held)await new Promise(resolve=>{release=resolve;});if(missing)throw Error('Previous experiment missing. Use Load experiment file.');return loaded;}
- }
- throw Error('Unexpected command '+command);
-};
+  if(args.action==='load')return load(entries[0]);
+  if(args.action==='confirm'){check(args.sourceSha256===receipt.canonicalSourceByteSha256,'confirmed exact source');entries=[pending,...entries.filter(id=>id!==pending)];return{available:true,basename:'experiment.json'};}
+ }throw Error('Unexpected '+command);};
+const choose=id=>{q('runner-recent-files').value=id;q('runner-recent-files').dispatchEvent(new Event('change',{bubbles:true}));};
 try{
- app=await bootRunner(root,{invoke,pollMs:100});
- check(q('runner-load-previous').disabled,'first launch disabled');
- cancel=true;q('runner-open').click();await tick();check(!remembered&&app.recipe===null,'cancel does not remember');cancel=false;
- invalid=true;q('runner-open').click();await until(()=>!q('runner-error').hidden,'invalid rejected');check(!remembered,'invalid does not remember');invalid=false;
- q('runner-open').click();await until(()=>!q('runner-load-previous').disabled,'successful load');
- check(app.recipe.canonicalSourceByteSha256===documentReceipt.canonicalSourceByteSha256,'picker loads exact source');
- app.destroy();app=await bootRunner(root,{invoke,pollMs:100});
- check(!q('runner-load-previous').disabled&&q('runner-load-previous').title==='Reload experiment.json','restart restores shortcut');
- const pickers=calls.filter(x=>x.command==='research_load_planner_recipe').length;
- held=true;q('runner-load-previous').click();await until(()=>release,'held read');
- check(q('runner-load-previous').disabled&&q('runner-open').disabled,'both buttons lock while reading');
- release();held=false;await until(()=>!q('runner-load-previous').disabled,'reload complete');
- check(app.recipe.canonicalSourceByteSha256===documentReceipt.canonicalSourceByteSha256,'reload passes frontend reader');
- check(calls.filter(x=>x.command==='research_load_planner_recipe').length===pickers,'reload skips picker');
- check(!calls.some(x=>/start/.test(x.command)),'load never starts experiment');
- missing=true;q('runner-load-previous').click();await until(()=>!q('runner-error').hidden,'missing error');
- check(q('runner-error').textContent.includes('missing'),'missing error visible');
- check(app.recipe.canonicalSourceByteSha256===documentReceipt.canonicalSourceByteSha256,'missing preserves loaded recipe');missing=false;
- recording=true;await until(()=>q('runner-load-previous').disabled,'recording lock');check(q('runner-open').disabled,'both buttons lock during recording');
- recording=false;await until(()=>!q('runner-load-previous').disabled,'recording unlock');
- q('runner-load-previous').click();await tick();await until(()=>q('runner-error').hidden&&!q('runner-load-previous').disabled,'final view');
- check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');
- check(q('runner-load-previous').getBoundingClientRect().right<=innerWidth,'shortcut fits viewport');
+ app=await bootRunner(root,{invoke,pollMs:100});check(app.recipe===null&&q('runner-recent-files').disabled,'empty startup stays usable');check(q('runner-open').textContent==='Load new experiment','one new-file button');
+ cancel=true;q('runner-open').click();await tick();check(entries.length===0&&app.recipe===null,'cancel preserves empty history');cancel=false;
+ invalid=true;q('runner-open').click();await until(()=>!q('runner-error').hidden,'invalid JSON');check(entries.length===0,'rejected JSON not remembered');invalid=false;
+ q('runner-open').click();await until(()=>entries.length===1&&!q('runner-recent-files').disabled,'first load');check(q('runner-participant').value==='P01','default participant accompanies loaded JSON');
+ next=1;q('runner-open').click();await until(()=>entries.length===2&&!q('runner-open').disabled,'second load');check(entries[0]===ids[1],'accepted file moves to top');check(q('runner-recent-files').options[1].textContent.includes('Study two'),'same basenames distinguished by folder');
+ const pickers=calls.filter(c=>c.command==='research_load_planner_recipe').length;
+ app.destroy();app=await bootRunner(root,{invoke,pollMs:100});check(app.recipe.canonicalSourceByteSha256===receipt.canonicalSourceByteSha256,'startup automatically reads last JSON');check(q('runner-workspace-status').textContent==='Study two','autoload uses file project root');check(calls.filter(c=>c.command==='research_load_planner_recipe').length===pickers,'autoload opens no picker');
+ held=true;choose(ids[0]);await until(()=>release,'pending recent file');check(q('runner-open').disabled&&q('runner-recent-files').disabled,'file controls lock during load');release();held=false;await until(()=>entries[0]===ids[0]&&!q('runner-open').disabled,'recent chosen');check(q('runner-workspace-status').textContent==='Study one','selected recent file sets project root');check(entries.length===2,'reload does not duplicate entries');
+ missing=true;app.destroy();app=await bootRunner(root,{invoke,pollMs:100});check(app.recipe===null&&!q('runner-error').hidden,'missing startup file leaves launcher with error');check(!q('runner-open').disabled&&!q('runner-recent-files').disabled,'another file can be chosen');check([...q('runner-recent-files').options].some(o=>o.disabled&&o.textContent.includes('unavailable')),'missing history entry remains visible');
+ choose(ids[1]);await until(()=>app.recipe&&!q('runner-open').disabled,'recover with other recent');check(q('runner-workspace-status').textContent==='Study two','recovered correct project');
+ recording=true;await until(()=>q('runner-open').disabled,'recording guard');check(q('runner-recent-files').disabled,'recent list locks while recording');recording=false;await until(()=>!q('runner-open').disabled,'unlock');
+ check(!calls.some(c=>/master_start|recorder_start/.test(c.command)),'autoload never starts a run or recorder');check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');check(q('runner-recent-files').getBoundingClientRect().right<=innerWidth,'recent dropdown fits');
  const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);
 }catch(error){errors.push(String(error));app?.destroy();}
-const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({checks,errors,scope:'Production frontend with synthetic native transport only'});document.body.append(result);
+const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({checks,errors,scope:'Production Runner with synthetic native recent-file service'});document.body.append(result);
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "runner-app-v2-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent" });
 const server = createServer(async (req, res) => {
