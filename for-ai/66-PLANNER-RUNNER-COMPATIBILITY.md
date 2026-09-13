@@ -155,3 +155,15 @@ an immutable naming receipt; Planner emission base names and original JSON remai
 intact. XDF policy/destination belong to Runner. Ledger65 binds software evidence
 and remaining native/master qualification. Frozen legacy recoveries preserve names
 and paths; nothing is silently migrated or overwritten.
+
+
+## Runner convenience selection — 2026-09-13 amendment
+
+The user allocates XDF-filename-based participant/version defaults to Runner.
+The Planner's exact P3 variants/order/IDs remain unchanged. Runner displays V1,
+V2 by the saved array order, chooses the least-used according to matching local
+XDF files and passes the actual selected variant ID to existing native plan
+reconstruction. The experimenter can override both version and participant.
+Named XDF recordings and their inventory belong to Runner session behavior;
+see [the exact contract](../docs/runner-version-preselection.md). This is not a
+new Planner allocator, a changed selected-order hash, or execution qualification.

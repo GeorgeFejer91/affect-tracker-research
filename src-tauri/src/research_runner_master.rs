@@ -10,6 +10,7 @@ pub(crate) mod response;
 pub mod runtime;
 pub(crate) mod storage;
 pub(crate) mod typed_forms;
+pub(crate) mod variant_usage;
 pub(crate) mod worker;
 use crate::research_contracts::canonical_sha256;
 use crate::research_error::{CommandError, ResearchResult};

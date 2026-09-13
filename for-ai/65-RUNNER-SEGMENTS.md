@@ -570,3 +570,22 @@ with synthetic native transport across two viewport widths, visually inspected
 screenshots, and Runner production build/boundary checks. See
 [release validation](../docs/release-validation.md). Installed native UI validation
 and the existing playback/XDF release gates remain open.
+
+
+### XDF-based participant/version defaults — 2026-09-13 user amendment
+
+RR-03/RR-08/RR-09/RR-10: prefer the first unused participant and least-used
+version across all participants using this exact JSON's recordings folder.
+Every matching XDF counts, including stopped/partial files. Ties follow saved
+version order; both defaults remain manually overridable and repeat sessions
+remain possible. Names are P01_V1_UTCtimestamp.xdf, V1 being the first saved
+variant, independent of arbitrary internal variant IDs. Unknown old names are
+excluded visibly, never guessed or renamed. Preserve existing rerun guards,
+recording policy and frozen Planner/LSL/XDF data contracts. An armed named
+recorder binds the selected participant/version until stopped.
+
+Implementation and component receipts: [Runner preselection](../docs/runner-version-preselection.md).
+The visible frequency dropdown includes counts and a green-to-red relative scale;
+color alone is never the selection or count indicator. Missing history leaves
+manual selection available, with no fabricated zero counts. Root owns collecting
+this isolated change into the current native application and final qualification.
