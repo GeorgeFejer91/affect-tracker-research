@@ -49,6 +49,17 @@ try{
  check(q('runner-version-0').style.getPropertyValue('--version-color')!==q('runner-version-2').style.getPropertyValue('--version-color'),'color reflects unequal frequency');
  const key=k=>q('runner-variant-button').dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
  key('Home');key('Enter');check(q('runner-variant').value==='variant-3','keyboard manual version override');check(q('runner-variant-popup').hidden,'selection closes menu');
+ q('runner-sequence-preview').click();await tick();
+ check(q('runner-sequence-dialog').open,'sequence preview opens');
+ check(q('runner-sequence-timeline').textContent.includes('Language'),'preview shows language as first event before terminal choice');
+ const choosePreview=async(label)=>{[...q('runner-preview-language').querySelectorAll('button')].find(button=>button.textContent===label).click();await tick();};
+ await choosePreview('Study languages');await choosePreview('en');
+ const sequenceText=q('runner-sequence-dialog').textContent;
+ check(sequenceText.includes('Repeated and interval edges'),'preview names the selected version');
+ check(sequenceText.includes('Demographics')&&sequenceText.includes('Custom study'),'preview recognizes questionnaire content');
+ check(sequenceText.includes('ISI1')&&sequenceText.includes('session%5Fa_clip.mp4'),'preview recognizes selected version ISI and video IDs');
+ check(q('runner-sequence-status').textContent.includes('Language > Demographics > Custom study > ISI1'),'preview status summarizes the ordered sequence');
+ root.querySelector('[data-close-dialog="runner-sequence-dialog"]').click();await tick();
  q('runner-participant').value='P01';q('runner-participant').dispatchEvent(new Event('input',{bubbles:true}));q('runner-participant').dispatchEvent(new Event('blur'));await tick();
  q('runner-variant-button').click();key('Home');key('Enter');check(q('runner-participant').value==='P01','experimenter can repeat used participant');
  q('runner-settings').click();await tick();q('runner-record-start').click();await until(()=>active&&!q('runner-record-stop').disabled,'recorder armed');

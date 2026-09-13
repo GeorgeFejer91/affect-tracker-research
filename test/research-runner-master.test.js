@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState } from "../runner/src/recipe.js";
-import { participantCatalogue, participantTimeline } from "../runner/src/participants.js";
+import { participantCatalogue, participantTimeline, participantPreviewTimeline } from "../runner/src/participants.js";
 import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
 import { reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
 import { assertMasterPlanParity } from "../runner/src/master-presentation.js";
@@ -38,6 +38,18 @@ test("Runner does not infer allocation and distinguishes every repeated occurren
   assert.equal(a.events[0].payload.presentation.repeatLabelsEvery, 5);
   assert.notEqual(a.events[3].entryId, a.events[4].entryId);
   assert.equal(participantCatalogue(receipt).resolve("p100000"), "P100000");
+});
+test("Runner preview resolves the selected master version's participant-facing sequence", async () => {
+  const receipt = await load("runner-master-v3-owner");
+  const variantId = receipt.recipe.segments.P3.variants[1].variantId;
+  const promptOnly = await participantPreviewTimeline(receipt, "P001", [], variantId);
+  assert.equal(promptOnly.complete, false);
+  assert.deepEqual(promptOnly.events.map(event => event.kind), ["language"]);
+  const preview = await participantPreviewTimeline(receipt, "P001", ["both", "en"], variantId);
+  assert.equal(preview.complete, true);
+  assert.deepEqual(preview.events.map(event => event.kind), ["language", "questionnaire", "questionnaire", "video", "interval", "video", "interval", "questionnaire"]);
+  assert.match(preview.sequence, /^Language > Demographics > Custom study > session2_portrait\.mp4 > ISI4 > session%5Fa_clip\.mp4 > ISI2 > Custom study$/u);
+  assert.equal(preview.events.find(event => event.kind === "video").videoId, "session2_portrait.mp4");
 });
 
 test("Runner complete feedback projection preserves successor controls and rejects XR substitution", async () => {

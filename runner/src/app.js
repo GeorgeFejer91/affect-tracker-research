@@ -13,7 +13,7 @@ import { createQuestionnaireKeyboard } from "./questionnaire-keyboard.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
 import { createRecentFiles } from "./recent-files.js";
 import { createVariantPicker, nextParticipant } from "./variant-picker.js";
-import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
+import { createParticipantPicker, participantLabel, participantPreviewTimeline } from "./participants.js";
 import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
 import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
@@ -204,17 +204,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const host = query("runner-sequence-timeline"); host.replaceChildren();
     if (!query("runner-sequence-dialog").open || !recipe) return;
     const generation = revision;
-    text("runner-sequence-status", "Choose a language to preview the exact sequence.");
-    if (resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind !== "terminal") return;
     try {
-      const timeline = await participantTimeline(recipe, participantId(), path, value("runner-variant"));
+      const timeline = await participantPreviewTimeline(recipe, participantId(), path, value("runner-variant"));
       if (destroyed || generation !== revision || !query("runner-sequence-dialog").open) return;
-      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${[2, 3, 4].includes(recipe.recipe?.version) ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
+      const version = recipe.recipe ? recipe.recipe.segments.P3.variants.find(item => item.variantId === value("runner-variant")) : null;
+      text("runner-sequence-status", timeline.complete
+        ? `${participantLabel(participantId())}${version ? ` · ${version.title}` : ""} · ${timeline.events.length - 1} scheduled events. ${timeline.sequence}. Questionnaire durations depend on responses.`
+        : `${participantLabel(participantId())}${version ? ` · ${version.title}` : ""} · ${timeline.sequence}. Choose a language to preview the selected version's remaining events.`);
       for (const event of timeline.events) {
         const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
-        row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition;
+        row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition ?? "";
         title.textContent = `${event.label} · ${event.title}`;
-        detail.textContent = `${event.durationMs === null ? `${event.itemCount} items · Self-paced` : `${Number((event.durationMs / 1000).toFixed(3))} seconds`}${event.blockId ? ` · Block ${event.blockId}` : ""}${event.moduleId ? ` · ${event.moduleId}` : ""}`;
+        detail.textContent = event.kind === "language" ? event.detail
+          : `${event.durationMs === null ? `${event.itemCount} items · Self-paced` : `${Number((event.durationMs / 1000).toFixed(3))} seconds`}${event.blockId ? ` · Block ${event.blockId}` : ""}${event.moduleId ? ` · ${event.moduleId}` : ""}${event.videoId ? ` · ${event.videoId}` : ""}`;
         row.append(title, detail); host.append(row);
       }
     } catch (error) { if (!destroyed && generation === revision) text("runner-sequence-status", messageOf(error)); }

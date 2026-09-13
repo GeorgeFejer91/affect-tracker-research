@@ -1,4 +1,4 @@
-import { resolveRunnerSelection } from "./recipe.js";
+import { resolveLanguageSelectionTraversalStepV1, runnerLanguageTree, resolveRunnerSelection } from "./recipe.js";
 import { masterTimeline } from "./master-recipe.js";
 
 export function participantNumber(value) {
@@ -47,6 +47,41 @@ export async function participantTimeline(recipe, participantId, path, variantId
     if (step.kind !== "interval") throw new Error("Unsupported timeline event.");
     return { ...step, title: "Between videos", label: "Interval" };
   }) };
+}
+
+function eventToken(event) {
+  if (event.kind === "language") return "Language";
+  if (event.kind === "questionnaire") return event.title;
+  if (event.kind === "video") return event.videoId ?? event.title;
+  if (event.kind === "interval") return event.title?.toUpperCase?.().startsWith("ISI") ? event.title : "ISI";
+  return event.label ?? event.kind;
+}
+
+function withLanguageEvent(recipe, path, events, complete) {
+  const step = resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path);
+  const languageEvent = {
+    kind: "language",
+    label: "Language",
+    title: step.kind === "terminal" ? step.labels.join(" > ") : step.prompt,
+    detail: step.kind === "terminal" ? step.languageId : "Select before previewing the remaining events",
+    durationMs: null,
+    protocolPosition: 0,
+  };
+  const previewEvents = [languageEvent, ...events];
+  return {
+    complete,
+    events: previewEvents,
+    sequence: previewEvents.map(eventToken).filter(Boolean).join(" > "),
+  };
+}
+
+/** Preview-only sequence: includes the participant-facing language choice ahead
+ * of the exact executable timeline. It performs no media, input or write work. */
+export async function participantPreviewTimeline(recipe, participantId, path, variantId) {
+  const step = resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path);
+  if (step.kind !== "terminal") return withLanguageEvent(recipe, path, [], false);
+  const timeline = await participantTimeline(recipe, participantId, path, variantId);
+  return { ...timeline, ...withLanguageEvent(recipe, path, timeline.events, true) };
 }
 
 /** Virtual list: every declared number is scrollable, with a bounded DOM. */

@@ -52,8 +52,9 @@ export async function resolveMasterPlan(receipt, participantId, path, variantId)
 export function masterTimeline(plan) {
   return plan.steps.map(step => ({ ...step, protocolPosition: step.position,
     title: step.kind === "questionnaire" ? step.payload.definition.title : step.kind === "interval"
-      ? step.payload.definition.isiId : step.payload.asset.annotationId ?? step.payload.asset.sourceRelativePath,
+      ? step.payload.definition.isiId : step.payload.entry?.referenceId ?? step.payload.asset.annotationId ?? step.payload.asset.sourceRelativePath,
     label: step.kind === "questionnaire" ? "Questionnaire" : step.kind === "interval" ? "Interval" : "Video",
+    videoId: step.kind === "video" ? step.payload.entry?.referenceId ?? step.payload.asset.annotationId ?? null : null,
     itemCount: step.kind === "questionnaire" ? step.payload.definition.items?.length ?? null : null,
     moduleId: step.payload.module?.moduleId ?? null, blockId: null,
   }));

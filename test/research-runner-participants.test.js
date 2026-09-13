@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readRunnerRecipe, resolveRunnerSelection } from "../runner/src/recipe.js";
-import { participantNumber, participantLabel, participantCatalogue, participantTimeline } from "../runner/src/participants.js";
+import { participantNumber, participantLabel, participantCatalogue, participantTimeline, participantPreviewTimeline } from "../runner/src/participants.js";
 const recipe = await readRunnerRecipe(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url)));
 test("participant aliases resolve to the original scheduled ID without allocating another", () => {
   const catalogue = participantCatalogue(recipe);
@@ -32,4 +32,14 @@ test("timeline preserves every participant and language's exact video, form and 
   assert.deepEqual(en.events.map(e => e.kind), ["stimulus", "questionnaire", "questionnaire", "interval", "questionnaire", "stimulus", "interval"]);
   await assert.rejects(participantTimeline(recipe, "P001", []), /language/);
   await assert.rejects(participantTimeline(recipe, "P003", ["en"]));
+});
+test("preview timeline includes language before the executable package sequence", async () => {
+  const incomplete = await participantPreviewTimeline(recipe, "P001", []);
+  assert.equal(incomplete.complete, false);
+  assert.deepEqual(incomplete.events.map(e => e.kind), ["language"]);
+  assert.match(incomplete.sequence, /^Language$/u);
+  const en = await participantPreviewTimeline(recipe, "P001", ["en"]);
+  assert.equal(en.complete, true);
+  assert.deepEqual(en.events.map(e => e.kind), ["language", "stimulus", "questionnaire", "questionnaire", "interval", "questionnaire", "stimulus", "interval"]);
+  assert.match(en.sequence, /Language > .* > ISI/u);
 });
