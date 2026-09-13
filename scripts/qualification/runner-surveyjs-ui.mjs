@@ -10,13 +10,14 @@ import { build } from "esbuild";
 
 const [browser, destination, onlyCase, recipeVersion = "4"] = process.argv.slice(2);
 assert.ok(browser && destination);
-assert.ok(["2", "3", "4"].includes(recipeVersion));
+assert.ok(["2", "3", "4", "5"].includes(recipeVersion));
 assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|stop|dispose)$/u.test(onlyCase));
 const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output);
 const entry = String.raw`
 import {bootRunner} from './runner/src/app.js';
 import {resolveRunnerSelection} from './runner/src/recipe.js';
+import {plannerRecipeTransportText} from './site/src/research/planner-recipe-transport.js';
 import {checkSurveyData} from './site/src/research/surveyjs-engine.js';
 import {validateFormAnswers} from './site/src/research/form-definition.js';
 import {validateQuestionnaireAnswers} from './site/src/research/questionnaires.js';
@@ -59,12 +60,13 @@ const invoke=async(command,args)=>{
   case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,nativeStartReady:true,reasons:[]};
   case 'research_runner_master_start_v2':
   case 'research_runner_master_start_v3':
-  case 'research_runner_master_start_v4':{
+  case 'research_runner_master_start_v4':
+  case 'research_runner_master_start_v5':{
    check(command==='research_runner_master_start_v'+masterVersion,'exact Start version dispatch');
    check(fullscreen,'Start2 follows fullscreen acknowledgement');
    check(Object.keys(args.request).sort().join('|')===['version','workspaceId','sourceText','participantId','selector','rerunConfirmed','inputTestReceiptId'].sort().join('|'),'Start2 has exact participant-only fields');
    check(args.request.version===masterVersion&&args.request.participantId==='P001','Start2 retains canonical participant ID');
-   check(args.request.sourceText===app.recipe.canonicalSourceText,'Start2 retains exact canonical source');
+   check(args.request.sourceText===plannerRecipeTransportText(app.recipe),'Start retains exact source and declared questionnaire snapshots');
    const receipt={schema:'affect-runner-master-attempt',version:masterVersion,runId:'run-00000000-0000-4000-8000-000000000001',attemptId:'attempt-synthetic',participantId:'P001',recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256};
    status={...receipt,schema:'affect-runner-master-status',active:true,position:1,stepCount:plan.steps.length,phase:'awaitingPresentation',answers:{},sampleCount:0,missedSlotCount:0,currentValence:0,currentArousal:0};
    if(holdStart){holdStart=false;await new Promise(resolve=>{releaseStart=resolve;});}
@@ -77,7 +79,8 @@ const invoke=async(command,args)=>{
   }
   case 'research_runner_master_action_v2':
   case 'research_runner_master_action_v3':
-  case 'research_runner_master_action_v4':{
+  case 'research_runner_master_action_v4':
+  case 'research_runner_master_action_v5':{
    check(command==='research_runner_master_action_v'+masterVersion,'exact action version dispatch');
    if(masterVersion>=3)check(args.request.version===masterVersion&&args.request.runId===status.runId,'action3 exact envelope');
    const action=masterVersion>=3?args.request.action:args.action;
@@ -116,7 +119,7 @@ const invoke=async(command,args)=>{
 try{
  const win=new Proxy(window,{get(target,key){if(key==='requestAnimationFrame')return callback=>setTimeout(()=>callback(performance.now()),16);const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
  app=await bootRunner(root,{invoke,windowObject:win,pollMs:250,subscribeAbort:callback=>{nativeAbort=callback;return()=>{unsubscribed=true;};}});
- await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
+ await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===5?'/test/fixtures/planner-recipe-v5.bundle.json':masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
  check(q('runner-recipe-status').textContent.includes('master v'+masterVersion),'launcher identifies master v2');
  check(!q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true})),'input-test arrows cannot scroll and cancel the native test');
  check(q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})),'input-test keyboard escape remains available through Tab');
