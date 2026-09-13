@@ -29,7 +29,7 @@ jobs:
       - name: Audit frontend dependencies
         run: pnpm audit --audit-level=moderate
       - name: Run Research tests
-        run: pnpm test
+        run: pnpm surveyjs:check && pnpm test
       - name: Build focused Pages application
         run: pnpm build:pages
       - name: Build focused desktop WebView

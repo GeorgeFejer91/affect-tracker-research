@@ -1,5 +1,4 @@
-import { questionnairePresentationGroups } from "../../site/src/research/questionnaire-recipe.js";
-import { renderTypedForm } from "./typed-form.js";
+import { renderSurveyQuestionnaire } from "../../site/src/research/surveyjs-view.js";
 
 /** Compare complete native interpretation. Only derived P4/P5 geometry gets the
  * owner's documented numeric tolerance; authored content always matches exactly. */
@@ -38,39 +37,30 @@ export function clearMasterDesktopLayout(root) {
   }
 }
 
-/** Full form, with the exact P2 label repetition groups. Repetition is not
- * pagination, and researcher-supplied codes never replace visible labels.
- * Typed forms return a controller which the caller retains for the occurrence
- * and destroys before changing forms; polling must not replace active inputs. */
-export function renderMasterQuestionnaire(host, definition, presentation, answers) {
+/** All master questionnaires render with the complete bundled SurveyJS UI.
+ * Legacy definitions retain their native answer contracts at this adapter. */
+export function renderMasterQuestionnaire(host, definition, presentation, answers = {}, options = {}) {
   if (presentation.questionnaireId !== definition.questionnaireId || presentation.definitionSha256 !== definition.definitionSha256) throw new Error("Questionnaire presentation does not bind this definition.");
-  if (definition.schema === "affect-research-form-definition" && definition.version === 1) {
-    return renderTypedForm(host, definition, presentation, Object.entries(answers).map(([itemId, value]) => ({ itemId, value })));
+  const surveyjs = definition.schema === "affect-research-surveyjs-definition";
+  const typed = definition.schema === "affect-research-form-definition";
+  if (definition.version !== 1 || (surveyjs ? presentation.kind !== "surveyjs" : typed ? presentation.kind !== "fields" : definition.schema !== "affect-research-questionnaire-definition" || presentation.kind && presentation.kind !== "likert")) throw new Error("Unsupported questionnaire presentation.");
+  const data = surveyjs ? structuredClone(answers) : Object.fromEntries(Object.entries(answers).map(([id, value]) => [id, typeof value === "string" ? value : value?.text ?? value?.integer ?? value?.optionId]));
+  const controller = renderSurveyQuestionnaire(host, definition, { ...options, data, presentation });
+  function read({ allowPartial = true } = {}) {
+    if (!allowPartial && !controller.validate()) throw new Error("Complete the visible questionnaire before submitting.");
+    const result = controller.read();
+    if (surveyjs) return { surveyjs: true, ...result };
+    return { answers: definition.items.filter(item => Object.hasOwn(result.data, item.itemId)).map(item => {
+      const value = result.data[item.itemId];
+      return { itemId: item.itemId, value: options.version === 1 ? value : typed && item.response.kind === "text" ? { kind: "text", text: value }
+        : typed && item.response.kind === "integer" ? { kind: "integer", integer: value } : { kind: "singleChoice", optionId: value } };
+    }) };
   }
-  if (definition.schema !== "affect-research-questionnaire-definition" || definition.version !== 1 || (presentation.kind !== undefined && presentation.kind !== "likert")) throw new Error("Unsupported questionnaire presentation.");
-  const document = host.ownerDocument;
-  host.replaceChildren();
-  for (const group of questionnairePresentationGroups(definition, presentation.repeatLabelsEvery)) {
-    const table = document.createElement("table"); table.className = "runner-questionnaire-table";
-    const head = document.createElement("thead"), headings = document.createElement("tr"), promptHeading = document.createElement("th");
-    promptHeading.scope = "col"; promptHeading.textContent = "Item"; headings.append(promptHeading);
-    const options = definition.items[group.start].options;
-    for (const [index, option] of options.entries()) {
-      const th = document.createElement("th"); th.scope = "col"; th.id = `runner-option-${group.start}-${index}`; th.textContent = option.label; headings.append(th);
-    }
-    head.append(headings); table.append(head); const body = document.createElement("tbody");
-    for (const item of definition.items.slice(group.start, group.end)) {
-      const row = document.createElement("tr"), label = document.createElement("th"); label.scope = "row"; label.id = `runner-item-${item.order}`;
-      label.textContent = `${item.order}. ${item.prompt} (required)`; row.append(label);
-      for (const [index, option] of item.options.entries()) {
-        const cell = document.createElement("td"), input = document.createElement("input");
-        input.type = "radio"; input.name = `answer-${item.itemId}`; input.value = option.optionId; input.dataset.answerItem = item.itemId;
-        input.checked = (presentation.kind === "likert" ? answers[item.itemId]?.optionId : answers[item.itemId]) === option.optionId; input.required = true;
-        input.setAttribute("aria-labelledby", `${label.id} runner-option-${group.start}-${index}`);
-        cell.append(input); row.append(cell);
-      }
-      body.append(row);
-    }
-    table.append(body); host.append(table);
+  function progress() {
+    const questions = controller.model.getAllQuestions(false, false, true).filter(q => q.isVisibleInSurvey && !["html", "image", "expression"].includes(q.getType()));
+    const answered = surveyjs ? questions.filter(q => !q.isEmpty()).length : read().answers.length;
+    const total = surveyjs ? questions.length : definition.items.length;
+    return { answered, total, text: definition.language.startsWith("de") ? answered + " / " + total + " beantwortet" : answered + " / " + total + " answered" };
   }
+  return { ...controller, usesSurveyJS: true, surveyjs, read, progress, instructions: definition.instructions ?? "" };
 }

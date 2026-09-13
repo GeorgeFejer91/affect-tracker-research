@@ -1,4 +1,8 @@
 import { canonicalJson } from "./canonical.js";
+import { SURVEYJS_DEFINITION_SCHEMA, SURVEYJS_BUILDER_URL, importSurveyJson } from "./surveyjs-definition.js";
+import { isSurveySheet, surveyEntryMarkup } from "./surveyjs-sheet.js";
+import { renderSurveyQuestionnaire } from "./surveyjs-view.js";
+import { createQuestionnairePresentationV3, validateQuestionnairePresentationV3 } from "./questionnaire-recipe-v2.js";
 import { restoreQuestionnaireRecipeContent } from "./questionnaire-recipe-restoration.js";
 import { questionnaireFamilyId } from "./questionnaire-assets.js";
 import {
@@ -12,11 +16,11 @@ import { cloneQuestionnaireSheet, sheetFromDefinition, sheetToAuthoring, isFormS
 import { demographicsFormDraft } from "./form-assets.js";
 import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
 import { createQuestionnairePresentationV2, validateQuestionnairePresentationV2 } from "./questionnaire-recipe-v2.js";
-import { formEntryMarkup, editFormField, moveFormField, changeFormOption, formPreviewMarkup } from "./form-sheet-view.js";
+import { formEntryMarkup, editFormField, moveFormField, changeFormOption } from "./form-sheet-view.js";
 import { prepareQuestionnaireSave } from "./questionnaire-save-preparation.js";
 import { importQuestionnaireAuthoring } from "./questionnaire-authoring.js";
 import { createQuestionnairePresentationV1, validateQuestionnairePresentationV1,
-  QUESTIONNAIRE_LABEL_REPETITIONS, questionnairePresentationGroups } from "./questionnaire-recipe.js";
+  QUESTIONNAIRE_LABEL_REPETITIONS } from "./questionnaire-recipe.js";
 
 const escape = (value) => String(value ?? "").replace(/[&<>"']/gu, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -33,6 +37,9 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   let uploadKey = null;
   let fingerprint = "";
   let restoreGeneration = 0;
+  let previewController = null;
+  let surveyImportKey = null;
+  dialog?.addEventListener("close", () => { previewController?.destroy(); previewController = null; });
 
   function makeEntry(family, language, restoredSheet = null) {
     const sheet = restoredSheet ?? (family.id === "demographics" ? sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
@@ -114,6 +121,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   }
 
   function entryMarkup({ family, language, key, entry }, index) {
+    if (isSurveySheet(entry.sheet)) return surveyEntryMarkup({ family, language, key, entry }, index, context, status(entry));
     if (isFormSheet(entry.sheet)) return formEntryMarkup({ family, language, key, entry }, index, context, status(entry));
     const sheet = entry.sheet;
     return `<details class="questionnaire-sheet" data-sheet-key="${escape(key)}" ${entry.open ? "open" : ""}>
@@ -124,7 +132,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           <label class="field"><span>Answer options</span><input type="number" min="2" max="64" step="1" data-sheet-option-count value="${escape(entry.rawOptionCount ?? sheet.optionCount)}"></label>
           <label class="field"><span>Table columns</span><select data-sheet-layout><option value="labels-and-codes" ${entry.layout === "labels-and-codes" ? "selected" : ""}>Items, answer labels and codes</option><option value="codes-only" ${entry.layout === "codes-only" ? "selected" : ""}>Items and codes only</option></select></label>
         </div>
-        <p class="sheet-paste-help">Paste cells from Excel. Answers are participant labels; codes are recorded values. One answer per item.</p>
+        <p class="sheet-paste-help">Paste cells from Excel for a basic questionnaire, or import a complete SurveyJS form.</p>
+        <div class="sheet-actions"><button type="button" data-sheet-action="survey-builder">Open SurveyJS builder</button><button type="button" data-sheet-action="survey-upload">Import SurveyJS JSON</button><button type="button" data-sheet-action="survey-paste">Paste SurveyJS JSON</button></div>
         <p class="sheet-error" role="status" aria-live="polite">${escape(entry.error)}</p>
         <div class="sheet-table-scroll" tabindex="0" role="region" aria-label="${escape(family.label)} ${escape(language.label)} questionnaire table">
           <table class="sheet-table"><thead><tr><th scope="col">#</th>${questionnaireGridColumns(sheet, entry.layout).map((label) => `<th scope="col">${escape(label)}</th>`).join("")}<th scope="col"><span class="sr-only">Row actions</span></th></tr></thead><tbody>${sheet.rows.map((row, i) => rowMarkup(entry, row, i)).join("")}</tbody></table>
@@ -183,7 +192,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     container.querySelectorAll("details[data-sheet-key]").forEach((details) => {
       details.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.open = details.open; });
       const options = details.querySelector(".sheet-options");
-      options.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.optionsOpen = options.open; });
+      options?.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.optionsOpen = options.open; });
       const metadata = details.querySelector("[data-sheet-metadata]");
       metadata?.addEventListener("toggle", () => { const entry = entries.get(details.dataset.sheetKey); if (entry) entry.metadataOpen = metadata.open; });
     });
@@ -278,13 +287,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const { definition } = await sheetToAuthoring(entry.sheet);
     root.querySelector("#questionnaire-sheet-preview-title").textContent = `${definition.title} · ${definition.language}`;
     const body = root.querySelector("#questionnaire-sheet-preview-content");
-    if (definition.schema === FORM_DEFINITION_SCHEMA) { body.innerHTML = formPreviewMarkup(definition); dialog.showModal(); return; }
-    const chunks = [];
-    for (const { start, end } of questionnairePresentationGroups(definition, entry.repeatLabels)) {
-      const items = definition.items.slice(start, end);
-      chunks.push(`<div class="sheet-table-scroll"><table class="sheet-preview-table"><thead><tr><th scope="col">Item</th>${items[0].options.map((o) => `<th scope="col">${escape(o.label)}</th>`).join("")}</tr></thead><tbody>${items.map((item, index) => `<tr><th scope="row">${start + index + 1}. ${escape(item.prompt)}${item.required ? ' <span aria-label="Required">*</span>' : ""}</th>${item.options.map((option) => `<td><input type="radio" name="preview-${escape(item.itemId)}" aria-label="${escape(item.prompt)} — ${escape(option.label)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
-    }
-    body.innerHTML = `<p>${escape(definition.instructions)}</p><p class="field-help">Design preview · answers here are not recorded.</p>${chunks.join("")}`;
+    previewController?.destroy();
+    previewController = renderSurveyQuestionnaire(body, definition, { preview: true, presentation: { repeatLabelsEvery: entry.repeatLabels } });
     dialog.showModal();
   }
 
@@ -497,6 +501,24 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     if (!entry || entry.busy || context.locked) return;
     const action = button.dataset.sheetAction;
     try {
+      if (action === "survey-builder") {
+        const windowObject = root.ownerDocument?.defaultView ?? window;
+        if (root.dispatchEvent(new CustomEvent("research:open-surveyjs-builder", { cancelable: true }))) windowObject.open(SURVEYJS_BUILDER_URL, "_blank", "noopener,noreferrer");
+        return;
+      }
+      if (action === "survey-paste") {
+        surveyImportKey = key;
+        root.querySelector("#questionnaire-survey-json").value = "";
+        root.querySelector("#questionnaire-survey-error").textContent = "";
+        root.querySelector("#questionnaire-survey-import").showModal();
+        root.querySelector("#questionnaire-survey-json").focus(); return;
+      }
+      if (action === "survey-upload") { uploadKey = key; fileInput.value = ""; fileInput.click(); return; }
+      if (action === "survey-export" && isSurveySheet(entry.sheet)) {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(entry.sheet.definition.surveyJson, null, 2)], { type: "application/json" }));
+        const link = root.ownerDocument.createElement("a"); link.href = url; link.download = `${entry.sheet.questionnaireId}-surveyjs.json`; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+      }
       if (action === "save") { await save(key); return; }
       if (action === "preview") { await preview(entry); return; }
       if (action === "upload") { uploadKey = key; fileInput.value = ""; fileInput.click(); return; }
@@ -564,7 +586,9 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while opening the file. Import it again into the intended table.");
       const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       if (file.name.toLowerCase().endsWith(".json") || /^format_version[,\t]/u.test(text)) {
-        const imported = await importQuestionnaireAuthoring(bytes, { logicalName: file.name });
+        const looksLikeSurvey = file.name.toLowerCase().endsWith(".json") && (() => { const json = JSON.parse(text); return !json.schema || json.schema === SURVEYJS_DEFINITION_SCHEMA; })();
+        const imported = looksLikeSurvey ? await importSurveyJson(bytes, { questionnaireId: entry.sheet.questionnaireId, language: entry.sheet.language, basename: file.name })
+          : await importQuestionnaireAuthoring(bytes, { logicalName: file.name });
         if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while importing. Import it again into the intended table.");
         if (imported.definition.language !== entry.sheet.language) throw new TypeError(`This table requires ${entry.sheet.language}; the file declares ${imported.definition.language}.`);
         const familyId = context.familyForDefinition(imported.definition);
@@ -588,10 +612,22 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     finally { if (entries.get(selectedKey) === entry) entry.busy = false; render(); }
   });
 
+  root.querySelector("[data-survey-import-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-survey-import").close());
+  root.querySelector("#questionnaire-survey-apply")?.addEventListener("click", async () => {
+    const key = surveyImportKey, entry = entries.get(key), generation = restoreGeneration;
+    if (!entry || entry.busy || context.locked) return;
+    try {
+      const imported = await importSurveyJson(root.querySelector("#questionnaire-survey-json").value, { questionnaireId: entry.sheet.questionnaireId, language: entry.sheet.language });
+      if (generation !== restoreGeneration || entries.get(key) !== entry || context.locked || entry.busy) throw new Error("The questionnaire changed while importing. Open the import again.");
+      if (!loadDefinition(imported.definition, { familyId: entry.sheet.familyId, sourceBytes: imported.sourceBytes, authoringResult: imported })) throw new Error("The questionnaire could not be imported into this slot.");
+      root.querySelector("#questionnaire-survey-import").close();
+    } catch (error) { root.querySelector("#questionnaire-survey-error").textContent = error.message; }
+  });
+
   root.querySelector("[data-sheet-preview-close]")?.addEventListener("click", () => dialog.close());
   root.querySelector("[data-sheet-copy-close]")?.addEventListener("click", () => root.querySelector("#questionnaire-sheet-copy").close());
 
-  return Object.freeze({ sync, loadDefinition, save, reset() { restoreGeneration++; entries.clear(); fingerprint = ""; },
+  return Object.freeze({ sync, loadDefinition, save, reset() { previewController?.destroy(); previewController = null; dialog?.close(); restoreGeneration++; entries.clear(); fingerprint = ""; },
     async prepareAuthoringImport(imported, { familyId, language, sourceBytes, isCurrent, signal }) {
       if (typeof isCurrent !== "function" || !signal || !(sourceBytes instanceof Uint8Array))
         throw new TypeError("Questionnaire import needs exact source bytes and current-operation/cancellation guards.");
@@ -619,12 +655,16 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         throw new TypeError("Imported questionnaire family or language differs from the requested slot.");
       // Reuse the importer to verify that the supplied result and original bytes
       // are one exact source, including TXT/JSON normalization receipts.
-      const verified = await importQuestionnaireAuthoring(bytes, {
+      const verified = captured.definition.schema === SURVEYJS_DEFINITION_SCHEMA
+        ? await importSurveyJson(bytes, { questionnaireId: captured.definition.questionnaireId, language, basename: captured.definition.source.basename })
+        : await importQuestionnaireAuthoring(bytes, {
         logicalName: captured.authoringReceipt?.original?.logicalName,
         sourceKind: captured.definition.source.kind,
         sourceDocumentSha256: captured.definition.source.sourceDocumentSha256,
       });
-      if (canonicalJson(verified) !== canonicalJson(captured)) throw new TypeError("Imported questionnaire result does not match its exact source bytes.");
+      const comparable = result => result.definition.schema === SURVEYJS_DEFINITION_SCHEMA
+        ? { ...result, sourceBytes: Array.from(result.sourceBytes) } : result;
+      if (canonicalJson(comparable(verified)) !== canonicalJson(comparable(captured))) throw new TypeError("Imported questionnaire result does not match its exact source bytes.");
       check();
       const prepared = prepareLoadedDefinition(entry, verified.definition, { familyId, sourceBytes: bytes, authoringResult: verified });
       check();
@@ -673,7 +713,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
         const sheet = sheetFromDefinition(definition, { familyId: family.id });
         const entry = makeEntry(family, language, sheet);
         const presentation = restored.presentation.definitions.find(p => p.questionnaireId === definition.questionnaireId);
-        entry.repeatLabels = presentation.kind === "fields" ? 1 : presentation.repeatLabelsEvery;
+        entry.repeatLabels = ["fields", "surveyjs"].includes(presentation.kind) ? 1 : presentation.repeatLabelsEvery;
         entry.sourceDefinitionHash = definition.definitionSha256;
         entry.dirty = false; entry.pristine = false; entry.open = next.size === 0;
         next.set(keyFor(family.id, language.languageTag), entry);
@@ -753,7 +793,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       }, afterCommit: render };
     },
     getPresentation(definitions) {
-      const create = definitions.some(d => d.schema === FORM_DEFINITION_SCHEMA) ? createQuestionnairePresentationV2 : createQuestionnairePresentationV1;
+      const create = definitions.some(d => d.schema === SURVEYJS_DEFINITION_SCHEMA) ? createQuestionnairePresentationV3 : definitions.some(d => d.schema === FORM_DEFINITION_SCHEMA) ? createQuestionnairePresentationV2 : createQuestionnairePresentationV1;
       return create(definitions, definitions.map((definition) => {
         const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === definition.questionnaireId);
         if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
@@ -761,14 +801,14 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       }));
     },
     restorePresentation(value, definitions) {
-      const presentation = value.version === 2 ? validateQuestionnairePresentationV2(value, definitions) : validateQuestionnairePresentationV1(value, definitions);
+      const presentation = value.version === 3 ? validateQuestionnairePresentationV3(value, definitions) : value.version === 2 ? validateQuestionnairePresentationV2(value, definitions) : validateQuestionnairePresentationV1(value, definitions);
       const targets = presentation.definitions.map((record) => {
         const entry = [...entries.values()].find(({ sheet }) => sheet.questionnaireId === record.questionnaireId);
         if (!entry) throw new TypeError("Questionnaire presentation has no matching editable table.");
         return { entry, record };
       });
       restoreGeneration++;
-      targets.forEach(({ entry, record }) => { entry.repeatLabels = record.kind === "fields" ? 1 : record.repeatLabelsEvery; });
+      targets.forEach(({ entry, record }) => { entry.repeatLabels = ["fields", "surveyjs"].includes(record.kind) ? 1 : record.repeatLabelsEvery; });
       render();
     },
     presetToken(familyId, language) { return entries.get(keyFor(familyId, language))?.presetToken ?? null; },

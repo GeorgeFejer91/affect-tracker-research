@@ -1,5 +1,17 @@
 # Central segment roadmap and capability checklist
 
+## P2 / Runner SurveyJS extension — 2026-09-13
+
+User explicitly allocated the full standard SurveyJS questionnaire pipeline.
+P2 retains its table builder and prebuilt selectors, adds the online builder
+link and raw JSON import/paste, and preserves imported definitions through
+native source save and editable master4 reopen. MAIA-2 EN/DE and the installed
+researcher-local German TAS retain their wording, codes and language routing.
+Uninstalled translations remain unavailable. Runner renders all master forms
+through SurveyJS and validates custom survey submissions natively before durable
+write/advance. Full contract, scope and qualification boundaries are in
+[SurveyJS questionnaires](../docs/surveyjs-questionnaires.md).
+
 **Planner authoring goal completed — 2026-09-12:** every required P1–P6 segment,
 including experiment-defining Flubber/live configuration, contributes to one
 validated, saveable and editable master. Canonical source, local build and

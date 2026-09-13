@@ -93,6 +93,9 @@ export function validatePlannerRecipeStructureV2(value, { integrity = true } = {
 export function validatePlannerRecipeStructureV3(value, { integrity = true } = {}) {
   return validateStructure(value, integrity, 3, ["planner-recipe-reproduction-v4"]);
 }
+export function validatePlannerRecipeStructureV4(value, { integrity = true } = {}) {
+  return validateStructure(value, integrity, 4, ["planner-recipe-reproduction-v5"]);
+}
 
 function validateStructure(value, integrity, version, algorithms) {
   exactRecipeObject(value, integrity ? [...CORE_KEYS, "integrity"] : CORE_KEYS, "Planner recipe");

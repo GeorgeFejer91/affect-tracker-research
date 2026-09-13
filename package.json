@@ -10,6 +10,8 @@
   },
   "homepage": "https://GeorgeFejer91.github.io/affect-tracker-research/",
   "scripts": {
+    "surveyjs:build": "node scripts/build-surveyjs-vendor.js && node scripts/build-surveyjs-native.js",
+    "surveyjs:check": "node scripts/build-surveyjs-vendor.js --check && node scripts/build-surveyjs-native.js --check && node scripts/build-surveyjs-fixture.js --check",
     "test": "node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js",
     "test:research": "node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js",
     "test:web": "node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js",
@@ -41,5 +43,10 @@
     "@tauri-apps/cli": "2.11.4",
     "esbuild": "0.28.1",
     "vite": "8.2.2"
+  },
+  "dependencies": {
+    "dompurify": "3.4.15",
+    "survey-core": "3.0.4",
+    "survey-js-ui": "3.0.4"
   }
 }

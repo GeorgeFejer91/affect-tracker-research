@@ -1,6 +1,10 @@
 import { preparePlannerSurface } from "./planner-surface.js";
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
-import { FORM_DEFINITION_SCHEMA, verifyP2Definition } from "./form-definition.js";
+import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
+import { SURVEYJS_DEFINITION_SCHEMA, importSurveyJson, verifySurveySupportedDefinition as verifyP2Definition } from "./surveyjs-definition.js";
+import { prepareSurveySourceStorage } from "./surveyjs-sheet.js";
+import { QUESTIONNAIRE_HOOKS_V4_ALGORITHM_VERSION } from "./questionnaire-recipe-v2.js";
+import { compilePlannerRecipeV4 } from "./planner-recipe.js";
 import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { withPlannerCore9 } from "./planner-authoring-core9.js";
 import { createPlannerCore9Composition } from "./planner-core9-composition.js";
@@ -2524,7 +2528,7 @@ function bindResearchInteractions(root, { surface }) {
       definitionSha256: definition.definitionSha256,
       placement,
     }, {
-      definition: definition.schema === FORM_DEFINITION_SCHEMA ? null : definition,
+      definition: [FORM_DEFINITION_SCHEMA, SURVEYJS_DEFINITION_SCHEMA].includes(definition.schema) ? null : definition,
       blockIds: protocolBlockIds(),
       stimulusIds: experimentDocument?.definition.stimuli.map(({ stimulusId }) => stimulusId) ?? [],
     });
@@ -2595,7 +2599,12 @@ function bindResearchInteractions(root, { surface }) {
       throw new TypeError("The edited questionnaire does not match its language table.");
     }
     let sourceReceipt = null;
-    if (definition.schema === FORM_DEFINITION_SCHEMA) {
+    if (definition.schema === SURVEYJS_DEFINITION_SCHEMA) {
+      if (sourceFormat !== "surveyJsDefinitionV1") throw new TypeError("SurveyJS save requires its explicit source format.");
+      const payload = await prepareSurveySourceStorage(sourceBytes, definition);
+      if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
+      sourceReceipt = await storeQuestionnairePayload(payload);
+    } else if (definition.schema === FORM_DEFINITION_SCHEMA) {
       if (sourceFormat !== "formDefinitionV1") throw new TypeError("Typed form save requires its explicit source format.");
       const payload = await prepareFormSourceStorage(sourceBytes, definition);
       if (!current()) throw new Error("The questionnaire save was cancelled before storage.");
@@ -3674,8 +3683,9 @@ function bindResearchInteractions(root, { surface }) {
     try {
       const source = coverageSource();
       const typed = source.definitions.some(definition => definition.schema === FORM_DEFINITION_SCHEMA);
-      contribution = { schema: QUESTIONNAIRE_RECIPE_SCHEMA, version: typed ? 2 : 1,
-        questionnaires: { algorithmVersion: typed ? QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION : QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
+      const surveyjs = source.definitions.some(definition => definition.schema === SURVEYJS_DEFINITION_SCHEMA);
+      contribution = { schema: QUESTIONNAIRE_RECIPE_SCHEMA, version: surveyjs ? 3 : typed ? 2 : 1,
+        questionnaires: { algorithmVersion: surveyjs ? QUESTIONNAIRE_HOOKS_V4_ALGORITHM_VERSION : typed ? QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION : QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
           definitions: structuredClone(source.definitions), modules: structuredClone(source.modules) },
         languageSelection: structuredClone(languageTreeFromUi({ allowPresentation: true })),
         presentation: questionnaireEditor.getPresentation(source.definitions) };
@@ -6131,7 +6141,7 @@ function bindResearchInteractions(root, { surface }) {
     observedContributions = packageContributionFingerprint;
   }
   async function compileSupportedRecipeDocument(input) {
-    const compile = ({ 1: compilePlannerRecipeV1, 2: compilePlannerRecipeV2, 3: compilePlannerRecipeV3 })[input.version];
+    const compile = ({ 1: compilePlannerRecipeV1, 2: compilePlannerRecipeV2, 3: compilePlannerRecipeV3, 4: compilePlannerRecipeV4 })[input.version];
     if (!compile) throw new TypeError("Unsupported Planner recipe version.");
     const recipe = await compile(input);
     return parseSupportedPlannerRecipe(new TextEncoder().encode(`${canonicalJson(recipe)}\n`));
@@ -6188,7 +6198,11 @@ function bindResearchInteractions(root, { surface }) {
       if (!/^(?:[0-9a-f]{2})+$/u.test(source.bytesHex)) throw new TypeError("Malformed questionnaire source bytes.");
       const bytes = Uint8Array.from(source.bytesHex.match(/../gu), byte => Number.parseInt(byte, 16));
       if (bytes.byteLength !== source.byteLength || await sha256Hex(bytes) !== source.sha256) throw new TypeError("Questionnaire source receipt mismatch.");
-      const imported = await importQuestionnaireAuthoring(bytes, { logicalName: source.logicalName });
+      const isJson = source.logicalName.toLowerCase().endsWith(".json");
+      const jsonSource = isJson ? JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) : null;
+      const imported = isJson && (!jsonSource.schema || jsonSource.schema === SURVEYJS_DEFINITION_SCHEMA)
+        ? await importSurveyJson(bytes, { questionnaireId: `${args.familyId}-${args.language}`, language: args.language, basename: source.logicalName })
+        : await importQuestionnaireAuthoring(bytes, { logicalName: source.logicalName });
       return questionnaireEditor.prepareAuthoringImport(imported, { ...context, familyId: args.familyId,
         language: args.language, sourceBytes: bytes });
     },
@@ -6198,7 +6212,8 @@ function bindResearchInteractions(root, { surface }) {
       const before = canonicalJson(readQuestionnaireAuthoringContext());
       const current = () => prepared.isCurrent() && canonicalJson(readQuestionnaireAuthoringContext()) === before;
       let storage;
-      if (definition.schema === FORM_DEFINITION_SCHEMA) storage = await prepareFormSourceStorage(payload.sourceBytes, definition);
+      if (definition.schema === SURVEYJS_DEFINITION_SCHEMA) storage = await prepareSurveySourceStorage(payload.sourceBytes, definition);
+      else if (definition.schema === FORM_DEFINITION_SCHEMA) storage = await prepareFormSourceStorage(payload.sourceBytes, definition);
       else {
         const format = { "questionnaire-csv-v1": "csv", "questionnaire-txt-v1": "txt", "questionnaire-json-v1": "json" }[payload.authoringReceipt?.original.formatVersion];
         if (!format || !(payload.sourceBytes instanceof Uint8Array)) throw new TypeError("Questionnaire source is unavailable.");

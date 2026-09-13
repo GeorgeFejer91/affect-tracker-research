@@ -1,4 +1,6 @@
 import { canonicalJson } from "./canonical.js";
+import { SURVEYJS_DEFINITION_SCHEMA } from "./surveyjs-definition.js";
+import { isSurveySheet, surveySheetFromDefinition, surveySheetToAuthoring } from "./surveyjs-sheet.js";
 import { FORM_DEFINITION_SCHEMA, createFormDefinitionV1, validateFormDefinitionV1, exactFormObject } from "./form-definition.js";
 import { cloneQuestionnaireSheet as cloneLegacy, sheetFromDefinition as fromLegacy, sheetToAuthoring as toLegacy } from "./questionnaire-sheet.js";
 
@@ -23,13 +25,15 @@ export function formSheetFromDraft(value) {
   return { kind, familyId, ...metadata, rows: items, modified: true };
 }
 export function sheetFromDefinition(definition, options = {}) {
+  if (definition.schema === SURVEYJS_DEFINITION_SCHEMA) return surveySheetFromDefinition(definition, options);
   if (definition.schema !== FORM_DEFINITION_SCHEMA) return fromLegacy(definition, options);
   const d = validateFormDefinitionV1(definition);
   return formSheetFromDraft({ kind: "form", familyId: options.familyId, language: d.language, questionnaireId: d.questionnaireId,
     questionnaireVersion: d.questionnaireVersion, title: d.title, provenance: d.provenance, items: d.items });
 }
-export function cloneQuestionnaireSheet(sheet) { return isFormSheet(sheet) ? structuredClone(sheet) : cloneLegacy(sheet); }
+export function cloneQuestionnaireSheet(sheet) { return isFormSheet(sheet) || isSurveySheet(sheet) ? structuredClone(sheet) : cloneLegacy(sheet); }
 export async function sheetToAuthoring(sheet) {
+  if (isSurveySheet(sheet)) return surveySheetToAuthoring(sheet);
   if (!isFormSheet(sheet)) return toLegacy(sheet);
   const { kind, familyId, items, ...metadata } = formDraft(formSheetFromDraft(formDraft(sheet)));
   const definition = await createFormDefinitionV1({ schema: FORM_DEFINITION_SCHEMA, version: 1, ...metadata, items });

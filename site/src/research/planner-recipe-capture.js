@@ -1,5 +1,6 @@
 import { canonicalJson } from "./canonical.js";
 import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
+import { validatePlannerRecipeStructureV4 } from "./planner-recipe-wire.js";
 import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS,
   validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3, freezeRecipeValue } from "./planner-recipe-wire.js";
 
@@ -12,7 +13,7 @@ export function capturePlannerRecipeInputV1(registry, options) {
 
 /** Explicit version from the accepted owner's contract, never ambient state. */
 export function capturePlannerRecipeInputVersion(registry, { version, recipeId, presentationTarget, policy, isCurrent }) {
-  if (![1, 2, 3].includes(version)) throw new TypeError("Capture requires an explicit supported Planner recipe version.");
+  if (![1, 2, 3, 4].includes(version)) throw new TypeError("Capture requires an explicit supported Planner recipe version.");
   if (typeof isCurrent !== "function" || typeof registry.getAcceptanceGeneration !== "function") {
     throw new TypeError("Recipe capture requires a caller edit/operation/disposal guard and an acceptance generation.");
   }
@@ -113,12 +114,14 @@ export function capturePlannerRecipeInputPreparedFeedback(registry, {
 
 /** New capture follows explicit accepted contracts, never upgrades loaded bytes. */
 export function plannerRecipeVersionForContributions(workspace, questionnaires) {
+  if ([1, 2, 3].includes(workspace?.version) && questionnaires?.version === 3) return 4;
   if (workspace?.version === 3 && questionnaires?.version === 2) return 3;
   if ([1, 2].includes(workspace?.version) && [1, 2].includes(questionnaires?.version)) return questionnaires.version;
   throw new TypeError("Unsupported workspace/questionnaire combination for final capture.");
 }
 
 function captureStructure(version) {
+  if (version === 4) return validatePlannerRecipeStructureV4;
   if (version === 3) return validatePlannerRecipeStructureV3;
   return version === 2 ? validatePlannerRecipeStructureV2 : validatePlannerRecipeStructureV1;
 }

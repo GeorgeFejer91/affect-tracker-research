@@ -1,5 +1,5 @@
 import { commandFailure } from "./planner-authoring-contract.js";
-import { NativeCatalogueFailure } from "./native-media-catalogue.js";
+import { NativeCatalogueFailure } from "./media-catalogue-error.js";
 
 /** Compose existing owners, the native receipt transport and session publication.
  * No editor state, filesystem implementation or recipe compiler lives here. */

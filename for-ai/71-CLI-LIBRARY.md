@@ -1,5 +1,17 @@
 # Maintained Planner CLI library
 
+## SurveyJS import extension — 2026-09-13
+
+`importQuestionnaire` now also accepts raw SurveyJS builder/Node-generated JSON
+or the saved SurveyJS definition wrapper. Operation arguments and native path
+grants are unchanged. Create the pristine family/language slot first, then call
+`saveQuestionnaire` to persist its canonical wrapper. `P2.questionnaires` exposes
+`kind:surveyjs` drafts; title/version edits remain available and full survey
+content changes use import. Final capture chooses P2 v3/master v4 when needed.
+See [the public workflow and CLI examples](../docs/surveyjs-questionnaires.md).
+The consolidated About/CLI library must link this page; About is absent from
+this feature branch's base and remains owned by the integration task.
+
 ## User requirement — 2026-09-12
 
 Maintain a dedicated **About → CLI library** on the GitHub Pages site and a

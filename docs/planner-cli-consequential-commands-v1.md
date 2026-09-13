@@ -1,5 +1,11 @@
 # Planner CLI consequential commands v1
 
+SurveyJS extension: `importQuestionnaire` accepts raw builder/Node-generated
+JSON and saved SurveyJS definition v1 wrappers, using the same arguments and
+pristine-slot/native-grant rules below. `saveQuestionnaire` persists the complete
+canonical wrapper with source format `surveyJsDefinitionV1`; final save/Open
+support master v4. See [workflow and examples](surveyjs-questionnaires.md).
+
 This is the frozen integration catalogue for the allocated CLI pass, not a claim
 that every command is already installed. The owner adapters and real policy
 transport are collected; composition and the commands below are being connected.

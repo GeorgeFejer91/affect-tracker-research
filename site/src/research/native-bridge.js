@@ -1305,6 +1305,10 @@ export class NativeResearchRuntimeBridge {
       event.preventDefault();
       this.#queue(() => this.#loadExperimentPackage());
     });
+    this.#listen(this.root, "research:open-surveyjs-builder", event => {
+      event.preventDefault();
+      this.#queue(() => this.invoke("research_open_surveyjs_builder"));
+    });
     this.#listen(this.root, PLANNER_LOAD_REQUEST, event => {
       event.preventDefault();
       // Selecting authored JSON never rescans or authorizes its media folders.
