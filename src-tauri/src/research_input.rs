@@ -16,6 +16,7 @@ const INPUT_SERVICE_SCHEMA: &str = "affect-research-native-input";
 const CONTINUOUS_TEST_THRESHOLD: f64 = 0.72;
 const GAMEPAD_DEADZONE: f64 = 0.12;
 type RunInputSink = Arc<dyn Fn(NativeInputUpdate) + Send + Sync>;
+type RunnerAbortSink = Arc<dyn Fn() + Send + Sync>;
 type NativeEventToken = (DigitalInputTokenV1, bool, bool, Option<(f64, f64)>);
 
 /// Single native authority for Setup capture/testing and Run rating input.
@@ -258,6 +259,8 @@ struct InputServiceState {
     last_ordered_observed_at: Option<Instant>,
     run_authority_id: Option<String>,
     run_sink: Option<RunInputSink>,
+    runner_abort_sink: Option<RunnerAbortSink>,
+    escape_held: bool,
     window_focused: bool,
     pointer_backend_ready: bool,
     gamepad_backend_ready: bool,
@@ -287,6 +290,8 @@ impl Default for InputServiceState {
             last_ordered_observed_at: None,
             run_authority_id: None,
             run_sink: None,
+            runner_abort_sink: None,
+            escape_held: false,
             window_focused: false,
             pointer_backend_ready: false,
             gamepad_backend_ready: false,
@@ -356,6 +361,20 @@ impl ResearchInputService {
             test_backend: true,
             test_gamepad_backend: true,
         }
+    }
+
+    /// Installed only by the Runner fullscreen command. The sink must only
+    /// enqueue a notification; it must not re-enter input or stop a worker here.
+    pub fn set_runner_abort_sink(&self, sink: Option<RunnerAbortSink>) -> ResearchResult<()> {
+        if sink.is_some() && !self.backend_ready() {
+            return Err(CommandError::new(
+                "runner_abort_unavailable",
+                "The native escape key is unavailable. Restart Runner before entering fullscreen.",
+            ));
+        }
+        let _dispatch = lock(&self.dispatch_gate);
+        lock(&self.state).runner_abort_sink = sink;
+        Ok(())
     }
 
     fn backend_ready(&self) -> bool {
@@ -822,6 +841,7 @@ impl ResearchInputService {
             state.phase = NativeInputPhase::Idle;
             state.run_authority_id = None;
             state.run_sink = None;
+            state.runner_abort_sink = None;
             state.active_gamepad = None;
             state.last_ordered_observed_at = None;
             clear_held(&mut state);
@@ -1172,6 +1192,12 @@ fn process_event(
 ) {
     let observed_at = Instant::now();
     let _dispatch = lock(dispatch_gate);
+    // Observe this control before rating-input phase/region filtering: it also
+    // works during forms, intervals and preparation. Never record the chord as
+    // a rating, and never wait for protocol/recorder shutdown inside the hook.
+    if process_runner_escape(shared, event) {
+        return;
+    }
     if process_pointer_event(shared, event, observed_at) {
         return;
     }
@@ -1229,6 +1255,33 @@ fn process_event(
     if let Some((sink, input)) = sink_and_input {
         dispatch_input(&sink, input);
     }
+}
+
+fn process_runner_escape(shared: &Arc<Mutex<InputServiceState>>, event: &Event) -> bool {
+    use monio::state::{MASK_ALT, MASK_CTRL, MASK_META, MASK_SHIFT};
+    if event.keyboard.as_ref().map(|key| key.key) != Some(monio::Key::Escape) {
+        return false;
+    }
+    let mut state = lock(shared);
+    if event.event_type == EventType::KeyReleased {
+        state.escape_held = false;
+        return false;
+    }
+    if event.event_type != EventType::KeyPressed {
+        return false;
+    }
+    let repeated = std::mem::replace(&mut state.escape_held, true);
+    let matched = state.window_focused
+        && state.runner_abort_sink.is_some()
+        && event.mask & (MASK_ALT | MASK_CTRL | MASK_META | MASK_SHIFT) == MASK_ALT;
+    let sink = matched.then(|| state.runner_abort_sink.clone()).flatten();
+    drop(state);
+    if !repeated {
+        if let Some(sink) = sink {
+            sink();
+        }
+    }
+    matched
 }
 
 /// Called only while the service dispatch gate is held.
@@ -1762,6 +1815,91 @@ mod tests {
     use crate::research_contracts::{AxisNameV1, InputAxesV1, INPUT_BINDING_SCHEMA};
     use monio::Key;
     use std::sync::Barrier;
+
+    #[test]
+    fn runner_escape_requires_fullscreen_focus_exact_modifiers_and_fresh_press() {
+        use monio::state::{MASK_ALT, MASK_CAPS_LOCK, MASK_CTRL, MASK_META, MASK_SHIFT};
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let service = ResearchInputService::for_tests();
+        let count = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&count);
+        let sink: RunnerAbortSink = Arc::new(move || {
+            observed.fetch_add(1, Ordering::SeqCst);
+        });
+        let key = |mask, pressed| {
+            let mut event = if pressed {
+                Event::key_pressed(Key::Escape, 27)
+            } else {
+                Event::key_released(Key::Escape, 27)
+            };
+            event.mask = mask;
+            process_event(&service.state, &service.dispatch_gate, &event);
+        };
+        key(MASK_ALT, true);
+        key(0, false);
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+        service
+            .set_runner_abort_sink(Some(Arc::clone(&sink)))
+            .unwrap();
+        for mask in [
+            0,
+            MASK_ALT | MASK_CTRL,
+            MASK_ALT | MASK_SHIFT,
+            MASK_ALT | MASK_META,
+        ] {
+            key(mask, true);
+            key(0, false);
+        }
+        service.set_window_focused(false);
+        key(MASK_ALT, true);
+        key(0, false);
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+        service.set_window_focused(true);
+        key(MASK_ALT | MASK_CAPS_LOCK, true);
+        key(MASK_ALT, true);
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+        // Disarming/rearming with Escape held does not trigger another abort.
+        service.set_runner_abort_sink(None).unwrap();
+        service.set_runner_abort_sink(Some(sink)).unwrap();
+        key(MASK_ALT, true);
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+        key(0, false);
+        key(MASK_ALT, true);
+        assert_eq!(count.load(Ordering::SeqCst), 2);
+        service.shutdown();
+        key(0, false);
+        key(MASK_ALT, true);
+        assert_eq!(count.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn runner_escape_is_available_without_rating_regions_and_never_becomes_a_rating() {
+        use monio::state::MASK_ALT;
+        let service = ResearchInputService::for_tests();
+        service
+            .set_runner_abort_sink(Some(Arc::new(|| {})))
+            .unwrap();
+        for phase in [
+            NativeInputPhase::Idle,
+            NativeInputPhase::Testing,
+            NativeInputPhase::RunPrepared,
+            NativeInputPhase::Running,
+        ] {
+            lock(&service.state).phase = phase;
+            let mut event = Event::key_pressed(Key::Escape, 27);
+            event.mask = MASK_ALT;
+            process_event(&service.state, &service.dispatch_gate, &event);
+            assert!(lock(&service.state).last_input.is_none());
+            process_event(
+                &service.state,
+                &service.dispatch_gate,
+                &Event::key_released(Key::Escape, 27),
+            );
+        }
+        assert!(ResearchInputService::unavailable()
+            .set_runner_abort_sink(Some(Arc::new(|| {})))
+            .is_err());
+    }
 
     fn arrow_binding() -> InputBindingV1 {
         InputBindingV1 {

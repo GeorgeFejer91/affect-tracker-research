@@ -29,7 +29,8 @@ addEventListener('error',event=>errors.push(event.message));
 addEventListener('unhandledrejection',event=>errors.push(String(event.reason)));
 document.body.innerHTML='<div id="experiment-runner"></div>';
 const root=document.querySelector('#experiment-runner'),q=id=>root.querySelector('#'+id);
-let app,plan,status,fullscreen=false,holdDraft=false,releaseDraft,holdPoll=false,releasePoll,rejectSubmit=false;
+let app,plan,status,fullscreen=false,holdDraft=false,releaseDraft,holdPoll=false,releasePoll,rejectSubmit=false,nativeAbort,unsubscribed=false,holdStart=false,releaseStart,holdStop=false,releaseStop,rejectStop=false;
+const escape=options=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true,...options}));
 const selected=()=>resolveRunnerSelection(app.recipe,'P001',['both',language],'variant-1');
 const commandCount=type=>calls.filter(call=>(call.args?.request?.action??call.args?.action)?.type===type).length;
 const controls=()=>[...q('runner-questionnaire-items').querySelectorAll('input,textarea')];
@@ -65,7 +66,9 @@ const invoke=async(command,args)=>{
    check(args.request.version===masterVersion&&args.request.participantId==='P001','Start2 retains canonical participant ID');
    check(args.request.sourceText===app.recipe.canonicalSourceText,'Start2 retains exact canonical source');
    const receipt={schema:'affect-runner-master-attempt',version:masterVersion,runId:'run-00000000-0000-4000-8000-000000000001',attemptId:'attempt-synthetic',participantId:'P001',recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256};
-   status={...receipt,schema:'affect-runner-master-status',active:true,position:1,stepCount:plan.steps.length,phase:'awaitingPresentation',answers:{},sampleCount:0,missedSlotCount:0,currentValence:0,currentArousal:0};return receipt;
+   status={...receipt,schema:'affect-runner-master-status',active:true,position:1,stepCount:plan.steps.length,phase:'awaitingPresentation',answers:{},sampleCount:0,missedSlotCount:0,currentValence:0,currentArousal:0};
+   if(holdStart){holdStart=false;await new Promise(resolve=>{releaseStart=resolve;});}
+   return receipt;
   }
   case 'research_runner_master_status':{
    const snapshot=structuredClone(status);
@@ -100,7 +103,11 @@ const invoke=async(command,args)=>{
     if(action.type==='submit'&&rejectSubmit){rejectSubmit=false;throw Error('Synthetic native submission rejected');}
     status.answers=Object.fromEntries(action.answers.map(row=>[row.itemId,row.value]));
     if(action.type==='submit'){submissions.push(structuredClone(action));status.position++;status.phase='awaitingPresentation';status.answers={};}
-   }else if(action.type==='stop'){status.active=false;status.phase='finished';status.result={status:'stopped',outputDirectory:'outputs/recipe-synthetic/P001/attempt-synthetic'};}
+   }else if(action.type==='stop'){
+    if(rejectStop){rejectStop=false;throw Error('Synthetic native stop rejected');}
+    if(holdStop){holdStop=false;await new Promise(resolve=>{releaseStop=resolve;});}
+    status.active=false;status.phase='finished';status.result={status:'stopped',outputDirectory:'outputs/recipe-synthetic/P001/attempt-synthetic'};
+   }
    return structuredClone(status);
   }
   default:throw Error('Unexpected command '+command);
@@ -108,16 +115,35 @@ const invoke=async(command,args)=>{
 };
 try{
  const win=new Proxy(window,{get(target,key){if(key==='requestAnimationFrame')return callback=>setTimeout(()=>callback(performance.now()),16);const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
- app=await bootRunner(root,{invoke,windowObject:win,pollMs:250});
+ app=await bootRunner(root,{invoke,windowObject:win,pollMs:250,subscribeAbort:callback=>{nativeAbort=callback;return()=>{unsubscribed=true;};}});
  await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
  check(q('runner-recipe-status').textContent.includes('master v'+masterVersion),'launcher identifies master v2');
  check(!q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true})),'input-test arrows cannot scroll and cancel the native test');
  check(q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})),'input-test keyboard escape remains available through Tab');
  q('runner-variant').value='variant-1';q('runner-variant').dispatchEvent(new Event('change'));
+ check(escape({altKey:true}),'windowed Alt+Esc is not consumed');nativeAbort();await tick();
+ check(!fullscreen&&commandCount('stop')===0,'windowed DOM/native shortcuts cannot abort');
  q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'fullscreen preparation');
+ q('runner-preparation-settings').click();check(q('runner-settings-dialog').open,'preparation dialog opened');
+ check(!escape({altKey:true}),'fullscreen Alt+Esc consumed before dialog handling');
+ escape({altKey:true,repeat:true});nativeAbort();
+ await until(()=>!fullscreen&&!q('runner-launch').disabled,'preparation abort returns to launcher');
+ check(!q('runner-settings-dialog').open&&commandCount('stop')===0,'preparation abort closes dialog without fabricating an attempt');
+ q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'fullscreen reentry');
+ for(const options of [{altKey:true,ctrlKey:true},{altKey:true,shiftKey:true},{altKey:true,metaKey:true},{altKey:true,isComposing:true},{altKey:true,repeat:true}])escape(options);
+ await tick();check(fullscreen,'other modifiers, composition and repeats cannot abort');
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');
  check(q('runner-preparation-title').textContent==='Experiment language','preparation requests only experiment language');
+ if(mode==='dispose')holdStart=true;
  for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
+ if(mode==='dispose'){
+  await until(()=>releaseStart,'native Start acknowledgement pending');nativeAbort();releaseStart();
+  await until(()=>!fullscreen&&!q('runner-launch').disabled,'pending Start is aborted after acknowledgement');
+  check(commandCount('stop')===1&&!status.active,'in-flight Start cannot escape the abort request');
+  q('runner-variant').value='variant-1';q('runner-variant').dispatchEvent(new Event('change'));
+  q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'reenter after aborted Start');
+  for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
+ }
  check(q('runner-prepare').hidden,'language selection advances without Continue');await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
 
  check(!q('runner-questionnaire').hidden&&controls().length>0,'production Runner mounts SurveyJS controls');
@@ -201,8 +227,24 @@ try{
    check(!controls().some(c=>c.checked),'new occurrence starts with no prior answers');
  }
  }
- if(mode==='dispose'){app.destroy();check(!host.children.length,'dispose removes SurveyJS controls');}
- else if(mode!=='form'){q('runner-stop').click();q('runner-stop-confirm').click();await until(()=>!fullscreen,'stop acknowledged');check(!host.children.length,'stop clears the survey');app.destroy();}
+ if(mode==='dispose'){
+  app.destroy();const before=calls.length;nativeAbort();escape({altKey:true});await tick();
+  check(calls.length===before&&unsubscribed,'dispose removes both abort inputs');check(!host.children.length,'dispose removes SurveyJS controls');
+ }else if(mode!=='form'){
+  escape({});check(q('runner-session-dialog').open&&commandCount('stop')===0,'ordinary Escape still opens session controls');
+  if(mode==='stop'){
+   rejectStop=true;nativeAbort();await until(()=>!q('runner-error').hidden,'abort failure is visible');
+   check(fullscreen&&status.active,'failed stop preserves fullscreen and the active attempt');
+   await tick();
+  }
+  const before=commandCount('stop');holdStop=true;
+  if(mode==='stop')nativeAbort();else escape({altKey:true});
+  await until(()=>releaseStop,'native stop pending');escape({altKey:true,repeat:true});nativeAbort();
+  await tick();check(fullscreen&&commandCount('stop')===before+1,'abort waits for durable native stop and ignores duplicates');
+  releaseStop();await until(()=>!fullscreen,'shortcut stop acknowledged');
+  check(status.result.status==='stopped'&&!host.children.length,'shortcut retains partial outcome and clears survey');
+  app.destroy();
+ }
  check(q('runner-error').hidden,'no unresolved app error');
  check(!calls.some(call=>['research_runner_master_start','research_runner_master_action'].includes(call.command)),'v2 never uses legacy native ingress');
  check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');

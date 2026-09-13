@@ -68,6 +68,15 @@ codes, without inferred reverse scoring, subscales, totals or thresholds.
 
 ## Project-authored boundaries
 
+2026-09-13 Runner control addition: the existing `NATIVE-INPUT-RUST` listen-only
+hook recognizes the user-designated Alt+Esc fullscreen abort, with no new native
+dependency or unsafe boundary. Windows' [documented system shortcut](https://support.microsoft.com/en-us/accessibility/windows/keyboard-shortcuts-in-windows)
+motivates native observation alongside frontend key handling; system events are
+still forwarded. The pinned Tauri [channel interface](https://v2.tauri.app/develop/calling-frontend/#channels)
+carries only an empty abort notification scoped to Runner fullscreen. Existing
+native protocol/recorder services retain finalization authority. Implementation
+and software-versus-physical evidence are in [Runner Alt+Esc](../docs/runner-alt-escape.md).
+
 The closed Research contract family, package and legacy-authoring readers,
 canonical JSON encoding, package/settings/assets/assignment/protocol hash
 binding, independent-instance reproduction gate, participant-code derivation,
