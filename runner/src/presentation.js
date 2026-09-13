@@ -8,7 +8,7 @@ export function createRunnerPresentation(root, { invoke, windowObject, isActive 
     query("runner-preparation").hidden = page !== "preparation";
     query("runner-stage").hidden = page !== "run";
     query("runner-questionnaire").hidden = page !== "questionnaire";
-    query("runner-session-menu").hidden = page === "preparation";
+    query("runner-session-menu").hidden = page !== "run";
   }
   function launcher() {
     presenting = false;

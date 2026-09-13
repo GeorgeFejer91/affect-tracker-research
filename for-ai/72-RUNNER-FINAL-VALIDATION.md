@@ -112,3 +112,9 @@ do not add duplicate convenience copies of whole segment projections.
 Current source work is in `D:/GitHub/affect-tracker-research-master-v3`, branch
 `codex/final-release-validation`. See `docs/release-validation.md` for prior
 artifact identities and gates. Keep pending work explicit after every pass.
+
+## Participant layout amendment — 2026-09-13
+
+R1 presentation scope: participants see the questionnaire title, authored instructions, questions and one Next/Weiter action. Use a centered 210 mm maximum-width reading column; short forms center vertically and long forms scroll. Keyboard assistance remains available to assistive technology, without visible control clutter. Researcher session controls remain accessible through Escape. Terminal participant language selection automatically performs the existing preparation/start checks; preview language selection never starts a session. Legacy external-demographics preparation retains its explicit action. No JSON, questionnaire wording, scoring or native qualification gate is changed.
+
+Verified production frontend with synthetic native replies: centered German keyboard form 89 assertions, English complete flow 78 assertions, English keyboard form 86 assertions; screenshots inspected in D:/GitHub/.affect-checks/runner-centered-{en,de}-01. These are frontend evidence, not actual native playback or XDF qualification. Test-only PyAutoGUI sequence now relies on language auto-advance. Native full-run validation remains pending.

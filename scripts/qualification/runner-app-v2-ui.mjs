@@ -104,7 +104,7 @@ try{
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');
  check(q('runner-preparation-title').textContent==='Experiment language','preparation requests only experiment language');
  for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
- q('runner-prepare').click();await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
+ check(q('runner-prepare').hidden,'language selection advances without Continue');await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
  check(!q('runner-questionnaire').hidden&&controls().length===10,'production app mounts typed demographic controls');
  check(q('runner-questionnaire').lang===language,'form language follows exact selected definition');
  check(q('runner-questionnaire-instructions').textContent===(language==='de'?'Beantworten Sie alle Fragen, um fortzufahren.':'Answer every item to continue.'),'typed instructions are localized');

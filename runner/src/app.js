@@ -143,6 +143,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-sequence-preview").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
     query("runner-preview-language-reset").disabled = busy || protocol.active || !recipe;
     query("runner-prepare").disabled = busy || protocol.active || !recipe;
+    query("runner-prepare").hidden = [2, 3].includes(recipe?.recipe?.version);
     for (const id of ["runner-professor", "runner-controller", "runner-remote", "runner-settings", "runner-preparation-settings", "runner-back"]) query(id).disabled = busy || protocol.active;
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
@@ -170,7 +171,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
     }
     }
     renderControls();
@@ -374,7 +375,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items · Answer every item to continue`);
         questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
         text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
-        text("runner-questionnaire-submit", questionnaire.presenter?.submitLabel ?? "Submit responses");
+        text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
         if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
         query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=false;
       }
@@ -406,7 +407,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     renderQuestionnaireItem();
   }
   function renderQuestionnaireItem() {
-    text("runner-questionnaire-submit", "Submit responses");
+    text("runner-questionnaire-submit", "Next");
     query("runner-questionnaire-previous").hidden = false;
     const { definition, itemIndex } = questionnaire;
     text("runner-questionnaire-title", definition.title); text("runner-questionnaire-instructions", definition.instructions);
@@ -442,15 +443,17 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await retainParticipant();
     text("runner-selected-participant", `Participant ${participantLabel(participantId())}`);
     invalidate(); await invoke("research_input_cancel_setup");
+    if ([2, 3].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
     await presentation.enter();
   }));
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
-  listen(query("runner-prepare"), "click", () => action(async () => {
+  const prepareAttempt = () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
     if (![2, 3].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
-  }));
+  });
+  listen(query("runner-prepare"), "click", prepareAttempt);
   listen(query("runner-back"), "click", () => action(async () => {
     await presentation.leave(); invalidate(); query("runner-test-region").hidden = true;
     query("runner-first").value = ""; query("runner-last").value = "";

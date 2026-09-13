@@ -104,7 +104,7 @@ try{
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');
  check(q('runner-preparation-title').textContent==='Experiment language','preparation requests only experiment language');
  for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
- q('runner-prepare').click();await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
+ check(q('runner-prepare').hidden,'language selection advances without Continue');await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
  check(!q('runner-questionnaire').hidden&&controls().length===10,'production app mounts typed demographic controls');
  check(q('runner-questionnaire').lang===language,'form language follows exact selected definition');
  check(q('runner-questionnaire-instructions').textContent===(language==='de'?'Beantworten Sie alle Fragen, um fortzufahren.':'Answer every item to continue.'),'typed instructions are localized');
@@ -131,6 +131,10 @@ try{
  }
  check(document.activeElement===q('runner-questionnaire-submit'),'Likert ends at submit without submitting automatically');
  check(!q('runner-error').hidden===false,'no keyboard error');
+ const rect=q('runner-questionnaire').getBoundingClientRect();
+ check(Math.abs(rect.left+rect.width/2-innerWidth/2)<2,'questionnaire column centered');
+ check([...q('runner-questionnaire').querySelectorAll('button')].filter(b=>b.getClientRects().length).length===1,'single visible Next action');
+ check(q('runner-questionnaire-submit').textContent===(language==='de'?'Weiter':'Next'),'localized Next label');
  const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);
 }catch(error){errors.push(String(error));app?.destroy();}
 const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,checks,errors,scope:'Production app keyboard handlers with synthetic native replies; not an actual execution'});document.body.append(result);

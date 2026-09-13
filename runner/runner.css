@@ -103,3 +103,16 @@ html, body { min-width: 0; margin: 0; }
 #runner-sequence-timeline strong { font-size: 15px; font-weight: 600; }
 #runner-sequence-timeline p { font-size: 13px; color: #bbbdb4; margin: 6px 0 0; }
 @media (max-width: 400px) { .runner-participant-row { flex-direction: column; } .runner-combobox { width: 100%; } }
+
+/* Participant forms use one centered paper-width reading column. */
+.runner-presentation:has(#runner-questionnaire:not([hidden])),
+.runner-presentation:has(#runner-preparation:not([hidden])) { display: flex; flex-direction: column; }
+.runner-presentation .runner-participant-page { box-sizing: border-box; width: min(100%, 210mm); margin: auto; padding: 40px 32px; }
+#runner-questionnaire-progress, #runner-questionnaire-keyboard { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#runner-questionnaire-previous, #runner-back, #runner-preparation-settings, #runner-selected-participant { display: none; }
+#runner-questionnaire .button-row { justify-content: flex-end; margin-top: 24px; }
+#runner-questionnaire .button-row button { min-width: 104px; }
+#runner-language { display: flex; flex-wrap: wrap; gap: 12px; }
+#runner-language p { flex-basis: 100%; }
+#runner-language-reset { margin-top: 16px; }
+@media (max-width: 640px) { .runner-presentation .runner-participant-page { padding: 24px 16px; } }

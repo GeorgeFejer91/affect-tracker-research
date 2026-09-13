@@ -137,7 +137,6 @@ def main():
         press("tab", 1 if args.language == "en" else 2)
         press("enter")
         capture("language-selected")
-        button("runner-prepare")
         questionnaire("demogra")
 
     def demographics():
@@ -191,7 +190,8 @@ def main():
         for phase in phases:
             if phase == "setup": setup()
             elif phase == "prepare":
-                button("runner-prepare")
+                press("tab", 1 if args.language == "en" else 2)
+                press("enter")
                 questionnaire("demogra")
             elif phase == "demographics": demographics()
             elif phase == "maia": likert("maia", 37)
