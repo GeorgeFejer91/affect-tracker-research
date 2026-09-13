@@ -12,7 +12,11 @@ export function runnerMarkup() {
       <header class="runner-header"><img src="${symbol}" width="36" height="36" alt=""><h1>Experiment Runner</h1></header>
       <div class="runner-load-actions"><button id="runner-open">Load experiment file</button><button id="runner-load-previous" disabled>Load previous experiment</button></div>
       <p id="runner-recipe-status" role="status">No experiment loaded</p>
-      <label id="runner-variant-field" class="field" hidden>Experiment variant<select id="runner-variant"><option value="">Choose variant…</option></select></label>
+      <div id="runner-variant-field" class="runner-version-picker" hidden>
+        <label id="runner-variant-heading">Experiment version</label><select id="runner-variant" hidden aria-hidden="true" tabindex="-1"></select>
+        <button id="runner-variant-button" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="runner-variant-options" aria-labelledby="runner-variant-heading runner-variant-label" aria-describedby="runner-variant-status"><span><strong id="runner-variant-label">Choose version</strong><span id="runner-variant-count"></span></span><span aria-hidden="true">▾</span></button>
+        <div id="runner-variant-popup" hidden><p id="runner-variant-scale"></p><div class="runner-version-legend" aria-hidden="true"></div><div id="runner-variant-options" role="listbox" aria-label="Versions and recording frequency"></div></div>
+        <p id="runner-variant-status" role="status"></p></div>
       <div class="runner-participant-picker">
         <label for="runner-participant">Participant number</label>
         <div class="runner-participant-row"><div class="runner-combobox">

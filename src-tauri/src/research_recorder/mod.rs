@@ -1,5 +1,6 @@
 //! Runner-owned recording policy. No recording fields are added to Planner recipes.
 pub mod commands;
+pub(crate) mod naming;
 #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
 mod service;
 #[cfg(any(test, all(feature = "lsl-streaming", target_os = "windows")))]

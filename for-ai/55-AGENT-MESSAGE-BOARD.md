@@ -5549,3 +5549,22 @@ claim and is not inferred from the synthetic transport test.
 ## Current user amendment — 2026-09-13
 
 Root continues R1/RR-01/02/06 plus named P1/shared native loading seams: keyboard navigation, loaded-JSON project root and standardized metadata completeness. User clarified that PyAutoGUI belongs only in for-ai as a test utility. [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) records requirements and checked versus pending evidence. No other task is being delegated work.
+
+
+## Runner version and participant preselection — 2026-09-13
+
+Direct user allocation R1 RR-03/RR-08/RR-09/RR-10, Backend Verification on
+codex/segment-runner-version-usage, base468de36,
+D:/GitHub/affect-tracker-research-runner-version-usage. Latest user decisions:
+least-used version across all participants; first unused participant number;
+EVERY matching existing XDF counts, including stopped/partial recordings.
+Defaults are advisory and manually overridable; repeat sessions remain allowed.
+New names P01_V1_UTCtimestamp.xdf use the one-based saved variant order. Native
+usage scans this exact JSON's recordings folder, not completion receipts. Unknown
+legacy names are excluded and counted visibly. No existing files are renamed.
+New named recorder command v2 preserves old recording command/request/status and
+XDF/LSL data contracts. Native Start rejects participant/version changes against
+an armed named recording. Main/root owns integration with concurrent keyboard
+and recipe-root changes; edits to app/view/lib are bounded. See
+[version preselection](../docs/runner-version-preselection.md) for behavior and
+component evidence. Installed execution/release qualification remains separate.

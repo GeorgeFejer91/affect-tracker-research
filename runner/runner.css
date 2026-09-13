@@ -116,3 +116,23 @@ html, body { min-width: 0; margin: 0; }
 #runner-language p { flex-basis: 100%; }
 #runner-language-reset { margin-top: 16px; }
 @media (max-width: 640px) { .runner-presentation .runner-participant-page { padding: 24px 16px; } }
+
+/* Version frequency is data, with counts and selection independent of color. */
+.runner-version-picker { position:relative; margin:16px 0; }
+.runner-version-picker > label { display:block; margin-bottom:8px; }
+#runner-variant-button { display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; border-left:5px solid var(--version-color); padding:12px; }
+#runner-variant-button strong, #runner-variant-count { display:block; }
+#runner-variant-count { font-size:14px; margin-top:4px; }
+#runner-variant-status { font-size:13px; line-height:1.45; margin:8px 0; }
+#runner-variant-popup { position:absolute; top:100%; left:0; right:0; z-index:20; padding:12px; background:#171914; border:1px solid #666b5a; border-radius:6px; }
+#runner-variant-scale { font-size:13px; margin:0 0 6px; }
+.runner-version-legend { height:6px; background:linear-gradient(to right,hsl(120 55% 52%),hsl(60 55% 52%),hsl(0 55% 52%)); margin-bottom:8px; }
+#runner-variant-options { max-height:320px; overflow-y:auto; }
+.runner-version-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; padding:10px; border-left:5px solid var(--version-color); cursor:pointer; }
+.runner-version-option > span:first-child { overflow-wrap:anywhere; }
+.runner-version-option > span:nth-child(2) { font-size:13px; }
+.runner-version-option[aria-selected="true"] { background:#323528; }
+.runner-version-option.is-active { outline:2px solid #e3c574; outline-offset:-2px; }
+.runner-version-track { grid-column:1 / -1; height:7px; background:#35382f; }
+.runner-version-track > span { display:block; height:100%; background:var(--version-color); }
+@media(max-width:600px){.runner-version-option { grid-template-columns:1fr; }.runner-version-option > span:nth-child(2){grid-column:1;}}

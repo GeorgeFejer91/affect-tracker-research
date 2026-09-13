@@ -159,3 +159,15 @@ and paths; nothing is silently migrated or overwritten.
 ## Current user amendment — 2026-09-13
 
 The JSON is the complete experiment authority; a common default folder must not be required. Use declared IDs, relative asset locations, hashes and owner metadata, with explicit versioned rules for any new locator semantics. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for current portable-path rules and consumer verification gaps.
+
+
+## Runner convenience selection — 2026-09-13 amendment
+
+The user allocates XDF-filename-based participant/version defaults to Runner.
+The Planner's exact P3 variants/order/IDs remain unchanged. Runner displays V1,
+V2 by the saved array order, chooses the least-used according to matching local
+XDF files and passes the actual selected variant ID to existing native plan
+reconstruction. The experimenter can override both version and participant.
+Named XDF recordings and their inventory belong to Runner session behavior;
+see [the exact contract](../docs/runner-version-preselection.md). This is not a
+new Planner allocator, a changed selected-order hash, or execution qualification.
