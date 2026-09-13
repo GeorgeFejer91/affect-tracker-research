@@ -186,8 +186,8 @@ def main():
             press("tab")
         raise RuntimeError("Keyboard could not reach button " + name)
 
-    def questionnaire(title_fragment):
-        wait_for(lambda: visible("runner-questionnaire-title") and title_fragment.casefold() in control("runner-questionnaire-title").window_text().casefold(), "Expected questionnaire: " + title_fragment, 90)
+    def questionnaire():
+        wait_for(lambda: visible("runner-questionnaire-title") and control("runner-questionnaire-title").window_text().strip(), "Expected questionnaire screen", 90)
         wait_for(lambda: control("runner-questionnaire-submit").is_enabled(), "Questionnaire not ready")
 
     def answer_key(key):
@@ -236,10 +236,10 @@ def main():
         press("tab", 1 if args.language == "en" else 2)
         press("enter")
         capture("language-selected")
-        questionnaire("demogra")
+        questionnaire()
 
     def demographics():
-        questionnaire("demogra")
+        questionnaire()
         for _ in range(100):
             if uia.GetFocusedElement().CurrentControlType == 50004:
                 break
@@ -261,7 +261,7 @@ def main():
         named_button("Weiter" if args.language == "de" else "Next")
 
     def likert(label, count):
-        questionnaire("Multidimensional" if label == "maia" else "Toronto" if args.language == "en" else "TAS-20")
+        questionnaire()
         for _ in range(100):
             if uia.GetFocusedElement().CurrentControlType == 50013:
                 break
@@ -301,7 +301,7 @@ def main():
             elif phase == "prepare":
                 press("tab", 1 if args.language == "en" else 2)
                 press("enter")
-                questionnaire("demogra")
+                questionnaire()
             elif phase == "demographics": demographics()
             elif phase == "maia": likert("maia", 37)
             elif phase == "tas": likert("tas", 20)

@@ -117,14 +117,16 @@ html, body { min-width: 0; margin: 0; }
 #runner-questionnaire .affect-surveyjs .sd-body { padding: 0; background: transparent; }
 #runner-questionnaire .affect-surveyjs .sd-page { padding: 0; }
 #runner-questionnaire .affect-surveyjs .sd-page__content { padding: 0; gap: 8px; }
-#runner-questionnaire .affect-surveyjs .sd-question { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 16px 0; }
+#runner-questionnaire .affect-surveyjs .sd-question { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 16px 0 18px; }
 #runner-questionnaire .affect-surveyjs .sd-question__container,
 #runner-questionnaire .affect-surveyjs .sd-question__header-and-content-container { padding: 0; gap: 8px; }
 #runner-questionnaire .affect-surveyjs .sd-page__row { margin-top: 0; }
 #runner-questionnaire .affect-surveyjs .sd-question__content { padding-top: 8px; }
-#runner-questionnaire .affect-surveyjs .sd-selectbase__label { padding: 6px 0; }
-#runner-questionnaire .affect-surveyjs .sd-selectbase { gap: 0; }
-#runner-questionnaire .affect-surveyjs .sd-selectbase__item { padding: 0; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px 14px; align-items: start; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase__item { min-width: 0; padding: 0; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase__label { display: inline-flex; align-items: center; gap: 10px; min-height: 38px; padding: 4px 0; white-space: normal; }
+#runner-questionnaire .affect-surveyjs .sd-item__decorator { flex: 0 0 auto; }
+#runner-questionnaire .affect-surveyjs .sd-item__control-label { min-width: 0; line-height: 1.35; }
 #runner-questionnaire .affect-surveyjs .sd-comment__input { min-height: 76px; height: 76px; }
 #runner-questionnaire .affect-surveyjs .sd-body__navigation { padding: 16px 0 0; justify-content: flex-end; }
 #runner-questionnaire .affect-surveyjs .sd-element__num { position: static; padding-right: 6px; }

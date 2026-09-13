@@ -125,6 +125,9 @@ try{
  const host=q('runner-questionnaire-items');
  const nav=pattern=>[...host.querySelectorAll('button,input[type="button"]')].find(b=>pattern.test((b.textContent||b.value).trim()));
  check(q('runner-questionnaire-submit').hidden,'SurveyJS owns navigation and completion');
+ const visibleHeading=q('runner-questionnaire-title').textContent.trim();
+ check(/^(Please|Bitte)\b/u.test(visibleHeading),'participant questionnaire heading is a general instruction');
+ check(!/(Multidimensional|Toronto|TAS-20|Demographics|Fictitious)/iu.test(visibleHeading),'participant heading does not expose instrument names');
  if(masterVersion<4){
    const name='  Fictitious Änne\n李 Example  ';
    const original=host.querySelector('textarea');check(!!original,'typed text uses SurveyJS comment input');
@@ -138,6 +141,8 @@ try{
    enter(host.querySelector('input[type="number"]'),'0');
    const radios=[...host.querySelectorAll('input[type="radio"]')];
    const groups=[...new Set(radios.map(r=>r.name))];check(groups.length===2,'both typed choice questions render');
+   const firstGroupRects=radios.filter(r=>r.name===groups[0]).map(r=>(r.closest('.sd-selectbase__item')??r).getBoundingClientRect());
+   check(firstGroupRects.length<2||(firstGroupRects[1].left>firstGroupRects[0].left&&Math.abs(firstGroupRects[1].top-firstGroupRects[0].top)<18),'radio answers are arranged horizontally at desktop width');
    if(params.get('keyboard')==='1'){
      radios[0].focus();check(document.activeElement===radios[0]&&!radios[0].checked,'focusing a choice does not answer it');
      check((await fetch('/trusted-arrow')).ok,'trusted browser key injection acknowledged');

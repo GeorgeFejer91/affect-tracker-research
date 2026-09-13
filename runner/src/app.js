@@ -89,6 +89,24 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!participantPicker.participantId) throw new Error("Choose a participant number with a schedule in this JSON.");
     return participantPicker.participantId;
   };
+  function questionnaireParticipantCopy(definition) {
+    const german = definition.language?.toLowerCase().startsWith("de");
+    const form = definition.schema === "affect-research-form-definition";
+    if (form) return {
+      title: german ? "Bitte machen Sie die folgenden Angaben" : "Please provide the following information",
+      instructions: german ? "Füllen Sie die erforderlichen Felder aus und wählen Sie dann Weiter." : "Fill in the required fields, then choose Next.",
+    };
+    return {
+      title: german ? "Bitte beantworten Sie die folgenden Fragen" : "Please answer the following questions",
+      instructions: german ? "Wählen Sie bei jeder Aussage die Antwort, die am besten passt. Sie können eine Antwort vor dem Fortfahren ändern." : "For each item, choose the response that fits best. You can change an answer before continuing.",
+    };
+  }
+  function renderQuestionnaireParticipantCopy(definition) {
+    const copy = questionnaireParticipantCopy(definition);
+    text("runner-questionnaire-title", copy.title);
+    text("runner-questionnaire-instructions", copy.instructions);
+    query("runner-questionnaire").dataset.sourceTitle = definition.title ?? "";
+  }
   // A terminal native status returns to preparation in this same Runner app.
   root.researchUi = { setMode: () => renderControls() };
 
@@ -203,8 +221,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-lsl", "No LSL markers emitted");
     query("runner-pause").disabled = true;
     questionnaire = { definition: step.payload.definition, position: step.position, answers: {}, master: false, preview: true, version: questionnairePreview.plan.version };
-    text("runner-questionnaire-title", questionnaire.definition.title);
     query("runner-questionnaire").lang = questionnaire.definition.language;
+    renderQuestionnaireParticipantCopy(questionnaire.definition);
     text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
     const current = questionnaire;
     questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
@@ -213,7 +231,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
       onComplete: () => action(() => showQuestionnairePreview(nextIndex + 1)),
     });
-    text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
     text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
     if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
     query("runner-questionnaire-previous").hidden = true;
@@ -505,8 +522,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (questionnaire?.position !== status.position) {
         clearQuestionnaire();
         questionnaire = {definition:step.payload.definition,position:status.position,answers:structuredClone(status.answers),master:true,version:plan.version};
-        text("runner-questionnaire-title", questionnaire.definition.title);
         query("runner-questionnaire").lang = questionnaire.definition.language;
+        renderQuestionnaireParticipantCopy(questionnaire.definition);
         text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
         const current = questionnaire;
         questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers, {
@@ -519,7 +536,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
             await protocol.questionnaireSubmit(questionnaireDetail(current, false));
           }),
         });
-        text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
         text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
         if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
         query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=true;
@@ -555,7 +571,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-questionnaire-submit", "Next");
     query("runner-questionnaire-previous").hidden = false;
     const { definition, itemIndex } = questionnaire;
-    text("runner-questionnaire-title", definition.title); text("runner-questionnaire-instructions", definition.instructions);
+    renderQuestionnaireParticipantCopy(definition);
     text("runner-questionnaire-progress", `Item ${itemIndex + 1} of ${definition.items.length}`);
     const host = query("runner-questionnaire-items"); host.replaceChildren();
     for (const item of [definition.items[itemIndex]]) {
