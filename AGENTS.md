@@ -11,9 +11,10 @@ This supersedes earlier single-executable/two-mode and blanket Runner-deferral
 text below. Planner completion does not wait for final runtime correspondence.
 Consult the **Chat Orchestrator** task for uncertain ownership or contracts.
 
-Before inspecting, planning, editing, testing, or publishing this repository,
-every AI agent MUST read every Markdown file in [`for-ai/`](./for-ai/) completely
-and in lexical filename order.
+Before project work, follow the ordered core reading and owner-specific routes
+in [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md). Read matching ownership
+entries before editing; historical receipts are consulted for relevant evidence,
+not reread in full for every pass. Direct session instructions take precedence.
 
 Before mutating work in each new development pass, follow the intent check and
 three-stage verification workflow in
@@ -35,9 +36,11 @@ Every implementation pass must name its assigned P1–P7/R1 segment and checklis
 IDs, compare intended function/inputs/JSON contribution with verified current
 source, and work only on that segment's remaining items and named shared seams.
 Read the wider map for context; route other-segment gaps to their owners.
-The current priority is Planner completion; Runner implementation/recording is
-deferred unless separately allocated. The product has exactly two
-user-visible modes, **Setting Up the Experiment** and **Running the Experiment**.
+Baseline Planner authoring is complete; CLI/SurveyJS extend that baseline.
+Planner–Runner correspondence is allocated under `for-ai/69` and `for-ai/72`.
+Use `for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md` for current version support and
+open consumer gaps. The two programs serve **Setting Up the Experiment** and
+**Running the Experiment**, respectively.
 Only Tauri on Windows and the static application in current desktop Chrome and
 Edge are active-v1 qualification targets. Optional world-fixed XR authoring is
 an accepted final-state roadmap target, not current runtime support.
@@ -61,8 +64,8 @@ invariants.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.
-Read and update `for-ai/55-AGENT-MESSAGE-BOARD.md` for ownership, cross-segment
-suggestions, dependencies, and compatibility issues; messages never override
+Read matching entries and update `for-ai/55-AGENT-MESSAGE-BOARD.md` for ownership,
+cross-segment suggestions, dependencies, and compatibility issues; messages never override
 the user or charter. Do not edit another segment opportunistically.
 
 Use the charter amendment and central roadmap to distinguish an intended future

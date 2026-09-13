@@ -28,9 +28,9 @@ write/advance. Full contract, scope and qualification boundaries are in
 including experiment-defining Flubber/live configuration, contributes to one
 validated, saveable and editable master. Canonical source, local build and
 combined verification are recorded in 67; checked capabilities below are delivered.
-See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for current
-assignments, exact source/artifact identities and evidence. Final Planner–Runner correspondence
-is explicitly deferred to the last development stage. The separate-program and
+See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for historical
+assignments, exact source/artifact identities and evidence. Final Planner–Runner
+correspondence is the active later allocation under 69/72. The separate-program and
 Runner-owned recording amendment in [16](16-COMPANION-APP-BOUNDARY.md) supersedes
 older one-program/two-mode wording below.
 
@@ -40,9 +40,12 @@ agent must answer: **What is my segment supposed to do? What does it already
 do? Which of its capability items remain?** Read the whole map for context,
 then work only on the assigned segment and explicitly named shared seams.
 
-**Current status: required Planner authoring is complete.** Runner responsibilities
-are downstream contracts; Runner implementation, recording and runtime
-qualification are deferred unless separately allocated by the researcher.
+**Baseline Planner authoring is complete.** That receipt does not establish
+all later SurveyJS cases or native execution. Runner correspondence is allocated
+under 69/72; qualification remains open. The source-bound
+[2026-09-13 audit](../docs/planner-runner-correspondence-audit.md) reproduces gaps
+affecting P7-03–09 and RR-02/03/05/06/07/10. Retain existing checkboxes for their
+recorded baseline; do not use them to dismiss these later counterexamples.
 
 ## Authority, status and evidence
 

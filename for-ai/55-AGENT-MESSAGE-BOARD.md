@@ -5739,3 +5739,27 @@ controller-mapping owner to preserve its work. File-size owner a046bf6 is the
 authoritative docs contribution; experimental runtime39f27ad is not an approved
 merge source. New manifest adds no arbitrary asset-size/reference-count cap;
 shared historical acceptance limits remain implementation behavior.
+# 20260913-contract-correspondence-audit
+
+Owner: current audit task; stage: Backend Verification; concern: `contracts`.
+User requests critical Planner JSON / Runner correspondence analysis and clutter
+cleanup. Base: `32c7c2d`; isolated branch
+`codex/segment-contracts-correspondence-audit`, worktree
+`C:/Users/Georgeous/Documents/GitHub/affect-tracker-research-contract-audit`.
+Dependencies: P7-03–09 and RR-02/03/05/06/07/10; inspect P1–P6 owner contracts.
+Deliverable: source-bound audit, reproducible parser/sequence checks and current
+guidance cleanup. Allowed changes: audit document/check script and instruction
+routing/status documentation. No runtime-schema change, execution qualification,
+controller implementation, app rebuild/replacement or publication in this pass.
+Preserve concurrent Runner work in the integration checkout. Findings remain
+separate from implementation and actual native/XDF evidence.
+
+Handoff: audit and guidance cleanup ready in this isolated branch. See
+`docs/planner-runner-correspondence-audit.md` and the adjacent probe receipt.
+All 66 focused existing JS tests and three direct SurveyJS bundle/fixture checks
+pass. Four masters × six selections preserve bytes and selected content. Probes
+reproduce valid-master/5-MiB-owner mismatch, unbound remote survey resources and
+master4 validation rejection; source confirms controller overrides are drafts.
+00/66 now route current contracts; their former text is preserved in docs/history.
+AGENTS/50 use ordered core plus relevant owner/history reading. No product source,
+native runtime, qualification flags or current application distribution changed.

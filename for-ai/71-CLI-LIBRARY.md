@@ -114,7 +114,8 @@ and P6 in the existing order; then save through P7, which captures the current
 P5 Live Preview settings. P5 has no independent confirmation action: the
 registered `confirmSegment` vocabulary reports that final-capture requirement
 explicitly for P5. Reopening restores editable content but
-requires fresh media binding/preparation before it is ready to run or re-export.
+requires fresh media binding/preparation before new accepted compilation or
+execution. Copying the unchanged validated source remains separately supported.
 
 Every export creates a new timestamped file. The implemented shared naming form
 is `recipeId_YYYY-MM-DD_HH-mm-ss-SSSZ.json`, with `_001` through `_999` collision
@@ -132,7 +133,11 @@ An already written file is not rolled back by late cancellation or stale editor
 adoption. Never blindly repeat an uncertain native write with a fresh request
 identity. The shared API defines retained-request reconciliation and shutdown.
 
-## Evidence and current limits
+## Historical implementation evidence and current limits
+
+The pending CLI/mock statements below describe intermediate checkpoints.
+The real 55-step mock later passed (69, serial validation result); SurveyJS
+extends that generation. Use 66 for current master support and remaining gaps.
 
 Root independently ran eight commands against native CLI source `680842a` and
 verified all nine P7 policy readbacks, invalid/read-only rejection and clean EOF.

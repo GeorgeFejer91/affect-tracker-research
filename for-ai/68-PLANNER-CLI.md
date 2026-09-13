@@ -11,7 +11,9 @@ the researcher requested CLI access to every user setting and a real example
 experiment. The subsequent clarification defines the first workflow: load a
 saved JSON recipe, change settings, and export a new file automatically named
 with its creation timestamp. This authorizes the bounded Planner CLI below and
-supersedes older blanket no-CLI wording. The new extension is not yet complete.
+supersedes older blanket no-CLI wording. The baseline notes below record its
+initial allocation. The production 55-step mock later passed, as recorded in 69;
+current SurveyJS and Runner coverage must be assessed separately under 66/72.
 
 Capability status remains in [60](60-SEGMENT-CATALOGUE.md), CLI-P1 through
 CLI-P7 and CLI-SHARED. This file holds the scope, example and evidence ledger.
