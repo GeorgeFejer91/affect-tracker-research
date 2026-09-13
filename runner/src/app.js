@@ -77,7 +77,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     ready: () => !destroyed && !busy && !!questionnaire && (!questionnaire.master || masterProtocol.status?.phase === "questionnaire"),
     commit: commitQuestionnaireDraft,
   });
-  const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
+  const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate(), windowObject });
   const recentFiles = createRecentFiles(root, { onSelect: id => action(() => loadExperiment(id)) });
   const variantPicker = createVariantPicker(root, { onChange: () => { invalidate(); refreshTimeline(); } });
   const participantPicker = createParticipantPicker(root, { onChange: commit => {

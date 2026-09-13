@@ -44,6 +44,8 @@ try{
  case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return {playerActorReady:true};
  case 'research_workspace_status':return {selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic fixture (no files)'};
+ case 'research_runner_recent_experiments':return {schema:'affect-runner-recent-experiments',version:1,entries:[]};
+ case 'research_runner_previous_experiment':return args.action==='load'?null:{ok:true};
  case 'research_runner_selection':return {schema:'affect-runner-selection',version:1,packageSourceByteSha256:root.runner.recipe.canonicalSourceByteSha256,participantId:args.participantId??(mode==='unselected'?null:'P001'),outputDirectory:'outputs/recipe-synthetic'};
  case 'research_recorder_status':return {available:false,active:false,phase:'idle'};
  case 'research_input_cancel_setup':return {receipt:null,remainingDirections:[]};
@@ -73,8 +75,13 @@ try{
   await click('runner-'+mode);check(q('runner-'+mode+'-dialog').open,'requested dialog opens');
   if(mode==='professor'||mode==='remote')check(q('runner-'+mode+'-dialog').querySelector('img').naturalWidth>0,'QR loads');
  } else if(mode==='override'){
-  const original=app.recipe.canonicalSourceText;await click('runner-controller');q('runner-controller-preset').value='wasd';q('runner-controller-preset').dispatchEvent(new Event('change'));await click('runner-controller-apply');
-  check(q('runner-controller-note').textContent.includes('Session override draft: WASD'),'override draft visible');
+  const original=app.recipe.canonicalSourceText;await click('runner-controller');
+  root.querySelector('[data-controller-capture="up"]').click();dispatchEvent(new KeyboardEvent('keydown',{key:'w',code:'KeyW',cancelable:true}));await tick();
+  check(q('runner-controller-note').textContent.includes('Session override draft: movement bindings'),'movement override draft visible');
+  check(root.querySelector('[data-controller-binding-value="up"]').textContent==='KeyW','captured up binding is displayed');
+  root.querySelector('[data-controller-capture="neutral"]').click();dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',cancelable:true}));await tick();
+  check(q('runner-controller-note').textContent.includes('neutral Space'),'neutral override draft visible');
+  check(root.querySelector('[data-controller-binding-value="neutral"]').textContent==='Space','captured neutral hotkey is displayed');
   check(app.recipe.canonicalSourceText===original,'override never rewrites source');check(!q('runner-start'),'no second Start screen');
   await click('runner-controller-reset');check(q('runner-controller-note').textContent.includes('Using the experiment'),'restore file binding');
  } else if(mode==='unselected') {
@@ -90,9 +97,9 @@ try{
   check(calls.some(c=>c.command==='research_runner_selection'&&c.args.participantId==='P002'),'retention writes original native ID');
  } else if(mode==='sequence') {
   await click('runner-sequence-preview');check(q('runner-sequence-dialog').open,'sequence popup opens');
-  check(q('runner-sequence-timeline').children.length===0,'no assumed language schedule');
+  check([...q('runner-sequence-timeline').children].map(e=>e.dataset.eventKind).join(',')==='language','only language choice appears before preview schedule');
   q('runner-preview-language').querySelector('[data-language-option="en"]').click();await tick();await tick();
-  check([...q('runner-sequence-timeline').children].map(e=>e.dataset.eventKind).join(',')==='stimulus,questionnaire,questionnaire,interval,questionnaire,stimulus,interval','preview retains exact authored hooks');
+  check([...q('runner-sequence-timeline').children].map(e=>e.dataset.eventKind).join(',')==='language,stimulus,questionnaire,questionnaire,interval,questionnaire,stimulus,interval','preview retains exact authored hooks');
   check(!calls.some(c=>/start_run|recorder_start|rescan|fullscreen/.test(c.command)),'preview creates no run or media acquisition');
  } else if(mode==='picker-large') {
   app.destroy();const picker=createParticipantPicker(root,{onChange:()=>{}});
