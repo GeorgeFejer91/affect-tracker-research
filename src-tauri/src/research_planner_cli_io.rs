@@ -15,7 +15,6 @@ pub(crate) const MAX_CLI_IO_REQUESTS: usize = 256;
 pub(crate) const MAX_CLI_VIDEO_PATHS: usize = 256;
 pub(crate) const MAX_CLI_PATH_BYTES: usize = 4096;
 pub(crate) const MAX_CLI_RETAINED_PATH_BYTES: usize = 1024 * 1024;
-pub(crate) const MAX_CLI_QUESTIONNAIRE_BYTES: usize = 4 * 1024 * 1024;
 pub(crate) const MAX_CLI_LOGICAL_NAME_BYTES: usize = 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -117,8 +116,7 @@ pub(crate) struct CliQuestionnaireSource {
     pub format: CliQuestionnaireFormat,
     pub byte_length: usize,
     pub sha256: String,
-    // Hex expands at most to 8 MiB. A JSON integer array or escaped string can
-    // exceed the broker's 16 MiB frame limit for a valid 4 MiB source snapshot.
+    // Hex preserves exact source bytes without expanding them to JSON integers.
     pub bytes_hex: String,
 }
 
@@ -466,10 +464,10 @@ fn validate_current_paths(paths: &[PathBuf], purpose: CliIoPurpose) -> ResearchR
         }
         if purpose == CliIoPurpose::ImportQuestionnaire {
             questionnaire_name(path)?;
-            if metadata.len() == 0 || metadata.len() > MAX_CLI_QUESTIONNAIRE_BYTES as u64 {
+            if metadata.len() == 0 {
                 return Err(failure(
                     "invalid_selection",
-                    "Questionnaire sources require 1 byte–4 MiB.",
+                    "Questionnaire sources must be nonempty.",
                 ));
             }
         }
@@ -557,16 +555,15 @@ fn read_questionnaire_bytes(path: &Path) -> ResearchResult<Vec<u8>> {
     if is_link(&before)
         || !before.is_file()
         || before.len() == 0
-        || before.len() > MAX_CLI_QUESTIONNAIRE_BYTES as u64
     {
         return Err(failure(
             "invalid_selection",
-            "Questionnaire source must remain an ordinary 1 byte–4 MiB file.",
+            "Questionnaire source must remain an ordinary nonempty file.",
         ));
     }
     let mut bytes = Vec::with_capacity(before.len() as usize);
     (&mut file)
-        .take((MAX_CLI_QUESTIONNAIRE_BYTES + 1) as u64)
+        .take(before.len().saturating_add(1))
         .read_to_end(&mut bytes)
         .map_err(CommandError::io)?;
     let after = file.metadata().map_err(CommandError::io)?;
@@ -1108,12 +1105,11 @@ mod tests {
     }
 
     #[test]
-    fn questionnaire_byte_limit_and_extensions_apply_at_issue_and_claim() {
+    fn questionnaire_sources_can_exceed_old_limits_but_must_be_nonempty_and_stable() {
         let temp = TestDirectory::new();
         let (mut grants, initial) = store();
         for (name, size) in [
             ("empty.csv", 0),
-            ("large.json", MAX_CLI_QUESTIONNAIRE_BYTES + 1),
             ("wrong.pdf", 1),
         ] {
             let path = temp.file(name, &vec![b'x'; size]);
@@ -1122,16 +1118,17 @@ mod tests {
                 .issue(request, CliIoSelection::ImportQuestionnaire { path })
                 .is_err());
         }
-        let path = temp.file("limit.txt", &vec![0xff; MAX_CLI_QUESTIONNAIRE_BYTES]);
+        let size = 9 * 1024 * 1024;
+        let path = temp.file("large.txt", &vec![0xff; size]);
         let receipt = grants
             .issue(initial, CliIoSelection::ImportQuestionnaire { path })
             .unwrap();
         let source = grants
             .claim_questionnaire_source(&initial, receipt.grant_id)
             .unwrap();
-        assert_eq!(source.byte_length, MAX_CLI_QUESTIONNAIRE_BYTES);
-        assert_eq!(source.bytes_hex.len(), MAX_CLI_QUESTIONNAIRE_BYTES * 2);
-        assert!(serde_json::to_vec(&source).unwrap().len() < 16 * 1024 * 1024);
+        assert_eq!(source.byte_length, size);
+        assert_eq!(source.bytes_hex.len(), size * 2);
+        assert!(serde_json::to_vec(&source).unwrap().len() > 16 * 1024 * 1024);
         let path = temp.file("changed.csv", b"x");
         let request = binding(initial.session_id);
         let receipt = grants

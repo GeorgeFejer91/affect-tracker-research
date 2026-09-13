@@ -372,7 +372,7 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
       if (state.context.locked || state.records.some(record => record.busy)) throw new TypeError("Questionnaire editor is locked or saving.");
       if (!current()) commandFailure(signal.aborted ? "canceled" : "stale_revision", "Questionnaire staging is stale or cancelled.", "P2.questionnaires");
       json(edits); list(edits, 256, "Edits");
-      if (!edits.length || new TextEncoder().encode(canonicalJson(edits)).byteLength > 16 * 1024 * 1024) throw new TypeError("Questionnaire edit batch is empty or oversized.");
+      if (!edits.length) throw new TypeError("Questionnaire edit batch is empty.");
       const detached = clone(edits);
       if (detached.some(edit => edit.operation === "addDemographics")) {
         for (const language of state.context.languages) await loadDemographicsForm(language.languageTag);

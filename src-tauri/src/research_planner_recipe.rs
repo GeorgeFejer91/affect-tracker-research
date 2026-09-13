@@ -17,7 +17,6 @@ use sha2::{Digest, Sha256};
 pub const SCHEMA: &str = "affect-research-planner-recipe";
 pub const ALGORITHM: &str = "planner-recipe-reproduction-v2";
 const LEGACY_ALGORITHM: &str = "planner-recipe-reproduction-v1";
-pub const MAX_BYTES: usize = 16 * 1024 * 1024;
 pub const MAX_DEPTH: usize = 64;
 pub const MAX_CASES: usize = 25_000;
 const SEGMENTS: [&str; 6] = ["P1", "P2", "P3", "P4", "P5", "P6"];
@@ -278,9 +277,6 @@ impl PlannerRecipeV1 {
         self.validate()?;
         let mut bytes = canonical_json(self, &[])?;
         bytes.push(b'\n');
-        if bytes.len() > MAX_BYTES {
-            return Err(invalid("Recipe exceeds 16 MiB."));
-        }
         Ok(bytes)
     }
     pub fn reconstruct_selection(&self, selector: &Value) -> ResearchResult<Value> {
@@ -337,8 +333,8 @@ impl PlannerRecipeV1 {
 /// Check resource bounds before recursive JSON deserialization. Comparing exact
 /// canonical bytes rejects duplicate keys even inside Value-dispatched owners.
 pub(crate) fn read_value(bytes: &[u8]) -> ResearchResult<Value> {
-    if bytes.is_empty() || bytes.len() > MAX_BYTES {
-        return Err(invalid("Recipe must contain 1 byte to 16 MiB."));
+    if bytes.is_empty() {
+        return Err(invalid("Recipe must contain nonempty UTF-8 JSON."));
     }
     std::str::from_utf8(bytes).map_err(|_| invalid("Recipe must be valid UTF-8."))?;
     let mut depth: usize = 0;
@@ -569,7 +565,7 @@ mod tests {
             assert!(parse_planner_recipe_bytes(source.as_bytes()).is_err());
         }
         assert!(parse_planner_recipe_bytes(&[0xff]).is_err());
-        assert!(parse_planner_recipe_bytes(&vec![b' '; MAX_BYTES + 1]).is_err());
+        assert!(parse_planner_recipe_bytes(b" \n").is_err());
     }
 
     #[test]

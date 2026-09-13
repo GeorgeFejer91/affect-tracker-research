@@ -12,7 +12,6 @@ use std::time::{Duration, Instant};
 
 const ENGINE: &str = include_str!("../surveyjs/engine.js");
 const ENGINE_HASH: &str = include_str!("../surveyjs/engine.sha256");
-const MAX_JSON: usize = 4 * 1024 * 1024;
 type Reply = Result<Value, String>;
 struct Request {
     value: Value,
@@ -72,9 +71,6 @@ fn execute(context: &mut Context, input: Value) -> Reply {
         .as_string()
         .ok_or("SurveyJS returned a non-string result.")?
         .to_std_string_escaped();
-    if text.len() > MAX_JSON * 2 {
-        return Err("SurveyJS response exceeds its byte limit.".into());
-    }
     let response: Value =
         serde_json::from_str(&text).map_err(|_| "SurveyJS returned invalid JSON.")?;
     if response["ok"] != true {
@@ -120,13 +116,6 @@ fn service() -> ResearchResult<&'static mpsc::SyncSender<Request>> {
 }
 
 pub(crate) fn surveyjs_request(value: Value) -> ResearchResult<Value> {
-    if serde_json::to_vec(&value)
-        .map_err(|_| invalid("Invalid SurveyJS request."))?
-        .len()
-        > MAX_JSON * 2 + 1024
-    {
-        return Err(invalid("SurveyJS request exceeds its byte limit."));
-    }
     let (reply, response) = mpsc::sync_channel(1);
     service()?
         .try_send(Request { value, reply })
@@ -188,6 +177,15 @@ mod tests {
         let mut incomplete = data;
         incomplete["matrix"] = json!({"first":{}});
         assert!(validate_survey_data(&schema, "de", &incomplete, true).is_err());
+    }
+    #[test]
+    fn native_surveyjs_accepts_large_definitions_and_answers() {
+        let text = "x".repeat(5 * 1024 * 1024);
+        let schema = json!({"elements":[{"type":"html","name":"intro","html":text},
+            {"type":"comment","name":"answer","maxLength":0}]});
+        assert_eq!(inspect_survey_json(&schema).unwrap()["questionCount"], 2);
+        let data = json!({"answer":text});
+        assert_eq!(validate_survey_data(&schema, "en", &data, true).unwrap()["data"], data);
     }
     #[test]
     fn native_bundled_surveyjs_executes_conditional_pages_and_validation() {

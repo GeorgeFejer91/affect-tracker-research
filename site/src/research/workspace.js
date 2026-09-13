@@ -71,7 +71,6 @@ const MAX_SCAN_DEPTH = 32;
 const MAX_SCAN_ENTRIES = 10_000;
 const MAX_SETTINGS_SNAPSHOT_BYTES = 5 * 1024 * 1024;
 const MAX_EXPERIMENT_SOURCE_BYTES = 5 * 1024 * 1024;
-const MAX_QUESTIONNAIRE_SOURCE_BYTES = 5 * 1024 * 1024;
 const MAX_EXPERIMENT_PLAN_SNAPSHOT_BYTES = 256 * 1024 * 1024;
 const MAX_PROTOCOL_PLAN_SNAPSHOT_BYTES = 16 * 1024 * 1024;
 const MAX_EVENT_LOG_BYTES = 256 * 1024 * 1024;
@@ -225,8 +224,8 @@ function questionnaireSourceBytes(value) {
   } else {
     fail("questionnaire-asset-bytes", "Questionnaire source content must be supplied as bytes.");
   }
-  if (bytes.byteLength < 1 || bytes.byteLength > MAX_QUESTIONNAIRE_SOURCE_BYTES) {
-    fail("questionnaire-asset-size", "A questionnaire source must contain 1 byte–5 MiB.");
+  if (bytes.byteLength < 1) {
+    fail("questionnaire-asset-size", "A questionnaire source must be nonempty.");
   }
   return bytes;
 }

@@ -156,7 +156,7 @@ fn require_wire_version(actual: u32, expected: u32) -> ResearchResult<()> {
 pub struct MasterValidationStartRequest {
     pub version: u32,
     pub acknowledge_unqualified: bool,
-    pub experiment: MasterStartRequestV3,
+    pub experiment: MasterStartRequestV2,
 }
 
 struct StartInput {
@@ -396,11 +396,13 @@ impl MasterRuntime {
         &self, request: MasterValidationStartRequest, window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
-        require_wire_version(request.experiment.0.version, 3)?;
+        if ![3, 4].contains(&request.experiment.version) {
+            return Err(CommandError::invalid_contract("Validation sessions require master3 or master4."));
+        }
         if !request.acknowledge_unqualified {
             return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
         }
-        self.start_typed_mode(request.experiment.0, window, true)
+        self.start_typed_mode(request.experiment, window, true)
     }
     fn start_typed_mode(
         &self, request: MasterStartRequestV2, window: (u32, u32, f64), validation: bool,

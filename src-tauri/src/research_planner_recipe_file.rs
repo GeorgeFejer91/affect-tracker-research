@@ -4,7 +4,7 @@
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_planner_recipe::{
     parse_planner_recipe_bytes, parse_planner_recipe_file, read_value, LoadedPlannerRecipe,
-    SavedPlannerRecipeReceipt, MAX_BYTES,
+    SavedPlannerRecipeReceipt,
 };
 use crate::research_planner_recipe_supported::{
     parse_supported_planner_recipe_bytes, LoadedSupportedPlannerRecipe,
@@ -142,14 +142,13 @@ fn read_recipe_bytes(path: &Path) -> ResearchResult<Vec<u8>> {
     if is_link(&metadata)
         || !metadata.is_file()
         || metadata.len() == 0
-        || metadata.len() > MAX_BYTES as u64
     {
         return Err(CommandError::invalid_contract(
-            "Recipe must be a regular file containing 1 byte to 16 MiB.",
+            "Recipe must be a nonempty regular file.",
         ));
     }
     let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    file.take((MAX_BYTES + 1) as u64)
+    file.take(metadata.len().saturating_add(1))
         .read_to_end(&mut bytes)
         .map_err(CommandError::io)?;
     if bytes.len() as u64 != metadata.len() {
@@ -572,7 +571,7 @@ mod tests {
         let mut invalid = vec![
             String::new(),
             "{}\n".into(),
-            " ".repeat(MAX_BYTES + 1),
+            " ".repeat(17 * 1024 * 1024),
             V2_SOURCE.replacen(
                 "\"recipeId\":",
                 "\"recipeId\":\"duplicate\",\"recipeId\":",
@@ -753,7 +752,7 @@ mod tests {
         }
         File::create(&target)
             .unwrap()
-            .set_len(MAX_BYTES as u64 + 1)
+            .set_len(17 * 1024 * 1024)
             .unwrap();
         assert!(read_planner_recipe_path(&target).is_err());
         assert!(read_planner_recipe_path(&root.0).is_err());
@@ -801,7 +800,7 @@ mod tests {
                 "\"recipeId\":\"duplicate\",\"recipeId\":",
                 1,
             ),
-            " ".repeat(MAX_BYTES + 1),
+            " ".repeat(17 * 1024 * 1024),
         ] {
             assert!(write_new_planner_recipe(&root.0, &source).is_err());
             assert!(write_selected_planner_recipe(&root.0.join("invalid.json"), &source).is_err());

@@ -1,6 +1,6 @@
 //! Closed broker IPC and retained native outcomes. No filesystem authority here.
 use super::wire::{
-    is_uuid, Consequence, PlannerAction, PlannerCommand, PlannerResponse, MAX_FRAME_BYTES,
+    is_uuid, Consequence, PlannerAction, PlannerCommand, PlannerResponse,
 };
 use crate::research_contracts::canonical_json;
 use crate::research_error::{CommandError, ResearchResult};
@@ -13,7 +13,6 @@ use uuid::Uuid;
 
 pub(super) const COMPACT_LIMIT: usize = 64 * 1024;
 const RETAINED_LIMIT: usize = 8 * 1024 * 1024;
-const BULK_LIMIT: usize = 2 * MAX_FRAME_BYTES;
 const MAX_RECORDS: usize = 1024;
 
 pub(super) fn failure(code: &str, message: &str) -> CommandError {
@@ -60,13 +59,9 @@ mod tests {
 
     #[test]
     fn capacity_is_reserved_before_effect_and_retention_never_evicts_prior_identity() {
-        for bulk_full in [false, true] {
+        {
             let (mut ledger, original, request) = fixture();
-            if bulk_full {
-                ledger.bulk_reserved = BULK_LIMIT;
-            } else {
-                ledger.retained_bytes = RETAINED_LIMIT;
-            }
+            ledger.retained_bytes = RETAINED_LIMIT;
             assert_eq!(code(ledger.reserve(&request)), "session_capacity");
             assert!(!ledger.has_call(&original.request_id));
             assert!(ledger.lease.is_none());
@@ -82,25 +77,24 @@ mod tests {
             "native_in_flight"
         );
         assert_eq!(code(ledger.reserve(&request)), "native_in_flight");
-        assert_eq!(ledger.bulk_reserved, MAX_FRAME_BYTES);
         let mut result = NativeResult::new(&request);
         result.payload = json!({"sourceText":"synthetic"});
         ledger.finish(&original.request_id, result, false).unwrap();
-        assert!(ledger.bulk_reserved < MAX_FRAME_BYTES);
         ledger.complete(&original.request_id).unwrap();
-        assert_eq!(ledger.bulk_reserved, 0);
+        assert!(ledger.records[&original.request_id].call.as_ref().unwrap().bulk.is_none());
         assert!(ledger.lease.is_none());
     }
     #[test]
-    fn oversized_encoded_response_retains_acknowledged_compact_effect() {
+    fn large_encoded_response_is_returned_and_released_after_acknowledgement() {
         let (mut ledger, original, request) = fixture();
         reserve(&mut ledger, &request);
         let mut result = NativeResult::new(&request);
         result.effect = json!({"outcome":"acknowledged","receipt":{"basename":"synthetic.json"}});
-        result.payload = json!({"sourceText":"\n".repeat(MAX_FRAME_BYTES / 2)});
+        let source = "\n".repeat(9 * 1024 * 1024);
+        result.payload = json!({"sourceText":source});
         let result = ledger.finish(&original.request_id, result, false).unwrap();
-        assert!(result.payload.is_null());
-        assert_eq!(result.error.unwrap().code, "native_result_limit");
+        assert_eq!(result.payload["sourceText"], source);
+        assert!(result.error.is_none());
         assert_eq!(result.effect["receipt"]["basename"], "synthetic.json");
         ledger.complete(&original.request_id).unwrap();
     }
@@ -123,7 +117,7 @@ mod tests {
         result.payload = json!({"large":"payload"});
         result.superseded = Some(failure("session_closed", "Closed."));
         ledger.finish(&original.request_id, result, true).unwrap();
-        assert_eq!(ledger.bulk_reserved, 0);
+        assert!(ledger.records[&original.request_id].call.as_ref().unwrap().bulk.is_none());
         let CallAdmission::Retained(receipt) = ledger.reserve(&request).unwrap() else {
             panic!("redispatched")
         };
@@ -264,11 +258,10 @@ impl NativeRequest {
         if !is_uuid(&self.context.session_id)
             || !is_uuid(&self.context.request_id)
             || self.context.expected_revision > 9_007_199_254_740_991
-            || encoded_size(&json!({"request":self}))? + 1 > MAX_FRAME_BYTES
         {
             return Err(failure(
                 "invalid_native_request",
-                "Native command identity or encoded size is invalid.",
+                "Native command identity is invalid.",
             ));
         }
         if self.action.grant().is_some_and(|grant| grant.is_nil()) {
@@ -303,14 +296,13 @@ impl NativeRequest {
                         .bytes()
                         .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
                     && !bytes_hex.is_empty()
-                    && bytes_hex.len() <= 10 * 1024 * 1024
                     && bytes_hex.len() % 2 == 0
                     && bytes_hex
                         .bytes()
                         .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
             }
             NativeAction::WriteRecipe { source_text, .. } => {
-                !source_text.is_empty() && source_text.len() <= MAX_FRAME_BYTES
+                !source_text.is_empty()
             }
             _ => true,
         };
@@ -384,7 +376,6 @@ struct NativeCall {
     running: bool,
     compact_bytes: usize,
     bulk: Option<Value>,
-    bulk_bytes: usize,
 }
 struct Record {
     fingerprint: [u8; 32],
@@ -403,7 +394,6 @@ struct Record {
 pub(super) struct NativeLedger {
     records: HashMap<String, Record>,
     retained_bytes: usize,
-    bulk_reserved: usize,
     lease: Option<String>,
 }
 pub(super) enum CallAdmission {
@@ -632,7 +622,6 @@ impl NativeLedger {
             ));
         }
         if self.retained_bytes + COMPACT_LIMIT > RETAINED_LIMIT
-            || self.bulk_reserved + MAX_FRAME_BYTES > BULK_LIMIT
         {
             return Err(failure(
                 "session_capacity",
@@ -640,7 +629,8 @@ impl NativeLedger {
             ));
         }
         self.retained_bytes += COMPACT_LIMIT;
-        self.bulk_reserved += MAX_FRAME_BYTES;
+        // The operation lease allows one payload at a time; its size is not a
+        // survey limit. Completion/close drops it, retaining only the receipt.
         self.lease = Some(request.context.request_id.clone());
         record.call = Some(NativeCall {
             fingerprint: hash,
@@ -648,7 +638,6 @@ impl NativeLedger {
             running: true,
             compact_bytes: COMPACT_LIMIT,
             bulk: None,
-            bulk_bytes: MAX_FRAME_BYTES,
         });
         Ok(CallAdmission::Execute(CliIoRequestBinding {
             session_id: Uuid::parse_str(&request.context.session_id).map_err(CommandError::io)?,
@@ -659,7 +648,7 @@ impl NativeLedger {
     pub(super) fn finish(
         &mut self,
         id: &str,
-        mut result: NativeResult,
+        result: NativeResult,
         closed: bool,
     ) -> ResearchResult<NativeResult> {
         let call = self
@@ -678,31 +667,20 @@ impl NativeLedger {
                 "Native effect completion was already retained.",
             ));
         }
-        if encoded_size(&result)? > MAX_FRAME_BYTES {
-            result.payload = Value::Null;
-            result.error = Some(failure("native_result_limit", "Native effect finished, but its encoded response exceeds the transport bound. Inspect the retained effect."));
-        }
         let compact = result.compact();
         let bytes = encoded_size(&compact)?;
         if bytes > COMPACT_LIMIT {
             return Err(failure("native_result_limit", "Native effect acknowledgement exceeds compact retention; its prior unknown outcome remains retained."));
         }
         self.retained_bytes = self.retained_bytes - call.compact_bytes + bytes;
-        self.bulk_reserved -= call.bulk_bytes;
         call.compact_bytes = bytes;
         call.running = false;
         call.result = compact;
-        call.bulk_bytes = if closed {
-            0
-        } else {
-            encoded_size(&result.payload)?
-        };
         call.bulk = if closed {
             None
         } else {
             Some(result.payload.clone())
         };
-        self.bulk_reserved += call.bulk_bytes;
         Ok(result)
     }
     pub(super) fn complete(&mut self, id: &str) -> ResearchResult<()> {
@@ -714,8 +692,6 @@ impl NativeLedger {
                         "Cannot complete a command while its native outcome is unknown.",
                     ));
                 }
-                self.bulk_reserved -= call.bulk_bytes;
-                call.bulk_bytes = 0;
                 call.bulk = None;
             }
             record.completed = true;
@@ -730,8 +706,6 @@ impl NativeLedger {
             record.canceled = true;
             if let Some(call) = &mut record.call {
                 if !call.running {
-                    self.bulk_reserved -= call.bulk_bytes;
-                    call.bulk_bytes = 0;
                     call.bulk = None;
                 }
             }

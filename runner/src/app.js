@@ -271,7 +271,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
-    query("runner-validation").disabled = locked || recipe?.recipe?.version !== 3;
+    query("runner-validation").disabled = locked || ![3, 4].includes(recipe?.recipe?.version);
     recentFiles.lock(locked);
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It

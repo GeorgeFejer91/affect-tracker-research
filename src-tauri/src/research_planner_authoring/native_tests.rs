@@ -468,11 +468,11 @@ fn actual_typed_master_save_retry_and_read_preserve_exact_file_and_basename() {
 }
 
 #[test]
-fn encoded_oversize_is_rejected_before_claim_or_publication() {
+fn invalid_recipe_is_rejected_before_claim_or_publication() {
     let f = Fixture::new();
     let command = f.command("saveRecipe", json!({"directory":f.root}));
     let forward = f.dispatch(&command);
-    let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":"\n".repeat(MAX_FRAME_BYTES/2)}));
+    let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":""}));
     assert_eq!(
         error(f.broker.native_effect(&f.workspace, request)),
         "invalid_native_request"

@@ -1,7 +1,6 @@
 //! Explicit master3 boundary; shared reproduction, never widening the v2 reader.
 use crate::research_contracts::canonical_json;
-use crate::research_error::{CommandError, ResearchResult};
-use crate::research_planner_recipe::MAX_BYTES;
+use crate::research_error::ResearchResult;
 use crate::research_planner_recipe_v2::PlannerRecipeV2;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -24,9 +23,6 @@ impl PlannerRecipeV3 {
         self.validate()?;
         let mut bytes = canonical_json(self, &[])?;
         bytes.push(b'\n');
-        if bytes.len() > MAX_BYTES {
-            return Err(CommandError::invalid_contract("Recipe exceeds 16 MiB."));
-        }
         Ok(bytes)
     }
 }

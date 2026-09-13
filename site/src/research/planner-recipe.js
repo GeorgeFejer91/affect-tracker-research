@@ -13,7 +13,7 @@ import { validateXrLayoutSelection, resolveSavedXrLayoutContribution, resolveSup
 import { compilePlannerQuestionnaireRoutesV1, PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 import { reproducePreparedPlannerRecipeV1, reconstructPreparedPlannerRecipeSelectionV1, reconstructPreparedPlannerRecipeSelectionV2, reconstructPreparedPlannerRecipeSelectionV3 } from "./planner-recipe-reproduction.js";
 import { PLANNER_RECIPE_SCHEMA, PLANNER_RECIPE_VERSION, PLANNER_RECIPE_SEGMENTS, PLANNER_RECIPE_INTEGRITY_ALGORITHM,
-  MAX_PLANNER_RECIPE_BYTES, readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3,
+  readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3,
   boundPlannerRecipeMatrix, freezeRecipeValue, exactRecipeObject, assertPlannerRecipeJsonValue } from "./planner-recipe-wire.js";
 
 const encoder = new TextEncoder();
@@ -29,7 +29,6 @@ async function owned(segment, operation) {
 function captureJson(value) {
   assertPlannerRecipeJsonValue(value);
   const source = `${canonicalJson(value)}\n`;
-  if (encoder.encode(source).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new RangeError("Planner recipe exceeds 16 MiB.");
   return readPlannerRecipeJsonBytes(encoder.encode(source)).value;
 }
 
@@ -85,7 +84,6 @@ async function compilePrepared(prepared, algorithmVersion = PLANNER_RECIPE_INTEG
   const integrity = { algorithmVersion, definitionSha256, segmentSha256,
     reproductionSha256: await canonicalSha256(reproduction.matrix) };
   const recipe = freezeRecipeValue({ ...core, integrity });
-  if (encoder.encode(`${canonicalJson(recipe)}\n`).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new RangeError("Planner recipe exceeds 16 MiB.");
   return { recipe, prepared, reproduction };
 }
 

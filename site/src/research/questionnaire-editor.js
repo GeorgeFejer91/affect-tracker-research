@@ -581,7 +581,6 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     entry.busy = true;
     render();
     try {
-      if (file.size > 4 * 1024 * 1024) throw new RangeError("Questionnaire files must be no larger than 4 MiB.");
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (entries.get(selectedKey) !== entry || context.locked) throw new Error("The questionnaire table changed while opening the file. Import it again into the intended table.");
       const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);

@@ -215,7 +215,7 @@ test("owner validation receives actual detached dependency snapshots and target"
   assert.equal(p1.contribution.accepted, "design");
 });
 
-test("handoff metadata is closed, bounded, plain JSON with exact unique dependencies", () => {
+test("handoff metadata is closed plain JSON with exact unique dependencies", () => {
   const original = snapshot();
   const checked = validatePlannerContributionSnapshot(original);
   checked.contribution.accepted = "different";
@@ -223,8 +223,7 @@ test("handoff metadata is closed, bounded, plain JSON with exact unique dependen
   for (const invalid of [snapshot({ extra: 1 }), snapshot({ revision: -1 }), snapshot({ revision: 1.5 }),
     snapshot({ contribution: [] }), snapshot({ contribution: { value: Infinity } }),
     snapshot({ dependencyRevisions: [{ segment: "P7", revision: 0 }] }),
-    snapshot({ dependencyRevisions: [{ segment: "P1", revision: 0 }, { segment: "P1", revision: 1 }] }),
-    snapshot({ contribution: { data: "x".repeat(5 * 1024 * 1024) } })]) {
+    snapshot({ dependencyRevisions: [{ segment: "P1", revision: 0 }, { segment: "P1", revision: 1 }] })]) {
     assert.throws(() => validatePlannerContributionSnapshot(invalid));
   }
 });

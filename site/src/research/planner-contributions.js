@@ -7,7 +7,6 @@ export const PLANNER_SEGMENT_SECTIONS = Object.freeze({
   P4: "layout", P5: "feedback", P6: "xr",
 });
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
-const MAX_CONTRIBUTION_BYTES = 5 * 1024 * 1024;
 
 /** Bind available producer APIs only after the complete UI controller exists.
  * P3/P6 are successor contributions: registering them deliberately supplies no
@@ -120,9 +119,6 @@ export function validatePlannerContributionSnapshot(input) {
     dependencies.add(dependency.segment);
   }
   const serialized = canonicalJson(input);
-  if (new TextEncoder().encode(serialized).byteLength > MAX_CONTRIBUTION_BYTES) {
-    throw new RangeError("Planner contribution exceeds the bounded handoff size.");
-  }
   return JSON.parse(serialized);
 }
 

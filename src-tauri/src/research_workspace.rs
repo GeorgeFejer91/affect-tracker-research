@@ -28,7 +28,6 @@ const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mov", "m4v", "avi", "mkv"];
 const MAX_PROTOCOL_CHUNK: u64 = 8 * 1024 * 1024;
-const MAX_QUESTIONNAIRE_SOURCE_BYTES: usize = 5 * 1024 * 1024;
 const WORKSPACE_LIBRARY_NAMES: [&str; 4] = ["stimuli", "settings", "outputs", "recovery"];
 
 #[derive(Debug, Clone, Serialize)]
@@ -739,9 +738,9 @@ impl WorkspaceService {
         source_sha256: &str,
         bytes: &[u8],
     ) -> ResearchResult<QuestionnaireAssetReceipt> {
-        if bytes.is_empty() || bytes.len() > MAX_QUESTIONNAIRE_SOURCE_BYTES {
+        if bytes.is_empty() {
             return Err(CommandError::invalid_contract(
-                "A questionnaire source must contain 1 byte–5 MiB.",
+                "A questionnaire source must be nonempty.",
             ));
         }
         let safe_family = normalize_identifier(family_id, "questionnaire family ID")?;
@@ -2716,7 +2715,8 @@ mod tests {
             assert_eq!(error.code, "invalid_research_contract");
         }
 
-        let oversized = vec![b'x'; MAX_QUESTIONNAIRE_SOURCE_BYTES + 1];
+        // Invalid content still rejects even after removing the storage ceiling.
+        let oversized = vec![b'x'; 5 * 1024 * 1024 + 1];
         let oversized_sha256 = format!("{:x}", Sha256::digest(&oversized));
         let error = service
             .store_questionnaire_asset(

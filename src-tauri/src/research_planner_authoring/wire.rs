@@ -6,7 +6,6 @@ use serde_json::{Map, Value};
 use std::fmt;
 use uuid::Uuid;
 
-pub const MAX_FRAME_BYTES: usize = 16 * 1024 * 1024;
 const MAX_SAFE_REVISION: u64 = 9_007_199_254_740_991;
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -370,10 +369,10 @@ impl<'de> Deserialize<'de> for UniqueJson {
 }
 
 pub fn parse_command(bytes: &[u8]) -> ResearchResult<PlannerCommand> {
-    if bytes.is_empty() || bytes.len() > MAX_FRAME_BYTES {
+    if bytes.is_empty() {
         return Err(CommandError::new(
             "limit_exceeded",
-            "Command frame must contain 1 byte to 16 MiB.",
+            "Command frame must be nonempty.",
         ));
     }
     let UniqueJson(value) = serde_json::from_slice(bytes).map_err(|_| {
@@ -460,7 +459,7 @@ mod tests {
             assert!(parse_command(malformed.as_bytes()).is_err());
         }
         assert!(parse_command(&[0xff]).is_err());
-        assert!(parse_command(&vec![b' '; MAX_FRAME_BYTES + 1]).is_err());
+        assert!(parse_command(b" \n").is_err());
         let mut nullable: Value = serde_json::from_str(&input).unwrap();
         nullable["action"] = serde_json::json!({"kind":"validate"});
         assert!(parse_command(nullable.to_string().as_bytes()).is_err());

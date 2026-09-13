@@ -5,7 +5,7 @@ import { canonicalJson } from "../site/src/research/canonical.js";
 import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
 import { capturePlannerRecipeInputV1 } from "../site/src/research/planner-recipe-capture.js";
 import { readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3, boundPlannerRecipeMatrix, PLANNER_RECIPE_SEGMENTS,
-  MAX_PLANNER_RECIPE_BYTES, MAX_PLANNER_RECIPE_DEPTH } from "../site/src/research/planner-recipe-wire.js";
+  MAX_PLANNER_RECIPE_DEPTH } from "../site/src/research/planner-recipe-wire.js";
 
 const policy = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url), "utf8"));
 const legacy = JSON.parse(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url), "utf8"));
@@ -35,7 +35,7 @@ test("recipe transport rejects duplicate keys, malformed UTF-8, non-finite, nonc
     '{"a":1,"a":2}\n', '{"a":{"b":1,"b":2}}\n', '{"a":1e999}\n', '{"a":NaN}\n', '"unterminated',
     "[".repeat(MAX_PLANNER_RECIPE_DEPTH + 1) + "0" + "]".repeat(MAX_PLANNER_RECIPE_DEPTH + 1) + "\n"];
   for (const text of hostile) assert.throws(() => readPlannerRecipeJsonBytes(bytes(text)));
-  for (const input of [new Uint8Array(), new Uint8Array([0xff]), new Uint8Array(MAX_PLANNER_RECIPE_BYTES + 1), source]) {
+  for (const input of [new Uint8Array(), new Uint8Array([0xff]), new Uint8Array([0]), source]) {
     assert.throws(() => readPlannerRecipeJsonBytes(input));
   }
   const quotedBrackets = `${canonicalJson({ text: '[{\\"'.repeat(100) })}\n`;

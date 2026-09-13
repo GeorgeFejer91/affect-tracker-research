@@ -1,4 +1,18 @@
 # Agent message board
+ 
+## 20260913 Survey size removal — user-allocated contracts pass
+
+Owner: Audit Planner Runner design logic, isolated
+`codex/segment-contracts-survey-cap-removal`, base `640d8a1`.
+User explicitly removes the arbitrary survey/recipe byte ceilings. Backend
+Verification: P2-03/04 import and storage, P7 save/reopen, RR-02/06 questionnaire
+intake and before-session sequence; named CLI and information-transfer seams.
+Evidence: large SurveyJS import/save/reopen/native validation and ordered Runner
+questionnaire checks. Keep integrity, schema, authored validators and existing
+execution qualification separate from file size. Installed recording/playback
+qualification and the separate questionnaire-assets worktree are outside this
+pass. This allocation supersedes older 4/5/16 MiB survey/recipe guidance.
+
 
 ## 20260913 root consolidated SurveyJS Runner validation
 

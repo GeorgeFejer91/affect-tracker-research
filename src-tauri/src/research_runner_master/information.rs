@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
 
-pub(crate) const MAX_TRANSFER_BYTES: usize = 64 * 1024 * 1024;
 pub(crate) const CHUNK_BYTES: usize = 64 * 1024;
 pub(crate) const MAX_FRAME_BYTES: usize = 128 * 1024;
 const MAX_FRAMES: u64 = 1_000_000;
@@ -58,9 +57,6 @@ pub(crate) struct PreparedTransfer {
 impl PreparedTransfer {
     pub(crate) fn new(value: &impl Serialize) -> ResearchResult<Self> {
         let bytes = canonical_json(value, &[])?;
-        if bytes.is_empty() || bytes.len() > MAX_TRANSFER_BYTES {
-            return Err(invalid("Information transfer exceeds its 64 MiB bound."));
-        }
         let sha256 = format!("{:x}", Sha256::digest(&bytes));
         Ok(Self { bytes, sha256 })
     }
@@ -425,8 +421,9 @@ mod tests {
             .is_err());
     }
     #[test]
-    fn oversize_transfer_rejects_before_publication() {
-        assert!(PreparedTransfer::new(&"x".repeat(MAX_TRANSFER_BYTES)).is_err());
+    fn large_payloads_are_prepared_without_a_total_transfer_ceiling() {
+        let transfer = PreparedTransfer::new(&"x".repeat(64 * 1024 * 1024)).unwrap();
+        assert!(transfer.bytes.len() > 64 * 1024 * 1024);
     }
 }
 

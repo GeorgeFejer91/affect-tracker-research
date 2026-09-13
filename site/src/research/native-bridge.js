@@ -27,7 +27,6 @@ const PLAYBACK_QUALIFICATIONS = new Set(["qualifiedNative", "unqualified"]);
 const WORKSPACE_LOCATIONS = new Set(["workspaceRoot", "videoLibrary", "experimentPackage"]);
 const QUESTIONNAIRE_ASSET_IDENTIFIER = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
 const QUESTIONNAIRE_ASSET_FORMATS = new Set(["csv", "txt", "json"]);
-const MAX_QUESTIONNAIRE_SOURCE_BYTES = 5 * 1024 * 1024;
 const NATIVE_MEDIA_CAPABILITY_KEYS = Object.freeze([
   "ambientRuntimeAllowed", "api", "backend", "bindingsVersion", "defaultPlaybackMode",
   "pinnedRuntimeVersion", "playerActorReady", "qualifiedFormatMatrixReady",
@@ -90,8 +89,8 @@ function nativeQuestionnaireAssetRequest(detail) {
   } else {
     throw new TypeError("Questionnaire source content must be supplied as bytes.");
   }
-  if (bytes.length < 1 || bytes.length > MAX_QUESTIONNAIRE_SOURCE_BYTES) {
-    throw new RangeError("A questionnaire source must contain 1 byte–5 MiB.");
+  if (bytes.length < 1) {
+    throw new RangeError("A questionnaire source must be nonempty.");
   }
   return Object.freeze({
     familyId: detail.familyId,
