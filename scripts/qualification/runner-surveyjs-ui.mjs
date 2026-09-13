@@ -128,6 +128,8 @@ try{
  const visibleHeading=q('runner-questionnaire-title').textContent.trim();
  check(/^(Please|Bitte)\b/u.test(visibleHeading),'participant questionnaire heading is a general instruction');
  check(!/(Multidimensional|Toronto|TAS-20|Demographics|Fictitious)/iu.test(visibleHeading),'participant heading does not expose instrument names');
+ const resolveColor=value=>{const probe=document.createElement('span');probe.style.color=value;document.body.append(probe);const color=getComputedStyle(probe).color;probe.remove();return color;};
+ check(getComputedStyle(host.querySelector('.sd-question')).backgroundColor===resolveColor('var(--surface)'),'SurveyJS question surface uses Runner palette');
  if(masterVersion<4){
    const name='  Fictitious Änne\n李 Example  ';
    const original=host.querySelector('textarea');check(!!original,'typed text uses SurveyJS comment input');
@@ -158,9 +160,20 @@ try{
      await until(()=>!host.inert,'correction enabled');nav(/^(Next|Weiter)$/).click();
      await until(()=>status.position===2&&status.phase==='questionnaire','next Likert occurrence');
      check(!original.isConnected,'prior text removed');
-     check(submissions[0].answers.find(a=>a.itemId==='fullName').value.text===name,'native submit preserves whitespace and Unicode');
-     const nextRadios=[...host.querySelectorAll('input[type="radio"]')];check(nextRadios.length>0&&!nextRadios.some(r=>r.checked),'Likert starts empty');
-     for(const group of new Set(nextRadios.map(r=>r.name)))nextRadios.find(r=>r.name===group).click();
+      check(submissions[0].answers.find(a=>a.itemId==='fullName').value.text===name,'native submit preserves whitespace and Unicode');
+      const nextRadios=[...host.querySelectorAll('input[type="radio"]')];check(nextRadios.length>0&&!nextRadios.some(r=>r.checked),'Likert starts empty');
+      const likertQuestions=[...host.querySelectorAll('.sd-question')];
+      if(likertQuestions.length>1&&document.documentElement.scrollHeight>innerHeight+160){
+        const scrollTarget=likertQuestions[Math.min(3,likertQuestions.length-2)];
+        scrollTarget.scrollIntoView({block:'end'});await tick(100);
+        const beforeScroll=scrollY;
+        scrollTarget.querySelector('input[type="radio"]').click();
+        await until(()=>scrollY>beforeScroll+20,'smart scroll advances after a low visible answer');
+        const advancedScroll=scrollY;scrollTo(0,beforeScroll);await tick(100);
+        check(Math.abs(scrollY-beforeScroll)<20,'participant can manually scroll back after smart scroll');
+        scrollTo(0,advancedScroll);await tick(50);
+      }else check(true,'short fixture skips smart-scroll geometry assertion');
+      for(const group of new Set(nextRadios.map(r=>r.name)))nextRadios.find(r=>r.name===group).click();
      await until(()=>Object.keys(status.answers).length===plan.steps[1].payload.definition.items.length,'Likert native drafts');
      check(Object.values(status.answers).every(a=>a.kind==='singleChoice'),'legacy codes retain tagged wire values');
      nav(/^(Next|Weiter)$/).click();await until(()=>status.position===3&&!q('runner-stage').hidden,'timed stage after both forms');

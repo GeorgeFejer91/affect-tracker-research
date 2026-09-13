@@ -45,7 +45,7 @@ export function renderMasterQuestionnaire(host, definition, presentation, answer
   const typed = definition.schema === "affect-research-form-definition";
   if (definition.version !== 1 || (surveyjs ? presentation.kind !== "surveyjs" : typed ? presentation.kind !== "fields" : definition.schema !== "affect-research-questionnaire-definition" || presentation.kind && presentation.kind !== "likert")) throw new Error("Unsupported questionnaire presentation.");
   const data = surveyjs ? structuredClone(answers) : Object.fromEntries(Object.entries(answers).map(([id, value]) => [id, typeof value === "string" ? value : value?.text ?? value?.integer ?? value?.optionId]));
-  const controller = renderSurveyQuestionnaire(host, definition, { ...options, data, presentation });
+  const controller = renderSurveyQuestionnaire(host, definition, { ...options, data, presentation, smartScroll: true });
   // The participant page already owns the instrument heading and instructions.
   // These are presentation settings only; the embedded definition stays exact.
   controller.model.showTitle = false;
