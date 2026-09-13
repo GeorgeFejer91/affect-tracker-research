@@ -140,7 +140,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         if (!protocol.active) {
           if (recorder?.active) { recorder = await invoke("research_recorder_stop"); renderRecorder(); }
           await invoke("research_input_cancel_setup");
-          clearQuestionnaire(); questionnairePreview = null;
+          clearQuestionnaire(); questionnairePreview = null; validationPreview = null;
           selection = null;
           query("runner-test-region").hidden = true;
           query("runner-first").value = ""; query("runner-last").value = "";

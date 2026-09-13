@@ -77,6 +77,12 @@ try {
   check(q('runner-session').textContent === firstSession, 'Alt+B returns to the previous validation step');
   check(laterSession.includes('validation step'), 'later traversal remains in validation preview');
   check(!calls.some(call => /master_start|recorder_start|master_action|preflight/u.test(call.command)), 'Alt+B also stays outside recorded native paths');
+  press('Escape');
+  await until(() => !fullscreen && app.selection === null, 'Alt+Esc exits traversal and clears selection');
+  press('n');
+  await until(() => fullscreen && app.selection && q('runner-session').textContent.includes('validation step 1/'), 'Alt+N starts a fresh traversal after abort');
+  check(!calls.some(call => /master_start|recorder_start|master_action|preflight/u.test(call.command)), 'aborted traversal never starts a recorded attempt');
+
   app.destroy();
 } catch (error) { errors.push(String(error)); }
 const result = document.createElement('pre');
