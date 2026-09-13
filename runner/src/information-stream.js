@@ -141,6 +141,7 @@ function validateResponses(record, plan, context, open, alreadySubmitted) {
 export async function inspectInformationStream(samples) {
   require(Array.isArray(samples) && samples.length <= INFORMATION_LIMITS.frames, "Information trace exceeds its frame bound.");
   const assembler = new InformationAssembler(), records = [], issues = [], submitted = new Set(), markerSamples = [];
+  let executionQualification = null;
   let startup = null, plan = null, outcome = null, openForm = null, monotonic = -1, retainedBytes = 0;
   for (const sample of samples) {
     const transfer = await assembler.push(sample); if (!transfer) continue;
@@ -148,7 +149,16 @@ export async function inspectInformationStream(samples) {
     require(retainedBytes <= 256 * 1024 * 1024, "Information collector exceeds its retained-data bound; use incremental analysis.");
     const value = transfer.value;
     if (transfer.kind === "startup") {
-      startup = value; plan = await reconstructStartup(startup, assembler.context);
+      if (value.schema === "affect-runner-validation-startup") {
+        exact(value, ["schema", "version", "executionQualification", "startup"], "Validation startup");
+        require(value.version === 1, "Unsupported validation startup.");
+        const q = value.executionQualification;
+        exact(q, ["schema", "version", "sessionKind", "researchQualified", "reason"], "Execution qualification");
+        require(q.schema === "affect-runner-execution-qualification" && q.version === 1 && q.sessionKind === "local-validation" && q.researchQualified === false && q.reason === "explicit-unqualified-validation", "Invalid validation qualification.");
+        executionQualification = q; startup = value.startup;
+        require(startup.version === 3, "Validation startup requires master3.");
+      } else { startup = value; }
+      plan = await reconstructStartup(startup, assembler.context);
       markerSamples.push({ value: canonicalJson(startup.markerProfile), timestamp: transfer.commitLslTimeSeconds });
     } else {
       require(Number.isFinite(value.monotonicMs) && value.monotonicMs >= monotonic && value.monotonicMs >= 0 && value.monotonicMs <= Number.MAX_SAFE_INTEGER, "Native observation clock is invalid or reversed."); monotonic = value.monotonicMs;
@@ -176,5 +186,5 @@ export async function inspectInformationStream(samples) {
     require(terminal === (outcome.protocolOutcome === "completed" ? "complete" : "partial"), "Outcome differs from observed terminal marker.");
     require(outcome.protocolOutcome !== "completed" || outcome.failureCode === null, "Completed outcome contains a failure.");
   }
-  return { status: issues.length ? "incomplete" : trace.status, recordingFinalization: "requires-xdf-footer-verification", startup, plan, records, occurrences: trace.occurrences, outcome, issues, framing };
+  return { ...(executionQualification ? {executionQualification} : {}), status: issues.length ? "incomplete" : trace.status, recordingFinalization: "requires-xdf-footer-verification", startup, plan, records, occurrences: trace.occurrences, outcome, issues, framing };
 }

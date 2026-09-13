@@ -146,3 +146,24 @@ test("information3 rejects empty submissions, type/version confusion and extra l
     await assert.rejects(inspectInformationStream(await frameRecords(records, f.context)));
   }
 });
+
+
+test("validation information remains permanently unqualified after reconstruction", async () => {
+  const f = await informationV3("en");
+  const qualification = {schema:"affect-runner-execution-qualification",version:1,sessionKind:"local-validation",researchQualified:false,reason:"explicit-unqualified-validation"};
+  f.records[0].value = {schema:"affect-runner-validation-startup",version:1,executionQualification:qualification,startup:f.records[0].value};
+  const result = await inspectInformationStream(await frameRecords(f.records, f.context));
+  assert.equal(result.status, "complete");
+  assert.deepEqual(result.executionQualification, qualification);
+  assert.deepEqual(result.plan, f.plan);
+  f.records[0].value.executionQualification.researchQualified = true;
+  await assert.rejects(inspectInformationStream(await frameRecords(f.records, f.context)), /qualification/u);
+});
+
+test("validation adapter never accepts an unlabelled native receipt", async () => {
+  const {adapter, plan, calls} = adapterFixture(3);
+  await assert.rejects(adapter.start(plan, {version:3,participantId:"P001"}, {validation:true}), /unqualified label/u);
+  assert.equal(calls[0].name, "research_runner_master_validation_start");
+  assert.equal(calls[0].args.request.acknowledgeUnqualified, true);
+  assert.equal(adapter.active, false);
+});

@@ -74,6 +74,12 @@ impl MasterStorage {
         participant: Value,
         rerun_confirmed: bool,
     ) -> ResearchResult<Self> {
+        Self::create_with_validation(root, prepared, run_id, participant, rerun_confirmed, false)
+    }
+    pub(crate) fn create_with_validation(
+        root: &Path, prepared: &PreparedMaster, run_id: &str, participant: Value,
+        rerun_confirmed: bool, validation: bool,
+    ) -> ResearchResult<Self> {
         RunnerDocument::read(&prepared.loaded.canonical_source_text)?.ensure_directory(root)?;
         let directories = RunOutputDirectories::prepare(
             root,
@@ -103,6 +109,7 @@ impl MasterStorage {
         if matches!(prepared.plan.version, 2 | 3) {
             receipt.as_object_mut().unwrap().remove("participant");
         }
+        if validation { receipt["executionQualification"] = super::information::validation_qualification(); }
         write_new(
             &session.join("experiment.master.json"),
             prepared.loaded.canonical_source_text.as_bytes(),
@@ -443,8 +450,13 @@ mod tests {
         );
         let second = MasterStorage::create(&root, &first, "run-second", Value::Null, true).unwrap();
         assert_eq!(second.receipt["attemptNumber"], 2);
-        let separate =
-            MasterStorage::create(&root, &other, "run-other", Value::Null, false).unwrap();
+        let mut separate =
+            MasterStorage::create_with_validation(&root, &other, "run-other", Value::Null, false, true).unwrap();
+        assert_eq!(separate.receipt["executionQualification"]["researchQualified"], false);
+        let terminal = separate.finish("stopped", 0, None).unwrap();
+        assert_eq!(terminal["executionQualification"], super::super::information::validation_qualification());
+        let saved: Value = serde_json::from_slice(&fs::read(separate.session.join("master-attempt.v1.json")).unwrap()).unwrap();
+        assert_eq!(saved["executionQualification"]["sessionKind"], "local-validation");
         assert_eq!(separate.receipt["attemptNumber"], 1);
         assert_eq!(fs::read(snapshot).unwrap(), original);
         drop(second);

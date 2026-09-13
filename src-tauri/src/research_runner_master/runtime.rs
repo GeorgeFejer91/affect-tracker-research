@@ -75,7 +75,16 @@ fn require_wire_version(actual: u32, expected: u32) -> ResearchResult<()> {
     Ok(())
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterValidationStartRequest {
+    pub version: u32,
+    pub acknowledge_unqualified: bool,
+    pub experiment: MasterStartRequestV3,
+}
+
 struct StartInput {
+    validation: bool,
     version: u32,
     workspace_id: String,
     source_text: String,
@@ -251,6 +260,7 @@ impl MasterRuntime {
         let participant = json!({"participantId":request.participant.participant_id,"participantCode":code,"age":request.participant.age,"gender":request.participant.gender,"handedness":request.participant.handedness});
         self.start_input(
             StartInput {
+                validation: false,
                 version: 1,
                 workspace_id: request.workspace_id,
                 source_text: request.source_text,
@@ -284,9 +294,25 @@ impl MasterRuntime {
         request: MasterStartRequestV2,
         window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
+        self.start_typed_mode(request, window, false)
+    }
+    pub fn start_validation(
+        &self, request: MasterValidationStartRequest, window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.version, 1)?;
+        require_wire_version(request.experiment.0.version, 3)?;
+        if !request.acknowledge_unqualified {
+            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+        }
+        self.start_typed_mode(request.experiment.0, window, true)
+    }
+    fn start_typed_mode(
+        &self, request: MasterStartRequestV2, window: (u32, u32, f64), validation: bool,
+    ) -> ResearchResult<Value> {
         super::validate_master_participant(&request.participant_id)?;
         self.start_input(
             StartInput {
+                validation,
                 version: request.version,
                 workspace_id: request.workspace_id,
                 source_text: request.source_text,
@@ -311,7 +337,9 @@ impl MasterRuntime {
             crate::research_platform::require_native_acquisition(
                 crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
             )?;
-            if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
+            if request.validation {
+                require_validation_media(&self.media.capability())?;
+            } else if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
                 != PlaybackQualification::QualifiedNative
             {
                 return Err(CommandError::native_media_unavailable(
@@ -360,12 +388,13 @@ impl MasterRuntime {
             let storage = self
                 .workspace
                 .with_workspace(&request.workspace_id, |root, _| {
-                    MasterStorage::create(
+                    MasterStorage::create_with_validation(
                         root,
                         &prepared,
                         &run_id,
                         participant,
                         request.rerun_confirmed,
+                        request.validation,
                     )
                 })?;
             let receipt = storage.receipt.clone();
@@ -575,5 +604,31 @@ mod v3_ingress_tests {
             .unwrap()
             .validate()
             .is_err());
+    }
+}
+
+/// Validation admits a functioning verified player, never a qualified claim.
+pub(crate) fn require_validation_media(capability: &crate::research_native_media::NativeMediaCapability) -> ResearchResult<()> {
+    if !capability.runtime_integrity_verified || !capability.player_actor_ready {
+        return Err(CommandError::native_media_unavailable(&capability.reason_code));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod validation_tests {
+    use super::*;
+    #[test]
+    fn validation_requires_verified_runtime_and_live_actor_without_qualifying_it() {
+        let media = NativeMediaService::unavailable_for_tests();
+        let mut capability = media.capability();
+        assert!(require_validation_media(&capability).is_err());
+        capability.runtime_integrity_verified = true;
+        assert!(require_validation_media(&capability).is_err());
+        capability.player_actor_ready = true;
+        assert!(require_validation_media(&capability).is_ok());
+        assert!(!capability.qualified_start_available);
+        capability.runtime_integrity_verified = false;
+        assert!(require_validation_media(&capability).is_err());
     }
 }

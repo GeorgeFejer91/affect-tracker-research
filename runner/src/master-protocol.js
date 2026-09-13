@@ -4,11 +4,15 @@ export class NativeMasterProtocolAdapter {
     Object.assign(this, { invoke, render, terminal, fail, windowObject });
     this.active = false; this.status = null; this.plan = null; this.pending = false; this.destroyed = false;
   }
-  async start(plan, request) {
+  async start(plan, request, {validation = false} = {}) {
     if (this.active) throw new Error("A master attempt is already active.");
     if (![1, 2, 3].includes(plan.version)) throw new Error("Unsupported master plan version.");
     if ([2, 3].includes(plan.version) && (request.version !== plan.version || request.participantId !== plan.participantId || Object.hasOwn(request, "participant"))) throw new Error("Typed master Start requires its participant ID without legacy participant preparation.");
-    const receipt = await this.invoke(({1:"research_runner_master_start",2:"research_runner_master_start_v2",3:"research_runner_master_start_v3"}[plan.version]), { request });
+    if (validation && plan.version !== 3) throw new Error("Validation sessions require master3.");
+    const receipt = validation
+      ? await this.invoke("research_runner_master_validation_start", {request:{version:1,acknowledgeUnqualified:true,experiment:request}})
+      : await this.invoke(({1:"research_runner_master_start",2:"research_runner_master_start_v2",3:"research_runner_master_start_v3"}[plan.version]), { request });
+    if (validation && (receipt?.executionQualification?.sessionKind !== "local-validation" || receipt.executionQualification.researchQualified !== false)) throw new Error("Validation Start omitted its permanent unqualified label.");
     if (receipt?.schema !== "affect-runner-master-attempt" || receipt.version !== plan.version || receipt.recipeSourceByteSha256 !== plan.recipeSourceByteSha256
       || receipt.planIdentitySha256 !== plan.planIdentitySha256 || receipt.participantId !== plan.participantId || !/^run-[a-f0-9-]{36}$/u.test(receipt.runId)) {
       throw new Error("Native master Start did not return this exact plan and participant.");

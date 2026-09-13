@@ -78,6 +78,26 @@ pub async fn research_runner_master_preflight(
     media: State<'_, Arc<NativeMediaService>>,
     request: MasterPreflightRequest,
 ) -> ResearchResult<serde_json::Value> {
+    master_preflight(window, workspace, runtime, media, request, false).await
+}
+#[tauri::command]
+pub async fn research_runner_master_validation_preflight(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    media: State<'_, Arc<NativeMediaService>>,
+    request: MasterPreflightRequest,
+) -> ResearchResult<serde_json::Value> {
+    master_preflight(window, workspace, runtime, media, request, true).await
+}
+async fn master_preflight(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    media: State<'_, Arc<NativeMediaService>>,
+    request: MasterPreflightRequest,
+    validation: bool,
+) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
     let physical = window.inner_size().map_err(CommandError::io)?;
     let scale = window.scale_factor().map_err(CommandError::io)?;
@@ -92,12 +112,16 @@ pub async fn research_runner_master_preflight(
         let capability = media.capability();
         let mut reasons = Vec::new();
         if !viewport_matches { reasons.push("master-exact-fullscreen-viewport-required".to_owned()); }
-        if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
+        if validation {
+            if prepared.plan.version != 3 { reasons.push("validation-requires-master3".into()); }
+            if super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
+        } else if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
         if !crate::research_platform::NATIVE_ACQUISITION_SUPPORTED { reasons.push("native-acquisition-platform-unsupported".into()); }
         super::markers::MasterMarkers::new(&prepared.plan,"run-preflight","attempt-preflight")?;
-        Ok(serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,
+        let result = serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,
             "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,
-            "mediaBindingCount":bindings.len(),"viewportMatches":viewport_matches,"nativeStartReady":reasons.is_empty(),"reasons":reasons}))
+            "mediaBindingCount":bindings.len(),"viewportMatches":viewport_matches,"nativeStartReady":reasons.is_empty(),"reasons":reasons});
+        if validation { Ok(serde_json::json!({"schema":"affect-runner-validation-preflight","version":1,"result":result})) } else { Ok(result) }
     })).await.map_err(|_| CommandError::forbidden("Master preflight did not finish."))?
 }
 
@@ -156,6 +180,25 @@ pub async fn research_runner_master_start_v3(
     let runtime = Arc::clone(&runtime);
     tauri::async_runtime::spawn_blocking(move || {
         runtime.start_v3(request, (physical.width, physical.height, scale))
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("Master Start worker did not finish."))?
+}
+#[tauri::command]
+pub async fn research_runner_master_validation_start(
+    window: WebviewWindow,
+    runtime: State<'_, Arc<MasterRuntime>>,
+    request: super::runtime::MasterValidationStartRequest,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    if !window.is_fullscreen().map_err(CommandError::io)? {
+        return Err(CommandError::forbidden("Enter fullscreen before starting."));
+    }
+    let physical = window.inner_size().map_err(CommandError::io)?;
+    let scale = window.scale_factor().map_err(CommandError::io)?;
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.start_validation(request, (physical.width, physical.height, scale))
     })
     .await
     .map_err(|_| CommandError::forbidden("Master Start worker did not finish."))?

@@ -129,6 +129,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
+    query("runner-validation").disabled = locked || recipe?.recipe?.version !== 3;
     query("runner-load-previous").disabled = locked || previousExperiment?.available !== true;
     query("runner-load-previous").title = previousExperiment?.available ? `Reload ${previousExperiment.basename}` : "Load an experiment file first.";
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
@@ -305,9 +306,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const attested = await attestMasterMedia({ recipe: currentRecipe.recipe, controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
         viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
       if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
-      const checked = await invoke("research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText,
+      const validation = query("runner-validation").checked;
+      const preflightResponse = await invoke(validation ? "research_runner_master_validation_preflight" : "research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText,
         participantId: participantId(), selector: candidate.selector } });
       if (destroyed || generation !== revision) return;
+      if (validation && (preflightResponse.schema !== "affect-runner-validation-preflight" || preflightResponse.version !== 1)) throw new Error("Invalid validation preflight receipt.");
+      const checked = validation ? preflightResponse.result : preflightResponse;
       if (checked?.schema !== "affect-runner-master-preflight" || checked.version !== candidate.version || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
       preflight = checked;
       text("runner-preflight", checked.nativeStartReady ? "Master and media verified. Test the configured input before Start." : `Master and media verified. ${checked.reasons.join(" · ")}`);
@@ -492,6 +496,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-test-region").hidden = false; query("runner-test-region").scrollIntoView({ block: "center" }); query("runner-test-region").focus();
     await setRegion(query("runner-test-region"), "setupTest"); await invoke("research_input_begin_test", { binding: runnerInput(recipe) });
   }));
+  listen(query("runner-validation"), "change", () => { invalidate(); renderControls(); });
   async function startAttempt() {
     if (!selection || !preflight) throw new Error("Check the current selection first.");
     if (!presentation.active) throw new Error("Enter fullscreen participant preparation first.");
@@ -499,7 +504,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const disposition = value("runner-attempt");
     if (recipe.recipe && disposition !== "new-attempt") throw new Error("Master recovery is not implemented. Start an explicitly confirmed new attempt; prior partial files remain retained.");
     if (disposition !== "finalize") {
-      if (!capability?.nativeStartReady || !preflight.nativeStartReady) throw new Error("Native experiment playback is not qualified in this build.");
+      if ((!query("runner-validation").checked && !capability?.nativeStartReady) || !preflight.nativeStartReady) throw new Error("Native experiment playback is not qualified in this build.");
       const status = await invoke("research_input_status");
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
@@ -511,7 +516,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
       if ([2, 3].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
       else request.participant = {participantId:participantId(),...participant};
-      await masterProtocol.start(selection, request);
+      await masterProtocol.start(selection, request, {validation:query("runner-validation").checked});
       inputReceipt=null; renderControls(); return;
     }
     await protocol.start({ ...selection.detail, participant, inputTestReceiptId: inputReceipt?.receiptId,

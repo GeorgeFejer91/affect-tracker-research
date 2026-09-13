@@ -429,3 +429,9 @@ mod tests {
         assert!(PreparedTransfer::new(&"x".repeat(MAX_TRANSFER_BYTES)).is_err());
     }
 }
+
+pub(crate) fn validation_qualification() -> serde_json::Value {
+    serde_json::json!({"schema":"affect-runner-execution-qualification","version":1,
+        "sessionKind":"local-validation","researchQualified":false,
+        "reason":"explicit-unqualified-validation"})
+}

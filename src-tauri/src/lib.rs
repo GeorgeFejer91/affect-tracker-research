@@ -299,6 +299,8 @@ fn launch(
             research_runner_master::commands::research_runner_master_start,
             research_runner_master::commands::research_runner_master_start_v2,
             research_runner_master::commands::research_runner_master_start_v3,
+            research_runner_master::commands::research_runner_master_validation_start,
+            research_runner_master::commands::research_runner_master_validation_preflight,
             research_runner_master::commands::research_runner_master_status,
             research_runner_master::commands::research_runner_master_action,
             research_runner_master::commands::research_runner_master_action_v2,
