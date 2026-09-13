@@ -18,13 +18,14 @@ const q=id=>root.querySelector('#'+id),checks=[],errors=[],calls=[];
 const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
 const tick=()=>new Promise(r=>setTimeout(r,50));
 const until=async(f,s)=>{for(let i=0;i<100;i++){if(f())return;await tick();}throw Error(s);};
-let app,files=[],active=false,lastName=null,failInventory=false;
+let app,files=[],active=false,lastName=null,failInventory=false,failReveal=false;
 const counts=()=>app.recipe.recipe.segments.P3.variants.map((v,i)=>({variantId:v.variantId,recordingCount:files.filter(f=>f.v===i+1).length,participantCount:new Set(files.filter(f=>f.v===i+1).map(f=>f.p)).size}));
 const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_runner_recent_experiments':return{schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return{playerActorReady:false};
+ case 'research_runner_reveal_video':if(failReveal)throw Error('Video file is missing');return null;
  case 'research_workspace_status':case 'research_choose_workspace':return{selected:true,workspaceId:'workspace',displayName:'Test experiment'};
  case 'research_runner_previous':return{available:false};
  case 'research_runner_selection':return{schema:'affect-runner-selection',version:1,packageSourceByteSha256:app.recipe.canonicalSourceByteSha256,participantId:args.participantId??'P001',outputDirectory:'outputs/recipe-test'};
@@ -59,6 +60,20 @@ try{
  check(sequenceText.includes('Demographics')&&sequenceText.includes('Custom study'),'preview recognizes questionnaire content');
  check(sequenceText.includes('ISI1')&&sequenceText.includes('session%5Fa_clip.mp4'),'preview recognizes selected version ISI and video IDs');
  check(q('runner-sequence-status').textContent.includes('Language > Demographics > Custom study > ISI1'),'preview status summarizes the ordered sequence');
+ const videoLinks=[...q('runner-sequence-timeline').querySelectorAll('[data-event-kind="video"] a')];
+ check(videoLinks.length===3,'every video occurrence has a hyperlink');
+ check(q('runner-sequence-timeline').querySelectorAll('a').length===videoLinks.length,'questionnaires and intervals are not file links');
+ videoLinks[0].focus();check(document.activeElement===videoLinks[0],'video link accepts keyboard focus');
+ for(const [index,link] of videoLinks.entries()){
+  link.click();await tick();
+  const call=calls.filter(call=>call.command==='research_runner_reveal_video').at(-1);
+  check(call.args.workspaceId==='workspace','link uses current project workspace');
+  check(call.args.relativePath===['assets/stimuli/session_a/clip.mp4','assets/stimuli/session_a/clip.mp4','assets/stimuli/session2/portrait.mp4'][index],'link reveals actual nested path, not encoded annotation ID');
+ }
+ check(q('runner-sequence-dialog').open&&q('runner-variant').value==='variant-3','revealing keeps preview and version selection');
+ failReveal=true;videoLinks[0].click();await tick();
+ check(!q('runner-error').hidden&&q('runner-sequence-dialog').contains(q('runner-error'))&&q('runner-error').textContent.includes('missing'),'missing video error is visible inside preview');
+ failReveal=false;videoLinks[0].click();await tick();check(q('runner-error').hidden,'link can be retried after a missing-file error');
  root.querySelector('[data-close-dialog="runner-sequence-dialog"]').click();await tick();
  q('runner-participant').value='P01';q('runner-participant').dispatchEvent(new Event('input',{bubbles:true}));q('runner-participant').dispatchEvent(new Event('blur'));await tick();
  q('runner-variant-button').click();key('Home');key('Enter');check(q('runner-participant').value==='P01','experimenter can repeat used participant');
@@ -72,7 +87,10 @@ try{
  failInventory=false;files=[];await app.adoptRecipe(bytes);await tick();check(q('runner-participant').value==='P01'&&q('runner-variant').value==='variant-3','new inventory clears prior manual selection');
  files=[{p:'P001',v:1},{p:'P001',v:1},{p:'P003',v:2}];await app.adoptRecipe(bytes);await tick();if(!new URL(location.href).searchParams.has('closed'))q('runner-variant-button').click();
  check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');check(q('runner-variant-popup').hidden||q('runner-variant-popup').getBoundingClientRect().right<=innerWidth,'menu contained in viewport');
+ if(new URL(location.href).searchParams.has('preview')){q('runner-sequence-preview').click();await tick();await choosePreview('Study languages');await choosePreview('en');
+  check(document.documentElement.scrollWidth<=innerWidth,'video links fit narrow preview');}
  const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);
+ for(const dialog of snapshot.querySelectorAll('dialog[open]')){dialog.removeAttribute('open');dialog.showModal();}
 }catch(error){errors.push(String(error));app?.destroy();}
 const receipt=document.createElement('pre');receipt.id='receipt';receipt.hidden=true;receipt.textContent=JSON.stringify({checks,errors,calls,viewport:[innerWidth,innerHeight],scope:'Production Runner UI with synthetic native inventory/recorder'});document.body.append(receipt);
 `;
@@ -88,10 +106,10 @@ const server = createServer(async (req, res) => {
 });
 await new Promise(done => server.listen(0, "127.0.0.1", done));
 const rows=[],execute=promisify(execFile);
-try{for(const {width,closed} of [{width:900,closed:false},{width:600,closed:false},{width:900,closed:true}]){
- const name=`usage-${width}${closed?"-closed":""}`;
+try{for(const {width,closed,preview} of [{width:900,closed:false},{width:600,closed:false},{width:900,closed:true},{width:600,closed:true,preview:true}]){
+ const name=`usage-${width}${closed?"-closed":""}${preview?"-preview":""}`;
  const profile=await mkdtemp(join(output,'profile-'));
- const {stdout}=await execute(browser,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--window-size=${width},1100`,'--force-device-scale-factor=1','--virtual-time-budget=18000',`--screenshot=${join(output,`${name}.png`)}`,'--dump-dom',`http://127.0.0.1:${server.address().port}/${closed?"?closed=1":""}`],{windowsHide:true,timeout:45000,maxBuffer:4000000});
+ const {stdout}=await execute(browser,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--window-size=${width},1100`,'--force-device-scale-factor=1','--virtual-time-budget=18000',`--screenshot=${join(output,`${name}.png`)}`,'--dump-dom',`http://127.0.0.1:${server.address().port}/${preview?"?closed=1&preview=1":closed?"?closed=1":""}`],{windowsHide:true,timeout:45000,maxBuffer:4000000});
  await writeFile(join(output,`${name}.html`),stdout);
  const raw=stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];assert.ok(raw,'Missing receipt');
  const row=JSON.parse(raw.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>'));rows.push(row);console.log(JSON.stringify({width,checks:row.checks.length,errors:row.errors}));assert.deepEqual(row.errors,[]);

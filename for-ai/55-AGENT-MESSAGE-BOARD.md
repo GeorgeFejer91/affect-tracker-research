@@ -25,6 +25,27 @@ anchors resolve, the remaining numeric byte ceilings are per-frame constraints
 or explicitly labelled implementation history, and `git diff --check` passes.
 Ready for documentation-only integration; no app tests, build, runtime support
 or completed validation claim belongs to this change.
+## 20260913 R1 preview video locations
+
+Direct user follow-up; R1 RR-03 and named workspace reveal seam, Backend
+Verification. Isolated `codex/segment-runner-preview-links` at sibling worktree
+`affect-tracker-research-runner-preview-links`, base `f96d8e2`.
+Video hyperlinks reveal the exact saved package-relative file in Explorer.
+Scope: timeline projection/rendering, Runner-only command, bounded workspace
+path resolution. Evidence: 9/9 baseline sequence tests, focused link dispatch,
+native containment/missing-file checks and Runner build/boundary checks.
+Root retains current distribution replacement and installed qualification.
+
+Ready evidence: 9 sequence/projection tests, 165 production-frontend assertions
+across four headless Chrome cases (900/600px), narrow preview screenshot inspected,
+and Runner build/boundary verification pass. The native resolver test passes on
+the compiled no-default-features library test, using the existing copy-only
+Common Controls 6 manifest helper; ordinary Cargo launch failed before tests with
+Windows 0xc0000139, including default-feature compilation. No product binary was
+patched. Evidence: `.affect-checks/runner-preview-video-links-04` and
+`.affect-checks/runner-preview-video-location-native-01` under the GitHub root.
+Native tests resolve paths without opening Explorer; actual installed click
+verification follows root integration/rebuild. No acquisition/recording claim.
 
 ## 20260913 root consolidated SurveyJS Runner validation
 

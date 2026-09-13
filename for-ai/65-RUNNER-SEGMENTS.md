@@ -11,6 +11,21 @@ Windows task switching. No recipe or recording schema change. See
 [the implementation and evidence](../docs/runner-alt-escape.md); component tests
 pass, while current-distribution collection and native key/XDF qualification
 remain with the integration owner.
+## Preview video locations - 2026-09-13
+
+R1/RR-03 user follow-up: each preview video title is a keyboard-focusable
+hyperlink that reveals its exact saved file in File Explorer. Master and legacy
+package previews project the actual package-relative location, independent of
+display annotation encoding and repeated occurrences. The Runner-only native
+command confines resolution to the selected workspace's ordinary video-library
+files. Missing files and unavailable workspaces report errors in the preview.
+No new JSON fields or runtime protocol semantics are introduced.
+
+Component evidence: 9 Node tests, 165 headless production UI assertions,
+one native resolver test with the existing Common Controls 6 test-only manifest,
+and Runner build/boundary pass. See the matching message-board entry for evidence
+paths. Root owns integration into the current distribution and installed click
+verification; these checks do not establish playback or recording qualification.
 
 ## Complete-XDF smoke extension — 2026-09-12
 

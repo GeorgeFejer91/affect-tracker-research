@@ -455,6 +455,22 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
         row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition ?? "";
         title.textContent = `${event.label} · ${event.title}`;
+        if (event.videoRelativePath) {
+          const link = document.createElement("a");
+          link.href = "#runner-sequence-timeline";
+          link.textContent = event.title;
+          link.title = `Show in File Explorer: ${event.videoRelativePath}`;
+          link.setAttribute("aria-label", `Show ${event.title} in File Explorer`);
+          link.addEventListener("click", click => {
+            click.preventDefault();
+            if (destroyed || generation !== revision || busy || protocol.active) return;
+            action(async () => {
+              if (!workspace?.selected) throw new Error("Select the experiment's project folder to locate this video.");
+              await invoke("research_runner_reveal_video", { workspaceId: workspace.workspaceId, relativePath: event.videoRelativePath });
+            });
+          });
+          title.replaceChildren(`${event.label} · `, link);
+        }
         detail.textContent = event.kind === "language" ? event.detail
           : `${event.durationMs === null ? `${event.itemCount} items · Self-paced` : `${Number((event.durationMs / 1000).toFixed(3))} seconds`}${event.blockId ? ` · Block ${event.blockId}` : ""}${event.moduleId ? ` · ${event.moduleId}` : ""}${event.videoId ? ` · ${event.videoId}` : ""}`;
         row.append(title, detail); host.append(row);

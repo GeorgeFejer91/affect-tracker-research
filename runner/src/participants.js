@@ -37,7 +37,7 @@ export async function participantTimeline(recipe, participantId, path, variantId
     if (step.kind === "stimulus") {
       const video = stimuli.get(step.stimulusId);
       if (!video) throw new Error("A scheduled video is absent from the recipe.");
-      return { ...step, title: video.title, label: "Video", durationMs: video.durationMs };
+      return { ...step, title: video.title, label: "Video", durationMs: video.durationMs, videoRelativePath: video.relativePath };
     }
     if (step.kind === "questionnaire") {
       const form = forms.get(step.questionnaireId);
