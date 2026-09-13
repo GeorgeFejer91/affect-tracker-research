@@ -52,3 +52,17 @@ files and screenshots on D:. Restore sufficient system-drive space before the
 next actual-app qualification attempt; do not treat this failed run as evidence
 of questionnaire, playback, geometry, timing or XDF correctness. Do not delete
 unrelated user data to recover space.
+
+## Questionnaire validation shortcuts, 2026-09-13
+
+The Runner now contains hidden validation accelerators for actual-app survey
+inspection. With the Runner window focused, `Ctrl+Alt+Shift+Q` loads the current
+or recent master JSON, chooses participant `P001` if none is selected, follows
+the first terminal language route, resolves the selected or first version, and
+opens the first questionnaire through the production SurveyJS renderer.
+`Ctrl+Alt+Shift+N` and `Ctrl+Alt+Shift+P` step between questionnaire occurrences.
+`Ctrl+Alt+Shift+F` fills the visible SurveyJS page with synthetic validation
+answers. These shortcuts do not start recording, emit LSL markers, or create
+XDF output, and they must not be cited as evidence for full experiment execution.
+They are only a fast way to verify participant-facing questionnaire layout and
+keyboard behaviour before running the stricter native session path.

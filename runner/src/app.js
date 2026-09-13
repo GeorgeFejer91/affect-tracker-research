@@ -39,6 +39,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recentExperiments = null, participantManual = false;
   let focusAfterAction = null;
   let setupScrollQuietUntil = 0;
+  let questionnairePreview = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -140,6 +141,109 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (!allowPartial && current.definition.items.some(item => !Object.hasOwn(choices, item.itemId) || choices[item.itemId] === null)) throw new Error("Answer every questionnaire item before continuing.");
     }
     return { protocolStepPosition: current.position, answers: structuredClone(current.answers) };
+  }
+  function firstTerminalLanguagePath(tree, nodeId = tree?.rootNodeId, prefix = []) {
+    const node = tree?.nodes?.find(item => item.nodeId === nodeId);
+    if (!node) return null;
+    for (const option of node.options ?? []) {
+      if (option.target?.kind === "language") return [...prefix, option.optionId];
+      if (option.target?.kind === "node") {
+        const path = firstTerminalLanguagePath(tree, option.target.nodeId, [...prefix, option.optionId]);
+        if (path) return path;
+      }
+    }
+    return null;
+  }
+  function currentLanguagePath() {
+    if (!recipe) return [];
+    try {
+      if (resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") return path;
+    } catch { /* fall through to the first terminal route */ }
+    const terminal = firstTerminalLanguagePath(runnerLanguageTree(recipe));
+    if (!terminal) throw new Error("The experiment JSON has no complete language route.");
+    return terminal;
+  }
+  function selectedVariantId() {
+    if (!recipe?.recipe) return "";
+    const selected = value("runner-variant");
+    if (selected) return selected;
+    const first = recipe.recipe.segments.P3.variants[0]?.variantId;
+    if (!first) throw new Error("The experiment JSON has no counterbalance version.");
+    query("runner-variant").value = first;
+    return first;
+  }
+  async function ensurePreviewPlan() {
+    if (!recipe) await loadExperiment(true);
+    if (!recipe?.recipe) throw new Error("Load a master experiment JSON first.");
+    if (!participantPicker.participantId) {
+      participantPicker.restore("P001");
+      participantManual = true;
+      variantPicker.participant(participantPicker.participantId);
+    }
+    path = currentLanguagePath();
+    renderLanguage(); refreshTimeline();
+    const plan = await resolveRunnerSelection(recipe, participantId(), path, selectedVariantId());
+    const steps = plan.steps.filter(step => step.kind === "questionnaire");
+    if (!steps.length) throw new Error("This experiment has no questionnaire steps to preview.");
+    selection = plan;
+    return { plan, steps };
+  }
+  async function showQuestionnairePreview(index = 0) {
+    const previewPlan = questionnairePreview?.plan ? questionnairePreview : await ensurePreviewPlan();
+    const nextIndex = Math.max(0, Math.min(previewPlan.steps.length - 1, index));
+    questionnairePreview = { ...previewPlan, index: nextIndex };
+    const step = questionnairePreview.steps[nextIndex];
+    if (!presentation.active) await presentation.enter();
+    clearQuestionnaire();
+    presentation.showPage("questionnaire"); preview.update({ hideFeedback: true });
+    text("runner-session", `${participantLabel(participantId())} · questionnaire ${nextIndex + 1}/${questionnairePreview.steps.length}`);
+    text("runner-stimulus", step.payload.definition.title);
+    text("runner-timing", "Validation preview");
+    text("runner-write", "No recording");
+    text("runner-lsl", "No LSL markers emitted");
+    query("runner-pause").disabled = true;
+    questionnaire = { definition: step.payload.definition, position: step.position, answers: {}, master: false, preview: true, version: questionnairePreview.plan.version };
+    text("runner-questionnaire-title", questionnaire.definition.title);
+    query("runner-questionnaire").lang = questionnaire.definition.language;
+    text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
+    const current = questionnaire;
+    questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
+      version: questionnairePreview.plan.version,
+      randomSeed: surveyRandomSeed(questionnairePreview.plan.planIdentitySha256, step.position),
+      onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
+      onComplete: () => action(() => showQuestionnairePreview(nextIndex + 1)),
+    });
+    text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
+    text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
+    if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
+    query("runner-questionnaire-previous").hidden = true;
+    query("runner-questionnaire-next").hidden = true;
+    query("runner-questionnaire-submit").hidden = true;
+    renderControls();
+  }
+  function sampleSurveyValue(question) {
+    const choice = (question.visibleChoices ?? question.choices ?? question.rateValues ?? [])
+      .find(item => item?.value !== undefined && item.value !== "none" && item.value !== "other");
+    const value = choice?.value ?? choice ?? "synthetic";
+    switch (question.getType?.()) {
+      case "text": return question.inputType === "number" ? 30 : "Synthetic Keyboard Test";
+      case "comment": return "Synthetic validation response";
+      case "checkbox": return [value];
+      case "boolean": return true;
+      case "multipletext": return Object.fromEntries((question.items ?? []).map(item => [item.name, item.inputType === "number" ? 30 : "Synthetic Keyboard Test"]));
+      default: return value;
+    }
+  }
+  function fillVisibleQuestionnairePage() {
+    const model = questionnaire?.presenter?.model;
+    if (!model) return;
+    const pageQuestions = model.currentPage?.questions ?? model.getAllQuestions(false, false, true);
+    for (const question of pageQuestions) {
+      if (!question.isVisible || question.isReadOnly) continue;
+      question.value = sampleSurveyValue(question);
+    }
+    questionnaire?.presenter?.focusFirstUnanswered?.();
+    if (questionnaire?.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
   }
   function destroy() {
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
@@ -501,6 +605,22 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await invoke("research_input_cancel_setup");
   }));
   listen(windowObject, "keydown", event => {
+    if (event.ctrlKey && event.altKey && event.shiftKey && !event.repeat && !event.isComposing) {
+      const key = event.key.toLowerCase();
+      if (["q", "n", "p", "f"].includes(key)) {
+        event.preventDefault();
+        if (key === "q") action(async () => {
+          questionnairePreview = null;
+          const previewPlan = await ensurePreviewPlan();
+          questionnairePreview = { ...previewPlan, index: 0 };
+          await showQuestionnairePreview(0);
+        });
+        else if (key === "n") action(() => showQuestionnairePreview((questionnairePreview?.index ?? -1) + 1));
+        else if (key === "p") action(() => showQuestionnairePreview((questionnairePreview?.index ?? 1) - 1));
+        else if (key === "f") fillVisibleQuestionnairePage();
+        return;
+      }
+    }
     if (event.key !== "Escape" || !presentation.active || root.querySelector("dialog[open]")) return;
     event.preventDefault();
     if (protocol.active) query("runner-session-dialog").showModal();
