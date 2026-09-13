@@ -28,6 +28,8 @@ def main():
     if args.deps:
         site.addsitedir(str(args.deps.resolve()))
     import pyautogui as keys
+    import win32api
+    import win32con
     import win32gui
     import win32process
     from pywinauto import Application
@@ -43,13 +45,77 @@ def main():
     app = Application(backend="uia").connect(process=args.pid)
     window = app.window(title="Experiment Runner")
     window.wait("exists visible", timeout=10)
-    window.set_focus()
     keys.FAILSAFE = True
     keys.PAUSE = 0.15
     observations = []
     uia = IUIA().iuia
 
+    def bring_runner_foreground():
+        handle = window.wrapper_object().handle
+        for _ in range(4):
+            attached = []
+            try:
+                foreground = win32gui.GetForegroundWindow()
+                target_thread = win32process.GetWindowThreadProcessId(handle)[0]
+                foreground_thread = win32process.GetWindowThreadProcessId(foreground)[0] if foreground else 0
+                current_thread = win32api.GetCurrentThreadId()
+                for thread in {target_thread, foreground_thread}:
+                    if thread and thread != current_thread:
+                        win32process.AttachThreadInput(current_thread, thread, True)
+                        attached.append(thread)
+                keys.press("alt")
+                win32gui.ShowWindow(handle, win32con.SW_RESTORE)
+                win32gui.SetWindowPos(
+                    handle,
+                    win32con.HWND_TOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+                )
+                win32gui.BringWindowToTop(handle)
+                box = window.rectangle()
+                keys.click(box.left + 120, box.top + 18)
+                win32gui.SetForegroundWindow(handle)
+                win32gui.SetActiveWindow(handle)
+                window.set_focus()
+            except Exception:
+                pass
+            finally:
+                current_thread = win32api.GetCurrentThreadId()
+                for thread in attached:
+                    try:
+                        win32process.AttachThreadInput(current_thread, thread, False)
+                    except Exception:
+                        pass
+            time.sleep(0.25)
+            foreground = win32gui.GetForegroundWindow()
+            if win32process.GetWindowThreadProcessId(foreground)[1] == args.pid:
+                return
+        raise RuntimeError("Runner could not be brought to the foreground.")
+
+    bring_runner_foreground()
+
+    def release_runner_topmost():
+        try:
+            win32gui.SetWindowPos(
+                window.wrapper_object().handle,
+                win32con.HWND_NOTOPMOST,
+                0,
+                0,
+                0,
+                0,
+                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+            )
+        except Exception:
+            pass
+
     def guard():
+        foreground = win32gui.GetForegroundWindow()
+        if win32process.GetWindowThreadProcessId(foreground)[1] == args.pid:
+            return
+        bring_runner_foreground()
         foreground = win32gui.GetForegroundWindow()
         if win32process.GetWindowThreadProcessId(foreground)[1] != args.pid:
             raise RuntimeError("Runner lost foreground focus; no key was sent.")
@@ -246,6 +312,7 @@ def main():
         try: capture("blocked")
         except Exception: pass
     finally:
+        release_runner_topmost()
         (args.output / "receipt.json").write_text(json.dumps({"recipeSha256": hashlib.sha256(recipe_bytes).hexdigest(), "pid": args.pid, "phase": args.phase, "language": args.language, "error": error, "observations": observations, "qualification": "GUI test evidence only; independently verify XDF and timing"}, ensure_ascii=False, indent=2), encoding="utf-8")
     if error:
         raise SystemExit(error)
