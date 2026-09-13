@@ -101,6 +101,8 @@ html, body { min-width: 0; margin: 0; }
 #runner-sequence-timeline li { padding: 0 0 18px 8px; border-left: 1px solid #656c5c; }
 #runner-sequence-timeline li::marker { color: #d6c597; }
 #runner-sequence-timeline strong { font-size: 15px; font-weight: 600; }
+#runner-sequence-timeline a { color: #f3c96d; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+#runner-sequence-timeline a:focus-visible { outline: 2px solid #f3c96d; outline-offset: 4px; }
 #runner-sequence-timeline p { font-size: 13px; color: #bbbdb4; margin: 6px 0 0; }
 @media (max-width: 400px) { .runner-participant-row { flex-direction: column; } .runner-combobox { width: 100%; } }
 

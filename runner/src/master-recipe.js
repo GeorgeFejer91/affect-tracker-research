@@ -55,6 +55,7 @@ export function masterTimeline(plan) {
       ? step.payload.definition.isiId : step.payload.entry?.referenceId ?? step.payload.asset.annotationId ?? step.payload.asset.sourceRelativePath,
     label: step.kind === "questionnaire" ? "Questionnaire" : step.kind === "interval" ? "Interval" : "Video",
     videoId: step.kind === "video" ? step.payload.entry?.referenceId ?? step.payload.asset.annotationId ?? null : null,
+    videoRelativePath: step.kind === "video" ? step.payload.asset.packageRelativePath : null,
     itemCount: step.kind === "questionnaire" ? step.payload.definition.items?.length ?? null : null,
     moduleId: step.payload.module?.moduleId ?? null, blockId: null,
   }));

@@ -323,6 +323,7 @@ fn launch(
             research_desktop::research_runner_fullscreen,
             research_recorder::commands::research_recorder_status,
             research_runner_session::research_runner_selection,
+            research_runner_session::research_runner_reveal_video,
             research_recorder::commands::research_recorder_discover,
             research_recorder::commands::research_recorder_start,
             research_recorder::commands::research_recorder_start_v2,

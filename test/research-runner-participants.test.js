@@ -42,4 +42,7 @@ test("preview timeline includes language before the executable package sequence"
   assert.equal(en.complete, true);
   assert.deepEqual(en.events.map(e => e.kind), ["language", "stimulus", "questionnaire", "questionnaire", "interval", "questionnaire", "stimulus", "interval"]);
   assert.match(en.sequence, /Language > .* > ISI/u);
+  for (const event of en.events.filter(event => event.kind === "stimulus")) {
+    assert.equal(event.videoRelativePath, recipe.package.assets.stimuli.find(video => video.stimulusId === event.stimulusId).relativePath);
+  }
 });

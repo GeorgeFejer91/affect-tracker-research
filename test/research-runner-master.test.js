@@ -50,6 +50,8 @@ test("Runner preview resolves the selected master version's participant-facing s
   assert.deepEqual(preview.events.map(event => event.kind), ["language", "questionnaire", "questionnaire", "video", "interval", "video", "interval", "questionnaire"]);
   assert.match(preview.sequence, /^Language > Demographics > Custom study > session2_portrait\.mp4 > ISI4 > session%5Fa_clip\.mp4 > ISI2 > Custom study$/u);
   assert.equal(preview.events.find(event => event.kind === "video").videoId, "session2_portrait.mp4");
+  assert.deepEqual(preview.events.filter(event => event.kind === "video").map(event => event.videoRelativePath),
+    ["assets/stimuli/session2/portrait.mp4", "assets/stimuli/session_a/clip.mp4"]);
 });
 
 test("Runner complete feedback projection preserves successor controls and rejects XR substitution", async () => {

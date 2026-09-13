@@ -289,6 +289,23 @@ fn selection(
 }
 
 #[tauri::command]
+pub fn research_runner_reveal_video(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+    relative_path: String,
+) -> ResearchResult<()> {
+    if window.label() != "research"
+        || window.try_state::<DesktopRole>().as_deref() != Some(&DesktopRole::Runner)
+    {
+        return Err(CommandError::forbidden(
+            "Only Experiment Runner can reveal a preview video.",
+        ));
+    }
+    workspace.reveal_video_location(&workspace_id, &relative_path)
+}
+
+#[tauri::command]
 pub async fn research_runner_selection(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,

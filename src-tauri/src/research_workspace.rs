@@ -21,6 +21,7 @@ use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 mod controlled_geometry;
+mod video_location;
 mod stimulus_authoring;
 pub(crate) use controlled_geometry::RunnerVideoBindingV3;
 
