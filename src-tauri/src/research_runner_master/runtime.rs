@@ -363,6 +363,12 @@ impl MasterRuntime {
                 &prepared,
             )?;
             let recording = self.recorder.status();
+            crate::research_recorder::naming::validate_selection(
+                &recording,
+                &request.source_text,
+                &request.participant_id,
+                &prepared.plan.selector.variant_id,
+            )?;
             if recording.active
                 && recording.recipe_sha256.as_deref()
                     != Some(&prepared.plan.recipe_source_byte_sha256)

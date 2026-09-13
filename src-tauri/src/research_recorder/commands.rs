@@ -90,3 +90,59 @@ pub async fn research_recorder_stop(
         .await
         .map_err(|_| CommandError::new("recorder_worker", "The recorder did not finish."))?
 }
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NamedRecordStartRequest {
+    version: u8,
+    participant_id: String,
+    variant_id: String,
+    recording: RecordStartRequest,
+}
+#[tauri::command]
+pub async fn research_recorder_start_v2(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<crate::research_workspace::WorkspaceService>>,
+    service: State<'_, Arc<RecorderService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    request: NamedRecordStartRequest,
+    workspace_id: String,
+) -> ResearchResult<Option<RecorderStatus>> {
+    authorize(&window)?;
+    idle(&runtime)?;
+    if request.version != 2 {
+        return Err(CommandError::invalid_contract(
+            "Named recording requires request version 2.",
+        ));
+    }
+    request.recording.validate()?;
+    let ordinal = super::naming::variant_number(
+        &request.recording.experiment_package_source_text,
+        &request.variant_id,
+    )?;
+    let file_name = super::naming::file_name(
+        &request.participant_id,
+        ordinal,
+        time::OffsetDateTime::now_utc(),
+    )?;
+    let service = Arc::clone(&service);
+    let runtime = Arc::clone(&runtime);
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.while_idle(|| {
+            workspace.with_workspace(&workspace_id, |root, _| {
+                let document = crate::research_runner_session::RunnerDocument::read(
+                    &request.recording.experiment_package_source_text,
+                )?;
+                let recipe = document.ensure_directory(root)?;
+                let recordings =
+                    crate::research_run_storage::ensure_checked_run_child(&recipe, "recordings")?;
+                service
+                    .start_path(request.recording, recordings.path.join(file_name))
+                    .map(Some)
+            })
+        })
+    })
+    .await
+    .map_err(|_| CommandError::new("recorder_worker", "The named recorder could not start."))?
+}

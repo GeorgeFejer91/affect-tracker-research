@@ -580,3 +580,21 @@ Root alone owns current Runner closure. Actual keyboard operation and a test-onl
 The user explicitly approved local validation sessions to break the installed-qualification/Start dependency. Master3 has a separate, explicit acknowledgement and native command path. Verified runtime, live actor, exact recipe/assets/viewport, input test, native acquisition, response validation and durable recording rules remain enforced. Normal research Start is unchanged. Validation attempt receipts carry `executionQualification` with `researchQualified:false`; the primary information stream uses a versioned `affect-runner-validation-startup` envelope around the unchanged startup3 record, carrying the same permanent unqualified designation. Reconstruction must preserve that designation and reject attempts to promote it. This is permission to test the actual software, not a qualification or installer release claim.
 
 The user also prioritizes functional pipeline validation first and installer verification last. Keep one authoritative current Planner/Runner test distribution on the PC. Before testing, compare its source commit and executable hashes to the integration receipt; segment agents may develop in isolated worktrees but must not leave competing user-launchable app copies or qualify stale binaries. Consolidate accepted changes into the root-owned build, stop stale test processes, and replace old launch targets deliberately. Keep historical evidence in non-launchable evidence archives, without deleting experiments, participant output or user assets. Commit validated milestones and push them regularly to the integration branch; pushing work is not evidence of successful execution or permission to publish an installer.
+
+### XDF-based participant/version defaults — 2026-09-13 user amendment
+
+RR-03/RR-08/RR-09/RR-10: prefer the first unused participant and least-used
+version across all participants using this exact JSON's recordings folder.
+Every matching XDF counts, including stopped/partial files. Ties follow saved
+version order; both defaults remain manually overridable and repeat sessions
+remain possible. Names are P01_V1_UTCtimestamp.xdf, V1 being the first saved
+variant, independent of arbitrary internal variant IDs. Unknown old names are
+excluded visibly, never guessed or renamed. Preserve existing rerun guards,
+recording policy and frozen Planner/LSL/XDF data contracts. An armed named
+recorder binds the selected participant/version until stopped.
+
+Implementation and component receipts: [Runner preselection](../docs/runner-version-preselection.md).
+The visible frequency dropdown includes counts and a green-to-red relative scale;
+color alone is never the selection or count indicator. Missing history leaves
+manual selection available, with no fabricated zero counts. Root owns collecting
+this isolated change into the current native application and final qualification.

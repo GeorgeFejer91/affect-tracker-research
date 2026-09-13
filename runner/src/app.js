@@ -11,6 +11,7 @@ import { validateQuestionnaireAnswers } from "../../site/src/research/questionna
 import { createRunnerPresentation } from "./presentation.js";
 import { createQuestionnaireKeyboard } from "./questionnaire-keyboard.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
+import { createVariantPicker, nextParticipant } from "./variant-picker.js";
 import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
@@ -31,7 +32,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
-  let previousExperiment = null;
+  let previousExperiment = null, participantManual = false;
   let focusAfterAction = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
@@ -62,7 +63,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-receipt", status.result ? `Participant ${participantLabel(status.participantId)} · ${status.result.status}\n${status.result.outputDirectory}` : `Participant ${participantLabel(status.participantId)} · incomplete attempt\n${status.failureCode ?? "Native finalization unavailable"}`);
     query("runner-receipt").hidden = false;
     preview.update({hideFeedback:true}); clearMasterDesktopLayout(root);
-    await presentation.leave(); await refreshParticipantHistory(); renderControls();
+    await presentation.leave(); participantManual = false; variantPicker.reset(); await refreshParticipantHistory(); renderControls();
   } });
   const presentation = createRunnerPresentation(root, { invoke, windowObject, isActive: () => protocol.active });
   const questionnaireKeyboard = createQuestionnaireKeyboard(query("runner-questionnaire-form"), {
@@ -71,7 +72,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     commit: commitQuestionnaireDraft,
   });
   const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
+  const variantPicker = createVariantPicker(root, { onChange: () => { invalidate(); refreshTimeline(); } });
   const participantPicker = createParticipantPicker(root, { onChange: commit => {
+    participantManual = true; variantPicker.participant(participantPicker.participantId);
     invalidate(); refreshTimeline();
     if (commit && participantPicker.participantId) retainParticipant().catch(fail);
   } });
@@ -124,7 +127,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
     clearQuestionnaire();
     questionnaireKeyboard.destroy();
-    listeners.forEach((remove) => remove()); participantPicker.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
+    listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
@@ -136,7 +139,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     // An armed recorder binds the recipe, then the attempt on activation. It
     // must not prevent the participant from completing the first form.
     query("runner-language-reset").disabled = busy || protocol.active;
-    participantPicker.lock(busy || protocol.active || !recipe);
+    participantPicker.lock(busy || protocol.active || recorder?.active === true || !recipe);
+    variantPicker.lock(locked || !recipe);
     root.querySelectorAll("[data-language-option]").forEach(element => { element.disabled = busy || protocol.active; });
     query("runner-language-reset").disabled ||= !recipe;
     query("runner-launch").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
@@ -151,6 +155,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-test").disabled = busy || protocol.active || !recipe || controllerSettings.overridden;
     query("runner-stop").disabled = busy || !protocol.active;
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
+    query("runner-record-start").disabled ||= Boolean(recipe?.recipe && (!participantPicker.participantId || !value("runner-variant")));
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
     query("runner-demographics").hidden = [2, 3].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
@@ -210,17 +215,28 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     return retentionQueue;
   }
   async function refreshParticipantHistory(restore = false) {
-    participantPicker.history(null);
+    participantPicker.history(null); variantPicker.history(null);
     if (!recipe || !workspace?.selected) return;
     const generation = revision;
     const result = await selectionReceipt();
     if (destroyed || generation !== revision) return;
-    if (restore) participantPicker.restore(result.participantId);
+    if (restore && !recipe.recipe) participantPicker.restore(result.participantId);
     if (recipe.recipe) {
       const listing = await invoke("research_runner_master_history", { workspaceId: workspace.workspaceId, sourceText: recipe.canonicalSourceText });
       if (destroyed || generation !== revision) return;
       if (listing?.schema !== "affect-runner-master-history" || listing.recipeSourceByteSha256 !== recipe.canonicalSourceByteSha256) throw new Error("Participant history belongs to another JSON.");
-      participantPicker.history(listing.participants); renderControls(); return;
+      const usage = await invoke("research_runner_variant_usage", { workspaceId: workspace.workspaceId, sourceText: recipe.canonicalSourceText });
+      if (destroyed || generation !== revision) return;
+      // Validate the entire inventory before it can select either field.
+      variantPicker.history(usage);
+      if (restore || !participantManual) {
+        participantPicker.restore(nextParticipant(usage.usedParticipantIds));
+        participantManual = false;
+      }
+      variantPicker.participant(participantPicker.participantId);
+      participantPicker.history([...listing.participants, ...usage.usedParticipantIds.map(participantId => ({ participantId, state: "used" }))]);
+      if (participantPicker.participantId) retainParticipant().catch(fail);
+      renderControls(); return;
     }
     const listing = await protocol.refreshRecoveries(workspace.workspaceId, recipe.canonicalSourceText);
     if (destroyed || generation !== revision) return;
@@ -232,7 +248,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
     selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
     clearQuestionnaire();
-    participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
+    participantManual = false; variantPicker.adopt(null); participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
     const candidate = await readRunnerRecipe(bytes);
     if (destroyed || generation !== revision) return false;
     recipe = candidate; path = [];
@@ -250,12 +266,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-questionnaire-submit").disabled=false;
     text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
     text("runner-preparation-title", [2, 3].includes(master?.version) ? "Experiment language" : "Participant details");
-    query("runner-variant-field").hidden = !master;
-    query("runner-variant").replaceChildren();
-    const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = "Choose variant…"; query("runner-variant").append(prompt);
-    if (master) for (const variant of master.segments.P3.variants) {
-      const option = document.createElement("option"); option.value = variant.variantId; option.textContent = variant.title; query("runner-variant").append(option);
-    }
+    variantPicker.adopt(candidate);
     const details = query("runner-recipe-details"); details.replaceChildren();
     for (const [label, detail] of master ? [
       ["Recipe", master.recipeId], ["SHA-256", candidate.canonicalSourceByteSha256],
@@ -490,7 +501,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   for (const id of ["runner-language-reset", "runner-preview-language-reset"]) listen(query(id), "click", () => { path = []; invalidate(); renderLanguage(); refreshTimeline(); });
   listen(query("runner-sequence-preview"), "click", () => { query("runner-sequence-dialog").showModal(); renderLanguage(); refreshTimeline(); });
   listen(query("runner-attempt"), "change", invalidate);
-  listen(query("runner-variant"), "change", () => { invalidate(); refreshTimeline(); });
   listen(query("runner-check"), "click", () => action(checkSession));
   listen(query("runner-test"), "click", () => action(async () => {
     query("runner-test-region").hidden = false; query("runner-test-region").scrollIntoView({ block: "center" }); query("runner-test-region").focus();
@@ -570,12 +580,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!discovery.streams.length) host.textContent = "No external streams found. Start the source application, then search again.";
   }));
   listen(query("runner-record-start"), "click", () => action(async () => {
-    const result = await invoke("research_recorder_start", { workspaceId: workspace.workspaceId, request: { experimentPackageSourceText: recipe.canonicalSourceText,
+    const recording = { experimentPackageSourceText: recipe.canonicalSourceText,
       recordOwn: query("runner-record-own").checked, discoveryRevision: discovery?.revision ?? null,
-      streamKeys: [...root.querySelectorAll("[data-stream-key]:checked")].map((item) => item.dataset.streamKey) } });
+      streamKeys: [...root.querySelectorAll("[data-stream-key]:checked")].map((item) => item.dataset.streamKey) };
+    const result = await invoke(recipe.recipe ? "research_recorder_start_v2" : "research_recorder_start", { workspaceId: workspace.workspaceId,
+      request: recipe.recipe ? { version: 2, participantId: participantId(), variantId: value("runner-variant"), recording } : recording });
     if (result) recorder = result; renderRecorder();
   }));
-  listen(query("runner-record-stop"), "click", () => action(async () => { recorder = await invoke("research_recorder_stop"); renderRecorder(); }));
+  listen(query("runner-record-stop"), "click", () => action(async () => { recorder = await invoke("research_recorder_stop"); participantManual = false; variantPicker.reset(); await refreshParticipantHistory(); renderRecorder(); }));
   listen(windowObject, "resize", () => action(async () => {
     if (protocol.active) {
       // Questionnaires intentionally hide the feedback surface. Its region is

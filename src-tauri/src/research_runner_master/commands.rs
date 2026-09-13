@@ -311,3 +311,25 @@ pub async fn research_runner_master_history(
     .await
     .map_err(|_| CommandError::forbidden("Master history scan did not finish."))?
 }
+
+#[tauri::command]
+pub async fn research_runner_variant_usage(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    workspace_id: String,
+    source_text: String,
+) -> ResearchResult<serde_json::Value> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.while_idle(|| {
+            workspace.with_workspace(&workspace_id, |root, _| {
+                super::variant_usage::usage(root, &source_text)
+            })
+        })
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("Version usage scan did not finish."))?
+}
