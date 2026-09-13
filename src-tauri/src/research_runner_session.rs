@@ -26,7 +26,7 @@ impl RunnerDocument {
         // Each owner validates its own complete version; no fallback or repair.
         let value = crate::research_planner_recipe::read_value(source.as_bytes())?;
         match value["schema"].as_str() {
-            Some("affect-research-planner-recipe") => Ok(Self::Master(Box::new(
+            Some("affect-research-planner-recipe" | "affect-research-planner-asset-bundle") => Ok(Self::Master(Box::new(
                 crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes(
                     source.as_bytes(),
                 )?,
@@ -69,12 +69,14 @@ impl RunnerDocument {
     pub(crate) fn ensure_directory(&self, root: &Path) -> ResearchResult<CheckedRunDirectory> {
         match self {
             Self::Package(p) => ensure_recipe_directory(root, p),
-            Self::Master(p) => ensure_source_directory(
-                root,
-                &p.canonical_source_byte_sha256,
-                &p.canonical_source_text,
-                "experiment.master.json",
-            ),
+            Self::Master(p) => {
+                let directory = ensure_source_directory(root, &p.canonical_source_byte_sha256,
+                    &p.canonical_source_text, "experiment.master.json")?;
+                if let crate::research_planner_recipe_supported::SupportedPlannerRecipe::V5(recipe) = &p.recipe {
+                    crate::research_planner_recipe_file::store_questionnaire_snapshots(&directory.path, &recipe.assets)?;
+                }
+                Ok(directory)
+            },
         }
     }
 }

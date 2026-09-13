@@ -1,4 +1,5 @@
 import { parsePlannerRecipeV1 } from "./planner-recipe.js";
+import { plannerRecipeContent } from "./planner-recipe-transport.js";
 
 const ORDER = Object.freeze(["P1", "P2", "P5", "P3", "P4", "P6", "policy", "presentationTarget"]);
 
@@ -35,12 +36,13 @@ export async function preparePlannerRecipeReopen(sourceText, { isCurrent, parseD
   requireCurrent();
   if (typeof sourceText !== "string") throw new TypeError("Recipe reopening requires canonical source text.");
   const document = await parseDocument(new TextEncoder().encode(sourceText));
+  const content = plannerRecipeContent(document);
   requireCurrent();
   let used = false;
   const contextFor = current => Object.freeze({ workspace: document.recipe.segments.P1,
     feedback: document.recipe.segments.P5, presentationTarget: document.recipe.presentationTarget, isCurrent: current });
-  const valueFor = name => structuredClone(name === "policy" ? document.recipe.policy : name === "presentationTarget"
-    ? document.recipe.presentationTarget : document.recipe.segments[name]);
+  const valueFor = name => structuredClone(name === "policy" ? content.policy : name === "presentationTarget"
+    ? content.presentationTarget : content.segments[name]);
   return Object.freeze({ document, isCurrent: current,
     /** Adapters call their domain's guarded content-only restore. For P3/P4,
      * obtain actual current dependencies at invocation, after P1/P5 restore;

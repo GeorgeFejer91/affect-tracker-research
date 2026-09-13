@@ -10,9 +10,9 @@ import { resolveMasterPlan } from "./master-recipe.js";
 export { resolveLanguageSelectionTraversalStepV1 };
 
 /** P7's complete dispatch preserves both independent strict readers. */
-export async function readRunnerRecipe(bytes) {
+export async function readRunnerRecipe(bytes, questionnaireAssets) {
   const { value } = readPlannerRecipeJsonBytes(bytes);
-  if (value?.schema === PLANNER_RECIPE_SCHEMA) return parseSupportedPlannerRecipe(bytes);
+  if ([PLANNER_RECIPE_SCHEMA, "affect-research-planner-asset-bundle"].includes(value?.schema)) return parseSupportedPlannerRecipe(bytes, questionnaireAssets);
   return (await parsePlannerRecipeFile(bytes)).document;
 }
 

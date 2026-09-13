@@ -354,7 +354,7 @@ impl MasterWorker {
         submitted: bool,
     ) -> ResearchResult<()> {
         use super::typed_forms::FormAnswerValue;
-        if !matches!(self.prepared.plan.version, 2..=4) {
+        if !matches!(self.prepared.plan.version, 2..=5) {
             return Err(invalid("Typed answers require master version 2, 3 or 4."));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
@@ -415,7 +415,7 @@ impl MasterWorker {
         page_no: u32,
         submitted: bool,
     ) -> ResearchResult<()> {
-        if self.prepared.plan.version != 4 {
+        if !matches!(self.prepared.plan.version, 4 | 5) {
             return Err(invalid("SurveyJS answers require master version 4."));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
@@ -461,7 +461,7 @@ impl MasterWorker {
         Ok(())
     }
     fn record_answers(&mut self, record: &mut Value, submitted: bool) -> ResearchResult<()> {
-        if self.prepared.plan.version == 4 {
+        if matches!(self.prepared.plan.version, 4 | 5) {
             record["version"] = json!(3);
         }
         record["runId"] = json!(self.state.run_id);

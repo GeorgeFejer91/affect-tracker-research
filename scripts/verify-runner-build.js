@@ -21,7 +21,7 @@ for (const theme of ["dark", "light"]) {
 const actualKinds = files.map(file => file === "index.html" ? file : file.replace(/^assets\/(professor-widget|input-widget|remote-widget|professor-qr|controller-qr|runner-symbol|app-symbol|flubber-input-dark|flubber-input-light|runner)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
 assert.deepEqual(actualKinds.sort(), expectedKinds.sort(), "Runner build must contain exactly the declared entry and referenced shared CSS assets.");
 const graph = await build({ entryPoints: [resolve(root, "runner/src/entry.js")], bundle: true, write: false, metafile: true, format: "esm", loader: { ".svg": "dataurl" }, logLevel: "silent" });
-const sharedRecipeReaders = new Set(["planner-recipe.js", "planner-recipe-wire.js", "planner-recipe-policy.js", "planner-recipe-questionnaires.js", "planner-recipe-reproduction.js"]);
+const sharedRecipeReaders = new Set(["planner-recipe.js", "planner-recipe-wire.js", "planner-recipe-policy.js", "planner-recipe-questionnaires.js", "planner-recipe-reproduction.js", "planner-recipe-assets.js", "planner-recipe-transport.js"]);
 for (const input of Object.keys(graph.metafile.inputs)) {
   if (sharedRecipeReaders.has(input.replaceAll("\\", "/").split("/").at(-1))) continue;
   assert.doesNotMatch(input.replaceAll("\\", "/"), /site\/src\/research\/(?:app|ui-view|native-bridge|runtime-bridge|planner-.+|.+-editor)\.js$/u, "Runner must not import Planner composition or editors.");

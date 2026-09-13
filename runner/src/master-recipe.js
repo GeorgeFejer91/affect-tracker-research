@@ -2,6 +2,7 @@ import { canonicalSha256 } from "../../site/src/research/canonical.js";
 import { reconstructPlannerRecipeSelectionV1, reconstructPlannerRecipeSelectionV2, reconstructPlannerRecipeSelectionV3, reconstructPlannerRecipeSelectionV4 } from "../../site/src/research/planner-recipe.js";
 import { resolveLanguageSelectionTraversalStepV1 } from "../../site/src/research/experiment-package.js";
 import { projectSavedVariantCatalogue, projectSupportedSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
+import { reconstructPlannerRecipeSelectionV5 } from "../../site/src/research/planner-recipe-assets.js";
 
 export function masterParticipantId(value) {
   if (!/^P[0-9]{3,6}$/u.test(value)) throw new Error("Select a participant number.");
@@ -15,11 +16,12 @@ export function masterParticipantId(value) {
 export async function resolveMasterPlan(receipt, participantId, path, variantId) {
   masterParticipantId(participantId);
   const recipe = receipt.recipe;
-  if (recipe.schema !== "affect-research-planner-recipe" || ![1, 2, 3, 4].includes(recipe.version)) throw new Error("Unsupported master recipe version.");
+  if (recipe.schema !== "affect-research-planner-recipe" || ![1, 2, 3, 4, 5].includes(recipe.version)) throw new Error("Unsupported master recipe version.");
   const route = resolveLanguageSelectionTraversalStepV1(recipe.segments.P2.languageSelection, path);
   if (route.kind !== "terminal") throw new Error("Complete the participant's language choices first.");
   const selector = { variantId, languageId: route.languageId, languageSelectionPath: [...path], presentationTarget: recipe.presentationTarget };
-  const selected = await ({1: reconstructPlannerRecipeSelectionV1, 2: reconstructPlannerRecipeSelectionV2, 3: reconstructPlannerRecipeSelectionV3, 4: reconstructPlannerRecipeSelectionV4}[recipe.version])(recipe, selector);
+  const selected = recipe.version === 5 ? await reconstructPlannerRecipeSelectionV5(receipt, selector)
+    : await ({1: reconstructPlannerRecipeSelectionV1, 2: reconstructPlannerRecipeSelectionV2, 3: reconstructPlannerRecipeSelectionV3, 4: reconstructPlannerRecipeSelectionV4}[recipe.version])(recipe, selector);
   if (selected.presentationTarget !== "desktop-screen") throw new Error("This master requires XR presentation. Desktop execution cannot substitute its desktop profile.");
   const variant = recipe.segments.P3.variants.find(v => v.variantId === variantId);
   const catalogue = await (recipe.version >= 3 ? projectSupportedSavedVariantCatalogue : projectSavedVariantCatalogue)(recipe.segments.P1);

@@ -80,7 +80,7 @@ impl MasterStorage {
         root: &Path, prepared: &PreparedMaster, run_id: &str, participant: Value,
         rerun_confirmed: bool, validation: bool,
     ) -> ResearchResult<Self> {
-        RunnerDocument::read(&prepared.loaded.canonical_source_text)?.ensure_directory(root)?;
+        RunnerDocument::read(&prepared.loaded.transport_text()?)?.ensure_directory(root)?;
         let directories = RunOutputDirectories::prepare(
             root,
             &recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?,
@@ -106,10 +106,13 @@ impl MasterStorage {
             "buildCommit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION"),
             "outputDirectory":format!("outputs/{}/{}/{}", recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?, prepared.plan.participant_id, session_name),
             "status":"prepared","completedStepCount":0});
-        if matches!(prepared.plan.version, 2..=4) {
+        if matches!(prepared.plan.version, 2..=5) {
             receipt.as_object_mut().unwrap().remove("participant");
         }
         if validation { receipt["executionQualification"] = super::information::validation_qualification(); }
+        if let crate::research_planner_recipe_supported::SupportedPlannerRecipe::V5(recipe) = &prepared.loaded.recipe {
+            crate::research_planner_recipe_file::store_questionnaire_snapshots(&session, &recipe.assets)?;
+        }
         write_new(
             &session.join("experiment.master.json"),
             prepared.loaded.canonical_source_text.as_bytes(),
@@ -131,7 +134,7 @@ impl MasterStorage {
                 "master-responses.v{}.jsonl",
                 match prepared.plan.version {
                     1 => 1,
-                    4 => 3,
+                    4 | 5 => 3,
                     _ => 2,
                 }
             ),

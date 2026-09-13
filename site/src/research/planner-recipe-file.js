@@ -1,6 +1,7 @@
 import { parsePlannerRecipeV1, parsePlannerRecipeFile, parseSupportedPlannerRecipe } from "./planner-recipe.js";
 import { MAX_PLANNER_RECIPE_BYTES, PLANNER_RECIPE_SCHEMA, readPlannerRecipeJsonBytes, exactRecipeObject } from "./planner-recipe-wire.js";
 import { plannerRecipeFilename } from "./planner-recipe-filename.js";
+import { readBrowserPlannerAssets, prepareBrowserPlannerAssetSave } from "./planner-asset-browser-files.js";
 
 const encoder = new TextEncoder();
 const TYPES = [{ description: "Experiment recipe JSON", accept: { "application/json": [".json"] } }];
@@ -43,10 +44,10 @@ export function openBrowserPlannerRecipeFile(options) {
 }
 
 export function openSupportedBrowserPlannerRecipeFile(options) {
-  return openBrowserRecipeFile(options, async bytes => {
+  return openBrowserRecipeFile(options, async (bytes, handle, requireCurrent) => {
     const { value } = readPlannerRecipeJsonBytes(bytes);
     if (value.schema === PLANNER_RECIPE_SCHEMA) {
-      const document = await parseSupportedPlannerRecipe(bytes);
+      const document = value.version === 5 ? await readBrowserPlannerAssets(bytes, handle, options.rootHandle, requireCurrent) : await parseSupportedPlannerRecipe(bytes);
       return Object.freeze({ kind: `planner-recipe-v${document.recipe.version}`, document });
     }
     // The old dispatcher retains sole legacy-package validation authority.
@@ -65,7 +66,7 @@ function openBrowserRecipeFile({ isCurrent, pickOpenFile = globalThis.showOpenFi
     requireCurrent();
     if (!Array.isArray(handles) || handles.length !== 1) throw new TypeError("Select exactly one recipe file.");
     const bytes = await readFileBytes(handles[0]); requireCurrent();
-    const result = await parseFile(bytes); requireCurrent();
+    const result = await parseFile(bytes, handles[0], requireCurrent); requireCurrent();
     return result;
   }, error => { if (error?.name === "AbortError") return null; throw error; });
 }
@@ -82,12 +83,16 @@ export function prepareSupportedBrowserPlannerRecipeSave(sourceText, options) {
 }
 
 async function prepareBrowserRecipeSave(sourceText, {
-  isCurrent, pickSaveFile = globalThis.showSaveFilePicker?.bind(globalThis),
+  isCurrent, pickSaveFile = globalThis.showSaveFilePicker?.bind(globalThis), pickDirectory,
 }, parseDocument) {
   const requireCurrent = currentGuard(isCurrent);
   requireCurrent();
   if (typeof sourceText !== "string" || encoder.encode(sourceText).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new TypeError("Invalid Planner recipe save source.");
   const expected = await parseDocument(encoder.encode(sourceText)); requireCurrent();
+  if (expected.recipe.version === 5) return prepareBrowserPlannerAssetSave(expected, { requireCurrent, pickDirectory,
+    receipt: observed => validatePlannerRecipeSaveReceipt({ schema: PLANNER_RECIPE_SAVE_RECEIPT_SCHEMA, version: 1,
+      recipeId: observed.recipe.recipeId, definitionSha256: observed.recipe.integrity.definitionSha256,
+      canonicalSourceByteSha256: observed.canonicalSourceByteSha256, byteLength: encoder.encode(observed.canonicalSourceText).length }, expected) });
   const sourceBytes = encoder.encode(expected.canonicalSourceText);
   let busy = false;
   return Object.freeze({ recipeId: expected.recipe.recipeId, byteLength: sourceBytes.byteLength, expected,

@@ -18,7 +18,7 @@ pub(crate) fn bind_master_media(
     prepared: &PreparedMaster,
 ) -> ResearchResult<Vec<MasterVideoBinding>> {
     let catalogue = &prepared.loaded.recipe.segment("P1")?["videoCatalogue"];
-    match if prepared.plan.version == 4 {
+    match if matches!(prepared.plan.version, 4 | 5) {
         if prepared.loaded.recipe.segment("P1")?["version"] == 3 {
             3
         } else {

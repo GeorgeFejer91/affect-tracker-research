@@ -1,3 +1,4 @@
+import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
 import { commandFailure } from "./planner-authoring-contract.js";
 import { NativeCatalogueFailure } from "./media-catalogue-error.js";
 
@@ -19,7 +20,7 @@ export function createPlannerCore9Composition(host) {
         let basename = null;
         const result = await prepared.dispatch({ ...publication,
           write: async document => {
-            const saved = await effect({ type: "writeRecipe", grantId: args.directory, sourceText: document.canonicalSourceText }, publication);
+            const saved = await effect({ type: "writeRecipe", grantId: args.directory, sourceText: plannerRecipeTransportText(document) }, publication);
             basename = saved.basename; return saved.receipt;
           },
         });

@@ -272,7 +272,7 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="package-language-tree"/u);
   assert.doesNotMatch(markup, /id="package-language-route"/u);
   assert.doesNotMatch(markup, /id="package-file-input"/u);
-  assert.match(source, /openSupportedBrowserPlannerRecipeFile\(options\)/u);
+  assert.match(source, /openSupportedBrowserPlannerRecipeFile\(\{ \.\.\.options, rootHandle: workspace\?\.rootHandle \}\)/u);
   assert.match(source, /documentAdapter: \{\s*parseDocument: parseSupportedPlannerRecipe/u);
   assert.match(source, /openLegacy: applyExperimentPackageReceipt/u);
   assert.match(source, /packageSaveDialog\.request\(parsed\.canonicalSourceText/u);

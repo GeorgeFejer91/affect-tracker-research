@@ -4,7 +4,8 @@ import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
 import { SURVEYJS_DEFINITION_SCHEMA, importSurveyJson, verifySurveySupportedDefinition as verifyP2Definition } from "./surveyjs-definition.js";
 import { prepareSurveySourceStorage } from "./surveyjs-sheet.js";
 import { QUESTIONNAIRE_HOOKS_V4_ALGORITHM_VERSION } from "./questionnaire-recipe-v2.js";
-import { compilePlannerRecipeV4 } from "./planner-recipe.js";
+import { compilePlannerAssetDocument } from "./planner-recipe-assets.js";
+import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
 import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { withPlannerCore9 } from "./planner-authoring-core9.js";
 import { createPlannerCore9Composition } from "./planner-core9-composition.js";
@@ -85,7 +86,7 @@ import { createPackageExportController } from "./package-export-controller.js";
 import { createPackageSaveDialog } from "./package-save-dialog.js";
 import { prepareBrowserPackageSave } from "./package-file-picker.js";
 import { openSupportedBrowserPlannerRecipeFile, prepareSupportedBrowserPlannerRecipeSave } from "./planner-recipe-file.js";
-import { parseSupportedPlannerRecipe, compilePlannerRecipeV1, compilePlannerRecipeV2, compilePlannerRecipeV3 } from "./planner-recipe.js";
+import { parseSupportedPlannerRecipe } from "./planner-recipe.js";
 import { createPlannerFileWorkflow } from "./planner-file-workflow.js";
 import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { parsePlannerTargetSelection } from "./planner-target.js";
@@ -332,7 +333,7 @@ function bindResearchInteractions(root, { surface }) {
   const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root, {
     prepareSave: async (sourceText, options) => {
       const schema = JSON.parse(sourceText).schema;
-      return schema === "affect-research-planner-recipe" ? prepareSupportedBrowserPlannerRecipeSave(sourceText, options)
+      return ["affect-research-planner-recipe", "affect-research-planner-asset-bundle"].includes(schema) ? prepareSupportedBrowserPlannerRecipeSave(sourceText, options)
         : prepareBrowserPackageSave(sourceText, options);
     },
   }) : null;
@@ -433,8 +434,8 @@ function bindResearchInteractions(root, { surface }) {
       presentationTarget: (value, context) => restorePlannerPresentationTarget(value, { isCurrent: context.isCurrent }),
     },
     write: (document, options) => surface === "tauri"
-      ? requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: document.canonicalSourceText })
-      : packageSaveDialog.request(document.canonicalSourceText, options),
+      ? requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: plannerRecipeTransportText(document) })
+      : packageSaveDialog.request(plannerRecipeTransportText(document), options),
     onChange: () => renderPackageReceipt(),
   });
   let browserPackageRoot = null;
@@ -4347,7 +4348,7 @@ function bindResearchInteractions(root, { surface }) {
     // carries no authorization for its declared media or local root.
     void plannerFileWorkflow.open(options => surface === "tauri"
       ? requestPlannerFile(root, PLANNER_LOAD_REQUEST)
-      : openSupportedBrowserPlannerRecipeFile(options), { openLegacy: applyExperimentPackageReceipt })
+      : openSupportedBrowserPlannerRecipeFile({ ...options, rootHandle: workspace?.rootHandle }), { openLegacy: applyExperimentPackageReceipt })
       .then(result => {
         if (result === null) announce("Open cancelled. The current design is preserved.");
         else if (result && experimentPackageDocument?.recipe) announce("Recipe opened for editing. Rebind and verify its video folder before changing and confirming media-dependent sections. An unchanged copy can be saved without granting media access.");
@@ -6141,10 +6142,7 @@ function bindResearchInteractions(root, { surface }) {
     observedContributions = packageContributionFingerprint;
   }
   async function compileSupportedRecipeDocument(input) {
-    const compile = ({ 1: compilePlannerRecipeV1, 2: compilePlannerRecipeV2, 3: compilePlannerRecipeV3, 4: compilePlannerRecipeV4 })[input.version];
-    if (!compile) throw new TypeError("Unsupported Planner recipe version.");
-    const recipe = await compile(input);
-    return parseSupportedPlannerRecipe(new TextEncoder().encode(`${canonicalJson(recipe)}\n`));
+    return compilePlannerAssetDocument(input);
   }
   async function prepareQuestionnaireRestoration(contribution, context) {
     const prepared = await questionnaireEditor.prepareRestoreRecipe(contribution, context);

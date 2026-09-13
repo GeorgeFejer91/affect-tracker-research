@@ -5682,3 +5682,14 @@ new native list/load endpoint exposes opaque IDs and labels only. Auto-load uses
 existing exactaccept/projectroot/confirm and never starts playback/recording.
 [Handoff](../docs/runner-recent-files.md). No Cargo/SDK hold. Root owns installed
 collection; this branch includes preselection dependency05c6307.
+
+## Questionnaire assets and minimal builder — 2026-09-13
+
+Direct user allocation, isolated codex/segment-contracts-questionnaire-assets
+from3b5584e. Backend Verification: master5/P2v4 manifest, raw SurveyJS assets,
+guarded native/browser save/Open, historical readers, frozen Runner files and
+startup5 evidence. Plan5 binds the manifest source; selected content retains
+master4 semantic identity. P7 primary with P2/Runner shared seams; user then
+allocated P2 SurveyJS presets, Excel paste, arrangement and preview popup.
+Chat Orchestrator notified; main is untouched and no work delegated.
+Evidence and remaining boundaries: docs/planner-questionnaire-assets.md.

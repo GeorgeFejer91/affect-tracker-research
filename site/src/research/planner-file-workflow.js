@@ -2,6 +2,7 @@ import { capturePlannerRecipeInputV1 } from "./planner-recipe-capture.js";
 import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1 } from "./planner-recipe.js";
 import { preparePlannerRecipeReopen } from "./planner-recipe-restore.js";
 import { validatePlannerRecipeSaveReceipt } from "./planner-recipe-file.js";
+import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
 
 /** P7 composition only. The application retains the sole immutable document;
  * this coordinator stores operation/edit identities, never a second recipe.
@@ -113,7 +114,7 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
       const copy = canCopy() ? getDocument() : null;
       let feedback = null, capture = null, document;
       if (copy) {
-        document = await parseDocument(new TextEncoder().encode(copy.canonicalSourceText));
+        document = await parseDocument(new TextEncoder().encode(plannerRecipeTransportText(copy)));
         if (document.canonicalSourceText !== copy.canonicalSourceText
           || document.canonicalSourceByteSha256 !== copy.canonicalSourceByteSha256) {
           throw new TypeError("Unchanged recipe validation did not preserve the exact source.");
@@ -194,10 +195,10 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
           source = null;
           return await openLegacy(selected.document, { guard: current });
         }
-        if (selected?.kind !== "planner-recipe-v1" && !(documentAdapter && ["planner-recipe-v2", "planner-recipe-v3"].includes(selected?.kind))) {
+        if (selected?.kind !== "planner-recipe-v1" && !(documentAdapter && ["planner-recipe-v2", "planner-recipe-v3", "planner-recipe-v4", "planner-recipe-v5"].includes(selected?.kind))) {
           throw new TypeError("Unsupported recipe file type.");
         }
-        const prepared = await preparePlannerRecipeReopen(selected.document.canonicalSourceText, { isCurrent: current, parseDocument: parseGuiDocument });
+        const prepared = await preparePlannerRecipeReopen(plannerRecipeTransportText(selected.document), { isCurrent: current, parseDocument: parseGuiDocument });
         if (selected.kind !== `planner-recipe-v${prepared.document.recipe.version}`) throw new TypeError("Recipe file type does not match its validated version.");
         const document = await prepared.apply({ ...restoreOwners,
           begin() { source = null; exporter.invalidate(); registry.clearAcceptance(); restoreOwners.begin(); },
@@ -224,7 +225,7 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
       return exporter.save({ isCurrent: valid,
         async compile() {
           if (copy) {
-            const checked = await parseGuiDocument(new TextEncoder().encode(copy.canonicalSourceText));
+            const checked = await parseGuiDocument(new TextEncoder().encode(plannerRecipeTransportText(copy)));
             if (checked.canonicalSourceText !== copy.canonicalSourceText
               || checked.canonicalSourceByteSha256 !== copy.canonicalSourceByteSha256) {
               throw new TypeError("Unchanged recipe validation did not preserve the exact source.");

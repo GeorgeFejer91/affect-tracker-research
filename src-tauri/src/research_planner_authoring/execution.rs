@@ -174,7 +174,7 @@ impl PlannerAuthoringBroker {
                     "byteLength":loaded.canonical_source_text.len()}),
                     false,
                 );
-                result.payload = json!({"sourceText":loaded.canonical_source_text,"sourceSha256":loaded.canonical_source_byte_sha256,
+                result.payload = json!({"sourceText":loaded.transport_text()?,"sourceSha256":loaded.canonical_source_byte_sha256,
                     "byteLength":loaded.canonical_source_text.len()});
                 return Ok(());
             }

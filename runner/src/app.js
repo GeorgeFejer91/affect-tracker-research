@@ -1,4 +1,5 @@
 import { runnerMarkup } from "./view.js";
+import { plannerRecipeTransportText } from "../../site/src/research/planner-recipe-transport.js";
 import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState } from "./recipe.js";
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
 import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
@@ -151,7 +152,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       current.answers = Object.fromEntries(result.answers.map(row => [row.itemId, row.value]));
       text("runner-questionnaire-progress", current.presenter.progress().text);
     } else {
-      const choices = [2, 3, 4].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
+      const choices = [2, 3, 4, 5].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
         if (answer?.kind !== "singleChoice") throw new Error("This questionnaire requires a declared choice.");
         return [id, answer.optionId];
       })) : current.answers;
@@ -271,7 +272,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
-    query("runner-validation").disabled = locked || recipe?.recipe?.version !== 3;
+    query("runner-validation").disabled = locked || ![3, 5].includes(recipe?.recipe?.version);
     recentFiles.lock(locked);
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
@@ -286,7 +287,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-sequence-preview").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
     query("runner-preview-language-reset").disabled = busy || protocol.active || !recipe;
     query("runner-prepare").disabled = busy || protocol.active || !recipe;
-    query("runner-prepare").hidden = [2, 3, 4].includes(recipe?.recipe?.version);
+    query("runner-prepare").hidden = [2, 3, 4, 5].includes(recipe?.recipe?.version);
     for (const id of ["runner-professor", "runner-controller", "runner-remote", "runner-settings", "runner-preparation-settings", "runner-back"]) query(id).disabled = busy || protocol.active;
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
@@ -295,7 +296,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-start").disabled ||= Boolean(recipe?.recipe && (!participantPicker.participantId || !value("runner-variant")));
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
-    query("runner-demographics").hidden = [2, 3, 4].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
+    query("runner-demographics").hidden = [2, 3, 4, 5].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
       const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
       questionnaire.presenter?.setDisabled(disabled);
@@ -315,7 +316,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4, 5].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
     }
     }
     renderControls();
@@ -344,7 +345,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }
   async function selectionReceipt(id = null, currentRecipe = recipe, currentWorkspace = workspace) {
     if (!currentRecipe || !currentWorkspace?.selected) throw new Error("Select the experiment’s project folder to retain its participant number.");
-    const result = await invoke("research_runner_selection", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText, participantId: id });
+    const result = await invoke("research_runner_selection", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe), participantId: id });
     if (result?.schema !== "affect-runner-selection" || result.version !== 1 || result.packageSourceByteSha256 !== currentRecipe.canonicalSourceByteSha256 || (id !== null && result.participantId !== id)) throw new Error("Native participant receipt does not match this JSON and selection.");
     if (!destroyed && recipe === currentRecipe && workspace === currentWorkspace) text("runner-output-directory", `Experiment output folder: ${result.outputDirectory}`);
     return result;
@@ -362,10 +363,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (destroyed || generation !== revision) return;
     if (restore && !recipe.recipe) participantPicker.restore(result.participantId);
     if (recipe.recipe) {
-      const listing = await invoke("research_runner_master_history", { workspaceId: workspace.workspaceId, sourceText: recipe.canonicalSourceText });
+      const listing = await invoke("research_runner_master_history", { workspaceId: workspace.workspaceId, sourceText: plannerRecipeTransportText(recipe) });
       if (destroyed || generation !== revision) return;
       if (listing?.schema !== "affect-runner-master-history" || listing.recipeSourceByteSha256 !== recipe.canonicalSourceByteSha256) throw new Error("Participant history belongs to another JSON.");
-      const usage = await invoke("research_runner_variant_usage", { workspaceId: workspace.workspaceId, sourceText: recipe.canonicalSourceText });
+      const usage = await invoke("research_runner_variant_usage", { workspaceId: workspace.workspaceId, sourceText: plannerRecipeTransportText(recipe) });
       if (destroyed || generation !== revision) return;
       // Validate the entire inventory before it can select either field.
       variantPicker.history(usage);
@@ -405,7 +406,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelector(".stimulus-stage").hidden=false;root.querySelector(".run-feedback-stage").hidden=false;
     query("runner-questionnaire-submit").disabled=false;
     text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
-    text("runner-preparation-title", [2, 3, 4].includes(master?.version) ? "Experiment language" : "Participant details");
+    text("runner-preparation-title", [2, 3, 4, 5].includes(master?.version) ? "Experiment language" : "Participant details");
     variantPicker.adopt(candidate);
     const details = query("runner-recipe-details"); details.replaceChildren();
     for (const [label, detail] of master ? [
@@ -444,13 +445,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     preflight = null; inputReceipt = null;
     const candidate = await resolveRunnerSelection(currentRecipe, participantId(), path, value("runner-variant"));
     if (currentRecipe.recipe) {
-      const native = await invoke("research_runner_master_plan", { sourceText: currentRecipe.canonicalSourceText,
+      const native = await invoke("research_runner_master_plan", { sourceText: plannerRecipeTransportText(currentRecipe),
         participantId: participantId(), selector: candidate.selector });
       if (destroyed || generation !== revision) return;
       assertMasterPlanParity(candidate, native);
       selection = candidate;
       text("runner-preflight", `Master interpreted: ${native.steps.length} ordered events. Verifying media…`);
-      const scan = await invoke("research_runner_master_rescan", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText });
+      const scan = await invoke("research_runner_master_rescan", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe) });
       if (destroyed || generation !== revision) return;
       if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Master media scan belongs to another workspace.");
       if (!await requireNativeMediaReady(generation)) return;
@@ -458,7 +459,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
       if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
       const validation = query("runner-validation").checked;
-      const preflightResponse = await invoke(validation ? "research_runner_master_validation_preflight" : "research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText,
+      const preflightResponse = await invoke(validation ? "research_runner_master_validation_preflight" : "research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe),
         participantId: participantId(), selector: candidate.selector } });
       if (destroyed || generation !== revision) return;
       if (validation && (preflightResponse.schema !== "affect-runner-validation-preflight" || preflightResponse.version !== 1)) throw new Error("Invalid validation preflight receipt.");
@@ -478,7 +479,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       text("runner-preflight", "Pending output can be finalized without starting acquisition."); return;
     }
     text("runner-preflight", "Verifying complete video files and native decode…");
-    const scan = await invoke("research_rescan_package_stimuli", { workspaceId: currentWorkspace.workspaceId, sourceText: currentRecipe.canonicalSourceText });
+    const scan = await invoke("research_rescan_package_stimuli", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe) });
     if (destroyed || generation !== revision) return;
     if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Media scan belongs to a different project folder.");
     if (!await requireNativeMediaReady(generation)) return;
@@ -604,13 +605,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await retainParticipant();
     text("runner-selected-participant", `Participant ${participantLabel(participantId())}`);
     invalidate(); await invoke("research_input_cancel_setup");
-    if ([2, 3, 4].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
+    if ([2, 3, 4, 5].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
     await presentation.enter();
   }));
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   const prepareAttempt = () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
-    if (![2, 3, 4].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
+    if (![2, 3, 4, 5].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
   });
@@ -655,7 +656,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const receipt = loaded.document;
     workspace = loaded.workspace ?? await invoke("research_workspace_status");
     text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
-    const adopted = await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
+    const adopted = await adoptRecipe(new TextEncoder().encode(plannerRecipeTransportText(receipt)));
     if (destroyed || adopted === false) return;
     if (recipe?.canonicalSourceByteSha256 !== receipt.canonicalSourceByteSha256) { invalidate(); recipe = null; throw new Error("Native and frontend package bytes disagree."); }
     try { await invoke("research_runner_previous_experiment", { action: "confirm", sourceSha256: receipt.canonicalSourceByteSha256 }); await refreshRecentFiles(); }
@@ -690,12 +691,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
-    const participant = ![2, 3, 4].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
+    const participant = ![2, 3, 4, 5].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
-      const request = {workspaceId:workspace.workspaceId,sourceText:recipe.canonicalSourceText,selector:selection.selector,
+      const request = {workspaceId:workspace.workspaceId,sourceText:plannerRecipeTransportText(recipe),selector:selection.selector,
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
-      if ([2, 3, 4].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
+      if ([2, 3, 4, 5].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
       else request.participant = {participantId:participantId(),...participant};
       await masterProtocol.start(selection, request, {validation:query("runner-validation").checked});
       inputReceipt=null; renderControls(); return;
@@ -710,7 +711,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   async function commitQuestionnaireDraft(target) {
     const current = questionnaire;
     if (!current || busy || (!target.dataset.answerItem && !target.dataset.formItem)) return false;
-    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4].includes(current.version)
+    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4, 5].includes(current.version)
       ? {kind:"singleChoice",optionId:target.value} : target.value;
     let accepted = false;
     await action(async () => {
@@ -763,7 +764,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!discovery.streams.length) host.textContent = "No external streams found. Start the source application, then search again.";
   }));
   listen(query("runner-record-start"), "click", () => action(async () => {
-    const recording = { experimentPackageSourceText: recipe.canonicalSourceText,
+    const recording = { experimentPackageSourceText: plannerRecipeTransportText(recipe),
       recordOwn: query("runner-record-own").checked, discoveryRevision: discovery?.revision ?? null,
       streamKeys: [...root.querySelectorAll("[data-stream-key]:checked")].map((item) => item.dataset.streamKey) };
     const result = await invoke(recipe.recipe ? "research_recorder_start_v2" : "research_recorder_start", { workspaceId: workspace.workspaceId,

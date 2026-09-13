@@ -56,6 +56,20 @@ pub struct MasterStartRequestV3(pub MasterStartRequestV2);
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
 pub struct MasterStartRequestV4(pub MasterStartRequestV2);
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+pub struct MasterStartRequestV5(pub MasterStartRequestV2);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterActionRequestV5 {
+    pub version: u32,
+    pub run_id: String,
+    pub action: MasterActionV4,
+}
+impl MasterActionRequestV5 {
+    pub(crate) fn validate(&self) -> ResearchResult<()> { require_wire_version(self.version, 5) }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -157,6 +171,14 @@ pub struct MasterValidationStartRequest {
     pub version: u32,
     pub acknowledge_unqualified: bool,
     pub experiment: MasterStartRequestV3,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterValidationStartRequestV5 {
+    pub version: u32,
+    pub acknowledge_unqualified: bool,
+    pub experiment: MasterStartRequestV5,
 }
 
 struct StartInput {
@@ -385,6 +407,10 @@ impl MasterRuntime {
         require_wire_version(request.0.version, 4)?;
         self.start_typed(request.0, window)
     }
+    pub fn start_v5(&self, request: MasterStartRequestV5, window: (u32, u32, f64)) -> ResearchResult<Value> {
+        require_wire_version(request.0.version, 5)?;
+        self.start_typed(request.0, window)
+    }
     fn start_typed(
         &self,
         request: MasterStartRequestV2,
@@ -397,6 +423,16 @@ impl MasterRuntime {
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         require_wire_version(request.experiment.0.version, 3)?;
+        if !request.acknowledge_unqualified {
+            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+        }
+        self.start_typed_mode(request.experiment.0, window, true)
+    }
+    pub fn start_validation_v5(
+        &self, request: MasterValidationStartRequestV5, window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.version, 1)?;
+        require_wire_version(request.experiment.0.version, 5)?;
         if !request.acknowledge_unqualified {
             return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
         }
@@ -453,6 +489,9 @@ impl MasterRuntime {
                 ));
             }
             let viewport = native_viewport(&prepared, window)?;
+            self.workspace.with_workspace(&request.workspace_id, |root, _| {
+                crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(root, &prepared.loaded)
+            })?;
             let bindings = super::bindings::bind_master_media(
                 &self.workspace,
                 &request.workspace_id,

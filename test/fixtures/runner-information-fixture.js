@@ -4,6 +4,7 @@ import { canonicalJson, canonicalSha256, sha256Hex } from "../../site/src/resear
 import { readRunnerRecipe, resolveRunnerSelection } from "../../runner/src/recipe.js";
 import { checkSurveyData, surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { compilePlannerRecipeV4, serializePlannerRecipeV4 } from "../../site/src/research/planner-recipe.js";
+import { externalizePlannerRecipe } from "../../site/src/research/planner-recipe-assets.js";
 
 // Independent test encoder. Production publication is Rust-owned.
 export async function frameRecords(records, context = { runId: "run-test", attemptId: "attempt-test", recipeSourceByteSha256: "a".repeat(64) }) {
@@ -18,10 +19,11 @@ export async function frameRecords(records, context = { runId: "run-test", attem
   return samples;
 }
 
-export async function informationFixture({ surveyJs = false } = {}) {
+export async function informationFixture({ surveyJs = false, manifestAssets = false } = {}) {
   let bytes = await readFile(new URL(surveyJs ? "./planner-recipe-v4-surveyjs.canonical.json" : "./runner-master-lsl-synthetic-v1.canonical.json", import.meta.url));
   if (surveyJs) { const { integrity, ...core } = JSON.parse(bytes); core.policy.lsl.enabled = true; bytes = new TextEncoder().encode(await serializePlannerRecipeV4(await compilePlannerRecipeV4(core))); }
-  const receipt = await readRunnerRecipe(bytes);
+  const embedded = await readRunnerRecipe(bytes);
+  const receipt = manifestAssets ? await externalizePlannerRecipe(embedded) : embedded;
   const plan = await resolveRunnerSelection(receipt, "P001", ["both", "en"], surveyJs ? "variant-1" : "variant-3");
   const context = { runId: "run-test", attemptId: "attempt-test", recipeSourceByteSha256: plan.recipeSourceByteSha256 };
   const execution = structuredClone(plan.selected.markerProfile); execution.entries = [];
@@ -36,6 +38,7 @@ export async function informationFixture({ surveyJs = false } = {}) {
   const records = [{ kind: "startup", value: { schema: "affect-runner-startup", version: 1, recipeSourceText: receipt.canonicalSourceText, recipeSourceByteSha256: plan.recipeSourceByteSha256, planIdentitySha256: plan.planIdentitySha256, participantId: plan.participantId, selector: plan.selector, markerProfile: profile, effectiveLsl: lsl, legacyCodedParticipant: { participantId: "P001", participantCode: "TP", age: 30, gender: "X", handedness: "R" }, build: { commit: "a".repeat(40), appVersion: "test" } } }];
   let sequence = 0, time = 0;
   if (surveyJs) { records[0].value.version = 4; delete records[0].value.legacyCodedParticipant; }
+  if (manifestAssets) { records[0].value.version = 5; records[0].value.questionnaireAssets = structuredClone(receipt.questionnaireAssets); }
   const observe = (eventType, step = null) => records.push({ kind: "observation", value: { schema: "affect-research-marker", version: 1, recipeSha256: execution.recipeSha256, runId: context.runId, attemptId: context.attemptId, variantId: execution.variantId, variantVersionSha256: execution.variantVersionSha256, sequence: ++sequence, eventType, entryId: step?.entryId ?? null, executionId: step ? `execution-${step.position}` : null, sourceCode: step ? execution.entries[step.position - 1].sourceCode : null, monotonicMs: time } });
   observe("sessionStart");
   for (const step of plan.steps) {

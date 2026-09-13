@@ -1,5 +1,17 @@
 # Planner JSON and Runner compatibility contract
 
+## Questionnaire asset amendment — 2026-09-13
+
+Direct user approval changes fresh Planner saves to a master5 manifest and
+separate questionnaire files. P7 owns this contract pass (P7-02/04/05/06/09),
+with named P2-04/08 and Runner intake/evidence seams. Historical master1–4
+readers and unchanged copies remain strict and byte-preserving. See
+[the asset contract](../docs/planner-questionnaire-assets.md).
+The follow-up user allocation is P2-03/04/07/08: MAIA-2, researcher-local TAS and
+demographics save as SurveyJS. A minimal element arrangement box retains Excel
+table paste and opens an interactive participant-preview popup. No free-position
+canvas, changed instrument wording or new computed scoring is requested.
+
 ## SurveyJS producer/consumer extension — 2026-09-13
 
 Master v4 explicitly accepts P2 v3 (full SurveyJS definitions, hooks v4,

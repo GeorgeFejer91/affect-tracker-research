@@ -29,6 +29,7 @@ pub mod research_planner_recipe_supported;
 pub mod research_planner_recipe_v2;
 pub mod research_planner_recipe_v3;
 pub mod research_planner_recipe_v4;
+pub mod research_planner_recipe_v5;
 mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
@@ -311,13 +312,16 @@ fn launch(
             research_runner_master::commands::research_runner_master_start_v2,
             research_runner_master::commands::research_runner_master_start_v3,
             research_runner_master::commands::research_runner_master_validation_start,
+            research_runner_master::commands::research_runner_master_validation_start_v5,
             research_runner_master::commands::research_runner_master_validation_preflight,
             research_runner_master::commands::research_runner_master_start_v4,
+            research_runner_master::commands::research_runner_master_start_v5,
             research_runner_master::commands::research_runner_master_status,
             research_runner_master::commands::research_runner_master_action,
             research_runner_master::commands::research_runner_master_action_v2,
             research_runner_master::commands::research_runner_master_action_v3,
             research_runner_master::commands::research_runner_master_action_v4,
+            research_runner_master::commands::research_runner_master_action_v5,
             research_runner_master::commands::research_runner_master_history,
             research_runner_master::commands::research_runner_variant_usage,
             research_desktop::research_runner_fullscreen,
