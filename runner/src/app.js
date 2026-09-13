@@ -29,6 +29,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
+  const now = () => windowObject.performance?.now?.() ?? Date.now();
+  const animationFrame = () => new Promise(resolve => windowObject.requestAnimationFrame(resolve));
   const listeners = [];
   const listen = (element, event, fn) => { element.addEventListener(event, fn); listeners.push(() => element.removeEventListener(event, fn)); };
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
@@ -36,6 +38,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
   let recentExperiments = null, participantManual = false;
   let focusAfterAction = null;
+  let setupScrollQuietUntil = 0;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -110,6 +113,17 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     questionnaireKeyboard.reset();
     questionnaire?.presenter?.destroy();
     questionnaire = null;
+  }
+  async function prepareInputTestRegion() {
+    const region = query("runner-test-region");
+    region.hidden = false;
+    setupScrollQuietUntil = now() + 1500;
+    region.scrollIntoView({ block: "center", behavior: "instant" });
+    await animationFrame();
+    await animationFrame();
+    try { region.focus({ preventScroll: true }); } catch { region.focus(); }
+    await animationFrame();
+    await animationFrame();
   }
   function questionnaireDetail(current, allowPartial) {
     if (current.presenter) {
@@ -517,8 +531,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-attempt"), "change", invalidate);
   listen(query("runner-check"), "click", () => action(checkSession));
   listen(query("runner-test"), "click", () => action(async () => {
-    query("runner-test-region").hidden = false; query("runner-test-region").scrollIntoView({ block: "center" }); query("runner-test-region").focus();
-    await new Promise(resolve => windowObject.requestAnimationFrame(() => windowObject.requestAnimationFrame(resolve)));
+    await prepareInputTestRegion();
     await setRegion(query("runner-test-region"), "setupTest"); await invoke("research_input_begin_test", { binding: runnerInput(recipe) });
   }));
   listen(query("runner-test-region"), "keydown", event => {
@@ -631,6 +644,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }));
   listen(root.querySelector(".runner-sidebar"), "scroll", () => {
     if (busy || protocol.active || !recipe || query("runner-test-region").hidden) return;
+    if (now() < setupScrollQuietUntil) return;
     revision += 1; inputReceipt = null;
     action(async () => { await invoke("research_input_cancel_setup"); text("runner-input-status", "The test region moved. Test the configured input again."); });
   });
