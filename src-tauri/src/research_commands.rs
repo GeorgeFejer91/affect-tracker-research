@@ -748,6 +748,13 @@ pub fn research_input_begin_test(
     binding: InputBindingV1,
 ) -> ResearchResult<NativeInputStatus> {
     authorize(&window)?;
+    // Reconcile startup/WebView focus before granting a test. The native
+    // window query is authoritative; the renderer cannot assert focus.
+    let focused = window.is_focused().map_err(CommandError::io)?;
+    input.set_window_focused(focused);
+    if !focused {
+        return Err(CommandError::forbidden("Focus the experiment window before testing input."));
+    }
     input.begin_test(binding)
 }
 

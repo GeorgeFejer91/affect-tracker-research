@@ -174,33 +174,41 @@ def main():
 
     def demographics():
         questionnaire("demogra")
-        if uia.GetFocusedElement().CurrentControlType != 50004:
-            raise RuntimeError("Expected focused text field; refusing to type a name elsewhere.")
+        for _ in range(100):
+            if uia.GetFocusedElement().CurrentControlType == 50004:
+                break
+            press("tab")
+        else:
+            raise RuntimeError("Expected a SurveyJS text field; refusing to type elsewhere.")
         keys.write("Synthetic Keyboard Test", interval=0.03)
-        answer_key("enter")
+        answer_key("tab")
+        if uia.GetFocusedElement().CurrentControlType != 50004:
+            raise RuntimeError("Expected the age field.")
         keys.write("30", interval=0.03)
-        answer_key("enter")
-        answer_key("end")
-        answer_key("enter")
-        answer_key("home")
-        answer_key("enter")
-        if uia.GetFocusedElement().CurrentAutomationId != "runner-questionnaire-submit":
-            raise RuntimeError("Demographics did not advance to Submit.")
+        answer_key("tab")
+        for _ in range(2):
+            if uia.GetFocusedElement().CurrentControlType != 50013:
+                raise RuntimeError("Expected a demographic choice.")
+            answer_key("right")
+            answer_key("tab")
         capture("demographics-filled")
-        press("enter")
+        named_button("Weiter" if args.language == "de" else "Next")
 
     def likert(label, count):
         questionnaire("Multidimensional" if label == "maia" else "Toronto" if args.language == "en" else "TAS-20")
+        for _ in range(100):
+            if uia.GetFocusedElement().CurrentControlType == 50013:
+                break
+            press("tab")
+        else:
+            raise RuntimeError("Expected a SurveyJS Likert choice.")
         for index in range(count):
             if uia.GetFocusedElement().CurrentControlType != 50013:
                 raise RuntimeError(f"Expected radio input at {label} item {index + 1}.")
-            answer_key("home")
             answer_key("right")
-            answer_key("enter")
-        if uia.GetFocusedElement().CurrentAutomationId != "runner-questionnaire-submit":
-            raise RuntimeError("Final item did not advance to Submit.")
+            answer_key("tab")
         capture(label + "-filled")
-        press("enter")
+        named_button("Weiter" if args.language == "de" else "Next")
 
     def playback():
         deadline = time.monotonic() + 300
