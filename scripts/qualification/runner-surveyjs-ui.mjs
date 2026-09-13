@@ -111,6 +111,8 @@ try{
  app=await bootRunner(root,{invoke,windowObject:win,pollMs:250});
  await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
  check(q('runner-recipe-status').textContent.includes('master v'+masterVersion),'launcher identifies master v2');
+ check(!q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true})),'input-test arrows cannot scroll and cancel the native test');
+ check(q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})),'input-test keyboard escape remains available through Tab');
  q('runner-variant').value='variant-1';q('runner-variant').dispatchEvent(new Event('change'));
  q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'fullscreen preparation');
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');

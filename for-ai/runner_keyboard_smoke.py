@@ -23,7 +23,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--deps", type=Path)
     parser.add_argument("--language", choices=["en", "de"], default="en")
-    parser.add_argument("--phase", choices=["inspect", "setup", "prepare", "demographics", "maia", "tas", "playback", "all"], default="inspect")
+    parser.add_argument("--phase", choices=["inspect", "settings", "launch", "setup", "prepare", "demographics", "maia", "tas", "playback", "all"], default="inspect")
     args = parser.parse_args()
     if args.deps:
         site.addsitedir(str(args.deps.resolve()))
@@ -55,7 +55,7 @@ def main():
             raise RuntimeError("Runner lost foreground focus; no key was sent.")
 
     def control(identifier):
-        return window.child_window(auto_id=identifier)
+        return window.child_window(auto_id=identifier, visible_only=False)
 
     def visible(identifier):
         spec = control(identifier)
@@ -83,15 +83,18 @@ def main():
         image = keys.screenshot(region=(box.left, box.top, box.width(), box.height()))
         file = args.output / (label + ".png")
         image.save(file)
-        texts = [child.window_text() for child in window.descendants(control_type="Text") if child.is_visible()]
+        focused = uia.GetFocusedElement()
         guard()
-        observations.append({"stage": label, "monotonicSeconds": time.monotonic(), "screenshot": file.name, "visibleText": texts})
+        observations.append({"stage": label, "monotonicSeconds": time.monotonic(), "screenshot": file.name,
+                             "focusedId": focused.CurrentAutomationId, "focusedName": focused.CurrentName})
+        print("Captured: " + label, flush=True)
 
     def press(key, count=1):
         guard()
         keys.press(key, presses=count, interval=0.15)
 
     def focus(identifier):
+        print("Keyboard focus: " + identifier, flush=True)
         for _ in range(100):
             guard()
             if uia.GetFocusedElement().CurrentAutomationId == identifier:
@@ -100,10 +103,22 @@ def main():
         raise RuntimeError("Keyboard could not reach " + identifier)
 
     def button(identifier):
-        if not visible(identifier) or not control(identifier).is_enabled():
+        if not control(identifier).exists(timeout=0) or not control(identifier).is_enabled():
             raise RuntimeError("Required control is unavailable: " + identifier)
         focus(identifier)
+        if not visible(identifier):
+            raise RuntimeError("Focused control did not scroll into view: " + identifier)
         press("enter")
+
+    def named_button(name):
+        for _ in range(100):
+            guard()
+            element = uia.GetFocusedElement()
+            if element.CurrentName == name and element.CurrentControlType == 50000:
+                press("enter")
+                return
+            press("tab")
+        raise RuntimeError("Keyboard could not reach button " + name)
 
     def questionnaire(title_fragment):
         wait_for(lambda: visible("runner-questionnaire-title") and title_fragment.casefold() in control("runner-questionnaire-title").window_text().casefold(), "Expected questionnaire: " + title_fragment, 90)
@@ -121,16 +136,34 @@ def main():
         keys.hotkey("alt", "n")
         keys.write(str(args.recipe.resolve()), interval=0.01)
         press("enter")
-        wait_for(lambda: visible("runner-variant") and control("runner-variant").is_enabled(), "Recipe load", 90)
-        focus("runner-variant")
-        press("home")
-        press("down")
-        press("tab")
+        wait_for(lambda: visible("runner-variant-button") and control("runner-variant-button").is_enabled(), "Recipe load", 90)
         focus("runner-participant")
         keys.hotkey("ctrl", "a")
         keys.write("1")
         press("tab")
         wait_for(lambda: control("runner-launch").is_enabled(), "Participant/version selection")
+        settings()
+        launch()
+
+    def settings():
+        if not visible("runner-settings-title"):
+            button("runner-settings")
+        # Choose validation before arming the recorder locks the session policy.
+        focus("runner-validation")
+        if control("runner-validation").get_toggle_state() != 1:
+            press("space")
+        button("runner-test")
+        focus("runner-test-region")
+        for direction in ["up", "down", "left", "right"]:
+            press(direction)
+        wait_for(lambda: "All directions tested" in control("runner-input-status").window_text(), "Real native input test", 30)
+        capture("input-tested")
+        button("runner-record-start")
+        wait_for(lambda: control("runner-record-stop").is_enabled(), "Recorder armed", 30)
+        capture("recording-armed")
+        named_button("Done")
+
+    def launch():
         button("runner-launch")
         wait_for(lambda: visible("runner-preparation"), "Fullscreen preparation")
         # Fresh preparation focuses its heading. The mock has EN then DE buttons.
@@ -189,6 +222,8 @@ def main():
         phases = ["setup", "demographics", "maia", "tas", "playback"] if args.phase == "all" else [args.phase]
         for phase in phases:
             if phase == "setup": setup()
+            elif phase == "settings": settings()
+            elif phase == "launch": launch()
             elif phase == "prepare":
                 press("tab", 1 if args.language == "en" else 2)
                 press("enter")

@@ -518,8 +518,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-check"), "click", () => action(checkSession));
   listen(query("runner-test"), "click", () => action(async () => {
     query("runner-test-region").hidden = false; query("runner-test-region").scrollIntoView({ block: "center" }); query("runner-test-region").focus();
+    await new Promise(resolve => windowObject.requestAnimationFrame(() => windowObject.requestAnimationFrame(resolve)));
     await setRegion(query("runner-test-region"), "setupTest"); await invoke("research_input_begin_test", { binding: runnerInput(recipe) });
   }));
+  listen(query("runner-test-region"), "keydown", event => {
+    // Native hooks observe the physical key. Do not let its browser scroll
+    // default move the registered region and cancel that same test.
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) event.preventDefault();
+  });
   listen(query("runner-validation"), "change", () => { invalidate(); renderControls(); });
   async function startAttempt() {
     if (!selection || !preflight) throw new Error("Check the current selection first.");
@@ -643,7 +649,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         const generation = revision;
         const status = await invoke("research_input_status");
         if (destroyed || generation !== revision) return;
-        inputReceipt = status.receipt; text("runner-input-status", inputReceipt ? "All directions tested. Input ready." : `Remaining: ${status.remainingDirections.join(", ")}`);
+        inputReceipt = status.receipt; text("runner-input-status", inputReceipt ? "All directions tested. Input ready." : status.phase === "idle" ? "Input test stopped. Select Test configured input again." : `Remaining: ${status.remainingDirections.join(", ")}`);
       }
       if (recorder?.available) { recorder = await invoke("research_recorder_status"); if (!destroyed) renderRecorder(); }
     } catch (error) { if (!destroyed) { inputReceipt = null; fail(error); } }
