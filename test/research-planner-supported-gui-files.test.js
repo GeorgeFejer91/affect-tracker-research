@@ -103,7 +103,7 @@ test("strict default workflow and capture reject v2; supported Open rejects a mi
   const legacyCapture = capturePlannerRecipeInputV1(strict.registry, { ...strict.options, version: 2, isCurrent: () => true });
   assert.equal(legacyCapture.input.version, 1);
   await assert.rejects(compilePlannerRecipeV1(legacyCapture.input));
-  for (const version of [undefined, 0, 4, "2"]) assert.throws(() => capturePlannerRecipeInputVersion(strict.registry,
+  for (const version of [undefined, 0, 5, "2"]) assert.throws(() => capturePlannerRecipeInputVersion(strict.registry,
     { ...strict.options, version, isCurrent: () => true }), /explicit supported/);
   const f = await fixture();
   await assert.rejects(f.workflow.open(() => ({ ...f.select(), kind: "planner-recipe-v1" })), /does not match/);

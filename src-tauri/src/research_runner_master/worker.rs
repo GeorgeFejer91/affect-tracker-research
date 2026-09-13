@@ -281,6 +281,16 @@ impl MasterWorker {
             MasterAction::SubmitV2 { position, answers } => {
                 self.typed_answers_action(position, answers, true)
             }
+            MasterAction::SurveyDraft {
+                position,
+                data,
+                page_no,
+            } => self.survey_answers_action(position, data, page_no, false),
+            MasterAction::SurveySubmit {
+                position,
+                data,
+                page_no,
+            } => self.survey_answers_action(position, data, page_no, true),
             MasterAction::Pause => {
                 if self.state.phase != MasterPhase::Playing {
                     return Err(invalid("Pause requires native Playing."));
@@ -344,8 +354,8 @@ impl MasterWorker {
         submitted: bool,
     ) -> ResearchResult<()> {
         use super::typed_forms::FormAnswerValue;
-        if !matches!(self.prepared.plan.version, 2 | 3) {
-            return Err(invalid("Typed answers require master version 2 or 3."));
+        if !matches!(self.prepared.plan.version, 2..=4) {
+            return Err(invalid("Typed answers require master version 2, 3 or 4."));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
         let step = self.current()?.clone();
@@ -398,7 +408,62 @@ impl MasterWorker {
         };
         self.record_answers(&mut record, submitted)
     }
+    fn survey_answers_action(
+        &mut self,
+        position: u32,
+        data: Value,
+        page_no: u32,
+        submitted: bool,
+    ) -> ResearchResult<()> {
+        if self.prepared.plan.version != 4 {
+            return Err(invalid("SurveyJS answers require master version 4."));
+        }
+        self.require_position(position, MasterPhase::Questionnaire)?;
+        let step = self.current()?.clone();
+        let definition: crate::research_surveyjs_definition::SurveyDefinitionV1 =
+            serde_json::from_value(step.payload["definition"].clone())
+                .map_err(|_| invalid("This occurrence is not a SurveyJS questionnaire."))?;
+        // The definition was validated and hashed by PreparedMaster; only the
+        // participant's data enters the fixed core for this bound occurrence.
+        let seed = (u32::from_str_radix(&self.state.plan_identity_sha256[..8], 16)
+            .map_err(|_| invalid("Invalid plan hash."))?
+            ^ position)
+            .max(1);
+        let checked = crate::research_surveyjs_engine::validate_survey_data_seed(
+            &definition.survey_json,
+            &definition.language,
+            &data,
+            submitted,
+            seed,
+        )?;
+        let page_count = checked["pageCount"]
+            .as_u64()
+            .ok_or_else(|| invalid("SurveyJS did not return its page count."))?;
+        if u64::from(page_no) >= page_count {
+            return Err(invalid(
+                "SurveyJS page index is outside this questionnaire.",
+            ));
+        }
+        let elapsed = self
+            .step_started
+            .ok_or_else(|| invalid("Questionnaire was not presented."))?
+            .elapsed()
+            .as_secs_f64()
+            * 1000.;
+        let mut record = json!({"schema":"affect-runner-master-responses","version":3,"entryId":step.entry_id,"position":step.position,"module":step.payload["module"],"questionnaireId":definition.questionnaire_id,"questionnaireVersion":definition.questionnaire_version,"definitionSha256":definition.definition_sha256,"status":if submitted {"submitted"} else {"draft"},
+            "responses":{"engineVersion":definition.engine_version,"language":definition.language,"completionPolicy":definition.completion_policy,"randomSeed":seed,"evaluatedAtUnixMs":checked["evaluatedAtUnixMs"],"inputData":data,"data":checked["data"],"visibleQuestionNames":checked["visibleQuestionNames"],"pageNo":page_no,"elapsedMs":elapsed}});
+        let projection = serde_json::from_value(checked["data"].clone())
+            .map_err(|_| invalid("Invalid SurveyJS answer projection."))?;
+        self.record_answers(&mut record, submitted)?;
+        if !submitted {
+            self.state.answers = projection;
+        }
+        Ok(())
+    }
     fn record_answers(&mut self, record: &mut Value, submitted: bool) -> ResearchResult<()> {
+        if self.prepared.plan.version == 4 {
+            record["version"] = json!(3);
+        }
         record["runId"] = json!(self.state.run_id);
         record["attemptId"] = json!(self.state.attempt_id);
         record["participantId"] = json!(self.state.participant_id);
@@ -781,6 +846,9 @@ impl Drop for MasterWorker {
 fn invalid(message: &str) -> CommandError {
     CommandError::invalid_contract(message)
 }
+#[cfg(test)]
+#[path = "worker_survey_tests.rs"]
+mod survey_tests;
 
 #[cfg(test)]
 mod tests {

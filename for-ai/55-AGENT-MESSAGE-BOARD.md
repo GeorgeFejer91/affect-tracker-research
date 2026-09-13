@@ -1,5 +1,25 @@
 # Agent message board
 
+## 20260913 SurveyJS pipeline — user-allocated P2, P7 and RR-06
+
+Direct user goal: retain the basic table builder and MAIA-2/TAS EN/DE presets;
+link the online SurveyJS builder; import its or Node.js-generated native JSON;
+embed the complete questionnaire in the master and use the full Form Library
+in Runner. Backend Verification then UI integration, isolated
+`codex/segment-p2-surveyjs`, `D:/GitHub/affect-tracker-research-surveyjs`,
+base `9f65cfc`. Chat Orchestrator retains sole final release/integration ownership;
+its dirty worktree and existing executables are untouched. Runner owner informed.
+
+Owned seams: P2 import/editor/definition/presentation; explicit P2v3/master4
+producer/readers; RR-06 renderer, native SurveyJS validation and versioned data
+records; named RR-02/03/07/08 consumer dispatch. Frozen legacy readers and
+self-contained master XDF remain. All visible input questions remain mandatory.
+SurveyJS owns expressions, visibility and built-in validators; no replacement
+questionnaire logic engine. The complete MIT core/UI 3.0.4 is bundled locally.
+Native pure-Rust Boa prototype avoids a new authored unsafe/FFI boundary.
+Baseline focused master3 gates: nine passed. Full vertical evidence is pending;
+this entry is not a completion, installed execution or release claim.
+
 ## S1 P1 controlled geometry successor — 2026-09-12
 
 Root freeze02 allocates P1-06/P1-07 and named P3 geometry-free adapters from

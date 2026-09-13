@@ -18,7 +18,15 @@ pub(crate) fn bind_master_media(
     prepared: &PreparedMaster,
 ) -> ResearchResult<Vec<MasterVideoBinding>> {
     let catalogue = &prepared.loaded.recipe.segment("P1")?["videoCatalogue"];
-    match prepared.plan.version {
+    match if prepared.plan.version == 4 {
+        if prepared.loaded.recipe.segment("P1")?["version"] == 3 {
+            3
+        } else {
+            2
+        }
+    } else {
+        prepared.plan.version
+    } {
         1 | 2 => workspace
             .validate_runner_video_catalogue(workspace_id, catalogue)
             .map(|values| {

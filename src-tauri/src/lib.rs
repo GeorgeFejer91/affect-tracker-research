@@ -28,6 +28,7 @@ pub mod research_planner_recipe_policy;
 pub mod research_planner_recipe_supported;
 pub mod research_planner_recipe_v2;
 pub mod research_planner_recipe_v3;
+pub mod research_planner_recipe_v4;
 mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
@@ -41,6 +42,8 @@ mod research_runner_session;
 mod research_runtime;
 mod research_shutdown;
 mod research_stimulus_order;
+pub mod research_surveyjs_definition;
+mod research_surveyjs_engine;
 mod research_timing;
 mod research_video_geometry;
 mod research_workspace;
@@ -153,7 +156,9 @@ fn launch(
                     // Companion programs share the Planner's default project,
                     // while their WebViews, preferences and sessions stay separate.
                     WorkspaceService::with_default_workspace(
-                        app.path().data_dir()?.join("io.github.georgefejer91.affecttracker"),
+                        app.path()
+                            .data_dir()?
+                            .join("io.github.georgefejer91.affecttracker"),
                     )
                 })
                 .map_err(|error| std::io::Error::other(error.message))?,
@@ -200,10 +205,15 @@ fn launch(
                     )
                     .with_recorder(Arc::clone(&recorder)),
                 );
-                app.manage(Arc::new(research_runner_master::runtime::MasterRuntime::new(
-                    Arc::clone(&workspace), Arc::clone(&native_media), Arc::clone(&input),
-                    Arc::clone(&recorder), Arc::clone(&package_runtime),
-                )));
+                app.manage(Arc::new(
+                    research_runner_master::runtime::MasterRuntime::new(
+                        Arc::clone(&workspace),
+                        Arc::clone(&native_media),
+                        Arc::clone(&input),
+                        Arc::clone(&recorder),
+                        Arc::clone(&package_runtime),
+                    ),
+                ));
                 app.manage(package_runtime);
                 app.manage(recorder);
             }
@@ -277,6 +287,7 @@ fn launch(
             research_commands::research_save_experiment_package,
             research_commands::research_load_planner_recipe,
             research_commands::research_save_planner_recipe,
+            research_commands::research_open_surveyjs_builder,
             research_commands::research_rescan_stimuli,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
@@ -301,10 +312,12 @@ fn launch(
             research_runner_master::commands::research_runner_master_start_v3,
             research_runner_master::commands::research_runner_master_validation_start,
             research_runner_master::commands::research_runner_master_validation_preflight,
+            research_runner_master::commands::research_runner_master_start_v4,
             research_runner_master::commands::research_runner_master_status,
             research_runner_master::commands::research_runner_master_action,
             research_runner_master::commands::research_runner_master_action_v2,
             research_runner_master::commands::research_runner_master_action_v3,
+            research_runner_master::commands::research_runner_master_action_v4,
             research_runner_master::commands::research_runner_master_history,
             research_runner_master::commands::research_runner_variant_usage,
             research_desktop::research_runner_fullscreen,
@@ -439,7 +452,9 @@ fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
         while !master.is_stopped() {
             std::thread::sleep(std::time::Duration::from_millis(20));
         }
-        master.join_stopped().map_err(|_| "master-shutdown-failed")?;
+        master
+            .join_stopped()
+            .map_err(|_| "master-shutdown-failed")?;
     }
     if let Some(recorder) = app.try_state::<Arc<research_recorder::RecorderService>>() {
         recorder.shutdown();

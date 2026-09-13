@@ -1,9 +1,11 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
+import { surveyNoticesPlugin } from "../scripts/surveyjs-notices-vite.js";
 
 const desktopRoot = resolve(import.meta.dirname);
 
 export default defineConfig({
+  plugins: [surveyNoticesPlugin()],
   root: desktopRoot,
   publicDir: false,
   clearScreen: false,

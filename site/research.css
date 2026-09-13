@@ -1,3 +1,8 @@
+@import url("./src/research/vendor/surveyjs.css");
+
+.affect-surveyjs { width: 100%; min-width: 0; }
+#questionnaire-survey-json { width: 100%; font-family: monospace; }
+
 /* P6 authoring: text reflows; the inspection scene has a responsive viewBox. */
 .xr-layout-editor { min-width: 0; }
 .xr-layout-editor [data-xr-content] { min-width: 0; }

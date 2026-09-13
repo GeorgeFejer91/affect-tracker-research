@@ -7,6 +7,16 @@ settings:
 importers:
 
   .:
+    dependencies:
+      dompurify:
+        specifier: 3.4.15
+        version: 3.4.15
+      survey-core:
+        specifier: 3.0.4
+        version: 3.0.4
+      survey-js-ui:
+        specifier: 3.0.4
+        version: 3.0.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(survey-core@3.0.4)
     devDependencies:
       '@tauri-apps/api':
         specifier: 2.11.1
@@ -360,9 +370,26 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
+  '@types/react-dom@19.3.0':
+    resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
+    peerDependencies:
+      '@types/react': ^19.3.0
+
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  csstype@3.2.3:
+    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  dompurify@3.4.15:
+    resolution: {integrity: sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==}
 
   esbuild@0.28.1:
     resolution: {integrity: sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==}
@@ -481,6 +508,16 @@ packages:
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
+
+  survey-core@3.0.4:
+    resolution: {integrity: sha512-VLCqazYrBKoJVAacm7HCLAHSlyK0mOISVqa/QBQjGxzjwaORkKKBPUHf8UOc42XQ2uEq+vtCLioeYnXgiE3rqA==}
+
+  survey-js-ui@3.0.4:
+    resolution: {integrity: sha512-zmYe4Mn+HChXeX05w+4PF9likpoIyKQ+pHHX9H4l7CO84X2G952eJg7Uu4Qv8pBhA5AnyiZpHLsN/i/B5U5eKw==}
+    peerDependencies:
+      '@types/react': '*'
+      '@types/react-dom': '*'
+      survey-core: 3.0.4
 
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
@@ -707,7 +744,24 @@ snapshots:
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
 
+  '@types/react-dom@19.3.0(@types/react@19.3.0)':
+    dependencies:
+      '@types/react': 19.3.0
+
+  '@types/react@19.3.0':
+    dependencies:
+      csstype: 3.2.3
+
+  '@types/trusted-types@2.0.7':
+    optional: true
+
+  csstype@3.2.3: {}
+
   detect-libc@2.1.2: {}
+
+  dompurify@3.4.15:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
   esbuild@0.28.1:
     optionalDependencies:
@@ -828,6 +882,14 @@ snapshots:
       '@rolldown/binding-win32-x64-msvc': 1.2.5
 
   source-map-js@1.2.1: {}
+
+  survey-core@3.0.4: {}
+
+  survey-js-ui@3.0.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(survey-core@3.0.4):
+    dependencies:
+      '@types/react': 19.3.0
+      '@types/react-dom': 19.3.0(@types/react@19.3.0)
+      survey-core: 3.0.4
 
   tinyglobby@0.2.17:
     dependencies:

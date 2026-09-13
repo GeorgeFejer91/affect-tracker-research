@@ -15,6 +15,7 @@ import { createRecentFiles } from "./recent-files.js";
 import { createVariantPicker, nextParticipant } from "./variant-picker.js";
 import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
+import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
 
@@ -113,10 +114,11 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function questionnaireDetail(current, allowPartial) {
     if (current.presenter) {
       const result = current.presenter.read({ allowPartial });
+      if (result.surveyjs) return { protocolStepPosition: current.position, ...result };
       current.answers = Object.fromEntries(result.answers.map(row => [row.itemId, row.value]));
       text("runner-questionnaire-progress", current.presenter.progress().text);
     } else {
-      const choices = [2, 3].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
+      const choices = [2, 3, 4].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
         if (answer?.kind !== "singleChoice") throw new Error("This questionnaire requires a declared choice.");
         return [id, answer.optionId];
       })) : current.answers;
@@ -149,7 +151,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-sequence-preview").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
     query("runner-preview-language-reset").disabled = busy || protocol.active || !recipe;
     query("runner-prepare").disabled = busy || protocol.active || !recipe;
-    query("runner-prepare").hidden = [2, 3].includes(recipe?.recipe?.version);
+    query("runner-prepare").hidden = [2, 3, 4].includes(recipe?.recipe?.version);
     for (const id of ["runner-professor", "runner-controller", "runner-remote", "runner-settings", "runner-preparation-settings", "runner-back"]) query(id).disabled = busy || protocol.active;
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
@@ -158,11 +160,11 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-start").disabled ||= Boolean(recipe?.recipe && (!participantPicker.participantId || !value("runner-variant")));
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
-    query("runner-demographics").hidden = [2, 3].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
+    query("runner-demographics").hidden = [2, 3, 4].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
       const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
       questionnaire.presenter?.setDisabled(disabled);
-      query("runner-questionnaire-items").querySelectorAll("input,textarea").forEach(input => { input.disabled = disabled; });
+      if (!questionnaire.presenter?.usesSurveyJS) query("runner-questionnaire-items").querySelectorAll("input,textarea").forEach(input => { input.disabled = disabled; });
       query("runner-questionnaire-submit").disabled = disabled;
       query("runner-questionnaire-next").disabled = disabled;
       query("runner-questionnaire-previous").disabled = disabled || questionnaire.itemIndex === 0;
@@ -178,7 +180,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
     }
     }
     renderControls();
@@ -193,7 +195,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     try {
       const timeline = await participantTimeline(recipe, participantId(), path, value("runner-variant"));
       if (destroyed || generation !== revision || !query("runner-sequence-dialog").open) return;
-      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${[2, 3].includes(recipe.recipe?.version) ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
+      text("runner-sequence-status", `${participantLabel(participantId())} · ${timeline.events.length} scheduled events. ${[2, 3, 4].includes(recipe.recipe?.version) ? "Questionnaires follow the saved order." : "Demographics come first for a new attempt."} Questionnaire durations depend on responses.`);
       for (const event of timeline.events) {
         const row = document.createElement("li"), title = document.createElement("strong"), detail = document.createElement("p");
         row.dataset.eventKind = event.kind; row.dataset.protocolPosition = event.protocolPosition;
@@ -266,7 +268,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelector(".stimulus-stage").hidden=false;root.querySelector(".run-feedback-stage").hidden=false;
     query("runner-questionnaire-submit").disabled=false;
     text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
-    text("runner-preparation-title", [2, 3].includes(master?.version) ? "Experiment language" : "Participant details");
+    text("runner-preparation-title", [2, 3, 4].includes(master?.version) ? "Experiment language" : "Participant details");
     variantPicker.adopt(candidate);
     const details = query("runner-recipe-details"); details.replaceChildren();
     for (const [label, detail] of master ? [
@@ -385,15 +387,22 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         questionnaire = {definition:step.payload.definition,position:status.position,answers:structuredClone(status.answers),master:true,version:plan.version};
         text("runner-questionnaire-title", questionnaire.definition.title);
         query("runner-questionnaire").lang = questionnaire.definition.language;
-        text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de")
-          ? "Pfeiltasten: Antwort wählen · Enter: weiter · Tab: navigieren · Umschalt+Enter: Zeilenumbruch im Textfeld"
-          : "Arrow keys: choose · Enter: next · Tab: navigate · Shift+Enter: newline in text fields");
-        text("runner-questionnaire-progress", `${questionnaire.definition.items.length} items · Answer every item to continue`);
-        questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers);
+        text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
+        const current = questionnaire;
+        questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers, {
+          version: plan.version,
+          randomSeed: surveyRandomSeed(plan.planIdentitySha256, status.position),
+          onChange: () => { if (questionnaire === current && current.presenter) { text("runner-questionnaire-progress", current.presenter.progress().text); current.draftPending = true; void flushSurveyDraft(current).catch(fail); } },
+          onComplete: () => action(async () => {
+            if (questionnaire !== current) return;
+            await flushSurveyDraft(current);
+            await protocol.questionnaireSubmit(questionnaireDetail(current, false));
+          }),
+        });
         text("runner-questionnaire-instructions", questionnaire.presenter?.instructions ?? questionnaire.definition.instructions);
         text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
         if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
-        query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=false;
+        query("runner-questionnaire-previous").hidden=true; query("runner-questionnaire-next").hidden=true; query("runner-questionnaire-submit").hidden=true;
       }
       query("runner-questionnaire-submit").disabled=status.phase!=="questionnaire";
     } else {
@@ -459,13 +468,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await retainParticipant();
     text("runner-selected-participant", `Participant ${participantLabel(participantId())}`);
     invalidate(); await invoke("research_input_cancel_setup");
-    if ([2, 3].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
+    if ([2, 3, 4].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
     await presentation.enter();
   }));
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   const prepareAttempt = () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
-    if (![2, 3].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
+    if (![2, 3, 4].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
   });
@@ -524,12 +533,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
-    const participant = ![2, 3].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
+    const participant = ![2, 3, 4].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
       const request = {workspaceId:workspace.workspaceId,sourceText:recipe.canonicalSourceText,selector:selection.selector,
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
-      if ([2, 3].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
+      if ([2, 3, 4].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
       else request.participant = {participantId:participantId(),...participant};
       await masterProtocol.start(selection, request, {validation:query("runner-validation").checked});
       inputReceipt=null; renderControls(); return;
@@ -544,7 +553,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   async function commitQuestionnaireDraft(target) {
     const current = questionnaire;
     if (!current || busy || (!target.dataset.answerItem && !target.dataset.formItem)) return false;
-    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3].includes(current.version)
+    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4].includes(current.version)
       ? {kind:"singleChoice",optionId:target.value} : target.value;
     let accepted = false;
     await action(async () => {
@@ -555,6 +564,17 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     });
     return accepted;
   }
+  async function flushSurveyDraft(current) {
+    if (current.draftPromise) return current.draftPromise;
+    current.draftPromise = (async () => {
+      while (current.draftPending && questionnaire === current && protocol.active) {
+        if (masterProtocol.status?.phase !== "questionnaire") return;
+        current.draftPending = false;
+        await protocol.questionnaireDraft(questionnaireDetail(current, true));
+      }
+    })();
+    try { await current.draftPromise; } finally { current.draftPromise = null; }
+  }
   listen(query("runner-questionnaire-form"), "change", event => { void commitQuestionnaireDraft(event.target); });
   listen(query("runner-questionnaire-form"), "input", () => {
     if (questionnaire?.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
@@ -562,6 +582,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-questionnaire-form"), "submit", (event) => {
     event.preventDefault(); const current = questionnaire;
     if (!current || busy) return;
+    if (current.presenter?.usesSurveyJS) return; // SurveyJS owns Enter, page navigation and completion.
     action(async () => {
       if (questionnaire !== current) return;
       await protocol.questionnaireSubmit(questionnaireDetail(current, false));

@@ -1,5 +1,15 @@
 # Planner master recipe v1
 
+## SurveyJS successor v4
+
+Experiments containing imported SurveyJS definitions use explicit master v4,
+P2 v3, hooks v4, presentation v3 and reproduction v5. The complete source object
+is nested in each SurveyJS definition; no advanced content is flattened or
+discarded. Existing master1–3 readers and unchanged-file saves retain their
+original contracts. See [SurveyJS questionnaires](surveyjs-questionnaires.md)
+for the complete producer/Runner/persistence extension. The v1 contract below
+remains frozen.
+
 P7 owns this successor contract. It is separate from frozen
 `affect-research-experiment-package` version 1; no existing reader is widened.
 The master carries complete authored experiment content and supports editable

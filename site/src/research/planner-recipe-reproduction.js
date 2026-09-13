@@ -39,7 +39,7 @@ export async function reproducePreparedPlannerRecipeV1(prepared, definitionSha25
   for (const route of questionnaireRoutes) languages.push({ languageId: route.languageId,
     languageSelectionPath: [...route.optionIds], questionnaireSha256: await canonicalSha256(route) });
   const presentations = [];
-  const media = (await (core.version === 3 ? projectSupportedVideoDisplayGeometry : projectVideoDisplayGeometry)(core.segments.P1.videoCatalogue)).videos;
+  const media = (await (core.version >= 3 ? projectSupportedVideoDisplayGeometry : projectVideoDisplayGeometry)(core.segments.P1.videoCatalogue)).videos;
   for (const value of profileValues) presentations.push(algorithmVersion === "planner-recipe-reproduction-v1"
     ? { presentationTarget: value.presentationTarget, layoutSha256: await canonicalSha256(value.layout) }
     : { presentationTarget: value.presentationTarget, layoutIdentitySha256: await canonicalSha256(plannerLayoutIdentityV1(
@@ -78,6 +78,10 @@ export function reconstructPreparedPlannerRecipeSelectionV2(prepared, reproducti
 export function reconstructPreparedPlannerRecipeSelectionV3(prepared, reproduction, definitionSha256, selector) {
   if (prepared.core.version !== 3) throw new TypeError("Expected Planner recipe v3.");
   return reconstructSelection(prepared, reproduction, definitionSha256, selector, 3);
+}
+export function reconstructPreparedPlannerRecipeSelectionV4(prepared, reproduction, definitionSha256, selector) {
+  if (prepared.core.version !== 4) throw new TypeError("Expected Planner recipe v4.");
+  return reconstructSelection(prepared, reproduction, definitionSha256, selector, 4);
 }
 
 function reconstructSelection(prepared, reproduction, definitionSha256, selector, version) {

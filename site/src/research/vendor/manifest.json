@@ -1,0 +1,10 @@
+{
+  "surveyJs": "3.0.4",
+  "domPurify": "3.4.15",
+  "files": {
+    "THIRD-PARTY-NOTICES.txt": "14bc13c7b71f75aa85ef06ca36bdf4da69edb258aa05eb0fc66a46d6762fbc01",
+    "surveyjs-core.js": "1a097ce5da8ab5095faed2240a0a9d15fa7beb9ec4243ba3cddef79774b5be50",
+    "surveyjs-ui.js": "900a57789a07dfac5f380639f1e0f09e8469c90ed54805a8d86fd45aaa663ead",
+    "surveyjs.css": "332de01efe74a2ed07f2bb1a06334680038c991a31ae66197e32ff66a0e9d0db"
+  }
+}

@@ -95,7 +95,7 @@ jobs:
           workspaces: src-tauri
           key: ${{ matrix.target }}-no-default-features
       - name: Run frontend tests
-        run: pnpm test
+        run: pnpm surveyjs:check && pnpm test
       - name: Build focused desktop frontend
         run: pnpm desktop:build
       - name: Check Rust without Windows-only or LSL features

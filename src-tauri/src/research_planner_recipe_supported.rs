@@ -5,6 +5,7 @@ use crate::research_planner_recipe::{parse_planner_recipe_bytes, read_value, Pla
 use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_planner_recipe_v2::PlannerRecipeV2;
 use crate::research_planner_recipe_v3::PlannerRecipeV3;
+use crate::research_planner_recipe_v4::PlannerRecipeV4;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -14,6 +15,7 @@ pub enum SupportedPlannerRecipe {
     V1(PlannerRecipeV1),
     V2(PlannerRecipeV2),
     V3(PlannerRecipeV3),
+    V4(PlannerRecipeV4),
 }
 impl Serialize for SupportedPlannerRecipe {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -21,6 +23,7 @@ impl Serialize for SupportedPlannerRecipe {
             Self::V1(value) => value.serialize(serializer),
             Self::V2(value) => value.serialize(serializer),
             Self::V3(value) => value.serialize(serializer),
+            Self::V4(value) => value.serialize(serializer),
         }
     }
 }
@@ -37,6 +40,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => r.version,
             Self::V2(r) => r.version,
             Self::V3(r) => r.0.version,
+            Self::V4(r) => r.0.version,
         }
     }
     pub fn recipe_id(&self) -> &str {
@@ -44,6 +48,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => &r.recipe_id,
             Self::V2(r) => &r.recipe_id,
             Self::V3(r) => &r.0.recipe_id,
+            Self::V4(r) => &r.0.recipe_id,
         }
     }
     pub fn presentation_target(&self) -> &str {
@@ -51,6 +56,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => &r.presentation_target,
             Self::V2(r) => &r.presentation_target,
             Self::V3(r) => &r.0.presentation_target,
+            Self::V4(r) => &r.0.presentation_target,
         }
     }
     pub fn definition_sha256(&self) -> &str {
@@ -58,6 +64,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => &r.integrity.definition_sha256,
             Self::V2(r) => &r.integrity.definition_sha256,
             Self::V3(r) => &r.0.integrity.definition_sha256,
+            Self::V4(r) => &r.0.integrity.definition_sha256,
         }
     }
     pub fn policy(&self) -> &PlannerRecipePolicyV1 {
@@ -65,6 +72,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => &r.policy,
             Self::V2(r) => &r.policy,
             Self::V3(r) => &r.0.policy,
+            Self::V4(r) => &r.0.policy,
         }
     }
     pub fn segment(&self, id: &str) -> ResearchResult<Value> {
@@ -85,6 +93,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => segment!(r),
             Self::V2(r) => segment!(r),
             Self::V3(r) => segment!(r.0),
+            Self::V4(r) => segment!(r.0),
         }
         .map_err(|_| CommandError::invalid_contract("Invalid Planner owner projection."))
     }
@@ -93,6 +102,7 @@ impl SupportedPlannerRecipe {
             Self::V1(r) => r.reconstruct_selection(selector),
             Self::V2(r) => r.reconstruct_selection(selector),
             Self::V3(r) => r.reconstruct_selection(selector),
+            Self::V4(r) => r.reconstruct_selection(selector),
         }
     }
 }
@@ -120,6 +130,13 @@ pub fn parse_supported_planner_recipe_bytes(
             exact_reencoding(&value, &recipe)?;
             recipe.validate()?;
             SupportedPlannerRecipe::V3(recipe)
+        }
+        Some(4) => {
+            let recipe: PlannerRecipeV4 = serde_json::from_value(value.clone())
+                .map_err(|_| CommandError::invalid_contract("Invalid Planner v4 fields."))?;
+            exact_reencoding(&value, &recipe)?;
+            recipe.validate()?;
+            SupportedPlannerRecipe::V4(recipe)
         }
         _ => {
             return Err(CommandError::invalid_contract(

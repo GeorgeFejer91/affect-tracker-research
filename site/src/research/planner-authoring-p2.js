@@ -1,4 +1,5 @@
 import { canonicalJson } from "./canonical.js";
+import { isSurveySheet } from "./surveyjs-sheet.js";
 import { commandFailure, PlannerCommandError } from "./planner-authoring-contract.js";
 import { createFlatLanguageSelectionV1, validateLanguageSelectionTreeV1 } from "./experiment-package.js";
 import { analyzeQuestionnaireLanguageCoverage } from "./questionnaire-assets.js";
@@ -41,6 +42,8 @@ function rawCell(value) {
 }
 function draft(record) {
   const { sheet } = record;
+  if (isSurveySheet(sheet)) return { kind: "surveyjs", familyId: sheet.familyId, language: sheet.language, questionnaireId: sheet.questionnaireId,
+    title: sheet.title, questionnaireVersion: sheet.questionnaireVersion, definition: clone(sheet.definition) };
   if (isFormSheet(sheet)) return formDraft(sheet, record.invalid);
   const value = Object.fromEntries(DRAFT_KEYS.filter(key => key !== "items").map(key => [key, sheet[key]]));
   value.items = clone(sheet.rows);
@@ -82,6 +85,15 @@ function ordered(values, ids, key) {
 // its normal bounded mutation path. Raw invalid codes remain separate UI drafts.
 function replaceDraft(record, value) {
   record.pristine = false;
+  if (isSurveySheet(record.sheet) || value?.kind === "surveyjs") {
+    if (!isSurveySheet(record.sheet) || value?.kind !== "surveyjs") throw new TypeError("Import SurveyJS JSON into a questionnaire slot to change its kind.");
+    exact(value, ["kind", "familyId", "language", "questionnaireId", "title", "questionnaireVersion", "definition"]);
+    if (canonicalJson(value.definition) !== canonicalJson(record.sheet.definition) || value.questionnaireId !== record.sheet.questionnaireId || value.language !== record.sheet.language || value.familyId !== record.sheet.familyId) throw new TypeError("Replace the questionnaire JSON through its import operation.");
+    if (typeof value.title !== "string" || !value.title.trim() || value.title.length > 500 || typeof value.questionnaireVersion !== "string" || !value.questionnaireVersion.trim() || value.questionnaireVersion.length > 120) throw new TypeError("Invalid SurveyJS title/version.");
+    record.dirty ||= value.title !== record.sheet.title || value.questionnaireVersion !== record.sheet.questionnaireVersion;
+    record.sheet.title = value.title; record.sheet.questionnaireVersion = value.questionnaireVersion;
+    return;
+  }
   if (isFormSheet(record.sheet) || value?.kind === "form") {
     if (!isFormSheet(record.sheet) || value?.kind !== "form") throw new TypeError("A questionnaire draft cannot silently change definition kind.");
     replaceFormDraft(record, value); return;
@@ -136,11 +148,11 @@ function replaceDraft(record, value) {
 }
 
 const settings = Object.freeze([
-  ["questionnaires", "Questionnaire drafts", "Array of legacy questionnaire drafts or explicit kind:form drafts with typed text/integer/singleChoice items and stable identities."],
+  ["questionnaires", "Questionnaire drafts", "Array of legacy, kind:form typed, or kind:surveyjs imported drafts with stable identities. Import SurveyJS content using importQuestionnaire; its title and version remain editable."],
   ["languages", "Selected languages", "Array of exact {languageId,languageTag,label}; each family gets one editable slot per language."],
   ["modules", "Ordered questionnaire modules", "Array of existing QuestionnaireModuleV2, in authored order; hashes reference accepted definitions."],
   ["languageSelection", "Language routing", "Exact LanguageSelectionTreeV1 or null for the owner's flat-language projection; no automatic participant selection."],
-  ["presentation", "Answer presentation", "Ordered legacy {questionnaireId,repeatLabelsEvery:1|5|10} or typed {kind:fields,questionnaireId} entries. This is not pagination."],
+  ["presentation", "Answer presentation", "Ordered legacy {questionnaireId,repeatLabelsEvery:1|5|10}, typed {kind:fields,questionnaireId}, or imported {kind:surveyjs,questionnaireId} entries. SurveyJS JSON owns its pages."],
 ].map(([id, label, description]) => Object.freeze({ id: `P2.${id}`, label, description, type: "json", classification: "authored", writable: true }))
   .concat(["acceptedDefinitions", "coverage"].map(id => Object.freeze({ id: `P2.${id}`, label: id,
     type: "json", classification: "derived", writable: false }))));
@@ -232,9 +244,9 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     } else if (field === "P2.presentation") {
       if (!Array.isArray(value) || value.length !== state.records.length) throw new TypeError("Presentation needs one entry per draft.");
       value.forEach((entry, index) => {
-        if (isFormSheet(state.records[index].sheet)) {
+        if (isFormSheet(state.records[index].sheet) || isSurveySheet(state.records[index].sheet)) {
           exact(entry, ["kind", "questionnaireId"]);
-          if (entry.kind !== "fields" || entry.questionnaireId !== state.records[index].sheet.questionnaireId) throw new TypeError("Invalid typed form presentation.");
+          if (entry.kind !== (isSurveySheet(state.records[index].sheet) ? "surveyjs" : "fields") || entry.questionnaireId !== state.records[index].sheet.questionnaireId) throw new TypeError("Invalid form presentation.");
           return;
         }
         exact(entry, ["questionnaireId", "repeatLabelsEvery"]);
@@ -246,7 +258,7 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
       const previous = state.records, ids = new Set(), slots = new Set();
       context.families = [];
       state.records = value.map(content => {
-        if (content?.kind === "form") formSheetFromDraft(content); else exact(content, DRAFT_KEYS);
+        if (content?.kind === "form") formSheetFromDraft(content); else if (content?.kind !== "surveyjs") exact(content, DRAFT_KEYS);
         const slot = `${content.familyId}/${content.language}`;
         if (ids.has(content.questionnaireId) || slots.has(slot)) throw new TypeError("Questionnaire identities and language slots must be unique.");
         ids.add(content.questionnaireId); slots.add(slot);
@@ -282,6 +294,10 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
     }
     if (name === "reorderModules") { state.context.modules = ordered(state.context.modules, args.moduleIds, "moduleId"); return; }
     const record = findRecord(state.records, args.questionnaireId), content = draft(record);
+    if (isSurveySheet(record.sheet)) {
+      if (name !== "updateQuestionnaire" || !args.changes || !Object.keys(args.changes).length || Object.keys(args.changes).some(k => !["title", "questionnaireVersion"].includes(k))) throw new TypeError("Edit SurveyJS questions in the builder and import the updated JSON.");
+      Object.assign(content, args.changes); replaceDraft(record, content); return;
+    }
     record.pristine = false;
     if (isFormSheet(record.sheet)) {
       if (name === "updateForm") {
@@ -344,7 +360,7 @@ export function createPlannerAuthoringP2({ editor, readContext, commitContext, o
       try { currentCoverage = coverage(state.context); } catch { /* Report issues, not a fabricated complete result. */ }
       return { values: { "P2.questionnaires": state.records.map(draft), "P2.languages": state.context.languages,
         "P2.modules": state.context.modules, "P2.languageSelection": state.context.languageSelection,
-        "P2.presentation": state.records.map(record => isFormSheet(record.sheet) ? { kind: "fields", questionnaireId: record.sheet.questionnaireId }
+        "P2.presentation": state.records.map(record => isSurveySheet(record.sheet) ? { kind: "surveyjs", questionnaireId: record.sheet.questionnaireId } : isFormSheet(record.sheet) ? { kind: "fields", questionnaireId: record.sheet.questionnaireId }
           : { questionnaireId: record.sheet.questionnaireId, repeatLabelsEvery: record.repeatLabels }),
         "P2.acceptedDefinitions": state.context.definitions, "P2.coverage": currentCoverage }, issues: issuesFor(state) };
     },

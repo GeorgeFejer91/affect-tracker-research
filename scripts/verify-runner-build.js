@@ -7,7 +7,7 @@ const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "runner/dist");
 const files = (await readdir(dist, { recursive: true, withFileTypes: true })).filter((item) => item.isFile())
   .map((item) => relative(dist, resolve(item.parentPath, item.name)).replaceAll("\\", "/"));
-const expectedKinds = ["index.html", "runner.js", "runner.css", "runner-symbol.svg", "app-symbol.svg", "professor-qr.svg", "controller-qr.svg", "professor-widget.svg", "input-widget.svg", "remote-widget.svg"];
+const expectedKinds = ["index.html", "surveyjs-notices.txt", "runner.js", "runner.css", "runner-symbol.svg", "app-symbol.svg", "professor-qr.svg", "controller-qr.svg", "professor-widget.svg", "input-widget.svg", "remote-widget.svg"];
 const sharedCss = await readFile(resolve(root, "site/research.css"), "utf8");
 for (const theme of ["dark", "light"]) {
   if (sharedCss.includes(`flubber-input-${theme}.svg`)) {

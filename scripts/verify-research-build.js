@@ -80,6 +80,8 @@ const rules = {
       || path === "research.css"
       || path === "experiment-template.json"
       || path === "src/math.js"
+      // Pure injected-capability guard, shared by the portable authoring owner.
+      || path === "src/research/native-media-readiness.js"
       || path === "questionnaires/questionnaire-template.csv"
       || path === "questionnaires/questionnaire-template.txt"
       || path === "questionnaires/questionnaire-template.json"
@@ -99,6 +101,7 @@ const rules = {
   desktop: {
     root: resolve(repositoryRoot, "desktop", "dist"),
     allowed: (path) => path === "index.html"
+      || path === "surveyjs-notices.txt"
       || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
       || /^assets\/(?:maia-2-(?:de|en)|ssq-six-item-en|vr-exp-en)-[A-Za-z0-9_-]+\.csv$/u.test(path)
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)

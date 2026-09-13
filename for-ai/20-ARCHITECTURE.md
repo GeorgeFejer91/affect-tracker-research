@@ -1,5 +1,15 @@
 # Research architecture and authority contract
 
+## SurveyJS amendment — 2026-09-13
+
+P2 and Runner share pinned SurveyJS Form Library 3.0.4. Full imported JSON is
+preserved in SurveyJS definition v1 / P2 v3 / master v4; historical readers remain
+strict. Rust independently validates the bundled core using Boa 0.22, with no
+imported JavaScript, filesystem or network host bindings. Native occurrence
+authority and write/flush/sync-before-advance remain unchanged. Full definitions
+and response records stay in the information stream. See the maintained
+[SurveyJS contract and workflow](../docs/surveyjs-questionnaires.md).
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and

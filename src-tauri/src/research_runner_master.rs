@@ -196,6 +196,7 @@ impl PreparedMaster {
             1 => "master-sequence-v1",
             2 => "master-sequence-v2",
             3 => "master-sequence-v3",
+            4 => "master-sequence-v4",
             _ => return Err(invalid("Unsupported Runner master version.")),
         };
         let identity = json!({"schema":"affect-runner-master-plan","version":version,"algorithmVersion":algorithm,

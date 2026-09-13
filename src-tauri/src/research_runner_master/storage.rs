@@ -106,7 +106,7 @@ impl MasterStorage {
             "buildCommit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION"),
             "outputDirectory":format!("outputs/{}/{}/{}", recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?, prepared.plan.participant_id, session_name),
             "status":"prepared","completedStepCount":0});
-        if matches!(prepared.plan.version, 2 | 3) {
+        if matches!(prepared.plan.version, 2..=4) {
             receipt.as_object_mut().unwrap().remove("participant");
         }
         if validation { receipt["executionQualification"] = super::information::validation_qualification(); }
@@ -129,7 +129,11 @@ impl MasterStorage {
             &session,
             &format!(
                 "master-responses.v{}.jsonl",
-                if prepared.plan.version == 1 { 1 } else { 2 }
+                match prepared.plan.version {
+                    1 => 1,
+                    4 => 3,
+                    _ => 2,
+                }
             ),
         )?;
         let csv = prepared

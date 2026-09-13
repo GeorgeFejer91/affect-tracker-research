@@ -60,6 +60,13 @@ use uuid::Uuid;
 const MAX_SETTINGS_DOCUMENT_BYTES: usize = 5 * 1024 * 1024;
 
 #[tauri::command]
+pub async fn research_open_surveyjs_builder(window: WebviewWindow) -> ResearchResult<()> {
+    authorize(&window)?;
+    tauri_plugin_opener::open_url("https://surveyjs.io/create-free-survey", None::<&str>)
+        .map_err(CommandError::io)
+}
+
+#[tauri::command]
 pub async fn research_video_library(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
@@ -1035,10 +1042,12 @@ pub async fn research_runner_recent_experiments(
 }
 
 fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {
-    let directory = app.state::<crate::research_runner_recent::RunnerRecentExperiment>()
+    let directory = app
+        .state::<crate::research_runner_recent::RunnerRecentExperiment>()
         .selected_directory()?;
     let workspace = app.state::<Arc<WorkspaceService>>();
-    let runtime = app.state::<Arc<crate::research_native_protocol::runtime::PackageProtocolRuntime>>();
+    let runtime =
+        app.state::<Arc<crate::research_native_protocol::runtime::PackageProtocolRuntime>>();
     let status = runtime.while_idle(|| workspace.select(directory))?;
     document["workspace"] = serde_json::to_value(status).map_err(CommandError::io)?;
     Ok(())

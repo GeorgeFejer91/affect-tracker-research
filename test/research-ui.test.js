@@ -188,7 +188,9 @@ test("Section 2 uses multilingual questionnaire tables and hides backend documen
   for (const retired of ["questionnaire-file-input", "questionnaire-preview-dialog", "questionnaire-inspiration-dialog", "questionnaire-definition-list", "questionnaire-module-list"]) {
     assert.ok(!markup.includes(`id="${retired}"`), `Retired questionnaire surface: ${retired}`);
   }
-  assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|JSON|sourceSha256/u);
+  assert.doesNotMatch(section, /phencon|inspiration|questionnaire-module-list|protocol-plan-hash|sourceSha256/u);
+  assert.match(section, /id="questionnaire-survey-json"/u);
+  assert.match(section, /Import SurveyJS questionnaire/u);
   assert.match(section, /Paste items, answer labels and recorded values together from Excel/u);
   assert.match(section, /before the video task/u);
   assert.match(editor, /event\.clipboardData\.getData\("text\/plain"\)/u);

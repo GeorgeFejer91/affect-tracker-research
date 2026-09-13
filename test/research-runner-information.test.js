@@ -8,6 +8,19 @@ import { frameRecords, informationFixture } from "./fixtures/runner-information-
 const change = (samples, index, fn) => { const copy = structuredClone(samples), frame = JSON.parse(copy[index].value); fn(frame); copy[index].value = canonicalJson(frame); return copy; };
 const assemble = async samples => { const reader = new InformationAssembler(), values = []; for (const sample of samples) { const value = await reader.push(sample); if (value) values.push(value); } return { status: reader.finish(), values }; };
 
+test("master4 information independently reconstructs complete SurveyJS JSON, nested data and engine validation", async () => {
+  const fixture = await informationFixture({ surveyJs: true });
+  const result = await inspectInformationStream(fixture.samples);
+  assert.equal(result.status, "complete"); assert.equal(result.plan.version, 4);
+  assert.deepEqual(result.plan, fixture.plan);
+  const responseIndex = fixture.records.findIndex(r => r.kind === "responses");
+  assert.equal(result.records.find(r => r.kind === "responses").value.responses.data.explanation, "Fictitious response 🌻");
+  for (const mutate of [r => delete r.responses.data.explanation, r => r.responses.data.choices = ["a"], r => r.responses.randomSeed++, r => r.version = 2, r => r.responses.language = "de", r => r.responses.data.unknown = "forged"]) {
+    const records = structuredClone(fixture.records); mutate(records[responseIndex].value);
+    await assert.rejects(inspectInformationStream(await frameRecords(records, fixture.context)));
+  }
+});
+
 test("prior dictionary stream remains readable and rejects comma-colliding profile fields", async () => {
   const fixture = await informationFixture(), profile = fixture.records[0].value.markerProfile;
   const samples = [{ value: canonicalJson(profile), timestamp: 0 }, ...fixture.records.filter(r => r.kind === "observation").map((r, i) => ({ value: canonicalJson(r.value), timestamp: i + 1 }))];

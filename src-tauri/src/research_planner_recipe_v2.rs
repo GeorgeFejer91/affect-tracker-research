@@ -98,6 +98,7 @@ impl PlannerRecipeV2 {
         let algorithm = match version {
             2 => ALGORITHM,
             3 => "planner-recipe-reproduction-v4",
+            4 => "planner-recipe-reproduction-v5",
             _ => return Err(invalid("Unsupported Planner recipe version.")),
         };
         if self.schema != SCHEMA
@@ -127,12 +128,16 @@ impl PlannerRecipeV2 {
             ));
         }
         self.policy.validate()?;
-        self.segments.p2.validate()?;
+        if version == 4 {
+            self.segments.p2.validate_version(3)?;
+        } else {
+            self.segments.p2.validate()?;
+        }
         self.segments.p5.validate()?;
         if version == 2 && !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
             return Err(invalid("Planner recipe v2 requires workspace v1/v2."));
         }
-        let workspace = if version == 3 {
+        let workspace = if version == 3 || (version == 4 && self.segments.p1["version"] == 3) {
             PreparedWorkspace::Controlled(validate_workspace_contribution_v3(&self.segments.p1)?)
         } else {
             PreparedWorkspace::Legacy(validate_workspace_contribution(&self.segments.p1)?)

@@ -1,5 +1,17 @@
 # Planner JSON and Runner compatibility contract
 
+## SurveyJS producer/consumer extension — 2026-09-13
+
+Master v4 explicitly accepts P2 v3 (full SurveyJS definitions, hooks v4,
+presentation v3) with existing P1 v1/v2/v3 semantics. Its identity algorithm is
+`planner-recipe-reproduction-v5`; native Start/Action v4 and master-sequence-v4
+consume the complete recipe. Old dispatch/strict-reader behavior is retained.
+Master4 responses use record v3 and `master-responses.v3.jsonl`, including full
+input and processed data, locale, completion policy, random seed, evaluation
+clock, visible questions and occurrence timing. Full records and definitions
+continue through the information stream. See [SurveyJS contracts](../docs/surveyjs-questionnaires.md)
+for all fields, limits and software-vs-live-XDF qualification boundaries.
+
 ## Typed demographics and independent XDF reconstruction — 2026-09-12
 
 The researcher now explicitly requests a shipped EN/DE demographic form and a

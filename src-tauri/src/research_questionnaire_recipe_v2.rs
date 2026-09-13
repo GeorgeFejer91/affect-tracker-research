@@ -16,12 +16,14 @@ use std::collections::{BTreeMap, BTreeSet};
 pub enum SupportedQuestionnaireDefinition {
     Likert(QuestionnaireDefinitionV1),
     Form(FormDefinitionV1),
+    SurveyJs(crate::research_surveyjs_definition::SurveyDefinitionV1),
 }
 impl Serialize for SupportedQuestionnaireDefinition {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::Likert(value) => value.serialize(serializer),
             Self::Form(value) => value.serialize(serializer),
+            Self::SurveyJs(value) => value.serialize(serializer),
         }
     }
 }
@@ -38,6 +40,9 @@ impl<'de> Deserialize<'de> for SupportedQuestionnaireDefinition {
             Some("affect-research-form-definition") => decode_form_definition_v1(&value)
                 .map(Self::Form)
                 .map_err(serde::de::Error::custom),
+            Some("affect-research-surveyjs-definition") => serde_json::from_value(value)
+                .map(Self::SurveyJs)
+                .map_err(serde::de::Error::custom),
             _ => Err(serde::de::Error::custom("Unsupported definition schema.")),
         }
     }
@@ -47,18 +52,21 @@ impl SupportedQuestionnaireDefinition {
         match self {
             Self::Likert(d) => &d.questionnaire_id,
             Self::Form(d) => &d.questionnaire_id,
+            Self::SurveyJs(d) => &d.questionnaire_id,
         }
     }
     pub fn language(&self) -> &str {
         match self {
             Self::Likert(d) => &d.language,
             Self::Form(d) => &d.language,
+            Self::SurveyJs(d) => &d.language,
         }
     }
     pub fn definition_sha256(&self) -> &str {
         match self {
             Self::Likert(d) => &d.definition_sha256,
             Self::Form(d) => &d.definition_sha256,
+            Self::SurveyJs(d) => &d.definition_sha256,
         }
     }
     fn validate(&self) -> ResearchResult<()> {
@@ -70,6 +78,7 @@ impl SupportedQuestionnaireDefinition {
                 Ok(())
             }
             Self::Form(d) => validate_form_definition_v1(d),
+            Self::SurveyJs(d) => d.validate(),
         }
     }
 }
@@ -117,6 +126,11 @@ pub enum QuestionnairePresentationEntryV2 {
         questionnaire_id: String,
         definition_sha256: String,
     },
+    #[serde(rename = "surveyjs")]
+    SurveyJs {
+        questionnaire_id: String,
+        definition_sha256: String,
+    },
 }
 impl QuestionnairePresentationEntryV2 {
     pub fn questionnaire_id(&self) -> &str {
@@ -125,6 +139,9 @@ impl QuestionnairePresentationEntryV2 {
                 questionnaire_id, ..
             }
             | Self::Fields {
+                questionnaire_id, ..
+            }
+            | Self::SurveyJs {
                 questionnaire_id, ..
             } => questionnaire_id,
         }
@@ -135,6 +152,9 @@ impl QuestionnairePresentationEntryV2 {
                 definition_sha256, ..
             }
             | Self::Fields {
+                definition_sha256, ..
+            }
+            | Self::SurveyJs {
                 definition_sha256, ..
             } => definition_sha256,
         }
@@ -166,9 +186,17 @@ fn family_id(definition: &SupportedQuestionnaireDefinition) -> String {
 }
 impl QuestionnaireRecipeContributionV2 {
     pub fn validate(&self) -> ResearchResult<()> {
+        self.validate_version(2)
+    }
+    pub(crate) fn validate_version(&self, version: u32) -> ResearchResult<()> {
+        let algorithm = match version {
+            2 => "questionnaire-hooks-v3",
+            3 => "questionnaire-hooks-v4",
+            _ => return Err(invalid("Unsupported P2 version.")),
+        };
         if self.schema != "affect-research-questionnaire-recipe-contribution"
-            || self.version != 2
-            || self.questionnaires.algorithm_version != "questionnaire-hooks-v3"
+            || self.version != version
+            || self.questionnaires.algorithm_version != algorithm
             || self.questionnaires.definitions.len() > 256
             || self.questionnaires.modules.len() > 1024
         {
@@ -191,6 +219,9 @@ impl QuestionnaireRecipeContributionV2 {
             .map(|l| l.language_tag.as_str())
             .collect();
         for definition in &self.questionnaires.definitions {
+            if version == 2 && matches!(definition, SupportedQuestionnaireDefinition::SurveyJs(_)) {
+                return Err(invalid("SurveyJS definitions require P2 version 3."));
+            }
             definition.validate()?;
             if definition.language().eq_ignore_ascii_case("und")
                 || !language_tags.contains(definition.language())
@@ -259,7 +290,8 @@ impl QuestionnaireRecipeContributionV2 {
         if mapped.len() != modules.len() {
             return Err(invalid("Every module needs a language mapping."));
         }
-        self.presentation.validate(&self.questionnaires.definitions)
+        self.presentation
+            .validate_version(&self.questionnaires.definitions, version)
     }
     pub(crate) fn routes(&self) -> ResearchResult<Vec<Value>> {
         routes::questionnaire_routes(self)
@@ -267,8 +299,15 @@ impl QuestionnaireRecipeContributionV2 {
 }
 impl QuestionnairePresentationV2 {
     pub fn validate(&self, definitions: &[SupportedQuestionnaireDefinition]) -> ResearchResult<()> {
+        self.validate_version(definitions, 2)
+    }
+    fn validate_version(
+        &self,
+        definitions: &[SupportedQuestionnaireDefinition],
+        version: u32,
+    ) -> ResearchResult<()> {
         if self.schema != "affect-research-questionnaire-presentation"
-            || self.version != 2
+            || self.version != version
             || self.definitions.len() != definitions.len()
         {
             return Err(invalid(
@@ -289,6 +328,15 @@ impl QuestionnairePresentationV2 {
                     SupportedQuestionnaireDefinition::Form(_)
                 )
             );
+            let compatible = compatible
+                || (version == 3
+                    && matches!(
+                        (entry, definition),
+                        (
+                            QuestionnairePresentationEntryV2::SurveyJs { .. },
+                            SupportedQuestionnaireDefinition::SurveyJs(_)
+                        )
+                    ));
             if !compatible
                 || entry.questionnaire_id() != definition.questionnaire_id()
                 || entry.definition_sha256() != definition.definition_sha256()

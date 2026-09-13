@@ -53,6 +53,82 @@ pub struct MasterStartRequestV2 {
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
 pub struct MasterStartRequestV3(pub MasterStartRequestV2);
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+pub struct MasterStartRequestV4(pub MasterStartRequestV2);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterActionRequestV4 {
+    pub version: u32,
+    pub run_id: String,
+    pub action: MasterActionV4,
+}
+impl MasterActionRequestV4 {
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
+        require_wire_version(self.version, 4)
+    }
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
+pub enum MasterActionV4 {
+    Presented {
+        position: u32,
+    },
+    Draft {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    Submit {
+        position: u32,
+        answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    #[serde(rename_all = "camelCase")]
+    SurveyDraft {
+        position: u32,
+        data: Value,
+        page_no: u32,
+    },
+    #[serde(rename_all = "camelCase")]
+    SurveySubmit {
+        position: u32,
+        data: Value,
+        page_no: u32,
+    },
+    Pause,
+    Resume,
+    Stop,
+}
+impl From<MasterActionV4> for MasterAction {
+    fn from(value: MasterActionV4) -> Self {
+        match value {
+            MasterActionV4::Presented { position } => Self::Presented { position },
+            MasterActionV4::Draft { position, answers } => Self::DraftV2 { position, answers },
+            MasterActionV4::Submit { position, answers } => Self::SubmitV2 { position, answers },
+            MasterActionV4::SurveyDraft {
+                position,
+                data,
+                page_no,
+            } => Self::SurveyDraft {
+                position,
+                data,
+                page_no,
+            },
+            MasterActionV4::SurveySubmit {
+                position,
+                data,
+                page_no,
+            } => Self::SurveySubmit {
+                position,
+                data,
+                page_no,
+            },
+            MasterActionV4::Pause => Self::Pause,
+            MasterActionV4::Resume => Self::Resume,
+            MasterActionV4::Stop => Self::Stop,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -168,6 +244,18 @@ pub enum MasterAction {
     SubmitV2 {
         position: u32,
         answers: Vec<super::typed_forms::TypedChoice>,
+    },
+    #[serde(skip)]
+    SurveyDraft {
+        position: u32,
+        data: Value,
+        page_no: u32,
+    },
+    #[serde(skip)]
+    SurveySubmit {
+        position: u32,
+        data: Value,
+        page_no: u32,
     },
 }
 #[derive(Debug, Clone, Deserialize)]
@@ -287,6 +375,14 @@ impl MasterRuntime {
         window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.0.version, 3)?;
+        self.start_typed(request.0, window)
+    }
+    pub fn start_v4(
+        &self,
+        request: MasterStartRequestV4,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.0.version, 4)?;
         self.start_typed(request.0, window)
     }
     fn start_typed(

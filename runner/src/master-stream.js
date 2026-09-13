@@ -16,7 +16,7 @@ function parse(text, maximum) {
  * The version is supplied by verified startup context for v2/v3; the historical
  * dictionary-only entrypoint retains v1 by default. No hash-probing fallback. */
 export async function inspectMasterStream(samples, { planVersion = 1 } = {}) {
-  if (![1, 2, 3].includes(planVersion)) throw new Error("Unsupported master plan version.");
+  if (![1, 2, 3, 4].includes(planVersion)) throw new Error("Unsupported master plan version.");
   if (!Array.isArray(samples) || samples.length > 200001) throw new Error("Master stream trace exceeds its bound.");
   if (!samples.length) return { status: "incomplete", occurrences: [], issues: [{ code: "missing-profile" }] };
   const profile = parse(samples[0].value, 4 * 1024 * 1024);
