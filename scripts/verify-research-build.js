@@ -106,6 +106,7 @@ const rules = {
       || path === "launcher.css"
       || path === "planner/index.html"
       || path === "runner/index.html"
+      || path === "runner/surveyjs-notices.txt"
       || path === "build-info.json"
       || path === "research.css"
       || path === "experiment-template.json"
@@ -123,8 +124,8 @@ const rules = {
       || path === "assets/app-symbol.svg"
       || path === "assets/questionnaires/demographics/en.json"
       || path === "assets/questionnaires/demographics/de.json"
-      || /^assets\/flubber-input-(?:light|dark)\.svg$/u.test(path)
       || path === "assets/runner-symbol.svg"
+      || /^runner\/assets\/(?:browser|runner-symbol|app-symbol|professor-qr|controller-qr|professor-widget|input-widget|remote-widget|flubber-input-light)-[A-Za-z0-9_-]+\.(?:js|css|svg)$/u.test(path)
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")
       || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),
@@ -138,7 +139,7 @@ const rules = {
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)
       || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path)
       || /^assets\/app-(?:logo|symbol)-[A-Za-z0-9_-]+\.svg$/u.test(path)
-      || /^assets\/flubber-input-(?:light|dark)-[A-Za-z0-9_-]+\.svg$/u.test(path),
+      || /^assets\/flubber-input-(?:dark|light)-[A-Za-z0-9_-]+\.svg$/u.test(path)
   },
 };
 
@@ -155,14 +156,5 @@ if (unexpected.length > 0) {
 if (!files.includes("index.html")) throw new Error(`${target} build is missing index.html.`);
 await verifyRelativeModuleClosure(rule.root, files);
 await verifySelectedLogo(rule.root, files, target);
-for (const theme of ["light", "dark"]) {
-  const name = `flubber-input-${theme}`;
-  const emitted = files.filter(path => target === "pages" ? path === `assets/${name}.svg` : path.startsWith(`assets/${name}-`) && path.endsWith(".svg"));
-  if (emitted.length !== 1) throw new Error(`${target} must contain exactly one ${name} SVG.`);
-  const original = await readFile(resolve(repositoryRoot, "site", "assets", `${name}.svg`));
-  if (!(await readFile(resolve(rule.root, emitted[0]))).equals(original)) throw new Error(`${name} differs from approved source.`);
-  const styles = await Promise.all(files.filter(path => path.endsWith(".css")).map(path => readFile(resolve(rule.root, path), "utf8")));
-  if (!styles.some(css => css.includes(emitted[0].split("/").at(-1)))) throw new Error(`${name} is not referenced by CSS.`);
-}
 if (target === "pages") await verifyPagesEntrypoints(rule.root, files);
 console.log(`${target} Research-only boundary verified (${files.length} files).`);

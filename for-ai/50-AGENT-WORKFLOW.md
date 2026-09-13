@@ -399,7 +399,7 @@ and never unwind a panic across FFI.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
 
-### User-control protection, main-app launch and background verification
+### User-control protection and background verification
 
 Routine verification must leave the user's desktop, windows, focus, pointer,
 keyboard, clipboard, and active applications untouched. Agents must use the
@@ -420,10 +420,10 @@ blocker rather than opening a second canonical-looking app. This launch must be
 the exact latest candidate, not a copied shortcut, stale installer, helper
 engine, or older build with the same title.
 
-Do not use computer-control, browser-control, window activation outside the
-current app handoff, synthetic input, or foreground visual exercise for testing
-unless the user explicitly asks for that specific check. The standing handoff
-authorizes opening the latest app for review only; it does not authorize
+Do not use computer-control, browser-control, window activation, GUI launch,
+synthetic input, or foreground visual exercise for testing unless the user
+explicitly opts in for that specific check. The standing current-app handoff
+authorizes opening the latest rebuilt app for review only; it does not authorize
 clicking through workflows, typing, moving windows, or qualifying physical
 behavior. If a claim cannot be established without an interactive check, report
 it as unverified and ask before touching the user's desktop; do not silently

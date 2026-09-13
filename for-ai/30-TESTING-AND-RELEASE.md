@@ -82,7 +82,7 @@ Any stable, release, experiment-use, or research-ready claim still requires
 every applicable gate in this file for one exact candidate, regardless of the
 stage used while developing it.
 
-## Non-interactive verification and current-app handoff
+## Non-interactive verification default and current-app handoff
 
 Testing must preserve the researcher's control of the Windows desktop. Use
 CLI-capable application functions, focused Node/Rust test entrypoints, isolated
@@ -91,8 +91,8 @@ machine-readable receipts. During testing, do not activate, foreground, move,
 close, or interact with application windows; do not synthesize keyboard,
 pointer, or clipboard input; and do not use browser/computer-control tooling for
 routine verification. A background renderer or automated test proves only the
-software property represented by its receipt; it does not establish physical,
-installed, accessibility, timing, hardware, or research qualification.
+software property represented by its receipt; it does not establish physical, installed,
+accessibility, timing, hardware, or research qualification.
 
 The standard handoff for app-changing work is separate from routine
 verification: after focused checks pass, rebuild/stage the latest candidate into

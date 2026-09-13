@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,7 +25,6 @@ await Promise.all([
   cp(resolve(sourceRoot, "research.html"), resolve(outputRoot, "research.html")),
   cp(resolve(sourceRoot, "launcher.css"), resolve(outputRoot, "launcher.css")),
   cp(resolve(sourceRoot, "planner"), resolve(outputRoot, "planner"), { recursive: true }),
-  cp(resolve(sourceRoot, "runner"), resolve(outputRoot, "runner"), { recursive: true }),
   cp(resolve(sourceRoot, "research.css"), resolve(outputRoot, "research.css")),
   cp(resolve(sourceRoot, "experiment-template.json"), resolve(outputRoot, "experiment-template.json")),
   cp(resolve(sourceRoot, "src", "math.js"), resolve(outputRoot, "src", "math.js")),
@@ -38,7 +37,6 @@ await Promise.all([
   cp(resolve(sourceRoot, "assets", "app-symbol.svg"), resolve(outputRoot, "assets", "app-symbol.svg")),
   ...["en", "de"].map(language => cp(resolve(sourceRoot, "assets", "questionnaires", "demographics", `${language}.json`),
     resolve(outputRoot, "assets", "questionnaires", "demographics", `${language}.json`))),
-  ...["light", "dark"].map(theme => cp(resolve(sourceRoot, "assets", `flubber-input-${theme}.svg`), resolve(outputRoot, "assets", `flubber-input-${theme}.svg`))),
   cp(resolve(repositoryRoot, "runner", "assets", "runner-symbol.svg"), resolve(outputRoot, "assets", "runner-symbol.svg")),
   cp(resolve(sourceRoot, "assets", "app-icons"), resolve(outputRoot, "assets", "app-icons"), { recursive: true }),
   cp(
@@ -58,6 +56,14 @@ await Promise.all([
   "native-package-protocol.js",
   "native-run-media.js",
 ].map((name) => rm(resolve(outputRoot, "src", "research", name), { force: true })));
+
+// Browser Runner is bundled separately so the desktop Tauri entrypoint remains
+// outside the public Pages artifact while the shared Runner UI can be reused.
+execFileSync(process.execPath, [resolve(repositoryRoot, "node_modules", "vite", "bin", "vite.js"), "build", "--config", "runner/vite.pages.config.js"], {
+  cwd: repositoryRoot,
+  stdio: "inherit",
+});
+await rename(resolve(outputRoot, "runner", "browser.html"), resolve(outputRoot, "runner", "index.html"));
 
 // Bind the published entrypoints to the exact checkout used by Pages CI.
 const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();

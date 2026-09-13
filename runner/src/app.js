@@ -1,4 +1,5 @@
 import { runnerMarkup } from "./view.js";
+import { createRunnerHtmlVideoPlayer } from "./html-video-player.js";
 import { plannerRecipeTransportText } from "../../site/src/research/planner-recipe-transport.js";
 import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState } from "./recipe.js";
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
@@ -21,12 +22,29 @@ import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
 
 const messageOf = (error) => error?.message ?? String(error);
+const csvCell = (value) => {
+  const text = value === null || value === undefined ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+  return /[",\r\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+};
+const downloadText = (windowObject, fileName, text, type = "text/csv;charset=utf-8") => {
+  const blob = new Blob([text], { type });
+  const url = windowObject.URL.createObjectURL(blob);
+  const anchor = windowObject.document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  windowObject.document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  windowObject.setTimeout(() => windowObject.URL.revokeObjectURL(url), 1000);
+};
+const safeName = (value) => String(value ?? "run").replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/^-+|-+$/gu, "").slice(0, 96) || "run";
 
 export async function bootRunner(root, { invoke, windowObject = window, pollMs = 250, subscribeAbort = () => () => {} } = {}) {
   if (!(root instanceof HTMLElement) || typeof invoke !== "function") throw new TypeError("Runner needs its root and native adapter.");
   root.innerHTML = runnerMarkup(); root.setAttribute("aria-busy", "false");
   const identity = await invoke("research_desktop_identity");
   if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
+  const browserMode = identity.platform === "browser";
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
@@ -41,9 +59,23 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let focusAfterAction = null;
   let setupScrollQuietUntil = 0;
   let questionnairePreview = null, validationPreview = null;
+  let browserAttempt = null;
   let abortPending = false, actionEpoch = 0;
-  let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
+  let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null, validationStepTimer = null;
+  let validationPlaybackEpoch = 0;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
+  const validationVideo = createRunnerHtmlVideoPlayer(query("run-native-video-host"), {
+    invoke, windowObject,
+    onEnded: () => {
+      const attempt = browserAttempt;
+      if (!destroyed && attempt?.active && attempt.steps[attempt.index]?.kind === "video") {
+        action(() => showBrowserRunStep(attempt.index + 1));
+        return;
+      }
+      const current = validationPreview;
+      if (!destroyed && current?.steps[current.index]?.kind === "video") action(() => showValidationPreview(current.index + 1));
+    },
+  });
   const media = new NativeMediaController({ invoke });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
   const legacyProtocol = new NativePackageProtocolAdapter(root, {
@@ -136,11 +168,15 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     revision += 1; preflight = null; inputReceipt = null; renderControls();
     action(async () => {
       try {
+        if (browserAttempt?.active) {
+          await finishBrowserAttempt("partial");
+          return;
+        }
         if (protocol.active) await protocol.finish("stopEarly");
         if (!protocol.active) {
           if (recorder?.active) { recorder = await invoke("research_recorder_stop"); renderRecorder(); }
           await invoke("research_input_cancel_setup");
-          clearQuestionnaire(); questionnairePreview = null; validationPreview = null;
+          clearQuestionnaire(); clearValidationPlayback(); questionnairePreview = null; validationPreview = null;
           selection = null;
           query("runner-test-region").hidden = true;
           query("runner-first").value = ""; query("runner-last").value = "";
@@ -153,12 +189,300 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function invalidate() {
     revision += 1; preflight = null; selection = null; inputReceipt = null;
     questionnairePreview = null; validationPreview = null;
+    clearValidationPlayback();
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
   }
   function clearQuestionnaire() {
     questionnaireKeyboard.reset();
     questionnaire?.presenter?.destroy();
     questionnaire = null;
+  }
+  function clearValidationTimer() {
+    if (validationStepTimer !== null) {
+      windowObject.clearTimeout(validationStepTimer);
+      validationStepTimer = null;
+    }
+  }
+  function clearValidationPlayback() {
+    validationPlaybackEpoch += 1;
+    clearValidationTimer();
+    validationVideo.stop();
+  }
+  function scheduleValidationStepAdvance(index, durationMs) {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+    const epoch = validationPlaybackEpoch;
+    validationStepTimer = windowObject.setTimeout(() => {
+      validationStepTimer = null;
+      if (destroyed || epoch !== validationPlaybackEpoch || validationPreview?.index !== index) return;
+      action(() => showValidationPreview(index + 1));
+    }, durationMs);
+  }
+  function browserRecord(row) {
+    const attempt = browserAttempt;
+    if (!attempt?.active) return;
+    attempt.rows.push({
+      row_type: row.row_type ?? "event",
+      run_id: attempt.runId,
+      participant_id: attempt.participantId,
+      variant_id: attempt.selector.variantId,
+      language_id: attempt.selector.languageId,
+      recipe_sha256: attempt.recipeSha256,
+      plan_sha256: attempt.planSha256,
+      protocol_step_position: row.protocol_step_position ?? attempt.steps[attempt.index]?.position ?? "",
+      step_kind: row.step_kind ?? attempt.steps[attempt.index]?.kind ?? "",
+      step_label: row.step_label ?? (attempt.steps[attempt.index] ? stepTitle(attempt.steps[attempt.index]) : ""),
+      source_code: row.source_code ?? attempt.steps[attempt.index]?.sourceCode ?? "",
+      relative_path: row.relative_path ?? attempt.steps[attempt.index]?.payload?.asset?.packageRelativePath ?? "",
+      event_type: row.event_type ?? "",
+      sequence: attempt.rows.length + 1,
+      iso_time: new Date().toISOString(),
+      elapsed_ms: Math.round(now() - attempt.startedAtMs),
+      media_time_ms: row.media_time_ms ?? "",
+      valence: Number.isFinite(row.valence) ? row.valence : attempt.x,
+      arousal: Number.isFinite(row.arousal) ? row.arousal : attempt.y,
+      questionnaire_id: row.questionnaire_id ?? "",
+      module_id: row.module_id ?? "",
+      item_id: row.item_id ?? "",
+      answer_value: row.answer_value ?? "",
+      payload_json: row.payload_json ?? "",
+    });
+  }
+  function browserCsv() {
+    const headers = [
+      "row_type", "run_id", "participant_id", "variant_id", "language_id",
+      "recipe_sha256", "plan_sha256", "protocol_step_position", "step_kind",
+      "step_label", "source_code", "relative_path", "event_type", "sequence",
+      "iso_time", "elapsed_ms", "media_time_ms", "valence", "arousal",
+      "questionnaire_id", "module_id", "item_id", "answer_value", "payload_json",
+    ];
+    const rows = browserAttempt?.rows ?? [];
+    return `${headers.join(",")}\n${rows.map(row => headers.map(header => csvCell(row[header])).join(",")).join("\n")}\n`;
+  }
+  function browserStopSampling() {
+    const attempt = browserAttempt;
+    if (!attempt) return;
+    if (attempt.sampleTimer !== null) windowObject.clearInterval(attempt.sampleTimer);
+    if (attempt.stepTimer !== null) windowObject.clearTimeout(attempt.stepTimer);
+    attempt.sampleTimer = null;
+    attempt.stepTimer = null;
+    if (attempt.pointerMove) root.querySelector(".run-feedback-stage")?.removeEventListener("pointermove", attempt.pointerMove);
+    if (attempt.pointerDown) root.querySelector(".run-feedback-stage")?.removeEventListener("pointerdown", attempt.pointerDown);
+    if (attempt.keyDown) windowObject.removeEventListener("keydown", attempt.keyDown, true);
+    attempt.pointerMove = null;
+    attempt.pointerDown = null;
+    attempt.keyDown = null;
+  }
+  function browserStartSampling(step) {
+    const attempt = browserAttempt;
+    if (!attempt?.active) return;
+    browserStopSampling();
+    const feedbackStage = root.querySelector(".run-feedback-stage");
+    const setFromPoint = (event) => {
+      const bounds = feedbackStage.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return;
+      attempt.x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
+      attempt.y = Math.max(-1, Math.min(1, 1 - ((event.clientY - bounds.top) / bounds.height) * 2));
+      preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+    };
+    attempt.pointerMove = setFromPoint;
+    attempt.pointerDown = setFromPoint;
+    attempt.keyDown = (event) => {
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+      const delta = event.shiftKey ? 0.2 : 0.08;
+      if (event.key === "Home") { attempt.x = 0; attempt.y = 0; }
+      if (event.key === "ArrowLeft") attempt.x = Math.max(-1, attempt.x - delta);
+      if (event.key === "ArrowRight") attempt.x = Math.min(1, attempt.x + delta);
+      if (event.key === "ArrowDown") attempt.y = Math.max(-1, attempt.y - delta);
+      if (event.key === "ArrowUp") attempt.y = Math.min(1, attempt.y + delta);
+      preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+      event.preventDefault();
+    };
+    feedbackStage?.addEventListener("pointermove", attempt.pointerMove);
+    feedbackStage?.addEventListener("pointerdown", attempt.pointerDown);
+    windowObject.addEventListener("keydown", attempt.keyDown, true);
+    const sampleMs = Math.max(8, Math.round(1000 / Math.max(1, Math.min(120, Number(recipe?.recipe?.policy?.samplingFrequencyHz ?? 30)))));
+    const sample = () => browserRecord({
+      row_type: "sample",
+      event_type: "affectSample",
+      protocol_step_position: step.position,
+      step_kind: step.kind,
+      step_label: stepTitle(step),
+      source_code: step.sourceCode,
+      relative_path: step.payload.asset?.packageRelativePath ?? "",
+      media_time_ms: validationVideo.video ? Math.round(validationVideo.video.currentTime * 1000) : "",
+      valence: attempt.x,
+      arousal: attempt.y,
+    });
+    sample();
+    attempt.sampleTimer = windowObject.setInterval(sample, sampleMs);
+  }
+  async function finishBrowserAttempt(status = "complete") {
+    const attempt = browserAttempt;
+    if (!attempt) return;
+    browserStopSampling();
+    validationVideo.stop();
+    browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: { status } });
+    attempt.active = false;
+    const csv = browserCsv();
+    const fileName = `${safeName(recipe?.recipe?.segments?.P1?.study?.title)}_${attempt.participantId}_${safeName(attempt.selector.variantId)}_${status}.csv`;
+    downloadText(windowObject, fileName, csv);
+    text("runner-session", `${participantLabel(attempt.participantId)} · ${status}`);
+    text("runner-receipt", `Browser CSV downloaded\n${fileName}\nRows: ${attempt.rows.length}`);
+    query("runner-receipt").hidden = false;
+    text("runner-write", "Browser CSV downloaded");
+    text("runner-lsl", "Browser run uses CSV instead of LSL/XDF");
+    preview.update({ hideFeedback: true });
+    clearQuestionnaire();
+    clearMasterDesktopLayout(root);
+    participantManual = false;
+    variantPicker.reset();
+    renderControls();
+    browserAttempt = null;
+    try { await presentation.leave(); } catch { /* Already outside the participant view. */ }
+  }
+  async function submitBrowserQuestionnaire(current) {
+    if (!browserAttempt?.active || questionnaire !== current) return;
+    const detail = questionnaireDetail(current, false);
+    const step = browserAttempt.steps[browserAttempt.index];
+    const answers = detail.surveyjs ? detail.data : detail.answers;
+    for (const [itemId, answer] of Object.entries(answers ?? {})) {
+      browserRecord({
+        row_type: "questionnaire",
+        event_type: "questionnaireAnswer",
+        protocol_step_position: step.position,
+        step_kind: step.kind,
+        step_label: stepTitle(step),
+        questionnaire_id: step.payload.definition.questionnaireId,
+        module_id: step.payload.module?.moduleId ?? "",
+        item_id: itemId,
+        answer_value: typeof answer === "object" ? JSON.stringify(answer) : answer,
+        payload_json: detail,
+      });
+    }
+    browserRecord({
+      row_type: "event",
+      event_type: "questionnaireCompleted",
+      protocol_step_position: step.position,
+      step_kind: step.kind,
+      step_label: stepTitle(step),
+      questionnaire_id: step.payload.definition.questionnaireId,
+      module_id: step.payload.module?.moduleId ?? "",
+    });
+    await showBrowserRunStep(browserAttempt.index + 1);
+  }
+  async function showBrowserRunStep(index = 0) {
+    const attempt = browserAttempt;
+    if (!attempt?.active) return;
+    if (index >= attempt.steps.length) {
+      await finishBrowserAttempt("complete");
+      return;
+    }
+    attempt.index = Math.max(0, Math.min(attempt.steps.length - 1, index));
+    const step = attempt.steps[attempt.index];
+    browserStopSampling();
+    validationPlaybackEpoch += 1;
+    const playbackEpoch = validationPlaybackEpoch;
+    clearQuestionnaire();
+    const title = stepTitle(step);
+    text("runner-session", `${participantLabel(attempt.participantId)} · browser step ${attempt.index + 1}/${attempt.steps.length}`);
+    text("runner-stimulus", title);
+    text("runner-write", "Browser CSV journal active");
+    text("runner-lsl", "Browser run records CSV rows instead of emitting LSL/XDF");
+    query("runner-pause").disabled = true;
+    browserRecord({ row_type: "event", event_type: `${step.kind}Started`, protocol_step_position: step.position, step_kind: step.kind, step_label: title });
+    if (step.kind === "questionnaire") {
+      validationVideo.stop();
+      presentation.showPage("questionnaire");
+      preview.update({ hideFeedback: true });
+      questionnaire = { definition: step.payload.definition, position: step.position, answers: {}, master: false, browserRun: true, version: attempt.plan.version };
+      query("runner-questionnaire").lang = questionnaire.definition.language;
+      renderQuestionnaireParticipantCopy(questionnaire.definition);
+      text("runner-questionnaire-keyboard", questionnaire.definition.language.startsWith("de") ? "Tab: navigieren · Pfeiltasten: Antwort wählen" : "Tab: navigate · Arrow keys: choose");
+      const current = questionnaire;
+      questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
+        version: attempt.plan.version,
+        randomSeed: surveyRandomSeed(attempt.plan.planIdentitySha256, step.position),
+        onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
+        onComplete: () => action(() => submitBrowserQuestionnaire(current)),
+      });
+      text("runner-questionnaire-submit", questionnaire.definition.language.startsWith("de") ? "Weiter" : "Next");
+      if (questionnaire.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
+      query("runner-questionnaire-previous").hidden = true;
+      query("runner-questionnaire-next").hidden = true;
+      query("runner-questionnaire-submit").hidden = Boolean(questionnaire.presenter?.usesSurveyJS);
+    } else {
+      presentation.showPage("run");
+      const stage = root.querySelector(".stimulus-stage"), feedback = root.querySelector(".run-feedback-stage");
+      clearMasterDesktopLayout(root);
+      applyMasterDesktopLayout(root, attempt.plan, windowObject);
+      stage.hidden = false;
+      feedback.hidden = false;
+      query("run-stimulus-placeholder").textContent = "";
+      preview.update(step.kind === "interval"
+        ? { ...runnerMasterFeedbackState(attempt.plan.selected.feedback, 0, 0), hideFeedback: false, lockPosition: true }
+        : runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+      text("runner-timing", step.kind === "interval"
+        ? `Browser CSV run · waiting ${Number((step.durationMs / 1000).toFixed(3))} s`
+        : `Browser CSV run · loading ${Number((step.durationMs / 1000).toFixed(3))} s video`);
+      if (step.kind === "interval") {
+        validationVideo.stop();
+        attempt.x = 0;
+        attempt.y = 0;
+        attempt.stepTimer = windowObject.setTimeout(() => {
+          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
+        }, step.durationMs);
+      } else if (step.kind === "video") {
+        const result = await validationVideo.playStep({
+          workspaceId: workspace.workspaceId,
+          sourceText: plannerRecipeTransportText(recipe),
+          participantId: attempt.participantId,
+          selector: attempt.selector,
+          step,
+        });
+        if (destroyed || playbackEpoch !== validationPlaybackEpoch || browserAttempt !== attempt || attempt.index !== index || !result) return;
+        text("runner-timing", `Browser CSV run · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
+        browserStartSampling(step);
+        attempt.stepTimer = windowObject.setTimeout(() => {
+          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
+        }, step.durationMs);
+      }
+    }
+    renderControls();
+  }
+  async function startBrowserAttempt() {
+    if (!browserMode) return false;
+    if (!recipe?.recipe) throw new Error("Browser Runner currently supports Planner master JSON versions 3-5.");
+    if (![3, 4, 5].includes(recipe.recipe.version)) throw new Error("Browser Runner currently supports Planner master JSON versions 3-5.");
+    if (!presentation.active) throw new Error("Enter participant preparation first.");
+    if (!workspace?.selected && recipe.recipe.segments.P3.variants.some(variant => variant.entries.some(entry => entry.kind === "video"))) {
+      throw new Error("Open Session settings and choose the experiment project folder before browser video playback.");
+    }
+    const plan = await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
+    selection = plan;
+    const runId = windowObject.crypto?.randomUUID?.() ?? `browser-${Date.now().toString(16)}`;
+    browserAttempt = {
+      active: true,
+      runId,
+      participantId: participantId(),
+      selector: plan.selector,
+      recipeSha256: recipe.canonicalSourceByteSha256,
+      planSha256: plan.planIdentitySha256,
+      plan,
+      steps: plan.steps,
+      index: 0,
+      rows: [],
+      startedAtMs: now(),
+      x: 0,
+      y: 0,
+      sampleTimer: null,
+      stepTimer: null,
+      pointerMove: null,
+      pointerDown: null,
+      keyDown: null,
+    };
+    browserRecord({ row_type: "event", event_type: "runStarted", protocol_step_position: 0, step_kind: "run", step_label: "Browser run started", payload_json: { platform: "browser-csv", stepCount: plan.steps.length } });
+    await showBrowserRunStep(0);
+    return true;
   }
   async function prepareInputTestRegion() {
     const region = query("runner-test-region");
@@ -251,6 +575,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const step = questionnairePreview.steps[nextIndex];
     if (!presentation.active) await presentation.enter();
     clearQuestionnaire();
+    clearValidationPlayback();
     presentation.showPage("questionnaire"); preview.update({ hideFeedback: true });
     text("runner-session", `${participantLabel(participantId())} · questionnaire ${nextIndex + 1}/${questionnairePreview.steps.length}`);
     text("runner-stimulus", step.payload.definition.title);
@@ -290,6 +615,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const asset = step.payload.asset;
     return `${asset.annotationId ?? step.payload.entry?.referenceId ?? "video"} · ${duration}`;
   }
+  function validationNeutralFeedbackState() {
+    return { ...runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0), hideFeedback: false, lockPosition: true };
+  }
   function moveQuestionnairePage(delta) {
     const presenter = questionnaire?.presenter, model = presenter?.model;
     if (!model || typeof model.currentPageNo !== "number") return false;
@@ -309,14 +637,22 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const step = validationPreview.steps[nextIndex];
     if (!presentation.active) await presentation.enter();
     clearQuestionnaire();
-    const title = stepTitle(step), label = stepLabel(step);
+    validationPlaybackEpoch += 1;
+    const playbackEpoch = validationPlaybackEpoch;
+    clearValidationTimer();
+    const title = stepTitle(step);
     text("runner-session", `${participantLabel(participantId())} · validation step ${nextIndex + 1}/${validationPreview.steps.length}`);
     text("runner-stimulus", title);
-    text("runner-timing", "Hidden validation traversal · timers not waited");
+    text("runner-timing", step.kind === "interval"
+      ? `Hidden validation traversal · waiting ${Number((step.durationMs / 1000).toFixed(3))} s`
+      : step.kind === "video"
+        ? `Hidden validation traversal · loading ${Number((step.durationMs / 1000).toFixed(3))} s video`
+        : "Hidden validation traversal");
     text("runner-write", "No recording");
     text("runner-lsl", "No LSL markers emitted");
     query("runner-pause").disabled = true;
     if (step.kind === "questionnaire") {
+      validationVideo.stop();
       presentation.showPage("questionnaire"); preview.update({ hideFeedback: true });
       questionnaire = { definition: step.payload.definition, position: step.position, answers: {}, master: false, preview: true, validationPreview: true, version: validationPreview.plan.version };
       query("runner-questionnaire").lang = questionnaire.definition.language;
@@ -337,19 +673,30 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     } else {
       presentation.showPage("run");
       const stage = root.querySelector(".stimulus-stage"), feedback = root.querySelector(".run-feedback-stage");
-      query("run-native-video-host").hidden = true;
       clearMasterDesktopLayout(root);
-      let layoutStatus = "";
-      try {
-        const layout = applyMasterDesktopLayout(root, validationPreview.plan, windowObject);
-        layoutStatus = layout.warnings.length ? `\n${layout.warnings.join("\n")}` : "";
-      } catch (error) { layoutStatus = `\nLayout preview unavailable: ${messageOf(error)}`; }
+      applyMasterDesktopLayout(root, validationPreview.plan, windowObject);
       stage.hidden = false;
-      feedback.hidden = step.kind !== "video";
-      query("run-stimulus-placeholder").textContent = `${label.toUpperCase()}\n${title}\n${stepDetail(step)}${layoutStatus}`;
-      preview.update(step.kind === "video"
-        ? runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0)
-        : { ...runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0), hideFeedback: true });
+      feedback.hidden = false;
+      query("run-stimulus-placeholder").textContent = "";
+      preview.update(validationNeutralFeedbackState());
+      if (step.kind === "interval") {
+        validationVideo.stop();
+        feedback.hidden = false;
+        query("run-stimulus-placeholder").textContent = "";
+        scheduleValidationStepAdvance(nextIndex, step.durationMs);
+      } else if (step.kind === "video") {
+        const result = await validationVideo.playStep({
+          workspaceId: workspace.workspaceId,
+          sourceText: plannerRecipeTransportText(recipe),
+          participantId: participantId(),
+          selector: validationPreview.plan.selector,
+          step,
+        });
+        if (destroyed || playbackEpoch !== validationPlaybackEpoch || validationPreview?.index !== nextIndex || !result) return;
+        query("run-stimulus-placeholder").textContent = "";
+        text("runner-timing", `Hidden validation traversal · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
+        scheduleValidationStepAdvance(nextIndex, step.durationMs);
+      }
     }
     renderControls();
   }
@@ -384,13 +731,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (questionnaire?.presenter) text("runner-questionnaire-progress", questionnaire.presenter.progress().text);
   }
   function destroy() {
-    destroyed = true; revision += 1; windowObject.clearInterval(timer);
+    destroyed = true; revision += 1; windowObject.clearInterval(timer); clearValidationTimer(); validationVideo.destroy();
     clearQuestionnaire();
     questionnaireKeyboard.destroy();
     listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); recentFiles.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
-    const locked = busy || protocol.active || recorder?.active === true;
+    const activeBrowserRun = browserAttempt?.active === true;
+    const locked = busy || protocol.active || activeBrowserRun || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
     query("runner-validation").disabled = locked || ![3, 4, 5].includes(recipe?.recipe?.version);
     recentFiles.lock(locked);
@@ -412,10 +760,16 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
     query("runner-test").disabled = busy || protocol.active || !recipe || controllerSettings.overridden;
-    query("runner-stop").disabled = busy || !protocol.active;
+    query("runner-stop").disabled = busy || (!protocol.active && !activeBrowserRun);
     query("runner-record-start").disabled = busy || protocol.active || recorder?.active === true || !recipe || !workspace?.selected || recorder?.available !== true;
     query("runner-record-start").disabled ||= Boolean(recipe?.recipe && (!participantPicker.participantId || !value("runner-variant")));
     query("runner-record-stop").disabled = busy || recorder?.active !== true || protocol.active;
+    if (browserMode) {
+      query("runner-record-start").disabled = true;
+      query("runner-record-stop").disabled = true;
+      query("runner-discover").disabled = true;
+      query("runner-record-own").disabled = true;
+    }
     query("runner-demographics").hidden = [2, 3, 4, 5].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
       const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
@@ -525,7 +879,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
     selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
     questionnairePreview = null; validationPreview = null;
-    clearQuestionnaire();
+    clearQuestionnaire(); clearValidationPlayback();
     participantManual = false; variantPicker.adopt(null); participantPicker.clear(); text("runner-output-directory", ""); text("runner-recipe-status", "No experiment loaded"); renderControls();
     const candidate = await readRunnerRecipe(bytes);
     if (destroyed || generation !== revision) return false;
@@ -682,10 +1036,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     } else {
       clearQuestionnaire(); presentation.showPage("run");
       applyMasterDesktopLayout(root,plan,windowObject);
-      root.querySelector(".stimulus-stage").hidden=step.kind!=="video";
-      root.querySelector(".run-feedback-stage").hidden=step.kind!=="video";
-      preview.update(step.kind === "video" ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {...runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal),hideFeedback:true});
-      if (step.kind === "video" && status.phase === "awaitingPresentation") {
+      const videoStep = step.kind === "video";
+      root.querySelector(".stimulus-stage").hidden=!videoStep;
+      root.querySelector(".run-feedback-stage").hidden=!videoStep;
+      query("run-native-video-host").hidden=!videoStep;
+      query("run-stimulus-placeholder").textContent = videoStep ? "" : "";
+      preview.update(videoStep ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {...runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal),hideFeedback:true});
+      if (videoStep && status.phase === "awaitingPresentation") {
         const ready=await setRegion(root.querySelector(".run-feedback-stage"),"runFeedback");
         if (!ready.runReady) throw new Error("Native participant input is not ready for this video.");
       }
@@ -748,6 +1105,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
   const prepareAttempt = () => action(async () => {
     await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
+    if (browserMode && recipe?.recipe) {
+      await startBrowserAttempt();
+      return;
+    }
     if (![2, 3, 4, 5].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
@@ -862,12 +1223,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-pause"), "click", () => action(() => protocol.togglePause()));
   listen(query("runner-stop"), "click", () => query("runner-stop-dialog").showModal());
   listen(query("runner-stop-cancel"), "click", () => query("runner-stop-dialog").close());
-  listen(query("runner-stop-confirm"), "click", () => { query("runner-stop-dialog").close(); action(() => protocol.finish("stopEarly")); });
+  listen(query("runner-stop-confirm"), "click", () => { query("runner-stop-dialog").close(); action(() => browserAttempt?.active ? finishBrowserAttempt("partial") : protocol.finish("stopEarly")); });
   async function commitQuestionnaireDraft(target) {
     const current = questionnaire;
     if (!current || busy || (!target.dataset.answerItem && !target.dataset.formItem)) return false;
     if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4, 5].includes(current.version)
       ? {kind:"singleChoice",optionId:target.value} : target.value;
+    if (browserAttempt?.active) return true;
     let accepted = false;
     await action(async () => {
       if (questionnaire !== current) return;
@@ -898,6 +1260,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (current.presenter?.usesSurveyJS) return; // SurveyJS owns Enter, page navigation and completion.
     action(async () => {
       if (questionnaire !== current) return;
+      if (browserAttempt?.active) {
+        await submitBrowserQuestionnaire(current);
+        return;
+      }
       await protocol.questionnaireSubmit(questionnaireDetail(current, false));
     });
   });
@@ -945,8 +1311,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   try {
     [capability, mediaCapability, workspace] = await Promise.all([legacyProtocol.initialize(), invoke("research_native_media_capability"), invoke("research_workspace_status")]);
   } catch (error) { destroy(); throw error; }
-  text("runner-capability", capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
-  text("runner-launch-status", capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
+  text("runner-capability", browserMode ? "Browser execution available · CSV download replaces LSL/XDF"
+    : capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
+  text("runner-launch-status", browserMode ? "Runs in this browser with local video access and CSV export."
+    : capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { await refreshRecentFiles(); } catch (error) { fail(error); }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
