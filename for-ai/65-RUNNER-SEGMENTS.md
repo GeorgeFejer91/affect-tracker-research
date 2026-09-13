@@ -598,3 +598,19 @@ The visible frequency dropdown includes counts and a green-to-red relative scale
 color alone is never the selection or count indicator. Missing history leaves
 manual selection available, with no fabricated zero counts. Root owns collecting
 this isolated change into the current native application and final qualification.
+
+
+### Automatic previous JSON and recent-file list — 2026-09-13
+
+User allocates RR-01/RR-02: load the last accepted experiment automatically at
+startup and replace the previous-file button with Load new experiment plus a
+Previous files dropdown. Preserve all distinct accepted paths, newest first;
+reloading promotes an existing entry and never duplicates it. Old single-file
+bookmarks migrate to local history2. Missing/invalid files leave the launcher
+usable; selecting another recent file sets its own project root and passes full
+native/JS validation before confirmation. Autoload grants no execution or
+recording. Existing participant/version defaults and manual overrides remain.
+
+[Recent-file contract and receipts](../docs/runner-recent-files.md):4 native,
+52 recent UI,69 preselection UI,89 English keyboard-flow and5 logic checks pass,
+plus compilation/build boundary. Root owns current installed integration.

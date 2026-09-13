@@ -11,6 +11,7 @@ import { validateQuestionnaireAnswers } from "../../site/src/research/questionna
 import { createRunnerPresentation } from "./presentation.js";
 import { createQuestionnaireKeyboard } from "./questionnaire-keyboard.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
+import { createRecentFiles } from "./recent-files.js";
 import { createVariantPicker, nextParticipant } from "./variant-picker.js";
 import { createParticipantPicker, participantLabel, participantTimeline } from "./participants.js";
 import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
@@ -32,7 +33,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
-  let previousExperiment = null, participantManual = false;
+  let recentExperiments = null, participantManual = false;
   let focusAfterAction = null;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
@@ -72,6 +73,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     commit: commitQuestionnaireDraft,
   });
   const controllerSettings = createRunnerControllerSettings(root, { onChange: () => invalidate() });
+  const recentFiles = createRecentFiles(root, { onSelect: id => action(() => loadExperiment(id)) });
   const variantPicker = createVariantPicker(root, { onChange: () => { invalidate(); refreshTimeline(); } });
   const participantPicker = createParticipantPicker(root, { onChange: commit => {
     participantManual = true; variantPicker.participant(participantPicker.participantId);
@@ -127,14 +129,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
     clearQuestionnaire();
     questionnaireKeyboard.destroy();
-    listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
+    listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); recentFiles.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
     query("runner-validation").disabled = locked || recipe?.recipe?.version !== 3;
-    query("runner-load-previous").disabled = locked || previousExperiment?.available !== true;
-    query("runner-load-previous").title = previousExperiment?.available ? `Reload ${previousExperiment.basename}` : "Load an experiment file first.";
+    recentFiles.lock(locked);
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
     // must not prevent the participant from completing the first form.
@@ -480,10 +481,15 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (protocol.active) query("runner-session-dialog").showModal();
     else query("runner-back").click();
   });
+  async function refreshRecentFiles() {
+    const listing = await invoke("research_runner_recent_experiments", { action: "list" });
+    if (destroyed) return;
+    recentFiles.render(listing); recentExperiments = listing;
+  }
   async function loadExperiment(previous = false) {
     if (protocol.active || recorder?.active) throw new Error("Finish the active session or recording before loading an experiment.");
-    const loaded = previous ? await invoke("research_runner_previous_experiment", { action: "load" })
-      : await invoke("research_load_planner_recipe");
+    const loaded = typeof previous === "string" ? await invoke("research_runner_recent_experiments", { action: "load", entryId: previous })
+      : previous ? await invoke("research_runner_previous_experiment", { action: "load" }) : await invoke("research_load_planner_recipe");
     if (!loaded) return;
     const receipt = loaded.document;
     workspace = loaded.workspace ?? await invoke("research_workspace_status");
@@ -491,12 +497,11 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const adopted = await adoptRecipe(new TextEncoder().encode(receipt.canonicalSourceText));
     if (destroyed || adopted === false) return;
     if (recipe?.canonicalSourceByteSha256 !== receipt.canonicalSourceByteSha256) { invalidate(); recipe = null; throw new Error("Native and frontend package bytes disagree."); }
-    try { previousExperiment = await invoke("research_runner_previous_experiment", { action: "confirm", sourceSha256: receipt.canonicalSourceByteSha256 }); }
-    catch { throw new Error("Experiment loaded, but its previous-file shortcut could not be saved."); }
-    focusAfterAction = query("runner-variant-field").hidden ? query("runner-participant") : query("runner-variant");
+    try { await invoke("research_runner_previous_experiment", { action: "confirm", sourceSha256: receipt.canonicalSourceByteSha256 }); await refreshRecentFiles(); }
+    catch { throw new Error("Experiment loaded, but its recent-file history could not be saved."); }
+    focusAfterAction = query("runner-variant-field").hidden ? query("runner-participant") : query("runner-variant-button");
   }
   listen(query("runner-open"), "click", () => action(() => loadExperiment()));
-  listen(query("runner-load-previous"), "click", () => action(() => loadExperiment(true)));
   listen(query("runner-folder"), "click", () => action(async () => { invalidate(); workspace = await invoke("research_choose_workspace"); text("runner-workspace-status", workspace.selected ? workspace.displayName : "No project folder selected."); text("runner-output-directory", ""); await refreshParticipantHistory(true); }));
   for (const id of ["runner-language-reset", "runner-preview-language-reset"]) listen(query(id), "click", () => { path = []; invalidate(); renderLanguage(); refreshTimeline(); });
   listen(query("runner-sequence-preview"), "click", () => { query("runner-sequence-dialog").showModal(); renderLanguage(); refreshTimeline(); });
@@ -608,7 +613,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   text("runner-capability", capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
   text("runner-launch-status", capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
-  try { previousExperiment = await invoke("research_runner_previous_experiment", { action: "status" }); } catch { previousExperiment = null; }
+  try { await refreshRecentFiles(); } catch (error) { fail(error); }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
   timer = windowObject.setInterval(async () => {
     if (destroyed || polling || busy) return; polling = true;
@@ -627,5 +632,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const controller = Object.freeze({ adoptRecipe, get recipe() { return recipe; }, get selection() { return selection; },
     destroy,
   });
-  root.runner = controller; query("runner-open").focus(); return controller;
+  root.runner = controller;
+  if (recentExperiments?.entries.length && !protocol.active && !recorder?.active) await action(() => loadExperiment(true));
+  if (!recipe) query("runner-open").focus();
+  return controller;
 }

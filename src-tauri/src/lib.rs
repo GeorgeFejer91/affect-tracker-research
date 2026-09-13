@@ -349,6 +349,7 @@ fn launch(
             research_commands::research_rescan_package_stimuli,
             research_commands::research_load_planner_recipe,
             research_commands::research_runner_previous_experiment,
+            research_commands::research_runner_recent_experiments,
             research_commands::research_workspace_media_url,
             research_commands::research_storage_readiness,
             research_commands::research_lsl_readiness,

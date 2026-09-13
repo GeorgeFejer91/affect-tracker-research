@@ -21,6 +21,7 @@ const until=async(f,s)=>{for(let i=0;i<100;i++){if(f())return;await tick();}thro
 let app,files=[],active=false,lastName=null,failInventory=false;
 const counts=()=>app.recipe.recipe.segments.P3.variants.map((v,i)=>({variantId:v.variantId,recordingCount:files.filter(f=>f.v===i+1).length,participantCount:new Set(files.filter(f=>f.v===i+1).map(f=>f.p)).size}));
 const invoke=async(command,args)=>{calls.push({command,args});switch(command){
+ case 'research_runner_recent_experiments':return{schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return{playerActorReady:false};

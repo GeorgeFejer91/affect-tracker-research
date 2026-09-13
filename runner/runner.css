@@ -136,3 +136,5 @@ html, body { min-width: 0; margin: 0; }
 .runner-version-track { grid-column:1 / -1; height:7px; background:#35382f; }
 .runner-version-track > span { display:block; height:100%; background:var(--version-color); }
 @media(max-width:600px){.runner-version-option { grid-template-columns:1fr; }.runner-version-option > span:nth-child(2){grid-column:1;}}
+
+.runner-load-actions > select { flex:1; min-width:160px; max-width:100%; width:0; }
