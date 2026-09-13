@@ -16,9 +16,65 @@ records; named RR-02/03/07/08 consumer dispatch. Frozen legacy readers and
 self-contained master XDF remain. All visible input questions remain mandatory.
 SurveyJS owns expressions, visibility and built-in validators; no replacement
 questionnaire logic engine. The complete MIT core/UI 3.0.4 is bundled locally.
-Native pure-Rust Boa prototype avoids a new authored unsafe/FFI boundary.
-Baseline focused master3 gates: nine passed. Full vertical evidence is pending;
-this entry is not a completion, installed execution or release claim.
+Native pure-Rust Boa avoids a new authored unsafe/FFI boundary.
+
+Software implementation delivered in `5d3329bc0f080880b7cb8f65e42845b65bc30169`
+plus the follow-up verification/qualification commit containing this update.
+The maintained contract is [SurveyJS questionnaires](../docs/surveyjs-questionnaires.md).
+The source is ready for Chat Orchestrator to consolidate and resume full Runner
+execution validation. No integration checkout or current-app executable was changed.
+
+Evidence root: `D:/GitHub/.affect-surveyjs-build/` (local diagnostic receipts).
+
+- `js-all-final-3.log`: 1,192/1,192 JS tests.
+- `native-all-final.log`: 374 passed, one existing ignored native test. The final
+  `native-complex-final.log` adds four passing SurveyJS cases, including the new
+  actual-Boa nested panel/calculation/matrix/ranking/inline-file case (375 unique
+  native tests exercised in total). Windows test executables are manifest-adjusted
+  copies, explicitly unqualified artifacts.
+- `browser-final-1/receipt.json`: 26 actual Planner/preset/renderer checks,
+  including MAIA-2 EN/DE, five-item labels, and the installed German TAS source.
+  Source-save callbacks in this browser fixture are synthetic.
+- `runner-browser-v2-final-2`, `runner-browser-v3-final-1`,
+  `runner-browser-v4-final-1`: eight actual Runner app scenarios each (EN/DE form,
+  flow/rejected-submit correction, Stop and disposal), with synthetic native IPC.
+- `keyboard-wrapper-final-3/receipt.json`: 410 checks across eight EN/DE Runner
+  scenarios, including trusted browser arrow-key interaction; native IPC remains
+  synthetic. The harness owns isolated headless Chrome and records UI scope.
+- `planner-cli-2/process/receipt.json`: all nine real hidden production CLI steps
+  pass, clean build identity `5d3329bc0f080880b7cb8f65e42845b65bc30169`, executable
+  SHA-256 `02864cd4ca49de1eb169abb66c2c32fdbe4175f0073dc50916b0315462942fa0`.
+  Includes raw Node-generated JSON import, durable source save in both languages
+  and native master4 Open restoring complete editable JSON.
+- `runner-native-lsl-check.log`: native Runner compiles with `lsl-streaming` and
+  `tauri/custom-protocol` (other default features disabled). Frontend desktop,
+  Runner, Pages builds and committed vendor/fixture checks pass.
+- `native-integration-compile.log`: all native test targets compile after adding
+  the missing explicit source-module registrations to the three standalone test
+  crates (SurveyJS/master4 and their existing master3/geometry/shutdown dependencies).
+- `integration-authoring-final.log`, `integration-effects-final.log`, and
+  `integration-recipes-final.log`: affected standalone native suites pass
+  218/218, 176/176, and 87/87 tests respectively. Prepared copies retain their
+  original integration-test names and record original/prepared executable hashes.
+
+Keep the qualification boundary explicit: no installed app, real video or live
+XDF acquisition is qualified by these fixtures. Full definitions and responses
+remain in the existing XDF information stream; independent JS replay tests pass.
+Strict all-target Clippy is not clean at this base: pre-existing feature-gated
+dead code, unused imports in source-including integration tests and the
+`controlled_geometry` items-after-test-module layout remain. New SurveyJS Clippy
+findings were corrected; do not report the repository lint gate as passed.
+
+Migration/integration: use master4/P2v3/presentation3/response3 only for SurveyJS;
+keep older readers strict and preserve complete JSON. The updated legacy UI
+qualification entrypoints delegate to the SurveyJS harness. Keyboard interaction
+uses upstream/browser controls; do not restore the retired handwritten form DOM
+or its Enter-to-next-field policy over arbitrary surveys. About is absent from
+this feature base: the root-owned About/CLI page should link the new public doc.
+Available presets remain MAIA-2 EN/DE and researcher-local German TAS; unavailable
+TAS translations are not fabricated or redistributed. Custom JS/widgets and
+external services require separate adapters; paid Creator/Dashboard/PDF products
+are not included in the Form Library integration.
 
 ## S1 P1 controlled geometry successor — 2026-09-12
 

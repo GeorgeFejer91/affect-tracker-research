@@ -96,7 +96,7 @@ occurrence-bound response record. `inputData` is the submitted checkpoint;
 `data` is SurveyJS's processed result, including completion cleanup and calculations.
 Both are needed to reproduce conditions that change when hidden answers are
 cleared at completion. Partial drafts also retain answers. Randomization uses a
-stable definition-and-occurrence seed; expression evaluation time is recorded.
+stable plan-and-occurrence seed; expression evaluation time is recorded.
 Draft and completed records are flushed and synced before acknowledgement or
 advancement. Full definitions and full response records remain in the existing
 Runner information stream for XDF reconstruction; an independent consumer checks
@@ -121,8 +121,9 @@ the native source-store operation before final experiment capture. See the
 `pnpm surveyjs:build` regenerates committed browser and native assets from locked
 packages. `pnpm surveyjs:check` checks bundles, hashes, license notices and the
 cross-language master fixture; CI runs it before the test suite. Source licenses
-are in `docs/licenses`, with complete notices in generated bundles and
-`site/src/research/vendor/THIRD-PARTY-NOTICES.txt`.
+are in `docs/licenses`, with complete notices in generated bundles,
+`site/src/research/vendor/THIRD-PARTY-NOTICES.txt`, and the desktop/Runner
+`surveyjs-notices.txt` build asset.
 
 Qualification entry points are `surveyjs-rendered.mjs` (Planner, presets and
 renderer), `runner-surveyjs-ui.mjs` (actual Runner app, master 2/3/4) and

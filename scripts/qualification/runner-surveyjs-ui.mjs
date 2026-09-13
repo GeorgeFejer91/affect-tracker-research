@@ -245,7 +245,7 @@ try {
     const name = `${language}-${mode}`, profile = await mkdtemp(join(output, "profile-"));
     const keyboard = process.env.AFFECT_SURVEY_KEYBOARD === "1";
     let releaseDebugger; debuggerReady = new Promise(done => { releaseDebugger = done; });
-    const running = execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", ...(keyboard ? ["--remote-debugging-port=0"] : []), `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", "--virtual-time-budget=15000", `--screenshot=${join(output, `${name}.png`)}`, "--dump-dom", `http://127.0.0.1:${server.address().port}/?language=${language}&case=${mode}&version=${recipeVersion}&keyboard=${keyboard ? "1" : "0"}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
+    const running = execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", ...(keyboard ? ["--remote-debugging-port=0"] : ["--virtual-time-budget=15000", `--screenshot=${join(output, `${name}.png`)}`, "--dump-dom"]), `--user-data-dir=${profile}`, "--window-size=1938,1176", "--force-device-scale-factor=1", `http://127.0.0.1:${server.address().port}/?language=${language}&case=${mode}&version=${recipeVersion}&keyboard=${keyboard ? "1" : "0"}`], { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });
     // Observe rejection immediately while the optional debugger connects.
     running.catch(() => {});
     let debug;
@@ -267,7 +267,16 @@ try {
         const picture = await debug.send("Page.captureScreenshot", { format: "png" });
         await writeFile(join(output, `${name}.png`), Buffer.from(picture.data, "base64"));
         await debug.send("Browser.close", {}).catch(() => {});
-        await running;
+        // Remote-debugging Chrome remains resident after dump-DOM on Windows.
+        // This is our isolated headless process, after receipt and screenshot.
+        running.child.kill();
+        await running.catch(error => { if (!error.killed) throw error; });
+      } catch (error) {
+        // Chrome can exit naturally just after producing the final dump-DOM.
+        // Preserve that complete receipt if the debugger closes concurrently.
+        const completed = await running.catch(() => null);
+        if (!completed?.stdout.includes('id="receipt"')) throw error;
+        stdout = completed.stdout;
       } finally { debug?.close(); running.child.kill(); }
     } else ({ stdout } = await running);
     await writeFile(join(output, `${name}.html`), stdout);
