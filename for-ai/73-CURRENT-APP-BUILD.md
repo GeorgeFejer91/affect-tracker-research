@@ -66,3 +66,15 @@ answers. These shortcuts do not start recording, emit LSL markers, or create
 XDF output, and they must not be cited as evidence for full experiment execution.
 They are only a fast way to verify participant-facing questionnaire layout and
 keyboard behaviour before running the stricter native session path.
+
+`Alt+N` and `Alt+B` are the newer researcher-only validation traversal hotkeys.
+They are intentionally absent from the participant UI. From the launcher,
+`Alt+N` loads the previous/current master JSON, uses the standard next
+participant and selected/least-used version defaults, follows the first complete
+language route when needed, enters the participant presentation, and opens the
+first resolved protocol step. During validation traversal, `Alt+N` advances and
+`Alt+B` goes back across questionnaires, ISIs and video steps. Questionnaire
+pages are allowed to advance without satisfying required fields; visible fields
+may be filled with synthetic validation answers when paging. These shortcuts do
+not start a recorded attempt, emit LSL markers or create XDF output, and they
+refuse to hijack an active recorded attempt.

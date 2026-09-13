@@ -50,6 +50,12 @@ export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo 
       view.scrollTo({ top: desiredTop, behavior: reduceMotion ? "auto" : "smooth" });
     });
   }
+  function focusFirstUnansweredQuestion() {
+    const question = model.getAllQuestions(false, false, true)
+      .find(item => item.isVisibleInSurvey && !["html", "image", "expression"].includes(item.getType?.()) && item.isEmpty());
+    const element = questionElement(question);
+    element?.querySelector("input, textarea, select, button")?.focus?.();
+  }
   model.onValueChanged.add((_, options) => { onChange?.({ data: readData(), pageNo: model.currentPageNo }); scheduleSmartScroll(options.question); });
   model.onCurrentPageChanged.add(() => onChange?.({ data: readData(), pageNo: model.currentPageNo }));
   let completing = false;
@@ -70,6 +76,6 @@ export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo 
   return { model, read() { return { data: readData(), pageNo: model.currentPageNo }; },
     validate() { return model.validate(false, true); },
     setDisabled(disabled) { host.inert = disabled; host.setAttribute("aria-busy", String(disabled)); },
-    focusFirstUnanswered() { model.focusFirstQuestionAutomatic(); },
+    focusFirstUnanswered: focusFirstUnansweredQuestion,
     destroy() { host.ownerDocument.defaultView.cancelAnimationFrame(scrollFrame); model.dispose(); host.replaceChildren(); host.classList.remove("affect-surveyjs"); } };
 }

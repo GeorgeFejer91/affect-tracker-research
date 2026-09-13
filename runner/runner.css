@@ -55,7 +55,7 @@ html, body { min-width: 0; margin: 0; }
 .runner-questionnaire-table th, .runner-questionnaire-table td { padding: 12px 6px; border-bottom: 1px solid #373a34; overflow-wrap: anywhere; text-align: center; font-size: 14px; font-weight: normal; }
 .runner-questionnaire-table th:first-child { width: 42%; text-align: left; }
 .runner-questionnaire-table input { width: 20px; height: 20px; margin: 0; }
-#run-stimulus-placeholder { color: #b4b4ac; text-align: center; }
+#run-stimulus-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 24px; color: #b4b4ac; text-align: center; white-space: pre-line; line-height: 1.5; }
 .runner-session-menu { position: fixed; right: 16px; bottom: 12px; font-size: 12px !important; opacity: 0; pointer-events: none; }
 .runner-session-menu:focus-visible { opacity: 1; pointer-events: auto; }
 .runner-run-status p { font-size: 13px; overflow-wrap: anywhere; }
