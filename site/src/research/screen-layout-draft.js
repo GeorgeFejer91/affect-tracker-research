@@ -3,19 +3,23 @@ export const SCREEN_LAYOUT_DRAFT_FIELDS = Object.freeze({
   screenWidth: "Design viewport width", screenHeight: "Design viewport height",
   physicalWidth: "Measured active width", physicalHeight: "Measured active height",
   referenceWidth: "Maximum reference width", referenceHeight: "Maximum reference height",
-  referenceX: "Reference centre X", referenceY: "Reference centre Y",
-  diameter: "Feedback viewport side", offsetX: "Centre offset X", offsetY: "Centre offset Y",
+  referenceX: "Video centre X", referenceY: "Video centre Y",
+  feedbackX: "Flubber centre X", feedbackY: "Flubber centre Y",
+  diameter: "Feedback viewport side",
   gap: "Minimum separation",
 });
-const LAYOUT_FIELDS = ["referenceWidth", "referenceHeight", "referenceX", "referenceY", "diameter", "offsetX", "offsetY", "gap"];
+export const SCREEN_LAYOUT_WARNING_CODES = Object.freeze(["reference-clips", "footprint-clips", "envelope-clips", "video-overlap", "gap-too-small"]);
+const WARNING_CODES = new Set(SCREEN_LAYOUT_WARNING_CODES);
+export const isScreenLayoutWarning = item => WARNING_CODES.has(item?.code);
+const LAYOUT_FIELDS = ["referenceWidth", "referenceHeight", "referenceX", "referenceY", "feedbackX", "feedbackY", "diameter", "gap"];
 const issue = (field, code, message, videoId = null) => ({ field, code, message, videoId });
 
 export function createScreenLayoutDraft() {
   return {
     screenWidth: 1920, screenHeight: 1080, physicalWidth: "", physicalHeight: "",
-    fullViewportMapping: false, units: "relative", referencePolicy: null,
+    fullViewportMapping: false, units: "relative", referencePolicy: "largest-oriented-area",
     referenceWidth: 60, referenceHeight: 60, referenceX: 50, referenceY: 35,
-    diameter: 24, offsetX: 0, offsetY: 75, gap: 3,
+    feedbackX: 50, feedbackY: 80, diameter: 24, gap: 3,
   };
 }
 
@@ -64,7 +68,7 @@ export function applyScreenLayoutFit(result, media, maximumFeedback, boundKind) 
       ? { overlaps: false, gap: null } : separation(bounds, painted);
     result.videos.push({ id: item.id, label: item.label ?? item.id, displayWidth: item.width, displayHeight: item.height,
       bounds, gap: check.gap, boundKind });
-    if (check.overlaps) result.issues.push(issue("offsetY", "video-overlap", `${item.label ?? item.id}: feedback bounds overlap the fitted video.`, item.id));
+    if (check.overlaps) result.issues.push(issue("feedbackY", "video-overlap", `${item.label ?? item.id}: feedback bounds overlap the fitted video.`, item.id));
     else if (check.gap !== null && check.gap + 1e-7 < gap) result.issues.push(issue("gap", "gap-too-small", `${item.label ?? item.id}: separation is below the requested minimum.`, item.id));
   }
   return result;
@@ -96,15 +100,15 @@ export function resolveScreenLayoutDraft(draft, { media = [], envelope = null } 
   const rh = values.referenceHeight * (relative ? screen.height / 100 : scale);
   const cx = values.referenceX * (relative ? screen.width / 100 : scale);
   const cy = values.referenceY * (relative ? screen.height / 100 : scale);
+  const feedbackCx = values.feedbackX * (relative ? screen.width / 100 : scale);
+  const feedbackCy = values.feedbackY * (relative ? screen.height / 100 : scale);
   const diameter = values.diameter * (relative ? Math.min(rw, rh) / 100 : scale);
-  const dx = values.offsetX * (relative ? rw / 100 : scale);
-  const dy = values.offsetY * (relative ? rh / 100 : scale);
   const gap = values.gap * (relative ? Math.min(rw, rh) / 100 : scale);
   const reference = rect(cx, cy, rw, rh);
-  const feedback = rect(cx + dx, cy + dy, diameter, diameter);
-  result.geometry = { screen, reference, feedback, offset: { x: dx, y: dy }, gap, maximumFeedback: null };
+  const feedback = rect(feedbackCx, feedbackCy, diameter, diameter);
+  result.geometry = { screen, reference, feedback, offset: { x: feedback.cx - reference.cx, y: feedback.cy - reference.cy }, gap, maximumFeedback: null };
   if (outside(reference, screen)) issues.push(issue("referenceWidth", "reference-clips", "The fixed reference extends beyond the design viewport. Edit its size or centre."));
-  if (outside(feedback, screen)) issues.push(issue("offsetY", "footprint-clips", "The nominal Flubber footprint extends beyond the design viewport."));
+  if (outside(feedback, screen)) issues.push(issue("feedbackY", "footprint-clips", "The nominal Flubber footprint extends beyond the design viewport."));
 
   let maximumFeedback = null;
   if (envelope !== null) {
@@ -141,7 +145,7 @@ export function convertScreenLayoutDraftUnits(draft, units) {
   const resolved = resolveScreenLayoutDraft(draft);
   if (!resolved.geometry) return { ok: false, draft, issues: resolved.issues };
   if (!["relative", "mm"].includes(units)) return { ok: false, draft, issues: [issue("units", "invalid-unit", "Choose relative percentages or millimetres.")] };
-  const { screen, reference, feedback, offset, gap } = resolved.geometry;
+  const { screen, reference, feedback, gap } = resolved.geometry;
   const measured = calibration(draft, screen);
   if (units !== draft.units && measured.issues.length) return { ok: false, draft, issues: measured.issues };
   if (units === draft.units) return { ok: true, draft: { ...draft }, issues: [] };
@@ -152,9 +156,9 @@ export function convertScreenLayoutDraftUnits(draft, units) {
     referenceHeight: reference.height / (relative ? screen.height / 100 : scale),
     referenceX: reference.cx / (relative ? screen.width / 100 : scale),
     referenceY: reference.cy / (relative ? screen.height / 100 : scale),
+    feedbackX: feedback.cx / (relative ? screen.width / 100 : scale),
+    feedbackY: feedback.cy / (relative ? screen.height / 100 : scale),
     diameter: feedback.width / (relative ? Math.min(reference.width, reference.height) / 100 : scale),
-    offsetX: offset.x / (relative ? reference.width / 100 : scale),
-    offsetY: offset.y / (relative ? reference.height / 100 : scale),
     gap: gap / (relative ? Math.min(reference.width, reference.height) / 100 : scale),
   };
   const checked = resolveScreenLayoutDraft(next);

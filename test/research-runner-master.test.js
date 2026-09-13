@@ -5,8 +5,11 @@ import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState } f
 import { participantCatalogue, participantTimeline, participantPreviewTimeline } from "../runner/src/participants.js";
 import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
 import { reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
-import { assertMasterPlanParity } from "../runner/src/master-presentation.js";
+import { assertMasterPlanParity, resolveMasterDesktopLayoutProjection } from "../runner/src/master-presentation.js";
 const load = async name => readRunnerRecipe(await readFile(new URL(`./fixtures/${name}.canonical.json`, import.meta.url)));
+const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
+const inside = (box, screen) => box.x >= -1e-8 && box.y >= -1e-8
+  && box.x + box.width <= screen.width + 1e-8 && box.y + box.height <= screen.height + 1e-8;
 
 test("Runner preserves the complete master across every explicit variant/language selection", async () => {
   for (const name of ["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-deep-language-v1"]) {
@@ -65,6 +68,26 @@ test("Runner complete feedback projection preserves successor controls and rejec
   const xr = await load("planner-recipe-xr-current-v1");
   const route = enumerateLanguageRoutesV1(xr.recipe.segments.P2.languageSelection)[0];
   await assert.rejects(resolveRunnerSelection(xr, "P001", route.optionIds, xr.recipe.segments.P3.variants[0].variantId), /XR/iu);
+});
+
+test("Runner falls back from viewport mismatch to a centered on-screen video and Flubber stack", async () => {
+  const receipt = await load("planner-recipe-locations-current-v1");
+  const plan = await resolveRunnerSelection(receipt, "P001", ["both", "en"], "variant-3");
+  const exact = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1920, innerHeight: 1080 });
+  assert.equal(exact.mode, "authored");
+  assert.deepEqual(exact.reference, plan.selected.layout.geometry.reference);
+  assert.deepEqual(exact.feedback, plan.selected.layout.geometry.feedback);
+  const fallback = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1536, innerHeight: 864 });
+  assert.equal(fallback.mode, "centered-fallback");
+  assert.ok(fallback.warnings.some(message => /saved target viewport/u.test(message)));
+  near(fallback.scale, 0.8);
+  near(fallback.reference.cx, 768);
+  near(fallback.feedback.cx, 768);
+  assert.ok(fallback.feedback.y >= fallback.reference.y + fallback.reference.height);
+  assert.equal(inside(fallback.reference, fallback.actualViewport), true);
+  assert.equal(inside(fallback.feedback, fallback.actualViewport), true);
+  near(fallback.reference.width / fallback.feedback.width,
+    plan.selected.layout.geometry.reference.width / plan.selected.layout.geometry.feedback.width);
 });
 
 test("native correspondence checks all authored fields and tolerates only derived geometry", async () => {

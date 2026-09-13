@@ -211,7 +211,7 @@ rows; they do not reopen the completed baseline authoring goal.
 | P1 `workspace` | Workspace, study identity, video catalogue | `segments.P1`: workspace, catalogue and oriented geometry | Implemented; exact current-directory verification and rebind |
 | P2 `questionnaires` | Items, scoring and languages | `segments.P2`: definitions, languages, modules, presentation | Implemented; optional instrument content/advanced scoring remain separate |
 | P3 `variants` | Event columns, ISIs and markers | `segments.P3`: ordered variants, named ISIs and planned markers | Implemented; Runner owns allocation and actual timestamps |
-| P4 `layout` | Video fitting and centre-relative Flubber layout | `segments.P4`: complete accepted desktop profile | Implemented; two required explicit reference choices, relative/mm modes |
+| P4 `layout` | Video fitting and centre-relative Flubber layout | `segments.P4`: complete accepted desktop profile | Implemented; largest-video default, optional envelope override, relative/mm modes |
 | P5 `feedback` | Flubber/input/Advanced editor and live preview | `segments.P5`: input, visual, mappings, presentation, response | Implemented; one editor, complete v2 settings and final Save capture |
 | P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | `segments.P6`: included profile or explicit exclusion | Implemented authoring and master round trip; headset execution deferred |
 | P7 `package` | Recipe validation, save/reopen and export | Master envelope, target, policy and integrity | Implemented; strict JS/native readers and actual browser save/Open proof |
@@ -429,8 +429,10 @@ prove video identity reconstruction. See `event_marker` in
 
 **Purpose:** preview and define a reproducible video/Flubber arrangement for
 mixed video sizes.
-**User input:** physical screen dimensions or relative mode, reference method,
-Flubber size, centre offsets and required calibration/reference choices (Q08).
+**User input:** target/fullscreen CSS viewport, optional physical screen
+dimensions or relative mode, editable video centre, Flubber centre and size.
+The default reference method is largest oriented video area; maximum width/height
+envelope remains an expert override.
 **Receives:** P1 display geometry and P5 style/maximum animation extent.
 **Produces:** screen profile, units/reference, video fit, Flubber footprint and
 centre-relative arrangement with whole-screen miniature preview.
@@ -439,21 +441,26 @@ centre-relative arrangement with whole-screen miniature preview.
 geometry. [P4 contract](../docs/planner-p4-layout-contract.md) owns units,
 reference methods, fit, centre conventions and all validation.
 
-Accepted relationship after video fitting:
-`flubberCentre = videoCentre + (offsetX, offsetY)`.
-`offsetX=0` places centres on the same vertical line. Right-positive x/down-
-positive y and a fixed animated Flubber design centre are explicit P4 conventions.
-The researcher confirmed fixed-reference percentages across all videos; save
-that reference explicitly rather than scaling offsets per video. Largest pixel resolution alone
-does not resolve widest/tallest aspect-ratio constraints. Check every fitted
-video and animation extent without silently using per-video bottom-edge alignment.
+Accepted relationship after video fitting: the Planner UI authors geometric
+centres for the fitted video reference and Flubber in the target viewport, then
+saves the Flubber centre as the derived offset from the fitted reference. Equal
+centre X values place both on the same vertical line. Right-positive x/down-
+positive y and a fixed animated Flubber design centre are explicit P4
+conventions. The researcher confirmed fixed-reference percentages across all
+videos; save that reference explicitly rather than scaling offsets per video.
+Largest pixel resolution alone does not resolve widest/tallest aspect-ratio
+constraints. Check every fitted video and animation extent without silently
+using per-video bottom-edge alignment. Off-screen, overlap and separation
+problems are warnings that preserve the authored intent; Runner maps an
+incorrect target viewport to a centered on-screen fallback stack instead of
+blanking the preview/run surface.
 
 - [x] **P4-01 — Preserved compatibility:** historical normalized feedback placement/size retains its meaning; current accepted centre/calibration geometry belongs to P4-02–07.
 - [x] **P4-02 — Implemented Planner:** Whole-screen miniature uses complete actual P1 geometry and P5 maximum painted bounds; no synthetic geometry enters product state.
-- [x] **P4-03 — Implemented Planner:** Explicit required choice of largest oriented video area or maximum oriented width/height envelope; no default. One fixed reference, contain fit and defined centre/axes are saved.
+- [x] **P4-03 — Implemented Planner:** Largest oriented video area is the default reference basis; maximum oriented width/height envelope remains an explicit override. One fixed reference, contain fit and defined centre/axes are saved.
 - [x] **P4-04 — Implemented Planner:** Relative percentages and calibrated millimetres convert while preserving the same reference, centres and drawing geometry; missing required measurements reject.
-- [x] **P4-05 — Implemented Planner:** Accepted P4 profile owns all desktop centre offsets, fitted video and feedback geometry across preview/export/reopen.
-- [x] **P4-06 — Implemented Planner:** Every video and full animation/halo envelope is checked for clipping, overlap, separation and compatible viewport; no silent repositioning.
+- [x] **P4-05 — Implemented Planner:** Accepted P4 profile owns desktop video/Flubber centres, derived saved offset, fitted video and feedback geometry across preview/export/reopen.
+- [x] **P4-06 — Implemented Planner/Runner seam:** Every video and full animation/halo envelope is checked for clipping, overlap and separation as visible warnings; Runner viewport mismatch uses a centered on-screen fallback preserving the video-to-Flubber size ratio.
 - [x] **P4-07 — Implemented Planner:** Independent JS/Rust geometry, both reference methods, relative/physical examples, pending/ready restore and full master round trip pass. Owner fa64e8d and shared875 evidence.
 
 **Acceptance:** preview and saved geometry agree; units/reference are explicit;
@@ -477,10 +484,12 @@ six inspected scenes. See [the exact contract and API](../docs/planner-p4-layout
 and [final component evidence](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
 Integration/P7 subsequently completed the combined acceptance and master
 save/reopen receipts at delivered `1218c9e`; Runner remains separately deferred.
-Current internal draft v2 adds a nullable method; explicit restoration of frozen
-v1 drafts leaves that new choice unselected. The capability boxes now reflect
-collected combined evidence. Runner correspondence is the final separately
-allocated stage and does not block Planner authoring completion.
+Current internal draft v2 remains the canonical recoverable draft shape; older
+offset-shaped drafts are read only to restore editable centres. Explicit
+restoration of frozen v1 drafts leaves their missing reference choice unselected.
+The capability boxes now reflect collected combined evidence. Runner
+correspondence is the final separately allocated stage and does not block
+Planner authoring completion.
 
 ## P5 — Flubber & Controls
 

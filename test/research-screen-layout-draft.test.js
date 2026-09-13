@@ -5,7 +5,8 @@ import { createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutD
 import { screenLayoutDraftMarkup, screenLayoutSceneMarkup } from "../site/src/research/screen-layout-view.js";
 
 const fixture = () => ({ ...createScreenLayoutDraft(), referenceWidth: 1280 / 1920 * 100, referenceHeight: 720 / 1080 * 100,
-  referenceX: 50, referenceY: 400 / 1080 * 100, diameter: 25, offsetX: 0, offsetY: 500 / 720 * 100, gap: 50 / 720 * 100 });
+  referenceX: 50, referenceY: 400 / 1080 * 100, feedbackX: 50, feedbackY: 900 / 1080 * 100,
+  diameter: 25, gap: 50 / 720 * 100 });
 const media = [
   { id: "landscape", source: "synthetic", width: 1920, height: 1080 },
   { id: "portrait", source: "synthetic", width: 1080, height: 1920 },
@@ -35,10 +36,10 @@ test("proposed contain geometry preserves both centres for every aspect ratio", 
 });
 
 test("fixed-reference percentages do not change with the selected video's dimensions", () => {
-  const d = { ...fixture(), offsetX: 10 };
+  const d = { ...fixture(), feedbackX: 55 };
   const a = resolveScreenLayoutDraft(d, { media: [media[0]] });
   const b = resolveScreenLayoutDraft(d, { media: [media[1]] });
-  near(a.geometry.offset.x, 128);
+  near(a.geometry.offset.x, 96);
   assert.deepEqual(a.geometry, b.geometry);
 });
 
@@ -58,7 +59,7 @@ test("unit switching requires measurement and preserves geometry without double 
   assert.equal(mm.ok, true);
   near(mm.draft.referenceWidth, 320);
   near(mm.draft.diameter, 45);
-  near(mm.draft.offsetY, 125);
+  near(mm.draft.feedbackY, 225);
   let current = mm.draft;
   for (let i = 0; i < 50; i++) {
     current = convertScreenLayoutDraftUnits(current, "relative").draft;
@@ -84,7 +85,7 @@ test("unavailable or anisotropic calibration rejects atomically", () => {
 });
 
 test("invalid and out-of-range draft numbers do not clamp or reuse older geometry", () => {
-  for (const [field, value] of [["screenWidth", ""], ["screenHeight", 0], ["screenWidth", 1.5], ["diameter", "NaN"], ["diameter", Infinity], ["offsetX", " "], ["referenceWidth", -1], ["gap", -1], ["offsetY", 100001]]) {
+  for (const [field, value] of [["screenWidth", ""], ["screenHeight", 0], ["screenWidth", 1.5], ["diameter", "NaN"], ["diameter", Infinity], ["feedbackX", " "], ["referenceWidth", -1], ["gap", -1], ["feedbackY", 100001]]) {
     const p = resolveScreenLayoutDraft({ ...fixture(), [field]: value });
     assert.equal(p.geometry, null, field);
     assert.ok(p.issues.some(item => item.field === field), field);
@@ -92,10 +93,10 @@ test("invalid and out-of-range draft numbers do not clamp or reuse older geometr
 });
 
 test("clipping and overlap remain visible without moving or resizing the draft", () => {
-  const overlap = resolveScreenLayoutDraft({ ...fixture(), offsetY: 0 }, { media });
+  const overlap = resolveScreenLayoutDraft({ ...fixture(), feedbackY: 400 / 1080 * 100 }, { media });
   assert.equal(overlap.issues.filter(item => item.code === "video-overlap").length, 3);
   near(overlap.geometry.feedback.cy, 400);
-  const clips = resolveScreenLayoutDraft({ ...fixture(), offsetY: 200 });
+  const clips = resolveScreenLayoutDraft({ ...fixture(), feedbackY: 1840 / 1080 * 100 });
   assert.ok(clips.issues.some(item => item.code === "footprint-clips"));
   near(clips.geometry.feedback.cy, 1840);
   assert.ok(resolveScreenLayoutDraft({ ...fixture(), referenceWidth: 120 }).issues.some(item => item.code === "reference-clips"));
@@ -122,13 +123,14 @@ test("the provisional fixture adapter rejects unowned real geometry and duplicat
   assert.equal(resolveScreenLayoutDraft(fixture(), { media: null }).issues.at(-1).code, "invalid-media");
 });
 
-test("layout markup provides numeric alternatives and a required explicit reference choice", () => {
+test("layout markup provides numeric alternatives and an editable reference choice", () => {
   const markup = screenLayoutDraftMarkup();
   assert.match(markup, /Choose a reference method/u);
   assert.match(markup, /may not match any single video/u);
   assert.match(markup, /aria-live="polite"/u);
-  assert.match(markup, /for="layout-offsetX"/u);
-  assert.match(markup, /for="layout-offsetY"/u);
+  assert.match(markup, /for="layout-feedbackX"/u);
+  assert.match(markup, /for="layout-feedbackY"/u);
+  assert.match(markup, /data-layout-detect/u);
   assert.doesNotMatch(markup, /type="submit"|data-confirm-section/u);
   assert.match(screenLayoutSceneMarkup(resolveScreenLayoutDraft(fixture())), /role="img" aria-labelledby=/u);
 });

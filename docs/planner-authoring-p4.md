@@ -54,42 +54,46 @@ addresses. The saved paths below are relative to `segments.P4` in the master.
 | `P4.calibration.activeHeightMm` | `layout-physicalHeight` | `calibration.activeHeightMm` |
 | `P4.calibration.fullViewportMapping` | `layout-fullViewportMapping` | Complete `calibration` object with `mapping: full-viewport`, or `null` when absent |
 | `P4.units` | `layout-units` | `units`; setting a different unit converts all geometric fields through the existing owner |
-| `P4.reference.method` | `layout-referencePolicy` | `reference.source.policy`; `null` is an incomplete draft only |
+| `P4.reference.method` | `layout-referencePolicy` | `reference.source.policy`; largest oriented video area is the default draft basis; `null` is an incomplete historical/API draft only |
 | `P4.reference.maximumWidth` | `layout-referenceWidth` | `reference.box.width` |
 | `P4.reference.maximumHeight` | `layout-referenceHeight` | `reference.box.height` |
 | `P4.reference.centreX` | `layout-referenceX` | `reference.centre.x` |
 | `P4.reference.centreY` | `layout-referenceY` | `reference.centre.y` |
 | `P4.feedback.viewportSide` | `layout-diameter` | `feedback.overlayViewportSide`; square drawing viewport, not painted diameter |
-| `P4.feedback.offsetX` | `layout-offsetX` | `feedback.offset.x` |
-| `P4.feedback.offsetY` | `layout-offsetY` | `feedback.offset.y` |
+| `P4.feedback.centreX` | `layout-feedbackX` | Authored Flubber centre X; saved as derived `feedback.offset.x` |
+| `P4.feedback.centreY` | `layout-feedbackY` | Authored Flubber centre Y; saved as derived `feedback.offset.y` |
 | `P4.feedback.minimumGap` | `layout-gap` | `feedback.minimumGap` |
 
 Viewport dimensions are integers 1–32768 CSS px. Physical measurements are
-numbers 1–100000 mm. Reference box and feedback side are 0.001–100000; centres
-and offsets are −100000–100000; gap is 0–100000. Relative X/Y reference dimensions
-and centres use viewport width/height. Feedback offsets use the **fixed fitted
-reference** width/height; drawing side and gap use its shorter side. Millimetres
-require uniform full-viewport calibration. Existing full owner validation also
-checks aspect, bounds, clipping, overlap, separation and complete P1/P5 data.
+numbers 1–100000 mm. Reference box and feedback side are 0.001–100000; video and
+Flubber centres are −100000–100000; gap is 0–100000. Relative X/Y dimensions and
+centres use viewport width/height. The accepted profile derives the saved
+Flubber offset from those centres; drawing side and gap use the fixed fitted
+reference's shorter side. Millimetres require uniform full-viewport calibration.
+Existing full owner validation also checks aspect, bounds, clipping, overlap,
+separation and complete P1/P5 data; clipping/overlap/separation are warnings
+that do not move the authored layout.
 
 Ordered operations have closed arguments and existing UI counterparts:
 
 | Operation | Arguments | UI operation and saved result |
 | --- | --- | --- |
-| `convertUnits` | exactly `{units: "relative"}` or `{units: "mm"}` | Select the same Geometry units option. All authored sizes/centres/offsets/gap convert together; resolved geometry is preserved. Same semantics as setting `P4.units`. |
+| `convertUnits` | exactly `{units: "relative"}` or `{units: "mm"}` | Select the same Geometry units option. All authored sizes/centres/gap convert together; resolved geometry is preserved. Same semantics as setting `P4.units`. |
 | `clearCalibration` | exactly `{}` | Clear both measured dimension controls and uncheck full-viewport mapping. In relative mode this can prepare `calibration: null`; in mm mode it stays incomplete until repaired. No implicit unit change. |
 
 Both operations run at their exact position in the edit list. For example,
-offset → convert → offset interprets the last value in the newly chosen unit.
-Neither operation writes media, a file, acceptance or an extra experiment field.
+Flubber centre → convert → Flubber centre interprets the last value in the newly
+chosen unit. Neither operation writes media, a file, acceptance or an extra
+experiment field.
 
-The five derived entries map to existing outputs: `P4.geometry` and
+The six derived entries map to existing outputs: `P4.geometry` and
 `P4.videoFits` describe the miniature/readout and video-fit inspection;
 `P4.reference.candidates` and `P4.reference.source` describe automatic analysis;
-`P4.conventions` records the existing contain-fit/right-down/design-centre/exact
-viewport rules. The saved source is derived from the complete catalogue, and
-cannot be supplied by a caller. Missing dependencies yield explicit unavailable
-geometry. These queries need no new authoring controls.
+`P4.layoutWarnings` reports non-blocking placement warnings; `P4.conventions`
+records the existing contain-fit/right-down/design-centre/Runner-fallback rules.
+The saved source is derived from the complete catalogue, and cannot be supplied
+by a caller. Missing dependencies yield explicit unavailable geometry. These
+queries need no new authoring controls.
 
 ## Component evidence and remaining shared work
 

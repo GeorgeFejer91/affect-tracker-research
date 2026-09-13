@@ -31,6 +31,24 @@ This is a guidance change only. Limits still present in source are implementatio
 limitations to assess, not proof of unlimited support or instructions to preserve
 them. Runtime changes and support claims require their own implementation evidence.
 
+## Current-canonical versioning amendment — 2026-09-13
+
+Git worktree and branch commits, with pushed GitHub history when publication is
+authorized, are the primary version-control mechanism for this project. Keep the
+checked-out repository focused on the most up-to-date consolidated canonical
+source, contracts and AI guidance. Do not create new local `v1`/`v2`/`v3`
+generations merely to remember prior internal designs, drafts or documentation
+states; once a successor is accepted, the previous local shape belongs in commit
+history or a clearly historical archive, not beside the current contract as a
+parallel authority.
+
+Explicit schema or protocol versions remain appropriate only for externally
+persisted user files, Runner intake, cross-runtime wire formats, independently
+reproduced fixtures, or a deliberate compatibility window. Such versions need a
+real consumer boundary and tests. Internal recoverable drafts and AI routing
+should usually be updated in place to the current canonical form, with narrow
+shape-based readers only where existing user data needs recovery.
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and

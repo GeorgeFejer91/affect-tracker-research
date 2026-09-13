@@ -16,6 +16,13 @@ fn invalid(message: impl Into<String>) -> CommandError {
     CommandError::invalid_contract(message)
 }
 
+fn desktop_layout_warning(code: &str) -> bool {
+    matches!(
+        code,
+        "reference-clips" | "footprint-clips" | "envelope-clips" | "video-overlap" | "gap-too-small"
+    )
+}
+
 pub(crate) fn hash(value: &impl serde::Serialize) -> ResearchResult<String> {
     canonical_sha256(value, &[])
 }
@@ -76,8 +83,14 @@ pub(crate) fn desktop_media(
             },
         )
         .map_err(|code| invalid(format!("P4: {code}")))?;
-    if !result.issues.is_empty() {
-        return Err(invalid(format!("P4: {}", result.issues.join(", "))));
+    let blockers: Vec<&str> = result
+        .issues
+        .iter()
+        .copied()
+        .filter(|code| !desktop_layout_warning(code))
+        .collect();
+    if !blockers.is_empty() {
+        return Err(invalid(format!("P4: {}", blockers.join(", "))));
     }
     Ok(
         json!({"profile":profile,"geometry":result.geometry,"videos":result.videos,

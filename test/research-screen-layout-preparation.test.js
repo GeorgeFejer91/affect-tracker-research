@@ -31,7 +31,7 @@ test("preparation yields one detached contribution, no-op refresh preserves it, 
   prepared.contribution.feedback.offset.x = 888;
   assert.equal(h.state.getSnapshot().contribution.feedback.offset.x, 0);
   const before = h.state.getSnapshot(); h.state.refreshDependencies(); assert.deepEqual(h.state.getSnapshot(), before);
-  h.state.replaceDraft({ ...h.state.draft, offsetX: 8 }); assert.equal(h.state.getSnapshot().pending, true);
+  h.state.replaceDraft({ ...h.state.draft, feedbackX: h.state.draft.feedbackX + 1 }); assert.equal(h.state.getSnapshot().pending, true);
   await h.state.prepareContribution(); h.changeP1(); assert.equal(h.state.getSnapshot().contribution, null);
   await h.state.prepareContribution(); h.changeP5(); assert.equal(h.state.getSnapshot().contribution, null);
 });
@@ -52,11 +52,11 @@ test("content-only reopen renders editable fields with actual dependencies and r
   const h = harness(), value = profile(); value.feedback.offset.x = 12;
   const restored = await h.state.restoreContribution(value, { contentOnly: true });
   assert.equal(restored.pending, true); assert.equal(restored.contribution, null);
-  assert.equal(h.state.draft.offsetX, 12);
+  assert.equal(h.state.draft.feedbackX, desktopLayoutDraftFromProfile(value).feedbackX);
   assert.deepEqual(restored.dependencyRevisions, [{ segment: "P1", revision: 31 }, { segment: "P5", revision: 9 }]);
-  h.state.replaceDraft({ ...h.state.draft, offsetX: 15 }); h.changeP1();
-  assert.equal(h.state.draft.offsetX, 15);
-  assert.equal((await h.state.prepareContribution()).contribution.feedback.offset.x, 15);
+  h.state.replaceDraft({ ...h.state.draft, feedbackX: h.state.draft.feedbackX + 1 }); h.changeP1();
+  const expected = desktopLayoutProfileFromDraft(h.state.draft, fixture.media, "largest-oriented-area").feedback.offset.x;
+  assert.equal((await h.state.prepareContribution()).contribution.feedback.offset.x, expected);
 });
 
 test("ready restore commits once; invalid/stale/cancelled and racing restores never replace newer authoring", async () => {
@@ -71,15 +71,16 @@ test("ready restore commits once; invalid/stale/cancelled and racing restores ne
   const first = h.state.restoreContribution(profile(), { contentOnly: true });
   const secondValue = profile(); secondValue.feedback.offset.x = 7;
   const second = h.state.restoreContribution(secondValue, { contentOnly: true });
-  wait.resolve(); await assert.rejects(first, /stale/u); await second; assert.equal(h.state.draft.offsetX, 7);
+  wait.resolve(); await assert.rejects(first, /stale/u); await second;
+  assert.equal(h.state.draft.feedbackX, desktopLayoutDraftFromProfile(secondValue).feedbackX);
 });
 
 test("internal draft restore supersedes contribution restore and cannot install imported revisions", async () => {
   const h = harness(), wait = deferred(); h.delay(wait.promise);
   const first = h.state.restoreContribution(profile());
-  const document = h.state.getDraftDocument(); document.draft.offsetX = 11;
+  const document = h.state.getDraftDocument(); document.draft.feedbackX = 51;
   await h.state.restoreDraft(document); wait.resolve(); await assert.rejects(first, /stale/u);
-  assert.equal(h.state.draft.offsetX, 11); assert.equal(h.state.getSnapshot().pending, true);
+  assert.equal(h.state.draft.feedbackX, 51); assert.equal(h.state.getSnapshot().pending, true);
   await assert.rejects(h.state.restoreDraft({ ...document, dependencyRevisions: [{ segment: "P1", revision: 99 }] }));
 });
 
@@ -105,10 +106,17 @@ test("synchronous producer invalidation during the final getter also fences prep
 
 test("historical internal draft reader preserves v1 and restores the new policy unselected", async () => {
   const h = harness();
-  const old = h.state.getDraftDocument(); old.version = 1; delete old.draft.referencePolicy;
+  const old = h.state.getDraftDocument();
+  old.version = 1;
+  old.draft.offsetX = profile().feedback.offset.x;
+  old.draft.offsetY = profile().feedback.offset.y;
+  delete old.draft.feedbackX;
+  delete old.draft.feedbackY;
+  delete old.draft.referencePolicy;
   await h.state.restoreDraft(old);
   assert.equal(h.state.getDraftDocument().version, 2);
   assert.equal(h.state.draft.referencePolicy, null);
+  assert.equal(h.state.draft.feedbackX, desktopLayoutDraftFromProfile(profile()).feedbackX);
   assert.equal(h.state.getSnapshot().pending, true);
   await assert.rejects(h.state.restoreDraft({ ...old, draft: { ...old.draft, referencePolicy: "largest-oriented-area" } }));
 });
@@ -118,8 +126,8 @@ test("late validation failure cannot report an old field after a newer edit", as
   const delayed = new Promise((_resolve, fail) => { reject = fail; });
   const h = harness(); h.delay(delayed);
   const preparing = h.state.prepareContribution();
-  h.state.replaceDraft({ ...h.state.draft, offsetX: 21 });
+  h.state.replaceDraft({ ...h.state.draft, feedbackX: 51 });
   reject(Object.assign(new TypeError("old field failure"), { field: "diameter", code: "range" }));
   await assert.rejects(preparing, error => /stale/u.test(error.message) && error.field === undefined);
-  assert.equal(h.state.draft.offsetX, 21);
+  assert.equal(h.state.draft.feedbackX, 51);
 });

@@ -1,4 +1,5 @@
-import { SCREEN_LAYOUT_DRAFT_FIELDS, createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "./screen-layout-draft.js";
+import { SCREEN_LAYOUT_DRAFT_FIELDS, createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits,
+  isScreenLayoutWarning } from "./screen-layout-draft.js";
 import { screenLayoutSceneMarkup } from "./screen-layout-view.js";
 import { createScreenLayoutState } from "./screen-layout-state.js";
 import { createScreenLayoutDependencyBinding } from "./screen-layout-dependencies.js";
@@ -61,29 +62,32 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
     const geometry = projection.geometry;
     const number = value => Number(value.toFixed(2));
     query("[data-layout-readout]").textContent = geometry
-      ? `Reference ${number(geometry.reference.width)} × ${number(geometry.reference.height)} CSS px · Feedback centre (${number(geometry.feedback.cx)}, ${number(geometry.feedback.cy)}) · offsets (${number(geometry.offset.x)}, ${number(geometry.offset.y)})`
+      ? `Video centre (${number(geometry.reference.cx)}, ${number(geometry.reference.cy)}) · Flubber centre (${number(geometry.feedback.cx)}, ${number(geometry.feedback.cy)}) · reference ${number(geometry.reference.width)} × ${number(geometry.reference.height)} CSS px`
       : "Geometry unavailable until all layout inputs are ready.";
     const issues = [...projection.issues, ...conversionIssues].map(item => {
       const field = desktopLayoutDraftField(item.field), label = SCREEN_LAYOUT_DRAFT_FIELDS[field];
       return { ...item, field, message: label ? item.message.replace(item.field, label) : item.message };
     });
+    const blockers = issues.filter(item => !isScreenLayoutWarning(item));
+    const warnings = issues.filter(isScreenLayoutWarning);
     const errors = query("[data-layout-errors]");
     errors.replaceChildren(...issues.map(item => {
       const li = document.createElement("li");
+      if (isScreenLayoutWarning(item)) li.dataset.severity = "warning";
       li.textContent = item.message;
       return li;
     }));
     errors.hidden = !issues.length;
-    for (const control of controls) control.setAttribute("aria-invalid", String(issues.some(item => item.field === control.dataset.layoutField)));
-    query("[data-layout-status]").textContent = issues.length
-      ? `${issues.length} layout ${issues.length === 1 ? "issue" : "issues"} to resolve.`
+    for (const control of controls) control.setAttribute("aria-invalid", String(blockers.some(item => item.field === control.dataset.layoutField)));
+    query("[data-layout-status]").textContent = blockers.length
+      ? `${blockers.length} layout ${blockers.length === 1 ? "issue" : "issues"} to resolve.`
+      : warnings.length ? `${warnings.length} layout ${warnings.length === 1 ? "warning" : "warnings"}; saved geometry can still be used.`
       : "Geometry checks passed.";
     for (const unit of root.querySelectorAll("[data-layout-unit]")) {
       const field = unit.dataset.layoutUnit;
       if (field.startsWith("screen") || field.startsWith("physical")) continue;
-      const basis = ["referenceWidth", "referenceX"].includes(field) ? "viewport width"
-        : ["referenceHeight", "referenceY"].includes(field) ? "viewport height"
-          : field === "offsetX" ? "reference width" : field === "offsetY" ? "reference height" : "shorter reference side";
+      const basis = ["referenceWidth", "referenceX", "feedbackX"].includes(field) ? "viewport width"
+        : ["referenceHeight", "referenceY", "feedbackY"].includes(field) ? "viewport height" : "shorter reference side";
       unit.textContent = draft.units === "mm" ? "(mm)" : `(% ${basis})`;
     }
     const notice = query("[data-layout-dependencies]");
@@ -132,9 +136,17 @@ export function createScreenLayoutDraftEditor(root, { fixtures = {}, dependencie
   }
 
   function click(event) {
-    if (!event.target.closest?.("[data-layout-reset]")) return;
-    event.stopPropagation();
-    draft = createScreenLayoutDraft();
+    if (event.target.closest?.("[data-layout-reset]")) {
+      event.stopPropagation();
+      draft = createScreenLayoutDraft();
+    } else if (event.target.closest?.("[data-layout-detect]")) {
+      event.stopPropagation();
+      const view = document.defaultView;
+      const width = Math.round(view?.screen?.width ?? view?.visualViewport?.width ?? view?.innerWidth ?? 0);
+      const height = Math.round(view?.screen?.height ?? view?.visualViewport?.height ?? view?.innerHeight ?? 0);
+      if (width < 1 || height < 1) return;
+      draft = { ...draft, screenWidth: width, screenHeight: height };
+    } else return;
     conversionIssues = [];
     syncFields();
     state.replaceDraft(draft);

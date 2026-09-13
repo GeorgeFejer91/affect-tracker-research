@@ -1,20 +1,41 @@
 import { canonicalJson } from "./canonical.js";
 import { createScreenLayoutDraft, resolveScreenLayoutDraft } from "./screen-layout-draft.js";
-import { validateDesktopLayoutContribution, desktopLayoutDraftFromProfile } from "./desktop-layout-contribution.js";
+import { validateDesktopLayoutContribution, desktopLayoutDraftFromProfile, cloneDesktopLayoutDraft } from "./desktop-layout-contribution.js";
 import { DESKTOP_REFERENCE_POLICIES } from "./desktop-layout.js";
 
 export const SCREEN_LAYOUT_DRAFT_SCHEMA = "affect-research-screen-layout-draft";
+export const SCREEN_LAYOUT_DRAFT_VERSION = 2;
 const fields = Object.keys(createScreenLayoutDraft());
-const legacyFields = fields.filter(field => field !== "referencePolicy");
+const offsetFields = Object.freeze(fields.filter(field => !["feedbackX", "feedbackY"].includes(field)).concat(["offsetX", "offsetY"]));
+const legacyFields = offsetFields.filter(field => field !== "referencePolicy");
 const exact = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
+const number = value => typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : NaN;
+function upgradeOffsetDraft(draft) {
+  const next = Object.fromEntries(fields.map(field => [field, draft[field] ?? createScreenLayoutDraft()[field]]));
+  next.referencePolicy = Object.hasOwn(draft, "referencePolicy") ? draft.referencePolicy : null;
+  const referenceX = number(draft.referenceX), referenceY = number(draft.referenceY);
+  const referenceWidth = number(draft.referenceWidth), referenceHeight = number(draft.referenceHeight);
+  const offsetX = number(draft.offsetX), offsetY = number(draft.offsetY);
+  if ([referenceX, referenceY, referenceWidth, referenceHeight, offsetX, offsetY].every(Number.isFinite)) {
+    next.feedbackX = draft.units === "mm" ? referenceX + offsetX : referenceX + offsetX * referenceWidth / 100;
+    next.feedbackY = draft.units === "mm" ? referenceY + offsetY : referenceY + offsetY * referenceHeight / 100;
+  }
+  return next;
+}
+function draftFieldsFor(document) {
+  if (document.version === 1) return legacyFields;
+  if (document.version !== SCREEN_LAYOUT_DRAFT_VERSION) return null;
+  return Object.hasOwn(document.draft ?? {}, "offsetX") || Object.hasOwn(document.draft ?? {}, "offsetY") ? offsetFields : fields;
+}
 
 /** Recoverable authoring state only. Never an accepted desktop layout contract. */
 export function validateScreenLayoutDraftDocument(value) {
-  if (!exact(value, ["schema", "version", "draft"]) || value.schema !== SCREEN_LAYOUT_DRAFT_SCHEMA || ![1, 2].includes(value.version)
-    || !exact(value.draft, value.version === 1 ? legacyFields : fields)) throw new TypeError("Unsupported or malformed screen layout draft.");
+  const documentFields = exact(value, ["schema", "version", "draft"]) && value.schema === SCREEN_LAYOUT_DRAFT_SCHEMA
+    ? draftFieldsFor(value) : null;
+  if (!documentFields || !exact(value.draft, documentFields)) throw new TypeError("Unsupported or malformed screen layout draft.");
   const draft = value.draft;
-  for (const field of value.version === 1 ? legacyFields : fields) {
+  for (const field of documentFields) {
     const raw = draft[field];
     const valid = field === "units" ? ["relative", "mm"].includes(raw)
       : field === "referencePolicy" ? raw === null || DESKTOP_REFERENCE_POLICIES.includes(raw)
@@ -23,6 +44,11 @@ export function validateScreenLayoutDraftDocument(value) {
     if (!valid) throw new TypeError(`Invalid screen layout draft field: ${field}.`);
   }
   return structuredClone(value);
+}
+
+function normalizeDraftDocument(document) {
+  const validated = validateScreenLayoutDraftDocument(document);
+  return exact(validated.draft, fields) ? validated.draft : upgradeOffsetDraft(validated.draft);
 }
 
 export const validateScreenLayoutContribution = validateDesktopLayoutContribution;
@@ -45,7 +71,7 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
     const identity = canonicalJson(nextProjection.dependencyIdentity ?? null);
     const changed = force || canonicalJson(next) !== canonicalJson(draft) || identity !== dependencyIdentity;
     if (changed && revision === Number.MAX_SAFE_INTEGER) throw new RangeError("Screen layout revision limit reached.");
-    draft = structuredClone(next);
+    draft = cloneDesktopLayoutDraft(next);
     projection = nextProjection;
     dependencyIdentity = identity;
     if (changed) { revision += 1; operation += 1; contribution = structuredClone(restoredContribution); onChange(snapshot()); }
@@ -68,12 +94,12 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
     return snapshot();
   }
   return Object.freeze({
-    get draft() { return structuredClone(draft); },
+    get draft() { return cloneDesktopLayoutDraft(draft); },
     get projection() { return structuredClone(projection); },
     getSnapshot: snapshot,
-    getDraftDocument() { return { schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: 2, draft: structuredClone(draft) }; },
+    getDraftDocument() { return { schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: SCREEN_LAYOUT_DRAFT_VERSION, draft: cloneDesktopLayoutDraft(draft) }; },
     replaceDraft(next) {
-      next = validateScreenLayoutDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: 2, draft: next }).draft;
+      next = normalizeDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: SCREEN_LAYOUT_DRAFT_VERSION, draft: next });
       return commit(next, resolve(next));
     },
     async stageDraft(transform, { isCurrent, signal } = {}) {
@@ -86,8 +112,8 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
           || operation !== expectedOperation || identity !== expectedIdentity) throw new Error("Screen layout staging became stale.");
       };
       check();
-      const next = validateScreenLayoutDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: 2,
-        draft: transform(structuredClone(draft)) }).draft;
+      const next = normalizeDraftDocument({ schema: SCREEN_LAYOUT_DRAFT_SCHEMA, version: SCREEN_LAYOUT_DRAFT_VERSION,
+        draft: transform(cloneDesktopLayoutDraft(draft)) });
       const nextProjection = structuredClone(resolve(next, { observe: false }));
       const nextIdentity = canonicalJson(nextProjection.dependencyIdentity ?? null);
       const changed = canonicalJson(next) !== canonicalJson(draft) || nextIdentity !== expectedIdentity;
@@ -156,10 +182,7 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
       });
     },
     async restoreDraft(document, { isCurrent = () => true } = {}) {
-      const validated = validateScreenLayoutDraftDocument(document);
-      // Preserve the historical v1 reader. Explicit draft restoration upgrades
-      // only editable content and leaves the new choice unselected.
-      const next = validated.version === 1 ? { ...validated.draft, referencePolicy: null } : validated.draft;
+      const next = normalizeDraftDocument(document);
       const expectedRevision = revision;
       const expectedOperation = ++operation;
       // A restoration is a transaction; interleaved edits or teardown cancel it.
@@ -171,7 +194,7 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
     async prepareContribution({ isCurrent = () => true } = {}) {
       const expectedRevision = revision, expectedOperation = ++operation;
       let value;
-      try { value = await prepareDraft(structuredClone(draft)); }
+      try { value = await prepareDraft(cloneDesktopLayoutDraft(draft)); }
       catch (error) { current(expectedRevision, expectedOperation, isCurrent); throw error; }
       current(expectedRevision, expectedOperation, isCurrent);
       return prepared(value);
@@ -187,7 +210,7 @@ export function createScreenLayoutState({ resolve = resolveScreenLayoutDraft, on
       };
       check();
       let value;
-      try { value = structuredClone(await prepareDraft(structuredClone(draft))); }
+      try { value = structuredClone(await prepareDraft(cloneDesktopLayoutDraft(draft))); }
       catch (error) { check(); throw error; }
       check();
       const changed = canonicalJson(value) !== canonicalJson(contribution);

@@ -59,7 +59,7 @@ const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 const config = () => ({ visual: clone(DEFAULT_SETTINGS.visual), mappings: clone(DEFAULT_SETTINGS.advanced.mappings) });
 const draft = () => ({ ...createScreenLayoutDraft(), referencePolicy: "largest-oriented-area", referenceWidth: 1280 / 1920 * 100, referenceHeight: 720 / 1080 * 100,
-  referenceX: 50, referenceY: 400 / 1080 * 100, diameter: 20, offsetY: 500 / 720 * 100, gap: 0 });
+  referenceX: 50, referenceY: 400 / 1080 * 100, feedbackX: 50, feedbackY: 900 / 1080 * 100, diameter: 20, gap: 0 });
 // Explicit synthetic P1 API fixture. Actual producer conformance is checked separately.
 function catalogue(revision = 7) {
   return { revision, enabled: true, pending: false, dependencyRevisions: [], contribution: { revision: 2, entries: [
@@ -199,7 +199,7 @@ test("draft restoration is closed, recoverable, and independent of imported depe
   for (const malformed of [
     { ...saved, version: 99 }, { ...saved, dependencyRevisions: [{ segment: "P1", revision: 7 }] },
     { ...saved, draft: { ...saved.draft, diameter: Infinity } }, { ...saved, draft: { ...saved.draft, unknown: 1 } },
-    { ...saved, draft: { ...saved.draft, offsetX: "x".repeat(129) } },
+    { ...saved, draft: { ...saved.draft, feedbackX: "x".repeat(129) } },
   ]) await assert.rejects(h.owner.restoreDraft(malformed), /draft/u);
   assert.deepEqual(h.owner.getSnapshot(), before);
   const copy = validateScreenLayoutDraftDocument(saved); copy.draft.diameter = 99;
@@ -293,7 +293,7 @@ test("wrong algorithm, centre, viewport and nonfinite P5 extents never become fi
 test("hidden feedback has no painted overlap and invalid P4 fields still track saved dependency revisions", async () => {
   const h = harness(); await h.binding.refreshCatalogue();
   h.changeFeedback(c => { c.visual.hideFeedback = true; });
-  h.owner.replaceDraft({ ...h.owner.draft, offsetY: 0 });
+  h.owner.replaceDraft({ ...h.owner.draft, feedbackY: 400 / 1080 * 100 });
   assert.equal(h.owner.projection.geometry.maximumFeedback.width, 0);
   assert.equal(h.owner.projection.issues.some(i => i.code === "video-overlap"), false);
   h.owner.replaceDraft({ ...h.owner.draft, diameter: "" });

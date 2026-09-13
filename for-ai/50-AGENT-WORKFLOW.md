@@ -92,7 +92,7 @@ label.
 | --- | --- | --- |
 | **UI Finalization** | Work out layout, hierarchy, visual styling, responsive behavior, accessibility presentation, and front-end interactions quickly in the locally rebuilt Windows Tauri app. A clearly labelled, non-shipping synthetic fixture or typed preview projection may stand in for incomplete backend data when it has no acquisition, persistence, IPC, package, hash, Run, or evidence authority. | The changed local UI was observed and its focused checks passed. Do not claim backend correctness, installer/package compatibility, Pages compatibility, deployment, or research qualification. |
 | **Backend Verification** | After the UI direction is accepted, connect and verify the real browser/Rust owners and their contracts: package resolution, IPC, workspace, input, media, scheduling, persistence/recovery, outputs, and LSL as applicable. A bounded pass may cover a named subset, but promotion from this stage requires an inventory of every current local application function. Keep visual changes to those needed for truthful state and error presentation. | The named backend functions and cross-layer paths passed the reported software or physical checks. Do not claim repository/deployment synchronization or unperformed qualification. |
-| **Repository/Web Synchronization** | Reconcile the accepted local application and source candidate with GitHub and the static Chrome/Edge application; inspect the whole diff, run candidate/build-closure gates, and bind evidence to exact artifact and commit identities. Name any proposed commit, push, merge, or deploy action in the Pass check. | The specifically verified local, remote, CI, artifact, and deployed states match. The stage name alone does not authorize an external write and does not imply full installed, physical, timing, or research qualification. |
+| **Repository/Web Synchronization** | Reconcile the accepted local application and source candidate with GitHub and the static Chrome/Edge application; inspect the whole diff, run candidate/build-closure gates, and bind evidence to exact artifact and commit identities. App-changing passes follow the standing app-first handoff below: open the rebuilt single current PC app for inspection first, then push the matching source to GitHub while the researcher reviews it. | The specifically verified local, remote, CI, artifact, and deployed states match. This standing workflow authorizes ordinary source push for completed app-changing work, but does not imply deployment, signing, release publication, installed, physical, timing, or research qualification. |
 
 The effective stage is the stricter of the user-confirmed stage and the stage
 required by the files and authorities actually changed. An agent may propose an
@@ -102,6 +102,28 @@ return to **UI Finalization** explicitly rather than mixing unbounded work into
 the backend pass. A previously installed executable verifies only its bound
 source/artifact identity; after source changes, rebuild and reopen the local
 Tauri app before treating it as evidence for the current pass.
+
+### Standard current-app handoff
+
+The 2026-09-13 researcher workflow makes immediate inspection of the latest app
+the default finish for app-changing work. When a pass changes the Planner,
+Runner or another user-reviewable desktop application surface, the agent must
+finish by compiling/staging the latest candidate into the one authoritative PC
+app location, replacing or archiving superseded local app builds so they are no
+longer launch targets, and opening the latest app with the new functionality for
+researcher inspection as soon as the focused checks pass. This is standing
+opt-in to launch the newly built current app; it is not permission to drive the
+researcher's desktop, synthesize input, or claim installed/research
+qualification from the launch alone.
+
+After the latest app is open for inspection, continue the Git work in the
+background: commit the exact completed source/evidence slice and push it to
+GitHub as the canonical version-control record for the repository. Do not push
+if the user explicitly requested local-only/no-push, required checks failed,
+the diff contains unresolved or unrelated work that cannot be separated, branch
+ownership is unsafe, credentials are unavailable, or a repository safeguard
+blocks publication. Do not launch an older build to satisfy this rule; if the
+latest app cannot be built or safely opened, report that blocker directly.
 
 Stage completion and promotion use these boundaries:
 
@@ -162,6 +184,13 @@ a shared checkout's branch, stage another agent's files, or merge into it while
 another writer is active. Record branch, worktree, base commit, owner, scope,
 and status before starting. Do not create empty branches merely to imply past
 work was isolated, and do not rewrite shared history to fabricate separation.
+Git worktree/branch commits are the normal version-control mechanism. Do not
+multiply local `v1`/`v2`/`v3` documents, feature copies or draft generations just
+to preserve an older in-progress shape; once the current canonical behavior is
+accepted, prior local states are retained by Git history and, after authorized
+publication, GitHub. Add schema/protocol versions only for persisted external
+artifacts, Runner/wire consumers, cross-runtime fixtures or explicit
+compatibility windows.
 
 Keep segment implementation, tests, and necessary documentation together in
 small explicit-path commits. For shared files such as `app.js`, `ui-view.js`,
@@ -176,11 +205,13 @@ the combined local application. An explicitly allocated integration owner
 collects ready segment commits, checks ancestry and charter compatibility,
 merges compatible work, resolves only understood integration conflicts, runs
 the applicable combined gates, and rebuilds/verifies the app in the background
-from that exact checkout. Opening or interacting with it requires the specific
-user opt-in described below. Never use blanket ours/theirs conflict resolution. Record excluded
-or blocked branches and why; do not restore historical Playground branches.
-Commit and merge only when authorized by the user's workflow; local convergence
-does not authorize pushing, deployment, signing, or publication.
+from that exact checkout. For app-changing milestones, the integration owner
+then replaces the single current PC app, opens that latest app for inspection,
+and pushes the matching source branch under the standard current-app handoff.
+Never use blanket ours/theirs conflict resolution. Record excluded or blocked
+branches and why; do not restore historical Playground branches. This workflow
+does not authorize force-pushing, deployment, signing, releases, store
+submission, production credentials, or bypassing failing safeguards.
 
 The board is versioned, not a live shared database: worktrees contain independent
 copies. Read the integration branch's board as well as the local copy before
@@ -359,14 +390,16 @@ and never unwind a panic across FFI.
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
 6. Verify behavior through non-interactive CLI/test commands, process-isolated
    fixtures, and a background/headless renderer whenever the claim can be
-   covered that way. Never take control of the researcher's computer, move
-   windows, synthesize pointer/keyboard input, or foreground an application as
-   part of routine testing. Never infer physical/platform qualification from
-   mocks, a background renderer, or a build.
+   covered that way. During development, do not take control of the
+   researcher's computer, move windows, synthesize pointer/keyboard input, or
+   foreground applications as routine testing. The final launch of the rebuilt
+   single current PC app is the standard handoff described above, not a
+   substitute for tests. Never infer physical/platform qualification from mocks,
+   a background renderer, an opened window, or a build.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
 
-### User-control protection and background verification
+### User-control protection, main-app launch and background verification
 
 Routine verification must leave the user's desktop, windows, focus, pointer,
 keyboard, clipboard, and active applications untouched. Agents must use the
@@ -378,25 +411,36 @@ video frames without taking over the desktop. Keep this verification separate
 from participant-facing runtime authority and do not add a remote-control or
 general-purpose CLI surface contrary to the charter.
 
-Do not use computer-control, browser-control, window activation, GUI launch,
-synthetic input, or foreground visual exercise for testing unless the user
-explicitly opts in for that specific check. A GUI is never a default fallback
-merely because it is available. If a claim cannot be established without an
-interactive check, report it as unverified and ask before touching the user's
-desktop; do not silently perform the check.
+The standard current-app handoff is the exception to the no-foreground default:
+after app-changing work passes its focused checks, launch the newly rebuilt
+single current PC app so the researcher can inspect it immediately. Before doing
+so, close or avoid stale/superseded app instances when that can be done without
+interrupting an active experiment or unrelated user work; otherwise report the
+blocker rather than opening a second canonical-looking app. This launch must be
+the exact latest candidate, not a copied shortcut, stale installer, helper
+engine, or older build with the same title.
 
-When the user explicitly opts in to a named interactive check, keep it bounded:
+Do not use computer-control, browser-control, window activation outside the
+current app handoff, synthetic input, or foreground visual exercise for testing
+unless the user explicitly asks for that specific check. The standing handoff
+authorizes opening the latest app for review only; it does not authorize
+clicking through workflows, typing, moving windows, or qualifying physical
+behavior. If a claim cannot be established without an interactive check, report
+it as unverified and ask before touching the user's desktop; do not silently
+perform the check.
+
+When the user explicitly requests a named interactive check, keep it bounded:
 
 1. run the proportionate tests and rebuild the current desktop frontend/native
    development candidate so the window cannot be serving stale assets;
 2. do not close, focus, move, or interrupt any existing user window or active
-   experiment; use a separately identified candidate only after confirming it
-   cannot affect the user's work;
-3. obtain the user's explicit approval immediately before launching or
-   foregrounding the candidate, then exercise only the named behavior; and
+   experiment; use only the current rebuilt candidate after confirming it cannot
+   affect the user's work;
+3. open or foreground only the current rebuilt candidate, then exercise only the
+   named behavior; and
 4. report the exact launch mode, interaction performed, and any behavior that
-   remains unchecked. Without that opt-in, a background receipt is the maximum
-   claim and the interactive gate remains open.
+   remains unchecked. Without that named request, the standard handoff launch is
+   the maximum foreground action and the interactive gate remains open.
 
 The two-clean-independent-instance package reproduction benchmark is a
 permanent gate, not a one-time implementation test. Any package-contract,
@@ -425,9 +469,15 @@ staging step proves only that step.
   reformat, or stage unrelated work.
 - Keep coherent concerns separable and stage explicit paths. Create tested
   checkpoints before risky migration or lengthy platform work when requested.
-- Commit, push, merge, deploy, or publish only within the user's requested
-  workflow and repository safeguards. Never rewrite shared history or bypass a
-  failing check.
+- For app-changing passes, the requested workflow is: focused checks pass, build
+  and replace the one main local PC app, open that latest app for researcher
+  inspection, then commit and push the exact source/evidence slice to GitHub
+  while the researcher reviews it. The GitHub tree is the canonical repository
+  version-control record; local app builds are inspection artifacts bound to a
+  recorded source identity, not competing versions.
+- Outside that standing app-first workflow, commit, push, merge, deploy, or
+  publish only within the user's requested workflow and repository safeguards.
+  Never rewrite shared history or bypass a failing check.
 - After an authorized push, verify the exact remote commit and applicable CI.
   For a web-facing deployment, use a cache-bypassed check of the exact Pages
   project URL. A push or green build alone is not deployed behavior evidence.

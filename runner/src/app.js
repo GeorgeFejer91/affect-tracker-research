@@ -340,8 +340,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       query("run-native-video-host").hidden = true;
       clearMasterDesktopLayout(root);
       let layoutStatus = "";
-      try { applyMasterDesktopLayout(root, validationPreview.plan, windowObject); }
-      catch (error) { layoutStatus = `\nLayout preview unavailable at this window size: ${messageOf(error)}`; }
+      try {
+        const layout = applyMasterDesktopLayout(root, validationPreview.plan, windowObject);
+        layoutStatus = layout.warnings.length ? `\n${layout.warnings.join("\n")}` : "";
+      } catch (error) { layoutStatus = `\nLayout preview unavailable: ${messageOf(error)}`; }
       stage.hidden = false;
       feedback.hidden = step.kind !== "video";
       query("run-stimulus-placeholder").textContent = `${label.toUpperCase()}\n${title}\n${stepDetail(step)}${layoutStatus}`;
@@ -929,8 +931,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (protocol.active) {
       // Questionnaires intentionally hide the feedback surface. Its region is
       // re-registered when the next native stimulus is prepared.
-      if (!query("runner-stage").hidden) await setRegion(root.querySelector(".run-feedback-stage"), "runFeedback");
       await protocol.resize();
+      if (!query("runner-stage").hidden) await setRegion(root.querySelector(".run-feedback-stage"), "runFeedback");
     }
     else { inputReceipt = null; await invoke("research_input_cancel_setup"); }
   }));

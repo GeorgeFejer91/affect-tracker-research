@@ -72,10 +72,7 @@ export class NativeMasterProtocolAdapter {
   async questionnaireDraft(detail) { await this.command(this.answerAction("draft", detail)); }
   async questionnaireSubmit(detail) { await this.command(this.answerAction("submit", detail)); await this.poll(); }
   async resize() {
-    const viewport = this.plan.selected.layout.profile.viewport;
-    if (this.windowObject.innerWidth !== viewport.widthCssPx || this.windowObject.innerHeight !== viewport.heightCssPx) {
-      await this.finish(); throw new Error("The saved fullscreen layout changed. The attempt was stopped and retained as partial.");
-    }
+    if (this.status) await this.render(this.status, this.plan);
   }
   destroy() { this.destroyed = true; this.windowObject.clearInterval(this.timer); }
 }

@@ -36,7 +36,7 @@ function adapterFixture(version) {
   const receipt = { schema: "affect-runner-master-attempt", version, ...plan, runId: "run-12345678-1234-1234-1234-123456789abc", attemptId: "attempt-test" };
   const status = { ...receipt, schema: "affect-runner-master-status", active: true, phase: "questionnaire", position: 1, answers: {} };
   const adapter = new NativeMasterProtocolAdapter({ invoke: async (name, args) => { calls.push({ name, args }); return name.includes("start") ? receipt : status; }, render: async () => {}, terminal: async () => {}, fail: assert.fail, windowObject: { setInterval: () => 1, clearInterval: () => {} } });
-  return { adapter, calls, plan, status };
+  return { adapter, calls, plan, receipt, status };
 }
 
 test("v3 adapter uses participant-only Start, shared status and tagged actions without text coercion", async () => {
@@ -62,6 +62,17 @@ test("v1 adapter keeps legacy commands and option ID members", async () => {
   await adapter.questionnaireDraft({ protocolStepPosition: 1, answers: { item: "yes" } });
   assert.equal(calls[0].name, "research_runner_master_start");
   assert.deepEqual(calls.at(-1), { name: "research_runner_master_action", args: { runId: adapter.receipt.runId, action: { type: "draft", position: 1, answers: [{ itemId: "item", optionId: "yes" }] } } });
+  adapter.destroy();
+});
+
+test("v3 adapter resize re-renders the current layout without stopping the attempt", async () => {
+  const { adapter, calls, plan, receipt, status } = adapterFixture(3);
+  let rendered = null;
+  adapter.render = async (nextStatus, nextPlan) => { rendered = { status: nextStatus, plan: nextPlan }; };
+  Object.assign(adapter, { active: true, plan, receipt, status });
+  await adapter.resize();
+  assert.deepEqual(rendered, { status, plan });
+  assert.deepEqual(calls, []);
   adapter.destroy();
 });
 

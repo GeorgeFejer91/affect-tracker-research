@@ -115,14 +115,14 @@ test("clipping, overlap, gap and full animated halo failures never move authored
   assert.equal(resolve(p, feedback).geometry.maximumFeedback.width, 0);
 });
 
-test("wrong P5 envelope or observed viewport fails explicitly without fallback", () => {
+test("wrong P5 envelope fails while observed viewport mismatch is reportable", () => {
   const p = profile(), side = resolveDesktopLayoutBase(p).geometry.feedback.width;
   const envelope = resolveFeedbackEnvelope(fixture.feedback, side);
   for (const [key, value] of [["origin", "centroid"], ["algorithmVersion", "guessed"], ["overlaySideCssPx", side + 1], ["halfExtentCssPx", NaN], ["halfExtentCssPx", -1], ["configurationKey", ""]]) {
     assert.throws(() => resolveDesktopLayoutGeometry(p, fixture.media, { ...envelope, [key]: value }), { code: "envelope" });
   }
   assert.equal(assertDesktopLayoutViewport(p, { widthCssPx: 1920, heightCssPx: 1080 }), true);
-  assert.throws(() => assertDesktopLayoutViewport(p, { widthCssPx: 1280, heightCssPx: 720 }), { code: "incompatible" });
+  assert.equal(assertDesktopLayoutViewport(p, { widthCssPx: 1280, heightCssPx: 720 }), false);
 });
 
 test("canonical reader rejects duplicate/unknown/noncanonical data without choosing a missing policy", async () => {
@@ -135,13 +135,15 @@ test("canonical reader rejects duplicate/unknown/noncanonical data without choos
   await assert.rejects(validateDesktopLayoutContribution(p, fixture));
 });
 
-test("accepted composition rejects altered media, feedback and fit instead of trusting profile or claimed bounds", async () => {
+test("accepted composition rejects altered media and feedback while preserving placement warnings", async () => {
   const p = profile(), changed = structuredClone(fixture);
   changed.workspace.videoCatalogue.entries[0].geometry.displayWidthPx += 1;
   await assert.rejects(validateDesktopLayoutContribution(p, changed));
   await assert.rejects(validateDesktopLayoutContribution(p, { ...fixture, feedback: { ...fixture.feedback, halfExtentCssPx: 0 } }));
   const overlap = profile(); overlap.feedback.offset.y = 0;
-  await assert.rejects(validateDesktopLayoutContribution(overlap, fixture), { code: "video-overlap" });
+  assert.deepEqual(await validateDesktopLayoutContribution(overlap, fixture), overlap);
+  assert.deepEqual((await resolveDesktopLayoutContribution(overlap, fixture)).issues, []);
+  assert.ok(resolve(overlap).issues.some(item => item.code === "video-overlap"));
   const missing = profile(); missing.reference.source.assetId = `asset-${"d".repeat(64)}`;
   await assert.rejects(validateDesktopLayoutContribution(missing, fixture), { code: "source-mismatch" });
 });

@@ -48,17 +48,23 @@ immutable final `master-result.v1.json` containing artifact hashes. An unfinishe
 attempt remains used; starting another requires explicit rerun confirmation.
 Master resume/finalize-only recovery is not implemented and is visibly disabled.
 
-P4 requires the authored exact fullscreen CSS viewport and fixed reference box;
-it does not permit fitting an experiment into a differently sized window. P5's
-complete response owns grid steps, full-span continuous holds, separate/repeated
-presses and absolute-position snapping. Native OS repeat is ignored, opposing
-holds cancel, and overdue repeat polling reports missed repeats without a burst.
-P2 label repetition creates consecutive table groups, not pages; different visible
-answer labels immediately begin a new group. Required responses and explicit
-nullable recorded codes retain P2's meanings.
+P4 supplies an authored target fullscreen CSS viewport and fixed reference box.
+When the actual fullscreen viewport matches, Runner uses the authored geometry
+exactly. When it differs, Runner must not blank the presentation: it uses a
+centered fallback projection that horizontally aligns the fitted video centre
+and Flubber centre, places Flubber below the video, keeps both boxes on screen
+when mathematically possible, and preserves the saved video-to-Flubber size
+ratio while shrinking no more than needed for the current viewport. The mismatch
+is still reported as a warning. P5's complete response owns grid steps, full-span
+continuous holds, separate/repeated presses and absolute-position snapping.
+Native OS repeat is ignored, opposing holds cancel, and overdue repeat polling
+reports missed repeats without a burst. P2 label repetition creates consecutive
+table groups, not pages; different visible answer labels immediately begin a new
+group. Required responses and explicit nullable recorded codes retain P2's
+meanings.
 
 The native worker requires actual qualified GstPlay, fresh exact P1 media
-bindings, an exact fullscreen viewport, a native input-test receipt and idle
+bindings, an observed fullscreen viewport, a native input-test receipt and idle
 shared services. The renderer acknowledges a painted occurrence before its
 native form/ISI transition or video preparation. Only native observed Playing
 enables acquisition. One poll emits at most one sample; missed deadlines are

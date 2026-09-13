@@ -7,14 +7,15 @@ function field(key, unit, min = null) {
 
 export function screenLayoutDraftMarkup() {
   return `<div id="screen-layout-editor" class="screen-layout-draft" data-screen-layout-draft>
-    <p class="field-help">Define one fixed reference for all videos. Confirm this section to include its validated layout in the experiment recipe.</p>
+    <p class="field-help">Define one target display and one fixed video-to-Flubber arrangement for all videos. Confirm this section to include its validated layout in the experiment recipe.</p>
     <div class="layout-miniature" data-layout-scene></div>
     <p class="field-help" data-layout-dependencies>Video display geometry and maximum animation bounds are unavailable. The feedback square shows its drawing viewport; fit is not verified.</p>
     <p class="layout-legend">Border: screen · dashed frame: reference · filled rectangle: video · dotted frame: maximum animation · solid square: feedback viewport · crosses: centres</p>
     <output data-layout-readout class="layout-readout"></output>
     <fieldset><legend>Design viewport</legend><div class="layout-fields">
       ${field("screenWidth", "(CSS px)", 1)}${field("screenHeight", "(CSS px)", 1)}
-    </div><p class="field-help">Full-screen rendering area. Initial values are editable examples.</p></fieldset>
+    </div><p class="field-help">Full-screen rendering area. Initial values are editable; use the current display size when it matches the target monitor.</p>
+      <button type="button" data-layout-detect>Use current window size</button></fieldset>
     <details class="layout-calibration"><summary>Physical measurements and mapping</summary>
       <div class="layout-fields">${field("physicalWidth", "(mm)", 1)}${field("physicalHeight", "(mm)", 1)}</div>
       <label class="layout-check"><input id="layout-fullViewportMapping" data-layout-field="fullViewportMapping" type="checkbox" aria-describedby="layout-field-errors"> The design viewport covers the measured active display</label>
@@ -22,16 +23,16 @@ export function screenLayoutDraftMarkup() {
     </details>
     <label for="layout-units" class="layout-units">Geometry units<select id="layout-units" data-layout-field="units"><option value="relative">Relative percentages</option><option value="mm">Millimetres</option></select></label>
     <label for="layout-referencePolicy" class="layout-units">Reference method<select id="layout-referencePolicy" data-layout-field="referencePolicy" required aria-describedby="layout-reference-help layout-field-errors"><option value="">Choose a reference method</option><option value="largest-oriented-area">Largest oriented video by pixel area</option><option value="maximum-oriented-dimensions">Maximum width/height envelope</option></select></label>
-    <p id="layout-reference-help" class="field-help">Pixel area selects an actual video by oriented width × height. The combined envelope uses the largest width and height across the library; it may not match any single video.</p>
+    <p id="layout-reference-help" class="field-help">Largest oriented video by pixel area is selected by default. The combined envelope uses the largest width and height across the library; it may not match any single video.</p>
     <fieldset><legend>Fixed reference frame</legend><div class="layout-fields">
-      ${field("referenceWidth", "(% viewport width)", 0.001)}${field("referenceHeight", "(% viewport height)", 0.001)}
-      ${field("referenceX", "(% viewport width)")}${field("referenceY", "(% viewport height)")}
+       ${field("referenceWidth", "(% viewport width)", 0.001)}${field("referenceHeight", "(% viewport height)", 0.001)}
+       ${field("referenceX", "(% viewport width)")}${field("referenceY", "(% viewport height)")}
     </div></fieldset>
-    <fieldset><legend>Feedback size and centre offsets</legend><div class="layout-fields">
+    <fieldset><legend>Feedback size and centre</legend><div class="layout-fields">
       ${field("diameter", "(% shorter reference side)", 0.001)}${field("gap", "(% shorter reference side)", 0)}
-      ${field("offsetX", "(% reference width)")}${field("offsetY", "(% reference height)")}
+      ${field("feedbackX", "(% viewport width)")}${field("feedbackY", "(% viewport height)")}
     </div><p class="field-help">Size sets the square drawing viewport. The dotted frame includes the full saved animation and halo bounds.</p></fieldset>
-    <details class="layout-conventions"><summary>Layout conventions</summary><p class="field-help">Contain the selected reference within the maximum width and height, then contain each full video without cropping. +X points right, +Y down. Feedback uses a fixed design centre. Percentage offsets always use the same fitted reference frame.</p></details>
+    <details class="layout-conventions"><summary>Layout conventions</summary><p class="field-help">Contain the selected reference within the maximum width and height, then contain each full video without cropping. +X points right, +Y down. The video and Flubber centres are authored in the target viewport; saved JSON stores the Flubber centre as an offset from the fitted reference.</p></details>
     <div data-layout-fixture-controls hidden><label for="layout-video"><span data-layout-video-label>Inspect video fit</span><select id="layout-video" data-layout-video></select></label></div>
     <output data-layout-status role="status" aria-live="polite" class="layout-status"></output>
     <ul id="layout-field-errors" data-layout-errors class="layout-errors"></ul>

@@ -21,6 +21,11 @@ File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHART
 arbitrary whole-file ceilings are no longer requirements. Historical implemented
 limits do not instruct agents to retain or reinstate them.
 
+Current-canonical versioning follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#current-canonical-versioning-amendment--2026-09-13).
+The historical master table below preserves external JSON compatibility; it is
+not an instruction to add new local draft/document generations when Git history
+is enough.
+
 ## Composition and interpretation
 
 Planner UI and CLI edit the same owner models. Confirmation accepts complete
@@ -60,7 +65,7 @@ See [master](../docs/planner-master-recipe-v1.md),
 | P1 Workspace/videos | Study, logical roots, locations/content IDs, hashes, lengths, durations and versioned geometry | P3 references; P4/P6 fit; native media binding. Video bytes remain external, hash-bound assets |
 | P2 Questionnaires/languages | Definitions/SurveyJS assets, exact reference metadata, provenance, modules, language tree and presentation | Form sequence, pinned renderer, native answer validation, durable responses/information stream |
 | P3 Versions/ISIs | Named ISIs, variants, ordered occurrences, library identity and marker meaning | Exact selected chronology. `allocation:{kind:"runnerAssigned"}` declares ownership, not a repeating/cyclic algorithm |
-| P4 Desktop layout | Reference method, viewport/calibration, units, sizes, centres and fit | Shared geometry, native viewport/media enforcement and participant rendering |
+| P4 Desktop layout | Target viewport/calibration, units, sizes, video centre, Flubber centre and fit | Shared geometry, Planner warnings, Runner smart viewport fallback and participant rendering |
 | P5 Feedback/input | Bindings, renderer, colors/labels, halo, mappings and response grid/timing/hold | Shared feedback projection and native response reducer. Legacy step/geometry fields remain inactive compatibility data |
 | P6 XR | Explicit exclusion or complete spatial profile/target | Editable authoring; desktop Runner rejects XR |
 | P7 / root | Sampling, output, playback/audio, authored LSL convention and integrity | Compiler/intake/native worker. Session/recording choices belong to Runner |

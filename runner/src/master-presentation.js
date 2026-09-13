@@ -14,20 +14,63 @@ export function assertMasterPlanParity(expected, observed) {
   same(expected, observed);
 }
 
-/** P4 uses exact authored viewport compatibility. Never fit or rescale a master
- * into an arbitrary window and imply that the authored geometry was preserved. */
-export function applyMasterDesktopLayout(root, plan, viewport) {
-  const profile = plan.selected.layout.profile;
-  if (viewport.innerWidth !== profile.viewport.widthCssPx || viewport.innerHeight !== profile.viewport.heightCssPx) {
-    throw new Error(`This experiment requires a ${profile.viewport.widthCssPx} × ${profile.viewport.heightCssPx} CSS-pixel fullscreen viewport; the current viewport is ${viewport.innerWidth} × ${viewport.innerHeight}.`);
+const rect = (cx, cy, width, height) => ({ x: cx - width / 2, y: cy - height / 2, width, height, cx, cy });
+const inside = (box, screen) => box.x >= -1e-7 && box.y >= -1e-7
+  && box.x + box.width <= screen.width + 1e-7 && box.y + box.height <= screen.height + 1e-7;
+const round = value => Number(value.toFixed(3));
+
+function readViewport(viewport) {
+  const width = viewport?.innerWidth, height = viewport?.innerHeight;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    throw new Error("The current presentation viewport is unavailable.");
   }
+  return { width, height };
+}
+
+function intendedVerticalGap(reference, feedback, minimumGap) {
+  if (feedback.cy >= reference.cy) return Math.max(0, feedback.y - (reference.y + reference.height), minimumGap ?? 0);
+  return Math.max(0, reference.y - (feedback.y + feedback.height), minimumGap ?? 0);
+}
+
+export function resolveMasterDesktopLayoutProjection(plan, viewport) {
+  const profile = plan.selected.layout.profile;
+  const geometry = plan.selected.layout.geometry;
+  const target = { width: profile.viewport.widthCssPx, height: profile.viewport.heightCssPx };
+  const actual = readViewport(viewport);
+  if (actual.width === target.width && actual.height === target.height) {
+    return { mode: "authored", targetViewport: target, actualViewport: actual, scale: 1, warnings: [],
+      reference: structuredClone(geometry.reference), feedback: structuredClone(geometry.feedback) };
+  }
+  const reference = geometry.reference, feedback = geometry.feedback;
+  const gap = intendedVerticalGap(reference, feedback, geometry.gap);
+  const basis = { width: Math.max(reference.width, feedback.width), height: reference.height + gap + feedback.height };
+  const scale = Math.min(1, actual.width / target.width, actual.height / target.height, actual.width / basis.width, actual.height / basis.height);
+  if (!Number.isFinite(scale) || scale <= 0) throw new Error("The saved video and feedback layout cannot be projected into this viewport.");
+  const x = actual.width / 2, total = basis.height * scale, top = Math.max(0, (actual.height - total) / 2);
+  const projectedReference = rect(x, top + reference.height * scale / 2, reference.width * scale, reference.height * scale);
+  const projectedFeedback = rect(x, projectedReference.y + projectedReference.height + gap * scale + feedback.height * scale / 2,
+    feedback.width * scale, feedback.height * scale);
+  const warnings = [
+    `The saved target viewport is ${target.width} × ${target.height} CSS px; the current fullscreen viewport is ${round(actual.width)} × ${round(actual.height)} CSS px.`,
+    `Runner is using the centered fallback layout: video and Flubber are horizontally aligned, Flubber is below the video, and both preserve the saved size ratio at ${round(scale)}× scale.`,
+  ];
+  if (!inside(projectedReference, actual) || !inside(projectedFeedback, actual)) {
+    warnings.push("The fallback projection could not keep the complete video and Flubber boxes within the current viewport.");
+  }
+  return { mode: "centered-fallback", targetViewport: target, actualViewport: actual, scale,
+    warnings, reference: projectedReference, feedback: projectedFeedback };
+}
+
+export function applyMasterDesktopLayout(root, plan, viewport) {
+  const projection = resolveMasterDesktopLayoutProjection(plan, viewport);
   const stage = root.querySelector("#runner-stage"); stage.classList.add("runner-master-layout");
   const place = (element, box) => {
     element.style.left = `${box.x}px`; element.style.top = `${box.y}px`;
     element.style.width = `${box.width}px`; element.style.height = `${box.height}px`;
   };
-  place(stage.querySelector(".stimulus-stage"), plan.selected.layout.geometry.reference);
-  place(stage.querySelector(".run-feedback-stage"), plan.selected.layout.geometry.feedback);
+  place(stage.querySelector(".stimulus-stage"), projection.reference);
+  place(stage.querySelector(".run-feedback-stage"), projection.feedback);
+  return projection;
 }
 
 export function clearMasterDesktopLayout(root) {

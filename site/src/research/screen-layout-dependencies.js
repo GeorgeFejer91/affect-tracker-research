@@ -7,7 +7,7 @@ import { desktopLayoutProfileFromDraft, desktopLayoutDraftFromProfile } from "./
 const issue = (field, code, message) => ({ field, code, message, videoId: null });
 const revision = value => Number.isSafeInteger(value) && value >= 0;
 
-/** Both reference interpretations are inspection candidates until Q08 is settled. */
+/** Reference interpretations shown to the researcher; largest video is the default draft basis. */
 export function screenLayoutReferenceCandidates(videos) {
   if (!videos.length) return null;
   const byArea = [...videos].sort((a, b) => b.width * b.height - a.width * a.height

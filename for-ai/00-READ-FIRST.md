@@ -7,6 +7,12 @@ File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHART
 arbitrary whole-file ceilings are no longer requirements. Historical implemented
 limits do not instruct agents to retain or reinstate them.
 
+Versioning policy follows the [2026-09-13 current-canonical amendment](15-RESEARCH-V1-CHARTER.md#current-canonical-versioning-amendment--2026-09-13):
+Git worktree/branch commits and authorized GitHub history retain older states.
+Do not add local schema/document generations for ordinary internal design
+iteration; update the current canonical contract unless an external saved-file,
+wire, Runner or fixture compatibility boundary truly requires a version.
+
 ## Reading order
 
 Read these core documents completely, in order: this file,

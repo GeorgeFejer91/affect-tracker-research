@@ -83,7 +83,7 @@ test("P4 command catalogue exactly covers every writable draft field and read-on
   const h = await harness(), result = await h.execute({ kind: "catalogue" });
   assert.equal(result.status, "ok");
   assert.equal(h.owner.settings.filter(field => field.writable).length, Object.keys(createScreenLayoutDraft()).length);
-  assert.equal(h.owner.settings.filter(field => !field.writable).length, 5);
+  assert.equal(h.owner.settings.filter(field => !field.writable).length, 6);
   assert.deepEqual(Object.keys(h.owner.read().values).sort(), h.owner.settings.map(field => field.id).sort());
   assert.ok(h.owner.settings.every(field => field.id.startsWith("P4.") && field.label && field.classification));
   assert.deepEqual(h.owner.operations.map(item => item.id), ["convertUnits", "clearCalibration"]);
@@ -101,8 +101,8 @@ test("every writable P4 setting has matching UI edit, session readback and exact
     ["reference.method", "maximum-oriented-dimensions", "referencePolicy"], ["units", "mm", "units"],
     ["reference.maximumWidth", 230, "referenceWidth"], ["reference.maximumHeight", 120, "referenceHeight"],
     ["reference.centreX", 240, "referenceX"], ["reference.centreY", 80, "referenceY"],
-    ["feedback.viewportSide", 4.25, "diameter"], ["feedback.offsetX", -6.5, "offsetX"],
-    ["feedback.offsetY", 95, "offsetY"], ["feedback.minimumGap", 1.5, "gap"],
+    ["feedback.viewportSide", 4.25, "diameter"], ["feedback.centreX", 240, "feedbackX"],
+    ["feedback.centreY", 130, "feedbackY"], ["feedback.minimumGap", 1.5, "gap"],
   ];
   assert.deepEqual(examples.map(([id]) => `P4.${id}`).sort(), h.owner.settings.filter(field => field.writable).map(field => field.id).sort());
   for (const [id, value, key] of examples) {
@@ -123,6 +123,7 @@ test("every writable P4 setting has matching UI edit, session readback and exact
   const uiProfile = (await ui.editor.prepareContribution()).contribution;
   assert.deepEqual(cliProfile, uiProfile);
   for (const descriptor of h.owner.settings.filter(field => field.writable)) {
+    if (descriptor.jsonPath === null) continue;
     const value = descriptor.jsonPath.split(".").slice(2).reduce((node, key) => node[key], cliProfile);
     if (descriptor.id === "P4.calibration.fullViewportMapping") assert.equal(value.mapping, "full-viewport");
     else assert.equal(value, h.owner.read().values[descriptor.id], descriptor.id);
@@ -131,11 +132,11 @@ test("every writable P4 setting has matching UI edit, session readback and exact
 
 test("a fresh P4 editor authors its complete profile through CLI fields without importing layout JSON", async () => {
   const h = await harness({ restore: false });
-  assert.equal(h.owner.read().values["P4.reference.method"], null);
+  assert.equal(h.owner.read().values["P4.reference.method"], "largest-oriented-area");
   const edits = [set("reference.method", "largest-oriented-area"), set("viewport.widthCssPx", 1920), set("viewport.heightCssPx", 1080),
     set("calibration.activeWidthMm", 480), set("calibration.activeHeightMm", 270), set("calibration.fullViewportMapping", true), set("units", "relative"),
     set("reference.maximumWidth", 60), set("reference.maximumHeight", 45), set("reference.centreX", 50), set("reference.centreY", 30),
-    set("feedback.viewportSide", 4), set("feedback.offsetX", 0), set("feedback.offsetY", 90), set("feedback.minimumGap", 1)];
+    set("feedback.viewportSide", 4), set("feedback.centreX", 50), set("feedback.centreY", 90), set("feedback.minimumGap", 1)];
   assert.deepEqual(edits.map(edit => edit.field).sort(), h.owner.settings.filter(field => field.writable).map(field => field.id).sort());
   assert.equal((await h.execute({ kind: "apply", edits })).status, "applied");
   assert.equal(h.editor.getSnapshot().pending, true);
@@ -161,12 +162,12 @@ test("ordered unit operations use the current candidate and preserve both fixed 
     assert.equal((await h.execute(set("units", "relative"))).status, "applied");
     ui.root.input("units", "relative"); assert.deepEqual(h.owner.read(), ui.owner.read());
     near(h.owner.read().values["P4.geometry"], before["P4.geometry"]);
-    const mixed = await h.execute({ kind: "apply", edits: [set("feedback.offsetX", 10), operation("convertUnits", { units: "mm" }), set("feedback.offsetX", 8)] });
+    const mixed = await h.execute({ kind: "apply", edits: [set("feedback.centreX", 55), operation("convertUnits", { units: "mm" }), set("feedback.centreX", 280)] });
     assert.ok(["applied", "incomplete"].includes(mixed.status));
-    ui.root.input("offsetX", 10); ui.root.input("units", "mm"); ui.root.input("offsetX", 8);
+    ui.root.input("feedbackX", 55); ui.root.input("units", "mm"); ui.root.input("feedbackX", 280);
     assert.deepEqual(h.owner.read(), ui.owner.read());
-    assert.equal(h.owner.read().values["P4.feedback.offsetX"], 8);
-    assert.equal(h.owner.read().values["P4.geometry"].offset.x, 32);
+    assert.equal(h.owner.read().values["P4.feedback.centreX"], 280);
+    assert.equal(h.owner.read().values["P4.geometry"].feedback.cx, 1120);
     assert.deepEqual(h.sources(), sources);
     await h.execute(set("units", "relative")); ui.root.input("units", "relative");
     await h.execute({ kind: "apply", edits: [operation("clearCalibration")] });
@@ -181,15 +182,15 @@ test("ordered unit operations use the current candidate and preserve both fixed 
 test("staging is detached, has no notification/acceptance, and commits once only after guard preflight", async () => {
   const h = await harness(); await h.editor.prepareContribution();
   const before = h.owner.read(), snapshot = h.editor.getSnapshot(), count = h.changes.length;
-  const edits = [set("feedback.offsetX", 3)];
+  const edits = [set("feedback.centreX", 51)];
   const pending = h.owner.stage(edits, lifetime()); edits[0].value = 500;
   const staged = await pending;
   assert.deepEqual(h.owner.read(), before); assert.deepEqual(h.editor.getSnapshot(), snapshot); assert.equal(h.changes.length, count);
   assert.equal(staged.isCurrent(), true); assert.doesNotThrow(() => staged.commit());
   assert.equal(staged.isCurrent(), false); assert.equal(h.changes.length, count);
-  assert.equal(h.editor.getDraftDocument().draft.offsetX, 3);
+  assert.equal(h.editor.getDraftDocument().draft.feedbackX, 51);
   staged.afterCommit(); staged.afterCommit(); assert.equal(h.changes.length, count + 1);
-  assert.equal(h.owner.read().values["P4.feedback.offsetX"], 3);
+  assert.equal(h.owner.read().values["P4.feedback.centreX"], 51);
   assert.equal(h.editor.getSnapshot().pending, true); assert.equal(h.editor.getSnapshot().contribution, null);
 });
 
@@ -198,10 +199,10 @@ test("malformed/unknown/read-only/range/type operations reject a whole batch wit
   const invalid = [set("geometry", {}), set("viewport.widthCssPx", 1.5), set("viewport.heightCssPx", "1080"),
     set("feedback.viewportSide", 0), set("feedback.minimumGap", -1),
     set("calibration.fullViewportMapping", 1), set("reference.method", "automatic"), set("unknown", 1),
-    set("feedback.offsetX", Infinity), { ...set("feedback.offsetX", 2), extra: true },
+    set("feedback.centreX", Infinity), { ...set("feedback.centreX", 2), extra: true },
     operation("convertUnits", { units: "cm" }), operation("convertUnits", { units: "mm", extra: true }),
     operation("clearCalibration", { confirmed: true }), operation("reset"), { ...operation("clearCalibration"), owner: "P5" }];
-  for (const bad of invalid) await assert.rejects(h.owner.stage([set("feedback.offsetX", 7), bad], lifetime()));
+  for (const bad of invalid) await assert.rejects(h.owner.stage([set("feedback.centreX", 57), bad], lifetime()));
   assert.deepEqual(h.owner.read(), before); assert.deepEqual(h.editor.getSnapshot(), snapshot); assert.equal(h.changes.length, count);
 });
 
@@ -226,20 +227,20 @@ test("incomplete drafts stay honest and writable without fabricating geometry or
 });
 
 test("staging rejects edits, producer drift, cancellation and disposal before publication", async () => {
-  for (const change of [h => h.root.input("offsetX", "9"), h => h.changeP1(), h => h.changeP5(), h => h.editor.destroy()]) {
-    const h = await harness(), pending = h.owner.stage([set("feedback.offsetX", 7)], lifetime());
+  for (const change of [h => h.root.input("feedbackX", "57"), h => h.changeP1(), h => h.changeP5(), h => h.editor.destroy()]) {
+    const h = await harness(), pending = h.owner.stage([set("feedback.centreX", 57)], lifetime());
     const rejected = assert.rejects(pending, /stale/u);
     await change(h);
     await rejected;
   }
   for (const cancel of [options => { options.isCurrent = () => false; }, options => options.controller.abort()]) {
     const h = await harness(), controller = new AbortController(), options = { ...lifetime(), signal: controller.signal, controller };
-    cancel(options); await assert.rejects(h.owner.stage([set("feedback.offsetX", 7)], options), /stale/u);
+    cancel(options); await assert.rejects(h.owner.stage([set("feedback.centreX", 57)], options), /stale/u);
   }
 });
 
 test("staged guards detect unnotified dependency drift without changing observer caches", async () => {
-  const h = await harness(), staged = await h.owner.stage([set("feedback.offsetX", 7)], lifetime());
+  const h = await harness(), staged = await h.owner.stage([set("feedback.centreX", 57)], lifetime());
   const snapshot = h.editor.getSnapshot(), count = h.changes.length;
   h.setUnnotifiedP5Revision(9); assert.equal(staged.isCurrent(), false);
   h.setUnnotifiedP5Revision(8); assert.equal(staged.isCurrent(), true);
@@ -253,14 +254,14 @@ test("shared session preflights dependency guards before publishing any owner", 
     read: () => ({ values: { "P6.enabled": false }, issues: [] }), validate: () => [],
     async stage() { h.changeP5(); return { commit() { otherCommits++; } }; } };
   h.session.registerOwner(other);
-  const result = await h.execute({ kind: "apply", edits: [set("feedback.offsetX", 7), { kind: "set", field: "P6.enabled", value: true }] });
+  const result = await h.execute({ kind: "apply", edits: [set("feedback.centreX", 57), { kind: "set", field: "P6.enabled", value: true }] });
   assert.equal(result.status, "rejected"); assert.equal(otherCommits, 0);
-  assert.equal(h.owner.read().values["P4.feedback.offsetX"], before.values["P4.feedback.offsetX"]);
+  assert.equal(h.owner.read().values["P4.feedback.centreX"], before.values["P4.feedback.centreX"]);
   assert.equal(h.session.revision, 0);
 });
 
 test("afterCommit publishes the current receipt if another owner has already refreshed P4", async () => {
-  const h = await harness(), staged = await h.owner.stage([set("feedback.offsetX", 7)], lifetime());
+  const h = await harness(), staged = await h.owner.stage([set("feedback.centreX", 57)], lifetime());
   assert.equal(staged.isCurrent(), true); staged.commit();
   h.changeP5(); const current = h.editor.getSnapshot();
   staged.afterCommit(); assert.deepEqual(h.changes.at(-1), current);
@@ -273,17 +274,17 @@ test("P4 observer failure follows complete atomic publication and retains UI rea
     read: () => ({ values: { "P6.enabled": enabled }, issues: [] }), validate: () => [],
     async stage() { return { commit() { enabled = true; } }; } });
   h.failNotifications();
-  const result = await h.execute({ kind: "apply", edits: [set("feedback.offsetX", 7), { kind: "set", field: "P6.enabled", value: true }] });
+  const result = await h.execute({ kind: "apply", edits: [set("feedback.centreX", 57), { kind: "set", field: "P6.enabled", value: true }] });
   assert.equal(result.status, "incomplete"); assert.equal(enabled, true);
   assert.deepEqual(result.result.updatedOwners, ["P4", "P6"]);
   assert.equal(h.session.revision, 1);
-  assert.equal(h.root.controls.find(control => control.id === "layout-offsetX").value, "7");
-  assert.equal(h.owner.read().values["P4.feedback.offsetX"], 7);
+  assert.equal(h.root.controls.find(control => control.id === "layout-feedbackX").value, "57");
+  assert.equal(h.owner.read().values["P4.feedback.centreX"], 57);
 });
 
 test("CLI preparation retains the actual accepted profile and independent geometry authority", async () => {
   const h = await harness(), original = await h.editor.prepareContribution();
-  const staged = await h.owner.stage([set("feedback.offsetX", 1.25)], lifetime());
+  const staged = await h.owner.stage([set("feedback.centreX", desktopLayoutDraftFromProfile(original.contribution).feedbackX + 1.25)], lifetime());
   assert.equal(staged.isCurrent(), true); staged.commit(); staged.afterCommit();
   const actual = await h.editor.prepareContribution();
   const expected = desktopLayoutProfileFromDraft(h.editor.getDraftDocument().draft, fixture.media);
@@ -313,14 +314,15 @@ test("prepared P4 content validates without mutation, commits state then project
   assert.equal(prepared.isCurrent(), false); assert.throws(() => prepared.commit(), /already committed/);
   assert.equal(prepared.afterCommit(), undefined); prepared.afterCommit();
   assert.equal(h.changes.length, before.count + 1);
-  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "offsetX").value, "1.25");
+  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "feedbackX").value,
+    String(Number(expected.feedbackX.toPrecision(12))));
   const legacy = await harness(); await legacy.editor.restoreContent({ ...clone(fixture.cases[0].profile),
     feedback: { ...clone(fixture.cases[0].profile.feedback), offset: { ...fixture.cases[0].profile.feedback.offset, x: 1.25 } } }, restoreOptions());
   assert.deepEqual(h.editor.draft, legacy.editor.draft); assert.deepEqual(h.editor.projection, legacy.editor.projection);
 });
 
 test("prepared content rejects edits, reset, disposal, dependency drift and cancellation without replacement", async () => {
-  for (const change of [h => h.root.input("offsetX", "9"), h => h.root.reset(), h => h.editor.destroy(),
+  for (const change of [h => h.root.input("feedbackX", "57"), h => h.root.reset(), h => h.editor.destroy(),
     h => h.changeP1(), h => h.changeP5(), h => h.setUnnotifiedP5Revision(9)]) {
     const h = await harness(), prepared = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
     await change(h); const before = h.editor.getSnapshot(), draft = h.editor.draft;
@@ -358,7 +360,8 @@ test("content projection failures retain committed state and synchronize control
   prepared.commit(); const committed = h.editor.getSnapshot(); h.failNotifications();
   assert.throws(() => prepared.afterCommit(), /Observer failed/);
   assert.deepEqual(h.editor.getSnapshot(), committed);
-  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "offsetX").value, "1.25");
+  assert.equal(h.root.controls.find(c => c.dataset.layoutField === "feedbackX").value,
+    String(Number(desktopLayoutDraftFromProfile(value).feedbackX.toPrecision(12))));
   prepared.afterCommit(); assert.deepEqual(h.editor.getSnapshot(), committed);
 });
 
@@ -370,9 +373,9 @@ test("in-flight content preparation and competing prepared commits are fenced", 
   const second = await h.editor.prepareRestoreContent(fixture.cases[0].profile, restoreOptions());
   assert.equal(first.isCurrent(), true); assert.equal(second.isCurrent(), true);
   first.commit(); assert.equal(second.isCurrent(), false); assert.throws(() => second.commit(), /stale/);
-  h.root.input("offsetX", "9"); const current = h.editor.getSnapshot();
+  h.root.input("feedbackX", "57"); const current = h.editor.getSnapshot();
   assert.throws(() => first.afterCommit(), /stale/);
-  assert.deepEqual(h.editor.getSnapshot(), current); assert.equal(h.editor.draft.offsetX, "9");
+  assert.deepEqual(h.editor.getSnapshot(), current); assert.equal(h.editor.draft.feedbackX, "57");
 });
 
 test("a throwing DOM projection cannot undo a prepared content commit", async () => {
@@ -419,7 +422,7 @@ test("P4 confirmation preserves already-prepared revision and fences competing c
 });
 
 test("P4 confirmation rejects stale edits, reset, dependencies, disposal and aborted commands", async () => {
-  for (const change of [h => h.root.input("offsetX", "9"), h => h.root.reset(), h => h.changeP1(),
+  for (const change of [h => h.root.input("feedbackX", "57"), h => h.root.reset(), h => h.changeP1(),
     h => h.changeP5(), h => h.setUnnotifiedP5Revision(9), h => h.editor.destroy()]) {
     const h = await harness(), candidate = await h.editor.prepareConfirmation(lifetime());
     await change(h); const before = h.editor.getSnapshot(), count = h.changes.length;
@@ -438,7 +441,7 @@ test("P4 confirmation rejects stale edits, reset, dependencies, disposal and abo
 
 test("P4 confirmation rejects mid-preparation edits and never manufactures missing readiness", async () => {
   const h = await harness(), preparing = h.editor.prepareConfirmation(lifetime());
-  h.root.input("offsetX", "9"); const before = h.editor.getSnapshot();
+  h.root.input("feedbackX", "57"); const before = h.editor.getSnapshot();
   await assert.rejects(preparing, /stale/); assert.deepEqual(h.editor.getSnapshot(), before);
   h.changeP5(); const pending = h.editor.getSnapshot();
   await assert.rejects(h.editor.prepareConfirmation(lifetime())); assert.deepEqual(h.editor.getSnapshot(), pending);

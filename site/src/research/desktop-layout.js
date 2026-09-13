@@ -1,5 +1,5 @@
 import { canonicalJson } from "./canonical.js";
-import { applyScreenLayoutFit } from "./screen-layout-draft.js";
+import { applyScreenLayoutFit, isScreenLayoutWarning } from "./screen-layout-draft.js";
 
 export const DESKTOP_LAYOUT_SCHEMA = "affect-research-desktop-layout-contribution";
 export const DESKTOP_LAYOUT_MAX_BYTES = 8192;
@@ -107,7 +107,7 @@ export function resolveDesktopLayoutBase(value) {
   const screen = { width: v.widthCssPx, height: v.heightCssPx };
   const issues = [];
   if (outside(reference, screen)) issues.push({ field: "referenceWidth", code: "reference-clips", message: "The fixed reference extends beyond the design viewport." });
-  if (outside(feedback, screen)) issues.push({ field: "offsetY", code: "footprint-clips", message: "The feedback SVG viewport extends beyond the design viewport." });
+  if (outside(feedback, screen)) issues.push({ field: "feedbackY", code: "footprint-clips", message: "The feedback SVG viewport extends beyond the design viewport." });
   return { geometry: { screen, reference, feedback, offset, gap: f.minimumGap * sideScale, maximumFeedback: null }, videos: [], issues };
 }
 
@@ -150,6 +150,9 @@ export function convertDesktopLayoutUnits(value, units) {
 export function assertDesktopLayoutViewport(value, viewport) {
   const p = validateDesktopLayoutProfileV1(value);
   exact(viewport, ["widthCssPx", "heightCssPx"], "observed viewport");
-  if (viewport.widthCssPx !== p.viewport.widthCssPx || viewport.heightCssPx !== p.viewport.heightCssPx) fail("viewport", "incompatible", "The observed viewport differs from the authored viewport; no automatic layout resizing is allowed.");
-  return true;
+  number(viewport.widthCssPx, "observed viewport width", 1, 32768, true);
+  number(viewport.heightCssPx, "observed viewport height", 1, 32768, true);
+  return viewport.widthCssPx === p.viewport.widthCssPx && viewport.heightCssPx === p.viewport.heightCssPx;
 }
+
+export const isDesktopLayoutWarning = isScreenLayoutWarning;

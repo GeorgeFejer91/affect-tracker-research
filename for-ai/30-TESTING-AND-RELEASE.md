@@ -62,7 +62,7 @@ evidence. Apply the following normal evidence floor for a pass:
 
 | Development stage | Evidence required for a normal handoff | Evidence normally deferred |
 | --- | --- | --- |
-| **UI Finalization** | Focused tests for the changed presentation and UI contracts; relevant keyboard, focus, reflow, reduced-motion, and no-console-error checks; isolation tests for any synthetic preview; a rebuilt candidate verified through background/headless or off-screen receipts. Interactive visual exercise is opt-in only. | Unchanged Rust/backend matrices, installer qualification, full clean-candidate gates, remote CI, Pages deployment, and physical research qualification. |
+| **UI Finalization** | Focused tests for the changed presentation and UI contracts; relevant keyboard, focus, reflow, reduced-motion, and no-console-error checks; isolation tests for any synthetic preview; a rebuilt candidate verified through background/headless or off-screen receipts. For app-changing work, the latest single current PC app is opened for researcher inspection at handoff; scripted interactive exercise remains opt-in only. | Unchanged Rust/backend matrices, installer qualification, full clean-candidate gates, remote CI, Pages deployment, and physical research qualification. |
 | **Backend Verification** | Focused owner-level tests followed by the applicable cross-layer browser/Rust contract, IPC, workspace, input, media, scheduler, persistence/recovery, output, and LSL gates for the functionality under review. A stage-completion pass must inventory every current local application function rather than sampling only recently changed code. Record unavailable hardware or physical checks as open rather than passing. | Unrelated interface polishing and repository publication or deployment unless they are part of the confirmed pass. |
 | **Repository/Web Synchronization** | Inspect the complete candidate diff; run the clean-candidate automated gates below unless a gate is explicitly inapplicable; verify Pages and desktop build closures; bind results to the exact commit; after authorized publication, verify the remote commit, CI, and cache-bypassed Chrome and Edge Pages result. | Installed, hardware, long-run, and research-readiness qualification only when the confirmed pass does not claim them. |
 
@@ -82,25 +82,33 @@ Any stable, release, experiment-use, or research-ready claim still requires
 every applicable gate in this file for one exact candidate, regardless of the
 stage used while developing it.
 
-## Non-interactive verification default
+## Non-interactive verification and current-app handoff
 
 Testing must preserve the researcher's control of the Windows desktop. Use
 CLI-capable application functions, focused Node/Rust test entrypoints, isolated
 processes, and background/headless or off-screen renderers that emit
-machine-readable receipts. Do not activate, foreground, move, close, or
-interact with application windows; do not synthesize keyboard, pointer, or
-clipboard input; and do not use browser/computer-control tooling for routine
-verification. A background renderer or automated test proves only the software
-property represented by its receipt; it does not establish physical, installed,
-accessibility, timing, hardware, or research qualification.
+machine-readable receipts. During testing, do not activate, foreground, move,
+close, or interact with application windows; do not synthesize keyboard,
+pointer, or clipboard input; and do not use browser/computer-control tooling for
+routine verification. A background renderer or automated test proves only the
+software property represented by its receipt; it does not establish physical,
+installed, accessibility, timing, hardware, or research qualification.
 
-Interactive browser or Tauri checks are opt-in exceptions only. Before such a
-check, obtain explicit user approval for that specific interaction and confirm
-that no active experiment or user work will be interrupted. If the user has not
-opted in, leave the interactive gate open and report it as unverified rather
-than taking control of the computer. This rule does not authorize a new remote
-control, companion, or general-purpose CLI product surface; any verification
-command must remain a bounded local seam consistent with the charter.
+The standard handoff for app-changing work is separate from routine
+verification: after focused checks pass, rebuild/stage the latest candidate into
+the one authoritative PC app location, archive or remove superseded local app
+launch targets, and open that latest app so the researcher can inspect the new
+functionality immediately. This launch is not an installed-artifact,
+accessibility, physical, timing, hardware, or research qualification claim.
+
+Interactive browser or Tauri exercises beyond opening the latest current app
+are opt-in exceptions only. Before such a check, obtain explicit user approval
+for that specific interaction and confirm that no active experiment or user work
+will be interrupted. If the user has not opted in, leave the interactive gate
+open and report it as unverified rather than taking control of the computer.
+This rule does not authorize a new remote control, companion, or general-purpose
+CLI product surface; any verification command must remain a bounded local seam
+consistent with the charter.
 
 ## Automated candidate gates
 

@@ -1,4 +1,5 @@
 import { DESKTOP_REFERENCE_POLICIES } from "./desktop-layout.js";
+import { isScreenLayoutWarning } from "./screen-layout-draft.js";
 import { desktopLayoutDraftField } from "./desktop-layout-contribution.js";
 import { commandFailure as fail, PlannerCommandError, validateSettingValue } from "./planner-authoring-contract.js";
 
@@ -15,21 +16,22 @@ const FIELDS = [
     enum: [null, ...DESKTOP_REFERENCE_POLICIES], description: "A supported method string or null for an unselected draft; null blocks preparation." },
   number("reference.maximumWidth", "referenceWidth", "Maximum reference width", 0.001, 100000, "mm or % viewport width"),
   number("reference.maximumHeight", "referenceHeight", "Maximum reference height", 0.001, 100000, "mm or % viewport height"),
-  number("reference.centreX", "referenceX", "Reference centre X", -100000, 100000, "mm or % viewport width"),
-  number("reference.centreY", "referenceY", "Reference centre Y", -100000, 100000, "mm or % viewport height"),
+  number("reference.centreX", "referenceX", "Video centre X", -100000, 100000, "mm or % viewport width"),
+  number("reference.centreY", "referenceY", "Video centre Y", -100000, 100000, "mm or % viewport height"),
   number("feedback.viewportSide", "diameter", "Feedback drawing viewport side", 0.001, 100000, "mm or % shorter reference side"),
-  number("feedback.offsetX", "offsetX", "Feedback centre offset X", -100000, 100000, "mm or % reference width"),
-  number("feedback.offsetY", "offsetY", "Feedback centre offset Y", -100000, 100000, "mm or % reference height"),
+  number("feedback.centreX", "feedbackX", "Flubber centre X", -100000, 100000, "mm or % viewport width"),
+  number("feedback.centreY", "feedbackY", "Flubber centre Y", -100000, 100000, "mm or % viewport height"),
   number("feedback.minimumGap", "gap", "Minimum separation", 0, 100000, "mm or % shorter reference side"),
 ];
 const CONVENTIONS = Object.freeze({ target: "desktop-screen", coordinateSystem: "viewport-right-down",
-  compatibility: "exact", feedbackOrigin: "design-centre", fit: "contain" });
+  compatibility: "target-viewport-with-runner-smart-fallback", feedbackOrigin: "design-centre", fit: "contain" });
 const DERIVED = [
   { id: "P4.geometry", label: "Resolved screen/reference/feedback geometry in CSS pixels" },
   { id: "P4.videoFits", label: "All verified video contain fits and separation" },
   { id: "P4.reference.candidates", label: "Automatic reference candidates from the complete catalogue" },
   { id: "P4.reference.source", label: "Selected oriented reference source" },
-  { id: "P4.conventions", label: "Fixed viewport, axes, centre and fitting conventions" },
+  { id: "P4.layoutWarnings", label: "Non-blocking placement warnings" },
+  { id: "P4.conventions", label: "Target viewport, axes, centre and Runner fallback conventions" },
 ].map(field => ({ ...field, type: "json", classification: "derived", writable: false }));
 const ids = new Map(FIELDS.map(field => [field.id, field]));
 const keys = new Map(FIELDS.map(field => [field.key, field]));
@@ -37,7 +39,7 @@ const JSON_PATHS = Object.freeze({ screenWidth: "viewport.widthCssPx", screenHei
   physicalWidth: "calibration.activeWidthMm", physicalHeight: "calibration.activeHeightMm", fullViewportMapping: "calibration",
   units: "units", referencePolicy: "reference.source.policy", referenceWidth: "reference.box.width", referenceHeight: "reference.box.height",
   referenceX: "reference.centre.x", referenceY: "reference.centre.y", diameter: "feedback.overlayViewportSide",
-  offsetX: "feedback.offset.x", offsetY: "feedback.offset.y", gap: "feedback.minimumGap" });
+  feedbackX: null, feedbackY: null, gap: "feedback.minimumGap" });
 const clone = value => structuredClone(value);
 const exact = (value, expected) => value && typeof value === "object" && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value))
@@ -60,7 +62,7 @@ function authoredValues(draft) {
 
 function issuesFor(draft, projection) {
   const values = authoredValues(draft);
-  const issues = (projection.issues ?? []).map(item => ({ owner: "P4",
+  const issues = (projection.issues ?? []).filter(item => !isScreenLayoutWarning(item)).map(item => ({ owner: "P4",
     field: keys.get(desktopLayoutDraftField(item.field))?.id ?? null,
     code: item.code, message: item.message }));
   for (const field of FIELDS) {
@@ -84,7 +86,8 @@ export function createPlannerAuthoringP4({ editor }) {
   }
   const settings = [
     ...FIELDS.map(({ key, ...field }) => ({ ...clone(field), classification: "authored", writable: true,
-      uiControl: `layout-${key}`, jsonPath: `segments.P4.${JSON_PATHS[key]}` })),
+      uiControl: `layout-${key}`, jsonPath: JSON_PATHS[key] === null ? null : `segments.P4.${JSON_PATHS[key]}`,
+      ...(JSON_PATHS[key] === null ? { savedAs: "segments.P4.feedback.offset" } : {}) })),
     ...clone(DERIVED),
   ];
   const operations = [
@@ -99,7 +102,9 @@ export function createPlannerAuthoringP4({ editor }) {
       const draft = editor.getDraftDocument().draft, projection = editor.projection;
       return { values: { ...authoredValues(draft), "P4.geometry": clone(projection.geometry ?? null),
         "P4.videoFits": clone(projection.videos ?? []), "P4.reference.candidates": clone(projection.referenceCandidates ?? null),
-        "P4.reference.source": clone(projection.profile?.reference.source ?? null), "P4.conventions": clone(CONVENTIONS) },
+        "P4.reference.source": clone(projection.profile?.reference.source ?? null),
+        "P4.layoutWarnings": clone((projection.issues ?? []).filter(isScreenLayoutWarning)),
+        "P4.conventions": clone(CONVENTIONS) },
       issues: issuesFor(draft, projection) };
     },
     validate() { return issuesFor(editor.getDraftDocument().draft, editor.projection); },
