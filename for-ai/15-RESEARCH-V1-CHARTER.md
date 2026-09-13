@@ -19,6 +19,20 @@ ledger in `65` and compatibility inventory in `66` as final-state authority for
 the newly allocated desktop Runner. Historical Setup/Run labels describe the
 two companion purposes; they no longer require one program or a mode switch.
 
+## Web entrypoint amendment — 2026-09-12
+
+The public root may be an Affect Tracker landing page with separate icon links
+for online Experiment Planner and Experiment Runner routes. The initial
+infrastructure reserves `planner/` and `runner/` with explicit
+development-status pages; it does not claim to port or qualify the companion
+desktop programs. The earlier combined Research instrument can live at
+`research.html` without changing its runtime contracts. The landing page is
+navigation, not a third experiment mode. See
+[`docs/WEB-DELIVERY.md`](../docs/WEB-DELIVERY.md) for the source/build/route
+boundary. Later browser integration for the companion apps requires its own
+bounded implementation and must preserve the desktop owners and recipe
+authority.
+
 ## Status and precedence
 
 This file, including the final-state amendment below, is the product and

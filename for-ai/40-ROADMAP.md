@@ -1,5 +1,19 @@
 # Research v1 roadmap
 
+## Web infrastructure — 2026-09-12
+
+The public root provides two icon links to separate permanent `planner/` and
+`runner/` addresses. Both destinations explicitly show that their browser apps
+are in development. The earlier combined research instrument remains at
+`research.html`. The existing main-only GitHub Pages deployment builds these
+routes, verifies their relative asset/link closure, and emits the source
+revision in every entrypoint and `build-info.json`.
+
+This is navigation and delivery infrastructure only. It does not integrate
+current companion desktop code, supply a browser Runner, change experiment
+schemas or execution authority, or establish research qualification. See
+`docs/WEB-DELIVERY.md` for the next integration boundary.
+
 ## P4 CLI authoring and UI mapping — 2026-09-12
 
 Owner-ready **CLI-P4** Backend Verification and owned **E2E-UI** mapping are at

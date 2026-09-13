@@ -1,5 +1,14 @@
 # Affect Research
 
+[Affect Tracker online](https://georgefejer91.github.io/affect-tracker-research/)
+is the landing page for the two companion web apps:
+[Experiment Planner](https://georgefejer91.github.io/affect-tracker-research/planner/)
+and [Experiment Runner](https://georgefejer91.github.io/affect-tracker-research/runner/).
+Their permanent routes currently show development status; the separate browser
+apps are not implemented by this infrastructure change. The earlier combined
+[research prototype](https://georgefejer91.github.io/affect-tracker-research/research.html)
+remains accessible. See [the web delivery guide](docs/WEB-DELIVERY.md).
+
 <p align="center">
   <img src="./site/assets/app-logo.svg" width="160" height="160" alt="Aurora Axis, the Affect Research app logo">
 </p>

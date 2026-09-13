@@ -22,6 +22,9 @@ test("browser Planner cannot open recovery, acquire a run lease or start acquisi
   assert.match(rejection.message, /Experiment Runner/u);
   assert.equal(bridge.controller, null); assert.equal(bridge.lease, null); assert.equal(bridge.ready, false);
   bridge.destroy();
-  const index = await readFile(new URL("../site/index.html", import.meta.url), "utf8");
-  assert.match(index, /data-research-program="planner"/u);
+  const planner = await readFile(new URL("../site/research.html", import.meta.url), "utf8");
+  assert.match(planner, /data-research-program="planner"/u);
+  const launcher = await readFile(new URL("../site/index.html", import.meta.url), "utf8");
+  assert.match(launcher, /href="\.\/planner\/"/u);
+  assert.match(launcher, /href="\.\/runner\/"/u);
 });
