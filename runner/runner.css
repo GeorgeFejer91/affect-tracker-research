@@ -59,9 +59,9 @@ html, body { min-width: 0; margin: 0; }
 .runner-session-menu { position: fixed; right: 16px; bottom: 12px; font-size: 12px !important; opacity: 0; pointer-events: none; }
 .runner-session-menu:focus-visible { opacity: 1; pointer-events: auto; }
 .runner-run-status p { font-size: 13px; overflow-wrap: anywhere; }
-#runner-questionnaire fieldset { margin: 24px 0; padding: 0; border: 0; }
-#runner-questionnaire legend { font-size: 20px; margin-bottom: 12px; }
-#runner-questionnaire label { display: flex; gap: 12px; align-items: start; padding: 12px 0; }
+#runner-questionnaire-items:not(.affect-surveyjs) fieldset { margin: 24px 0; padding: 0; border: 0; }
+#runner-questionnaire-items:not(.affect-surveyjs) legend { font-size: 20px; margin-bottom: 12px; }
+#runner-questionnaire-items:not(.affect-surveyjs) label { display: flex; gap: 12px; align-items: start; padding: 12px 0; }
 #runner-questionnaire-progress { font-size: 13px; color: #b4b4ac; }
 #runner-questionnaire .runner-typed-form fieldset { margin: 24px 0; }
 #runner-questionnaire .runner-typed-form legend { font-size: 17px; margin-bottom: 10px; }
@@ -112,6 +112,23 @@ html, body { min-width: 0; margin: 0; }
 #runner-questionnaire-previous, #runner-back, #runner-preparation-settings, #runner-selected-participant { display: none; }
 #runner-questionnaire .button-row { justify-content: flex-end; margin-top: 24px; }
 #runner-questionnaire .button-row button { min-width: 104px; }
+#runner-questionnaire .affect-surveyjs .sd-root-modern,
+#runner-questionnaire .affect-surveyjs .sd-container-modern { background: transparent; }
+#runner-questionnaire .affect-surveyjs .sd-body { padding: 0; background: transparent; }
+#runner-questionnaire .affect-surveyjs .sd-page { padding: 0; }
+#runner-questionnaire .affect-surveyjs .sd-page__content { padding: 0; gap: 8px; }
+#runner-questionnaire .affect-surveyjs .sd-question { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 16px 0; }
+#runner-questionnaire .affect-surveyjs .sd-question__container,
+#runner-questionnaire .affect-surveyjs .sd-question__header-and-content-container { padding: 0; gap: 8px; }
+#runner-questionnaire .affect-surveyjs .sd-page__row { margin-top: 0; }
+#runner-questionnaire .affect-surveyjs .sd-question__content { padding-top: 8px; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase__label { padding: 6px 0; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase { gap: 0; }
+#runner-questionnaire .affect-surveyjs .sd-selectbase__item { padding: 0; }
+#runner-questionnaire .affect-surveyjs .sd-comment__input { min-height: 76px; height: 76px; }
+#runner-questionnaire .affect-surveyjs .sd-body__navigation { padding: 16px 0 0; justify-content: flex-end; }
+#runner-questionnaire .affect-surveyjs .sd-element__num { position: static; padding-right: 6px; }
+#runner-questionnaire .affect-surveyjs .sd-navigation__complete-btn { color: #171812; min-height: 44px; }
 #runner-language { display: flex; flex-wrap: wrap; gap: 12px; }
 #runner-language p { flex-basis: 100%; }
 #runner-language-reset { margin-top: 16px; }

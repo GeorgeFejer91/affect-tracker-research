@@ -46,6 +46,11 @@ export function renderMasterQuestionnaire(host, definition, presentation, answer
   if (definition.version !== 1 || (surveyjs ? presentation.kind !== "surveyjs" : typed ? presentation.kind !== "fields" : definition.schema !== "affect-research-questionnaire-definition" || presentation.kind && presentation.kind !== "likert")) throw new Error("Unsupported questionnaire presentation.");
   const data = surveyjs ? structuredClone(answers) : Object.fromEntries(Object.entries(answers).map(([id, value]) => [id, typeof value === "string" ? value : value?.text ?? value?.integer ?? value?.optionId]));
   const controller = renderSurveyQuestionnaire(host, definition, { ...options, data, presentation });
+  // The participant page already owns the instrument heading and instructions.
+  // These are presentation settings only; the embedded definition stays exact.
+  controller.model.showTitle = false;
+  controller.model.showPrevButton = false;
+  controller.model.completeText = definition.language.startsWith("de") ? "Weiter" : "Next";
   function read({ allowPartial = true } = {}) {
     if (!allowPartial && !controller.validate()) throw new Error("Complete the visible questionnaire before submitting.");
     const result = controller.read();
@@ -62,5 +67,5 @@ export function renderMasterQuestionnaire(host, definition, presentation, answer
     const total = surveyjs ? questions.length : definition.items.length;
     return { answered, total, text: definition.language.startsWith("de") ? answered + " / " + total + " beantwortet" : answered + " / " + total + " answered" };
   }
-  return { ...controller, usesSurveyJS: true, surveyjs, read, progress, instructions: definition.instructions ?? "" };
+  return { ...controller, usesSurveyJS: true, surveyjs, read, progress, instructions: definition.instructions ?? controller.model.description ?? "" };
 }

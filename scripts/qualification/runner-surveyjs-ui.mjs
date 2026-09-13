@@ -130,7 +130,7 @@ try{
    enter(original,name);original.focus();original.setSelectionRange(4,7);
    await until(()=>status.answers.fullName?.text===name,'native tagged text draft');await tick(300);
    check(original.isConnected&&document.activeElement===original&&original.selectionStart===4,'polling preserves exact text, focus and selection');
-   const before=commandCount('submit');nav(/^(Complete|Abschließen)$/).click();await tick();
+   const before=commandCount('submit');nav(/^(Next|Weiter)$/).click();await tick();
    check(commandCount('submit')===before,'missing typed answers cannot submit');
    q('runner-questionnaire-form').requestSubmit();await tick();check(commandCount('submit')===before,'outer form Enter cannot bypass SurveyJS navigation');
    enter(host.querySelector('input[type="number"]'),'0');
@@ -146,9 +146,9 @@ try{
    await until(()=>Object.keys(status.answers).length===4,'all typed answers drafted');
    check(status.answers.age.integer===0,'zero remains a tagged integer');
    if(mode==='flow'){
-     rejectSubmit=true;nav(/^(Complete|Abschließen)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
+     rejectSubmit=true;nav(/^(Next|Weiter)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
      check(original.isConnected&&original.value===name,'rejection preserves editable answers');
-     await until(()=>!host.inert,'correction enabled');nav(/^(Complete|Abschließen)$/).click();
+     await until(()=>!host.inert,'correction enabled');nav(/^(Next|Weiter)$/).click();
      await until(()=>status.position===2&&status.phase==='questionnaire','next Likert occurrence');
      check(!original.isConnected,'prior text removed');
      check(submissions[0].answers.find(a=>a.itemId==='fullName').value.text===name,'native submit preserves whitespace and Unicode');
@@ -156,7 +156,7 @@ try{
      for(const group of new Set(nextRadios.map(r=>r.name)))nextRadios.find(r=>r.name===group).click();
      await until(()=>Object.keys(status.answers).length===plan.steps[1].payload.definition.items.length,'Likert native drafts');
      check(Object.values(status.answers).every(a=>a.kind==='singleChoice'),'legacy codes retain tagged wire values');
-     nav(/^(Complete|Abschließen)$/).click();await until(()=>status.position===3&&!q('runner-stage').hidden,'timed stage after both forms');
+     nav(/^(Next|Weiter)$/).click();await until(()=>status.position===3&&!q('runner-stage').hidden,'timed stage after both forms');
      check(submissions.length===2,'both legacy forms submit through their frozen contract');
    }
  }else{
@@ -173,9 +173,9 @@ try{
  }
  check(!q('runner-error').hidden===false,'draft did not report an error');
  if(mode==='flow'){
-   rejectSubmit=true;nav(/^(Complete|Abschließen)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
+   rejectSubmit=true;nav(/^(Next|Weiter)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
    check(q('runner-error').textContent==='Synthetic native submission rejected','native rejection remains visible');
-   await until(()=>!host.inert,'correction available');nav(/^(Complete|Abschließen)$/).click();
+   await until(()=>!host.inert,'correction available');nav(/^(Next|Weiter)$/).click();
    await until(()=>status.position===2&&status.phase==='questionnaire','next occurrence');
    check(submissions.length===1&&submissions[0].data.details!==undefined,'full SurveyJS data reaches versioned submit');
    check(!controls().some(c=>c.checked),'new occurrence starts with no prior answers');
@@ -191,7 +191,7 @@ try{
   // Chrome's command-line screenshot can resize the live viewport after its
   // dump-DOM receipt, correctly triggering Runner's fail-closed resize Stop.
   // Freeze the exact already-checked rendered DOM for visual inspection only.
-  const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);
+  const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);window.scrollTo(0,0);
  }
 }catch(error){errors.push(String(error));}
 const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,masterVersion,checks,errors,questionnaireDom:q('runner-questionnaire-items').innerHTML,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:mode==='form',scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);

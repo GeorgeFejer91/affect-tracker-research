@@ -148,3 +148,18 @@ A policy decision has been requested from the user: whether to allow an explicit
 The user explicitly approved local validation sessions to break the installed-qualification/Start dependency. Master3 has a separate, explicit acknowledgement and native command path. Verified runtime, live actor, exact recipe/assets/viewport, input test, native acquisition, response validation and durable recording rules remain enforced. Normal research Start is unchanged. Validation attempt receipts carry `executionQualification` with `researchQualified:false`; the primary information stream uses a versioned `affect-runner-validation-startup` envelope around the unchanged startup3 record, carrying the same permanent unqualified designation. Reconstruction must preserve that designation and reject attempts to promote it. This is permission to test the actual software, not a qualification or installer release claim.
 
 The user also prioritizes functional pipeline validation first and installer verification last. Keep one authoritative current Planner/Runner test distribution on the PC. Before testing, compare its source commit and executable hashes to the integration receipt; segment agents may develop in isolated worktrees but must not leave competing user-launchable app copies or qualify stale binaries. Consolidate accepted changes into the root-owned build, stop stale test processes, and replace old launch targets deliberately. Keep historical evidence in non-launchable evidence archives, without deleting experiments, participant output or user assets. Commit validated milestones and push them regularly to the integration branch; pushing work is not evidence of successful execution or permission to publish an installer.
+
+### SurveyJS integration and participant layout
+
+Root collected the completed SurveyJS branch as `762f063` / `4ad9249`, retaining
+recent-history and participant/version selection. `f6d9b25` passed the native
+GStreamer build (`runner-survey-consolidated-build-01.log`) and 27 focused Node
+tests. Its initial screenshots exposed duplicate titles and oversized question
+frames; the integration follow-up preserves the centered 210 mm reading column,
+uses one heading and Next/Weiter, removes redundant frames, and keeps authored
+instructions. Imported JSON is unchanged. Combined browser checks then passed
+410 master3 and 318 master4 assertions with synthetic native replies, in
+`runner-survey-compact-final-01` and `runner-survey-master4-final-01` under the
+local `.affect-checks` evidence directory. These are frontend checks only.
+The old PID 25120 was observed at blocked language preparation and closed
+gracefully. Full native session/LSL/XDF validation is still outstanding.
