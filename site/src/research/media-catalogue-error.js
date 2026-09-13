@@ -28,4 +28,3 @@ export class NativeCatalogueFailure extends Error {
     super(`Video catalogue failed at ${knownPhase} (${reason}). The native effect receipt is retained; do not repeat the import blindly.`);
   }
 }
-

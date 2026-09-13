@@ -165,6 +165,31 @@ pub(crate) fn validate_survey_data_seed(
 mod tests {
     use super::*;
     #[test]
+    fn native_surveyjs_retains_nested_calculations_matrices_and_inline_files() {
+        let schema = json!({"elements":[
+            {"type":"paneldynamic","name":"rows","templateElements":[{"type":"text","inputType":"number","name":"amount"}]},
+            {"type":"expression","name":"total","expression":"sumInArray({rows}, 'amount')"},
+            {"type":"matrixdropdown","name":"matrix","rows":["first"],"columns":[{"name":"answer","cellType":"text"}]},
+            {"type":"ranking","name":"rank","choices":["a","b"]},
+            {"type":"file","name":"attachment","storeDataAsText":true}
+        ]});
+        let data = json!({"rows":[{"amount":2},{"amount":3}],"matrix":{"first":{"answer":"nested answer"}},"rank":["b","a"],
+            "attachment":[{"name":"note.txt","type":"text/plain","content":"data:text/plain;base64,aGVsbG8="}]});
+        let checked = surveyjs_request(
+            json!({"operation":"check","surveyJson":schema,"language":"de","data":data,
+            "complete":true,"randomSeed":42,"evaluatedAtUnixMs":1789250000000_u64}),
+        )
+        .unwrap();
+        assert_eq!(checked["data"]["total"], 5);
+        assert_eq!(checked["data"]["matrix"], data["matrix"]);
+        assert_eq!(checked["data"]["attachment"], data["attachment"]);
+        assert_eq!(checked["data"]["rank"], data["rank"]);
+        assert_eq!(checked["evaluatedAtUnixMs"], 1789250000000_u64);
+        let mut incomplete = data;
+        incomplete["matrix"] = json!({"first":{}});
+        assert!(validate_survey_data(&schema, "de", &incomplete, true).is_err());
+    }
+    #[test]
     fn native_bundled_surveyjs_executes_conditional_pages_and_validation() {
         let schema = json!({"pages":[{"elements":[{"type":"boolean","name":"details"}]},{"visibleIf":"{details} = true","elements":[{"type":"text","name":"answer"}]}]});
         assert_eq!(inspect_survey_json(&schema).unwrap()["questionCount"], 2);
