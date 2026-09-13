@@ -468,21 +468,13 @@ fn actual_typed_master_save_retry_and_read_preserve_exact_file_and_basename() {
 }
 
 #[test]
-fn encoded_oversize_is_rejected_before_claim_or_publication() {
+fn large_recipe_source_reaches_native_validation_without_transport_rejection() {
     let f = Fixture::new();
     let command = f.command("saveRecipe", json!({"directory":f.root}));
     let forward = f.dispatch(&command);
-    let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":"\n".repeat(MAX_FRAME_BYTES/2)}));
-    assert_eq!(
-        error(f.broker.native_effect(&f.workspace, request)),
-        "invalid_native_request"
-    );
-    assert!(!f
-        .broker
-        .lock()
-        .unwrap()
-        .native
-        .has_call(&command.request_id));
+    let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":"\n".repeat(17 * 1024 * 1024)}));
+    assert_eq!(error(f.broker.native_effect(&f.workspace, request)), "invalid_research_contract");
+    assert!(f.broker.lock().unwrap().native.has_call(&command.request_id));
     assert_eq!(fs::read_dir(&f.root).unwrap().count(), 1); // app directory only
 }
 

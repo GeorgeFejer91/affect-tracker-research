@@ -1,5 +1,5 @@
 import { parsePlannerRecipeV1, parsePlannerRecipeFile, parseSupportedPlannerRecipe } from "./planner-recipe.js";
-import { MAX_PLANNER_RECIPE_BYTES, PLANNER_RECIPE_SCHEMA, readPlannerRecipeJsonBytes, exactRecipeObject } from "./planner-recipe-wire.js";
+import { PLANNER_RECIPE_SCHEMA, readPlannerRecipeJsonBytes, exactRecipeObject } from "./planner-recipe-wire.js";
 import { plannerRecipeFilename } from "./planner-recipe-filename.js";
 import { readBrowserPlannerAssets, prepareBrowserPlannerAssetSave } from "./planner-asset-browser-files.js";
 
@@ -19,7 +19,7 @@ function currentGuard(isCurrent) {
 async function readFileBytes(handle) {
   if (handle?.kind !== "file" || typeof handle.getFile !== "function") throw new TypeError("Select one recipe file.");
   const file = await handle.getFile();
-  if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MAX_PLANNER_RECIPE_BYTES) throw new RangeError("The recipe must contain between 1 byte and 16 MiB.");
+  if (!Number.isSafeInteger(file.size) || file.size < 1) throw new RangeError("The recipe must be a nonempty file.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes.byteLength !== file.size) throw new Error("The selected recipe changed while reading its bytes.");
   return bytes;
@@ -87,7 +87,7 @@ async function prepareBrowserRecipeSave(sourceText, {
 }, parseDocument) {
   const requireCurrent = currentGuard(isCurrent);
   requireCurrent();
-  if (typeof sourceText !== "string" || encoder.encode(sourceText).byteLength > MAX_PLANNER_RECIPE_BYTES) throw new TypeError("Invalid Planner recipe save source.");
+  if (typeof sourceText !== "string" || sourceText.length < 1) throw new TypeError("Invalid Planner recipe save source.");
   const expected = await parseDocument(encoder.encode(sourceText)); requireCurrent();
   if (expected.recipe.version === 5) return prepareBrowserPlannerAssetSave(expected, { requireCurrent, pickDirectory,
     receipt: observed => validatePlannerRecipeSaveReceipt({ schema: PLANNER_RECIPE_SAVE_RECEIPT_SCHEMA, version: 1,

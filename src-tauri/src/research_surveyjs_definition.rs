@@ -1,5 +1,5 @@
 //! SurveyJS JSON has its own versioned definition; old form contracts stay frozen.
-use crate::research_contracts::{canonical_json, canonical_sha256};
+use crate::research_contracts::canonical_sha256;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_experiment_package::deserialize_u32_integer;
 use serde::{Deserialize, Serialize};
@@ -65,7 +65,6 @@ impl SurveyDefinitionV1 {
             || self.source.basename.contains(['/', '\\', '\0'])
             || !hash(&self.source.sha256)
             || !hash(&self.definition_sha256)
-            || canonical_json(self, &[])?.len() > 4 * 1024 * 1024
             || canonical_sha256(self, &["definitionSha256"])? != self.definition_sha256
         {
             return Err(invalid());

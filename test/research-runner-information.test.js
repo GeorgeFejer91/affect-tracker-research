@@ -21,6 +21,18 @@ test("master4 information independently reconstructs complete SurveyJS JSON, nes
   }
 });
 
+test("SurveyJS validation recordings preserve the unqualified label and full questionnaire replay", async () => {
+  const f = await informationFixture({ surveyJs: true });
+  const qualification = { schema: "affect-runner-execution-qualification", version: 1, sessionKind: "local-validation", researchQualified: false, reason: "explicit-unqualified-validation" };
+  f.records[0].value = { schema: "affect-runner-validation-startup", version: 1, executionQualification: qualification, startup: f.records[0].value };
+  const result = await inspectInformationStream(await frameRecords(f.records, f.context));
+  assert.equal(result.status, "complete");
+  assert.equal(result.plan.version, 4);
+  assert.deepEqual(result.executionQualification, qualification);
+  f.records[0].value.executionQualification.researchQualified = true;
+  await assert.rejects(inspectInformationStream(await frameRecords(f.records, f.context)), /qualification/u);
+});
+
 test("prior dictionary stream remains readable and rejects comma-colliding profile fields", async () => {
   const fixture = await informationFixture(), profile = fixture.records[0].value.markerProfile;
   const samples = [{ value: canonicalJson(profile), timestamp: 0 }, ...fixture.records.filter(r => r.kind === "observation").map((r, i) => ({ value: canonicalJson(r.value), timestamp: i + 1 }))];

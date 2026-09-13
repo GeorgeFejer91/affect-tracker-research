@@ -3,9 +3,7 @@ use crate::research_contracts::{canonical_json, validate_sha256};
 use crate::research_desktop_layout::DesktopLayoutContributionV1;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_feedback::FeedbackContributionV2;
-use crate::research_planner_recipe::{
-    owners, RecipeIntegrityV1, XrSelectionV1, MAX_BYTES, MAX_CASES,
-};
+use crate::research_planner_recipe::{owners, RecipeIntegrityV1, XrSelectionV1, MAX_CASES};
 use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_questionnaire_recipe_v2::QuestionnaireRecipeContributionV2;
 use crate::research_workspace_contribution::v3::{
@@ -262,9 +260,6 @@ impl PlannerRecipeV2 {
         self.validate()?;
         let mut bytes = canonical_json(self, &[])?;
         bytes.push(b'\n');
-        if bytes.len() > MAX_BYTES {
-            return Err(invalid("Recipe exceeds 16 MiB."));
-        }
         Ok(bytes)
     }
     pub fn reconstruct_selection(&self, selector: &Value) -> ResearchResult<Value> {

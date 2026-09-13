@@ -1,4 +1,3 @@
-import { canonicalJson } from "./canonical.js";
 import { commandFailure, exactCommandKeys, validateCommandJson } from "./planner-authoring-contract.js";
 
 const FIELDS = Object.freeze({
@@ -8,7 +7,6 @@ const FIELDS = Object.freeze({
   writeRecipe: ["grantId", "sourceText"], readRecipe: ["grantId"],
 });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
-const MAX_FRAME_BYTES = 16 * 1024 * 1024;
 const PUBLIC_OPERATIONS = Object.freeze({ readQuestionnaire: "importQuestionnaire", storeQuestionnaire: "saveQuestionnaire",
   writeRecipe: "saveRecipe", readRecipe: "openRecipe" });
 
@@ -30,7 +28,6 @@ export function createPlannerNativeEffects({ invoke, sessionId, beforeDispatch =
       if (Object.hasOwn(action, "grantId") && !UUID.test(action.grantId)) commandFailure("invalid_grant", "Native selection requires an opaque grant identity.");
       if (typeof isCurrent !== "function" || typeof recordEffect !== "function") throw new TypeError("Native effects require command guards and receipt retention.");
       const request = structuredClone({ context, action });
-      if (new TextEncoder().encode(canonicalJson({ request })).byteLength + 1 > MAX_FRAME_BYTES) commandFailure("request_limit", "Native effect exceeds the encoded transport limit.");
       if (disposed || signal?.aborted || !isCurrent()) commandFailure("canceled", "The command ended before native dispatch.");
       await beforeDispatch({ context: request.context, action: request.action,
         isCurrent: () => !disposed && isCurrent(), signal });

@@ -444,11 +444,13 @@ test("escaped maximum issues and two compact receipts fit the reserved result bu
 
 test("retry admission rejects before effects and retains exact previous outcomes without eviction", async () => {
   const h = harness();
-  // The nested fingerprint must be counted with its own escaping. A request
-  // below the 16 MiB input limit can still exceed the 8 MiB retry capacity.
-  const huge = h.request({ kind: "perform", operation: "saveRecipe", arguments: { directory: "\u0000".repeat(1250000) } });
-  assert.equal(firstIssue(await h.session.execute(huge)), "session_capacity");
-  assert.equal(h.dispatches, 0);
+  // A content hash keeps survey-sized command bodies out of retry retention.
+  const large = harness();
+  const huge = large.request({ kind: "perform", operation: "saveRecipe", arguments: { directory: "x".repeat(17 * 1024 * 1024) } });
+  const applied = await large.session.execute(huge);
+  assert.equal(applied.status, "applied");
+  assert.deepEqual(await large.session.execute(huge), applied);
+  assert.equal(large.dispatches, 1);
   const first = h.request(), firstResult = await h.session.execute(first);
   for (let index = 1; index < 1024; index++) assert.equal((await h.session.execute(h.request())).status, "applied");
   assert.equal(firstIssue(await h.session.execute(h.request())), "session_capacity");

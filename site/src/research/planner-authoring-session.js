@@ -1,4 +1,4 @@
-import { canonicalJson } from "./canonical.js";
+import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { PLANNER_RESULT_SCHEMA, PlannerCommandError, commandFailure, commandOwner,
   commandField, commandConsequence, exactCommandKeys, validateCommandJson, validatePlannerCommand, validateSettingValue } from "./planner-authoring-contract.js";
 
@@ -137,13 +137,15 @@ export function createPlannerAuthoringSession({ sessionId = crypto.randomUUID(),
     let consequence = null;
     const updatedOwners = [];
     try {
-      request = validatePlannerCommand(input);
+      request = structuredClone(validatePlannerCommand(input));
+      if (publishing) commandFailure("busy", "An atomic authoring batch is being published.");
+      // Retain command identity without keeping a second survey-sized string.
+      fingerprint = await canonicalSha256(request);
       if (destroyed) commandFailure("session_closed", "Planner authoring session is closed.");
       if (publishing) commandFailure("busy", "An atomic authoring batch is being published.");
       if (request.sessionId !== sessionId) commandFailure("stale_session", "The authoring session has changed.");
       const { action, requestId } = request;
       mutation = ["set", "apply", "perform"].includes(action.kind);
-      fingerprint = canonicalJson(request);
       const prior = retries.get(requestId);
       if (prior) {
         if (prior.fingerprint !== fingerprint) commandFailure("request_id_reused", "Request identity was reused with different content.");

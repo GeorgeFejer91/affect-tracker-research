@@ -12,13 +12,13 @@ use effects::{failure, NativeLedger};
 pub(crate) use effects::{NativeRequest, NativeResult, RevisionNotice};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
-use std::io::{BufRead, Read, Write};
+use std::io::{BufRead, Write};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State, WebviewWindow};
 use uuid::Uuid;
-use wire::{parse_command, PlannerCommand, PlannerResponse, MAX_FRAME_BYTES};
+use wire::{parse_command, PlannerCommand, PlannerResponse};
 use wire::{Consequence, PlannerAction};
 
 const MAX_PENDING: usize = 4;
@@ -97,13 +97,6 @@ impl PlannerAuthoringBroker {
     }
 
     fn send_output(&self, value: Value) -> ResearchResult<()> {
-        let bytes = serde_json::to_vec(&value).map_err(CommandError::io)?;
-        if bytes.len() > MAX_FRAME_BYTES {
-            return Err(CommandError::new(
-                "limit_exceeded",
-                "Planner result exceeds 16 MiB.",
-            ));
-        }
         {
             let mut state = self.lock()?;
             if state.closed {
@@ -247,14 +240,13 @@ impl PlannerAuthoringBroker {
             let stdin = std::io::stdin(); let mut input = stdin.lock();
             loop {
                 let mut frame = Vec::new();
-                let read = (&mut input).take((MAX_FRAME_BYTES + 1) as u64).read_until(b'\n', &mut frame);
+                let read = input.read_until(b'\n', &mut frame);
                 if read.is_err() { broker.fail(&input_app, "input_unavailable"); return; }
                 if frame.is_empty() {
                     crate::research_shutdown::observe(crate::research_shutdown::Phase::EofObserved);
                     if let Ok(mut state) = broker.lock() { state.eof = true; }
                     broker.wake.notify_all(); broker.finish_if_drained(&input_app); return;
                 }
-                if frame.len() > MAX_FRAME_BYTES { broker.fail(&input_app, "frame_limit_exceeded"); return; }
                 let parsed = parse_command(&frame);
                 let request_id = parsed.as_ref().ok().map(|request| request.request_id.clone());
                 let result = parsed.and_then(|request| broker.enqueue(request));
@@ -608,12 +600,6 @@ pub(crate) fn research_planner_authoring_complete(
     authorize(&window, &role, &broker)?;
     response.validate()?;
     let value = serde_json::to_value(&response).map_err(CommandError::io)?;
-    if serde_json::to_vec(&value).map_err(CommandError::io)?.len() > MAX_FRAME_BYTES {
-        return Err(CommandError::new(
-            "limit_exceeded",
-            "Planner result exceeds 16 MiB.",
-        ));
-    }
     broker.reserve_completion(&response)?;
     if let Err(error) = broker.send_reserved_output(value) {
         broker.fail(window.app_handle(), "output_backpressure");

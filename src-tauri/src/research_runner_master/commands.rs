@@ -116,7 +116,7 @@ async fn master_preflight(
         let mut reasons = Vec::new();
         if !viewport_matches { reasons.push("master-exact-fullscreen-viewport-required".to_owned()); }
         if validation {
-            if !matches!(prepared.plan.version, 3 | 5) { reasons.push("validation-requires-master3-or-5".into()); }
+            if !matches!(prepared.plan.version, 3 | 4 | 5) { reasons.push("validation-requires-master3-4-or-5".into()); }
             if super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
         } else if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
         if !crate::research_platform::NATIVE_ACQUISITION_SUPPORTED { reasons.push("native-acquisition-platform-unsupported".into()); }

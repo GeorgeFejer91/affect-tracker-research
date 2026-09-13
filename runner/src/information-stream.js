@@ -4,7 +4,7 @@ import { inspectMasterStream } from "./master-stream.js";
 import { validateTypedResponseRows } from "./typed-responses.js";
 import { checkSurveyData, surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 
-export const INFORMATION_LIMITS = Object.freeze({ frameBytes: 128 * 1024, transferBytes: 64 * 1024 * 1024, chunkBytes: 64 * 1024, frames: 1_000_000 });
+export const INFORMATION_LIMITS = Object.freeze({ frameBytes: 128 * 1024, chunkBytes: 64 * 1024, frames: 1_000_000 });
 const encoder = new TextEncoder(), decoder = new TextDecoder("utf-8", { fatal: true });
 const sha = /^[a-f0-9]{64}$/u, code = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
 const transferId = /^transfer-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u;
@@ -46,9 +46,11 @@ export class InformationAssembler {
       exact(p, ["kind", "transferId", "contentKind", "byteLength", "sha256", "chunkCount"], "Information header");
       require(!this.pending && !this.ids.has(p.transferId), "Overlapping or duplicate information transfer.");
       require(kinds.includes(p.contentKind) && this.started !== (p.contentKind === "startup"), "Information startup must be first and unique.");
-      require(integer(p.byteLength, 1, INFORMATION_LIMITS.transferBytes) && sha.test(p.sha256) && p.chunkCount === Math.ceil(p.byteLength / INFORMATION_LIMITS.chunkBytes), "Information header length, hash or chunk count exceeds its bound.");
+      require(integer(p.byteLength, 1, Number.MAX_SAFE_INTEGER) && sha.test(p.sha256) && p.chunkCount === Math.ceil(p.byteLength / INFORMATION_LIMITS.chunkBytes)
+        && p.chunkCount + frame.sequence + 1 <= INFORMATION_LIMITS.frames, "Information header length, hash or chunk count exceeds its bound.");
       this.ids.add(p.transferId);
-      this.pending = { header: p, bytes: new Uint8Array(p.byteLength), next: 0, offset: 0, timestamp: sample.timestamp, sequence: frame.sequence };
+      // Allocate only for received chunks, never for an untrusted declared size.
+      this.pending = { header: p, chunks: [], next: 0, offset: 0, timestamp: sample.timestamp, sequence: frame.sequence };
       return null;
     }
     const active = this.pending;
@@ -57,18 +59,21 @@ export class InformationAssembler {
     if (p.kind === "chunk") {
       exact(p, ["kind", "transferId", "index", "data"], "Information chunk");
       require(p.index === active.next && p.index < active.header.chunkCount, "Information chunk index is missing, duplicated or reordered.");
-      const length = Math.min(INFORMATION_LIMITS.chunkBytes, active.bytes.length - active.offset);
+      const length = Math.min(INFORMATION_LIMITS.chunkBytes, active.header.byteLength - active.offset);
       require(typeof p.data === "string" && p.data.length === 4 * Math.ceil(length / 3) && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(p.data), "Information chunk has invalid base64 or length.");
       const raw = atob(p.data);
       require(raw.length === length && btoa(raw) === p.data, "Information chunk is not canonical base64.");
-      active.bytes.set(Uint8Array.from(raw, c => c.charCodeAt(0)), active.offset); active.offset += length; active.next++;
+      active.chunks.push(Uint8Array.from(raw, c => c.charCodeAt(0))); active.offset += length; active.next++;
       return null;
     }
     exact(p, ["kind", "transferId", "sha256"], "Information commit");
-    require(p.kind === "commit" && active.next === active.header.chunkCount && active.offset === active.bytes.length, "Information commit precedes complete chunks.");
-    require(p.sha256 === active.header.sha256 && p.sha256 === await sha256Hex(active.bytes), "Information transfer hash differs.");
-    const value = canonicalParse(decoder.decode(active.bytes), INFORMATION_LIMITS.transferBytes, "Information transfer");
-    const result = { kind: active.header.contentKind, value, byteLength: active.bytes.length, firstSequence: active.sequence, lastSequence: frame.sequence, firstLslTimeSeconds: active.timestamp, commitLslTimeSeconds: sample.timestamp };
+    require(p.kind === "commit" && active.next === active.header.chunkCount && active.offset === active.header.byteLength, "Information commit precedes complete chunks.");
+    const bytes = new Uint8Array(active.offset); let offset = 0;
+    for (const chunk of active.chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+    active.chunks = [];
+    require(p.sha256 === active.header.sha256 && p.sha256 === await sha256Hex(bytes), "Information transfer hash differs.");
+    const value = canonicalParse(decoder.decode(bytes), Number.MAX_SAFE_INTEGER, "Information transfer");
+    const result = { kind: active.header.contentKind, value, byteLength: bytes.length, firstSequence: active.sequence, lastSequence: frame.sequence, firstLslTimeSeconds: active.timestamp, commitLslTimeSeconds: sample.timestamp };
     this.pending = null; this.started = true; this.ended = result.kind === "outcome"; return result;
   }
   finish() { return { complete: !this.failed && !this.pending && this.started && this.ended, frameCount: this.sequence, context: this.context }; }
@@ -149,17 +154,14 @@ function validateResponses(record, plan, context, open, alreadySubmitted) {
 
 /** Reconstruct from recorded information only. The caller independently checks
  * XDF footers; protocol completion alone never asserts recording finalization.
- * This convenience collector caps retained decoded data at 256 MiB. Larger
- * analyses can consume the bounded incremental assembler without collecting. */
+ * For long traces, use the incremental assembler to release decoded records. */
 export async function inspectInformationStream(samples) {
   require(Array.isArray(samples) && samples.length <= INFORMATION_LIMITS.frames, "Information trace exceeds its frame bound.");
   const assembler = new InformationAssembler(), records = [], issues = [], submitted = new Set(), markerSamples = [];
   let executionQualification = null;
-  let startup = null, plan = null, outcome = null, openForm = null, monotonic = -1, retainedBytes = 0;
+  let startup = null, plan = null, outcome = null, openForm = null, monotonic = -1;
   for (const sample of samples) {
     const transfer = await assembler.push(sample); if (!transfer) continue;
-    retainedBytes += transfer.byteLength;
-    require(retainedBytes <= 256 * 1024 * 1024, "Information collector exceeds its retained-data bound; use incremental analysis.");
     const value = transfer.value;
     if (transfer.kind === "startup") {
       if (value.schema === "affect-runner-validation-startup") {
@@ -169,7 +171,7 @@ export async function inspectInformationStream(samples) {
         exact(q, ["schema", "version", "sessionKind", "researchQualified", "reason"], "Execution qualification");
         require(q.schema === "affect-runner-execution-qualification" && q.version === 1 && q.sessionKind === "local-validation" && q.researchQualified === false && q.reason === "explicit-unqualified-validation", "Invalid validation qualification.");
         executionQualification = q; startup = value.startup;
-        require(startup.version === 3, "Validation startup requires master3.");
+        require([3, 4, 5].includes(startup.version), "Validation startup requires master3, master4 or master5.");
       } else { startup = value; }
       plan = await reconstructStartup(startup, assembler.context);
       markerSamples.push({ value: canonicalJson(startup.markerProfile), timestamp: transfer.commitLslTimeSeconds });

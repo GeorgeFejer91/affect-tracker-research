@@ -1,5 +1,5 @@
 //! Explicit SurveyJS master boundary; historical readers retain their contracts.
-use crate::research_error::{CommandError, ResearchResult};
+use crate::research_error::ResearchResult;
 use crate::research_planner_recipe_v2::PlannerRecipeV2;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -20,9 +20,6 @@ impl PlannerRecipeV4 {
         self.validate()?;
         let mut bytes = crate::research_contracts::canonical_json(self, &[])?;
         bytes.push(b'\n');
-        if bytes.len() > crate::research_planner_recipe::MAX_BYTES {
-            return Err(CommandError::invalid_contract("Recipe exceeds 16 MiB."));
-        }
         Ok(bytes)
     }
 }

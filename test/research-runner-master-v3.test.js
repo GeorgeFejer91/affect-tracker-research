@@ -161,9 +161,11 @@ test("validation information remains permanently unqualified after reconstructio
 });
 
 test("validation adapter never accepts an unlabelled native receipt", async () => {
-  const {adapter, plan, calls} = adapterFixture(3);
-  await assert.rejects(adapter.start(plan, {version:3,participantId:"P001"}, {validation:true}), /unqualified label/u);
-  assert.equal(calls[0].name, "research_runner_master_validation_start");
-  assert.equal(calls[0].args.request.acknowledgeUnqualified, true);
-  assert.equal(adapter.active, false);
+  for (const version of [3, 4, 5]) {
+    const {adapter, plan, calls} = adapterFixture(version);
+    await assert.rejects(adapter.start(plan, {version,participantId:"P001"}, {validation:true}), /unqualified label/u);
+    assert.equal(calls[0].name, version === 5 ? "research_runner_master_validation_start_v5" : "research_runner_master_validation_start");
+    assert.equal(calls[0].args.request.acknowledgeUnqualified, true);
+    assert.equal(adapter.active, false);
+  }
 });

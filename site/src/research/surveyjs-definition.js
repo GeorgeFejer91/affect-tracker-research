@@ -1,7 +1,7 @@
-import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
+import { canonicalSha256, sha256Hex } from "./canonical.js";
 import { exactFormObject, verifyP2Definition } from "./form-definition.js";
 import { parseStrictJsonDocument } from "./external-experiment.js";
-import { inspectSurveyJson, SURVEYJS_ENGINE_VERSION, SURVEYJS_COMPLETION_POLICY, SURVEYJS_MAX_BYTES } from "./surveyjs-engine.js";
+import { inspectSurveyJson, SURVEYJS_ENGINE_VERSION, SURVEYJS_COMPLETION_POLICY } from "./surveyjs-engine.js";
 
 export const SURVEYJS_DEFINITION_SCHEMA = "affect-research-surveyjs-definition";
 export const SURVEYJS_BUILDER_URL = "https://surveyjs.io/create-free-survey";
@@ -17,7 +17,6 @@ export function validateSurveyDefinition(value) {
   exactFormObject(value.source, ["kind", "basename", "sha256"], "SurveyJS source");
   if (value.source.kind !== "researcherJson" || typeof value.source.basename !== "string" || !value.source.basename || value.source.basename.length > 255 || /[/\\\u0000]/u.test(value.source.basename)
     || !hash(value.source.sha256) || !hash(value.definitionSha256)) throw new TypeError("Invalid SurveyJS source identity.");
-  if (new TextEncoder().encode(canonicalJson(value)).length > SURVEYJS_MAX_BYTES) throw new RangeError("SurveyJS definition exceeds 4 MiB.");
   inspectSurveyJson(value.surveyJson);
   return structuredClone(value);
 }
@@ -28,7 +27,6 @@ export async function verifySurveyDefinition(value) {
 }
 export async function importSurveyJson(bytes, { questionnaireId, language, title, questionnaireVersion = "1", basename = "questionnaire.json" }) {
   const source = bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(bytes);
-  if (source.length > SURVEYJS_MAX_BYTES) throw new RangeError("SurveyJS import exceeds 4 MiB.");
   const json = parseStrictJsonDocument(new TextDecoder("utf-8", { fatal: true }).decode(source));
   if (json.schema === SURVEYJS_DEFINITION_SCHEMA) {
     const definition = await verifySurveyDefinition(json);

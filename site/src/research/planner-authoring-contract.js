@@ -1,8 +1,5 @@
-import { canonicalJson } from "./canonical.js";
-
 export const PLANNER_COMMAND_SCHEMA = "affect-research-planner-command";
 export const PLANNER_RESULT_SCHEMA = "affect-research-planner-command-result";
-export const PLANNER_COMMAND_MAX_BYTES = 16 * 1024 * 1024;
 export const PLANNER_COMMAND_MAX_EDITS = 256;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const FIELD = /^P[1-7]\.[A-Za-z][A-Za-z0-9_.-]{0,159}$/u;
@@ -58,7 +55,6 @@ export function validatePlannerEdit(edit) {
 }
 export function validatePlannerCommand(value) {
   validateCommandJson(value);
-  if (new TextEncoder().encode(canonicalJson(value)).byteLength > PLANNER_COMMAND_MAX_BYTES) commandFailure("limit_exceeded", "Command exceeds 16 MiB.");
   exactCommandKeys(value, ["schema", "version", "sessionId", "requestId", "expectedRevision", "action"]);
   if (value.schema !== PLANNER_COMMAND_SCHEMA || value.version !== 1) commandFailure("unsupported_version", "Unsupported Planner command version.");
   if (!UUID.test(value.sessionId ?? "") || !UUID.test(value.requestId ?? "")) commandFailure("malformed_command", "Command identity must be a UUID.");

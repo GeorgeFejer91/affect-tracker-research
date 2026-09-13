@@ -20,7 +20,6 @@ function modelInput(json, sourceText = JSON.stringify(json)) {
 
 export const SURVEYJS_ENGINE_VERSION = "3.0.4";
 export const SURVEYJS_COMPLETION_POLICY = "allVisibleQuestions";
-export const SURVEYJS_MAX_BYTES = 4 * 1024 * 1024;
 const passive = new Set(["html", "image", "expression"]);
 const hostProperties = new Set(["choicesByUrl", "navigateToUrl", "navigateToUrlOnCondition", "surveyId", "surveyPostId", "postId", "clientId"]);
 const inspected = new Map(); // Bounded, successful definitions only; no answers.
@@ -32,7 +31,6 @@ export function inspectSurveyJson(json) {
   if (Version !== SURVEYJS_ENGINE_VERSION) throw new Error("SurveyJS engine version mismatch.");
   if (!json || Array.isArray(json) || typeof json !== "object") throw new TypeError("Import a SurveyJS questionnaire JSON object.");
   const cacheKey = JSON.stringify(json);
-  if (cacheKey.length > SURVEYJS_MAX_BYTES || utf8Length(cacheKey) > SURVEYJS_MAX_BYTES) throw new RangeError("SurveyJS JSON exceeds 4 MiB.");
   if (inspected.has(cacheKey)) return cloneJson(inspected.get(cacheKey));
   let nodes = 0;
   function visit(value, path, depth) {
@@ -121,7 +119,6 @@ function checkSurveyDataAt(json, { language = "en", data = {}, complete = false,
     }
   };
   checkData(data, 0);
-  if (utf8Length(JSON.stringify(data)) > SURVEYJS_MAX_BYTES) throw new RangeError("SurveyJS answers exceed 4 MiB.");
   const model = createSurveyModel(json, { language, data, randomSeed });
   try {
     const before = JSON.stringify(model.data);

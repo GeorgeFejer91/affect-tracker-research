@@ -1,5 +1,19 @@
 # Agent message board
 
+## 20260913 root cap-removal app integration
+
+Direct user override: newest implemented feature behavior is authoritative when
+older `for-ai` notes conflict. This root integration pass collected the
+compatible app/runtime portions of the prior size-cap work onto
+`codex/research-unified` instead of merging the old branch wholesale. SurveyJS
+definitions/answers, supported Planner recipes, Planner authoring commands and
+native effect payloads, CLI questionnaire sources, and Runner information
+transfers must not regain arbitrary whole-document byte ceilings. Keep semantic
+guards: nonempty UTF-8/canonical JSON, duplicate-key rejection, depth/node/case
+limits, per-field text limits, path/reparse safety, frame-size limits, row/count
+limits, and exact hash/readback checks. Historical entries below that mention
+4 MiB, 5 MiB, 16 MiB or 64 MiB whole-source ceilings are implementation history,
+not constraints to preserve for these integrated paths.
 
 ## 20260913 contracts file-size guidance correction
 

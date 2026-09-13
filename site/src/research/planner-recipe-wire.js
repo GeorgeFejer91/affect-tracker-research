@@ -9,7 +9,6 @@ export const PLANNER_RECIPE_VERSION = 1;
 export const PLANNER_RECIPE_INTEGRITY_ALGORITHM = "planner-recipe-reproduction-v2";
 export const PLANNER_RECIPE_INTEGRITY_ALGORITHMS = Object.freeze(["planner-recipe-reproduction-v1", PLANNER_RECIPE_INTEGRITY_ALGORITHM]);
 export const PLANNER_RECIPE_SEGMENTS = Object.freeze(["P1", "P2", "P3", "P4", "P5", "P6"]);
-export const MAX_PLANNER_RECIPE_BYTES = 16 * 1024 * 1024;
 export const MAX_PLANNER_RECIPE_CASES = 25_000;
 export const MAX_PLANNER_RECIPE_DEPTH = 64;
 const CORE_KEYS = ["schema", "version", "recipeId", "presentationTarget", "policy", "segments"];
@@ -64,8 +63,8 @@ function assertDepth(text) {
 /** Syntax/canonical transport check only. The public reader must additionally
  * validate every owner, cross-reference and reproduction hash before adoption. */
 export function readPlannerRecipeJsonBytes(input) {
-  if (!(input instanceof Uint8Array) || input.byteLength < 1 || input.byteLength > MAX_PLANNER_RECIPE_BYTES) {
-    throw new RangeError("A Planner recipe must contain between 1 byte and 16 MiB of UTF-8 JSON.");
+  if (!(input instanceof Uint8Array) || input.byteLength < 1) {
+    throw new RangeError("A Planner recipe must contain nonempty UTF-8 JSON.");
   }
   const bytes = input.slice();
   const sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
