@@ -261,6 +261,43 @@ fn exercise(
     observed(&actor, NativeMediaStateV1::Paused)?;
     actor.play(fence.clone()).map_err(|e| e.message)?;
     observed(&actor, NativeMediaStateV1::Playing)?;
+    if std::env::var("AFFECT_NATIVE_DIAGNOSTIC_FULL_CLIP").as_deref() == Ok("1") {
+        let started = Instant::now();
+        let deadline = started + Duration::from_secs(285);
+        let mut last_position = 0.0;
+        let mut samples = 0_u64;
+        loop {
+            let status = actor.status().map_err(|e| e.message)?;
+            if status.session_id.as_deref() != Some(&fence.session_id)
+                || status.generation != fence.generation
+                || status.reason_code.is_some()
+            {
+                return Err("full-clip-identity-or-state-error".into());
+            }
+            if status.state == NativeMediaStateV1::Ended {
+                if samples < 100 || last_position < 250_000.0 {
+                    return Err("full-clip-ended-before-observed-playback".into());
+                }
+                trace("full-clip-ended", serde_json::json!({
+                    "elapsedMs": started.elapsed().as_millis(),
+                    "lastPositionMs": last_position, "observations": samples,
+                    "audioMuted": true, "physicalTimingQualified": false
+                }));
+                break;
+            }
+            if status.state == NativeMediaStateV1::Failed || Instant::now() >= deadline {
+                return Err("full-clip-failed-or-deadline-exceeded".into());
+            }
+            if let Some(position) = status.position_ms {
+                if !position.is_finite() || position < last_position {
+                    return Err("full-clip-position-regressed".into());
+                }
+                last_position = position;
+                samples += 1;
+            }
+            thread::sleep(Duration::from_millis(250));
+        }
+    }
     actor.stop(fence.clone()).map_err(|e| e.message)?;
     observed(&actor, NativeMediaStateV1::Idle)?;
     let next = actor
