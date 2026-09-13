@@ -8,7 +8,6 @@ const encoder = new TextEncoder();
 const HASH = /^[a-f0-9]{64}$/u;
 const CORE = ["schema", "version", "recipeId", "presentationTarget", "policy", "segments", "contentIntegrity"];
 const REF = ["questionnaireId", "language", "definitionSha256", "format", "relativePath", "sha256", "byteLength", "metadata"];
-export const QUESTIONNAIRE_ASSET_LIMIT = 4 * 1024 * 1024;
 const fileText = value => `${canonicalJson(value)}\n`;
 
 export function validateQuestionnaireAssetReference(ref) {
@@ -16,7 +15,7 @@ export function validateQuestionnaireAssetReference(ref) {
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/u.test(ref.questionnaireId)
     || !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u.test(ref.language)
     || !HASH.test(ref.sha256) || !HASH.test(ref.definitionSha256)
-    || !Number.isSafeInteger(ref.byteLength) || ref.byteLength < 1 || ref.byteLength > QUESTIONNAIRE_ASSET_LIMIT
+    || !Number.isSafeInteger(ref.byteLength) || ref.byteLength < 1
     || !["surveyjs", "questionnaire-definition"].includes(ref.format)) throw new TypeError("Invalid questionnaire asset identity, format or size.");
   const suffix = ref.format === "surveyjs" ? "survey" : "definition";
   const expected = `assets/questionnaires/${ref.questionnaireId.toLowerCase()}/${ref.language.toLowerCase()}/${ref.sha256}.${suffix}.json`;
@@ -39,7 +38,7 @@ export async function validatePlannerAssetManifest(value) {
   exactRecipeObject(p2.questionnaires, ["algorithmVersion", "assets", "modules"], "Questionnaire asset registry");
   if (p2.schema !== "affect-research-questionnaire-recipe-contribution" || p2.version !== 4
     || p2.questionnaires.algorithmVersion !== "questionnaire-asset-hooks-v1"
-    || !Array.isArray(p2.questionnaires.assets) || p2.questionnaires.assets.length > 256) throw new TypeError("Unsupported questionnaire asset contribution.");
+    || !Array.isArray(p2.questionnaires.assets)) throw new TypeError("Unsupported questionnaire asset contribution.");
   const paths = new Set(), ids = new Set();
   for (const ref of p2.questionnaires.assets) {
     validateQuestionnaireAssetReference(ref);

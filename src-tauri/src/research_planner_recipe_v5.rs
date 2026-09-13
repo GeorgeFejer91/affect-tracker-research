@@ -11,7 +11,6 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const BUNDLE_SCHEMA: &str = "affect-research-planner-asset-bundle";
-pub const ASSET_LIMIT: usize = 4 * 1024 * 1024;
 const SEGMENTS: [&str; 6] = ["P1", "P2", "P3", "P4", "P5", "P6"];
 fn invalid(message: &str) -> CommandError { CommandError::invalid_contract(message) }
 
@@ -108,7 +107,7 @@ impl QuestionnaireAssetReference {
             || !id.iter().all(|b| b.is_ascii_alphanumeric() || *b == b'-' || *b == b'_')
             || language.is_empty() || !(2..=8).contains(&language[0].len()) || !language[0].bytes().all(|b| b.is_ascii_alphabetic())
             || language[1..].iter().any(|s| s.is_empty() || s.len() > 8 || !s.bytes().all(|b| b.is_ascii_alphanumeric()))
-            || self.byte_length == 0 || self.byte_length > ASSET_LIMIT as u64 {
+            || self.byte_length == 0 {
             return Err(invalid("Invalid questionnaire asset identity or size."));
         }
         let suffix = match self.format.as_str() {
@@ -153,7 +152,6 @@ impl PlannerAssetManifestV5 {
         if p2["schema"] != "affect-research-questionnaire-recipe-contribution" || p2["version"] != 4
             || p2["questionnaires"]["algorithmVersion"] != "questionnaire-asset-hooks-v1" { return Err(invalid("Unsupported questionnaire asset contribution.")); }
         let refs: Vec<QuestionnaireAssetReference> = serde_json::from_value(p2["questionnaires"]["assets"].clone()).map_err(|_| invalid("Invalid questionnaire asset registry."))?;
-        if refs.len() > 256 { return Err(invalid("Too many questionnaire assets.")); }
         let mut paths = BTreeSet::new(); let mut ids = BTreeSet::new();
         for entry in &refs {
             entry.validate()?;
@@ -196,7 +194,6 @@ impl PlannerRecipeV5 {
     pub fn bundle_text(&self, source: &str) -> ResearchResult<String> {
         let mut bytes = canonical_json(&json!({"schema":BUNDLE_SCHEMA,"version":1,"recipeSourceText":source,"questionnaireAssets":self.assets}), &[])?;
         bytes.push(b'\n');
-        if bytes.len() > crate::research_planner_recipe::MAX_BYTES { return Err(invalid("Questionnaire asset transport exceeds 16 MiB.")); }
         String::from_utf8(bytes).map_err(|_| invalid("Invalid UTF-8."))
     }
 }

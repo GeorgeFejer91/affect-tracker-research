@@ -1,6 +1,8 @@
 import { canonicalJson } from "./canonical.js";
 import { SURVEYJS_DEFINITION_SCHEMA, SURVEYJS_BUILDER_URL, importSurveyJson } from "./surveyjs-definition.js";
 import { isSurveySheet, surveyEntryMarkup } from "./surveyjs-sheet.js";
+import { surveyDraftFromDefinition } from "./surveyjs-builder.js";
+import { createSurveyBuilderController } from "./surveyjs-builder-controller.js";
 import { renderSurveyQuestionnaire } from "./surveyjs-view.js";
 import { createQuestionnairePresentationV3, validateQuestionnairePresentationV3 } from "./questionnaire-recipe-v2.js";
 import { restoreQuestionnaireRecipeContent } from "./questionnaire-recipe-restoration.js";
@@ -28,7 +30,7 @@ const escape = (value) => String(value ?? "").replace(/[&<>"']/gu, (char) => ({
 const keyFor = (familyId, language) => `${familyId}/${language}`;
 
 /** Section 2 presentation owner. Drafts never become run authority until saved. */
-export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove, onAdoptImportedFamily }) {
+export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, onMove, onAdoptImportedFamily, authorSurveyJs = false }) {
   const container = root.querySelector("#questionnaire-sheet-list");
   const fileInput = root.querySelector("#questionnaire-sheet-file");
   const dialog = root.querySelector("#questionnaire-sheet-preview");
@@ -39,10 +41,12 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   let restoreGeneration = 0;
   let previewController = null;
   let surveyImportKey = null;
+  const builder = createSurveyBuilderController({ render, markChanged, preserveUndo, refreshEntryState,
+    revision: () => restoreGeneration, isCurrent: entry => !context.locked && !entry.busy && entries.get(keyFor(entry.sheet.familyId, entry.sheet.language)) === entry });
   dialog?.addEventListener("close", () => { previewController?.destroy(); previewController = null; });
 
   function makeEntry(family, language, restoredSheet = null) {
-    const sheet = restoredSheet ?? (family.id === "demographics" ? sheetFromDefinition(demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
+    const sheet = restoredSheet ?? (family.id === "demographics" ? sheetFromDefinition(authorSurveyJs ? surveyDraftFromDefinition(demographicsFormDraft(language.languageTag)) : demographicsFormDraft(language.languageTag), { familyId: family.id }) : createQuestionnaireSheet({ familyId: family.id, language: language.languageTag,
       title: family.label, optionCount: family.id === "maia-2" ? 6 : 5,
       rowCount: family.id === "tas-20" ? 20 : 5 }));
     return { sheet, dirty: true, pristine: true, busy: false, error: "", invalid: new Map(), open: false,
@@ -152,7 +156,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
           <p class="sheet-paste-help">Replacement tables retain item identity and subscale only for unambiguous matches. New items receive new identities. The final recipe retains full metadata.</p>
           ${metadataMarkup(entry)}
         </div></details>
-        <div class="sheet-footer"><span>Placement is set under questionnaire modules.</span><div class="sheet-actions"><button type="button" data-sheet-action="preview">Preview</button><button type="button" data-sheet-action="save" class="primary-action" ${!entry.dirty ? "disabled" : ""}>Save questionnaire</button></div></div>
+        <div class="sheet-footer"><span>Placement is set under questionnaire modules.</span><div class="sheet-actions"><button type="button" data-sheet-action="survey-arrange">Arrange elements</button><button type="button" data-sheet-action="preview">Participant preview</button><button type="button" data-sheet-action="save" class="primary-action" ${!entry.dirty ? "disabled" : ""}>Save questionnaire</button></div></div>
         <div class="sheet-family-actions"><button type="button" data-sheet-action="move-up" ${index < context.languages.length ? "disabled" : ""}>Move questionnaire up</button><button type="button" data-sheet-action="move-down" ${index >= (context.families.length - 1) * context.languages.length ? "disabled" : ""}>Move questionnaire down</button><button type="button" data-sheet-action="remove">Remove questionnaire${context.languages.length > 1 ? " (all languages)" : ""}</button></div>
       </fieldset>
     </details>`;
@@ -238,7 +242,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
       entry.error = "";
       render();
       const guard = operation ?? { signal: new AbortController().signal, isCurrent: () => true };
-      const prepared = await prepareQuestionnaireSave({ readEntry: () => entries.get(key), isLocked: () => context.locked, busyExpected: true }, guard);
+      const prepared = await prepareQuestionnaireSave({ readEntry: () => entries.get(key), isLocked: () => context.locked, busyExpected: true, asSurvey: authorSurveyJs }, guard);
       sourceReceipt = await onSave(prepared.payload, operation ? { isCurrent: prepared.isCurrent, signal: operation.signal } : undefined);
       return prepared.commit(sourceReceipt);
     } catch (error) {
@@ -269,7 +273,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   function prepareLoadedDefinition(entry, definition, { familyId, sourceBytes, authoringResult }) {
     const candidate = { ...entry };
     preserveUndo(candidate);
-    candidate.sheet = sheetFromDefinition(definition, { familyId, authoringResult });
+    candidate.sheet = sheetFromDefinition(authorSurveyJs ? surveyDraftFromDefinition(definition) : definition, { familyId, authoringResult });
+    candidate.repeatLabels = 1;
     candidate.sourceBytes = sourceBytes; candidate.authoringResult = authoringResult;
     candidate.invalid = new Map(); candidate.rawOptionCount = null; candidate.error = "";
     candidate.dirty = true; candidate.pristine = false; candidate.open = true;
@@ -284,6 +289,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   async function preview(entry) {
     if (entry.invalid.size) throw new TypeError("Correct the recorded values before previewing.");
     if (entry.rawOptionCount !== null) throw new TypeError("Finish a valid answer-option count before previewing.");
+    if (entry.builderPaste) throw new TypeError("Add the pasted items or cancel the paste before previewing.");
     const { definition } = await sheetToAuthoring(entry.sheet);
     root.querySelector("#questionnaire-sheet-preview-title").textContent = `${definition.title} · ${definition.language}`;
     const body = root.querySelector("#questionnaire-sheet-preview-content");
@@ -311,6 +317,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
     if (target.matches("select")) return;
+    if (builder.input(target, entry)) return;
     if (handleFormInput(target, entry)) return;
     if (target.hasAttribute("data-sheet-option-count")) {
       preserveUndo(entry); entry.rawOptionCount = target.value;
@@ -342,6 +349,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     const target = event.target;
     const entry = entries.get(target.closest("[data-sheet-key]")?.dataset.sheetKey);
     if (!entry || entry.busy || context.locked) return;
+    if (target.matches("select") && builder.input(target, entry)) return;
     if (target.matches("select") && handleFormInput(target, entry)) return;
     try {
       if (target.hasAttribute("data-sheet-metadata-item")) {
@@ -386,6 +394,8 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
   });
 
   container?.addEventListener("paste", (event) => {
+    const builderEntry = entries.get(event.target.closest("[data-sheet-key]")?.dataset.sheetKey);
+    if (builderEntry && !builderEntry.busy && !context.locked && builder.paste(event, builderEntry)) return;
     restoreGeneration++;
     const target = event.target;
     if (!target.closest(".sheet-table-scroll") || target.closest("[data-sheet-metadata]")) return;
@@ -479,6 +489,13 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
 
   container?.addEventListener("click", async (event) => {
     restoreGeneration++;
+    const arrangement = event.target.closest("button[data-survey-arrange]");
+    if (arrangement) {
+      event.stopPropagation();
+      const entry = entries.get(arrangement.closest("[data-sheet-key]")?.dataset.sheetKey);
+      if (entry && !entry.busy && !context.locked) builder.arrange(arrangement, entry);
+      return;
+    }
     const mover = event.target.closest("button[data-form-move], button[data-form-option]");
     if (mover) {
       event.stopPropagation();
@@ -501,6 +518,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     if (!entry || entry.busy || context.locked) return;
     const action = button.dataset.sheetAction;
     try {
+      if (await builder.action(entry, action)) return;
       if (action === "survey-builder") {
         const windowObject = root.ownerDocument?.defaultView ?? window;
         if (root.dispatchEvent(new CustomEvent("research:open-surveyjs-builder", { cancelable: true }))) windowObject.open(SURVEYJS_BUILDER_URL, "_blank", "noopener,noreferrer");
@@ -744,7 +762,7 @@ export function createQuestionnaireEditor({ root, onChange, onSave, onRemove, on
     prepareAuthoringQuestionnaireSave(questionnaireId, operation) {
       const slot = activeEntries().find(({ entry }) => entry.sheet.questionnaireId === questionnaireId);
       if (!slot) throw new TypeError("Unknown questionnaire identity.");
-      return prepareQuestionnaireSave({ readEntry: () => entries.get(slot.key), isLocked: () => context.locked,
+      return prepareQuestionnaireSave({ readEntry: () => entries.get(slot.key), isLocked: () => context.locked, asSurvey: authorSurveyJs,
         afterCommit() { render(); onChange?.(); } }, operation);
     },
     /** Separate consequential action; the host supplies guarded native dispatch

@@ -10,13 +10,13 @@ import { promisify } from "node:util";
 import { build } from "esbuild";
 
 const [browser, destination, width = "1280", mode = "populated"] = process.argv.slice(2);
-assert.ok(browser && destination); assert.ok(["800", "1280"].includes(width)); assert.ok(["populated", "actions", "invalid"].includes(mode));
+assert.ok(browser && destination); assert.ok(["800", "1280"].includes(width)); assert.ok(["populated", "actions", "invalid", "builder", "builder-preview"].includes(mode));
 const output = resolve(destination); await mkdir(output, { recursive: true });
 assert.equal((await readdir(output)).length, 0, "Use a new evidence directory.");
 const run = promisify(execFile), hash = value => createHash("sha256").update(value).digest("hex");
 const git = async args => (await run("git", args, { windowsHide: true })).stdout.trim();
 const commit = await git(["rev-parse", "HEAD"]), status = await git(["status", "--short"]);
-const bundle = await build({ entryPoints: ["test/fixtures/surveyjs-browser.js"], bundle: true, write: false, format: "esm", target: "chrome120", metafile: true, logLevel: "silent",
+const bundle = await build({ entryPoints: [mode.startsWith("builder") ? "test/fixtures/surveyjs-builder-browser.js" : "test/fixtures/surveyjs-browser.js"], bundle: true, write: false, format: "esm", target: "chrome120", metafile: true, logLevel: "silent",
   banner: { js: "const __plannerModuleUrl = new URL('/site/src/research/ui-view.js', location.href).href;" }, define: { "import.meta.url": "__plannerModuleUrl" } });
 const sourceHashes = {};
 for (const file of [...Object.keys(bundle.metafile.inputs), "site/research.css"]) sourceHashes[file] = hash(await readFile(file));

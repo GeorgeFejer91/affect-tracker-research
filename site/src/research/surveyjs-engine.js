@@ -1,5 +1,23 @@
 import { Model, Version, lintSurvey } from "./vendor/surveyjs-core.js";
 
+const researchMetadata = new Set(["affectResearch", "affectResearchSources", "affectResearchResponseCodes", "affectResearchUtf8Limit"]);
+/** Raw files retain non-rendering provenance and response coding. Only these
+ * declared metadata keys are omitted when constructing SurveyJS's model; all
+ * questionnaire fields, conditions and unknown-field checks remain intact.
+ * Avoid global Serializer extensions on every nested native question. */
+function modelInput(json, sourceText = JSON.stringify(json)) {
+  const utf8Limits = new Map();
+  if (!sourceText.includes('"affectResearch')) return { json, utf8Limits };
+  const source = JSON.stringify(json, function(key, value) {
+    if (key === "affectResearchUtf8Limit") {
+      if (!Number.isSafeInteger(value) || value < 1 || typeof this.name !== "string") throw new TypeError("Invalid questionnaire UTF-8 limit.");
+      utf8Limits.set(this.name, value);
+    }
+    return researchMetadata.has(key) ? undefined : value;
+  });
+  return { json: JSON.parse(source), utf8Limits };
+}
+
 export const SURVEYJS_ENGINE_VERSION = "3.0.4";
 export const SURVEYJS_COMPLETION_POLICY = "allVisibleQuestions";
 export const SURVEYJS_MAX_BYTES = 4 * 1024 * 1024;
@@ -31,10 +49,11 @@ export function inspectSurveyJson(json) {
     }
   }
   visit(json, "surveyJson", 0);
-  const result = lintSurvey(json);
+  const input = modelInput(json, cacheKey);
+  const result = lintSurvey(input.json);
   const errors = result.findings.filter(f => f.severity === "error");
   if (errors.length) throw new TypeError(errors.slice(0, 8).map(f => `${f.path}: ${f.message}`).join("\n"));
-  const model = new Model(json);
+  const model = new Model(input.json);
   try {
     if (model.jsonErrors?.length) throw new TypeError(model.jsonErrors.map(e => e.message ?? e.text ?? String(e)).join("\n"));
     if (!model.getAllQuestions().length) throw new TypeError("The SurveyJS JSON contains no questions.");
@@ -48,7 +67,7 @@ export function inspectSurveyJson(json) {
   } finally { model.dispose(); }
 }
 
-export function applySurveyCompletionPolicy(model) {
+export function applySurveyCompletionPolicy(model, utf8Limits = new Map()) {
   function required(question) {
     if (!passive.has(question.getType()) && !question.readOnly) { question.requiredIf = ""; question.isRequired = true; }
     // SurveyJS performs nested cell/panel validation itself.
@@ -62,6 +81,10 @@ export function applySurveyCompletionPolicy(model) {
     const q = options.question;
     if (!passive.has(q.getType()) && !q.readOnly && q.isVisibleInSurvey && (q.isEmpty() || typeof options.value === "string" && !options.value.trim())) options.error = model.locale === "de" ? "Bitte beantworten Sie diese Frage." : "Please answer this question.";
   });
+  if (utf8Limits.size) model.onValidateQuestion.add((_, options) => {
+    const byteLimit = utf8Limits.get(options.question.name);
+    if (Number.isSafeInteger(byteLimit) && byteLimit > 0 && typeof options.value === "string" && utf8Length(options.value) > byteLimit) options.error = model.locale === "de" ? "Diese Antwort ist zu lang." : "This response is too long.";
+  });
 }
 
 export function surveyRandomSeed(planIdentitySha256, position) { return ((Number.parseInt(planIdentitySha256.slice(0, 8), 16) ^ position) >>> 0) || 1; }
@@ -69,9 +92,10 @@ export function createSurveyModel(json, { language = "en", data = {}, randomSeed
   if (!Number.isSafeInteger(randomSeed) || randomSeed < 1 || randomSeed > 0xffffffff) throw new TypeError("Invalid SurveyJS random seed.");
   const model = new Model();
   model.randomSeed = randomSeed;
-  model.fromJSON(json);
+  const input = modelInput(json);
+  model.fromJSON(input.json);
   model.locale = language;
-  applySurveyCompletionPolicy(model);
+  applySurveyCompletionPolicy(model, input.utf8Limits);
   model.data = data;
   return model;
 }

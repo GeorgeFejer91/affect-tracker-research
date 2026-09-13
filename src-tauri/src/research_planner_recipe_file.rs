@@ -9,7 +9,7 @@ use crate::research_planner_recipe::{
 use crate::research_planner_recipe_supported::{
     parse_supported_planner_recipe_bytes, parse_planner_recipe_asset_bytes, LoadedSupportedPlannerRecipe, SupportedPlannerRecipe,
 };
-use crate::research_planner_recipe_v5::{PlannerAssetManifestV5, QuestionnaireAssetSnapshot, ASSET_LIMIT};
+use crate::research_planner_recipe_v5::{PlannerAssetManifestV5, QuestionnaireAssetSnapshot};
 use serde::Serialize;
 use std::fs::{self, Metadata, OpenOptions};
 use std::io::{Read, Write};
@@ -202,7 +202,7 @@ fn parse_supported_at(path: &Path, bytes: &[u8]) -> ResearchResult<LoadedSupport
     for entry in manifest.references()? {
         let target = directory.join(&entry.relative_path);
         let metadata = require_unlinked_path(&target)?;
-        if !metadata.is_file() || metadata.len() != entry.byte_length || metadata.len() > ASSET_LIMIT as u64 {
+        if !metadata.is_file() || metadata.len() != entry.byte_length {
             return Err(CommandError::invalid_contract("Questionnaire file is missing or its size changed."));
         }
         let source_text = String::from_utf8(read_recipe_bytes(&target)?).map_err(|_| CommandError::invalid_contract("Invalid questionnaire UTF-8."))?;
@@ -218,8 +218,7 @@ pub(crate) fn store_questionnaire_snapshots(directory: &Path, snapshots: &[Quest
     for snapshot in snapshots {
         let parts: Vec<_> = snapshot.relative_path.split('/').collect();
         if parts.len() != 5 || parts[0] != "assets" || parts[1] != "questionnaires"
-            || parts.iter().any(|part| part.is_empty() || *part == "." || *part == ".." || part.contains(['\\', ':']))
-            || snapshot.source_text.len() > ASSET_LIMIT { return Err(CommandError::invalid_contract("Invalid questionnaire snapshot path or size.")); }
+            || parts.iter().any(|part| part.is_empty() || *part == "." || *part == ".." || part.contains(['\\', ':'])) { return Err(CommandError::invalid_contract("Invalid questionnaire snapshot path or size.")); }
         let mut parent = directory.to_path_buf();
         for part in &parts[..4] {
             require_directory(&parent)?;

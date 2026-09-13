@@ -516,7 +516,7 @@ function bindResearchInteractions(root, { surface }) {
   let questionnaireRestoreGeneration = 0;
   let questionnaireSyncFingerprint = null;
   const questionnaireEditor = createQuestionnaireEditor({
-    root,
+    root, authorSurveyJs: true,
     onChange: () => {
       questionnaireContributionRevision += 1;
       root.researchUi?.plannerContributionChanged?.("P2");

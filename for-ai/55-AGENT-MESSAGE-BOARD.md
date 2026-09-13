@@ -5693,3 +5693,17 @@ master4 semantic identity. P7 primary with P2/Runner shared seams; user then
 allocated P2 SurveyJS presets, Excel paste, arrangement and preview popup.
 Chat Orchestrator notified; main is untouched and no work delegated.
 Evidence and remaining boundaries: docs/planner-questionnaire-assets.md.
+
+P2-03/04/07/08 builder follow-up ready in the locked questionnaire-assets
+worktree at D:/GitHub/affect-tracker-research-questionnaire-assets. Actual Planner
+now authors MAIA-2, installed local TAS and demographics as raw SurveyJS assets.
+Element ordering, row/page layout, Excel table paste and interactive popup use
+the existing owner/save boundary. Source wording/coding/attribution preserved.
+1215 Node checks, 29 final headless Edge checks, three native engine checks and
+both app builds/boundaries pass. Native metadata handling keeps the existing
+execution deadline. No installed app, playback, XDF or research qualification
+claim. User explicitly requests unified merge; coordinating with current Runner
+controller-mapping owner to preserve its work. File-size owner a046bf6 is the
+authoritative docs contribution; experimental runtime39f27ad is not an approved
+merge source. New manifest adds no arbitrary asset-size/reference-count cap;
+shared historical acceptance limits remain implementation behavior.

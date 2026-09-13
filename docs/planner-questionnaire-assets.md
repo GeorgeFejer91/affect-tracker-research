@@ -34,8 +34,11 @@ and exact bytes. Fresh authoring compiles current semantics then externalizes.
 The version1 `affect-research-planner-asset-bundle` is only an IPC/CLI/in-memory
 envelope carrying exact manifest text and `{relativePath,sourceText}` snapshots.
 It is not the saved master JSON. No absolute paths, URLs, inferred search or
-ambient presets resolve files. Limits:16MiB manifest/transport,4MiB per asset,
-256 references. Duplicate, missing, extra, reordered or changed files reject.
+ambient presets resolve files. Duplicate, missing, extra, reordered or changed
+files reject. The manifest adds no arbitrary per-asset size or reference-count
+ceiling. Existing shared readers still enforce historical 4MiB SurveyJS and
+16MiB recipe/transport acceptance limits; these are implementation behavior, not
+product requirements. Broad removal remains separately owned.
 
 ## Lifecycle
 
@@ -64,5 +67,40 @@ All three manifest native tests pass with that prepared copy. No dependency or
 unsafe boundary was added. This is software evidence, not installed-device,
 native playback, actual XDF acquisition, timing or research qualification.
 
-Chat Orchestrator owns integration; the user extended the same task with the P2
-minimal builder and SurveyJS preset conversion before final handoff.
+## Minimal P2 builder
+
+The production Planner opts into SurveyJS authoring. Importing MAIA-2, an
+installed researcher-local TAS source, or demographics converts their complete
+items to standard SurveyJS elements before save. Historical CSV/form presets
+remain available to frozen readers. The questionnaire save writes raw SurveyJS
+JSON; the manifest references that file. Researcher-local TAS content is not
+redistributed in the repository.
+
+Each questionnaire card contains a scrollable list of its added elements. Edit
+prompts, choice labels and numeric codes; move elements up/down, place beside the
+previous element, choose a page, or add choice/text/number elements and pages.
+Paste a copied Excel table into the editable import grid and add its rows. A
+second paste gives newly generated IDs distinct names and preserves original
+item IDs in provenance. Unfinished paste and invalid cells block save/preview.
+Imported advanced JSON keeps its conditions, nested panels and translations.
+
+The bottom Participant preview button opens a dialog using the real participant
+SurveyJS renderer. Researchers can answer and test the uploaded questionnaire.
+Answers stay in the temporary preview and closing disposes its model. Preview
+never changes saved questionnaire definitions or experiment results.
+
+Raw JSON retains source attribution, original item identities, prompts, coding
+and subscales in declared affectResearch metadata. Model construction omits only
+those non-rendering fields. SurveyJS remains the questionnaire evaluator; the
+shared completion hook also preserves the demographic UTF-8 text bound.
+
+The user authorized unified integration with current Planner/Runner updates.
+Chat Orchestrator and the active Runner task are informed of the tested handoff.
+
+Final isolated software evidence (2026-09-13, D:/GitHub/.affect-checks):
+1215 Node tests pass (questionnaire-builder-all-node-04.log); SurveyJS generated
+bundle/fixture checks and both frontend builds/boundaries pass. Headless Edge
+builder-final-ui-02 has 15 checks including the installed local TAS source;
+builder-final-popup-02 has 14 checks at 800px. Both screenshot layouts inspected.
+questionnaire-builder-native-03 uses the documented prepared diagnostic copy:
+all three engine tests pass with the existing execution deadline unchanged.

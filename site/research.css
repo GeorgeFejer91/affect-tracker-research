@@ -3597,3 +3597,28 @@ dialog::backdrop {
 @media (forced-colors: active) {
   .stimulus-order-table td[data-order-kind], .isi-definition label, .order-cell-cue { border-color: CanvasText; color: CanvasText; }
 }
+:where(#research-app) .survey-builder-box {
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+:where(#research-app) .survey-builder-heading,
+:where(#research-app) .survey-builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; }
+:where(#research-app) .survey-builder-heading span { color: var(--muted); }
+:where(#research-app) .survey-builder-elements { max-height: 420px; overflow: auto; scrollbar-gutter: stable; border-block: 1px solid var(--border); }
+:where(#research-app) .survey-builder-elements ol { margin: 0; padding: 0; list-style: none; }
+:where(#research-app) .survey-builder-elements li { display: flex; align-items: start; gap: 16px; padding: 12px; border-bottom: 1px solid var(--border); }
+:where(#research-app) .survey-builder-elements li:last-child { border-bottom: 0; }
+:where(#research-app) .survey-element-description { flex: 1; min-width: 0; }
+:where(#research-app) .survey-element-description textarea { width: 100%; resize: vertical; min-height: 60px; overflow: auto; }
+:where(#research-app) .survey-element-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; max-width: 320px; }
+:where(#research-app) .survey-element-controls label { display: grid; gap: 4px; }
+:where(#research-app) .survey-builder-box > .sheet-actions,
+:where(#research-app) .survey-builder-paste { padding: 12px; }
+:where(#research-app) .survey-builder-footer { border-top: 1px solid var(--border); justify-content: flex-end; }
+:where(#research-app) .survey-element-answers { margin-top: 8px; }
+:where(#research-app) .survey-element-answers > div { display: grid; grid-template-columns: minmax(0, 1fr) 80px; gap: 8px; margin-top: 8px; }
+:where(#research-app) .survey-element-answers label { display: grid; gap: 4px; min-width: 0; }
+@media (max-width: 850px) {
+  :where(#research-app) .survey-builder-elements li { flex-direction: column; }
+  :where(#research-app) .survey-element-description { width: 100%; }
+  :where(#research-app) .survey-element-controls { max-width: none; }
+}

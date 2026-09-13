@@ -165,6 +165,16 @@ pub(crate) fn validate_survey_data_seed(
 mod tests {
     use super::*;
     #[test]
+    fn native_surveyjs_builder_metadata_and_utf8_validation_survive() {
+        let schema = json!({"affectResearch":{"schema":"affect-research-survey-instrument","version":1,"items":[]},
+            "elements":[{"type":"comment","name":"name","affectResearchUtf8Limit":8},
+            {"type":"radiogroup","name":"choice","choices":["yes","no"],"affectResearchResponseCodes":{"yes":0,"no":1}}]});
+        assert_eq!(inspect_survey_json(&schema).unwrap()["questionCount"], 2);
+        let data = json!({"name":"🌻🌻","choice":"yes"});
+        assert_eq!(validate_survey_data(&schema, "en", &data, true).unwrap()["data"], data);
+        assert!(validate_survey_data(&schema, "en", &json!({"name":"🌻🌻a","choice":"yes"}), true).is_err());
+    }
+    #[test]
     fn native_surveyjs_retains_nested_calculations_matrices_and_inline_files() {
         let schema = json!({"elements":[
             {"type":"paneldynamic","name":"rows","templateElements":[{"type":"text","inputType":"number","name":"amount"}]},
