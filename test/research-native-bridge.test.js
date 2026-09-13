@@ -64,6 +64,50 @@ test("Planner native file requests acknowledge exact results without rescanning 
   bridge.plannerOnly = true; bridge.destroy();
 });
 
+test("Planner startup adopts an existing workspace even when native media rescan is unavailable", async () => {
+  const root = new EventTarget(), win = new EventTarget(), calls = [];
+  const status = { textContent: "", hidden: true, scrollIntoView() {} };
+  let connector = null;
+  root.dataset = { researchProgram: "planner" };
+  root.querySelector = selector => {
+    if (selector === "#planner-status") return status;
+    if (selector === "#native-playback-mode") return { value: "nativeGstPlay" };
+    return null;
+  };
+  root.researchUi = {
+    settings: { stimuli: { items: [] } },
+    applyNativeInputStatus() {},
+    connectPlannerNativeWorkspace(value) { connector = value; },
+  };
+  const workspace = {
+    selected: true,
+    workspaceId: "11111111-1111-4111-8111-111111111111",
+    displayName: "Saved Planner workspace",
+    librariesReady: true,
+  };
+  const bridge = new NativeResearchRuntimeBridge(root, {
+    windowObject: win,
+    setIntervalObject: () => 1,
+    clearIntervalObject: () => {},
+    invoke: async (command, payload) => {
+      calls.push({ command, payload });
+      if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
+      if (command === "research_workspace_status") return workspace;
+      if (command === "research_source_capabilities") return {};
+      if (command === "research_native_media_capability") return nativeMediaCapability();
+      if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
+      if (command === "research_input_status") return {};
+      if (command === "research_rescan_stimuli") throw new Error("rescan must wait for media readiness");
+      throw new Error(`Unexpected command ${command}`);
+    },
+  });
+  await bridge.initialize();
+  assert.equal(connector.getWorkspaceId(), workspace.workspaceId);
+  assert.match(status.textContent, /Native media startup is unavailable/u);
+  assert.equal(calls.some(({ command }) => command === "research_rescan_stimuli"), false);
+  bridge.destroy();
+});
+
 test("native capture fences cancelled, rearmed, rejected and delayed results", async () => {
   const root = new EventTarget(), win = new EventTarget(), projected = [], captures = [], calls = [], polls = [];
   const binding = createInputBindingPreset("arrowKeys");
