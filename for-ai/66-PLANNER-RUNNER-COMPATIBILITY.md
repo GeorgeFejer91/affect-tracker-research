@@ -10,7 +10,10 @@ Master4 responses use record v3 and `master-responses.v3.jsonl`, including full
 input and processed data, locale, completion policy, random seed, evaluation
 clock, visible questions and occurrence timing. Full records and definitions
 continue through the information stream. See [SurveyJS contracts](../docs/surveyjs-questionnaires.md)
-for all fields, limits and software-vs-live-XDF qualification boundaries.
+for fields, implemented constraints and software-vs-live-XDF qualification boundaries.
+Whole-file ceilings are not product requirements; the
+[2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13)
+supersedes earlier size-limit guidance without claiming runtime changes.
 
 ## Typed demographics and independent XDF reconstruction — 2026-09-12
 
@@ -67,7 +70,9 @@ JS authority: `site/src/research/experiment-package.js`,
 `parse_experiment_package_bytes`, `parse_canonical_experiment_package_text`.
 Readers reject unknown/missing/duplicate fields, invalid references/integrity,
 noncanonical bytes and unsupported versions; UTF-8 without BOM, canonical JSON
-plus LF, maximum 16 MiB. Do not reconstruct it from editable UI fields at Start.
+plus LF. The current reader's 16 MiB ceiling is an implementation limitation,
+not a product requirement under the charter's file-size amendment.
+Do not reconstruct it from editable UI fields at Start.
 
 | Producer option | Current v1 representation | Runner obligation / successor seam |
 | --- | --- | --- |

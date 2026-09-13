@@ -1,5 +1,31 @@
 # Agent message board
 
+## 20260913 contracts file-size guidance correction
+
+The user clarified that this pass removes arbitrary file-size restrictions from
+`for-ai`. Owner: this task's root; segment: contracts; stage: Backend Verification,
+documentation only. P2 import, P6 profile interchange, P7 packaging and RR-02/07
+intake/information-stream guidance are the shared seams; no capability checkbox
+or runtime behavior changes.
+Branch: `codex/segment-contracts-file-size-guidance`, base `640d8a1`, worktree:
+`D:/GitHub/affect-tracker-research-survey-cap-removal`. Allowed files are the
+affected `for-ai` Markdown files. Evidence: complete size-rule inventory,
+contradiction/link review and whitespace/diff checks. App validation is deferred.
+
+The [charter file-size amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13)
+supersedes old whole-file and assembled-document ceilings as product requirements.
+Historical receipts below describe their tested implementations, not limits
+agents must preserve. Earlier runtime experiments remain unintegrated on
+`codex/segment-contracts-survey-cap-removal` at `3ed53ef`; do not collect that
+branch as part of this documentation correction. Chat Orchestrator retains
+integration ownership; its active checkout and current app are untouched.
+
+Handoff: 11 `for-ai` Markdown files only; all nine added relative links and
+anchors resolve, the remaining numeric byte ceilings are per-frame constraints
+or explicitly labelled implementation history, and `git diff --check` passes.
+Ready for documentation-only integration; no app tests, build, runtime support
+or completed validation claim belongs to this change.
+
 ## 20260913 root consolidated SurveyJS Runner validation
 
 Root resumes the user-authorized R1 integration pass (RR-02/03/06/07/08 and
@@ -405,8 +431,10 @@ owns full source-bound combined builds and actual native/application execution.
   current coordinator; its complete ten-step fresh-target test yields applied.
 - S1's resumed independent typed-definition review found language/sparse-array
   defects; S3 aa8717b fixes both and S1's10focused checks pass. S4's native
-  5f786f0 aligns16MiB/80-character/und constraints with62JS parity vectors and
-  22native checks. Main/Runner retain integration ownership. The earlier usage
+  `5f786f0` aligned the then-current 16 MiB, 80-character and `und` checks with
+  62 JS parity vectors and 22 native checks. Its whole-document ceiling is
+  historical implementation evidence, superseded as guidance by the charter's
+  file-size amendment. Main/Runner retain integration ownership. The earlier usage
   error was terminal, but the fresh usage check permitted resuming the review;
   no reset/purchase was requested or performed.
 
@@ -705,12 +733,14 @@ owns full source-bound combined builds and actual native/application execution.
 
 - Language follow-up: max80 characters and case-insensitive `und` rejection,
   matching S3 `aa8717b`. Final focused native suite passes 22/22 with 62 pinned
-  JS parity cases (21 accepted / 41 rejected); 16 MiB correction stays intact.
+  JS parity cases (21 accepted / 41 rejected), including the then-current 16 MiB
+  ceiling. That ceiling is historical evidence, not a continuing requirement.
 
-- Follow-up from Runner/S3: align the initial JS/native 4 MiB cap to the frozen
-  contract's 16 MiB bound. Focused regression accepts >4 MiB and rejects >16 MiB
-  while preserving all individual field limits. Corrected suite passes 22/22
-  through the exact-source external standalone harness. Main/Runner collect this fix.
+- Historical follow-up from Runner/S3: the initial JS/native 4 MiB cap was
+  raised to 16 MiB. The regression accepted >4 MiB and rejected >16 MiB while
+  preserving individual field limits; the corrected suite passed 22/22 through
+  the exact-source external standalone harness. This records the tested behavior;
+  the charter's file-size amendment removes the ceiling as a product requirement.
 
 - Main/root allocated S4 the standalone P2 / E2E-DEMOGRAPHICS native validator,
   focused tests and docs only; Backend Verification, isolated branch
@@ -854,7 +884,7 @@ owns full source-bound combined builds and actual native/application execution.
   isolated fixed-source store/helper as `79e073b`. Native Planner now owns one
   optional real app-data preset store (including private CLI sessions), two
   fixed-ID read/install commands, and the existing picker's local choices.
-  Source installation accepts bounded bytes, not renderer-selected paths.
+  Source installation accepts source bytes, not renderer-selected paths.
 - Adding the local preset uses the existing pristine table loader and guarded
   source-save flow. A work-folder receipt precedes accepted definition adoption;
   missing workspace leaves an explicitly unsaved draft. No automatic Section 2
@@ -1090,9 +1120,11 @@ owns full source-bound combined builds and actual native/application execution.
   implementation. Implemented six purposes with session/request/full-request and
   ordered-selection fingerprints, original admission/error retention, no eviction,
   consumption before revalidation/read, cancellation/close and path-free errors.
-- Questionnaire source is at most 4 MiB, preserved byte-for-byte as bounded
-  `bytesHex` with length/SHA-256/basename/format/grant ID. This fits the broker's
-  16 MiB frame for arbitrary bytes; the existing importer still owns compilation.
+- This implementation limited questionnaire sources to 4 MiB, preserved
+  byte-for-byte as `bytesHex` with length/SHA-256/basename/format/grant ID, within
+  its 16 MiB broker frame. These historical capacities are not file-size product
+  requirements; see the charter's file-size amendment. The existing importer
+  retains compilation authority.
 - Windows focused harness: 17/17 passed (15 new module tests, 2 existing error
   tests). Includes actual junctions/replaced ancestors, file-type substitution,
   existing-writer rejection, exact source snapshot timing, identity/purpose/replay,

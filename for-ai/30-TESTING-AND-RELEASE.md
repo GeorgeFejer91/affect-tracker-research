@@ -220,7 +220,7 @@ qualification evidence.
   `45-FUTURE-AGENT-CHECKLIST.md`; do not expand this pass into Runner
   implementation or claim the whole Backend Verification stage complete.
 - Strictly parse UTF-8 RFC 4180 `questionnaire-csv-v1`: exact 14-column header,
-  optional BOM, bounded byte/row/item/option/text counts, consistent repeated
+  optional BOM, format-specific row/item/option/text constraints, consistent repeated
   metadata, contiguous item rows, unique IDs, explicit required flags, and
   finite-or-blank scores. Strictly parse the matching tab-delimited
   `questionnaire-txt-v1` and closed nested `questionnaire-json-v1` templates;
@@ -228,7 +228,8 @@ qualification evidence.
   malformed encoding, invalid bounds, noncontiguous/inconsistent rows, and
   control characters. Prove TXT and JSON deterministically normalize into
   canonical Questionnaire CSV v1 and every format produces the same definition
-  for equivalent content.
+  for equivalent content. Arbitrary whole-file size rejection is not a product
+  acceptance gate; apply the [charter file-size amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
 - Prove original-source, canonical-CSV, and embedded-definition hashes
   independently, plus JS/Rust canonical-hash parity. Store original uploads
   content-addressed beneath validated

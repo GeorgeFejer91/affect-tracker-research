@@ -26,7 +26,9 @@ profiles in one master envelope remains P7's decision and implementation.
 
 `XrLayoutProfileV1`, schema `affect-research-xr-layout`, is a strict separate
 authoring contribution. It is not an `ExperimentPackageV1`. Its canonical
-representation is UTF-8 without BOM, sorted keys, one LF, maximum 8192 bytes.
+representation is UTF-8 without BOM, sorted keys and one LF. The original
+implementation's 8192-byte ceiling is not a product requirement under the
+[2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
 JS and Rust independently reject unknown/missing fields, invalid policies,
 out-of-range numbers, unsupported targets and noncanonical bytes. The parser
 also rejects duplicate keys; exact byte reserialization is mandatory.

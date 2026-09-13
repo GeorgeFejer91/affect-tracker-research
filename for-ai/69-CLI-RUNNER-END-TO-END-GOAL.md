@@ -50,8 +50,11 @@ Runner's approved bounded protocol direction uses its existing single marker
 outlet with a new versioned, sequenced information envelope. A startup header,
 indexed chunks and verified commit carry exact canonical Planner bytes, immutable
 selection, the complete execution dictionary, effective output settings and
-participant metadata. Each wire chunk is at most 128 KiB and the startup bundle
-at most 64 MiB; assembled memory and startup duration must also be bounded.
+participant metadata. Each wire chunk is at most 128 KiB; this framing constraint
+does not cap the complete startup bundle. Whole-document size follows the
+[charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+Reassembly must verify completeness and integrity and report allocation or timeout
+failures without silently truncating content.
 Attach the recorder before the first envelope and begin acquisition only after
 the committed startup bundle. Later records carry typed draft/submitted answers,
 observed lifecycle transitions and explicit final or interrupted outcome.

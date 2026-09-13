@@ -1,5 +1,9 @@
 # Read this first
 
+File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13):
+arbitrary whole-file ceilings are no longer requirements. Older size limits in
+implementation receipts do not instruct agents to retain or reinstate them.
+
 ## Companion-program amendment — 2026-09-12
 
 The latest user decision requires separate **Experiment Planner** and

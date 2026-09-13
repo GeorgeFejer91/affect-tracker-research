@@ -164,7 +164,7 @@ The local questionnaire library has its own fixed authority pair:
 verification and guarded pristine-slot loading through the existing editor;
 the selected native bridge calls
 `research_local_questionnaire_preset_commands.rs`. Those Planner-only commands
-accept a fixed preset ID and, for installation, bounded exact source bytes,
+accept a fixed preset ID and, for installation, exact source bytes,
 never a caller-supplied storage path. `research_local_questionnaire_presets.rs`
 owns fresh read/hash verification and no-clobber installation beneath the real
 application user-data root, including when CLI WebView profiles are temporary.
@@ -570,8 +570,10 @@ all three formats pass through the same strict importer.
 One canonical row is one allowed single-choice option. The importer creates a
 `QuestionnaireDefinitionV1` only after checking consistent repeated metadata,
 contiguous item rows, unique item and option IDs, explicit required flags,
-finite-or-blank scores, safe text, and all size limits. Original-source,
-canonical-CSV, and definition hashes remain distinct in authoring receipts.
+finite-or-blank scores, safe text, and format-specific field constraints.
+Whole-file size policy follows the [charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+Original-source, canonical-CSV, and definition hashes remain distinct in
+authoring receipts.
 The workspace service stores the original bytes by digest at
 `assets/questionnaires/<family>/<language>/<sha256>.<format>`, verifies existing
 content on idempotent reuse, and returns only a bounded relative receipt. The
