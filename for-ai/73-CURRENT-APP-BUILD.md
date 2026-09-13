@@ -28,3 +28,27 @@ No experiment or recording started. The next focused fix prevents arrow-key
 scrolling from cancelling the input test and waits for the initial region scroll
 before arming it; actual native verification is still required. Full experiment,
 geometry, ISI and XDF validation remain open.
+
+## Resumed native validation, 2026-09-13
+
+The current distribution now identifies source `d9bf6be` in its adjacent
+`current-build.json`. Native compilation passed in
+`runner-input-focus-build-01.log`; the launcher was rebuilt and verified.
+Source is pushed to `codex/final-release-validation`. The previous `ba9a1c3`
+executables and receipts were archived under `current-apps/history/ba9a1c3`;
+its idle process closed gracefully. Exactly one replacement engine was observed,
+PID 27660. The mock autoloaded with zero XDF files and participant P01.
+
+Actual PyAutoGUI evidence `runner-real-survey-settings-05` reached the validation
+checkbox, input-test button and input-test region, but timed out waiting for
+native direction confirmation. Its final screenshot shows black client content,
+although Windows reports the process as responsive. This does not establish
+whether the native focus reconciliation fixed any part of input handling.
+No recorder was armed and no experiment started.
+
+The C: drive reported zero free bytes and the computer-use tool could not start
+because it could not write kernel assets. The test driver ran with temporary
+files and screenshots on D:. Restore sufficient system-drive space before the
+next actual-app qualification attempt; do not treat this failed run as evidence
+of questionnaire, playback, geometry, timing or XDF correctness. Do not delete
+unrelated user data to recover space.
