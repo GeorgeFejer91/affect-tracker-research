@@ -21,7 +21,7 @@ import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.j
 
 const messageOf = (error) => error?.message ?? String(error);
 
-export async function bootRunner(root, { invoke, windowObject = window, pollMs = 250 } = {}) {
+export async function bootRunner(root, { invoke, windowObject = window, pollMs = 250, subscribeAbort = () => () => {} } = {}) {
   if (!(root instanceof HTMLElement) || typeof invoke !== "function") throw new TypeError("Runner needs its root and native adapter.");
   root.innerHTML = runnerMarkup(); root.setAttribute("aria-busy", "false");
   const identity = await invoke("research_desktop_identity");
@@ -32,7 +32,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const now = () => windowObject.performance?.now?.() ?? Date.now();
   const animationFrame = () => new Promise(resolve => windowObject.requestAnimationFrame(resolve));
   const listeners = [];
-  const listen = (element, event, fn) => { element.addEventListener(event, fn); listeners.push(() => element.removeEventListener(event, fn)); };
+  const listen = (element, event, fn, options) => { element.addEventListener(event, fn, options); listeners.push(() => element.removeEventListener(event, fn, options)); };
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
@@ -40,6 +40,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let focusAfterAction = null;
   let setupScrollQuietUntil = 0;
   let questionnairePreview = null;
+  let abortPending = false, actionEpoch = 0;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
@@ -98,14 +99,38 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-error", messageOf(error)); query("runner-error").hidden = false;
   }
   function action(operation) {
+    const epoch = actionEpoch;
     queue = queue.then(async () => {
-      if (destroyed) return;
+      if (destroyed || epoch !== actionEpoch) return;
       busy = true; query("runner-error").hidden = true; renderControls();
       try { await operation(); } catch (error) { if (!destroyed) fail(error); }
       finally { busy = false; if (!destroyed) { renderControls(); focusAfterAction?.focus(); focusAfterAction = null; } }
     });
     return queue;
   }
+  function requestAbort() {
+    if (destroyed || abortPending || (!presentation.active && !presentation.entering)) return;
+    abortPending = true;
+    actionEpoch += 1; // Discard queued form/navigation actions from the aborted presentation.
+    // Revoke pending preparation but retain the active frozen selection until
+    // its adapter has processed the terminal status (including legacy forms).
+    revision += 1; preflight = null; inputReceipt = null; renderControls();
+    action(async () => {
+      try {
+        if (protocol.active) await protocol.finish("stopEarly");
+        if (!protocol.active) {
+          if (recorder?.active) { recorder = await invoke("research_recorder_stop"); renderRecorder(); }
+          await invoke("research_input_cancel_setup");
+          clearQuestionnaire(); questionnairePreview = null;
+          selection = null;
+          query("runner-test-region").hidden = true;
+          query("runner-first").value = ""; query("runner-last").value = "";
+          await presentation.leave();
+        }
+      } finally { abortPending = false; }
+    });
+  }
+  listeners.push(subscribeAbort(requestAbort));
   function invalidate() {
     revision += 1; preflight = null; selection = null; inputReceipt = null;
     text("runner-preflight", "Check the current participant, language and media before starting."); renderControls();
@@ -605,6 +630,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await invoke("research_input_cancel_setup");
   }));
   listen(windowObject, "keydown", event => {
+    if (event.key === "Escape" && event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
+      && !event.isComposing && (presentation.active || presentation.entering)) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (!event.repeat) requestAbort();
+      return;
+    }
+  }, true);
+  listen(windowObject, "keydown", event => {
     if (event.ctrlKey && event.altKey && event.shiftKey && !event.repeat && !event.isComposing) {
       const key = event.key.toLowerCase();
       if (["q", "n", "p", "f"].includes(key)) {
@@ -621,7 +654,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         return;
       }
     }
-    if (event.key !== "Escape" || !presentation.active || root.querySelector("dialog[open]")) return;
+    if (event.key !== "Escape" || event.altKey || event.ctrlKey || event.shiftKey || event.metaKey || event.repeat || event.isComposing || !presentation.active || root.querySelector("dialog[open]")) return;
     event.preventDefault();
     if (protocol.active) query("runner-session-dialog").showModal();
     else query("runner-back").click();
@@ -663,6 +696,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   });
   listen(query("runner-validation"), "change", () => { invalidate(); renderControls(); });
   async function startAttempt() {
+    if (abortPending) return;
     if (!selection || !preflight) throw new Error("Check the current selection first.");
     if (!presentation.active) throw new Error("Enter fullscreen participant preparation first.");
     if (controllerSettings.overridden) throw new Error("Controller override execution is not connected yet.");
@@ -674,6 +708,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
+    if (abortPending) return;
     const participant = ![2, 3, 4].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {

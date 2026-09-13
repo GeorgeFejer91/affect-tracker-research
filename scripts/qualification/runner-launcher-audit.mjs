@@ -8,7 +8,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
-const [browser, destination, viewport = '800,800'] = process.argv.slice(2);
+const [browser, destination, viewport = '800,800', onlyCase] = process.argv.slice(2);
 assert.ok(browser && destination, "Supply a headless browser executable and output directory.");
 const source = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 const execute = promisify(execFile), hash = bytes => createHash("sha256").update(bytes).digest("hex");
@@ -43,6 +43,7 @@ try{
  case 'research_desktop_identity':return {schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return {playerActorReady:true};
+ case 'research_runner_recent_experiments':return {schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_workspace_status':return {selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic fixture (no files)'};
  case 'research_runner_selection':return {schema:'affect-runner-selection',version:1,packageSourceByteSha256:root.runner.recipe.canonicalSourceByteSha256,participantId:args.participantId??(mode==='unselected'?null:'P001'),outputDirectory:'outputs/recipe-synthetic'};
  case 'research_recorder_status':return {available:false,active:false,phase:'idle'};
@@ -124,7 +125,9 @@ try{
     }
     if(mode==='stop'){
      dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',cancelable:true}));await tick();check(q('runner-session-dialog').open&&fullscreen,'Escape opens controls, keeps active fullscreen');
-     await click('runner-stop');await click('runner-stop-confirm');check(!fullscreen&&!q('runner-launcher').hidden,'terminal attempt returns to windowed launcher');
+     await click('runner-stop');
+     window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',altKey:true,bubbles:true,cancelable:true}));
+     await tick();await tick();check(!fullscreen&&!q('runner-launcher').hidden,'Alt+Esc aborts legacy attempt through an open stop dialog');
     }
    }
   }
@@ -149,6 +152,7 @@ const server=createServer(async(req,res)=>{try{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const rows=[];
 try {for(const program of ['empty','launcher','professor','remote','controller','settings','override','demographics','fullscreen-error','escape','questionnaire','video','stop','unselected','participant-used','sequence','picker-large']){
+ if(onlyCase&&program!==onlyCase)continue;
  const profile=await mkdtemp(join(output,'profile-'));
  const {stdout}=await execute(browser,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--window-size=${viewport}`,'--force-prefers-reduced-motion','--force-device-scale-factor=1','--virtual-time-budget=5000',`--screenshot=${join(output,program+'.png')}`,'--dump-dom',`http://127.0.0.1:${server.address().port}/?program=${program}`],{windowsHide:true,timeout:30000,maxBuffer:4_000_000});
  await writeFile(join(output,program+'.html'),stdout);

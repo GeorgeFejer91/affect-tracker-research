@@ -1,5 +1,17 @@
 # Experiment Runner agent ledger
 
+## Hidden fullscreen abort — 2026-09-13
+
+Direct user requirement, R1/RR-01 with RR-07/RR-09 seams: exact Alt+Esc aborts
+fullscreen Runner without confirmation or participant-visible hints. The existing
+safe listen-only native hook and capture-phase frontend handler reach controlled
+stopEarly; repeats coalesce, pending preparation is canceled, partial attempts
+remain durable and plain Esc retains session controls. The hook does not suppress
+Windows task switching. No recipe or recording schema change. See
+[the implementation and evidence](../docs/runner-alt-escape.md); component tests
+pass, while current-distribution collection and native key/XDF qualification
+remain with the integration owner.
+
 ## Complete-XDF smoke extension — 2026-09-12
 
 The latest explicit user request activates RR-02/03/04/06/07/08/09/10 seams for

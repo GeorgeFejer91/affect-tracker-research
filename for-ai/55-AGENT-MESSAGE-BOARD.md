@@ -5682,3 +5682,23 @@ new native list/load endpoint exposes opaque IDs and labels only. Auto-load uses
 existing exactaccept/projectroot/confirm and never starts playback/recording.
 [Handoff](../docs/runner-recent-files.md). No Cargo/SDK hold. Root owns installed
 collection; this branch includes preselection dependency05c6307.
+
+### 20260913-runner-alt-escape
+
+Direct user allocation: hidden Alt+Esc abort in fullscreen Runner. R1 RR-01,
+with RR-09 controlled-stop and RR-07 native-hook seams; Backend Verification.
+Owner: Add hidden runner escape key; isolated codex/segment-runner-alt-escape,
+base 32c7c2d. Current Esc opens session controls; stopEarly preserves partial
+attempts. Add exact Alt+Esc through the existing safe listen-only hook and the
+same stop path, debounce repeats, cancel pending preparation, preserve ordinary
+Esc, and leave fullscreen after finalization. No recipe or recording schema
+change. Collect focused native/JS and actual-app synthetic browser regressions.
+Current distribution integration and physical key/XDF qualification remain with
+Chat Orchestrator; do not create a second user-launchable distribution.
+
+20260913-runner-alt-escape handoff: implementation and source-bound evidence are
+in docs/runner-alt-escape.md. Native input 25 tests, existing Node adapters 18,
+master3/master4 16 EN/DE production-app cases and legacy stop 26 assertions pass.
+SurveyJS checks and Runner frontend boundary pass. Existing monio listen-only
+hook uses a fullscreen-scoped empty Channel; no added unsafe, dependencies or
+recipe fields. Root owns canonical collection and the single current-app build.

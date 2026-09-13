@@ -3,6 +3,7 @@ export function createRunnerPresentation(root, { invoke, windowObject, isActive 
   const query = id => root.querySelector(`#${id}`);
   const shell = root.querySelector(".runner-shell");
   let presenting = false;
+  let entering = false;
   const paint = () => new Promise(resolve => windowObject.requestAnimationFrame(() => windowObject.requestAnimationFrame(resolve)));
   function showPage(page) {
     query("runner-preparation").hidden = page !== "preparation";
@@ -19,8 +20,10 @@ export function createRunnerPresentation(root, { invoke, windowObject, isActive 
   }
   return Object.freeze({
     get active() { return presenting; },
+    get entering() { return entering; },
     showPage,
     async enter() {
+      entering = true;
       root.querySelectorAll("dialog[open]").forEach(dialog => dialog.close());
       query("runner-launcher").hidden = true;
       query("runner-participant-view").hidden = false;
@@ -37,7 +40,7 @@ export function createRunnerPresentation(root, { invoke, windowObject, isActive 
         // A rejected window request is never represented as a fullscreen session.
         await invoke("research_runner_fullscreen", { fullscreen: false }).catch(() => {});
         launcher(); throw error;
-      }
+      } finally { entering = false; }
     },
     async leave() {
       if (isActive()) throw new Error("Finish or stop the active attempt before returning to the launcher.");

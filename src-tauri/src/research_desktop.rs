@@ -1,5 +1,8 @@
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_input::ResearchInputService;
 use serde::Serialize;
+use std::sync::Arc;
+use tauri::ipc::Channel;
 use tauri::{State, WebviewWindow};
 
 /// Chosen by the executable, never by an IPC request or a mutable UI mode.
@@ -10,22 +13,34 @@ pub enum DesktopRole {
     Runner,
 }
 
-/// Presentation only: no protocol, input, persistence or network authority.
+/// Presentation plus a scoped native escape notification. Existing protocol
+/// commands still own abort/finalization; no input data crosses this channel.
 #[tauri::command]
 pub fn research_runner_fullscreen(
     window: WebviewWindow,
     role: State<'_, DesktopRole>,
+    input: State<'_, Arc<ResearchInputService>>,
     fullscreen: bool,
+    on_abort: Channel<()>,
 ) -> ResearchResult<()> {
     if window.label() != "research" || *role != DesktopRole::Runner {
         return Err(CommandError::forbidden("Runner window required."));
     }
-    window.set_fullscreen(fullscreen).map_err(|_| {
+    if fullscreen {
+        input.set_runner_abort_sink(Some(Arc::new(move || {
+            let _ = on_abort.send(());
+        })))?;
+    }
+    let result = window.set_fullscreen(fullscreen).map_err(|_| {
         CommandError::new(
             "runner_fullscreen_failed",
             "Could not change the experiment window's fullscreen state.",
         )
-    })
+    });
+    if (!fullscreen && result.is_ok()) || (fullscreen && result.is_err()) {
+        input.set_runner_abort_sink(None)?;
+    }
+    result
 }
 
 #[derive(Serialize)]
