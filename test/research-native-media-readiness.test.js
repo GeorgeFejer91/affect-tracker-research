@@ -2,7 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { waitForNativeMediaReadiness, NATIVE_MEDIA_STARTUP_BUDGET_MS } from "../site/src/research/native-media-readiness.js";
 
-const ready = { runtimeIntegrityVerified: true, playerActorReady: true, qualifiedStartAvailable: false };
+const ready = {
+  backend: "html-video",
+  api: "webview-video",
+  defaultPlaybackMode: "unqualifiedWebview",
+  requiredForQualifiedRun: false,
+  runtimeIntegrityVerified: false,
+  playerActorReady: false,
+  qualifiedStartAvailable: false,
+};
 test("cold startup can finish after one minute within the original command limit", async () => {
   let clock = 0;
   assert.equal(await waitForNativeMediaReadiness({ now: () => clock, deadline: NATIVE_MEDIA_STARTUP_BUDGET_MS,
@@ -10,9 +18,9 @@ test("cold startup can finish after one minute within the original command limit
   assert.equal(NATIVE_MEDIA_STARTUP_BUDGET_MS, 90_000);
   assert.ok(NATIVE_MEDIA_STARTUP_BUDGET_MS < 120_000);
 });
-test("startup observes both pending phases and returns exact unqualified ready capability", async () => {
+test("startup observes pending phase and returns exact HTML video capability", async () => {
   const values = [{ reasonCode: "native-runtime-verification-pending" },
-    { reasonCode: "native-gstplay-startup-pending" }, ready];
+    { reasonCode: "native-player-startup-pending" }, ready];
   let reads = 0;
   assert.equal(await waitForNativeMediaReadiness({ readCapability: async () => values[reads++] }), ready);
   assert.equal(reads, 3);
@@ -50,7 +58,7 @@ test("abort and disposal interrupt a pending capability RPC", async () => {
 test("deadline remains absolute across pending observations", async () => {
   let clock = 0, reads = 0;
   await assert.rejects(waitForNativeMediaReadiness({ deadline: 10, now: () => clock,
-    readCapability: async () => { reads++; clock = 11; return { reasonCode: "native-gstplay-startup-pending" }; },
+    readCapability: async () => { reads++; clock = 11; return { reasonCode: "native-player-startup-pending" }; },
   }), /timed out/u);
   assert.equal(reads, 1);
 });

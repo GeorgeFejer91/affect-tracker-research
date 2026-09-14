@@ -454,8 +454,8 @@ test("Review and Start carries privacy, participant-state, format, and fail-clos
   for (const id of ["settings-hash", "review-plan-hash", "storage-estimate", "timing-capability", "native-playback-mode", "native-media-capability", "lsl-capability"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
-  assert.match(markup, /GStreamer \/ GstPlay · qualification required/u);
-  assert.match(markup, /WebView video · unqualified testing only/u);
+  assert.match(markup, /HTML video · desktop and browser/u);
+  assert.doesNotMatch(markup, /GStreamer \/ GstPlay · qualification required/u);
 });
 
 test("Run has mutually exclusive questionnaire and stimulus stages with bounded controls", () => {

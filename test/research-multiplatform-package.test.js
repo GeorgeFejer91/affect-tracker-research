@@ -77,7 +77,6 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /process\.platform !== target\.nodePlatform \|\| process\.arch !== target\.nodeArch/u);
   assert.match(helper, /--no-sign/u);
   assert.match(helper, /--no-default-features/u);
-  assert.match(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"/u);
   assert.match(helper, /AFFECT_TRACKER_BUILD_COMMIT: commit/u);
   assert.match(helper, /status", "--porcelain=v1", "--untracked-files=normal"/u);
   assert.match(helper, /TAURI_SIGNING_PRIVATE_KEY/u);
@@ -100,7 +99,7 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
-  assert.match(windows.bundle.longDescription, /not bundled/iu);
+  assert.match(windows.bundle.longDescription, /HTML-compatible video path/iu);
   assert.match(macos.bundle.longDescription, /not qualified/iu);
   assert.match(linux.bundle.longDescription, /not qualified/iu);
 });

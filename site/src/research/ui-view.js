@@ -422,7 +422,7 @@ function reviewSection() {
         <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
         <div class="field-block"><span class="field-label">Estimated storage</span><output id="storage-estimate" class="field-output">Pending verified videos</output></div>
         <div class="field-block"><span class="field-label">Sampling capability</span><output id="timing-capability" class="field-output">Dedicated scheduler not yet verified</output></div>
-        <label class="field is-wide tauri-only"><span>Native playback qualification</span><select id="native-playback-mode"><option value="nativeGstPlay" selected>GStreamer / GstPlay · qualification required</option><option value="unqualifiedWebview">WebView video · unqualified testing only</option></select><output id="native-media-capability" class="field-help">Native runtime capability has not been checked.</output></label>
+        <label class="field is-wide tauri-only"><span>Playback path</span><select id="native-playback-mode"><option value="unqualifiedWebview" selected>HTML video · desktop and browser</option></select><output id="native-media-capability" class="field-help">Playback capability has not been checked.</output></label>
       </div>
     </details>
     <details id="review-participant-chooser" class="inner-disclosure">

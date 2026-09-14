@@ -1,10 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 #![forbid(unsafe_code)]
 
-#[allow(dead_code)]
-#[path = "../../native-media/runtime_manifest.rs"]
-mod runtime_manifest;
-
 use sha2::{Digest, Sha256};
 use std::{
     fs,
@@ -62,7 +58,7 @@ fn verify_engine(path: &Path, expected: &str) -> Result<(), String> {
 
 fn verify_application_directory(root: &Path) -> Result<(), String> {
     // Windows searches the executable directory before PATH. No application DLL
-    // may override the verified private runtime or the system loader there.
+    // may override WebView/system loader behavior from the suite root.
     for (index, entry) in fs::read_dir(root)
         .map_err(|_| "launcher-directory-read")?
         .enumerate()
@@ -85,15 +81,12 @@ fn prepare(root: &Path) -> Result<Command, String> {
     verify_application_directory(root)?;
     let engine = root.join(ENGINE);
     verify_engine(&engine, ENGINE_HASH)?;
-    let runtime = root.join(runtime_manifest::RUNTIME_RELATIVE_ROOT);
-    runtime_manifest::verify_runtime_tree(&runtime).map_err(|e| e.code.as_str().to_owned())?;
-    let bin = runtime.join("bin");
     let mut command = Command::new(engine);
     // Exact executable, no shell, no forwarded arguments, no inherited PATH.
-    // Setting cwd to the verified bin also excludes ambient working-directory DLLs.
+    // Setting cwd to the suite root excludes ambient working-directory DLLs.
     command
-        .current_dir(&bin)
-        .env("PATH", &bin)
+        .current_dir(root)
+        .env_remove("PATH")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());

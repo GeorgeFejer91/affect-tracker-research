@@ -3,11 +3,10 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const flags = new Set(process.argv.slice(2));
-if ([...flags].some(flag => !["--release", "--no-default-features", "--native-gstreamer"].includes(flag))) {
-  throw new Error("Usage: node scripts/build-planner-cli.js [--release] [--no-default-features] [--native-gstreamer]");
+if ([...flags].some(flag => !["--release", "--no-default-features"].includes(flag))) {
+  throw new Error("Usage: node scripts/build-planner-cli.js [--release] [--no-default-features]");
 }
-const features = flags.delete("--native-gstreamer")
-  ? "tauri/custom-protocol,native-gstreamer" : "tauri/custom-protocol";
+const features = "tauri/custom-protocol";
 function run(command, args) {
   const child = spawnSync(command, args, { cwd: root, stdio: "inherit", windowsHide: true, shell: false });
   if (child.error) throw child.error;

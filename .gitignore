@@ -6,6 +6,7 @@ node_modules/
 dist-pages/
 desktop/dist/
 src-tauri/native-media/runtime/
+src-tauri/native-launcher/target/
 src-tauri/target/
 src-tauri/gen/schemas/
 coverage/

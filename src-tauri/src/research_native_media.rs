@@ -7,10 +7,6 @@ pub mod live_frame;
 #[path = "research_native_media/state.rs"]
 mod state;
 
-#[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-#[path = "research_native_media/gst_actor.rs"]
-mod gst_actor;
-
 pub use contracts::{
     NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1,
     NativeMediaDecodeReceiptV2, NativeMediaPrepareReceiptV1, NativeMediaStateV1,
@@ -28,14 +24,9 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-#[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-use gst_actor::{GstActorConfig, GstPlayActorHandle};
-
 #[derive(Debug)]
 struct ServiceState {
     capability: NativeMediaCapability,
-    #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-    actor: Option<Arc<GstPlayActorHandle>>,
 }
 
 /// Internal lifecycle projection, deliberately not an IPC or recipe contract.
@@ -71,15 +62,8 @@ impl NativeMediaService {
         &self,
         fence: NativeMediaCommandFenceV1,
     ) -> ResearchResult<live_frame::LiveFrame> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.snapshot_live_frame(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
     /// Legacy composition compatibility. A raw HWND cannot establish a parent
     /// lifetime: this path reports unavailable and never starts a native actor.
@@ -120,8 +104,6 @@ impl NativeMediaService {
         Self {
             state: Arc::new(Mutex::new(ServiceState {
                 capability,
-                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-                actor: None,
             })),
             native_acquisition_supported,
             lifecycle: Arc::new(ServiceLifecycle::default()),
@@ -157,61 +139,9 @@ impl NativeMediaService {
                 crate::research_shutdown::observe(
                     crate::research_shutdown::Phase::VerificationCompleted,
                 );
-                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-                let actor = if capability.runtime_integrity_verified()
-                    && !lifecycle.requested.load(Ordering::Acquire)
-                {
-                    match parent.hwnd() {
-                        Ok(hwnd) => match GstPlayActorHandle::spawn(GstActorConfig::new(
-                            capability.runtime_root().to_owned(),
-                            state_dir
-                                .join("affect-research")
-                                .join("v1")
-                                .join("gstreamer"),
-                            hwnd.0 as isize,
-                        )) {
-                            Ok(actor) => {
-                                capability.mark_actor_failed("native-gstplay-startup-pending");
-                                Some(Arc::new(actor))
-                            }
-                            Err(error) => {
-                                capability.mark_actor_failed(error.reason_code());
-                                None
-                            }
-                        },
-                        Err(_) => {
-                            capability.mark_actor_failed("native-parent-window-unavailable");
-                            None
-                        }
-                    }
-                } else {
-                    None
-                };
-                #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-                {
-                    let _ = (&parent, &state_dir, &lifecycle);
-                    if capability.runtime_integrity_verified() {
-                        capability.mark_actor_failed("native-gstreamer-feature-disabled");
-                    }
-                }
+                let _ = (&parent, &state_dir, &lifecycle);
                 let mut state = state.lock().unwrap_or_else(|p| p.into_inner());
                 state.capability = capability.into_public();
-                #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-                {
-                    state.actor = actor;
-                    if state.actor.is_some() {
-                        crate::research_shutdown::observe(
-                            crate::research_shutdown::Phase::ActorRetained,
-                        );
-                    }
-                    // Paired with request_shutdown's state lock: neither order
-                    // can miss a shutdown requested during runtime inspection.
-                    if lifecycle.requested.load(Ordering::Acquire) {
-                        if let Some(actor) = &state.actor {
-                            actor.request_shutdown();
-                        }
-                    }
-                }
                 drop(state);
                 crate::research_shutdown::observe(
                     crate::research_shutdown::Phase::InitializerCompleted,
@@ -253,24 +183,6 @@ impl NativeMediaService {
             .unwrap_or_else(|p| p.into_inner())
             .capability
             .clone();
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if let Some(actor) = self.actor() {
-            match actor.startup_result() {
-                Some(Ok(())) if !actor.is_stopped() => {
-                    capability.player_actor_ready = true;
-                    capability.reason_code = "native-qualification-evidence-incomplete".to_owned();
-                }
-                Some(Err(error)) => {
-                    actor.request_shutdown();
-                    capability.reason_code = error.reason_code().to_owned();
-                }
-                _ => {}
-            }
-            if let Some(reason) = actor.failure_reason() {
-                capability.player_actor_ready = false;
-                capability.reason_code = reason.to_owned();
-            }
-        }
         if self.lifecycle.requested.load(Ordering::Acquire) {
             capability.player_actor_ready = false;
             capability.qualified_start_available = false;
@@ -307,11 +219,6 @@ impl NativeMediaService {
     }
 
     pub fn status(&self) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.status())
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
         self.actor_unavailable()
     }
 
@@ -319,11 +226,6 @@ impl NativeMediaService {
     /// coordinator. Unlike the public command, this never queues an actor
     /// request and therefore cannot stall the sampling deadline loop.
     pub(crate) fn status_snapshot(&self) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| Ok(actor.status_snapshot()))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
         self.actor_unavailable()
     }
 
@@ -332,15 +234,8 @@ impl NativeMediaService {
         grant: NativeMediaGrant,
         viewport: NativeMediaViewportPxV1,
     ) -> ResearchResult<NativeMediaPrepareReceiptV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.prepare(grant, viewport))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = (grant, viewport);
-            self.actor_unavailable()
-        }
+        let _ = (grant, viewport);
+        self.actor_unavailable()
     }
 
     pub fn set_viewport(
@@ -348,81 +243,39 @@ impl NativeMediaService {
         fence: NativeMediaCommandFenceV1,
         viewport: NativeMediaViewportPxV1,
     ) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.set_viewport(fence, viewport))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = (fence, viewport);
-            self.actor_unavailable()
-        }
+        let _ = (fence, viewport);
+        self.actor_unavailable()
     }
 
     pub fn play(&self, fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.play(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
 
     pub fn attest_decode(
         &self,
         fence: NativeMediaCommandFenceV1,
     ) -> ResearchResult<NativeMediaDecodeReceiptV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.attest_decode(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
 
     pub fn attest_decode_v2(
         &self,
         fence: NativeMediaCommandFenceV1,
     ) -> ResearchResult<NativeMediaDecodeReceiptV2> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.attest_decode_v2(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
 
     pub fn pause(&self, fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.pause(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
 
     pub fn stop(&self, fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        {
-            self.with_actor(|actor| actor.stop(fence))
-        }
-        #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
-        {
-            let _ = fence;
-            self.actor_unavailable()
-        }
+        let _ = fence;
+        self.actor_unavailable()
     }
 
     pub fn shutdown(&self) {
@@ -436,10 +289,6 @@ impl NativeMediaService {
                 .requested_at
                 .lock()
                 .unwrap_or_else(|p| p.into_inner()) = Some(Instant::now());
-        }
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if let Some(actor) = self.actor() {
-            actor.request_shutdown();
         }
     }
 
@@ -455,10 +304,6 @@ impl NativeMediaService {
             return false;
         }
         crate::research_shutdown::observe(crate::research_shutdown::Phase::InitializerStopped);
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if self.actor().is_some_and(|actor| !actor.is_stopped()) {
-            return false;
-        }
         crate::research_shutdown::observe(crate::research_shutdown::Phase::ActorStopped);
         true
     }
@@ -511,10 +356,6 @@ impl NativeMediaService {
             ));
         }
         crate::research_shutdown::observe(crate::research_shutdown::Phase::InitializerJoined);
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if let Some(actor) = self.actor() {
-            actor.finish_shutdown()?;
-        }
         crate::research_shutdown::observe(crate::research_shutdown::Phase::ActorJoined);
         self.parent.lock().unwrap_or_else(|p| p.into_inner()).take();
         self.lifecycle.completed.store(true, Ordering::Release);
@@ -522,41 +363,6 @@ impl NativeMediaService {
         Ok(())
     }
 
-    #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-    fn actor(&self) -> Option<Arc<GstPlayActorHandle>> {
-        self.state
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .actor
-            .clone()
-    }
-
-    #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-    fn with_actor<T>(
-        &self,
-        action: impl FnOnce(&GstPlayActorHandle) -> ResearchResult<T>,
-    ) -> ResearchResult<T> {
-        if self.lifecycle.requested.load(Ordering::Acquire) {
-            return Err(CommandError::native_media_unavailable(
-                "native-media-shutdown-pending",
-            ));
-        }
-        let actor = self.actor().ok_or_else(|| {
-            CommandError::native_media_unavailable(&self.capability().reason_code)
-        })?;
-        match actor.startup_result() {
-            Some(Ok(())) if !actor.is_stopped() => action(&actor),
-            Some(Err(error)) => {
-                actor.request_shutdown();
-                Err(CommandError::native_media_unavailable(error.reason_code()))
-            }
-            _ => Err(CommandError::native_media_unavailable(
-                "native-gstplay-actor-unavailable",
-            )),
-        }
-    }
-
-    #[cfg(not(all(target_os = "windows", feature = "native-gstreamer")))]
     fn actor_unavailable<T>(&self) -> ResearchResult<T> {
         Err(CommandError::native_media_unavailable(
             &self.capability().reason_code,
@@ -577,10 +383,6 @@ impl Drop for NativeMediaService {
             .take()
         {
             let _ = join.join();
-        }
-        #[cfg(all(target_os = "windows", feature = "native-gstreamer"))]
-        if let Some(actor) = self.actor() {
-            actor.join_for_drop();
         }
     }
 }
@@ -654,7 +456,7 @@ mod tests {
         let capability = media.capability();
         assert_eq!(
             capability.default_playback_mode,
-            PlaybackMode::NativeGstPlay
+            PlaybackMode::UnqualifiedWebview
         );
         assert_eq!(
             capability.runtime_bundle_state,
@@ -682,7 +484,7 @@ mod tests {
             mode: PlaybackMode,
         }
         let parsed: Wrapper = serde_json::from_str("{}").unwrap();
-        assert_eq!(parsed.mode, PlaybackMode::NativeGstPlay);
+        assert_eq!(parsed.mode, PlaybackMode::UnqualifiedWebview);
     }
 
     #[test]
@@ -714,38 +516,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn machine_readable_pin_matches_the_compiled_verifier() {
-        let pin: serde_json::Value =
-            serde_json::from_str(include_str!("../native-media/gstreamer-runtime-v1.json"))
-                .unwrap();
-        assert_eq!(
-            pin["runtimeVersion"],
-            capability::runtime_manifest::PINNED_GSTREAMER_VERSION
-        );
-        assert_eq!(
-            pin["bindingsSeries"],
-            capability::runtime_manifest::PINNED_BINDINGS_SERIES
-        );
-        assert_eq!(pin["target"], capability::runtime_manifest::PINNED_TARGET);
-        assert_eq!(
-            pin["installer"]["sha256"],
-            capability::runtime_manifest::PINNED_INSTALLER_SHA256
-        );
-        assert_eq!(
-            pin["runtimeTree"]["manifestSha256"],
-            capability::runtime_manifest::PINNED_RUNTIME_MANIFEST_SHA256
-        );
-        assert_eq!(
-            pin["runtimeTree"]["fileCount"],
-            capability::runtime_manifest::PINNED_RUNTIME_FILE_COUNT
-        );
-        assert_eq!(
-            pin["runtimeTree"]["byteLength"],
-            capability::runtime_manifest::PINNED_RUNTIME_BYTE_LENGTH
-        );
-        assert_eq!(pin["runtimeTree"]["requiredPeMachine"], "0x8664");
-        assert_eq!(pin["runtimeTree"]["requiredOptionalHeaderMagic"], "0x020b");
-        assert_eq!(pin["productName"], "Affect Research");
-    }
 }

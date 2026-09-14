@@ -50,32 +50,9 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
       - name: Lint native Research backend without optional features
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --no-default-features
-      # The full upstream tree is prepared only on this ephemeral validation
-      # runner so the optional Rust bindings and verifier can be tested. It is
-      # never packaged or uploaded while redistribution review is incomplete.
-      - name: Prepare pinned GStreamer inputs for compile and verifier tests only
-        shell: pwsh
-        run: |
-          ./src-tauri/native-media/prepare-gstreamer-windows-ci.ps1 `
-            -DownloadDirectory $env:RUNNER_TEMP `
-            -DevelopmentDestinationPath (Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.6-devel') `
-            -GithubEnvironmentPath $env:GITHUB_ENV `
-            -GithubPathPath $env:GITHUB_PATH
       - name: Check native Research backend
-        env:
-          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
-        run: |
-          $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
-          cargo check --locked --manifest-path src-tauri/Cargo.toml --all-features
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --all-features
       - name: Compile native Research tests with all features
-        env:
-          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
-        run: |
-          $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
-          cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --no-run
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --no-run
       - name: Lint native Research backend
-        env:
-          AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
-        run: |
-          $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
-          cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-features
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-features

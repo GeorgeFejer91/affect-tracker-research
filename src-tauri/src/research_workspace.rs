@@ -247,10 +247,6 @@ struct MediaGrant {
 /// Neither the path nor the file handle is serializable, so the WebView can
 /// receive only the opaque identifiers exposed by the native-media actor.
 #[derive(Debug)]
-#[cfg_attr(
-    not(all(target_os = "windows", feature = "native-gstreamer")),
-    allow(dead_code)
-)]
 pub(crate) struct NativeMediaGrant {
     pub(crate) media_grant_id: String,
     pub(crate) workspace_file_id: String,

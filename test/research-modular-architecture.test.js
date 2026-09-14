@@ -162,23 +162,20 @@ test("the authoritative Rust package runtime is split by authority and failure d
   const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
   for (const name of required) assert.ok(files.includes(name), `missing native package module ${name}`);
 
-  const [commands, runtime, storage, media] = await Promise.all([
+  const [commands, runtime, storage, mediaService] = await Promise.all([
     readFile(new URL("src-tauri/src/research_native_protocol/commands.rs", root), "utf8"),
     readFile(new URL("src-tauri/src/research_native_protocol/runtime.rs", root), "utf8"),
     readFile(new URL("src-tauri/src/research_native_protocol/storage.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_native_media/gst_actor.rs", root), "utf8"),
+    readFile(new URL("src-tauri/src/research_native_media.rs", root), "utf8"),
   ]);
   assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|gst::|gst_play::|unsafe\s*\{/u);
   assert.doesNotMatch(storage, /gst::|gst_play::|windows::Win32|tauri::command/u);
-  assert.doesNotMatch(media, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv/u);
+  assert.doesNotMatch(mediaService, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv|mod gst_actor/u);
   assert.doesNotMatch(runtime, /tauri::command/u);
 });
 
-test("project-authored unsafe is confined to the two approved documented Windows FFI adapters", async () => {
-  const allowed = new Set([
-    "src-tauri/src/research_native_media/gst_actor/runtime_environment.rs",
-    "src-tauri/src/research_native_media/gst_actor/windows_renderer.rs",
-  ]);
+test("project-authored unsafe is absent after removing native media FFI adapters", async () => {
+  const allowed = new Set();
   const found = [];
   for (const path of await filesRecursively("src-tauri/src/", ".rs")) {
     const source = await readFile(new URL(path, root), "utf8");

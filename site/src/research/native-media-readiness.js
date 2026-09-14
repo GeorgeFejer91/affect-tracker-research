@@ -1,11 +1,11 @@
-// Cold verification of the pinned runtime can consume over 40 seconds before
-// GStreamer starts. Reserve 30 seconds of the broker's 120-second command limit
-// for the actual import; keep this startup deadline absolute and cancellable.
+// HTML-video capability is normally immediate, but keep the startup deadline
+// absolute and cancellable so stale desktop builds fail closed instead of
+// blocking Planner workspace import.
 export const NATIVE_MEDIA_STARTUP_BUDGET_MS = 90_000;
-const PENDING = new Set(["native-runtime-verification-pending", "native-gstplay-startup-pending"]);
+const PENDING = new Set(["native-runtime-verification-pending", "native-player-startup-pending"]);
 
-/** Startup only: decode readiness does not imply qualified playback. Only the
- * read-only capability RPC is polled; callers dispatch their mutation once. */
+/** Startup only: decode readiness does not imply playback qualification. Only
+ * the read-only capability RPC is polled; callers dispatch mutations once. */
 export async function waitForNativeMediaReadiness({ readCapability, isCurrent = () => true, signal,
   deadline = performance.now() + NATIVE_MEDIA_STARTUP_BUDGET_MS, now = () => performance.now() }) {
   const check = () => {
@@ -25,6 +25,10 @@ export async function waitForNativeMediaReadiness({ readCapability, isCurrent = 
     check();
     const capability = await bounded(readCapability);
     check();
+    if (capability?.backend === "html-video"
+      && capability?.api === "webview-video"
+      && capability?.defaultPlaybackMode === "unqualifiedWebview"
+      && capability?.requiredForQualifiedRun === false) return capability;
     if (capability?.runtimeIntegrityVerified === true && capability?.playerActorReady === true) return capability;
     if (!PENDING.has(capability?.reasonCode)) throw new Error("Native media startup is unavailable; import was not dispatched.");
     // A polling interval, not an assumed startup delay: every dispatch requires

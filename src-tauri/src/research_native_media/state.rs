@@ -1,8 +1,3 @@
-#![cfg_attr(
-    not(all(target_os = "windows", feature = "native-gstreamer")),
-    allow(dead_code)
-)]
-
 use super::contracts::{NativeMediaStateV1, NativeMediaStatusV1};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,7 +58,7 @@ pub(crate) fn apply_generation_fenced_signal(
             }
             BackendPlaybackState::Unknown => {
                 status.state = NativeMediaStateV1::Failed;
-                status.reason_code = Some("gstreamer-unknown-playback-state".to_owned());
+                status.reason_code = Some("html-video-unknown-playback-state".to_owned());
             }
         },
         MediaSignal::Buffering(percent) => {
@@ -77,7 +72,7 @@ pub(crate) fn apply_generation_fenced_signal(
         }
         MediaSignal::Error => {
             status.state = NativeMediaStateV1::Failed;
-            status.reason_code = Some("gstreamer-playback-error".to_owned());
+            status.reason_code = Some("html-video-playback-error".to_owned());
             status.buffering_percent = None;
         }
         MediaSignal::Warning => status.warning_count = status.warning_count.saturating_add(1),
@@ -171,7 +166,7 @@ mod tests {
         assert_eq!(status.state, NativeMediaStateV1::Failed);
         assert_eq!(
             status.reason_code.as_deref(),
-            Some("gstreamer-playback-error")
+            Some("html-video-playback-error")
         );
     }
 
@@ -283,7 +278,7 @@ mod tests {
                 status.duration_ms = Some(1_000.0);
                 status.position_ms = Some(1_000.0);
                 status.reason_code = (terminal_state == NativeMediaStateV1::Failed)
-                    .then(|| "gstreamer-playback-error".to_owned());
+                    .then(|| "html-video-playback-error".to_owned());
                 let terminal_observation = status.clone();
 
                 assert!(!apply_generation_fenced_signal(&mut status, 7, signal));
@@ -325,7 +320,7 @@ mod tests {
         assert_eq!(end_then_error.state, NativeMediaStateV1::Failed);
         assert_eq!(
             end_then_error.reason_code.as_deref(),
-            Some("gstreamer-playback-error")
+            Some("html-video-playback-error")
         );
         assert_eq!(end_then_error.sequence, ended_sequence + 1);
     }
