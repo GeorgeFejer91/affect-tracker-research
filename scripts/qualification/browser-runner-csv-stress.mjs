@@ -7,6 +7,8 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
+import { sha256Hex } from "../../site/src/research/canonical.js";
+import { readRunnerRecipe, resolveRunnerSelection } from "../../runner/src/recipe.js";
 
 const [browser, destination, iterationsArg = "4", recipeVersion = "5"] = process.argv.slice(2);
 assert.ok(browser && destination, "Usage: node scripts/qualification/browser-runner-csv-stress.mjs <browser> <output-dir> [iterations] [4|5]");
@@ -17,6 +19,7 @@ assert.ok(Number.isSafeInteger(iterations) && iterations >= 1 && iterations <= 1
 const repoRoot = resolve(import.meta.dirname, "../..");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
+const encoder = new TextEncoder();
 
 const entry = String.raw`
 const checks = [], errors = [], downloads = [], mediaUrls = [], routeEvents = [];
@@ -341,13 +344,120 @@ result.textContent = JSON.stringify({
   iterations,
   checks,
   errors,
-  downloads: downloads.map(download => ({ fileName: download.fileName, bytes: download.text?.length ?? 0 })),
+  downloads: downloads.map(download => ({ fileName: download.fileName, bytes: download.text?.length ?? 0, text: download.text ?? '' })),
   mediaUrls,
   routeEvents,
   finalText: root.textContent.slice(0, 2000),
 });
 document.body.append(result);
 `;
+
+function parseCsvRows(csv) {
+  const rows = [];
+  let row = [], cell = "", quote = false;
+  for (let index = 0; index < csv.length; index += 1) {
+    const char = csv[index];
+    if (quote) {
+      if (char === '"' && csv[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else if (char === '"') quote = false;
+      else cell += char;
+    } else if (char === '"') quote = true;
+    else if (char === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (char === "\n") {
+      row.push(cell.endsWith("\r") ? cell.slice(0, -1) : cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else cell += char;
+  }
+  assert.equal(quote, false, "CSV quote closed");
+  assert.deepEqual(row, [], "CSV has no unterminated final row");
+  assert.equal(cell, "", "CSV ends on a newline");
+  const headers = rows.shift() ?? [];
+  return rows.filter(item => item.length === headers.length && item.some(Boolean))
+    .map(item => Object.fromEntries(headers.map((header, index) => [header, item[index]])));
+}
+
+const payload = (row, label) => {
+  assert.ok(row?.payload_json, `${label} row has payload_json`);
+  return JSON.parse(row.payload_json);
+};
+
+async function reconstructBrowserCsv(download, index) {
+  assert.ok(download.text && download.fileName.endsWith(".csv"), "download contains CSV text");
+  const csvDirectory = join(output, "csv");
+  await mkdir(csvDirectory, { recursive: true });
+  const csvPath = join(csvDirectory, `${String(index + 1).padStart(2, "0")}-${download.fileName}`);
+  await writeFile(csvPath, download.text);
+  const rows = parseCsvRows(download.text);
+  const events = rows.filter(row => row.row_type === "event");
+  const samples = rows.filter(row => row.row_type === "sample");
+  const questionnaires = rows.filter(row => row.row_type === "questionnaire");
+  const startup = payload(events.find(row => row.event_type === "runStarted"), "startup");
+  const terminalRow = events.find(row => row.event_type === "runComplete" || row.event_type === "runPartial");
+  const outcome = payload(terminalRow, "outcome");
+  const receipt = await readRunnerRecipe(encoder.encode(startup.recipeSourceText));
+  const plan = await resolveRunnerSelection(
+    receipt,
+    startup.participantId,
+    startup.selector.languageSelectionPath,
+    startup.selector.variantId,
+  );
+  assert.equal(receipt.canonicalSourceByteSha256, startup.recipeSourceByteSha256);
+  assert.equal(plan.planIdentitySha256, startup.planIdentitySha256);
+  assert.equal(plan.version, startup.planVersion);
+  assert.equal(plan.steps.length, startup.stepCount);
+  assert.equal(outcome.recipeSourceByteSha256, startup.recipeSourceByteSha256);
+  assert.equal(outcome.planIdentitySha256, startup.planIdentitySha256);
+  assert.equal(outcome.participantId, startup.participantId);
+  assert.deepEqual(outcome.selector, startup.selector);
+  assert.equal(outcome.completedStepCount, outcome.protocolOutcome === "completed" ? plan.steps.length : Math.min(outcome.completedStepCount, plan.steps.length));
+  assert.equal(outcome.recordingFinalization, "browser-csv-downloaded");
+  const stepByPosition = new Map(plan.steps.map(step => [String(step.position), step]));
+  for (const row of rows) {
+    assert.equal(row.recipe_sha256, startup.recipeSourceByteSha256);
+    assert.equal(row.plan_sha256, startup.planIdentitySha256);
+    assert.equal(row.participant_id, startup.participantId);
+    assert.equal(row.variant_id, startup.selector.variantId);
+    if (row.protocol_step_position && row.protocol_step_position !== "0") assert.ok(stepByPosition.has(row.protocol_step_position), `known step ${row.protocol_step_position}`);
+  }
+  for (const row of samples) {
+    for (const key of ["current_valence", "current_arousal", "target_valence", "target_arousal", "radius", "angle_degrees"]) {
+      assert.ok(Number.isFinite(Number(row[key])), `finite sample ${key}`);
+    }
+    assert.ok(["true", "false"].includes(row.animation_active));
+    assert.ok(["true", "false"].includes(row.input_active));
+    if (row.relative_path) {
+      const step = stepByPosition.get(row.protocol_step_position);
+      assert.equal(row.relative_path, step?.payload?.asset?.packageRelativePath ?? "");
+    }
+  }
+  for (const row of questionnaires) {
+    const step = stepByPosition.get(row.protocol_step_position);
+    assert.equal(step?.kind, "questionnaire");
+    assert.equal(row.questionnaire_id, step.payload.definition.questionnaireId);
+    assert.ok(row.item_id);
+    assert.ok(row.answer_value);
+    payload(row, "questionnaire");
+  }
+  assert.ok(questionnaires.some(row => /demographics/u.test(row.questionnaire_id)), "demographics rows reconstructed");
+  assert.ok(samples.length > 0, "sample rows reconstructed");
+  return {
+    fileName: download.fileName,
+    csvPath,
+    sha256: await sha256Hex(encoder.encode(download.text)),
+    rows: rows.length,
+    samples: samples.length,
+    questionnaires: questionnaires.length,
+    outcome: outcome.protocolOutcome,
+    planVersion: plan.version,
+    questionnaireAssetCount: startup.questionnaireAssetCount,
+  };
+}
 
 const bundle = await build({
   stdin: { contents: entry, resolveDir: repoRoot, sourcefile: "browser-runner-csv-stress.js" },
@@ -428,12 +538,21 @@ try {
   const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];
   assert.ok(raw, "Missing browser Runner CSV stress receipt");
   const receipt = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">"));
-  await writeFile(join(output, "receipt.json"), JSON.stringify({ repoRoot, receipt }, null, 2));
+  const reconstructions = [];
+  for (const [index, download] of receipt.downloads.entries()) {
+    reconstructions.push(await reconstructBrowserCsv(download, index));
+  }
+  const compactReceipt = {
+    ...receipt,
+    downloads: receipt.downloads.map(({ text, ...download }) => download),
+  };
+  await writeFile(join(output, "receipt.json"), JSON.stringify({ repoRoot, receipt: compactReceipt, reconstructions }, null, 2));
   console.log(JSON.stringify({
     checks: receipt.checks.length,
     errors: receipt.errors,
     iterations: receipt.iterations,
-    downloads: receipt.downloads,
+    downloads: compactReceipt.downloads,
+    reconstructions,
     routeEvents: receipt.routeEvents.map(event => ({
       fileName: event.fileName,
       rows: event.rows,

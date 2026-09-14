@@ -1,5 +1,27 @@
 # Agent message board
 
+## 20260914 Browser CSV saved-file reconstruction
+
+Direct user request continues full browser/offline parity and GitHub Pages
+validation. Owner: current task; segment: R1/browser Runner CSV + Planner/Runner
+transport seam; stage: Repository/Web Synchronization feeding Backend
+Verification. Scope extends the browser CSV stress harness so every intercepted
+download is written as a real `.csv` file in the evidence directory and then
+reconstructed by Node using the production Runner recipe reader and selection
+resolver. It also corrects complete browser outcomes to report every authored
+step as completed. Desktop LSL/XDF, native Start qualification, Planner JSON
+authoring and recording policy remain unchanged.
+
+Evidence: `D:/GitHub/.affect-checks/browser-csv-reconstruct-813395c-current/`
+contains Chrome and Edge receipts plus saved CSV files for master5 asset-bundle
+and master4 canonical recipes. Each browser/version path ran 12 iterations and
+reconstructed all 12 saved CSVs: complete and partial outcomes, selected recipe
+identity, plan hash, participant/variant/language, demographics questionnaire
+rows, affect samples, media relative paths, LSL-equivalent state columns, and
+terminal browser CSV finalization. This is still browser adapter/static-site
+evidence only; installed native GUI playback, physical timing/input, external
+LabRecorder and desktop XDF acquisition remain open.
+
 ## 20260914 Browser CSV startup/outcome parity stress
 
 Direct user request continues full GitHub Pages and browser stress validation.
