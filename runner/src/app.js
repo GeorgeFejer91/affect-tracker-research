@@ -20,12 +20,9 @@ import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLay
 import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
+import { browserAffectState, browserRunCsv } from "./browser-csv.js";
 
 const messageOf = (error) => error?.message ?? String(error);
-const csvCell = (value) => {
-  const text = value === null || value === undefined ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
-  return /[",\r\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-};
 const downloadText = (windowObject, fileName, text, type = "text/csv;charset=utf-8") => {
   const blob = new Blob([text], { type });
   const url = windowObject.URL.createObjectURL(blob);
@@ -220,6 +217,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function browserRecord(row) {
     const attempt = browserAttempt;
     if (!attempt?.active) return;
+    const affect = browserAffectState({
+      currentValence: Number.isFinite(row.valence) ? row.valence : attempt.x,
+      currentArousal: Number.isFinite(row.arousal) ? row.arousal : attempt.y,
+      targetValence: Number.isFinite(row.target_valence) ? row.target_valence : (Number.isFinite(row.valence) ? row.valence : attempt.x),
+      targetArousal: Number.isFinite(row.target_arousal) ? row.target_arousal : (Number.isFinite(row.arousal) ? row.arousal : attempt.y),
+      animationActive: row.animation_active ?? attempt.animationActive,
+      inputActive: row.input_active ?? attempt.inputActive,
+    });
     attempt.rows.push({
       row_type: row.row_type ?? "event",
       run_id: attempt.runId,
@@ -240,23 +245,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       media_time_ms: row.media_time_ms ?? "",
       valence: Number.isFinite(row.valence) ? row.valence : attempt.x,
       arousal: Number.isFinite(row.arousal) ? row.arousal : attempt.y,
+      ...affect,
       questionnaire_id: row.questionnaire_id ?? "",
       module_id: row.module_id ?? "",
       item_id: row.item_id ?? "",
       answer_value: row.answer_value ?? "",
       payload_json: row.payload_json ?? "",
     });
-  }
-  function browserCsv() {
-    const headers = [
-      "row_type", "run_id", "participant_id", "variant_id", "language_id",
-      "recipe_sha256", "plan_sha256", "protocol_step_position", "step_kind",
-      "step_label", "source_code", "relative_path", "event_type", "sequence",
-      "iso_time", "elapsed_ms", "media_time_ms", "valence", "arousal",
-      "questionnaire_id", "module_id", "item_id", "answer_value", "payload_json",
-    ];
-    const rows = browserAttempt?.rows ?? [];
-    return `${headers.join(",")}\n${rows.map(row => headers.map(header => csvCell(row[header])).join(",")).join("\n")}\n`;
   }
   function browserStopSampling() {
     const attempt = browserAttempt;
@@ -282,6 +277,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (bounds.width <= 0 || bounds.height <= 0) return;
       attempt.x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
       attempt.y = Math.max(-1, Math.min(1, 1 - ((event.clientY - bounds.top) / bounds.height) * 2));
+      attempt.inputActive = true;
       preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
     };
     attempt.pointerMove = setFromPoint;
@@ -294,6 +290,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (event.key === "ArrowRight") attempt.x = Math.min(1, attempt.x + delta);
       if (event.key === "ArrowDown") attempt.y = Math.max(-1, attempt.y - delta);
       if (event.key === "ArrowUp") attempt.y = Math.min(1, attempt.y + delta);
+      attempt.inputActive = event.key !== "Home";
       preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
       event.preventDefault();
     };
@@ -312,6 +309,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       media_time_ms: validationVideo.video ? Math.round(validationVideo.video.currentTime * 1000) : "",
       valence: attempt.x,
       arousal: attempt.y,
+      target_valence: attempt.x,
+      target_arousal: attempt.y,
+      animation_active: attempt.animationActive,
+      input_active: attempt.inputActive,
     });
     sample();
     attempt.sampleTimer = windowObject.setInterval(sample, sampleMs);
@@ -323,7 +324,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     validationVideo.stop();
     browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: { status } });
     attempt.active = false;
-    const csv = browserCsv();
+    const csv = browserRunCsv(attempt.rows);
     const fileName = `${safeName(recipe?.recipe?.segments?.P1?.study?.title)}_${attempt.participantId}_${safeName(attempt.selector.variantId)}_${status}.csv`;
     downloadText(windowObject, fileName, csv);
     text("runner-session", `${participantLabel(attempt.participantId)} · ${status}`);
@@ -476,6 +477,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       y: 0,
       sampleTimer: null,
       stepTimer: null,
+      animationActive: Boolean(plan.selected.feedback?.visual?.flubberEnabled),
+      inputActive: false,
       pointerMove: null,
       pointerDown: null,
       keyDown: null,

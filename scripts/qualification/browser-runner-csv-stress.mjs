@@ -269,6 +269,10 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
   check(questionnaires.length > 0, 'CSV includes questionnaire answers');
   check(questionnaires.some(row => /demographics/u.test(row.questionnaire_id)), 'CSV includes demographics questionnaire rows');
   check(samples.some(row => Math.abs(Number(row.valence)) > 0 || Math.abs(Number(row.arousal)) > 0), 'CSV includes non-neutral affect samples from browser input');
+  check(samples.every(row => ['current_valence', 'current_arousal', 'target_valence', 'target_arousal', 'radius', 'angle_degrees', 'animation_active', 'input_active'].every(column => column in row)), 'CSV sample rows include every LSL-equivalent state column');
+  check(samples.every(row => Number.isFinite(Number(row.current_valence)) && Number.isFinite(Number(row.current_arousal)) && Number.isFinite(Number(row.target_valence)) && Number.isFinite(Number(row.target_arousal)) && Number.isFinite(Number(row.radius)) && Number.isFinite(Number(row.angle_degrees))), 'CSV sample state values are finite numbers');
+  check(samples.every(row => Math.abs(Number(row.current_valence) - Number(row.valence)) < 1e-12 && Math.abs(Number(row.current_arousal) - Number(row.arousal)) < 1e-12), 'CSV current state mirrors browser valence/arousal columns');
+  check(samples.every(row => ['true', 'false'].includes(row.animation_active) && ['true', 'false'].includes(row.input_active)), 'CSV sample activity state is boolean text');
   check(rows.every(row => row.recipe_sha256 && row.plan_sha256 && row.participant_id && row.variant_id && row.language_id), 'CSV rows carry run identities');
   check(rows.some(row => row.relative_path), 'CSV carries media relative paths');
   routeEvents.push({
