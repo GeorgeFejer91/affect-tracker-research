@@ -6,6 +6,19 @@ hashes before any actual-app validation. The adjacent engine is an implementatio
 binary of the same version, not a second application version. Do not launch it
 without the verified launcher.
 
+Use `scripts/qualification/current-app-build-audit.mjs --require-current`
+before any current-app validation claim. It verifies the authoritative launcher
+and engine hashes against `current-build.json` and `launcher-receipt.json`, then
+compares the build receipt to the checked-out clean `HEAD`. A failing audit is
+a stop for installed-app qualification, not a product runtime failure.
+
+2026-09-14 audit work found that the current app receipt still binds
+`1574ece7370e418c0b6110abd045cf1e4d4dd82c-dirty` from
+`codex/segment-p4-adaptive-layout`. The launcher and engine still match their
+adjacent receipts and report verified runtime, but this distribution is stale
+relative to repository `main`; rebuild and replace it before using the installed
+Runner for keyboard, playback, timing or XDF evidence.
+
 Root consolidates accepted segment changes into this one distribution. Isolated
 source worktrees and Cargo outputs are development artifacts, not alternative
 user launch targets. Do not create additional desktop/download shortcuts or

@@ -1,5 +1,27 @@
 # Agent message board
 
+## 20260914 Current App Build Audit
+
+Direct user request continues full Planner/Runner parity and research-ready
+validation. Owner: current task; segment: R1/current desktop distribution and
+installed-validation preflight; stage: Backend Verification feeding
+Repository/Web Synchronization. Scope adds a repeatable current-app audit that
+hashes the authoritative `D:/GitHub/.affect-checks/current-apps/Experiment
+Runner.exe` launcher and adjacent engine, compares them to
+`current-build.json` and `launcher-receipt.json`, and compares the build receipt
+to the checked-out clean repository HEAD. It does not launch the GUI, synthesize
+input, execute an experiment, qualify playback or prove XDF correctness.
+
+Precommit shakeout evidence:
+`D:/GitHub/.affect-checks/current-app-build-audit-precommit-02/receipt.json`.
+It correctly fails the current distribution: binaries match their adjacent
+receipts and runtime verification flag, but `current-build.json` binds
+`1574ece7370e418c0b6110abd045cf1e4d4dd82c-dirty` on
+`codex/segment-p4-adaptive-layout`, not current source
+`025ed3859c38263bb59a2372ae571ca489e12709`. The next actual-app validation
+must rebuild and replace the authoritative current-app distribution before
+keyboard, playback, timing or XDF claims can proceed.
+
 ## 20260914 Browser CSV to desktop XDF parity report
 
 Direct user request continues full desktop/browser parity and research-ready
