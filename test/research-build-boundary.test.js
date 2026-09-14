@@ -51,7 +51,7 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
     assert.match(workflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --no-default-features/u);
     assert.doesNotMatch(workflow, /libvlc|vlc-3\.0\.23/iu);
   }
-  assert.match(checksWorkflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --all-features/u);
+  assert.match(checksWorkflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --all-features --no-run/u);
   assert.match(checksWorkflow, /prepare-gstreamer-windows-ci\.ps1/u);
   assert.equal(
     [...checksWorkflow.matchAll(/AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME:\s*"1"/gu)].length,
@@ -59,14 +59,25 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
   );
   for (const step of [
     "Check native Research backend",
-    "Test native Research backend with all features",
+    "Compile native Research tests with all features",
     "Lint native Research backend",
   ]) {
     assert.match(
       checksWorkflow,
-      new RegExp(`- name: ${step}\\n\\s+env:\\n\\s+AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"`, "u"),
+      new RegExp(
+        `- name: ${step}\\n\\s+env:\\n\\s+AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"\\n\\s+run: \\|`,
+        "u",
+      ),
     );
   }
+  assert.equal(
+    [
+      ...checksWorkflow.matchAll(
+        /\$env:PATH = "\$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\\bin;\$env:PATH"/gu,
+      ),
+    ].length,
+    3,
+  );
   assert.doesNotMatch(packageWorkflow, /prepare-gstreamer-windows-ci\.ps1|--all-features/u);
   assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle|write-gstreamer-artifact-provenance/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);
