@@ -53,6 +53,17 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
   }
   assert.match(checksWorkflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --all-features --no-run/u);
   assert.match(checksWorkflow, /prepare-gstreamer-windows-ci\.ps1/u);
+  const prepareStepIndex = checksWorkflow.indexOf("- name: Prepare pinned GStreamer inputs for compile and verifier tests only");
+  assert.ok(prepareStepIndex > 0, "expected GStreamer prep step");
+  for (const step of [
+    "Check native Research backend without optional features",
+    "Test native Research backend without optional features",
+    "Lint native Research backend without optional features",
+  ]) {
+    const stepIndex = checksWorkflow.indexOf(`- name: ${step}\n`);
+    assert.ok(stepIndex > 0, `expected ${step}`);
+    assert.ok(stepIndex < prepareStepIndex, `${step} must run before GStreamer mutates PATH`);
+  }
   assert.equal(
     [...checksWorkflow.matchAll(/AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME:\s*"1"/gu)].length,
     3,
@@ -68,6 +79,10 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
         `- name: ${step}\\n\\s+env:\\n\\s+AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"\\n\\s+run: \\|`,
         "u",
       ),
+    );
+    assert.ok(
+      checksWorkflow.indexOf(`- name: ${step}\n`) > prepareStepIndex,
+      `${step} must run after GStreamer prep`,
     );
   }
   assert.equal(

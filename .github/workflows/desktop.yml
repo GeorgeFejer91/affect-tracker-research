@@ -34,6 +34,22 @@ jobs:
         run: pnpm build:pages
       - name: Build focused desktop WebView
         run: pnpm desktop:build
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
+        with:
+          components: rustfmt, clippy
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - name: Check native Research backend without optional features
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Test native Research backend without optional features
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Lint native Research backend without optional features
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features -- -D warnings
       # The full upstream tree is prepared only on this ephemeral validation
       # runner so the optional Rust bindings and verifier can be tested. It is
       # never packaged or uploaded while redistribution review is incomplete.
@@ -45,37 +61,21 @@ jobs:
             -DevelopmentDestinationPath (Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.6-devel') `
             -GithubEnvironmentPath $env:GITHUB_ENV `
             -GithubPathPath $env:GITHUB_PATH
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
-        with:
-          components: rustfmt, clippy
-      - name: Cache Rust artifacts
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
-        with:
-          workspaces: src-tauri
-      - name: Check Rust formatting
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
       - name: Check native Research backend
         env:
           AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
         run: |
           $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
           cargo check --locked --manifest-path src-tauri/Cargo.toml --all-features
-      - name: Check native Research backend without optional features
-        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Compile native Research tests with all features
         env:
           AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
         run: |
           $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
           cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --no-run
-      - name: Test native Research backend without optional features
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Lint native Research backend
         env:
           AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
         run: |
           $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
           cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
-      - name: Lint native Research backend without optional features
-        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features -- -D warnings
