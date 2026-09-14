@@ -60,7 +60,15 @@ function Get-NormalizedRelativePath {
         [Parameter(Mandatory = $true)] [string] $Root,
         [Parameter(Mandatory = $true)] [string] $Path
     )
-    [IO.Path]::GetRelativePath($Root, $Path).Replace('\', '/')
+    if ([IO.Path].GetMethod('GetRelativePath', [type[]] @([string], [string]))) {
+        return [IO.Path]::GetRelativePath($Root, $Path).Replace('\', '/')
+    }
+    $rootFull = [IO.Path]::GetFullPath($Root)
+    if (-not $rootFull.EndsWith([IO.Path]::DirectorySeparatorChar.ToString(), [StringComparison]::Ordinal)) {
+        $rootFull = "$rootFull$([IO.Path]::DirectorySeparatorChar)"
+    }
+    $pathFull = [IO.Path]::GetFullPath($Path)
+    [Uri]::UnescapeDataString(([Uri] $rootFull).MakeRelativeUri([Uri] $pathFull).ToString()).Replace('\', '/')
 }
 
 function Assert-SafeRelativePath {
