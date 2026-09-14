@@ -16,6 +16,11 @@ path = "src/bin/runner.rs"
 name = "affect-planner-cli"
 path = "src/bin/planner-cli.rs"
 
+[[bin]]
+name = "affect-lsl-loopback"
+path = "src/bin/lsl-loopback.rs"
+required-features = ["lsl-streaming"]
+
 [lib]
 name = "affect_research"
 crate-type = ["lib", "cdylib", "staticlib"]

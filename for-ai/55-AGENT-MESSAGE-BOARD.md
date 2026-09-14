@@ -1,5 +1,18 @@
 # Agent message board
 
+## 20260914 R1 standalone LSL loopback diagnostic
+
+Direct user request continues full Runner/browser validation and GitHub Pages
+sync. Owner: current task; segment: R1/LSL validation seam; stage: Backend
+Verification feeding Repository/Web Synchronization. Scope is a standalone,
+feature-gated native LSL loopback diagnostic and source parity guard for the
+existing outbound state/marker contract. It must not change Planner JSON,
+browser CSV behavior, Runner acquisition policy, XDF qualification, native
+playback gates, or qualified Start status. Evidence target: compile/run the
+diagnostic with `lsl-streaming` only, capture a JSON receipt, and keep any
+failure as LSL/toolchain evidence rather than silently promoting research
+readiness.
+
 ## 20260913 root cap-removal app integration
 
 Direct user override: newest implemented feature behavior is authoritative when
