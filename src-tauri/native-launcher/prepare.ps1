@@ -7,7 +7,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $source = (Resolve-Path -LiteralPath $EnginePath).Path
 $destination = (Resolve-Path -LiteralPath $ApplicationDirectory).Path
-if (-not [IO.Path]::IsPathFullyQualified($BuildDirectory)) { throw 'BuildDirectory must be absolute.' }
+$buildDirectoryIsAbsolute = if ([IO.Path].GetMethod('IsPathFullyQualified', [type[]] @([string]))) {
+    [IO.Path]::IsPathFullyQualified($BuildDirectory)
+}
+else {
+    $BuildDirectory -match '^[A-Za-z]:[\\/]' -or $BuildDirectory -match '^\\\\[^\\]+\\[^\\]+'
+}
+if (-not $buildDirectoryIsAbsolute) { throw 'BuildDirectory must be absolute.' }
 $engineTarget = Join-Path $destination 'affect-runner-engine.exe'
 $launcherTarget = Join-Path $destination 'Experiment Runner.exe'
 if ((Test-Path -LiteralPath $engineTarget) -or (Test-Path -LiteralPath $launcherTarget)) {
