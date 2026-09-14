@@ -1,5 +1,32 @@
 # Agent message board
 
+## 20260914 R1 master5 SurveyJS recording/XDF diagnostic
+
+Direct user request continues full Runner/browser validation and GitHub Pages
+sync. Owner: current task; segment: R1/recording + LSL/XDF validation seam;
+stage: Backend Verification feeding Repository/Web Synchronization. Scope extends
+the existing non-interactive Runner recording diagnostic from the legacy
+synthetic master source to a current master5 questionnaire-asset transport with
+LSL enabled for the diagnostic fixture. It reuses the real RecorderService,
+MasterLslService, native SurveyJS validation engine, own state/marker recording,
+selected external LSL stream discovery and XDF writer. Normal Start, installed
+GUI playback, browser CSV behavior, Planner JSON semantics and native
+qualification flags are unchanged.
+
+Evidence: `D:/GitHub/.affect-checks/runner-recording-diagnostic-v5-4b6113b-01/`
+contains `recording.xdf`, `diagnostic.json`, `independent-xdf.json`,
+`reconstruction.json` and `crosscheck.json`. The diagnostic completed master5
+with four questionnaire assets, 11 occurrences, three SurveyJS submitted
+response records, three own affect samples, three selected external Int64
+samples and 87 information/marker samples. Independent pyxdf 1.17.5 verified
+all XDF stream footers and raw timestamps, and the JS XDF-only reconstructor
+rebuilt the exact v5 source/selection/SurveyJS answers/outcome with no issues.
+Crosscheck result: pass, XDF SHA-256
+`5831cf8623952d231cdbedb972c177fdfa63a174dc09f84a82cc51aed5caf22a`.
+Limitations remain: no installed Tauri window, native video/display geometry,
+physical input timing, external LabRecorder process, full-duration run or
+GitHub Pages CSV qualification is claimed by this diagnostic.
+
 ## 20260914 R1 master recording/XDF diagnostic
 
 Direct user request continues full Runner/browser validation and GitHub Pages

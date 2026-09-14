@@ -4,15 +4,14 @@ use crate::research_error::{CommandError, ResearchResult};
 use crate::research_lsl::LslState;
 use crate::research_recorder::{RecordStartRequest, RecorderService, RecorderStatus};
 use crate::research_runner_master::{
-    forms::FormAnswers,
     information::{startup_bundle, ContentKind, PreparedTransfer, CHUNK_BYTES},
     lsl::MasterLslService,
     markers::{MarkerEvent, MasterMarkers},
-    runtime::MasterChoice,
     MasterSelector, MasterStepKind, PreparedMaster,
 };
 use labstream::{Channel, Format, Outlet, StreamInfo};
 use serde::Serialize;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     fs::{self, OpenOptions},
@@ -41,6 +40,9 @@ pub struct RecordingDiagnosticReceipt {
     participant_id: &'static str,
     run_id: String,
     attempt_id: String,
+    master_version: u32,
+    source_transport: &'static str,
+    questionnaire_asset_count: usize,
     recipe_source_byte_sha256: String,
     plan_identity_sha256: String,
     sample_rate_hz: u16,
@@ -90,7 +92,7 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
         fs::create_dir_all(parent).map_err(CommandError::io)?;
     }
 
-    let source = include_str!("../../test/fixtures/runner-master-lsl-synthetic-v1.canonical.json");
+    let source = include_str!("../../test/fixtures/runner-recording-master-v5-lsl.bundle.json");
     let participant_id = "P001";
     let prepared = PreparedMaster::read(
         source,
@@ -102,6 +104,12 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
             presentation_target: "desktop-screen".into(),
         },
     )?;
+    if prepared.plan.version != 5 {
+        return Err(CommandError::new(
+            "diagnostic_identity",
+            "The recording diagnostic must exercise the current master5 SurveyJS transport.",
+        ));
+    }
     let run_id = format!("diagnostic-run-{}", Uuid::new_v4());
     let attempt_id = format!("diagnostic-attempt-{}", Uuid::new_v4());
     let external_source_id = format!("diagnostic-external-{}", Uuid::new_v4());
@@ -195,39 +203,8 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
         monotonic_ms += step.duration_ms.unwrap_or(250) as f64;
         match step.kind {
             MasterStepKind::Questionnaire => {
-                let now = Instant::now();
-                let choices = step.payload["definition"]["items"]
-                    .as_array()
-                    .ok_or_else(|| {
-                        CommandError::invalid_contract(
-                            "Diagnostic questionnaire definition has no items.",
-                        )
-                    })?
-                    .iter()
-                    .map(|item| MasterChoice {
-                        item_id: item["itemId"].as_str().unwrap_or_default().into(),
-                        option_id: item["options"][0]
-                            .get("optionId")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or_default()
-                            .into(),
-                    })
-                    .collect();
-                let mut record = FormAnswers::default().replace(
-                    step,
-                    choices,
-                    true,
-                    now,
-                    now + Duration::from_millis(125),
-                )?;
-                record["runId"] = serde_json::json!(run_id);
-                record["attemptId"] = serde_json::json!(attempt_id);
-                record["participantId"] = serde_json::json!(participant_id);
-                record["recipeSourceByteSha256"] =
-                    serde_json::json!(prepared.plan.recipe_source_byte_sha256);
-                record["planIdentitySha256"] =
-                    serde_json::json!(prepared.plan.plan_identity_sha256);
-                record["monotonicMs"] = serde_json::json!(monotonic_ms);
+                let record =
+                    surveyjs_response_record(&prepared, step, &run_id, &attempt_id, monotonic_ms)?;
                 service.record(ContentKind::Responses, &record)?;
                 expected += 3;
                 payloads.responses += 1;
@@ -267,7 +244,7 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
     service.observe(&markers.observe(MarkerEvent::Complete, None, None, monotonic_ms + 1.0)?)?;
     expected += 3;
     payloads.observations += 1;
-    let outcome = serde_json::json!({"schema":"affect-runner-outcome","version":1,"protocolOutcome":"completed","completedStepCount":prepared.plan.steps.len(),"failureCode":null,"monotonicMs":monotonic_ms+2.0,"localCheckpoint":"durable","recordingFinalization":"pending"});
+    let outcome = json!({"schema":"affect-runner-outcome","version":1,"protocolOutcome":"completed","completedStepCount":prepared.plan.steps.len(),"failureCode":null,"monotonicMs":monotonic_ms+2.0,"localCheckpoint":"durable","recordingFinalization":"pending"});
     service.record(ContentKind::Outcome, &outcome)?;
     expected += 3;
     payloads.outcome = 1;
@@ -303,6 +280,9 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
         participant_id,
         run_id,
         attempt_id,
+        master_version: prepared.plan.version,
+        source_transport: "affect-research-planner-asset-bundle",
+        questionnaire_asset_count: questionnaire_asset_count(&prepared),
         recipe_source_byte_sha256: prepared.plan.recipe_source_byte_sha256,
         plan_identity_sha256: prepared.plan.plan_identity_sha256,
         sample_rate_hz: SAMPLE_RATE_HZ,
@@ -327,6 +307,53 @@ pub fn run(xdf_path: PathBuf, receipt_path: PathBuf) -> ResearchResult<()> {
         ],
     };
     write_json_new(&receipt_path, &receipt)
+}
+
+fn questionnaire_asset_count(prepared: &PreparedMaster) -> usize {
+    match &prepared.loaded.recipe {
+        crate::research_planner_recipe_supported::SupportedPlannerRecipe::V5(recipe) => {
+            recipe.assets.len()
+        }
+        _ => 0,
+    }
+}
+
+fn surveyjs_response_record(
+    prepared: &PreparedMaster,
+    step: &crate::research_runner_master::MasterStep,
+    run_id: &str,
+    attempt_id: &str,
+    monotonic_ms: f64,
+) -> ResearchResult<Value> {
+    let definition: crate::research_surveyjs_definition::SurveyDefinitionV1 =
+        serde_json::from_value(step.payload["definition"].clone()).map_err(|_| {
+            CommandError::invalid_contract("Diagnostic step is not a SurveyJS questionnaire.")
+        })?;
+    let seed = (u32::from_str_radix(&prepared.plan.plan_identity_sha256[..8], 16)
+        .map_err(|_| CommandError::invalid_contract("Invalid plan hash."))?
+        ^ step.position)
+        .max(1);
+    let data = json!({
+        "details": true,
+        "explanation": "Fictitious diagnostic response",
+        "choices": ["a", "b"]
+    });
+    let checked = crate::research_surveyjs_engine::validate_survey_data_seed(
+        &definition.survey_json,
+        &definition.language,
+        &data,
+        true,
+        seed,
+    )?;
+    let page_count = checked["pageCount"]
+        .as_u64()
+        .ok_or_else(|| CommandError::invalid_contract("SurveyJS did not return its page count."))?;
+    let page_no = page_count.saturating_sub(1);
+    Ok(
+        json!({"schema":"affect-runner-master-responses","version":3,"entryId":step.entry_id,"position":step.position,"module":step.payload["module"],"questionnaireId":definition.questionnaire_id,"questionnaireVersion":definition.questionnaire_version,"definitionSha256":definition.definition_sha256,"status":"submitted",
+        "responses":{"engineVersion":definition.engine_version,"language":definition.language,"completionPolicy":definition.completion_policy,"randomSeed":seed,"evaluatedAtUnixMs":checked["evaluatedAtUnixMs"],"inputData":data,"data":checked["data"],"visibleQuestionNames":checked["visibleQuestionNames"],"pageNo":page_no,"elapsedMs":250.0},
+        "runId":run_id,"attemptId":attempt_id,"participantId":prepared.plan.participant_id,"recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,"monotonicMs":monotonic_ms}),
+    )
 }
 
 fn framed_count(value: &impl Serialize) -> ResearchResult<u64> {
