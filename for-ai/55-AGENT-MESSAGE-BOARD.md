@@ -1,5 +1,32 @@
 # Agent message board
 
+## 20260914 Live GitHub Pages Runner CSV stress
+
+Direct user request continues pushed GitHub Pages validation and browser-based
+stress testing. Owner: current task; segment: R1/browser Runner CSV + deployed
+Pages qualification seam; stage: Repository/Web Synchronization. Scope adds a
+CDP-based live Pages harness that launches the deployed `/runner/` route in a
+named browser, injects test-only file/media/download shims before the live bundle
+starts, captures the downloaded CSV files, fetches live `build-info.json`, and
+reconstructs each CSV through the production Runner reader. It does not alter
+product runtime behavior, Planner JSON, native LSL/XDF, GStreamer playback, or
+qualified desktop Start.
+
+Evidence against live revision
+`3dd8baec47c65864a82c011ad3e79b7b3d272f40`:
+`D:/GitHub/.affect-checks/live-pages-runner-csv-stress-3dd8bae-chrome-v5-11/`,
+`...-chrome-v4-01/`, `...-edge-v5-01/`, and `...-edge-v4-01/`. Each browser and
+recipe generation ran four live deployed-page attempts, including complete EN,
+complete DE/variant coverage and one partial stop. All four receipts report
+81 checks, zero browser errors, saved CSV files, startup/outcome schemas,
+demographics/questionnaire rows, video/interval events, LSL-equivalent sample
+columns, media object URL resolution and reconstruction through the production
+recipe reader. Master5 receipts bind four questionnaire assets; master4 receipts
+bind zero external assets as expected. This is deployed static-browser evidence;
+headless live Pages input did not qualify non-neutral physical/browser input,
+and desktop installed playback, LSL/XDF, external LabRecorder and full-duration
+timing remain open.
+
 ## 20260914 Current-head desktop LSL/XDF diagnostic refresh
 
 Direct user request continues desktop/browser parity and research-readiness

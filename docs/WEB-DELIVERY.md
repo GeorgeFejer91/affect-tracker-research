@@ -61,6 +61,16 @@ SurveyJS questionnaire completion, local-video object URL resolution, affect
 sampling, and CSV download capture. The 2026-09-14 evidence pass covered Chrome
 v5, Edge v5, and Chrome v4 with four iterations each.
 
+Deployed Pages CSV qualification uses
+`scripts/qualification/live-pages-runner-csv-stress.mjs <browser> <output-dir>
+[iterations] [4|5] [runner-url]`. This launches the actual GitHub Pages Runner
+URL in the named browser, injects test-only File System Access/media/download
+shims before the deployed bundle starts, fetches the live `build-info.json`, and
+saves the intercepted CSV downloads for reconstruction through the production
+Runner recipe reader. Its receipts prove the deployed static Runner route for
+the exact reported Pages revision; they still do not qualify native LSL, XDF,
+GStreamer, installed desktop playback, physical input, or full-duration timing.
+
 Preserve strict recipe compatibility and platform capability checks; native LSL,
 XDF recording, GStreamer playback, and other desktop services do not become
 browser features through a static deployment. Their implementation belongs to
