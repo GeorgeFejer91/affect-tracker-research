@@ -71,6 +71,17 @@ Runner recipe reader. Its receipts prove the deployed static Runner route for
 the exact reported Pages revision; they still do not qualify native LSL, XDF,
 GStreamer, installed desktop playback, physical input, or full-duration timing.
 
+CSV/XDF parity qualification uses
+`scripts/qualification/runner-csv-xdf-parity-report.mjs` with one or more
+live Pages browser receipts plus desktop `reconstruction.json`,
+`crosscheck.json`, and `independent-xdf.json`. It verifies that saved browser
+CSV files and independently reconstructed desktop XDF expose the same stable
+run data surface: selected recipe identity, participant route,
+questionnaire/demographics rows, the eight LSL-equivalent affect-state columns,
+terminal outcome and durable reconstruction evidence. This is a contract
+parity report, not a visible installed-playback, physical-timing or
+LabRecorder qualification.
+
 Preserve strict recipe compatibility and platform capability checks; native LSL,
 XDF recording, GStreamer playback, and other desktop services do not become
 browser features through a static deployment. Their implementation belongs to

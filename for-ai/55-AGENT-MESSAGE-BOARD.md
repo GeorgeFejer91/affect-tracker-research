@@ -1,5 +1,30 @@
 # Agent message board
 
+## 20260914 Browser CSV to desktop XDF parity report
+
+Direct user request continues full desktop/browser parity and research-ready
+validation. Owner: current task; segment: R1/browser CSV plus desktop
+information-stream/XDF compatibility seam; stage: Backend Verification feeding
+Repository/Web Synchronization. Scope adds a repeatable parity reporter that
+consumes live GitHub Pages CSV stress receipts and independently reconstructed
+desktop XDF receipts, then verifies the shared stable run contract:
+CSV headers, startup/outcome payload identities, recipe and plan hashes,
+participant route, demographics/questionnaire rows, the eight LSL-equivalent
+affect-state columns, completed/partial browser outcomes, pyxdf-only XDF
+reconstruction, XDF footer/sample-count verification, the desktop affect/marker
+streams and selected external stream evidence. It does not alter product code
+or claim installed visible playback, physical input/timing, external LabRecorder
+operation or full-duration participant qualification.
+
+Evidence:
+`D:/GitHub/.affect-checks/csv-xdf-parity-21127cf-v5-02/report.json`,
+generated from live Pages Chrome/Edge v5 receipts at deployed revision
+`21127cf0d03a2ae7fab8a95b596561435504254a` and desktop XDF diagnostic
+`D:/GitHub/.affect-checks/runner-recording-diagnostic-v5-0a6896f-01/`.
+The report schema is `affect-runner-csv-xdf-parity-report` v1 and carries the
+explicit limitation that timing, sample counts and fixture plan hashes need not
+match between independently generated browser and desktop receipts.
+
 ## 20260914 Live GitHub Pages Runner CSV stress
 
 Direct user request continues pushed GitHub Pages validation and browser-based
@@ -26,6 +51,20 @@ bind zero external assets as expected. This is deployed static-browser evidence;
 headless live Pages input did not qualify non-neutral physical/browser input,
 and desktop installed playback, LSL/XDF, external LabRecorder and full-duration
 timing remain open.
+
+Exact-current deployed refresh against live revision
+`21127cf0d03a2ae7fab8a95b596561435504254a`:
+`D:/GitHub/.affect-checks/live-pages-runner-csv-stress-21127cf-chrome-v5-01/`,
+`...-chrome-v4-01/`, `...-edge-v5-01/`, and `...-edge-v4-01/`. Each receipt
+again reports 81 checks, zero browser errors, four live deployed attempts,
+captured CSV downloads and production Runner reconstruction. Chrome and Edge
+both covered master5 asset-bundle recipes with four questionnaire assets and
+master4 canonical recipes with zero questionnaire assets; complete EN, complete
+DE/variant and partial-stop routes all emitted startup/outcome schemas,
+demographics/questionnaire rows, video/interval events and LSL-equivalent sample
+columns. This refresh binds the public Pages route to the current pushed commit;
+it still does not close installed desktop playback, physical input, external
+LabRecorder, native LSL/XDF or full-duration research-readiness gates.
 
 ## 20260914 Current-head desktop LSL/XDF diagnostic refresh
 
