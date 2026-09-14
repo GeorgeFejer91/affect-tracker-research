@@ -22,6 +22,18 @@ receipts and runtime verification flag, but `current-build.json` binds
 must rebuild and replace the authoritative current-app distribution before
 keyboard, playback, timing or XDF claims can proceed.
 
+Follow-up replacement evidence: `D:/GitHub/.affect-checks/current-apps` now
+contains the clean `35f43a01b370db50a83e72b323ac15a3a87f2e50` build. The stale
+distribution was archived at
+`D:/GitHub/.affect-checks/current-apps-archive/before-35f43a0-20260914-092536`.
+Default current-app audit
+`D:/GitHub/.affect-checks/current-app-build-audit-35f43a0-current-01/receipt.json`
+passes with matching Runner launcher/engine hashes, `runtimeVerified: true`,
+clean source binding and `researchQualified: false`. This is still only
+distribution preflight evidence; actual installed Runner launch, participant
+playback, physical input timing, LSL stream observation and XDF recording remain
+separate validation gates.
+
 ## 20260914 Browser CSV to desktop XDF parity report
 
 Direct user request continues full desktop/browser parity and research-ready
