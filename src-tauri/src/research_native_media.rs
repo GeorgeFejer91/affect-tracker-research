@@ -102,9 +102,7 @@ impl NativeMediaService {
         parent: Option<tauri::WebviewWindow>,
     ) -> Self {
         Self {
-            state: Arc::new(Mutex::new(ServiceState {
-                capability,
-            })),
+            state: Arc::new(Mutex::new(ServiceState { capability })),
             native_acquisition_supported,
             lifecycle: Arc::new(ServiceLifecycle::default()),
             initializer: Mutex::new(None),
@@ -515,5 +513,4 @@ mod tests {
             assert_eq!(error.code, "native_acquisition_platform_unsupported");
         }
     }
-
 }

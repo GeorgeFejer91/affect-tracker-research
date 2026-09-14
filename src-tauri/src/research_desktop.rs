@@ -109,7 +109,10 @@ fn desktop_suite_status(role: DesktopRole) -> DesktopSuiteStatus {
     }
     for (file, code) in [
         ("Experiment Planner.exe", "desktop-suite-planner-missing"),
-        ("Experiment Runner.exe", "desktop-suite-runner-launcher-missing"),
+        (
+            "Experiment Runner.exe",
+            "desktop-suite-runner-launcher-missing",
+        ),
         (
             "affect-runner-engine.exe",
             "desktop-suite-runner-engine-missing",
