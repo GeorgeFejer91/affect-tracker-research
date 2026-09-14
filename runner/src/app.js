@@ -253,6 +253,38 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       payload_json: row.payload_json ?? "",
     });
   }
+  function browserStartupPayload(attempt) {
+    return {
+      schema: "affect-runner-browser-startup",
+      version: 1,
+      recipeSourceText: plannerRecipeTransportText(recipe),
+      recipeSourceByteSha256: attempt.recipeSha256,
+      planIdentitySha256: attempt.planSha256,
+      participantId: attempt.participantId,
+      selector: attempt.selector,
+      planVersion: attempt.plan.version,
+      stepCount: attempt.steps.length,
+      questionnaireAssetCount: recipe?.questionnaireAssets?.length ?? 0,
+      platform: "browser-csv",
+      lslUnavailable: true,
+    };
+  }
+  function browserOutcomePayload(attempt, status) {
+    return {
+      schema: "affect-runner-browser-outcome",
+      version: 1,
+      protocolOutcome: status === "complete" ? "completed" : "partial",
+      completedStepCount: Math.min(attempt.index, attempt.steps.length),
+      failureCode: status === "complete" ? null : "browser-stop-early",
+      recipeSourceByteSha256: attempt.recipeSha256,
+      planIdentitySha256: attempt.planSha256,
+      participantId: attempt.participantId,
+      selector: attempt.selector,
+      rowCountBeforeOutcome: attempt.rows.length,
+      lslUnavailable: true,
+      recordingFinalization: "browser-csv-downloaded",
+    };
+  }
   function browserStopSampling() {
     const attempt = browserAttempt;
     if (!attempt) return;
@@ -322,7 +354,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!attempt) return;
     browserStopSampling();
     validationVideo.stop();
-    browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: { status } });
+    browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: browserOutcomePayload(attempt, status) });
     attempt.active = false;
     const csv = browserRunCsv(attempt.rows);
     const fileName = `${safeName(recipe?.recipe?.segments?.P1?.study?.title)}_${attempt.participantId}_${safeName(attempt.selector.variantId)}_${status}.csv`;
@@ -483,7 +515,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       pointerDown: null,
       keyDown: null,
     };
-    browserRecord({ row_type: "event", event_type: "runStarted", protocol_step_position: 0, step_kind: "run", step_label: "Browser run started", payload_json: { platform: "browser-csv", stepCount: plan.steps.length } });
+    browserRecord({ row_type: "event", event_type: "runStarted", protocol_step_position: 0, step_kind: "run", step_label: "Browser run started", payload_json: browserStartupPayload(browserAttempt) });
     await showBrowserRunStep(0);
     return true;
   }

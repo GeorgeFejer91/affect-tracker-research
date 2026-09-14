@@ -127,3 +127,17 @@ test("browser CSV serializes event, questionnaire and LSL-equivalent sample fiel
   assert.equal(row[headers.indexOf("animation_active")], "true");
   assert.equal(row[headers.indexOf("input_active")], "true");
 });
+
+test("browser Runner CSV events carry startup and outcome identities", async () => {
+  const app = await readFile(new URL("../runner/src/app.js", import.meta.url), "utf8");
+
+  assert.match(app, /schema:\s*"affect-runner-browser-startup"/u);
+  assert.match(app, /recipeSourceText:\s*plannerRecipeTransportText\(recipe\)/u);
+  assert.match(app, /recipeSourceByteSha256:\s*attempt\.recipeSha256/u);
+  assert.match(app, /planIdentitySha256:\s*attempt\.planSha256/u);
+  assert.match(app, /questionnaireAssetCount:\s*recipe\?\.questionnaireAssets\?\.length\s*\?\?\s*0/u);
+  assert.match(app, /schema:\s*"affect-runner-browser-outcome"/u);
+  assert.match(app, /recordingFinalization:\s*"browser-csv-downloaded"/u);
+  assert.match(app, /payload_json:\s*browserStartupPayload\(browserAttempt\)/u);
+  assert.match(app, /payload_json:\s*browserOutcomePayload\(attempt,\s*status\)/u);
+});

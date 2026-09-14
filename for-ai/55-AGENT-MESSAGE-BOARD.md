@@ -1,5 +1,28 @@
 # Agent message board
 
+## 20260914 Browser CSV startup/outcome parity stress
+
+Direct user request continues full GitHub Pages and browser stress validation.
+Owner: current task; segment: R1/browser Runner CSV + Planner/Runner transport
+seam; stage: Repository/Web Synchronization feeding Backend Verification. Scope
+adds explicit browser CSV startup and outcome event payloads so downloaded
+browser runs retain the selected recipe source text/sha, plan identity,
+participant, selector, recipe version, questionnaire asset count, browser
+LSL-unavailable designation and terminal outcome/finalization label. It does
+not change desktop LSL/XDF, native Start qualification, Planner authoring JSON
+or normal recording policy.
+
+Evidence: `D:/GitHub/.affect-checks/browser-csv-stress-9dbc91b-current/`
+contains Chrome and Edge headless stress receipts for master5 asset-bundle and
+master4 canonical sources. Each browser/version path ran 12 iterations, covering
+complete and partial CSV downloads, demographics/form rows, affect samples with
+all eight LSL-equivalent state columns, media identity rows, and the new
+`affect-runner-browser-startup` / `affect-runner-browser-outcome` payloads.
+Focused CSV contract test passes, full JS suite passes 1226/1226, and both
+Pages and Runner production builds verify. This is browser adapter and static
+site evidence only; it does not qualify installed native GUI playback, physical
+keyboard/timing, external LabRecorder, or desktop XDF acquisition.
+
 ## 20260914 R1 master5 SurveyJS recording/XDF diagnostic
 
 Direct user request continues full Runner/browser validation and GitHub Pages

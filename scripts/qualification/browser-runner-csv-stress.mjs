@@ -180,6 +180,12 @@ function parseCsv(csv) {
   const headers = rows.shift() ?? [];
   return rows.filter(item => item.length === headers.length && item.some(Boolean)).map(item => Object.fromEntries(headers.map((header, index) => [header, item[index]])));
 }
+function parsePayload(row) {
+  check(row && row.payload_json, 'CSV row carries payload_json');
+  const payload = JSON.parse(row.payload_json);
+  check(payload && typeof payload === 'object' && !Array.isArray(payload), 'CSV payload_json parses as an object');
+  return payload;
+}
 function clickSurveyNavigation() {
   const host = q('runner-questionnaire-items');
   if (!host) return false;
@@ -258,8 +264,11 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
   await until(() => download.text !== null, 'CSV blob text');
   const rows = parseCsv(download.text);
   const events = rows.filter(row => row.row_type === 'event').map(row => row.event_type);
+  const eventRows = rows.filter(row => row.row_type === 'event');
   const samples = rows.filter(row => row.row_type === 'sample');
   const questionnaires = rows.filter(row => row.row_type === 'questionnaire');
+  const startup = parsePayload(eventRows.find(row => row.event_type === 'runStarted'));
+  const outcome = parsePayload(eventRows.find(row => row.event_type === (partial ? 'runPartial' : 'runComplete')));
   check(download.fileName.endsWith(partial ? '_partial.csv' : '_complete.csv'), 'CSV filename declares terminal status');
   check(rows.length >= 10, 'CSV has substantial run rows');
   check(events.includes('runStarted'), 'CSV includes runStarted event');
@@ -275,12 +284,26 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
   check(samples.every(row => ['true', 'false'].includes(row.animation_active) && ['true', 'false'].includes(row.input_active)), 'CSV sample activity state is boolean text');
   check(rows.every(row => row.recipe_sha256 && row.plan_sha256 && row.participant_id && row.variant_id && row.language_id), 'CSV rows carry run identities');
   check(rows.some(row => row.relative_path), 'CSV carries media relative paths');
+  check(startup.schema === 'affect-runner-browser-startup' && startup.version === 1, 'CSV startup payload has browser startup schema');
+  check(startup.platform === 'browser-csv' && startup.lslUnavailable === true, 'CSV startup payload declares browser CSV replacement for LSL');
+  check(startup.recipeSourceText && startup.recipeSourceByteSha256 === rows[0].recipe_sha256, 'CSV startup payload binds exact recipe source identity');
+  check(startup.planIdentitySha256 === rows[0].plan_sha256 && startup.participantId === rows[0].participant_id && startup.selector?.variantId === rows[0].variant_id, 'CSV startup payload binds selected plan identity');
+  check(startup.planVersion === Number(recipeVersion), 'CSV startup payload binds recipe version');
+  check(recipeVersion === '5' ? startup.questionnaireAssetCount === 4 : startup.questionnaireAssetCount === 0, 'CSV startup payload records questionnaire asset count');
+  check(outcome.schema === 'affect-runner-browser-outcome' && outcome.version === 1, 'CSV terminal payload has browser outcome schema');
+  check(outcome.protocolOutcome === (partial ? 'partial' : 'completed'), 'CSV terminal payload declares protocol outcome');
+  check(outcome.recordingFinalization === 'browser-csv-downloaded' && outcome.lslUnavailable === true, 'CSV terminal payload records browser CSV finalization');
+  check(outcome.recipeSourceByteSha256 === startup.recipeSourceByteSha256 && outcome.planIdentitySha256 === startup.planIdentitySha256 && outcome.participantId === startup.participantId, 'CSV terminal payload preserves startup identity');
   routeEvents.push({
     fileName: download.fileName,
     rows: rows.length,
     events: [...new Set(events)],
     samples: samples.length,
     questionnaires: questionnaires.length,
+    startupSchema: startup.schema,
+    outcomeSchema: outcome.schema,
+    planVersion: startup.planVersion,
+    questionnaireAssetCount: startup.questionnaireAssetCount,
     sawQuestionnaire,
     sawVideo,
     questionnairePages,
@@ -416,6 +439,10 @@ try {
       rows: event.rows,
       samples: event.samples,
       questionnaires: event.questionnaires,
+      startupSchema: event.startupSchema,
+      outcomeSchema: event.outcomeSchema,
+      planVersion: event.planVersion,
+      questionnaireAssetCount: event.questionnaireAssetCount,
       events: event.events,
     })),
   }));
