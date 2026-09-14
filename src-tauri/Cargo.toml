@@ -21,6 +21,11 @@ name = "affect-lsl-loopback"
 path = "src/bin/lsl-loopback.rs"
 required-features = ["lsl-streaming"]
 
+[[bin]]
+name = "affect-runner-recording-diagnostic"
+path = "src/bin/runner-recording-diagnostic.rs"
+required-features = ["lsl-streaming"]
+
 [lib]
 name = "affect_research"
 crate-type = ["lib", "cdylib", "staticlib"]

@@ -35,6 +35,8 @@ pub mod research_protocol;
 pub mod research_questionnaire_recipe;
 pub mod research_questionnaire_recipe_v2;
 mod research_recorder;
+#[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
+pub mod research_recorder_diagnostic;
 mod research_run_storage;
 pub mod research_runner_master;
 mod research_runner_recent;

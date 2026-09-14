@@ -1,5 +1,20 @@
 # Agent message board
 
+## 20260914 R1 master recording/XDF diagnostic
+
+Direct user request continues full Runner/browser validation and GitHub Pages
+sync. Owner: current task; segment: R1/recording + LSL/XDF validation seam;
+stage: Backend Verification feeding Repository/Web Synchronization. Scope is a
+non-interactive native diagnostic that reuses the real Runner recorder, master
+LSL information stream, own state/marker binding, selected external LSL stream
+discovery, and XDF writer. It must not change Planner JSON, browser CSV
+behavior, normal Start qualification, native playback gates, or installed-app
+research readiness. Evidence target: compile/run the diagnostic with
+`lsl-streaming`, reconstruct the generated XDF through the independent pyxdf
+reader, assert own/external stream counts and information payload presence, and
+preserve limitations for playback, GUI/Tauri command wiring, LabRecorder, and
+full-duration research qualification.
+
 ## 20260914 R1 standalone LSL loopback diagnostic
 
 Direct user request continues full Runner/browser validation and GitHub Pages
