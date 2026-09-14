@@ -1,5 +1,29 @@
 # Agent message board
 
+## 20260914 Current-head desktop LSL/XDF diagnostic refresh
+
+Direct user request continues desktop/browser parity and research-readiness
+validation. Owner: current task; segment: R1/recording + LSL/XDF validation
+seam; stage: Backend Verification feeding Repository/Web Synchronization.
+Scope refreshes the non-interactive desktop Runner recording diagnostic against
+current clean commit `0a6896f3c3a380390d79b03e35baaabab7925b61` after the
+browser CSV work. It does not change product code, Planner JSON, browser CSV
+behavior, native Start qualification or recording policy.
+
+Evidence: `D:/GitHub/.affect-checks/runner-recording-diagnostic-v5-0a6896f-01/`
+contains `recording.xdf`, `diagnostic.json`, `independent-xdf.json`,
+`reconstruction.json` and `crosscheck.json`. The diagnostic completed with 93
+samples, master5 asset-bundle source, four questionnaire assets, three SurveyJS
+response records, three own affect-state samples, three selected external Int64
+samples and 87 information/marker samples. Independent pyxdf 1.17.5 verified
+XDF stream footers and raw timestamps; the JS XDF-only reconstructor rebuilt
+11 occurrences, three response records and the outcome. Crosscheck result:
+pass, XDF SHA-256
+`5344f5d1c221561be0e929f1488de5bf0e6d0b88532224c69699068aa3b0a4c6`.
+Limitations remain: no installed Tauri window, visible native playback/layout,
+physical input timing, external LabRecorder process, full-duration run or
+research-readiness claim is made by this diagnostic.
+
 ## 20260914 Browser CSV saved-file reconstruction
 
 Direct user request continues full browser/offline parity and GitHub Pages
