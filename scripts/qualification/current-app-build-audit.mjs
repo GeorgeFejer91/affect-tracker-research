@@ -30,6 +30,11 @@ async function sha256File(path) {
   return createHash("sha256").update(data).digest("hex");
 }
 
+async function readJson(path) {
+  const text = await readFile(path, "utf8");
+  return JSON.parse(text.replace(/^\uFEFF/u, ""));
+}
+
 function git(args) {
   const result = spawnSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   if (result.error) throw result.error;
@@ -57,8 +62,8 @@ const launcherPath = join(appDir, "Experiment Runner.exe");
 const enginePath = join(appDir, "affect-runner-engine.exe");
 
 const [build, launcherReceipt, launcherInfo, engineInfo, launcherSha256, engineSha256] = await Promise.all([
-  readFile(buildPath, "utf8").then(JSON.parse),
-  readFile(launcherReceiptPath, "utf8").then(JSON.parse),
+  readJson(buildPath),
+  readJson(launcherReceiptPath),
   stat(launcherPath),
   stat(enginePath),
   sha256File(launcherPath),
