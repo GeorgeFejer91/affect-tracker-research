@@ -7,6 +7,7 @@ const PACKAGE_PHASES = new Set([
   "questionnaire", "stimulusReady", "playing", "paused", "interval",
   "completeReady", "finalizing", "finished", "failed",
 ]);
+const CAPABILITY_BACKENDS = new Set(["html-video", "rust-gstplay"]);
 const CAPABILITY_KEYS = Object.freeze([
   "backend", "manifestV4Ready", "nativeStartReady", "packageV1CompilationReady",
   "protocolPlanV2Ready", "questionnaireDraftsReady", "reasonCode",
@@ -86,7 +87,7 @@ export function validateNativePackageProtocolCapabilityV1(value) {
   if (!exactKeys(value, CAPABILITY_KEYS)
     || value.schema !== "affect-research-native-package-protocol-capability"
     || value.version !== 1
-    || value.backend !== "rust-gstplay"
+    || !CAPABILITY_BACKENDS.has(value.backend)
     || value.rustOwnedProtocol !== true
     || typeof value.packageV1CompilationReady !== "boolean"
     || typeof value.protocolPlanV2Ready !== "boolean"

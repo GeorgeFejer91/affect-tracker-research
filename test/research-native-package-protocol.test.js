@@ -187,6 +187,18 @@ function rootAndHost() {
 
 test("Rust package capability and status projections are closed-world", () => {
   assert.equal(validateNativePackageProtocolCapabilityV1(capability()).nativeStartReady, true);
+  const browserCapability = validateNativePackageProtocolCapabilityV1(capability({
+    backend: "html-video",
+    packageV1CompilationReady: false,
+    protocolPlanV2Ready: false,
+    questionnaireDraftsReady: false,
+    recoveryJournalReady: false,
+    manifestV4Ready: false,
+    nativeStartReady: false,
+    reasonCode: "browser-csv-runner",
+  }));
+  assert.equal(browserCapability.backend, "html-video");
+  assert.equal(browserCapability.nativeStartReady, false);
   assert.throws(() => validateNativePackageProtocolCapabilityV1({ ...capability(), extra: true }), /malformed/u);
   assert.throws(() => validateNativePackageProtocolCapabilityV1(capability({ protocolPlanV2Ready: false })), /inconsistent/u);
   assert.equal(validateNativePackageRunStatusV1(status()).phase, "stimulusReady");

@@ -10,5 +10,6 @@ src-tauri/native-launcher/target/
 src-tauri/target/
 src-tauri/gen/schemas/
 coverage/
+validation-artifacts/
 *.log
 runner/dist/

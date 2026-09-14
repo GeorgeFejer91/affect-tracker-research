@@ -1,11 +1,10 @@
 // Browser Runner CSV stress qualification with mocked Chrome/Edge file handles.
 // This exercises the public browser adapter path. It is not desktop LSL/XDF evidence.
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
-import { promisify } from "node:util";
 import { build } from "esbuild";
 import { sha256Hex } from "../../site/src/research/canonical.js";
 import { readRunnerRecipe, resolveRunnerSelection } from "../../runner/src/recipe.js";
@@ -20,9 +19,11 @@ const repoRoot = resolve(import.meta.dirname, "../..");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const encoder = new TextEncoder();
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const entry = String.raw`
 const checks = [], errors = [], downloads = [], mediaUrls = [], routeEvents = [];
+globalThis.__stressProgress = 'entry-start';
 const check = (ok, label) => { if (!ok) throw Error(label); checks.push(label); };
 const tick = (ms = 30) => new Promise(resolve => setTimeout(resolve, ms));
 const until = async (predicate, label, attempts = 240) => {
@@ -208,14 +209,20 @@ function clickSurveyNavigation() {
   return false;
 }
 async function prepareRecipe() {
+  globalThis.__stressProgress = 'prepare-folder-click';
   q('runner-folder').click();
+  globalThis.__stressProgress = 'prepare-folder-wait';
   await until(() => q('runner-workspace-status').textContent.includes('synthetic-project'), 'workspace selection');
+  globalThis.__stressProgress = 'prepare-open-click';
   q('runner-open').click();
+  globalThis.__stressProgress = 'prepare-recipe-wait';
   await until(() => app.recipe && q('runner-recipe-status').textContent.includes('master v' + recipeVersion), 'recipe loaded');
+  globalThis.__stressProgress = 'prepare-capability-check';
   check(q('runner-capability').textContent.includes('CSV download replaces LSL/XDF'), 'browser capability states CSV replaces LSL/XDF');
   check(q('runner-record-start').disabled && q('runner-discover').disabled && q('runner-record-own').disabled, 'browser disables native LSL/XDF recording controls');
 }
 async function chooseVariant(variantId) {
+  globalThis.__stressProgress = 'choose-variant-' + variantId;
   const select = q('runner-variant');
   select.value = variantId;
   select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -223,17 +230,21 @@ async function chooseVariant(variantId) {
   check(select.value === variantId, 'variant selected ' + variantId);
 }
 async function startRun({ language, variantId }) {
+  globalThis.__stressProgress = 'start-run-' + language + '-' + variantId;
   await chooseVariant(variantId);
   q('runner-launch').click();
+  globalThis.__stressProgress = 'start-run-preparation-wait';
   await until(() => !q('runner-preparation').hidden && visible(q('runner-language')), 'participant preparation');
   for (const optionId of ['both', language]) {
     const button = await until(() => q('runner-language').querySelector('[data-language-option="' + optionId + '"]:not([disabled])'), 'language option ' + optionId);
+    globalThis.__stressProgress = 'language-' + optionId;
     button.click();
     await tick();
   }
   await until(() => q('runner-session').textContent.includes('browser step') || !q('runner-questionnaire').hidden || !q('runner-stage').hidden, 'browser run started');
 }
 async function driveUntilDownload(startDownloadCount, { partial = false } = {}) {
+  globalThis.__stressProgress = 'drive-until-download';
   let questionnairePages = 0, videoInputs = 0, sawVideo = false, sawQuestionnaire = false;
   for (let i = 0; i < 900; i += 1) {
     if (!q('runner-error').hidden) throw Error(q('runner-error').textContent);
@@ -254,7 +265,7 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
         stage.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: bounds.left + bounds.width * 0.82, clientY: bounds.top + bounds.height * 0.18 }));
         videoInputs += 1;
       }
-      if (partial && sawVideo && videoInputs > 3) {
+      if (partial && sawVideo && videoInputs > 10 && text(q('runner-timing')).includes('playing')) {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', altKey: true, bubbles: true, cancelable: true }));
       }
       await tick(30);
@@ -263,6 +274,7 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
     }
   }
   check(downloads.length > startDownloadCount, partial ? 'partial browser CSV downloaded' : 'complete browser CSV downloaded');
+  globalThis.__stressProgress = 'download-detected';
   const download = downloads.at(-1);
   await until(() => download.text !== null, 'CSV blob text');
   const rows = parseCsv(download.text);
@@ -315,6 +327,7 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
 }
 
 try {
+  globalThis.__stressProgress = 'prepare-recipe-start';
   await prepareRecipe();
   const cases = [
     { language: 'en', variantId: 'variant-1', partial: false },
@@ -323,6 +336,7 @@ try {
     { language: 'en', variantId: 'variant-3', partial: true },
   ];
   for (let index = 0; index < iterations; index += 1) {
+    globalThis.__stressProgress = 'iteration-' + index;
     const current = cases[index % cases.length];
     const before = downloads.length;
     await startRun(current);
@@ -332,8 +346,10 @@ try {
   check(routeEvents.some(event => event.events.includes('runComplete')), 'stress includes complete runs');
   check(routeEvents.some(event => event.events.includes('runPartial')) || iterations < 4, 'stress includes partial run when requested by case set');
   app.destroy();
+  globalThis.__stressProgress = 'complete';
 } catch (error) {
   errors.push(String(error?.stack ?? error));
+  globalThis.__stressProgress = 'caught-error';
 }
 const result = document.createElement('pre');
 result.id = 'receipt';
@@ -517,27 +533,132 @@ const server = createServer(async (req, res) => {
   }
 });
 await new Promise(done => server.listen(0, "127.0.0.1", done));
-const execute = promisify(execFile);
+
+async function waitForDevToolsPort(profile, timeoutMs = 15000) {
+  const marker = join(profile, "DevToolsActivePort");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const [port, path] = (await readFile(marker, "utf8")).trim().split(/\r?\n/u);
+      if (port && path) return { port, path };
+    } catch {}
+    await delay(50);
+  }
+  throw new Error("Timed out waiting for Chrome DevTools endpoint.");
+}
+
+async function jsonGet(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
+  return response.json();
+}
+
+async function connectPage(port, expectedUrl, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const pages = await jsonGet(`http://127.0.0.1:${port}/json/list`);
+    const page = pages.find(item => item.type === "page" && item.url === expectedUrl) ?? pages.find(item => item.type === "page");
+    if (page?.webSocketDebuggerUrl) return page.webSocketDebuggerUrl;
+    await delay(50);
+  }
+  throw new Error("Timed out waiting for Chrome page target.");
+}
+
+async function withCdp(webSocketUrl, callback) {
+  const socket = new WebSocket(webSocketUrl);
+  await new Promise((resolveOpen, rejectOpen) => {
+    socket.addEventListener("open", resolveOpen, { once: true });
+    socket.addEventListener("error", rejectOpen, { once: true });
+  });
+  let nextId = 1;
+  const pending = new Map();
+  socket.addEventListener("message", event => {
+    const message = JSON.parse(event.data);
+    if (!message.id || !pending.has(message.id)) return;
+    const { resolveMessage, rejectMessage } = pending.get(message.id);
+    pending.delete(message.id);
+    if (message.error) rejectMessage(new Error(message.error.message ?? JSON.stringify(message.error)));
+    else resolveMessage(message.result);
+  });
+  const command = (method, params = {}) => new Promise((resolveMessage, rejectMessage) => {
+    const id = nextId++;
+    pending.set(id, { resolveMessage, rejectMessage });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
+  try {
+    return await callback(command);
+  } finally {
+    socket.close();
+  }
+}
+
+async function waitForReceipt(command, timeoutMs = 120000) {
+  const deadline = Date.now() + timeoutMs;
+  let latest = "";
+  while (Date.now() < deadline) {
+    const result = await command("Runtime.evaluate", {
+      expression: "document.querySelector('#receipt')?.textContent ?? ''",
+      returnByValue: true,
+      awaitPromise: true,
+    });
+    latest = result.result?.value ?? "";
+    if (latest) return latest;
+    await delay(100);
+  }
+  const debug = await command("Runtime.evaluate", {
+    expression: `JSON.stringify({
+      progress: globalThis.__stressProgress ?? null,
+      errors: globalThis.errors ?? null,
+      readyState: document.readyState,
+      hasReceipt: !!document.querySelector('#receipt'),
+      recipeStatus: document.querySelector('#runner-recipe-status')?.textContent ?? null,
+      workspaceStatus: document.querySelector('#runner-workspace-status')?.textContent ?? null,
+      capability: document.querySelector('#runner-capability')?.textContent ?? null,
+      errorText: document.querySelector('#runner-error')?.textContent ?? null,
+      rootText: document.querySelector('#experiment-runner')?.textContent?.slice(0, 1000) ?? null
+    })`,
+    returnByValue: true,
+    awaitPromise: true,
+  });
+  throw new Error(`Timed out waiting for browser Runner CSV stress receipt. Debug: ${debug.result?.value ?? latest}`);
+}
+
 try {
   const profile = await mkdtemp(join(output, "profile-"));
-  const { stdout } = await execute(browser, [
+  const targetUrl = `http://127.0.0.1:${server.address().port}/?iterations=${iterations}&version=${recipeVersion}`;
+  const chrome = spawn(browser, [
     "--headless=new",
     "--disable-gpu",
     "--no-first-run",
     "--no-default-browser-check",
     "--autoplay-policy=no-user-gesture-required",
-    "--virtual-time-budget=30000",
-    `--screenshot=${join(output, "browser-runner-csv-stress.png")}`,
-    "--dump-dom",
+    "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     "--window-size=1938,1176",
     "--force-device-scale-factor=1",
-    `http://127.0.0.1:${server.address().port}/?iterations=${iterations}&version=${recipeVersion}`,
-  ], { windowsHide: true, timeout: 60000, maxBuffer: 8_000_000 });
-  await writeFile(join(output, "browser-runner-csv-stress.html"), stdout);
-  const raw = stdout.match(/<pre id="receipt" hidden="">([^<]+)<\/pre>/u)?.[1];
-  assert.ok(raw, "Missing browser Runner CSV stress receipt");
-  const receipt = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">"));
+    targetUrl,
+  ], { windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
+  let stderr = "";
+  chrome.stderr.setEncoding("utf8");
+  chrome.stderr.on("data", chunk => { stderr += chunk; });
+  try {
+    const { port } = await waitForDevToolsPort(profile);
+    const pageSocket = await connectPage(port, targetUrl);
+    const raw = await withCdp(pageSocket, async command => {
+      await command("Runtime.enable");
+      await command("Page.enable");
+      const receiptText = await waitForReceipt(command);
+      const html = await command("Runtime.evaluate", {
+        expression: "document.documentElement.outerHTML",
+        returnByValue: true,
+      });
+      await writeFile(join(output, "browser-runner-csv-stress.html"), html.result?.value ?? "");
+      const screenshot = await command("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
+      await writeFile(join(output, "browser-runner-csv-stress.png"), Buffer.from(screenshot.data, "base64"));
+      return receiptText;
+    });
+    assert.ok(raw, "Missing browser Runner CSV stress receipt");
+    const receipt = JSON.parse(raw);
   const reconstructions = [];
   for (const [index, download] of receipt.downloads.entries()) {
     reconstructions.push(await reconstructBrowserCsv(download, index));
@@ -566,6 +687,10 @@ try {
     })),
   }));
   assert.deepEqual(receipt.errors, []);
+  } finally {
+    chrome.kill();
+    if (stderr.trim()) await writeFile(join(output, "chrome-stderr.log"), stderr);
+  }
 } finally {
   server.close();
 }
