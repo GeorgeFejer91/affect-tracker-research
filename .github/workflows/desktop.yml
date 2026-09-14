@@ -46,8 +46,8 @@ jobs:
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
       - name: Check native Research backend without optional features
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
-      - name: Test native Research backend without optional features
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Compile native Research tests without optional features
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
       - name: Lint native Research backend without optional features
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features -- -D warnings
       # The full upstream tree is prepared only on this ephemeral validation

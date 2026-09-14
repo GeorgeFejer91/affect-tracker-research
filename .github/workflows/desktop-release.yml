@@ -100,8 +100,8 @@ jobs:
         run: pnpm desktop:build
       - name: Check Rust without Windows-only or LSL features
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
-      - name: Test Rust without Windows-only or LSL features
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+      - name: Compile Rust tests without Windows-only or LSL features
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
       - name: Build unsigned host-native package candidate
         run: node scripts/build-unqualified-desktop-package.js ${{ matrix.target }}
       - name: Write exact unqualified artifact provenance

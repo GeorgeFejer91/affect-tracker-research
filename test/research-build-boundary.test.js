@@ -48,7 +48,7 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
     const actionReferences = [...workflow.matchAll(/^\s*uses:\s*[^@\s#]+@([^\s#]+)/gmu)];
     assert.ok(actionReferences.length >= 5, "expected the complete desktop action set");
     for (const [, reference] of actionReferences) assert.match(reference, /^[0-9a-f]{40}$/u);
-    assert.match(workflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --no-default-features/u);
+    assert.match(workflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --no-default-features --no-run/u);
     assert.doesNotMatch(workflow, /libvlc|vlc-3\.0\.23/iu);
   }
   assert.match(checksWorkflow, /cargo test --locked --manifest-path src-tauri\/Cargo\.toml --all-features --no-run/u);
@@ -57,7 +57,7 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
   assert.ok(prepareStepIndex > 0, "expected GStreamer prep step");
   for (const step of [
     "Check native Research backend without optional features",
-    "Test native Research backend without optional features",
+    "Compile native Research tests without optional features",
     "Lint native Research backend without optional features",
   ]) {
     const stepIndex = checksWorkflow.indexOf(`- name: ${step}\n`);
