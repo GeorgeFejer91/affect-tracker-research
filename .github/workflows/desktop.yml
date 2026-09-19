@@ -2,7 +2,7 @@ name: Affect Research Windows checks
 
 on:
   push:
-    branches: [main, research/video-protocol-v1]
+    branches: [main, research/video-protocol-v1, "refactor/**"]
   pull_request:
   workflow_dispatch:
 
