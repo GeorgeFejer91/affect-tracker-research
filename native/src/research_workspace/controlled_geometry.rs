@@ -20,6 +20,7 @@ pub(crate) struct RunnerVideoBindingV3 {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use crate::research_contracts::canonical_sha256;
@@ -378,6 +379,7 @@ fn validate_receipt(
 }
 
 impl WorkspaceService {
+    #[cfg(test)]
     pub fn validate_planner_video_catalogue_v3(
         &self,
         workspace_id: &str,
@@ -388,6 +390,7 @@ impl WorkspaceService {
         validate_video_catalogue_contribution_v3(value)
     }
 
+    #[cfg(test)]
     pub(crate) fn attest_native_decode_v2(
         &self,
         workspace_id: &str,

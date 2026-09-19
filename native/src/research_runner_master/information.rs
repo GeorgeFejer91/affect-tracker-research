@@ -1,4 +1,6 @@
 //! Bounded master-only information framing. The receiver needs no recipe sidecar.
+// The no-LSL build keeps the same worker/stub types but cannot publish frames.
+#![cfg_attr(not(feature = "lsl-streaming"), allow(dead_code))]
 use crate::research_contracts::{canonical_json, validate_sha256};
 use crate::research_error::{CommandError, ResearchResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -248,6 +250,7 @@ pub(crate) fn startup_bundle(
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use serde_json::{json, Value};

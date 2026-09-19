@@ -163,6 +163,7 @@ fn read_recipe_bytes(path: &Path) -> ResearchResult<Vec<u8>> {
 
 /// Strict master/legacy dispatch over one bounded native byte snapshot. Opening
 /// authored JSON does not create a workspace or grant access to declared media.
+#[cfg(test)]
 pub(crate) fn read_planner_recipe_path(path: &Path) -> ResearchResult<serde_json::Value> {
     parse_planner_recipe_file(&read_recipe_bytes(path)?)
 }
@@ -438,6 +439,7 @@ fn publish_new(staged: &StagedRecipe, path: &Path) -> ResearchResult<bool> {
 
 /// A user-selected native destination is still create-new only. In particular,
 /// a dialog's replace confirmation never authorizes this writer to overwrite.
+#[cfg(test)]
 pub(crate) fn write_selected_planner_recipe(
     path: &Path,
     source_text: &str,
@@ -481,6 +483,7 @@ fn write_selected_document(
     verify_published(path, expected, basename)
 }
 
+#[cfg(test)]
 pub(crate) fn write_new_planner_recipe(
     directory: &Path,
     source_text: &str,
@@ -504,6 +507,7 @@ fn write_new_supported_at(
     write_new_document_at(directory, &expected, now)
 }
 
+#[cfg(test)]
 fn write_new_at(
     directory: &Path,
     source_text: &str,

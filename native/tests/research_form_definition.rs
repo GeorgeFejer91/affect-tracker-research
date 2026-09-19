@@ -1,4 +1,5 @@
 // Standalone integration harness; Main owns lib/master registration.
+#![allow(dead_code)] // Source inclusion intentionally exposes more owner API than this harness uses.
 #[path = "../src/research_contracts.rs"]
 mod research_contracts;
 #[path = "../src/research_error.rs"]

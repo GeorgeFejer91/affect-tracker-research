@@ -150,12 +150,6 @@ what is known open, not a ledger to be duplicated.
   resource bytes; retaining the object does not guarantee identical
   presentation.
 - Master recovery (resume of a master-protocol run) is **not implemented**.
-- `native/tests/planner_authoring_native.rs` and
-  `native/tests/planner_cli_native_effects.rs` do **not compile**. They
-  re-include crate sources through `#[path = "../src"]`, and their module list
-  is missing `research_input` and its dependency closure. Completing that list
-  pulls in most of the crate; the real fix is to drive these tests through the
-  public `affect_research::` API instead of re-including sources.
 - The retired direct native-player IPC commands, live-frame placeholder and
   capability probe are deleted. `research_native_media_capability` remains as
   the fail-closed compatibility report. `research_native_media.rs` still holds

@@ -1,4 +1,5 @@
 // Standalone answer-module verification. Main owns production lib/master wiring.
+#![allow(dead_code)] // Source inclusion intentionally exposes more owner API than this harness uses.
 #[path = "../src/research_contracts.rs"]
 mod research_contracts;
 #[path = "../src/research_error.rs"]

@@ -103,7 +103,6 @@ pub enum DecodeBackend {
 pub enum DecodeEvidence {
     RepresentativeFramesV1,
     NativeDecodedSnapshotsV1,
-    NativeDecodedSnapshotsV2,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -489,6 +488,7 @@ impl WorkspaceService {
         })
     }
 
+    #[cfg(test)]
     pub fn rescan(&self, workspace_id: &str) -> ResearchResult<RescanResult> {
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
@@ -1144,6 +1144,7 @@ impl WorkspaceService {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn attest_native_decode(
         &self,
         workspace_id: &str,
@@ -1933,6 +1934,7 @@ fn scan_package_videos(
     Ok(files)
 }
 
+#[cfg(test)]
 fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
     let stimuli_root = root
         .join("stimuli")
@@ -2610,6 +2612,7 @@ fn validate_native_positions(duration_ms: f64, positions_ms: &[f64]) -> Research
     Ok(())
 }
 
+#[cfg(test)]
 fn logical_relative_path(workspace_file_id: &str) -> String {
     format!("stimuli/.workspace/{workspace_file_id}")
 }

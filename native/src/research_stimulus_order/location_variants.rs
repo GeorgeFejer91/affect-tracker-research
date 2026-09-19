@@ -137,6 +137,7 @@ pub struct VariantDesignV2 {
     pub integrity_sha256: String,
 }
 impl VariantDesignV2 {
+    #[cfg(test)]
     pub fn create(
         draft: &VariantDraft,
         catalogue: &VideoCatalogueContribution,

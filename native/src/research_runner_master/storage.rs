@@ -67,6 +67,7 @@ pub(crate) struct MasterStorage {
 }
 
 impl MasterStorage {
+    #[cfg(test)]
     pub(crate) fn create(
         root: &Path,
         prepared: &PreparedMaster,

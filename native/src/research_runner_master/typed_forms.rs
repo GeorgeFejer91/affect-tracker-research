@@ -92,6 +92,7 @@ pub(crate) struct TypedFormAnswers {
     values: BTreeMap<String, (FormAnswerValue, f64)>,
 }
 pub(crate) struct TypedFormResult {
+    #[cfg(test)]
     pub complete: bool,
     pub responses: Vec<Value>,
 }
@@ -169,6 +170,7 @@ impl TypedFormAnswers {
         }
         self.values = next;
         Ok(TypedFormResult {
+            #[cfg(test)]
             complete,
             responses,
         })

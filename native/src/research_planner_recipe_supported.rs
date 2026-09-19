@@ -14,6 +14,9 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone)]
+// Recipe variants are bounded, compatibility-authoritative documents. Keeping
+// them direct avoids adding ownership indirection to every version consumer.
+#[allow(clippy::large_enum_variant)]
 pub enum SupportedPlannerRecipe {
     V1(PlannerRecipeV1),
     V2(PlannerRecipeV2),

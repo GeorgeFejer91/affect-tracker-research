@@ -1,4 +1,5 @@
 //! Exact source modules, no lib/Runner/file-service registration or test parser.
+#![allow(dead_code)] // Source inclusion intentionally exposes more owner API than this harness uses.
 #[path = "../src"]
 mod owners {
     pub(crate) mod research_contracts;

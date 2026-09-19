@@ -182,8 +182,8 @@ async fn master_preflight(
         let viewport_scale = viewport.as_ref().map(|projection| projection.scale).unwrap_or(0.0);
         let mut reasons = Vec::new();
         if viewport.is_err() { reasons.push("master-html-video-viewport-unavailable".to_owned()); }
-        if validation {
-            if !matches!(prepared.plan.version, 3 | 4 | 5) { reasons.push("validation-requires-master3-4-or-5".into()); }
+        if validation && !matches!(prepared.plan.version, 3..=5) {
+            reasons.push("validation-requires-master3-4-or-5".into());
         }
         super::markers::MasterMarkers::new(&prepared.plan,"run-preflight","attempt-preflight")?;
         let result = serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,

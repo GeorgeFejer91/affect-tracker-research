@@ -2,9 +2,10 @@
 //! request serialization and public projections. No paths/bytes enter via Serde.
 //! Call without a broker lock; the guard must acquire and release its own lock.
 use crate::research_error::{CommandError, ResearchResult};
+#[cfg(test)]
+use crate::research_planner_recipe_file::write_new_planner_recipe;
 use crate::research_planner_recipe_file::{
-    write_new_planner_recipe, write_new_supported_planner_recipe, PlannerRecipeWriteError,
-    SavedPlannerRecipeFile,
+    write_new_supported_planner_recipe, PlannerRecipeWriteError, SavedPlannerRecipeFile,
 };
 use crate::research_workspace::{
     QuestionnaireAssetReceipt, RescanResult, WorkspaceService, WorkspaceStatus,
@@ -34,6 +35,7 @@ pub(crate) enum NativeEffect {
         source_sha256: String,
         bytes: Vec<u8>,
     },
+    #[cfg(test)]
     WriteRecipe {
         directory: PathBuf,
         source_text: String,
@@ -144,6 +146,7 @@ pub(crate) fn execute_native_effect(
             )
             .map(NativeEffectReceipt::Questionnaire)
             .map_err(workspace_failure),
+        #[cfg(test)]
         NativeEffect::WriteRecipe {
             directory,
             source_text,
