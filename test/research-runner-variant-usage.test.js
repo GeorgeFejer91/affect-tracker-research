@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateVariantUsage,leastUsedVariant,nextParticipant,usageColor} from "../runner/src/variant-picker.js";
+import {validateVariantUsage,leastUsedVariant,nextParticipant,usageColor} from "../experiment-runner/src/variant-picker.js";
 const variants=[{variantId:"third"},{variantId:"first"},{variantId:"second"}];
 const fixture=()=>({schema:"affect-runner-variant-usage",version:1,basis:"xdf-file-names-v1",recipeSourceByteSha256:"hash",ignoredXdfFiles:1,usedParticipantIds:["P001","P003"],variants:variants.map((v,i)=>({...v,recordingCount:[3,1,1][i],participantCount:[2,1,1][i]}))});
 test("least used across participants ties in saved order and participant fills first gap",()=>{

@@ -5,8 +5,8 @@ import { createHash } from "node:crypto";
 import {
   RESEARCH_SAMPLE_SCHEMA,
   createDefaultResearchSettings,
-} from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+} from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 import {
   ASSIGNMENT_PLAN_COLUMNS,
   RESEARCH_SAMPLE_COLUMNS,
@@ -14,7 +14,7 @@ import {
   samplesToCsv,
   samplesToTsv,
   serializeRatings,
-} from "../site/src/research/tabular.js";
+} from "../experiment-planner/web/src/research/tabular.js";
 
 const settingsHash = "1".repeat(64);
 const planHash = "2".repeat(64);

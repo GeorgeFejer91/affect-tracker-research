@@ -8,7 +8,7 @@ import {
   createProjectionOffsets,
   FLUBBER_BASE_SHAPES,
   smoothToward,
-} from "../site/src/math.js";
+} from "../experiment-planner/web/src/math.js";
 
 test("arousal maps to the expected frequency and amplitude extrema", () => {
   const expected = [[0.5, 0.2], [1.5, 0.3], [2.5, 0.4]];

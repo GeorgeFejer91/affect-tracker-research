@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readRunnerRecipe, resolveRunnerSelection } from "../runner/src/recipe.js";
-import { participantNumber, participantLabel, participantCatalogue, participantTimeline, participantPreviewTimeline } from "../runner/src/participants.js";
+import { readRunnerRecipe, resolveRunnerSelection } from "../experiment-runner/src/recipe.js";
+import { participantNumber, participantLabel, participantCatalogue, participantTimeline, participantPreviewTimeline } from "../experiment-runner/src/participants.js";
 const recipe = await readRunnerRecipe(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url)));
 test("participant aliases resolve to the original scheduled ID without allocating another", () => {
   const catalogue = participantCatalogue(recipe);

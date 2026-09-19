@@ -353,7 +353,7 @@ screenshots: `D:/GitHub/.affect-runner-build/boundary-audit/`. No physical input
 foreground application control, native experiment or real stream recording ran.
 
 Static G11 follow-up: Chat Orchestrator allocated the browser entry boundary to
-this lane. Static `site/index.html` now explicitly identifies Planner and uses
+this lane. Static `experiment-planner/web/index.html` now explicitly identifies Planner and uses
 the same seven-section/preview/Review & Export surface. Its browser bridge skips
 participant journal creation/audit/reconciliation, runtime lease, sampling worker,
 output-manifest and acquisition storage probes, and refuses a synthetic Start
@@ -388,7 +388,7 @@ the recorder. Buffer loss, disconnection, queue overflow and disk/receipt failur
 are explicit incomplete recordings. A start receipt without a final receipt is
 an interrupted file; automatic XDF repair/append/restart recovery is not offered.
 External arbitrary invalid UTF-8 byte-string fidelity is unqualified because the
-pinned safe LSL library decodes strings. See `runner/README.md` for limits and
+pinned safe LSL library decodes strings. See `experiment-runner/README.md` for limits and
 local build/use commands; physical/long-run recording remains an open gate.
 
 Evidence collected during implementation: nine initial recorder unit/worker
@@ -409,7 +409,7 @@ the new selected-external fixture was separately exercised). Default and
 no-default all-target Clippy pass with `-D warnings`. Planner/Runner frontend
 builds and Pages closure pass. A standalone Windows Runner executable built with
 its own embedded resources/product identity. All-feature compilation is blocked
-in this environment by missing pkg-config/GStreamer SDK; this is not a recorder
+in this environment by missing pkg-config/removed native player stack SDK; this is not a recorder
 test failure or permission to weaken native player qualification. Integration
 owns merging these checkpoints into its newer P1–P7 master candidate.
 
@@ -514,7 +514,7 @@ Direct user follow-up allocates integration of the existing professor, input
 selector and remote SVG widgets from Create professor SVG icon. Continue the
 isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
 approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
-artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+artwork. Exact copies and SHA-256 provenance are in experiment-runner/assets/README.md.
 Only launcher image/layout and asset-closure seams change; button labels and
 popups remain. Check SVG external-resource/script absence, actual headless image
 loading/containment at desktop widths, existing popup behavior, frontend closure
@@ -675,3 +675,23 @@ ends, and LSL/XDF output must include affect samples, all event markers,
 input-edge markers using original observed physical-input timestamps, and
 neutral-reset markers. Frontend draft UI must continue to fail closed until the
 native override receipt and recovery/evidence binding exist.
+
+### Controller listener interaction handoff — 2026-09-13
+
+R1/RR-07 UI Finalization follow-up: the Set controller dialog keeps the five
+target capture pad but moves live state into the controls themselves. The active
+target has a pulsing border in ordinary motion and a static high-contrast border
+under reduced motion, its value reads `Listening`, and a compact overview row
+switches between Ready, Listening and Recognized with the latest physical input
+token. Captured cells remain visually marked as recognized/overridden, while
+dialog copy is shortened to avoid the earlier explanatory paragraph.
+
+Evidence: `pnpm surveyjs:check`; `runner-launcher-audit.mjs` full 800px matrix
+with 17 clean scenarios; narrow 600px override case with 28 checks; and
+`pnpm runner:build`. Receipts:
+`D:/GitHub/.affect-checks/runner-controller-ui-final-01` and
+`D:/GitHub/.affect-checks/runner-controller-ui-final-narrow-01`. These are
+headless production-frontend checks with synthetic native replies; they do not
+close native override execution, physical input/device testing, neutral runtime
+markers, XDF/LSL reconstruction, installed fullscreen execution or research
+qualification.

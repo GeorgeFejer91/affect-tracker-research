@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { typedOwner, op, guard } from "./p2-typed-owner.js";
-import { compilePlannerRecipeV2, reproducePlannerRecipeV2, reconstructPlannerRecipeSelectionV2 } from "../../site/src/research/planner-recipe.js";
+import { compilePlannerRecipeV2, reproducePlannerRecipeV2, reconstructPlannerRecipeSelectionV2 } from "../../experiment-planner/web/src/research/planner-recipe.js";
 
 /** Synthetic engineering fixture. Real P2 editor compilation with a synthetic
  * source-save callback; no native storage or participant run is represented. */

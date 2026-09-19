@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { canonicalJson } from "../site/src/research/canonical.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
 import { compilePlannerRecipeV1, parsePlannerRecipeFile, parsePlannerRecipeV1, serializePlannerRecipeV1,
-  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
-import { openBrowserPlannerRecipeFile, prepareBrowserPlannerRecipeSave } from "../site/src/research/planner-recipe-file.js";
+  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { openBrowserPlannerRecipeFile, prepareBrowserPlannerRecipeSave } from "../experiment-planner/web/src/research/planner-recipe-file.js";
 import { assertVariantReproduction } from "./fixtures/assert-variant-reproduction.js";
-import { plannerLayoutIdentityV1 } from "../site/src/research/planner-recipe-reproduction.js";
-import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
-import { canonicalSha256 } from "../site/src/research/canonical.js";
+import { plannerLayoutIdentityV1 } from "../experiment-planner/web/src/research/planner-recipe-reproduction.js";
+import { projectVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
 
 const load = async name => JSON.parse(await readFile(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8"));
 const workspace = await load("variant-reproduction-v1");
@@ -137,8 +137,8 @@ test("a valid 66-node language graph is independent of JSON nesting and retains 
 
 test("two independent processes read only saved data and reproduce bytes and every selected projection", () => {
   const program = `import{readFileSync}from'node:fs';
-    import{parsePlannerRecipeV1,serializePlannerRecipeV1,reproducePlannerRecipeV1,reconstructPlannerRecipeSelectionV1}from'./site/src/research/planner-recipe.js';
-    import{canonicalJson}from'./site/src/research/canonical.js';
+    import{parsePlannerRecipeV1,serializePlannerRecipeV1,reproducePlannerRecipeV1,reconstructPlannerRecipeSelectionV1}from'./experiment-planner/web/src/research/planner-recipe.js';
+    import{canonicalJson}from'./experiment-planner/web/src/research/canonical.js';
     const fail=()=>{throw Error('ambient state forbidden')};Math.random=fail;Date.now=fail;
     for(const key of ['localStorage','sessionStorage','navigator','document'])Object.defineProperty(globalThis,key,{get:fail});
     const bytes=new Uint8Array(readFileSync(process.argv[1]));const {recipe}=await parsePlannerRecipeV1(bytes);

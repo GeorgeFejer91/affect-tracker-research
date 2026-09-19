@@ -6,17 +6,17 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
 import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1,
-  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
-import { prepareBrowserPlannerRecipeSave, openBrowserPlannerRecipeFile } from "../site/src/research/planner-recipe-file.js";
-import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout-recipe.js";
-import { createXrLayoutAuthoring } from "../site/src/research/xr-layout-authoring.js";
-import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
-import { serializeXrLayoutProfileV1, createDefaultXrLayoutProfile } from "../site/src/research/xr-layout.js";
-import { projectWorkspaceVideoDisplayGeometry } from "../site/src/research/workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
-import { plannerLayoutIdentityV1 } from "../site/src/research/planner-recipe-reproduction.js";
+  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { prepareBrowserPlannerRecipeSave, openBrowserPlannerRecipeFile } from "../experiment-planner/web/src/research/planner-recipe-file.js";
+import { resolveSavedXrLayoutContribution } from "../experiment-planner/web/src/research/xr-layout-recipe.js";
+import { createXrLayoutAuthoring } from "../experiment-planner/web/src/research/xr-layout-authoring.js";
+import { createXrLayoutState } from "../experiment-planner/web/src/research/xr-layout-editor.js";
+import { serializeXrLayoutProfileV1, createDefaultXrLayoutProfile } from "../experiment-planner/web/src/research/xr-layout.js";
+import { projectWorkspaceVideoDisplayGeometry } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { plannerLayoutIdentityV1 } from "../experiment-planner/web/src/research/planner-recipe-reproduction.js";
 
 const masters = await Promise.all(["planner-recipe-v1", "planner-recipe-locations-v1"].map(async name =>
   JSON.parse(await readFile(new URL(`fixtures/${name}.canonical.json`, import.meta.url)))));

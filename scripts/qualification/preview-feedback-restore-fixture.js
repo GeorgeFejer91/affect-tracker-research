@@ -1,8 +1,8 @@
 // Runs the real Planner restore API. No replacement validator/controller or Runner.
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { evaluateFlubberMappings } from "../../site/src/research/mappings.js";
-import { PREVIEW_GREY } from "../../site/src/research/preview-appearance.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { evaluateFlubberMappings } from "../../experiment-planner/web/src/research/mappings.js";
+import { PREVIEW_GREY } from "../../experiment-planner/web/src/research/preview-appearance.js";
 import configured from "../../test/fixtures/research-feedback-settings-v2.json";
 
 export async function checkPreviewFeedbackRestore() {
@@ -86,7 +86,7 @@ export async function checkPreviewFeedbackRestore() {
   q(".preview-primary-stage").focus(); key("ArrowRight");
   check("restored binding accepts same key without stale keyup", Math.abs(state().rendering.x - 2 / 30) < 1e-9);
   await restore(configured);
-  q("#preview-input-menu").click(); q('[data-binding-capture-target="left"]').click();
+  q('[data-binding-direction="left"]').click();
   await restore(configured);
   q(".binding-capture-area").dispatchEvent(new KeyboardEvent("keydown", { code: "KeyJ", key: "j", bubbles: true }));
   check("real restore cancels capture without changing bindings", !q("#binding-capture-dialog").open && equal(saved(), configured));

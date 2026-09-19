@@ -1,8 +1,8 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 import { questionnaireRecipeFixture } from "./questionnaire-recipe-fixture.js";
-import { validateQuestionnaireRecipeContributionV1 } from "../../site/src/research/questionnaire-recipe.js";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
+import { validateQuestionnaireRecipeContributionV1 } from "../../experiment-planner/web/src/research/questionnaire-recipe.js";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
 
 const cases = [];
 const check = (name, value) => { if (!value) throw new Error(name); cases.push(name); };

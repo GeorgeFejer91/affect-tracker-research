@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   QUESTIONNAIRE_INSPIRATION_CATALOGUE,
   validateQuestionnaireInspirationCatalogue,
-} from "../site/src/research/questionnaire-inspiration.js";
+} from "../experiment-planner/web/src/research/questionnaire-inspiration.js";
 
 const EXPECTED_KEYS = [
   "bundledAssetIds",

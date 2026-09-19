@@ -19,8 +19,8 @@ const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const source = await readFile("test/fixtures/xr-layout-v1.canonical.json", "utf8");
 const { cases } = JSON.parse(await readFile("test/fixtures/xr-feedback-envelope-v1.json", "utf8"));
-const css = await readFile("site/research.css", "utf8");
-const entry = `import { bootResearchUi } from './site/src/research/app.js';
+const css = await readFile("experiment-planner/web/research.css", "utf8");
+const entry = `import { bootResearchUi } from './experiment-planner/web/src/research/app.js';
 const checks=[];const check=(name,ok)=>{if(!ok)throw Error(name);checks.push(name);};
 (async()=>{
  const params=new URL(location.href).searchParams, state=params.get('state');
@@ -59,7 +59,7 @@ const checks=[];const check=(name,ok)=>{if(!ok)throw Error(name);checks.push(nam
 })().catch(error=>document.querySelector('#receipt').textContent=JSON.stringify({passed:false,error:error.message}));`;
 const bundle = await build({ stdin: { contents: entry, resolveDir: process.cwd() }, bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent",
-  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/app.js")).href) } });
+  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("experiment-planner/web/src/research/app.js")).href) } });
 const file = join(output, "boot.html");
 await writeFile(file, `<!doctype html><html lang="en"><meta charset="utf-8"><title>P6 full boot offscreen</title><style>${css}#receipt{display:none}</style><div id="research-app" data-research-surface="browser"></div><pre id="receipt"></pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script></html>`);
 for (const width of widths) for (const [state, view] of [["empty", "controls"], ["populated", "controls"], ["populated", "scene"], ["error", "controls"]]) {

@@ -1,7 +1,7 @@
 import { typedOwner, op, guard } from "./p2-typed-owner.js";
-import { createQuestionnaireRoutingEditor } from "../../site/src/research/questionnaire-routing-editor.js";
-import { createPlannerAuthoringSession } from "../../site/src/research/planner-authoring-session.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { createQuestionnaireRoutingEditor } from "../../experiment-planner/web/src/research/questionnaire-routing-editor.js";
+import { createPlannerAuthoringSession } from "../../experiment-planner/web/src/research/planner-authoring-session.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 const cases = [];
 const check = (label, condition) => { if (!condition) throw new Error(label); cases.push(label); };
 const settle = async predicate => { for (let i = 0; i < 300; i++) { if (predicate()) return; await new Promise(r => setTimeout(r, 10)); } throw new Error("UI did not settle"); };

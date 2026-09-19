@@ -1,8 +1,8 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
-import { createVariantDesign, variantDesignToDraft } from "../../site/src/research/variant-design.js";
-import { projectSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
+import { createVariantDesign, variantDesignToDraft } from "../../experiment-planner/web/src/research/variant-design.js";
+import { projectSavedVariantCatalogue } from "../../experiment-planner/web/src/research/variant-catalogue-adapter.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import variants from "./variant-workspace-binding-v1.json";
 import legacyRecipe from "./experiment-package-v1.canonical.json";
@@ -231,8 +231,8 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
     && !accepted("review") && ui.workspace === null);
   // Tear down a separate real controller with an outstanding picker so the
   // delayed response cannot adopt into its detached DOM after disposal.
-  const { initializeResearchUi } = await import("../../site/src/research/app.js");
-  const { renderResearchUiMarkup } = await import("../../site/src/research/ui-view.js");
+  const { initializeResearchUi } = await import("../../experiment-planner/web/src/research/app.js");
+  const { renderResearchUiMarkup } = await import("../../experiment-planner/web/src/research/ui-view.js");
   const detached = document.createElement("section");
   detached.innerHTML = renderResearchUiMarkup("browser");
   const disposedUi = initializeResearchUi(detached, { surface: "browser" });

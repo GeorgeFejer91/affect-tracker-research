@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createScreenLayoutDraftEditor } from "../site/src/research/screen-layout-editor.js";
-import { createScreenLayoutDraft } from "../site/src/research/screen-layout-draft.js";
-import { screenLayoutDraftMarkup } from "../site/src/research/screen-layout-view.js";
-import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft } from "../site/src/research/desktop-layout-contribution.js";
-import { projectWorkspaceVideoCatalogueSnapshot } from "../site/src/research/workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
-import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
-import { createPlannerAuthoringP4 } from "../site/src/research/planner-authoring-p4.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { PLANNER_COMMAND_SCHEMA, validateCommandJson } from "../site/src/research/planner-authoring-contract.js";
+import { createScreenLayoutDraftEditor } from "../experiment-planner/web/src/research/screen-layout-editor.js";
+import { createScreenLayoutDraft } from "../experiment-planner/web/src/research/screen-layout-draft.js";
+import { screenLayoutDraftMarkup } from "../experiment-planner/web/src/research/screen-layout-view.js";
+import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft } from "../experiment-planner/web/src/research/desktop-layout-contribution.js";
+import { projectWorkspaceVideoCatalogueSnapshot } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { resolveFeedbackEnvelope } from "../experiment-planner/web/src/research/feedback-layout.js";
+import { createPlannerAuthoringP4 } from "../experiment-planner/web/src/research/planner-authoring-p4.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA, validateCommandJson } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
 const clone = structuredClone;

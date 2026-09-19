@@ -291,7 +291,7 @@ test("browser timing diagnostic remains an explicit non-production Worker-only s
   assert.match(html, /does not qualify media, persistence, physical input, LSL, or the full application/u);
   assert.match(html, /operator-supplied label; it does not verify the served Worker against Git/u);
   assert.match(html, /id="duration-seconds"[^>]*max="1800"/u);
-  assert.match(source, /new Worker\("\.\.\/\.\.\/site\/src\/research\/sampling-worker\.js"/u);
+  assert.match(source, /new Worker\("\.\.\/\.\.\/experiment-planner\/web\/src\/research\/sampling-worker\.js"/u);
   assert.match(source, /messageerror/u);
   assert.match(source, /actualDurationMs:\s*performance\.now\(\) - startedMonotonicMs/u);
   assert.doesNotMatch(source, /\bfetch\s*\(|localStorage|indexedDB/u,

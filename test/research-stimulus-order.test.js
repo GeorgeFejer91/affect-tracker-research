@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson, sha256Hex } from "../site/src/research/canonical.js";
+import { canonicalJson, sha256Hex } from "../experiment-planner/web/src/research/canonical.js";
 import {
   createVideoLibrary, validateVideoLibrary, createStimulusOrder, pasteStimulusOrder,
   createStimulusOrderDocument, validateStimulusOrderDocument, resolveStimulusVariants,
   videoLibraryCsv, VIDEO_LIBRARY_FILE, STIMULUS_ORDER_FILE,
-} from "../site/src/research/stimulus-order.js";
-import { videoLibraryWorkbook } from "../site/src/research/stimulus-workbook.js";
-import { BrowserResearchWorkspace } from "../site/src/research/workspace.js";
+} from "../experiment-planner/web/src/research/stimulus-order.js";
+import { videoLibraryWorkbook } from "../experiment-planner/web/src/research/stimulus-workbook.js";
+import { BrowserResearchWorkspace } from "../experiment-planner/web/src/research/workspace.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/stimulus-order-v1.json", import.meta.url), "utf8"));
 const { library, design } = fixture;
@@ -157,7 +157,7 @@ test("browser authoring accepts the same video suffixes as native imports", asyn
 });
 
 test("browser named-ISI save and clean reopen preserve the contribution; corrupt saves never masquerade as accepted", async () => {
-  const { createVariantDocument, createVariantDraft, addIsiDurations, pasteVariantTable } = await import("../site/src/research/variant-design.js");
+  const { createVariantDocument, createVariantDraft, addIsiDurations, pasteVariantTable } = await import("../experiment-planner/web/src/research/variant-design.js");
   const { root, workspace, assets } = await workspaceFixture();
   const { library } = await workspace.videoLibrary({ confirm: true });
   const [a, b] = library.videos.map(video => video.annotationId);

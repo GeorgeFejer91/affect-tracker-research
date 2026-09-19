@@ -1,11 +1,11 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
-import { createStimulusOrderEditor } from "../../site/src/research/stimulus-order-editor.js";
-import { createPlannerVariantCommandOwner } from "../../site/src/research/planner-authoring-p3.js";
-import { createPlannerAuthoringSession } from "../../site/src/research/planner-authoring-session.js";
-import { createVariantDesign } from "../../site/src/research/variant-design.js";
-import { projectSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
+import { createStimulusOrderEditor } from "../../experiment-planner/web/src/research/stimulus-order-editor.js";
+import { createPlannerVariantCommandOwner } from "../../experiment-planner/web/src/research/planner-authoring-p3.js";
+import { createPlannerAuthoringSession } from "../../experiment-planner/web/src/research/planner-authoring-session.js";
+import { createVariantDesign } from "../../experiment-planner/web/src/research/variant-design.js";
+import { projectSavedVariantCatalogue } from "../../experiment-planner/web/src/research/variant-catalogue-adapter.js";
 import sample from "./variant-reproduction-v2.json";
 
 const checks = [], errors = [], trace = [], covered = new Set();

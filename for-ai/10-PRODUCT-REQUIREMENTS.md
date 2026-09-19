@@ -1,18 +1,13 @@
 # Product requirements
 
-## Companion-program amendment — 2026-09-12
+## Current companion-program authority
 
-The latest user decision requires separate **Experiment Planner** and
-**Experiment Runner** programs. Planner retains Flubber previews and generates
-one comprehensive JSON; Runner owns execution, video playback, LSL transport
-and recording of own plus selected external streams to XDF. Stream recording
-policy is Runner-owned session state, not a Planner recipe field.
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
-single-executable wording and blanket Runner deferral in this historical text.
-Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
-producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Planner completion is independent; actual execution correspondence is the final
-development stage. Existing frozen contracts and qualification gates remain.
+For the current product split, read
+[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md),
+[65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) and
+[66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
+Those files supersede older single-executable wording and blanket Runner
+deferral in this historical requirements summary.
 
 ## Status
 
@@ -36,27 +31,27 @@ in [`40-ROADMAP.md`](./40-ROADMAP.md).
 - Desktop name: **Affect Research**.
 - Exactly two modes: **Setting Up the Experiment** and **Running the
   Experiment**.
-- These modes provide two applet functions: **Affect Tracker Designer** authors
+- These modes provide two companion functions: **Experiment Planner** authors
   experiment settings, the video library/manual plan, and questionnaires via
   UI controls and outputs one complete unified JSON package; **Experiment
   Runner** consumes a finished package for acquisition and monitoring. JSON
-  compilation belongs behind the Designer UI. A researcher need not create or
-  edit JSON to design a study. This is a product-role distinction, not an
-  additional mode or a separate-executable requirement.
+  compilation belongs behind the Planner UI. A researcher need not create or
+  edit JSON to design a study. This is a product-role distinction with two
+  separate programs, not an additional experiment mode.
 - First qualification targets: Tauri on Windows and the static application in
   current desktop Google Chrome and Microsoft Edge.
 - Manual CI may create unsigned Windows x64 NSIS, macOS ARM64/x64 DMG, and
   Linux x64 DEB/AppImage packages for internal Setup/interface evaluation.
-  They use no optional Cargo features, exclude GStreamer, native-input, and LSL
+  They use no optional Cargo features, exclude removed native player stack, native-input, and LSL
   authority, must block experiment Start, and are neither supported research
   runtimes nor release-ready downloads.
 - Tauri retains bundle ID `io.github.georgefejer91.affecttracker` and legacy
   app-data compatibility, but new Research data uses a separate namespace and
   is never populated by automatic legacy import.
 - Qualified Windows playback of declared package assets uses the
-  bundled, repository-pinned GStreamer 1.28.6 MSVC x86_64 runtime through
-  GstPlay. Affect Research never downloads native media code at runtime or
-  discovers ambient GStreamer installations or plugin paths.
+  bundled, repository-pinned removed native player stack 1.28.6 MSVC x86_64 runtime through
+  HTML video. Affect Research never downloads native media code at runtime or
+  discovers ambient removed native player stack installations or plugin paths.
 - WebXR, native Quest, remote control, Ground Control, Party/Universe, Remote
   Flubber, direct Polar, Face/Photoatlas, Touch inference, and the other former
   Playground surfaces are absent from the active source, navigation, and
@@ -196,10 +191,9 @@ contracts and never affect Start, Run, hashes, records, LSL, or evidence.
   pre-session modules to fit this editor. The finalizer owns the finite
   language tree and package embedding.
 
-The current pass is limited to this Designer section and its authoring
-integration. The Experiment Runner and other Setup sections are out of scope;
-record issues there in
-[`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
+This Section 2-only scope is historical. Current work follows the routed owner
+IDs in [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) and the Runner
+ledgers rather than treating this section as a standing pass boundary.
 
 ### Experiment Plan & Stimuli
 
@@ -215,10 +209,10 @@ record issues there in
   0 ms, decoded end, rate 1, no loop/seeking, Pause allowed, unmuted volume 1,
   adjacent feedback, and restart-from-beginning recovery. The execution backend
   is a separate frozen platform receipt. Chromium uses
-  `browserMediaAdapters`; qualified Windows requires `nativeGstPlay`; explicit
+  `browserMediaAdapters`; qualified Windows requires `unqualifiedWebview`; explicit
   `unqualifiedWebview` stays permanently labelled unqualified. No unavailable
   mode silently falls back.
-- Array order is authority. The Designer target lets a researcher define the
+- Array order is authority. The Planner target lets a researcher define the
   video library and manual plan through UI; it does not shuffle, balance, seed,
   rotate, select from pools, or otherwise randomize the plan. The researcher
   owns study-design validity. Current read-only/import-based plan controls are
@@ -240,7 +234,7 @@ record issues there in
 
 ### Experiment
 
-- The Designer target authors experiment ID, title, sampling frequency, and a
+- The Planner target authors experiment ID, title, sampling frequency, and a
   complete manual participant schedule through UI and compiles those values
   into the finished package. The Runner reads them as immutable protocol facts.
   Current import/read-only controls are tracked for a later section pass.
@@ -359,7 +353,7 @@ lifecycle/safe-boundary evidence still exists without waiting. Package bytes,
 settings, bindings, demographics, assignment/protocol plans, terminal language,
 playback/output policies, and geometry cannot change; position is locked.
 
-For Windows qualified runs, Rust-owned GstPlay lifecycle state—not WebView media
+For Windows qualified runs, Rust-owned HTML video lifecycle state—not WebView media
 events or animation frames—opens and closes sampling segments. Player pause,
 buffering, end, error, teardown, or loss of the exact media grant fences the
 scheduler and produces bounded semantic evidence.
@@ -446,7 +440,7 @@ A future qualified Windows native runtime must be packaged from an approved
 minimal closure derived from the exact checked-in pin and verified file
 manifest, with complete corresponding-source evidence and upstream notices.
 Current interface packages exclude it. Runtime integrity, compilation, or
-staging alone does not qualify playback. The in-process raw-window GstPlay
+staging alone does not qualify playback. The in-process raw-window HTML video
 renderer requires its separately approved and audited `unsafe` boundary, a
 safe pre-`main` DLL-loading design, and installed-artifact media/lifecycle
 tests.

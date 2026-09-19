@@ -12,7 +12,7 @@ const [browser,destination]=process.argv.slice(2);
 assert.ok(browser&&destination);
 const root=resolve(import.meta.dirname,"../.."),output=resolve(destination);await mkdir(output);
 const entry=String.raw`
-import {bootRunner} from './runner/src/app.js';
+import {bootRunner} from './experiment-runner/src/app.js';
 const root=document.createElement('div');document.body.append(root);
 const q=id=>root.querySelector('#'+id),checks=[],errors=[],calls=[];
 const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
@@ -23,7 +23,7 @@ const counts=()=>app.recipe.recipe.segments.P3.variants.map((v,i)=>({variantId:v
 const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_runner_recent_experiments':return{schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
- case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
+ case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return{playerActorReady:false};
  case 'research_runner_reveal_video':if(failReveal)throw Error('Video file is missing');return null;
  case 'research_workspace_status':case 'research_choose_workspace':return{selected:true,workspaceId:'workspace',displayName:'Test experiment'};
@@ -43,25 +43,27 @@ try{
  const bytes=new Uint8Array(await(await fetch('/test/fixtures/runner-master-v3-owner.canonical.json')).arrayBuffer());
  await app.adoptRecipe(bytes);await tick();
  check(q('runner-participant').value==='P01','empty data prefills P01');check(q('runner-variant').value==='variant-3','empty data prefills first saved version');check(!q('runner-launch').disabled,'no explicit version selection needed');
- check(q('runner-variant-scale').textContent.includes('Equal usage: 0 XDF'),'zero inventory has neutral equal-usage legend');
+ check(q('runner-variant-scale').textContent.includes('All versions have 0 XDF'),'zero inventory has simple equal-usage note');
  const color=i=>q('runner-version-'+i).style.getPropertyValue('--version-color');
  for(const distribution of [[0,4,9],[5,7,9],[9,9,9]]){
   files=distribution.flatMap((n,i)=>Array.from({length:n},()=>({p:'P001',v:i+1})));await app.adoptRecipe(bytes);await tick();
   if(distribution[0]===distribution[2]){
    check([0,1,2].every(i=>color(i)==='hsl(0 0% 65%)'),'equal nonzero counts share neutral color');
-   check(q('runner-variant-scale').textContent.includes('Equal usage: 9 XDF'),'balanced nonzero legend');
+   check(q('runner-variant-scale').textContent.includes('All versions have 9 XDF'),'balanced nonzero note');
   }else{
    check(color(0)==='hsl(120 55% 52%)'&&color(2)==='hsl(0 55% 52%)','observed minimum green and maximum red: '+distribution);
-   check(q('runner-variant-scale').textContent.includes('Green: '+distribution[0]+' XDF (minimum)'),'legend uses observed minimum: '+distribution);
+   check(q('runner-variant-scale').textContent.includes('Usage range: '+distribution[0]+' to '+distribution[2]+' XDF'),'note uses observed count range: '+distribution);
    if(distribution[0]===5)check(color(1)==='hsl(60 55% 52%)','nonzero-range midpoint is yellow');
   }
   check(q('runner-variant-button').style.getPropertyValue('--version-color')===color(0),'selected button matches menu color: '+distribution);
-  check(root.querySelector('.runner-version-legend').hidden===(distribution[0]===distribution[2]),'gradient legend only shown for unequal counts: '+distribution);
+  check(root.querySelector('.runner-version-legend').hidden,'decorative gradient legend stays hidden: '+distribution);
  }
  files=[{p:'P001',v:1},{p:'P001',v:1},{p:'P003',v:2}];await app.adoptRecipe(bytes);await tick();
  check(q('runner-participant').value==='P02','participant fills first unused XDF number');check(q('runner-variant').value==='variant-2','least-used version across all participants');
- q('runner-variant-button').click();check(!q('runner-variant-popup').hidden,'arrow opens frequency chart');
- check(q('runner-variant-options').textContent.includes('2 XDF · 1 participant'),'repeat XDFs and unique participants distinguished');
+ q('runner-variant-button').click();check(!q('runner-variant-popup').hidden,'arrow opens version menu');
+ const buttonRect=q('runner-variant-button').getBoundingClientRect(),popupRect=q('runner-variant-popup').getBoundingClientRect();
+ check(Math.abs(popupRect.top-buttonRect.bottom)<=2&&Math.abs(popupRect.left-buttonRect.left)<=1&&Math.abs(popupRect.width-buttonRect.width)<=2,'menu stays connected to version field');
+ check(q('runner-variant-options').textContent.includes('2 XDF, 1 participant'),'repeat XDFs and unique participants distinguished');
  check(q('runner-version-0').style.getPropertyValue('--version-color')!==q('runner-version-2').style.getPropertyValue('--version-color'),'color reflects unequal frequency');
  const key=k=>q('runner-variant-button').dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
  key('Home');key('Enter');check(q('runner-variant').value==='variant-3','keyboard manual version override');check(q('runner-variant-popup').hidden,'selection closes menu');

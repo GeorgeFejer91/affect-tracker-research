@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const stimulusRoot = path.join(root, "site", "assets", "research-stimuli");
+const stimulusRoot = path.join(root, "experiment-planner", "web", "assets", "research-stimuli");
 const caavRoot = path.join(stimulusRoot, "caav", "v1");
 const openlavRoot = path.join(stimulusRoot, "openlav", "v1");
 

@@ -5,9 +5,9 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
-import { resolveXrFeedbackFootprintV1 } from "../../site/src/research/xr-layout-feedback.js";
+import { resolveXrFeedbackFootprintV1 } from "../../experiment-planner/web/src/research/xr-layout-feedback.js";
 
-const producerPath = resolve(process.argv[2] ?? "site/src/research/feedback-envelope.js");
+const producerPath = resolve(process.argv[2] ?? "experiment-planner/web/src/research/feedback-envelope.js");
 const producer = await import(pathToFileURL(producerPath));
 const fixture = JSON.parse(await readFile(new URL("../../test/fixtures/xr-feedback-envelope-v1.json", import.meta.url), "utf8"));
 for (const { profile, configuration, envelope, expected } of fixture.cases) {

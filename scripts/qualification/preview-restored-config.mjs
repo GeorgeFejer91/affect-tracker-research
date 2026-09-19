@@ -17,8 +17,8 @@ const repository=resolve(fileURLToPath(new URL("../..",import.meta.url)));
 const run=promisify(execFile);
 const git=async(...args)=>(await run("git",args,{cwd:repository,windowsHide:true})).stdout.trim();
 const provenance={commit:await git("rev-parse","HEAD"),applicationTree:await git("rev-parse","HEAD:site"),applicationDirty:Boolean(await git("diff","HEAD","--name-only","--","site")),browserSha256:createHash("sha256").update(await readFile(browser)).digest("hex")};
-const css=(await readFile(new URL("../../site/research.css",import.meta.url),"utf8"))
-  .replaceAll('./assets/',pathToFileURL(fileURLToPath(new URL('../../site/assets/',import.meta.url))).href);
+const css=(await readFile(new URL("../../experiment-planner/web/research.css",import.meta.url),"utf8"))
+  .replaceAll('./assets/',pathToFileURL(fileURLToPath(new URL('../../experiment-planner/web/assets/',import.meta.url))).href);
 const fixture = mode.startsWith("stage-") ? ["checkPreviewStage", "preview-stage-fixture.js"]
   : mode.startsWith("labels-") ? ["checkPreviewLabelLayout", "preview-label-layout-fixture.js"]
   : mode === "restore" ? ["checkPreviewFeedbackRestore", "preview-feedback-restore-fixture.js"]

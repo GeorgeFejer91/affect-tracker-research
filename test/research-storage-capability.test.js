@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import {
   ResearchStorageCapabilityError,
   probeBrowserStorage,
-} from "../site/src/research/storage-capability.js";
-import { estimateResearchStorageUse } from "../site/src/research/app.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+} from "../experiment-planner/web/src/research/storage-capability.js";
+import { estimateResearchStorageUse } from "../experiment-planner/web/src/research/app.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 
 test("browser storage preflight reports quota headroom and persistence explicitly", async () => {
   let persistCalls = 0;

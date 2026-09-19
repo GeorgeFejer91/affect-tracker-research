@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { resolveSavedXrLayoutContribution } from "../../site/src/research/xr-layout-recipe.js";
-import { parseXrLayoutProfileV1, serializeXrLayoutProfileV1 } from "../../site/src/research/xr-layout.js";
-import { validateFeedbackContribution } from "../../site/src/research/feedback-settings.js";
-import { createWorkspaceContribution } from "../../site/src/research/workspace-contribution.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { resolveSavedXrLayoutContribution } from "../../experiment-planner/web/src/research/xr-layout-recipe.js";
+import { parseXrLayoutProfileV1, serializeXrLayoutProfileV1 } from "../../experiment-planner/web/src/research/xr-layout.js";
+import { validateFeedbackContribution } from "../../experiment-planner/web/src/research/feedback-settings.js";
+import { createWorkspaceContribution } from "../../experiment-planner/web/src/research/workspace-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("xr-layout-recipe-v1.json", import.meta.url)));
 const catalogueV2 = JSON.parse(await readFile(new URL("research-video-catalogue-contribution-v2.json", import.meta.url)));

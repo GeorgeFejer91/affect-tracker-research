@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   NativeResearchRuntimeBridge,
-} from "../site/src/research/native-bridge.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/app.js";
+} from "../experiment-planner/web/src/research/native-bridge.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/app.js";
 
 const FINISHED_RUN_STATUS = Object.freeze({
   active: false,
@@ -36,14 +36,14 @@ const FINISHED_RUN_STATUS = Object.freeze({
 const NATIVE_MEDIA_CAPABILITY = Object.freeze({
   schema: "affect-research-native-media-capability",
   version: 2,
-  backend: "gstreamer-gstplay",
-  api: "gstplay",
-  pinnedRuntimeVersion: "1.28.6",
-  bindingsVersion: "0.25",
-  target: "msvc-x86_64",
-  runtimeInstallerSha256: "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5",
-  runtimeTreeManifestSha256: "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566",
-  defaultPlaybackMode: "nativeGstPlay",
+  backend: "html-video-element",
+  api: "research-media",
+  pinnedRuntimeVersion: "none",
+  bindingsVersion: "webview",
+  target: "tauri-webview",
+  runtimeInstallerSha256: "",
+  runtimeTreeManifestSha256: "",
+  defaultPlaybackMode: "unqualifiedWebview",
   unqualifiedFallbackMode: "unqualifiedWebview",
   runtimeBundleState: "notStaged",
   runtimeIntegrityVerified: false,
@@ -54,9 +54,9 @@ const NATIVE_MEDIA_CAPABILITY = Object.freeze({
   qualifiedFormatMatrixReady: false,
   redistributionReviewReady: false,
   ambientRuntimeAllowed: false,
-  requiredForQualifiedRun: true,
+  requiredForQualifiedRun: false,
   rendererReceivesFilesystemPaths: false,
-  reasonCode: "runtime-not-staged",
+  reasonCode: "html-video-player-active",
 });
 
 const NATIVE_PROTOCOL_CAPABILITY = Object.freeze({

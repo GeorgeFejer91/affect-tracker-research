@@ -14,9 +14,9 @@ const source = resolve(import.meta.dirname, "../.."), output = resolve(destinati
 const execute = promisify(execFile), hash = bytes => createHash("sha256").update(bytes).digest("hex");
 await mkdir(output, { recursive: true });
 const entry = `
-import { bootRunner } from './runner/src/app.js';
-import { NativePackageProtocolAdapter } from './site/src/research/native-package-protocol.js';
-import { createParticipantPicker } from './runner/src/participants.js';
+import { bootRunner } from './experiment-runner/src/app.js';
+import { NativePackageProtocolAdapter } from './experiment-planner/web/src/research/native-package-protocol.js';
+import { createParticipantPicker } from './experiment-runner/src/participants.js';
 const mode=new URL(location.href).searchParams.get('program');
 const errors=[],calls=[],checks=[];let protocol,fullscreen=false,failFullscreen=mode==='fullscreen-error';
 const check=(condition,label)=>{if(!condition)throw new Error(label);checks.push(label);};
@@ -41,7 +41,7 @@ try{
  const q=id=>root.querySelector('#'+id),click=async id=>{q(id).click();await tick();};
  const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_desktop_identity':return {schema:'affect-research-desktop-identity',version:1,program:'runner'};
- case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
+ case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return {playerActorReady:true};
  case 'research_runner_recent_experiments':return {schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_workspace_status':return {selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic fixture (no files)'};
@@ -77,14 +77,26 @@ try{
   if(mode==='professor'||mode==='remote')check(q('runner-'+mode+'-dialog').querySelector('img').naturalWidth>0,'QR loads');
  } else if(mode==='override'){
   const original=app.recipe.canonicalSourceText;await click('runner-controller');
-  root.querySelector('[data-controller-capture="up"]').click();dispatchEvent(new KeyboardEvent('keydown',{key:'w',code:'KeyW',cancelable:true}));await tick();
-  check(q('runner-controller-note').textContent.includes('Session override draft: movement bindings'),'movement override draft visible');
+  const upCell=root.querySelector('[data-controller-capture="up"]');
+  upCell.click();await tick();
+  check(upCell.hasAttribute('data-listening'),'up capture cell shows listening state');
+  check(root.querySelector('[data-controller-binding-value="up"]').textContent==='Listening','up capture cell displays listening');
+  check(q('runner-controller-overview').dataset.state==='listening'&&q('runner-controller-overview-target').textContent==='Up','overview shows active listening target');
+  check(getComputedStyle(upCell).borderTopColor==='rgb(243, 201, 109)','listening border is visible in reduced motion');
+  dispatchEvent(new KeyboardEvent('keydown',{key:'w',code:'KeyW',cancelable:true}));await tick();
+  check(q('runner-controller-overview').dataset.state==='recognized'&&q('runner-controller-overview-target').textContent==='Up'&&q('runner-controller-overview-input').textContent==='KeyW','overview shows recognized up binding');
+  check(q('runner-controller-note').textContent==='Draft only - restore before run.','movement override warning is compact');
+  check(upCell.hasAttribute('data-recognized')&&upCell.hasAttribute('data-overridden'),'captured up cell remains marked');
   check(root.querySelector('[data-controller-binding-value="up"]').textContent==='KeyW','captured up binding is displayed');
-  root.querySelector('[data-controller-capture="neutral"]').click();dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',cancelable:true}));await tick();
-  check(q('runner-controller-note').textContent.includes('neutral Space'),'neutral override draft visible');
+  const neutralCell=root.querySelector('[data-controller-capture="neutral"]');
+  neutralCell.click();await tick();
+  check(neutralCell.hasAttribute('data-listening')&&q('runner-controller-overview-target').textContent==='Neutral','neutral capture cell shows listening state');
+  dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',cancelable:true}));await tick();
+  check(q('runner-controller-overview').dataset.state==='recognized'&&q('runner-controller-overview-target').textContent==='Neutral'&&q('runner-controller-overview-input').textContent==='Space','overview shows recognized neutral hotkey');
+  check(q('runner-controller-note').textContent==='Draft only - restore before run.','neutral override warning remains compact');
   check(root.querySelector('[data-controller-binding-value="neutral"]').textContent==='Space','captured neutral hotkey is displayed');
   check(app.recipe.canonicalSourceText===original,'override never rewrites source');check(!q('runner-start'),'no second Start screen');
-  await click('runner-controller-reset');check(q('runner-controller-note').textContent.includes('Using the experiment'),'restore file binding');
+  await click('runner-controller-reset');check(q('runner-controller-note').textContent==='File settings active.'&&q('runner-controller-overview').dataset.state==='ready','restore file binding');
  } else if(mode==='unselected') {
   check(q('runner-participant').value===''&&q('runner-launch').disabled,'new JSON requires explicit participant');
   q('runner-participant').value='P999';q('runner-participant').dispatchEvent(new Event('input'));await tick();

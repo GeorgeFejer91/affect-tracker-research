@@ -1,23 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { RESEARCH_UI_EVENTS } from "../site/src/research/app.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/app.js";
 import {
   RESEARCH_RUN_MANIFEST_SCHEMA,
   createDefaultResearchSettings,
-} from "../site/src/research/contracts.js";
-import { canonicalJson, canonicalSha256, sha256Hex } from "../site/src/research/canonical.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
-import { serializeRatings } from "../site/src/research/tabular.js";
+} from "../experiment-planner/web/src/research/contracts.js";
+import { canonicalJson, canonicalSha256, sha256Hex } from "../experiment-planner/web/src/research/canonical.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
+import { serializeRatings } from "../experiment-planner/web/src/research/tabular.js";
 import {
   BrowserResearchRuntimeBridge,
   mergeParticipantStateRows,
-} from "../site/src/research/runtime-bridge.js";
+} from "../experiment-planner/web/src/research/runtime-bridge.js";
 import {
   BrowserResearchWorkspace,
   probeVideoFile,
   sha256Blob,
-} from "../site/src/research/workspace.js";
+} from "../experiment-planner/web/src/research/workspace.js";
 
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);

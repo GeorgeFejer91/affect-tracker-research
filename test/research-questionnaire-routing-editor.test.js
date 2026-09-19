@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { questionnaireRoutingEdits, questionnaireRoutingSnapshot } from "../site/src/research/questionnaire-routing-editor.js";
-import { createPlannerAuthoringP2 } from "../site/src/research/planner-authoring-p2.js";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
+import { questionnaireRoutingEdits, questionnaireRoutingSnapshot } from "../experiment-planner/web/src/research/questionnaire-routing-editor.js";
+import { createPlannerAuthoringP2 } from "../experiment-planner/web/src/research/planner-authoring-p2.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
 import { questionnaireRecipeFixture } from "./fixtures/questionnaire-recipe-fixture.js";
-import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
+import { enumerateLanguageRoutesV1 } from "../experiment-planner/web/src/research/experiment-package.js";
 
 async function fixture(onSave = async () => null) {
   const recipe = await questionnaireRecipeFixture();

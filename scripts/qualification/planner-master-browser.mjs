@@ -22,8 +22,8 @@ const fixtures = await Promise.all(["planner-recipe-current-v1", "planner-recipe
   name, source: await readFile(`test/fixtures/${name}.canonical.json`, "utf8"),
   matrix: JSON.parse(await readFile(`test/fixtures/${name}-reproduction.json`, "utf8")),
 })));
-const program = `import{parsePlannerRecipeV1,compilePlannerRecipeV1,serializePlannerRecipeV1,reproducePlannerRecipeV1,reconstructPlannerRecipeSelectionV1}from'./site/src/research/planner-recipe.js';
-import{canonicalJson}from'./site/src/research/canonical.js';
+const program = `import{parsePlannerRecipeV1,compilePlannerRecipeV1,serializePlannerRecipeV1,reproducePlannerRecipeV1,reconstructPlannerRecipeSelectionV1}from'./experiment-planner/web/src/research/planner-recipe.js';
+import{canonicalJson}from'./experiment-planner/web/src/research/canonical.js';
 (async()=>{const cases=[];let checks=0;const equal=(a,b)=>{if(a!==b)throw Error('Exact codec comparison failed');checks++};
 const report=async receipt=>{document.getElementById('receipt').textContent=JSON.stringify(receipt);await fetch(${JSON.stringify(receiptPath)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(receipt)});};
 try{for(const f of ${JSON.stringify(fixtures)}){const{recipe,canonicalSourceText}=await parsePlannerRecipeV1(new TextEncoder().encode(f.source));

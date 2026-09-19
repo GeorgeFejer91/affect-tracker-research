@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { openBrowserExperimentPackage, prepareBrowserPackageSave } from "../site/src/research/package-file-picker.js";
+import { openBrowserExperimentPackage, prepareBrowserPackageSave } from "../experiment-planner/web/src/research/package-file-picker.js";
 
 const source = await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url), "utf8");
 const encode = (value) => new TextEncoder().encode(value);

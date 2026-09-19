@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { NativeResearchRuntimeBridge } from "../site/src/research/native-bridge.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+import { NativeResearchRuntimeBridge } from "../experiment-planner/web/src/research/native-bridge.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/ui-contracts.js";
 import {
   completeQuestionnaireAssetStorageRequest,
   requestQuestionnaireAssetStorage,
-} from "../site/src/research/questionnaire-storage-request.js";
+} from "../experiment-planner/web/src/research/questionnaire-storage-request.js";
 
 const payload = () => ({
   familyId: "custom", languageTag: "en", format: "csv", sourceSha256: "a".repeat(64), bytes: [1, 2, 3],

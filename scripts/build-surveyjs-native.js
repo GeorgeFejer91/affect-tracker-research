@@ -5,7 +5,7 @@ import { surveyNoticeBanner } from "./surveyjs-notices.js";
 const result = await build({ entryPoints: ["scripts/surveyjs-native-entry.js"], bundle: true, write: false, format: "iife", minify: true,
   platform: "neutral", mainFields: ["module", "main"], legalComments: "inline", banner: { js: surveyNoticeBanner } });
 const source = result.outputFiles[0].text;
-const directory = "src-tauri/surveyjs";
+const directory = "native/surveyjs";
 if (process.argv.includes("--check")) {
   if (await readFile(`${directory}/engine.js`, "utf8") !== source || (await readFile(`${directory}/engine.sha256`, "utf8")).trim() !== createHash("sha256").update(source).digest("hex")) throw new Error("Bundled native SurveyJS engine is stale. Run pnpm surveyjs:build.");
 } else {

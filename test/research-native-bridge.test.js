@@ -28,10 +28,10 @@ import {
   validateNativeMediaCapabilityV2,
   validateNativeProtocolCapabilityV1,
   validateNativeProtocolPreflightV1,
-} from "../site/src/research/native-bridge.js";
-import { createInputBindingPreset } from "../site/src/research/contracts.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
-import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "../site/src/research/planner-file-request.js";
+} from "../experiment-planner/web/src/research/native-bridge.js";
+import { createInputBindingPreset } from "../experiment-planner/web/src/research/contracts.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/ui-contracts.js";
+import { requestPlannerFile, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "../experiment-planner/web/src/research/planner-file-request.js";
 
 test("Planner native file requests acknowledge exact results without rescanning media or invoking Runner", async () => {
   const root = new EventTarget(), win = new EventTarget(), calls = [];
@@ -64,14 +64,14 @@ test("Planner native file requests acknowledge exact results without rescanning 
   bridge.plannerOnly = true; bridge.destroy();
 });
 
-test("Planner startup adopts an existing workspace even when native media rescan is unavailable", async () => {
+test("Planner startup adopts an existing workspace even when media rescan fails", async () => {
   const root = new EventTarget(), win = new EventTarget(), calls = [];
   const status = { textContent: "", hidden: true, scrollIntoView() {} };
   let connector = null;
   root.dataset = { researchProgram: "planner" };
   root.querySelector = selector => {
     if (selector === "#planner-status") return status;
-    if (selector === "#native-playback-mode") return { value: "nativeGstPlay" };
+    if (selector === "#native-playback-mode") return { value: "unqualifiedWebview" };
     return null;
   };
   root.researchUi = {
@@ -103,8 +103,8 @@ test("Planner startup adopts an existing workspace even when native media rescan
   });
   await bridge.initialize();
   assert.equal(connector.getWorkspaceId(), workspace.workspaceId);
-  assert.match(status.textContent, /Native media startup is unavailable/u);
-  assert.equal(calls.some(({ command }) => command === "research_rescan_stimuli"), false);
+  assert.match(status.textContent, /rescan must wait/u);
+  assert.equal(calls.some(({ command }) => command === "research_rescan_stimuli"), true);
   bridge.destroy();
 });
 
@@ -198,14 +198,14 @@ function nativeMediaCapability(overrides = {}) {
   return {
     schema: "affect-research-native-media-capability",
     version: 2,
-    backend: "gstreamer-gstplay",
-    api: "gstplay",
-    pinnedRuntimeVersion: "1.28.6",
-    bindingsVersion: "0.25",
-    target: "msvc-x86_64",
-    runtimeInstallerSha256: "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5",
-    runtimeTreeManifestSha256: "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566",
-    defaultPlaybackMode: "nativeGstPlay",
+    backend: "html-video-element",
+    api: "research-media",
+    pinnedRuntimeVersion: "none",
+    bindingsVersion: "webview",
+    target: "tauri-webview",
+    runtimeInstallerSha256: "",
+    runtimeTreeManifestSha256: "",
+    defaultPlaybackMode: "unqualifiedWebview",
     unqualifiedFallbackMode: "unqualifiedWebview",
     runtimeBundleState: "notStaged",
     runtimeIntegrityVerified: false,
@@ -216,9 +216,9 @@ function nativeMediaCapability(overrides = {}) {
     qualifiedFormatMatrixReady: false,
     redistributionReviewReady: false,
     ambientRuntimeAllowed: false,
-    requiredForQualifiedRun: true,
+    requiredForQualifiedRun: false,
     rendererReceivesFilesystemPaths: false,
-    reasonCode: "runtime-not-staged",
+    reasonCode: "html-video-player-active",
     ...overrides,
   };
 }
@@ -447,7 +447,7 @@ test("renderer fences require both the local epoch and native run ID", () => {
   assert.equal(nativeRunStatusMatchesFence({ ...matchingStatus, attemptNumber: 2 }, run, fence), false);
   assert.equal(nativeRunStatusMatchesFence({
     ...matchingStatus,
-    playbackMode: "nativeLibvlc",
+    playbackMode: "browserMediaAdapters",
     playbackQualification: "qualifiedNative",
   }, run, fence), false);
   assert.equal(nativeRunStatusMatchesFence({ ...matchingStatus, active: false }, run, fence), false);
@@ -1085,23 +1085,10 @@ test("native input regions remain bounded to visible client coordinates", () => 
   });
 });
 
-test("desktop playback defaults qualified and requires an explicit unqualified fallback", () => {
+test("desktop playback defaults to the HTML-compatible WebView mode", () => {
   const unavailable = nativeMediaCapability();
-  assert.throws(() => authorizeDesktopPlaybackMode(undefined, unavailable), /Qualified native playback is unavailable/u);
+  assert.equal(authorizeDesktopPlaybackMode(undefined, unavailable), "unqualifiedWebview");
   assert.equal(authorizeDesktopPlaybackMode("unqualifiedWebview", unavailable), "unqualifiedWebview");
-  const ready = nativeMediaCapability({
-    runtimeBundleState: "verified",
-    runtimeIntegrityVerified: true,
-    runtimeFileCount: 827,
-    runtimeByteLength: 340362958,
-    qualifiedStartAvailable: true,
-    playerActorReady: true,
-    qualifiedFormatMatrixReady: true,
-    redistributionReviewReady: true,
-    reasonCode: "qualified-native-gstplay-ready",
-  });
-  assert.equal(authorizeDesktopPlaybackMode("nativeGstPlay", ready), "nativeGstPlay");
-  assert.throws(() => authorizeDesktopPlaybackMode("nativeLibvlc", unavailable), /retired/u);
   assert.throws(() => authorizeDesktopPlaybackMode("ambientVlc", unavailable), /Unknown native playback mode/u);
 
   const interfaceOnly = nativeMediaCapability({
@@ -1112,12 +1099,12 @@ test("desktop playback defaults qualified and requires an explicit unqualified f
     /Setup and interface evaluation only/u,
   );
   assert.throws(
-    () => authorizeDesktopPlaybackMode("nativeGstPlay", interfaceOnly),
+    () => authorizeDesktopPlaybackMode("unqualifiedWebview", interfaceOnly),
     /native experiment acquisition requires the Windows build/u,
   );
 });
 
-test("native media capability v2 is exact, pinned, isolated, and internally consistent", () => {
+test("native media capability v2 is exact, HTML-video-only, and internally consistent", () => {
   assert.deepEqual(validateNativeMediaCapabilityV2(nativeMediaCapability()), nativeMediaCapability());
   assert.throws(() => validateNativeMediaCapabilityV2({
     ...nativeMediaCapability(), extra: true,
@@ -1229,6 +1216,21 @@ class ProbeVideo extends EventTarget {
     queueMicrotask(() => callback(0, { mediaTime }));
     return this.decodedFrames.length;
   }
+}
+
+function htmlVideoDisplayGeometry(videoWidth = 1_920, videoHeight = 1_080) {
+  const gcd = (left, right) => (right === 0 ? left : gcd(right, left % right));
+  const divisor = gcd(videoWidth, videoHeight);
+  return {
+    status: "verified",
+    source: "html-video-metadata",
+    displayWidthPx: videoWidth,
+    displayHeightPx: videoHeight,
+    displayAspect: { numerator: videoWidth / divisor, denominator: videoHeight / divisor },
+    rotationDegrees: 0,
+    pixelAspectRatio: { numerator: 1, denominator: 1 },
+    metadataInterpretation: "explicit-orientation-and-square-pixel-snapshot",
+  };
 }
 
 test("native WebView attestation requires near-start, midpoint, and near-end decoded frames", async () => {
@@ -1364,12 +1366,12 @@ test("native metadata and seeking cannot pass without frame callbacks, and the g
 
 test("desktop entrypoint sequences the shared UI before the path-free Research native bridge", async () => {
   const [html, entrySource, source, appSource] = await Promise.all([
-    readFile(new URL("../desktop/index.html", import.meta.url), "utf8"),
-    readFile(new URL("../site/src/research/native-entry.js", import.meta.url), "utf8"),
-    readFile(new URL("../site/src/research/native-bridge.js", import.meta.url), "utf8"),
-    readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/desktop/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/src/research/native-entry.js", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/src/research/native-bridge.js", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /src="\.\.\/site\/src\/research\/native-entry\.js"/u);
+  assert.match(html, /src="\.\.\/web\/src\/research\/native-entry\.js"/u);
   assert.doesNotMatch(html, /runtime-bridge\.js|app\.js/u);
   assert.match(entrySource, /import \{ bootNativeBridge \} from "\.\/native-bridge\.js"/u);
   assert.match(entrySource, /bootstrapResearchSurface\(\{[\s\S]*surface: "tauri",[\s\S]*initializeRuntime: bootNativeBridge/u);
@@ -1378,6 +1380,7 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
     "research_open_workspace_location",
     "research_store_questionnaire_asset",
     "research_rescan_stimuli",
+    "research_prepare_html_video_assets",
     "research_import_stimuli",
     "research_video_library",
     "research_save_stimulus_order",
@@ -1408,9 +1411,8 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
   assert.match(source, /playbackMode/u);
   assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
-  assert.match(source, /decodeQualification = "attestedQualified"/u);
-  assert.match(source, /NativeMediaController/u);
-  assert.match(source, /attestNativeGstCatalogue/u);
+  assert.match(source, /prepare-html-video-assets/u);
+  assert.match(source, /probeAndAttestNativeVideo/u);
   assert.match(source, /this\.nativeTimingReady = \(nativeRunStatusHandshake\(status\)[\s\S]+nativePackageProtocolCapability\.nativeStartReady/u);
   assert.match(source, /NativePackageProtocolAdapter/u);
   assert.doesNotMatch(source, /timingWorkerReady:\s*true/u);
@@ -1444,7 +1446,7 @@ function preparedScanSummary(name = "one") {
 }
 async function preparedBridgeFixture() {
   const root = new EventTarget(), win = new EventTarget(), events = [], calls = [], actorCalls = [];
-  const mode = { value: "nativeGstPlay" }, progress = { textContent: "unchanged" };
+  const mode = { value: "unqualifiedWebview" }, progress = { textContent: "unchanged" };
   const viewport = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 360 }) };
   let connector, scan = { workspaceId: preparedWorkspaceId, stimuli: [preparedScanSummary()] };
   root.dataset = { researchProgram: "planner" };
@@ -1458,24 +1460,47 @@ async function preparedBridgeFixture() {
     setIntervalObject: () => 1, clearIntervalObject: () => {}, invoke: async (command, payload) => {
       calls.push({ command, payload });
       if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
-      if (command === "research_native_media_capability") return nativeMediaCapability({ runtimeBundleState: "verified",
-        runtimeIntegrityVerified: true, runtimeFileCount: 827, runtimeByteLength: 340362958, playerActorReady: true });
+      if (command === "research_native_media_capability") return nativeMediaCapability();
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (command === "research_rescan_stimuli") return structuredClone(scan);
+      if (command === "research_workspace_media_url") return {
+        mediaGrantId: `grant-${payload.workspaceFileId}`,
+        workspaceFileId: payload.workspaceFileId,
+        mediaUrl: `http://research-media.localhost/${payload.workspaceFileId}`,
+        byteLength: payload.byteLength,
+        mimeType: payload.mimeType,
+        durationMs: null,
+        decodeStatus: "unverified",
+        decodeBackend: null,
+        decodeAttestation: null,
+        decodedPositionsMs: [],
+      };
+      if (command === "research_attest_workspace_decode") {
+        const attestation = payload.attestation;
+        actorCalls.push([attestation.attestationKind, attestation.workspaceFileId]);
+        if (attestation.attestationKind === "revokeGrant") return {};
+        return {
+          workspaceFileId: attestation.workspaceFileId,
+          displayName: `${attestation.workspaceFileId}.mp4`,
+          sha256: attestation.sha256,
+          byteLength: attestation.byteLength,
+          mimeType: attestation.mimeType,
+          durationMs: attestation.observedDurationMs,
+          decodeStatus: "attestedUnqualified",
+          decodeBackend: "webviewVideoFrameCallback",
+          decodeAttestation: "representativeFramesV1",
+          decodedPositionsMs: attestation.decodedPositionsMs,
+          displayGeometry: htmlVideoDisplayGeometry(attestation.videoWidth, attestation.videoHeight),
+          source: { kind: "workspaceFile", relativePath: `stimuli/${attestation.workspaceFileId}.mp4`,
+            mimeType: attestation.mimeType, sha256: attestation.sha256, byteLength: attestation.byteLength,
+            durationMs: attestation.observedDurationMs },
+        };
+      }
       return {};
-    } });
+    },
+    videoFactory: () => new ProbeVideo(),
+    });
   await bridge.initialize();
-  // Synthetic controller receipts exercise the actual catalogue orchestration,
-  // not native playback or the truth of a media qualification claim.
-  bridge.nativeMedia = {
-    prepare: async ({ summary }) => { actorCalls.push(["prepare", summary.workspaceFileId]); },
-    awaitPrepared: async () => { actorCalls.push(["await"]); },
-    attestDecodeV2: async ({ summary }) => { actorCalls.push(["attest", summary.workspaceFileId]); return {
-      ...summary, decodeStatus: "attestedQualified", decodeBackend: "nativeGstPlay", decodeAttestation: "nativeDecodedSnapshotsV2",
-      displayGeometry: { synthetic: true }, source: { kind: "workspaceFile", relativePath: `stimuli/${summary.displayName}` },
-    }; },
-    stop: async () => { actorCalls.push(["stop"]); },
-  };
   return { root, bridge, connector, events, calls, actorCalls, mode, progress, scan,
     setScan: value => { scan = value; } };
 }
@@ -1506,7 +1531,7 @@ test("prepared catalogue uses existing sequential authority without early state/
   const prepared = await f.connector.prepareCatalogue(f.scan, { isCurrent: () => true });
   assert.equal(f.bridge.catalog, original); assert.equal(original.size, 0);
   assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
-  assert.deepEqual(f.actorCalls.map(([name]) => name), ["prepare", "await", "attest", "stop"]);
+  assert.deepEqual(f.actorCalls.map(([name]) => name), ["attestRepresentativeFramesV1"]);
   const projection = prepared.projection;
   projection.items[0].stimulus.title = "Mutated copy";
   assert.equal(prepared.projection.items[0].stimulus.title, "one.mp4");
@@ -1524,9 +1549,9 @@ test("prepared catalogue guards caller, workspace, mode, settings, capability, n
     const prepared = await f.connector.prepareCatalogue(f.scan, { isCurrent: () => current });
     if (change === "caller") current = false;
     if (change === "workspace") f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
-    if (change === "mode") f.mode.value = "unqualifiedWebview";
+    if (change === "mode") f.mode.value = "browserMediaAdapters";
     if (change === "settings") f.root.researchUi.settings.stimuli.items.push({ stimulusId: "new", source: { relativePath: "new.mp4" } });
-    if (change === "capability") f.bridge.nativeMediaCapability = { ...f.bridge.nativeMediaCapability, playerActorReady: false };
+    if (change === "capability") f.bridge.nativeMediaCapability = { ...f.bridge.nativeMediaCapability, reasonCode: "changed-capability" };
     if (change === "catalogue") (await f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId, stimuli: [] })).commit();
     if (change === "destroy") f.bridge.destroy();
     const catalogue = f.bridge.catalog;
@@ -1548,18 +1573,22 @@ test("workspace prepare is canceled by a later bridge publication or caller life
   f.bridge.destroy();
 });
 
-test("a canceled pending native probe stops its actor and cannot publish or change progress", async () => {
+test("a canceled pending HTML video probe cannot publish or change progress", async () => {
   const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
   let entered, resume, current = true;
   const started = new Promise(resolve => { entered = resolve; });
   const pending = new Promise(resolve => { resume = resolve; });
-  f.bridge.nativeMedia.awaitPrepared = async () => { entered(); await pending; };
+  const invoke = f.bridge.invoke;
+  f.bridge.invoke = async (command, payload) => {
+    if (command === "research_workspace_media_url") { entered(); await pending; }
+    return invoke(command, payload);
+  };
   const work = f.connector.prepareCatalogue(f.scan, { isCurrent: () => current });
   await started; current = false; resume();
   await assert.rejects(work, /stale/u);
   assert.equal(f.bridge.catalog.size, 0); assert.equal(f.events.length, 0);
   assert.equal(f.progress.textContent, "unchanged");
-  assert.equal(f.actorCalls.filter(([name]) => name === "stop").length, 1);
+  assert.equal(f.actorCalls.length, 1);
   f.bridge.destroy();
 });
 
@@ -1567,9 +1596,12 @@ test("failed or duplicate catalogue preparation never partially accepts verified
   for (const failure of ["decode", "duplicate"]) {
     const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
     const original = f.bridge.catalog;
-    const decode = f.bridge.nativeMedia.attestDecodeV2;
-    if (failure === "decode") f.bridge.nativeMedia.attestDecodeV2 = async args => {
-      if (args.summary.workspaceFileId === "two") throw Error("Synthetic decode failure"); return decode(args);
+    const invoke = f.bridge.invoke;
+    if (failure === "decode") f.bridge.invoke = async (command, payload) => {
+      if (command === "research_attest_workspace_decode"
+        && payload.attestation.workspaceFileId === "two"
+        && payload.attestation.attestationKind === "attestRepresentativeFramesV1") throw Error("Synthetic decode failure");
+      return invoke(command, payload);
     };
     await assert.rejects(f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId,
       stimuli: [preparedScanSummary(), preparedScanSummary(failure === "decode" ? "two" : "one")] }), /failed/u);
@@ -1583,8 +1615,13 @@ test("legacy GUI scan reuses preparation, projects after commit and withdraws on
   f.root.id = "native-playback-mode";
   f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
   assert.equal(f.events.length, 1); assert.equal(f.events[0].detail.items.length, 1);
-  assert.equal(f.bridge.catalog.size, 1); assert.match(f.progress.textContent, /complete/u);
-  f.bridge.nativeMedia.attestDecodeV2 = async () => { throw Error("Synthetic decode failure"); };
+  assert.equal(f.bridge.catalog.size, 1); assert.equal(f.progress.textContent, "unchanged");
+  const invoke = f.bridge.invoke;
+  f.bridge.invoke = async (command, payload) => {
+    if (command === "research_attest_workspace_decode"
+      && payload.attestation.attestationKind === "attestRepresentativeFramesV1") throw Error("Synthetic decode failure");
+    return invoke(command, payload);
+  };
   f.root.dispatchEvent(new Event("change")); await f.bridge.operation;
   assert.equal(f.bridge.catalog.size, 0); assert.deepEqual(f.events.at(-1).detail, { items: [], replace: true });
   f.bridge.destroy();
@@ -1594,7 +1631,11 @@ test("a late GUI scan cannot erase a newly selected workspace catalogue", async 
   const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
   let entered, resume;
   const started = new Promise(resolve => { entered = resolve; }), pending = new Promise(resolve => { resume = resolve; });
-  f.bridge.nativeMedia.awaitPrepared = async () => { entered(); await pending; };
+  const invoke = f.bridge.invoke;
+  f.bridge.invoke = async (command, payload) => {
+    if (command === "research_workspace_media_url") { entered(); await pending; }
+    return invoke(command, payload);
+  };
   f.root.id = "native-playback-mode"; f.root.dispatchEvent(new Event("change"));
   await started;
   f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
@@ -1622,7 +1663,7 @@ test("native scan receipts are fenced before awaiting I/O, including same-worksp
     resume(f.scan); await f.bridge.operation;
     assert.equal(f.bridge.catalog, currentCatalogue); assert.ok(currentCatalogue.has("newer"));
     assert.equal(f.events.length, 0);
-    assert.equal(f.actorCalls.filter(([kind]) => kind === "prepare").length, 1);
+    assert.equal(f.actorCalls.filter(([kind]) => kind === "attestRepresentativeFramesV1").length, 1);
     f.bridge.destroy();
   }
 });

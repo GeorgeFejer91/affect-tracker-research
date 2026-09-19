@@ -1,5 +1,5 @@
-import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring } from "../../site/src/research/questionnaire-sheet.js";
-import { QUESTIONNAIRE_RECIPE_SCHEMA, createQuestionnairePresentationV1 } from "../../site/src/research/questionnaire-recipe.js";
+import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring } from "../../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { QUESTIONNAIRE_RECIPE_SCHEMA, createQuestionnairePresentationV1 } from "../../experiment-planner/web/src/research/questionnaire-recipe.js";
 
 /** Synthetic study content, never an asserted validated instrument translation. */
 export async function questionnaireRecipeFixture() {

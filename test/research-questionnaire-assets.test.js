@@ -7,7 +7,7 @@ import {
   analyzeQuestionnaireLanguageCoverage,
   createCoveredFlatLanguageSelectionV1,
   questionnaireFamilyId,
-} from "../site/src/research/questionnaire-assets.js";
+} from "../experiment-planner/web/src/research/questionnaire-assets.js";
 
 const ENGLISH = { languageId: "en", languageTag: "en", label: "English" };
 const GERMAN = { languageId: "de", languageTag: "de", label: "Deutsch" };

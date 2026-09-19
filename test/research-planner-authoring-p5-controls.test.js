@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createPlannerAuthoringP5Controls } from "../site/src/research/planner-authoring-p5-controls.js";
-import { createPlannerAuthoringP5 } from "../site/src/research/planner-authoring-p5.js";
-import { createInputBindingPreset } from "../site/src/research/contracts.js";
+import { createPlannerAuthoringP5Controls } from "../experiment-planner/web/src/research/planner-authoring-p5-controls.js";
+import { createPlannerAuthoringP5 } from "../experiment-planner/web/src/research/planner-authoring-p5.js";
+import { createInputBindingPreset } from "../experiment-planner/web/src/research/contracts.js";
 
 const fixture = () => JSON.parse(readFileSync(new URL("./fixtures/research-feedback-settings-v2.json", import.meta.url)));
 const context = () => ({ isCurrent: () => true, contribution: null, issues: [] });

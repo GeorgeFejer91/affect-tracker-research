@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-import { canonicalSha256 } from "../site/src/research/canonical.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   assertExperimentPlanMatchesDefinition,
@@ -12,7 +12,7 @@ import {
   resolveExternalExperimentPlanV1,
   validateExperimentDefinitionV1,
   validateResolvedExperimentPlanV1,
-} from "../site/src/research/external-experiment.js";
+} from "../experiment-planner/web/src/research/external-experiment.js";
 import {
   applyLegacySettingsV1ToResearchSettingsV3,
   EXTERNAL_QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
@@ -20,9 +20,9 @@ import {
   resolveProtocolPlanV2,
   validateResearchSettingsV3,
   validateResolvedProtocolPlanV2,
-} from "../site/src/research/external-protocol.js";
+} from "../experiment-planner/web/src/research/external-protocol.js";
 
-const templateUrl = new URL("../site/experiment-template.json", import.meta.url);
+const templateUrl = new URL("../experiment-planner/web/experiment-template.json", import.meta.url);
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 
 function verifiedStimulus(reference, index) {

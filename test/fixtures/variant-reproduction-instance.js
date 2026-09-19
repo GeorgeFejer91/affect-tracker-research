@@ -15,13 +15,13 @@ const subtle = globalThis.crypto.subtle;
 Object.defineProperty(globalThis, "crypto", { configurable: true, value: {
   subtle, randomUUID: () => reject("crypto RNG"), getRandomValues: () => reject("crypto RNG"),
 } });
-const { canonicalJson, canonicalSha256 } = await import("../../site/src/research/canonical.js");
-const { createVariantDesign, variantDesignToDraft } = await import("../../site/src/research/variant-design.js");
-const { projectSavedVariantCatalogue } = await import("../../site/src/research/variant-catalogue-adapter.js");
+const { canonicalJson, canonicalSha256 } = await import("../../experiment-planner/web/src/research/canonical.js");
+const { createVariantDesign, variantDesignToDraft } = await import("../../experiment-planner/web/src/research/variant-design.js");
+const { projectSavedVariantCatalogue } = await import("../../experiment-planner/web/src/research/variant-catalogue-adapter.js");
 const { assertVariantReproduction } = await import("./assert-variant-reproduction.js");
 const fixture = JSON.parse(await readFile(process.argv[2], "utf8"));
 if (process.argv[3]) {
-  const { parsePlannerRecipeV1, serializePlannerRecipeV1, reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } = await import("../../site/src/research/planner-recipe.js");
+  const { parsePlannerRecipeV1, serializePlannerRecipeV1, reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } = await import("../../experiment-planner/web/src/research/planner-recipe.js");
   const { recipe } = await parsePlannerRecipeV1(await readFile(process.argv[3]));
   const projections = await assertVariantReproduction(recipe.segments.P1, recipe.segments.P3, recipe.integrity.definitionSha256, fixture.expected);
   const matrix = await reproducePlannerRecipeV1(recipe);

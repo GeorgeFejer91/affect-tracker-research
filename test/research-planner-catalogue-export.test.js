@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { prepareVerifiedCatalogueExport } from "../site/src/research/planner-catalogue-export.js";
-import { createLocationLibraryExport } from "../site/src/research/variant-library-export.js";
+import { prepareVerifiedCatalogueExport } from "../experiment-planner/web/src/research/planner-catalogue-export.js";
+import { createLocationLibraryExport } from "../experiment-planner/web/src/research/variant-library-export.js";
 const master = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-locations-current-v1.canonical.json", import.meta.url)));
 function fixture() {
   let current = true;

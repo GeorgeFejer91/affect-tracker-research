@@ -1,7 +1,7 @@
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { validateQuestionnaireRecipeContributionV1 } from "../../site/src/research/questionnaire-recipe.js";
-import { sheetFromDefinition, sheetToAuthoring } from "../../site/src/research/questionnaire-sheet.js";
-import { questionnaireFamilyId } from "../../site/src/research/questionnaire-assets.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { validateQuestionnaireRecipeContributionV1 } from "../../experiment-planner/web/src/research/questionnaire-recipe.js";
+import { sheetFromDefinition, sheetToAuthoring } from "../../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { questionnaireFamilyId } from "../../experiment-planner/web/src/research/questionnaire-assets.js";
 
 let source = "";
 for await (const chunk of process.stdin) {

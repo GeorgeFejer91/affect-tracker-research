@@ -12,10 +12,10 @@ const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination);
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const bundle = await build({ write: false, bundle: true, format: "esm", stdin: {
   resolveDir: fileURLToPath(new URL("../../", import.meta.url)), contents: `
-import {bootResearchUi} from './site/src/research/app.js';
+import {bootResearchUi} from './experiment-planner/web/src/research/app.js';
 window.checkAppearance=async()=>{
  const errors=[];window.addEventListener('error',event=>errors.push(event.message));
  const root=bootResearchUi(),q=selector=>root.querySelector(selector),receipts=[];

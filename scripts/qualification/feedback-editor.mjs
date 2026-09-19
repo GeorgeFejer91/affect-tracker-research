@@ -8,9 +8,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { build } from "esbuild";
-import { createDefaultResearchSettings } from "../../site/src/research/contracts.js";
-import { parseExperimentDefinitionV1, EXTERNAL_ORDER_ALGORITHM_VERSION } from "../../site/src/research/external-experiment.js";
-import { validateResearchSettingsV3, QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from "../../site/src/research/external-protocol.js";
+import { createDefaultResearchSettings } from "../../experiment-planner/web/src/research/contracts.js";
+import { parseExperimentDefinitionV1, EXTERNAL_ORDER_ALGORITHM_VERSION } from "../../experiment-planner/web/src/research/external-experiment.js";
+import { validateResearchSettingsV3, QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from "../../experiment-planner/web/src/research/external-protocol.js";
 
 const [browser, destination, purpose, selectedStates] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and isolated output directory.");
@@ -27,7 +27,7 @@ const provenance = {
   browserExecutableSha256: createHash("sha256").update(await readFile(browser)).digest("hex"),
 };
 const defaults = createDefaultResearchSettings();
-const parsed = await parseExperimentDefinitionV1(await readFile(new URL("../../site/experiment-template.json", import.meta.url)));
+const parsed = await parseExperimentDefinitionV1(await readFile(new URL("../../experiment-planner/web/experiment-template.json", import.meta.url)));
 const settings = await validateResearchSettingsV3({
   schema: defaults.schema, version: 3,
   experiment: { id: parsed.definition.experimentId, title: parsed.definition.title,
@@ -43,7 +43,7 @@ const settings = await validateResearchSettingsV3({
   externalProtocol: { algorithmVersion: EXTERNAL_ORDER_ALGORITHM_VERSION,
     sourceByteSha256: parsed.sourceByteSha256, definitionSha256: parsed.definitionSha256, definition: parsed.definition },
 });
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const results = [];
 const cases = purpose === "snapshots"
   ? ["empty", "controls", "error", "advanced", "color", "long-label"].flatMap((state) => [["browser", 1280, 1, state], ["browser", 500, 1.5625, state]])

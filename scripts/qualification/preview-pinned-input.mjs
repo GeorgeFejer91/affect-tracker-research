@@ -7,21 +7,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
+import { renderResearchUiMarkup } from "../../experiment-planner/web/src/research/ui-view.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination);
 const output = resolve(destination); await mkdir(output, { recursive: true });
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const pane = renderResearchUiMarkup("browser").match(/<aside class="preview-pane"[\s\S]*?<\/aside>/u)?.[0];
 assert.ok(pane);
 const bundle = await build({ write: false, bundle: true, format: "iife", stdin: {
   resolveDir: fileURLToPath(new URL("../../", import.meta.url)), contents: `
-import {createPreviewLayout,MINIMUM_PREVIEW_CONTROLS_REM} from './site/src/research/preview-layout.js';
-import {createPreviewInteraction} from './site/src/research/preview-interaction.js';
-import {createPreviewResponseSimulator} from './site/src/research/preview-response-simulator.js';
-import {createResearchPreview} from './site/src/research/preview.js';
-import {createInputBindingPreset} from './site/src/research/contracts.js';
+import {createPreviewLayout,MINIMUM_PREVIEW_CONTROLS_REM} from './experiment-planner/web/src/research/preview-layout.js';
+import {createPreviewInteraction} from './experiment-planner/web/src/research/preview-interaction.js';
+import {createPreviewResponseSimulator} from './experiment-planner/web/src/research/preview-response-simulator.js';
+import {createResearchPreview} from './experiment-planner/web/src/research/preview.js';
+import {createInputBindingPreset} from './experiment-planner/web/src/research/contracts.js';
 window.checkPreview=async()=>{
  const pane=document.querySelector('.preview-pane'),map=pane.querySelector('.preview-control-surface'),stage=pane.querySelector('.preview-primary-stage');
  const layout=createPreviewLayout(pane);

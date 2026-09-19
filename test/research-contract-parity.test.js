@@ -5,15 +5,15 @@ import { readFile } from "node:fs/promises";
 import {
   canonicalJson,
   canonicalSha256,
-} from "../site/src/research/canonical.js";
+} from "../experiment-planner/web/src/research/canonical.js";
 import {
   validateResearchEventV1,
   validateResearchRunManifestV2,
   validateResearchSampleV1,
   validateResearchSettingsV1,
   validateResolvedAssignmentPlanV1,
-} from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+} from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 
 const fixture = JSON.parse(await readFile(
   new URL("./fixtures/research-contract-parity-v1.json", import.meta.url),

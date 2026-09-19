@@ -19,7 +19,7 @@ The user separately answered **“Yes, use these alignment rules”** to Q11:
 head-forward with no eye tracking, one world anchor throughout the attempt,
 stop on tracking loss, and recentering only before the next attempt. This
 explicit answer supersedes the earlier pending-policy notes. Q15's initial
-profile is a flat monoscopic WebXR screen. Combining alternative desktop/XR
+profile is a flat monoscopic WebXR screen. Combining alternative experiment-planner/desktop/XR
 profiles in one master envelope remains P7's decision and implementation.
 
 ## Contract and ownership
@@ -214,8 +214,8 @@ const dependencies = await resolveXrLayoutDependencies(
 const compiled = resolveXrLayoutContribution(profile, dependencies, selectedTarget);
 ```
 
-Both P6 functions are exported from `site/src/research/xr-layout-authoring.js`;
-the projector is P1's `site/src/research/workspace-contribution.js`. The compiled
+Both P6 functions are exported from `experiment-planner/web/src/research/xr-layout-authoring.js`;
+the projector is P1's `experiment-planner/web/src/research/workspace-contribution.js`. The compiled
 result contains `{profile, requirements, videos, feedback}`. Master serialization
 and target selection remain P7-owned; this helper introduces no new saved fields.
 

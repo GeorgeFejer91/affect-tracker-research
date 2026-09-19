@@ -12,7 +12,7 @@ import {
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(testDirectory, "..");
-const conceptDirectory = path.join(repositoryRoot, "desktop", "icons", "concepts");
+const conceptDirectory = path.join(repositoryRoot, "experiment-planner", "desktop", "icons", "concepts");
 
 test("five deterministic app-logo concepts are checked in", async () => {
   const generated = buildAppLogoConcepts();

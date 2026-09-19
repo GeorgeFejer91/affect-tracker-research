@@ -1,8 +1,8 @@
 // Non-shipping DOM fixture. No platform adapter, workspace, media, acquisition or IPC.
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { MAPPING_FIELDS, RESEARCH_UI_EVENTS, SETUP_SECTIONS } from "../../site/src/research/ui-contracts.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { resolveFeedbackEnvelopeV1 } from "../../site/src/research/feedback-envelope.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { MAPPING_FIELDS, RESEARCH_UI_EVENTS, SETUP_SECTIONS } from "../../experiment-planner/web/src/research/ui-contracts.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { resolveFeedbackEnvelopeV1 } from "../../experiment-planner/web/src/research/feedback-envelope.js";
 
 export async function checkFeedbackEditor({ settings, experimentReceipt, surface, zoom = 1, screenshotState = "default" }) {
   const rows = [];

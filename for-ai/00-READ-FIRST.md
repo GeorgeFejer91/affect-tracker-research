@@ -13,6 +13,34 @@ Do not add local schema/document generations for ordinary internal design
 iteration; update the current canonical contract unless an external saved-file,
 wire, Runner or fixture compatibility boundary truly requires a version.
 
+## Current vs historical files
+
+Future agents should spend their attention on current owners, not on reconciling
+every dated receipt. Use this folder as follows:
+
+| Role | Files | How to use |
+| --- | --- | --- |
+| Current router | `00` | Start here; follow only the routed files for the task. |
+| Product authority | `15`, plus `16` for the companion split | These own the current product decisions. Later dated amendments in `15` supersede older wording lower in the same file. |
+| Workflow and gates | `30`, `50` | Use for pass stage, evidence floor, launch/push handoff and release boundaries. |
+| Current owner maps | `60`, `65`, `66`, `68`, `69`, `71`, `72`, `73` | Read the relevant owner/consumer ledger for the assigned work. |
+| Architecture and provenance | `20`, `70`, relevant `docs/` contracts | Read when changing authority boundaries, contracts, dependencies or provenance. |
+| Compact retired signposts | `45`, `61`, `62`, `64`, `67` | These are stubs only. Use Git history for their removed long-form content if an exact historical receipt is truly needed. |
+| Coordination ledger | `55` | Read current and matching ownership entries before editing; older entries are diagnostic receipts, not standing instructions. |
+
+Do not copy full amendment blocks into more files. Add the decision once to its
+owner and link to it from dependent docs. If older copied wording conflicts with
+`15`, `16`, `60`, `65`, `66`, `72` or direct user instructions, treat the copied
+wording as historical unless the current owner explicitly re-adopts it.
+
+Keep the active repository parsimonious. Do not add backup copies, superseded
+architectures, old option matrices, duplicate ledgers, or local `vN` document
+generations merely to preserve history. Git commits and pushed GitHub history
+are the archive; the checked-out tree should contain current authority, live
+contracts, active evidence, and compact signposts only. When retiring a large
+historical document, either delete it or replace it with a short route to the
+current owner and to Git history.
+
 ## Reading order
 
 Read these core documents completely, in order: this file,
@@ -49,7 +77,8 @@ not undo a later explicit amendment.
 
 ## Current status and work routes
 
-Baseline Planner completion is recorded in [67](67-PLANNER-COMPLETION-GOAL.md).
+Baseline Planner completion is summarized in [60](60-SEGMENT-CATALOGUE.md);
+[67](67-PLANNER-COMPLETION-GOAL.md) is now only a retired signpost.
 CLI and SurveyJS extend that baseline. Correspondence is now allocated by
 [69](69-CLI-RUNNER-END-TO-END-GOAL.md) and
 [72](72-RUNNER-FINAL-VALIDATION.md); blanket Runner deferral is historical.
@@ -73,7 +102,7 @@ validation availability and controller override execution.
 | Runner / recording | [65](65-RUNNER-SEGMENTS.md), [72](72-RUNNER-FINAL-VALIDATION.md), session/stream contracts |
 | Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
-| Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
+| Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), compact retired signposts [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
 
-The [old entrypoint](../docs/history/00-READ-FIRST-2026-09-13.md) is preserved
-as historical evidence, not a competing current router.
+The former copied entrypoint backup was removed from the active tree. Use Git
+history for pre-cleanup text if an exact old router is needed.

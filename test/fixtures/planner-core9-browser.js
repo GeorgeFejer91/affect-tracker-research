@@ -1,8 +1,8 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson, sha256Hex } from "../../site/src/research/canonical.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson, sha256Hex } from "../../experiment-planner/web/src/research/canonical.js";
 import recipe from "./planner-recipe-current-v1.canonical.json";
-import template from "../../site/questionnaires/questionnaire-template.json";
-import { PLANNER_SAVE_REQUEST, completePlannerFileRequest } from "../../site/src/research/planner-file-request.js";
+import template from "../../experiment-planner/web/questionnaires/questionnaire-template.json";
+import { PLANNER_SAVE_REQUEST, completePlannerFileRequest } from "../../experiment-planner/web/src/research/planner-file-request.js";
 
 // Actual app/session/owners; injected native boundary, never a filesystem claim.
 const checks = [], errors = [];

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { createQuestionnaireSheet, setSheetCell, sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
-import { updateQuestionnaireDefinitionReferences } from "../site/src/research/questionnaire-assets.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { createQuestionnaireSheet, setSheetCell, sheetToAuthoring } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { updateQuestionnaireDefinitionReferences } from "../experiment-planner/web/src/research/questionnaire-assets.js";
 
 const context = (languages = ["en"]) => ({
   families: [{ id: "custom", label: "Custom" }],
@@ -20,7 +20,7 @@ const editor = (onSave = async () => {}) => createQuestionnaireEditor({
 });
 
 test("P2 frozen snapshot reads the full package catalogue rather than the participant settings subset", async () => {
-  const source = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
+  const source = await readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
   const snapshot = source.slice(source.indexOf("function getQuestionnaireContributionSnapshot()"), source.indexOf("async function restoreQuestionnaireContribution("));
   assert.match(snapshot, /const source = coverageSource\(\)/u);
   assert.match(snapshot, /definitions: structuredClone\(source.definitions\)/u);
@@ -68,7 +68,7 @@ test("adding a language or finishing a delayed preset cannot replace an existing
 });
 
 test("app integration uses preservation and guards preset adoption after asynchronous loading", async () => {
-  const source = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
+  const source = await readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
   const save = source.slice(source.indexOf("async function saveEditedQuestionnaire"), source.indexOf("function addBlankQuestionnaire"));
   assert.match(save, /updateQuestionnaireDefinitionReferences\(questionnaireModules, definition\)/u);
   assert.doesNotMatch(save, /\.placement\s*=/u);

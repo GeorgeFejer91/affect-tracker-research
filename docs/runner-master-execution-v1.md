@@ -63,7 +63,7 @@ table groups, not pages; different visible answer labels immediately begin a new
 group. Required responses and explicit nullable recorded codes retain P2's
 meanings.
 
-The native worker requires actual qualified GstPlay, fresh exact P1 media
+The native worker requires actual qualified HTML video, fresh exact P1 media
 bindings, an observed fullscreen viewport, a native input-test receipt and idle
 shared services. The renderer acknowledges a painted occurrence before its
 native form/ISI transition or video preparation. Only native observed Playing

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerContributionRegistry, registerAvailablePlannerContributions, installPlannerContributions, validatePlannerContributionSnapshot } from "../site/src/research/planner-contributions.js";
+import { createPlannerContributionRegistry, registerAvailablePlannerContributions, installPlannerContributions, validatePlannerContributionSnapshot } from "../experiment-planner/web/src/research/planner-contributions.js";
 
 const snapshot = (overrides = {}) => ({ revision: 0, enabled: true, pending: false,
   contribution: { accepted: "design" }, dependencyRevisions: [], ...overrides });

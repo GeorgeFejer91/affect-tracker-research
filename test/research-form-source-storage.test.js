@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { prepareFormSourceStorage } from "../site/src/research/form-source-storage.js";
-import { sha256Hex } from "../site/src/research/canonical.js";
+import { prepareFormSourceStorage } from "../experiment-planner/web/src/research/form-source-storage.js";
+import { sha256Hex } from "../experiment-planner/web/src/research/canonical.js";
 
 test("typed storage retains exact EN/DE JSON and independently binds file hash", async () => {
   for (const language of ["en", "de"]) {

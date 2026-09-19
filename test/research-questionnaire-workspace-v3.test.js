@@ -1,32 +1,32 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { canonicalJson, canonicalSha256, sha256Hex } from "../site/src/research/canonical.js";
+import { canonicalJson, canonicalSha256, sha256Hex } from "../experiment-planner/web/src/research/canonical.js";
 import {
   RESEARCH_EVENT_SCHEMA,
   RESEARCH_RUN_MANIFEST_SCHEMA,
   RESEARCH_SAMPLE_SCHEMA,
   createDefaultResearchSettings,
   validateResearchSampleV1,
-} from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+} from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 import {
   projectResearchSettingsV2ToAssignmentSettingsV1,
   resolveProtocolPlanV1,
   validateResearchSettingsV2,
-} from "../site/src/research/protocol-plan.js";
+} from "../experiment-planner/web/src/research/protocol-plan.js";
 import {
   createQuestionnaireResponseV1,
   questionnaireResponsesToCsv,
   questionnaireResponsesToTsv,
-} from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/questionnaires.js";
 import {
   RESEARCH_RUN_MANIFEST_V3_SCHEMA,
   validateResearchEventV2,
   validateResearchRunManifestV3,
-} from "../site/src/research/protocol-records.js";
-import { samplesToCsv, samplesToTsv } from "../site/src/research/tabular.js";
-import { BrowserResearchWorkspace } from "../site/src/research/workspace.js";
+} from "../experiment-planner/web/src/research/protocol-records.js";
+import { samplesToCsv, samplesToTsv } from "../experiment-planner/web/src/research/tabular.js";
+import { BrowserResearchWorkspace } from "../experiment-planner/web/src/research/workspace.js";
 
 const RUN_ID = "00000000-0000-4000-8000-000000000001";
 const STARTED_AT = "2026-09-08T14:30:12.482Z";

@@ -1,9 +1,9 @@
-import { createQuestionnaireEditor } from "../../site/src/research/questionnaire-editor.js";
-import { questionnaireFamilyId } from "../../site/src/research/questionnaire-assets.js";
-import { importQuestionnaireAuthoring } from "../../site/src/research/questionnaire-authoring.js";
-import { prepareSurveySourceStorage } from "../../site/src/research/surveyjs-sheet.js";
-import { verifySurveyDefinition } from "../../site/src/research/surveyjs-definition.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { createQuestionnaireEditor } from "../../experiment-planner/web/src/research/questionnaire-editor.js";
+import { questionnaireFamilyId } from "../../experiment-planner/web/src/research/questionnaire-assets.js";
+import { importQuestionnaireAuthoring } from "../../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { prepareSurveySourceStorage } from "../../experiment-planner/web/src/research/surveyjs-sheet.js";
+import { verifySurveyDefinition } from "../../experiment-planner/web/src/research/surveyjs-definition.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 const cases = [], check = (name, ok) => { if (!ok) throw Error(name); cases.push(name); };
 const settle = async predicate => { for (let i = 0; i < 400; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } throw Error("Builder UI did not settle"); };
 const root = document.querySelector("main"); root.id = "research-app";

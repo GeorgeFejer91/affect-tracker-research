@@ -1,14 +1,14 @@
 // Developer fixture generator. Expected boundaries below are independently
 // specified examples; never obtain them from the timeline/marker compiler.
 import { readFile, writeFile } from "node:fs/promises";
-import { projectSavedVariantCatalogue } from "../site/src/research/variant-catalogue-adapter.js";
-import { addIsiDurations, createVariantDraft, createVariantDesign, pasteVariantTable } from "../site/src/research/variant-design.js";
-import { createVideoCatalogueContribution } from "../site/src/research/video-catalogue-contribution.js";
-import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
+import { projectSavedVariantCatalogue } from "../experiment-planner/web/src/research/variant-catalogue-adapter.js";
+import { addIsiDurations, createVariantDraft, createVariantDesign, pasteVariantTable } from "../experiment-planner/web/src/research/variant-design.js";
+import { createVideoCatalogueContribution } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { createWorkspaceContribution } from "../experiment-planner/web/src/research/workspace-contribution.js";
 import { assertVariantReproduction } from "../test/fixtures/assert-variant-reproduction.js";
-import { sha256Hex } from "../site/src/research/canonical.js";
-import { videoLibraryCsv } from "../site/src/research/stimulus-order.js";
-import { videoLibraryWorkbook } from "../site/src/research/stimulus-workbook.js";
+import { sha256Hex } from "../experiment-planner/web/src/research/canonical.js";
+import { videoLibraryCsv } from "../experiment-planner/web/src/research/stimulus-order.js";
+import { videoLibraryWorkbook } from "../experiment-planner/web/src/research/stimulus-workbook.js";
 
 const workspace = JSON.parse(await readFile(new URL("../test/fixtures/variant-workspace-binding-v1.json", import.meta.url))).initialSnapshot.contribution;
 const { library } = await projectSavedVariantCatalogue(workspace);

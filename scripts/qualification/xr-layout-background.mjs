@@ -7,18 +7,18 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { build } from "esbuild";
-import { xrLayoutEditorMarkup } from "../../site/src/research/xr-layout-view.js";
+import { xrLayoutEditorMarkup } from "../../experiment-planner/web/src/research/xr-layout-view.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const fixtureSource = await readFile(new URL("../../test/fixtures/xr-layout-v1.canonical.json", import.meta.url), "utf8");
 const feedbackFixture = JSON.parse(await readFile(new URL("../../test/fixtures/xr-feedback-envelope-v1.json", import.meta.url), "utf8"));
 const entry = `
-import { createXrLayoutEditor } from './site/src/research/xr-layout-editor.js';
+import { createXrLayoutEditor } from './experiment-planner/web/src/research/xr-layout-editor.js';
 const source=${JSON.stringify(fixtureSource)};
 const feedbackEnvelope=${JSON.stringify(feedbackFixture.cases[0].envelope)};
 (async()=>{

@@ -27,13 +27,13 @@ async function filesRecursively(directory, suffix) {
 }
 
 async function researchImportGraph() {
-  const paths = await javascriptFiles("site/src/research/");
+  const paths = await javascriptFiles("experiment-planner/web/src/research/");
   const known = new Set(paths);
   const graph = new Map();
   for (const path of paths) {
     const source = await readFile(new URL(path, root), "utf8");
     const imports = [...source.matchAll(/\bfrom\s+["'](\.\/[^"']+)["']/gu)]
-      .map((match) => `site/src/research/${match[1].slice(2)}`)
+      .map((match) => `experiment-planner/web/src/research/${match[1].slice(2)}`)
       .filter((candidate) => known.has(candidate));
     graph.set(path, [...new Set(imports)].sort());
   }
@@ -77,21 +77,20 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
 
 test("raw Tauri invocation remains confined to explicit native adapter modules", async () => {
   const allowed = new Set([
-    "site/src/research/native-bridge.js",
-    "site/src/research/native-media-controller.js",
-    "site/src/research/native-package-protocol.js",
-    "site/src/research/planner-authoring-native.js",
-    "site/src/research/planner-authoring-native-effects.js",
+    "experiment-planner/web/src/research/native-bridge.js",
+    "experiment-planner/web/src/research/native-package-protocol.js",
+    "experiment-planner/web/src/research/planner-authoring-native.js",
+    "experiment-planner/web/src/research/planner-authoring-native-effects.js",
   ]);
   const offenders = [];
-  for (const relativePath of await javascriptFiles("site/src/research/")) {
+  for (const relativePath of await javascriptFiles("experiment-planner/web/src/research/")) {
     const source = await readFile(new URL(relativePath, root), "utf8");
     if (/\b(?:invoke|this\.invoke)\s*\(/u.test(source) && !allowed.has(relativePath)) {
       offenders.push(relativePath);
     }
   }
   assert.deepEqual(offenders, []);
-  const effects = await readFile(new URL("site/src/research/planner-authoring-native-effects.js", root), "utf8");
+  const effects = await readFile(new URL("experiment-planner/web/src/research/planner-authoring-native-effects.js", root), "utf8");
   assert.deepEqual([...effects.matchAll(/\binvoke\("([^"]+)"/gu)].map(match => match[1]), ["research_planner_authoring_effect"]);
 });
 
@@ -116,11 +115,11 @@ test("frontend feature modules form an acyclic graph below the UI composition ro
 
 test("native and browser bridges depend on the typed UI contract, not the UI composition module", async () => {
   const [app, nativeBridge, browserBridge, uiContracts, uiView] = await Promise.all([
-    readFile(new URL("site/src/research/app.js", root), "utf8"),
-    readFile(new URL("site/src/research/native-bridge.js", root), "utf8"),
-    readFile(new URL("site/src/research/runtime-bridge.js", root), "utf8"),
-    readFile(new URL("site/src/research/ui-contracts.js", root), "utf8"),
-    readFile(new URL("site/src/research/ui-view.js", root), "utf8"),
+    readFile(new URL("experiment-planner/web/src/research/app.js", root), "utf8"),
+    readFile(new URL("experiment-planner/web/src/research/native-bridge.js", root), "utf8"),
+    readFile(new URL("experiment-planner/web/src/research/runtime-bridge.js", root), "utf8"),
+    readFile(new URL("experiment-planner/web/src/research/ui-contracts.js", root), "utf8"),
+    readFile(new URL("experiment-planner/web/src/research/ui-view.js", root), "utf8"),
   ]);
   assert.match(app, /from "\.\/ui-contracts\.js"/u);
   assert.match(app, /from "\.\/ui-view\.js"/u);
@@ -137,15 +136,15 @@ test("native and browser bridges depend on the typed UI contract, not the UI com
 
 test("Tauri has one composition root and media internals stay out of commands", async () => {
   const [lib, commands] = await Promise.all([
-    readFile(new URL("src-tauri/src/lib.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_commands.rs", root), "utf8"),
+    readFile(new URL("native/src/lib.rs", root), "utf8"),
+    readFile(new URL("native/src/research_commands.rs", root), "utf8"),
   ]);
   assert.ok((lib.match(/\.manage\(/gu) ?? []).length > 0);
-  assert.doesNotMatch(commands, /gst::|gst_play::|windows::Win32/u);
+  assert.doesNotMatch(commands, /windows::Win32/u);
   assert.doesNotMatch(commands, /unsafe\s*\{/u);
 });
 
-test("the authoritative Rust package runtime is split by authority and failure domain", async () => {
+test("the authoritative Rust package runtime is split by authority and has no native media actor dependency", async () => {
   const required = [
     "commands.rs",
     "compiler.rs",
@@ -158,38 +157,29 @@ test("the authoritative Rust package runtime is split by authority and failure d
     "runtime.rs",
     "storage.rs",
   ];
-  const entries = await readdir(new URL("src-tauri/src/research_native_protocol/", root), { withFileTypes: true });
+  const entries = await readdir(new URL("native/src/research_native_protocol/", root), { withFileTypes: true });
   const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
   for (const name of required) assert.ok(files.includes(name), `missing native package module ${name}`);
 
-  const [commands, runtime, storage, media] = await Promise.all([
-    readFile(new URL("src-tauri/src/research_native_protocol/commands.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_native_protocol/runtime.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_native_protocol/storage.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_native_media/gst_actor.rs", root), "utf8"),
+  const [commands, runtime, storage] = await Promise.all([
+    readFile(new URL("native/src/research_native_protocol/commands.rs", root), "utf8"),
+    readFile(new URL("native/src/research_native_protocol/runtime.rs", root), "utf8"),
+    readFile(new URL("native/src/research_native_protocol/storage.rs", root), "utf8"),
   ]);
-  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|gst::|gst_play::|unsafe\s*\{/u);
-  assert.doesNotMatch(storage, /gst::|gst_play::|windows::Win32|tauri::command/u);
-  assert.doesNotMatch(media, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv/u);
-  assert.doesNotMatch(runtime, /tauri::command/u);
+  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|unsafe\s*\{/u);
+  assert.doesNotMatch(storage, /windows::Win32|tauri::command/u);
+  assert.doesNotMatch(runtime, /windows::Win32|tauri::command/u);
 });
 
-test("project-authored unsafe is confined to the two approved documented Windows FFI adapters", async () => {
-  const allowed = new Set([
-    "src-tauri/src/research_native_media/gst_actor/runtime_environment.rs",
-    "src-tauri/src/research_native_media/gst_actor/windows_renderer.rs",
-  ]);
+test("project-authored unsafe is absent after retiring the Windows native media adapters", async () => {
   const found = [];
-  for (const path of await filesRecursively("src-tauri/src/", ".rs")) {
+  for (const path of await filesRecursively("native/src/", ".rs")) {
     const source = await readFile(new URL(path, root), "utf8");
     if (/\bunsafe\s*\{/u.test(source)) found.push(path);
-    if (allowed.has(path)) {
-      assert.match(source, /\/\/ SAFETY:/u, `${path} must document every contained FFI invariant`);
-    }
   }
-  assert.deepEqual(found, [...allowed].sort());
+  assert.deepEqual(found, []);
 
-  const crateRoot = await readFile(new URL("src-tauri/src/lib.rs", root), "utf8");
+  const crateRoot = await readFile(new URL("native/src/lib.rs", root), "utf8");
   assert.match(crateRoot, /#!\[deny\(unsafe_op_in_unsafe_fn\)\]/u);
   assert.match(crateRoot, /#!\[deny\(clippy::undocumented_unsafe_blocks\)\]/u);
 });

@@ -15,12 +15,12 @@ assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|s
 const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output);
 const entry = String.raw`
-import {bootRunner} from './runner/src/app.js';
-import {resolveRunnerSelection} from './runner/src/recipe.js';
-import {plannerRecipeTransportText} from './site/src/research/planner-recipe-transport.js';
-import {checkSurveyData} from './site/src/research/surveyjs-engine.js';
-import {validateFormAnswers} from './site/src/research/form-definition.js';
-import {validateQuestionnaireAnswers} from './site/src/research/questionnaires.js';
+import {bootRunner} from './experiment-runner/src/app.js';
+import {resolveRunnerSelection} from './experiment-runner/src/recipe.js';
+import {plannerRecipeTransportText} from './experiment-planner/web/src/research/planner-recipe-transport.js';
+import {checkSurveyData} from './experiment-planner/web/src/research/surveyjs-engine.js';
+import {validateFormAnswers} from './experiment-planner/web/src/research/form-definition.js';
+import {validateQuestionnaireAnswers} from './experiment-planner/web/src/research/questionnaires.js';
 const params=new URL(location.href).searchParams,language=params.get('language'),mode=params.get('case'),masterVersion=Number(params.get('version'));
 const checks=[],calls=[],errors=[],submissions=[];
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
@@ -44,7 +44,7 @@ const invoke=async(command,args)=>{
  switch(command){
   case 'research_runner_recent_experiments':return{schema:'affect-runner-recent-experiments',version:1,entries:[]};
   case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
-  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
+  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
   case 'research_native_media_capability':return{playerActorReady:calls.filter(call=>call.command==='research_native_media_capability').length>1,reasonCode:'native-runtime-verification-pending'};
   case 'research_workspace_status':return{selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic app verification'};
   case 'research_runner_selection':return{schema:'affect-runner-selection',version:1,packageSourceByteSha256:app.recipe.canonicalSourceByteSha256,participantId:args.participantId??'P001',outputDirectory:'outputs/recipe-synthetic'};
@@ -57,7 +57,11 @@ const invoke=async(command,args)=>{
   case 'research_runner_fullscreen':fullscreen=args.fullscreen;return;
   case 'research_runner_master_plan':return selected();
   case 'research_runner_master_rescan':return{workspaceId:'synthetic-workspace',stimuli:[]};
-  case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,nativeStartReady:true,reasons:[]};
+  case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,htmlVideoStartReady:true,nativeStartReady:true,reasons:[]};
+  case 'research_runner_master_html_video_url':{
+   const step=plan.steps.find(item=>item.position===args.request.protocolStepPosition);
+   return{mediaUrl:'/'+step.payload.asset.packageRelativePath,sha256:step.payload.asset.sha256,byteLength:step.payload.asset.byteLength,mimeType:step.payload.asset.mimeType};
+  }
   case 'research_runner_master_start_v2':
   case 'research_runner_master_start_v3':
   case 'research_runner_master_start_v4':
@@ -86,7 +90,13 @@ const invoke=async(command,args)=>{
    const action=masterVersion>=3?args.request.action:args.action;
    if(action.type==='presented'){
     check(action.position===status.position,'presented acknowledgement binds current occurrence');
-    const kind=plan.steps[status.position-1].kind;status.phase=kind==='questionnaire'?'questionnaire':kind==='video'?'playing':'interval';
+    const kind=plan.steps[status.position-1].kind;status.phase=kind==='questionnaire'?'questionnaire':kind==='video'?'preparing':'interval';
+    }else if(action.type==='htmlVideoStarted'){
+    check(action.position===status.position,'HTML video start binds current occurrence');
+    status.phase='playing';
+    }else if(action.type==='htmlVideoEnded'){
+    check(action.position===status.position,'HTML video end binds current occurrence');
+    status.position++;status.phase=status.position>status.stepCount?'finished':'awaitingPresentation';status.answers={};
     }else if(action.type==='surveyDraft'||action.type==='surveySubmit'){
     check(action.position===status.position,'SurveyJS answers bind the current occurrence');
     const d=plan.steps[status.position-1].payload.definition;
@@ -147,7 +157,7 @@ try{
   q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'reenter after aborted Start');
   for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
  }
- check(q('runner-prepare').hidden,'language selection advances without Continue');await until(()=>status?.phase==='questionnaire'&&!q('runner-questionnaire-submit').disabled,'typed form');
+ check(q('runner-prepare').hidden,'language selection advances without Continue');await until(()=>status?.phase==='questionnaire'&&(masterVersion>=4?(!q('runner-questionnaire').hidden&&controls().length>0):!q('runner-questionnaire-submit').disabled),'questionnaire ready');
 
  check(!q('runner-questionnaire').hidden&&controls().length>0,'production Runner mounts SurveyJS controls');
  check(q('runner-questionnaire').lang===language,'SurveyJS language follows selected definition');

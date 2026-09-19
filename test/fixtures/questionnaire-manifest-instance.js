@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parsePlannerRecipeV5 } from "../../site/src/research/planner-recipe-assets.js";
-import { resolveRunnerSelection } from "../../runner/src/recipe.js";
-import { canonicalSha256 } from "../../site/src/research/canonical.js";
+import { parsePlannerRecipeV5 } from "../../experiment-planner/web/src/research/planner-recipe-assets.js";
+import { resolveRunnerSelection } from "../../experiment-runner/src/recipe.js";
+import { canonicalSha256 } from "../../experiment-planner/web/src/research/canonical.js";
 const root = process.argv[2], bytes = readFileSync(join(root, "experiment.json"));
 const manifest = JSON.parse(bytes);
 const assets = manifest.segments.P2.questionnaires.assets.map(ref => ({ relativePath: ref.relativePath, sourceText: readFileSync(join(root, ref.relativePath), "utf8") }));

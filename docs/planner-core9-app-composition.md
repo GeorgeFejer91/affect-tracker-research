@@ -74,7 +74,7 @@ Evidence is separate from synthetic UI tests:
 `D:/GitHub/.affect-checks/main-core9-native-io-run-05b8c18`.
 Binary SHA-256 is
 `4e5949586b2e1b284af9ec54e6c0d7a9229a36bc61fe2f42b01b3ebeba2f0a0b`.
-This build omits native-gstreamer; it proves neither playback nor a complete run.
+This build omits html-video; it proves neither playback nor a complete run.
 Private instrument text is not committed. Local command transcripts can contain
 the imported definitions and must remain researcher-local.
 
@@ -93,7 +93,7 @@ qualification flags. Main registered v2 Start/actions and placed Master cancel
 before Package cleanup, then Master join before recorder/input/native teardown.
 The dedicated coordinator remains off the UI thread and retains the parent.
 
-38 focused Runner/driver Node checks pass. The assembled no-default-feature
+38 focused experiment-runner/driver Node checks pass. The assembled no-default-feature
 library compiled, but its original Cargo test executable exited before the
 harness with Windows `0xc0000139`: its import of `TaskDialogIndirect` needs the
 Common Controls v6 activation manifest. The existing owner copy-only diagnostic

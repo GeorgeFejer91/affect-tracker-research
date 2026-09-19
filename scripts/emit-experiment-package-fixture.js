@@ -1,28 +1,28 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
-} from "../site/src/research/external-experiment.js";
+} from "../experiment-planner/web/src/research/external-experiment.js";
 import {
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
   validateResearchSettingsV3,
-} from "../site/src/research/external-protocol.js";
+} from "../experiment-planner/web/src/research/external-protocol.js";
 import {
   createExperimentPackageV1,
   createFlatLanguageSelectionV1,
   serializeExperimentPackageV1,
-} from "../site/src/research/experiment-package.js";
-import { importQuestionnaireCsv } from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/experiment-package.js";
+import { importQuestionnaireCsv } from "../experiment-planner/web/src/research/questionnaires.js";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
-const definitionSource = await readFile(new URL("../site/experiment-template.json", import.meta.url));
+const definitionSource = await readFile(new URL("../experiment-planner/web/experiment-template.json", import.meta.url));
 const definition = await parseExperimentDefinitionV1(definitionSource);
 const questionnaireSource = await readFile(new URL(
-  "../site/questionnaires/vr-exp-en.csv",
+  "../experiment-planner/web/questionnaires/vr-exp-en.csv",
   import.meta.url,
 ));
 const questionnaire = await importQuestionnaireCsv(questionnaireSource, {

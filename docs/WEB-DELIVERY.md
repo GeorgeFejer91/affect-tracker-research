@@ -1,22 +1,29 @@
 # Affect Tracker web delivery
 
 The 2026-09-12 request establishes one public Affect Tracker landing page and
-two separate companion app addresses. This is the website infrastructure stage;
-it does not port the current desktop programs or qualify browser experiments.
+two separate companion app addresses. The browser Planner route now loads the
+existing browser authoring runtime so it can save experiment JSON from GitHub
+Pages. The browser Runner route now loads a separate Runner bundle that accepts
+Planner master JSON, plays JSON-selected local videos through browser file
+access, captures questionnaire responses and sampled valence/arousal rows, and
+downloads a session CSV. It is not a substitute for the desktop Runner's native
+LSL or XDF services.
 
 | Public route | Source | Current behavior |
 | --- | --- | --- |
-| `/affect-tracker-research/` | `site/index.html` | Two icon links to Planner and Runner |
-| `/affect-tracker-research/planner/` | `site/planner/index.html` | Explicit development status for the future online authoring app |
-| `/affect-tracker-research/runner/` | `site/runner/index.html` | Explicit development status for the future online execution app |
-| `/affect-tracker-research/research.html` | `site/research.html` | Earlier combined browser research prototype |
+| `/affect-tracker-research/` | `experiment-planner/web/index.html` | Two icon links to Planner and Runner |
+| `/affect-tracker-research/planner/` | `experiment-planner/web/planner/index.html` | Browser Experiment Planner entrypoint using `experiment-planner/web/src/research/browser-entry.js` |
+| `/affect-tracker-research/runner/` | `experiment-runner/browser.html`, `experiment-runner/src/browser-entry.js` | Browser Experiment Runner bundle with CSV export instead of LSL/XDF |
+| `/affect-tracker-research/research.html` | `experiment-planner/web/research.html` | Earlier combined browser research prototype and compatibility alias |
 
-The launcher and app status pages require no JavaScript, account, backend, or
-external runtime assets. They share `site/launcher.css`, the selected Aurora
-Axis logo, relative links, keyboard focus styles, and narrow-screen reflow.
-The two companion routes must retain their addresses when their actual apps
-replace the status pages. Do not label the earlier combined prototype as the
-new Planner or Runner, or publish native adapters as a browser runtime.
+The launcher requires no JavaScript, account, backend, or external runtime
+assets. The Planner route requires the static browser authoring closure copied
+by `scripts/build-research-pages.js`, including `experiment-planner/web/src/research/`,
+`experiment-planner/web/research.css`, questionnaire definitions, and packaged browser assets. The
+Runner route is built by Vite from `experiment-runner/browser.html` and uses
+`experiment-runner/src/browser-adapter.js` for browser-only recipe loading, directory
+access, fullscreen, local video object URLs, and CSV export. Do not publish
+Tauri entrypoints or native adapters as a browser runtime.
 
 ## Build and deploy
 
@@ -30,10 +37,12 @@ The repository Pages source is GitHub Actions. Its separate validation and
 deployment jobs follow [GitHub's custom workflow guidance](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 No second deployment service or dependency is required.
 
-`scripts/build-research-pages.js` copies an explicit source closure and excludes
-native adapters. `scripts/verify-research-build.js` checks the four HTML entrypoints,
-their local links and assets under a GitHub project prefix, module imports, and
-selected logo. Missing routes, broken relative paths, and files outside the
+`scripts/build-research-pages.js` copies an explicit Planner source closure,
+excludes native Planner adapters, builds the separate browser Runner bundle, and
+renames its generated HTML to `runner/index.html`. `scripts/verify-research-build.js`
+checks the four HTML entrypoints, their local links and assets under a GitHub
+project prefix, module imports, selected logo, and the declared hashed Runner
+bundle assets. Missing routes, broken relative paths, and files outside the
 allowlist fail the build before upload.
 
 The build emits `build-info.json` and a matching `build-revision` meta tag on
@@ -44,9 +53,15 @@ previews, not evidence for a published revision.
 
 ## Next app integration
 
-Bring in the verified Planner browser entrypoint and its explicit asset closure
-under `planner/`, then do the same for a separately implemented browser Runner.
+Browser Runner CSV qualification uses
+`scripts/qualification/browser-runner-csv-stress.mjs <browser> <output-dir>
+[iterations] [4|5]`. The harness runs the production browser adapter with
+mocked Chrome/Edge file handles, repeated complete and partial attempts,
+SurveyJS questionnaire completion, local-video object URL resolution, affect
+sampling, and CSV download capture. The 2026-09-14 evidence pass covered Chrome
+v5, Edge v5, and Chrome v4 with four iterations each.
+
 Preserve strict recipe compatibility and platform capability checks; native LSL,
-XDF recording, playback, and other desktop services do not become browser
-features through a static deployment. Their implementation belongs to the
-separate app work. The launcher is navigation only and owns no experiment data.
+XDF recording, removed native player stack playback, and other desktop services do not become
+browser features through a static deployment. Their implementation belongs to
+the desktop app. The launcher is navigation only and owns no experiment data.

@@ -7,10 +7,10 @@ import { createHash } from "node:crypto";
 import { join, resolve, extname, sep } from "node:path";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
-import { browserDisplayGeometry, assetIdFromSha256 } from "../../site/src/research/video-catalogue-contribution.js";
+import { browserDisplayGeometry, assetIdFromSha256 } from "../../experiment-planner/web/src/research/video-catalogue-contribution.js";
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination);
-const output = resolve(destination), site = resolve(import.meta.dirname, "../../site");
+const output = resolve(destination), site = resolve(import.meta.dirname, "../../experiment-planner/web");
 await mkdir(output, { recursive: true });
 const catalogue = JSON.parse(await readFile(resolve(import.meta.dirname, "../../test/fixtures/research-video-catalogue-contribution-v1.json"), "utf8"));
 catalogue.entries.push({ ...catalogue.entries[0], sha256: "c".repeat(64), assetId: assetIdFromSha256("c".repeat(64)),

@@ -1,10 +1,10 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson, sha256Hex } from "../../site/src/research/canonical.js";
-import { createExperimentPackageV1, parseExperimentPackageV1 } from "../../site/src/research/experiment-package.js";
-import { importQuestionnaireAuthoring } from "../../site/src/research/questionnaire-authoring.js";
-import english from "../../site/questionnaires/maia-2-en.csv";
-import german from "../../site/questionnaires/maia-2-de.csv";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson, sha256Hex } from "../../experiment-planner/web/src/research/canonical.js";
+import { createExperimentPackageV1, parseExperimentPackageV1 } from "../../experiment-planner/web/src/research/experiment-package.js";
+import { importQuestionnaireAuthoring } from "../../experiment-planner/web/src/research/questionnaire-authoring.js";
+import english from "../../experiment-planner/web/questionnaires/maia-2-en.csv";
+import german from "../../experiment-planner/web/questionnaires/maia-2-de.csv";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
 import packageFixture from "./experiment-package-v1.canonical.json";
 
 // Synthetic adapter in an isolated headless process. It never opens a picker,

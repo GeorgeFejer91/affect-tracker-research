@@ -8,7 +8,7 @@ recipe version, saved geometry meaning, media permission or native authority.
 ## Integration
 
 Import `createPlannerAuthoringP4` from
-`site/src/research/planner-authoring-p4.js` and register
+`experiment-planner/web/src/research/planner-authoring-p4.js` and register
 `createPlannerAuthoringP4({editor: screenLayoutEditor})` with the shared session.
 The argument is the existing `createScreenLayoutDraftEditor` instance, not its
 DOM root or an alternative draft. Main owns app/bootstrap registration.

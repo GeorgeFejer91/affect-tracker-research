@@ -1,8 +1,8 @@
 // Independent, data-only authoring round trip. No user files or runtime devices.
-import { parseExperimentPackageV1, createExperimentPackageV1, serializeExperimentPackageV1 } from "../../site/src/research/experiment-package.js";
-import { restoreQuestionnaireAuthoring } from "../../site/src/research/questionnaire-contribution.js";
-import { sheetFromDefinition, sheetToAuthoring } from "../../site/src/research/questionnaire-sheet.js";
-import { questionnaireFamilyId } from "../../site/src/research/questionnaire-assets.js";
+import { parseExperimentPackageV1, createExperimentPackageV1, serializeExperimentPackageV1 } from "../../experiment-planner/web/src/research/experiment-package.js";
+import { restoreQuestionnaireAuthoring } from "../../experiment-planner/web/src/research/questionnaire-contribution.js";
+import { sheetFromDefinition, sheetToAuthoring } from "../../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { questionnaireFamilyId } from "../../experiment-planner/web/src/research/questionnaire-assets.js";
 
 let source = "";
 for await (const chunk of process.stdin) {

@@ -1,7 +1,7 @@
 # Planner CLI native selection grants
 
 Allocated CLI-SHARED helper for the frozen consequential-command catalogue.
-`src-tauri/src/research_planner_cli_io.rs` contains native path admission,
+`native/src/research_planner_cli_io.rs` contains native path admission,
 purpose-bound one-use grants and bounded questionnaire source reads. Main owns
 module registration, the broker/wire, Tauri wrappers and composition with the
 existing Workspace, questionnaire importer and S7 services. This module adds
@@ -140,7 +140,7 @@ qualification from this helper.
 
 ## Focused validation
 
-`src-tauri/tests/planner_cli_io.rs` compiles the exact module and existing
+`native/tests/planner_cli_io.rs` compiles the exact module and existing
 `research_error.rs` before Main registers the module in `lib.rs`; it contains
 no alternate filesystem or error implementation. Its module tests cover all
 purposes, exact public fields/bytes/hash, identity/purpose mismatches, retained
@@ -149,8 +149,8 @@ limits, questionnaire bounds, Windows aliases, actual junctions, ancestor/type
 replacement and existing-writer rejection.
 
 ```powershell
-cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features --test planner_cli_io
-cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --test planner_cli_io -- -D warnings -A dead_code
+cargo test --manifest-path native/Cargo.toml --locked --no-default-features --test planner_cli_io
+cargo clippy --manifest-path native/Cargo.toml --locked --no-default-features --test planner_cli_io -- -D warnings -A dead_code
 ```
 
 This is native helper evidence. Broker dispatch, actual imports/saves, renderer

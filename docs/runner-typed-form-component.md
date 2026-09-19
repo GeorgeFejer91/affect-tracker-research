@@ -43,7 +43,7 @@ demographic answers.
 
 ## Participant presentation and recorded rows
 
-`runner/src/typed-form.js` exposes `renderTypedForm(host, definition,
+`experiment-runner/src/typed-form.js` exposes `renderTypedForm(host, definition,
 presentation, initialAnswers)`. It requires the `fields` presentation binding
 and uses the P2 answer validator. It returns `read`, `progress`,
 `focusFirstUnanswered`, `setDisabled` and `destroy`, plus localized instruction
@@ -51,7 +51,7 @@ and Submit text. Controls preserve text exactly, have no default answers and
 expose browser required semantics. The parent must preserve this presenter
 between status polls and destroy it when the occurrence changes.
 
-`runner/src/typed-responses.js` validates recorded response rows against their
+`experiment-runner/src/typed-responses.js` validates recorded response rows against their
 verified bound definition: exact typed branches/keys, authored order/labels,
 mandatory completion and native latency bounds. It never repairs missing data.
 The full information reader remains responsible for source/selection/occurrence
@@ -60,7 +60,7 @@ binding, ordering and actual LSL timestamps.
 ## Evidence and remaining integration
 
 - Three focused native answer tests pass through the standalone
-  `src-tauri/tests/runner_typed_answers.rs` harness, which includes the exact
+  `native/tests/runner_typed_answers.rs` harness, which includes the exact
   production component and its owners without changing shared lib registration.
 - Twelve focused Node checks cover frozen fixtures, current P2 validation and
   recorded typed responses. EN and DE each pass 22 actual headless Chromium

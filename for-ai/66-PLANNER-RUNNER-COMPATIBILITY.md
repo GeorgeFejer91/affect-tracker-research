@@ -1,21 +1,18 @@
 # Planner JSON and Runner correspondence
 
 Current source audit: `32c7c2d`, 2026-09-13. This maintained map points to
-exact contracts; it does not define another schema.
-The [prior ledger](../docs/history/66-PLANNER-RUNNER-COMPATIBILITY-2026-09-13.md)
-is historical evidence, not current implementation status.
+exact contracts; it does not define another schema. The former copied prior
+ledger was removed from the active tree; use Git history for exact old text if
+needed.
 
-## Questionnaire asset amendment — 2026-09-13
+## Current amendment routing
 
-Direct user approval changes fresh Planner saves to a master5 manifest and
-separate questionnaire files. P7 owns this contract pass (P7-02/04/05/06/09),
-with named P2-04/08 and Runner intake/evidence seams. Historical master1–4
-readers and unchanged copies remain strict and byte-preserving. See
-[the asset contract](../docs/planner-questionnaire-assets.md).
-The follow-up user allocation is P2-03/04/07/08: MAIA-2, researcher-local TAS and
-demographics save as SurveyJS. A minimal element arrangement box retains Excel
-table paste and opens an interactive participant-preview popup. No free-position
-canvas, changed instrument wording or new computed scoring is requested.
+Fresh Planner saves use the master5 questionnaire-asset boundary in
+[the charter](15-RESEARCH-V1-CHARTER.md#questionnaire-asset-amendment--2026-09-13)
+and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
+manifest contract, P2 owns authored SurveyJS content, and R1 owns Runner
+intake/evidence seams. This compatibility map records supported generations and
+consumer gaps rather than duplicating the full amendment text.
 
 File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13):
 arbitrary whole-file ceilings are no longer requirements. Historical implemented
@@ -95,8 +92,8 @@ Historical reproduction names use prefix `planner-recipe-reproduction-`.
 `ExperimentPackageV1` remains a separate nine-root-member schema with its own
 strict parser/compiler/runtime. Preserve its semantics and records. Fresh authored saves use master5; Open never silently upgrades historical files.
 
-JS ingress: `site/src/research/planner-recipe.js::parseSupportedPlannerRecipe`;
-Runner: `runner/src/recipe.js::readRunnerRecipe`.
+JS ingress: `experiment-planner/web/src/research/planner-recipe.js::parseSupportedPlannerRecipe`;
+Runner: `experiment-runner/src/recipe.js::readRunnerRecipe`.
 Rust: `research_planner_recipe_supported::parse_supported_planner_recipe_bytes`;
 plan compilation: `research_runner_master::PreparedMaster::read`.
 

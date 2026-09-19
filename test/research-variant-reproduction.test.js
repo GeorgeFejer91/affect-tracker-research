@@ -4,10 +4,10 @@ import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
-import { projectSavedVariantCatalogue } from "../site/src/research/variant-catalogue-adapter.js";
-import { createVariantDesign, editIsi, validateVariantDesign, variantDesignToDraft } from "../site/src/research/variant-design.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
+import { projectSavedVariantCatalogue } from "../experiment-planner/web/src/research/variant-catalogue-adapter.js";
+import { createVariantDesign, editIsi, validateVariantDesign, variantDesignToDraft } from "../experiment-planner/web/src/research/variant-design.js";
 import { assertVariantReproduction } from "./fixtures/assert-variant-reproduction.js";
 
 const fixturePath = fileURLToPath(new URL("./fixtures/variant-reproduction-v1.json", import.meta.url));

@@ -4,11 +4,11 @@ import assert from "node:assert/strict";
 import {
   IndexedDbResearchJournal,
   RESEARCH_JOURNAL_DATABASE,
-} from "../site/src/research/browser-journal.js";
+} from "../experiment-planner/web/src/research/browser-journal.js";
 import {
   RESEARCH_EVENT_SCHEMA,
   RESEARCH_SAMPLE_SCHEMA,
-} from "../site/src/research/contracts.js";
+} from "../experiment-planner/web/src/research/contracts.js";
 import {
   idbRequestResult,
   idbTransactionDone,

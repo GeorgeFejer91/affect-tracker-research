@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { validatePlannerRecipePolicyV1, plannerRecipePolicyFromPackageV1 } from "../site/src/research/planner-recipe-policy.js";
-import { compilePlannerQuestionnaireRoutesV1, selectPlannerQuestionnaireRouteV1 } from "../site/src/research/planner-recipe-questionnaires.js";
-import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
-import { parsePlannerTargetSelection } from "../site/src/research/planner-target.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { validatePlannerRecipePolicyV1, plannerRecipePolicyFromPackageV1 } from "../experiment-planner/web/src/research/planner-recipe-policy.js";
+import { compilePlannerQuestionnaireRoutesV1, selectPlannerQuestionnaireRouteV1 } from "../experiment-planner/web/src/research/planner-recipe-questionnaires.js";
+import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { parsePlannerTargetSelection } from "../experiment-planner/web/src/research/planner-target.js";
 
 const pkg = JSON.parse(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url), "utf8"));
 const policyFixture = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url), "utf8"));
@@ -84,9 +84,9 @@ test("all language routes retain exact module order, full definitions and option
 });
 
 test("two independent processes reproduce policy and nested language routes without ambient context", async () => {
-  const policyUrl = new URL("../site/src/research/planner-recipe-policy.js", import.meta.url).href;
-  const formsUrl = new URL("../site/src/research/planner-recipe-questionnaires.js", import.meta.url).href;
-  const canonicalUrl = new URL("../site/src/research/canonical.js", import.meta.url).href;
+  const policyUrl = new URL("../experiment-planner/web/src/research/planner-recipe-policy.js", import.meta.url).href;
+  const formsUrl = new URL("../experiment-planner/web/src/research/planner-recipe-questionnaires.js", import.meta.url).href;
+  const canonicalUrl = new URL("../experiment-planner/web/src/research/canonical.js", import.meta.url).href;
   const code = `
     const fail = () => { throw new Error('ambient input forbidden'); };
     Date.now = fail; Math.random = fail;

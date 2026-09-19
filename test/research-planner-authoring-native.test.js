@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { bootPlannerAuthoringNative } from "../site/src/research/planner-authoring-native.js";
+import { bootPlannerAuthoringNative } from "../experiment-planner/web/src/research/planner-authoring-native.js";
 
 test("native revision notices are ordered across readiness and drained before replies", async () => {
   let notify, ready, releaseRevision, completed;
@@ -37,7 +37,7 @@ test("native revision notices are ordered across readiness and drained before re
 });
 
 test("CLI explicitly builds one hidden native WebView with its owned profile", async () => {
-  const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const source = await readFile(new URL("../native/src/lib.rs", import.meta.url), "utf8");
   assert.match(source, /context\.config\(\)\.app\.windows\.len\(\) != 1/u);
   assert.match(source, /window\.create = false/u);
   assert.match(source, /if tauri::is_dev\(\) \{\s*return Err\(\s*"Planner CLI requires embedded assets/u);
@@ -46,7 +46,7 @@ test("CLI explicitly builds one hidden native WebView with its owned profile", a
 });
 
 test("fallible setup finishes before starting the UI-dependent native actor", async () => {
-  const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const source = await readFile(new URL("../native/src/lib.rs", import.meta.url), "utf8");
   const setup = source.slice(source.indexOf(".setup("), source.indexOf(".on_window_event("));
   const start = setup.indexOf("NativeMediaService::start_async(");
   assert.ok(start > 0);

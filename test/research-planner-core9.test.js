@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withPlannerCore9 } from "../site/src/research/planner-authoring-core9.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
-import { createPlannerCore9Composition } from "../site/src/research/planner-core9-composition.js";
-import { NativeCatalogueFailure } from "../site/src/research/native-media-catalogue.js";
+import { withPlannerCore9 } from "../experiment-planner/web/src/research/planner-authoring-core9.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
+import { createPlannerCore9Composition } from "../experiment-planner/web/src/research/planner-core9-composition.js";
+import { NativeCatalogueFailure } from "../experiment-planner/web/src/research/media-catalogue-error.js";
 
 test("post-effect catalogue diagnosis retains acknowledgement without publication or private text", async () => {
   for (const error of [new Error("C:/private/source.csv secret"), new NativeCatalogueFailure("prepare", {
-    code: "native_media_unavailable", message: "Unavailable (native-gstplay-command-timeout)." })]) {
+    code: "native_media_unavailable", message: "Unavailable (html-video-command-timeout)." })]) {
     let effects = 0;
     const acknowledgement = { operation: "rescanVideoLibrary", stage: "completed", outcome: "acknowledged", receipt: { stimuliCount: 1 } };
     const prepare = createPlannerCore9Composition({

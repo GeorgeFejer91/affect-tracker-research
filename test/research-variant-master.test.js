@@ -5,10 +5,10 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { parsePlannerRecipeV1, serializePlannerRecipeV1, createPlannerRecipeV1, reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
-import { preparePlannerRecipeReopenV1 } from "../site/src/research/planner-recipe-restore.js";
-import { prepareWorkspaceContentRestore, createWorkspaceContributionProducer } from "../site/src/research/workspace-contribution.js";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
+import { parsePlannerRecipeV1, serializePlannerRecipeV1, createPlannerRecipeV1, reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { preparePlannerRecipeReopenV1 } from "../experiment-planner/web/src/research/planner-recipe-restore.js";
+import { prepareWorkspaceContentRestore, createWorkspaceContributionProducer } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
 import { assertVariantReproduction } from "./fixtures/assert-variant-reproduction.js";
 
 const fixturePath = fileURLToPath(new URL("./fixtures/variant-reproduction-v2.json", import.meta.url));
@@ -23,7 +23,7 @@ test("actual complete master bytes preserve every authored P3 variant across fil
   assert.equal(recipe.integrity.algorithmVersion, "planner-recipe-reproduction-v1");
   assert.deepEqual(recipe.segments.P1, fixture.workspace);
   assert.deepEqual(recipe.segments.P3, fixture.contribution);
-  const base = fileURLToPath(new URL("../src-tauri/target/p3-master-verification/", import.meta.url));
+  const base = fileURLToPath(new URL("../native/target/p3-master-verification/", import.meta.url));
   await mkdir(base, { recursive: true });
   const folder = await mkdtemp(join(base, "export-"));
   const file = join(folder, "experiment.json");

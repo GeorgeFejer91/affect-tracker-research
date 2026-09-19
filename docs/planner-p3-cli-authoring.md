@@ -2,7 +2,7 @@
 
 CLI-P3 and the allocated P3 portion of E2E-UI extend the delivered Planner.
 `createPlannerVariantCommandOwner({editor})` in
-`site/src/research/planner-authoring-p3.js` registers P3 with the shared
+`experiment-planner/web/src/research/planner-authoring-p3.js` registers P3 with the shared
 `createPlannerAuthoringSession`. The existing stimulus-order editor is the sole
 draft owner. The adapter neither confirms a contribution nor invokes native
 media, import, export or participant-allocation commands.

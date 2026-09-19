@@ -1,9 +1,9 @@
-import { createXrLayoutEditor } from "../../site/src/research/xr-layout-editor.js";
-import { xrLayoutEditorMarkup } from "../../site/src/research/xr-layout-view.js";
-import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1 } from "../../site/src/research/xr-layout.js";
-import { createPlannerAuthoringP6 } from "../../site/src/research/planner-authoring-p6.js";
-import { createPlannerAuthoringSession } from "../../site/src/research/planner-authoring-session.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { createXrLayoutEditor } from "../../experiment-planner/web/src/research/xr-layout-editor.js";
+import { xrLayoutEditorMarkup } from "../../experiment-planner/web/src/research/xr-layout-view.js";
+import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1 } from "../../experiment-planner/web/src/research/xr-layout.js";
+import { createPlannerAuthoringP6 } from "../../experiment-planner/web/src/research/planner-authoring-p6.js";
+import { createPlannerAuthoringSession } from "../../experiment-planner/web/src/research/planner-authoring-session.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 import envelope from "./xr-feedback-envelope-v1.json";
 
 const checks = [], errors = [], parity = [];

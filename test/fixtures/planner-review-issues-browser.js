@@ -1,6 +1,6 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { PLANNER_SEGMENT_SECTIONS } from "../../site/src/research/planner-contributions.js";
-import { renderPlannerContributionIssues } from "../../site/src/research/planner-issue-view.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { PLANNER_SEGMENT_SECTIONS } from "../../experiment-planner/web/src/research/planner-contributions.js";
+import { renderPlannerContributionIssues } from "../../experiment-planner/web/src/research/planner-issue-view.js";
 
 // Actual default app and registered producers, with no injected issue/media data.
 const checks = [], errors = [];

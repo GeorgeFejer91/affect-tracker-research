@@ -9,14 +9,14 @@ import {
   evaluateFlubberMappings,
   normalizedDriver,
   validateFlubberMapping,
-} from "../site/src/research/mappings.js";
+} from "../experiment-planner/web/src/research/mappings.js";
 import {
   compactUtcTimestamp,
   createSessionStem,
   deriveParticipantRecord,
   participantCode,
   participantIds,
-} from "../site/src/research/identity.js";
+} from "../experiment-planner/web/src/research/identity.js";
 
 const closeTo = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} ≈ ${expected}`);
 

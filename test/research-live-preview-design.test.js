@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { createResearchPreview, normalizePreviewState } from "../site/src/research/preview.js";
-import { COLOR_FIELDS, renderResearchUiMarkup } from "../site/src/research/ui-view.js";
+import { createResearchPreview, normalizePreviewState } from "../experiment-planner/web/src/research/preview.js";
+import { COLOR_FIELDS, renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
 
 const markup = renderResearchUiMarkup("browser");
-const appSource = readFileSync(new URL("../site/src/research/app.js", import.meta.url), "utf8");
-const previewSource = readFileSync(new URL("../site/src/research/preview.js", import.meta.url), "utf8");
-const nativeBridgeSource = readFileSync(new URL("../site/src/research/native-bridge.js", import.meta.url), "utf8");
-const cssSource = readFileSync(new URL("../site/research.css", import.meta.url), "utf8");
+const appSource = readFileSync(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
+const previewSource = readFileSync(new URL("../experiment-planner/web/src/research/preview.js", import.meta.url), "utf8");
+const nativeBridgeSource = readFileSync(new URL("../experiment-planner/web/src/research/native-bridge.js", import.meta.url), "utf8");
+const cssSource = readFileSync(new URL("../experiment-planner/web/research.css", import.meta.url), "utf8");
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
@@ -64,6 +64,8 @@ const studioMarkup = between(
 );
 
 test("Setup offers exactly three ordered feedback modes with one selected", () => {
+  assert.match(setupMarkup, /id="preview-flubber-release"[^>]*aria-label="Release Flubber into the preview"[^>]*aria-pressed="false"/u);
+  assert.doesNotMatch(setupMarkup.match(/<header class="preview-header"[\s\S]*?<\/header>/u)?.[0] ?? "", /binding-capture-dialog/u);
   const buttons = [...setupMarkup.matchAll(
     /<button\b[^>]*\bdata-feedback-preview-mode="([^"]+)"[^>]*>[\s\S]*?<\/button>/gu,
   )].map((match) => ({
@@ -436,8 +438,11 @@ test("the application projects successor settings to Setup and invalidates saved
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? feedbackPreviewMode : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? \(releasedFlubber \? "flubber" : feedbackPreviewMode\) : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
   );
+  assert.match(previewStateSource, /const releasedFlubber = design && feedbackSettingsVersion === 2 && previewFlubberReleased/u);
+  assert.match(previewStateSource, /position:\s*design && feedbackSettingsVersion === 2 \? \(releasedFlubber \? previewReleasedPosition : \{ x: 0\.5, y: 0\.5 \}\)/u);
+  assert.match(previewStateSource, /lockPosition:\s*locked \|\| \(design && feedbackSettingsVersion === 2 \? !releasedFlubber : checked\("visual-lock-position"\)\)/u);
   assert.match(
     previewStateSource,
     /\.\.\.\(design \? \{ haloSizePercent: previewHaloDraft\.width,\s*haloGradient: checked\("preview-halo-gradient"\), haloSteepness: previewHaloDraft\.steepness \} : \{\}\)/u,
@@ -471,6 +476,9 @@ test("the application projects successor settings to Setup and invalidates saved
     /if \(isFeedbackBehaviorControl\(target\)\) \{\s*refreshProjection\(\);\s*schedulePlanRefresh\(\);\s*return;\s*\}/gu,
   ), 2);
   assert.match(appSource, /createPreviewResponseSimulator\(\{[\s\S]*?previewDesignPoint = \{ x: point\.x, y: point\.y \};[\s\S]*?projectDesignPreview\(\)/u);
+  assert.match(appSource, /if \(previewFlubberReleased && feedbackSettingsVersion === 2\) \{\s*previewReleasedPosition = \{ x: position\.x, y: position\.y \};\s*projectDesignPreview\(\);\s*return;\s*\}/u);
+  assert.match(appSource, /if \(target\.id === "preview-flubber-release"\) \{[\s\S]*?feedbackPreviewMode = "flubber";[\s\S]*?previewFlubberReleased = true;[\s\S]*?announce\("Flubber released in the preview\. Drag it inside the preview field\."\)/u);
+  assert.match(appSource, /if \(\["flubber", "grid", "face"\]\.includes\(target\.dataset\.feedbackPreviewMode\)\) \{[\s\S]*?previewFlubberReleased = false;/u);
   assert.match(
     appSource,
     /previewResponseSimulator\?\.configure\(\{[\s\S]*?mode: responsePreviewMode,[\s\S]*?fullSpanDurationMs:[\s\S]*?\.\.\.\(dimensions \?\? \{\}\),[\s\S]*?holdRule:[\s\S]*?repeatDelayMs:/u,
@@ -481,8 +489,8 @@ test("the application projects successor settings to Setup and invalidates saved
   assert.match(appSource, /previewResponseSimulator\?\.destroy\(\)/u);
 });
 
-test("desktop media probes stay bounded to the primary renderer instead of the scrolling editor", () => {
-  assert.equal(count(nativeBridgeSource, /"\.preview-pane \.preview-primary-stage"/gu), 2);
+test("runtime media operations stay bounded to the run HTML video element", () => {
+  assert.equal(count(nativeBridgeSource, /"#run-video"/gu), 2);
   assert.doesNotMatch(nativeBridgeSource, /"\.preview-pane \.research-preview-stage"/u);
 });
 

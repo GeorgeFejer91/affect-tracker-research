@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { prepareBrowserPlannerRecipeSave, validatePlannerRecipeSaveReceipt } from "../site/src/research/planner-recipe-file.js";
-import { preparePlannerRecipeReopenV1, PlannerRecipeRestoreError } from "../site/src/research/planner-recipe-restore.js";
+import { prepareBrowserPlannerRecipeSave, validatePlannerRecipeSaveReceipt } from "../experiment-planner/web/src/research/planner-recipe-file.js";
+import { preparePlannerRecipeReopenV1, PlannerRecipeRestoreError } from "../experiment-planner/web/src/research/planner-recipe-restore.js";
 
 const source = await readFile(new URL("./fixtures/planner-recipe-v1.canonical.json", import.meta.url), "utf8");
 const bytes = new TextEncoder().encode(source);

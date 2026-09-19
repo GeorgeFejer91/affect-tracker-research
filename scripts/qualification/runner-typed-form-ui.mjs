@@ -11,9 +11,9 @@ assert.ok(mode === undefined || mode === "--master-presenter");
 assert.ok(browser && destination); const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output); const execute = promisify(execFile);
 const entry = String.raw`
-import {renderTypedForm} from './runner/src/typed-form.js';
-import {renderMasterQuestionnaire} from './runner/src/master-presentation.js';
-import {verifyFormDefinitionV1} from './site/src/research/form-definition.js';
+import {renderTypedForm} from './experiment-runner/src/typed-form.js';
+import {renderMasterQuestionnaire} from './experiment-runner/src/master-presentation.js';
+import {verifyFormDefinitionV1} from './experiment-planner/web/src/research/form-definition.js';
 const language=new URL(location.href).searchParams.get('language'),checks=[],errors=[];
 const check=(value,label)=>{if(!value)throw new Error(label);checks.push(label);};
 try {

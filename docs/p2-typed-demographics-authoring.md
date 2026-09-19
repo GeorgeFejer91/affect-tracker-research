@@ -15,7 +15,7 @@ native persistence and Rust/master dispatch; Runner retains execution/answers.
   `ffe11d8` handoff. No latency or native submission authority lives in JS.
 - `form-assets.js`: `loadDemographicsForm(language)` verifies the fixed public
   definition identity/hash. The EN/DE JSONs under
-  `site/assets/questionnaires/demographics/` match the frozen fixture bytes.
+  `experiment-planner/web/assets/questionnaires/demographics/` match the frozen fixture bytes.
   Static Pages copies and allowlists precisely these two assets; the desktop
   bundle imports the same JSON. Restricted TAS sources are unchanged.
 - `form-sheet.js`: explicit `kind: "form"` branch in the existing editor's
@@ -132,7 +132,7 @@ size advisory. Actual Chrome and Edge component checks exercise the routing
 button through the real shared JS session, UI fields, typed CLI correspondence,
 invalid-field save rejection, equal P2 v2 save content and both language previews.
 The fixture source-save callback is explicitly synthetic; native persistence,
-whole-app master integration, actual native CLI and Runner/XDF execution remain
+whole-app master integration, actual native CLI and experiment-runner/XDF execution remain
 Main/Runner evidence. The first Edge file-URL harness returned no DOM; the
 HTTP receipt/PNG harness succeeds and retains both outcomes.
 

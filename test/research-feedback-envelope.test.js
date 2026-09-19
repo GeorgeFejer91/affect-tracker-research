@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { deriveFeedbackEnvelopeV1, resolveFeedbackEnvelopeV1 } from "../site/src/research/feedback-envelope.js";
-import { MAPPING_DRIVERS, evaluateFlubberMappings } from "../site/src/research/mappings.js";
-import { buildFlubberPath, createProfiles, createProjectionOffsets, FLUBBER_BASE_SHAPES } from "../site/src/math.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { deriveFeedbackEnvelopeV1, resolveFeedbackEnvelopeV1 } from "../experiment-planner/web/src/research/feedback-envelope.js";
+import { MAPPING_DRIVERS, evaluateFlubberMappings } from "../experiment-planner/web/src/research/mappings.js";
+import { buildFlubberPath, createProfiles, createProjectionOffsets, FLUBBER_BASE_SHAPES } from "../experiment-planner/web/src/math.js";
 
 function configuration() {
   const settings = createDefaultResearchSettings();

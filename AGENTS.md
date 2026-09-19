@@ -52,15 +52,16 @@ requirements. Their complete Git history is preserved in
 and in this repository's immutable checkpoint/history refs. Do not restore or
 reactivate them without an explicit charter change.
 
-Windows qualified local/repository playback targets the repository-pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through a Rust-owned GstPlay actor.
-Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any
-implementation claim: runtime verification and a fail-closed capability are not
-evidence that the native player actor or playback qualification exists.
-The two contained Windows FFI adapters were approved on 2026-09-10; their
-focused audit and installed qualification remain open. Adding another unsafe
-boundary requires explicit user approval and audited window/thread/lifecycle
-invariants.
+Windows local/repository playback now targets the lightweight
+HTML-compatible video path: checked `research-media` URLs consumed by the
+Runner WebView `HTMLVideoElement`. Do not restore removed native player stack
+runtime staging, optional bindings, native child-window playback, or new unsafe
+media adapters without an explicit charter change. Planner save must prepare
+HTML-compatible sibling videos with deterministic `_converted.mp4` names and
+must reuse an existing compatible converted sibling instead of creating clutter.
+Consult
+[`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any runtime or
+research-qualification claim.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.

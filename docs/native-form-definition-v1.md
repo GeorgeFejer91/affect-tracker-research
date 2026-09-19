@@ -6,7 +6,7 @@ and production JavaScript validator `ffe11d8`, subsequently corrected through
 `aa8717b` for the frozen size/language bounds. Main owns lib/master/P2
 composition; Runner owns participant controls, answers, submission and XDF.
 
-`src-tauri/src/research_form_definition.rs` exports `FormDefinitionV1`,
+`native/src/research_form_definition.rs` exports `FormDefinitionV1`,
 `FormProvenanceV1`, `FormItemV1`, `FormResponseV1` and `FormOptionV1`. All public
 fields and the three response variants match Main/Runner's agreed API. They
 derive Clone/Serialize/Deserialize and retain closed camelCase JSON shapes.
@@ -35,7 +35,7 @@ metadata and is never rewritten to enforce Runner submission policy.
 
 Standalone tests include the exact module and its existing contract/error owners
 by path, so this handoff changes no shared lib registration or historical reader.
-Run `cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
+Run `cargo test --manifest-path native/Cargo.toml --no-default-features
 --test research_form_definition`. Main registers the production module later;
 Runner consumes `&FormResponseV1` directly instead of adding another JSON parser.
 

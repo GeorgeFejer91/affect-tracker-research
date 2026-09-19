@@ -6,7 +6,7 @@ import {
   buildFlubberPath,
   createProfiles,
   createProjectionOffsets,
-} from "../site/src/math.js";
+} from "../experiment-planner/web/src/math.js";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");

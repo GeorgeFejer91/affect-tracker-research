@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { validateQuestionnaireContribution, validateQuestionnairePlannerContribution, restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "../site/src/research/questionnaire-contribution.js";
-import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring, sheetFromDefinition } from "../site/src/research/questionnaire-sheet.js";
-import { updateQuestionnaireDefinitionReferences } from "../site/src/research/questionnaire-assets.js";
-import { parseExperimentPackageV1, createExperimentPackageV1, serializeExperimentPackageV1 } from "../site/src/research/experiment-package.js";
+import { validateQuestionnaireContribution, validateQuestionnairePlannerContribution, restoreQuestionnaireAuthoring, reconcileQuestionnaireModuleMappings } from "../experiment-planner/web/src/research/questionnaire-contribution.js";
+import { createQuestionnaireSheet, setQuestionnaireGridCell, sheetToAuthoring, sheetFromDefinition } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { updateQuestionnaireDefinitionReferences } from "../experiment-planner/web/src/research/questionnaire-assets.js";
+import { parseExperimentPackageV1, createExperimentPackageV1, serializeExperimentPackageV1 } from "../experiment-planner/web/src/research/experiment-package.js";
 
 async function fixture(languages = ["en", "de"]) {
   const { package: base } = await parseExperimentPackageV1(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url)));

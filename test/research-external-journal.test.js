@@ -2,32 +2,32 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-import { canonicalSha256 } from "../site/src/research/canonical.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
 import {
   IndexedDbResearchJournal,
   MemoryResearchJournal,
-} from "../site/src/research/browser-journal.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+} from "../experiment-planner/web/src/research/browser-journal.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
-} from "../site/src/research/external-experiment.js";
+} from "../experiment-planner/web/src/research/external-experiment.js";
 import {
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
   validateResearchSettingsV3,
-} from "../site/src/research/external-protocol.js";
+} from "../experiment-planner/web/src/research/external-protocol.js";
 import {
   compileExperimentPackageSelectionV1,
   createExperimentPackageV1,
   createFlatLanguageSelectionV1,
   parseExperimentPackageV1,
   serializeExperimentPackageV1,
-} from "../site/src/research/experiment-package.js";
+} from "../experiment-planner/web/src/research/experiment-package.js";
 import {
   RESEARCH_RUN_MANIFEST_V3_SCHEMA,
   RESEARCH_RUN_MANIFEST_V4_SCHEMA,
   validateResearchRunManifestV3,
-} from "../site/src/research/protocol-records.js";
+} from "../experiment-planner/web/src/research/protocol-records.js";
 import {
   ResearchIdbKeyRange,
   ResearchIndexedDbHarness,

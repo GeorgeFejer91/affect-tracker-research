@@ -11,7 +11,7 @@ const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
-const site = resolve(import.meta.dirname, "../../site");
+const site = resolve(import.meta.dirname, "../../experiment-planner/web");
 const cases = ["desktop", "narrow"].flatMap(pane => [
   {state:"unavailable",position:"top"}, {state:"unavailable",position:"middle"}, {state:"unavailable",position:"bottom"},
   {state:"populated",position:"middle"}, {state:"portrait",position:"top"}, {state:"error",position:"bottom"},

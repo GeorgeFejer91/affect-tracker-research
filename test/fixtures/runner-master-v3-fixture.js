@@ -1,7 +1,7 @@
 import {readFile,writeFile} from 'node:fs/promises';
-import {compilePlannerRecipeV3,serializePlannerRecipeV3,reproducePlannerRecipeV3,reconstructPlannerRecipeSelectionV3} from '../../site/src/research/planner-recipe.js';
-import {canonicalJson,canonicalSha256} from '../../site/src/research/canonical.js';
-import {deriveControlledVideoDisplayGeometry} from '../../site/src/research/video-display-controlled.js';
+import {compilePlannerRecipeV3,serializePlannerRecipeV3,reproducePlannerRecipeV3,reconstructPlannerRecipeSelectionV3} from '../../experiment-planner/web/src/research/planner-recipe.js';
+import {canonicalJson,canonicalSha256} from '../../experiment-planner/web/src/research/canonical.js';
+import {deriveControlledVideoDisplayGeometry,HTML_VIDEO_DISPLAY_METADATA_SCHEMA} from '../../experiment-planner/web/src/research/video-display-controlled.js';
 // Explicit synthetic proof, never a decoded/qualified media receipt. Start from
 // Main's mixed/location fixture; original P2/P3/P4/P5/P6 values remain intact.
 export async function runnerMasterV3Fixture() {
@@ -10,11 +10,9 @@ export async function runnerMasterV3Fixture() {
  const catalogue=core.segments.P1.videoCatalogue;catalogue.version=3;
  for(const entry of catalogue.entries){
   const width=entry.geometry.displayWidthPx,height=entry.geometry.displayHeightPx;
-  entry.geometry=deriveControlledVideoDisplayGeometry({schema:'affect-research-native-display-metadata-receipt',version:2,
-   encodedWidthPx:width,encodedHeightPx:height,pixelAspectRatio:{numerator:1,denominator:1},
-   sourceOrientation:{stream:{status:'absent'},media:{status:'absent'}},snapshotWidthPx:width,snapshotHeightPx:height,
-   snapshotPixelAspectRatio:{numerator:1,denominator:1},snapshotInterpretation:'pre-renderer-square-pixel',
-   renderer:{sinkFactory:'d3d11videosink',configuredRotationDegrees:0,readbackRotationDegrees:0}});
+  entry.geometry=deriveControlledVideoDisplayGeometry({schema:HTML_VIDEO_DISPLAY_METADATA_SCHEMA,version:1,
+   videoWidthPx:width,videoHeightPx:height,pixelAspectRatio:{numerator:1,denominator:1},
+   sourceOrientation:{stream:{status:'absent'},media:{status:'absent'}}});
  }
  const {integritySha256,...catalogueCore}=catalogue;catalogue.integritySha256=await canonicalSha256(catalogueCore);
  const recipe=await compilePlannerRecipeV3(core),source=await serializePlannerRecipeV3(recipe),matrix=await reproducePlannerRecipeV3(recipe),selections=[];

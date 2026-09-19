@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPreviewLayout } from "../site/src/research/preview-layout.js";
+import { createPreviewLayout } from "../experiment-planner/web/src/research/preview-layout.js";
 
 function fixture({ observerEnabled = true } = {}) {
   const frames = new Map(), classes = new Set(), observed = [];

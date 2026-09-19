@@ -13,8 +13,8 @@ assert.ok(browser&&destination);
 const root=resolve(import.meta.dirname,'../..'),output=resolve(destination);
 await mkdir(output);
 const entry=String.raw`
-import {bootRunner} from './runner/src/app.js';
-import {readRunnerRecipe} from './runner/src/recipe.js';
+import {bootRunner} from './experiment-runner/src/app.js';
+import {readRunnerRecipe} from './experiment-runner/src/recipe.js';
 const checks=[],errors=[],calls=[],check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
 const tick=()=>new Promise(r=>setTimeout(r,50));
 const until=async(f,s)=>{for(let i=0;i<100;i++){if(f())return;await tick();}throw Error('Timeout '+s);};
@@ -25,7 +25,7 @@ const root=document.createElement('div');document.body.append(root);const q=id=>
 const load=async id=>{if(held)await new Promise(r=>release=r);if(missing&&id===ids[0])throw Error('Previous experiment missing. Load a new experiment.');pending=id;return{document:receipt,workspace:{selected:true,workspaceId:id,displayName:id===ids[0]?'Study one':'Study two'}};};
 const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
- case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'not-qualified'};
+ case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'not-qualified'};
  case 'research_native_media_capability':return{playerActorReady:false};
  case 'research_workspace_status':return{selected:false};
  case 'research_input_cancel_setup':return{};

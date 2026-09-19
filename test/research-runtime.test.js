@@ -7,34 +7,34 @@ import {
   MAX_RESEARCH_RECOVERY_CONTEXT_BYTES,
   RESEARCH_JOURNAL_DATABASE,
   ResearchJournalError,
-} from "../site/src/research/browser-journal.js";
+} from "../experiment-planner/web/src/research/browser-journal.js";
 import {
   EXPERIMENT_PACKAGE_FILE_NAME,
   MAX_EXPERIMENT_PACKAGE_BYTES,
-} from "../site/src/research/experiment-package.js";
-import { ResearchSamplingClock, installWorkerProtocol } from "../site/src/research/sampling-worker.js";
+} from "../experiment-planner/web/src/research/experiment-package.js";
+import { ResearchSamplingClock, installWorkerProtocol } from "../experiment-planner/web/src/research/sampling-worker.js";
 import {
   capturedDigitalAction,
   ResearchInputController,
   withCustomDigitalAction,
-} from "../site/src/research/input-controller.js";
+} from "../experiment-planner/web/src/research/input-controller.js";
 import {
   RESEARCH_EVENT_SCHEMA,
   RESEARCH_RUN_MANIFEST_SCHEMA,
   RESEARCH_SAMPLE_SCHEMA,
   createDefaultResearchSettings,
   createInputBindingPreset,
-} from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
-import { BrowserResearchRunController } from "../site/src/research/run-controller.js";
-import { validateResearchSettingsV2 } from "../site/src/research/protocol-plan.js";
-import { importQuestionnaireCsv, questionnaireToCsv } from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
+import { BrowserResearchRunController } from "../experiment-planner/web/src/research/run-controller.js";
+import { validateResearchSettingsV2 } from "../experiment-planner/web/src/research/protocol-plan.js";
+import { importQuestionnaireCsv, questionnaireToCsv } from "../experiment-planner/web/src/research/questionnaires.js";
 import {
   acquireExclusiveRuntimeLease,
   nextAttemptNumber,
   participantStateDetail,
   selectCompatibleRecovery,
-} from "../site/src/research/runtime-bridge.js";
+} from "../experiment-planner/web/src/research/runtime-bridge.js";
 import {
   BrowserResearchWorkspace,
   isSupportedVideoName,
@@ -47,7 +47,7 @@ import {
   RESEARCH_WORKSPACE_DIRECTORIES,
   RESEARCH_WORKSPACE_IDENTITY_FILE,
   sha256Blob,
-} from "../site/src/research/workspace.js";
+} from "../experiment-planner/web/src/research/workspace.js";
 
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
@@ -1639,7 +1639,7 @@ test("questionnaire-aware settings save immutable content-addressed CSV definiti
   const root = new MemoryDirectoryHandle();
   const workspace = new BrowserResearchWorkspace(root);
   await workspace.initialize();
-  const sourceBytes = await readFile(new URL("../site/questionnaires/maia-2-de.csv", import.meta.url));
+  const sourceBytes = await readFile(new URL("../experiment-planner/web/questionnaires/maia-2-de.csv", import.meta.url));
   const { definition } = await importQuestionnaireCsv(sourceBytes, {
     sourceKind: "bundled",
     logicalName: "maia-2-de.csv",

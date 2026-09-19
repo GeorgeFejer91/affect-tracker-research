@@ -1,5 +1,5 @@
-import { bootResearchUi } from "../../site/src/research/app.js?visual-qualification=2";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js?visual-qualification=2";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
 
 const FIXTURE_STATES = Object.freeze([
   "setup",

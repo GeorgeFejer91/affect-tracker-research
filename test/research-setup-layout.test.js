@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createSetupLayout } from "../site/src/research/setup-layout.js";
-import { renderResearchUiMarkup } from "../site/src/research/ui-view.js";
+import { createSetupLayout } from "../experiment-planner/web/src/research/setup-layout.js";
+import { renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
 
 function close(actual, expected) { assert.ok(Math.abs(actual - expected) < 0.001, `${actual} != ${expected}`); }
 
@@ -202,10 +202,11 @@ test("both entrypoints expose one labelled Setup separator and keep layout state
     assert.ok(markup.indexOf("data-setup-resizer") < markup.indexOf('<aside class="preview-pane"'));
     assert.match(markup, /role="separator"[\s\S]*?aria-label="Resize sections and live preview"[\s\S]*?aria-orientation="vertical"/u);
     assert.match(markup, /aria-controls="setup-sections"/u);
+    assert.match(markup, /class="setup-resizer-grip" aria-hidden="true"/u);
   }
-  const source = await readFile(new URL("../site/src/research/setup-layout.js", import.meta.url), "utf8");
+  const source = await readFile(new URL("../experiment-planner/web/src/research/setup-layout.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\bimport\b|localStorage|sessionStorage|indexedDB|dispatchEvent|invoke\(/u);
-  const app = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
+  const app = await readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
   assert.match(app, /setupLayout\.setEnabled\(mode === "setup"\)/u);
   const teardown = app.match(/    destroy\(\) \{([\s\S]*?)\n    \},/u)?.[1];
   assert.ok(teardown, "the app controller exposes its teardown");

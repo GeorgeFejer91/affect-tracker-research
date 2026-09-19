@@ -2,9 +2,9 @@
 // hook. Values and elapsed times are explicitly synthetic engineering inputs.
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
-import { sha256Hex } from "../../site/src/research/canonical.js";
-import { verifyFormDefinitionV1 } from "../../site/src/research/form-definition.js";
-import { validateTypedResponseRows } from "../../runner/src/typed-responses.js";
+import { sha256Hex } from "../../experiment-planner/web/src/research/canonical.js";
+import { verifyFormDefinitionV1 } from "../../experiment-planner/web/src/research/form-definition.js";
+import { validateTypedResponseRows } from "../../experiment-runner/src/typed-responses.js";
 const [input, output] = process.argv.slice(2); assert.ok(input && output);
 const bytes = await readFile(input), fixture = JSON.parse(bytes);
 assert.equal(fixture.schema, "affect-runner-typed-answer-engineering-fixture"); assert.equal(fixture.version, 1);

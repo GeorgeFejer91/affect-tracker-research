@@ -336,7 +336,7 @@ the preliminary ffprobe description; the final recipe must use its actual P1
 import receipt, not a hard-coded preliminary duration.
 
 Although the test process exited successfully, all five inspected Paused/Playing
-snapshots retained `gstreamer-media-info-incomplete`. Root classified this as a
+snapshots retained `removed-native-player-media-info-incomplete`. Root classified this as a
 defect-reproducing engineering diagnostic, not clean playback or qualification;
 see its `root-review.json`. Incomplete initial MediaInfo had become Failed,
 then subsequent backend states overwrote that failure. S1's initial terminal
@@ -425,7 +425,7 @@ executable-hash comparison; both are fixed. Ten focused transport/comparison
 checks passed, including thirteen corruption/reordering counterexamples.
 Syntax and diff checks passed. These checks do not author a real recipe. The
 script awaits the combined native core9/typed-P2/master-v2 executable; all
-actual CLI import/export, editable reopen and Runner/XDF goal gates remain open.
+actual CLI import/export, editable reopen and experiment-runner/XDF goal gates remain open.
 
 ### 2026-09-13 — Root serial validation result
 

@@ -4,14 +4,14 @@ import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { parseSupportedPlannerRecipe, parsePlannerRecipeV4 } from "../site/src/research/planner-recipe.js";
-import { externalizePlannerRecipe, parsePlannerRecipeV5, compilePlannerAssetDocument } from "../site/src/research/planner-recipe-assets.js";
-import { plannerRecipeTransportText } from "../site/src/research/planner-recipe-transport.js";
-import { preparePlannerRecipeReopen } from "../site/src/research/planner-recipe-restore.js";
-import { resolveRunnerSelection } from "../runner/src/recipe.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { parseSupportedPlannerRecipe, parsePlannerRecipeV4 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { externalizePlannerRecipe, parsePlannerRecipeV5, compilePlannerAssetDocument } from "../experiment-planner/web/src/research/planner-recipe-assets.js";
+import { plannerRecipeTransportText } from "../experiment-planner/web/src/research/planner-recipe-transport.js";
+import { preparePlannerRecipeReopen } from "../experiment-planner/web/src/research/planner-recipe-restore.js";
+import { resolveRunnerSelection } from "../experiment-runner/src/recipe.js";
 import { informationFixture, frameRecords } from "./fixtures/runner-information-fixture.js";
-import { inspectInformationStream } from "../runner/src/information-stream.js";
+import { inspectInformationStream } from "../experiment-runner/src/information-stream.js";
 
 const encoder = new TextEncoder(), source = readFileSync(new URL("./fixtures/planner-recipe-v4-surveyjs.canonical.json", import.meta.url));
 const historical = await parseSupportedPlannerRecipe(source), document = await externalizePlannerRecipe(historical);

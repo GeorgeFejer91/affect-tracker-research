@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createInputBindingPreset, INPUT_PRESET_IDS } from "../site/src/research/contracts.js";
-import { createPlannerAuthoringP5, P5_AUTHORING_SETTINGS } from "../site/src/research/planner-authoring-p5.js";
-import { validateFeedbackContribution } from "../site/src/research/feedback-settings.js";
-import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createInputBindingPreset, INPUT_PRESET_IDS } from "../experiment-planner/web/src/research/contracts.js";
+import { createPlannerAuthoringP5, P5_AUTHORING_SETTINGS } from "../experiment-planner/web/src/research/planner-authoring-p5.js";
+import { validateFeedbackContribution } from "../experiment-planner/web/src/research/feedback-settings.js";
+import { resolveFeedbackEnvelope } from "../experiment-planner/web/src/research/feedback-layout.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
 
 const fixture = () => JSON.parse(readFileSync(new URL("./fixtures/research-feedback-settings-v2.json", import.meta.url), "utf8"));
 const set = (field, value) => ({ kind: "set", field, value });

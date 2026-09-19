@@ -5,32 +5,47 @@
   "byteLength": 27,
   "mimeType": "video/mp4",
   "durationMs": 1000,
-  "decodeStatus": "attestedQualified",
-  "decodeBackend": "nativeGstPlay",
-  "decodeAttestation": "nativeDecodedSnapshotsV2",
-  "decodedPositionsMs": [100, 500, 900],
+  "decodeStatus": "attestedUnqualified",
+  "decodeBackend": "webviewVideoFrameCallback",
+  "decodeAttestation": "representativeFramesV1",
+  "decodedPositionsMs": [
+    100,
+    500,
+    900
+  ],
   "displayGeometry": {
-    "displayAspect": {"denominator": 9, "numerator": 16},
-    "displayHeightPx": 1080,
+    "status": "verified",
+    "source": "html-video-controlled-renderer",
     "displayWidthPx": 1920,
-    "metadataInterpretation": "controlled-renderer-and-pre-sink-square-pixel-snapshot",
-    "nativeDisplayMetadata": {
-      "encodedHeightPx": 1080,
-      "encodedWidthPx": 1920,
-      "pixelAspectRatio": {"denominator": 1, "numerator": 1},
-      "renderer": {"configuredRotationDegrees": 0, "readbackRotationDegrees": 0, "sinkFactory": "d3d11videosink"},
-      "schema": "affect-research-native-display-metadata-receipt",
-      "snapshotHeightPx": 1080,
-      "snapshotInterpretation": "pre-renderer-square-pixel",
-      "snapshotPixelAspectRatio": {"denominator": 1, "numerator": 1},
-      "snapshotWidthPx": 1920,
-      "sourceOrientation": {"media": {"status": "absent"}, "stream": {"status": "absent"}},
-      "version": 2
+    "displayHeightPx": 1080,
+    "displayAspect": {
+      "numerator": 16,
+      "denominator": 9
     },
-    "pixelAspectRatio": {"denominator": 1, "numerator": 1},
     "rotationDegrees": 0,
-    "source": "native-gstplay-controlled-renderer",
-    "status": "verified"
+    "pixelAspectRatio": {
+      "numerator": 1,
+      "denominator": 1
+    },
+    "metadataInterpretation": "html-video-element-intrinsic-dimensions",
+    "htmlVideoMetadata": {
+      "schema": "affect-research-html-video-display-metadata-receipt",
+      "version": 1,
+      "videoWidthPx": 1920,
+      "videoHeightPx": 1080,
+      "pixelAspectRatio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "sourceOrientation": {
+        "media": {
+          "status": "absent"
+        },
+        "stream": {
+          "status": "absent"
+        }
+      }
+    }
   },
   "source": {
     "kind": "workspaceFile",

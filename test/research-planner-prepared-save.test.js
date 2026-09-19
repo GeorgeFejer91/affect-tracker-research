@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
-import { createPackageExportController } from "../site/src/research/package-export-controller.js";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { capturePlannerRecipeInputPreparedFeedback } from "../site/src/research/planner-recipe-capture.js";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { compilePlannerRecipeV1, compilePlannerRecipeV2, parseSupportedPlannerRecipe } from "../site/src/research/planner-recipe.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { createPlannerFileWorkflow } from "../experiment-planner/web/src/research/planner-file-workflow.js";
+import { createPackageExportController } from "../experiment-planner/web/src/research/package-export-controller.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { capturePlannerRecipeInputPreparedFeedback } from "../experiment-planner/web/src/research/planner-recipe-capture.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { compilePlannerRecipeV1, compilePlannerRecipeV2, parseSupportedPlannerRecipe } from "../experiment-planner/web/src/research/planner-recipe.js";
 import { plannerRecipeV2Fixture } from "./fixtures/planner-recipe-v2-fixture.js";
 
 const legacySource = await readFile(new URL("./fixtures/planner-recipe-current-v1.canonical.json", import.meta.url), "utf8");

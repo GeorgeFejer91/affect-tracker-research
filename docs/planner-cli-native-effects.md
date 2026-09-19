@@ -49,7 +49,7 @@ without changing Main's `lib.rs`. Inline helper tests also become available
 through ordinary library tests after Main registers the module. Run:
 
 ```powershell
-cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features --test planner_cli_native_effects research_planner_cli_effects
+cargo test --manifest-path native/Cargo.toml --locked --no-default-features --test planner_cli_native_effects research_planner_cli_effects
 ```
 
 Tests use temporary directories, synthetic unverified media/source bytes and

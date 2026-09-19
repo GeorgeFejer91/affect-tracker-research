@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { groupPlannerContributionIssues } from "../site/src/research/planner-issue-view.js";
+import { groupPlannerContributionIssues } from "../experiment-planner/web/src/research/planner-issue-view.js";
 
 test("Review groups owners while retaining distinct dependency diagnostics and input order", () => {
   const issues = Object.freeze([

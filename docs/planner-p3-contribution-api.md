@@ -7,7 +7,7 @@ recipe, session acceptance, save acknowledgement and dependency-ordered reopen.
 
 The accepted payload is `affect-research-variant-design` version 1, validated by
 `validateVariantDesign(contribution, library)` in
-[`variant-design.js`](../site/src/research/variant-design.js). The optional
+[`variant-design.js`](../experiment-planner/web/src/research/variant-design.js). The optional
 editable sidecar is `affect-research-stimulus-order` version 2. Historical version
 1 sidecars retain their numeric-ISI reader and require explicit conversion.
 Reopening a master recipe requires only its canonical P3 payload and P1 payload;
@@ -133,7 +133,7 @@ P7/integration evidence.
 
 ### Historical v1 projection details
 
-[`projectVariantCatalogue`](../site/src/research/variant-catalogue-adapter.js)
+[`projectVariantCatalogue`](../experiment-planner/web/src/research/variant-catalogue-adapter.js)
 consumes the registered `affect-research-workspace-contribution` v1 snapshot
 through P1's `projectWorkspaceVideoCatalogueSnapshotV1`. P1 validates the complete
 workspace and extracts its video catalogue without changing the registered owner

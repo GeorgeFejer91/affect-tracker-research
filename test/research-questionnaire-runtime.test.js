@@ -2,23 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-import { canonicalSha256 } from "../site/src/research/canonical.js";
-import { MemoryResearchJournal } from "../site/src/research/browser-journal.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { MemoryResearchJournal } from "../experiment-planner/web/src/research/browser-journal.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 import {
   QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
   projectResearchSettingsV2ToAssignmentSettingsV1,
   resolveProtocolPlanV1,
   validateResearchSettingsV2,
-} from "../site/src/research/protocol-plan.js";
+} from "../experiment-planner/web/src/research/protocol-plan.js";
 import {
   validateResearchEventV2,
   validateResearchRunManifestV3,
-} from "../site/src/research/protocol-records.js";
-import { BrowserResearchRunController } from "../site/src/research/run-controller.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/app.js";
-import { BrowserResearchRuntimeBridge } from "../site/src/research/runtime-bridge.js";
+} from "../experiment-planner/web/src/research/protocol-records.js";
+import { BrowserResearchRunController } from "../experiment-planner/web/src/research/run-controller.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/app.js";
+import { BrowserResearchRuntimeBridge } from "../experiment-planner/web/src/research/runtime-bridge.js";
 
 const WORKSPACE_ID = "11111111-1111-4111-8111-111111111111";
 const digest = (value) => createHash("sha256").update(value).digest("hex");

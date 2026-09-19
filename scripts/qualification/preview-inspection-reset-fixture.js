@@ -1,6 +1,6 @@
 // Actual Planner DOM, synthetic fixture input only; no physical device/Runner claim.
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 
 export async function checkPreviewInspectionReset() {
   const root = bootResearchUi(), ui = root.researchUi, q = selector => root.querySelector(selector);
@@ -39,7 +39,7 @@ export async function checkPreviewInspectionReset() {
   change("preview-color-hex","#345678");await new Promise(resolve=>setTimeout(resolve,0));q("#preview-color-apply").click();
   check("old close event cannot discard a newly opened palette",q("#color-up-hex").value==="#345678");
   await new Promise(resolve=>setTimeout(resolve,0));
-  q("#preview-input-menu").click();q('[data-binding-capture-target="left"]').click();
+  q('[data-binding-direction="left"]').click();
   const beforeCaptureReset=saved();ui.resetPreviewInspection();
   q(".binding-capture-area").dispatchEvent(new KeyboardEvent("keydown",{code:"KeyJ",key:"j",bubbles:true}));
   check("reset disarms binding capture without assigning input",!q("#binding-capture-dialog").open&&saved()===beforeCaptureReset);

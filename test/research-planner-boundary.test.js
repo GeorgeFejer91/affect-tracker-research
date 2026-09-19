@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { BrowserResearchRuntimeBridge } from "../site/src/research/runtime-bridge.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+import { BrowserResearchRuntimeBridge } from "../experiment-planner/web/src/research/runtime-bridge.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/ui-contracts.js";
 
 test("browser Planner cannot open recovery, acquire a run lease or start acquisition", async () => {
   const root = new EventTarget(); root.dataset = { researchProgram: "planner" };
@@ -22,9 +22,9 @@ test("browser Planner cannot open recovery, acquire a run lease or start acquisi
   assert.match(rejection.message, /Experiment Runner/u);
   assert.equal(bridge.controller, null); assert.equal(bridge.lease, null); assert.equal(bridge.ready, false);
   bridge.destroy();
-  const planner = await readFile(new URL("../site/research.html", import.meta.url), "utf8");
+  const planner = await readFile(new URL("../experiment-planner/web/research.html", import.meta.url), "utf8");
   assert.match(planner, /data-research-program="planner"/u);
-  const launcher = await readFile(new URL("../site/index.html", import.meta.url), "utf8");
+  const launcher = await readFile(new URL("../experiment-planner/web/index.html", import.meta.url), "utf8");
   assert.match(launcher, /href="\.\/planner\/"/u);
   assert.match(launcher, /href="\.\/runner\/"/u);
 });

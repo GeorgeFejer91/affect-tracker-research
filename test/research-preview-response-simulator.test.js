@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import * as previewResponse from "../site/src/research/preview-response-simulator.js";
+import * as previewResponse from "../experiment-planner/web/src/research/preview-response-simulator.js";
 
 const { createPreviewResponseSimulator } = previewResponse;
 

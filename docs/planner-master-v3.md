@@ -50,7 +50,7 @@ export remain separate gates. No foreground executable was replaced or opened.
 
 ## Actual native authoring attempt at 148a806
 
-The frozen production CLI built with default/custom-protocol/native-gstreamer
+The frozen production CLI built with default/custom-protocol/html-video
 features in 2m09s. Its executable SHA256 is
 a35418b14fa2fe53a289ba43ed46830ab0c6c8b5929c8c22ba50fe28f5eb09a1
 (32911872 bytes); the adjacent pinned runtime verified 827 files/340362958 bytes.

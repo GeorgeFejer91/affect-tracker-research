@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannedMarkerProfile, inspectPlannedMarkerTrace } from "../site/src/research/planned-marker-contract.js";
+import { createPlannedMarkerProfile, inspectPlannedMarkerTrace } from "../experiment-planner/web/src/research/planned-marker-contract.js";
 import { readFile } from "node:fs/promises";
-import { compileVariantTimeline } from "../site/src/research/variant-design.js";
+import { compileVariantTimeline } from "../experiment-planner/web/src/research/variant-design.js";
 
 const profile = {
   recipeSha256: "a".repeat(64), variantId: "variant-1", variantVersionSha256: "b".repeat(64),

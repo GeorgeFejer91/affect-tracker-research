@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { capturePlannerRecipeInputV1 } from "../site/src/research/planner-recipe-capture.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { capturePlannerRecipeInputV1 } from "../experiment-planner/web/src/research/planner-recipe-capture.js";
 import { readPlannerRecipeJsonBytes, validatePlannerRecipeStructureV1, validatePlannerRecipeStructureV2, validatePlannerRecipeStructureV3, boundPlannerRecipeMatrix, PLANNER_RECIPE_SEGMENTS,
-  MAX_PLANNER_RECIPE_DEPTH } from "../site/src/research/planner-recipe-wire.js";
+  MAX_PLANNER_RECIPE_DEPTH } from "../experiment-planner/web/src/research/planner-recipe-wire.js";
 
 const policy = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url), "utf8"));
 const legacy = JSON.parse(await readFile(new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url), "utf8"));

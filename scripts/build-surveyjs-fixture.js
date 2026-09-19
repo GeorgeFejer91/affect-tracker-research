@@ -1,7 +1,7 @@
 import { writeFile, readFile } from "node:fs/promises";
 import { surveyCore } from "../test/fixtures/planner-recipe-v4-fixture.js";
-import { compilePlannerRecipeV4, serializePlannerRecipeV4, reproducePlannerRecipeV4, reconstructPlannerRecipeSelectionV4 } from "../site/src/research/planner-recipe.js";
-import { canonicalJson } from "../site/src/research/canonical.js";
+import { compilePlannerRecipeV4, serializePlannerRecipeV4, reproducePlannerRecipeV4, reconstructPlannerRecipeSelectionV4 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
 const recipe = await compilePlannerRecipeV4(await surveyCore());
 const selector = { variantId: "variant-1", languageId: "de", languageSelectionPath: ["both", "de"], presentationTarget: "desktop-screen" };
 for (const [name, text] of Object.entries({

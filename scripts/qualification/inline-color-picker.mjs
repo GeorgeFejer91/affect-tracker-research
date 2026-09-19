@@ -6,14 +6,14 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
+import { renderResearchUiMarkup } from "../../experiment-planner/web/src/research/ui-view.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination);
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
-const source = (await readFile(new URL("../../site/src/research/inline-color-picker.js", import.meta.url), "utf8")).replace(/^export /gmu, "");
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const source = (await readFile(new URL("../../experiment-planner/web/src/research/inline-color-picker.js", import.meta.url), "utf8")).replace(/^export /gmu, "");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const dialog = renderResearchUiMarkup("browser").match(/<dialog id="preview-color-dialog"[\s\S]*?<\/dialog>/u)?.[0];
 assert.ok(dialog);
 const receipts = [];

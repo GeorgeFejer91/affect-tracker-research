@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createXrLayoutEditor } from "../site/src/research/xr-layout-editor.js";
-import { createXrLayoutAuthoring } from "../site/src/research/xr-layout-authoring.js";
-import { createDefaultXrLayoutProfile } from "../site/src/research/xr-layout.js";
+import { createXrLayoutEditor } from "../experiment-planner/web/src/research/xr-layout-editor.js";
+import { createXrLayoutAuthoring } from "../experiment-planner/web/src/research/xr-layout-authoring.js";
+import { createDefaultXrLayoutProfile } from "../experiment-planner/web/src/research/xr-layout.js";
 
 const saved = () => ({ status: "included", profile: {
   ...createDefaultXrLayoutProfile(), video: { ...createDefaultXrLayoutProfile().video,

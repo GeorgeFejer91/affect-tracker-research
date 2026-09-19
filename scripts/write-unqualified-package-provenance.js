@@ -13,7 +13,7 @@ const TARGETS = Object.freeze({
     nodePlatform: "win32",
     nodeArch: "x64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", suffix: ".exe" }),
+      Object.freeze({ kind: "nsis", directory: "native/target/release/bundle/nsis", suffix: ".exe" }),
     ]),
   }),
   "macos-arm64": Object.freeze({
@@ -22,7 +22,7 @@ const TARGETS = Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "arm64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "dmg", directory: "src-tauri/target/release/bundle/dmg", suffix: ".dmg" }),
+      Object.freeze({ kind: "dmg", directory: "native/target/release/bundle/dmg", suffix: ".dmg" }),
     ]),
   }),
   "macos-x64": Object.freeze({
@@ -31,7 +31,7 @@ const TARGETS = Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "x64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "dmg", directory: "src-tauri/target/release/bundle/dmg", suffix: ".dmg" }),
+      Object.freeze({ kind: "dmg", directory: "native/target/release/bundle/dmg", suffix: ".dmg" }),
     ]),
   }),
   "linux-x64": Object.freeze({
@@ -40,8 +40,8 @@ const TARGETS = Object.freeze({
     nodePlatform: "linux",
     nodeArch: "x64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "deb", directory: "src-tauri/target/release/bundle/deb", suffix: ".deb" }),
-      Object.freeze({ kind: "appimage", directory: "src-tauri/target/release/bundle/appimage", suffix: ".AppImage" }),
+      Object.freeze({ kind: "deb", directory: "native/target/release/bundle/deb", suffix: ".deb" }),
+      Object.freeze({ kind: "appimage", directory: "native/target/release/bundle/appimage", suffix: ".AppImage" }),
     ]),
   }),
 });
@@ -152,10 +152,11 @@ const receipt = {
     notarized: false,
     published: false,
     cargoFeatures: "no-default-features",
-    bundledWindowsGStreamerRuntime: false,
+    bundledNativeMediaRuntime: false,
   },
   qualification: {
-    nativeGstPlay: false,
+    htmlVideoPlayerOnly: true,
+    htmlVideoResearchReady: false,
     lsl: false,
     nativeInput: false,
     installedWorkflow: false,

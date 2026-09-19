@@ -26,7 +26,7 @@ emit an event or touch the UI. The returned candidate has:
   `{surface:"tauri", label, directoryPermission:true, workspaceId}`.
 
 `await prepareCatalogue(scan, {isCurrent})` returns the same candidate shape.
-It uses the existing sequential native GstPlay attestation or explicitly
+It uses the existing sequential native HTML video attestation or explicitly
 selected unqualified WebView probe. It does not introduce another decoder or
 upgrade qualification claims. It prepares all entries before returning and
 rejects failures and duplicate native identities without publishing a partial
@@ -64,7 +64,7 @@ The focused checks use the actual bridge and event contract with synthetic
 controller receipts. Forty checks pass across native bridge and catalogue
 tests, including nine new preparation/legacy-race cases. They establish
 publication ordering and lifetime behavior, not actual native video playback,
-rendered final-app parity, completed mock export or Runner/XDF execution.
+rendered final-app parity, completed mock export or experiment-runner/XDF execution.
 Evidence: `D:/GitHub/.affect-checks/root-native-workspace-focused.log`.
 
 The app-side connector, matching P1 state preparation and CLI command handlers

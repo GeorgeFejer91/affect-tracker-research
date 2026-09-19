@@ -72,7 +72,7 @@ two companion purposes; they no longer require one program or a mode switch.
 
 The public root may be an Affect Tracker landing page with separate icon links
 for online Experiment Planner and Experiment Runner routes. The initial
-infrastructure reserves `planner/` and `runner/` with explicit
+infrastructure reserves `planner/` and `experiment-runner/` with explicit
 development-status pages; it does not claim to port or qualify the companion
 desktop programs. The earlier combined Research instrument can live at
 `research.html` without changing its runtime contracts. The landing page is
@@ -109,11 +109,13 @@ Flubber/input/Advanced controls; centre-relative physical/percentage screen
 layout using one fixed percentage reference; and optional world-fixed XR spatial
 authoring aligned forward at setup.
 
-Current priority is Planner completion. The Runner owns execution, actual event
-timestamps and recording, but implementation/qualification of those downstream
-responsibilities is deferred unless separately allocated. The two application
-modes remain unchanged. Open decisions and assistant recommendations in the
-catalogue are not silently promoted to accepted requirements.
+Historical 2026-09-11 priority was Planner completion. Later receipts record
+baseline Planner authoring as complete and allocate Runner correspondence under
+`69`/`72`. The Runner owns execution, actual event timestamps and recording; any
+implementation or qualification claim still needs its own allocated evidence.
+The two companion purposes remain unchanged. Open decisions and assistant
+recommendations in the catalogue are not silently promoted to accepted
+requirements.
 
 Later on 2026-09-11, the researcher answered the S3 allocation question:
 “Leave allocation policy to Runner.” This supersedes the earlier request for
@@ -147,23 +149,26 @@ The product has exactly two user-visible application modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
-These modes provide two applet functions. The **Affect Tracker Designer** in
+These modes provide two companion functions. The **Experiment Planner** in
 Setting Up lets researchers choose experiment settings, define a video
 library/manual plan, and design questionnaires through user-facing controls.
 Its primary final output is one unified JSON file containing all relevant
 parameters needed to run the experiment. The **Experiment Runner** in Running
 accepts that finished package as its main input and provides acquisition and
 monitoring, producing local questionnaire-response/rating tables and evidence
-plus the existing optional outbound Windows LSL streams and markers. “Applet”
-does not imply another mode or require separate executables.
+plus the existing optional outbound Windows LSL streams and markers. The later
+companion-program amendment requires separate Planner and Runner programs; this
+does not add a third experiment mode.
 
-Master JSON is an internal compilation and final output format. The Designer
+Master JSON is an internal compilation and final output format. The Planner
 must not depend on the researcher creating, viewing, or editing JSON. Loading
 an existing finished package is optional reuse; external settings/experiment
 JSON remain compatibility import paths rather than the normal design workflow.
-The current 2026-09-11 pass is bounded to Designer Section 2. Runner changes
-and other-section gaps are deferred to
-[`45-FUTURE-AGENT-CHECKLIST.md`](./45-FUTURE-AGENT-CHECKLIST.md).
+The 2026-09-11 Section 2-only pass is historical. Current Planner capability
+status belongs to [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md);
+Runner work is routed through [`65`](./65-RUNNER-SEGMENTS.md),
+[`66`](./66-PLANNER-RUNNER-COMPATIBILITY.md), and
+[`72`](./72-RUNNER-FINAL-VALIDATION.md).
 
 Dialogs, disclosures, recovery prompts, and the eight Setup accordions are
 parts of those modes, not additional modes. Active Research removes the former
@@ -190,7 +195,7 @@ Qualify these surfaces first and only:
 
 | Surface | Active role | Capability boundary |
 | --- | --- | --- |
-| Tauri on Windows | Setup and Run, workspace ownership, native input, bundled native media, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2/GStreamer evidence required |
+| Tauri on Windows | Setup and Run, workspace ownership, native input, bundled native media, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2/removed native player stack evidence required |
 | Static web in desktop Google Chrome | Setup and Run using a user-authorized workspace root and browser-local journal | Current stable desktop Chrome against the exact static/deployed build |
 | Static web in desktop Microsoft Edge | Same browser contract, qualified separately | Current stable desktop Edge against the exact static/deployed build |
 | Unsigned Tauri on macOS ARM64/x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; no native media, input, timing, persistence, recovery, LSL, or research qualification |
@@ -198,7 +203,7 @@ Qualify these surfaces first and only:
 
 The downloadable unsigned Windows x64 alpha currently follows the same
 interface-only boundary as macOS/Linux: it builds with no optional features,
-contains no GStreamer runtime, and blocks Start before mutation. The first row
+contains no removed native player stack runtime, and blocks Start before mutation. The first row
 describes the Windows qualification target, not current package evidence.
 
 The browser has no LSL or native/global-input authority. macOS and Linux
@@ -237,9 +242,9 @@ and cross-module mutation are prohibited. Cross-runtime mirrors require shared
 golden fixtures and differential tests.
 
 Qualified Windows playback for declared package assets uses the pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. The application
+bundled removed native player stack 1.28.6 MSVC x86_64 runtime through HTML video. The application
 never downloads native media at runtime, searches ambient plugin/installation
-paths, or treats a system GStreamer install as an acceptable dependency.
+paths, or treats a system removed native player stack install as an acceptable dependency.
 Missing, modified, extra, symlinked,
 wrong-architecture, or unavailable native media fails closed. The WebView video
 element is available only as an explicitly selected `unqualifiedWebview`
@@ -278,8 +283,8 @@ questionnaire-response projections.
 `settingsSha256`, `assetManifestSha256`, `experimentPlanSha256`, and
 `protocolMatrixSha256`. The algorithm is exactly
 `experiment-package-reproduction-v1`. The
-[browser contract](../site/src/research/experiment-package.js),
-[Rust mirror](../src-tauri/src/research_experiment_package.rs), and
+[browser contract](../experiment-planner/web/src/research/experiment-package.js),
+[Rust mirror](../native/src/research_experiment_package.rs), and
 [canonical cross-runtime fixture](../test/fixtures/experiment-package-v1.canonical.json)
 are the executable schema mirrors; a member or semantic change requires a new
 package version and fixture.
@@ -308,7 +313,7 @@ on decoded end, rate 1, no loop or seeking, Pause allowed, unmuted volume 1,
 feedback adjacent, and recovery restart from the beginning. These values are
 serialized rather than inferred. Execution backend is a separate frozen
 platform receipt: Chromium uses `browserMediaAdapters`; a qualified Windows
-attempt requires `nativeGstPlay`; `unqualifiedWebview` is an explicit
+attempt requires `unqualifiedWebview`; `unqualifiedWebview` is an explicit
 development selection. There is no automatic fallback. The unavailable native
 actor blocks qualified Start, and every WebView attempt remains permanently
 labelled unqualified.
@@ -413,7 +418,7 @@ acknowledged P7 operation. Explicit legacy authoring storage remains compatible.
 
 For Windows qualified playback, Rust revalidates a declared package asset
 against its opaque identity before issuing a bounded native media grant.
-One Rust-owned actor owns the GLib context/loop, GstPlay instance, renderer,
+One Rust-owned actor owns the GLib context/loop, HTML video instance, renderer,
 sink, callbacks, and teardown on its required thread. It renders into an
 application-owned child
 window attached to the Run stage. The WebView may send only a validated viewport
@@ -428,7 +433,7 @@ Rendering cadence and WebView media events never authorize native samples.
 The native runtime is built from the exact repository pin and deterministic
 file-hash manifest, with upstream license notices retained and ambient plugin
 paths disabled. Unavoidable Windows FFI is confined to exactly two small
-adapters: private DLL-search activation/removal and raw-window GstPlay renderer/
+adapters: private DLL-search activation/removal and raw-window HTML video renderer/
 child-window operations. Both document handle lifetime, thread affinity,
 callback, panic, and teardown invariants; the crate denies undocumented unsafe
 blocks and source guards reject unsafe code anywhere else. The researcher
@@ -582,7 +587,7 @@ though they represented the new table. Historical package parsing and runtime
 contracts retain their exact complete-video identity/duration and ISI rules.
 
 The current downloadable
-[`site/experiment-template.json`](../site/experiment-template.json) is a
+[`experiment-planner/web/experiment-template.json`](../experiment-planner/web/experiment-template.json) is a
 transitional legacy authoring input that demonstrates manual orders and
 zero/nonzero terminal ISIs. It is not an `ExperimentPackageV1` and cannot be a
 new-attempt runtime authority after the package boundary lands. A future
@@ -618,7 +623,7 @@ journals, and manifests. These are observed states, never editable flags.
 
 ### 4. Experiment
 
-- The Designer target authors experiment ID, title, participant count, and
+- The Planner target authors experiment ID, title, participant count, and
   explicit manual participant IDs/schedules through UI, then compiles them
   into `ExperimentPackageV1`. The Runner consumes them as immutable protocol
   facts. Replacing current read-only/import-based controls belongs to a later
@@ -847,7 +852,7 @@ questionnaire; only bounded lifecycle markers without prompt or answer content
 are permitted.
 
 Sampling runs only while a video is actively playing. On Windows qualified
-runs, only Rust-owned GstPlay lifecycle state may establish that fact. After
+runs, only Rust-owned HTML video lifecycle state may establish that fact. After
 each video, sampling stops and the affect state resets to neutral. Ordered
 `afterStimulus` questionnaire hooks for that `stimulusId` whose
 `relativeToIsi` is `before` run next, followed by an explicit interval step for
@@ -1121,7 +1126,7 @@ including:
   LSL, invalid/missing video, and interval tests plus accessibility review.
 
 Windows acceptance additionally requires an integrity-verified packaged
-GStreamer runtime, the separately approved and audited native GstPlay actor,
+removed native player stack runtime, the separately approved and audited native HTML video actor,
 exact
 player-to-scheduler lifecycle fencing, and installed-artifact playback, error,
 resize/DPI, audio, shutdown, and recovery tests. A staged runtime or successful

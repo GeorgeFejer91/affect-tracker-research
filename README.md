@@ -10,19 +10,21 @@ apps are not implemented by this infrastructure change. The earlier combined
 remains accessible. See [the web delivery guide](docs/WEB-DELIVERY.md).
 
 <p align="center">
-  <img src="./site/assets/app-logo.svg" width="160" height="160" alt="Aurora Axis, the Affect Research app logo">
+  <img src="./experiment-planner/web/assets/app-logo.svg" width="160" height="160" alt="Aurora Axis, the Affect Research app logo">
 </p>
 <p align="center"><sub><strong>Aurora Axis</strong> maps valence left-to-right and arousal bottom-to-top inside the project’s Flubber silhouette.</sub></p>
 
 Affect Research is a local-first instrument for continuous valence–arousal ratings during complete video stimuli. The active product deliberately has two modes: **Setting Up the Experiment** and **Running the Experiment**.
 
-Those modes provide two functions: the **Affect Tracker Designer** lets a
+Those modes are served by two companion programs: **Experiment Planner** lets a
 researcher choose settings, define the video library/manual plan, and build
 questionnaires through UI; its main finished output is one unified experiment
-JSON file. The **Experiment Runner** takes that finished file for acquisition
-and monitoring. Researchers are not expected to write or edit master JSON.
-The current pass focuses on Designer Section 2; Runner and other-section work
-is tracked in the [future-agent checklist](./for-ai/45-FUTURE-AGENT-CHECKLIST.md).
+JSON recipe. **Experiment Runner** takes that finished file for acquisition and
+monitoring. Researchers are not expected to write or edit master JSON. Current
+Planner status is tracked in [the segment catalogue](./for-ai/60-SEGMENT-CATALOGUE.md);
+Runner correspondence is tracked in
+[the compatibility map](./for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md) and
+[final validation ledger](./for-ai/72-RUNNER-FINAL-VALIDATION.md).
 
 This repository is the focused Research lineage. The complete feature-rich application and its full Git history are preserved in [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground), with the frozen application deployed at <https://GeorgeFejer91.github.io/affect-tracker-playground/>.
 
@@ -79,7 +81,7 @@ single-language package requires that explicit step. A compatible interrupted
 attempt restores its exact hash-bound route without asking again, while a new
 participant, new attempt, cancel, rejected Start, or completion clears it.
 
-The current [`experiment.json` template](./site/experiment-template.json),
+The current [`experiment.json` template](./experiment-planner/web/experiment-template.json),
 portable settings files, and standardized questionnaire CSV, tab-delimited TXT,
 or JSON documents are transitional authoring/import inputs. The three
 questionnaire adapters normalize through the canonical 14-column
@@ -124,18 +126,18 @@ resolution only, not playback, timing, recovery, hardware, LSL, accessibility,
 or research qualification.
 
 The supported qualification targets for v1 are Windows Tauri and visible
-desktop Chrome/Edge. Qualified Windows package-asset playback targets the
-bundled, repository-pinned GStreamer 1.28.6 MSVC x64 runtime through a
-Rust-owned GstPlay actor; the app never downloads native media code or discovers
-ambient system plugins. LSL is a Tauri-only capability.
+desktop Chrome/Edge. Current Windows/package-asset playback uses checked
+`research-media` URLs consumed by the Runner WebView `HTMLVideoElement`; the app
+does not bundle or probe native media runtimes. LSL remains a Tauri-only
+capability and is not implied by browser/CSV execution.
 The package contract accepts only its declared complete videos beneath
 `assets/stimuli/`. Repository/network and Experimental YouTube sources are not
 accepted by new package runs.
 
 Unsigned host-native Windows x64 NSIS, macOS ARM64/x64 DMG, and Linux x64
 DEB/AppImage candidates are available only for internal Setup/interface
-evaluation. They build without optional features or the unreviewed GStreamer
-runtime, and Experiment Start fails closed before mutation. They are not
+evaluation. They build without native media runtimes or optional player
+bindings, and research qualification still fails closed before mutation. They are not
 research, timing, media, input, recovery, or LSL qualification claims.
 
 The durable product contract is
@@ -172,9 +174,10 @@ undeclared files. This contract-resolver benchmark does not decode those
 fixture bytes or launch two installed graphical application profiles. Rust now
 reconstructs and verifies the external plan and complete participant/language
 protocol matrix. A package-only native compiler, reducer, recovery journal,
-atomic run writer, sampling/input/LSL coordinator, and GstPlay media actor are
-implemented as separate backend modules. Public native package Start remains
-fail-closed until the installed runtime and physical qualification gates pass.
+atomic run writer, and sampling/input/LSL coordinator remain as backend modules.
+The heavyweight native media actor path has been removed; current master JSON
+execution uses the HTML-compatible Runner video path with CSV evidence. Public recorded Start
+remains fail-closed until the physical qualification gates pass.
 These are implementation slices, not playback or research qualification.
 Existing standalone experiment/settings/questionnaire files are transitional
 authoring/import scaffolding.
@@ -185,30 +188,25 @@ physical workflow qualification.
 
 The candidate remains under development. The exact open software and qualification gates are tracked in [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) and [`for-ai/30-TESTING-AND-RELEASE.md`](./for-ai/30-TESTING-AND-RELEASE.md). The Pages deployment target is <https://GeorgeFejer91.github.io/affect-tracker-research/>.
 
-### Windows native-player status
+### Windows video-player status
 
-The native-media source implementation is present: an exact GStreamer installer
-and runtime-tree pin, deterministic local/ephemeral-CI staging and verification,
-optional Rust bindings, a build-time runtime-integrity gate, path-free
-capability response, serialized GstPlay actor, isolated GLib/GStreamer runtime,
-and application-owned child-window renderer. Project-authored `unsafe` is
-restricted to the two contained Windows FFI adapters approved by the researcher
-on 2026-09-10: private DLL-search activation/removal and raw child-window/GstPlay
-overlay operations.
+The old native SDK/player protocol has been excised from the active build.
+The remaining media capability surface reports `html-video-element` /
+`research-media`, and playback is handled by the same HTML-compatible video
+player used by the browser path, with exact workspace media URLs and CSV output.
+Planner save probes workspace videos with ffprobe and writes at most one
+deterministic `_converted.mp4` sibling via ffmpeg when conversion is needed.
+Existing compatible converted siblings are reused.
 
-The runtime is deliberately not included in current downloadable packages.
-Until installed Windows qualification, corresponding-source evidence, and
-redistribution review pass, `nativeGstPlay` and qualified Start fail closed.
-Researchers may deliberately choose the WebView player for development, but the
-attempt remains labelled `unqualifiedWebview` in status, events, recovery, and
-its final receipt. Staging
-the native runtime or completing a desktop build is not playback qualification.
+HTML video execution is implementation evidence only. It does not by itself
+qualify installed timing, LSL/XDF recording, accessibility, recovery durability,
+or physical workflow readiness.
 
 ### Questionnaire authoring status
 
-Section 2 keeps downloadable [CSV](./site/questionnaires/questionnaire-template.csv),
-[tab-delimited TXT](./site/questionnaires/questionnaire-template.txt), and
-[JSON](./site/questionnaires/questionnaire-template.json) templates for the
+Section 2 keeps downloadable [CSV](./experiment-planner/web/questionnaires/questionnaire-template.csv),
+[tab-delimited TXT](./experiment-planner/web/questionnaires/questionnaire-template.txt), and
+[JSON](./experiment-planner/web/questionnaires/questionnaire-template.json) templates for the
 same closed single-choice/Likert questionnaire model as secondary ways to
 populate the spreadsheet editor. Direct edits and paste compile through the
 same canonical `questionnaire-csv-v1` boundary. Per-language accordions expose
@@ -272,14 +270,11 @@ pnpm desktop:bundle
 Remove-Item Env:AFFECT_RESEARCH_PACKAGE_COMMIT
 ```
 
-Native-media staging instructions and the exact runtime pin are in
-[`src-tauri/native-media/README.md`](./src-tauri/native-media/README.md). A
-candidate intended for native playback must be built with the required runtime
-gate only after the redistribution closure, corresponding-source evidence,
-pre-main DLL loader design, and unsafe renderer are approved. Today,
-`pnpm desktop:bundle` deliberately uses `--no-default-features`, excludes the
-GStreamer runtime, and produces an interface-only Windows package whose Start
-commands fail closed.
+The desktop bundle no longer stages native media runtimes. Current lightweight
+video playback uses checked `research-media` URLs in the WebView. Today,
+`pnpm desktop:bundle` deliberately uses `--no-default-features` and produces an
+internal evaluation package without research-ready timing, LSL/XDF, or physical
+workflow qualification.
 
 The displayed product version is `0.4.0-alpha.1`; it must not be described as stable or research-ready until the automated, timing, recovery, LSL, accessibility, and physical workflow gates in the charter pass.
 
@@ -287,10 +282,10 @@ The displayed product version is `0.4.0-alpha.1`; it must not be described as st
 
 - Pull requests and pushes to `research/video-protocol-v1` validate the isolated Pages artifact and Windows Tauri candidate. They do not deploy a public site.
 - A passing push to `main` deploys only the verified Research Pages artifact to the Research project URL.
-- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates. Its ephemeral GStreamer tree exists only to compile and test the optional integration boundary; CI neither packages nor uploads it.
+- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates without staging native media runtimes.
 - One manual-only matrix builds an unsigned, interface-only Windows x64 NSIS,
   host-native macOS ARM64/x64 DMGs, and a Linux x64 DEB/AppImage pair. Every
-  package excludes GStreamer and optional Cargo features; exact artifact
+  package excludes native media runtimes and optional player bindings; exact artifact
   provenance marks every qualification claim false, and Start fails closed.
 
 Signing, auto-updates, store submission, stable installers, and any research-ready claim remain out of scope until separately authorized and qualified.

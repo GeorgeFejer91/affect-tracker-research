@@ -6,8 +6,8 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
-import { previewTileGeometry, previewTileLines } from "../../site/src/research/preview-tiles.js";
+import { renderResearchUiMarkup } from "../../experiment-planner/web/src/research/ui-view.js";
+import { previewTileGeometry, previewTileLines } from "../../experiment-planner/web/src/research/preview-tiles.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide a browser executable and an isolated output directory.");

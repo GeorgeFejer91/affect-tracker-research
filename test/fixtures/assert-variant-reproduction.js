@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { projectSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
-import { compileVariantTimeline, validateVariantDesign } from "../../site/src/research/variant-design.js";
-import { createPlannedMarkerProfile } from "../../site/src/research/planned-marker-contract.js";
+import { projectSavedVariantCatalogue } from "../../experiment-planner/web/src/research/variant-catalogue-adapter.js";
+import { compileVariantTimeline, validateVariantDesign } from "../../experiment-planner/web/src/research/variant-design.js";
+import { createPlannedMarkerProfile } from "../../experiment-planner/web/src/research/planned-marker-contract.js";
 
 /** P3 assertions reusable by P7's full-master fixture. Expected entry times are
  * hand-specified in the fixture, never calculated by either compiler here. */

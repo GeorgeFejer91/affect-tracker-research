@@ -6,7 +6,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { runPlannerCli } from "./planner-cli-driver.mjs";
-import { RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS } from "../../site/src/research/questionnaire-local-presets.js";
+import { RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS } from "../../experiment-planner/web/src/research/questionnaire-local-presets.js";
 
 const [executable, outputDirectory, expectedCommit] = process.argv.slice(2);
 assert.ok(executable && outputDirectory && /^[a-f0-9]{40}$/.test(expectedCommit ?? ""),

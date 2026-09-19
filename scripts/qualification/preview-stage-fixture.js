@@ -1,4 +1,4 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
 import configured from "../../test/fixtures/research-feedback-settings-v2.json";
 
 export async function checkPreviewStage(mode) {

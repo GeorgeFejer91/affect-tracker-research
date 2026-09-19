@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "../site/src/research/planner-policy-controls.js";
+import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "../experiment-planner/web/src/research/planner-policy-controls.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url)));
 

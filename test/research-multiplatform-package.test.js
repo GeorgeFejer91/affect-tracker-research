@@ -62,8 +62,8 @@ test("tests and no-default-feature Rust gates precede the unsigned package build
   for (const prerequisite of [
     "pnpm test",
     "pnpm desktop:build",
-    "cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features",
-    "cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features",
+    "cargo check --locked --manifest-path native/Cargo.toml --no-default-features",
+    "cargo test --locked --manifest-path native/Cargo.toml --no-default-features",
   ]) {
     const prerequisiteIndex = workflow.indexOf(prerequisite);
     assert.ok(prerequisiteIndex >= 0 && prerequisiteIndex < packageIndex, `${prerequisite} must precede packaging`);
@@ -77,7 +77,6 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /process\.platform !== target\.nodePlatform \|\| process\.arch !== target\.nodeArch/u);
   assert.match(helper, /--no-sign/u);
   assert.match(helper, /--no-default-features/u);
-  assert.match(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"/u);
   assert.match(helper, /AFFECT_TRACKER_BUILD_COMMIT: commit/u);
   assert.match(helper, /status", "--porcelain=v1", "--untracked-files=normal"/u);
   assert.match(helper, /TAURI_SIGNING_PRIVATE_KEY/u);
@@ -85,13 +84,13 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /require\.resolve\("@tauri-apps\/cli\/tauri\.js"\)/u);
   assert.match(helper, /spawnSync\(\s*process\.execPath,\s*\[\s*tauriCli,/u);
   assert.doesNotMatch(helper, /pnpm\.cmd|shell:\s*true/iu);
-  assert.doesNotMatch(helper, /native-gstreamer|lsl-streaming/u);
+  assert.doesNotMatch(helper, /--features[\s\S]*native-[a-z-]+|lsl-streaming/u);
 });
 
 test("platform overrides exclude the Windows runtime and select only requested bundles", async () => {
-  const windows = JSON.parse(await source("src-tauri/tauri.bundle-windows-unqualified.conf.json"));
-  const macos = JSON.parse(await source("src-tauri/tauri.bundle-macos-unqualified.conf.json"));
-  const linux = JSON.parse(await source("src-tauri/tauri.bundle-linux-unqualified.conf.json"));
+  const windows = JSON.parse(await source("native/tauri.bundle-windows-unqualified.conf.json"));
+  const macos = JSON.parse(await source("native/tauri.bundle-macos-unqualified.conf.json"));
+  const linux = JSON.parse(await source("native/tauri.bundle-linux-unqualified.conf.json"));
 
   assert.deepEqual(windows.bundle.targets, ["nsis"]);
   assert.deepEqual(macos.bundle.targets, ["dmg"]);
@@ -100,7 +99,7 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
-  assert.match(windows.bundle.longDescription, /not bundled/iu);
+  assert.match(windows.bundle.longDescription, /HTML-compatible video playback/u);
   assert.match(macos.bundle.longDescription, /not qualified/iu);
   assert.match(linux.bundle.longDescription, /not qualified/iu);
 });
@@ -115,9 +114,10 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   assert.match(helper, /workflowRef,/u);
   assert.match(helper, /byteLength: details\.size/u);
   assert.match(helper, /sha256: await sha256\(path\)/u);
-  for (const claim of ["nativeGstPlay", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
+  for (const claim of ["htmlVideoResearchReady", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
     assert.match(helper, new RegExp(`${claim}: false`, "u"));
   }
+  assert.match(helper, /htmlVideoPlayerOnly: true/u);
   assert.match(helper, /unsigned: true/u);
   assert.match(helper, /notarized: false/u);
   assert.match(helper, /published: false/u);

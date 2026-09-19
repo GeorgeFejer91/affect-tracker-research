@@ -19,8 +19,8 @@ const bundle = await build({ entryPoints: ["test/fixtures/planner-master-browser
   banner: { js: "const __plannerModuleUrl = new URL('/site/src/research/ui-view.js', location.href).href;" },
   define: { "import.meta.url": "__plannerModuleUrl" } });
 const sourceHashes = {};
-for (const file of [...Object.keys(bundle.metafile.inputs), "site/research.css"]) sourceHashes[file] = hash(await readFile(file));
-const source = resolve(), resourceFailures = [];
+for (const file of [...Object.keys(bundle.metafile.inputs), "experiment-planner/web/research.css"]) sourceHashes[file] = hash(await readFile(file));
+const source = resolve(), site = join(source, "experiment-planner", "web"), resourceFailures = [];
 const savedFiles = new Map();
 const harnessSha256 = hash(await readFile(new URL(import.meta.url)));
 let completedReceipt = null;
@@ -81,8 +81,8 @@ const server = createServer(async (request, response) => {
         await writeFile(selected.path, bytes); selected.sha256 = hash(bytes); response.end("ok");
       } else response.end(await readFile(selected.path));
     } else if (pathname.startsWith("/site/") && request.method === "GET") {
-      const file = resolve(source, "." + decodeURIComponent(pathname));
-      assert.ok(file.startsWith(join(source, "site") + sep), "Static resource escaped the site root.");
+      const file = resolve(site, "." + decodeURIComponent(pathname.slice(5)));
+      assert.ok(file.startsWith(site + sep), "Static resource escaped the site root.");
       const bytes = await readFile(file);
       sourceHashes[relative(source, file).split(sep).join("/")] = hash(bytes);
       response.setHeader("Content-Type", ({ ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".csv": "text/csv" })[extname(file)] ?? "application/octet-stream");

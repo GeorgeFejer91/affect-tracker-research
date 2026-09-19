@@ -1,0 +1,60 @@
+[package]
+name = "affect-research"
+version = "0.4.0-alpha.1"
+description = "Local-first video affect research instrument"
+authors = ["George Fejer"]
+edition = "2021"
+default-run = "affect-research"
+license = "BSD-3-Clause"
+repository = "https://github.com/GeorgeFejer91/affect-tracker-research"
+
+[[bin]]
+name = "affect-runner"
+path = "src/bin/runner.rs"
+
+[[bin]]
+name = "affect-planner-cli"
+path = "src/bin/planner-cli.rs"
+
+[lib]
+name = "affect_research"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+base64 = "=0.22.1"
+boa_engine = { version = "=0.22.0", default-features = false, features = ["annex-b"] }
+fs2 = "0.4"
+labstream = { version = "0.1.0", optional = true }
+monio = "0.1.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+sha2 = "0.10"
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+time = { version = "0.3", features = ["formatting", "macros"] }
+unicode-normalization = "0.1"
+unicode-segmentation = "1"
+url = "2"
+uuid = { version = "1", features = ["serde", "v4"] }
+zmij = "1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# Windows-only, input-only backend. Force feedback is disabled at construction;
+# the application never exposes device identity or output authority.
+gilrs = { version = "0.11.2", default-features = false, features = ["xinput"] }
+
+[features]
+default = ["lsl-streaming", "native-acquisition-windows"]
+lsl-streaming = ["dep:labstream"]
+native-acquisition-windows = []
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

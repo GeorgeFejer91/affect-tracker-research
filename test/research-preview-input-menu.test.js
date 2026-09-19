@@ -1,10 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import { renderResearchUiMarkup } from "../site/src/research/ui-view.js";
+import { renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
 
-test("input menu reuses four saved directions outside the native capture allow-region", () => {
+test("top preview button releases Flubber while custom bindings stay in Controls", () => {
   const markup = renderResearchUiMarkup("tauri");
   assert.equal([...markup.matchAll(/<dialog\b/gu)].length, [...markup.matchAll(/<\/dialog>/gu)].length,
     "dialog markup must have balanced element boundaries");
@@ -13,15 +11,11 @@ test("input menu reuses four saved directions outside the native capture allow-r
   const area = dialog.match(/<div class="dialog-content binding-capture-area"[\s\S]*?<\/div>/u)[0];
   assert.doesNotMatch(area, /<button/u);
   assert.match(dialog, /class="binding-centre-pending" disabled/u);
-  assert.match(markup, /id="preview-input-menu"[^>]*aria-haspopup="dialog"[^>]*aria-controls="binding-capture-dialog"/u);
-  assert.match(dialog, /individual axis directions cannot be assigned here/u);
-});
-
-test("approved input SVGs retain exact supplied bytes and remain self-contained", async () => {
-  const hashes = { light: "3629f6cbc973aaa28dbadf6510d150c6afc761c65f46ef8c7f6492d15df843f1", dark: "0e8651e3d8e319d100429766dcae65dec31c75501f772b22b64ce2b88838dc46" };
-  for (const [theme, hash] of Object.entries(hashes)) {
-    const bytes = await readFile(new URL(`../site/assets/flubber-input-${theme}.svg`, import.meta.url));
-    assert.equal(createHash("sha256").update(bytes).digest("hex"), hash);
-    assert.doesNotMatch(bytes.toString(), /<script|<image|<foreignObject|href=/iu);
+  assert.doesNotMatch(markup, /id="preview-input-menu"/u);
+  assert.match(markup, /id="preview-flubber-release"[^>]*aria-label="Release Flubber into the preview"[^>]*aria-pressed="false"/u);
+  assert.doesNotMatch(markup.match(/<header class="preview-header"[\s\S]*?<\/header>/u)?.[0] ?? "", /binding-capture-dialog/u);
+  for (const direction of ["up", "down", "left", "right"]) {
+    assert.match(markup, new RegExp(`data-binding-direction="${direction}"[^>]*aria-controls="binding-capture-dialog"`, "u"));
   }
+  assert.match(dialog, /individual axis directions cannot be assigned here/u);
 });

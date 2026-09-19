@@ -1,6 +1,6 @@
 import { controlledCore } from "./planner-recipe-v3-fixture.js";
-import { importSurveyJson } from "../../site/src/research/surveyjs-definition.js";
-import { createQuestionnairePresentationV3 } from "../../site/src/research/questionnaire-recipe-v2.js";
+import { importSurveyJson } from "../../experiment-planner/web/src/research/surveyjs-definition.js";
+import { createQuestionnairePresentationV3 } from "../../experiment-planner/web/src/research/questionnaire-recipe-v2.js";
 export const fixtureSurvey = { title: { default: "Fictitious survey", de: "Fiktiver Fragebogen" }, clearInvisibleValues: "onComplete", pages: [
   { name: "branch", elements: [{ type: "boolean", name: "details", title: { default: "Provide details?", de: "Details angeben?" } }] },
   { name: "detail", visibleIf: "{details} = true", elements: [{ type: "comment", name: "explanation" }, { type: "checkbox", name: "choices", choices: ["a", "b", "c"], validators: [{ type: "answercount", minCount: 2 }] }] },

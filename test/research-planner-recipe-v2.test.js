@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
 import { plannerRecipeV2Fixture } from "./fixtures/planner-recipe-v2-fixture.js";
 import { compilePlannerRecipeV2, validatePlannerRecipeV2, parsePlannerRecipeV2, parsePlannerRecipeV1,
-  parseSupportedPlannerRecipe, serializePlannerRecipeV2, serializePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
+  parseSupportedPlannerRecipe, serializePlannerRecipeV2, serializePlannerRecipeV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
 
 const fixture = await plannerRecipeV2Fixture();
 test("explicit master2 reconstructs exact mixed EN/DE forms without altering other owners", async () => {

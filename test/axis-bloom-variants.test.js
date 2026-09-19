@@ -14,6 +14,7 @@ const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(testDirectory, "..");
 const variantDirectory = path.join(
   repositoryRoot,
+  "experiment-planner",
   "desktop",
   "icons",
   "concepts",
@@ -40,7 +41,7 @@ test("five deterministic Axis Bloom variants are checked in", async () => {
 test("each Axis Bloom variant is distinct, portable, and retains the directional palette", async () => {
   const generated = buildAxisBloomVariants();
   const originalAxisBloom = await readFile(
-    path.join(repositoryRoot, "desktop", "icons", "concepts", "03-axis-bloom.svg"),
+    path.join(repositoryRoot, "experiment-planner", "desktop", "icons", "concepts", "03-axis-bloom.svg"),
     "utf8",
   );
   const originalDigest = createHash("sha256").update(originalAxisBloom).digest("hex");

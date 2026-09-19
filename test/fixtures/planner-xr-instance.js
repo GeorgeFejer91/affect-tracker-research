@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1,
-  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../../site/src/research/planner-recipe.js";
+  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../../experiment-planner/web/src/research/planner-recipe.js";
 
 const masters = await Promise.all(["planner-recipe-v1", "planner-recipe-locations-v1"].map(async name =>
   JSON.parse(await readFile(new URL(`${name}.canonical.json`, import.meta.url)))));

@@ -13,7 +13,7 @@ assert.ok(browser && destination, "Provide browser executable and isolated outpu
 const repository = fileURLToPath(new URL("../..", import.meta.url));
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
-const css = await readFile(join(repository, "site/research.css"), "utf8");
+const css = await readFile(join(repository, "experiment-planner/web/research.css"), "utf8");
 const cases = [
   { id: "application", width: 1280, app: true },
   { id: "fixture-wide", width: 760 },
@@ -24,9 +24,9 @@ const receipts = [];
 for (const sample of cases) {
   const profile = await mkdtemp(join(output, `${sample.id}-profile-`));
   const { outputFiles } = await build({ stdin: { contents: `
-import { screenLayoutDraftMarkup } from './site/src/research/screen-layout-view.js';
-import { createScreenLayoutDraftEditor } from './site/src/research/screen-layout-editor.js';
-import { renderResearchUiMarkup, initializeResearchUi } from './site/src/research/app.js';
+import { screenLayoutDraftMarkup } from './experiment-planner/web/src/research/screen-layout-view.js';
+import { createScreenLayoutDraftEditor } from './experiment-planner/web/src/research/screen-layout-editor.js';
+import { renderResearchUiMarkup, initializeResearchUi } from './experiment-planner/web/src/research/app.js';
 const sample=${JSON.stringify(sample)};
 const checks=[]; const failures=[];
 const check=(name, pass)=>{checks.push({name,pass:Boolean(pass)});if(!pass)failures.push(name);};

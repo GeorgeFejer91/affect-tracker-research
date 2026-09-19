@@ -122,7 +122,7 @@ the native source-store operation before final experiment capture. See the
 packages. `pnpm surveyjs:check` checks bundles, hashes, license notices and the
 cross-language master fixture; CI runs it before the test suite. Source licenses
 are in `docs/licenses`, with complete notices in generated bundles,
-`site/src/research/vendor/THIRD-PARTY-NOTICES.txt`, and the desktop/Runner
+`experiment-planner/web/src/research/vendor/THIRD-PARTY-NOTICES.txt`, and the experiment-planner/desktop/Runner
 `surveyjs-notices.txt` build asset.
 
 Qualification entry points are `surveyjs-rendered.mjs` (Planner, presets and

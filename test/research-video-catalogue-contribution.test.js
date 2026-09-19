@@ -21,7 +21,7 @@ import {
   videoRelativePathFromAnnotationIdV1,
   workspaceStimuliToVideoCatalogueEntries,
   workspaceStimuliToVideoCatalogueEntriesV1,
-} from "../site/src/research/video-catalogue-contribution.js";
+} from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url);
 
@@ -77,7 +77,7 @@ function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annot
 function nativeGeometry(overrides = {}) {
   return {
     status: "verified",
-    source: "native-gstplay-metadata",
+    source: "html-video-metadata",
     displayWidthPx: 1_080,
     displayHeightPx: 1_920,
     displayAspect: { numerator: 9, denominator: 16 },
@@ -133,7 +133,7 @@ test("v2 catalogue ordering follows JavaScript UTF-16 code units across runtimes
   ]);
 });
 
-test("native GstPlay geometry retains explicit orientation and source pixel aspect metadata", async () => {
+test("HTML video geometry retains explicit orientation and source pixel aspect metadata", async () => {
   assert.deepEqual(validateVideoDisplayGeometry(nativeGeometry()), nativeGeometry());
   const anamorphic = nativeGeometry({
     displayWidthPx: 1_024,

@@ -76,7 +76,7 @@ shared worktree was edited. New registered commands are included in the two smal
 lib.rs hunks. No publication or installed app qualification is claimed here.
 
 Evidence under D:/GitHub/.affect-runner-master-build/:
-- variant-ui-04/: 69 assertions across desktop/narrow/menu-closed production UI
+- variant-ui-04/: 69 assertions across experiment-planner/desktop/narrow/menu-closed production UI
   cases with synthetic native inventory/recorder; screenshots visually inspected.
 - variant-forms-01/: all8 EN/DE production questionnaire cases,350 assertions,
   synthetic native replies; mandatory-answer and runtime transitions retained.

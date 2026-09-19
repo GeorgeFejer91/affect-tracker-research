@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createPlannerAuthoringP6 } from "../site/src/research/planner-authoring-p6.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
+import { createPlannerAuthoringP6 } from "../experiment-planner/web/src/research/planner-authoring-p6.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { createXrLayoutState } from "../experiment-planner/web/src/research/xr-layout-editor.js";
 import { createDefaultXrLayoutProfile, serializeXrLayoutProfileV1, withXrAngularSize,
-  resolveXrCatalogueV1, resolveXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
-import { xrLayoutEditorMarkup } from "../site/src/research/xr-layout-view.js";
-import { resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
-import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
+  resolveXrCatalogueV1, resolveXrLayoutProfileV1 } from "../experiment-planner/web/src/research/xr-layout.js";
+import { xrLayoutEditorMarkup } from "../experiment-planner/web/src/research/xr-layout-view.js";
+import { resolveXrFeedbackFootprintV1 } from "../experiment-planner/web/src/research/xr-layout-feedback.js";
+import { compilePlannerRecipeV1, parsePlannerRecipeV1, serializePlannerRecipeV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
 
 const feedback = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url))).cases[0].envelope;
 const media = [{ assetId: "landscape", displayWidth: 1920, displayHeight: 1080 },

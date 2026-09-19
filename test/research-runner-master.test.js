@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState } from "../runner/src/recipe.js";
-import { participantCatalogue, participantTimeline, participantPreviewTimeline } from "../runner/src/participants.js";
-import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
-import { reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
-import { assertMasterPlanParity, resolveMasterDesktopLayoutProjection } from "../runner/src/master-presentation.js";
+import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState } from "../experiment-runner/src/recipe.js";
+import { participantCatalogue, participantTimeline, participantPreviewTimeline } from "../experiment-runner/src/participants.js";
+import { enumerateLanguageRoutesV1 } from "../experiment-planner/web/src/research/experiment-package.js";
+import { reconstructPlannerRecipeSelectionV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { assertMasterPlanParity, resolveMasterDesktopLayoutProjection } from "../experiment-runner/src/master-presentation.js";
 const load = async name => readRunnerRecipe(await readFile(new URL(`./fixtures/${name}.canonical.json`, import.meta.url)));
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 const inside = (box, screen) => box.x >= -1e-8 && box.y >= -1e-8
@@ -61,6 +61,8 @@ test("Runner complete feedback projection preserves successor controls and rejec
   const receipt = await load("planner-recipe-locations-current-v1"), feedback = receipt.recipe.segments.P5;
   const state = runnerMasterFeedbackState(feedback, -0.8, 0.6);
   assert.equal(state.displayMode, "grid"); assert.equal(state.responseMode, "stepwise");
+  assert.equal(state.gridVisible, feedback.visual.gridEnabled);
+  assert.equal(state.flubberVisible, feedback.visual.flubberEnabled);
   assert.equal(state.tileCount, 31); assert.equal(state.tileRows, 15);
   assert.equal(state.flubber.haloSizePercent, 275.5); assert.equal(state.flubber.haloGradient, false);
   assert.equal(state.flubber.haloSteepness, 2.5); assert.equal(state.colorAnchorMode, "corners");

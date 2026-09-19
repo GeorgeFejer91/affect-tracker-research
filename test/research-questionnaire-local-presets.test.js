@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS, verifyResearcherLocalQuestionnaireSource,
   createResearcherLocalQuestionnairePresets, mergeQuestionnairePresetChoices,
-  researcherLocalQuestionnaireAvailability } from "../site/src/research/questionnaire-local-presets.js";
-import { PREBUILT_QUESTIONNAIRE_ASSETS } from "../site/src/research/questionnaire-prebuilt.js";
-import { createQuestionnaireSheet, sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
+  researcherLocalQuestionnaireAvailability } from "../experiment-planner/web/src/research/questionnaire-local-presets.js";
+import { PREBUILT_QUESTIONNAIRE_ASSETS } from "../experiment-planner/web/src/research/questionnaire-prebuilt.js";
+import { createQuestionnaireSheet, sheetToAuthoring } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
 const local = RESEARCHER_LOCAL_QUESTIONNAIRE_PRESETS[0];
 const guard = () => ({ isCurrent: () => true, signal: new AbortController().signal });
 async function synthetic() {

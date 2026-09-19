@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { createDefaultResearchSettings } from "../../site/src/research/contracts.js";
-import { createWorkspaceContributionV1, projectWorkspaceVideoDisplayGeometryV1 } from "../../site/src/research/workspace-contribution.js";
-import { createStudyIdentityV1 } from "../../site/src/research/study-identity.js";
-import { resolveXrLayoutDependencies, resolveXrLayoutContribution } from "../../site/src/research/xr-layout-authoring.js";
-import { parseXrLayoutProfileV1, xrLayoutReceipt } from "../../site/src/research/xr-layout.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { createDefaultResearchSettings } from "../../experiment-planner/web/src/research/contracts.js";
+import { createWorkspaceContributionV1, projectWorkspaceVideoDisplayGeometryV1 } from "../../experiment-planner/web/src/research/workspace-contribution.js";
+import { createStudyIdentityV1 } from "../../experiment-planner/web/src/research/study-identity.js";
+import { resolveXrLayoutDependencies, resolveXrLayoutContribution } from "../../experiment-planner/web/src/research/xr-layout-authoring.js";
+import { parseXrLayoutProfileV1, xrLayoutReceipt } from "../../experiment-planner/web/src/research/xr-layout.js";
 
 const catalogue = JSON.parse(await readFile(new URL("research-video-catalogue-contribution-v1.json", import.meta.url)));
 const cases = JSON.parse(await readFile(new URL("xr-feedback-envelope-v1.json", import.meta.url))).cases;

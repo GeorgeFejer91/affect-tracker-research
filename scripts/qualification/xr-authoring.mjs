@@ -18,15 +18,14 @@ const before = (await run("git", ["rev-parse", "HEAD"], { windowsHide: true })).
 const entry = scope === "cli" ? "test/fixtures/planner-authoring-p6-browser.js" : "test/fixtures/xr-authoring-browser.js";
 const bundle = await build({ entryPoints: [entry], bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent", metafile: true,
-  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
+  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("experiment-planner/web/src/research/ui-view.js")).href) } });
 const hashes = {};
-for (const path of [...Object.keys(bundle.metafile.inputs), "site/research.css",
-  "site/assets/flubber-input-dark.svg", "site/assets/flubber-input-light.svg"]) {
+for (const path of [...Object.keys(bundle.metafile.inputs), "experiment-planner/web/research.css"]) {
   hashes[path] = createHash("sha256").update(await readFile(path)).digest("hex");
 }
-const css = await readFile("site/research.css", "utf8"), fixture = join(output, "xr-authoring.html");
+const css = await readFile("experiment-planner/web/research.css", "utf8"), fixture = join(output, "xr-authoring.html");
 await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>P6 live authoring regression</title>
-<base href="${pathToFileURL(resolve("site")).href}/">
+<base href="${pathToFileURL(resolve("experiment-planner/web")).href}/">
 <style>${css}</style><main></main><pre id="receipt">pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`);
 const fixtureUrl = pathToFileURL(fixture); fixtureUrl.searchParams.set("scope", scope);
 const { stdout, stderr } = await run(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--force-prefers-reduced-motion",

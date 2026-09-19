@@ -1,4 +1,4 @@
-import { inspectSurveyJson, checkSurveyData } from "../site/src/research/surveyjs-engine.js";
+import { inspectSurveyJson, checkSurveyData } from "../experiment-planner/web/src/research/surveyjs-engine.js";
 // The native validator has no event loop or rendered controls. Model disposal
 // cancels SurveyJS's UI debounce handles; execution never waits for browser work.
 const timers = new Map();

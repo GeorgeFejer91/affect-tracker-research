@@ -96,7 +96,7 @@ Final focused native gate: **71 passed, 0 failed, 0 ignored** in 2.28 seconds.
 pass. The initial failures changed test comparisons, not scientific algorithms.
 
 The repository-equivalent command is `cargo test --manifest-path
-src-tauri/Cargo.toml --no-default-features --test research_planner_recipe_v2`.
+native/Cargo.toml --no-default-features --test research_planner_recipe_v2`.
 The external `run-focused.mjs` invokes the same source harness without Tauri
 composition or the shared build target. Existing unused-owner warnings remain
 visible. Native GUI/CLI, browser, file persistence, actual Runner playback,

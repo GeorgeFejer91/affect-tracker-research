@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDefaultResearchSettings, createInputBindingPreset } from "../site/src/research/contracts.js";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { resolveFeedbackEnvelopeV1 } from "../site/src/research/feedback-envelope.js";
-import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "../site/src/research/feedback-contribution.js";
+import { createDefaultResearchSettings, createInputBindingPreset } from "../experiment-planner/web/src/research/contracts.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { resolveFeedbackEnvelopeV1 } from "../experiment-planner/web/src/research/feedback-envelope.js";
+import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "../experiment-planner/web/src/research/feedback-contribution.js";
 
 function configuration() {
   const value = createDefaultResearchSettings();

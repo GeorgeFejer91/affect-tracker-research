@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   createStudyIdentityV1,
   validateStudyIdentityV1,
-} from "../site/src/research/study-identity.js";
+} from "../experiment-planner/web/src/research/study-identity.js";
 
 test("P1 study identity is editable strict content independent of filesystem authority", () => {
   const identity = createStudyIdentityV1({ id: "video-affect-study", title: "Video Affect Study" });

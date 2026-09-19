@@ -83,7 +83,7 @@ it. Never silently overwrite an earlier version.
   file remains unchanged and reproduce both complete language routes.
 
 The researcher confirmed the clip from the earlier Playground repository.
-Identified source: `site/assets/dictator-3-study.mp4` in the local
+Identified source: `experiment-planner/web/assets/dictator-3-study.mp4` in the local
 `affect-tracker-playground` checkout, labelled “The Great Dictator study clip”.
 Preliminary identification: 86,870,779 bytes, SHA-256
 `b5327e7465ec92a4c93f3236a1ebab4556cdf508e24eafe6c593eac1e13afd49`,

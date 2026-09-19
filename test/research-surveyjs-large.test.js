@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { importSurveyJson } from "../site/src/research/surveyjs-definition.js";
-import { checkSurveyData } from "../site/src/research/surveyjs-engine.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { importSurveyJson } from "../experiment-planner/web/src/research/surveyjs-definition.js";
+import { checkSurveyData } from "../experiment-planner/web/src/research/surveyjs-engine.js";
 import { surveyCore } from "./fixtures/planner-recipe-v4-fixture.js";
-import { createQuestionnairePresentationV3 } from "../site/src/research/questionnaire-recipe-v2.js";
-import { compilePlannerRecipeV4 } from "../site/src/research/planner-recipe.js";
-import { validatePlannerContributionSnapshot } from "../site/src/research/planner-contributions.js";
-import { prepareSupportedBrowserPlannerRecipeSave, openSupportedBrowserPlannerRecipeFile } from "../site/src/research/planner-recipe-file.js";
-import { readRunnerRecipe, resolveRunnerSelection } from "../runner/src/recipe.js";
+import { createQuestionnairePresentationV3 } from "../experiment-planner/web/src/research/questionnaire-recipe-v2.js";
+import { compilePlannerRecipeV4 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { validatePlannerContributionSnapshot } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { prepareSupportedBrowserPlannerRecipeSave, openSupportedBrowserPlannerRecipeFile } from "../experiment-planner/web/src/research/planner-recipe-file.js";
+import { readRunnerRecipe, resolveRunnerSelection } from "../experiment-runner/src/recipe.js";
 
 test("large SurveyJS content survives import, segment handoff, exact save/reopen and before-session planning", async () => {
   const core = await surveyCore(), p2 = core.segments.P2;

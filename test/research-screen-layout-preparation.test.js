@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createScreenLayoutState } from "../site/src/research/screen-layout-state.js";
-import { createScreenLayoutDraft, resolveScreenLayoutDraft } from "../site/src/research/screen-layout-draft.js";
-import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft } from "../site/src/research/desktop-layout-contribution.js";
-import { validateDesktopLayoutProfileV1 } from "../site/src/research/desktop-layout.js";
+import { createScreenLayoutState } from "../experiment-planner/web/src/research/screen-layout-state.js";
+import { createScreenLayoutDraft, resolveScreenLayoutDraft } from "../experiment-planner/web/src/research/screen-layout-draft.js";
+import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft } from "../experiment-planner/web/src/research/desktop-layout-contribution.js";
+import { validateDesktopLayoutProfileV1 } from "../experiment-planner/web/src/research/desktop-layout.js";
 const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
 const profile = () => structuredClone(fixture.cases[0].profile);
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };

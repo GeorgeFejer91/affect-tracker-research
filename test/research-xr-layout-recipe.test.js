@@ -4,13 +4,13 @@ import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout-recipe.js";
-import { serializeXrLayoutProfileV1, parseXrLayoutProfileV1 } from "../site/src/research/xr-layout.js";
-import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
-import { resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
-import { createWorkspaceContribution, projectWorkspaceVideoDisplayGeometry } from "../site/src/research/workspace-contribution.js";
-import { resolveXrLayoutDependencies, resolveXrLayoutContribution } from "../site/src/research/xr-layout-authoring.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { resolveSavedXrLayoutContribution } from "../experiment-planner/web/src/research/xr-layout-recipe.js";
+import { serializeXrLayoutProfileV1, parseXrLayoutProfileV1 } from "../experiment-planner/web/src/research/xr-layout.js";
+import { resolveFeedbackEnvelope } from "../experiment-planner/web/src/research/feedback-layout.js";
+import { resolveXrFeedbackFootprintV1 } from "../experiment-planner/web/src/research/xr-layout-feedback.js";
+import { createWorkspaceContribution, projectWorkspaceVideoDisplayGeometry } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { resolveXrLayoutDependencies, resolveXrLayoutContribution } from "../experiment-planner/web/src/research/xr-layout-authoring.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-layout-recipe-v1.json", import.meta.url)));
 const options = () => ({ workspaceContribution: structuredClone(fixture.workspace),

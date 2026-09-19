@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { importQuestionnaireAuthoring } from "../site/src/research/questionnaire-authoring.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { importQuestionnaireAuthoring } from "../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
 
 async function fixture(format = "csv") {
-  const bytes = new Uint8Array(await readFile(new URL(`../site/questionnaires/questionnaire-template.${format}`, import.meta.url)));
+  const bytes = new Uint8Array(await readFile(new URL(`../experiment-planner/web/questionnaires/questionnaire-template.${format}`, import.meta.url)));
   const imported = await importQuestionnaireAuthoring(bytes, { logicalName: `questionnaire-template.${format}` });
   const familyId = questionnaireFamilyId(imported.definition), language = imported.definition.language;
   let renders = 0, changes = 0;
@@ -59,7 +59,7 @@ for (const change of ["reset", "cancel", "lock", "preset", "duringAwait"]) test(
 });
 
 // Exercise the actual CLI owner allocator rather than constructing editor slots directly.
-const { createPlannerAuthoringP2 } = await import("../site/src/research/planner-authoring-p2.js");
+const { createPlannerAuthoringP2 } = await import("../experiment-planner/web/src/research/planner-authoring-p2.js");
 for (const editSameBatch of [false, true]) test(`CLI addQuestionnaire preserves import eligibility only without subsequent edits (${editSameBatch})`, async () => {
   const f = await fixture();
   const { familyForDefinition, ...dataContext } = f.context;

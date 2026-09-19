@@ -4,7 +4,7 @@ import {
   createProfiles,
   createProjectionOffsets,
   FLUBBER_BASE_SHAPES,
-} from "../site/src/math.js";
+} from "../experiment-planner/web/src/math.js";
 
 const DEFAULT_FRAME_COUNT = 60 * 60 * 30;
 const requestedFrames = Number.parseInt(process.env.FLUBBER_STRESS_FRAMES ?? String(DEFAULT_FRAME_COUNT), 10);

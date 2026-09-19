@@ -7,7 +7,7 @@ researchers use the questionnaire tables and settings.
 
 ## Exact contract
 
-`site/src/research/questionnaire-recipe.js` exports the pure async
+`experiment-planner/web/src/research/questionnaire-recipe.js` exports the pure async
 `validateQuestionnaireRecipeContributionV1(value)` (detached validated object)
 and `validateQuestionnaireRecipeContribution(value)` (true or throws).
 

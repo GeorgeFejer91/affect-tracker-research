@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { prepareSupportedBrowserPlannerRecipeSave, openSupportedBrowserPlannerRecipeFile } from "../site/src/research/planner-recipe-file.js";
-import { parseSupportedPlannerRecipe } from "../site/src/research/planner-recipe.js";
+import { prepareSupportedBrowserPlannerRecipeSave, openSupportedBrowserPlannerRecipeFile } from "../experiment-planner/web/src/research/planner-recipe-file.js";
+import { parseSupportedPlannerRecipe } from "../experiment-planner/web/src/research/planner-recipe.js";
 const source = readFileSync(new URL("./fixtures/planner-recipe-v5.bundle.json", import.meta.url), "utf8");
 const document = await parseSupportedPlannerRecipe(new TextEncoder().encode(source));
 

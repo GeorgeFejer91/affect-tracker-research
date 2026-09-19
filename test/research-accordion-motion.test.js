@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   SETUP_ACCORDION_MOTION_MS,
   setSetupAccordionPanelExpanded,
-} from "../site/src/research/setup-accordion-motion.js";
+} from "../experiment-planner/web/src/research/setup-accordion-motion.js";
 
 class FakePanel {
   constructor({ expanded = false } = {}) {

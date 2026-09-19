@@ -19,10 +19,10 @@ const git = async (...args) => (await execute("git", args, { windowsHide: true }
 const commit = await git("rev-parse", "HEAD"), status = await git("status", "--porcelain");
 const bundle = await build({ entryPoints: [entryPoint], bundle: true,
   write: false, metafile: true, format: "iife", target: "chrome105", logLevel: "silent", loader: { ".csv": "text" },
-  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
-const inputs = [...new Set([...Object.keys(bundle.metafile.inputs), "site/research.css", "scripts/qualification/questionnaire-recipe.mjs"])].sort();
+  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("experiment-planner/web/src/research/ui-view.js")).href) } });
+const inputs = [...new Set([...Object.keys(bundle.metafile.inputs), "experiment-planner/web/research.css", "scripts/qualification/questionnaire-recipe.mjs"])].sort();
 const sourceHashes = Object.fromEntries(await Promise.all(inputs.map(async path => [path, hash(await readFile(path))])));
-const css = await readFile("site/research.css", "utf8");
+const css = await readFile("experiment-planner/web/research.css", "utf8");
 const html = `<!doctype html><meta charset="utf-8"><title>P2 successor verification</title><style>${css}</style><main></main><pre id="receipt" hidden>pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`;
 const fixture = join(output, "questionnaire-recipe.html"); await writeFile(fixture, html);
 const { stdout, stderr } = await execute(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",

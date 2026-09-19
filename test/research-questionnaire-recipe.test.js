@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { validateQuestionnaireContribution } from "../site/src/research/questionnaire-contribution.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { validateQuestionnaireContribution } from "../experiment-planner/web/src/research/questionnaire-contribution.js";
 import { validateQuestionnaireRecipeContributionV1, validateQuestionnaireRecipeContribution,
-  createQuestionnairePresentationV1, questionnairePresentationGroups } from "../site/src/research/questionnaire-recipe.js";
+  createQuestionnairePresentationV1, questionnairePresentationGroups } from "../experiment-planner/web/src/research/questionnaire-recipe.js";
 import { questionnaireRecipeFixture } from "./fixtures/questionnaire-recipe-fixture.js";
 
 test("shared Rust/JavaScript fixture matches generated content and fixed canonical digest", async () => {

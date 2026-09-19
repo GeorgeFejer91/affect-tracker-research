@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createFormDefinitionV1, verifyFormDefinitionV1, verifyP2Definition, validateFormDefinitionV1, validateFormAnswers } from "../site/src/research/form-definition.js";
-import { canonicalJson } from "../site/src/research/canonical.js";
+import { createFormDefinitionV1, verifyFormDefinitionV1, verifyP2Definition, validateFormDefinitionV1, validateFormAnswers } from "../experiment-planner/web/src/research/form-definition.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
 const fixtures = await Promise.all(["en", "de"].map(async language => JSON.parse(await readFile(new URL(`./fixtures/demographics-${language}-form-v1.canonical.json`, import.meta.url), "utf8"))));
 test("production form reader reproduces both frozen canonical definitions and snapshots async input", async () => {
   for (const d of fixtures) {

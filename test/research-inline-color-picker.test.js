@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hsvToHex, hexToHsv, createInlineColorPicker } from "../site/src/research/inline-color-picker.js";
+import { hsvToHex, hexToHsv, createInlineColorPicker } from "../experiment-planner/web/src/research/inline-color-picker.js";
 
 test("inline color conversion round-trips RGB and preserves hue through neutral colors", () => {
   for (let r = 0; r <= 255; r += 17) for (let g = 0; g <= 255; g += 17) for (let b = 0; b <= 255; b += 17) {

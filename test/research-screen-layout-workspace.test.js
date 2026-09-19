@@ -1,18 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
-import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
-import { createWorkspaceContributionProducerV1, projectWorkspaceVideoCatalogueSnapshotV1 } from "../site/src/research/workspace-contribution.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
-import { createScreenLayoutDependencyBinding } from "../site/src/research/screen-layout-dependencies.js";
-import { createScreenLayoutState } from "../site/src/research/screen-layout-state.js";
-import { createWorkspaceContribution, projectWorkspaceVideoCatalogueSnapshot } from "../site/src/research/workspace-contribution.js";
-import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
+import { createStudyIdentityV1 } from "../experiment-planner/web/src/research/study-identity.js";
+import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { createWorkspaceContributionProducerV1, projectWorkspaceVideoCatalogueSnapshotV1 } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { createFeedbackContributionSource } from "../experiment-planner/web/src/research/feedback-contribution.js";
+import { createScreenLayoutDependencyBinding } from "../experiment-planner/web/src/research/screen-layout-dependencies.js";
+import { createScreenLayoutState } from "../experiment-planner/web/src/research/screen-layout-state.js";
+import { createWorkspaceContribution, projectWorkspaceVideoCatalogueSnapshot } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry, projectSupportedVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
 import { desktopLayoutDraftFromProfile, desktopLayoutProfileFromDraft, resolveDesktopLayoutContribution,
-  validateSupportedDesktopLayoutContribution } from "../site/src/research/desktop-layout-contribution.js";
-import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
+  validateSupportedDesktopLayoutContribution } from "../experiment-planner/web/src/research/desktop-layout-contribution.js";
+import { resolveFeedbackEnvelope } from "../experiment-planner/web/src/research/feedback-layout.js";
 
 test("current P4 preparation validates workspace3 without broadening the historical reader", async () => {
   const { workspace } = JSON.parse(await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"));
@@ -23,7 +23,7 @@ test("current P4 preparation validates workspace3 without broadening the histori
   assert.deepEqual(await validateSupportedDesktopLayoutContribution(profile, dependencies), profile);
   await assert.rejects(resolveDesktopLayoutContribution(profile, dependencies), /unsupported/);
   const invalid = structuredClone(dependencies);
-  invalid.workspace.videoCatalogue.entries[0].geometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90;
+  invalid.workspace.videoCatalogue.entries[0].geometry.htmlVideoMetadata.videoWidthPx = 1;
   await assert.rejects(validateSupportedDesktopLayoutContribution(profile, invalid));
 });
 

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { inspectMasterStream } from "../../runner/src/master-stream.js";
+import { inspectMasterStream } from "../../experiment-runner/src/master-stream.js";
 const [samplesPath, receiptPath] = process.argv.slice(2);
 assert.ok(samplesPath && receiptPath, "Supply independently exported marker samples and a new result path.");
 const bytes = await readFile(samplesPath), samples = JSON.parse(bytes);

@@ -1,7 +1,7 @@
 // This accepts only independent XDF export; no producer JSON or sidecar input.
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
-import { inspectInformationStream } from "../../runner/src/information-stream.js";
+import { inspectInformationStream } from "../../experiment-runner/src/information-stream.js";
 const [input, output] = process.argv.slice(2);
 assert.ok(input && output, "Supply an independent XDF export and new reconstruction output path.");
 const data = JSON.parse(await readFile(input, "utf8"));

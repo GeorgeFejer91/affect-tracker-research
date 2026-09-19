@@ -11,17 +11,18 @@ import { build } from "esbuild";
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination);
 const output = resolve(destination); await mkdir(output, { recursive: true });
-const css = (await readFile(new URL("../../site/research.css", import.meta.url), "utf8"))
-  .replaceAll('./assets/', pathToFileURL(fileURLToPath(new URL('../../site/assets/', import.meta.url))).href);
+const css = (await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8"))
+  .replaceAll('./assets/', pathToFileURL(fileURLToPath(new URL('../../experiment-planner/web/assets/', import.meta.url))).href);
 const bundle = await build({ write: false, bundle: true, format: "esm", stdin: {
   resolveDir: fileURLToPath(new URL("../../", import.meta.url)), contents: `
-import {bootResearchUi} from './site/src/research/app.js';
-import {withCustomDigitalAction} from './site/src/research/input-controller.js';
+import {bootResearchUi} from './experiment-planner/web/src/research/app.js';
+import {withCustomDigitalAction} from './experiment-planner/web/src/research/input-controller.js';
 window.checkNativeMenu=async()=>{
  const root=bootResearchUi(),q=s=>root.querySelector(s),checks=[];
  const check=(name,pass)=>{checks.push({name,pass:!!pass});if(!pass)throw Error(name);};
  const dialog=q('#binding-capture-dialog'),area=q('.binding-capture-area');
- q('#preview-input-menu').click();q('[data-binding-capture-target=left]').click();
+ const openLeft=()=>q('[data-binding-direction=left]').click();
+ openLeft();
  const before=root.researchUi.inputBinding,action={kind:'keyboard',code:'KeyJ'},binding=withCustomDigitalAction(before,'left',action);
  area.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyJ',key:'j',bubbles:true}));
  check('Tauri UI does not use browser keyboard capture',JSON.stringify(root.researchUi.inputBinding)===JSON.stringify(before));
@@ -33,16 +34,16 @@ window.checkNativeMenu=async()=>{
  check('cancelled native capture cannot apply',root.researchUi.applyNativeCapture({binding,action,direction:'left'})===false);
  q('[data-binding-capture-target=left]').click();root.researchUi.failNativeCapture('Device unavailable.');
  check('native begin failure disarms and stays visible',area.dataset.listening==='false'&&q('#binding-capture-receipt').textContent==='Device unavailable.');
- q('[data-binding-capture-target=left]').click();dialog.close();q('#preview-input-menu').click();q('[data-binding-capture-target=left]').click();await new Promise(r=>setTimeout(r,0));
+ q('[data-binding-capture-target=left]').click();dialog.close();openLeft();await new Promise(r=>setTimeout(r,0));
  check('old close event cannot cancel reopened capture',area.dataset.listening==='true');
  q('#binding-capture-cancel').click();
  check('closed native popup rejects delayed result',root.researchUi.applyNativeCapture({binding,action,direction:'left'})===false);
- q('#preview-input-menu').click();document.getElementById('receipt').textContent=JSON.stringify({pass:true,checks});
+ openLeft();document.getElementById('receipt').textContent=JSON.stringify({pass:true,checks});
 };
 window.checkMenu=async()=>{
  const root=bootResearchUi(),q=s=>root.querySelector(s),checks=[];
  const check=(name,pass)=>{checks.push({name,pass:!!pass});if(!pass)throw Error(name);};
- const dialog=q('#binding-capture-dialog'),area=q('.binding-capture-area'),opener=q('#preview-input-menu');
+ const dialog=q('#binding-capture-dialog'),area=q('.binding-capture-area'),opener=q('[data-binding-direction=left]'),release=q('#preview-flubber-release');
  const key=code=>area.dispatchEvent(new KeyboardEvent('keydown',{key:code,code,bubbles:true,cancelable:true}));
  const arm=d=>q('[data-binding-capture-target='+d+']').click();
  const binding=()=>root.researchUi.inputBinding;
@@ -50,9 +51,9 @@ window.checkMenu=async()=>{
  const pane=q('.preview-pane'),oldWidth=pane.style.width;
  for(const width of [320,680]){pane.style.width=width+'px';const box=pane.getBoundingClientRect();check('preview header controls fit '+width+'px pane',[...pane.querySelectorAll('.preview-header-controls button')].every(e=>{const b=e.getBoundingClientRect();return b.left>=box.left&&b.right<=box.right;}));}
  pane.style.width=oldWidth;
- opener.focus();opener.click();key('KeyJ');
- check('opener does not arm capture',dialog.open&&JSON.stringify(binding())===initial);
- arm('left');check('target arms and focuses dedicated capture area',area===document.activeElement&&area.dataset.listening==='true');
+ release.focus();release.click();key('KeyJ');
+ check('release button does not arm binding capture',!dialog.open&&JSON.stringify(binding())===initial);
+ opener.click();check('direction control arms and focuses dedicated capture area',area===document.activeElement&&area.dataset.listening==='true');
  key('KeyJ');check('keyboard assignment updates saved binding and all readouts',binding().directions.left.code==='KeyJ'&&[...root.querySelectorAll('[data-binding-value=left]')].every(e=>e.textContent.includes('KeyJ')));
  arm('right');await new Promise(r=>setTimeout(r,220));
  check('success has no delayed close that cancels the next target',dialog.open&&area.dataset.listening==='true');
@@ -87,22 +88,21 @@ window.checkMenu=async()=>{
  check('cancel capture keeps menu open and binding unchanged',dialog.open&&binding().directions.left.kind==='mouseButton');
  arm('left');key('KeyJ');q('#binding-capture-cancel').click();await new Promise(r=>setTimeout(r,0));
  check('Done returns focus to opener',!dialog.open&&document.activeElement===opener);
- opener.click();arm('left');dialog.close();await new Promise(r=>setTimeout(r,0));key('KeyP');
+ opener.click();dialog.close();await new Promise(r=>setTimeout(r,0));key('KeyP');
  check('programmatic close cancels capture',binding().directions.left.code==='KeyJ');
  const stage=q('.preview-primary-stage');stage.focus();
  stage.dispatchEvent(new KeyboardEvent('keydown',{key:'l',code:'KeyL',bubbles:true,cancelable:true}));
  stage.dispatchEvent(new KeyboardEvent('keyup',{key:'l',code:'KeyL',bubbles:true}));
  check('accepted key drives the live preview',Number(q('.preview-pane [data-preview-x]').textContent)>0);
- opener.click();arm('down');area.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}));
+ q('[data-binding-direction=down]').click();area.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}));
  check('Escape closes and stops capture',!dialog.open&&area.dataset.listening==='false');
- q('#input-preset').value='gamepad-left-stick';q('#input-preset').dispatchEvent(new Event('change',{bubbles:true}));opener.click();
- check('analog preset is clearly read-only in digital capture menu',[...dialog.querySelectorAll('[data-binding-capture-target]')].every(button=>button.disabled)&&q('#binding-capture-instruction').textContent.includes('analog'));
- q('#binding-capture-cancel').click();q('#input-preset').value='arrow-keys';q('#input-preset').dispatchEvent(new Event('change',{bubbles:true}));
+ q('#input-preset').value='gamepad-left-stick';q('#input-preset').dispatchEvent(new Event('change',{bubbles:true}));
+ check('analog preset disables custom binding controls',[...root.querySelectorAll('[data-binding-direction]')].every(button=>button.disabled)&&q('#input-step-applicability').textContent.includes('N/A'));
+ q('#input-preset').value='arrow-keys';q('#input-preset').dispatchEvent(new Event('change',{bubbles:true}));
  opener.click();window.scrollTo(0,0);await new Promise(resolve=>setTimeout(resolve,250));
  const box=dialog.getBoundingClientRect();check('dialog controls fit viewport',box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight&&[...dialog.querySelectorAll('button')].every(e=>{const b=e.getBoundingClientRect();return b.left>=box.left&&b.right<=box.right;}));
- const theme=window.fixtureTheme??(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
- check('opener uses the matching theme asset',getComputedStyle(opener.firstElementChild).backgroundImage.includes('flubber-input-'+theme));
- document.getElementById('receipt').textContent=JSON.stringify({pass:true,checks,theme,dialogWidth:box.width});
+ check('release button remains a self-contained Flubber control',getComputedStyle(release.firstElementChild).backgroundImage==='none'&&release.getAttribute('aria-pressed')==='true');
+ document.getElementById('receipt').textContent=JSON.stringify({pass:true,checks,dialogWidth:box.width});
 };` } });
 // Chrome's headless window has a platform minimum width. Exercise a genuinely
 // 320px dialog inside a desktop viewport instead of mislabelling a clipped PNG.

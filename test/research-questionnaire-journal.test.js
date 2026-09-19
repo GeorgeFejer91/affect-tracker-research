@@ -2,21 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-import { canonicalSha256 } from "../site/src/research/canonical.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
 import {
   IndexedDbResearchJournal,
   MemoryResearchJournal,
   RESEARCH_JOURNAL_VERSION,
-} from "../site/src/research/browser-journal.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+} from "../experiment-planner/web/src/research/browser-journal.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 import {
   QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
   projectResearchSettingsV2ToAssignmentSettingsV1,
   resolveProtocolPlanV1,
   validateResearchSettingsV2,
-} from "../site/src/research/protocol-plan.js";
-import { RESEARCH_RUN_MANIFEST_V3_SCHEMA } from "../site/src/research/protocol-records.js";
+} from "../experiment-planner/web/src/research/protocol-plan.js";
+import { RESEARCH_RUN_MANIFEST_V3_SCHEMA } from "../experiment-planner/web/src/research/protocol-records.js";
 import {
   idbRequestResult,
   idbTransactionDone,

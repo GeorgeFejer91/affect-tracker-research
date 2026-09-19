@@ -1,15 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
 import { compilePlannerRecipeV3, parsePlannerRecipeV3, parsePlannerRecipeV2, parsePlannerRecipeV1,
   parseSupportedPlannerRecipe, serializePlannerRecipeV3, reproducePlannerRecipeV3,
-  reconstructPlannerRecipeSelectionV3, validatePlannerRecipeV3 } from "../site/src/research/planner-recipe.js";
-import { plannerRecipeVersionForContributions, capturePlannerRecipeInputVersion } from "../site/src/research/planner-recipe-capture.js";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { createPackageExportController } from "../site/src/research/package-export-controller.js";
-import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
-import { prepareSupportedBrowserPlannerRecipeSave } from "../site/src/research/planner-recipe-file.js";
+  reconstructPlannerRecipeSelectionV3, validatePlannerRecipeV3 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { plannerRecipeVersionForContributions, capturePlannerRecipeInputVersion } from "../experiment-planner/web/src/research/planner-recipe-capture.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { createPackageExportController } from "../experiment-planner/web/src/research/package-export-controller.js";
+import { createPlannerFileWorkflow } from "../experiment-planner/web/src/research/planner-file-workflow.js";
+import { prepareSupportedBrowserPlannerRecipeSave } from "../experiment-planner/web/src/research/planner-recipe-file.js";
 
 import { controlledCore } from "./fixtures/planner-recipe-v3-fixture.js";
 
@@ -35,7 +35,7 @@ test("master3 preserves controlled provenance across canonical bytes, selection 
       if (name === "xr") assert.equal(`${canonicalJson(selected.layout)}\n`,
         await readFile(new URL("./fixtures/planner-recipe-v3-xr-layout.json", import.meta.url), "utf8"));
       assert.deepEqual(selected.assets, recipe.segments.P1.videoCatalogue.entries);
-      assert.equal(selected.assets[0].geometry.nativeDisplayMetadata.sourceOrientation.stream.status, "absent");
+      assert.equal(selected.assets[0].geometry.htmlVideoMetadata.sourceOrientation.stream.status, "absent");
       selectionHashes.push({ selector, sha256: await canonicalSha256(selected) });
     }
     assert.equal(`${canonicalJson(selectionHashes)}\n`, await readFile(new URL(`./fixtures/planner-recipe-v3-${name}-selection-hashes.json`, import.meta.url), "utf8"));
@@ -55,7 +55,7 @@ test("master3 rejects mixed chains and drift instead of repairing old sources", 
   const recipe = await compilePlannerRecipeV3((await controlledCore()).core);
   for (const mutate of [r => r.version = 2, r => r.segments.P1.version = 2,
     r => r.segments.P2.version = 1, r => r.integrity.algorithmVersion = "planner-recipe-reproduction-v3",
-    r => r.segments.P1.videoCatalogue.entries[0].geometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90]) {
+    r => r.segments.P1.videoCatalogue.entries[0].geometry.htmlVideoMetadata.videoWidthPx = 1]) {
     const changed = structuredClone(recipe); mutate(changed);
     await assert.rejects(validatePlannerRecipeV3(changed));
   }

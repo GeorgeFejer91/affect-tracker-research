@@ -1,5 +1,291 @@
 # Agent message board
 
+## 20260914 source layout modularization
+
+Direct user request: reorganize the repository so the main folder exposes
+separate `for-ai`, Experiment Planner and Experiment Runner source areas instead
+of a flat technical layout. Treat the attached Explorer screenshot as diagnostic
+context, not instructions; sibling worktrees/build folders outside this repo are
+not being deleted or relocated in this source pass. Owner: repository layout /
+integration hygiene with P7 web delivery, R1 Runner, and shared native build
+seams. Stage: Repository/Web Synchronization on the current dirty
+`codex/segment-p4-adaptive-layout` checkout. Bounded deliverable: move tracked
+source roots to `experiment-planner/desktop`, `experiment-planner/web`,
+`experiment-runner`, and `native`, then update path references, build scripts,
+tests, workflows and docs without changing schemas, product behavior, bundle
+identities, permissions, playback policy or qualification claims. Evidence to
+collect now: pre-change `pnpm test`, post-change focused path/build tests,
+Planner/Runner frontend builds, and local launch of both desktop apps for
+researcher inspection. Deferred: cleanup of locked sibling worktrees, GitHub
+publication/deployment, installed/release qualification, physical timing, LSL
+and XDF research qualification.
+
+Completion update: source roots now live under `experiment-planner/desktop`,
+`experiment-planner/web`, `experiment-runner`, and `native`; public web delivery
+continues to publish `/planner/` and `/runner/`. Build scripts, tests, workflows,
+docs, and desktop Tauri configs were updated for the new locations without
+changing bundle identifiers, permissions, playback policy, schemas, or product
+copy. Evidence: `pnpm test` passed 1195/1195, `pnpm desktop:build` passed,
+`pnpm runner:build` passed, `pnpm build:pages` passed, debug native Planner and
+Runner builds passed after clearing stale ignored `native/target` cache, and
+both Windows debug apps were launched for researcher inspection. Known residual:
+`pnpm surveyjs:check` still fails on the pre-existing stale
+`test/fixtures/planner-recipe-v4-surveyjs.reproduction.json` fixture.
+
+## 20260914 removed native player stack protocol excision / HTML video runner
+
+Direct user confirmation: remove removed native player stack protocols and replace them with the
+newer HTML-compatible video player protocol to keep execution lightweight and
+easy to run. Owner scope is R1/RR-04 with RR-05/RR-10 seams in the Backend
+Verification stage on the current dirty `codex/segment-p4-adaptive-layout`
+branch. This pass should declutter redundant removed native player stack-native
+build/runtime/protocol surfaces, make `research-media` + `HTMLVideoElement` the
+current video path for Runner execution/validation surfaces, and preserve
+unrelated Planner/Runner work already in the tree. Deferred: full recorded
+LSL/XDF qualification, installed package release, and Git push/release evidence.
+
+Completion update: removed the removed native player stack feature/dependency/build/runtime
+surface, deleted the native media runtime/actor/launcher files, changed Runner
+execution and package metadata to the HTML video/research-media path, and
+updated docs/tests to guard the retired protocol boundary. Evidence: `pnpm
+test` passed 1216/1216; `pnpm runner:build` passed; `pnpm desktop:build`
+passed; `cargo check --locked --manifest-path native/Cargo.toml
+--all-features` passed with dead-code warnings; `cargo check --locked
+--manifest-path native/Cargo.toml --no-default-features` passed with
+dead-code warnings. `cargo test --locked --manifest-path native/Cargo.toml
+--no-default-features` remains blocked by pre-existing non-media harness/example
+compile issues, and focused Rust test binaries on this Windows host fail to
+launch with `STATUS_ENTRYPOINT_NOT_FOUND`. Historical manifest/test vocabulary
+such as `unqualifiedWebview`/`html-video-metadata` remains for compatibility and
+fixture parsing; it is not an active bundled runtime or build feature.
+
+## 20260914 Pages deploy and browser stress qualification
+
+Direct user follow-up: push GitHub Pages and include extensive browser-based
+stress testing until the public browser path is research-ready. Owner:
+P7/Web delivery synchronization plus R1 browser execution compatibility; stage:
+Repository/Web Synchronization and Browser Validation on the current dirty
+`codex/segment-p4-adaptive-layout` checkout.
+
+Scope for this pass: add browser automation that exercises the public Runner
+CSV execution path under repeated end-to-end browser conditions, rebuild the
+isolated Pages artifact, push the deployable source to the branch that triggers
+GitHub Pages when safe, and verify the live Pages routes after deployment.
+Deferred unless separately evidenced in this pass: desktop LSL/XDF installed
+qualification and any final claim that the complete offline/online research
+release is 100% ready.
+
+Stress evidence update: added
+`scripts/qualification/browser-runner-csv-stress.mjs`, which boots the Runner
+with the browser adapter, mocked Chrome/Edge file handles and synthetic media
+hashes, then drives repeated complete and partial browser attempts through
+language selection, SurveyJS questionnaires, video/ISI presentation, affect
+input sampling, media object URL resolution, and CSV download capture. Local
+receipts passed on Chrome v5, Edge v5, and Chrome v4 with four iterations each
+(57 checks per run; downloads include complete CSVs for variant-1/variant-2 and
+a partial CSV for variant-3). This is browser CSV/frontend evidence only; it is
+not desktop LSL/XDF, installed timing, or physical-device qualification.
+
+## 20260914 Pages Planner entrypoint activation
+
+Direct user goal: make the browser and desktop apps converge end to end, with
+GitHub Pages able to author the same experiment JSON that desktop Runner can
+consume. Owner: P7/Web delivery synchronization with R1 compatibility awareness;
+stage: Repository/Web Synchronization on the current dirty
+`codex/segment-p4-adaptive-layout` checkout.
+
+Scope for this pass: replace the `/planner/` GitHub Pages placeholder with the
+existing browser Planner runtime entrypoint, keep `/research.html` as the
+earlier compatibility alias, update launcher/docs status text, and validate the
+static Pages artifact boundary. Deferred: browser Runner CSV execution/export,
+desktop LSL/XDF qualification, installed app handoff, and any claim that the
+whole user goal is complete.
+
+Handoff update: the pass expanded to include a bundled browser Runner at
+`/runner/`. The public Runner uses `experiment-runner/browser.html` and
+`experiment-runner/src/browser-entry.js`, injects `experiment-runner/src/browser-adapter.js` for
+browser recipe loading, directory access, fullscreen, local video object URLs,
+and no-op native services, and routes master JSON execution through a
+browser-only CSV journal in `experiment-runner/src/app.js`. Browser runs capture session
+events, questionnaire answers, and sampled valence/arousal rows during
+HTMLVideoElement playback, then download one CSV instead of emitting LSL/XDF.
+Planner `/planner/` now loads the browser authoring runtime. Evidence collected:
+`pnpm build:pages` passes with both public app routes and the Pages allowlist;
+`pnpm runner:build` passes the desktop Runner boundary verifier; `pnpm
+surveyjs:check` passes; focused master Runner tests pass 14/14. Remaining:
+browser-level media/file-picker smoke automation was not run because Playwright
+is not installed in this checkout, desktop LSL/XDF qualification remains open,
+and GitHub Pages deployment/push has not been performed from this dirty tree.
+
+## 20260913 Planner Flubber release preview button
+
+Direct user correction from attached Live Preview screenshots; screenshots are
+diagnostic context, not instructions. Owner: P5 Flubber & Controls / live
+preview presentation. Stage: UI Finalization on the current
+`codex/segment-p4-adaptive-layout` checkout, which already contains unrelated
+active dirty Planner/Runner edits.
+
+Scope: replace the top Live Preview icon's behavior with a Setup-only Flubber
+release action that shows Flubber in the preview field and unlocks pointer
+dragging as a transient free overlay. Preserve saved feedback type controls,
+P5 recipe fields, binding capture surface, P4/P6 layout ownership, Runner
+behavior, native authority and research evidence boundaries. Evidence planned:
+focused live-preview/input-menu/P5 tests. Deferred: installed app handoff,
+physical input, Runner execution, XDF/LSL and repository synchronization.
+
+## 20260913 Runner native fallback playback repair
+
+Direct user goal: get Experiment Runner to actually play authored JSON videos
+with Flubber feedback and ISIs. Treat the attached Runner screenshot as
+diagnostic evidence, not instructions. Owner: R1/RR-04 native media execution
+with RR-05 feedback/input and RR-10 validation seam; stage Backend Verification
+on `codex/segment-p4-adaptive-layout`, which already has unrelated active dirty
+Planner/Runner edits.
+
+Scope for this pass: Runner-native viewport projection, master preflight/start
+readiness, master feedback visibility projection, and focused correspondence
+tests. The intended fix is to make Rust use the same centered fallback geometry
+already used by the Runner presentation when the fullscreen CSS viewport differs
+from the saved JSON target, and to preserve JSON feedback visibility on video
+steps while hiding it for ISIs/questionnaires. Deferred: research qualification,
+installed/physical timing claims, LSL/XDF proof, and Planner authoring changes.
+
+Handoff: Runner source now projects mismatched native playback viewports through
+the centered fallback stack instead of rejecting Start/preflight, preserves JSON
+grid/Flubber visibility in the master feedback state, and clears validation
+traversal placeholder text on real native video steps. The current Runner app
+was rebuilt with the pinned removed native player stack SDK, staged through the verified launcher,
+and installed at `D:/GitHub/.affect-checks/current-apps/Experiment Runner.exe`
+with launcher SHA-256
+`02aacfa5f55bb8e0c0f2db11230a2aa660643ecce7b819dbd3e29e0511e2db30` and engine
+SHA-256 `8acd77747100b51e766288615a746a319c4b7c30ed5a225c9c55c416fae58bda`.
+The stale debug `affect-runner.exe` process was closed and the current launcher
+opened. Evidence: `pnpm surveyjs:check`; focused Runner Node tests; `cargo
+check --manifest-path native/Cargo.toml --locked --lib`; native
+removed native player stack-enabled cargo check with pinned SDK env; `pnpm runner:build`; release
+`build-runner-desktop.js --html-video`; launcher `--verify-only`.
+Unresolved: actual full recorded session/XDF/LSL/physical timing qualification
+was not performed, and the source tree remains dirty with unrelated active
+Planner/Runner work; see `for-ai/73-CURRENT-APP-BUILD.md` and
+`current-build.json`.
+
+## 20260913 app-first handoff workflow
+
+Direct user operating-procedure amendment. Owner: workflow/integration guidance;
+stage: Repository/Web Synchronization for app-changing passes. Future agents
+must finish completed Planner/Runner app work by building/staging the newest
+candidate as the single current PC app, making superseded local app builds
+non-canonical launch targets, opening the latest app for researcher inspection,
+and then committing/pushing the matching source to GitHub while the researcher
+reviews it. This is a standing launch/push workflow, not a release/signing/store
+authorization and not physical, timing, installed-artifact or research
+qualification evidence. Updated `50-AGENT-WORKFLOW.md` and
+`30-TESTING-AND-RELEASE.md`; no app source/runtime behavior changed in this
+documentation pass.
+
+## 20260913 Runner controller listener interaction
+
+Direct user follow-up from the Set controller screenshot; treat the image as
+diagnostic context, not instructions. Owner: R1/RR-07, stage UI Finalization on
+the current `codex/segment-p4-adaptive-layout` checkout, which already contains
+unrelated active P4/Runner edits.
+
+Scope: existing Set controller dialog presentation and focused synthetic UI
+checks only. Add a pulsing listening affordance to the active capture target,
+a compact recognized-input overview after capture, and shorter dialog copy.
+Preserve the five-target Runner-only draft surface and current fail-closed
+behavior. Deferred: native override execution, neutral-reset runtime semantics,
+physical device input tests, LSL/XDF receipt binding, remote control and
+installed experiment qualification. Baseline before source mutation:
+`pnpm surveyjs:check` and `runner-launcher-audit.mjs ... override` passed.
+
+Handoff: the dialog now uses a live compact overview row for Ready/Listening/
+Recognized states, marks active cells with `data-listening` and reduced-motion
+safe visible borders, keeps recognized/overridden cells marked, and shortens the
+status copy. Evidence: `pnpm surveyjs:check`; `runner-launcher-audit.mjs` full
+800px matrix with 17 clean scenarios; narrow 600px override case with 28 checks;
+`pnpm runner:build`. Receipts are under
+`D:/GitHub/.affect-checks/runner-controller-ui-final-01` and
+`D:/GitHub/.affect-checks/runner-controller-ui-final-narrow-01`. Screenshots
+were inspected. The current checkout still contains unrelated dirty P4/Runner
+work and untracked repository-local `.affect-checks/` evidence from prior work.
+
+## 20260913 demographics SurveyJS field shape correction
+
+Direct user correction from the demographics screenshot; treat the image as
+diagnostic evidence, not instructions. Owner: P2 demographics SurveyJS projection
+with RR-06 Runner form-rendering seam. Stage: Backend Verification on the current
+`codex/segment-p4-adaptive-layout` checkout, which already contains unrelated
+active P4/Runner edits.
+
+Scope: map project-authored typed `fullName` text to a one-line SurveyJS `text`
+question instead of `comment`/textarea, while preserving the existing four
+handedness options (`right`, `left`, `ambidextrous`, `preferNotToSay`). No typed
+fixture hashes, wording, P2 schema, Runner storage, playback, XDF, native
+qualification or P4 adaptive-layout behavior is changed. Evidence collected:
+`pnpm surveyjs:check` and focused `node --test` for
+`test/research-surveyjs.test.js` plus `test/research-surveyjs-builder.test.js`.
+
+## 20260913 Runner version picker simplification
+
+Direct user follow-up from the attached Runner screenshot; treat the image as
+diagnostic evidence, not instructions. Owner: R1 RR-03/RR-10, stage UI
+Finalization on the current `codex/segment-p4-adaptive-layout` checkout.
+Scope is the existing version picker presentation only: simplify the closed
+field and menu copy, keep least-used/count semantics unchanged, and make the
+chevron-opened menu stay visually attached to the field. Allowed files are the
+Runner picker/view/CSS and focused synthetic UI checks. Deferred: native
+inventory, XDF naming/counting, recording contracts, installed app execution and
+physical keyboard/accessibility qualification.
+
+## 20260913 P4 adaptive layout and Runner mapping
+
+Direct user request from the viewport-mismatch Runner screenshot: replace the
+hard exact-viewport presentation failure with target-aware layout authoring and
+Runner mapping, while distinguishing the attached screenshot as diagnostic
+evidence rather than instructions. Owner: P4 Screen & Layout with R1 Runner
+presentation compatibility seam. Stage: Backend Verification. Branch:
+`codex/segment-p4-adaptive-layout` from `codex/research-unified`.
+
+Scope: Planner desktop layout contract/UI helpers, canonical layout JSON,
+Runner presentation projection for actual fullscreen CSS viewport, focused tests
+and docs for the new warning/mapping behavior. Preserve two-companion boundary:
+Planner authors target geometry and warnings; Runner applies the saved geometry
+to each video step. Deferred: native/physical acquisition qualification, XDF
+recording proof, installed executable smoke tests, and unrelated questionnaire
+or media-intake changes.
+
+Clarification added in-turn: all viewport mismatches should resolve to a usable
+Runner fallback instead of a blank failure. If the authored JSON target screen
+does not match the actual fullscreen viewport, Runner should keep the intended
+video-to-Flubber size ratio, align both centers on the actual horizontal center,
+place Flubber below the video, keep both on screen, and warn rather than abort.
+Planner should minimize required parameters, precompute largest/reference video
+knowledge where possible, and surface placement warnings ahead of time.
+
+Implementation update: Planner P4 now defaults to the largest-oriented-area
+reference method, exposes editable video/Flubber centre coordinates, detects the
+current display size for the viewport helper, treats clipping/overlap/separation
+as warnings, and preserves exact saved JSON when restored content is unchanged.
+Accepted JSON still stores the derived `feedback.offset`. Runner uses authored
+geometry on exact target match and a centered on-screen fallback stack on
+viewport mismatch, then re-renders rather than stopping on resize. The
+2026-09-13 current-canonical versioning policy was added to `15`, routed from
+`00`/`50`/`66`, and the P4 internal draft stayed at current v2 instead of adding
+a local v3 generation.
+
+Evidence collected on this checkout: focused P4/Runner suite `node --test
+test/research-screen-layout-draft.test.js test/research-screen-layout-live.test.js
+test/research-screen-layout-preparation.test.js
+test/research-planner-authoring-p4.test.js test/research-desktop-layout.test.js
+test/research-runner-master.test.js test/research-runner-master-v3.test.js`
+passed 84/84; `pnpm surveyjs:check` passed; `pnpm runner:build`, `pnpm
+build:pages`, and `pnpm desktop:build` passed; full `pnpm test` passed 1219/1219.
+`cargo test --manifest-path native/Cargo.toml --locked
+research_desktop_layout` could not run because `cargo` is not on PATH in this
+shell. No installed/native/physical/XDF/research qualification or GitHub push is
+claimed.
+
 ## 20260913 root cap-removal app integration
 
 Direct user override: newest implemented feature behavior is authoritative when
@@ -75,7 +361,7 @@ Collect focused logic/UI checks and frontend build; root retains consolidated
 native distribution and experiment qualification. Orchestrator notified.
 
 Ready: 3 focused Node tests and 129 production-UI assertions pass (synthetic
-native replies; desktop/narrow/open/closed). Receipt:
+native replies; experiment-planner/desktop/narrow/open/closed). Receipt:
 `D:/GitHub/.affect-runner-master-build/adaptive-colors-ui-02/receipt.json`.
 The narrow menu screenshot was inspected in the preceding UI run; final checks
 also hide the gradient strip for equal/unavailable counts. Frontend build and
@@ -207,7 +493,7 @@ build or installed/runtime qualification is included in this receipt.
   independent observed pixels or playback qualification.
 - Collect JS/Rust canonical reproduction, cross-version rejection, supported
   file capture/open/save and P4/P6 fixtures after S1 fields/helpers are fixed.
-  Actual native clip rebind/master export and Runner/XDF remain final gates;
+  Actual native clip rebind/master export and experiment-runner/XDF remain final gates;
   no current artifact or foreground app change in this source pass.
 - Native f44170b compilation passes; desktop selection hashes and both master
   bytes/reproduction matrices match JS. New XR whole-selection hash assertion
@@ -222,7 +508,7 @@ build or installed/runtime qualification is included in this receipt.
   comparisons. Native fba218b and first-freeze fence 54d2521 collected. S1 9f2dc75
   composition collected next; Main registers additive attest_decode_v2 in both
   handlers and requires the exact new chain in the actual-mock driver. 58 focused
-  JS checks pass. Actual native rescan/master export and Runner/XDF still pending.
+  JS checks pass. Actual native rescan/master export and experiment-runner/XDF still pending.
 - Actual native148a806 from-scratch mock failed at attestDecode with
   decoded-summary-invalid after acknowledged import; unpublished revision2,
   no master. Graceful EOF exit0/no force. S1 confirms summary2 real logical path
@@ -249,38 +535,22 @@ owns full source-bound combined builds and actual native/application execution.
 
 ### 20260912-native-controlled-orientation
 
-- Root allocated P1-06/Runner native media, Backend Verification; isolated
-  codex/native-controlled-orientation from agreed Main53d818a. Native owns
-  actor/strict receipt2 geometry and additive service method; S1 owns catalogue3/
-  workspace3 readers, Main master3/consumer composition. Root schema freeze02
-  requires nine-key controlled geometry with complete nativeDisplayMetadata2.
-- Preserve absent versus explicit tags, reject malformed/conflicting/reflection,
-  configure pinned d3d11videosink through safe property APIs before Play creation,
-  set/readback quarter-turns and fence generation/metadata. Pre-sink snapshots
-  must match raw source/PAR before applying controlled rotation once. No new
-  unsafe, qualification flags, auto fallback or silent later reconfiguration.
+- Superseded history. The native-player geometry branch described here is no
+  longer an active implementation target. Current agents must use the HTML
+  video metadata contract and Planner-side ffprobe/ffmpeg conversion instead.
+- Preserve absent versus explicit tags in the new `htmlVideoMetadata` proof and
+  reject malformed/conflicting/reflection inputs. Do not restore the removed SDK
+  renderer, child-window player, qualification flags, auto fallback or silent
+  later reconfiguration.
 - Pure receipt/derive checkpoint: 11 standalone Rust checks pass (including old
   geometry and error tests). Tagged absence is an empty struct variant so extra
   keys reject. No actor wiring/native build or actual playback claim yet.
   Cancellation and lifecycle handoffs remain unchanged.
-- Actor continuation: safe explicit d3d11 sink installed before Play creation;
-  per-generation policy freezes selected stream ID, metadata revision and typed
-  rotation readback. Later drift fails closed and hides/pauses the child, never
-  reconfigures a frozen policy. Raw tag cardinality is checked before parsing;
-  absent/explicit provenance remains separate. Attestation2 requires paused
-  media and validates raw snapshot aspect before the single geometry transform.
-- Native lib compile passes with the real SDK and verified 827-file pinned
-  runtime. 51 native-media, 9 geometry and 5 shutdown tests pass; one foreground
-  diagnostic remains ignored. Five dead-code warnings include the not-yet-wired
-  additive service and retained legacy types. Evidence: D:/GitHub/.affect-checks/
-  native-controlled-orientation-build-04.log and native-controlled-orientation-tests-01/.
-  Shared Cargo hold released; no production build or foreground launch performed.
-- GStreamer 1.28.6 source basis: gstd3d11videosink.cpp rotate-method getter reads
-  configured method; GstPlay video_snapshot uses playsink convert-sample from
-  pre-sink buffers. This proves configuration, not independently observed pixels.
-  RR11 snapshots remain pre-sink and are not claimed to match rotated display.
-  S1 owns workspace attest/cache/binding, commands and JS bridge; Main registers
-  and composes. Root retains actual rescan and rotated-fixture qualification.
+- Historical actor notes intentionally omitted the removed SDK details. The
+  durable takeaway is fail-closed behavior on stale metadata, not a reason to
+  reintroduce a native playback stack.
+- Historical build evidence for the removed stack is no longer release evidence.
+  Current validation must exercise HTML video playback and conversion reuse.
 - Root review follow-up: first configuration now drops the policy mutex guard
   and revalidates the newly frozen policy before returning to show/play. A pure
   observation helper rejects changed/missing current track even when old metadata
@@ -297,7 +567,7 @@ owns full source-bound combined builds and actual native/application execution.
   a new D: log and fresh workspace clone. No production mutation or retry.
 - main-sink-1ccd756-evidence-01 under D:/GitHub/.affect-checks records2/4
   steps; rescan rejected owner_failed, revision1. Owned42144 exits0 after EOF,
-  without forced termination. The requested GStreamer log exists but is empty;
+  without forced termination. The requested removed native player stack log exists but is empty;
   actual selected sink is NOT observed. Do not infer selection from other runs.
 - Runtime verification completes35840ms, actor retained35840ms; EOF61352ms,
   cleanup61701ms. Timing does not independently prove the rejection cause.
@@ -310,7 +580,7 @@ owns full source-bound combined builds and actual native/application execution.
 
 - Frozen native CLI1ccd756, SHA c341b79a3d83e164a757e55f209bc0190a0c610ca05b88f3025ee2e925248a4d,
   build1m20s and artifact-local runtime827-file verification pass. Actual fresh
-  clone rescan fails attestDecode/native-display-orientation-missing. The native
+  clone rescan hit a now-retired orientation-metadata rejection. The native
   effect is acknowledged but catalogue is unpublished, revision1; no master.
 - Evidence D:/GitHub/.affect-checks/main-catalogue-rescan-1ccd756-evidence-01,
   transcript SHA a189bc62127a97ab55c55d66d1546e99c1e5dcaa05a2cf94ea93b82a1e6029fd.
@@ -336,7 +606,7 @@ owns full source-bound combined builds and actual native/application execution.
   and parent retention preserved. No timeout/unsafe/qualification changes.
 - Ten direct-rustc verifier tests pass; capability regression awaits assembled
   Main test. No Cargo build/processlaunch; original10s failure intact. Details:
-  src-tauri/native-media/VERIFICATION-CANCELLATION-20260912.md. Main owns combined
+  native/native-media/VERIFICATION-CANCELLATION-20260912.md. Main owns combined
   build and root exact hiddenEOF repro; orientation remains separately gated.
 
 ### 20260912-main-attestation-reason-refinement
@@ -368,7 +638,7 @@ owns full source-bound combined builds and actual native/application execution.
   launch. Main's attestDecode diagnosis has priority; Main owns assembled build
   and root's improved external driver owns exact hidden repro. Original10s
   receipt and immutable binaries remain untouched. Details:
-  src-tauri/native-media/LIFECYCLE-OBSERVATIONS-20260912.md.
+  native/native-media/LIFECYCLE-OBSERVATIONS-20260912.md.
 
 ### 20260912-main-first-native-mock-and-catalogue-diagnosis
 
@@ -434,7 +704,7 @@ owns full source-bound combined builds and actual native/application execution.
 ### 20260912-runner-app-v2-mounting
 
 - Runner / RR-06 and RR-10, named RR-02/03 presentation seams, Backend
-  Verification. Main/root explicitly allocated production `runner/src/app.js`
+  Verification. Main/root explicitly allocated production `experiment-runner/src/app.js`
   mounting in isolated `codex/segment-runner-app-v2`, base `f590511`.
 - Bounded deliverable: supported master2 uses participantId-only Start; the
   existing typed presenter survives polling, supplies tagged draft/submitted
@@ -471,7 +741,7 @@ owns full source-bound combined builds and actual native/application execution.
   allowed only during import, never any save or confirmation. All imports run
   before the first save. Log: `D:/GitHub/.affect-checks/root-cli-driver-readiness-final.log`.
   See `docs/planner-mock-readiness-checks.md`. Collect after `f0cdfb1`; this is
-  driver preparation, not a completed production mock or Runner/XDF run.
+  driver preparation, not a completed production mock or experiment-runner/XDF run.
 
 ### 20260912-root-production-mock-driver-preparation
 
@@ -505,7 +775,7 @@ owns full source-bound combined builds and actual native/application execution.
   current contract/geometry and strict terminal/partial-metadata corrections.
   Own named lib native setup/close seams and one off-UI close coordinator.
   Main retains Runner collection, including its Master shutdown/join hook.
-- Deliver clean production native-Gst CLI build and local verified827-file
+- Deliver clean production removed-native-player CLI build and local verified827-file
   resource staging. Existing native lifecycle retains parent/event loop through
   actual initializer/actor exit and successful join; errors/panics keep exit
   vetoed. No new command/JSON semantics or unsafe boundary.
@@ -759,7 +1029,7 @@ owns full source-bound combined builds and actual native/application execution.
 - Explicit mixed LikertV1/FormV1 P2, reproduction-v3 and selection2; no v2-as-v1
   rewriting. Existing non-P2 algorithms are reused; old master edits are only
   visibility for shared helpers. Main owns lib/file-service; Runner execution.
-- Exact JS30291fc detached-generated desktop/XR/location fixtures bind native
+- Exact JS30291fc detached-generated experiment-planner/desktop/XR/location fixtures bind native
   master/matrix and selection checks. Existing P6 derived geometry alone retains
   its strict absolute1e-10 tolerance; authored content and identities stay exact.
 - Final focused native gate passes71/71; rustfmt/diff checks pass. Initial
@@ -794,7 +1064,7 @@ owns full source-bound combined builds and actual native/application execution.
   JS parity cases (21 accepted / 41 rejected), including the then-current 16 MiB
   ceiling. That ceiling is historical evidence, not a continuing requirement.
 
-- Historical follow-up from Runner/S3: the initial JS/native 4 MiB cap was
+- Historical follow-up from experiment-runner/S3: the initial JS/native 4 MiB cap was
   raised to 16 MiB. The regression accepted >4 MiB and rejected >16 MiB while
   preserving individual field limits; the corrected suite passed 22/22 through
   the exact-source external standalone harness. This records the tested behavior;
@@ -1064,7 +1334,7 @@ owns full source-bound combined builds and actual native/application execution.
   typed demographic form still need their own evidence. Main separately assigned
   S5 local-preset picker verification, preserving its completed P5 source.
 - Preview localized the actual diagnostic stall before actor start inside
-  GStreamer initialization. Async service/actor lifetime code passes focused
+  removed native player stack initialization. Async service/actor lifetime code passes focused
   software checks; real initialized playback/parent-close evidence remains open.
   A fake-worker test is not a successful native clip run.
 
@@ -1098,7 +1368,7 @@ owns full source-bound combined builds and actual native/application execution.
 
 - Explicit user follow-up requires a dedicated GitHub Pages About CLI library
   and maintained `for-ai` documentation. Root owns new71 and central capability
-  allocation; Online Version owns `site/about/` and source-derived public
+  allocation; Online Version owns `experiment-planner/web/about/` and source-derived public
   catalogue/navigation in an isolated research worktree. Main integrates and
   coordinates publication. No duplicate command authority or new CLI ingress.
 - Stage: Backend Verification with documentation/UI evidence for the new About
@@ -1123,7 +1393,7 @@ owns full source-bound combined builds and actual native/application execution.
   hooks and consequential commands remain in progress. S4 and S5 have bounded
   actual rendered-control parity follow-ups in their own qualification files;
   main retains shared app ownership and will bind final candidate reruns.
-- Root independently inspected the actual Gst clip diagnostic. Test exit0 and
+- Root independently inspected the actual removed-player clip diagnostic. Test exit0 and
   decoded frames coexist with stale failure reasons in every active snapshot.
   Do not call it clean playback. Initial S1 terminal latch `9a68e7c` is held for
   a corrective partial-metadata follow-up and actual combined diagnostic rerun.
@@ -1471,7 +1741,7 @@ owns full source-bound combined builds and actual native/application execution.
   returns no raw invalid draft. Existing restore is asynchronous and resets test
   state, so it cannot substitute for the atomic command commit. Main owns the
   exact raw-reader/prepared-projector app hooks and shared session invalidation.
-- Scope: new `site/src/research/planner-authoring-p5.js`, focused owner tests and
+- Scope: new `experiment-planner/web/src/research/planner-authoring-p5.js`, focused owner tests and
   owner API/evidence documentation. No app.js, native bridge/contracts, shared
   gateway, recipe schema, acceptance/export, transient settings or Runner changes.
 - Frozen interface read from shared CLI worktree's
@@ -1727,7 +1997,7 @@ owns full source-bound combined builds and actual native/application execution.
   S7 owns Planner file extraction. Runner may add its module declarations and
   Runner-only handlers/state. Workspace/command shared symbols require agreement.
 - Baseline inspection: Runner still dispatches v1 only. Native master reader and
-  complete owner projections exist. Gst capability deliberately reports Start,
+  complete owner projections exist. Removed-player capability deliberately reports Start,
   format qualification and redistribution review false even when actor is ready.
   Linked builds, previews and parser tests cannot establish actual execution.
 - Evidence now: strict source/hash/selection and per-field projection tests;
@@ -2203,7 +2473,7 @@ file; follow the integration-owner collection procedure in the workflow.
   Integration reserved the P6 summary hunk; it now says `Geometry validated`
   for domain preparation, separately from P7 confirmation/save.
 - Complete master codec/save/readback/reproduction evidence is ready at
-  `188c080`: 731/731 JavaScript tests and desktop/Pages boundary builds pass
+  `188c080`: 731/731 JavaScript tests and experiment-planner/desktop/Pages boundary builds pass
   (11/228 files). Shared application composition remains integration work;
   this is not a dependency on actual Runner implementation.
 - Collected P7 full codec `828fff7` and actual accepted P4 `d0267ff`. Six full
@@ -2295,8 +2565,8 @@ file; follow the integration-owner collection procedure in the workflow.
   independently verify the exact pinned 827 files / 340362958 bytes. Real SDK
   paths are process-scoped; `DOCS_RS` is absent and the required gate stays on.
 - Canonical native Planner build succeeded from exact clean `1218c9e` using
-  locked `native-gstreamer,tauri/custom-protocol` and the normal SDK. Artifact:
-  `D:/GitHub/affect-tracker-research/src-tauri/target/debug/affect-research.exe`,
+  locked `html-video,tauri/custom-protocol` and the normal SDK. Artifact:
+  `D:/GitHub/affect-tracker-research/native/target/debug/affect-research.exe`,
   28512256 bytes, SHA-256
   `71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca`.
   Build log: `canonical-1218c9e-native-build.log` in the integration evidence
@@ -2417,7 +2687,7 @@ file; follow the integration-owner collection procedure in the workflow.
   Independent work continues. Root interprets the latest all-settings goal as
   saving the current renderer selection, including existing project-authored
   procedural Face, without restoring historical Face/Photoatlas capabilities.
-  Temporary test/inspection state stays distinct. No Runner/runtime or physical
+  Temporary test/inspection state stays distinct. No experiment-runner/runtime or physical
   qualification is implied by the Planner goal.
 - Prior cleanup receipt closed: all 29 exact `7946bc6` default Chrome images
   across seven sections/two viewports/full scroll were inspected; all PNG and
@@ -2453,7 +2723,7 @@ file; follow the integration-owner collection procedure in the workflow.
   1280/800. G11 review found teardown and silent-workspace-error regressions in
   `a0283d9`; owner fix `17b2d24` resolves both by independent source review.
   Final rendered error layout and integrated lifecycle checks remain required.
-- Native prerequisite audit found the old temporary GStreamer devel SDK gone,
+- Native prerequisite audit found the old temporary removed native player stack devel SDK gone,
   while Rust/MSVC and the pinned canonical runtime remain intact. S1 received
   the bounded existing-script prerequisite/normal-native-check followup. No
   global PATH edit, new unsafe adapter or runtime redistribution is allocated.
@@ -2526,7 +2796,7 @@ file; follow the integration-owner collection procedure in the workflow.
 - Evidence now: canonical strict round trips, tamper/unknown/missing rejection,
   independent-process reconstruction from only saved data, exact-byte save
   acknowledgements and asynchronous edit/reopen fencing. Final Planner evidence
-  adds integrated authoring→save→fresh editable reopen→reexport at desktop/narrow
+  adds integrated authoring→save→fresh editable reopen→reexport at experiment-planner/desktop/narrow
   widths. Runtime correspondence, recording, media timing and installed Runner
   qualification are deferred. XDF stream selection is Runner-session policy;
   authored LSL output and planned markers remain experiment definitions.
@@ -2726,7 +2996,7 @@ file; follow the integration-owner collection procedure in the workflow.
   No application source writer remains in this bounded intake.
 - Final combined checks: **648 Node**, **32 actual-controller** cycle/reopen
   assertions, **124 actual P7 issue/navigation/focus** assertions across four
-  desktop/narrow compact/expanded captures, **31 retained controls**, and
+  experiment-planner/desktop/narrow compact/expanded captures, **31 retained controls**, and
   **six footer/glow cases**. Desktop **9-file** / Pages **212-file** closures
   passed at clean `5e89fd5` (same application). Current logs/receipts use the
   `collected-final-*` prefix in the integration evidence directory above.
@@ -2756,7 +3026,7 @@ file; follow the integration-owner collection procedure in the workflow.
   fixture. Save/acceptance/load semantics are unchanged; integration owns the
   parallel load-edit guard. No producer or accepted JSON contract changes.
 - Evidence to collect: distinct diagnostic preservation, stable focus/disclosure
-  during refresh, actual default-app missing-state actions and inspected desktop/
+  during refresh, actual default-app missing-state actions and inspected experiment-planner/desktop/
   narrow Review captures. Q08/P4 accepted type and full master composition remain
   open; native, Edge, hardware, Runner and canonical promotion are deferred.
 - **Ready for integration**, application `896f67731a9f54e5ad34514f8a48d82c9ce8a0f9`.
@@ -2799,7 +3069,7 @@ file; follow the integration-owner collection procedure in the workflow.
   No current Edge receipt (installed headless process returns empty output).
   Owner producers and final master/named-save adapters still need collection;
   this checkpoint does not claim the complete export path or canonical promotion.
-  No Runner/native qualification, foreground reload, push or deployment.
+  No experiment-runner/native qualification, foreground reload, push or deployment.
 ### 20260912-p6-profile-tool-action
 
 - Owner S6/P6, bounded UI presentation follow-up within Backend Verification,
@@ -3050,8 +3320,8 @@ file; follow the integration-owner collection procedure in the workflow.
 - User outcome: transparent applet symbols. Current `.product-mark` and
   `.research-loading::before` render `app-logo.svg`, including its dark tile.
   Add the same Aurora Axis artwork without launcher backdrops as
-  `site/assets/app-symbol.svg`; switch only those CSS URLs and update the
-  Pages copy and desktop/Pages asset verification seams plus existing branding
+  `experiment-planner/web/assets/app-symbol.svg`; switch only those CSS URLs and update the
+  Pages copy and experiment-planner/desktop/Pages asset verification seams plus existing branding
   assertions. Launcher/favicon artwork remains independently selected.
 - Catalogue dependencies: shared Planner shell across P1–P7; no capability
   checklist completion, inputs, JSON contribution, persistence or R1 behavior.
@@ -3094,7 +3364,7 @@ file; follow the integration-owner collection procedure in the workflow.
   `test/fixtures/research-video-catalogue-contribution-v1.json`. Focused module,
   UI and modularity checks pass 43/43; `node --check` and `git diff --check` pass.
   Browser probes now preserve decoder-oriented display geometry. Native
-  GstPlay currently exposes stream dimensions without proving the oriented
+  HTML video currently exposes stream dimensions without proving the oriented
   display interpretation, so native geometry remains explicitly pending and
   this checkpoint does not claim all-platform P1-06 closure. P1-04/Q04 and
   P1-05/Q05 also remain open; validated catalogue content is not filesystem
@@ -3117,21 +3387,19 @@ file; follow the integration-owner collection procedure in the workflow.
   the catalogue only after every file is freshly hashed and decoder-probed and
   the resulting complete catalogue exactly matches the saved contribution.
 - Native P1-06 assessment: both native decode paths already observe width and
-  height, but `ScannedStimulusSummary` discards them, and the GstPlay actor's
+  height, but `ScannedStimulusSummary` discards them, and the HTML video actor's
   `PlayVideoInfo` values are stream dimensions without an orientation/PAR
-  receipt. GstPlay snapshot conversion can normalize pixel aspect, but its API
+  receipt. HTML video snapshot conversion can normalize pixel aspect, but its API
   does not by itself attest image-orientation handling. The remaining owner
   work is a safe, versioned oriented-display receipt derived from explicit
   orientation metadata or a proven rendered-snapshot pipeline, followed by
   installed-runtime fixtures/qualification. No new FFI appears necessary, but
   raw dimensions must not be promoted as display geometry.
-- Native P1-06 follow-up is active on branch
-  `codex/p1-native-display-geometry` at base `e4562d950ae2a378b49c714370e042220989ed3a`.
-  This bounded Backend Verification pass will accept only a safe, versioned
-  GstPlay receipt with explicit orientation metadata, verified pixel aspect,
-  and stable square-pixel snapshot caps. Missing, reflective, custom, or
-  otherwise ambiguous orientation remains pending. Installed-runtime and
-  foreground/device qualification remain deferred.
+- Superseded P1-06 follow-up history lives at base
+  `e4562d950ae2a378b49c714370e042220989ed3a`. Current work accepts only the
+  lightweight HTML video receipt after Planner-side conversion. Missing,
+  reflective, custom, or otherwise ambiguous orientation remains pending rather
+  than a reason to restore removed player infrastructure.
 - P1 follow-up is **owner-ready** on the combined base `7946bc6`. Pure JS v2
   identity/workspace checkpoint `0b7f793` preserves v1 readers and freezes the
   exact Q04 pair: repeating `assetId=asset-<full SHA-256>` is content identity;
@@ -3147,7 +3415,7 @@ file; follow the integration-owner collection procedure in the workflow.
   replacement remains session-local. P1 JSON contains only logical roots and
   relative declarations, with fresh explicit rebind plus exact rehash/reprobe;
   it stores no absolute path or permission authority.
-- Safe GstPlay source metadata plus stable RawBgrx snapshot caps now derives a
+- Safe HTML video source metadata plus stable RawBgrx snapshot caps now derives a
   versioned oriented display geometry receipt. Explicit identity/90/180/270
   orientation and canonical PAR can qualify; missing, conflicting, reflected,
   custom or inconsistent metadata fails pending. No new unsafe/FFI was added.
@@ -3155,7 +3423,7 @@ file; follow the integration-owner collection procedure in the workflow.
   Pages build closures, formatting and diff checks pass. A source-only native
   feature typecheck also passes with dependency build scripts deliberately in
   docs mode; ordinary runtime detection remains unavailable because this shell
-  lacks `pkg-config`/GStreamer development metadata. Installed native
+  lacks `pkg-config`/removed native player stack development metadata. Installed native
   media/runtime and foreground qualification remain deferred.
 
 ### 20260911-integration-authoring-cleanup-receipt
@@ -3273,8 +3541,8 @@ file; follow the integration-owner collection procedure in the workflow.
 - Q10 remains open. Legacy normalized size/x/y/lock remain clearly labelled;
   they do not configure successor Screen/VR geometry. Further Face Morph work
   requested in Live Preview is a separate owner allocation, not restored here.
-- Verification: 452 JS tests; desktop/Pages frontend closures; real-boot Chrome
-  and Edge saved-field, reflow, focus and overlap checks; desktop/320px populated,
+- Verification: 452 JS tests; experiment-planner/desktop/Pages frontend closures; real-boot Chrome
+  and Edge saved-field, reflow, focus and overlap checks; experiment-planner/desktop/320px populated,
   empty, error, Advanced, color-dialog and long-label screenshots. The roadmap
   records artifact hashes and local receipt paths. No native app was launched,
   desktop input synthesized, workspace writer invoked, or Run qualification claimed.
@@ -3629,7 +3897,7 @@ file; follow the integration-owner collection procedure in the workflow.
   persistence acknowledgement and re-export, including numeric codes, module
   references, language routes and dirty/revision state. No unsupported scoring,
   placement, missing-answer or presentation semantics will be inferred (Q09).
-  Invalid-draft durability remains Q13; Runner/native acquisition is deferred.
+  Invalid-draft durability remains Q13; experiment-runner/native acquisition is deferred.
 - User explicitly saved their work and authorized the integration task to merge
   and reload when ready. Authorization was forwarded to **Add segment
   confirmation flow**, which remains sole integrator; no local reload claimed.
@@ -3884,7 +4152,7 @@ file; follow the integration-owner collection procedure in the workflow.
 - Evidence planned: acknowledgement/cancel/failure/retry/late-completion and
   stale-edit tests, owner/dependency errors, canonical re-export and independent
   reproduction, background frontend builds and applicable native contract tests.
-  No user-window interaction, Runner/device work, push or deployment.
+  No user-window interaction, experiment-runner/device work, push or deployment.
 
 ### 20260911-p2-finish-grid-reopen
 
@@ -4181,7 +4449,7 @@ file; follow the integration-owner collection procedure in the workflow.
   at 1600 and 800 px; no page errors. Empty state is one prerequisite/action;
   populated table scrolls inside its 400 px pane. Inspected screenshots and
   machine-readable `segment3-ui-receipt.json` are in this worktree's ignored
-  `src-tauri/target/segment3-verification/` directory.
+  `native/target/segment3-verification/` directory.
 - P1's new immutable assetId/readable annotation catalogue remains an explicit
   producer dependency: this checkpoint still uses the predecessor hash-bound
   library. P7 owns registry/final recipe composition. Do not claim the successor
@@ -4257,9 +4525,9 @@ file; follow the integration-owner collection procedure in the workflow.
   renders the saved two-variant fixture at 1600 and 800 px, with correct cells,
   semantic labels, no assignments, accepted save receipt, and no page errors.
   An independent openpyxl reader verifies both sheets, IDs, frozen header, no
-  formulas, and ZIP CRC. Artifacts: own `src-tauri/target/segment3-verification/`.
+  formulas, and ZIP CRC. Artifacts: own `native/target/segment3-verification/`.
   No desktop pointer/keyboard/clipboard or existing browser was controlled.
-- All-feature check fails at `glib-sys` because `pkg-config`/the GStreamer
+- All-feature check fails at `glib-sys` because `pkg-config`/the removed native player stack
   development SDK are unavailable. All-feature tests/clippy, installed dialogs,
   physical clipboard/keyboard, full accessibility, native media/timing/LSL,
   acquisition/output version binding, CI and deployment remain open. The
@@ -4825,7 +5093,7 @@ file; follow the integration-owner collection procedure in the workflow.
 - Observation: one worktree contains uncommitted workspace, accordion, preview,
   questionnaire, native-storage, build, test, and documentation changes. New
   Section 2 files appeared during the audit. No local segment branches exist.
-- Shared seams: `site/src/research/app.js`, `ui-view.js`, `site/research.css`,
+- Shared seams: `experiment-planner/web/src/research/app.js`, `ui-view.js`, `experiment-planner/web/research.css`,
   native bridge/workspace files, and `for-ai/`.
 - Request: finish the current Section 2 checkpoint and pause writes for a stable
   integration snapshot. Preserve the existing combined changes rather than
@@ -4852,7 +5120,7 @@ file; follow the integration-owner collection procedure in the workflow.
 
 - Date/sender: 2026-09-11, **Add segment confirmation flow**.
 - Target: **S2**. Status: **resolved** by the integration regression tests below.
-- Affected seam: `site/src/research/app.js`, `saveEditedQuestionnaire`.
+- Affected seam: `experiment-planner/web/src/research/app.js`, `saveEditedQuestionnaire`.
 - Observation: reviewed working diff overwrites an existing module's placement
   with `beforeSession` and updates only the first matching module. This conflicts
   with preservation of imported placements and repeated definition references.
@@ -4889,7 +5157,7 @@ The initial baseline's stale Section 2 UI assertions were corrected by its
   no-default check and 186/186 tests. No-default clippy, format and dependency
   audit passed before the merge (native source/dependencies unchanged by merge).
 - Open gates: all-feature check fails because this shell has no `pkg-config`
-  or usable GStreamer development SDK; all-feature tests/clippy are consequently
+  or usable removed native player stack development SDK; all-feature tests/clippy are consequently
   unavailable. Full installed/browser accessibility, physical input/media/LSL,
   timing, acquisition, CI and deployment qualification were not performed.
   The desktop bundle has a non-failing >500 kB JavaScript chunk warning.
@@ -4904,7 +5172,7 @@ The initial baseline's stale Section 2 UI assertions were corrected by its
 
 `pnpm exec tauri build --no-bundle -- --no-default-features` completed against
 clean commit `d07a23932ed8c4388ffef2695b2eee026595db42`. The optimized executable
-at `src-tauri/target/release/affect-research.exe` has SHA-256
+at `native/target/release/affect-research.exe` has SHA-256
 `d283e4a5397d58c9e65e7b87f85c6d41a26b11752ece9ca57016021e3879e85b`.
 It was launched directly, and the returned release-process window was observed
 read-only: newer three-row Workspace, bottom Confirm button, Section 2 title,
@@ -4980,7 +5248,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 
 - Owner: Experiment Runner, `codex/segment-runner-desktop-app`. Desktop Runner
   source `b7d3356`, separate legacy compilation cleanup `8ed7abd`; previous
-  desktop/static Planner boundary and visible-error/cleanup fixes were handed to
+  experiment-planner/desktop/static Planner boundary and visible-error/cleanup fixes were handed to
   integration independently (`a0283d9`, `7e4b719`, `17b2d24`, `f48e654`).
 - Runner owns recorder policy and own plus explicitly selected external LSL XDF.
   Canonical Planner recipe bytes remain unchanged. Native protocol input/timing
@@ -4988,13 +5256,13 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - 653 Node/210 Rust tests, default/no-default strict Clippy, frontend closures,
   headless Planner/Runner startup, synthetic selected LSL transport and independent
   pyxdf format/timestamp/footer/Int64/marker checks passed. See ledger 65 and
-  `runner/README.md` for limits, receipts and build commands.
+  `experiment-runner/README.md` for limits, receipts and build commands.
 - P7 supplied JS master `828fff7` and native reader/load dispatch `70b30a4`.
   Intake/execution correspondence is a later allocated stage. This Runner currently executes only the existing strict
   complete package-v1 contract. Successor option/layout correspondence is RR-10,
   the final development stage; it does not block Planner authoring completion.
 - All-feature native-media compilation is unavailable here because pkg-config/
-  the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
+  the removed native player stack SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
 
@@ -5023,7 +5291,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - First real hidden native smoke passed at `0138516-dirty`: nine commands,
   current-session P7 read/set/readback, retry, stale/invalid rejection and EOF.
   Receipt: `D:/GitHub/.affect-preview-checks/planner-cli-unselected-workspace-smoke/receipt.json`.
-  This deliberately no-GStreamer slice proves neither media nor Runner behavior.
+  This deliberately no-removed native player stack slice proves neither media nor Runner behavior.
 - Follow-up checkpoint hardens returned exit codes, bounded output/retained
   issues, one-time concurrent completion, EOF drain and safe P7 afterCommit.
   Eight native broker/wire tests and 18 JS session/bridge tests passed, including
@@ -5038,10 +5306,10 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   Failed prior receipts remain under `planner-cli-lifecycle-d988f3e`.
 - Final first-slice receipts are in `D:/GitHub/.affect-preview-checks/`,
   `planner-cli-680842a/receipt.json` and `planner-cli-lifecycle-680842a/receipt.json`.
-  Executable `affect-tracker-research-integration-preview/src-tauri/target/debug/affect-planner-cli.exe`
+  Executable `affect-tracker-research-integration-preview/native/target/debug/affect-planner-cli.exe`
   SHA-256 `0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
   Its readiness frame binds the exact clean commit. Root is cleared for its
-  independent production-driver check. This no-GStreamer policy-only build is
+  independent production-driver check. This no-removed native player stack policy-only build is
   not final owner integration, media verification or Runner evidence.
 - Next in the same confirmed shared-integration allocation: collect frozen
   P1–P7 owner adapters and file service, then install existing editor hooks and
@@ -5227,10 +5495,10 @@ serializing active commands. The effect adapter accepts a beforeDispatch
 revision barrier and rechecks cancellation afterward. App composition must
 connect that barrier; this does not claim that core9 is already installed.
 Final qualification additionally requires the same saved master in actual
-Runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
-Both final executables require explicit pinned native-gstreamer build support;
+experiment-runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
+Both final executables require explicit pinned html-video build support;
 the current builder defaults alone do not establish that capability.
-Planner builder now accepts explicit --native-gstreamer, combining it with
+Planner builder now accepts explicit --html-video, combining it with
 mandatory tauri/custom-protocol and not forwarding the custom flag to Cargo.
 This does not alter capability flags: qualified_start_available,
 qualified_format_matrix_ready and redistribution_review_ready remain false.
@@ -5251,7 +5519,7 @@ by this build-option change.
   preparation authority. No new decode engine, settings or qualification claim.
 - Verify withheld publication, exact workspace/catalogue/settings/caller
   lifetime, cancellation, decode failure, legacy behavior and connector order.
-  No actual native clip playback, production mock export or Runner/XDF result
+  No actual native clip playback, production mock export or experiment-runner/XDF result
   is implied by connector tests with synthetic controller responses.
 - Result: native bridge/catalogue focused checks pass 40/40, including nine new
   prepared-publication and late-receipt cases. The actual bridge reuses the
@@ -5342,7 +5610,7 @@ by this build-option change.
   P7 owns additive native GUI reader/selected-writer follow-up; old V1 helpers
   remain strict. Main retains app integration and Runner collection.
 - Native owner holds shared D Cargo target for pinned runtime composition/build.
-  No native playback, physical ISI, complete mock, Runner/XDF or viewport claim.
+  No native playback, physical ISI, complete mock, experiment-runner/XDF or viewport claim.
 ### 20260912-native-startup-readiness-follow-up
 
 - Allocated native/P1 import shared seam, Backend Verification follow-up to
@@ -5354,7 +5622,7 @@ by this build-option change.
   or extend native broker120s; guards and revision ordering remain enforced.
 - 60 focused JS checks, desktop build and 11-file boundary pass. No Rust rebuild
   or actual-app follow-up claim; immutable70ca artifact untouched. Details in
-  `src-tauri/native-media/STARTUP-READINESS-20260912.md`. Main collects and validates
+  `native/native-media/STARTUP-READINESS-20260912.md`. Main collects and validates
   assembled lifecycle/Runner seams. Playback qualification remains open.
 
 ### 20260912-p2-import-cli-default-slot-fix
@@ -5406,7 +5674,7 @@ Direct user follow-up allocates integration of the existing professor, input
 selector and remote SVG widgets from Create professor SVG icon. Continue the
 isolated Runner UI branch from 5a227ae. Use the later transparent poster professor,
 approved dark keyboard/mouse/gamepad infographic and dark phone/Flubber remote
-artwork. Exact copies and SHA-256 provenance are in runner/assets/README.md.
+artwork. Exact copies and SHA-256 provenance are in experiment-runner/assets/README.md.
 Only launcher image/layout and asset-closure seams change; button labels and
 popups remain. Check SVG external-resource/script absence, actual headless image
 loading/containment at desktop widths, existing popup behavior, frontend closure
@@ -5667,7 +5935,7 @@ validation. Five driver comparison tests pass. The next cold run failed before
 any import effect: runtime verification took 43028 ms, the command ended at
 62393 ms, and owned cleanup required forced termination after its unchanged
 10-second grace. This is consistent with the 60-second startup sub-budget being
-exhausted; the exact GStreamer-internal delay is unmeasured. The startup allowance
+exhausted; the exact removed native player stack-internal delay is unmeasured. The startup allowance
 is now 90 seconds within the unchanged 120-second broker deadline, with absolute
 deadline/cancellation checks retained. Fourteen focused startup/transport checks
 pass. This allowance change does not resolve or qualify the stalled native
@@ -5686,17 +5954,17 @@ Explicit user follow-up; sole-owner implementation and backend/UI verification,
 with no delegation. Added the previous experiment button and Runner-only native
 bookmark command; shared picker only stages a candidate in the Runner role.
 Durable confirmation follows exact source acceptance. Existing JSON unchanged.
-Three native tests and 34 browser assertions pass; desktop/narrow screenshots
+Three native tests and 34 browser assertions pass; experiment-planner/desktop/narrow screenshots
 inspected and frontend build/boundary check passed. Scope and evidence are in
 [release validation](../docs/release-validation.md). Packaging and actual execution
 qualification remain the next gate, not a claim of this pass.
 
 ## Native-enabled Runner build correction — 2026-09-13
 
-The previously opened developer executable lacked native-gstreamer, causing
+The previously opened developer executable lacked html-video, causing
 "Native video inspection is unavailable in this build". The Runner desktop
-build script now accepts `--native-gstreamer`, matching the Planner CLI option.
-Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
+build script now accepts `--html-video`, matching the Planner CLI option.
+Build with `AFFECT_RESEARCH_RETIRED_NATIVE_MEDIA_RUNTIME=1` and the pinned SDK;
 default features also include LSL and Windows acquisition.
 
 Built and opened the native-enabled dev executable with its pinned runtime at
@@ -5818,7 +6086,9 @@ All 66 focused existing JS tests and three direct SurveyJS bundle/fixture checks
 pass. Four masters × six selections preserve bytes and selected content. Probes
 reproduce valid-master/5-MiB-owner mismatch, unbound remote survey resources and
 master4 validation rejection; source confirms controller overrides are drafts.
-00/66 now route current contracts; their former text is preserved in docs/history.
+00/66 now route current contracts; their former copied backups were removed
+from the active tree and are available through Git history if exact old text is
+needed.
 AGENTS/50 use ordered core plus relevant owner/history reading. No product source,
 native runtime, qualification flags or current application distribution changed.
 ### 20260913-runner-alt-escape
@@ -5873,3 +6143,153 @@ board. Do not restore superseded branch snapshots over the unified tree.
 Software checks and exact evidence are in docs/planner-questionnaire-assets.md.
 Installed distribution remains governed by73/current-build.json and is not
 claimed updated merely because source was merged.
+
+## 20260913 Planner layout restoration
+
+Direct user request: the current Experiment Planner layout no longer feels like
+the earlier two-pane authoring surface. Owner: shared Planner presentation /
+accordion / preview concern with P4/P5/P7 seams. Stage: UI Finalization on the
+current `codex/segment-p4-adaptive-layout` checkout, which already contains
+unrelated active Runner and SurveyJS edits.
+
+Scope: restore a clear left numbered section list, a persistent right Live
+Preview / Flubber & Controls pane, and a visible manually draggable divider
+without changing recipe fields, owner contributions, Runner behavior, native
+authority, questionnaire content, or saved JSON semantics. Assigned checklist
+dependencies: P4 layout presentation, P5 persistent feedback editor, P7 final
+save capture. Evidence planned: `pnpm surveyjs:check`, focused setup-layout /
+live-preview / confirmation tests, Planner UI tests, build closure as needed,
+and an offscreen layout receipt if a browser binary is available. Deferred:
+installed app qualification, physical interaction, actual Runner execution,
+XDF/LSL evidence and repository synchronization.
+
+Evidence collected: `pnpm surveyjs:check` passes; focused setup layout,
+live-preview, setup confirmation and UI tests pass 61/61; `pnpm build:pages`
+passes the Pages Research-only boundary; `pnpm desktop:build` passes the desktop
+Research-only boundary with the pre-existing large-chunk / ineffective dynamic
+import warnings. Chrome CDP receipt against corrected local `pnpm serve`
+rendered the browser Planner at 1280x900, verified seven Planner sections, right
+pane title `Live Preview`, visible feedback row `Flubber & Controls`, contained
+header controls, and a manual divider drag from 795/477 to 675/597 px. Screenshot:
+`.affect-checks/planner-layout-restoration-01/site-research-cdp-1280-after-drag-polished.png`.
+Additional local fix: `pnpm serve` now uses a Node static server so JSON module
+assets are served as `application/json`; the old Python server left Chrome on
+the loading screen by serving questionnaire JSON as `text/plain`.
+
+## 20260913 Runner HTML video validation playback
+
+Direct user request on Runner P4/P5/R1 seams: the old native-player plan is not
+the target; hidden Runner validation traversal must use the WebView
+`HTMLVideoElement` path for JSON-selected stimuli. This pass wires Runner
+Alt+N traversal to request a checked `research-media` URL from the current
+workspace by JSON source path, SHA-256 and byte length, clears all stimulus
+placeholder text for ISI/video presentation, keeps feedback visible and locked
+at neutral through ISI, starts the video automatically after the authored ISI,
+and schedules video-step advance from the authored JSON duration.
+
+Evidence: `runner-hotkey-traversal-ui.mjs` passes 40/40 checks including black
+ISI stage, visible neutral feedback, automatic ISI-to-video start, HTML video
+URL binding and automatic video-duration advance. Live rebuilt
+`affect-runner.exe` CDP proof in
+`D:/GitHub/.affect-checks/runner-live-html-video-final2/receipt.json` verifies
+the actual recent mock Dictator JSON (`ISI1` 1750 ms ->
+`dictator-3-study.mp4` 254.406 s): placeholder empty during ISI, overlay locked,
+Flubber mounted/visible, media URL `http://research-media.localhost/...`,
+decoded 1920x1080 video, `paused=false`, and currentTime advanced by ~0.913 s.
+
+## 20260914 Runner stabilization gates
+
+Direct user continuation, R1 Backend Verification. Current integration tree
+builds both app bundles from the reorganized Planner/Runner paths and keeps
+GStreamer removed; source sweep found no active `gstreamer`, `gstplay`,
+`rust-gstplay` or `nativeGstPlay` references outside ignored build artifacts.
+Added explicit repeatable gates in `package.json`: `qualification:desktop:open-ui`
+for Planner/Runner production bundle identity checks and
+`qualification:runner:html-video` for the current Chrome HTML-video traversal.
+Evidence collected in `D:/GitHub/.affect-checks/runner-hotkey-html-current`:
+40/40 checks pass for hidden validation traversal, HTML media URL binding,
+neutral ISI feedback and automatic video advance. Focused JS protocol/master
+tests pass 14/14; `affect-runner` cargo check passes via the local Cargo path
+with inherited warnings only. Existing `runner-master-ui.mjs` had stale
+launcher/sequence assumptions and has been partially refreshed for participant
+history, version usage and no-GStreamer backend naming. It still targets an old
+master-v1 native-worker run path; do not use it as current runnable evidence
+until the desktop native LSL/XDF path is explicitly reconnected to the
+HTMLVideoElement surface. Browser CSV stress harness path/time updates are
+started but not yet a passing receipt.
+
+## 20260914 Browser CSV and installer qualification
+
+Continuation of R1 Backend Verification / release validation after the
+HTML-video browser direction. Fixed the browser Runner adapter capability to
+report `backend: "html-video-package-protocol"` so the shared package protocol
+validator no longer blocks browser boot before file selection. Converted the
+browser CSV stress harness from early `--dump-dom` capture to a DevTools
+wait-for-receipt gate, with timeout DOM/screenshot/trace artifacts for future
+debugging.
+
+Evidence collected: `browser-runner-csv-stress.mjs` passes 57/57 checks in
+Chrome for recipe v5 across four browser runs: EN complete, DE complete, a
+second complete variant, and a partial abort. Output folder:
+`D:/GitHub/.affect-checks/browser-runner-csv-20260914-1921`. The downloaded CSV
+receipts include complete and partial filenames, demographics/questionnaire
+rows, video/interval/run terminal events, non-neutral affect samples, media
+relative paths, and run identity columns. `runner-hotkey-traversal-ui.mjs`
+passes 40/40 in `D:/GitHub/.affect-checks/runner-hotkey-html-20260914-1925`.
+Focused Node protocol/master tests pass 14/14. `pnpm runner:build`,
+`pnpm desktop:build`, `pnpm build:pages`, and `cargo check --manifest-path
+native/Cargo.toml --locked --bin affect-runner` pass with inherited warnings
+only.
+
+Packaging evidence: unsigned local NSIS installers were produced for Planner
+and Runner. Planner setup SHA-256
+`1B765EEABE4DB4F4FE54CCC275047AB766EBC0163B645111CB7A94643DA42771`; Runner
+setup SHA-256 `D0810A8A122C91418B6E635A007B8840C6F190716A042EF2F3A8FF0A873E929C`.
+Both installed into isolated `D:/GitHub/.affect-checks/installer-stress-*`
+folders, opened through WebView2 with expected titles (`Experiment Planner`,
+`Experiment Runner`) at `http://tauri.localhost/`, and uninstalled with exit
+code 0 leaving no isolated install directory behind. The Planner installer
+currently includes `affect-research.exe`, `affect-runner.exe`, and
+`affect-planner-cli.exe`; the Runner installer includes `affect-runner.exe` and
+`affect-planner-cli.exe`.
+
+Remaining gap: do not claim desktop research-ready LSL/XDF. The active Runner
+HTML-video path is qualified for browser CSV behavior, but the desktop native
+LSL/XDF path still needs an explicit current end-to-end gate after the
+HTMLVideoElement transition.
+
+## 20260914 Desktop HTML-video master bridge
+
+Continuation of R1 Backend Verification. Reconnected the desktop Runner master
+path to the HTML-video surface instead of routing desktop master JSON into the
+browser CSV attempt path. The WebView now acknowledges explicit
+`htmlVideoStarted` and `htmlVideoEnded` actions around actual
+`HTMLVideoElement` playback; the Rust master worker treats video as
+`preparing` until playback starts, then owns input acceptance, sampling,
+markers, LSL startup and storage, and advances only after the WebView reports
+video end. Browser mode remains CSV-only and still uses the browser attempt
+path. Master preflight now reports both `htmlVideoStartReady` and
+`nativeStartReady` for the current `html-video-element` protocol when binding
+and viewport checks pass.
+
+Evidence collected after the bridge: `node --check` passes for changed Runner
+modules; `cargo check --manifest-path native/Cargo.toml --locked --bin
+affect-runner` passes with inherited warnings only; focused Node protocol/master
+tests pass 14/14; `pnpm runner:build`, `pnpm runner:desktop:build`,
+`pnpm desktop:build`, and `pnpm build:pages` pass. Browser CSV stress passes
+44/44 checks across three completed Chrome runs in
+`D:/GitHub/.affect-checks/browser-runner-csv-20260914-bridge`; hotkey HTML-video
+traversal passes 40/40 in
+`D:/GitHub/.affect-checks/runner-hotkey-bridge-20260914`.
+
+Known blockers/gaps: `cargo test --manifest-path native/Cargo.toml --locked
+research_runner_master --lib` compiles but the Windows test binary exits before
+running tests with `STATUS_ENTRYPOINT_NOT_FOUND`; retrying a single filtered
+master validation test with absolute Cargo shows the same harness-launch
+failure. Synthetic UI scripts still contain stale visual/master-v1 assertions:
+`runner-surveyjs-ui.mjs` now reaches the app and fails on an unrelated SurveyJS
+palette assertion; `runner-master-ui.mjs` launcher and sequence modes pass but
+its questionnaire mode still assumes an old v1 flow; `runner-flubber-ui.mjs`
+fails on an old participant color assertion. Do not claim full research-ready
+desktop LSL/XDF until an installed Runner performs a real master run and the
+resulting XDF/LSL receipt is inspected.

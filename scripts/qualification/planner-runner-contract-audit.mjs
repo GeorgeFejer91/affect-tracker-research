@@ -5,14 +5,14 @@ import { readFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { canonicalJson } from '../../site/src/research/canonical.js';
-import { parseSupportedPlannerRecipe, compilePlannerRecipeV4 } from '../../site/src/research/planner-recipe.js';
-import { enumerateLanguageRoutesV1 } from '../../site/src/research/experiment-package.js';
-import { validatePlannerContributionSnapshot } from '../../site/src/research/planner-contributions.js';
-import { importSurveyJson } from '../../site/src/research/surveyjs-definition.js';
-import { createQuestionnairePresentationV3 } from '../../site/src/research/questionnaire-recipe-v2.js';
-import { resolveMasterPlan } from '../../runner/src/master-recipe.js';
-import { NativeMasterProtocolAdapter } from '../../runner/src/master-protocol.js';
+import { canonicalJson } from '../../experiment-planner/web/src/research/canonical.js';
+import { parseSupportedPlannerRecipe, compilePlannerRecipeV4 } from '../../experiment-planner/web/src/research/planner-recipe.js';
+import { enumerateLanguageRoutesV1 } from '../../experiment-planner/web/src/research/experiment-package.js';
+import { validatePlannerContributionSnapshot } from '../../experiment-planner/web/src/research/planner-contributions.js';
+import { importSurveyJson } from '../../experiment-planner/web/src/research/surveyjs-definition.js';
+import { createQuestionnairePresentationV3 } from '../../experiment-planner/web/src/research/questionnaire-recipe-v2.js';
+import { resolveMasterPlan } from '../../experiment-runner/src/master-recipe.js';
+import { NativeMasterProtocolAdapter } from '../../experiment-runner/src/master-protocol.js';
 
 const encode = value => new TextEncoder().encode(canonicalJson(value) + '\n');
 const report = { sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),

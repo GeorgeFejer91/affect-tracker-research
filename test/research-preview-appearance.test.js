@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { affectPaletteColor } from "../site/src/math.js";
-import { PREVIEW_GREY, PREVIEW_ANCHORS, parsePreviewNumber, randomPreviewAnchors, previewPaletteColor } from "../site/src/research/preview-appearance.js";
+import { affectPaletteColor } from "../experiment-planner/web/src/math.js";
+import { PREVIEW_GREY, PREVIEW_ANCHORS, parsePreviewNumber, randomPreviewAnchors, previewPaletteColor } from "../experiment-planner/web/src/research/preview-appearance.js";
 
 const colors = { up: "#ff0000", right: "#00ff00", down: "#0000ff", left: "#ffffff" };
 

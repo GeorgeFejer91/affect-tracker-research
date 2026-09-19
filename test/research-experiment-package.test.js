@@ -8,15 +8,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
-} from "../site/src/research/external-experiment.js";
+} from "../experiment-planner/web/src/research/external-experiment.js";
 import {
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
   validateResearchSettingsV3,
-} from "../site/src/research/external-protocol.js";
+} from "../experiment-planner/web/src/research/external-protocol.js";
 import {
   EXPERIMENT_PACKAGE_RECOVERY_BINDING_SCHEMA,
   compileExperimentPackageSelectionV1,
@@ -34,8 +34,8 @@ import {
   validateExperimentPackageRecoveryBindingV1,
   validateLanguageSelectionTreeV1,
   verifySameRealmPackageReproductionV1,
-} from "../site/src/research/experiment-package.js";
-import { importQuestionnaireCsv } from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/experiment-package.js";
+import { importQuestionnaireCsv } from "../experiment-planner/web/src/research/questionnaires.js";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const execFileAsync = promisify(execFile);
@@ -89,10 +89,10 @@ function nestedLanguageSelection(questionnaireModuleIds = []) {
 }
 
 async function fixture() {
-  const definitionBytes = await readFile(new URL("../site/experiment-template.json", import.meta.url));
+  const definitionBytes = await readFile(new URL("../experiment-planner/web/experiment-template.json", import.meta.url));
   const parsed = await parseExperimentDefinitionV1(definitionBytes);
   const questionnaireBytes = await readFile(
-    new URL("../site/questionnaires/vr-exp-en.csv", import.meta.url),
+    new URL("../experiment-planner/web/questionnaires/vr-exp-en.csv", import.meta.url),
   );
   const questionnaire = await importQuestionnaireCsv(questionnaireBytes, {
     sourceKind: "bundled",

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
-import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createStudyIdentityV1 } from "../experiment-planner/web/src/research/study-identity.js";
+import { createVideoCatalogueContributionV1 } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
 import {
   createWorkspaceContribution,
   createWorkspaceContributionV1,
@@ -20,7 +20,7 @@ import {
   validateWorkspaceContributionV1,
   verifyWorkspaceRestoredVideoEntries,
   verifyWorkspaceRestoredVideoEntriesV1,
-} from "../site/src/research/workspace-contribution.js";
+} from "../experiment-planner/web/src/research/workspace-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url);
 const fixtureV2Url = new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url);

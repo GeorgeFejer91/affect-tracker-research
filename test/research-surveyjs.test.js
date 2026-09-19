@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { importSurveyJson, verifySurveyDefinition } from "../site/src/research/surveyjs-definition.js";
-import { inspectSurveyJson, checkSurveyData, createSurveyModel, surveyJsonFromQuestionnaire } from "../site/src/research/surveyjs-engine.js";
-import { createQuestionnairePresentationV3, validateQuestionnaireRecipeContributionV2 } from "../site/src/research/questionnaire-recipe-v2.js";
-import { compilePlannerRecipeV4, serializePlannerRecipeV4, parseSupportedPlannerRecipe, parsePlannerRecipeV3, reconstructPlannerRecipeSelectionV4 } from "../site/src/research/planner-recipe.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { importSurveyJson, verifySurveyDefinition } from "../experiment-planner/web/src/research/surveyjs-definition.js";
+import { inspectSurveyJson, checkSurveyData, createSurveyModel, surveyJsonFromQuestionnaire } from "../experiment-planner/web/src/research/surveyjs-engine.js";
+import { createQuestionnairePresentationV3, validateQuestionnaireRecipeContributionV2 } from "../experiment-planner/web/src/research/questionnaire-recipe-v2.js";
+import { compilePlannerRecipeV4, serializePlannerRecipeV4, parseSupportedPlannerRecipe, parsePlannerRecipeV3, reconstructPlannerRecipeSelectionV4 } from "../experiment-planner/web/src/research/planner-recipe.js";
 import { controlledCore } from "./fixtures/planner-recipe-v3-fixture.js";
-import { sheetFromDefinition, sheetToAuthoring } from "../site/src/research/form-sheet.js";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
-import { legacySurveyPresentation } from "../site/src/research/surveyjs-legacy-presentation.js";
+import { sheetFromDefinition, sheetToAuthoring } from "../experiment-planner/web/src/research/form-sheet.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
+import { legacySurveyPresentation } from "../experiment-planner/web/src/research/surveyjs-legacy-presentation.js";
 
 test("Node-generated SurveyJS JSON passes guarded CLI import and canonical source-save preparation", async () => {
   const editor = createQuestionnaireEditor({ root: { querySelector: () => null } });
@@ -138,10 +138,19 @@ test("saved repeated-label layouts round-trip legacy item IDs and row-specific o
   }
 });
 
-test("typed integer adapter accepts zero and rejects fractional ages through SurveyJS", async () => {
+test("typed demographics adapter uses one-line full name and four handedness choices", async () => {
   const recipe = JSON.parse(await readFile(new URL("./fixtures/runner-master-v2-owner.canonical.json", import.meta.url), "utf8"));
   const d = recipe.segments.P2.questionnaires.definitions.find(d => d.questionnaireId === "demographics-en");
-  const model = createSurveyModel(surveyJsonFromQuestionnaire(d), { data: { fullName: "Fictitious person", age: 0, gender: "preferNotToSay", handedness: "ambidextrous" } });
+  const json = surveyJsonFromQuestionnaire(d);
+  const fullName = json.elements.find(q => q.name === "fullName");
+  assert.equal(fullName.type, "text");
+  assert.equal(fullName.inputType, "text");
+  assert.equal(fullName.maxLength, 1024);
+  assert.equal(fullName.acceptCarriageReturn, undefined);
+  const handedness = json.elements.find(q => q.name === "handedness");
+  assert.equal(handedness.type, "radiogroup");
+  assert.deepEqual(handedness.choices.map(choice => choice.value), ["right", "left", "ambidextrous", "preferNotToSay"]);
+  const model = createSurveyModel(json, { data: { fullName: "Fictitious person", age: 0, gender: "preferNotToSay", handedness: "ambidextrous" } });
   assert.equal(model.validate(false, false), true);
   model.setValue("age", 1.5); assert.equal(model.validate(false, false), false);
   model.setValue("age", -1); assert.equal(model.validate(false, false), false);

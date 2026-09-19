@@ -10,10 +10,10 @@ const [browser, destination, viewport="1938,1176", suite="flubber"] = process.ar
 assert.ok(browser && destination); const root=resolve(import.meta.dirname,"../.."),output=resolve(destination);
 await mkdir(output);const execute=promisify(execFile);
 const entry=String.raw`
-import {bootRunner} from './runner/src/app.js';
-import {resolveRunnerSelection} from './runner/src/recipe.js';
-import {compilePlannerRecipeV1,serializePlannerRecipeV1} from './site/src/research/planner-recipe.js';
-import {runnerMasterFeedbackState} from './runner/src/recipe.js';
+import {bootRunner} from './experiment-runner/src/app.js';
+import {resolveRunnerSelection} from './experiment-runner/src/recipe.js';
+import {compilePlannerRecipeV1,serializePlannerRecipeV1} from './experiment-planner/web/src/research/planner-recipe.js';
+import {runnerMasterFeedbackState} from './experiment-runner/src/recipe.js';
 const mode=new URL(location.href).searchParams.get('case'),representative=mode.startsWith('flubber-'),checks=[],calls=[],errors=[];
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
 const tick=()=>new Promise(r=>setTimeout(r,120));
@@ -24,7 +24,7 @@ const click=async id=>{q(id).click();await tick();};
 const selected=()=>resolveRunnerSelection(app.recipe,'P001',['both','en'],'variant-3');
 const invoke=async(command,args)=>{calls.push(command);switch(command){
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
- case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
+ case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
  case 'research_native_media_capability':return{playerActorReady:true};
  case 'research_workspace_status':return{selected:true,workspaceId:'synthetic-workspace',displayName:'Synthetic UI test'};
  case 'research_runner_selection':return{schema:'affect-runner-selection',version:1,packageSourceByteSha256:app.recipe.canonicalSourceByteSha256,participantId:args.participantId??'P001',outputDirectory:'outputs/recipe-synthetic'};
@@ -36,7 +36,7 @@ const invoke=async(command,args)=>{calls.push(command);switch(command){
  case 'research_runner_fullscreen':fullscreen=args.fullscreen;return;
  case 'research_runner_master_plan':return selected();
  case 'research_runner_master_rescan':return{workspaceId:'synthetic-workspace',stimuli:[]};
- case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:1,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,nativeStartReady:true,reasons:[]};
+ case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:1,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,htmlVideoStartReady:true,nativeStartReady:true,reasons:[]};
  case 'research_runner_master_start':
   check(args.request.participant.participantId==='P001','canonical participant reaches master Start');
   check(!JSON.stringify(args.request.participant).includes('Alex'),'raw names do not reach native Start');

@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { PREBUILT_QUESTIONNAIRE_ASSETS } from "../site/src/research/questionnaire-prebuilt.js";
-import { importQuestionnaireAuthoring } from "../site/src/research/questionnaire-authoring.js";
-import { sheetFromDefinition, sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
+import { PREBUILT_QUESTIONNAIRE_ASSETS } from "../experiment-planner/web/src/research/questionnaire-prebuilt.js";
+import { importQuestionnaireAuthoring } from "../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { sheetFromDefinition, sheetToAuthoring } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
 
 test("every ready preset provides all item labels and recorded codes to the sheet without changing provenance", async () => {
   const ready = PREBUILT_QUESTIONNAIRE_ASSETS.filter(({ ready }) => ready);
   assert.deepEqual(ready.map(({ id }) => id), ["maia-2-en", "maia-2-de"]);
   for (const asset of ready) {
     const logicalName = `${asset.id}.csv`;
-    const source = await readFile(new URL(`../site/questionnaires/${logicalName}`, import.meta.url));
+    const source = await readFile(new URL(`../experiment-planner/web/questionnaires/${logicalName}`, import.meta.url));
     const { definition } = await importQuestionnaireAuthoring(source, { logicalName, sourceKind: "bundled" });
     assert.equal(definition.questionnaireId, asset.id);
     assert.equal(definition.language, asset.language);

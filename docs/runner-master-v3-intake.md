@@ -26,18 +26,15 @@ lib handler registration. Startup3 embeds exactly recipe3 and reconstructs selec
 its response records must be2, never3. Demographics remain ordinary mandatory
 forms, not legacy coded participant preparation. No new timing/reset marker data.
 
-## Native media seam
+## HTML video seam
 
-For wholly controlled master3 catalogues, Runner freshly rescans and uses the
-native owner's attestNativeGstCatalogueV2 / NativeMediaController.attestDecodeV2 /
-research_native_media_attest_decode_v2. Wholly historical catalogues retain
-attest1; mixed historical/controlled catalogues fail before media side effects.
-Each bounded attestation loop stops its generation. S1's
-validate_runner_video_catalogue_v3 binds the current library to full cached
-receipt2/control proof (or exact historical proof), content, location, duration
-and fences. Runner retains the complete typed binding through media preparation;
-it never converts catalogue3 to2. Current playback qualification, input receipt
-and exact fullscreen gates still apply.
+Runner catalogues now bind to the same HTML-compatible video path used by
+browser/WebView playback. Planner save prepares workspace assets before writing:
+ffprobe checks each declared video, ffmpeg writes a deterministic
+`_converted.mp4` sibling only when needed, and compatible converted siblings are
+reused. Runner retains the complete typed binding through media preparation; it
+does not revive removed native SDK/player protocols. Current input receipt,
+recording, and exact fullscreen gates still apply.
 
 Root explicitly rejected duplicating the native opaque-ID hash algorithm.
 Fresh RescanResult currently exposes workspaceId and stimuli with workspaceFileId,

@@ -19,8 +19,8 @@ const commit = await git(["rev-parse", "HEAD"]), status = await git(["status", "
 const bundle = await build({ entryPoints: ["test/fixtures/planner-p3-cli-browser.js"], bundle: true, write: false, format: "esm", target: "chrome120", metafile: true, logLevel: "silent",
   banner: { js: "const __plannerModuleUrl = new URL('/site/src/research/ui-view.js', location.href).href;" }, define: { "import.meta.url": "__plannerModuleUrl" } });
 const sourceHashes = {};
-for (const file of [...Object.keys(bundle.metafile.inputs), "site/research.css"]) sourceHashes[file] = hash(await readFile(file));
-const source = resolve(), harnessSha256 = hash(await readFile(new URL(import.meta.url))), failures = [];
+for (const file of [...Object.keys(bundle.metafile.inputs), "experiment-planner/web/research.css"]) sourceHashes[file] = hash(await readFile(file));
+const source = resolve(), site = join(source, "experiment-planner", "web"), harnessSha256 = hash(await readFile(new URL(import.meta.url))), failures = [];
 let receipt;
 const html = `<!doctype html><meta charset="utf-8"><title>P3 UI and CLI parity</title><link rel="stylesheet" href="/site/research.css"><main></main><pre id="receipt" hidden></pre>
 <script>const node=document.querySelector('#receipt');const observer=new MutationObserver(()=>{if(!node.textContent)return;observer.disconnect();fetch('/receipt',{method:'POST',body:node.textContent});});observer.observe(node,{childList:true,characterData:true,subtree:true});</script>
@@ -34,7 +34,7 @@ const server = createServer(async (request, response) => {
       for await (const chunk of request) { length += chunk.length; assert.ok(length <= 4 * 1024 * 1024); chunks.push(chunk); }
       receipt = JSON.parse(Buffer.concat(chunks).toString("utf8")); response.writeHead(204); response.end();
     } else if (pathname.startsWith("/site/") && request.method === "GET") {
-      const file = resolve(source, "." + decodeURIComponent(pathname)); assert.ok(file.startsWith(join(source, "site") + sep));
+      const file = resolve(site, "." + decodeURIComponent(pathname.slice(5))); assert.ok(file.startsWith(site + sep));
       const bytes = await readFile(file); sourceHashes[relative(source, file).split(sep).join("/")] = hash(bytes);
       response.setHeader("Content-Type", ({ ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".csv": "text/csv" })[extname(file)] ?? "application/octet-stream"); response.end(bytes);
     } else if (pathname === "/") { response.setHeader("Content-Type", "text/html; charset=utf-8"); response.end(html); }

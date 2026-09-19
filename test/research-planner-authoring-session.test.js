@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { createPlannerPolicyCommandOwner } from "../site/src/research/planner-authoring-p7.js";
-import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
-import { readPlannerPolicyControls } from "../site/src/research/planner-policy-controls.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { createPlannerPolicyCommandOwner } from "../experiment-planner/web/src/research/planner-authoring-p7.js";
+import { PLANNER_COMMAND_SCHEMA } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
+import { readPlannerPolicyControls } from "../experiment-planner/web/src/research/planner-policy-controls.js";
 
 function harness() {
   const fields = new Map([

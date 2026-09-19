@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { importQuestionnaireAuthoring } from "../site/src/research/questionnaire-authoring.js";
-import { questionnaireToCsv } from "../site/src/research/questionnaires.js";
+import { importQuestionnaireAuthoring } from "../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { questionnaireToCsv } from "../experiment-planner/web/src/research/questionnaires.js";
 import {
   QUESTIONNAIRE_SHEET_LIMITS,
   appendSheetRows,
@@ -18,7 +18,7 @@ import {
   setSheetCell,
   sheetFromDefinition,
   sheetToAuthoring,
-} from "../site/src/research/questionnaire-sheet.js";
+} from "../experiment-planner/web/src/research/questionnaire-sheet.js";
 
 const make = (options = {}) => createQuestionnaireSheet({ familyId: "custom", language: "en", title: "Study questionnaire", ...options });
 const digest = (value) => createHash("sha256").update(value).digest("hex");
@@ -216,7 +216,7 @@ test("reverse, append and delete preserve stable item/option identity and stay b
 test("bundled English/German MAIA opening/saving does not alter item text, scoring, IDs or source hashes", async () => {
   for (const language of ["en", "de"]) {
     const logicalName = `maia-2-${language}.csv`;
-    const bytes = await readFile(new URL(`../site/questionnaires/${logicalName}`, import.meta.url));
+    const bytes = await readFile(new URL(`../experiment-planner/web/questionnaires/${logicalName}`, import.meta.url));
     const original = await importQuestionnaireAuthoring(bytes, { logicalName, sourceKind: "bundled" });
     const sheet = sheetFromDefinition(original.definition, { familyId: "maia-2", authoringResult: original });
     const result = await sheetToAuthoring(sheet);

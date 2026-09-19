@@ -4,10 +4,12 @@ Thumbs.db
 node_modules/
 .pnpm-store/
 dist-pages/
-desktop/dist/
-src-tauri/native-media/runtime/
-src-tauri/target/
-src-tauri/gen/schemas/
+experiment-planner/desktop/dist/
+native/target/
+native/gen/schemas/
 coverage/
 *.log
-runner/dist/
+experiment-runner/dist/
+.affect-checks/
+.affect-runner-master-build/
+current-apps/

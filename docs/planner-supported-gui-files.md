@@ -71,5 +71,5 @@ are covered. Diff checks pass. Log:
 `D:/GitHub/.affect-checks/p7-gui-supported-final.log`.
 
 This is workflow/helper evidence. Actual GUI hook installation, native dialogs,
-rendered typed-form interaction, complete user mock and Runner/XDF execution
+rendered typed-form interaction, complete user mock and experiment-runner/XDF execution
 remain separate Main/root integration gates.

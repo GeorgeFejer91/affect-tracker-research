@@ -13,7 +13,7 @@ const assert = require("node:assert/strict");
   const sectionOnly = process.argv.includes("--section-only");
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
   const dirty = execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).trim();
-  const output = path.join(root, "src-tauri/target/segment3-verification", `${commit.slice(0, 12)}-${Date.now()}`);
+  const output = path.join(root, "native/target/segment3-verification", `${commit.slice(0, 12)}-${Date.now()}`);
   const sources = new Map();
   const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
   sources.set("scripts/verify-stimulus-order-ui.cjs", sha256(await readFile(__filename)));

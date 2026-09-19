@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import {
   canonicalJson,
   canonicalSha256,
-} from "../site/src/research/canonical.js";
+} from "../experiment-planner/web/src/research/canonical.js";
 import {
   INPUT_PRESET_IDS,
   RESEARCH_EVENT_SCHEMA,
@@ -20,7 +20,7 @@ import {
   validateResearchSampleV1,
   validateResearchSettingsV1,
   validateStimulusV1,
-} from "../site/src/research/contracts.js";
+} from "../experiment-planner/web/src/research/contracts.js";
 
 const digest = "a".repeat(64);
 const planDigest = "b".repeat(64);
@@ -249,8 +249,12 @@ test("ResearchRunManifestV2 contains coded demographics but no raw-name slots", 
   assert.equal(JSON.stringify(normalized).includes("firstName"), false);
   assert.throws(() => validateResearchRunManifestV2({
     ...manifest,
-    playbackMode: "nativeLibvlc",
+    playbackMode: "browserMediaAdapters",
   }), /playback mode and qualification do not match/u);
+  assert.throws(() => validateResearchRunManifestV2({
+    ...manifest,
+    playbackMode: "ambientVlc",
+  }), /playbackMode/u);
   assert.throws(() => validateResearchRunManifestV2({ ...manifest, firstName: "Erika" }), /unknown field firstName/);
   assert.throws(() => validateResearchRunManifestV2({ ...manifest, runId: "run-001" }), /canonical UUID for Tauri Windows/u);
   for (const runId of [manifest.runId.toUpperCase(), ` ${manifest.runId}`]) {

@@ -67,7 +67,7 @@ dimensions, and choosing it without changing dimensions does not alter the recip
 
 ## Interfaces and restoration
 
-`site/src/research/feedback-settings.js` exports:
+`experiment-planner/web/src/research/feedback-settings.js` exports:
 
 - `validateFeedbackContributionV2(value)` → detached recursively frozen V2.
 - `validateFeedbackContribution(value)` → strict generation dispatch.

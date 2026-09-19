@@ -1,8 +1,8 @@
-import { bootResearchUi, initializeResearchUi, renderResearchUiMarkup } from "../../site/src/research/app.js";
-import { preparePlannerSurface } from "../../site/src/research/planner-surface.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { parsePlannerRecipeV1 } from "../../site/src/research/planner-recipe.js";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
+import { bootResearchUi, initializeResearchUi, renderResearchUiMarkup } from "../../experiment-planner/web/src/research/app.js";
+import { preparePlannerSurface } from "../../experiment-planner/web/src/research/planner-surface.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { parsePlannerRecipeV1 } from "../../experiment-planner/web/src/research/planner-recipe.js";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
 import sample from "./planner-recipe-locations-current-v1.canonical.json";
 
 const checks = [], errors = [];

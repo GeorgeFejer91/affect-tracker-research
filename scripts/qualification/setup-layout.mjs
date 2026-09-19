@@ -1,4 +1,4 @@
-// Background-only real UI bootstrap and layout fixture. No desktop/browser input.
+// Background-only real UI bootstrap and layout fixture. No experiment-planner/desktop/browser input.
 // Usage: node scripts/qualification/setup-layout.mjs <browser.exe> <output-dir>
 import { execFile } from "node:child_process";
 import { createServer } from "node:http";
@@ -11,7 +11,7 @@ const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
-const site = resolve(import.meta.dirname, "../../site");
+const site = resolve(import.meta.dirname, "../../experiment-planner/web");
 const cases = [
   { name: "default", width: 1280, height: 900 },
   { name: "wide-preview", width: 1280, height: 900, sections: 432 },

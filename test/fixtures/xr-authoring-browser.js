@@ -1,8 +1,8 @@
-import { bootResearchUi } from "../../site/src/research/app.js";
-import { RESEARCH_UI_EVENTS } from "../../site/src/research/ui-contracts.js";
-import { serializeXrLayoutProfileV1 } from "../../site/src/research/xr-layout.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
-import { resolveSavedXrLayoutContribution } from "../../site/src/research/xr-layout-recipe.js";
+import { bootResearchUi } from "../../experiment-planner/web/src/research/app.js";
+import { RESEARCH_UI_EVENTS } from "../../experiment-planner/web/src/research/ui-contracts.js";
+import { serializeXrLayoutProfileV1 } from "../../experiment-planner/web/src/research/xr-layout.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
+import { resolveSavedXrLayoutContribution } from "../../experiment-planner/web/src/research/xr-layout-recipe.js";
 import catalogue from "./research-video-catalogue-contribution-v1.json";
 import savedXr from "./xr-layout-recipe-v1.json";
 import xrMaster from "./planner-recipe-xr-current-v1.canonical.json";

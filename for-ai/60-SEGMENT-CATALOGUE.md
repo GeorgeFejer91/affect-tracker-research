@@ -1,16 +1,13 @@
 # Central segment roadmap and capability checklist
 
-## Questionnaire asset amendment — 2026-09-13
+## Current questionnaire asset authority
 
-Direct user approval changes fresh Planner saves to a master5 manifest and
-separate questionnaire files. P7 owns this contract pass (P7-02/04/05/06/09),
-with named P2-04/08 and Runner intake/evidence seams. Historical master1–4
-readers and unchanged copies remain strict and byte-preserving. See
-[the asset contract](../docs/planner-questionnaire-assets.md).
-The follow-up user allocation is P2-03/04/07/08: MAIA-2, researcher-local TAS and
-demographics save as SurveyJS. A minimal element arrangement box retains Excel
-table paste and opens an interactive participant-preview popup. No free-position
-canvas, changed instrument wording or new computed scoring is requested.
+Fresh Planner saves use the master5 questionnaire-asset boundary in
+[the charter](15-RESEARCH-V1-CHARTER.md#questionnaire-asset-amendment--2026-09-13)
+and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
+manifest contract; P2 owns authored SurveyJS content and presentation seams; R1
+owns Runner intake/evidence. This catalogue keeps checklist status and does not
+duplicate the full amendment text.
 
 ## P2 / Runner SurveyJS extension — 2026-09-13
 
@@ -280,7 +277,7 @@ Decoding and canonical re-encoding must reproduce the exact path; collision is
 a hard error, never enumeration-based suffixing. Moves change annotation identity
 and acceptance, not equal content identity. Geometry consumers may deduplicate
 content; reference consumers retain each pair. Ambiguous, missing or reflected
-native geometry remains pending; installed GStreamer qualification stays separate.
+native geometry remains pending; installed removed native player stack qualification stays separate.
 
 - [x] **P1-01 — Implemented component:** browser/native workspace selection and authorization (`workspace.js`, `research_workspace.rs`).
 - [x] **P1-02 — Implemented component:** declared-asset verification binds safe paths, hashes, byte lengths and duration. Decode qualification remains separate.
@@ -293,8 +290,8 @@ native geometry remains pending; installed GStreamer qualification stays separat
 **Acceptance:** collisions, rescans and moves have explicit outcomes; each ID
 resolves to declared bytes after export/reload. No second catalogue or directory-
 order experiment is created.
-**Source:** [browser workspace](../site/src/research/workspace.js),
-[native workspace](../src-tauri/src/research_workspace.rs), [audit](61-IMPLEMENTATION-AUDIT.md).
+**Source:** [browser workspace](../experiment-planner/web/src/research/workspace.js),
+[native workspace](../native/src/research_workspace.rs), [audit](61-IMPLEMENTATION-AUDIT.md).
 **Boundary:** P1 does not allocate participants, order events or lay out the screen.
 
 ## P2 — Questionnaires & Languages
@@ -324,10 +321,10 @@ presentation companion. See [P2 contract](../docs/planner-p2-questionnaire-recip
 and codes remain distinct; missing variants reject; imports preserve declared
 content. No implicit translation/fallback supplies coverage. Existing module
 placements remain explicit.
-**Source:** [authoring](../site/src/research/questionnaire-authoring.js),
-[editor](../site/src/research/questionnaire-editor.js),
-[coverage](../site/src/research/questionnaire-assets.js),
-[contracts](../site/src/research/questionnaires.js).
+**Source:** [authoring](../experiment-planner/web/src/research/questionnaire-authoring.js),
+[editor](../experiment-planner/web/src/research/questionnaire-editor.js),
+[coverage](../experiment-planner/web/src/research/questionnaire-assets.js),
+[contracts](../experiment-planner/web/src/research/questionnaires.js).
 **Boundary:** P2 does not allocate participants, schedule videos or record answers.
 
 2026-09-12 P2-04/P2-08 successor evidence: six pure tests include a shared
@@ -408,8 +405,8 @@ its exact wire representation is owned by P3/P7, not fixed by this document.
 Current P3 handoff `2f862b9`, native catalogue export `ea3c788` and reproduction
 expectation `c7afb28` are collected in `875efae`. V1 hash references and V2 exact
 asset/location pairs retain their separate semantics. See
-[variant model](../site/src/research/variant-design.js),
-[native mirror](../src-tauri/src/research_stimulus_order/variants.rs), and
+[variant model](../experiment-planner/web/src/research/variant-design.js),
+[native mirror](../native/src/research_stimulus_order/variants.rs), and
 [marker contract](../docs/planner-marker-contract-v1.md).
 
 **Marker boundary:** Planner owns definitions/expected sequence; Runner owns
@@ -421,8 +418,8 @@ Planner contract does not change the existing runtime marker payload.
 Current native package markers contain only `event:<eventType>`; richer local
 records are not carried in the payload. Existing LSL outlets therefore do not
 prove video identity reconstruction. See `event_marker` in
-[native runtime](../src-tauri/src/research_native_protocol/runtime.rs) and
-[LSL service](../src-tauri/src/research_lsl.rs).
+[native runtime](../native/src/research_native_protocol/runtime.rs) and
+[LSL service](../native/src/research_lsl.rs).
 **Boundary:** implement Planner definitions/fixtures here, not Runner recording.
 
 ## P4 — Screen & Layout
@@ -466,8 +463,8 @@ blanking the preview/run surface.
 **Acceptance:** preview and saved geometry agree; units/reference are explicit;
 mixed videos retain the chosen relationship; missing calibration/impossible fit
 has an explicit outcome.
-**Source predecessor:** [settings](../site/src/research/contracts.js),
-[preview](../site/src/research/preview.js), [UI](../site/src/research/app.js).
+**Source predecessor:** [settings](../experiment-planner/web/src/research/contracts.js),
+[preview](../experiment-planner/web/src/research/preview.js), [UI](../experiment-planner/web/src/research/app.js).
 **Boundary:** P4 owns geometry, not colors, input or animation parameters.
 
 **Current evidence:** accepted/live P4 application `77e4752`, handoff `fa64e8d`,
@@ -518,9 +515,9 @@ renderer/labels/halo presentation and response grid/timing/hold behavior.
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
 distinct from the acquisition sample rate in recording policy.
-**Source:** [input](../site/src/research/input-controller.js),
-[contracts](../site/src/research/contracts.js),
-[preview](../site/src/research/preview.js), [mappings](../site/src/research/mappings.js).
+**Source:** [input](../experiment-planner/web/src/research/input-controller.js),
+[contracts](../experiment-planner/web/src/research/contracts.js),
+[preview](../experiment-planner/web/src/research/preview.js), [mappings](../experiment-planner/web/src/research/mappings.js).
 **Boundary:** no allocation, sampling clock, LSL transport or screen calibration.
 
 **Current evidence:** complete P5 `5c0ad7a` / `495ee13` and Preview badge repair
@@ -577,7 +574,7 @@ separately changes it; removing old UI sections must not orphan playback semanti
 - [x] **P7-06 — Implemented Planner:** Strict closed-field, cross-reference, language, planned-marker, geometry and target validation routes actionable errors to the owning segment.
 - [x] **P7-07 — Implemented Planner:** Contribution/edit/operation generations prevent stale compiled output, including edit/revert, P4 Reset and P5 color Reset. Shared reopen restores all owners before adoption.
 - [x] **P7-08 — Implemented Planner:** Final JSON contains accepted design and authored metadata/sampling/output/LSL policy; it excludes drafts, live permissions, allocator and recording-session state. Optional draft/provenance storage stays separate.
-- [x] **P7-09 — Implemented Planner:** Canonical independent-process and native/browser reproduction cover current desktop/XR and historical readers. Final11-case native parity,79 codec checks per browser and actual UI-generated files agree; Runner correspondence remains later.
+- [x] **P7-09 — Implemented Planner:** Canonical independent-process and native/browser reproduction cover current experiment-planner/desktop/XR and historical readers. Final11-case native parity,79 codec checks per browser and actual UI-generated files agree; Runner correspondence remains later.
 
 **Acceptance:** no raw JSON authoring prerequisite; every required value explicit;
 embedded forms need no reopened source document; assets resolve; exact saved
@@ -674,7 +671,7 @@ Desktop Planner completion requires applicable P1–P5/P7 items closed, decision
 answered or explicitly deferred, one valid recipe created through UI,
 reproducible reopen/compile fixtures and clear target requirements. Optional
 spatial authoring also requires P6-01 through P6-05 and corresponding P7 checks;
-P6-06 remains deferred Runner/device work. Runner readiness is a separate claim;
+P6-06 remains deferred experiment-runner/device work. Runner readiness is a separate claim;
 a recipe does not prove qualified execution or recording.
 
 ## Historical initial evidence and pending integration

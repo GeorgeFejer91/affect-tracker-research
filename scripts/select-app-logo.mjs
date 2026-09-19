@@ -9,10 +9,10 @@ import { AXIS_BLOOM_VARIANTS } from "./build-axis-bloom-variants.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
-const conceptDirectory = path.join(repositoryRoot, "desktop", "icons", "concepts");
-const sourceIcon = path.join(repositoryRoot, "desktop", "icons", "app-icon.svg");
-const generatedIconDirectory = path.join(repositoryRoot, "src-tauri", "icons");
-const siteAssetDirectory = path.join(repositoryRoot, "site", "assets");
+const conceptDirectory = path.join(repositoryRoot, "experiment-planner", "desktop", "icons", "concepts");
+const sourceIcon = path.join(repositoryRoot, "experiment-planner", "desktop", "icons", "app-icon.svg");
+const generatedIconDirectory = path.join(repositoryRoot, "native", "icons");
+const siteAssetDirectory = path.join(repositoryRoot, "experiment-planner", "web", "assets");
 const siteSourceIcon = path.join(siteAssetDirectory, "app-logo.svg");
 const siteIconDirectory = path.join(siteAssetDirectory, "app-icons");
 const tauriCli = path.join(repositoryRoot, "node_modules", "@tauri-apps", "cli", "tauri.js");

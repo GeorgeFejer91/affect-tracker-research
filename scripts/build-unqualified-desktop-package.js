@@ -21,25 +21,25 @@ const TARGETS = Object.freeze({
     nodePlatform: "win32",
     nodeArch: "x64",
     bundles: "nsis",
-    config: "src-tauri/tauri.bundle-windows-unqualified.conf.json",
+    config: "native/tauri.bundle-windows-unqualified.conf.json",
   }),
   "macos-arm64": Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "arm64",
     bundles: "dmg",
-    config: "src-tauri/tauri.bundle-macos-unqualified.conf.json",
+    config: "native/tauri.bundle-macos-unqualified.conf.json",
   }),
   "macos-x64": Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "x64",
     bundles: "dmg",
-    config: "src-tauri/tauri.bundle-macos-unqualified.conf.json",
+    config: "native/tauri.bundle-macos-unqualified.conf.json",
   }),
   "linux-x64": Object.freeze({
     nodePlatform: "linux",
     nodeArch: "x64",
     bundles: "deb,appimage",
-    config: "src-tauri/tauri.bundle-linux-unqualified.conf.json",
+    config: "native/tauri.bundle-linux-unqualified.conf.json",
   }),
 });
 
@@ -76,9 +76,6 @@ function verifyBoundary(target) {
     );
   }
   if (!existsSync(target.config)) fail(`missing Tauri override ${target.config}.`);
-  if (process.env.AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME === "1") {
-    fail("the Windows-only GStreamer runtime gate must not be active.");
-  }
   const suppliedSigningKey = SIGNING_ENVIRONMENT_KEYS.find((key) => process.env[key]);
   if (suppliedSigningKey) fail(`${suppliedSigningKey} must be absent from this unsigned job.`);
 
@@ -116,7 +113,6 @@ const result = spawnSync(
     cwd: process.cwd(),
     env: {
       ...process.env,
-      AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0",
       AFFECT_TRACKER_BUILD_COMMIT: commit,
     },
     stdio: "inherit",

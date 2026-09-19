@@ -95,7 +95,7 @@ Runner maps a target/current viewport mismatch with its centered fallback.
 
 ## Public composition APIs
 
-`site/src/research/desktop-layout-contribution.js`:
+`experiment-planner/web/src/research/desktop-layout-contribution.js`:
 
 - `validateDesktopLayoutContribution(value, {workspace, feedback})` → async
   detached profile or throws. Both arguments are complete saved owner payloads.

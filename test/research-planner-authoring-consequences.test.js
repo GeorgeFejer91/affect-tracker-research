@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerAuthoringSession, PLANNER_REOPEN_STEPS } from "../site/src/research/planner-authoring-session.js";
-import { PLANNER_COMMAND_SCHEMA, commandFailure } from "../site/src/research/planner-authoring-contract.js";
+import { createPlannerAuthoringSession, PLANNER_REOPEN_STEPS } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA, commandFailure } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
 
 // Owner doubles exercise the production coordinator; these are not file/media
 // or native transport qualification receipts.

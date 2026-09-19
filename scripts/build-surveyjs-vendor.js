@@ -2,7 +2,7 @@ import { build } from "esbuild";
 import { mkdir, writeFile, readFile, copyFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { surveyNotices, surveyNoticeBanner } from "./surveyjs-notices.js";
-const directory = "site/src/research/vendor";
+const directory = "experiment-planner/web/src/research/vendor";
 await mkdir(directory, { recursive: true });
 const common = { bundle: true, write: false, format: "esm", minify: true, platform: "browser", legalComments: "inline", banner: { js: surveyNoticeBanner } };
 const core = await build({ ...common, stdin: { contents: 'export * from "survey-core"; import "survey-core/i18n"; export {lintSurvey} from "survey-core/linter";', resolveDir: process.cwd() } });

@@ -5,9 +5,9 @@ import {
   createQuestionnaireSheet, cloneQuestionnaireSheet, applyQuestionnaireGridPaste,
   setQuestionnaireGridCell, questionnaireGridRows, serializeQuestionnaireGrid,
   sheetFromDefinition, sheetToAuthoring,
-} from "../site/src/research/questionnaire-sheet.js";
-import { importQuestionnaireAuthoring } from "../site/src/research/questionnaire-authoring.js";
-import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "../site/src/research/questionnaire-prebuilt.js";
+} from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { importQuestionnaireAuthoring } from "../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { PREBUILT_QUESTIONNAIRE_ASSETS, prebuiltQuestionnaireAvailability } from "../experiment-planner/web/src/research/questionnaire-prebuilt.js";
 
 const make = () => createQuestionnaireSheet({ familyId: "custom", language: "en" });
 const table = 'Item\tAnswer 1\tCode 1\tAnswer 2\tCode 2\tRequired\r\n"How, exactly, do you ""feel""?"\tNever\t4\tAlways\t-2\ttrue\r\nSecond item\tNo\t0\tYes\t1\tfalse\r\n';
@@ -78,7 +78,7 @@ test("copy refuses formula-like text rather than making Excel execute it", () =>
 
 test("both shipped MAIA variants expose all labels and codes without altering untouched definition provenance", async () => {
   for (const language of ["en", "de"]) {
-    const bytes = await readFile(new URL(`../site/questionnaires/maia-2-${language}.csv`, import.meta.url));
+    const bytes = await readFile(new URL(`../experiment-planner/web/questionnaires/maia-2-${language}.csv`, import.meta.url));
     const imported = await importQuestionnaireAuthoring(bytes, { logicalName: `maia-2-${language}.csv`, sourceKind: "bundled" });
     const sheet = sheetFromDefinition(imported.definition, { familyId: "maia-2", authoringResult: imported });
     const rows = questionnaireGridRows(sheet);

@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { resolveFeedbackEnvelope } from "../site/src/research/feedback-layout.js";
-import { validateWorkspaceContributionV1 } from "../site/src/research/workspace-contribution.js";
-import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
-import { projectVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { resolveFeedbackEnvelope } from "../experiment-planner/web/src/research/feedback-layout.js";
+import { validateWorkspaceContributionV1 } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { createWorkspaceContribution } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { projectVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
 import { DEFAULT_DESKTOP_REFERENCE_POLICY, validateDesktopLayoutProfileV1, selectDesktopReference,
-  resolveDesktopLayoutBase, resolveDesktopLayoutGeometry, convertDesktopLayoutUnits, assertDesktopLayoutViewport } from "../site/src/research/desktop-layout.js";
+  resolveDesktopLayoutBase, resolveDesktopLayoutGeometry, convertDesktopLayoutUnits, assertDesktopLayoutViewport } from "../experiment-planner/web/src/research/desktop-layout.js";
 import { validateDesktopLayoutContribution, resolveDesktopLayoutContribution, serializeDesktopLayoutContribution, parseDesktopLayoutContribution, desktopLayoutDraftFromProfile,
-  desktopLayoutProfileFromDraft } from "../site/src/research/desktop-layout-contribution.js";
+  desktopLayoutProfileFromDraft } from "../experiment-planner/web/src/research/desktop-layout-contribution.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/desktop-layout-candidates-v1.json", import.meta.url), "utf8"));
 const clone = structuredClone;
@@ -164,9 +164,9 @@ test("generic P1 v2 dispatch fits every unique content asset while retaining rep
 
 test("two clean processes reproduce candidate bytes and geometry without app/default/storage imports", () => {
   const script = `import {readFileSync} from 'node:fs';
-    import {canonicalJson} from './site/src/research/canonical.js';
-    import {resolveDesktopLayoutBase,resolveDesktopLayoutGeometry,validateDesktopLayoutProfileV1} from './site/src/research/desktop-layout.js';
-    import {resolveFeedbackEnvelope} from './site/src/research/feedback-layout.js';
+    import {canonicalJson} from './experiment-planner/web/src/research/canonical.js';
+    import {resolveDesktopLayoutBase,resolveDesktopLayoutGeometry,validateDesktopLayoutProfileV1} from './experiment-planner/web/src/research/desktop-layout.js';
+    import {resolveFeedbackEnvelope} from './experiment-planner/web/src/research/feedback-layout.js';
     for(const key of ['localStorage','sessionStorage','document','window']) Object.defineProperty(globalThis,key,{get(){throw Error('ambient '+key)}});
     const f=JSON.parse(readFileSync('test/fixtures/desktop-layout-candidates-v1.json','utf8'));
     process.stdout.write(canonicalJson(f.cases.map(c=>{const p=validateDesktopLayoutProfileV1(c.profile); const g=resolveDesktopLayoutGeometry(p,f.media,resolveFeedbackEnvelope(f.feedback,resolveDesktopLayoutBase(p).geometry.feedback.width));return {profile:p,geometry:g.geometry,videos:g.videos};})));`;

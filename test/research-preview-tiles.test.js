@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid, previewTileGeometry, previewTileLines, snapPreviewCoordinate } from "../site/src/research/preview-tiles.js";
-import { createPreviewResponseSimulator } from "../site/src/research/preview-response-simulator.js";
+import { parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid, previewTileGeometry, previewTileLines, snapPreviewCoordinate } from "../experiment-planner/web/src/research/preview-tiles.js";
+import { createPreviewResponseSimulator } from "../experiment-planner/web/src/research/preview-response-simulator.js";
 
 test("steps per side accept every bounded integer and custom dimensions validate atomically", () => {
   for (let steps = 1; steps <= 1000; steps++) {

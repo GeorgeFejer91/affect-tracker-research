@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
-import { createPackageExportController } from "../site/src/research/package-export-controller.js";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { parsePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
+import { createPlannerFileWorkflow } from "../experiment-planner/web/src/research/planner-file-workflow.js";
+import { createPackageExportController } from "../experiment-planner/web/src/research/package-export-controller.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { parsePlannerRecipeV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
 
 const sourceText = await readFile(new URL("./fixtures/planner-recipe-current-v1.canonical.json", import.meta.url), "utf8");
 const parsed = await parsePlannerRecipeV1(new TextEncoder().encode(sourceText));

@@ -54,7 +54,7 @@ location-v2 and XR-v2 fixtures. They cover exact bytes/hashes, receipt compatibi
 unsupported versions/fields, duplicate keys, malformed/oversized inputs, bad
 integrity, collision/clock rollback, linked/locked paths, final readback failure
 and early/late effect guards. They do not establish native CLI registration,
-real mock export, media readiness, UI parity or Runner/XDF execution.
+real mock export, media readiness, UI parity or experiment-runner/XDF execution.
 
 Validation from this isolated candidate: ten legacy file tests passed before
 changes; all 14 file-service and nine effect tests pass after changes. Rustfmt

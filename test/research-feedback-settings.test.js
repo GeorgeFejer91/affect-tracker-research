@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createInputBindingPreset } from "../site/src/research/contracts.js";
-import { validateFeedbackContributionV1, createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
-import { validateFeedbackContribution, validateFeedbackContributionV2, createFeedbackAuthoringSettingsV2 } from "../site/src/research/feedback-settings.js";
-import { resolveFeedbackEnvelope, resolveFeedbackEnvelopeV2 } from "../site/src/research/feedback-layout.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createInputBindingPreset } from "../experiment-planner/web/src/research/contracts.js";
+import { validateFeedbackContributionV1, createFeedbackContributionSource } from "../experiment-planner/web/src/research/feedback-contribution.js";
+import { validateFeedbackContribution, validateFeedbackContributionV2, createFeedbackAuthoringSettingsV2 } from "../experiment-planner/web/src/research/feedback-settings.js";
+import { resolveFeedbackEnvelope, resolveFeedbackEnvelopeV2 } from "../experiment-planner/web/src/research/feedback-layout.js";
 const fixture = () => JSON.parse(readFileSync(new URL("./fixtures/research-feedback-settings-v2.json", import.meta.url), "utf8"));
 const legacy = value => ({ input: value.input, visual: value.visual, mappings: value.mappings });
 
@@ -98,9 +98,9 @@ test("V2 envelope covers selected output, full halo filter region, grid edges an
 });
 
 test("two independent readers reproduce complete feedback and bounds without ambient defaults", () => {
-  const script = `import {validateFeedbackContribution} from './site/src/research/feedback-settings.js';
-    import {resolveFeedbackEnvelope} from './site/src/research/feedback-layout.js';
-    import {canonicalJson} from './site/src/research/canonical.js';
+  const script = `import {validateFeedbackContribution} from './experiment-planner/web/src/research/feedback-settings.js';
+    import {resolveFeedbackEnvelope} from './experiment-planner/web/src/research/feedback-layout.js';
+    import {canonicalJson} from './experiment-planner/web/src/research/canonical.js';
     let data='';for await (const chunk of process.stdin)data+=chunk;
     Date.now=()=>{throw Error('clock');};Math.random=()=>{throw Error('random');};
     for(const key of ['localStorage','sessionStorage','navigator'])Object.defineProperty(globalThis,key,{get(){throw Error(key);}});

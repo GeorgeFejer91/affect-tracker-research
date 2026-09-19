@@ -8,7 +8,7 @@ without the verified launcher.
 
 Root consolidates accepted segment changes into this one distribution. Isolated
 source worktrees and Cargo outputs are development artifacts, not alternative
-user launch targets. Do not create additional desktop/download shortcuts or
+user launch targets. Do not create additional experiment-planner/desktop/download shortcuts or
 leave old application builds running. Archive superseded distributions in a
 non-launchable form while preserving hashes, evidence, experiments and outputs.
 Push validated source milestones to `codex/final-release-validation`; do not
@@ -78,3 +78,28 @@ pages are allowed to advance without satisfying required fields; visible fields
 may be filled with synthetic validation answers when paging. These shortcuts do
 not start a recorded attempt, emit LSL markers or create XDF output, and they
 refuse to hijack an active recorded attempt.
+
+## Runner playback fallback build, 2026-09-13
+
+The current Runner distribution now identifies source
+`1574ece7370e418c0b6110abd045cf1e4d4dd82c-dirty` in its adjacent
+`current-build.json`. This is a source-dirty local app handoff because the
+checkout already contained unrelated active Planner/Runner work; consult the
+receipt's `sourceDirtyFiles` before claiming a clean source milestone.
+
+Current Runner launcher:
+`D:/GitHub/.affect-checks/current-apps/Experiment Runner.exe`, SHA-256
+`02aacfa5f55bb8e0c0f2db11230a2aa660643ecce7b819dbd3e29e0511e2db30`.
+Current Runner engine:
+`D:/GitHub/.affect-checks/current-apps/affect-runner-engine.exe`, SHA-256
+`8acd77747100b51e766288615a746a319c4b7c30ed5a225c9c55c416fae58bda`.
+The previous Runner launcher/engine/receipts were archived under
+`D:/GitHub/.affect-checks/current-apps/history/runner-before-playback-fallback-20260913-171636`.
+
+This historical build used the now-retired native playback path. Current Runner
+execution must use the lightweight HTML-compatible video surface and
+`research-media` URLs instead. Do not rebuild or launch the old native runtime
+candidate as evidence. Current validation must cite the HTML video runner,
+JavaScript suite, Rust check gates, and any later installed-runner evidence. This
+is not a research qualification, installed release, physical/timing/XDF claim,
+or proof that a complete recorded session has played through.

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { canonicalSha256 } from "../../site/src/research/canonical.js";
+import { canonicalSha256 } from "../../experiment-planner/web/src/research/canonical.js";
+import { deriveControlledVideoDisplayGeometry, HTML_VIDEO_DISPLAY_METADATA_SCHEMA } from "../../experiment-planner/web/src/research/video-display-controlled.js";
 
 // Synthetic contract fixture, not a native renderer receipt or qualification.
 export async function controlledCore(name = "locations", explicit = false) {
@@ -13,17 +14,14 @@ export async function controlledCore(name = "locations", explicit = false) {
   for (const entry of catalogue.entries) {
     const width = entry.geometry.displayWidthPx, height = entry.geometry.displayHeightPx;
     const metadata = {
-      schema: "affect-research-native-display-metadata-receipt", version: 2,
-      encodedWidthPx: width, encodedHeightPx: height, pixelAspectRatio: { numerator: 1, denominator: 1 },
+      schema: HTML_VIDEO_DISPLAY_METADATA_SCHEMA,
+      version: 1,
+      videoWidthPx: width,
+      videoHeightPx: height,
+      pixelAspectRatio: { numerator: 1, denominator: 1 },
       sourceOrientation: { stream: explicit ? { status: "explicit", rotationDegrees: 0 } : { status: "absent" }, media: { status: "absent" } },
-      snapshotWidthPx: width, snapshotHeightPx: height, snapshotPixelAspectRatio: { numerator: 1, denominator: 1 },
-      snapshotInterpretation: "pre-renderer-square-pixel",
-      renderer: { sinkFactory: "d3d11videosink", configuredRotationDegrees: 0, readbackRotationDegrees: 0 },
     };
-    entry.geometry = { status: "verified", source: "native-gstplay-controlled-renderer",
-      displayWidthPx: width, displayHeightPx: height, displayAspect: entry.geometry.displayAspect,
-      rotationDegrees: 0, pixelAspectRatio: { numerator: 1, denominator: 1 },
-      metadataInterpretation: "controlled-renderer-and-pre-sink-square-pixel-snapshot", nativeDisplayMetadata: metadata };
+    entry.geometry = deriveControlledVideoDisplayGeometry(metadata);
   }
   const { integritySha256, ...catalogueCore } = catalogue;
   catalogue.integritySha256 = await canonicalSha256(catalogueCore);

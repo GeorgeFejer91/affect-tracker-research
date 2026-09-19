@@ -7,7 +7,7 @@ import {
   validateNativePackagePreflightV1,
   validateNativePackageRecoveryListingV1,
   validateNativePackageRunStatusV1,
-} from "../site/src/research/native-package-protocol.js";
+} from "../experiment-planner/web/src/research/native-package-protocol.js";
 
 const RUN = "11111111-1111-4111-8111-111111111111";
 const WORKSPACE = "22222222-2222-4222-8222-222222222222";
@@ -21,7 +21,7 @@ function capability(overrides = {}) {
   return {
     schema: "affect-research-native-package-protocol-capability",
     version: 1,
-    backend: "rust-gstplay",
+    backend: "html-video-package-protocol",
     rustOwnedProtocol: true,
     packageV1CompilationReady: true,
     protocolPlanV2Ready: true,
@@ -87,7 +87,7 @@ function startReceipt() {
     outputReceiptId: OUTPUT,
     resumed: false,
     resumeAtProtocolStepPosition: 1,
-    playbackMode: "nativeGstPlay",
+    playbackMode: "unqualifiedWebview",
     playbackQualification: "qualifiedNative",
   };
 }
@@ -265,7 +265,7 @@ test("package adapter starts from exact package bytes and lets Rust own prepare 
       languageSelectionPath: ["en"],
       rerunConfirmed: false,
       inputTestReceiptId: "input-test-receipt",
-      playbackMode: "nativeGstPlay",
+      playbackMode: "unqualifiedWebview",
     },
   });
   assert.deepEqual(calls.filter(([command]) => command.startsWith("research_package_"))
@@ -392,7 +392,7 @@ test("package adapter resumes only the exact package recovery and restores its s
     experimentPackageSourceText: "{canonical}\n",
     recoveryId: recovered.recoveryId,
     inputTestReceiptId: "input-test-receipt",
-    playbackMode: "nativeGstPlay",
+    playbackMode: "unqualifiedWebview",
   });
   assert.equal(calls.some(([command]) => command === "research_start_package_run"), false);
   const stateEvent = events.find(([type]) => type === "affect-research:participant-states");

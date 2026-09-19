@@ -4,13 +4,13 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 import { compilePlannerRecipeV1, serializePlannerRecipeV1, parsePlannerRecipeV1,
-  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../../site/src/research/planner-recipe.js";
+  reproducePlannerRecipeV1, reconstructPlannerRecipeSelectionV1 } from "../../experiment-planner/web/src/research/planner-recipe.js";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const output = resolve(process.argv[2] ?? "D:/GitHub/.affect-checks/p7-master-native-parity");
-const executable = resolve(process.argv[3] ?? join(root, "src-tauri/target/debug/examples/planner-recipe-check.exe"));
+const executable = resolve(process.argv[3] ?? join(root, "native/target/debug/examples/planner-recipe-check.exe"));
 const load = async name => JSON.parse(await readFile(join(root, "test/fixtures", `${name}.json`), "utf8"));
 const source = async name => readFile(join(root, "test/fixtures", `${name}.canonical.json`), "utf8");
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
@@ -36,9 +36,9 @@ const receipt = { schema: "affect-research-planner-parity-evidence", version: 1,
   nativeExecutableSha256: hash(await readFile(executable)), algorithm: "planner-recipe-reproduction-v2",
   geometryComparison: "absolute-numeric-leaf-error-less-than-1e-10; exact shape and nonnumeric leaves",
   cases: [] };
-const sourcePaths = execFileSync("rg", ["--files", "site/src/research", "src-tauri/src", "src-tauri/examples"],
+const sourcePaths = execFileSync("rg", ["--files", "experiment-planner/web/src/research", "native/src", "native/examples"],
   { cwd: root, encoding: "utf8" }).trim().split(/\r?\n/u).filter(path => /\.(?:js|rs)$/u.test(path));
-sourcePaths.push("src-tauri/Cargo.toml", "src-tauri/Cargo.lock");
+sourcePaths.push("native/Cargo.toml", "native/Cargo.lock");
 receipt.sourceSha256 = Object.fromEntries(await Promise.all(sourcePaths.sort().map(async path => [path, hash(await readFile(join(root, path)))])));
 let maximumDifference = 0;
 function geometry(a, b, path = "layout") {

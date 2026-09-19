@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { importQuestionnaireCsv } from "../site/src/research/questionnaires.js";
+import { importQuestionnaireCsv } from "../experiment-planner/web/src/research/questionnaires.js";
 
 const fixtures = [
   {
@@ -36,7 +36,7 @@ const fixtures = [
 
 async function importFixture(fileName) {
   return importQuestionnaireCsv(
-    await readFile(new URL(`../site/questionnaires/${fileName}`, import.meta.url)),
+    await readFile(new URL(`../experiment-planner/web/questionnaires/${fileName}`, import.meta.url)),
     { sourceKind: "bundled", logicalName: fileName },
   );
 }

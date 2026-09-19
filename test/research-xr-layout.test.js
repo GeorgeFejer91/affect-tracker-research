@@ -8,11 +8,11 @@ import {
   canEditXrAngularSize, createDefaultXrLayoutProfile, createWorldFromSetup,
   parseXrLayoutProfileV1, resolveXrCatalogueV1, resolveXrLayoutProfileV1, serializeXrLayoutProfileV1,
   transformSetupPoint, validateXrLayoutProfileV1, withXrAngularSize, xrLayoutReceipt,
-} from "../site/src/research/xr-layout.js";
-import { createXrLayoutState } from "../site/src/research/xr-layout-editor.js";
-import { xrLayoutEditorMarkup, xrLayoutSceneSvg } from "../site/src/research/xr-layout-view.js";
-import { parseExperimentPackageV1 } from "../site/src/research/experiment-package.js";
-import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "../site/src/research/xr-layout-feedback.js";
+} from "../experiment-planner/web/src/research/xr-layout.js";
+import { createXrLayoutState } from "../experiment-planner/web/src/research/xr-layout-editor.js";
+import { xrLayoutEditorMarkup, xrLayoutSceneSvg } from "../experiment-planner/web/src/research/xr-layout-view.js";
+import { parseExperimentPackageV1 } from "../experiment-planner/web/src/research/experiment-package.js";
+import { XR_FEEDBACK_VIEWPORT_CSS_PX, resolveXrFeedbackFootprintV1 } from "../experiment-planner/web/src/research/xr-layout-feedback.js";
 
 const close = (a, b, tolerance = 1e-10) => assert.ok(Math.abs(a - b) < tolerance, `${a} != ${b}`);
 const fixture = await readFile(new URL("fixtures/xr-layout-v1.canonical.json", import.meta.url), "utf8");
@@ -159,7 +159,7 @@ test("P6 inspection and UI markup are isolated from saved settings and hardware"
   assert.match(markup, /Inspection yaw/); assert.match(markup, /role="status"/);
   assert.match(markup, /data-xr-layout-editor/); assert.doesNotMatch(markup, /<iframe|<video|<canvas/);
   for (const file of ["xr-layout.js", "xr-layout-editor.js", "xr-layout-view.js", "xr-layout-feedback.js"]) {
-    const source = await readFile(new URL(`../site/src/research/${file}`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../experiment-planner/web/src/research/${file}`, import.meta.url), "utf8");
     assert.doesNotMatch(source, /navigator\.xr|requestSession|getUserMedia|localStorage|indexedDB|@tauri-apps/);
   }
   await assert.rejects(() => parseExperimentPackageV1(fixture));
@@ -208,7 +208,7 @@ test("P6 full-envelope fixture retains exact P5 provenance and reproducible phys
 });
 
 test("P6 conformance is reproducible in two independent processes with ambient reads forbidden", async () => {
-  const url = new URL("../site/src/research/xr-layout.js", import.meta.url).href;
+  const url = new URL("../experiment-planner/web/src/research/xr-layout.js", import.meta.url).href;
   const code = `const m = await import(${JSON.stringify(url)});
     const source = ${JSON.stringify(fixture)};
     Math.random = () => { throw Error('RNG'); };

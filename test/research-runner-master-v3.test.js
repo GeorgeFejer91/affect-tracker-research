@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { compilePlannerRecipeV3 } from "../site/src/research/planner-recipe.js";
-import { readRunnerRecipe, resolveRunnerSelection } from "../runner/src/recipe.js";
-import { NativeMasterProtocolAdapter } from "../runner/src/master-protocol.js";
-import { inspectInformationStream } from "../runner/src/information-stream.js";
-import { inspectMasterStream } from "../runner/src/master-stream.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { compilePlannerRecipeV3 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { readRunnerRecipe, resolveRunnerSelection } from "../experiment-runner/src/recipe.js";
+import { NativeMasterProtocolAdapter } from "../experiment-runner/src/master-protocol.js";
+import { inspectInformationStream } from "../experiment-runner/src/information-stream.js";
+import { inspectMasterStream } from "../experiment-runner/src/master-stream.js";
 import { frameRecords } from "./fixtures/runner-information-fixture.js";
 
 // Exact outputs of Main/S1 strict production v3 compilers via runner-master-v3-fixture.js.

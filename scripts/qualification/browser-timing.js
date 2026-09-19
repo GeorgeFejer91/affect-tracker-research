@@ -277,7 +277,7 @@ function startRun() {
   updateLiveEvidence();
   setControls(true, false);
   setStatus("Starting the sampling worker…", "running");
-  worker = new Worker("../../site/src/research/sampling-worker.js", { type: "module", name: "affect-research-browser-timing" });
+  worker = new Worker("../../experiment-planner/web/src/research/sampling-worker.js", { type: "module", name: "affect-research-browser-timing" });
   worker.addEventListener("message", handleWorkerMessage);
   worker.addEventListener("error", () => failRun("The sampling worker failed."));
   worker.addEventListener("messageerror", () => failRun("The sampling worker returned an unreadable message."));

@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createPlannerWorkspaceCommandOwner, P1_PLANNER_OPERATIONS } from "../site/src/research/planner-authoring-p1.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
-import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
-import { renderResearchUiMarkup } from "../site/src/research/ui-view.js";
-import { createWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
+import { createPlannerWorkspaceCommandOwner, P1_PLANNER_OPERATIONS } from "../experiment-planner/web/src/research/planner-authoring-p1.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { PLANNER_COMMAND_SCHEMA } from "../experiment-planner/web/src/research/planner-authoring-contract.js";
+import { createStudyIdentityV1 } from "../experiment-planner/web/src/research/study-identity.js";
+import { renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
+import { createWorkspaceContribution } from "../experiment-planner/web/src/research/workspace-contribution.js";
 
 const fixtureUrl = new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url);
 const WORKSPACE_GRANT = "10000000-0000-4000-8000-000000000001";

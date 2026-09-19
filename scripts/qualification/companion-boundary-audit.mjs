@@ -16,11 +16,11 @@ const git = async args => (await execute("git", args, { cwd: source, windowsHide
 const commit = await git(["rev-parse", "HEAD"]), workingTreeStatus = await git(["status", "--short"]);
 await mkdir(output, { recursive: true });
 const entry = `
-import { bootResearchUi } from './site/src/research/app.js';
-import { NativeResearchRuntimeBridge } from './site/src/research/native-bridge.js';
-import { BrowserResearchRuntimeBridge } from './site/src/research/runtime-bridge.js';
-import { RESEARCH_UI_EVENTS } from './site/src/research/ui-contracts.js';
-import { bootRunner } from './runner/src/app.js';
+import { bootResearchUi } from './experiment-planner/web/src/research/app.js';
+import { NativeResearchRuntimeBridge } from './experiment-planner/web/src/research/native-bridge.js';
+import { BrowserResearchRuntimeBridge } from './experiment-planner/web/src/research/runtime-bridge.js';
+import { RESEARCH_UI_EVENTS } from './experiment-planner/web/src/research/ui-contracts.js';
+import { bootRunner } from './experiment-runner/src/app.js';
 const errors=[]; addEventListener('error',e=>errors.push(e.message)); addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
 const program=new URL(location.href).searchParams.get('program'), calls=[];
 try {
@@ -37,7 +37,7 @@ try {
    case 'research_input_status':case 'research_input_cancel_setup':return {available:false,receipt:null,remainingDirections:[],capture:null};
    case 'research_native_media_stop':return {};
    case 'research_choose_workspace':throw new Error('Synthetic workspace rejection');
-   case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'gstreamer-gstplay',api:'gstplay',pinnedRuntimeVersion:'1.28.6',bindingsVersion:'0.25',target:'msvc-x86_64',runtimeInstallerSha256:'059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5',runtimeTreeManifestSha256:'51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566',defaultPlaybackMode:'nativeGstPlay',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:true,rendererReceivesFilesystemPaths:false,reasonCode:'runtime-not-staged'};
+   case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'html-video-element',api:'research-media',pinnedRuntimeVersion:'none',bindingsVersion:'webview',target:'tauri-webview',runtimeInstallerSha256:'',runtimeTreeManifestSha256:'',defaultPlaybackMode:'unqualifiedWebview',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:false,rendererReceivesFilesystemPaths:false,reasonCode:'html-video-player-active'};
    default:throw new Error('Planner requested a runtime command: '+command);
   }};
   if(surface==='tauri') {
@@ -55,7 +55,7 @@ try {
   document.body.innerHTML='<div id="experiment-runner"></div>'; root=document.querySelector('#experiment-runner');
   const invoke=async command=>{calls.push(command);switch(command){
    case 'research_desktop_identity':return {schema:'affect-research-desktop-identity',version:1,program:'runner'};
-   case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'fixture-unqualified'};
+   case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video-package-protocol',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'html-video-player-active'};
    case 'research_native_media_capability':return {playerActorReady:false,qualifiedStartAvailable:false};
    case 'research_workspace_status':return {selected:false};
    case 'research_recorder_status':return {available:false,active:false,phase:'idle'};
@@ -84,7 +84,7 @@ try {
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: source, sourcefile: 'companion-audit-entry.js' }, bundle: true, format: 'esm', write: false, platform: 'browser', logLevel: 'silent', metafile: true });
 const inputs = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs).filter(path => path !== 'companion-audit-entry.js').map(async path => [path, hash(await readFile(join(source,path)))])));
-for (const path of ['site/research.css', 'runner/runner.css', 'scripts/qualification/companion-boundary-audit.mjs']) inputs[path]=hash(await readFile(join(source,path)));
+for (const path of ['experiment-planner/web/research.css', 'experiment-runner/runner.css', 'scripts/qualification/companion-boundary-audit.mjs']) inputs[path]=hash(await readFile(join(source,path)));
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://127.0.0.1');
  if(url.pathname==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="'+(url.searchParams.get('program').endsWith('planner')?'/site/research.css':'/runner/runner.css')+'"><script type="module" src="/runner/src/audit.js"></script>');return;}

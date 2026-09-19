@@ -1,10 +1,10 @@
-import { createQuestionnaireEditor } from "../../site/src/research/questionnaire-editor.js";
-import { createPlannerAuthoringP2 } from "../../site/src/research/planner-authoring-p2.js";
-import { questionnaireFamilyId } from "../../site/src/research/questionnaire-assets.js";
+import { createQuestionnaireEditor } from "../../experiment-planner/web/src/research/questionnaire-editor.js";
+import { createPlannerAuthoringP2 } from "../../experiment-planner/web/src/research/planner-authoring-p2.js";
+import { questionnaireFamilyId } from "../../experiment-planner/web/src/research/questionnaire-assets.js";
 import { questionnaireRecipeFixture } from "./questionnaire-recipe-fixture.js";
-import { createQuestionnairePresentationV2, validateQuestionnaireRecipeContributionV2 } from "../../site/src/research/questionnaire-recipe-v2.js";
-import { verifyFormDefinitionV1 } from "../../site/src/research/form-definition.js";
-import { canonicalJson } from "../../site/src/research/canonical.js";
+import { createQuestionnairePresentationV2, validateQuestionnaireRecipeContributionV2 } from "../../experiment-planner/web/src/research/questionnaire-recipe-v2.js";
+import { verifyFormDefinitionV1 } from "../../experiment-planner/web/src/research/form-definition.js";
+import { canonicalJson } from "../../experiment-planner/web/src/research/canonical.js";
 export const op = (operation, args = {}) => ({ kind: "operation", owner: "P2", operation, arguments: args });
 export const guard = () => ({ signal: new AbortController().signal, isCurrent: () => true });
 export async function typedOwner(root = { querySelector: () => null }) {

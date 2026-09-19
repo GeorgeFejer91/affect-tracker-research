@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createVideoLibrary } from "../site/src/research/stimulus-order.js";
-import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, validateVariantDesign, validateVariantDocument, variantDesignToDraft, videoColor, videoColorMap } from "../site/src/research/variant-design.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createVideoLibrary } from "../experiment-planner/web/src/research/stimulus-order.js";
+import { addIsiDurations, addVariantColumn, addVariantRow, compileVariantTimeline, createVariantDraft, createVariantDocument, editIsi, migrateLegacyOrder, pasteVariantTable, removeIsi, validateVariantDesign, validateVariantDocument, variantDesignToDraft, videoColor, videoColorMap } from "../experiment-planner/web/src/research/variant-design.js";
 
 const { library, document, videos, timelines } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
 const [a, b] = library.videos.map(video => video.annotationId);

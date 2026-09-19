@@ -29,10 +29,10 @@ rejects with “Planner contribution exceeds the bounded handoff size.” No net
 or real participant content is involved. This demonstrates a software capacity
 mismatch, not a physical GUI reopen test.
 
-Sources: [registry limit/validator](../site/src/research/planner-contributions.js),
-[master byte limit](../site/src/research/planner-recipe-wire.js),
-[P2 validation](../site/src/research/questionnaire-recipe-v2.js),
-[Survey definition limit](../site/src/research/surveyjs-definition.js).
+Sources: [registry limit/validator](../experiment-planner/web/src/research/planner-contributions.js),
+[master byte limit](../experiment-planner/web/src/research/planner-recipe-wire.js),
+[P2 validation](../experiment-planner/web/src/research/questionnaire-recipe-v2.js),
+[Survey definition limit](../experiment-planner/web/src/research/surveyjs-definition.js).
 
 Repair first: define shared, compatible whole-document/segment/definition limits
 and enforce them at import, composition, editable restoration and native ingress.
@@ -49,8 +49,8 @@ bytes or content digest. Definitions bind the URL string, not the image. The sam
 JSON can consequently show changed or missing content on another machine or later
 date. Hashing the questionnaire JSON does not solve that dependency.
 
-Sources: [inspection policy](../site/src/research/surveyjs-engine.js),
-[import/hash](../site/src/research/surveyjs-definition.js),
+Sources: [inspection policy](../experiment-planner/web/src/research/surveyjs-engine.js),
+[import/hash](../experiment-planner/web/src/research/surveyjs-definition.js),
 [documented remote-resource allowance](surveyjs-questionnaires.md).
 
 The current allowance is documented; this finding is its mismatch with the
@@ -77,10 +77,10 @@ Reproduction: the real master4 fixture resolves successfully, then
 `NativeMasterProtocolAdapter.start(..., {validation:true})` rejects with
 “Validation sessions require master3.” No native invocation occurs.
 
-Sources: [adapter](../runner/src/master-protocol.js),
-[native preflight](../src-tauri/src/research_runner_master/commands.rs),
-[native Start](../src-tauri/src/research_runner_master/runtime.rs),
-[qualification state](../src-tauri/src/research_native_media/capability.rs).
+Sources: [adapter](../experiment-runner/src/master-protocol.js),
+[native preflight](../native/src/research_runner_master/commands.rs),
+[native Start](../native/src/research_runner_master/runtime.rs),
+[qualification state](../native/src/research_native_media/capability.rs).
 
 Repair: extend the approved validation-session contract to supported master4
 with permanent unqualified attempt/information labels and matching independent
@@ -97,9 +97,9 @@ override hash or executable session override is established by the editor.
 The current implementation fails explicitly, which avoids silently running the
 wrong controls, but does not deliver the requested override behavior.
 
-Sources: [controller editor](../runner/src/controller-settings.js),
-[Start/check guards](../runner/src/app.js),
-[native input preparation](../src-tauri/src/research_runner_master/runtime.rs).
+Sources: [controller editor](../experiment-runner/src/controller-settings.js),
+[Start/check guards](../experiment-runner/src/app.js),
+[native input preparation](../native/src/research_runner_master/runtime.rs).
 Also, the editor exposes `InputBindingV1.stepSize`, which is inactive under P5 v2;
 the effective step comes from `response.grid`. Reusing this draft as a complete
 override implementation would create another conflicting parameter authority.
@@ -131,17 +131,16 @@ new information stream. Retain old rules for their exact generation; do not appl
 them as blanket bans to explicitly approved successors. Historical check counts
 are source-specific receipts, not universal current completion certificates.
 
-This pass replaces00/66 with current maps, preserves their former text under
-`docs/history`, corrects the named status/ownership errors, and replaces the
-global read-every-receipt rule with ordered core + relevant owner/history routes.
-Product decisions, strict legacy readers and qualification gates are preserved.
-The required core is now about 212 KB, plus relevant owner/history reading,
-instead of the previous approximately 1.25 MB mandatory corpus.
+This pass replaced `00`/`66` with current maps, and the later repository-hygiene
+cleanup removed their copied historical backups from the active tree. Git
+history is the archive for the old text. The current router replaces the global
+read-every-receipt rule with ordered core plus relevant owner routes. Product
+decisions, strict legacy readers and qualification gates are preserved.
 
 ## Additional boundaries requiring correspondence coverage
 
 - Mixed historical and controlled P1 media proofs are intentionally rejected by
-  [Runner attestation](../runner/src/master-media.js), pending native location
+  [Runner attestation](../experiment-runner/src/master-media.js), pending native location
   mapping. A valid catalogue does not imply executable compatibility. Existing
   focused tests reproduce this refusal; it is not a silently dropped field.
 - P5 saves axis/corner labels, but `runnerMasterFeedbackState` does not project
@@ -199,7 +198,7 @@ Keep four clear layers:
 Much of this already exists. The remaining structural work is concentration of
 composition policy, not replacement of every module:
 
-- `site/src/research/app.js` has 6,578 lines at the audit base and still owns
+- `experiment-planner/web/src/research/app.js` has 6,578 lines at the audit base and still owns
   feedback restoration, workspace publication, questionnaire restoration,
   version dispatch, file workflow and legacy runtime integration. Extract those
   owner compositions behind existing APIs, one owner at a time. A smaller shell

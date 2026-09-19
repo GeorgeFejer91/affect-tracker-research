@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
-import { createPlannerVariantCommandOwner } from "../site/src/research/planner-authoring-p3.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
-import { createVariantDesign, createVariantDraft, compileVariantTimeline } from "../site/src/research/variant-design.js";
-import { createPlannedMarkerProfile } from "../site/src/research/planned-marker-contract.js";
-import { projectSavedVariantCatalogue } from "../site/src/research/variant-catalogue-adapter.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
+import { createPlannerVariantCommandOwner } from "../experiment-planner/web/src/research/planner-authoring-p3.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
+import { createVariantDesign, createVariantDraft, compileVariantTimeline } from "../experiment-planner/web/src/research/variant-design.js";
+import { createPlannedMarkerProfile } from "../experiment-planner/web/src/research/planned-marker-contract.js";
+import { projectSavedVariantCatalogue } from "../experiment-planner/web/src/research/variant-catalogue-adapter.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/variant-reproduction-v2.json", import.meta.url), "utf8"));
 const legacyFixture = JSON.parse(await readFile(new URL("./fixtures/variant-workspace-binding-v1.json", import.meta.url), "utf8"));

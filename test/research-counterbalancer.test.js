@@ -5,14 +5,14 @@ import { createHash } from "node:crypto";
 import {
   createDefaultResearchSettings,
   validateResolvedAssignmentPlanV1,
-} from "../site/src/research/contracts.js";
+} from "../experiment-planner/web/src/research/contracts.js";
 import {
   ResearchCapacityError,
   analyzeAssignmentCoverage,
   cyclicRows,
   resolveAssignmentPlan,
   williamsRows,
-} from "../site/src/research/counterbalancer.js";
+} from "../experiment-planner/web/src/research/counterbalancer.js";
 
 function stimulus(id, durationMs = 30_000) {
   return {

@@ -9,15 +9,15 @@ import {
   QUESTIONNAIRE_TXT_FORMAT_VERSION,
   detectQuestionnaireAuthoringFormat,
   importQuestionnaireAuthoring,
-} from "../site/src/research/questionnaire-authoring.js";
+} from "../experiment-planner/web/src/research/questionnaire-authoring.js";
 import {
   importQuestionnaireCsv,
   questionnaireToCsv,
-} from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/questionnaires.js";
 
-const csvTemplateUrl = new URL("../site/questionnaires/questionnaire-template.csv", import.meta.url);
-const txtTemplateUrl = new URL("../site/questionnaires/questionnaire-template.txt", import.meta.url);
-const jsonTemplateUrl = new URL("../site/questionnaires/questionnaire-template.json", import.meta.url);
+const csvTemplateUrl = new URL("../experiment-planner/web/questionnaires/questionnaire-template.csv", import.meta.url);
+const txtTemplateUrl = new URL("../experiment-planner/web/questionnaires/questionnaire-template.txt", import.meta.url);
+const jsonTemplateUrl = new URL("../experiment-planner/web/questionnaires/questionnaire-template.json", import.meta.url);
 const HASH_A = "a".repeat(64);
 const MAX_AUTHORING_BYTES = 4 * 1024 * 1024;
 

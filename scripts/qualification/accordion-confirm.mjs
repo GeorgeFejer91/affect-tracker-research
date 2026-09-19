@@ -6,15 +6,15 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
-import { renderResearchUiMarkup } from "../../site/src/research/ui-view.js";
-import { SETUP_SECTIONS } from "../../site/src/research/ui-contracts.js";
+import { renderResearchUiMarkup } from "../../experiment-planner/web/src/research/ui-view.js";
+import { SETUP_SECTIONS } from "../../experiment-planner/web/src/research/ui-contracts.js";
 
 const [browser, destination] = process.argv.slice(2);
 assert.ok(browser && destination, "Provide browser executable and isolated output directory.");
 const output = resolve(destination);
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(join(output, "isolated-profile-"));
-const css = await readFile(new URL("../../site/research.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../../experiment-planner/web/research.css", import.meta.url), "utf8");
 const markup = renderResearchUiMarkup("browser");
 const fixture = join(output, "confirmation.html");
 await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>Offscreen confirmation check</title>

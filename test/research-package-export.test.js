@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { parseExperimentPackageV1 } from "../site/src/research/experiment-package.js";
-import { createPackageExportController } from "../site/src/research/package-export-controller.js";
+import { parseExperimentPackageV1 } from "../experiment-planner/web/src/research/experiment-package.js";
+import { createPackageExportController } from "../experiment-planner/web/src/research/package-export-controller.js";
 import {
   completeExperimentPackageSaveRequest, requestExperimentPackageSave, validatePackageSaveReceipt,
-} from "../site/src/research/package-save-request.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
+} from "../experiment-planner/web/src/research/package-save-request.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/ui-contracts.js";
 
 const compiled = await parseExperimentPackageV1(new Uint8Array(await readFile(
   new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url),

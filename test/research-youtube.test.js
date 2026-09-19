@@ -11,9 +11,9 @@ import {
   loadYouTubeIframeApi,
   youtubePlayerError,
   youtubePlayerParameters,
-} from "../site/src/research/youtube-player.js";
-import { renderResearchUiMarkup } from "../site/src/research/app.js";
-import { assertFreshYouTubePreflights } from "../site/src/research/runtime-bridge.js";
+} from "../experiment-planner/web/src/research/youtube-player.js";
+import { renderResearchUiMarkup } from "../experiment-planner/web/src/research/app.js";
+import { assertFreshYouTubePreflights } from "../experiment-planner/web/src/research/runtime-bridge.js";
 
 const VIDEO_ID = "dQw4w9WgXcQ";
 const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`;
@@ -222,9 +222,9 @@ test("embed-disabled and Referer/API identity failures remain explicit", async (
 
 test("the external-plan UI is workspace-only while the legacy player remains state-authoritative", async () => {
   const [app, runtime, css] = await Promise.all([
-    readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8"),
-    readFile(new URL("../site/src/research/runtime-bridge.js", import.meta.url), "utf8"),
-    readFile(new URL("../site/research.css", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/src/research/runtime-bridge.js", import.meta.url), "utf8"),
+    readFile(new URL("../experiment-planner/web/research.css", import.meta.url), "utf8"),
   ]);
   const markup = renderResearchUiMarkup("browser");
   assert.doesNotMatch(markup, /youtube-preflight-player|stimulus-add-youtube|Experimental YouTube URL/u);
@@ -243,7 +243,7 @@ test("the external-plan UI is workspace-only while the legacy player remains sta
 });
 
 test("settings file import uses bounded fatal UTF-8 and duplicate-key-safe parsing", async () => {
-  const app = await readFile(new URL("../site/src/research/app.js", import.meta.url), "utf8");
+  const app = await readFile(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
   const start = app.indexOf('query("#settings-file-input")?.addEventListener');
   const end = app.indexOf("root.addEventListener(RESEARCH_UI_EVENTS.settingsLoaded", start);
   const listener = app.slice(start, end);

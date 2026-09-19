@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
-import { createVariantDocument } from "../site/src/research/variant-design.js";
-import { requestStimulusAuthoring } from "../site/src/research/stimulus-authoring-request.js";
-import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
-import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
+import { createVariantDocument } from "../experiment-planner/web/src/research/variant-design.js";
+import { requestStimulusAuthoring } from "../experiment-planner/web/src/research/stimulus-authoring-request.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/ui-contracts.js";
+import { createVideoCatalogueContributionV1 } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
 
 const { library, document: design, videos } = JSON.parse(await readFile(new URL("./fixtures/variant-design-v1.json", import.meta.url), "utf8"));
 const contentFixture = JSON.parse(await readFile(new URL("./fixtures/variant-workspace-binding-v1.json", import.meta.url), "utf8"));

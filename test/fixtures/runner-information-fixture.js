@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { canonicalJson, canonicalSha256, sha256Hex } from "../../site/src/research/canonical.js";
-import { readRunnerRecipe, resolveRunnerSelection } from "../../runner/src/recipe.js";
-import { checkSurveyData, surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
-import { compilePlannerRecipeV4, serializePlannerRecipeV4 } from "../../site/src/research/planner-recipe.js";
-import { externalizePlannerRecipe } from "../../site/src/research/planner-recipe-assets.js";
+import { canonicalJson, canonicalSha256, sha256Hex } from "../../experiment-planner/web/src/research/canonical.js";
+import { readRunnerRecipe, resolveRunnerSelection } from "../../experiment-runner/src/recipe.js";
+import { checkSurveyData, surveyRandomSeed } from "../../experiment-planner/web/src/research/surveyjs-engine.js";
+import { compilePlannerRecipeV4, serializePlannerRecipeV4 } from "../../experiment-planner/web/src/research/planner-recipe.js";
+import { externalizePlannerRecipe } from "../../experiment-planner/web/src/research/planner-recipe-assets.js";
 
 // Independent test encoder. Production publication is Rust-owned.
 export async function frameRecords(records, context = { runId: "run-test", attemptId: "attempt-test", recipeSourceByteSha256: "a".repeat(64) }) {

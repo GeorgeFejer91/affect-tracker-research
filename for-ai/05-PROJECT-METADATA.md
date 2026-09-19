@@ -52,13 +52,14 @@ The active product has exactly two user-visible modes:
 1. **Setting Up the Experiment**; and
 2. **Running the Experiment**.
 
-Their functions are the **Affect Tracker Designer** (UI-authored experiment
-settings, video plan, and questionnaires → one finished unified JSON package)
-and **Experiment Runner** (finished package → acquisition/monitoring and local
-response/rating outputs plus optional outbound LSL). These names describe the
-existing modes, not extra modes. Master JSON is an internal compilation/output
-format, never a required hand-authored input to the Designer. Runner work is
-outside the current Section 2 pass; see `45-FUTURE-AGENT-CHECKLIST.md`.
+Their current companion programs are **Experiment Planner** (UI-authored
+experiment settings, video plan, and questionnaires -> one finished unified JSON
+recipe) and **Experiment Runner** (finished recipe -> acquisition/monitoring and
+local response/rating outputs plus optional outbound LSL). These names describe
+the existing modes, not extra modes. Master JSON is an internal compilation/
+output format, never a required hand-authored input to the Planner. The old
+Section 2-only pass is historical; route current Planner and Runner work through
+`60`, `65`, `66` and `72`.
 
 The active-v1 qualification target matrix is:
 
@@ -120,7 +121,7 @@ Run, record, LSL, or qualification authority.
 - New Research data is never populated by automatic import from legacy
   application data.
 - Windows qualified declared package media targets a pinned
-  bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. Runtime
+  bundled removed native player stack 1.28.6 MSVC x86_64 runtime through HTML video. Runtime
   verification, actor, and renderer implementation are present. The two
   contained Windows FFI adapters were approved on 2026-09-10; focused audit,
   redistribution, and installed qualification remain open. Qualified Start
@@ -137,33 +138,33 @@ Run, record, LSL, or qualification authority.
 
 ## Active source map
 
-- `site/index.html`, `site/launcher.css`, `site/planner/index.html`, and
-  `site/runner/index.html`: public Affect Tracker navigation and explicit
-  companion web-app development-status routes. `site/research.html` retains
+- `experiment-planner/web/index.html`, `experiment-planner/web/launcher.css`, `experiment-planner/web/planner/index.html`, and
+  `experiment-planner/web/runner/index.html`: public Affect Tracker navigation and explicit
+  companion web-app development-status routes. `experiment-planner/web/research.html` retains
   the earlier combined browser instrument; it is not the new companion Planner
   or Runner. `docs/WEB-DELIVERY.md` owns deployment and future integration
   notes.
-- `site/research.html`, `site/experiment-template.json`,
-  `site/questionnaires/questionnaire-template.{csv,txt,json}`,
-  `site/research.css`, and `site/src/research/`: current static UI,
+- `experiment-planner/web/research.html`, `experiment-planner/web/experiment-template.json`,
+  `experiment-planner/web/questionnaires/questionnaire-template.{csv,txt,json}`,
+  `experiment-planner/web/research.css`, and `experiment-planner/web/src/research/`: current static UI,
   transitional external-experiment and questionnaire authoring/import readers,
   browser adapter, shared contracts, protocol planner, renderer, and browser
   recovery. The templates and V3 reader are not the target
   `ExperimentPackageV1` runtime authority.
-- `site/src/research/experiment-package.js`,
-  `src-tauri/src/research_experiment_package.rs`, and
+- `experiment-planner/web/src/research/experiment-package.js`,
+  `native/src/research_experiment_package.rs`, and
   `test/fixtures/experiment-package-v1.canonical.json`: current strict package
   candidate, native mirror, and cross-runtime fixture.
 - `scripts/verify-experiment-package-instance.js`: one-instance verifier used
   by the two-clean-process deterministic reproduction test; it is not physical
   asset-tree or decode qualification.
-- `site/src/math.js`: active procedural Flubber geometry baseline.
-- `desktop/index.html` and `desktop/vite.config.js`: isolated Tauri WebView
+- `experiment-planner/web/src/math.js`: active procedural Flubber geometry baseline.
+- `experiment-planner/desktop/index.html` and `experiment-planner/desktop/vite.config.js`: isolated Tauri WebView
   entrypoint and production frontend build.
-- `src-tauri/src/research_*.rs`: Rust-owned Research contracts and services.
-- `src-tauri/native-media/`: GStreamer pin, deterministic staging/tree
+- `native/src/research_*.rs`: Rust-owned Research contracts and services.
+- `native/native-media/`: removed native player stack pin, deterministic staging/tree
   verification, and current safe integration boundary.
-- `src-tauri/capabilities/research.json` and `src-tauri/tauri.conf.json`:
+- `native/capabilities/research.json` and `native/tauri.conf.json`:
   narrow desktop exposure and package identity.
 - `scripts/build-research-pages.js` and `scripts/verify-research-build.js`:
   allowlisted active artifact construction and legacy-surface exclusion.

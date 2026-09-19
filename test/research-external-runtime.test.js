@@ -2,34 +2,34 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-import { RESEARCH_UI_EVENTS } from "../site/src/research/app.js";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { MemoryResearchJournal } from "../site/src/research/browser-journal.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
+import { RESEARCH_UI_EVENTS } from "../experiment-planner/web/src/research/app.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { MemoryResearchJournal } from "../experiment-planner/web/src/research/browser-journal.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
 import {
   EXTERNAL_ORDER_ALGORITHM_VERSION,
   parseExperimentDefinitionV1,
   resolveExternalExperimentPlanV1,
-} from "../site/src/research/external-experiment.js";
+} from "../experiment-planner/web/src/research/external-experiment.js";
 import {
   QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION,
   resolveProtocolPlanV2,
   validateResearchSettingsV3,
-} from "../site/src/research/external-protocol.js";
+} from "../experiment-planner/web/src/research/external-protocol.js";
 import {
   compileExperimentPackageSelectionV1,
   createExperimentPackageV1,
   createFlatLanguageSelectionV1,
   parseExperimentPackageV1,
   serializeExperimentPackageV1,
-} from "../site/src/research/experiment-package.js";
+} from "../experiment-planner/web/src/research/experiment-package.js";
 import {
   validateResearchEventV2,
   validateResearchRunManifestV4,
-} from "../site/src/research/protocol-records.js";
-import { BrowserResearchRunController } from "../site/src/research/run-controller.js";
-import { BrowserResearchRuntimeBridge } from "../site/src/research/runtime-bridge.js";
-import { BrowserResearchWorkspace } from "../site/src/research/workspace.js";
+} from "../experiment-planner/web/src/research/protocol-records.js";
+import { BrowserResearchRunController } from "../experiment-planner/web/src/research/run-controller.js";
+import { BrowserResearchRuntimeBridge } from "../experiment-planner/web/src/research/runtime-bridge.js";
+import { BrowserResearchWorkspace } from "../experiment-planner/web/src/research/workspace.js";
 
 const WORKSPACE_ID = "11111111-1111-4111-8111-111111111111";
 const digest = (value) => createHash("sha256").update(value).digest("hex");

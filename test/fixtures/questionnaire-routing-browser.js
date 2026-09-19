@@ -1,9 +1,9 @@
-import { createQuestionnaireRoutingEditor } from "../../site/src/research/questionnaire-routing-editor.js";
-import { createQuestionnaireEditor } from "../../site/src/research/questionnaire-editor.js";
-import { createPlannerAuthoringP2 } from "../../site/src/research/planner-authoring-p2.js";
-import { questionnaireFamilyId } from "../../site/src/research/questionnaire-assets.js";
+import { createQuestionnaireRoutingEditor } from "../../experiment-planner/web/src/research/questionnaire-routing-editor.js";
+import { createQuestionnaireEditor } from "../../experiment-planner/web/src/research/questionnaire-editor.js";
+import { createPlannerAuthoringP2 } from "../../experiment-planner/web/src/research/planner-authoring-p2.js";
+import { questionnaireFamilyId } from "../../experiment-planner/web/src/research/questionnaire-assets.js";
 import { questionnaireRecipeFixture } from "./questionnaire-recipe-fixture.js";
-import { sheetToAuthoring } from "../../site/src/research/questionnaire-sheet.js";
+import { sheetToAuthoring } from "../../experiment-planner/web/src/research/questionnaire-sheet.js";
 
 const cases = [], receipt = document.querySelector("#receipt");
 const check = (condition, label) => { if (!condition) throw new Error(label); cases.push(label); };

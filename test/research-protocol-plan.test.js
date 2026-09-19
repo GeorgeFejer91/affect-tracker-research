@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-import { canonicalSha256 } from "../site/src/research/canonical.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { resolveAssignmentPlan } from "../site/src/research/counterbalancer.js";
+import { canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { resolveAssignmentPlan } from "../experiment-planner/web/src/research/counterbalancer.js";
 import {
   QUESTIONNAIRE_HOOKS_ALGORITHM_VERSION,
   RESEARCH_PROTOCOL_PLAN_SCHEMA,
@@ -12,7 +12,7 @@ import {
   resolveProtocolPlanV1,
   validateResearchSettingsV2,
   validateResolvedProtocolPlanV1,
-} from "../site/src/research/protocol-plan.js";
+} from "../experiment-planner/web/src/research/protocol-plan.js";
 
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 

@@ -18,12 +18,12 @@ const git = async args => (await run("git", args, { windowsHide: true })).stdout
 const commit = await git(["rev-parse", "HEAD"]);
 const bundle = await build({ entryPoints: [scenario === "core9" ? "test/fixtures/planner-core9-browser.js" : "test/fixtures/setup-contribution-cycle-browser.js"], bundle: true,
   write: false, format: "iife", target: "chrome105", logLevel: "silent", metafile: true,
-  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("site/src/research/ui-view.js")).href) } });
+  define: { "import.meta.url": JSON.stringify(pathToFileURL(resolve("experiment-planner/web/src/research/ui-view.js")).href) } });
 const inputSha256 = {};
-for (const path of [...Object.keys(bundle.metafile.inputs), "site/research.css"]) inputSha256[path] = hash(await readFile(path));
+for (const path of [...Object.keys(bundle.metafile.inputs), "experiment-planner/web/research.css"]) inputSha256[path] = hash(await readFile(path));
 const fixture = join(output, "cycle.html"), screenshot = join(output, "review.png");
 await writeFile(fixture, `<!doctype html><meta charset="utf-8"><title>Segment contribution cycle</title>
-<style>${await readFile("site/research.css", "utf8")}</style><main></main><pre id="receipt" hidden>pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`);
+<style>${await readFile("experiment-planner/web/research.css", "utf8")}</style><main></main><pre id="receipt" hidden>pending</pre><script>${bundle.outputFiles[0].text.replace(/<\/script/giu, "<\\/script")}</script>`);
 const { stdout, stderr } = await run(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--force-prefers-reduced-motion",
   `--user-data-dir=${profile}`, "--window-size=1280,1000", `--screenshot=${screenshot}`, "--virtual-time-budget=15000", "--dump-dom", pathToFileURL(fixture).href],
   { windowsHide: true, timeout: 45000, maxBuffer: 4_000_000 });

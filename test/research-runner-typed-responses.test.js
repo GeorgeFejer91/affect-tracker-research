@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { verifyFormDefinitionV1 } from "../site/src/research/form-definition.js";
-import { validateTypedResponseRows } from "../runner/src/typed-responses.js";
+import { verifyFormDefinitionV1 } from "../experiment-planner/web/src/research/form-definition.js";
+import { validateTypedResponseRows } from "../experiment-runner/src/typed-responses.js";
 
 const fixtures = await Promise.all(["en", "de"].map(async language => verifyFormDefinitionV1(JSON.parse(await readFile(new URL(`./fixtures/demographics-${language}-form-v1.canonical.json`, import.meta.url), "utf8")))));
 const makeRows = definition => definition.items.map(item => {

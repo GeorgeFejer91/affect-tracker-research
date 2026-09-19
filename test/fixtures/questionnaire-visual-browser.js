@@ -1,9 +1,9 @@
-import { bootResearchUi } from '../../site/src/research/app.js';
-import { importQuestionnaireAuthoring } from '../../site/src/research/questionnaire-authoring.js';
-import { createCoveredFlatLanguageSelectionV1 } from '../../site/src/research/questionnaire-assets.js';
-import { QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from '../../site/src/research/external-protocol.js';
-import english from '../../site/questionnaires/maia-2-en.csv';
-import german from '../../site/questionnaires/maia-2-de.csv';
+import { bootResearchUi } from '../../experiment-planner/web/src/research/app.js';
+import { importQuestionnaireAuthoring } from '../../experiment-planner/web/src/research/questionnaire-authoring.js';
+import { createCoveredFlatLanguageSelectionV1 } from '../../experiment-planner/web/src/research/questionnaire-assets.js';
+import { QUESTIONNAIRE_HOOKS_V2_ALGORITHM_VERSION } from '../../experiment-planner/web/src/research/external-protocol.js';
+import english from '../../experiment-planner/web/questionnaires/maia-2-en.csv';
+import german from '../../experiment-planner/web/questionnaires/maia-2-de.csv';
 
 (async () => {
   const root = bootResearchUi({surface:'browser'});

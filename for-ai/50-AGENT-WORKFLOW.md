@@ -9,19 +9,14 @@ do not infer network, script execution, live-window control, Runner execution or
 a second compiler authority. Isolation, background verification, unsafe-boundary
 and qualification rules remain applicable.
 
-## Companion-program amendment — 2026-09-12
+## Companion-program routing — 2026-09-12
 
-The latest user decision requires separate **Experiment Planner** and
-**Experiment Runner** programs. Planner retains Flubber previews and generates
-one comprehensive JSON; Runner owns execution, video playback, LSL transport
-and recording of own plus selected external streams to XDF. Stream recording
-policy is Runner-owned session state, not a Planner recipe field.
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
-single-executable wording and blanket Runner deferral in this historical text.
-Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
-producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Planner completion is independent; actual execution correspondence is the final
-development stage. Existing frozen contracts and qualification gates remain.
+The current Planner/Runner split is owned by
+[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md), with Runner
+allocation in [65](65-RUNNER-SEGMENTS.md) and producer/consumer compatibility in
+[66](66-PLANNER-RUNNER-COMPATIBILITY.md). This workflow file points to those
+owners instead of repeating the full amendment. Earlier one-executable wording
+and blanket Runner deferral are historical.
 
 ## First actions
 
@@ -189,8 +184,16 @@ multiply local `v1`/`v2`/`v3` documents, feature copies or draft generations jus
 to preserve an older in-progress shape; once the current canonical behavior is
 accepted, prior local states are retained by Git history and, after authorized
 publication, GitHub. Add schema/protocol versions only for persisted external
-artifacts, Runner/wire consumers, cross-runtime fixtures or explicit
+artifacts, experiment-runner/wire consumers, cross-runtime fixtures or explicit
 compatibility windows.
+
+Repository hygiene is part of the workflow. Prefer a small current owner map
+plus exact source/tests over long fallback architectures and duplicate ledgers.
+Do not add archive folders, copied old routers, superseded design documents, or
+"just in case" alternative implementations to the active tree. When a document
+becomes only historical, retire it to a compact signpost or remove it entirely;
+Git history is the backup. Keep large receipts outside mandatory reading unless
+they are current evidence for the specific pass.
 
 Keep segment implementation, tests, and necessary documentation together in
 small explicit-path commits. For shared files such as `app.js`, `ui-view.js`,
@@ -240,11 +243,12 @@ successor Planner capabilities. Do not reinterpret v1 to implement those changes
   Experiment**. Setup follows the eight ordered charter sections: Workspace &
   Libraries; Languages & Study Assets; Experiment Plan & Stimuli; Experiment;
   Input; Visual; Advanced; Review & Start. Run stays deliberately narrow.
-- Preserve their two applet functions: Designer controls and questionnaire
+- Preserve the two companion functions: Planner controls and questionnaire
   tables compile one finished unified JSON package; Runner takes that package
-  for acquisition and monitoring. Raw/master JSON is not a required Designer
-  input or editing surface. In a Section 2 pass, log Runner/other-section gaps
-  in `45-FUTURE-AGENT-CHECKLIST.md` rather than expanding implementation scope.
+  for acquisition and monitoring. Raw/master JSON is not a required Planner
+  input or editing surface. In a narrow historical Section 2-style pass, route
+  Runner or other-owner gaps through `60`, `65`, `66`, `72` and the message
+  board rather than expanding implementation scope.
 - Qualify only Windows Tauri and desktop Chrome/Edge unless the user explicitly
   amends the charter.
 - Treat Windows/macOS/Linux no-optional-feature packages as unsigned internal
@@ -312,7 +316,7 @@ successor Planner capabilities. Do not reinterpret v1 to implement those changes
   `research_runtime.rs`, extract a bounded module first or in the same change.
 - Keep qualified Windows media behind the opaque, Rust-owned native-media
   boundary. Never pass arbitrary filesystem paths or native handles to/from the
-  WebView; never discover a system GStreamer installation/plugin path or
+  WebView; never discover a system removed native player stack installation/plugin path or
   download native runtime code in-app.
 - Do not restore deleted Playground features into the active tree. Historical
   WebXR/Quest, remote, Party/Ground Control, direct Polar, face, touch,
@@ -326,7 +330,7 @@ Use the smallest applicable set and read each selected skill completely before
 acting.
 
 - Use **`tauri-rust-developer`** for Tauri/Rust, Cargo, IPC, capabilities, CSP,
-  native windows, input, filesystem/persistence, GStreamer/native libraries,
+  native windows, input, filesystem/persistence, removed native player stack/native libraries,
   packaging, or release work. Read its security, networking/FFI, persistence,
   latency, and verification references as the task requires.
 - Use **`tauri-remote-app-builder`** as the general end-to-end skill for Tauri
@@ -363,9 +367,9 @@ Stop and request explicit user direction before:
 - signing, publishing installers/releases, store submission, or using
   production credentials.
 
-The current GstPlay design has two approved contained Windows `unsafe` FFI
+The current HTML video design has two approved contained Windows `unsafe` FFI
 adapters: private DLL-search activation/removal and application-owned child-
-window/GstPlay overlay operations. The researcher approved both boundaries on
+window/HTML video overlay operations. The researcher approved both boundaries on
 2026-09-10. Do not add a third unsafe source file without a new explicit pause
 and approval. Keep the two existing adapters private, document every handle,
 thread, teardown, and panic invariant, exercise malformed/missing native state,
@@ -399,7 +403,7 @@ and never unwind a panic across FFI.
 7. Update this durable brief whenever requirements, authority, contracts,
    privacy, data fields, media, LSL, platform support, or gates change.
 
-### User-control protection, main-app launch and background verification
+### User-control protection and background verification
 
 Routine verification must leave the user's desktop, windows, focus, pointer,
 keyboard, clipboard, and active applications untouched. Agents must use the
@@ -420,10 +424,10 @@ blocker rather than opening a second canonical-looking app. This launch must be
 the exact latest candidate, not a copied shortcut, stale installer, helper
 engine, or older build with the same title.
 
-Do not use computer-control, browser-control, window activation outside the
-current app handoff, synthetic input, or foreground visual exercise for testing
-unless the user explicitly asks for that specific check. The standing handoff
-authorizes opening the latest app for review only; it does not authorize
+Do not use computer-control, browser-control, window activation, GUI launch,
+synthetic input, or foreground visual exercise for testing unless the user
+explicitly opts in for that specific check. The standing current-app handoff
+authorizes opening the latest rebuilt app for review only; it does not authorize
 clicking through workflows, typing, moving windows, or qualifying physical
 behavior. If a claim cannot be established without an interactive check, report
 it as unverified and ask before touching the user's desktop; do not silently

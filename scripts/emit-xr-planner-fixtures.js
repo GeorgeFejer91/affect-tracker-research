@@ -1,8 +1,8 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { resolve, join } from "node:path";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { compilePlannerRecipeV1, serializePlannerRecipeV1, reproducePlannerRecipeV1 } from "../site/src/research/planner-recipe.js";
-import { resolveSavedXrLayoutContribution } from "../site/src/research/xr-layout-recipe.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { compilePlannerRecipeV1, serializePlannerRecipeV1, reproducePlannerRecipeV1 } from "../experiment-planner/web/src/research/planner-recipe.js";
+import { resolveSavedXrLayoutContribution } from "../experiment-planner/web/src/research/xr-layout-recipe.js";
 
 // Owner-reviewed P7/P6 fixtures supply every input. No default or ready snapshot.
 // Emit current-algorithm receipts into an explicit evidence directory. Historical

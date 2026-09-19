@@ -1,17 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { importQuestionnaireAuthoring } from "../site/src/research/questionnaire-authoring.js";
-import { demographicsFormDraft } from "../site/src/research/form-assets.js";
-import { surveyDraftFromDefinition, changeSurveyElement, surveyElements, appendSurveyElements, addSurveyPage } from "../site/src/research/surveyjs-builder.js";
-import { surveySheetFromDefinition, surveySheetToAuthoring, prepareSurveySourceStorage } from "../site/src/research/surveyjs-sheet.js";
-import { checkSurveyData } from "../site/src/research/surveyjs-engine.js";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
+import { importQuestionnaireAuthoring } from "../experiment-planner/web/src/research/questionnaire-authoring.js";
+import { demographicsFormDraft } from "../experiment-planner/web/src/research/form-assets.js";
+import { surveyDraftFromDefinition, changeSurveyElement, surveyElements, appendSurveyElements, addSurveyPage } from "../experiment-planner/web/src/research/surveyjs-builder.js";
+import { surveySheetFromDefinition, surveySheetToAuthoring, prepareSurveySourceStorage } from "../experiment-planner/web/src/research/surveyjs-sheet.js";
+import { checkSurveyData } from "../experiment-planner/web/src/research/surveyjs-engine.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
 
 for (const language of ["en", "de"]) test(`MAIA-2 ${language} converts to raw SurveyJS without losing wording, codes or source`, async () => {
-  const source = new Uint8Array(await readFile(new URL(`../site/questionnaires/maia-2-${language}.csv`, import.meta.url)));
+  const source = new Uint8Array(await readFile(new URL(`../experiment-planner/web/questionnaires/maia-2-${language}.csv`, import.meta.url)));
   const { definition } = await importQuestionnaireAuthoring(source, { sourceKind: "bundled", logicalName: `maia-2-${language}.csv` });
   const draft = surveyDraftFromDefinition(definition), saved = await surveySheetToAuthoring(surveySheetFromDefinition(draft, { familyId: "maia-2" }));
   const payload = await prepareSurveySourceStorage(saved.sourceBytes, saved.definition), raw = JSON.parse(new TextDecoder().decode(payload.bytes));
@@ -33,6 +33,11 @@ for (const language of ["en", "de"]) test(`MAIA-2 ${language} converts to raw Su
 
 test("demographic SurveyJS keeps zero, integer validation and UTF-8 text bounds", async () => {
   const definition = demographicsFormDraft("en"), raw = surveyDraftFromDefinition(definition).surveyJson;
+  const fullName = raw.elements.find(element => element.name === "fullName");
+  assert.equal(fullName.type, "text");
+  assert.equal(fullName.inputType, "text");
+  const handedness = raw.elements.find(element => element.name === "handedness");
+  assert.deepEqual(handedness.choices.map(choice => choice.value), ["right", "left", "ambidextrous", "preferNotToSay"]);
   const data = Object.fromEntries(definition.items.map(item => [item.itemId, item.response.kind === "text" ? "Fictitious" : item.response.kind === "integer" ? 0 : item.response.options[0].optionId]));
   assert.equal(checkSurveyData(raw, { data, complete: true }).valid, true);
   const integer = definition.items.find(item => item.response.kind === "integer");
@@ -57,7 +62,7 @@ test("arrangement preserves imported logic, nested panels, translations and iden
 test("production authoring mode saves both preset and demographics as SurveyJS", async () => {
   const saved = [], editor = createQuestionnaireEditor({ root: { querySelector: () => null }, authorSurveyJs: true, onSave: async value => { saved.push(value); return { stored: true }; } });
   editor.sync({ families: [{ id: "demographics", label: "Demographics" }, { id: "maia-2", label: "MAIA-2" }], languages: [{ languageId: "en", languageTag: "en", label: "English" }], definitions: [], familyForDefinition: questionnaireFamilyId, locked: false });
-  const source = new Uint8Array(await readFile(new URL("../site/questionnaires/maia-2-en.csv", import.meta.url)));
+  const source = new Uint8Array(await readFile(new URL("../experiment-planner/web/questionnaires/maia-2-en.csv", import.meta.url)));
   const imported = await importQuestionnaireAuthoring(source, { logicalName: "maia-2-en.csv" });
   assert.equal(editor.loadDefinition(imported.definition, { familyId: "maia-2" }), true);
   for (const key of ["demographics/en", "maia-2/en"]) await editor.save(key);

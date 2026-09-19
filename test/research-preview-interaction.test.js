@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createInputBindingPreset } from "../site/src/research/contracts.js";
-import { createPreviewResponseSimulator } from "../site/src/research/preview-response-simulator.js";
-import { previewTileGeometry } from "../site/src/research/preview-tiles.js";
-import { createPreviewInteraction, previewPointFromPointer } from "../site/src/research/preview-interaction.js";
+import { createInputBindingPreset } from "../experiment-planner/web/src/research/contracts.js";
+import { createPreviewResponseSimulator } from "../experiment-planner/web/src/research/preview-response-simulator.js";
+import { previewTileGeometry } from "../experiment-planner/web/src/research/preview-tiles.js";
+import { createPreviewInteraction, previewPointFromPointer } from "../experiment-planner/web/src/research/preview-interaction.js";
 
 function harness(preset = "arrowKeys") {
   const doc = new EventTarget(), win = new EventTarget();

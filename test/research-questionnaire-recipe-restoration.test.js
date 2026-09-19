@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
 import { questionnaireRecipeFixture } from "./fixtures/questionnaire-recipe-fixture.js";
-import { createQuestionnairePresentationV1 } from "../site/src/research/questionnaire-recipe.js";
+import { createQuestionnairePresentationV1 } from "../experiment-planner/web/src/research/questionnaire-recipe.js";
 import { typedOwner, op, guard } from "./fixtures/p2-typed-owner.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
 
 async function content(version) {
   if (version === 2) {

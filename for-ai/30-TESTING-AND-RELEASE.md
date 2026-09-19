@@ -17,19 +17,12 @@ for real native import/save/Open. Browser native replies are synthetic; they do
 not qualify live native playback, XDF or hardware. Final consolidation retains
 those checks. See [the integration documentation](../docs/surveyjs-questionnaires.md).
 
-## Companion-program amendment — 2026-09-12
+## Current companion-program authority
 
-The latest user decision requires separate **Experiment Planner** and
-**Experiment Runner** programs. Planner retains Flubber previews and generates
-one comprehensive JSON; Runner owns execution, video playback, LSL transport
-and recording of own plus selected external streams to XDF. Stream recording
-policy is Runner-owned session state, not a Planner recipe field.
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
-single-executable wording and blanket Runner deferral in this historical text.
-Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
-producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Planner completion is independent; actual execution correspondence is the final
-development stage. Existing frozen contracts and qualification gates remain.
+Use [16](16-COMPANION-APP-BOUNDARY.md), [65](65-RUNNER-SEGMENTS.md) and
+[66](66-PLANNER-RUNNER-COMPATIBILITY.md) for the current Planner/Runner split.
+This gates file defines evidence requirements; it no longer duplicates the full
+companion-program amendment text.
 
 ## Status
 
@@ -82,7 +75,7 @@ Any stable, release, experiment-use, or research-ready claim still requires
 every applicable gate in this file for one exact candidate, regardless of the
 stage used while developing it.
 
-## Non-interactive verification and current-app handoff
+## Non-interactive verification default and current-app handoff
 
 Testing must preserve the researcher's control of the Windows desktop. Use
 CLI-capable application functions, focused Node/Rust test entrypoints, isolated
@@ -91,8 +84,8 @@ machine-readable receipts. During testing, do not activate, foreground, move,
 close, or interact with application windows; do not synthesize keyboard,
 pointer, or clipboard input; and do not use browser/computer-control tooling for
 routine verification. A background renderer or automated test proves only the
-software property represented by its receipt; it does not establish physical,
-installed, accessibility, timing, hardware, or research qualification.
+software property represented by its receipt; it does not establish physical, installed,
+accessibility, timing, hardware, or research qualification.
 
 The standard handoff for app-changing work is separate from routine
 verification: after focused checks pass, rebuild/stage the latest candidate into
@@ -124,12 +117,11 @@ consistent with the charter.
   never `app.js`; the contract module must contain no DOM or IPC access.
 - Verify the Rust package runtime keeps commands, compiler/contracts, reducer,
   responses, input mailbox, media actor, storage, recovery, and coordinator in
-  separate source modules. Command handlers may contain no filesystem, GstPlay,
+  separate source modules. Command handlers may contain no filesystem, HTML video,
   platform-window, or protocol-policy implementation; storage and media modules
   may not import each other's domain.
-- Recursively reject project-authored `unsafe` outside the two approved
-  `research_native_media/gst_actor/{runtime_environment,windows_renderer}.rs`
-  FFI adapters, and deny undocumented unsafe blocks crate-wide.
+- Recursively reject project-authored `unsafe` and deny undocumented unsafe
+  blocks crate-wide.
 - Each native product boundary requires focused Rust tests, focused frontend
   presentation/adapter tests, and at least one shared fixture or IPC-contract
   test across the boundary.
@@ -146,13 +138,13 @@ pnpm test
 pnpm build:pages
 pnpm desktop:build
 pnpm audit --audit-level=moderate
-cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-cargo check --manifest-path src-tauri/Cargo.toml --locked --all-features
-cargo check --manifest-path src-tauri/Cargo.toml --locked --no-default-features
-cargo test --manifest-path src-tauri/Cargo.toml --locked --all-features
-cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features
-cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings
-cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
+cargo fmt --manifest-path native/Cargo.toml --all -- --check
+cargo check --manifest-path native/Cargo.toml --locked --all-features
+cargo check --manifest-path native/Cargo.toml --locked --no-default-features
+cargo test --manifest-path native/Cargo.toml --locked --all-features
+cargo test --manifest-path native/Cargo.toml --locked --no-default-features
+cargo clippy --manifest-path native/Cargo.toml --locked --all-targets --all-features -- -D warnings
+cargo clippy --manifest-path native/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
 ```
 
 Build an unsigned native-playback NSIS candidate only after staging and
@@ -222,11 +214,12 @@ qualification evidence.
 
 ### Questionnaires and protocol sequence
 
-- For the bounded 2026-09-11 Section 2 pass, verify the authoring/table,
-  normalization, exact-language coverage, source-storage, and package
-  integration boundaries below. Record Runner and other-section findings in
-  `45-FUTURE-AGENT-CHECKLIST.md`; do not expand this pass into Runner
-  implementation or claim the whole Backend Verification stage complete.
+- For the bounded historical 2026-09-11 Section 2 pass, verify the authoring/
+  table, normalization, exact-language coverage, source-storage, and package
+  integration boundaries below. Route current Runner and other-owner findings to
+  `60`, `65`, `66`, `72` and the message board; do not expand a questionnaire
+  pass into Runner implementation or claim the whole Backend Verification stage
+  complete.
 - Strictly parse UTF-8 RFC 4180 `questionnaire-csv-v1`: exact 14-column header,
   optional BOM, format-specific row/item/option/text constraints, consistent repeated
   metadata, contiguous item rows, unique IDs, explicit required flags, and
@@ -342,7 +335,7 @@ qualification evidence.
   closure, records decode readiness separately, never enrolls a scanned file,
   substitutes a source, or changes block/video/ISI order.
 - Exercise the exact serialized `complete-video-v1` policy on each surface.
-  Missing or unavailable `nativeGstPlay` must block qualified Windows Start;
+  Missing or unavailable `unqualifiedWebview` must block qualified Windows Start;
   `unqualifiedWebview` must be selected explicitly and permanently labelled;
   Chromium must require `browserMediaAdapters`; no mode may automatically fall
   back.
@@ -503,68 +496,38 @@ qualification evidence.
   separately reviewed safe handle/file-ID design exists; passing junction and
   replacement tests is not evidence of a race-free sandbox.
 
-## Native Windows media gate
+## HTML video playback gate
 
-Qualified declared package-asset playback uses only the pinned bundled
-GStreamer 1.28.6 MSVC x86_64 runtime and private plugin closure.
+Declared package-asset playback now uses the Runner WebView
+`HTMLVideoElement` through the repository `research-media` protocol. Packaging
+must not stage heavyweight media runtimes, retired player manifests, optional native
+player features, or ambient plugin-path setup. Provenance must keep
+`bundledNativeMediaRuntime: false`, `htmlVideoPlayerOnly: true`, and
+`htmlVideoResearchReady: false` until an installed Runner release is separately
+qualified for actual study use.
 
-### Supply-chain and package evidence
+### Player security and lifecycle evidence
 
-- Verify the official combined installer is 528,572,178 bytes with SHA-256
-  `059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5`
-  and verify all component source hashes against
-  `src-tauri/native-media/gstreamer-runtime-v1.json`.
-- Stage only the required DLLs, plugin tree, and upstream notices. Verify the
-  complete generated file-hash manifest and reject links, Windows directory
-  junctions/reparse points, traversal, extra, missing, modified, or
-  wrong-architecture files. A real-junction regression must prove the verifier
-  rejects before traversal and never changes the external target.
-- Package with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the
-  `native-gstreamer` feature; prove the build fails closed when the tree is
-  absent or altered. The running app must clear ambient plugin paths and use
-  only its private registry and scanner without runtime downloads.
-- Retain applicable source/license obligations and approve the exact shipped
-  plugin/codec redistribution closure.
-- Every distributed Windows alpha artifact must include the exact pinned
-  GStreamer source materials, the machine-readable runtime pin, and provenance
-  record binding repository, workflow/run, Git commit, runtime-pin identity,
-  and installer/source SHA-256 plus byte lengths. Every external build action
-  is pinned to an exact commit and the materialized checkout must remain clean.
-  Any future wrapper that distributes native GStreamer must activate the same
-  required-runtime gate. Until this complete evidence and redistribution review
-  exist, `pnpm desktop:bundle` must instead build with no optional features,
-  exclude the runtime, positively disable native acquisition, and label the
-  artifact interface-only. The artifact name also includes the full commit SHA;
-  a mutable filename or unbound aggregate pass count is not release evidence.
-
-### Player-actor security and lifecycle evidence
-
-The researcher approved the two contained Windows `unsafe` FFI adapters on
-2026-09-10 and the isolated runtime-environment/actor/renderer source has
-landed. Acceptance still requires a commit-bound focused audit of DLL-search
-cookie lifetime, validated HWND and strong-window lifetimes, GLib/GstPlay one-
-thread affinity, bounded callbacks, stale-generation fencing, panic
-containment, child-window ownership, and callbacks-after-teardown prevention.
-Compilation and unit tests do not satisfy this gate.
+Acceptance now targets the WebView `HTMLVideoElement` path and the
+`research-media` protocol. Compilation and unit tests do not satisfy an
+installed Runner gate by themselves.
 
 - Revalidate opaque media identity, root generation, hash, byte length,
-  duration, and decode evidence immediately before Prepare. No WebView path or
-  arbitrary native handle may cross IPC.
-- Prove only native decoded Playing opens sampling. Pause, buffering, end,
-  error, actor loss, window close, and teardown must fence sampling before UI
-  projection and retain an authoritative recovery boundary.
-- Test Prepare/Play/Pause/Resume/Stop/End/Error, stimulus-to-interval and
-  interval-to-next-step transitions, rerun, recovery restart from zero, rapid
-  command races, stale callbacks, and clean repeated shutdown.
-- Test supported containers/codecs, corrupt/truncated/zero-length/renamed files,
-  missing plugins, audio present/absent, output device changes, mute/volume
+  duration, and decode evidence immediately before issuing each media URL. No
+  arbitrary filesystem path or native handle may cross IPC.
+- Prove HTML video play, pause, end, error, metadata failure, detached element,
+  window close, and teardown fence run progression before UI projection and
+  retain an authoritative recovery boundary.
+- Test stimulus-to-interval and interval-to-next-step transitions, rerun,
+  recovery restart from zero, rapid command races, stale callbacks, and clean
+  repeated shutdown.
+- Test supported browser containers/codecs, corrupt/truncated/zero-length/
+  renamed files, audio present/absent, output device changes, mute/volume
   policy, seek prohibition, multi-monitor movement, resize, minimize/restore,
   and 100/125/150/200% display scaling.
-- Exercise native-library load and symbol failure without process crash. Run
-  leak/handle-growth and forced-termination checks on the packaged candidate.
-- Prove `unqualifiedWebview` is an explicit opt-in, never an automatic fallback,
-  and that status, first event, journal, receipt, and manifest all retain the
-  unqualified label. Its media errors must still stop native sampling.
+- Prove `unqualifiedWebview` status, first event, journal, receipt, and
+  manifest all retain the unqualified label. Its media errors must stop run
+  progression.
 - For the unqualified desktop probe, require decoded-frame callbacks at the
   deterministic near-start, midpoint, and near-end positions; reject metadata,
   seek, or short-play evidence without those frames. Assert the
@@ -654,7 +617,7 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
   ```powershell
   $env:AFFECT_RESEARCH_RUN_LSL_LOOPBACK = "1"
-  & "$env:USERPROFILE\.cargo\bin\cargo.exe" test --manifest-path src-tauri/Cargo.toml --locked --all-features research_lsl::tests::windows_lsl_loopback_conformance -- --ignored --exact --nocapture
+  & "$env:USERPROFILE\.cargo\bin\cargo.exe" test --manifest-path native/Cargo.toml --locked --all-features research_lsl::tests::windows_lsl_loopback_conformance -- --ignored --exact --nocapture
   Remove-Item Env:AFFECT_RESEARCH_RUN_LSL_LOOPBACK
   ```
 
@@ -699,7 +662,7 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and optional Windows GStreamer integration
+CI may validate the static artifact and optional Windows removed native player stack integration
 tree without uploading that tree. Manual workflows may produce explicitly
 unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
 packages. The internal

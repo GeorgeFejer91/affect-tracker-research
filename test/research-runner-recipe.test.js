@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { readRunnerRecipe, resolveRunnerSelection, runnerFeedbackState } from "../runner/src/recipe.js";
-import { enumerateLanguageRoutesV1, compileExperimentPackageSelectionV1 } from "../site/src/research/experiment-package.js";
+import { readRunnerRecipe, resolveRunnerSelection, runnerFeedbackState } from "../experiment-runner/src/recipe.js";
+import { enumerateLanguageRoutesV1, compileExperimentPackageSelectionV1 } from "../experiment-planner/web/src/research/experiment-package.js";
 const fixture = new URL("./fixtures/experiment-package-v1.canonical.json", import.meta.url);
 
 test("Runner reads unchanged Planner bytes and resolves every v1 participant and language", async () => {
@@ -45,7 +45,7 @@ test("Runner feedback projects saved values without simulator defaults", async (
 });
 
 test("native Planner registry cannot start acquisition and Runner cannot author recipes", async () => {
-  const lib = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const lib = await readFile(new URL("../native/src/lib.rs", import.meta.url), "utf8");
   const planner = lib.split("DesktopRole::Planner => builder.invoke_handler")[1].split("DesktopRole::Runner => builder.invoke_handler")[0];
   const runner = lib.split("DesktopRole::Runner => builder.invoke_handler")[1].split("    };")[0];
   assert.doesNotMatch(planner, /research_(?:start|resume|finish|recorder|lsl_readiness|package_(?:play|pause|run))/u);

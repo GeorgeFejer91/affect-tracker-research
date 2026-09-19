@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { resolveFeedbackEnvelopeV1 } from "../site/src/research/feedback-envelope.js";
-import { createScreenLayoutDraft, convertScreenLayoutDraftUnits, resolveScreenLayoutDraft } from "../site/src/research/screen-layout-draft.js";
-import { createScreenLayoutState, validateScreenLayoutDraftDocument, validateScreenLayoutContribution } from "../site/src/research/screen-layout-state.js";
-import { createScreenLayoutDependencyBinding, screenLayoutReferenceCandidates } from "../site/src/research/screen-layout-dependencies.js";
-import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../site/src/research/video-catalogue-contribution.js";
-import { createFeedbackContributionSource } from "../site/src/research/feedback-contribution.js";
-import { connectScreenLayoutProducers } from "../site/src/research/screen-layout-composition.js";
-import { createWorkspaceContributionV1 } from "../site/src/research/workspace-contribution.js";
-import { createStudyIdentityV1 } from "../site/src/research/study-identity.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { resolveFeedbackEnvelopeV1 } from "../experiment-planner/web/src/research/feedback-envelope.js";
+import { createScreenLayoutDraft, convertScreenLayoutDraftUnits, resolveScreenLayoutDraft } from "../experiment-planner/web/src/research/screen-layout-draft.js";
+import { createScreenLayoutState, validateScreenLayoutDraftDocument, validateScreenLayoutContribution } from "../experiment-planner/web/src/research/screen-layout-state.js";
+import { createScreenLayoutDependencyBinding, screenLayoutReferenceCandidates } from "../experiment-planner/web/src/research/screen-layout-dependencies.js";
+import { createVideoCatalogueProducerV1, projectVideoDisplayGeometryV1 } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { createFeedbackContributionSource } from "../experiment-planner/web/src/research/feedback-contribution.js";
+import { connectScreenLayoutProducers } from "../experiment-planner/web/src/research/screen-layout-composition.js";
+import { createWorkspaceContributionV1 } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { createStudyIdentityV1 } from "../experiment-planner/web/src/research/study-identity.js";
 
 const clone = value => structuredClone(value);
 const DEFAULT_SETTINGS = createDefaultResearchSettings();

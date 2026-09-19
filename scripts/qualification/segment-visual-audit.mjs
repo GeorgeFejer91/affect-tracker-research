@@ -18,12 +18,12 @@ const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 const harnessSha256 = sha256(await readFile(new URL(import.meta.url)));
 const source = resolve(sourceArgument ?? join(import.meta.dirname, "../.."));
 const output = resolve(destination);
-const site = join(source, "site");
+const site = join(source, "experiment-planner", "web");
 await mkdir(output, { recursive: true });
 assert.equal((await readdir(output)).length, 0, "Use a fresh empty output directory; preserve earlier receipts.");
 const git = async (...args) => (await execute("git", ["-C", source, ...args], { windowsHide: true })).stdout.trim();
 const sourceCommit = await git("rev-parse", "HEAD");
-const sourceChanges = await git("status", "--porcelain", "--", "site");
+const sourceChanges = await git("status", "--porcelain", "--", "experiment-planner/web");
 assert.equal(sourceChanges, "", "Capture only a clean application source snapshot.");
 const { SETUP_SECTIONS } = await import(pathToFileURL(join(site, "src/research/ui-contracts.js")));
 const sections = SETUP_SECTIONS.filter(({ id }) => !selectedArgument || selectedArgument.split(",").includes(id));
@@ -158,7 +158,7 @@ try {
 } finally {
   server.close();
   const finalCommit = await git("rev-parse", "HEAD");
-  const finalChanges = await git("status", "--porcelain", "--", "site");
+  const finalChanges = await git("status", "--porcelain", "--", "experiment-planner/web");
   const stableSource = finalCommit === sourceCommit && finalChanges === sourceChanges;
   await writeFile(join(output, "receipt.json"), JSON.stringify({ source, sourceCommit, stableSource, harnessSha256, browser, sections, viewports, rows }, null, 2));
   assert.ok(stableSource, "Application source changed during capture; discard this receipt.");

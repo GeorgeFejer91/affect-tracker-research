@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "../site/src/research/screen-layout-draft.js";
-import { screenLayoutDraftMarkup, screenLayoutSceneMarkup } from "../site/src/research/screen-layout-view.js";
+import { createScreenLayoutDraft, resolveScreenLayoutDraft, convertScreenLayoutDraftUnits } from "../experiment-planner/web/src/research/screen-layout-draft.js";
+import { screenLayoutDraftMarkup, screenLayoutSceneMarkup } from "../experiment-planner/web/src/research/screen-layout-view.js";
 
 const fixture = () => ({ ...createScreenLayoutDraft(), referenceWidth: 1280 / 1920 * 100, referenceHeight: 720 / 1080 * 100,
   referenceX: 50, referenceY: 400 / 1080 * 100, feedbackX: 50, feedbackY: 900 / 1080 * 100,
@@ -136,7 +136,7 @@ test("layout markup provides numeric alternatives and an editable reference choi
 });
 
 test("draft owner is isolated from package, native, storage and current Start projections", async () => {
-  const base = new URL("../site/src/research/", import.meta.url);
+  const base = new URL("../experiment-planner/web/src/research/", import.meta.url);
   for (const file of ["screen-layout-draft.js", "screen-layout-editor.js", "screen-layout-view.js"]) {
     const source = await readFile(new URL(file, base), "utf8");
     assert.doesNotMatch(source, /from ["']\.\/(?:experiment-package|contracts|native-|runtime-|workspace)|localStorage|indexedDB|fetch\(|invoke\(/u);

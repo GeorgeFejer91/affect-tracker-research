@@ -76,5 +76,5 @@ feedback substitution, generation invalidation and retained exact retries.
 
 These are coordination and contract tests. Main owns actual native write/effect
 binding, app adapters, production CLI registration and the timestamped master
-artifact. The full CLI-authored mock and actual Runner/XDF acceptance remain
+artifact. The full CLI-authored mock and actual experiment-runner/XDF acceptance remain
 open until observed against the final production artifacts.

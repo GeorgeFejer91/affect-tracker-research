@@ -3,7 +3,7 @@
 ## Web infrastructure — 2026-09-12
 
 The public root provides two icon links to separate permanent `planner/` and
-`runner/` addresses. Both destinations explicitly show that their browser apps
+`experiment-runner/` addresses. Both destinations explicitly show that their browser apps
 are in development. The earlier combined research instrument remains at
 `research.html`. The existing main-only GitHub Pages deployment builds these
 routes, verifies their relative asset/link closure, and emits the source
@@ -66,19 +66,12 @@ picker, installed runtime/decode, native execution or publication claim follows.
 P1 has a separate reported follow-up for fresh directory enumeration and link
 replacement rejection inside its verifier; this command duplicates no media policy.
 
-## Companion-program amendment — 2026-09-12
+## Current companion-program authority
 
-The latest user decision requires separate **Experiment Planner** and
-**Experiment Runner** programs. Planner retains Flubber previews and generates
-one comprehensive JSON; Runner owns execution, video playback, LSL transport
-and recording of own plus selected external streams to XDF. Stream recording
-policy is Runner-owned session state, not a Planner recipe field.
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
-single-executable wording and blanket Runner deferral in this historical text.
-Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
-producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Planner completion is independent; actual execution correspondence is the final
-development stage. Existing frozen contracts and qualification gates remain.
+Current Planner/Runner ownership is routed through
+[16](16-COMPANION-APP-BOUNDARY.md), [65](65-RUNNER-SEGMENTS.md) and
+[66](66-PLANNER-RUNNER-COMPATIBILITY.md). This roadmap records dated evidence;
+older entries below remain receipts, not competing companion-program authority.
 
 ## P3 native and complete-master reproduction handoff — 2026-09-12
 
@@ -100,7 +93,7 @@ Other owners' reopen effects remain fixture adapters in this owner test.
 
 Clean-source background P3 rendering at `4b20254` retains 4824-character values
 inside a 432px section, at both 1600/800 viewports, with no page errors or
-overflow. Receipt is under `src-tauri/target/segment3-verification/4b202545681f-1789214485721`.
+overflow. Receipt is under `native/target/segment3-verification/4b202545681f-1789214485721`.
 The subsequent focused repair allows shorter v2 variants retaining occurrence
 ordinal 999999 to reopen: editor-only blank padding uses unused IDs. Authored
 IDs, hashes and v1 behavior are unchanged. Its 25 focused Node and 4 Rust checks
@@ -727,8 +720,8 @@ contain-fit rectangle for all P1 assets. Camera/media selection is inspection on
 Checks executed on Windows, Node 24.19.0, repository lockfiles unchanged:
 
 - `node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js`: **443 passed**, including **17 P6** tests.
-- `cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features`: **191 passed**; focused `research_xr_layout` has **5 passed**. No optional native player/device/LSL qualification implied.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --all-targets -- -D warnings` and `cargo fmt --manifest-path src-tauri/Cargo.toml --check`: passed.
+- `cargo test --manifest-path native/Cargo.toml --locked --no-default-features`: **191 passed**; focused `research_xr_layout` has **5 passed**. No optional native player/device/LSL qualification implied.
+- `cargo clippy --manifest-path native/Cargo.toml --locked --no-default-features --all-targets -- -D warnings` and `cargo fmt --manifest-path native/Cargo.toml --check`: passed.
 - `pnpm desktop:build` and `pnpm build:pages`: passed, **8 desktop / 173 Pages files**. Existing Vite >500 kB chunk warning remains; no new dependency/runtime assets.
 - `node scripts/qualification/xr-layout-background.mjs <browser.exe> <output>`: **18 checks each** in separate Chrome/Edge headless processes, isolated profiles. Reflow, native form focus, invalid/stale state, editable reopen, delayed reads, teardown, camera/asset isolation and full envelope rendering passed.
 - `node scripts/qualification/xr-feedback-interop.mjs <P5 feedback-envelope.js>`: **2 actual producer fixtures** passed, source SHA-256 `e6b94f6e2f91f1d5a97e7d1aee2784e0481ced7d5cbdc522e22263344bd178f8`. Full animation mathematics remains P5-owned.
@@ -771,7 +764,7 @@ PNGs and JSON receipts are under
 `error-controls` suffixes. Observed P6 panes are 800/815 px and 383/398 px.
 Earlier `760` breakpoint-adjacent and `420` captures had blank/clipped compositor
 results and are **excluded from visual acceptance**; metrics alone were inadequate.
-The final desktop/narrow PNGs were inspected. Combined P5/P7 integration still
+The final experiment-planner/desktop/narrow PNGs were inspected. Combined P5/P7 integration still
 needs the integration owner's captures and applicable routing/guard checks.
 
 [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md) is the central final-state
@@ -836,7 +829,7 @@ are retained.
 
 ### P5 geometry seam
 
-[`feedback-envelope.js`](../site/src/research/feedback-envelope.js) exports
+[`feedback-envelope.js`](../experiment-planner/web/src/research/feedback-envelope.js) exports
 `deriveFeedbackEnvelopeV1({visual, mappings})` and
 `resolveFeedbackEnvelopeV1(configuration, overlaySideCssPx)`. Both require valid
 complete saved v1 configuration. The result identifies algorithm
@@ -959,7 +952,7 @@ Final reconciled suite: 456/456 JavaScript tests. Follow-up rendering uses an
 actual removed-library-reference error in offscreen Variant 6 and verifies
 focus/reveal; identity-derived colors stay stable across catalogue changes.
 Receipt and screenshots: immutable commit/timestamp subdirectories of the own
-`src-tauri/target/segment3-verification/`, including served-source SHA-256 hashes.
+`native/target/segment3-verification/`, including served-source SHA-256 hashes.
 Current v1 library lacks verified durations and the future readable/immutable-ID
 split; these remain P1 dependencies. P7 successor master composition and Runner
 recording are separate allocated work. Central items remain unchecked pending
@@ -989,7 +982,7 @@ are recorded in message `20260911-stimuli-order-table`. No desktop input or
 clipboard was synthesized; installed dialogs, physical keyboard/paste, full
 accessibility, Runner recording, and native media/timing/LSL remain unverified.
 The all-feature Rust check is unavailable because `pkg-config` and a usable
-GStreamer development SDK are absent in this shell; no-default software checks
+removed native player stack development SDK are absent in this shell; no-default software checks
 are separate evidence.
 
 ## Repository transition — verified
@@ -1195,7 +1188,7 @@ no-default-feature matrix passed 118/118 tests. Format, both-matrix check and
 clippy, dependency audit, Pages/desktop builds, Research-only artifact closure,
 the required-runtime NSIS bundle gate, and a separately invoked real local LSL
 loopback also passed. These automated results do not qualify physical workflow,
-independent LSL reception, long-run timing, or native GstPlay playback.
+independent LSL reception, long-run timing, or native HTML video playback.
 
 ## Native input status — safe pointer and gamepad authority implemented
 
@@ -1280,7 +1273,7 @@ is never upgraded in place.
 The Rust-owned package path now independently parses and compiles the selected
 participant/language projection, verifies the closed asset bindings, reserves a
 create-new attempt, executes questionnaire/video/explicit-ISI steps through a
-pure reducer, coordinates native input/GstPlay/sampling/LSL, persists typed
+pure reducer, coordinates native input/HTML video/sampling/LSL, persists typed
 samples/events/questionnaire responses and a recovery journal, resumes only at
 a safe boundary, and finalizes a package-bound ManifestV4 plus canonical CSV/
 TSV and immutable package snapshot. Thin Tauri commands expose that runtime
@@ -1391,69 +1384,23 @@ other-section improvements are explicitly outside this pass and recorded in
 label-layout persistence, optional-response output, demographics localization,
 LSL stream-versus-file ownership, and remaining native qualification.
 
-## Native GStreamer/GstPlay status — actor and package integration landed; distribution/qualification open
+## Native removed native player stack/HTML video status — actor and package integration landed; distribution/qualification open
 
-Implemented safe groundwork:
+Implemented native-player groundwork has been superseded by the 2026-09-14 HTML
+video playback direction. The runtime manifest, staging scripts, build gate,
+optional bindings, native actor, FFI adapters, and native launcher are retired.
+Current package wrappers use no native media runtime and write all-false,
+exact-commit artifact provenance.
 
-- exact GStreamer 1.28.6 Windows MSVC x86_64 combined-installer identity and a
-  canonical 827-file / 340,362,958-byte integration-tree manifest. Component
-  checksum notes exist, but source archive names, URLs, byte lengths, retained
-  artifacts, and automated source verification are explicitly incomplete;
-- a deterministic staging/verifying script that rejects traversal, links,
-  missing/extra/modified files, coordinated DLL-plus-manifest tampering, and
-  wrong-architecture engine DLLs while preserving upstream notices;
-- a build-time package gate controlled by
-  `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1`;
-- ephemeral Windows CI compilation/testing of the optional bindings and runtime
-  verifier. The current manual Windows/macOS/Linux package wrappers use no
-  optional features, exclude the GStreamer tree, positively disable native
-  acquisition, and write all-false, exact-commit artifact provenance;
-- a path-free native-media capability contract;
-- an isolated Rust-owned runtime environment and serialized GLib/GstPlay actor
-  with bounded control messages, generation/run/asset fencing, native status
-  snapshots, deterministic teardown, and decode-attestation receipts;
-- the user-approved contained Windows FFI adapters in
-  `gst_actor/runtime_environment.rs` and `gst_actor/windows_renderer.rs`, which
-  own private DLL-search state and one child HWND beneath the Tauri window while
-  keeping native handles and paths out of IPC;
-- typed Prepare/viewport/Play/Pause/Stop commands integrated with the package
-  reducer, native scheduler, input mailbox, recovery journal, and status
-  projection;
-- run/receipt/recovery labelling for `nativeGstPlay`, retired parse-only
-`nativeLibvlc`, versus explicit
-  `unqualifiedWebview`, including fail-closed media-error handling;
-- an IPC authority fence that accepts renderer playback lifecycle/failure
-  events only for the exact active run in the explicit unqualified WebView
-  fallback. A future qualified GstPlay run cannot treat WebView media events as
-  native playback authority;
-- per-source detached video generations, ordered status/lifecycle fencing,
-  strict receipt binding, duration-end validation, and explicit restart-required
-  handling when native terminal state cannot be reconciled; and
-- explicit lower-trust WebView decode evidence requiring representative frame
-  callbacks near the start, midpoint, and end. One-use media grants are
-  consumed and this evidence remains labelled `attestedUnqualified`; it cannot
-  satisfy the future native GstPlay qualification gate.
+The active playback path is the Runner WebView `HTMLVideoElement` plus
+`research-media` URLs. It keeps unqualified labels until installed Runner
+evidence exists, consumes one-use media grants, binds lifecycle events to the
+current run/stimulus generation, and treats media errors as run-blocking.
 
-Not implemented or qualified:
-
-- a reviewed minimal distributable plugin/codec closure, complete
-  corresponding-source artifacts/provenance, and redistribution approval;
-- a safe installed Windows pre-`main` DLL-resolution/bootstrap design that
-  cannot be masked by CI `PATH` or load an ambient GStreamer runtime;
-- installed native decode/duration evidence across a declared representative
-  container/codec matrix; or
-- packaged playback, DPI/resize, audio, recovery, shutdown, and soak
-  receipts.
-
-With the exact private runtime staged, the capability can report
-`playerActorReady: true`; it continues to report
-`qualifiedStartAvailable: false` and reason
-`native-qualification-evidence-incomplete`. `ExperimentPackageV1` carries the
-explicit `nativeGstPlay` policy and qualified Start therefore remains closed.
-The researcher approved the two contained `unsafe` Windows FFI adapters on
-2026-09-10. Focused source audit, installed-artifact qualification, and
-redistribution closure remain incomplete; compilation or staging is not
-playback qualification.
+Not implemented or qualified: installed playback timing, physical recording
+workflow, audio/device/DPI/resize matrices, recovery/soak receipts, or a
+research-ready release. Compilation or local staging is not playback
+qualification.
 
 ## Open software work before candidate acceptance
 
@@ -1468,7 +1415,7 @@ playback qualification.
    normalization checks. Retain the existing hostile ambient guards, closed
    asset tree, exact per-case five-hash tuple, sequence equality, and
    byte-identical re-export comparisons.
-3. Approve a minimal GStreamer redistribution/source closure and safe Windows
+3. Approve a minimal removed native player stack redistribution/source closure and safe Windows
    DLL-loader bootstrap; keep every downloadable package runtime-free until it
    passes review.
 4. Audit and physically qualify the landed actor/child-window/package lifecycle
@@ -1498,7 +1445,7 @@ run path, or native loader. They are automated baseline evidence only and
 establish no physical, timing, media, LSL, accessibility, recovery, or
 research-readiness claim.
 
-An earlier committed pre-GStreamer baseline
+An earlier committed pre-removed native player stack baseline
 `85e64f53bf61204a4a6b6c68ecb57f196df3b684` passed
 [Pages CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412486)
 and [Desktop CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412484).
@@ -1524,7 +1471,7 @@ historical exact 368-file / 142,167,916-byte runtime tree, launched responsively
 as **Affect Research**, accepted a normal close, exited with code zero, and
 uninstalled without a lingering process. These records are CI and installer-
 integrity evidence for their historical libVLC-based commits, not evidence for
-the subsequent GStreamer/questionnaire work, Setup-to-Run, native playback,
+the subsequent removed native player stack/questionnaire work, Setup-to-Run, native playback,
 hardware, or installed-workflow qualification.
 
 A ten-second current-Chrome Worker diagnostic at 130 Hz recorded 1300/1300
@@ -1549,7 +1496,7 @@ passed 325/325 JavaScript tests and the allowlisted Pages and desktop
 frontend builds. The pnpm moderate-severity dependency audit found no known
 vulnerabilities. Rust format and both clippy matrices passed with warnings
 denied. The no-default Rust matrix passed 175/175 tests. With the exact pinned
-GStreamer 1.28.6 Windows development SDK and required-runtime gate enabled,
+removed native player stack 1.28.6 Windows development SDK and required-runtime gate enabled,
 all-feature check, test, and clippy passed; the matrix reported 178 passed and
 one explicitly environment-gated LSL loopback ignored. That loopback then
 passed in its separate opt-in invocation.
@@ -1557,7 +1504,7 @@ passed in its separate opt-in invocation.
 The pinned installer SHA-256 and staged 827-file runtime closure were also
 verified locally. Interactive Chromium review covered every Setup accordion,
 Review blockers, bundled MAIA preview, keyboard input test, all mappings,
-desktop/tablet/mobile reflow, and the real Run presentation at stimulus,
+experiment-planner/desktop/tablet/mobile reflow, and the real Run presentation at stimulus,
 questionnaire, participant-controlled ISI, completion receipt, and return-to-
 Setup states without console errors. That visual projection fixture performs no
 acquisition and ships in neither product build. It exposed and led to fixes for
@@ -1596,7 +1543,7 @@ Before a stable or research-ready claim, record:
 5. Real keyboard, mouse, wheel, pointer/trackpad, and supported gamepad checks;
    keyboard-only Setup/Run; visible focus; labels/status; non-color meaning;
    reflow/contrast; announcements; and reduced motion.
-6. Installed native GstPlay evidence for exact runtime integrity and a declared
+6. Installed native HTML video evidence for exact runtime integrity and a declared
    supported container/codec matrix,
    player/scheduler lifecycle, errors, DPI/resize, audio, recovery, shutdown,
    forced termination, and a 30-minute run.

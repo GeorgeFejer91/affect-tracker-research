@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerNativeEffects } from "../site/src/research/planner-authoring-native-effects.js";
+import { createPlannerNativeEffects } from "../experiment-planner/web/src/research/planner-authoring-native-effects.js";
 const context = () => ({ sessionId: crypto.randomUUID(), requestId: crypto.randomUUID(), expectedRevision: 0 });
 const ack = (extra = {}) => ({ schema: "affect-research-planner-native-result", version: 1, operation: "saveRecipe",
   effect: { written: true, basename: "recipe.json" }, payload: { saved: true }, error: null, superseded: null, ...extra });

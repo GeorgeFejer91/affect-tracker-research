@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { createPlannerFileWorkflow } from "../site/src/research/planner-file-workflow.js";
-import { createPackageExportController } from "../site/src/research/package-export-controller.js";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { capturePlannerRecipeInputV1, capturePlannerRecipeInputVersion } from "../site/src/research/planner-recipe-capture.js";
-import { compilePlannerRecipeV1, compilePlannerRecipeV2, parseSupportedPlannerRecipe } from "../site/src/research/planner-recipe.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { createPlannerFileWorkflow } from "../experiment-planner/web/src/research/planner-file-workflow.js";
+import { createPackageExportController } from "../experiment-planner/web/src/research/package-export-controller.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { capturePlannerRecipeInputV1, capturePlannerRecipeInputVersion } from "../experiment-planner/web/src/research/planner-recipe-capture.js";
+import { compilePlannerRecipeV1, compilePlannerRecipeV2, parseSupportedPlannerRecipe } from "../experiment-planner/web/src/research/planner-recipe.js";
 import { openBrowserPlannerRecipeFile, openSupportedBrowserPlannerRecipeFile,
-  prepareBrowserPlannerRecipeSave, prepareSupportedBrowserPlannerRecipeSave } from "../site/src/research/planner-recipe-file.js";
+  prepareBrowserPlannerRecipeSave, prepareSupportedBrowserPlannerRecipeSave } from "../experiment-planner/web/src/research/planner-recipe-file.js";
 
 const encoder = new TextEncoder();
 const sources = await Promise.all(["planner-recipe-current-v1.canonical.json", "planner-recipe-v2-mixed.canonical.json"]

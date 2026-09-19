@@ -98,26 +98,20 @@ This is component and frontend evidence. The installed desktop executable has
 not been rebuilt/qualified for this shortcut; all preceding native execution,
 packaging, physical timing and real XDF gates remain open.
 
-## Native-enabled Runner build correction — 2026-09-13
+## Retired native-player correction — 2026-09-14
 
-The previously opened developer executable lacked native-gstreamer, causing
-"Native video inspection is unavailable in this build". The Runner desktop
-build script now accepts `--native-gstreamer`, matching the Planner CLI option.
-Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
-default features also include LSL and Windows acquisition.
+The previous native-enabled Runner build path has been superseded. Runner video
+execution now uses the lightweight HTML-compatible video surface and
+`research-media` URLs; the removed native player stack/HTML video feature, runtime gate, and bundled
+SDK instructions are retired and must not be used as release evidence.
 
-Built and opened the native-enabled dev executable with its pinned runtime at
-`D:/GitHub/.affect-checks/runner-current-native-2026-09-13/`. Its build receipt
-records SHA256 and scope; use **Launch Experiment Runner.cmd**, which scopes the
-bundled DLL path to the launched process. Direct EXE loader/installed packaging
-qualification remains open. This does not lift the qualified Start gate.
-
-Nine focused Runner reader/master tests passed. All eight English/German
-production-app questionnaire cases passed (350 assertions), using synthetic
-native replies. Evidence: `runner-current-questionnaire-ui-01/receipt.json`
-under the same checks root. Includes typed demographics, Likert presentation,
-answer validation/drafts/submission, transitions and disposal; does not prove
-actual video or real XDF execution. Current build includes the previous-file
+Nine focused Runner reader/master tests passed in the historical slice. All
+eight English/German production-app questionnaire cases passed (350 assertions),
+using synthetic native replies. Evidence:
+`runner-current-questionnaire-ui-01/receipt.json` under the same checks root.
+Includes typed demographics, Likert presentation, answer validation/drafts/
+submission, transitions and disposal; does not prove installed package, actual
+video timing, or real XDF execution. Current build includes the previous-file
 button and questionnaire module.
 
 ## Runner readiness refresh — 2026-09-13

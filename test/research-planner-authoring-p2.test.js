@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerAuthoringP2 } from "../site/src/research/planner-authoring-p2.js";
-import { createQuestionnaireEditor } from "../site/src/research/questionnaire-editor.js";
-import { questionnaireFamilyId } from "../site/src/research/questionnaire-assets.js";
-import { sheetToAuthoring } from "../site/src/research/questionnaire-sheet.js";
-import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
+import { createPlannerAuthoringP2 } from "../experiment-planner/web/src/research/planner-authoring-p2.js";
+import { createQuestionnaireEditor } from "../experiment-planner/web/src/research/questionnaire-editor.js";
+import { questionnaireFamilyId } from "../experiment-planner/web/src/research/questionnaire-assets.js";
+import { sheetToAuthoring } from "../experiment-planner/web/src/research/questionnaire-sheet.js";
+import { createPlannerAuthoringSession } from "../experiment-planner/web/src/research/planner-authoring-session.js";
 import { questionnaireRecipeFixture } from "./fixtures/questionnaire-recipe-fixture.js";
 
 const set = (field, value) => ({ kind: "set", field: `P2.${field}`, value });

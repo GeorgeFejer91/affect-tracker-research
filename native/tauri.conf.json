@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Experiment Planner",
+  "version": "0.4.0-alpha.1",
+  "identifier": "io.github.georgefejer91.affecttracker",
+  "build": {
+    "beforeDevCommand": "pnpm desktop:dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm desktop:build",
+    "frontendDist": "../experiment-planner/desktop/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "research",
+        "title": "Experiment Planner",
+        "url": "index.html",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 900,
+        "minHeight": 640,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data: blob:; media-src 'self' blob: http://research-media.localhost research-media:; object-src 'none'; frame-src 'none'; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "Experiment recipe authoring with live Flubber previews",
+    "longDescription": "Authors comprehensive experiment recipes and previews feedback and layout for the separate Experiment Runner companion.",
+    "copyright": "Copyright 2026 George Fejer",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

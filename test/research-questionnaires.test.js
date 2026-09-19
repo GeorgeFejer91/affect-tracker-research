@@ -20,10 +20,10 @@ import {
   validateQuestionnaireModuleV1,
   validateQuestionnaireResponseV1,
   verifyQuestionnaireDefinitionV1,
-} from "../site/src/research/questionnaires.js";
+} from "../experiment-planner/web/src/research/questionnaires.js";
 
-const fixtureUrl = new URL("../site/questionnaires/maia-2-de.csv", import.meta.url);
-const templateUrl = new URL("../site/questionnaires/questionnaire-template.csv", import.meta.url);
+const fixtureUrl = new URL("../experiment-planner/web/questionnaires/maia-2-de.csv", import.meta.url);
+const templateUrl = new URL("../experiment-planner/web/questionnaires/questionnaire-template.csv", import.meta.url);
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
 const HASH_C = "c".repeat(64);

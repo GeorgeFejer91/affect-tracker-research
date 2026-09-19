@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { canonicalJson, canonicalSha256 } from "../site/src/research/canonical.js";
-import { validateQuestionnaireDefinitionV1 } from "../site/src/research/questionnaires.js";
+import { canonicalJson, canonicalSha256 } from "../experiment-planner/web/src/research/canonical.js";
+import { validateQuestionnaireDefinitionV1 } from "../experiment-planner/web/src/research/questionnaires.js";
 
 const root = new URL("../", import.meta.url);
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import * as responsiveFace from "../site/src/research/responsive-face.js";
+import * as responsiveFace from "../experiment-planner/web/src/research/responsive-face.js";
 
 const { createResponsiveFaceGeometry } = responsiveFace;
 

@@ -5,7 +5,7 @@ Planner feedback editor. It adds no recipe schema, draft store, input acquisitio
 acceptance, file writer or Runner behavior. P7 still owns acceptance and export.
 
 `createPlannerAuthoringP5({ readDraft, readDigitalStep, prepareCommit })` from
-`site/src/research/planner-authoring-p5.js` returns the frozen shared owner
+`experiment-planner/web/src/research/planner-authoring-p5.js` returns the frozen shared owner
 interface: `id`, `settings`, `operations`, `read`, `stage`, `validate`.
 The exported `P5_AUTHORING_SETTINGS` is the closed catalogue; its product IDs
 are not an arbitrary JSON-pointer or DOM-selection interface.

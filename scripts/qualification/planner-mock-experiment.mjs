@@ -217,11 +217,11 @@ export async function authorMockExperiment(config) {
   step(get("P1.media.catalogue"), "ok");
   step(({ lastResponse }) => {
     const library = lastResponse.result.value;
-    assert.equal(library.version, 3, "Current native authoring must retain controlled proof in catalogue3");
+    assert.equal(library.version, 3, "Current authoring must retain controlled HTML video proof in catalogue3");
     assert.equal(library.entries.length, 1);
     const video = library.entries[0];
-    assert.equal(video.geometry?.source, "native-gstplay-controlled-renderer");
-    assert.equal(video.geometry?.nativeDisplayMetadata?.version, 2);
+    assert.equal(video.geometry?.source, "html-video-controlled-renderer");
+    assert.equal(video.geometry?.htmlVideoMetadata?.version, 1);
     expected.masterVersion = 3;
     expected.video = structuredClone(video);
     // Identity comes from the real import; never encode a guessed video ID.

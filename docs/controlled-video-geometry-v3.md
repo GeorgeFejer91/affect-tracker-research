@@ -1,16 +1,17 @@
-# Controlled native geometry: P1 successor contract
+# Controlled HTML Video Geometry: P1 Successor Contract
 
 Root schema freeze 02, 2026-09-12. P1-06/P1-07, Backend Verification.
-Native renderer configuration is controlled and read back, not independently
-observed pixel orientation. No playback qualification, source re-encoding,
-source-tag repair or filesystem permission is established by this contract.
+The active media path is the browser/WebView `HTMLVideoElement`. Planner save
+prepares researcher videos for that player with ffprobe/ffmpeg and binds the
+resulting element dimensions into the catalogue. No native player SDK, renderer
+sink, source-tag repair, or filesystem permission is established by this
+contract.
 
-## Exact native proof
+## Exact HTML Video Proof
 
-`affect-research-native-display-metadata-receipt`, version **2**, has exactly:
-`schema`, `version`, `encodedWidthPx`, `encodedHeightPx`, `pixelAspectRatio`,
-`sourceOrientation`, `snapshotWidthPx`, `snapshotHeightPx`,
-`snapshotPixelAspectRatio`, `snapshotInterpretation`, `renderer`.
+`affect-research-html-video-display-metadata-receipt`, version **1**, has
+exactly: `schema`, `version`, `videoWidthPx`, `videoHeightPx`,
+`pixelAspectRatio`, `sourceOrientation`.
 
 - Dimensions are integers 1–32768. Ratios have exactly `numerator` and
   `denominator`, coprime positive integers at most 65535.
@@ -19,22 +20,17 @@ source-tag repair or filesystem permission is established by this contract.
   Missing, malformed, unsupported/reflected/auto/custom or conflicting tags
   reject; a parser failure must never be relabelled absence. Two explicit tags
   must agree. Zero means an explicit identity only when status is explicit.
-- `snapshotInterpretation` is `pre-renderer-square-pixel` and
-  `snapshotPixelAspectRatio` is exactly 1/1. Its raw aspect must equal encoded
-  width × source PAR / encoded height. Already-rotated nonsquare caps reject.
-  Square-frame dimensions cannot prove rotation; this is a configured policy.
-- `renderer` has exactly `sinkFactory:"d3d11videosink"`,
-  `configuredRotationDegrees`, `readbackRotationDegrees`. Both rotations equal
-  the agreed explicit source rotation, or controlled zero when both are absent.
-  This last policy does not fabricate an explicit source tag.
-- Derive display dimensions by swapping raw snapshot width/height exactly once
-  for controlled 90/270 degrees, otherwise retaining them. No second rotation,
-  snapshot-orientation inference, sink substitution or ambient default.
+- `videoWidthPx` and `videoHeightPx` are the intrinsic dimensions surfaced to
+  the HTML video element after any Planner-side conversion. They are already
+  the dimensions the Runner will fit on screen; no renderer-local rotation or
+  sink substitution is part of the proof.
+- Planner-side conversion writes a deterministic `_converted.mp4` sibling only
+  when the source is not already HTML-compatible. Existing compatible converted
+  siblings are reused, so repeated saves do not create clutter.
 
-The native owner alone constructs this proof from the actual selected sink,
-set/readback and raw snapshot caps. Session/generation/grant/file/metadata-revision
-fences remain native receipt/lifecycle authority, not portable recipe entropy.
-The outer native decode receipt is separately version 2; its v1 remains strict.
+The HTML-video owner alone constructs this proof from the prepared workspace
+asset and the observed element metadata. Session/generation/grant/file fences
+remain runtime receipt authority, not portable recipe entropy.
 
 ## Catalogue and workspace
 
@@ -46,19 +42,19 @@ remain. Duplicate locations sharing content must agree on complete geometry.
 Only v3 additionally admits this exact nine-key geometry branch:
 
 ```text
-{status:"verified", source:"native-gstplay-controlled-renderer",
+{status:"verified", source:"html-video-controlled-renderer",
  displayWidthPx, displayHeightPx, displayAspect, rotationDegrees,
  pixelAspectRatio,
- metadataInterpretation:"controlled-renderer-and-pre-sink-square-pixel-snapshot",
- nativeDisplayMetadata:<exact receipt v2>}
+ metadataInterpretation:"html-video-element-intrinsic-dimensions",
+ htmlVideoMetadata:<exact receipt v1>}
 ```
 
-In this distinctly tagged branch rotation is controlled rotation and PAR is
-source PAR. All redundant values must equal independent derivation from the
-complete nested proof. `displayAspect` is the reduced display dimension ratio.
-The proof, including absent versus explicit identity, participates in the hash.
-Historical eight-key browser and explicit-native branches remain byte-identical
-alternatives. Their readers do not accept the new branch or added fields.
+In this distinctly tagged branch, all redundant values must equal independent
+derivation from the complete nested proof. `displayAspect` is the reduced HTML
+video display dimension ratio. The proof, including absent versus explicit
+identity, participates in the hash. Historical eight-key browser branches
+remain byte-identical alternatives. Their readers do not accept the new branch
+or added fields.
 
 Workspace `affect-research-workspace-contribution`, version **3**, retains
 `schema/version/study/workspaceLayout/videoCatalogue`, requires catalogue3 and
@@ -78,6 +74,6 @@ Runner owns supported intake and actual live media correspondence. These are not
 implemented or qualified merely by the P1 reader handoff.
 
 Required evidence: frozen old canonical hashes and rejection rules, new exact-key
-and malformed/conflict negatives, absent/explicit quarter-turn and PAR vectors,
+and malformed/conflict negatives, absent/explicit orientation and PAR vectors,
 proof-only hash changes, independent JS/Rust reencoding and geometry/P3 parity.
-Native sink lifecycle evidence and actual CLI import/rebind remain separate.
+HTML playback/import/rebind evidence remains separate from this static contract.

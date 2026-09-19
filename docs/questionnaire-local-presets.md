@@ -24,7 +24,7 @@ repository/public build. Root owns the source/permission amendment in `for-ai/70
 
 ## Native service (new module only)
 
-`src-tauri/src/research_local_questionnaire_presets.rs` provides:
+`native/src/research_local_questionnaire_presets.rs` provides:
 
 ```rust
 LocalQuestionnairePresetStore::new(app_data_root: PathBuf) -> ResearchResult<Self>
@@ -60,7 +60,7 @@ bound to the fixed SHA-256. No new unsafe boundary or dependency is introduced.
 
 ## JavaScript owner and composition contract
 
-`site/src/research/questionnaire-local-presets.js` exports the metadata registry,
+`experiment-planner/web/src/research/questionnaire-local-presets.js` exports the metadata registry,
 availability/merge helpers, verifier and factory:
 
 ```js
@@ -115,7 +115,7 @@ study must not depend on this global authoring library at runtime.
   warnings, plus unused existing error helpers in the standalone harness.
 
 Default native test command:
-`cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features --test research_local_questionnaire_presets`.
+`cargo test --manifest-path native/Cargo.toml --locked --no-default-features --test research_local_questionnaire_presets`.
 The actual-source test requires explicit `AFFECT_LOCAL_TAS_SOURCE` and filter
 `verified_external_german_tas_source_installs_and_reads_exactly -- --ignored --nocapture`.
 

@@ -31,7 +31,7 @@ from `bfc3746` is preserved; no feedback geometry or native timing was changed.
 
 ## Verification and limits
 
-`node --check runner/src/app.js` and `git diff --check` pass. The existing actual-app
+`node --check experiment-runner/src/app.js` and `git diff --check` pass. The existing actual-app
 master1 headless harness passes all five cases / 68 assertions. The new
 `scripts/qualification/runner-app-v2-ui.mjs` imports production `bootRunner`,
 loads the exact owner-generated engineering recipe, and exercises real browser

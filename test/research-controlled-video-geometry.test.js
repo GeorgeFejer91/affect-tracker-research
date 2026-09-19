@@ -1,14 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { deriveControlledVideoDisplayGeometry, validateNativeDisplayMetadataV2, validateControlledVideoDisplayGeometry } from "../site/src/research/video-display-controlled.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { deriveControlledVideoDisplayGeometry, validateHtmlVideoDisplayMetadataV1, validateControlledVideoDisplayGeometry,
+  HTML_VIDEO_DISPLAY_METADATA_SCHEMA } from "../experiment-planner/web/src/research/video-display-controlled.js";
 import { createVideoCatalogueContributionV3, validateVideoCatalogueContributionV3, validateVideoCatalogueContribution,
-  createSupportedVideoCatalogueProducer, validateVideoDisplayGeometry } from "../site/src/research/video-catalogue-contribution.js";
-import { createWorkspaceContributionV3, validateWorkspaceContributionV3, validateWorkspaceContribution } from "../site/src/research/workspace-contribution.js";
-import { createLocationVariantLibrary, createLocationVariantLibraryV3, validateVariantLibrary } from "../site/src/research/variant-library.js";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
-import { projectSupportedWorkspaceVideoDisplayGeometry, prepareSupportedWorkspaceContentRestore, verifySupportedWorkspaceRestoredVideoEntries } from "../site/src/research/workspace-contribution.js";
+  createSupportedVideoCatalogueProducer, validateVideoDisplayGeometry } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { createWorkspaceContributionV3, validateWorkspaceContributionV3, validateWorkspaceContribution } from "../experiment-planner/web/src/research/workspace-contribution.js";
+import { createLocationVariantLibrary, createLocationVariantLibraryV3, validateVariantLibrary } from "../experiment-planner/web/src/research/variant-library.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
+import { projectSupportedWorkspaceVideoDisplayGeometry, prepareSupportedWorkspaceContentRestore, verifySupportedWorkspaceRestoredVideoEntries } from "../experiment-planner/web/src/research/workspace-contribution.js";
 const old = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v2.json", import.meta.url), "utf8"));
 test("shared canonical vectors bind exact JS geometry and P1 bytes", async () => {
   const bytes = await readFile(new URL("./fixtures/controlled-video-geometry-v3.json", import.meta.url), "utf8"), fixture = JSON.parse(bytes);
@@ -32,34 +33,29 @@ test("actual P3 owner restores and confirms catalogue3 while P1 restore/rebind r
   assert.deepEqual(await verifySupportedWorkspaceRestoredVideoEntries(f.workspace, f.workspace.videoCatalogue.entries), f.workspace.videoCatalogue);
   editor.destroy();
 });
-export const proof = () => ({ schema: "affect-research-native-display-metadata-receipt", version: 2,
-  encodedWidthPx: 1920, encodedHeightPx: 1080, pixelAspectRatio: { numerator: 1, denominator: 1 },
+export const proof = () => ({ schema: HTML_VIDEO_DISPLAY_METADATA_SCHEMA, version: 1,
+  videoWidthPx: 1920, videoHeightPx: 1080, pixelAspectRatio: { numerator: 1, denominator: 1 },
   sourceOrientation: { stream: { status: "absent" }, media: { status: "absent" } },
-  snapshotWidthPx: 1920, snapshotHeightPx: 1080, snapshotPixelAspectRatio: { numerator: 1, denominator: 1 },
-  snapshotInterpretation: "pre-renderer-square-pixel",
-  renderer: { sinkFactory: "d3d11videosink", configuredRotationDegrees: 0, readbackRotationDegrees: 0 } });
+});
 test("absent source remains absent; configured quarter turns apply exactly once", () => {
   const absent = deriveControlledVideoDisplayGeometry(proof());
-  assert.equal(absent.rotationDegrees, 0); assert.deepEqual(absent.nativeDisplayMetadata.sourceOrientation.stream, { status: "absent" });
+  assert.equal(absent.rotationDegrees, 0); assert.deepEqual(absent.htmlVideoMetadata.sourceOrientation.stream, { status: "absent" });
   for (const rotation of [0, 90, 180, 270]) {
     const p = proof(); p.sourceOrientation.stream = { status: "explicit", rotationDegrees: rotation };
-    p.renderer.configuredRotationDegrees = rotation; p.renderer.readbackRotationDegrees = rotation;
+    if ([90, 270].includes(rotation)) [p.videoWidthPx, p.videoHeightPx] = [1080, 1920];
     const g = deriveControlledVideoDisplayGeometry(p);
     assert.deepEqual([g.displayWidthPx, g.displayHeightPx], [90, 270].includes(rotation) ? [1080, 1920] : [1920, 1080]);
     assert.deepEqual(validateControlledVideoDisplayGeometry(g), g);
     assert.throws(() => validateVideoDisplayGeometry(g));
   }
 });
-test("malformed, conflicting, unsupported, unacknowledged and pre-rotated evidence rejects", () => {
-  for (const change of [p => p.version = 1, p => p.extra = true, p => delete p.sourceOrientation.media,
+test("malformed, conflicting, unsupported and unacknowledged evidence rejects", () => {
+  for (const change of [p => p.version = 2, p => p.extra = true, p => delete p.sourceOrientation.media,
     p => p.sourceOrientation.stream = { status: "malformed" }, p => p.sourceOrientation.stream.rotationDegrees = 0,
     p => p.sourceOrientation.stream = { status: "explicit", rotationDegrees: 45 },
     p => { p.sourceOrientation.stream = { status: "explicit", rotationDegrees: 90 }; p.sourceOrientation.media = { status: "explicit", rotationDegrees: 0 }; },
-    p => p.renderer.sinkFactory = "autovideosink", p => p.renderer.readbackRotationDegrees = 90,
-    p => p.snapshotPixelAspectRatio = { numerator: 2, denominator: 2 },
-    p => p.encodedWidthPx = 32769, p => p.snapshotWidthPx = 1080,
-    p => { p.sourceOrientation.stream = { status: "explicit", rotationDegrees: 90 }; p.renderer.configuredRotationDegrees = 90; p.renderer.readbackRotationDegrees = 90; p.snapshotWidthPx = 1080; p.snapshotHeightPx = 1920; }]) {
-    const p = proof(); change(p); assert.throws(() => validateNativeDisplayMetadataV2(p));
+    p => p.videoWidthPx = 32769, p => p.pixelAspectRatio = { numerator: 2, denominator: 2 }]) {
+    const p = proof(); change(p); assert.throws(() => validateHtmlVideoDisplayMetadataV1(p));
   }
   const g = deriveControlledVideoDisplayGeometry(proof()); g.rotationDegrees = 180;
   assert.throws(() => validateControlledVideoDisplayGeometry(g));

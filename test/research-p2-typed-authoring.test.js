@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { typedOwner, op, guard } from "./fixtures/p2-typed-owner.js";
-import { loadDemographicsForm } from "../site/src/research/form-assets.js";
-import { compilePlannerQuestionnaireRoutesV2, validateQuestionnaireRecipeContributionV2, restoreQuestionnaireAuthoringV2 } from "../site/src/research/questionnaire-recipe-v2.js";
-import { validateQuestionnaireRecipeContribution } from "../site/src/research/questionnaire-recipe.js";
-import { questionnaireRoutingEdits } from "../site/src/research/questionnaire-routing-editor.js";
-import { editFormField } from "../site/src/research/form-sheet-view.js";
-import { formDraft } from "../site/src/research/form-sheet.js";
+import { loadDemographicsForm } from "../experiment-planner/web/src/research/form-assets.js";
+import { compilePlannerQuestionnaireRoutesV2, validateQuestionnaireRecipeContributionV2, restoreQuestionnaireAuthoringV2 } from "../experiment-planner/web/src/research/questionnaire-recipe-v2.js";
+import { validateQuestionnaireRecipeContribution } from "../experiment-planner/web/src/research/questionnaire-recipe.js";
+import { questionnaireRoutingEdits } from "../experiment-planner/web/src/research/questionnaire-routing-editor.js";
+import { editFormField } from "../experiment-planner/web/src/research/form-sheet-view.js";
+import { formDraft } from "../experiment-planner/web/src/research/form-sheet.js";
 test("shipped EN/DE bytes match frozen fixtures and unsupported languages reject", async () => {
   for (const language of ["en", "de"]) {
-    assert.deepEqual(await readFile(new URL(`../site/assets/questionnaires/demographics/${language}.json`, import.meta.url)), await readFile(new URL(`./fixtures/demographics-${language}-form-v1.canonical.json`, import.meta.url)));
+    assert.deepEqual(await readFile(new URL(`../experiment-planner/web/assets/questionnaires/demographics/${language}.json`, import.meta.url)), await readFile(new URL(`./fixtures/demographics-${language}-form-v1.canonical.json`, import.meta.url)));
     assert.equal((await loadDemographicsForm(language)).language, language);
   }
   await assert.rejects(loadDemographicsForm("fr"));

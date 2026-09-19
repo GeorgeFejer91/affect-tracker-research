@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canonicalJson } from "../site/src/research/canonical.js";
-import { InformationAssembler, inspectInformationStream } from "../runner/src/information-stream.js";
-import { inspectMasterStream } from "../runner/src/master-stream.js";
+import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
+import { InformationAssembler, inspectInformationStream } from "../experiment-runner/src/information-stream.js";
+import { inspectMasterStream } from "../experiment-runner/src/master-stream.js";
 import { frameRecords, informationFixture } from "./fixtures/runner-information-fixture.js";
 
 const change = (samples, index, fn) => { const copy = structuredClone(samples), frame = JSON.parse(copy[index].value); fn(frame); copy[index].value = canonicalJson(frame); return copy; };

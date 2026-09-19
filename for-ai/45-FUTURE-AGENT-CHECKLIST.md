@@ -1,159 +1,17 @@
-# Historical deferred issues and roadmap routing
+# Retired Future-Agent Checklist
 
-## Companion-program amendment — 2026-09-12
+This file no longer carries active requirements or duplicated deferred-issue
+text. Git history is the archive for the old Section 2 checklist and issue
+descriptions.
 
-The latest user decision requires separate **Experiment Planner** and
-**Experiment Runner** programs. Planner retains Flubber previews and generates
-one comprehensive JSON; Runner owns execution, video playback, LSL transport
-and recording of own plus selected external streams to XDF. Stream recording
-policy is Runner-owned session state, not a Planner recipe field.
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md) supersedes earlier
-single-executable wording and blanket Runner deferral in this historical text.
-Runner allocations use [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md); shared
-producer/consumer coverage uses [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Planner completion is independent; actual execution correspondence is the final
-development stage. Existing frozen contracts and qualification gates remain.
+Use current owners instead:
 
-The central capability checklist is now
-[`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md). The issue descriptions
-below preserve findings from the earlier Section 2 pass. They are not a second
-completion ledger or a perpetual Section 2-only allocation. Record current
-decisions and progress under the stable IDs below; add new capability items to
-the owning segment there and coordinate dependencies through the message board.
+- Planner capability/status: [60-SEGMENT-CATALOGUE.md](60-SEGMENT-CATALOGUE.md)
+- Runner allocation: [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md)
+- Planner/Runner compatibility: [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md)
+- Runner final validation: [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md)
+- Coordination and live handoff notes: [55-AGENT-MESSAGE-BOARD.md](55-AGENT-MESSAGE-BOARD.md)
 
-| Historical topic | Central owner / capability IDs |
-| --- | --- |
-| Designer roles, UI authoring, final export | P7-03, P7-05–P7-09 |
-| Video library and manual/version plan | P1-03–P1-07, P3-02–P3-10 |
-| Runnable feedback design | P5-04–P5-08, P4-02–P4-07 |
-| Draft persistence and editable reopen | P2-04, P1-07, P7-03–P7-04, Q13 |
-| Label repetition, option codes, missing answers | P2-06–P2-08, Q09 |
-| Participant-language UI and demographics | P2 language contribution; R1-03 downstream behavior |
-| Runner scoring/recording and LSL ownership | P3-06–P3-07, R1-04–R1-06, Q07/Q09 |
-| Remaining physical/accessibility qualification | R1-07 and `30-TESTING-AND-RELEASE.md` |
-
-The bullets below are historical issue descriptions. Their current resolution
-is determined by the linked central capability and evidence, not by editing
-another duplicate checkbox here.
-
-These notes record product gaps and questions discovered while simplifying
-Designer Section 2 on 2026-09-11. The researcher explicitly excluded the
-Experiment Runner and other sections from that historical pass. Descriptions
-below are not implementation permission, passing evidence or amendments to
-historical schemas. Read the charter amendment and central catalogue before
-the next bounded pass; keep capability status in `60-SEGMENT-CATALOGUE.md` and
-attach concrete receipts in `40-ROADMAP.md` when resolving an item.
-
-## Designer completion and other sections
-
-- **Make the two applet roles clear in navigation and completion.** The
-  target is Designer UI → one finished unified experiment JSON → Runner
-  acquisition/monitoring. Review the current load/import/preflight/Start-heavy
-  flow so creating a study does not depend on externally authored
-  `experiment.json` or an existing package. Provide an explicit final design
-  output action and a distinct finished-package intake in the Runner without
-  adding a third mode or exposing raw JSON editing.
-- **Connect authored variants to the final recipe and later Runner.** P3's
-  successor component preserves exact named-ISI sequences, variant versions and
-  occurrence identities. P1 owns the confirmed video catalogue; P7 owns final
-  recipe composition. The user's accepted Q06 leaves all participant allocation
-  policy to Runner. Preserve historical schedule readers and no-randomization
-  semantics; do not claim old records carry successor versions. Runner output,
-  retries and recovery must explicitly retain the selected variant identity.
-- **Decide which feedback-design controls become runnable.** The current
-  Flubber/Grid/procedural-Face selector, halo-size draft, and continuous/
-  stepwise timing/hold controls are deliberately preview-only and absent from
-  the package. A future pass must define the desired product behavior, version
-  the owning contracts, provide browser/Rust parity, and verify persistence,
-  hashes, input/timing, rendering, recovery, and accessibility before claiming
-  the saved experiment uses those choices.
-- **Finish the requested floating Live Preview in a named native pass.**
-  The 2026-09-11 request includes a checkbox beside the three-way selector for
-  a transparent, draggable, always-on-top Windows projection with a boundary
-  visible only during selection. UI palette/halo work does not implement it.
-  Approve the narrow charter/window authority change; audit all app command
-  callers, fixed-label/URL lifecycle and projection-only state before adding a
-  webview. Do not restore historical Playground PiP or promise an OS overlay
-  from static Chrome/Edge. Saved corner placement, gradient controls and
-  rectangular-grid/hold behavior belong to the separate runnable-controls
-  version decision above, not a hidden local-storage workaround.
-- **Review authoring-draft persistence and save/reopen semantics.** Confirm
-  what happens to unsaved Section 2 edits when a researcher closes/reloads or
-  loads another design. Keep invalid/unsaved variants visibly pending and block
-  final package creation. Never reuse a stale accepted definition after edits;
-  count an asset as saved only after the owning workspace operation returns a
-  validated receipt. Do not treat transient editor state as runtime authority.
-
-## Questionnaires, language, and future Runner work
-
-- **Review source-specific MAIA-2 scoring before claiming bilingual scoring
-  equivalence (P2-05/P2-06, Q09).** The supplied English asset has 37 items,
-  forward 0–5 codes and no subscale annotations; the German source has 37
-  items, supplied reverse codes and eight subscale annotations. Do not silently
-  modify either source to make them look equivalent. Any additional authorized
-  instrument version or computed scoring policy needs its own explicit decision,
-  provenance and tests. TAS remains unavailable as a ready bilingual preset.
-- **Integrate the P2 presentation companion, then qualify its future Runner
-  rendering separately.** The 2026-09-12 P2 owner pass adds an explicit versioned
-  contribution preserving label repetition 1/5/10 with exact definition hashes,
-  strict JavaScript/Rust validation and guarded editable restore. See
-  `docs/planner-p2-questionnaire-recipe.md`; P7 owns final master embedding.
-  Frozen v1 still has no presentation field and must not silently drop choices.
-  Future Runner work must retain question/option associations, keyboard operation,
-  focus, reflow, and non-color meaning, including an early label-header restart
-  when consecutive items have different answer labels. Runner qualification is
-  deferred and does not block Planner-owned serialization.
-- **Review optional-item output semantics.** The current single-choice
-  answer validator omits unanswered optional items from response rows rather
-  than writing a blank row. Decide whether analysis needs explicit missing-
-  response rows, and document/version any changed output, completion, draft,
-  recovery, and browser/Rust semantics. Do not alter this during Section 2
-  authoring work.
-- **Keep option count distinct from response cardinality.** The existing
-  contract accepts one option ID per item. Numeric coding uses the existing
-  nullable `scoreValue`, while `label` is participant-visible and `optionId`
-  is stable identity. If multi-select or a configurable number of permitted
-  selections is later wanted, define a separate versioned answer/record
-  contract; never reinterpret the current scalar answer or infer scoring.
-- **Qualify custom coding in the participant-to-output workflow.** On the
-  eventual Runner pass, verify that a choice displays its authored label and
-  writes the exact frozen option ID and `scoreValue`, including reverse-coded
-  values, null scoring, required and optional items, interrupted drafts, and
-  CSV/TSV exports. Section 2 authoring tests alone are not this end-to-end
-  acquisition evidence.
-- **Localize the fixed demographics and participant instructions.** Exact
-  questionnaire coverage does not establish language coverage for names/age/
-  gender/handedness prompts, validation messages, navigation, or other
-  participant UI. Preserve transient raw-name/self-description handling and
-  the closed persisted demographics contract; no translation should silently
-  change response meanings.
-- **Complete TAS-20 English/German preload provenance if appropriate.**
-  The English researcher-supplied fixture is retained in source but excluded
-  from distributions; no German asset is bundled. Obtain/record applicable
-  reuse permission and exact authorized language assets before enabling
-  preloads. Preserve wording, coding, attribution, and source receipts; do not
-  infer TAS scoring, subscales, diagnostic thresholds, or permission from
-  source-tree presence. MAIA-2 remains the currently authorized EN/DE preload.
-
-## Acquisition outputs and qualification
-
-- **Clarify “LSL file with markers” before implementation.** Current Windows
-  LSL support emits a regular state stream and an irregular semantic marker
-  stream; it is not an in-app LSL/XDF file writer. A future Runner pass should
-  document independent LabRecorder/XDF capture versus any proposed owned
-  recording feature, define file ownership/paths, and qualify the chosen
-  receiver. Preserve the existing prohibition on questionnaire prompts/answers
-  in marker payloads. CSV/TSV response/rating tables and local event/manifest
-  evidence remain separate outputs.
-- **Finish the existing native-media and installed-workflow gates.** The
-  GstPlay actor and two approved FFI adapters are present, but safe installed
-  pre-main DLL loading, redistribution/corresponding-source closure, supported
-  codec/container evidence, DPI/audio/lifecycle/recovery tests, and visible
-  long-run qualification remain open. Keep native Start fail-closed and
-  interface-only artifacts unqualified until roadmap gates pass.
-- **Finish acquisition qualification on each active target.** Use exact
-  Windows Tauri, current desktop Chrome, and current desktop Edge candidates
-  for full workflow, independent-instance decoding/reproduction, physical
-  input, timing, durability/adversity, accessibility, and independent LSL
-  evidence as applicable. No Section 2 UI/build/test receipt closes those
-  existing gates.
+Do not add new checklist rows here. Add current work to the owning map above,
+and let Git history retain superseded options, rejected alternatives and old
+fallback architectures.

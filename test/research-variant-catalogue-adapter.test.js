@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createVideoCatalogueContributionV1 } from "../site/src/research/video-catalogue-contribution.js";
-import { projectLegacyVariantCatalogue, projectSavedVariantCatalogue, projectVariantCatalogue, validateStimulusVariantContribution } from "../site/src/research/variant-catalogue-adapter.js";
-import { addIsiDurations, compileVariantTimeline, createVariantDocument, createVariantDraft, pasteVariantTable } from "../site/src/research/variant-design.js";
-import { createPlannedMarkerProfile } from "../site/src/research/planned-marker-contract.js";
-import { createStimulusOrderEditor } from "../site/src/research/stimulus-order-editor.js";
+import { createVideoCatalogueContributionV1 } from "../experiment-planner/web/src/research/video-catalogue-contribution.js";
+import { projectLegacyVariantCatalogue, projectSavedVariantCatalogue, projectVariantCatalogue, validateStimulusVariantContribution } from "../experiment-planner/web/src/research/variant-catalogue-adapter.js";
+import { addIsiDurations, compileVariantTimeline, createVariantDocument, createVariantDraft, pasteVariantTable } from "../experiment-planner/web/src/research/variant-design.js";
+import { createPlannedMarkerProfile } from "../experiment-planner/web/src/research/planned-marker-contract.js";
+import { createStimulusOrderEditor } from "../experiment-planner/web/src/research/stimulus-order-editor.js";
 
 const catalogue = JSON.parse(await readFile(new URL("./fixtures/research-video-catalogue-contribution-v1.json", import.meta.url), "utf8"));
 const legacySource = { revision: 11, enabled: true, pending: false, contribution: catalogue, dependencyRevisions: [] };

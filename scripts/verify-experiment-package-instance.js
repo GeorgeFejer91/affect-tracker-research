@@ -53,14 +53,14 @@ Object.defineProperty(globalThis, "crypto", {
 });
 
 const { canonicalJson, canonicalSha256, sha256Hex } = await import(
-  "../site/src/research/canonical.js"
+  "../experiment-planner/web/src/research/canonical.js"
 );
 const {
   compileExperimentPackageSelectionV1,
   enumerateLanguageRoutesV1,
   parseExperimentPackageV1,
   serializeExperimentPackageV1,
-} = await import("../site/src/research/experiment-package.js");
+} = await import("../experiment-planner/web/src/research/experiment-package.js");
 
 const canonicalPackageRootPath = await realpath(packageRootPath);
 const packagePath = resolve(canonicalPackageRootPath, "experiment.package.json");

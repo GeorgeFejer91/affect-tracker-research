@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createPlannerContributionRegistry } from "../site/src/research/planner-contributions.js";
-import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "../site/src/research/setup-confirmation-flow.js";
+import { createPlannerContributionRegistry } from "../experiment-planner/web/src/research/planner-contributions.js";
+import { createSetupConfirmationFlow, SETUP_CONFIRMATION_ORDER } from "../experiment-planner/web/src/research/setup-confirmation-flow.js";
 
 function fixture() {
   const registry = createPlannerContributionRegistry();

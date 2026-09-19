@@ -10,7 +10,7 @@ test("the non-shipping visual fixture projects every protocol UI state through r
     readFile(new URL("scripts/qualification/research-ui-visual-frame.html", root), "utf8"),
     readFile(new URL("scripts/qualification/research-ui-visual.js", root), "utf8"),
     readFile(new URL("scripts/build-research-pages.js", root), "utf8"),
-    readFile(new URL("desktop/vite.config.js", root), "utf8"),
+    readFile(new URL("experiment-planner/desktop/vite.config.js", root), "utf8"),
   ]);
 
   assert.match(html, /data-research-surface="browser"/u);

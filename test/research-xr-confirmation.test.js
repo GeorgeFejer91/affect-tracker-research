@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createXrLayoutEditor } from "../site/src/research/xr-layout-editor.js";
-import { createXrLayoutAuthoring } from "../site/src/research/xr-layout-authoring.js";
-import { createDefaultXrLayoutProfile } from "../site/src/research/xr-layout.js";
-import { createDefaultResearchSettings } from "../site/src/research/contracts.js";
-import { validatePlannerContributionSnapshot } from "../site/src/research/planner-contributions.js";
+import { createXrLayoutEditor } from "../experiment-planner/web/src/research/xr-layout-editor.js";
+import { createXrLayoutAuthoring } from "../experiment-planner/web/src/research/xr-layout-authoring.js";
+import { createDefaultXrLayoutProfile } from "../experiment-planner/web/src/research/xr-layout.js";
+import { createDefaultResearchSettings } from "../experiment-planner/web/src/research/contracts.js";
+import { validatePlannerContributionSnapshot } from "../experiment-planner/web/src/research/planner-contributions.js";
 
 const fixture = JSON.parse(await readFile(new URL("fixtures/xr-feedback-envelope-v1.json", import.meta.url)));
 const snap = (contribution, revision) => ({ enabled: true, revision, pending: false, contribution, dependencyRevisions: [] });
