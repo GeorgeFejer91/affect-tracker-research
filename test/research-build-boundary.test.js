@@ -39,11 +39,11 @@ test("Windows desktop builds do not carry the removed native player stack protoc
     const actionReferences = [...workflow.matchAll(/^\s*uses:\s*[^@\s#]+@([^\s#]+)/gmu)];
     assert.ok(actionReferences.length >= 5, "expected the complete desktop action set");
     for (const [, reference] of actionReferences) assert.match(reference, /^[0-9a-f]{40}$/u);
-    assert.match(workflow, /cargo test --locked --manifest-path native\/Cargo\.toml --no-default-features/u);
+    assert.match(workflow, /scripts\/qualification\/native-tests\.ps1 -FeatureSet no-default-features/u);
     assert.doesNotMatch(workflow, /libvlc|vlc-3\.0\.23/iu);
     assert.doesNotMatch(workflow, retiredRuntimeTerms);
   }
-  assert.match(checksWorkflow, /cargo test --locked --manifest-path native\/Cargo\.toml --all-features/u);
+  assert.match(checksWorkflow, /scripts\/qualification\/native-tests\.ps1 -FeatureSet all-features/u);
   assert.doesNotMatch(packageWorkflow, /--all-features/u);
   assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);

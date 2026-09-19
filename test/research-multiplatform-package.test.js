@@ -63,6 +63,7 @@ test("tests and no-default-feature Rust gates precede the unsigned package build
     "pnpm test",
     "pnpm desktop:build",
     "cargo check --locked --manifest-path native/Cargo.toml --no-default-features",
+    "scripts/qualification/native-tests.ps1 -FeatureSet no-default-features",
     "cargo test --locked --manifest-path native/Cargo.toml --no-default-features",
   ]) {
     const prerequisiteIndex = workflow.indexOf(prerequisite);

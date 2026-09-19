@@ -101,11 +101,16 @@ pnpm runner:check
 cargo fmt --manifest-path native/Cargo.toml --all -- --check
 cargo check --locked --manifest-path native/Cargo.toml --all-features
 cargo check --locked --manifest-path native/Cargo.toml --no-default-features
-cargo test --locked --manifest-path native/Cargo.toml --all-features
-cargo test --locked --manifest-path native/Cargo.toml --no-default-features
+./scripts/qualification/native-tests.ps1 -FeatureSet all-features
+./scripts/qualification/native-tests.ps1 -FeatureSet no-default-features
 cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --all-features -- -D warnings
 cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --no-default-features -- -D warnings
 ```
+
+The native test wrapper temporarily adds the checked-in Common Controls v6
+activation manifest to each generated test executable, runs it serially, then
+restores the exact Cargo-built bytes. It does not alter application or release
+binaries.
 
 Run one cargo command at a time. Two concurrent invocations on `native/target`,
 or a rustc killed by memory pressure, leave truncated artifacts that surface
