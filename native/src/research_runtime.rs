@@ -7266,14 +7266,15 @@ mod tests {
     }
 
     #[test]
-    fn zero_prefix_recovery_first_event_retains_playback_provenance() {
+    fn removed_native_playback_is_rejected_and_recovery_retains_webview_provenance() {
         assert_eq!(
             playback_provenance_detail(
                 PlaybackMode::LegacyNativePlayer,
                 PlaybackQualification::QualifiedNative,
             )
-            .unwrap(),
-            "playback-native-libvlc-qualified"
+            .unwrap_err()
+            .code,
+            "invalid_research_contract"
         );
         let fixture = PersistenceFixture::new("zero-prefix-playback-provenance");
         let session_dir = fixture.session_dir.clone();
@@ -7839,7 +7840,7 @@ mod tests {
             validate_manifest_against_journal(manifest, &changed_playback)
                 .unwrap_err()
                 .code,
-            "forbidden_operation"
+            "invalid_research_contract"
         );
 
         let mut changed_terminal = fixture.files.journal.clone();

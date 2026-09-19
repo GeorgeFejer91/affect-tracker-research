@@ -32,11 +32,7 @@ mod tests {
     }
 
     #[test]
-    fn mixed_native_catalogue_requires_each_exact_attestation_version() {
-        use crate::research_native_media::NativeMediaDecodeReceiptV1;
-        use crate::research_video_geometry::{
-            NativeDisplayMetadataReceiptV1, NativeVideoOrientationV1, VideoRatioV1,
-        };
+    fn mixed_catalogue_requires_current_html_attestation_for_each_geometry_version() {
         let base = std::env::temp_dir().join(format!("affect-p1-mixed-{}", Uuid::new_v4()));
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
         let root = base.join("workspace");
@@ -89,37 +85,6 @@ mod tests {
         };
         receipt2.video_width = receipt2.display_metadata.video_width_px;
         receipt2.video_height = receipt2.display_metadata.video_height_px;
-        let receipt1 = NativeMediaDecodeReceiptV1 {
-            schema: receipt2.schema,
-            version: 1,
-            session_id: Uuid::new_v4().to_string(),
-            generation: 2,
-            media_grant_id: Uuid::new_v4().to_string(),
-            workspace_file_id: historical.workspace_file_id.clone(),
-            duration_ms: 1000.0,
-            video_width: receipt2.video_width,
-            video_height: receipt2.video_height,
-            audio_stream_count: 1,
-            decoded_snapshot_count: 3,
-            decoded_positions_ms: receipt2.decoded_positions_ms.clone(),
-            display_metadata: NativeDisplayMetadataReceiptV1 {
-                schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
-                version: 1,
-                encoded_width_px: receipt2.video_width,
-                encoded_height_px: receipt2.video_height,
-                pixel_aspect_ratio: VideoRatioV1 {
-                    numerator: 1,
-                    denominator: 1,
-                },
-                orientation: NativeVideoOrientationV1::Identity,
-                snapshot_width_px: receipt2.video_width,
-                snapshot_height_px: receipt2.video_height,
-                snapshot_pixel_aspect_ratio: VideoRatioV1 {
-                    numerator: 1,
-                    denominator: 1,
-                },
-            },
-        };
         let new = service
             .attest_native_decode_v2(
                 &workspace_id,
@@ -129,14 +94,31 @@ mod tests {
                 &receipt2,
             )
             .unwrap();
-        let old = service
-            .attest_native_decode(
+        let grant = service
+            .issue_media_url(
                 &workspace_id,
+                &historical.workspace_file_id,
                 &historical.sha256,
                 historical.byte_length,
                 &historical.mime_type,
-                &receipt1,
             )
+            .unwrap();
+        let old = service
+            .attest_workspace_decode(DecodeAttestationRequest {
+                attestation_kind: DecodeAttestationKind::AttestRepresentativeFramesV1,
+                decode_backend: DecodeBackend::WebviewVideoFrameCallback,
+                workspace_id: workspace_id.clone(),
+                media_grant_id: grant.media_grant_id,
+                workspace_file_id: historical.workspace_file_id.clone(),
+                sha256: historical.sha256.clone(),
+                byte_length: historical.byte_length,
+                mime_type: historical.mime_type.clone(),
+                observed_duration_ms: Some(1_000.0),
+                video_width: Some(receipt2.video_width),
+                video_height: Some(receipt2.video_height),
+                muted_playback_ms: Some(100.0),
+                decoded_positions_ms: receipt2.decoded_positions_ms.clone(),
+            })
             .unwrap();
         let entry = |item: &ScannedStimulusSummary, geometry: serde_json::Value| {
             serde_json::json!({
@@ -509,11 +491,10 @@ impl WorkspaceService {
                     VideoDisplayGeometryV3::Controlled(validate_receipt(receipt)?)
                 }
                 VideoDisplayGeometryV3::Historical(_) => {
-                    if candidate.decode_attestation
-                        != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+                    if candidate.decode_attestation != Some(DecodeEvidence::RepresentativeFramesV1)
                     {
                         return Err(CommandError::forbidden(
-                            "Historical geometry has no exact historical decode proof.",
+                            "Historical geometry has no current HTML video proof.",
                         ));
                     }
                     let geometry = candidate.display_geometry.as_ref().ok_or_else(|| {

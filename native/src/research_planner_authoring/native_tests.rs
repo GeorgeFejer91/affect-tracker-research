@@ -473,10 +473,9 @@ fn large_recipe_source_reaches_native_validation_without_transport_rejection() {
     let command = f.command("saveRecipe", json!({"directory":f.root}));
     let forward = f.dispatch(&command);
     let request = f.native(&command,json!({"type":"writeRecipe","grantId":argument(&forward,"directory"),"sourceText":"\n".repeat(17 * 1024 * 1024)}));
-    assert_eq!(
-        error(f.broker.native_effect(&f.workspace, request)),
-        "invalid_research_contract"
-    );
+    let result = f.broker.native_effect(&f.workspace, request).unwrap();
+    assert_eq!(result.error.unwrap().code, "invalid_research_contract");
+    assert_eq!(result.effect["outcome"], "notPublished");
     assert!(f
         .broker
         .lock()

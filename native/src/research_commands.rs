@@ -249,9 +249,8 @@ mod catalogue_export_tests {
         export::{catalogue_bytes, LibraryFormat},
         location_variants::LocationLibrary,
     };
-    use crate::research_video_geometry::{
-        NativeDisplayMetadataReceiptV1, NativeVideoOrientationV1, VideoRatioV1,
-        NATIVE_DISPLAY_METADATA_SCHEMA,
+    use crate::research_workspace::{
+        DecodeAttestationKind, DecodeAttestationRequest, DecodeBackend,
     };
     use std::cell::Cell;
     use std::path::PathBuf;
@@ -280,46 +279,31 @@ mod catalogue_export_tests {
             fs::write(&video, b"synthetic catalogue export media").unwrap();
             let scan = service.rescan_planner_videos(&id).unwrap();
             let item = &scan.stimuli[0];
-            // This is a test-only software attestation, not decoded-media or
-            // installed player evidence. Production receipts stay P1-owned.
-            let summary = service
-                .attest_native_decode(
+            let grant = service
+                .issue_media_url(
                     &id,
+                    &item.workspace_file_id,
                     &item.sha256,
                     item.byte_length,
                     &item.mime_type,
-                    &crate::research_native_media::NativeMediaDecodeReceiptV1 {
-                        schema: "affect-research-native-media-decode-receipt",
-                        version: 1,
-                        session_id: Uuid::new_v4().to_string(),
-                        generation: 1,
-                        media_grant_id: Uuid::new_v4().to_string(),
-                        workspace_file_id: item.workspace_file_id.clone(),
-                        duration_ms: 1000.0,
-                        video_width: 1920,
-                        video_height: 1080,
-                        audio_stream_count: 1,
-                        decoded_positions_ms: vec![100.0, 500.0, 900.0],
-                        decoded_snapshot_count: 3,
-                        display_metadata: NativeDisplayMetadataReceiptV1 {
-                            schema: NATIVE_DISPLAY_METADATA_SCHEMA,
-                            version: 1,
-                            encoded_width_px: 1920,
-                            encoded_height_px: 1080,
-                            pixel_aspect_ratio: VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                            orientation: NativeVideoOrientationV1::Identity,
-                            snapshot_width_px: 1920,
-                            snapshot_height_px: 1080,
-                            snapshot_pixel_aspect_ratio: VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                        },
-                    },
                 )
+                .unwrap();
+            let summary = service
+                .attest_workspace_decode(DecodeAttestationRequest {
+                    attestation_kind: DecodeAttestationKind::AttestRepresentativeFramesV1,
+                    decode_backend: DecodeBackend::WebviewVideoFrameCallback,
+                    workspace_id: id.clone(),
+                    media_grant_id: grant.media_grant_id,
+                    workspace_file_id: item.workspace_file_id.clone(),
+                    sha256: item.sha256.clone(),
+                    byte_length: item.byte_length,
+                    mime_type: item.mime_type.clone(),
+                    observed_duration_ms: Some(1_000.0),
+                    video_width: Some(1_920),
+                    video_height: Some(1_080),
+                    muted_playback_ms: Some(100.0),
+                    decoded_positions_ms: vec![100.0, 500.0, 900.0],
+                })
                 .unwrap();
             let source = summary.source.as_ref().unwrap();
             let mut catalogue = serde_json::json!({"schema":"affect-research-video-catalogue-contribution","version":2,"revision":1,

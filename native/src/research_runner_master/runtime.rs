@@ -906,18 +906,20 @@ mod viewport_projection_tests {
     #[test]
     fn native_viewport_uses_authored_reference_on_exact_target() {
         let prepared = prepared();
+        let reference =
+            css_box(&prepared.plan.selected["layout"]["geometry"]["reference"]).unwrap();
         let projection = native_viewport_projection(&prepared, (1920, 1080, 1.0)).unwrap();
         assert_eq!(projection.mode, "authored");
         assert!(projection.viewport_matches);
-        near(projection.reference.left_css_px, 528.0);
-        near(projection.reference.top_css_px, 81.0);
-        near(projection.reference.width_css_px, 864.0);
-        near(projection.reference.height_css_px, 486.0);
+        near(projection.reference.left_css_px, reference.x);
+        near(projection.reference.top_css_px, reference.y);
+        near(projection.reference.width_css_px, reference.width);
+        near(projection.reference.height_css_px, reference.height);
         let viewport = native_viewport(&prepared, (1920, 1080, 1.0)).unwrap();
-        assert_eq!(viewport.left_px, 528);
-        assert_eq!(viewport.top_px, 81);
-        assert_eq!(viewport.width_px, 864);
-        assert_eq!(viewport.height_px, 486);
+        assert_eq!(viewport.left_px, reference.x.round() as i32);
+        assert_eq!(viewport.top_px, reference.y.round() as i32);
+        assert_eq!(viewport.width_px, reference.width.round() as i32);
+        assert_eq!(viewport.height_px, reference.height.round() as i32);
     }
 
     #[test]
@@ -927,15 +929,44 @@ mod viewport_projection_tests {
         assert_eq!(projection.mode, "centered-fallback");
         assert!(!projection.viewport_matches);
         near(projection.scale, 0.8);
-        near(projection.reference.left_css_px, 422.4);
-        near(projection.reference.top_css_px, 227.88);
-        near(projection.reference.width_css_px, 691.2);
-        near(projection.reference.height_css_px, 388.8);
+        let geometry = &prepared.plan.selected["layout"]["geometry"];
+        let reference = css_box(&geometry["reference"]).unwrap();
+        let feedback = css_box(&geometry["feedback"]).unwrap();
+        let gap = intended_vertical_gap(reference, feedback, geometry["gap"].as_f64().unwrap());
+        let basis_height = reference.height + gap + feedback.height;
+        near(
+            projection.reference.left_css_px,
+            (1536.0 - reference.width * projection.scale) / 2.0,
+        );
+        near(
+            projection.reference.top_css_px,
+            (864.0 - basis_height * projection.scale) / 2.0,
+        );
+        near(
+            projection.reference.width_css_px,
+            reference.width * projection.scale,
+        );
+        near(
+            projection.reference.height_css_px,
+            reference.height * projection.scale,
+        );
         let viewport = native_viewport(&prepared, (1536, 864, 1.0)).unwrap();
-        assert_eq!(viewport.left_px, 422);
-        assert_eq!(viewport.top_px, 228);
-        assert_eq!(viewport.width_px, 691);
-        assert_eq!(viewport.height_px, 389);
+        assert_eq!(
+            viewport.left_px,
+            projection.reference.left_css_px.round() as i32
+        );
+        assert_eq!(
+            viewport.top_px,
+            projection.reference.top_css_px.round() as i32
+        );
+        assert_eq!(
+            viewport.width_px,
+            projection.reference.width_css_px.round() as i32
+        );
+        assert_eq!(
+            viewport.height_px,
+            projection.reference.height_css_px.round() as i32
+        );
     }
 }
 

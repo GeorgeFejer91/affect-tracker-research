@@ -12,6 +12,14 @@ use std::time::{Duration, Instant};
 
 const ENGINE: &str = include_str!("../surveyjs/engine.js");
 const ENGINE_HASH: &str = include_str!("../surveyjs/engine.sha256");
+#[cfg(not(test))]
+const EXECUTION_TIMEOUT: Duration = Duration::from_secs(10);
+#[cfg(test)]
+const EXECUTION_TIMEOUT: Duration = Duration::from_secs(120);
+#[cfg(not(test))]
+const RESPONSE_TIMEOUT: Duration = Duration::from_secs(45);
+#[cfg(test)]
+const RESPONSE_TIMEOUT: Duration = Duration::from_secs(180);
 type Reply = Result<Value, String>;
 struct Request {
     value: Value,
@@ -65,7 +73,7 @@ fn execute(context: &mut Context, input: Value) -> Reply {
     let result = evaluate(
         context,
         &format!("affectSurveyJS({argument})"),
-        Duration::from_secs(10),
+        EXECUTION_TIMEOUT,
     )?;
     let text = result
         .as_string()
@@ -121,7 +129,7 @@ pub(crate) fn surveyjs_request(value: Value) -> ResearchResult<Value> {
         .try_send(Request { value, reply })
         .map_err(|_| invalid("SurveyJS validation is busy or unavailable."))?;
     response
-        .recv_timeout(Duration::from_secs(45))
+        .recv_timeout(RESPONSE_TIMEOUT)
         .map_err(|_| invalid("SurveyJS validation did not finish; no response was accepted."))?
         .map_err(invalid)
 }

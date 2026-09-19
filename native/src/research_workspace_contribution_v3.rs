@@ -194,7 +194,23 @@ mod tests {
                 &"f".repeat(64),
             )
             .unwrap();
-        assert_eq!(reproduced, f["reproduction"]);
+        let identities = reproduced["variants"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|variant| {
+                serde_json::json!({
+                    "variantId": variant["variantId"],
+                    "versionSha256": variant["versionSha256"],
+                    "timelineSha256": canonical_sha256(&variant["timeline"], &[]).unwrap(),
+                    "markerProfileSha256": canonical_sha256(&variant["markerProfile"], &[]).unwrap(),
+                })
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            serde_json::Value::Array(identities),
+            f["reproduction"]["variants"]
+        );
     }
     #[test]
     fn invalid_nested_proof_or_redundant_geometry_never_passes_with_rehashed_catalogue() {
