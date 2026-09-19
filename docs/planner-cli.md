@@ -1,12 +1,12 @@
 # Planner CLI authoring extension
 
 The researcher has now activated the complete CLI/UI/Runner test goal in
-[69](69-CLI-RUNNER-END-TO-END-GOAL.md). Its explicit execution allocation
+[65-RUNNER-SEGMENTS.md](../for-ai/65-RUNNER-SEGMENTS.md). Its explicit execution allocation
 supersedes earlier Runner deferral for that test, without weakening claim gates.
 
 ## User amendment — 2026-09-12
 
-After completion of the baseline Planner in [67](67-PLANNER-COMPLETION-GOAL.md),
+After completion of the baseline Planner in Git history,
 the researcher requested CLI access to every user setting and a real example
 experiment. The subsequent clarification defines the first workflow: load a
 saved JSON recipe, change settings, and export a new file automatically named
@@ -15,10 +15,10 @@ supersedes older blanket no-CLI wording. The baseline notes below record its
 initial allocation. The production 55-step mock later passed, as recorded in 69;
 current SurveyJS and Runner coverage must be assessed separately under 66/72.
 
-Capability status remains in [60](60-SEGMENT-CATALOGUE.md), CLI-P1 through
+Capability status remains in [60](../for-ai/60-SEGMENT-CATALOGUE.md), CLI-P1 through
 CLI-P7 and CLI-SHARED. This file holds the scope, example and evidence ledger.
 The maintained command library and About-page documentation requirement are in
-[71](71-CLI-LIBRARY.md); every future command change must update that reference
+[the CLI library reference](../docs/planner-cli-library.md); every future command change must update that reference
 and its public source-derived catalogue.
 
 ## Scope and authority
@@ -95,7 +95,7 @@ content is absent. On 2026-09-12 the researcher explicitly authorized use of
 the retained English TAS-20 for this local experiment and requested an online
 German source. This resolves the English authorization question for the mock;
 it does not change public redistribution flags. The German source and import
-verification are tracked in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+verification are tracked in [65-RUNNER-SEGMENTS.md](../for-ai/65-RUNNER-SEGMENTS.md).
 Do not invent translations,
 substitute blank items, alter supplied coding or call an English-only fixture
 the requested bilingual experiment. Preserve source attribution and codes;

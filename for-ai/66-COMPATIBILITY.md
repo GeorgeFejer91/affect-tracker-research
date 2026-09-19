@@ -8,17 +8,17 @@ needed.
 ## Current amendment routing
 
 Fresh Planner saves use the master5 questionnaire-asset boundary in
-[the charter](15-RESEARCH-V1-CHARTER.md#questionnaire-asset-amendment--2026-09-13)
+[the product authority](10-PRODUCT.md)
 and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
 manifest contract, P2 owns authored SurveyJS content, and R1 owns Runner
 intake/evidence seams. This compatibility map records supported generations and
 consumer gaps rather than duplicating the full amendment text.
 
-File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13):
+File-size policy follows the [product authority](10-PRODUCT.md):
 arbitrary whole-file ceilings are no longer requirements. Historical implemented
 limits do not instruct agents to retain or reinstate them.
 
-Current-canonical versioning follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#current-canonical-versioning-amendment--2026-09-13).
+Current-canonical versioning follows the [product authority](10-PRODUCT.md).
 The historical master table below preserves external JSON compatibility; it is
 not an instruction to add new local draft/document generations when Git history
 is enough.
@@ -137,5 +137,5 @@ No actual native session is claimed.
 
 Native playback qualification, actual geometry/ISI observations, device testing
 and independent actual-session XDF remain open under
-[30](30-TESTING-AND-RELEASE.md) and [72](72-RUNNER-FINAL-VALIDATION.md).
+[30-VERIFICATION.md](30-VERIFICATION.md) and [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md).
 Do not close capability checkboxes from parser or synthetic evidence.

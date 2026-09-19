@@ -33,7 +33,7 @@ The German source is Handrack (2016), appendix A8, PDF page 142, from the
 [University of Giessen repository](https://jlupub.ub.uni-giessen.de/bitstreams/0b9557df-78c8-4bab-96e5-d84f3b94f9a5/download).
 It contains 20 items and 5 anchors and cites Bach et al. (1996). This is the exact
 appendix version, not an independently verified original translation master.
-[69](69-CLI-RUNNER-END-TO-END-GOAL.md) records the source PDF/CSV/definition
+[65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) records the source PDF/CSV/definition
 hashes, visual comparison and independently reproduced production import.
 The complete content stays in the local researcher's asset store; provenance
 metadata here contains no item text. Numeric 1–5 positions are retained response

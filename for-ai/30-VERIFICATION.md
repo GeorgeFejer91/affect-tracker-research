@@ -1,134 +1,28 @@
-# Testing and release gates
+# Verification, gates and working discipline
 
-## SurveyJS validation — 2026-09-13
+Consolidated from the former `30-TESTING-AND-RELEASE.md` and
+`50-AGENT-WORKFLOW.md`. The everyday command list and the evidence limitations
+are in [`00-READ-FIRST.md`](./00-READ-FIRST.md) §3; this file holds the
+claim-specific gates and the change discipline behind them.
 
-Run `pnpm surveyjs:check` before tests/builds. Generated full browser assets,
-embedded native engine, license notices and master4 parity fixtures must match
-the locked dependencies. `research-surveyjs.test.js` covers schema/content
-preservation, conditions, mandatory answers, nested values and preset adapters;
-the native `surveyjs` test filter exercises the actual Boa core, JS/Rust master
-parity and durable worker submission. Information-stream tests independently
-replay input data using the saved evaluation clock and random seed.
-
-Use `scripts/qualification/surveyjs-rendered.mjs` for rendered Planner/preset
-checks, `runner-surveyjs-ui.mjs <Chrome> <new evidence dir> all <2|3|4>` for
-the actual Runner app, and `planner-surveyjs-cli.mjs <clean-build CLI> <new dir>`
-for real native import/save/Open. Browser native replies are synthetic; they do
-not qualify live native playback, XDF or hardware. Final consolidation retains
-those checks. See [the integration documentation](../docs/surveyjs-questionnaires.md).
-
-## Current companion-program authority
-
-Use [16](16-COMPANION-APP-BOUNDARY.md), [65](65-RUNNER-SEGMENTS.md) and
-[66](66-PLANNER-RUNNER-COMPATIBILITY.md) for the current Planner/Runner split.
-This gates file defines evidence requirements; it no longer duplicates the full
-companion-program amendment text.
-
-## Status
-
-These gates apply only to Affect Research v1. The feature-rich application's
-tests and physical receipts remain historical evidence in Playground and do
-not qualify the changed Research runtime.
-
-Apply the charter's 2026-09-11 amendment and
-[`central segment checklist`](./60-SEGMENT-CATALOGUE.md) when planning successor
-capabilities. Eight-section and no-cyclic-allocation assertions below remain v1
-regression gates; they are not a prohibition on the approved future Planner
-design. A new contract requires new explicit variant/layout/XR fixtures and
-corresponding gates while retaining historical readers and timing, persistence,
-privacy, accessibility and independent-reproduction obligations. References to
-the bounded Section 2 pass are historical allocations. No Planner checkbox
-qualifies a Runner, LSL recording or an APK/WebXR target.
-
-The first internal target is `0.4.0-alpha.1`. Documentation, schemas, mocks,
-compilation, a staged native runtime, or one successful adapter never establish
-a stable or research-ready claim. Acceptance evidence must bind the exact Git
-commit, package/output contract versions and derived hashes, built artifact hashes, OS/browser
-versions, hardware, and test receipt.
-
-## Staged use of these gates
-
-The three development stages in
-[`50-AGENT-WORKFLOW.md`](./50-AGENT-WORKFLOW.md) make verification modular; they
-do not lower any acceptance criterion or turn deferred evidence into passing
-evidence. Apply the following normal evidence floor for a pass:
-
-| Development stage | Evidence required for a normal handoff | Evidence normally deferred |
-| --- | --- | --- |
-| **UI Finalization** | Focused tests for the changed presentation and UI contracts; relevant keyboard, focus, reflow, reduced-motion, and no-console-error checks; isolation tests for any synthetic preview; a rebuilt candidate verified through background/headless or off-screen receipts. For app-changing work, the latest single current PC app is opened for researcher inspection at handoff; scripted interactive exercise remains opt-in only. | Unchanged Rust/backend matrices, installer qualification, full clean-candidate gates, remote CI, Pages deployment, and physical research qualification. |
-| **Backend Verification** | Focused owner-level tests followed by the applicable cross-layer browser/Rust contract, IPC, workspace, input, media, scheduler, persistence/recovery, output, and LSL gates for the functionality under review. A stage-completion pass must inventory every current local application function rather than sampling only recently changed code. Record unavailable hardware or physical checks as open rather than passing. | Unrelated interface polishing and repository publication or deployment unless they are part of the confirmed pass. |
-| **Repository/Web Synchronization** | Inspect the complete candidate diff; run the clean-candidate automated gates below unless a gate is explicitly inapplicable; verify Pages and desktop build closures; bind results to the exact commit; after authorized publication, verify the remote commit, CI, and cache-bypassed Chrome and Edge Pages result. | Installed, hardware, long-run, and research-readiness qualification only when the confirmed pass does not claim them. |
-
-The changed surface sets a non-negotiable verification floor. A UI-labelled
-pass that changes a schema, canonical bytes/hash, IPC, native authority,
-persistence, packaging, or release behavior must pause for a revised intent
-check and move to the stricter applicable stage. Conversely, unrelated backend
-and release matrices need not run after every presentation-only iteration.
-For Backend Verification stage completion, derive a canonical checklist from
-the normative mirror map in `20-ARCHITECTURE.md`, current implementation truth
-in `40-ROADMAP.md`, and the applicable sections of this file. Record every
-current local application function as pass, fail, unavailable, or deferred,
-with exact evidence or rationale. Name every omitted candidate gate, why it is
-inapplicable, and how its omission limits the claim; a gate is never
-inapplicable when its owning authority or claimed surface changed.
-Any stable, release, experiment-use, or research-ready claim still requires
-every applicable gate in this file for one exact candidate, regardless of the
-stage used while developing it.
-
-## Non-interactive verification default and current-app handoff
-
-Testing must preserve the researcher's control of the Windows desktop. Use
-CLI-capable application functions, focused Node/Rust test entrypoints, isolated
-processes, and background/headless or off-screen renderers that emit
-machine-readable receipts. During testing, do not activate, foreground, move,
-close, or interact with application windows; do not synthesize keyboard,
-pointer, or clipboard input; and do not use browser/computer-control tooling for
-routine verification. A background renderer or automated test proves only the
-software property represented by its receipt; it does not establish physical, installed,
-accessibility, timing, hardware, or research qualification.
-
-The standard handoff for app-changing work is separate from routine
-verification: after focused checks pass, rebuild/stage the latest candidate into
-the one authoritative PC app location, archive or remove superseded local app
-launch targets, and open that latest app so the researcher can inspect the new
-functionality immediately. This launch is not an installed-artifact,
-accessibility, physical, timing, hardware, or research qualification claim.
-
-Interactive browser or Tauri exercises beyond opening the latest current app
-are opt-in exceptions only. Before such a check, obtain explicit user approval
-for that specific interaction and confirm that no active experiment or user work
-will be interrupted. If the user has not opted in, leave the interactive gate
-open and report it as unverified rather than taking control of the computer.
-This rule does not authorize a new remote control, companion, or general-purpose
-CLI product surface; any verification command must remain a bounded local seam
-consistent with the charter.
+Run focused checks while working and the applicable gates before a claim. A
+gate applies to the claim you are making — do not run every gate for a
+documentation edit, and do not skip one because the suite is green.
 
 ## Automated candidate gates
 
-### Mirrored-module architecture gate
+### Boundary guards
 
-- Treat the module topology in `20-ARCHITECTURE.md` as a release gate, not a
-  refactoring suggestion.
-- Source guards must fail when raw Tauri invocation escapes the named native
-  adapters, when a feature view imports native/platform internals directly, or
-  when the Tauri composition root is duplicated.
-- Build the static frontend import graph and reject every feature-module cycle.
-  Both browser and native bridges must import the DOM-free UI contract module,
-  never `app.js`; the contract module must contain no DOM or IPC access.
-- Verify the Rust package runtime keeps commands, compiler/contracts, reducer,
-  responses, input mailbox, media actor, storage, recovery, and coordinator in
-  separate source modules. Command handlers may contain no filesystem, HTML video,
-  platform-window, or protocol-policy implementation; storage and media modules
-  may not import each other's domain.
-- Recursively reject project-authored `unsafe` and deny undocumented unsafe
-  blocks crate-wide.
-- Each native product boundary requires focused Rust tests, focused frontend
-  presentation/adapter tests, and at least one shared fixture or IPC-contract
-  test across the boundary.
-- Review every release diff for policy added to command handlers, platform
-  adapters, DOM callbacks, or a catch-all coordinator. Move such policy back to
-  its owning bounded module before packaging.
-- A passing functional test suite does not waive this architecture gate.
+`test/research-modular-architecture.test.js` keeps the real boundaries honest:
+raw Tauri `invoke(` stays inside the named native adapter modules, the frontend
+feature import graph stays acyclic, both bridges depend on the DOM-free
+`ui-contracts.js` seam rather than `app.js`, the Rust package runtime keeps
+commands/compiler/reducer/storage/recovery in separate modules with no
+filesystem or platform-window code in command handlers, and project-authored
+`unsafe` stays absent crate-wide. These protect security, input and acquisition
+boundaries. They are not an architecture gate independent of functionality: a
+passing guard is not evidence that a feature works, and a failing functional
+test is never waived by a passing guard.
 
 Run the repository's exact commands from a clean candidate checkout:
 
@@ -230,7 +124,7 @@ qualification evidence.
   control characters. Prove TXT and JSON deterministically normalize into
   canonical Questionnaire CSV v1 and every format produces the same definition
   for equivalent content. Arbitrary whole-file size rejection is not a product
-  acceptance gate; apply the [charter file-size amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+  acceptance gate; apply the [product authority](10-PRODUCT.md).
 - Prove original-source, canonical-CSV, and embedded-definition hashes
   independently, plus JS/Rust canonical-hash parity. Store original uploads
   content-addressed beneath validated
@@ -674,3 +568,204 @@ Publishing or signing an installer, creating a public GitHub Release, enabling
 an updater, submitting to a store, or handling production credentials requires
 explicit authorization. Test the exact artifact before promotion; never rebuild
 after approval and call it the same release.
+## Active change discipline
+
+These constraints preserve current wire and runtime semantics. They describe
+what must not drift; they are not a checklist to recite in every change.
+
+- Preserve exactly two modes: **Setting Up the Experiment** and **Running the
+  Experiment**. Setup follows the eight ordered charter sections: Workspace &
+  Libraries; Languages & Study Assets; Experiment Plan & Stimuli; Experiment;
+  Input; Visual; Advanced; Review & Start. Run stays deliberately narrow.
+- Preserve the two companion functions: Planner controls and questionnaire
+  tables compile one finished unified JSON package; Runner takes that package
+  for acquisition and monitoring. Raw/master JSON is not a required Planner
+  input or editing surface.
+- Qualify only Windows Tauri and desktop Chrome/Edge unless the user explicitly
+  amends the charter.
+- Treat Windows/macOS/Linux no-optional-feature packages as unsigned internal
+  Setup/interface-evaluation shells. Preserve their positive native-acquisition
+  feature gate and all-false qualification provenance; never describe them as
+  supported experiment downloads.
+- Treat exact canonical `experiment.package.json` (`ExperimentPackageV1`)
+  bytes/self-hash, derived
+  settings/assets/assignment/protocol hashes, transient-name erasure,
+  no-overwrite output, timing gaps, and safe-boundary recovery as cross-layer
+  contracts rather than UI details.
+- For new work, package arrays are the only participant/block/video/ISI/hook
+  order authority. Package language-tree traversal is the only terminal-
+  language authority. Do not call, restore, or emulate the historical
+  Williams/cyclic `balanced-v1` allocator, add a seed, use OS/browser locale,
+  inspect ambient storage/defaults, or silently repair/reorder an invalid
+  package.
+- Treat `settings.json`, `experiment.json`, and standardized questionnaire
+  CSV/TXT/JSON as explicit authoring/import inputs only. TXT and JSON normalize
+  through canonical Questionnaire CSV v1; a converter reports all carried/
+  defaulted/rejected/discarded values and emits one complete canonical package.
+  Original sources may be stored content-addressed only beneath
+  `assets/questionnaires/<family>/<language>/`; no legacy or source artifact
+  remains a parallel Start authority.
+- Keep Setup Section 2 user-facing and path/package opaque. It may project
+  selected languages, one questionnaire accordion/table per family/language,
+  editable/pasteable items, separate visible labels and recorded codes,
+  compact response settings, import/templates, and exact coverage, but never
+  raw package JSON. New modules authored here use `beforeSession`; do not
+  silently move imported modules with other placements. MAIA-2/TAS-20 EN/DE are
+  the current preset focus; broad Inspiration/Phenomenological Control UI is
+  deferred. Label repetition every-item/5/10 remains labelled preview state
+  until a versioned persisted contract and Runner parity are implemented.
+  Every requested questionnaire family requires an exact variant/module for
+  every selected study language before finalization; do not treat `und`, locale,
+  public availability, or an Inspiration entry as coverage or reuse authority.
+- Explicit researcher paste into the focused questionnaire editor is permitted
+  authoring input. Consume only the event's bounded table text and validate it;
+  never poll the ambient clipboard, log pasted payloads, evaluate spreadsheet
+  formulas, or extend that input path into participant acquisition.
+- Tauri Rust owns native workspace, input, playback, scheduler, timestamps,
+  persistence, and outbound LSL. Browser sampling lives in a dedicated worker
+  with IndexedDB journaling. Rendering never owns the sample clock.
+- Preserve the chartered module topology. One composition root connects narrow
+  package, workspace, protocol, questionnaire, participant, input, visual,
+  media, timing, persistence/recovery, LSL, and adapter interfaces. Frontend
+  Setup/Run modules mirror those responsibilities as presentation only on
+  Tauri. Do not add circular feature imports, cross-module mutable state,
+  untyped event buses, scattered raw `invoke` calls, or policy inside command
+  handlers and UI event callbacks.
+- Keep shared Setup/Run identifiers and bridge event vocabulary in the DOM-free
+  `ui-contracts.js` seam. Platform bridges must never import `app.js`, and UI
+  sections must never import a platform bridge. Keep declarative instrument
+  markup in `ui-view.js`; it must not acquire IPC, workspace, persistence,
+  media, or protocol authority. Keep the authoritative native
+  package implementation under `research_native_protocol/` split into command,
+  compiler/contract, reducer/response, input, storage, recovery, and runtime
+  responsibilities; do not add package-start policy to legacy compatibility
+  runtimes.
+- Before adding a feature, name the product boundary it belongs to and keep its
+  frontend editor/view model, native adapter, Rust domain/service, and platform
+  implementation distinguishable in source and tests. If a proposed edit adds a
+  second unrelated responsibility to `app.js`, `native-bridge.js`,
+  `research_commands.rs`, or `research_runtime.rs`, extract a bounded module
+  first or in the same change.
+- Keep media access behind the opaque, Rust-owned workspace-grant boundary.
+  The WebView receives a checked `research-media` URL and nothing else: never
+  pass an arbitrary filesystem path or native handle across IPC, never search
+  ambient plugin or installation paths, and never download runtime code in-app.
+- Do not restore deleted Playground features into the active tree. Historical
+  WebXR/Quest, remote, Party/Ground Control, direct Polar, face, touch,
+  calibration, retro, phone, and legacy study work belongs in
+  [`affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground)
+  and Git history unless a new charter explicitly reactivates a bounded slice.
+
+## Change workflow
+
+1. State the user-visible outcome and affected browser, desktop, shared,
+   settings, record, LSL, privacy, accessibility, packaging, and qualification
+   surfaces.
+2. Define one owner for each changed parameter and state transition. Preserve
+   package bytes, every derived hash, manual order, language path, hook order,
+   playback/output policies, and per-video `isiAfterMs` through every adapter;
+   keep UI handlers as typed adapters, not hidden business logic.
+3. Specify request/response/event types, lifetimes, generations, cancellation,
+   overload/error behavior, and observability before widening an IPC or native
+   boundary.
+4. Prefer the smallest coherent vertical slice. Avoid unrelated framework,
+   dependency, permission, or formatting churn.
+5. Add focused success, rejection, stale-generation, interruption, and cleanup
+   tests, then run the broader applicable gates in
+   the gates above.
+6. Verify behavior through non-interactive CLI/test commands, process-isolated
+   fixtures, and a background/headless renderer whenever the claim can be
+   covered that way. During development, do not take control of the
+   researcher's computer, move windows, synthesize pointer/keyboard input, or
+   foreground applications as routine testing. The final launch of the rebuilt
+   single current PC app is the standard handoff described above, not a
+   substitute for tests. Never infer physical/platform qualification from mocks,
+   a background renderer, an opened window, or a build.
+7. Update this durable brief whenever requirements, authority, contracts,
+   privacy, data fields, media, LSL, platform support, or gates change.
+
+### User-control protection and background verification
+
+Routine verification must leave the user's desktop, windows, focus, pointer,
+keyboard, clipboard, and active applications untouched. Agents must use the
+repository's existing CLI-capable functions and test entrypoints, or add a
+bounded local verification command when that is the smallest contract-faithful
+seam. For renderer-dependent checks, run a background/headless renderer or an
+off-screen process that produces machine-readable receipts, screenshots, or
+video frames without taking over the desktop. Keep this verification separate
+from participant-facing runtime authority and do not add a remote-control or
+general-purpose CLI surface contrary to the charter.
+
+The standard current-app handoff is the exception to the no-foreground default:
+after app-changing work passes its focused checks, launch the newly rebuilt
+single current PC app so the researcher can inspect it immediately. Before doing
+so, close or avoid stale/superseded app instances when that can be done without
+interrupting an active experiment or unrelated user work; otherwise report the
+blocker rather than opening a second canonical-looking app. This launch must be
+the exact latest candidate, not a copied shortcut, stale installer, helper
+engine, or older build with the same title.
+
+Do not use computer-control, browser-control, window activation, GUI launch,
+synthetic input, or foreground visual exercise for testing unless the user
+explicitly opts in for that specific check. The standing current-app handoff
+authorizes opening the latest rebuilt app for review only; it does not authorize
+clicking through workflows, typing, moving windows, or qualifying physical
+behavior. If a claim cannot be established without an interactive check, report
+it as unverified and ask before touching the user's desktop; do not silently
+perform the check.
+
+When the user explicitly requests a named interactive check, keep it bounded:
+
+1. run the proportionate tests and rebuild the current desktop frontend/native
+   development candidate so the window cannot be serving stale assets;
+2. do not close, focus, move, or interrupt any existing user window or active
+   experiment; use only the current rebuilt candidate after confirming it cannot
+   affect the user's work;
+3. open or foreground only the current rebuilt candidate, then exercise only the
+   named behavior; and
+4. report the exact launch mode, interaction performed, and any behavior that
+   remains unchecked. Without that named request, the standard handoff launch is
+   the maximum foreground action and the interactive gate remains open.
+
+The two-clean-independent-instance package reproduction benchmark is a
+permanent gate, not a one-time implementation test. Any package-contract,
+canonicalization, asset, language, questionnaire, assignment, or protocol
+change must rerun every participant × terminal-language comparison, exact
+five-hash/sequence equality, byte-identical re-export, and instrumented
+no-ambient-default/storage proof. Do not infer native playback or research
+qualification from that deterministic receipt.
+
+## Provenance and dependency discipline
+
+Record every adopted source-derived algorithm, API behavior, compatibility
+decision, runtime dependency, and license boundary in
+[`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md). Put publications in
+`references.bib`. State accurately whether code or binaries are copied,
+vendored, dynamically linked, or independently implemented.
+
+Pin native/runtime artifacts to exact versions and hashes, preserve notices and
+source obligations, and distinguish supply-chain integrity from runtime
+qualification. A successful transport call, capability response, build, or
+staging step proves only that step.
+
+## Git and handoff discipline
+
+- Inspect status and diff before and after edits. Never discard, absorb,
+  reformat, or stage unrelated work.
+- Keep coherent concerns separable and stage explicit paths. Create tested
+  checkpoints before risky migration or lengthy platform work when requested.
+- For app-changing passes, the requested workflow is: focused checks pass, build
+  and replace the one main local PC app, open that latest app for researcher
+  inspection, then commit and push the exact source/evidence slice to GitHub
+  while the researcher reviews it. The GitHub tree is the canonical repository
+  version-control record; local app builds are inspection artifacts bound to a
+  recorded source identity, not competing versions.
+- Outside that standing app-first workflow, commit, push, merge, deploy, or
+  publish only within the user's requested workflow and repository safeguards.
+  Never rewrite shared history or bypass a failing check.
+- After an authorized push, verify the exact remote commit and applicable CI.
+  For a web-facing deployment, use a cache-bypassed check of the exact Pages
+  project URL. A push or green build alone is not deployed behavior evidence.
+- Before handoff, report exact checks, untested platforms, remaining blockers,
+  publication/deployment identifiers, and whether the local/remote states are
+  synchronized. Do not hide intentional dirt or ambiguous ownership.

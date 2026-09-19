@@ -1,108 +1,151 @@
-# Current project entrypoint
+# Affect Research — agent entrypoint
 
-Updated 2026-09-13; audit base `32c7c2d`. This is the current instruction
-router. Historical receipts retain their original source and date.
+This file plus [`AGENTS.md`](../AGENTS.md) are the complete mandatory reading
+route. Everything else in `for-ai/` and `docs/` is routed reference material:
+read it when your task touches it, not on every pass.
 
-File-size policy follows the [2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13):
-arbitrary whole-file ceilings are no longer requirements. Historical implemented
-limits do not instruct agents to retain or reinstate them.
+Direct session instructions from the user take precedence over this file.
 
-Versioning policy follows the [2026-09-13 current-canonical amendment](15-RESEARCH-V1-CHARTER.md#current-canonical-versioning-amendment--2026-09-13):
-Git worktree/branch commits and authorized GitHub history retain older states.
-Do not add local schema/document generations for ordinary internal design
-iteration; update the current canonical contract unless an external saved-file,
-wire, Runner or fixture compatibility boundary truly requires a version.
+## 1. Product scope and non-goals
 
-## Current vs historical files
+**Affect Research** is a local-first continuous video affect research
+instrument built from two separate companion programs:
 
-Future agents should spend their attention on current owners, not on reconciling
-every dated receipt. Use this folder as follows:
+- **Experiment Planner** (GUI + CLI) authors an experiment: workspace and video
+  library, questionnaires and languages, versions/ordering/variants, intervals
+  and markers, screen layout, and Flubber feedback settings. It saves one
+  canonical master JSON plus separate questionnaire asset files, and it can
+  reopen what it saved.
+- **Experiment Runner** reads that exact JSON, selects participant/variant,
+  executes the authored sequence, acquires continuous affect samples and
+  questionnaire responses, emits outbound LSL, and records own/selected
+  external streams to XDF.
 
-| Role | Files | How to use |
-| --- | --- | --- |
-| Current router | `00` | Start here; follow only the routed files for the task. |
-| Product authority | `15`, plus `16` for the companion split | These own the current product decisions. Later dated amendments in `15` supersede older wording lower in the same file. |
-| Workflow and gates | `30`, `50` | Use for pass stage, evidence floor, launch/push handoff and release boundaries. |
-| Current owner maps | `60`, `65`, `66`, `68`, `69`, `71`, `72`, `73` | Read the relevant owner/consumer ledger for the assigned work. |
-| Architecture and provenance | `20`, `70`, relevant `docs/` contracts | Read when changing authority boundaries, contracts, dependencies or provenance. |
-| Compact retired signposts | `45`, `61`, `62`, `64`, `67` | These are stubs only. Use Git history for their removed long-form content if an exact historical receipt is truly needed. |
-| Coordination ledger | `55` | Read current and matching ownership entries before editing; older entries are diagnostic receipts, not standing instructions. |
+Recording policy belongs to Runner sessions. Planner never executes an
+experiment; Runner never authors one.
 
-Do not copy full amendment blocks into more files. Add the decision once to its
-owner and link to it from dependent docs. If older copied wording conflicts with
-`15`, `16`, `60`, `65`, `66`, `72` or direct user instructions, treat the copied
-wording as historical unless the current owner explicitly re-adopts it.
+**Video playback is an `HTMLVideoElement` over checked `research-media` URLs.**
+The Runner needs useful *observed* start and end events. It does not promise
+frame-accurate or physically measured display onset. The retired native
+(GStreamer) player stack, its runtime staging, its launcher shim and its
+native-renderer qualification obligations are gone; do not reintroduce them.
 
-Keep the active repository parsimonious. Do not add backup copies, superseded
-architectures, old option matrices, duplicate ledgers, or local `vN` document
-generations merely to preserve history. Git commits and pushed GitHub history
-are the archive; the checked-out tree should contain current authority, live
-contracts, active evidence, and compact signposts only. When retiring a large
-historical document, either delete it or replace it with a short route to the
-current owner and to Git history.
+Non-goals (do not implement, do not treat historical checklists as work items):
+WebXR/Quest runtime, remote control, Party/Ground Control, direct Polar,
+Face/Photoatlas, Touch, mobile, Firefox/Safari, any backend/account/CDN
+requirement. Deferred intent lives in [`90-FUTURE-SCOPE.md`](./90-FUTURE-SCOPE.md).
 
-## Reading order
+### Honest capability boundaries
 
-Read these core documents completely, in order: this file,
-[15](15-RESEARCH-V1-CHARTER.md), [16](16-COMPANION-APP-BOUNDARY.md),
-[30](30-TESTING-AND-RELEASE.md), [50](50-AGENT-WORKFLOW.md),
-[60](60-SEGMENT-CATALOGUE.md), [66](66-PLANNER-RUNNER-COMPATIBILITY.md).
-Then read the assigned owner's contract and applicable subtree instructions.
-
-Before editing, read current and matching ownership entries in
-[55](55-AGENT-MESSAGE-BOARD.md); consult older entries when they explain a
-dependency or decision. This replaces repository directions to reread all
-historical Markdown on every pass. Direct session instructions to read more
-still take precedence.
-
-## Product and authority
-
-**Experiment Planner** and **Experiment Runner** are separate programs.
-Planner UI and CLI author a canonical experiment manifest and questionnaire assets and retain previews.
-Runner interprets that exact JSON, selects a session, executes the sequence,
-acquires responses, emits LSL and records own/selected external streams to XDF.
-Recording policy belongs to Runner sessions.
-
-Current masters use `affect-research-planner-recipe` versions 1–5, with six
-named contributions assembled by P7. Fresh master5 saves reference separate
-SurveyJS files by ID, path and hash. P7 is not a seventh segment payload.
-`ExperimentPackageV1` is a separate supported predecessor.
-[66](66-PLANNER-RUNNER-COMPATIBILITY.md) maps versions, owners and known gaps.
-
-The user's current instructions and dated charter amendments govern product
-decisions; [60](60-SEGMENT-CATALOGUE.md) owns capability/checklist IDs.
-Wire contracts in `docs/` and strict readers define exact representations.
-A receipt proves only its named source, inputs and layer. Earlier wording does
-not undo a later explicit amendment.
-
-## Current status and work routes
-
-Baseline Planner completion is summarized in [60](60-SEGMENT-CATALOGUE.md);
-[67](67-PLANNER-COMPLETION-GOAL.md) is now only a retired signpost.
-CLI and SurveyJS extend that baseline. Correspondence is now allocated by
-[69](69-CLI-RUNNER-END-TO-END-GOAL.md) and
-[72](72-RUNNER-FINAL-VALIDATION.md); blanket Runner deferral is historical.
-Full native execution, geometry/timing and independent real-session XDF
-verification remain open. Root owns current Runner closure; no delegation.
-Do not reactivate historical owner tasks from old board assignments.
-
-Determine source checkout/branch from Git. At audit start the canonical branch
-was `codex/research-unified`. Verify actual-app source/binary hashes against
-the receipt described in [73](73-CURRENT-APP-BUILD.md), independently of HEAD.
-The [critical audit](../docs/planner-runner-correspondence-audit.md) records
-current source gaps: owner-size limits, survey resource completeness, master4
-validation availability and controller override execution.
-
-| Work | Additional reading |
+| Surface | What it may claim |
 | --- | --- |
-| Architecture / native authority | [20](20-ARCHITECTURE.md) and the relevant current wire contract |
-| Planner composition / Open / Save | [Master](../docs/planner-master-recipe-v1.md), [restoration](../docs/planner-recipe-restoration.md), [P7](../docs/planner-p7-recipe-assembly.md) |
-| Questionnaires / SurveyJS | [SurveyJS](../docs/surveyjs-questionnaires.md), [P2](../docs/planner-p2-questionnaire-recipe.md); [70](70-RESEARCH-PROVENANCE.md) for source/content changes |
-| CLI | [68](68-PLANNER-CLI.md), [71](71-CLI-LIBRARY.md), registered descriptors and linked command contracts |
-| Runner / recording | [65](65-RUNNER-SEGMENTS.md), [72](72-RUNNER-FINAL-VALIDATION.md), session/stream contracts |
-| Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
-| Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
-| Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), compact retired signposts [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
+| Tauri on Windows | Native workspace ownership, native global input, native sampling clock, outbound LSL, XDF recording, durable records and recovery |
+| Static web in current desktop Chrome / Edge | Browser input, browser timing, browser-local journal and CSV export — **no** LSL, **no** XDF, **no** native input or timing authority |
+| Unsigned Tauri on macOS / Linux | Interface evaluation only; Start fails closed |
 
-The former copied entrypoint backup was removed from the active tree. Use Git
-history for pre-cleanup text if an exact old router is needed.
+The browser path must never present native authority, native input-test
+receipts, or native timing evidence. An unsigned manually produced package is
+not a validated research release.
+
+## 2. Architecture and where the contracts live
+
+```
+experiment-planner/web/   Planner frontend (src/research/*.js), Pages build
+experiment-planner/desktop/  Planner Tauri shell (vite config, icons)
+experiment-runner/        Runner frontend (src/*.js), browser + desktop entries
+native/                   Rust crate `affect-research`
+  src/lib.rs              single Tauri composition root, command registration
+  src/bin/planner-cli.rs  Planner CLI entrypoint (source, not generated)
+  src/bin/runner.rs       Runner binary entrypoint (source, not generated)
+docs/                     wire contracts and per-feature reference
+scripts/                  build, verification and qualification scripts
+test/                     Node test suite (`pnpm test`)
+```
+
+Authority direction: contracts and pure domain logic → services → Windows/Tauri
+adapters → thin commands/events → frontend view models and controls. The
+frontend must not reimplement package, protocol, sampling, persistence, input
+or LSL authority. Raw `invoke(` is confined to the named native adapter modules
+(`native-bridge.js`, `native-package-protocol.js`, `planner-authoring-native.js`,
+`planner-authoring-native-effects.js`); `test/research-modular-architecture.test.js`
+enforces that, the absence of project-authored `unsafe`, and the acyclic
+frontend import graph.
+
+Key contract locations:
+
+| Concern | Where |
+| --- | --- |
+| Supported master generations, readers, known gaps | [`66-COMPATIBILITY.md`](./66-COMPATIBILITY.md) |
+| Product/package authority, delivery surfaces | [`10-PRODUCT.md`](./10-PRODUCT.md) |
+| Module responsibilities and boundaries | [`20-ARCHITECTURE.md`](./20-ARCHITECTURE.md) |
+| Feature requirements per segment (P1–P7, Runner) | [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), [`65-RUNNER-SEGMENTS.md`](./65-RUNNER-SEGMENTS.md) |
+| Scientific provenance, licences, citations | [`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md), [`references.bib`](./references.bib) |
+| Wire/format contracts | `docs/*.md` |
+| Planner CLI reference | [`../docs/planner-cli.md`](../docs/planner-cli.md), [`../docs/planner-cli-library.md`](../docs/planner-cli-library.md) |
+
+## 3. Verification and what evidence actually proves
+
+Run focused checks while working; run the applicable full set before handing
+off. Do not run every command for a documentation edit.
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm surveyjs:check
+pnpm test
+pnpm desktop:build
+pnpm runner:build
+pnpm build:pages
+pnpm planner:cli:build
+pnpm runner:check
+cargo fmt --manifest-path native/Cargo.toml --all -- --check
+cargo check --locked --manifest-path native/Cargo.toml --all-features
+cargo check --locked --manifest-path native/Cargo.toml --no-default-features
+cargo test --locked --manifest-path native/Cargo.toml --all-features
+cargo test --locked --manifest-path native/Cargo.toml --no-default-features
+cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --all-features -- -D warnings
+cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --no-default-features -- -D warnings
+```
+
+Record exit codes. A missing dependency or unavailable hardware is
+BLOCKED/NOT RUN, never PASS. Never reach green by skipping a broken functional
+test, weakening an assertion to match a bug, or excluding a new test from the
+test command.
+
+**Evidence limitations — state these explicitly whenever you make a claim:**
+
+- A passing unit test proves logic, not that a real video decodes in the
+  installed app.
+- A mock media element tests event wiring, not playback.
+- A synthetic LSL source verifies the recording path, not a physical device.
+- A successful `cargo check`, a CI run, or a Pages deployment is not a recorded
+  session.
+- A receipt proves only its named source, inputs and layer.
+
+Report an overall result as VERIFIED FOR THE TESTED SCOPE, PARTIAL or BLOCKED.
+
+Do not use computer-control, browser-control, window activation or GUI launch
+against the user's live desktop unless the user opts in for that specific
+check. Never terminate unrelated processes or delete user files.
+
+## 4. Current status and open issues
+
+Source of truth for status is Git and the checks above; this section records
+what is known open, not a ledger to be duplicated.
+
+- Native playback qualification, actual geometry/ISI observations, real device
+  testing and an independent real-session XDF verification remain **open**.
+- Master4 has intake and normal Start dispatch, but local validation accepts
+  only master3.
+- Controller override execution and its receipts are **not implemented**;
+  changed controller settings are drafts that block Start.
+- SurveyJS permits remote image URLs without embedding or hash-binding the
+  resource bytes; retaining the object does not guarantee identical
+  presentation.
+- Master recovery (resume of a master-protocol run) is **not implemented**.
+- `cargo fmt --check` currently fails on nine `native/src` files that were hand
+  edited with CRLF endings; this predates the YAGNI consolidation.
+- The downloadable Windows alpha is an unsigned, no-optional-feature,
+  interface-evaluation package. It is not a research release.
+
+Determine branch and source identity from Git (`git rev-parse HEAD`), not from
+a document.

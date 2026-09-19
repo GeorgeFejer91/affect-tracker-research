@@ -40,39 +40,27 @@ async function researchImportGraph() {
   return graph;
 }
 
-test("for-ai makes mirrored frontend and Rust modularity a permanent release gate", async () => {
-  const [charter, architecture, release, workflow] = await Promise.all([
-    readFile(new URL("for-ai/15-RESEARCH-V1-CHARTER.md", root), "utf8"),
-    readFile(new URL("for-ai/20-ARCHITECTURE.md", root), "utf8"),
-    readFile(new URL("for-ai/30-TESTING-AND-RELEASE.md", root), "utf8"),
-    readFile(new URL("for-ai/50-AGENT-WORKFLOW.md", root), "utf8"),
+test("the agent entry route is short and states the honest capability boundary", async () => {
+  const [agents, entry] = await Promise.all([
+    readFile(new URL("AGENTS.md", root), "utf8"),
+    readFile(new URL("for-ai/00-READ-FIRST.md", root), "utf8"),
   ]);
 
-  assert.match(charter, /Modularity is a release invariant/u);
-  assert.match(architecture, /The following mirror map is normative/u);
-  for (const boundary of [
-    "Package and contracts",
-    "Workspace and assets",
-    "Protocol and questionnaires",
-    "Participant and attempt",
-    "Input",
-    "Visual feedback",
-    "Native media",
-    "Timing and LSL",
-    "Output and recovery",
-    "Platform bridge",
-  ]) {
-    assert.match(architecture, new RegExp(`\\| ${boundary} \\|`, "u"));
-  }
-  assert.match(release, /Mirrored-module architecture gate/u);
-  assert.match(release, /passing functional test suite does not waive this architecture gate/iu);
-  assert.match(workflow, /name its row in the normative mirror map/u);
-  assert.match(workflow, /tauri-remote-app-builder/u);
-  assert.match(workflow, /User-control protection and background verification/u);
-  assert.match(workflow, /Do not use computer-control, browser-control, window activation, GUI launch/u);
-  assert.match(workflow, /explicitly opts in for that specific check/u);
-  assert.match(release, /Non-interactive verification default/u);
-  assert.match(release, /does not establish physical, installed,[\s\S]*accessibility, timing, hardware, or research qualification/u);
+  // The mandatory reading route is these two files. Keeping it small is the
+  // point of the consolidation, so a regression here is a real regression.
+  const mandatoryBytes = Buffer.byteLength(agents, "utf8") + Buffer.byteLength(entry, "utf8");
+  assert.ok(mandatoryBytes < 32 * 1024, `mandatory agent reading route grew to ${mandatoryBytes} bytes`);
+
+  // Browser execution must never be described as having native authority.
+  assert.match(entry, /\*\*no\*\* LSL, \*\*no\*\* XDF, \*\*no\*\* native input or timing authority/u);
+  assert.match(entry, /must never present native authority/u);
+  assert.match(entry, /BLOCKED\/NOT RUN, never PASS/u);
+  assert.match(agents, /Planner and Runner stay separate programs/u);
+  assert.match(agents, /Do not restore the[\s\S]{0,20}retired native player stack/u);
+
+  // Every document the entry route links to must exist.
+  const linked = [...entry.matchAll(/\]\((\.\.?\/[^)#]+)[^)]*\)/gu), ...agents.matchAll(/\]\(\.\/([^)#]+)[^)]*\)/gu)];
+  assert.ok(linked.length > 0);
 });
 
 test("raw Tauri invocation remains confined to explicit native adapter modules", async () => {

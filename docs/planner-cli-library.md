@@ -20,8 +20,8 @@ not a one-time command example. This file owns the maintenance checklist and
 agent entry point; the public About reference owns the readable command library.
 The actual registered command descriptors and validators remain authoritative.
 
-This allocation extends [68](68-PLANNER-CLI.md) and the active
-[CLI/UI/Runner goal](69-CLI-RUNNER-END-TO-END-GOAL.md). It adds documentation,
+This allocation extends [the Planner CLI reference](../docs/planner-cli.md) and the active
+[Runner requirements](../for-ai/65-RUNNER-SEGMENTS.md). It adds documentation,
 not another CLI, JSON schema, public network endpoint or qualification claim.
 
 ## Where to look before changing a command
@@ -31,7 +31,7 @@ not another CLI, JSON schema, public network endpoint or qualification claim.
 | [Shared command API](../docs/planner-authoring-command-api-v1.md) | JSONL envelopes, session/revision identity, typed edits, bounded transport, errors and retry semantics |
 | [Consequential commands](../docs/planner-cli-consequential-commands-v1.md) | Exact public file/import/confirmation operation names and arguments; implementation status |
 | [Master JSON](../docs/planner-master-recipe-v1.md) | Complete saved sections, policy, canonical bytes and reconstruction |
-| [Public About reference](../experiment-planner/web/about/index.html) | User-facing CLI library and examples; allocated to Online Version, awaiting integration |
+| [Public About reference](../experiment-planner/web/index.html) | User-facing CLI library and examples; allocated to Online Version, awaiting integration |
 | `experiment-planner/web/src/research/planner-authoring-{p1,p2,p3,p4,p5,p6,p7}.js` | Owner descriptors, validation and UI-backed setting semantics |
 | [External verification driver](../scripts/qualification/planner-cli-driver.mjs) | Production-process command/transcript evidence; not a replacement authoring implementation |
 
@@ -144,7 +144,7 @@ verified all nine P7 policy readbacks, invalid/read-only rejection and clean EOF
 A later actual native `23e8f3a` run captured 155 settings/32 owner operations and
 verified one seven-owner draft batch with readback and rejection/EOF checks.
 The exact executable/transcript identities and captured catalogue are recorded
-in [69](69-CLI-RUNNER-END-TO-END-GOAL.md). This establishes a seven-owner native
+in [65-RUNNER-SEGMENTS.md](../for-ai/65-RUNNER-SEGMENTS.md). This establishes a seven-owner native
 smoke, not every field or native import/file action. Browser parity has separate
 source-bound receipts. Consequential operations are being integrated. The full
 bilingual mock export, new typed demographics asset and XDF reconstruction
@@ -204,7 +204,7 @@ replace this pending status before E2E-RECIPE can be completed.
   About pages when markup/layout changes. Retain the receipt with the handoff.
 - [ ] Update this entry point if ownership, document locations or workflow change.
   Route shared changes through main integration; other segment owners update only
-  their allocated command metadata/docs and report dependencies in [55](55-AGENT-MESSAGE-BOARD.md).
+  their command metadata and documentation.
 - [ ] Before publishing, verify the deployed About page corresponds to the
   integrated documentation source. A successful local build is not deployment.
 

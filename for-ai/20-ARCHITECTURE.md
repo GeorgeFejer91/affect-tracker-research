@@ -3,7 +3,7 @@
 ## Current questionnaire asset authority
 
 Fresh Planner saves use the master5 questionnaire-asset boundary described in
-[the charter amendment](15-RESEARCH-V1-CHARTER.md#questionnaire-asset-amendment--2026-09-13)
+[the product authority](10-PRODUCT.md)
 and [the asset contract](../docs/planner-questionnaire-assets.md). This
 architecture file relies on those current owners rather than duplicating the
 full amendment text.
@@ -20,19 +20,19 @@ and response records stay in the information stream. See the maintained
 
 ## Current companion-program authority
 
-[16-COMPANION-APP-BOUNDARY.md](16-COMPANION-APP-BOUNDARY.md),
+[10-PRODUCT.md](10-PRODUCT.md),
 [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) and
-[66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md)
+[66-COMPATIBILITY.md](66-COMPATIBILITY.md)
 own the current Planner/Runner split. They supersede older one-program wording
 that remains below as v1 lineage or historical architecture context.
 
 ## Status
 
 This file refines the sole active authority in
-[`15-RESEARCH-V1-CHARTER.md`](./15-RESEARCH-V1-CHARTER.md). It describes the
+[`10-PRODUCT.md`](./10-PRODUCT.md). It describes the
 target architecture; it is not evidence that the current implementation
 candidate conforms or is qualified. Delivery status belongs in
-[`40-ROADMAP.md`](./40-ROADMAP.md).
+Git history.
 
 The charter's 2026-09-11 amendment delegates final-state segment capabilities,
 input/output ownership and remaining work to
@@ -71,7 +71,7 @@ remaining section work are routed by `60`, `65`, `66` and `72`.
 | Questionnaire label repetition draft | Ephemeral Section 2 presentation state | Every-item/5/10 design preview only; no current package, Runner, recovery, hash, or output authority |
 | Participant/attempt state | Locks, journals, and immutable schema-compatible manifests | Four-state chooser projection; never editable flags |
 | Run lifecycle | One run authority per attempt | Setup Start, Run Pause/Stop Early, recovery |
-| Native media | One Windows Rust actor over a pinned bundled removed native player stack/HTML video runtime | Opaque media grants/session IDs and child-window viewport projection |
+| Media | One Rust workspace-grant authority that hands the WebView a checked `research-media` URL | The `HTMLVideoElement` in the Runner page; no native player actor, no child window |
 | Affect state | One bounded current/target x/y engine | Inputs, Grid/Flubber renderer, recorder, Windows LSL |
 | Sampling | Run-owned monotonic scheduler | Canonical rows and Windows regular LSL outlet |
 | Recording | Canonical typed sample/event/questionnaire-response model plus package-derived hashes | Package output policy, CSV, TSV, `events.jsonl`, manifest, recovery journal |
@@ -128,25 +128,18 @@ contracts have one owner; JavaScript/Rust mirrors use canonical fixtures and
 differential conformance. A coordinator may sequence modules but cannot absorb
 their validation, storage, timing, or lifecycle implementation.
 
-The following mirror map is normative for the Research product. A row may be
-split into smaller cohesive files, but responsibilities from different rows may
-not be merged into a catch-all controller or runtime module:
+Responsibilities are split between the frontend and Rust along product
+boundaries: package/contracts, workspace/assets, protocol/questionnaires,
+participant/attempt, input, visual feedback, desktop layout authoring, media,
+timing/LSL, output/recovery, and the platform bridge. In every pair the
+frontend owns projections, editors and presentation, and Rust owns the
+authoritative parser, policy, storage, clock and device access. A boundary may
+be split into smaller cohesive files; responsibilities from different
+boundaries may not be merged into a catch-all controller. This is a design
+constraint checked against real behaviour, not a file-for-file map that any
+change must recite.
 
-| Product boundary | Frontend responsibility | Rust/native responsibility |
-|---|---|---|
-| Package and contracts | Authoring projections, strict browser reader, validation messages | Canonical parser/compiler, hashes, selected-language/participant projection |
-| Workspace and assets | Folder-selection affordances, catalogue projection, preview requests; P2 guarded local-preset inspection/import through its existing editor | Opaque workspace authority, closed-tree scan, grants, hashing and decode attestation; fixed-source researcher-local preset storage in actual app user-data, copied through the existing workspace source store before acceptance |
-| Protocol and questionnaires | Setup editors and Run-step view models | Authoritative reducer, hook/ISI progression, drafts, submissions and recovery boundary |
-| Participant and attempt | Transient form state and status tiles | Code derivation verification, locks, create-new attempt allocation and reconstruction |
-| Input | Binding editor and live-test presentation | Device capture, conflict/edge policy, authoritative state and sampling feed |
-| Visual feedback | Preview and Run rendering only | Frozen contract validation and evidence binding; no DOM or renderer ownership |
-| Desktop layout authoring (P4 successor) | `screen-layout-*` editor/lifecycle; `desktop-layout*` strict profile and full P1/P5 geometry composition | `research_desktop_layout` canonical typed reader and matching geometry; P7 owns full master composition, no Runner authority added |
-| Native media | Geometry/status projection through one adapter | HTML video actor, private file grant, lifecycle, timestamps and child-window adapter |
-| Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
-| Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
-| Platform bridge | One selected browser/native adapter; the explicitly selected Planner JSONL adapter routes typed commands to the same registered owners | Narrow authorized commands/events; bounded owned-process CLI broker/wire validation; no product policy in handlers |
-
-The user-authorized Planner CLI extension in [68](68-PLANNER-CLI.md) has an
+The user-authorized Planner CLI extension in [the Planner CLI reference](../docs/planner-cli.md) has an
 explicit bridge mirror: `experiment-planner/web/src/research/planner-authoring-native.js` owns
 the fixed status/ready/next/complete/startup-failure IPC calls;
 `planner-authoring-contract.js` and `planner-authoring-session.js` own typed
@@ -159,7 +152,7 @@ registers actual P1–P7 owners; it does not copy their setting semantics. Bound
 guards explicitly name this adapter, rather than exempting arbitrary new invoke
 callers. Consequential imports/saves use separately allocated native grants and
 effects plus the same guarded owner-adoption seam. Their interfaces and evidence
-remain in the shared command documents and [71](71-CLI-LIBRARY.md).
+remain in the shared command documents and [the CLI library reference](../docs/planner-cli-library.md).
 
 The local questionnaire library has its own fixed authority pair:
 `questionnaire-local-presets.js` handles public metadata, current-source
@@ -177,7 +170,7 @@ source remains researcher-installed rather than public repository content;
 the newly requested project-authored demographics asset is a separate P2
 versioned form allocation. Store/IPC/GUI/CLI evidence must be stated separately.
 
-The later complete-XDF requirement in [69](69-CLI-RUNNER-END-TO-END-GOAL.md)
+The later complete-XDF requirement in [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md)
 allocates a new Runner-only versioned primary information stream retaining
 canonical recipe content, definitions and typed answers alongside observations.
 Historical v1 marker exclusions later in this file remain the v1 contract;
@@ -553,7 +546,7 @@ One canonical row is one allowed single-choice option. The importer creates a
 `QuestionnaireDefinitionV1` only after checking consistent repeated metadata,
 contiguous item rows, unique item and option IDs, explicit required flags,
 finite-or-blank scores, safe text, and format-specific field constraints.
-Whole-file size policy follows the [charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+Whole-file size policy follows the [product authority](10-PRODUCT.md).
 Original-source, canonical-CSV, and definition hashes remain distinct in
 authoring receipts.
 The workspace service stores the original bytes by digest at
@@ -868,7 +861,7 @@ Face/Photoatlas assets, routes, permissions, dependencies, and runtime code.
 
 - Package and qualify Tauri on Windows first. Retain the bundle ID while using
   the new product/data namespace. A qualified package contains the exact pinned
-  removed native player stack runtime and approved native actor; package integrity alone does not
+  application binaries and WebView2 runtime; package integrity alone does not
   prove playback behavior.
 - Qualify desktop Chrome and Edge independently, including File System Access,
   permission renewal, worker timing, IndexedDB recovery, video playback, and
@@ -877,8 +870,7 @@ Face/Photoatlas assets, routes, permissions, dependencies, and runtime code.
   physiology support.
 - Host-native Windows/macOS/Linux packages are manual, unsigned, internal
   Setup/interface-evaluation artifacts only. They build with no optional
-  features, exclude the removed native player stack runtime, expose unavailable run capabilities,
-  block experiment Start, and bind their exact artifact hash to provenance with
+  features, expose unavailable run capabilities, block experiment Start, and bind their exact artifact hash to provenance with
   every qualification field false.
 - Signing, public installer/release publication, and production credentials
   remain separately authorized actions.

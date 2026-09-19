@@ -162,4 +162,4 @@ bytes and compare them with preview geometry. Runner correspondence/execution/
 recording remains the final, separately allocated development stage.
 Installed/native/Edge/physical qualification is not implied.
 The final component's exact source, checks, capture hashes and integration limits
-are recorded in the [P4 evidence ledger](../for-ai/40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+are recorded in the Git history.

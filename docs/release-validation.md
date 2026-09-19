@@ -145,12 +145,12 @@ projects share the Planner's root for convenience; exact JSON loading does not
 depend on it. The portable copy in `D:/Downloads/Mock Dictator Experiment/` has
 the unchanged JSON and exact declared video in `assets/stimuli/`.
 
-The agent-only `for-ai/runner_keyboard_smoke.py` uses real PyAutoGUI keys and
+The agent-only `scripts/runner_keyboard_smoke.py` uses real PyAutoGUI keys and
 read-only UI Automation checks; it is absent from app dependency/package inputs.
 Live attempts proved loading/observability but stopped on a test participant
 selection gap (corrected) and foreground changes. No complete questionnaire run,
 actual playback or XDF claim. The active owner/metadata/checklist authority is
-`for-ai/72-RUNNER-FINAL-VALIDATION.md`. Production Start qualification and the
+`for-ai/65-RUNNER-SEGMENTS.md`. Production Start qualification and the
 requested separation of questionnaire presentation from video preparation are
 still open. Do not label the current native-enabled development build a final
 research-qualified release.

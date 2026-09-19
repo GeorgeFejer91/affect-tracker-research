@@ -20,7 +20,7 @@ is unchanged. No German questionnaire item text is shipped by this change.
 
 The user-authorized source and owner proof remain external in
 `D:/GitHub/.affect-checks/tas20-german-source-20260912/`. Do not copy them into the
-repository/public build. Root owns the source/permission amendment in `for-ai/70`.
+repository/public build. Root owns the source/permission amendment in `for-ai/70-RESEARCH-PROVENANCE.md`.
 
 ## Native service (new module only)
 

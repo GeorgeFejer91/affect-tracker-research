@@ -3,7 +3,7 @@
 ## Current questionnaire asset authority
 
 Fresh Planner saves use the master5 questionnaire-asset boundary in
-[the charter](15-RESEARCH-V1-CHARTER.md#questionnaire-asset-amendment--2026-09-13)
+[the product authority](10-PRODUCT.md)
 and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
 manifest contract; P2 owns authored SurveyJS content and presentation seams; R1
 owns Runner intake/evidence. This catalogue keeps checklist status and does not
@@ -25,10 +25,10 @@ write/advance. Full contract, scope and qualification boundaries are in
 including experiment-defining Flubber/live configuration, contributes to one
 validated, saveable and editable master. Canonical source, local build and
 combined verification are recorded in 67; checked capabilities below are delivered.
-See [67-PLANNER-COMPLETION-GOAL.md](67-PLANNER-COMPLETION-GOAL.md) for historical
+See Git history for historical
 assignments, exact source/artifact identities and evidence. Final Planner–Runner
 correspondence is the active later allocation under 69/72. The separate-program and
-Runner-owned recording amendment in [16](16-COMPANION-APP-BOUNDARY.md) supersedes
+Runner-owned recording amendment in [10-PRODUCT.md](10-PRODUCT.md) supersedes
 older one-program/two-mode wording below.
 
 This is the central **final-state Planner roadmap**, segment contract map and
@@ -50,7 +50,7 @@ recorded baseline; do not use them to dismiss these later counterexamples.
 
 The completed baseline predates the user's CLI request. These additional items
 remain open until integrated and verified. Scope, example and evidence are in
-[68](68-PLANNER-CLI.md); these checkboxes are the capability authority.
+[the Planner CLI reference](../docs/planner-cli.md); these checkboxes are the capability authority.
 
 - [ ] **CLI-P1:** study/workspace selection, actual import/rescan and verified
   catalogue readback through P1; derived media facts read-only.
@@ -70,13 +70,13 @@ remain open until integrated and verified. Scope, example and evidence are in
   lifecycle fences, bounded transport, truthful results and the requested real
   mock experiment with full end-to-end setting coverage.
 - [ ] **CLI-DOCS:** maintained About → CLI library on GitHub Pages and matching
-  [for-ai reference](71-CLI-LIBRARY.md), source-derived command inventory and
+  [CLI library reference](../docs/planner-cli-library.md), source-derived command inventory and
   drift check, exact input/output/UI/JSON mappings, examples and verification
   status; rendered and deployed documentation checked against integrated source.
 
 ### CLI-to-Runner validation goal — 2026-09-12
 
-The user explicitly activated the final correspondence work; [69](69-CLI-RUNNER-END-TO-END-GOAL.md)
+The user explicitly activated the final correspondence work; [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md)
 owns the test plan and evidence ledger. These items add to the CLI implementation
 rows; they do not reopen the completed baseline authoring goal.
 
@@ -94,24 +94,24 @@ rows; they do not reopen the completed baseline authoring goal.
   complete canonical recipe/selection, demographics, questionnaire definitions
   and typed answers, plus observed identified video/ISI/form events and outcomes
   from its single primary information stream. Missing/corrupt/duplicate/out-of-order
-  data fails explicitly. Scope and evidence requirements are in [69](69-CLI-RUNNER-END-TO-END-GOAL.md).
+  data fails explicitly. Scope and evidence requirements are in [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md).
 
 ### Baseline evidence rules
 
-- The dated amendment in [the charter](15-RESEARCH-V1-CHARTER.md) adopts this
+- The dated amendment in [the product authority](10-PRODUCT.md) adopts this
   roadmap as the final-state capability and ownership plan. Accepted decisions
   below supersede conflicting old product-direction wording. Existing v1 JSON,
   records and reader semantics remain frozen until explicit versioned changes.
 - This file owns segment capability checkboxes and unresolved product decisions.
-  [40-ROADMAP.md](40-ROADMAP.md) retains implementation/qualification receipts;
-  [61-IMPLEMENTATION-AUDIT.md](61-IMPLEMENTATION-AUDIT.md) is the detailed dated
-  source audit; [30-TESTING-AND-RELEASE.md](30-TESTING-AND-RELEASE.md) owns claim
+  Git history retains implementation/qualification receipts;
+  the dated audit in Git history is the detailed dated
+  source audit; [30-VERIFICATION.md](30-VERIFICATION.md) owns claim
   gates. Requirement approval is not implementation evidence.
-- [62-PLANNER-CLOSURE-PLAN.md](62-PLANNER-CLOSURE-PLAN.md) summarizes current
+- the closure plan in Git history summarizes current
   input/output contracts, optional extensions and bounded future passes.
   This file owns capability status and accepted decisions. Current combined application source is
   `875efae0a852bdcea978e8a12b74c0e81288d51c`; detailed final component and shared
-  authoring/save/Open evidence is in [67](67-PLANNER-COMPLETION-GOAL.md).
+  authoring/save/Open evidence is in Git history.
   Canonical `codex/research-unified` received this product as
   `1218c9ebef87111109d784bc2a9bf5827767917f`. The checked Planner items below
   are delivered software capabilities; optional content and runtime gates are explicit.
@@ -177,7 +177,7 @@ rows; they do not reopen the completed baseline authoring goal.
 9. Add optional XR spatial authoring and a rotatable 3D preview. Content is
    **fixed in virtual space, aligned to the participant's forward direction at
    setup**. This accepted future direction is not current APK/WebXR support.
-10. Under the later two-program amendment in [16](16-COMPANION-APP-BOUNDARY.md),
+10. Under the later two-program amendment in [10-PRODUCT.md](10-PRODUCT.md),
     **Setting Up the Experiment** belongs to Experiment Planner and **Running
     the Experiment** belongs to the separate Experiment Runner. The Planner has
     no participant Start/Run surface. P1–P7 are responsibility IDs, not extra modes
@@ -222,34 +222,14 @@ previews edit one owner. The complete current wire contract is P7's
 `docs/planner-master-recipe-v1.md`; historical baseline proposals below do not
 override the dated companion boundary or the active completion goal.
 
-## Mandatory segment brief and update discipline
+## Working on a segment
 
-Before editing, every agent records in its pass/board entry:
-
-1. Assigned segment ID and exact checklist IDs; intended capability.
-2. Required user input, owned JSON contribution, producers and consumers.
-3. Current source snapshot and implemented/partial/missing evidence.
-4. Remaining items, open decisions and the smallest useful next slice.
-5. Allowed files/symbols, shared seams, dependencies and proportional checks.
-
-An allocation to one segment does not authorize implementing another segment's
-dependencies. Read its contract and use documented interfaces. Record an unmet
-interface as a dependency with its owner in the message board. Ask only for
-missing information; do not re-request accepted decisions. Pending questions
-block dependent implementation only, not independent work in the assigned scope.
-
-At handoff update only your segment's items, relevant decision answers and
-uniquely owned board entry. Every newly checked item needs exact source/commit,
-tests actually run, platform, limitations and integration state. Keep detailed
-receipts in `40-ROADMAP.md`. Keep the implementation audit dated, or explicitly
-re-audit it. Do not rewrite other
-segments' status or equate preview behavior with saved/Runner behavior. Follow
-[50-AGENT-WORKFLOW.md](50-AGENT-WORKFLOW.md) for isolation and convergence.
-
-A separately allocated `roadmap`, `contracts`, `media`, `timing`, `lsl` or
-`integration` pass is a bounded owner too; name its exact checklist dependencies.
-It never grants whole-project implementation. A Planner task must not silently
-turn into Runner, device or recording work.
+Read the segment's own entry below and its wire contract in `docs/` before
+editing it. Record what you changed and what you actually verified; a preview
+behaving correctly is not evidence that the saved recipe or the Runner behaves
+correctly. There is no allocation ledger, message-board entry or ownership
+claim to file: an explicitly requested cross-cutting change may touch several
+segments at once.
 
 ## P1 — Workspace & Video Library
 
@@ -291,7 +271,7 @@ native geometry remains pending; installed removed native player stack qualifica
 resolves to declared bytes after export/reload. No second catalogue or directory-
 order experiment is created.
 **Source:** [browser workspace](../experiment-planner/web/src/research/workspace.js),
-[native workspace](../native/src/research_workspace.rs), [audit](61-IMPLEMENTATION-AUDIT.md).
+[native workspace](../native/src/research_workspace.rs), audit in Git history.
 **Boundary:** P1 does not allocate participants, order events or lay out the screen.
 
 ## P2 — Questionnaires & Languages
@@ -478,7 +458,7 @@ accepted/native checkpoint `d0267fff` and the subsequent live preparation/reopen
 work implement this direction. Final component source `77e4752` passes 680 Node,
 203 no-default Rust, both builds and 231 clean-source Chrome assertions across
 six inspected scenes. See [the exact contract and API](../docs/planner-p4-layout-contract.md)
-and [final component evidence](./40-ROADMAP.md#p4-accepted-planner-layout--2026-09-12).
+and Git history.
 Integration/P7 subsequently completed the combined acceptance and master
 save/reopen receipts at delivered `1218c9e`; Runner remains separately deferred.
 Current internal draft v2 remains the canonical recoverable draft shape; older
@@ -548,8 +528,8 @@ rotatable 3D preview. **Consumers:** P7 and later R1 XR adapters.
 angle fixtures; the preview does not claim headset accuracy. World-fixed is not
 a measured-eye-tracking requirement. Authoring is implemented; XR execution is later.
 P6 worktree source/contract and exact limits are in
-[63-P6-XR-LAYOUT.md](63-P6-XR-LAYOUT.md), with receipts in
-[40-ROADMAP.md](40-ROADMAP.md#p6-virtual-screen-authoring--2026-09-11).
+[docs/planner-p6-xr-layout.md](../docs/planner-p6-xr-layout.md), with receipts in
+Git history.
 Final P6 `7fd56d5` (application `51685b0`) is collected in `875efae`; two actual
 master save/Open scenes pass 60 checks each and preserve included/excluded profiles.
 **Boundary:** no unrelated Playground restoration or device work merely to finish authoring.
@@ -629,7 +609,7 @@ Historical experiment-package v1 has nine root members: `schema`, `version`, `pa
 `assets`, `languageSelection`, `playback`, `settings`, `integrity`. Closed nested
 contracts cannot take new keys under the old version. Create explicit successor
 schemas/migration fixtures, preserving historical meaning. Actual current field
-shapes are in the dated [implementation audit](61-IMPLEMENTATION-AUDIT.md).
+shapes are in the dated implementation audit in Git history.
 The current `affect-research-planner-recipe` v1 has exactly `schema`, `version`,
 `recipeId`, `presentationTarget`, `policy`, `segments`, `integrity`; its portable
 reproduction identity is explicitly tagged v2. Full profile inputs and named
@@ -660,7 +640,7 @@ An open decision blocks only its dependent capability.
 
 ## Future-pass order and completion criteria
 
-Use the [bounded future-pass checklist](62-PLANNER-CLOSURE-PLAN.md#bounded-future-pass-checklist)
+Use the bounded future-pass checklist in Git history
 for new requested work. Required P1–P7 implementation is complete. Start from the
 delivered source, allocate one concrete remaining defect or extension, preserve
 owner contracts and route dependencies to their existing owners. Do not restart
@@ -679,7 +659,7 @@ a recipe does not prove qualified execution or recording.
 The initial source audit executed 59 focused existing Node tests successfully
 and inventoried every Research module. This roadmap pass is documentation-only;
 no fresh native/browser/hardware qualification is implied. Exact command and
-limits are in [61](61-IMPLEMENTATION-AUDIT.md).
+limits are in the audit in Git history.
 
 Pending branches observed 2026-09-11 are not integrated completion evidence:
 
@@ -697,4 +677,4 @@ exact evidence; this 2026-09-11 baseline is not a perpetual live audit.
 
 ## Current user amendment — 2026-09-13
 
-The latest user requires the canonical JSON to contain every segment's experiment-defining metadata and explicit asset identities/locations; Runner must reconstruct without a shared default-folder dependency. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md) for the current owner-by-owner contract inventory and evidence checklist. Existing Planner authoring completion does not prove complete Runner execution.
+The latest user requires the canonical JSON to contain every segment's experiment-defining metadata and explicit asset identities/locations; Runner must reconstruct without a shared default-folder dependency. See [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) for the current owner-by-owner contract inventory and evidence checklist. Existing Planner authoring completion does not prove complete Runner execution.

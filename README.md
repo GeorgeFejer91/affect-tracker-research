@@ -23,8 +23,8 @@ JSON recipe. **Experiment Runner** takes that finished file for acquisition and
 monitoring. Researchers are not expected to write or edit master JSON. Current
 Planner status is tracked in [the segment catalogue](./for-ai/60-SEGMENT-CATALOGUE.md);
 Runner correspondence is tracked in
-[the compatibility map](./for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md) and
-[final validation ledger](./for-ai/72-RUNNER-FINAL-VALIDATION.md).
+[the compatibility map](./for-ai/66-COMPATIBILITY.md) and
+[Runner requirements](./for-ai/65-RUNNER-SEGMENTS.md).
 
 This repository is the focused Research lineage. The complete feature-rich application and its full Git history are preserved in [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground), with the frozen application deployed at <https://GeorgeFejer91.github.io/affect-tracker-playground/>.
 
@@ -141,7 +141,7 @@ bindings, and research qualification still fails closed before mutation. They ar
 research, timing, media, input, recovery, or LSL qualification claims.
 
 The durable product contract is
-[`for-ai/15-RESEARCH-V1-CHARTER.md`](./for-ai/15-RESEARCH-V1-CHARTER.md).
+[`for-ai/10-PRODUCT.md`](./for-ai/10-PRODUCT.md).
 Historical architecture and source remain in Playground and Git history, not
 in the active Research tree.
 
@@ -186,7 +186,7 @@ implementation evidence only. They do not establish scheduler performance,
 crash durability, LSL interoperability, accessibility, media compatibility, or
 physical workflow qualification.
 
-The candidate remains under development. The exact open software and qualification gates are tracked in [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) and [`for-ai/30-TESTING-AND-RELEASE.md`](./for-ai/30-TESTING-AND-RELEASE.md). The Pages deployment target is <https://GeorgeFejer91.github.io/affect-tracker-research/>.
+The candidate remains under development. The exact open software and qualification gates are tracked in [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md) and [`for-ai/30-VERIFICATION.md`](./for-ai/30-VERIFICATION.md). The Pages deployment target is <https://GeorgeFejer91.github.io/affect-tracker-research/>.
 
 ### Windows video-player status
 

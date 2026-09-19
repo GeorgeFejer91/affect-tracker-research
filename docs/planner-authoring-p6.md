@@ -100,7 +100,7 @@ image hashes. It also checks invalid numeric UI repair, transient camera,
 staging nonmutation and GUI/cancellation guards. Media geometry is an explicit
 synthetic fixture. This owner evidence does not claim the native CLI transport,
 real media verification or Runner execution; Main/Runner own those active steps
-under [69](../for-ai/69-CLI-RUNNER-END-TO-END-GOAL.md).
+under [65-RUNNER-SEGMENTS.md](../for-ai/65-RUNNER-SEGMENTS.md).
 
 Final owner application checkpoint `28c5d6ce2f781eef6e37f20ccd762beabf86cb4d`
 collects shared `2310efc` and `0138516`. All 26 owner tests and 13 shared tests

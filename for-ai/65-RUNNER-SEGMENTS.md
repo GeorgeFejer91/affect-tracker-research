@@ -48,7 +48,7 @@ Root collects the isolated color change into its single current desktop build.
 
 The latest explicit user request activates RR-02/03/04/06/07/08/09/10 seams for
 an actual complete experiment whose saved XDF is independently reconstructable.
-[69](69-CLI-RUNNER-END-TO-END-GOAL.md) records the exact test, newly requested
+[65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) records the exact test, newly requested
 shipped bilingual demographics asset and bounded versioned information-stream
 allocation. S2/main provide the typed form/master contract; Runner presents and
 records full-name text, whole-year age and gender/handedness choices alongside
@@ -60,7 +60,7 @@ alone. Component/synthetic recorder evidence does not close this actual run.
 ## Active end-to-end allocation — 2026-09-12
 
 The researcher now explicitly requests CLI-authored master intake and an actual
-Runner correspondence test. [69](69-CLI-RUNNER-END-TO-END-GOAL.md) allocates
+Runner correspondence test. [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md) allocates
 RR-02/RR-10 and named RR-03–07 consumer dependencies to Experiment Runner,
 coordinated with main integration. This supersedes later-stage deferral for
 this bounded test. Existing parser, native authority and qualification gates
@@ -237,7 +237,7 @@ a self-contained primary XDF information stream and shipped typed EN/DE
 demographics. It is a subsequent checkpoint: ≤128 KiB indexed wire frames,
 a committed startup bundle with exact source/selection/definitions/answers,
 observed lifecycle/outcome and strict independent reconstruction. Whole-bundle
-size follows the [charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+size follows the [product authority](10-PRODUCT.md).
 S2/main own the new P2/master dispatch; Runner must not invent text/age-as-Likert data or claim
 the first-generation dictionary-only marker receipt satisfies the expansion.
 
@@ -255,7 +255,7 @@ producer artifact and TAS-DE source are coordinated separately. See the matching
 message-board entry for scope, shared-file ownership and evidence plan.
 
 This ledger applies to agents implementing the **Runner companion only**.
-Read [the two-program boundary](16-COMPANION-APP-BOUNDARY.md), the charter and
+Read [the two-program boundary](10-PRODUCT.md), the charter and
 testing/workflow requirements first. R1 in the wider catalogue names the whole
 Runner; the RR identifiers below divide that allocated application into bounded
 work. They are ownership IDs, not application modes or evidence of completion.
@@ -618,7 +618,7 @@ and the existing playback/XDF release gates remain open.
 
 ## Current user amendment — 2026-09-13
 
-Root alone owns current Runner closure. Actual keyboard operation and a test-only PyAutoGUI sequence are required, alongside JSON-relative project resolution and complete real XDF verification. See [72-RUNNER-FINAL-VALIDATION.md](72-RUNNER-FINAL-VALIDATION.md). The questionnaire definitions are embedded; initial-form execution gating remains open.
+Root alone owns current Runner closure. Actual keyboard operation and a test-only PyAutoGUI sequence are required, alongside JSON-relative project resolution and complete real XDF verification. See [65-RUNNER-SEGMENTS.md](65-RUNNER-SEGMENTS.md). The questionnaire definitions are embedded; initial-form execution gating remains open.
 
 ## User-approved local validation sessions — 2026-09-13
 
@@ -695,3 +695,152 @@ headless production-frontend checks with synthetic native replies; they do not
 close native override execution, physical input/device testing, neutral runtime
 markers, XDF/LSL reconstruction, installed fullscreen execution or research
 qualification.
+
+
+---
+
+# Runner requirements consolidated from the retired validation ledgers
+
+The sections below were the actionable requirements in the former
+`69-CLI-RUNNER-END-TO-END-GOAL.md` and `72-RUNNER-FINAL-VALIDATION.md`. Their
+dated progress ledgers, process receipts and agent allocations are in Git
+history.
+
+## Authoritative experiment recipe
+
+Planner writes one canonical, versioned master JSON. Every segment contributes
+its complete experiment-defining metadata. Runner must interpret that contract
+without consulting Planner memory or inventing settings from defaults.
+
+| Owner | Required contribution and Runner use | Verified current wire surface |
+| --- | --- | --- |
+| P1 | Study identity; explicit video IDs and asset paths; file identity, duration and display geometry | `segments.P1.study`, `workspaceLayout`, `videoCatalogue.entries`: `annotationId`, `assetId`, `sourceRelativePath`, `packageRelativePath`, `sha256`, `byteLength`, `durationMs`, `geometry` |
+| P2 | Full questionnaire/form definitions, item order, response choices/types, authored scoring, exact language routes and presentation | `segments.P2.questionnaires`, `languageSelection`, `presentation`; EN/DE demographics, 37-item MAIA-2 and 20-item TAS are embedded in the current mock |
+| P3 | Named user-defined ISIs, version columns/chronology, Runner-owned participant allocation, and marker identities | `segments.P3.isiDefinitions`, `variants`, `allocation: {kind:"runnerAssigned"}`, `markerContract`, library identity; no repeating algorithm is stored |
+| P4 | Screen units, viewport/calibration, reference-video fit and centre-relative video/Flubber geometry | `segments.P4.viewport`, `units`, `calibration`, `coordinateSystem`, `reference`, `fit`, `feedback` |
+| P5 | Flubber appearance, neutral response, mapping, animation and input configuration | `segments.P5.visual`, `presentation`, `input`, `response`, `mappings` |
+| P6 | Explicit optional XR inclusion and world-fixed layout when supported | `segments.P6.status`; current mock explicitly omits XR; do not imply desktop Runner supports XR |
+| Shared policy | Participant count, sampling, playback/audio, output and authored LSL convention | Top-level `policy` and `integrity`; segment hashes and reproduction identity bind the complete source |
+
+This inventory is source/recipe evidence, not proof that every consumer applies
+every field correctly. Audit each owner and named consumer against this table;
+do not add duplicate convenience copies of whole segment projections.
+
+## Asset location contract
+
+- A common default project folder is a convenience only, never a prerequisite
+  for interpreting a recipe. The latest user explicitly rejects dependence on
+  an unrelated default directory.
+- `packageRelativePath` identifies runtime media beneath the experiment project
+  root. `sourceRelativePath` is catalogue provenance, not an automatic fallback.
+- Current implementation work makes successful Runner file loading establish
+  the loaded JSON's parent directory as that project root, for both picker and
+  previous-file loading. Native authority retains the absolute root; frontend
+  receives a workspace receipt. Active-run guards remain in force.
+- Example: `D:/Studies/Example/experiment.json` plus declared
+  `assets/stimuli/clip.mp4` resolves to
+  `D:/Studies/Example/assets/stimuli/clip.mp4`. Moving that directory together
+  preserves the portable contract. Moving only the JSON does not move media.
+- Verify every declared path, hash, length, duration and geometry; reject
+  missing, changed, ambiguous or undeclared content. No silent directory search,
+  ID reconstruction, substitution, or fallback to an ambient library.
+- Arbitrary external absolute locations are not a field supported by master3.
+  If required beyond portable relative paths, introduce an explicit versioned
+  producer/consumer locator contract and migration tests; do not silently add
+  unknown fields or weaken the existing readers.
+
+## Keyboard and testing requirements
+
+- The actual Runner must be fully operable with keyboard controls: setup,
+  language/version/participant selection, dialogs, questionnaires, session
+  controls and completion. Use Tab/Shift+Tab and native button/select behaviour.
+- Questionnaire choices: arrows select; Home/End select first/last; Enter
+  explicitly accepts the focused option and advances after native draft
+  acknowledgement. Focusing a radio must not silently answer it.
+- Text and age use ordinary typing, Enter advances, and Shift+Enter preserves
+  multiline text. Last item focuses Submit; a further Enter submits through
+  existing validation. Rejected/pending drafts must not advance focus.
+- Preserve mouse operation, focus on fresh forms, reverse navigation, native
+  form validation, and input isolation during questionnaires/ISIs.
+- PyAutoGUI is exclusively an agent test utility under `scripts/`. Never import
+  it into the app, add it to app runtime dependencies, or package its sequence.
+  It uses synthetic answers, target-window guards and real keypresses. Screen
+  or readiness failure must stop the sequence, not continue typing blindly.
+  The utility is [scripts/runner_keyboard_smoke.py](../scripts/runner_keyboard_smoke.py). It uses
+  PyAutoGUI for keys/screenshots and UI Automation only for target/focus/state
+  checks. Start with `--phase inspect`; it requires explicit PID, recipe and a
+  new output directory. `--phase all` is not proof of success unless its actual
+  observations and independently inspected XDF confirm the full experiment.
+  PyAutoGUI uses the foreground keyboard; it cannot run safely in the background
+  while the researcher types in another application. The driver aborts on focus
+  loss and never disables its fail-safe. Keep Runner foreground during a run.
+
+## Required end-to-end Runner behaviour and XDF reconstruction
+
+The user explicitly requires the actual Runner to read the exact Planner JSON,
+present the participant's questionnaires, play the actual video, preserve its
+leading/trailing ISIs and save an XDF from which the whole experiment can be
+reconstructed. The primary LSL information/marker stream must retain participant
+metadata, complete questionnaire definitions and answers, and observed temporal
+events with unique video, named-ISI and occurrence identities. Separate attempt
+files or the original Planner JSON must not be necessary to interpret the XDF.
+Fixture-only or parser-only evidence does not satisfy this requirement.
+
+The user's demographic answer activates a **shipped EN/DE demographics asset**:
+full name (text), age (number), gender (male, female, other, prefer not to say),
+and handedness. The stated implementation uses whole years and handedness options
+right-handed, left-handed, ambidextrous and prefer not to say. Put demographics
+first in the mock, followed by MAIA-2 and TAS-20, then named ISI 1750 ms, the exact
+Great Dictator clip, and named ISI 3213 ms. Both complete language routes remain
+available for participant selection. This is a project-authored standard form,
+not a claim of psychometric validation. Smoke responses must be explicitly
+synthetic; no real participant is enrolled by this test.
+
+S2 owns the bilingual asset and explicit typed text/integer/single-choice form
+proposal. Main owns shared master/native reader integration; Runner owns the
+participant controls, typed answers and recording. Preserve existing Likert and
+old master contracts through explicit versioned dispatch. Never encode arbitrary
+names or ages as fabricated Likert options, invent scoring or impose an unasked
+adult-only eligibility rule. CLI and UI must expose the same new form capability,
+and the maintained [CLI library](../docs/planner-cli-library.md) must describe it after its
+contract is frozen and implementation is verified.
+
+Runner's approved bounded protocol direction uses its existing single marker
+outlet with a new versioned, sequenced information envelope. A startup header,
+indexed chunks and verified commit carry exact canonical Planner bytes, immutable
+selection, the complete execution dictionary, effective output settings and
+participant metadata. Each wire chunk is at most 128 KiB; this framing constraint
+does not cap the complete startup bundle. Whole-document size follows the
+[product authority](10-PRODUCT.md).
+Reassembly must verify completeness and integrity and report allocation or timeout
+failures without silently truncating content.
+Attach the recorder before the first envelope and begin acquisition only after
+the committed startup bundle. Later records carry typed draft/submitted answers,
+observed lifecycle transitions and explicit final or interrupted outcome.
+The Runner owner freezes the exact schema and implementation; this paragraph is
+the authorized seam, not a second schema definition or completion receipt.
+
+Preserve actual LSL timestamps and native observation times separately from
+planned offsets. Emit distinct start/end events for every video and named ISI,
+including repeated IDs, consecutive ISIs and zero-duration intervals. Pause,
+resume, errors, cancellation and incomplete recording must remain distinguishable.
+The stream binds recipe, run, attempt, participant, variant, language path,
+definition/item/option IDs and occurrence/execution IDs as appropriate.
+
+Independent verification must begin with **only the saved XDF**. Reconstruct its
+canonical recipe/selection, demographics, exact shown questionnaire definitions,
+typed answers and ordered observed timeline; then compare these reconstructed
+values with the original exported recipe and separately recorded UI/native
+observations. Reject or explicitly report missing profile/chunks/events, duplicate
+or reordered sequences, bad hashes, invalid typed answers and clock reversal.
+Do not repair gaps by inferring events from planned durations. XDF retains media
+identities, locations, hashes and metadata; replaying video pixels still requires
+the matching video asset, not a covert copy of video bytes in LSL markers.
+
+Acceptance includes real participant-panel rendering for both languages, real
+full-clip playback, measured leading/trailing intervals, saved Flubber/input/layout
+behavior, actual LSL capture and independent XDF reconstruction. Synthetic
+transport tests are useful prerequisites with their own receipts. They cannot
+close the actual smoke test. Existing installed/native timing, lifecycle, source
+closure and capability gates remain in force.
+

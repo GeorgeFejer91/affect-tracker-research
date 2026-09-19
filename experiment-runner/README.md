@@ -21,8 +21,7 @@ Planner retains its own desktop build entry and application-data identity.
 The default build uses checked `research-media` URLs and the WebView
 `HTMLVideoElement` for lightweight playback. A successful build or synthetic
 test does not qualify installed timing, LSL/XDF recording, accessibility, or
-physical workflow readiness; those gates remain tracked in `for-ai/30` and
-`for-ai/40`.
+physical workflow readiness; those gates remain tracked in `for-ai/30-VERIFICATION.md`.
 
 ## Launcher and participant flow
 
@@ -67,7 +66,7 @@ labels, codes and hook order continue to come from the frozen recipe.
 The two QR popups are previews. Their distinct reserved GitHub Pages destinations
 are not deployed and do not create a connection. The professor companion will
 mirror the whole Runner; the phone/tablet companion will expose a fullscreen 2D
-affect pad. Both are future browser work recorded in `for-ai/65`.
+affect pad. Both are future browser work recorded in `for-ai/65-RUNNER-SEGMENTS.md`.
 
 Set controller currently edits an in-memory override draft (preset and digital
 step size). Restoring the file settings discards it. Applying an override to actual

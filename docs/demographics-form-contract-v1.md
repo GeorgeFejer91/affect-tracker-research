@@ -8,7 +8,7 @@ chain before root allocated this bounded pass. Base:
 
 ## Authority and scope
 
-[The user amendment](../for-ai/69-CLI-RUNNER-END-TO-END-GOAL.md) authorizes a
+[The user requirement](../for-ai/65-RUNNER-SEGMENTS.md) authorizes a
 public project-authored English/German form for full name, whole-year age,
 gender and handedness. These definitions are the intended source assets for
 later integration, currently stored as small contract fixtures. They contain
@@ -207,7 +207,7 @@ browser/runtime check was run for these data/documentation-only changes.
 
 UI/CLI accepted-state parity, actual bilingual participant controls, native
 answers and saved-XDF-only reconstruction remain required later evidence under
-[69](../for-ai/69-CLI-RUNNER-END-TO-END-GOAL.md). No fixture check closes those gates.
+[65-RUNNER-SEGMENTS.md](../for-ai/65-RUNNER-SEGMENTS.md). No fixture check closes those gates.
 
 ## Owner handoff
 

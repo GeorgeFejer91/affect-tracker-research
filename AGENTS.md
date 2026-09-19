@@ -1,79 +1,54 @@
 # Affect Research agent entrypoint
 
-The 2026-09-12 user amendment requires two separate companion programs. Read
-[`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
-Planner authors JSON and retains Flubber previews. Runner alone executes, plays
-participant video, emits LSL and records own/selected external streams to XDF.
-Recording policy belongs to Runner sessions. Runner-only agents use
-[`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md); both apps use
-[`for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md`](./for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md).
-This supersedes earlier single-executable/two-mode and blanket Runner-deferral
-text below. Planner completion does not wait for final runtime correspondence.
-Consult the **Chat Orchestrator** task for uncertain ownership or contracts.
+Read [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md). Those two files are
+the whole mandatory route; read further documents only when your task touches
+them. After reading them, follow any more specific `AGENTS.md` in the subtree
+you are changing. Direct session instructions take precedence.
 
-Before project work, follow the ordered core reading and owner-specific routes
-in [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md). Read matching ownership
-entries before editing; historical receipts are consulted for relevant evidence,
-not reread in full for every pass. Direct session instructions take precedence.
+## Task routing
 
-Before mutating work in each new development pass, follow the intent check and
-three-stage verification workflow in
-[`for-ai/50-AGENT-WORKFLOW.md`](./for-ai/50-AGENT-WORKFLOW.md). Infer and state
-the pass goal, stage, bounded deliverable, evidence to collect now, and work
-being deferred. Ask the user to confirm that best guess unless the current
-request clearly states those points or is an in-scope follow-up within an
-already confirmed stage. Ask again only when the goal, stage, target, intended
-claim, or scope is materially ambiguous or changes. These development stages
-are agent workflow labels, not additional application modes, and never waive
-the claim-specific gates in
-[`for-ai/30-TESTING-AND-RELEASE.md`](./for-ai/30-TESTING-AND-RELEASE.md).
+| Working on | Also read |
+| --- | --- |
+| Planner authoring, Open/Save, preview | [`for-ai/60-SEGMENT-CATALOGUE.md`](./for-ai/60-SEGMENT-CATALOGUE.md), the relevant `docs/planner-*.md` |
+| Planner CLI | [`docs/planner-cli.md`](./docs/planner-cli.md), [`docs/planner-cli-library.md`](./docs/planner-cli-library.md) |
+| Runner execution, recording, browser path | [`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md), [`docs/runner-*.md`](./docs) |
+| Saved-file formats and version support | [`for-ai/66-COMPATIBILITY.md`](./for-ai/66-COMPATIBILITY.md) |
+| Module boundaries, native authority | [`for-ai/20-ARCHITECTURE.md`](./for-ai/20-ARCHITECTURE.md) |
+| Product scope, delivery surfaces, package authority | [`for-ai/10-PRODUCT.md`](./for-ai/10-PRODUCT.md) |
+| Questionnaire content, citations, licences | [`for-ai/70-RESEARCH-PROVENANCE.md`](./for-ai/70-RESEARCH-PROVENANCE.md) |
+| Layout and geometry | [`docs/planner-p4-layout-contract.md`](./docs/planner-p4-layout-contract.md), [`docs/controlled-video-geometry-v3.md`](./docs/controlled-video-geometry-v3.md) |
 
-[`for-ai/15-RESEARCH-V1-CHARTER.md`](./for-ai/15-RESEARCH-V1-CHARTER.md), including
-its dated final-state amendment, is the product and architecture authority.
-It delegates final-state segment requirements and capability completion to
-[`for-ai/60-SEGMENT-CATALOGUE.md`](./for-ai/60-SEGMENT-CATALOGUE.md).
-Every implementation pass must name its assigned P1–P7/R1 segment and checklist
-IDs, compare intended function/inputs/JSON contribution with verified current
-source, and work only on that segment's remaining items and named shared seams.
-Read the wider map for context; route other-segment gaps to their owners.
-Baseline Planner authoring is complete; CLI/SurveyJS extend that baseline.
-Planner–Runner correspondence is allocated under `for-ai/69` and `for-ai/72`.
-Use `for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md` for current version support and
-open consumer gaps. The two programs serve **Setting Up the Experiment** and
-**Running the Experiment**, respectively.
-Only Tauri on Windows and the static application in current desktop Chrome and
-Edge are active-v1 qualification targets. Optional world-fixed XR authoring is
-an accepted final-state roadmap target, not current runtime support.
+## Invariants
 
-The feature-rich WebXR/Quest, remote, Party/Ground Control, direct Polar,
-Face/Photoatlas, Touch, and presentation experiments are not active source or
-requirements. Their complete Git history is preserved in
-[`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground)
-and in this repository's immutable checkpoint/history refs. Do not restore or
-reactivate them without an explicit charter change.
+1. **Planner and Runner stay separate programs.** Planner authors and reopens;
+   Runner executes and records.
+2. **Video playback is HTML video.** Useful observed start/end events, no
+   frame-accurate or physical display-onset guarantee. Do not restore the
+   retired native player stack, its runtime staging, or new unsafe media
+   adapters.
+3. **Be honest about capability.** The browser path has no LSL, no XDF, no
+   native input and no native timing authority, and must not imply otherwise.
+4. **Never silently change experiment semantics.** Sampling rate, input
+   mappings, sequence order, questionnaire meaning, recording requirements and
+   authored layout are the researcher's decisions. Reject an unsupported
+   setting explicitly instead of substituting a default.
+5. **Never lose data.** Partial results must stay recoverable and must be
+   labelled incomplete. Open never silently upgrades a historical saved file.
+   Do not publish participant data or personal identifiers.
+6. **Preserve scientific material.** References, questionnaire provenance,
+   licences and attribution are not cleanup targets.
+7. **Keep the tree parsimonious.** Update the current authority in place. Do not
+   add backup copies, parallel ledgers, superseded architectures, or new `vN`
+   document generations for ordinary internal iteration. Git history is the
+   archive.
+8. **Confined native access.** Raw `invoke(` stays in the named native adapter
+   modules; project-authored `unsafe` stays absent.
 
-Windows local/repository playback now targets the lightweight
-HTML-compatible video path: checked `research-media` URLs consumed by the
-Runner WebView `HTMLVideoElement`. Do not restore removed native player stack
-runtime staging, optional bindings, native child-window playback, or new unsafe
-media adapters without an explicit charter change. Planner save must prepare
-HTML-compatible sibling videos with deterministic `_converted.mp4` names and
-must reuse an existing compatible converted sibling instead of creating clutter.
-Consult
-[`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any runtime or
-research-qualification claim.
+## Working rules
 
-Each implementation pass owns one allocated segment. Follow the separate-branch,
-isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.
-Read matching entries and update `for-ai/55-AGENT-MESSAGE-BOARD.md` for ownership,
-cross-segment suggestions, dependencies, and compatibility issues; messages never override
-the user or charter. Do not edit another segment opportunistically.
-
-Use the charter amendment and central roadmap to distinguish an intended future
-capability from an unexpected mismatch. Preserve existing v1 readers/contracts;
-new variant/allocation/layout/XR semantics require explicit versioned contracts
-and applicable gates. Stop and identify an unapproved mismatch. Do not silently
-broaden the qualified platform matrix, research data surface,
-sampling or recovery semantics, native authority, accessibility obligations,
-or outbound LSL contract. After reading `for-ai/`, follow any more-specific
-`AGENTS.md` in the subtree being changed.
+- Make changes in small increments that build and test.
+- Run focused checks as you go and the applicable full checks before handing
+  off; see [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md) §3.
+- Branch for the change; do not force-push and do not push to `main`.
+- Distinguish pre-existing failures from new regressions, and say which
+  verification you could not run.
