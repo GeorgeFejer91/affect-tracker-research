@@ -18,14 +18,16 @@ function pngDimensions(buffer) {
 }
 
 test("Aurora Axis is the canonical Research desktop and Pages logo", async () => {
-  const [selected, desktop, pages] = await Promise.all([
-    readFile(projectFile("experiment-planner/desktop/icons/concepts/axis-bloom-variants/axis-05-aurora-axis.svg")),
+  // The selection is finished: app-icon.svg is the chosen logo, and the Pages
+  // asset must stay byte-identical to it. The concept exploration it came from
+  // is in Git history.
+  const [desktop, pages] = await Promise.all([
     readFile(projectFile("experiment-planner/desktop/icons/app-icon.svg")),
     readFile(projectFile("experiment-planner/web/assets/app-logo.svg")),
   ]);
 
-  assert.deepEqual(desktop, selected);
-  assert.deepEqual(pages, selected);
+  assert.deepEqual(pages, desktop);
+  assert.match(desktop.toString("utf8"), /data-concept="axis-05-aurora-axis"/u);
 });
 
 test("Research browser and Tauri icon assets use the required sizes and containers", async () => {
