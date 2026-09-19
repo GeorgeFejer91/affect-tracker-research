@@ -2219,9 +2219,9 @@ fn portable_relative_to_path(root: &Path, relative: &str) -> ResearchResult<Path
 }
 
 fn logical_relative_path_for_asset(root: &Path, path: &Path) -> ResearchResult<String> {
-    let relative = path
-        .strip_prefix(root)
-        .map_err(|_| CommandError::forbidden("A prepared Planner video escaped assets/stimuli/."))?;
+    let relative = path.strip_prefix(root).map_err(|_| {
+        CommandError::forbidden("A prepared Planner video escaped assets/stimuli/.")
+    })?;
     let relative = portable_import_relative_path(relative)?;
     Ok(format!("stimuli/{relative}"))
 }
@@ -3748,7 +3748,9 @@ mod tests {
             .normalize_and_validate()
             .unwrap();
         let definition = import_questionnaire_csv(
-            include_bytes!("../../experiment-planner/web/questionnaires/questionnaire-template.csv"),
+            include_bytes!(
+                "../../experiment-planner/web/questionnaires/questionnaire-template.csv"
+            ),
             QuestionnaireSourceKindV1::ResearcherCsv,
             "questionnaire-template.csv",
             None,

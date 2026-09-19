@@ -156,16 +156,13 @@ what is known open, not a ledger to be duplicated.
   is missing `research_input` and its dependency closure. Completing that list
   pulls in most of the crate; the real fix is to drive these tests through the
   public `affect_research::` API instead of re-including sources.
-- `native/src/research_native_media.rs` still contains the retired player
-  service. Every one of its lifecycle methods returns `native_media_unavailable`
-  and `is_stopped()` is hardcoded true, so the seven `research_native_media_*`
-  lifecycle commands registered in `lib.rs` are unreachable. Only
-  `research_native_media_capability` carries information, and the only variable
-  field in its 23-field payload is `reasonCode`. Deleting the service, those
-  commands, `live_frame.rs` and the capability probe is an open cleanup; the
-  viewport types, `PlaybackMode`/`PlaybackQualification` (persisted in run
-  journals) and the decode receipts must be kept.
-- `MasterPhase::Pausing` and `MasterPhase::Resuming` are no longer reachable.
+- The retired direct native-player IPC commands, live-frame placeholder and
+  capability probe are deleted. `research_native_media_capability` remains as
+  the fail-closed compatibility report. `research_native_media.rs` still holds
+  the small compatibility service used by historical package/runtime readers;
+  its player methods return `native_media_unavailable`. Keep the viewport,
+  playback-mode/qualification and decode-receipt types because saved contracts
+  still contain them.
 - The downloadable Windows alpha is an unsigned, no-optional-feature,
   interface-evaluation package. It is not a research release.
 

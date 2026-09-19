@@ -5,9 +5,7 @@ use super::{
 };
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_input::ResearchInputService;
-use crate::research_native_media::{
-    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
-};
+use crate::research_native_media::{NativeMediaViewportCssV1, NativeMediaViewportPxV1};
 use crate::research_native_protocol::{
     input_mailbox::ProtocolInputMailbox, runtime::PackageProtocolRuntime,
 };
@@ -225,9 +223,7 @@ pub enum MasterPhase {
     Interval,
     Preparing,
     Playing,
-    Pausing,
     Paused,
-    Resuming,
     Finished,
     Failed,
 }
@@ -255,6 +251,8 @@ pub struct MasterStatus {
     pub current_arousal: f64,
     pub input_active: bool,
     pub interval_remaining_ms: Option<f64>,
+    /// The last media position the WebView actually observed, or None when no
+    /// observation has been reported. Never an elapsed estimate.
     pub media_time_ms: Option<f64>,
     pub failure_code: Option<String>,
     pub result: Option<Value>,
@@ -390,7 +388,6 @@ impl Drop for InputAuthority {
 
 pub struct MasterRuntime {
     pub(crate) workspace: Arc<WorkspaceService>,
-    pub(crate) media: Arc<NativeMediaService>,
     pub(crate) input: Arc<ResearchInputService>,
     pub(crate) recorder: Arc<RecorderService>,
     legacy: Arc<PackageProtocolRuntime>,
@@ -399,14 +396,12 @@ pub struct MasterRuntime {
 impl MasterRuntime {
     pub(crate) fn new(
         workspace: Arc<WorkspaceService>,
-        media: Arc<NativeMediaService>,
         input: Arc<ResearchInputService>,
         recorder: Arc<RecorderService>,
         legacy: Arc<PackageProtocolRuntime>,
     ) -> Self {
         Self {
             workspace,
-            media,
             input,
             recorder,
             legacy,
@@ -545,12 +540,6 @@ impl MasterRuntime {
             crate::research_platform::require_native_acquisition(
                 crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
             )?;
-            let _ = self
-                .media
-                .authorize_playback(PlaybackMode::UnqualifiedWebview)?;
-            if request.validation {
-                require_validation_media(&self.media.capability())?;
-            }
             let prepared = PreparedMaster::read(
                 &request.source_text,
                 &request.participant_id,
@@ -561,7 +550,9 @@ impl MasterRuntime {
                     "Start version must match the exact master version.",
                 ));
             }
-            let viewport = native_viewport(&prepared, window)?;
+            // Validate authored geometry against the actual window even though
+            // HTML video owns its own renderer-relative layout.
+            let _ = native_viewport(&prepared, window)?;
             self.workspace
                 .with_workspace(&request.workspace_id, |root, _| {
                     crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(
@@ -621,12 +612,10 @@ impl MasterRuntime {
                 prepared,
                 request.workspace_id,
                 bindings,
-                viewport,
                 storage,
                 authority.clone(),
                 mailbox,
                 Arc::clone(&self.workspace),
-                Arc::clone(&self.media),
                 Arc::clone(&self.recorder),
                 lease,
             )?;
@@ -1006,31 +995,5 @@ mod v3_ingress_tests {
             .unwrap()
             .validate()
             .is_err());
-    }
-}
-
-/// Validation no longer qualifies retired native media. Current validation
-/// playback is driven by the WebView HTML video protocol.
-pub(crate) fn require_validation_media(
-    capability: &crate::research_native_media::NativeMediaCapability,
-) -> ResearchResult<()> {
-    if capability.backend != "html-video-element" || capability.api != "research-media" {
-        return Err(CommandError::native_media_unavailable(
-            &capability.reason_code,
-        ));
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-mod validation_tests {
-    use super::*;
-    #[test]
-    fn validation_accepts_html_video_protocol() {
-        let media = NativeMediaService::unavailable_for_tests();
-        let capability = media.capability();
-        assert!(require_validation_media(&capability).is_ok());
-        assert_eq!(capability.backend, "html-video-element");
-        assert_eq!(capability.reason_code, "html-video-player-active");
     }
 }

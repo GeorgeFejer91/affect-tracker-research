@@ -212,8 +212,10 @@ mod tests {
                         serde_json::json!({"status":"malformed"})
                 }
                 3 => geometry["htmlVideoMetadata"]["videoWidthPx"] = 1.into(),
-                4 => geometry["htmlVideoMetadata"]["pixelAspectRatio"] =
-                    serde_json::json!({"numerator":2,"denominator":2}),
+                4 => {
+                    geometry["htmlVideoMetadata"]["pixelAspectRatio"] =
+                        serde_json::json!({"numerator":2,"denominator":2})
+                }
                 5 => geometry["extra"] = true.into(),
                 6 => geometry["htmlVideoMetadata"]["extra"] = true.into(),
                 7 => value["version"] = 2.into(),

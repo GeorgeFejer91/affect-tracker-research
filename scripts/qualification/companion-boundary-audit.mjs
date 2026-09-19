@@ -35,7 +35,6 @@ try {
    case 'research_source_capabilities':return {repositoryAsset:{supported:true}};
    case 'research_input_capability':return {nativeAuthorityReady:false,supportedPresets:[]};
    case 'research_input_status':case 'research_input_cancel_setup':return {available:false,receipt:null,remainingDirections:[],capture:null};
-   case 'research_native_media_stop':return {};
    case 'research_choose_workspace':throw new Error('Synthetic workspace rejection');
    case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'html-video-element',api:'research-media',pinnedRuntimeVersion:'none',bindingsVersion:'webview',target:'tauri-webview',runtimeInstallerSha256:'',runtimeTreeManifestSha256:'',defaultPlaybackMode:'unqualifiedWebview',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:false,rendererReceivesFilesystemPaths:false,reasonCode:'html-video-player-active'};
    default:throw new Error('Planner requested a runtime command: '+command);

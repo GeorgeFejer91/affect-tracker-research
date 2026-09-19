@@ -61,7 +61,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     launch(DesktopRole::Planner, tauri::generate_context!(), None);
 }
@@ -209,7 +208,6 @@ fn launch(
                 app.manage(Arc::new(
                     research_runner_master::runtime::MasterRuntime::new(
                         Arc::clone(&workspace),
-                        Arc::clone(&native_media),
                         Arc::clone(&input),
                         Arc::clone(&recorder),
                         Arc::clone(&package_runtime),
@@ -267,12 +265,6 @@ fn launch(
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
-            research_commands::research_native_media_status,
-            research_commands::research_native_media_prepare,
-            research_commands::research_native_media_set_viewport,
-            research_commands::research_native_media_attest_decode,
-            research_commands::research_native_media_attest_decode_v2,
-            research_commands::research_native_media_stop,
             research_commands::research_input_capability,
             research_commands::research_input_set_region,
             research_commands::research_input_begin_test,
@@ -337,12 +329,6 @@ fn launch(
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
-            research_commands::research_native_media_status,
-            research_commands::research_native_media_prepare,
-            research_commands::research_native_media_set_viewport,
-            research_commands::research_native_media_attest_decode,
-            research_commands::research_native_media_attest_decode_v2,
-            research_commands::research_native_media_stop,
             research_native_protocol::commands::research_package_protocol_capability,
             research_native_protocol::commands::research_package_preflight,
             research_native_protocol::commands::research_start_package_run,

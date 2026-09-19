@@ -1,6 +1,7 @@
 //! Actual native worker and durable storage; no playback qualification claim.
 use super::*;
 use crate::research_input::ResearchInputService;
+use crate::research_native_media::NativeMediaService;
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
 use crate::research_runner_master::MasterSelector;
 
@@ -48,12 +49,10 @@ fn surveyjs_worker_requires_native_validation_and_persists_before_advancing() {
                 prepared,
                 "unused".into(),
                 vec![],
-                NativeMediaViewportPxV1::initial(),
                 storage,
                 authority,
                 mailbox,
                 workspace,
-                media,
                 recorder,
                 lease,
             )

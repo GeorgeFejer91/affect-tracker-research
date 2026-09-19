@@ -3529,7 +3529,9 @@ pub(crate) mod tests {
 
     fn questionnaire_definition() -> QuestionnaireDefinitionV1 {
         import_questionnaire_csv(
-            include_bytes!("../../experiment-planner/web/questionnaires/questionnaire-template.csv"),
+            include_bytes!(
+                "../../experiment-planner/web/questionnaires/questionnaire-template.csv"
+            ),
             QuestionnaireSourceKindV1::ResearcherCsv,
             "questionnaire-template.csv",
             None,

@@ -216,8 +216,9 @@ The landed package-run slice realizes that map through these explicit seams:
   owns pure package-run domain logic; `{input_mailbox,storage,recovery}.rs`
   owns isolated service/failure domains; `runtime.rs` coordinates those
   services; and `commands.rs` is the path-free serialization boundary.
-- `research_native_media/{contracts,live_frame}.rs` is a compatibility surface
-  for HTML-video capability reporting. Playback itself stays in WebView
+- `research_native_media.rs` and `research_native_media/contracts.rs` are the
+  fail-closed compatibility surface for HTML-video capability reporting and
+  persisted native-era contract types. Playback itself stays in WebView
   `HTMLVideoElement` and package media URLs; do not add native player actors or
   SDK runtime staging without an explicit charter change.
 

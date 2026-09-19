@@ -1,33 +1,23 @@
 #![allow(dead_code)]
 
-#[path = "research_native_media/capability.rs"]
-mod capability;
 #[path = "research_native_media/contracts.rs"]
 mod contracts;
-#[path = "research_native_media/live_frame.rs"]
-pub mod live_frame;
 
 pub use contracts::{
     NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1,
     NativeMediaDecodeReceiptV2, NativeMediaPrepareReceiptV1, NativeMediaStateV1,
     NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
-    PlaybackQualification,
+    PlaybackQualification, RuntimeBundleState,
 };
 
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_platform::NATIVE_ACQUISITION_SUPPORTED;
 use crate::research_workspace::NativeMediaGrant;
-use capability::inspect_capability;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 const HTML_VIDEO_REASON: &str = "html-video-player-active";
-
-#[derive(Debug)]
-struct ServiceState {
-    capability: NativeMediaCapability,
-}
 
 /// Internal lifecycle projection, deliberately not an IPC or recipe contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,45 +37,36 @@ struct ServiceLifecycle {
 
 #[derive(Debug)]
 pub struct NativeMediaService {
-    state: Arc<Mutex<ServiceState>>,
+    capability: NativeMediaCapability,
     native_acquisition_supported: bool,
     lifecycle: Arc<ServiceLifecycle>,
     parent: Mutex<Option<tauri::WebviewWindow>>,
 }
 
 impl NativeMediaService {
-    pub(crate) fn snapshot_live_frame(
-        &self,
-        fence: NativeMediaCommandFenceV1,
-    ) -> ResearchResult<live_frame::LiveFrame> {
-        let _ = fence;
-        self.actor_unavailable()
-    }
-
     /// Legacy composition compatibility. HTML video is the only active player; this
     /// returns a fail-closed capability without probing for an external runtime.
     pub fn start(
-        resource_dir: &Path,
-        state_dir: &Path,
-        parent_window_handle: Option<isize>,
+        _resource_dir: &Path,
+        _state_dir: &Path,
+        _parent_window_handle: Option<isize>,
     ) -> Self {
         Self::start_for_platform(
-            resource_dir,
-            state_dir,
-            parent_window_handle,
+            _resource_dir,
+            _state_dir,
+            _parent_window_handle,
             NATIVE_ACQUISITION_SUPPORTED,
         )
     }
 
     fn start_for_platform(
-        resource_dir: &Path,
-        state_dir: &Path,
-        parent_window_handle: Option<isize>,
+        _resource_dir: &Path,
+        _state_dir: &Path,
+        _parent_window_handle: Option<isize>,
         native_acquisition_supported: bool,
     ) -> Self {
-        let _ = (state_dir, parent_window_handle);
         Self::from_capability(
-            inspect_capability(resource_dir, native_acquisition_supported).into_public(),
+            html_video_capability(native_acquisition_supported),
             native_acquisition_supported,
             None,
         )
@@ -97,7 +78,7 @@ impl NativeMediaService {
         parent: Option<tauri::WebviewWindow>,
     ) -> Self {
         Self {
-            state: Arc::new(Mutex::new(ServiceState { capability })),
+            capability,
             native_acquisition_supported,
             lifecycle: Arc::new(ServiceLifecycle::default()),
             parent: Mutex::new(parent),
@@ -107,13 +88,12 @@ impl NativeMediaService {
     /// Returns immediately. The current Runner video authority is the
     /// WebView's HTMLVideoElement over the checked research-media protocol.
     pub fn start_async(
-        resource_dir: PathBuf,
-        state_dir: PathBuf,
+        _resource_dir: PathBuf,
+        _state_dir: PathBuf,
         parent: tauri::WebviewWindow,
     ) -> Arc<Self> {
-        let _ = state_dir;
         Arc::new(Self::from_capability(
-            inspect_capability(&resource_dir, NATIVE_ACQUISITION_SUPPORTED).into_public(),
+            html_video_capability(NATIVE_ACQUISITION_SUPPORTED),
             NATIVE_ACQUISITION_SUPPORTED,
             Some(parent),
         ))
@@ -130,12 +110,7 @@ impl NativeMediaService {
     }
 
     pub fn capability(&self) -> NativeMediaCapability {
-        let mut capability = self
-            .state
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .capability
-            .clone();
+        let mut capability = self.capability.clone();
         if self.lifecycle.requested.load(Ordering::Acquire) {
             capability.player_actor_ready = false;
             capability.qualified_start_available = false;
@@ -158,9 +133,7 @@ impl NativeMediaService {
                 if !self.native_acquisition_supported {
                     Err(CommandError::native_acquisition_platform_unsupported())
                 } else {
-                    Err(CommandError::native_media_unavailable(
-                        HTML_VIDEO_REASON,
-                    ))
+                    Err(CommandError::native_media_unavailable(HTML_VIDEO_REASON))
                 }
             }
         }
@@ -260,6 +233,39 @@ impl NativeMediaService {
     }
 }
 
+fn html_video_capability(native_acquisition_supported: bool) -> NativeMediaCapability {
+    NativeMediaCapability {
+        schema: contracts::NATIVE_MEDIA_CAPABILITY_SCHEMA,
+        version: 2,
+        backend: "html-video-element",
+        api: "research-media",
+        pinned_runtime_version: "none",
+        bindings_version: "webview",
+        target: "tauri-webview",
+        runtime_installer_sha256: "",
+        runtime_tree_manifest_sha256: "",
+        default_playback_mode: PlaybackMode::UnqualifiedWebview,
+        unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
+        runtime_bundle_state: RuntimeBundleState::NotStaged,
+        runtime_integrity_verified: false,
+        runtime_file_count: None,
+        runtime_byte_length: None,
+        player_actor_ready: false,
+        qualified_start_available: false,
+        qualified_format_matrix_ready: false,
+        redistribution_review_ready: false,
+        ambient_runtime_allowed: false,
+        required_for_qualified_run: false,
+        renderer_receives_filesystem_paths: false,
+        reason_code: if native_acquisition_supported {
+            HTML_VIDEO_REASON
+        } else {
+            crate::research_platform::NATIVE_ACQUISITION_UNSUPPORTED_REASON
+        }
+        .to_owned(),
+    }
+}
+
 impl Drop for NativeMediaService {
     fn drop(&mut self) {
         self.request_shutdown();
@@ -269,7 +275,6 @@ impl Drop for NativeMediaService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use contracts::RuntimeBundleState;
 
     #[test]
     fn html_video_service_reports_protocol_and_shutdowns_immediately() {

@@ -16,10 +16,7 @@ use crate::research_input::{
 use crate::research_lsl::{probe_readiness, LslReadiness};
 #[cfg(test)]
 use crate::research_native_media::PlaybackMode;
-use crate::research_native_media::{
-    NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaPrepareReceiptV1,
-    NativeMediaService, NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
-};
+use crate::research_native_media::{NativeMediaCapability, NativeMediaService};
 #[cfg(test)]
 use crate::research_participant::TransientParticipant;
 use crate::research_planner_recipe::SavedPlannerRecipeReceipt;
@@ -28,6 +25,7 @@ use crate::research_planner_recipe_file::{
     write_selected_supported_planner_recipe,
 };
 use crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes;
+#[cfg(test)]
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 #[cfg(test)]
 use crate::research_protocol::{
@@ -44,10 +42,9 @@ use crate::research_runtime::{
 };
 use crate::research_workspace::{
     source_capabilities, AssignmentPlanExportReceipt, DecodeAttestationRequest,
-    HtmlVideoAssetPreparationReceipt, HtmlVideoAssetRequest, ImportSelectionKind,
-    MediaUrlReceipt, QuestionnaireAssetReceipt, RescanResult, SavedSettingsReceipt,
-    ScannedStimulusSummary, SourceCapabilities, StorageReadiness, WorkspaceLocation,
-    WorkspaceService, WorkspaceStatus,
+    HtmlVideoAssetPreparationReceipt, HtmlVideoAssetRequest, ImportSelectionKind, MediaUrlReceipt,
+    QuestionnaireAssetReceipt, RescanResult, SavedSettingsReceipt, ScannedStimulusSummary,
+    SourceCapabilities, StorageReadiness, WorkspaceLocation, WorkspaceService, WorkspaceStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
@@ -508,176 +505,6 @@ pub fn research_native_media_capability(
 ) -> ResearchResult<NativeMediaCapability> {
     authorize(&window)?;
     Ok(native_media.capability())
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaPrepareRequestV1 {
-    pub workspace_id: String,
-    pub workspace_file_id: String,
-    pub sha256: String,
-    pub byte_length: u64,
-    pub mime_type: String,
-    pub viewport: NativeMediaViewportCssV1,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaViewportRequestV1 {
-    pub fence: NativeMediaCommandFenceV1,
-    pub viewport: NativeMediaViewportCssV1,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaDecodeAttestationRequestV1 {
-    pub workspace_id: String,
-    pub workspace_file_id: String,
-    pub sha256: String,
-    pub byte_length: u64,
-    pub mime_type: String,
-    pub fence: NativeMediaCommandFenceV1,
-}
-
-#[tauri::command]
-pub fn research_native_media_status(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.status()
-}
-
-#[tauri::command]
-pub fn research_native_media_prepare(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaPrepareRequestV1,
-) -> ResearchResult<NativeMediaPrepareReceiptV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let viewport = physical_media_viewport(&window, request.viewport)?;
-    let grant = workspace.issue_native_media_grant(
-        &request.workspace_id,
-        &request.workspace_file_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-    )?;
-    native_media.prepare(grant, viewport)
-}
-
-#[tauri::command]
-pub fn research_native_media_set_viewport(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaViewportRequestV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let viewport = physical_media_viewport(&window, request.viewport)?;
-    native_media.set_viewport(request.fence, viewport)
-}
-
-#[tauri::command]
-#[cfg(test)]
-#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
-pub fn research_native_media_play(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.play(fence)
-}
-
-#[tauri::command]
-pub fn research_native_media_attest_decode_v2(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaDecodeAttestationRequestV1,
-) -> ResearchResult<ScannedStimulusSummary<crate::research_video_geometry::NativeDisplayGeometryV2>>
-{
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let expected_fence = request.fence.clone();
-    let receipt = native_media.attest_decode_v2(request.fence)?;
-    if receipt.workspace_file_id != request.workspace_file_id
-        || receipt.session_id != expected_fence.session_id
-        || receipt.generation != expected_fence.generation
-    {
-        return Err(CommandError::forbidden(
-            "Native controlled decode evidence returned a different workspace or generation identity.",
-        ));
-    }
-    workspace.attest_native_decode_v2(
-        &request.workspace_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-        &receipt,
-    )
-}
-
-#[tauri::command]
-pub fn research_native_media_attest_decode(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaDecodeAttestationRequestV1,
-) -> ResearchResult<ScannedStimulusSummary> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let receipt = native_media.attest_decode(request.fence)?;
-    if receipt.workspace_file_id != request.workspace_file_id {
-        return Err(CommandError::forbidden(
-            "Native decode evidence returned a different workspace identity.",
-        ));
-    }
-    workspace.attest_native_decode(
-        &request.workspace_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-        &receipt,
-    )
-}
-
-#[tauri::command]
-#[cfg(test)]
-#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
-pub fn research_native_media_pause(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.pause(fence)
-}
-
-#[tauri::command]
-pub fn research_native_media_stop(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.stop(fence)
-}
-
-fn physical_media_viewport(
-    window: &WebviewWindow,
-    viewport: NativeMediaViewportCssV1,
-) -> ResearchResult<NativeMediaViewportPxV1> {
-    let scale_factor = window.scale_factor().map_err(CommandError::io)?;
-    let size = window.inner_size().map_err(CommandError::io)?;
-    viewport.to_physical(scale_factor, size.width, size.height)
 }
 
 #[tauri::command]
@@ -1809,13 +1636,6 @@ mod tests {
             "research_open_workspace_location",
             "research_source_capabilities",
             "research_native_media_capability",
-            "research_native_media_status",
-            "research_native_media_prepare",
-            "research_native_media_set_viewport",
-            "research_native_media_play",
-            "research_native_media_attest_decode",
-            "research_native_media_pause",
-            "research_native_media_stop",
             "research_native_protocol_capability",
             "research_protocol_preflight",
             "research_input_capability",

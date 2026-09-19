@@ -13,10 +13,6 @@ use super::{
 use crate::{
     research_error::{CommandError, ResearchResult},
     research_lsl::LslState,
-    research_native_media::{
-        NativeMediaCommandFenceV1, NativeMediaService, NativeMediaStateV1, NativeMediaStatusV1,
-        NativeMediaViewportPxV1,
-    },
     research_native_protocol::{input_mailbox::ProtocolInputMailbox, runtime::CompanionLease},
     research_recorder::RecorderService,
     research_timing::DeadlineClock,
@@ -36,12 +32,10 @@ pub(crate) struct MasterWorker {
     prepared: PreparedMaster,
     workspace_id: String,
     bindings: Vec<MasterVideoBinding>,
-    viewport: NativeMediaViewportPxV1,
     storage: MasterStorage,
     authority: InputAuthority,
     mailbox: Arc<ProtocolInputMailbox>,
     workspace: Arc<WorkspaceService>,
-    media: Arc<NativeMediaService>,
     recorder: Arc<RecorderService>,
     _lease: CompanionLease,
     pub public: Arc<Mutex<MasterStatus>>,
@@ -54,9 +48,7 @@ pub(crate) struct MasterWorker {
     transition_started: Instant,
     occurrence: String,
     opened: bool,
-    fence: Option<NativeMediaCommandFenceV1>,
     bound_file: Option<String>,
-    media_sequence: u64,
     clock: Option<DeadlineClock>,
     interval_deadline: Option<Instant>,
     answers: FormAnswers,
@@ -72,12 +64,10 @@ impl MasterWorker {
         prepared: PreparedMaster,
         workspace_id: String,
         bindings: Vec<MasterVideoBinding>,
-        viewport: NativeMediaViewportPxV1,
         mut storage: MasterStorage,
         authority: InputAuthority,
         mailbox: Arc<ProtocolInputMailbox>,
         workspace: Arc<WorkspaceService>,
-        media: Arc<NativeMediaService>,
         recorder: Arc<RecorderService>,
         lease: CompanionLease,
     ) -> ResearchResult<Self> {
@@ -152,12 +142,10 @@ impl MasterWorker {
             prepared,
             workspace_id,
             bindings,
-            viewport,
             storage,
             authority,
             mailbox,
             workspace,
-            media,
             recorder,
             _lease: lease,
             public: Arc::new(Mutex::new(state.clone())),
@@ -170,9 +158,7 @@ impl MasterWorker {
             transition_started: now,
             occurrence: String::new(),
             opened: false,
-            fence: None,
             bound_file: None,
-            media_sequence: 0,
             clock: None,
             interval_deadline: None,
             answers: Default::default(),
@@ -306,28 +292,14 @@ impl MasterWorker {
                     return Err(invalid("Pause requires native Playing."));
                 }
                 self.quiesce()?;
-                if let Some(fence) = self.fence.clone() {
-                    self.state.phase = MasterPhase::Pausing;
-                    self.transition_started = Instant::now();
-                    let status = self.media.pause(fence)?;
-                    self.reconcile(status)
-                } else {
-                    self.state.phase = MasterPhase::Paused;
-                    self.observe(MarkerEvent::Pause, true)
-                }
+                self.state.phase = MasterPhase::Paused;
+                self.observe(MarkerEvent::Pause, true)
             }
             MasterAction::Resume => {
                 if self.state.phase != MasterPhase::Paused {
                     return Err(invalid("Resume requires native Paused."));
                 }
-                if let Some(fence) = self.fence.clone() {
-                    self.state.phase = MasterPhase::Resuming;
-                    self.transition_started = Instant::now();
-                    let status = self.media.play(fence)?;
-                    self.reconcile(status)
-                } else {
-                    self.resume_html_video()
-                }
+                self.resume_html_video()
             }
         }
     }
@@ -511,10 +483,9 @@ impl MasterWorker {
             })?;
         let _grant = binding.issue_grant(&self.workspace, &self.workspace_id)?;
         self.bound_file = Some(binding.workspace_file_id().to_owned());
-        self.fence = None;
-        self.media_sequence = 0;
         self.state.phase = MasterPhase::Preparing;
-        self.state.media_time_ms = Some(0.);
+        // No position has been observed yet; entering the step is not playback.
+        self.state.media_time_ms = None;
         Ok(())
     }
     fn html_video_started(
@@ -543,7 +514,9 @@ impl MasterWorker {
             now,
         )?);
         self.step_started = Some(now);
-        self.state.media_time_ms = Some(normalize_media_time(media_time_ms).unwrap_or(0.));
+        // Only a reported observation is recorded; an unavailable position
+        // stays absent rather than becoming a fabricated zero.
+        self.state.media_time_ms = normalize_media_time(media_time_ms);
         self.state.phase = MasterPhase::Playing;
         self.observe(event, true)?;
         self.opened = true;
@@ -568,26 +541,19 @@ impl MasterWorker {
                 "Video ended without an observed start.",
             ));
         }
-        self.state.media_time_ms = normalize_media_time(media_time_ms)
-            .or_else(|| self.step_started.map(|start| start.elapsed().as_secs_f64() * 1000.));
+        // An absent observed position stays absent rather than being filled in
+        // with the native elapsed estimate.
+        if let Some(observed) = normalize_media_time(media_time_ms) {
+            self.state.media_time_ms = Some(observed);
+        }
         self.observe(MarkerEvent::VideoEnd, true)?;
         self.stop_media()?;
         self.next()
     }
     fn tick(&mut self) -> ResearchResult<()> {
-        if self.fence.is_some() {
-            self.reconcile(self.media.status_snapshot()?)?;
-        }
         let now = Instant::now();
-        if self.state.phase == MasterPhase::Playing && self.fence.is_none() {
-            self.state.media_time_ms = self
-                .step_started
-                .map(|start| start.elapsed().as_secs_f64() * 1000.);
-        }
-        if matches!(
-            self.state.phase,
-            MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Pausing
-        ) && now.duration_since(self.transition_started) > Duration::from_secs(15)
+        if self.state.phase == MasterPhase::Preparing
+            && now.duration_since(self.transition_started) > Duration::from_secs(15)
         {
             return Err(CommandError::new(
                 "master-media-transition-timeout",
@@ -630,86 +596,6 @@ impl MasterWorker {
         self.state.input_active =
             self.state.phase == MasterPhase::Playing && self.response.active(now);
         self.publish();
-        Ok(())
-    }
-    fn reconcile(&mut self, status: NativeMediaStatusV1) -> ResearchResult<()> {
-        let fence = self
-            .fence
-            .as_ref()
-            .ok_or_else(|| invalid("Missing native media fence."))?;
-        if status.generation != fence.generation
-            || status.session_id.as_deref() != Some(&fence.session_id)
-            || status.workspace_file_id != self.bound_file
-            || status.sequence < self.media_sequence
-            || status.viewport != self.viewport
-        {
-            return Err(CommandError::new(
-                "master-media-binding-lost",
-                "Native media no longer matches the frozen occurrence and viewport.",
-            ));
-        }
-        self.media_sequence = status.sequence;
-        self.state.media_time_ms = status.position_ms;
-        match status.state {
-            NativeMediaStateV1::Playing
-                if matches!(
-                    self.state.phase,
-                    MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Paused
-                ) =>
-            {
-                let first = !self.opened;
-                self.authority
-                    .service
-                    .set_run_accepting(&self.authority.id, true)?;
-                let now = Instant::now();
-                self.response.clear_holds(now);
-                self.clock = Some(DeadlineClock::new(
-                    self.prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
-                    now,
-                )?);
-                self.state.phase = MasterPhase::Playing;
-                self.observe(
-                    if first {
-                        MarkerEvent::VideoStart
-                    } else {
-                        MarkerEvent::Resume
-                    },
-                    true,
-                )?;
-                self.opened = true;
-            }
-            NativeMediaStateV1::Paused | NativeMediaStateV1::Buffering
-                if matches!(
-                    self.state.phase,
-                    MasterPhase::Playing | MasterPhase::Pausing
-                ) =>
-            {
-                self.quiesce()?;
-                self.state.phase = MasterPhase::Paused;
-                self.observe(MarkerEvent::Pause, true)?;
-            }
-            NativeMediaStateV1::Ended => {
-                self.quiesce()?;
-                if !self.opened {
-                    return Err(CommandError::new(
-                        "master-video-ended-before-playing",
-                        "Video ended without an observed start.",
-                    ));
-                }
-                self.observe(MarkerEvent::VideoEnd, true)?;
-                self.stop_media()?;
-                self.next()?;
-            }
-            NativeMediaStateV1::Failed
-            | NativeMediaStateV1::Idle
-            | NativeMediaStateV1::ShuttingDown => {
-                return Err(CommandError::new(
-                    "master-native-media-failed",
-                    "The native media actor left the active occurrence.",
-                ))
-            }
-            _ => {}
-        }
         Ok(())
     }
     fn sample(&mut self, now: Instant) -> ResearchResult<()> {
@@ -802,9 +688,6 @@ impl MasterWorker {
         result
     }
     fn stop_media(&mut self) -> ResearchResult<()> {
-        if let Some(fence) = self.fence.take() {
-            self.media.stop(fence)?;
-        }
         self.bound_file = None;
         Ok(())
     }
@@ -923,6 +806,7 @@ mod tests {
     use super::*;
     use crate::{
         research_input::ResearchInputService,
+        research_native_media::NativeMediaService,
         research_native_protocol::runtime::PackageProtocolRuntime,
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
@@ -972,12 +856,10 @@ mod tests {
                     prepared,
                     "unused".into(),
                     vec![],
-                    NativeMediaViewportPxV1::initial(),
                     storage,
                     authority,
                     mailbox,
                     workspace,
-                    media,
                     Arc::new(RecorderService::default()),
                     lease,
                 )
@@ -1190,12 +1072,10 @@ mod tests {
                         prepared,
                         "unused".into(),
                         vec![],
-                        NativeMediaViewportPxV1::initial(),
                         storage,
                         authority,
                         mailbox,
                         workspace,
-                        media,
                         recorder,
                         lease,
                     )
@@ -1366,12 +1246,10 @@ mod tests {
                     prepared,
                     "unused-workspace".into(),
                     vec![],
-                    NativeMediaViewportPxV1::initial(),
                     storage,
                     authority,
                     mailbox,
                     workspace,
-                    media,
                     recorder,
                     lease,
                 )

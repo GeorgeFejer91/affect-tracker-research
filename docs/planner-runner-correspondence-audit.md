@@ -80,7 +80,7 @@ Reproduction: the real master4 fixture resolves successfully, then
 Sources: [adapter](../experiment-runner/src/master-protocol.js),
 [native preflight](../native/src/research_runner_master/commands.rs),
 [native Start](../native/src/research_runner_master/runtime.rs),
-[qualification state](../native/src/research_native_media/capability.rs).
+[qualification state](../native/src/research_native_media.rs).
 
 Repair: extend the approved validation-session contract to supported master4
 with permanent unqualified attempt/information labels and matching independent

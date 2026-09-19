@@ -2380,11 +2380,9 @@ impl RunWorker {
 fn authorize_webview_media_mode(playback_mode: Option<PlaybackMode>) -> ResearchResult<()> {
     match playback_mode {
         Some(PlaybackMode::UnqualifiedWebview) => Ok(()),
-        Some(PlaybackMode::LegacyNativePlayer) => {
-            Err(CommandError::forbidden(
-                "WebView media events cannot control a removed native playback run.",
-            ))
-        }
+        Some(PlaybackMode::LegacyNativePlayer) => Err(CommandError::forbidden(
+            "WebView media events cannot control a removed native playback run.",
+        )),
         None => Err(CommandError::no_active_run()),
     }
 }
@@ -2605,11 +2603,9 @@ fn playback_provenance_detail(
     qualification: PlaybackQualification,
 ) -> ResearchResult<&'static str> {
     match (mode, qualification) {
-        (PlaybackMode::LegacyNativePlayer, PlaybackQualification::QualifiedNative) => {
-            Err(CommandError::invalid_contract(
-                "Removed native-player runs are not supported.",
-            ))
-        }
+        (PlaybackMode::LegacyNativePlayer, PlaybackQualification::QualifiedNative) => Err(
+            CommandError::invalid_contract("Removed native-player runs are not supported."),
+        ),
         (PlaybackMode::UnqualifiedWebview, PlaybackQualification::Unqualified) => {
             Ok("playback-webview-unqualified")
         }
@@ -8009,7 +8005,8 @@ mod tests {
     #[test]
     fn webview_media_events_are_confined_to_the_unqualified_fallback() {
         assert!(authorize_webview_media_mode(Some(PlaybackMode::UnqualifiedWebview)).is_ok());
-        let native = authorize_webview_media_mode(Some(PlaybackMode::LegacyNativePlayer)).unwrap_err();
+        let native =
+            authorize_webview_media_mode(Some(PlaybackMode::LegacyNativePlayer)).unwrap_err();
         assert_eq!(native.code, "forbidden_operation");
         assert!(authorize_webview_media_mode(None).is_err());
 

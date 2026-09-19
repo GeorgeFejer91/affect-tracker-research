@@ -18,7 +18,10 @@ path = "src/bin/planner-cli.rs"
 
 [lib]
 name = "affect_research"
-crate-type = ["lib", "cdylib", "staticlib"]
+# Desktop binaries link this as an ordinary Rust library. The cdylib and
+# staticlib outputs existed only for the Tauri mobile targets, which are not a
+# supported surface; building them tripled codegen for no shipped artifact.
+crate-type = ["lib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

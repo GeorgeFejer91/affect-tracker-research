@@ -337,16 +337,10 @@ mod tests {
         let absent = derive_native_display_geometry_v2(&controlled_receipt(None)).unwrap();
         let explicit = derive_native_display_geometry_v2(&controlled_receipt(Some(0))).unwrap();
         assert_eq!(absent.rotation_degrees, explicit.rotation_degrees);
-        assert_ne!(
-            absent.html_video_metadata,
-            explicit.html_video_metadata
-        );
+        assert_ne!(absent.html_video_metadata, explicit.html_video_metadata);
         let value = serde_json::to_value(&absent).unwrap();
         assert_eq!(value.as_object().unwrap().len(), 9);
-        assert_eq!(
-            value["htmlVideoMetadata"].as_object().unwrap().len(),
-            6
-        );
+        assert_eq!(value["htmlVideoMetadata"].as_object().unwrap().len(), 6);
         assert_eq!(
             serde_json::from_value::<NativeDisplayGeometryV2>(value).unwrap(),
             absent
@@ -372,7 +366,10 @@ mod tests {
         already_rotated.video_width_px = 1920;
         already_rotated.video_height_px = 1080;
         let geometry = derive_native_display_geometry_v2(&already_rotated).unwrap();
-        assert_eq!((geometry.display_width_px, geometry.display_height_px), (1920, 1080));
+        assert_eq!(
+            (geometry.display_width_px, geometry.display_height_px),
+            (1920, 1080)
+        );
     }
 
     #[test]

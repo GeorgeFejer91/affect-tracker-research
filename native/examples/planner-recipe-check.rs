@@ -1,15 +1,13 @@
 //! Source-bound independent reader for Planner fixture verification. No runtime.
-use affect_research::research_planner_recipe::{parse_planner_recipe_bytes, MAX_BYTES};
+use affect_research::research_planner_recipe::parse_planner_recipe_bytes;
 use serde_json::json;
-use std::io::{Read, Write};
+use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = std::env::args_os()
         .nth(1)
         .ok_or("Supply one canonical recipe file.")?;
-    let file = std::fs::File::open(path)?;
-    let mut bytes = Vec::new();
-    file.take((MAX_BYTES + 1) as u64).read_to_end(&mut bytes)?;
+    let bytes = std::fs::read(path)?;
     let document = parse_planner_recipe_bytes(&bytes)?;
     let matrix = document.recipe.reproduce()?;
     let mut selections = Vec::new();

@@ -63,12 +63,22 @@ table groups, not pages; different visible answer labels immediately begin a new
 group. Required responses and explicit nullable recorded codes retain P2's
 meanings.
 
-The native worker requires actual qualified HTML video, fresh exact P1 media
-bindings, an observed fullscreen viewport, a native input-test receipt and idle
-shared services. The renderer acknowledges a painted occurrence before its
-native form/ISI transition or video preparation. Only native observed Playing
-enables acquisition. One poll emits at most one sample; missed deadlines are
-recorded. Native input is withdrawn before pause, interruption and termination.
+The native worker requires HTML video, fresh exact P1 media bindings, an
+observed fullscreen viewport, a native input-test receipt and idle shared
+services. The renderer acknowledges a painted occurrence before its form/ISI
+transition or video preparation. Acquisition begins when the renderer reports
+the video's first observed `playing` transition, not when `play()` resolves.
+One poll emits at most one sample; missed deadlines are recorded.
+
+`mediaTimeMs` is the last media position the WebView actually observed, taken
+from the video element at an observed `playing` or `ended` transition. It is
+absent (`null`) until an observation has been reported, and an unavailable
+observation is left absent rather than filled in. Scheduler timing remains in
+the existing `scheduledElapsedMs` and `observedElapsedMs` fields; neither is
+presented as a media position.
+
+Video events are display-onset agnostic. The Runner records observed playback
+transitions; it makes no frame-accurate or physically measured onset claim. Native input is withdrawn before pause, interruption and termination.
 A companion lease prevents simultaneous legacy/master use of native services.
 The integration owner must wire `MasterRuntime::shutdown/is_stopped/join_stopped`
 into the coordinated window/actor teardown; this candidate does not replace the

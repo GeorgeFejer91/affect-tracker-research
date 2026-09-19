@@ -71,9 +71,9 @@ change. Use this primary JSON for subsequent Runner work.
    event timing and neutral-before-ISI evidence. Existing flags stay false until
    their stated gates are satisfied; no alternative production Start was added.
 
-Source: `research_native_media/capability.rs` retains false qualification flags;
-`research_runner_master/runtime.rs` requires qualified native playback before
-starting. Redistribution/source closure and physical timing remain release gates.
+Source: `research_native_media.rs` retains false native-player qualification
+flags; `research_runner_master/runtime.rs` records observed HTML-video playback
+without claiming physical onset. Redistribution/source closure and physical timing remain release gates.
 FFmpeg sequence synthesis is still an assessed option, not an implemented feature.
 
 ## Runner previous-file shortcut — 2026-09-13

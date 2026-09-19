@@ -67,8 +67,7 @@ mod tests {
         ))
         .unwrap();
         let metadata = serde_json::from_value(
-            fixture["workspace"]["videoCatalogue"]["entries"][0]["geometry"]
-                ["htmlVideoMetadata"]
+            fixture["workspace"]["videoCatalogue"]["entries"][0]["geometry"]["htmlVideoMetadata"]
                 .clone(),
         )
         .unwrap();
@@ -495,8 +494,7 @@ impl WorkspaceService {
                     let receipt = candidate.native_decode_receipt_v2.as_ref().ok_or_else(|| {
                         CommandError::forbidden("Video lacks fresh controlled HTML video proof.")
                     })?;
-                    if candidate.decode_attestation
-                        != Some(DecodeEvidence::RepresentativeFramesV1)
+                    if candidate.decode_attestation != Some(DecodeEvidence::RepresentativeFramesV1)
                         || receipt.workspace_file_id != candidate.id
                         || candidate.duration_ms != Some(receipt.duration_ms.round())
                         || candidate.decoded_positions_ms != receipt.decoded_positions_ms
