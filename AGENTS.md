@@ -9,6 +9,7 @@ you are changing. Direct session instructions take precedence.
 
 | Working on | Also read |
 | --- | --- |
+| Any UI text, styling, responsive component or SVG icon | [`for-ai/25-UI-LAYOUT.md`](./for-ai/25-UI-LAYOUT.md): Pretext-based font-to-box fitting and container-relative geometry |
 | Planner authoring, Open/Save, preview | [`for-ai/60-SEGMENT-CATALOGUE.md`](./for-ai/60-SEGMENT-CATALOGUE.md), the relevant `docs/planner-*.md` |
 | Planner CLI | [`docs/planner-cli.md`](./docs/planner-cli.md), [`docs/planner-cli-library.md`](./docs/planner-cli-library.md) |
 | Runner execution, recording, browser path | [`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md), [`docs/runner-*.md`](./docs) |
@@ -46,6 +47,8 @@ you are changing. Direct session instructions take precedence.
 
 ## Working rules
 
+- Use [Ponytail's upstream skill](https://github.com/DietrichGebert/ponytail/blob/main/skills/ponytail/SKILL.md) for every implementation, fix, refactor and code review. Load it through the normal skill mechanism, or read and apply the actual `SKILL.md`; do not invent an invocation or build skill-management infrastructure. Reuse existing code and native platform features, preserving correctness, accessibility and research semantics.
+- For all UI work, follow [`25-UI-LAYOUT.md`](./for-ai/25-UI-LAYOUT.md). CSS defines the available box; measured text sizing and container-relative SVG geometry adapt within it. Do not replace this with per-element font/offset patches or clipping essential text.
 - Make changes in small increments that build and test.
 - Run focused checks as you go and the applicable full checks before handing
   off; see [`for-ai/00-READ-FIRST.md`](./for-ai/00-READ-FIRST.md) §3.

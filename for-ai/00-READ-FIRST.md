@@ -78,6 +78,7 @@ Key contract locations:
 | Supported master generations, readers, known gaps | [`66-COMPATIBILITY.md`](./66-COMPATIBILITY.md) |
 | Product/package authority, delivery surfaces | [`10-PRODUCT.md`](./10-PRODUCT.md) |
 | Module responsibilities and boundaries | [`20-ARCHITECTURE.md`](./20-ARCHITECTURE.md) |
+| All UI text, responsive CSS, font-to-box fitting and SVG centering | [`25-UI-LAYOUT.md`](./25-UI-LAYOUT.md): Cheng Lou's Pretext reference, shared dynamic fitting and readability checks |
 | Feature requirements per segment (P1–P7, Runner) | [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), [`65-RUNNER-SEGMENTS.md`](./65-RUNNER-SEGMENTS.md) |
 | Scientific provenance, licences, citations | [`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md), [`references.bib`](./references.bib) |
 | Wire/format contracts | `docs/*.md` |
@@ -105,6 +106,13 @@ cargo test --locked --manifest-path native/Cargo.toml --no-default-features
 cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --all-features -- -D warnings
 cargo clippy --locked --manifest-path native/Cargo.toml --all-targets --no-default-features -- -D warnings
 ```
+
+Run one cargo command at a time. Two concurrent invocations on `native/target`,
+or a rustc killed by memory pressure, leave truncated artifacts that surface
+later as `found invalid metadata files for crate …` or
+`only metadata stub found for rlib dependency core`. Those are a corrupt target
+directory, not a source error: `cargo clean -p <crate>` the named packages, or
+clean the whole directory, and rebuild with fewer jobs (`-j 2`).
 
 Record exit codes. A missing dependency or unavailable hardware is
 BLOCKED/NOT RUN, never PASS. Never reach green by skipping a broken functional
@@ -142,8 +150,22 @@ what is known open, not a ledger to be duplicated.
   resource bytes; retaining the object does not guarantee identical
   presentation.
 - Master recovery (resume of a master-protocol run) is **not implemented**.
-- `cargo fmt --check` currently fails on nine `native/src` files that were hand
-  edited with CRLF endings; this predates the YAGNI consolidation.
+- `native/tests/planner_authoring_native.rs` and
+  `native/tests/planner_cli_native_effects.rs` do **not compile**. They
+  re-include crate sources through `#[path = "../src"]`, and their module list
+  is missing `research_input` and its dependency closure. Completing that list
+  pulls in most of the crate; the real fix is to drive these tests through the
+  public `affect_research::` API instead of re-including sources.
+- `native/src/research_native_media.rs` still contains the retired player
+  service. Every one of its lifecycle methods returns `native_media_unavailable`
+  and `is_stopped()` is hardcoded true, so the seven `research_native_media_*`
+  lifecycle commands registered in `lib.rs` are unreachable. Only
+  `research_native_media_capability` carries information, and the only variable
+  field in its 23-field payload is `reasonCode`. Deleting the service, those
+  commands, `live_frame.rs` and the capability probe is an open cleanup; the
+  viewport types, `PlaybackMode`/`PlaybackQualification` (persisted in run
+  journals) and the decode receipts must be kept.
+- `MasterPhase::Pausing` and `MasterPhase::Resuming` are no longer reachable.
 - The downloadable Windows alpha is an unsigned, no-optional-feature,
   interface-evaluation package. It is not a research release.
 
