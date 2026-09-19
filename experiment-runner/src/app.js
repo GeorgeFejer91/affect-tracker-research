@@ -4,9 +4,11 @@ import { plannerRecipeTransportText } from "../../experiment-planner/web/src/res
 import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState } from "./recipe.js";
 import { NativePackageProtocolAdapter } from "../../experiment-planner/web/src/research/native-package-protocol.js";
 import { nativeInputRegionRequest } from "../../experiment-planner/web/src/research/input-region.js";
+import { ResearchInputController } from "../../experiment-planner/web/src/research/input-controller.js";
 import { createResearchPreview } from "../../experiment-planner/web/src/research/preview.js";
 import { deriveParticipantRecord } from "../../experiment-planner/web/src/research/identity.js";
 import { validateQuestionnaireAnswers } from "../../experiment-planner/web/src/research/questionnaires.js";
+import { validateInputBindingV1 } from "../../experiment-planner/web/src/research/contracts.js";
 import { createRunnerPresentation } from "./presentation.js";
 import { createQuestionnaireKeyboard } from "./questionnaire-keyboard.js";
 import { createRunnerControllerSettings } from "./controller-settings.js";
@@ -42,7 +44,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const identity = await invoke("research_desktop_identity");
   if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
   const browserMode = identity.platform === "browser";
-  const htmlVideoMode = true;
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
@@ -63,22 +64,91 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null, validationStepTimer = null;
   let validationPlaybackEpoch = 0;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
+  // One owner per playback occurrence. A reused media file played twice has two
+  // occurrences, so a late event from the previous one cannot advance this one.
+  let videoOccurrence = null;
+  const ownerOf = (occurrenceId) => (!destroyed && videoOccurrence?.id === occurrenceId ? videoOccurrence : null);
   const validationVideo = createRunnerHtmlVideoPlayer(query("run-native-video-host"), {
     invoke, windowObject,
-    onEnded: () => {
-      const attempt = browserAttempt;
-      if (!destroyed && attempt?.active && attempt.steps[attempt.index]?.kind === "video") {
-        action(() => showBrowserRunStep(attempt.index + 1));
+    // Browser media URLs are object URLs owned by this page; desktop
+    // research-media URLs need no release.
+    releaseMediaUrl: (url) => {
+      if (typeof url === "string" && url.startsWith("blob:")) windowObject.URL.revokeObjectURL(url);
+    },
+    onStarted: ({ occurrenceId, mediaTimeMs }) => {
+      const owner = ownerOf(occurrenceId);
+      if (!owner) return;
+      if (owner.kind === "browser") {
+        browserRecord({
+          row_type: "event", event_type: "videoStarted", protocol_step_position: owner.step.position,
+          step_kind: owner.step.kind, step_label: stepTitle(owner.step), media_time_ms: mediaTimeMs,
+          payload_json: { occurrenceId },
+        });
+        browserStartSampling(owner.step, occurrenceId);
         return;
       }
-      const current = validationPreview;
-      if (!destroyed && current?.steps[current.index]?.kind === "video") action(() => showValidationPreview(current.index + 1));
-      const master = masterVideoPlayback;
-      if (!destroyed && master?.key === `${masterProtocol.status?.runId}:${masterProtocol.status?.position}` && masterProtocol.status?.phase === "playing") {
-        void masterProtocol.command({ type: "htmlVideoEnded", position: masterProtocol.status.position, mediaTimeMs: validationVideo.currentTimeMs() })
+      if (owner.kind === "master") {
+        void masterProtocol.command({ type: "htmlVideoStarted", position: owner.position, mediaTimeMs }).catch(fail);
+      }
+    },
+    onEnded: ({ occurrenceId, mediaTimeMs }) => {
+      const owner = ownerOf(occurrenceId);
+      if (!owner) return;
+      videoOccurrence = null;
+      if (owner.kind === "browser") {
+        const attempt = owner.attempt;
+        browserRecord({
+          row_type: "event", event_type: "videoEnded", protocol_step_position: owner.step.position,
+          step_kind: owner.step.kind, step_label: stepTitle(owner.step), media_time_ms: mediaTimeMs,
+          payload_json: { occurrenceId },
+        });
+        browserStopSampling();
+        if (attempt.active && attempt.index === owner.index) action(() => showBrowserRunStep(owner.index + 1));
+        return;
+      }
+      if (owner.kind === "master") {
+        void masterProtocol.command({ type: "htmlVideoEnded", position: owner.position, mediaTimeMs })
           .then(() => masterProtocol.poll())
           .catch(fail);
+        return;
       }
+      if (validationPreview?.index === owner.index) action(() => showValidationPreview(owner.index + 1));
+    },
+    onFailed: ({ occurrenceId, error }) => {
+      const owner = ownerOf(occurrenceId);
+      if (!owner) return;
+      videoOccurrence = null;
+      if (owner.kind === "browser") {
+        browserRecord({
+          row_type: "event", event_type: "videoFailed", protocol_step_position: owner.step.position,
+          step_kind: owner.step.kind, step_label: stepTitle(owner.step),
+          payload_json: { occurrenceId, message: messageOf(error) },
+        });
+        browserStopSampling();
+        fail(error);
+        action(() => finishBrowserAttempt("partial"));
+        return;
+      }
+      fail(error);
+      if (owner.kind === "master") action(() => masterProtocol.finish());
+    },
+    onInterrupted: ({ occurrenceId, reason, mediaTimeMs }) => {
+      const owner = ownerOf(occurrenceId);
+      if (owner?.kind !== "browser") return;
+      browserRecord({
+        row_type: "event", event_type: "videoInterrupted", protocol_step_position: owner.step.position,
+        step_kind: owner.step.kind, step_label: stepTitle(owner.step), media_time_ms: mediaTimeMs,
+        payload_json: { occurrenceId, reason },
+      });
+    },
+    onResumed: ({ occurrenceId, mediaTimeMs }) => {
+      const owner = ownerOf(occurrenceId);
+      if (owner?.kind !== "browser") return;
+      browserRecord({
+        row_type: "event", event_type: "videoResumed", protocol_step_position: owner.step.position,
+        step_kind: owner.step.kind, step_label: stepTitle(owner.step), media_time_ms: mediaTimeMs,
+        payload_json: { occurrenceId },
+      });
     },
   });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
@@ -210,6 +280,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function clearValidationPlayback() {
     validationPlaybackEpoch += 1;
     masterVideoPlayback = null;
+    videoOccurrence = null;
     clearValidationTimer();
     validationVideo.stop();
   }
@@ -251,6 +322,42 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       answer_value: row.answer_value ?? "",
       payload_json: row.payload_json ?? "",
     });
+    browserPersist(attempt);
+  }
+  // Retained rows are written to browser-local storage as they are accepted, so
+  // a reload or crash leaves a recoverable prefix instead of nothing. This is
+  // browser-managed storage in this profile, not an independently verified file
+  // backup, and the tail written after the last flush can still be lost.
+  function browserPersist(attempt) {
+    if (attempt.persistenceFailed) return;
+    try {
+      windowObject.localStorage.setItem(BROWSER_RETAINED_KEY, JSON.stringify({
+        schema: "affect-runner-browser-retained-rows",
+        version: 1,
+        runId: attempt.runId,
+        participantId: attempt.participantId,
+        recipeSha256: attempt.recipeSha256,
+        planSha256: attempt.planSha256,
+        fileName: attempt.fileName,
+        complete: !attempt.active,
+        rows: attempt.rows,
+      }));
+      attempt.persistedRows = attempt.rows.length;
+    } catch (error) {
+      // A failed write is reported once and never hidden behind an apparently
+      // successful run.
+      attempt.persistenceFailed = messageOf(error);
+      text("runner-write", `Browser storage write failed after ${attempt.persistedRows ?? 0} rows · ${attempt.persistenceFailed}`);
+      fail(new Error(`Browser result storage failed: ${attempt.persistenceFailed}. Stop the run and export what has been retained.`));
+    }
+  }
+  function browserRetainedResult() {
+    try {
+      const stored = JSON.parse(windowObject.localStorage.getItem(BROWSER_RETAINED_KEY) ?? "null");
+      return stored?.schema === "affect-runner-browser-retained-rows" && Array.isArray(stored.rows) ? stored : null;
+    } catch {
+      return null;
+    }
   }
   function browserCsv() {
     const headers = [
@@ -263,6 +370,22 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const rows = browserAttempt?.rows ?? [];
     return `${headers.join(",")}\n${rows.map(row => headers.map(header => csvCell(row[header])).join(",")).join("\n")}\n`;
   }
+  // The browser path runs the authored rate. It never substitutes a default and
+  // never silently caps a rate the researcher chose.
+  const BROWSER_MAX_SAMPLING_HZ = 240;
+  const BROWSER_RETAINED_KEY = "affect-runner-browser-retained-rows-v1";
+  function browserSamplingFrequencyHz() {
+    const authored = recipe?.recipe
+      ? recipe.recipe.policy?.samplingFrequencyHz
+      : recipe?.package?.settings?.experiment?.samplingFrequencyHz;
+    if (!Number.isInteger(authored) || authored < 1) {
+      throw new Error("This experiment does not declare a supported sampling frequency.");
+    }
+    if (authored > BROWSER_MAX_SAMPLING_HZ) {
+      throw new Error(`Browser execution cannot honour ${authored} Hz sampling. Run this experiment in the desktop Runner or lower the authored rate.`);
+    }
+    return authored;
+  }
   function browserStopSampling() {
     const attempt = browserAttempt;
     if (!attempt) return;
@@ -270,56 +393,59 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (attempt.stepTimer !== null) windowObject.clearTimeout(attempt.stepTimer);
     attempt.sampleTimer = null;
     attempt.stepTimer = null;
-    if (attempt.pointerMove) root.querySelector(".run-feedback-stage")?.removeEventListener("pointermove", attempt.pointerMove);
-    if (attempt.pointerDown) root.querySelector(".run-feedback-stage")?.removeEventListener("pointerdown", attempt.pointerDown);
-    if (attempt.keyDown) windowObject.removeEventListener("keydown", attempt.keyDown, true);
-    attempt.pointerMove = null;
-    attempt.pointerDown = null;
-    attempt.keyDown = null;
+    attempt.inputController?.detach();
+    attempt.inputController = null;
   }
-  function browserStartSampling(step) {
+  function browserStartSampling(step, occurrenceId) {
     const attempt = browserAttempt;
     if (!attempt?.active) return;
     browserStopSampling();
-    const feedbackStage = root.querySelector(".run-feedback-stage");
-    const setFromPoint = (event) => {
-      const bounds = feedbackStage.getBoundingClientRect();
-      if (bounds.width <= 0 || bounds.height <= 0) return;
-      attempt.x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
-      attempt.y = Math.max(-1, Math.min(1, 1 - ((event.clientY - bounds.top) / bounds.height) * 2));
-      preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+    // The authored binding decides which controls move the rating and by how
+    // much. The browser reuses the same pure controller as the rest of the
+    // product instead of its own keyboard rules.
+    attempt.inputController = new ResearchInputController({
+      binding: attempt.inputBinding,
+      now: () => now(),
+      requestFrame: (callback) => windowObject.requestAnimationFrame(callback),
+      cancelFrame: (id) => windowObject.cancelAnimationFrame(id),
+      onState: (state) => {
+        attempt.x = state.x;
+        attempt.y = state.y;
+        attempt.inputActive = state.inputActive;
+        preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+      },
+    }).attach(windowObject);
+    const periodMs = 1000 / attempt.samplingFrequencyHz;
+    let deadline = now() + periodMs;
+    // Each accepted row carries the time it was actually taken. A late tick
+    // records one row at its real time; missed periods are reported as a gap
+    // and never backfilled with invented samples.
+    const sample = () => {
+      const observedMs = now();
+      const latenessMs = Math.max(0, observedMs - deadline);
+      const missedPeriods = Math.max(0, Math.floor(latenessMs / periodMs));
+      deadline += periodMs * (missedPeriods + 1);
+      browserRecord({
+        row_type: "sample",
+        event_type: "affectSample",
+        protocol_step_position: step.position,
+        step_kind: step.kind,
+        step_label: stepTitle(step),
+        source_code: step.sourceCode,
+        relative_path: step.payload.asset?.packageRelativePath ?? "",
+        media_time_ms: validationVideo.video ? Math.round(validationVideo.video.currentTime * 1000) : "",
+        valence: attempt.x,
+        arousal: attempt.y,
+        payload_json: {
+          occurrenceId,
+          nominalHz: attempt.samplingFrequencyHz,
+          schedulerLatenessMs: Math.round(latenessMs * 1000) / 1000,
+          missedPeriods,
+          inputActive: Boolean(attempt.inputActive),
+        },
+      });
     };
-    attempt.pointerMove = setFromPoint;
-    attempt.pointerDown = setFromPoint;
-    attempt.keyDown = (event) => {
-      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
-      const delta = event.shiftKey ? 0.2 : 0.08;
-      if (event.key === "Home") { attempt.x = 0; attempt.y = 0; }
-      if (event.key === "ArrowLeft") attempt.x = Math.max(-1, attempt.x - delta);
-      if (event.key === "ArrowRight") attempt.x = Math.min(1, attempt.x + delta);
-      if (event.key === "ArrowDown") attempt.y = Math.max(-1, attempt.y - delta);
-      if (event.key === "ArrowUp") attempt.y = Math.min(1, attempt.y + delta);
-      preview.update(runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
-      event.preventDefault();
-    };
-    feedbackStage?.addEventListener("pointermove", attempt.pointerMove);
-    feedbackStage?.addEventListener("pointerdown", attempt.pointerDown);
-    windowObject.addEventListener("keydown", attempt.keyDown, true);
-    const sampleMs = Math.max(8, Math.round(1000 / Math.max(1, Math.min(120, Number(recipe?.recipe?.policy?.samplingFrequencyHz ?? 30)))));
-    const sample = () => browserRecord({
-      row_type: "sample",
-      event_type: "affectSample",
-      protocol_step_position: step.position,
-      step_kind: step.kind,
-      step_label: stepTitle(step),
-      source_code: step.sourceCode,
-      relative_path: step.payload.asset?.packageRelativePath ?? "",
-      media_time_ms: validationVideo.video ? Math.round(validationVideo.video.currentTime * 1000) : "",
-      valence: attempt.x,
-      arousal: attempt.y,
-    });
-    sample();
-    attempt.sampleTimer = windowObject.setInterval(sample, sampleMs);
+    attempt.sampleTimer = windowObject.setInterval(sample, Math.max(1, periodMs));
   }
   async function finishBrowserAttempt(status = "complete") {
     const attempt = browserAttempt;
@@ -330,12 +456,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     attempt.active = false;
     const csv = browserCsv();
     const fileName = `${safeName(recipe?.recipe?.segments?.P1?.study?.title)}_${attempt.participantId}_${safeName(attempt.selector.variantId)}_${status}.csv`;
+    attempt.fileName = fileName;
+    browserPersist(attempt);
+    // Requesting a download is not the same as a saved file; report only what
+    // actually happened.
     downloadText(windowObject, fileName, csv);
+    const retained = attempt.persistenceFailed
+      ? `Browser storage write failed: ${attempt.persistenceFailed}`
+      : `Retained in this browser profile: ${attempt.persistedRows ?? attempt.rows.length} row(s)`;
     text("runner-session", `${participantLabel(attempt.participantId)} · ${status}`);
-    text("runner-receipt", `HTML video CSV downloaded\n${fileName}\nRows: ${attempt.rows.length}`);
+    text("runner-receipt", `${status === "complete" ? "Run complete" : "Run incomplete (partial result)"}\nDownload requested: ${fileName}\nRows: ${attempt.rows.length}\n${retained}\nConfirm the file in your browser download list.`);
     query("runner-receipt").hidden = false;
-    text("runner-write", "HTML video CSV downloaded");
-    text("runner-lsl", "HTML video run uses CSV instead of LSL/XDF");
+    text("runner-write", `${retained} · download requested`);
+    text("runner-lsl", "Browser run has no LSL or XDF: it records CSV rows only");
     preview.update({ hideFeedback: true });
     clearQuestionnaire();
     clearMasterDesktopLayout(root);
@@ -391,10 +524,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const title = stepTitle(step);
     text("runner-session", `${participantLabel(attempt.participantId)} · HTML video step ${attempt.index + 1}/${attempt.steps.length}`);
     text("runner-stimulus", title);
-    text("runner-write", "HTML video CSV journal active");
-    text("runner-lsl", "HTML video run records CSV rows instead of emitting LSL/XDF");
+    text("runner-write", "Browser CSV rows retained in this browser profile");
+    text("runner-lsl", "Browser run has no LSL or XDF: it records CSV rows only");
     query("runner-pause").disabled = true;
-    browserRecord({ row_type: "event", event_type: `${step.kind}Started`, protocol_step_position: step.position, step_kind: step.kind, step_label: title });
+    // A video's start is recorded from its observed `playing` transition, not
+    // from entering the step.
+    if (step.kind !== "video") {
+      browserRecord({ row_type: "event", event_type: `${step.kind}Started`, protocol_step_position: step.position, step_kind: step.kind, step_label: title });
+    }
     if (step.kind === "questionnaire") {
       validationVideo.stop();
       presentation.showPage("questionnaire");
@@ -428,34 +565,34 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         : runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
       text("runner-timing", step.kind === "interval"
         ? `HTML video CSV run · waiting ${Number((step.durationMs / 1000).toFixed(3))} s`
-        : `HTML video CSV run · loading ${Number((step.durationMs / 1000).toFixed(3))} s video`);
+        : `HTML video CSV run · loading video`);
       if (step.kind === "interval") {
         validationVideo.stop();
+        videoOccurrence = null;
         attempt.x = 0;
         attempt.y = 0;
+        // An authored interval is an intentional wait, so it keeps its timer.
         attempt.stepTimer = windowObject.setTimeout(() => {
           if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
         }, step.durationMs);
       } else if (step.kind === "video") {
+        const occurrenceId = `${attempt.runId}:${index}:${step.position}`;
+        videoOccurrence = { id: occurrenceId, kind: "browser", attempt, index, step };
         const result = await validationVideo.playStep({
           workspaceId: workspace.workspaceId,
           sourceText: plannerRecipeTransportText(recipe),
           participantId: attempt.participantId,
           selector: attempt.selector,
           step,
+          occurrenceId,
         });
         if (destroyed || playbackEpoch !== validationPlaybackEpoch || browserAttempt !== attempt || attempt.index !== index || !result) return;
-        text("runner-timing", `HTML video CSV run · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
-        browserStartSampling(step);
-        attempt.stepTimer = windowObject.setTimeout(() => {
-          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
-        }, step.durationMs);
+        text("runner-timing", "HTML video CSV run · playing video");
       }
     }
     renderControls();
   }
   async function startBrowserAttempt() {
-    if (!htmlVideoMode) return false;
     if (!recipe?.recipe) throw new Error("HTML video Runner currently supports Planner master JSON versions 3-5.");
     if (![3, 4, 5].includes(recipe.recipe.version)) throw new Error("HTML video Runner currently supports Planner master JSON versions 3-5.");
     if (!presentation.active) throw new Error("Enter participant preparation first.");
@@ -464,6 +601,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     }
     const plan = await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
     selection = plan;
+    // The experiment's own settings run; an unsupported one is rejected here
+    // rather than quietly replaced with a different experiment.
+    const samplingFrequencyHz = browserSamplingFrequencyHz();
+    const inputBinding = validateInputBindingV1(runnerInput(recipe));
     const runId = windowObject.crypto?.randomUUID?.() ?? `browser-${Date.now().toString(16)}`;
     browserAttempt = {
       active: true,
@@ -479,13 +620,14 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       startedAtMs: now(),
       x: 0,
       y: 0,
+      inputActive: false,
+      samplingFrequencyHz,
+      inputBinding,
+      inputController: null,
       sampleTimer: null,
       stepTimer: null,
-      pointerMove: null,
-      pointerDown: null,
-      keyDown: null,
     };
-    browserRecord({ row_type: "event", event_type: "runStarted", protocol_step_position: 0, step_kind: "run", step_label: "HTML video run started", payload_json: { platform: browserMode ? "browser-html-video-csv" : "desktop-html-video-csv", stepCount: plan.steps.length } });
+    browserRecord({ row_type: "event", event_type: "runStarted", protocol_step_position: 0, step_kind: "run", step_label: "HTML video run started", payload_json: { platform: browserMode ? "browser-html-video-csv" : "desktop-html-video-csv", stepCount: plan.steps.length, samplingFrequencyHz, inputPreset: inputBinding.preset, inputKind: inputBinding.kind, stepSize: inputBinding.stepSize } });
     await showBrowserRunStep(0);
     return true;
   }
@@ -690,17 +832,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         query("run-stimulus-placeholder").textContent = "";
         scheduleValidationStepAdvance(nextIndex, step.durationMs);
       } else if (step.kind === "video") {
+        const occurrenceId = `validation:${nextIndex}:${step.position}`;
+        videoOccurrence = { id: occurrenceId, kind: "validation", index: nextIndex, step };
         const result = await validationVideo.playStep({
           workspaceId: workspace.workspaceId,
           sourceText: plannerRecipeTransportText(recipe),
           participantId: participantId(),
           selector: validationPreview.plan.selector,
           step,
+          occurrenceId,
         });
         if (destroyed || playbackEpoch !== validationPlaybackEpoch || validationPreview?.index !== nextIndex || !result) return;
         query("run-stimulus-placeholder").textContent = "";
-        text("runner-timing", `Hidden validation traversal · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
-        scheduleValidationStepAdvance(nextIndex, step.durationMs);
+        text("runner-timing", "Hidden validation traversal · playing video");
       }
     }
     renderControls();
@@ -1018,16 +1162,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         if (masterVideoPlayback?.key !== key) {
           masterVideoPlayback = { key, state: "starting" };
           text("runner-timing", "HTML video native run · loading video");
+          videoOccurrence = { id: key, kind: "master", position: status.position };
           const result = await validationVideo.playStep({
             workspaceId: workspace.workspaceId,
             sourceText: plannerRecipeTransportText(recipe),
             participantId: status.participantId,
             selector: plan.selector,
             step,
+            occurrenceId: key,
           });
           if (destroyed || masterVideoPlayback?.key !== key || masterProtocol.status?.position !== status.position || !result) return;
+          // `htmlVideoStarted` is sent by the player's observed `playing`
+          // transition, not by the resolution of play().
           masterVideoPlayback = { key, state: "playing" };
-          await masterProtocol.command({ type: "htmlVideoStarted", position: status.position, mediaTimeMs: validationVideo.currentTimeMs() });
         }
       } else if (videoStep && status.phase === "paused") {
         validationVideo.pause();
@@ -1037,6 +1184,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         if (masterVideoPlayback) masterVideoPlayback.state = "playing";
       } else if (!videoStep) {
         masterVideoPlayback = null;
+        videoOccurrence = null;
         validationVideo.stop();
       }
     }
@@ -1308,12 +1456,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   try {
     [capability, workspace] = await Promise.all([legacyProtocol.initialize(), invoke("research_workspace_status")]);
   } catch (error) { destroy(); throw error; }
-  text("runner-capability", browserMode ? "HTML video execution available · CSV download replaces LSL/XDF"
-    : htmlVideoMode ? "HTML video execution available · native LSL/XDF authority"
-    : capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
-  text("runner-launch-status", browserMode ? "Runs with checked local video URLs and CSV export."
-    : htmlVideoMode ? "Runs with checked local video URLs, native timing, LSL and XDF output."
-    : capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
+  text("runner-capability", browserMode
+    ? "Browser execution · CSV rows only, no LSL, XDF, native input or native timing"
+    : "Desktop execution · native input, native timing, LSL and XDF");
+  text("runner-launch-status", browserMode
+    ? "Runs checked local video URLs and exports CSV from this browser profile."
+    : "Runs checked local video URLs with native timing, LSL and XDF output.");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { await refreshRecentFiles(); } catch (error) { fail(error); }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }

@@ -95,7 +95,6 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
   let workspaceName = "";
   let currentDocument = null;
   const recent = storageRead(windowObject, RECENT_KEY, []);
-  const objectUrls = new Set();
 
   const workspaceStatus = () => Object.freeze({
     schema: "affect-runner-browser-workspace",
@@ -160,8 +159,10 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const sha256 = await sha256Hex(bytes);
     if (sha256 !== asset.sha256) throw new Error("The selected video file hash differs from the JSON media identity.");
-    const url = URL.createObjectURL(new Blob([bytes], { type: asset.mimeType || file.type || "video/mp4" }));
-    objectUrls.add(url);
+    // The verified File is the media source. Copying its bytes into a second
+    // Blob would double the memory held for every clip without changing what
+    // is played, and the hash above was taken from this exact file.
+    const url = URL.createObjectURL(file);
     return Object.freeze({
       schema: "affect-runner-browser-media-url",
       version: 1,
