@@ -72,24 +72,64 @@ test("Runner complete feedback projection preserves successor controls and rejec
   await assert.rejects(resolveRunnerSelection(xr, "P001", route.optionIds, xr.recipe.segments.P3.variants[0].variantId), /XR/iu);
 });
 
-test("Runner falls back from viewport mismatch to a centered on-screen video and Flubber stack", async () => {
+test("a smaller viewport preserves the authored arrangement under one uniform scale", async () => {
   const receipt = await load("planner-recipe-locations-current-v1");
   const plan = await resolveRunnerSelection(receipt, "P001", ["both", "en"], "variant-3");
   const exact = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1920, innerHeight: 1080 });
   assert.equal(exact.mode, "authored");
   assert.deepEqual(exact.reference, plan.selected.layout.geometry.reference);
   assert.deepEqual(exact.feedback, plan.selected.layout.geometry.feedback);
-  const fallback = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1536, innerHeight: 864 });
-  assert.equal(fallback.mode, "centered-fallback");
-  assert.ok(fallback.warnings.some(message => /saved target viewport/u.test(message)));
-  near(fallback.scale, 0.8);
-  near(fallback.reference.cx, 768);
-  near(fallback.feedback.cx, 768);
-  assert.ok(fallback.feedback.y >= fallback.reference.y + fallback.reference.height);
-  assert.equal(inside(fallback.reference, fallback.actualViewport), true);
-  assert.equal(inside(fallback.feedback, fallback.actualViewport), true);
-  near(fallback.reference.width / fallback.feedback.width,
-    plan.selected.layout.geometry.reference.width / plan.selected.layout.geometry.feedback.width);
+
+  const authored = plan.selected.layout.geometry;
+  const fitted = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1536, innerHeight: 864 });
+  assert.equal(fitted.mode, "uniform-fit");
+  assert.ok(fitted.warnings.some(message => /saved target viewport/u.test(message)));
+  assert.equal(inside(fitted.reference, fitted.actualViewport), true);
+  assert.equal(inside(fitted.feedback, fitted.actualViewport), true);
+
+  // One uniform scale: every authored distance and both box sizes keep their
+  // ratios, and the authored side of the feedback box is unchanged.
+  const ratio = fitted.reference.width / authored.reference.width;
+  near(fitted.feedback.width / authored.feedback.width, ratio);
+  near(fitted.reference.height / authored.reference.height, ratio);
+  near(fitted.feedback.height / authored.feedback.height, ratio);
+  near(fitted.feedback.cx - fitted.reference.cx, (authored.feedback.cx - authored.reference.cx) * ratio);
+  near(fitted.feedback.cy - fitted.reference.cy, (authored.feedback.cy - authored.reference.cy) * ratio);
+  assert.equal(Math.sign(fitted.feedback.cy - fitted.reference.cy), Math.sign(authored.feedback.cy - authored.reference.cy));
+});
+
+test("an authored side arrangement is never silently rearranged below the video", async () => {
+  const receipt = await load("planner-recipe-locations-current-v1");
+  // The resolved plan is frozen, so the alternative arrangement is authored on
+  // a detached copy.
+  const plan = structuredClone(await resolveRunnerSelection(receipt, "P001", ["both", "en"], "variant-3"));
+  const geometry = plan.selected.layout.geometry;
+  const reference = geometry.reference;
+  geometry.feedback = {
+    width: geometry.feedback.width, height: geometry.feedback.height,
+    x: reference.x + reference.width + 40, y: reference.y,
+    cx: reference.x + reference.width + 40 + geometry.feedback.width / 2,
+    cy: reference.y + geometry.feedback.height / 2,
+  };
+  const authoredOffset = { x: geometry.feedback.cx - reference.cx, y: geometry.feedback.cy - reference.cy };
+  const fitted = resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1280, innerHeight: 720 });
+  assert.equal(fitted.mode, "uniform-fit");
+  const ratio = fitted.reference.width / reference.width;
+  assert.ok(fitted.feedback.x >= fitted.reference.x + fitted.reference.width - 1e-6,
+    "the feedback box stayed to the right of the video");
+  assert.ok(fitted.feedback.y < fitted.reference.y + fitted.reference.height,
+    "the feedback box was moved below the video instead of staying beside it");
+  near(fitted.feedback.cx - fitted.reference.cx, authoredOffset.x * ratio);
+  near(fitted.feedback.cy - fitted.reference.cy, authoredOffset.y * ratio);
+});
+
+test("a millimetre-calibrated layout reports incompatibility instead of rescaling physical size", async () => {
+  const receipt = await load("planner-recipe-locations-current-v1");
+  const plan = structuredClone(await resolveRunnerSelection(receipt, "P001", ["both", "en"], "variant-3"));
+  plan.selected.layout.profile.units = "mm";
+  assert.doesNotThrow(() => resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1920, innerHeight: 1080 }));
+  assert.throws(() => resolveMasterDesktopLayoutProjection(plan, { innerWidth: 1536, innerHeight: 864 }),
+    (error) => error.name === "MasterLayoutIncompatibleError" && /physical size cannot be reproduced/u.test(error.message));
 });
 
 test("native correspondence checks all authored fields and tolerates only derived geometry", async () => {

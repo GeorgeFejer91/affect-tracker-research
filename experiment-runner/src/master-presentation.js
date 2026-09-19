@@ -27,10 +27,26 @@ function readViewport(viewport) {
   return { width, height };
 }
 
-function intendedVerticalGap(reference, feedback, minimumGap) {
-  if (feedback.cy >= reference.cy) return Math.max(0, feedback.y - (reference.y + reference.height), minimumGap ?? 0);
-  return Math.max(0, reference.y - (feedback.y + feedback.height), minimumGap ?? 0);
+export class MasterLayoutIncompatibleError extends Error {
+  constructor(message, detail) {
+    super(message);
+    this.name = "MasterLayoutIncompatibleError";
+    this.detail = detail;
+  }
 }
+
+// The authored composition is the video box and the feedback box together, in
+// whatever arrangement the researcher chose: above, below, left or right.
+const composition = (reference, feedback) => {
+  const left = Math.min(reference.x, feedback.x);
+  const top = Math.min(reference.y, feedback.y);
+  return {
+    x: left,
+    y: top,
+    width: Math.max(reference.x + reference.width, feedback.x + feedback.width) - left,
+    height: Math.max(reference.y + reference.height, feedback.y + feedback.height) - top,
+  };
+};
 
 export function resolveMasterDesktopLayoutProjection(plan, viewport) {
   const profile = plan.selected.layout.profile;
@@ -41,23 +57,48 @@ export function resolveMasterDesktopLayoutProjection(plan, viewport) {
     return { mode: "authored", targetViewport: target, actualViewport: actual, scale: 1, warnings: [],
       reference: structuredClone(geometry.reference), feedback: structuredClone(geometry.feedback) };
   }
+  // A millimetre-calibrated layout states a physical size. Rescaling it into a
+  // different viewport would present a different physical stimulus, so the
+  // mismatch is reported instead of being absorbed.
+  if (profile.units === "mm") {
+    throw new MasterLayoutIncompatibleError(
+      `This experiment declares a millimetre-calibrated layout for a ${target.width} × ${target.height} CSS px display. `
+      + `The current viewport is ${round(actual.width)} × ${round(actual.height)} CSS px, so the authored physical size cannot be reproduced. `
+      + "Use the authored display resolution, or re-author the layout for this display.",
+      { targetViewport: target, actualViewport: actual, units: profile.units },
+    );
+  }
   const reference = geometry.reference, feedback = geometry.feedback;
-  const gap = intendedVerticalGap(reference, feedback, geometry.gap);
-  const basis = { width: Math.max(reference.width, feedback.width), height: reference.height + gap + feedback.height };
-  const scale = Math.min(1, actual.width / target.width, actual.height / target.height, actual.width / basis.width, actual.height / basis.height);
-  if (!Number.isFinite(scale) || scale <= 0) throw new Error("The saved video and feedback layout cannot be projected into this viewport.");
-  const x = actual.width / 2, total = basis.height * scale, top = Math.max(0, (actual.height - total) / 2);
-  const projectedReference = rect(x, top + reference.height * scale / 2, reference.width * scale, reference.height * scale);
-  const projectedFeedback = rect(x, projectedReference.y + projectedReference.height + gap * scale + feedback.height * scale / 2,
-    feedback.width * scale, feedback.height * scale);
+  const authored = composition(reference, feedback);
+  const scale = Math.min(actual.width / authored.width, actual.height / authored.height);
+  if (!Number.isFinite(scale) || scale <= 0) {
+    throw new MasterLayoutIncompatibleError(
+      "The saved video and feedback layout cannot be projected into this viewport.",
+      { targetViewport: target, actualViewport: actual },
+    );
+  }
+  // One uniform transform of the whole composition: every relative position,
+  // the authored gap and the authored side are preserved exactly.
+  const offsetX = (actual.width - authored.width * scale) / 2;
+  const offsetY = (actual.height - authored.height * scale) / 2;
+  const project = (box) => {
+    const width = box.width * scale, height = box.height * scale;
+    const x = offsetX + (box.x - authored.x) * scale, y = offsetY + (box.y - authored.y) * scale;
+    return { x, y, width, height, cx: x + width / 2, cy: y + height / 2 };
+  };
+  const projectedReference = project(reference);
+  const projectedFeedback = project(feedback);
   const warnings = [
-    `The saved target viewport is ${target.width} × ${target.height} CSS px; the current fullscreen viewport is ${round(actual.width)} × ${round(actual.height)} CSS px.`,
-    `Runner is using the centered fallback layout: video and Flubber are horizontally aligned, Flubber is below the video, and both preserve the saved size ratio at ${round(scale)}× scale.`,
+    `The saved target viewport is ${target.width} × ${target.height} CSS px; the current viewport is ${round(actual.width)} × ${round(actual.height)} CSS px.`,
+    `The authored arrangement is preserved and uniformly scaled to ${round(scale)}×.`,
   ];
   if (!inside(projectedReference, actual) || !inside(projectedFeedback, actual)) {
-    warnings.push("The fallback projection could not keep the complete video and Flubber boxes within the current viewport.");
+    throw new MasterLayoutIncompatibleError(
+      "The saved video and feedback boxes do not fit in the current viewport without changing the authored arrangement.",
+      { targetViewport: target, actualViewport: actual, scale },
+    );
   }
-  return { mode: "centered-fallback", targetViewport: target, actualViewport: actual, scale,
+  return { mode: "uniform-fit", targetViewport: target, actualViewport: actual, scale,
     warnings, reference: projectedReference, feedback: projectedFeedback };
 }
 

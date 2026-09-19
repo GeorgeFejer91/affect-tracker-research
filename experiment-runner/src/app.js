@@ -15,7 +15,7 @@ import { createRunnerControllerSettings } from "./controller-settings.js";
 import { createRecentFiles } from "./recent-files.js";
 import { createVariantPicker, nextParticipant } from "./variant-picker.js";
 import { createParticipantPicker, participantLabel, participantPreviewTimeline } from "./participants.js";
-import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire } from "./master-presentation.js";
+import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLayout, renderMasterQuestionnaire, resolveMasterDesktopLayoutProjection } from "./master-presentation.js";
 import { surveyRandomSeed } from "../../experiment-planner/web/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../experiment-planner/web/src/research/feedback-surface.js";
@@ -233,6 +233,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     });
     return queue;
   }
+  // Native and browser acquisition are both live participant runs. Every guard
+  // below uses this, so a browser run is protected by exactly the same rules.
+  const acquisitionActive = () => protocol.active || browserAttempt?.active === true;
   function requestAbort() {
     if (destroyed || abortPending || (!presentation.active && !presentation.entering)) return;
     abortPending = true;
@@ -483,6 +486,19 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const detail = questionnaireDetail(current, false);
     const step = browserAttempt.steps[browserAttempt.index];
     const answers = detail.surveyjs ? detail.data : detail.answers;
+    // One response record carries the complete submission; each answer row
+    // points at it by sequence instead of repeating the whole object.
+    browserRecord({
+      row_type: "questionnaire-response",
+      event_type: "questionnaireResponse",
+      protocol_step_position: step.position,
+      step_kind: step.kind,
+      step_label: stepTitle(step),
+      questionnaire_id: step.payload.definition.questionnaireId,
+      module_id: step.payload.module?.moduleId ?? "",
+      payload_json: detail,
+    });
+    const responseSequence = browserAttempt.rows.at(-1).sequence;
     for (const [itemId, answer] of Object.entries(answers ?? {})) {
       browserRecord({
         row_type: "questionnaire",
@@ -494,7 +510,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         module_id: step.payload.module?.moduleId ?? "",
         item_id: itemId,
         answer_value: typeof answer === "object" ? JSON.stringify(answer) : answer,
-        payload_json: detail,
+        payload_json: { responseSequence },
       });
     }
     browserRecord({
@@ -689,7 +705,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     return first;
   }
   async function ensureResolvedPreviewPlan() {
-    if (protocol.active) throw new Error("Stop the active recorded attempt before using hidden validation traversal.");
+    if (acquisitionActive()) throw new Error("Stop the active recorded attempt before using hidden validation traversal.");
     if (!recipe) await loadExperiment(true);
     if (!recipe?.recipe) throw new Error("Load a master experiment JSON first.");
     if (!participantPicker.participantId) {
@@ -869,6 +885,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     }
   }
   function fillVisibleQuestionnairePage() {
+    // Synthetic answers must never reach a participant's recorded run.
+    if (acquisitionActive()) throw new Error("Synthetic answers are unavailable during a participant run.");
     const model = questionnaire?.presenter?.model;
     if (!model) return;
     const pageQuestions = model.currentPage?.questions ?? model.getAllQuestions(false, false, true);
@@ -894,10 +912,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
     // must not prevent the participant from completing the first form.
-    query("runner-language-reset").disabled = busy || protocol.active;
-    participantPicker.lock(busy || protocol.active || recorder?.active === true || !recipe);
+    query("runner-language-reset").disabled = locked;
+    participantPicker.lock(locked || !recipe);
     variantPicker.lock(locked || !recipe);
-    root.querySelectorAll("[data-language-option]").forEach(element => { element.disabled = busy || protocol.active; });
+    root.querySelectorAll("[data-language-option]").forEach(element => { element.disabled = locked; });
     query("runner-language-reset").disabled ||= !recipe;
     query("runner-launch").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
     query("runner-launch").disabled ||= Boolean(recipe?.recipe && (!value("runner-variant") || recipe.recipe.presentationTarget !== "desktop-screen"));
@@ -939,7 +957,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || protocol.active) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4, 5].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || acquisitionActive()) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4, 5].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
     }
     }
     renderControls();
@@ -1023,7 +1041,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     participantPicker.history(listing.participants); renderControls();
   }
   async function adoptRecipe(bytes) {
-    if (protocol.active || recorder?.active) throw new Error("Stop the current session and recorder before changing recipe.");
+    if (acquisitionActive() || recorder?.active) throw new Error("Stop the current session and recorder before changing recipe.");
     const generation = ++revision;
     // Withdraw old readiness before parsing; a rejected new file cannot leave Start armed.
     selection = null; preflight = null; inputReceipt = null; recipe = null; path = [];
@@ -1089,10 +1107,27 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const checked = validation ? preflightResponse.result : preflightResponse;
       if (checked?.schema !== "affect-runner-master-preflight" || checked.version !== candidate.version || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
       preflight = checked;
-      text("runner-preflight", checked.htmlVideoStartReady ? `Master and ${scan.stimuli.length} video file(s) verified for HTML playback.` : `Master media binding incomplete. ${checked.reasons.join(" · ")}`);
+      // An authored layout that cannot be honoured on this display is reported
+      // now, before a participant run records anything under it.
+      const layout = masterLayoutReadiness(candidate);
+      preflight = layout.compatible ? checked : { ...checked, htmlVideoStartReady: false, reasons: [...checked.reasons, layout.message] };
+      text("runner-preflight", !layout.compatible ? `Saved layout cannot be honoured on this display. ${layout.message}`
+        : checked.htmlVideoStartReady ? `Master and ${scan.stimuli.length} video file(s) verified for HTML playback.${layout.note ? ` ${layout.note}` : ""}`
+        : `Master media binding incomplete. ${checked.reasons.join(" · ")}`);
       return;
     }
     throw new Error("Legacy package playback used the retired native media protocol. Load a Planner master JSON v3-5 to run with HTML video.");
+  }
+  // Reports whether the saved layout can be presented on this display without
+  // changing what the researcher authored.
+  function masterLayoutReadiness(plan) {
+    try {
+      const projection = resolveMasterDesktopLayoutProjection(plan, windowObject);
+      return { compatible: true, note: projection.mode === "authored" ? "" : projection.warnings.at(-1) ?? "" };
+    } catch (error) {
+      if (error?.name !== "MasterLayoutIncompatibleError") throw error;
+      return { compatible: false, message: messageOf(error) };
+    }
   }
   function project(type, detail) {
     if (destroyed) return;
@@ -1273,6 +1308,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const key = event.key.toLowerCase();
       if (["n", "b"].includes(key)) {
         event.preventDefault();
+        if (acquisitionActive()) return;
         action(() => traverseValidationPreview(key === "n" ? 1 : -1));
         return;
       }
@@ -1281,6 +1317,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const key = event.key.toLowerCase();
       if (["q", "n", "p", "f"].includes(key)) {
         event.preventDefault();
+        if (acquisitionActive()) return;
         if (key === "q") action(async () => {
           questionnairePreview = null;
           const previewPlan = await ensurePreviewPlan();
@@ -1304,7 +1341,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     recentFiles.render(listing); recentExperiments = listing;
   }
   async function loadExperiment(previous = false) {
-    if (protocol.active || recorder?.active) throw new Error("Finish the active session or recording before loading an experiment.");
+    if (acquisitionActive() || recorder?.active) throw new Error("Finish the active session or recording before loading an experiment.");
     const loaded = typeof previous === "string" ? await invoke("research_runner_recent_experiments", { action: "load", entryId: previous })
       : previous ? await invoke("research_runner_previous_experiment", { action: "load" }) : await invoke("research_load_planner_recipe");
     if (!loaded) return;
