@@ -325,7 +325,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       answer_value: row.answer_value ?? "",
       payload_json: row.payload_json ?? "",
     });
-    browserPersist(attempt);
+    // Flush at meaningful boundaries: every event and questionnaire row, and at
+    // most every BROWSER_FLUSH_MS while sampling. Serialising the whole journal
+    // per sample would stall the run at the authored rate.
+    if (row.row_type !== "sample" || now() - attempt.flushedAtMs >= BROWSER_FLUSH_MS) browserPersist(attempt);
   }
   // Retained rows are written to browser-local storage as they are accepted, so
   // a reload or crash leaves a recoverable prefix instead of nothing. This is
@@ -346,6 +349,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         rows: attempt.rows,
       }));
       attempt.persistedRows = attempt.rows.length;
+      attempt.flushedAtMs = now();
     } catch (error) {
       // A failed write is reported once and never hidden behind an apparently
       // successful run.
@@ -362,21 +366,37 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       return null;
     }
   }
-  function browserCsv() {
-    const headers = [
-      "row_type", "run_id", "participant_id", "variant_id", "language_id",
-      "recipe_sha256", "plan_sha256", "protocol_step_position", "step_kind",
-      "step_label", "source_code", "relative_path", "event_type", "sequence",
-      "iso_time", "elapsed_ms", "media_time_ms", "valence", "arousal",
-      "questionnaire_id", "module_id", "item_id", "answer_value", "payload_json",
-    ];
-    const rows = browserAttempt?.rows ?? [];
-    return `${headers.join(",")}\n${rows.map(row => headers.map(header => csvCell(row[header])).join(",")).join("\n")}\n`;
+  // After a reload or a crash, the retained prefix stays exportable instead of
+  // disappearing with the page.
+  function offerBrowserRecovery() {
+    const stored = browserRetainedResult();
+    const button = query("runner-recover");
+    if (!stored || stored.complete || !stored.rows.length) { button.hidden = true; return; }
+    button.hidden = false;
+    text("runner-receipt", `An interrupted browser run left ${stored.rows.length} retained row(s) for participant ${participantLabel(stored.participantId)}.\nExport them before starting another run.`);
+    query("runner-receipt").hidden = false;
   }
+  function exportBrowserRecovery() {
+    const stored = browserRetainedResult();
+    if (!stored?.rows.length) throw new Error("No retained browser rows are available to export.");
+    downloadText(windowObject, stored.fileName || `recovered_${safeName(stored.participantId)}_partial.csv`, browserRowsCsv(stored.rows));
+    text("runner-receipt", `Download requested for ${stored.rows.length} retained row(s) from an incomplete run.\nConfirm the file in your browser download list.`);
+  }
+  const BROWSER_CSV_HEADERS = Object.freeze([
+    "row_type", "run_id", "participant_id", "variant_id", "language_id",
+    "recipe_sha256", "plan_sha256", "protocol_step_position", "step_kind",
+    "step_label", "source_code", "relative_path", "event_type", "sequence",
+    "iso_time", "elapsed_ms", "media_time_ms", "valence", "arousal",
+    "questionnaire_id", "module_id", "item_id", "answer_value", "payload_json",
+  ]);
+  const browserRowsCsv = rows => `${BROWSER_CSV_HEADERS.join(",")}\n${
+    rows.map(row => BROWSER_CSV_HEADERS.map(header => csvCell(row[header])).join(",")).join("\n")}\n`;
+  const browserCsv = () => browserRowsCsv(browserAttempt?.rows ?? []);
   // The browser path runs the authored rate. It never substitutes a default and
   // never silently caps a rate the researcher chose.
   const BROWSER_MAX_SAMPLING_HZ = 240;
   const BROWSER_RETAINED_KEY = "affect-runner-browser-retained-rows-v1";
+  const BROWSER_FLUSH_MS = 2000;
   function browserSamplingFrequencyHz() {
     const authored = recipe?.recipe
       ? recipe.recipe.policy?.samplingFrequencyHz
@@ -455,6 +475,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (!attempt) return;
     browserStopSampling();
     validationVideo.stop();
+    videoOccurrence = null;
     browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: { status } });
     attempt.active = false;
     const csv = browserCsv();
@@ -465,8 +486,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     // actually happened.
     downloadText(windowObject, fileName, csv);
     const retained = attempt.persistenceFailed
-      ? `Browser storage write failed: ${attempt.persistenceFailed}`
-      : `Retained in this browser profile: ${attempt.persistedRows ?? attempt.rows.length} row(s)`;
+      ? `Browser storage write failed after ${attempt.persistedRows} row(s): ${attempt.persistenceFailed}`
+      : `Retained in this browser profile: ${attempt.persistedRows} of ${attempt.rows.length} row(s)`;
     text("runner-session", `${participantLabel(attempt.participantId)} · ${status}`);
     text("runner-receipt", `${status === "complete" ? "Run complete" : "Run incomplete (partial result)"}\nDownload requested: ${fileName}\nRows: ${attempt.rows.length}\n${retained}\nConfirm the file in your browser download list.`);
     query("runner-receipt").hidden = false;
@@ -634,6 +655,10 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       index: 0,
       rows: [],
       startedAtMs: now(),
+      flushedAtMs: 0,
+      persistedRows: 0,
+      persistenceFailed: null,
+      fileName: "",
       x: 0,
       y: 0,
       inputActive: false,
@@ -1501,6 +1526,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     : "Runs checked local video URLs with native timing, LSL and XDF output.");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { await refreshRecentFiles(); } catch (error) { fail(error); }
+  listen(query("runner-recover"), "click", () => action(async () => exportBrowserRecovery()));
+  if (browserMode) offerBrowserRecovery();
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
   timer = windowObject.setInterval(async () => {
     if (destroyed || polling || busy) return; polling = true;

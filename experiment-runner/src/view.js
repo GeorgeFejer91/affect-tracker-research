@@ -34,6 +34,7 @@ export function runnerMarkup() {
       <button id="runner-settings" class="runner-text-button" aria-haspopup="dialog">Session &amp; recording settings</button>
       <p id="runner-launch-status" role="status"></p>
       <pre id="runner-receipt" hidden></pre>
+      <button id="runner-recover" class="runner-text-button" hidden>Export the retained rows from the interrupted run</button>
     </main>
     <main id="runner-participant-view" class="runner-presentation" hidden>
       <section id="runner-preparation" class="runner-participant-page" aria-labelledby="runner-preparation-title">

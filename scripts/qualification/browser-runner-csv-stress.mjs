@@ -93,12 +93,38 @@ HTMLAnchorElement.prototype.click = function click() {
   return originalAnchorClick.call(this);
 };
 
+// The stimulus fixtures are synthetic byte patterns, not decodable video, and
+// this harness qualifies the adapter, journal and CSV path rather than decoding.
+// The source and the playback clock are therefore held on the element instead of
+// being handed to the real media pipeline, which would otherwise raise a genuine
+// decode error for every clip. Real decoding is covered separately by
+// html-video-real-playback.mjs.
+Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+  configurable: true,
+  get() { return this.__syntheticSrc ?? ''; },
+  set(value) { this.__syntheticSrc = String(value); },
+});
+Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
+  configurable: true,
+  get() { return this.__syntheticTime ?? 0; },
+  set(value) { this.__syntheticTime = Number(value) || 0; },
+});
+Object.defineProperty(HTMLMediaElement.prototype, 'ended', {
+  configurable: true,
+  get() { return this.__syntheticEnded === true; },
+});
+const originalRemoveAttribute = HTMLMediaElement.prototype.removeAttribute;
+HTMLMediaElement.prototype.removeAttribute = function removeAttribute(name) {
+  if (name === 'src') { this.__syntheticSrc = ''; return; }
+  return originalRemoveAttribute.call(this, name);
+};
 Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
   configurable: true,
   get() { return this.dataset.syntheticReady === 'true' ? 2 : 0; },
 });
 HTMLMediaElement.prototype.load = function load() {
   this.dataset.syntheticReady = this.src ? 'true' : 'false';
+  this.__syntheticEnded = false;
   if (this.src) {
     setTimeout(() => {
       this.dispatchEvent(new Event('loadedmetadata'));
@@ -106,17 +132,36 @@ HTMLMediaElement.prototype.load = function load() {
     }, 0);
   }
 };
+// The synthetic element follows the real media lifecycle: play() resolves, then
+// a 'playing' event announces observed playback, and 'ended' fires once the
+// clip finishes. The Runner records its start and end from those events, so a
+// mock that only resolved play() would not exercise the real path.
+const SYNTHETIC_CLIP_SECONDS = 0.6;
 HTMLMediaElement.prototype.play = function play() {
   this.dataset.syntheticPlaying = 'true';
   this.__stressClock ??= setInterval(() => {
-    try { this.currentTime = Number(this.currentTime || 0) + 0.033; } catch {}
+    try {
+      this.currentTime = Number(this.currentTime || 0) + 0.033;
+      if (this.currentTime >= SYNTHETIC_CLIP_SECONDS) {
+        clearInterval(this.__stressClock);
+        this.__stressClock = null;
+        this.dataset.syntheticPlaying = 'false';
+        this.__syntheticEnded = true;
+        this.dispatchEvent(new Event('ended'));
+      }
+    } catch {}
   }, 16);
+  // A microtask, not a timer: the harness compresses long timeouts, and the
+  // player's start watchdog must not race the observed 'playing' transition.
+  queueMicrotask(() => this.dispatchEvent(new Event('playing')));
   return Promise.resolve();
 };
 HTMLMediaElement.prototype.pause = function pause() {
+  const wasPlaying = this.dataset.syntheticPlaying === 'true';
   this.dataset.syntheticPlaying = 'false';
   if (this.__stressClock) clearInterval(this.__stressClock);
   this.__stressClock = null;
+  if (wasPlaying) this.dispatchEvent(new Event('pause'));
 };
 
 const fixturePath = recipeVersion === '5'
@@ -163,7 +208,12 @@ mark('after bootRunner');
 const q = id => root.querySelector('#' + id);
 const visible = element => !!element && !element.hidden && element.offsetParent !== null;
 const pressFill = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, altKey: true, shiftKey: true, bubbles: true, cancelable: true }));
-const press = key => window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+// A real keyboard delivers the physical code as well as the key, and releases
+// it. The authored input binding matches on the code, so both are required.
+const press = (key, code = key) => {
+  window.dispatchEvent(new KeyboardEvent('keydown', { key, code, bubbles: true, cancelable: true }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { key, code, bubbles: true, cancelable: true }));
+};
 const text = element => (element?.textContent ?? element?.value ?? '').trim();
 
 function parseCsv(csv) {
@@ -183,6 +233,40 @@ function parseCsv(csv) {
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const headers = rows.shift() ?? [];
   return rows.filter(item => item.length === headers.length && item.some(Boolean)).map(item => Object.fromEntries(headers.map((header, index) => [header, item[index]])));
+}
+// A participant answers by interacting with the page. The synthetic auto-fill
+// shortcut is refused during acquisition, so the harness must do the same.
+function answerVisibleQuestions() {
+  const host = q('runner-questionnaire-items');
+  if (!host) return;
+  const group = element => element.closest('[data-name]') ?? element.closest('fieldset') ?? host;
+  for (const radio of host.querySelectorAll('input[type="radio"]')) {
+    if (radio.disabled || !visible(radio)) continue;
+    if (group(radio).querySelector('input[type="radio"]:checked')) continue;
+    radio.click();
+  }
+  // A lone checkbox is a boolean/switch question; a group of them is a
+  // multi-select. Either way an unanswered question gets one real click.
+  for (const box of host.querySelectorAll('input[type="checkbox"]')) {
+    if (box.disabled || !visible(box)) continue;
+    if (group(box).querySelector('input[type="checkbox"]:checked')) continue;
+    box.click();
+  }
+  for (const field of host.querySelectorAll('input[type="text"], input[type="number"], input:not([type]), textarea')) {
+    if (field.disabled || field.readOnly || !visible(field) || field.value) continue;
+    field.focus();
+    field.value = field.type === 'number' ? '30' : 'Synthetic participant entry';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+    field.blur();
+  }
+  for (const select of host.querySelectorAll('select')) {
+    if (select.disabled || !visible(select) || select.value) continue;
+    const option = [...select.options].find(item => item.value);
+    if (!option) continue;
+    select.value = option.value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 function clickSurveyNavigation() {
   const host = q('runner-questionnaire-items');
@@ -212,8 +296,10 @@ async function prepareRecipe() {
   mark('prepareRecipe after open click');
   await until(() => app.recipe && q('runner-recipe-status').textContent.includes('master v' + recipeVersion), 'recipe loaded');
   mark('prepareRecipe recipe loaded');
-  check(q('runner-capability').textContent.includes('CSV download replaces LSL/XDF'), 'browser capability states CSV replaces LSL/XDF');
+  check(/no LSL, XDF, native input or native timing/u.test(q('runner-capability').textContent), 'browser capability claims no native authority');
   check(q('runner-record-start').disabled && q('runner-discover').disabled && q('runner-record-own').disabled, 'browser disables native LSL/XDF recording controls');
+  // The synthetic auto-fill shortcut must be refused while a run is acquiring.
+  check(typeof pressFill === 'function', 'auto-fill shortcut is reachable outside a run');
 }
 async function chooseVariant(variantId) {
   const select = q('runner-variant');
@@ -240,7 +326,7 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
     if (downloads.length > startDownloadCount && downloads.at(-1).text !== null) break;
     if (!q('runner-questionnaire').hidden) {
       sawQuestionnaire = true;
-      pressFill();
+      answerVisibleQuestions();
       await tick(20);
       if (clickSurveyNavigation()) questionnairePages += 1;
       await tick(25);
@@ -269,6 +355,22 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
   const events = rows.filter(row => row.row_type === 'event').map(row => row.event_type);
   const samples = rows.filter(row => row.row_type === 'sample');
   const questionnaires = rows.filter(row => row.row_type === 'questionnaire');
+  // Record what the run actually produced before asserting, so a failure is
+  // diagnosable from the receipt instead of only naming the first broken check.
+  routeEvents.push({
+    fileName: download.fileName,
+    rows: rows.length,
+    events: [...new Set(events)],
+    eventSequence: rows.filter(row => row.row_type === 'event').map(row => row.event_type),
+    samples: samples.length,
+    questionnaires: questionnaires.length,
+    sawQuestionnaire,
+    sawVideo,
+    questionnairePages,
+    videoInputs,
+    lastError: text(q('runner-error')),
+    receipt: text(q('runner-receipt')).slice(0, 400),
+  });
   check(download.fileName.endsWith(partial ? '_partial.csv' : '_complete.csv'), 'CSV filename declares terminal status');
   check(rows.length >= 10, 'CSV has substantial run rows');
   check(events.includes('runStarted'), 'CSV includes runStarted event');
@@ -276,21 +378,41 @@ async function driveUntilDownload(startDownloadCount, { partial = false } = {}) 
   check(events.some(event => event === 'videoStarted'), 'CSV includes videoStarted event');
   check(samples.length > 0, 'CSV includes affect samples');
   check(questionnaires.length > 0, 'CSV includes questionnaire answers');
+
+  // Observed playback: one start and one end per completed occurrence, each
+  // occurrence distinct, and no sample before its occurrence started.
+  const videoRows = rows.filter(row => row.row_type === 'event' && /^video(Started|Ended|Failed)$/u.test(row.event_type));
+  const occurrenceOf = row => { try { return JSON.parse(row.payload_json).occurrenceId; } catch { return null; } };
+  const starts = videoRows.filter(row => row.event_type === 'videoStarted');
+  const ends = videoRows.filter(row => row.event_type === 'videoEnded');
+  check(starts.every(row => occurrenceOf(row)), 'every videoStarted carries an occurrence identity');
+  check(new Set(starts.map(occurrenceOf)).size === starts.length, 'each playback occurrence starts exactly once');
+  check(new Set(ends.map(occurrenceOf)).size === ends.length, 'each playback occurrence ends at most once');
+  check(ends.every(row => starts.some(start => occurrenceOf(start) === occurrenceOf(row))), 'no video end without an observed start');
+  if (!partial) check(ends.length === starts.length, 'every started video reported its actual end');
+  check(!events.includes('videoFailed'), 'no video reported a failure in this run');
+  for (const start of starts) {
+    const occurrence = occurrenceOf(start);
+    const first = samples.find(row => occurrenceOf(row) === occurrence);
+    if (first) check(Number(first.sequence) > Number(start.sequence), 'sampling for ' + occurrence + ' begins after its observed start');
+  }
+
+  // The authored sampling rate is recorded and never silently replaced.
+  const runStarted = rows.find(row => row.event_type === 'runStarted');
+  const authoredHz = JSON.parse(runStarted.payload_json).samplingFrequencyHz;
+  check(Number.isInteger(authoredHz) && authoredHz >= 1, 'run records its authored sampling frequency');
+  check(samples.every(row => JSON.parse(row.payload_json).nominalHz === authoredHz), 'every sample records the authored nominal rate');
+  check(samples.every(row => Number.isFinite(Number(row.elapsed_ms))), 'every sample carries an actual timestamp');
+
+  // One response record per submission; answer rows reference it.
+  const responses = rows.filter(row => row.row_type === 'questionnaire-response');
+  check(responses.length > 0, 'CSV includes questionnaire response records');
+  check(questionnaires.every(row => Number.isInteger(JSON.parse(row.payload_json).responseSequence)),
+    'answer rows reference one response record instead of repeating it');
   check(questionnaires.some(row => /demographics/u.test(row.questionnaire_id)), 'CSV includes demographics questionnaire rows');
   check(samples.some(row => Math.abs(Number(row.valence)) > 0 || Math.abs(Number(row.arousal)) > 0), 'CSV includes non-neutral affect samples from browser input');
   check(rows.every(row => row.recipe_sha256 && row.plan_sha256 && row.participant_id && row.variant_id && row.language_id), 'CSV rows carry run identities');
   check(rows.some(row => row.relative_path), 'CSV carries media relative paths');
-  routeEvents.push({
-    fileName: download.fileName,
-    rows: rows.length,
-    events: [...new Set(events)],
-    samples: samples.length,
-    questionnaires: questionnaires.length,
-    sawQuestionnaire,
-    sawVideo,
-    questionnairePages,
-    videoInputs,
-  });
 }
 
 try {
