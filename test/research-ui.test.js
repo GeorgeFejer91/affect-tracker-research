@@ -67,7 +67,7 @@ test("Setup presents the seven owners as an ordered ledger deck", () => {
     assert.ok(next > cursor, `${label} must retain protocol order`);
     assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
     assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
-    assert.match(markup, new RegExp(`ledger-tab-icons\\.svg#ledger-${id}`, "u"));
+    assert.match(markup, new RegExp(`ledger-tab-icons\\.svg\\?no-inline#ledger-${id}`, "u"));
     cursor = next;
   }
   assert.equal((markup.match(/aria-expanded="true"/gu) ?? []).length, 1);

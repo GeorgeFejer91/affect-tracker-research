@@ -144,6 +144,7 @@ const rules = {
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)
       || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path)
       || /^assets\/app-(?:logo|symbol)-[A-Za-z0-9_-]+\.svg$/u.test(path)
+      || /^assets\/ledger-tab-icons-[A-Za-z0-9_-]+\.svg$/u.test(path)
   },
 };
 

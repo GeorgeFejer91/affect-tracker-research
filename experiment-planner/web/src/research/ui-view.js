@@ -10,7 +10,7 @@ import { PLANNER_TARGETS } from "./planner-target.js";
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
 const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
-const LEDGER_TAB_ICONS_URL = new URL("../../assets/ledger-tab-icons.svg", import.meta.url).href;
+const LEDGER_TAB_ICONS_URL = new URL("../../assets/ledger-tab-icons.svg?no-inline", import.meta.url).href;
 const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
   algorithmVersion: "language-tree-v1",
   rootNodeId: "language",
