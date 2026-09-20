@@ -3,5 +3,9 @@
   "identifier": "research-window",
   "description": "Run the local Affect Research command surface in the sole Research window.",
   "windows": ["research"],
-  "permissions": []
+  "permissions": [
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-start-dragging"
+  ]
 }

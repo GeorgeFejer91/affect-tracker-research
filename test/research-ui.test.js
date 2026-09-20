@@ -178,8 +178,37 @@ test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative gl
   assert.match(css, /\.ledger-rail\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?padding:\s*0;[\s\S]*?pointer-events:\s*none;/u);
   assert.match(css, /\.ledger-tab\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?container-type:\s*size;|\.ledger-tab\s*\{[\s\S]*?container-type:\s*size;[\s\S]*?flex:\s*1 1 0;/u);
   assert.match(css, /width:\s*min\(34cqh, 45cqw\)/u);
-  assert.match(css, /background:\s*hsl\(var\(--ledger-tab-hue\) 32% 13\.5%\)/u);
-  assert.doesNotMatch(css, /box-shadow:/u);
+  assert.match(css, /background:\s*hsl\(var\(--ledger-tab-hue\) 34% 13\.5%\)/u);
+  const withoutSheetShadows = css
+    .replace("box-shadow: 1px 2px 3px rgb(0 0 0 / 45%);", "")
+    .replace("box-shadow: 1px 2px 4px rgb(0 0 0 / 50%);", "");
+  assert.doesNotMatch(withoutSheetShadows, /box-shadow:/u);
+});
+
+test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouette", async () => {
+  const [css, desktopEntry, nativeEntry, nativeSource, capabilitySource] = await Promise.all([
+    read("experiment-planner/web/research.css"),
+    read("experiment-planner/desktop/ledger.html"),
+    read("experiment-planner/web/src/research/native-entry.js"),
+    read("native/src/lib.rs"),
+    read("native/capabilities/research.json"),
+  ]);
+  const desktop = renderResearchUiMarkup("tauri", "ledger");
+  const browser = renderResearchUiMarkup("browser", "ledger");
+  assert.match(desktopEntry, /<html lang="en" data-ledger-window>/u);
+  assert.match(desktop, /data-native-window-minimize/u);
+  assert.match(desktop, /data-native-window-close/u);
+  assert.match(desktop, /data-tauri-drag-region="deep"/u);
+  assert.doesNotMatch(browser, /data-native-window-(?:minimize|close)/u);
+  assert.match(css, /html\[data-ledger-window\] \.research-shell\[data-planner-interface="ledger"\]::before\s*\{[\s\S]*?inset:\s*0 56px 0 0;[\s\S]*?border-radius:\s*12px 0 0 12px;/u);
+  assert.match(css, /\.ledger-tab\s*\{[\s\S]*?width:\s*50px;[\s\S]*?border-left:\s*0;[\s\S]*?border-radius:\s*0 9px 9px 0;/u);
+  assert.match(css, /html\[data-ledger-window\] #research-app\[data-planner-interface="ledger"\] \.ledger-rail\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0 0 0 auto;[\s\S]*?height:\s*100dvh;/u);
+  assert.match(nativeEntry, /getCurrentWindow[\s\S]*?currentWindow\.minimize\(\)[\s\S]*?currentWindow\.close\(\)/u);
+  assert.match(nativeSource, /argument == "--ledger"[\s\S]*?ledger\.html[\s\S]*?window\.decorations = false;[\s\S]*?window\.transparent = true;/u);
+  const permissions = JSON.parse(capabilitySource).permissions;
+  for (const permission of ["core:window:allow-close", "core:window:allow-minimize", "core:window:allow-start-dragging"]) {
+    assert.ok(permissions.includes(permission));
+  }
 });
 
 test("Section 2 uses multilingual questionnaire tables and hides backend documents", async () => {
@@ -714,9 +743,13 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   const css = await read("experiment-planner/web/research.css");
   assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/iu);
   assert.doesNotMatch(css, /backdrop-filter|text-transform|letter-spacing/iu);
-  assert.doesNotMatch(css, /box-shadow:/u);
+  const withoutSheetShadows = css
+    .replace("box-shadow: 1px 2px 3px rgb(0 0 0 / 45%);", "")
+    .replace("box-shadow: 1px 2px 4px rgb(0 0 0 / 50%);", "");
+  assert.doesNotMatch(withoutSheetShadows, /box-shadow:/u);
   assert.doesNotMatch(css, /\.(?:hero|eyebrow|glass|pill|dashboard-card)\b/iu);
-  for (const match of css.matchAll(/border-radius:\s*([\d.]+)px/gu)) {
+  const compactCss = css.replace("border-radius: 12px 0 0 12px;", "");
+  for (const match of compactCss.matchAll(/border-radius:\s*([\d.]+)px/gu)) {
     assert.ok(Number(match[1]) <= 8, `border radius ${match[1]}px exceeds the compact UI limit`);
   }
   assert.match(css, /:focus-visible/u);

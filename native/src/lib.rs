@@ -62,7 +62,17 @@ use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
 
 pub fn run() {
-    launch(DesktopRole::Planner, tauri::generate_context!(), None);
+    let mut context = tauri::generate_context!();
+    if std::env::args_os().skip(1).any(|argument| argument == "--ledger") {
+        if let Some(window) = context.config_mut().app.windows.first_mut() {
+            window.title = "Experiment Planner Ledger".into();
+            window.url = tauri::WebviewUrl::App("ledger.html".into());
+            window.decorations = false;
+            window.transparent = true;
+            window.shadow = false;
+        }
+    }
+    launch(DesktopRole::Planner, context, None);
 }
 
 /// Independent Runner binary supplies its own embedded assets and identity.

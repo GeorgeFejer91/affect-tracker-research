@@ -627,10 +627,12 @@ function ledgerSetupMarkup() {
 
 export function renderResearchUiMarkup(surface = "browser", requestedInterface = "classic") {
   const plannerInterface = requestedInterface === "ledger" ? "ledger" : "classic";
+  const ledgerWindow = surface === "tauri" && plannerInterface === "ledger";
   const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · ${plannerInterface === "ledger" ? "Ledger" : "Classic"}`;
   return `
-    <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}">
-      <header class="app-bar">
+    <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}"${ledgerWindow ? ' style="--ledger-page-hue:236"' : ""}>
+      ${ledgerWindow ? '<div class="native-window-controls" role="group" aria-label="Window controls"><button type="button" class="native-window-control" data-native-window-minimize aria-label="Minimize" title="Minimize">−</button><button type="button" class="native-window-control native-window-close" data-native-window-close aria-label="Close" title="Close">×</button></div>' : ""}
+      <header class="app-bar"${ledgerWindow ? ' data-tauri-drag-region="deep"' : ""}>
         <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
         <nav class="mode-navigation" aria-label="Application mode">
           <button type="button" data-mode-button="setup" aria-current="page">Setting Up the Experiment</button>

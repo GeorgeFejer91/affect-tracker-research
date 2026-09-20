@@ -778,7 +778,9 @@ function bindResearchInteractions(root, { surface }) {
     const openIndex = SETUP_SECTIONS.findIndex(({ id }) => id === openSection);
     const pane = query("#setup-sections");
     if (pane instanceof HTMLElement && plannerInterface === "ledger") {
-      pane.style.setProperty("--ledger-page-hue", String(236 + (360 / SETUP_SECTIONS.length) * Math.max(0, openIndex)));
+      const pageHue = String(236 + (360 / SETUP_SECTIONS.length) * Math.max(0, openIndex));
+      pane.style.setProperty("--ledger-page-hue", pageHue);
+      shell.style.setProperty("--ledger-page-hue", pageHue);
       pane.dataset.ledgerSection = openSection;
     }
     const panelChanges = [];

@@ -3666,7 +3666,7 @@ dialog::backdrop {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  background: hsl(var(--ledger-page-hue) 32% 9.5%);
+  background: hsl(var(--ledger-page-hue) 36% 9.5%);
   transition: background-color 320ms ease;
 }
 
@@ -3680,7 +3680,7 @@ dialog::backdrop {
 #research-app[data-planner-interface="ledger"] .setup-intro {
   grid-column: 1;
   grid-row: 1;
-  background: hsl(var(--ledger-page-hue) 32% 9.5%);
+  background: hsl(var(--ledger-page-hue) 36% 9.5%);
   transition: background-color 320ms ease;
 }
 
@@ -3740,9 +3740,11 @@ dialog::backdrop {
   grid-column: 2;
   grid-row: 1;
   flex-direction: column;
+  gap: 4px;
   min-width: 0;
   min-height: 0;
   padding: 0;
+  background: transparent;
   pointer-events: none;
 }
 
@@ -3752,32 +3754,32 @@ dialog::backdrop {
   display: grid;
   flex: 1 1 0;
   grid-template: 1fr / 1fr;
-  width: 100%;
+  width: 50px;
   min-height: 0;
   padding: 0;
-  border: 0;
-  border-bottom: 1px solid rgb(240 238 232 / 16%);
-  border-radius: 0;
-  background: hsl(var(--ledger-tab-hue) 32% 13.5%);
-  color: var(--text);
+  border: 1px solid #3b3f6b;
+  border-left: 0;
+  border-radius: 0 9px 9px 0;
+  background: hsl(var(--ledger-tab-hue) 34% 13.5%);
+  box-shadow: 1px 2px 3px rgb(0 0 0 / 45%);
+  color: #6b7095;
   pointer-events: auto;
   place-items: center;
-  transition: background-color 320ms ease, color 160ms ease;
-}
-
-#research-app[data-planner-interface="ledger"] .ledger-tab:last-child {
-  border-bottom: 0;
+  transition: width 120ms ease, color 120ms ease, background-color 320ms ease;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-tab:hover:not(:disabled) {
-  background: hsl(var(--ledger-tab-hue) 32% 17%);
+  border-color: #6366f1;
+  color: #a5b4fc;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-tab[aria-expanded="true"] {
   z-index: 1;
-  width: calc(100% + 1px);
+  width: 57px;
   margin-left: -1px;
-  background: hsl(var(--ledger-tab-hue) 32% 9.5%);
+  background: hsl(var(--ledger-tab-hue) 36% 9.5%);
+  box-shadow: 1px 2px 4px rgb(0 0 0 / 50%);
+  color: #a5b4fc;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-tab-mark {
@@ -3786,7 +3788,7 @@ dialog::backdrop {
   height: min(34cqh, 45cqw);
   min-width: 1rem;
   min-height: 1rem;
-  border: 1px solid currentcolor;
+  border: 0;
   place-items: center;
 }
 
@@ -3823,6 +3825,90 @@ dialog::backdrop {
 #research-app[data-planner-interface="ledger"] .preview-header-controls {
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+/* The installed Ledger uses Secret Tunnel's window silhouette: the HTML page
+   is the window body and the ledger tabs protrude into a transparent rail. */
+html[data-ledger-window],
+html[data-ledger-window] body,
+html[data-ledger-window] #research-app {
+  background: transparent;
+}
+
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"] {
+  isolation: isolate;
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  overflow: visible;
+  background: transparent;
+}
+
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"]::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 56px 0 0;
+  border: 1px solid #3b3f6b;
+  border-radius: 12px 0 0 12px;
+  background: hsl(var(--ledger-page-hue) 36% 9.5%);
+  content: "";
+  transition: background-color 320ms ease;
+}
+
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > .app-bar {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 5.25rem;
+  background: transparent;
+}
+
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > main {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+html[data-ledger-window] #research-app[data-planner-interface="ledger"] .setup-pane,
+html[data-ledger-window] #research-app[data-planner-interface="ledger"] .setup-intro {
+  background: transparent;
+}
+
+html[data-ledger-window] #research-app[data-planner-interface="ledger"] .ledger-rail {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: 56px;
+  height: 100dvh;
+}
+
+.native-window-controls {
+  position: absolute;
+  z-index: 4;
+  top: 0.65rem;
+  right: calc(56px + 0.75rem);
+  display: flex;
+  gap: 2px;
+}
+
+.native-window-control {
+  width: 26px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.native-window-control:hover:not(:disabled) {
+  border: 0;
+  background: #232746;
+  color: var(--text);
+}
+
+.native-window-close:hover:not(:disabled) {
+  background: #7f1d1d;
+  color: #fff;
 }
 
 .planner-preview-window-shell {
