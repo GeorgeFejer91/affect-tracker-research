@@ -11,10 +11,12 @@ repository = "https://github.com/GeorgeFejer91/affect-tracker-research"
 [[bin]]
 name = "affect-runner"
 path = "src/bin/runner.rs"
+required-features = ["runner-bin"]
 
 [[bin]]
 name = "affect-planner-cli"
 path = "src/bin/planner-cli.rs"
+required-features = ["planner-cli-bin"]
 
 [lib]
 name = "affect_research"
@@ -54,6 +56,8 @@ gilrs = { version = "0.11.2", default-features = false, features = ["xinput"] }
 default = ["lsl-streaming", "native-acquisition-windows"]
 lsl-streaming = ["dep:labstream"]
 native-acquisition-windows = []
+runner-bin = []
+planner-cli-bin = []
 
 [profile.release]
 codegen-units = 1

@@ -19,4 +19,4 @@ function run(command, args) {
 }
 run(process.execPath, [resolve(require.resolve("vite/package.json"), "../bin/vite.js"), "build", "--config", "experiment-runner/vite.config.js"]);
 run(process.execPath, ["scripts/verify-runner-build.js"]);
-run(cargo, [options.has("--run") ? "run" : "build", "--manifest-path", "native/Cargo.toml", "--locked", "--bin", "affect-runner", "--features", "tauri/custom-protocol", ...(options.has("--release") ? ["--release"] : [])]);
+run(cargo, [options.has("--run") ? "run" : "build", "--manifest-path", "native/Cargo.toml", "--locked", "--bin", "affect-runner", "--features", "tauri/custom-protocol,runner-bin", ...(options.has("--release") ? ["--release"] : [])]);

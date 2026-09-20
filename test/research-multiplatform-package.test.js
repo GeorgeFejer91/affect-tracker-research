@@ -72,7 +72,10 @@ test("tests and no-default-feature Rust gates precede the unsigned package build
 });
 
 test("package helper rejects cross-host and signing boundaries", async () => {
-  const helper = await source(BUILD_HELPER_PATH);
+  const [helper, cargoToml] = await Promise.all([
+    source(BUILD_HELPER_PATH),
+    source("native/Cargo.toml"),
+  ]);
 
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"/u);
   assert.match(helper, /process\.platform !== target\.nodePlatform \|\| process\.arch !== target\.nodeArch/u);
@@ -87,6 +90,8 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /spawnSync\(\s*process\.execPath,\s*\[\s*tauriCli,/u);
   assert.doesNotMatch(helper, /pnpm\.cmd|shell:\s*true/iu);
   assert.doesNotMatch(helper, /--features[\s\S]*native-[a-z-]+|lsl-streaming/u);
+  assert.match(cargoToml, /name = "affect-runner"[\s\S]*?required-features = \["runner-bin"\]/u);
+  assert.match(cargoToml, /name = "affect-planner-cli"[\s\S]*?required-features = \["planner-cli-bin"\]/u);
 });
 
 test("platform overrides exclude the Windows runtime and select only requested bundles", async () => {

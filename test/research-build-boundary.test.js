@@ -75,6 +75,8 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.match(helper, /"--bin",\s*"affect-research"/u);
   assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_[A-Z_]+_RUNTIME|--features[\s\S]*native-[a-z-]+|lsl-streaming/iu);
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
+  assert.match(cargoToml, /name = "affect-runner"[\s\S]*?required-features = \["runner-bin"\]/u);
+  assert.match(cargoToml, /name = "affect-planner-cli"[\s\S]*?required-features = \["planner-cli-bin"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, {

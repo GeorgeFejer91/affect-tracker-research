@@ -6,7 +6,7 @@ const flags = new Set(process.argv.slice(2));
 if ([...flags].some(flag => !["--release", "--no-default-features"].includes(flag))) {
   throw new Error("Usage: node scripts/build-planner-cli.js [--release] [--no-default-features]");
 }
-const features = "tauri/custom-protocol";
+const features = "tauri/custom-protocol,planner-cli-bin";
 function run(command, args) {
   const child = spawnSync(command, args, { cwd: root, stdio: "inherit", windowsHide: true, shell: false });
   if (child.error) throw child.error;

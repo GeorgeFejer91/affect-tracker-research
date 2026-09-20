@@ -26,7 +26,7 @@
     "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64",
     "runner:dev": "vite --config experiment-runner/vite.config.js",
     "runner:build": "vite build --config experiment-runner/vite.config.js && node scripts/verify-runner-build.js",
-    "runner:check": "cargo check --manifest-path native/Cargo.toml --locked --bin affect-runner",
+    "runner:check": "cargo check --manifest-path native/Cargo.toml --locked --bin affect-runner --features runner-bin",
     "runner:desktop": "node scripts/build-runner-desktop.js --run",
     "runner:desktop:build": "node scripts/build-runner-desktop.js",
     "qualification:desktop:open-ui": "pnpm desktop:build && pnpm runner:build",
