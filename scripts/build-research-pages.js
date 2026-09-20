@@ -37,6 +37,7 @@ await Promise.all([
   )),
   cp(resolve(sourceRoot, "assets", "app-logo.svg"), resolve(outputRoot, "assets", "app-logo.svg")),
   cp(resolve(sourceRoot, "assets", "app-symbol.svg"), resolve(outputRoot, "assets", "app-symbol.svg")),
+  cp(resolve(sourceRoot, "assets", "ledger-tab-icons.svg"), resolve(outputRoot, "assets", "ledger-tab-icons.svg")),
   ...["en", "de"].map(language => cp(resolve(sourceRoot, "assets", "questionnaires", "demographics", `${language}.json`),
     resolve(outputRoot, "assets", "questionnaires", "demographics", `${language}.json`))),
   cp(resolve(repositoryRoot, "experiment-runner", "assets", "runner-symbol.svg"), resolve(outputRoot, "assets", "runner-symbol.svg")),

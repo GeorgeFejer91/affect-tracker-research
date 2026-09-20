@@ -75,6 +75,8 @@ pub fn run() {
             window.decorations = false;
             window.transparent = true;
             window.shadow = false;
+            window.min_width = Some(640.0);
+            window.min_height = Some(480.0);
         }
     }
     launch(

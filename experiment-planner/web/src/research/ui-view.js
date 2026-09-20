@@ -10,6 +10,7 @@ import { PLANNER_TARGETS } from "./planner-target.js";
 const DEFAULT_SETTINGS = createDefaultResearchSettings();
 const DEFAULT_COLORS = DEFAULT_SETTINGS.visual.colors;
 const EXPERIMENT_TEMPLATE_URL = new URL("../../experiment-template.json", import.meta.url).href;
+const LEDGER_TAB_ICONS_URL = new URL("../../assets/ledger-tab-icons.svg", import.meta.url).href;
 const DEFAULT_LANGUAGE_SELECTION_TREE = Object.freeze({
   algorithmVersion: "language-tree-v1",
   rootNodeId: "language",
@@ -585,10 +586,22 @@ function ledgerTabMarkup(section, index) {
     data-open-section="${section.id}"
     title="${section.label}: ${SECTION_SUMMARIES[section.id]}"
   >
-    <span class="ledger-tab-mark" aria-hidden="true"><span class="section-number">${index + 1}</span></span>
+    <span class="ledger-tab-mark" aria-hidden="true"><svg class="ledger-tab-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false"><use href="${LEDGER_TAB_ICONS_URL}#ledger-${section.id}"></use></svg></span>
     <span class="section-title sr-only">${section.label}</span>
     <span class="section-review-status" data-section-review-status="${section.id}"><span data-section-review-check="${section.id}" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="${section.id}">${section.id === "review" ? "Not saved" : "Not confirmed"}</span></span>
   </button>`;
+}
+
+function nativeLedgerWindowChromeMarkup() {
+  const directions = ["North", "NorthEast", "East", "SouthEast", "South", "SouthWest", "West", "NorthWest"];
+  return `<div class="native-window-controls" role="group" aria-label="Window controls">
+    <button type="button" class="native-window-control" data-native-window-minimize aria-label="Minimize" title="Minimize">−</button>
+    <button type="button" class="native-window-control" data-native-window-maximize aria-label="Maximize or restore" title="Maximize or restore">□</button>
+    <button type="button" class="native-window-control native-window-close" data-native-window-close aria-label="Close" title="Close">×</button>
+  </div>
+  <div class="native-window-resize-handles" aria-hidden="true">
+    ${directions.map(direction => `<span class="native-window-resize native-window-resize-${direction.toLowerCase()}" data-native-window-resize="${direction}"></span>`).join("")}
+  </div>`;
 }
 
 function classicSetupMarkup() {
@@ -629,7 +642,7 @@ export function renderResearchUiMarkup(surface = "browser", requestedInterface =
   const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · ${plannerInterface === "ledger" ? "Ledger" : "Classic"}`;
   return `
     <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}">
-      ${ledgerWindow ? '<div class="native-window-controls" role="group" aria-label="Window controls"><button type="button" class="native-window-control" data-native-window-minimize aria-label="Minimize" title="Minimize">−</button><button type="button" class="native-window-control native-window-close" data-native-window-close aria-label="Close" title="Close">×</button></div>' : ""}
+      ${ledgerWindow ? nativeLedgerWindowChromeMarkup() : ""}
       <header class="app-bar"${ledgerWindow ? ' data-tauri-drag-region="deep"' : ""}>
         <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
         <nav class="mode-navigation" aria-label="Application mode">

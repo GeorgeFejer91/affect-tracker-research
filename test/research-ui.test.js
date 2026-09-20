@@ -59,6 +59,7 @@ test("Setup presents the seven owners as an ordered ledger deck", () => {
   const markup = renderResearchUiMarkup("browser", "ledger");
   assert.equal((markup.match(/class="setup-accordion ledger-page"/gu) ?? []).length, expectedSections.length);
   assert.equal((markup.match(/class="setup-accordion-trigger ledger-tab"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/class="ledger-tab-icon"/gu) ?? []).length, expectedSections.length);
   assert.ok(markup.includes("7 ledger layers"));
   let cursor = -1;
   for (const [id, label] of expectedSections) {
@@ -66,6 +67,7 @@ test("Setup presents the seven owners as an ordered ledger deck", () => {
     assert.ok(next > cursor, `${label} must retain protocol order`);
     assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
     assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
+    assert.match(markup, new RegExp(`ledger-tab-icons\\.svg#ledger-${id}`, "u"));
     cursor = next;
   }
   assert.equal((markup.match(/aria-expanded="true"/gu) ?? []).length, 1);
@@ -174,13 +176,19 @@ test("Classic and Ledger are separate UI implementations over the same confirmat
 });
 
 test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative glow", async () => {
-  const css = await read("experiment-planner/web/research.css");
+  const [css, icons] = await Promise.all([
+    read("experiment-planner/web/research.css"),
+    read("experiment-planner/web/assets/ledger-tab-icons.svg"),
+  ]);
   const markup = renderResearchUiMarkup("tauri", "ledger");
   assert.match(css, /\.ledger-rail\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?padding:\s*0;[\s\S]*?pointer-events:\s*none;/u);
   assert.match(css, /\.ledger-tab\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?container-type:\s*size;|\.ledger-tab\s*\{[\s\S]*?container-type:\s*size;[\s\S]*?flex:\s*1 1 0;/u);
   assert.match(css, /width:\s*min\(34cqh, 45cqw\)/u);
   assert.match(css, /background:\s*hsl\(var\(--ledger-tab-hue\) 34% 13\.5%\)/u);
   assert.equal((css.match(/\.ledger-tab:nth-child\(\d\)\s*\{\s*--ledger-tab-hue:/gu) ?? []).length, SETUP_SECTIONS.length);
+  assert.equal((icons.match(/<symbol id="ledger-[^"]+"/gu) ?? []).length, SETUP_SECTIONS.length);
+  for (const { id } of SETUP_SECTIONS) assert.match(icons, new RegExp(`<symbol id="ledger-${id}"`, "u"));
+  assert.match(css, /\.ledger-tab-icon\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?stroke:\s*currentcolor;/u);
   assert.doesNotMatch(markup, /style="--ledger-(?:page|tab)-hue:/u);
   const withoutSheetShadows = css
     .replace("box-shadow: 1px 2px 3px rgb(0 0 0 / 45%);", "")
@@ -201,18 +209,26 @@ test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouet
   const browser = renderResearchUiMarkup("browser", "ledger");
   assert.match(desktopEntry, /<html lang="en" data-ledger-window>/u);
   assert.match(desktop, /data-native-window-minimize/u);
+  assert.match(desktop, /data-native-window-maximize/u);
   assert.match(desktop, /data-native-window-close/u);
+  assert.equal((desktop.match(/data-native-window-resize=/gu) ?? []).length, 8);
   assert.match(desktop, /data-tauri-drag-region="deep"/u);
-  assert.doesNotMatch(browser, /data-native-window-(?:minimize|close)/u);
+  assert.doesNotMatch(browser, /data-native-window-(?:minimize|maximize|close|resize)/u);
   assert.match(css, /html\[data-ledger-window\] \.research-shell\[data-planner-interface="ledger"\]::before\s*\{[\s\S]*?inset:\s*0 56px 0 0;[\s\S]*?border-radius:\s*12px 0 0 12px;/u);
   assert.match(css, /\.ledger-tab\s*\{[\s\S]*?width:\s*50px;[\s\S]*?border-left:\s*0;[\s\S]*?border-radius:\s*0 9px 9px 0;/u);
   assert.match(css, /html\[data-ledger-window\] #research-app\[data-planner-interface="ledger"\] \.ledger-rail\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0 0 0 auto;[\s\S]*?height:\s*100dvh;/u);
-  assert.match(nativeEntry, /getCurrentWindow[\s\S]*?currentWindow\.minimize\(\)[\s\S]*?currentWindow\.close\(\)/u);
-  assert.match(nativeSource, /argument == "--ledger"[\s\S]*?ledger\.html[\s\S]*?window\.decorations = false;[\s\S]*?window\.transparent = true;/u);
+  assert.match(nativeEntry, /getCurrentWindow[\s\S]*?currentWindow\.minimize\(\)[\s\S]*?currentWindow\.toggleMaximize\(\)[\s\S]*?currentWindow\.close\(\)[\s\S]*?currentWindow\.startResizeDragging/u);
+  assert.match(nativeSource, /argument == "--ledger"[\s\S]*?ledger\.html[\s\S]*?window\.decorations = false;[\s\S]*?window\.transparent = true;[\s\S]*?window\.min_width = Some\(640\.0\);[\s\S]*?window\.min_height = Some\(480\.0\);/u);
   assert.match(nativeSource, /LEDGER_WINDOW_ICON[\s\S]*?parent\.set_icon/u);
   assert.match(ledgerIcon, /<title id="title">Experiment Planner Ledger<\/title>[\s\S]*?seen from the side[\s\S]*?fill="#ff5c88"[\s\S]*?stroke="#a9b3ff"/u);
   const permissions = JSON.parse(capabilitySource).permissions;
-  for (const permission of ["core:window:allow-close", "core:window:allow-minimize", "core:window:allow-start-dragging"]) {
+  for (const permission of [
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-toggle-maximize",
+  ]) {
     assert.ok(permissions.includes(permission));
   }
 });

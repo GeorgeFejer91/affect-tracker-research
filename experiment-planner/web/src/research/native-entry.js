@@ -12,7 +12,18 @@ bootstrapResearchSurface({
 function wireNativeWindowControls() {
   const currentWindow = getCurrentWindow();
   document.querySelector("[data-native-window-minimize]")?.addEventListener("click", () => void currentWindow.minimize());
+  document.querySelector("[data-native-window-maximize]")?.addEventListener("click", () => void currentWindow.toggleMaximize());
   document.querySelector("[data-native-window-close]")?.addEventListener("click", () => void currentWindow.close());
+  document.querySelector(".app-bar[data-tauri-drag-region]")?.addEventListener("dblclick", (event) => {
+    if (event.button === 0 && event.target instanceof Element && !event.target.closest("button, input, select, textarea, a")) {
+      void currentWindow.toggleMaximize();
+    }
+  });
+  document.querySelectorAll("[data-native-window-resize]").forEach((handle) => {
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button === 0 && event.isPrimary) void currentWindow.startResizeDragging(handle.dataset.nativeWindowResize);
+    });
+  });
 }
 
 if (document.readyState === "loading") {

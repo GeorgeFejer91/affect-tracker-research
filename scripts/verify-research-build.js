@@ -122,6 +122,7 @@ const rules = {
       || path === "questionnaires/vr-exp-en.csv"
       || path === "assets/app-logo.svg"
       || path === "assets/app-symbol.svg"
+      || path === "assets/ledger-tab-icons.svg"
       || path === "assets/questionnaires/demographics/en.json"
       || path === "assets/questionnaires/demographics/de.json"
       || path === "assets/runner-symbol.svg"
