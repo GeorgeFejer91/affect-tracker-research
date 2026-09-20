@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { dirname, relative, resolve, sep } from "node:path";
 import process from "node:process";
 
@@ -59,6 +60,19 @@ function requiredEnvironment(name) {
 function git(arguments_) {
   return execFileSync("git", arguments_, {
     cwd: process.cwd(),
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function toolVersion(command, arguments_ = ["--version"]) {
+  if (process.platform === "win32" && command === "pnpm") {
+    return execFileSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "pnpm", ...arguments_], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  }
+  return execFileSync(command, arguments_, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
@@ -123,12 +137,15 @@ const runId = requiredEnvironment("GITHUB_RUN_ID");
 const runAttempt = requiredEnvironment("GITHUB_RUN_ATTEMPT");
 const serverUrl = requiredEnvironment("GITHUB_SERVER_URL");
 const artifacts = await identifyArtifacts(target);
+const require = createRequire(import.meta.url);
+const tauriVersion = require("@tauri-apps/cli/package.json").version;
+const productVersion = JSON.parse(await readFile(resolve("native/tauri.conf.json"), "utf8")).version;
 
 const receipt = {
-  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV1",
+  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
   status: "unqualified-internal-alpha",
   product: "Affect Research",
-  version: "0.4.0-alpha.1",
+  version: productVersion,
   repository,
   commit,
   workflow,
@@ -147,12 +164,21 @@ const receipt = {
     runnerImageVersion: process.env.ImageVersion ?? null,
   },
   buildBoundary: {
+    dirtyStateRejected: true,
+    lockedDependencies: true,
     hostNative: true,
     unsigned: true,
     notarized: false,
     published: false,
     cargoFeatures: "no-default-features",
     bundledNativeMediaRuntime: false,
+  },
+  toolchain: {
+    node: process.version,
+    pnpm: toolVersion("pnpm"),
+    rustc: toolVersion("rustc"),
+    cargo: toolVersion("cargo"),
+    tauri: tauriVersion,
   },
   qualification: {
     htmlVideoPlayerOnly: true,

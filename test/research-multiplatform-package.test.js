@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const WORKFLOW_PATH = ".github/workflows/desktop-release.yml";
 const BUILD_HELPER_PATH = "scripts/build-unqualified-desktop-package.js";
 const PROVENANCE_HELPER_PATH = "scripts/write-unqualified-package-provenance.js";
+const INSTALLED_SMOKE_PATH = "scripts/qualification/planner-installed-smoke.ps1";
 
 async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -125,7 +126,7 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   const helper = await source(PROVENANCE_HELPER_PATH);
 
   assert.match(helper, /"windows-x64"[\s\S]*platform: "windows"[\s\S]*kind: "nsis"/u);
-  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV1/u);
+  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
   assert.match(helper, /status: "unqualified-internal-alpha"/u);
   assert.match(helper, /commit,/u);
   assert.match(helper, /workflowRef,/u);
@@ -138,4 +139,33 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   assert.match(helper, /unsigned: true/u);
   assert.match(helper, /notarized: false/u);
   assert.match(helper, /published: false/u);
+  assert.match(helper, /dirtyStateRejected: true/u);
+  assert.match(helper, /lockedDependencies: true/u);
+  for (const tool of ["node", "pnpm", "rustc", "cargo", "tauri"]) {
+    assert.match(helper, new RegExp(`${tool}:`, "u"));
+  }
+});
+
+test("Windows artifacts carry the checkout-free installed lifecycle smoke route", async () => {
+  const [workflow, smoke] = await Promise.all([
+    source(WORKFLOW_PATH),
+    source(INSTALLED_SMOKE_PATH),
+  ]);
+
+  assert.match(workflow, /scripts\/qualification\/planner-installed-smoke\.ps1/u);
+  assert.match(smoke, /AffectResearchPlannerInstalledSmokeV1/u);
+  assert.match(smoke, /374DE290-123F-4565-9164-39C4925E467B/u);
+  assert.match(smoke, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
+  assert.match(smoke, /dirtyStateRejected/u);
+  assert.match(smoke, /lockedDependencies/u);
+  assert.match(smoke, /node\.exe[\s\S]*pnpm\.cmd/u);
+  assert.match(smoke, /8000, 8013, 1420, 5173/u);
+  assert.match(smoke, /Experiment Planner Classic\.lnk/u);
+  assert.match(smoke, /Experiment Planner Ledger\.lnk/u);
+  assert.match(smoke, /arguments -cne '--ledger'/u);
+  assert.match(smoke, /'stimuli', 'settings', 'outputs', 'recovery', 'assets', 'assets\/stimuli', 'assets\/questionnaires'/u);
+  assert.match(smoke, /\[IO\.File\]::Delete\(\$ledgerIcon\)[\s\S]*Invoke-SilentExecutable \$installer/u);
+  assert.match(smoke, /Invoke-SilentExecutable \$uninstaller/u);
+  assert.match(smoke, /\$receipt\.gates\[\$currentGate\]\.status -ne 'passed'[\s\S]*Set-Gate \$currentGate 'failed'/u);
+  assert.doesNotMatch(smoke, /USERPROFILE[^\n]*Downloads|localhost|http:\/\//iu);
 });

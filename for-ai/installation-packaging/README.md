@@ -172,13 +172,43 @@ installer artifact:
 | Tested bytes differ from distributed bytes | Test one immutable artifact; bind SHA-256 and installed inventory in the receipt |
 | Installer success is mistaken for scientific qualification | Preserve explicit unqualified flags and separate acceptance gates |
 
+## Clean-profile installed smoke route
+
+The Windows workflow artifact includes
+`scripts/qualification/planner-installed-smoke.ps1`. Run it only in a fresh,
+disposable Windows x64 profile or VM. Copy the script, the one NSIS installer,
+and its V2 provenance receipt directly into that user's Windows-known Downloads
+folder. Do not copy the repository or install Node or pnpm. Disconnect every
+default-route network adapter before invoking the offline gate:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\planner-installed-smoke.ps1 `
+  -InstallerPath '.\Experiment Planner_0.4.0-alpha.1_x64-setup.exe' `
+  -ProvenancePath '.\unqualified-windows-x64-provenance.json' `
+  -ReceiptPath '.\Experiment Planner_0.4.0-alpha.1_x64-installed-smoke.json' `
+  -RequireOffline
+```
+
+The route refuses a pre-existing Planner install or Planner Downloads tree. It
+checks exact provenance and installer bytes, absence of the common development
+runtime/listener boundary, silent per-user install, the fixed installed-file
+inventory, both shortcuts, first-launch directories, the isolated WebView
+profile, Classic/Ledger launch and normal close, restart idempotence, and zero
+Planner/WebView TCP connections. It then removes only the installed Ledger icon
+to prove same-artifact repair, verifies that the workspace is unchanged, and
+uninstalls program files while retaining that exact workspace. Its JSON receipt
+contains placeholders rather than user paths.
+
+This smoke does not substitute for the separate identical-input edit/confirm/
+save/reopen comparison, replacement-workspace interaction, 100%/125%/150%
+visual inspection, long/non-ASCII path checks, or a cross-version upgrade. Keep
+those gates `notRun` until their own evidence exists.
+
 ## Next slice
 
-1. Add a versioned Rust resolver that supplies the known-Downloads parent to
-   the existing `WorkspaceService` initializer, with conflict/idempotence tests.
-2. Add a Windows packaging override for offline WebView2 and per-user NSIS.
-3. Add the two installed shortcuts and distinct icon without duplicating the
-   executable or Planner logic.
-4. Extend package provenance and implement a clean-profile installed smoke test.
-5. Build one local unsigned candidate, run the gates above, and retain its exact
-   evidence without publishing it.
+1. Run the checkout-free smoke route against one immutable artifact on a fresh,
+   offline Windows profile and retain its receipt.
+2. Run the installed visual/interaction matrix at actual 100%, 125%, and 150%
+   Windows scaling, including long and non-ASCII workspace paths.
+3. Exercise a distinct lower-version package followed by the candidate to prove
+   cross-version workspace and saved-file preservation.
