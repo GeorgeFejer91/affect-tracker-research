@@ -16,6 +16,7 @@ you are changing. Direct session instructions take precedence.
 | Saved-file formats and version support | [`for-ai/66-COMPATIBILITY.md`](./for-ai/66-COMPATIBILITY.md) |
 | Module boundaries, native authority | [`for-ai/20-ARCHITECTURE.md`](./for-ai/20-ARCHITECTURE.md) |
 | Product scope, delivery surfaces, package authority | [`for-ai/10-PRODUCT.md`](./for-ai/10-PRODUCT.md) |
+| Standalone installer, app environment, Downloads workspace, package validation | [`for-ai/installation-packaging/README.md`](./for-ai/installation-packaging/README.md) |
 | Questionnaire content, citations, licences | [`for-ai/70-RESEARCH-PROVENANCE.md`](./for-ai/70-RESEARCH-PROVENANCE.md) |
 | Layout and geometry | [`docs/planner-p4-layout-contract.md`](./docs/planner-p4-layout-contract.md), [`docs/controlled-video-geometry-v3.md`](./docs/controlled-video-geometry-v3.md) |
 

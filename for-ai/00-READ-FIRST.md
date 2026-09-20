@@ -77,6 +77,7 @@ Key contract locations:
 | --- | --- |
 | Supported master generations, readers, known gaps | [`66-COMPATIBILITY.md`](./66-COMPATIBILITY.md) |
 | Product/package authority, delivery surfaces | [`10-PRODUCT.md`](./10-PRODUCT.md) |
+| Standalone installer, isolated app environment and package validation | [`installation-packaging/README.md`](./installation-packaging/README.md) |
 | Module responsibilities and boundaries | [`20-ARCHITECTURE.md`](./20-ARCHITECTURE.md) |
 | All UI text, responsive CSS, font-to-box fitting and SVG centering | [`25-UI-LAYOUT.md`](./25-UI-LAYOUT.md): Cheng Lou's Pretext reference, shared dynamic fitting and readability checks |
 | Feature requirements per segment (P1–P7, Runner) | [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), [`65-RUNNER-SEGMENTS.md`](./65-RUNNER-SEGMENTS.md) |
