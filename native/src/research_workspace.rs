@@ -415,6 +415,15 @@ impl WorkspaceService {
         }
     }
 
+    pub(crate) fn selected_root(&self) -> ResearchResult<PathBuf> {
+        let guard = self.lock_selected();
+        let workspace = guard
+            .as_ref()
+            .ok_or_else(CommandError::workspace_required)?;
+        validate_selected_workspace(workspace)?;
+        Ok(workspace.root.clone())
+    }
+
     pub fn select(&self, path: PathBuf) -> ResearchResult<WorkspaceStatus> {
         let root = path
             .canonicalize()
@@ -3637,6 +3646,8 @@ mod tests {
         let root = workspace.canonicalize().unwrap();
         let package = root.join(EXPERIMENT_PACKAGE_FILE_NAME);
         fs::write(&package, b"{}").unwrap();
+
+        assert_eq!(service.selected_root().unwrap(), root);
 
         assert_eq!(
             service

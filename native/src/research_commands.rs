@@ -782,16 +782,24 @@ pub async fn research_load_planner_recipe(
     window: WebviewWindow,
     app: AppHandle,
     role: State<'_, crate::research_desktop::DesktopRole>,
+    workspace: State<'_, Arc<WorkspaceService>>,
 ) -> ResearchResult<Option<serde_json::Value>> {
     authorize(&window)?;
     let remember_candidate = *role == crate::research_desktop::DesktopRole::Runner;
+    let planner_directory = if remember_candidate {
+        None
+    } else {
+        Some(workspace.selected_root()?)
+    };
     tauri::async_runtime::spawn_blocking(move || {
-        let Some(selection) = app
+        let mut dialog = app
             .dialog()
             .file()
-            .add_filter("Experiment recipe", &["json"])
-            .blocking_pick_file()
-        else {
+            .add_filter("Experiment recipe", &["json"]);
+        if let Some(directory) = planner_directory {
+            dialog = dialog.set_directory(directory);
+        }
+        let Some(selection) = dialog.blocking_pick_file() else {
             return Ok(None);
         };
         let path = selection
@@ -891,6 +899,7 @@ pub async fn research_save_planner_recipe(
     window: WebviewWindow,
     app: AppHandle,
     role: State<'_, crate::research_desktop::DesktopRole>,
+    workspace: State<'_, Arc<WorkspaceService>>,
     source_text: String,
 ) -> ResearchResult<Option<SavedPlannerRecipeReceipt>> {
     authorize(&window)?;
@@ -899,12 +908,14 @@ pub async fn research_save_planner_recipe(
             "Recipe authoring is available in Experiment Planner.",
         ));
     }
+    let save_directory = workspace.selected_root()?;
     tauri::async_runtime::spawn_blocking(move || {
         let document = parse_supported_planner_recipe_bytes(source_text.as_bytes())?;
         let Some(selection) = app
             .dialog()
             .file()
             .add_filter("Experiment recipe", &["json"])
+            .set_directory(save_directory)
             .set_file_name(planner_recipe_filename(
                 document.recipe.recipe_id(),
                 time::OffsetDateTime::now_utc(),
