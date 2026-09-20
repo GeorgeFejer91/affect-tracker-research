@@ -108,6 +108,8 @@ const result = spawnSync(
     "--",
     "--locked",
     "--no-default-features",
+    "--bin",
+    "affect-research",
   ],
   {
     cwd: process.cwd(),

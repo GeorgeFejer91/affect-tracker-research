@@ -78,6 +78,7 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /process\.platform !== target\.nodePlatform \|\| process\.arch !== target\.nodeArch/u);
   assert.match(helper, /--no-sign/u);
   assert.match(helper, /--no-default-features/u);
+  assert.match(helper, /"--bin",\s*"affect-research"/u);
   assert.match(helper, /AFFECT_TRACKER_BUILD_COMMIT: commit/u);
   assert.match(helper, /status", "--porcelain=v1", "--untracked-files=normal"/u);
   assert.match(helper, /TAURI_SIGNING_PRIVATE_KEY/u);

@@ -72,6 +72,7 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.match(packageJson, /"desktop:bundle": "node scripts\/build-unqualified-desktop-package\.js windows-x64"/u);
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"[\s\S]*tauri\.bundle-windows-unqualified\.conf\.json/u);
   assert.match(helper, /--no-default-features/u);
+  assert.match(helper, /"--bin",\s*"affect-research"/u);
   assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_[A-Z_]+_RUNTIME|--features[\s\S]*native-[a-z-]+|lsl-streaming/iu);
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
