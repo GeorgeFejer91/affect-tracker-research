@@ -194,15 +194,16 @@ test("teardown removes capture, listeners, observer and layout state; a remount 
   again.destroy();
 });
 
-test("both entrypoints expose one labelled Setup separator and keep layout state out of domain authority", async () => {
+test("both surfaces provide Classic split-pane and presentation-only Ledger layouts", async () => {
   for (const surface of ["browser", "tauri"]) {
-    const markup = renderResearchUiMarkup(surface);
-    assert.equal((markup.match(/data-setup-resizer/gu) ?? []).length, 1);
-    assert.ok(markup.indexOf('id="setup-sections"') < markup.indexOf("data-setup-resizer"));
-    assert.ok(markup.indexOf("data-setup-resizer") < markup.indexOf('<aside class="preview-pane"'));
-    assert.match(markup, /role="separator"[\s\S]*?aria-label="Resize sections and live preview"[\s\S]*?aria-orientation="vertical"/u);
-    assert.match(markup, /aria-controls="setup-sections"/u);
-    assert.match(markup, /class="setup-resizer-grip" aria-hidden="true"/u);
+    const classic = renderResearchUiMarkup(surface, "classic");
+    const ledger = renderResearchUiMarkup(surface, "ledger");
+    assert.equal((classic.match(/data-setup-resizer/gu) ?? []).length, 1);
+    assert.equal((classic.match(/class="ledger-rail"/gu) ?? []).length, 0);
+    assert.equal((ledger.match(/data-setup-resizer/gu) ?? []).length, 0);
+    assert.equal((ledger.match(/class="setup-accordion-trigger ledger-tab"/gu) ?? []).length, 7);
+    assert.match(ledger, /<nav class="ledger-rail" aria-label="Experiment planning layers">/u);
+    assert.ok(ledger.indexOf('id="setup-sections"') < ledger.indexOf('<nav class="ledger-rail"'));
   }
   const source = await readFile(new URL("../experiment-planner/web/src/research/setup-layout.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\bimport\b|localStorage|sessionStorage|indexedDB|dispatchEvent|invoke\(/u);

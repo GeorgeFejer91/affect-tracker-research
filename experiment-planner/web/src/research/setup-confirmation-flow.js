@@ -1,7 +1,7 @@
 /** Presentation orchestration only. P7 owns acceptance and persistence; each
  * section owns validation. Navigation and animation never create receipts. */
 export const SETUP_CONFIRMATION_SEGMENTS = Object.freeze({
-  workspace: "P1", questionnaires: "P2", stimuli: "P3", layout: "P4", xr: "P6",
+  workspace: "P1", questionnaires: "P2", stimuli: "P3", layout: "P4", feedback: "P5", xr: "P6",
 });
 export const SETUP_CONFIRMATION_ORDER = Object.freeze(Object.keys(SETUP_CONFIRMATION_SEGMENTS));
 const complete = (status) => status === "accepted" || status === "excluded";
@@ -26,7 +26,7 @@ export function createSetupConfirmationFlow({ acceptContribution, readAcceptance
     read,
     async confirm(sectionId) {
       if (!Object.hasOwn(SETUP_CONFIRMATION_SEGMENTS, sectionId)) {
-        throw new RangeError("This section is captured by the final save, not a separate confirmation.");
+        throw new RangeError("This section is finalized by the JSON save, not a separate confirmation.");
       }
       if (disposed) return { status: "disposed" };
       if (pendingSectionId !== null) return { status: "busy" };

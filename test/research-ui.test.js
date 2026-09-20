@@ -54,35 +54,30 @@ test("the active instrument exposes exactly Setup and Run modes", () => {
   assert.equal(normalizeResearchMode("unknown"), "setup");
 });
 
-test("Setup retains ordered review steps with one persistent P5 editor", () => {
+test("Setup presents the seven owners as an ordered ledger deck", () => {
   assert.deepEqual(SETUP_SECTIONS.map(({ id, label }) => [id, label]), expectedSections);
-  const markup = renderResearchUiMarkup();
-  assert.equal((markup.match(/class="setup-accordion"/gu) ?? []).length, expectedSections.length - 1);
-  assert.ok(markup.includes("7 Planner sections"));
+  const markup = renderResearchUiMarkup("browser", "ledger");
+  assert.equal((markup.match(/class="setup-accordion ledger-page"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/class="setup-accordion-trigger ledger-tab"/gu) ?? []).length, expectedSections.length);
+  assert.ok(markup.includes("7 ledger layers"));
   let cursor = -1;
   for (const [id, label] of expectedSections) {
     const next = markup.indexOf(`id="setup-trigger-${id}"`);
     assert.ok(next > cursor, `${label} must retain protocol order`);
-    if (id === "feedback") {
-      assert.match(markup, /data-open-section="feedback" aria-controls="preview-title"/u);
-      assert.match(markup, /data-setup-segment-row="feedback"/u);
-      assert.match(markup, /data-section-summary="feedback">Right-pane preview and controls/u);
-    } else {
-      assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
-      assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
-    }
+    assert.match(markup, new RegExp(`aria-controls="setup-panel-${id}"`, "u"));
+    assert.match(markup, new RegExp(`aria-labelledby="setup-trigger-${id}"`, "u"));
     cursor = next;
   }
   assert.equal((markup.match(/aria-expanded="true"/gu) ?? []).length, 1);
   assert.equal(normalizeSetupSection("feedback"), "feedback");
   assert.equal(normalizeSetupSection("nope"), "workspace");
   assert.equal(nextOpenSetupSection("workspace", "review"), "review");
-  assert.equal(nextOpenSetupSection("workspace", "workspace"), null);
+  assert.equal(nextOpenSetupSection("workspace", "workspace"), "workspace");
   assert.equal(nextOpenSetupSection("review", "nope"), "workspace");
 });
 
 test("Setup accordion panels animate open and closed without weakening semantics", async () => {
-  const markup = renderResearchUiMarkup();
+  const markup = renderResearchUiMarkup("browser", "ledger");
   const [source, motionSource, css] = await Promise.all([
     read("experiment-planner/web/src/research/app.js"),
     read("experiment-planner/web/src/research/setup-accordion-motion.js"),
@@ -93,12 +88,12 @@ test("Setup accordion panels animate open and closed without weakening semantics
   assert.ok(SETUP_ACCORDION_MOTION_MS > 0 && SETUP_ACCORDION_MOTION_MS <= 300);
   assert.equal(SETUP_ACCORDION_MOTION_QUERY, "(prefers-reduced-motion: reduce)");
   assert.equal((markup.match(/data-motion-state="open"/gu) ?? []).length, 1);
-  assert.equal((markup.match(/data-motion-state="closed"/gu) ?? []).length, expectedSections.length - 2);
-  assert.equal((markup.match(/hidden inert/gu) ?? []).length, expectedSections.length - 2);
-  assert.equal((markup.match(/class="setup-accordion-panel-clip"/gu) ?? []).length, expectedSections.length - 1);
-  assert.equal((markup.match(/class="setup-accordion-panel-inner"/gu) ?? []).length, expectedSections.length - 1);
+  assert.equal((markup.match(/data-motion-state="closed"/gu) ?? []).length, expectedSections.length - 1);
+  assert.equal((markup.match(/hidden inert/gu) ?? []).length, expectedSections.length - 1);
+  assert.equal((markup.match(/class="setup-accordion-panel-clip"/gu) ?? []).length, expectedSections.length);
+  assert.equal((markup.match(/class="setup-accordion-panel-inner"/gu) ?? []).length, expectedSections.length);
   assert.match(source, /import \{ setSetupAccordionPanelExpanded \} from "\.\/setup-accordion-motion\.js";/u);
-  assert.match(source, /const wasOpen = trigger instanceof HTMLButtonElement/u);
+  assert.match(source, /const trigger = query\(`#setup-trigger-\$\{id\}`\);[\s\S]*?const wasOpen = trigger instanceof HTMLButtonElement/u);
   assert.match(source, /panelChanges\.push\(\[panel, isOpen\]\)[\s\S]*?focusTarget\?\.focus\(\);[\s\S]*?panelChanges\.forEach/u);
   assert.match(motionSource, /const panelTransitions = new WeakMap\(\);/u);
   assert.match(motionSource, /clearPanelTransition\(panel\);/u);
@@ -115,17 +110,18 @@ test("Setup accordion panels animate open and closed without weakening semantics
   assert.match(css, /data-motion-state="opening"\],[\s\S]*?data-motion-state="closing"\][\s\S]*?will-change:\s*grid-template-rows, opacity;/u);
 });
 
-test("section confirmations use owner acceptance; Preview and final save are not independent review clicks", async () => {
-  const markup = renderResearchUiMarkup();
+test("each owner, including Preview, requires acceptance before the final save", async () => {
+  const markup = renderResearchUiMarkup("browser", "ledger");
   const source = await read("experiment-planner/web/src/research/app.js");
-  const confirmable = ["workspace", "questionnaires", "stimuli", "layout", "xr"];
-  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, 6);
-  assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 5);
+  const confirmable = ["workspace", "questionnaires", "stimuli", "layout", "feedback", "xr"];
+  assert.equal((markup.match(/class="setup-section-confirmation"/gu) ?? []).length, 7);
+  assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 6);
   assert.equal((markup.match(/id="package-generate"/gu) ?? []).length, 1);
-  assert.ok(markup.includes("0 of 5 confirmations · 7 Planner sections"));
+  assert.ok(markup.includes("0 of 6 confirmations · 7 ledger layers"));
   assert.match(markup, /id="package-generate"[\s\S]*?>Save final JSON…<\/button>/u);
-  assert.doesNotMatch(markup, /data-confirm-section="(?:feedback|review)"/u);
-  assert.doesNotMatch(markup, /data-section-review-check="feedback"/u);
+  assert.match(markup, /data-confirm-section="feedback"[\s\S]*?>Confirm preview<\/button>/u);
+  assert.doesNotMatch(markup, /data-confirm-section="review"/u);
+  assert.match(markup, /data-section-review-check="feedback"/u);
   for (const id of confirmable) {
     const tag = markup.match(new RegExp(`<button\\b(?=[^>]*data-confirm-section="${id}")[^>]*>`, "u"))?.[0];
     assert.ok(tag, id);
@@ -137,41 +133,53 @@ test("section confirmations use owner acceptance; Preview and final save are not
   assert.match(source, /setupNavigationRevision !== navigationRevision/u);
   assert.match(source, /openSetupSection\(transition\.nextSectionId, \{ focus: true \}\)/u);
   assert.match(source, /save\.phase === "saved" && !packageIsStale/u);
-  assert.match(source, /save\.saved !== observedSuccessfulSave[\s\S]*?if \(openSection === "review"\)[\s\S]*?openSetupSection\(null\)/u);
+  assert.match(source, /save\.saved !== observedSuccessfulSave[\s\S]*?if \(openSection === "review"\)[\s\S]*?query\("#setup-trigger-review"\)\?\.focus\(\)/u);
   assert.match(source, /setupConfirmationFlow\.destroy\(\)/u);
   const navigation = source.slice(source.indexOf("function openSetupSection("), source.indexOf("async function confirmSetupSection("));
   assert.doesNotMatch(navigation, /reviewedSetupSections|\.accept\(|\.confirm\(/u);
 });
 
-test("both app surfaces end each accordion with one confirmation or final-save footer", () => {
+test("both app surfaces end every ledger page with one confirmation or final-save footer", () => {
   for (const surface of ["browser", "tauri"]) {
-    const markup = renderResearchUiMarkup(surface);
-    for (const { id } of SETUP_SECTIONS.filter(({ id }) => id !== "feedback")) {
+    const markup = renderResearchUiMarkup(surface, "ledger");
+    for (const [index, { id }] of SETUP_SECTIONS.entries()) {
       const start = markup.indexOf(`id="setup-panel-${id}"`);
       const footer = markup.indexOf('class="setup-section-confirmation"', start);
-      const end = markup.indexOf('</div></div></div>\n    </section>', footer);
+      const nextId = SETUP_SECTIONS[index + 1]?.id;
+      const end = nextId ? markup.indexOf(`data-setup-section="${nextId}"`, footer) : markup.indexOf('<nav class="ledger-rail"', footer);
       assert.ok(start >= 0 && footer > start && end > footer, `${surface}/${id}: footer exists`);
       const panel = markup.slice(start, end);
       const action = id === "review" ? 'id="package-generate"' : `data-confirm-section="${id}"`;
       assert.ok(panel.includes(action));
-      assert.match(panel, /<\/button>\s*<\/div>\s*$/u, `${surface}/${id}: action ends panel`);
     }
-    const preview = markup.slice(markup.indexOf('<aside class="preview-pane"'));
-    assert.doesNotMatch(preview, /data-confirm-section=/u);
-    assert.match(preview, /Live Preview settings are captured with the final JSON in Section 7/u);
+    assert.match(markup, /id="preview-window-open"[^>]*>Open preview window<\/button>/u);
   }
 });
 
-test("pending confirmation has a stronger layered breathing edge with accessible fallbacks", async () => {
+test("Classic and Ledger are separate UI implementations over the same confirmation and JSON controls", () => {
+  const classic = renderResearchUiMarkup("browser", "classic");
+  const ledger = renderResearchUiMarkup("browser", "ledger");
+  assert.match(classic, /data-planner-interface="classic"/u);
+  assert.match(classic, /data-setup-resizer/u);
+  assert.match(classic, /class="feedback-navigation-trigger"/u);
+  assert.doesNotMatch(classic, /class="ledger-rail"/u);
+  assert.match(ledger, /data-planner-interface="ledger"/u);
+  assert.doesNotMatch(ledger, /data-setup-resizer/u);
+  assert.match(ledger, /class="ledger-rail"/u);
+  for (const markup of [classic, ledger]) {
+    assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 6);
+    assert.equal((markup.match(/id="package-generate"/gu) ?? []).length, 1);
+    assert.equal((markup.match(/id="preview-window-open"/gu) ?? []).length, 1);
+  }
+});
+
+test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative glow", async () => {
   const css = await read("experiment-planner/web/research.css");
-  const glow = css.slice(css.indexOf('.setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button'), css.indexOf('.setup-section-confirm-button[data-review-state="reviewed"]'));
-  assert.match(glow, /border: 2px solid rgb\(240 197 105 \/ 95%\)/u);
-  assert.match(glow, /box-shadow: 0 0 7px 2px rgb\(240 197 105 \/ 48%\), 0 0 18px 5px rgb\(240 197 105 \/ 20%\)/u);
-  assert.match(glow, /animation: setup-confirm-attention 2\.2s ease-in-out infinite/u);
-  assert.match(glow, /pointer-events: none/u);
-  const keyframes = css.slice(css.indexOf("@keyframes setup-confirm-attention"), css.indexOf(".section-lead,"));
-  assert.doesNotMatch(keyframes, /inset:|transform:/u, "breathing must not move the button edge");
-  assert.match(css.slice(css.indexOf("@media (forced-colors: active)")), /border-color: Highlight;\s*animation: none;\s*box-shadow: none;/u);
+  assert.match(css, /\.ledger-rail\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?padding:\s*0;[\s\S]*?pointer-events:\s*none;/u);
+  assert.match(css, /\.ledger-tab\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?container-type:\s*size;|\.ledger-tab\s*\{[\s\S]*?container-type:\s*size;[\s\S]*?flex:\s*1 1 0;/u);
+  assert.match(css, /width:\s*min\(34cqh, 45cqw\)/u);
+  assert.match(css, /background:\s*hsl\(var\(--ledger-tab-hue\) 32% 13\.5%\)/u);
+  assert.doesNotMatch(css, /box-shadow:/u);
 });
 
 test("Section 2 uses multilingual questionnaire tables and hides backend documents", async () => {
@@ -407,6 +415,14 @@ test("visual feedback has independent Grid and Flubber controls and one color ow
   assert.equal((markup.match(/data-color-anchor=/gu) ?? []).length, 4);
   assert.match(markup, /Acquisition continues while Grid and Flubber are hidden/u);
   assert.match(markup, /sole control for disabling drag/u);
+});
+
+test("preview startup resolves legacy state before projecting release controls", async () => {
+  const source = await read("experiment-planner/web/src/research/app.js");
+  const renderStart = source.indexOf("function renderPreviewDesignControls()");
+  const renderEnd = source.indexOf("function projectDesignPreview()", renderStart);
+  const renderer = source.slice(renderStart, renderEnd);
+  assert.ok(renderer.indexOf("const legacy = feedbackSettingsVersion === 1") < renderer.indexOf("releaseButton.disabled = legacy"));
 });
 
 test("Advanced contains the exact LSL fields and six mapping disclosures", () => {
@@ -698,11 +714,7 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   const css = await read("experiment-planner/web/research.css");
   assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/iu);
   assert.doesNotMatch(css, /backdrop-filter|text-transform|letter-spacing/iu);
-  // The user-requested confirmation edge is the sole decorative-shadow exception.
-  for (const rule of css.split("}")) {
-    if (!rule.includes("box-shadow:")) continue;
-    assert.match(rule, /\.setup-section-confirm-button\[data-review-state="pending"\]::after\s*\{/u);
-  }
+  assert.doesNotMatch(css, /box-shadow:/u);
   assert.doesNotMatch(css, /\.(?:hero|eyebrow|glass|pill|dashboard-card)\b/iu);
   for (const match of css.matchAll(/border-radius:\s*([\d.]+)px/gu)) {
     assert.ok(Number(match[1]) <= 8, `border radius ${match[1]}px exceeds the compact UI limit`);
@@ -710,18 +722,18 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   assert.match(css, /:focus-visible/u);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(css, /@media \(max-width: 759px\)/u);
-  assert.match(css, /grid-template-columns: var\(--setup-sections-width, minmax\(0, 1\.666667fr\)\) 8px minmax\(0, 1fr\)/u);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 56px/u);
 });
 
-test("Setup remains scrollable and narrow pane headers own intrinsic height", async () => {
+test("the open ledger page owns scrolling while the sheet rail stays fixed", async () => {
   const css = await read("experiment-planner/web/research.css");
   assert.match(css, /\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/u);
   assert.match(css, /\.setup-mode\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?height:\s*100%;/u);
   assert.match(css, /\.setup-layout\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?height:\s*100%;/u);
-  assert.match(css, /\.setup-pane\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*100%;[\s\S]*?overflow-y:\s*auto;/u);
+  assert.match(css, /\.ledger-page \.setup-accordion-panel-clip\s*\{[\s\S]*?height:\s*100%;[\s\S]*?overflow:\s*auto;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
-  assert.match(css, /@container setup-pane \(max-width: 479px\)[\s\S]*?grid-template-areas:[\s\S]*?"number title review chevron"[\s\S]*?"\. summary summary \."[\s\S]*?white-space:\s*normal;/u);
+  assert.match(css, /\.ledger-page-stack\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\);/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
   assert.match(css, /\.table-scroll\s*\{[\s\S]*?max-width:\s*100%;[\s\S]*?overflow:\s*auto;/u);
   assert.match(css, /\.video-location-id\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?user-select:\s*text;/u);

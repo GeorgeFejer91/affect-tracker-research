@@ -5,6 +5,9 @@ const MIN_PREVIEW_WIDTH = 320;
 
 export function createSetupLayout(layout) {
   const separator = layout.querySelector("[data-setup-resizer]");
+  if (!separator) {
+    return Object.freeze({ setEnabled() {}, destroy() {} });
+  }
   const view = layout.ownerDocument.defaultView;
   let preferredFraction = DEFAULT_FRACTION;
   let enabled = true;

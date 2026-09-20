@@ -101,8 +101,7 @@ export function normalizeSetupSection(sectionId) {
 }
 
 export function nextOpenSetupSection(currentSectionId, requestedSectionId) {
-  const requested = normalizeSetupSection(requestedSectionId);
-  return requested === currentSectionId ? null : requested;
+  return normalizeSetupSection(requestedSectionId);
 }
 
 export function normalizeResearchMode(mode) {

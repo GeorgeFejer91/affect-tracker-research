@@ -39,7 +39,7 @@ const SECTION_SUMMARIES = Object.freeze({
   stimuli: "Variants, video order, intervals",
   layout: "Video fit and feedback placement",
   questionnaires: "Languages, demographics, questionnaires",
-  feedback: "Right-pane preview and controls",
+  feedback: "Feedback preview and controls",
   review: "Final JSON export",
 });
 
@@ -159,6 +159,27 @@ function previewMarkup(label, { studio = false } = {}) {
       <p class="field-help">Live Preview settings are captured with the final JSON in Section 7.</p>
       </div>
     </div>`;
+}
+
+function feedbackSection({ setupSection = false } = {}) {
+  const feedback = SETUP_SECTIONS.find(({ id }) => id === "feedback");
+  const feedbackIndex = SETUP_SECTIONS.findIndex(({ id }) => id === "feedback");
+  return `<aside class="preview-pane" ${setupSection ? 'data-setup-section="feedback" data-reviewed="false"' : ""} aria-labelledby="preview-title">
+    <header class="preview-header">
+      <div><h3 id="preview-title" tabindex="-1">Live Preview</h3><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button></div>
+      <div class="preview-header-controls">
+        <button id="preview-window-open" type="button">Open preview window</button>
+        <button id="preview-flubber-release" class="preview-flubber-release" type="button" aria-label="Release Flubber into the preview" aria-pressed="false" title="Release Flubber into the preview"><span aria-hidden="true"></span></button>
+        <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
+          <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
+          <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
+          <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
+        </div>
+      </div>
+    </header>
+    ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
+    ${setupSection ? sectionConfirmationMarkup(feedback, feedbackIndex) : ""}
+  </aside>`;
 }
 
 function folderIconMarkup() {
@@ -475,6 +496,7 @@ const SECTION_CONTENT = Object.freeze({
   layout: screenLayoutDraftMarkup,
   stimuli: stimuliSection,
   questionnaires: questionnairesSection,
+  feedback: feedbackSection,
   xr: xrLayoutEditorMarkup,
   review: reviewSection,
 });
@@ -483,24 +505,24 @@ function sectionConfirmationMarkup(section, index) {
   const isLast = index === SETUP_SECTIONS.length - 1;
   return `
     <div class="setup-section-confirmation">
-      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}" role="status">${isLast ? "Current Live Preview settings are included when you save." : "Not confirmed"}</p>
+      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}" role="status">${isLast ? "Every section, including the preview, must be confirmed before export." : "Not confirmed"}</p>
       <button
         class="setup-section-confirm-button"
         type="button"
         ${isLast ? 'id="package-generate"' : `data-confirm-section="${section.id}"`}
         data-review-state="pending"
         aria-describedby="setup-confirmation-status-${section.id}"
-      >${isLast ? "Save final JSON…" : "Confirm section"}</button>
+      >${isLast ? "Save final JSON…" : section.id === "feedback" ? "Confirm preview" : "Confirm layer"}</button>
     </div>`;
 }
 
 function feedbackNavigationMarkup(section, index) {
   return `<div class="feedback-navigation" data-setup-segment-row="feedback">
-    <button type="button" id="setup-trigger-feedback" class="feedback-navigation-trigger" data-open-section="feedback" aria-controls="preview-title">
+    <button type="button" id="setup-trigger-feedback" class="feedback-navigation-trigger" data-open-section="feedback" aria-controls="preview-title" aria-expanded="false">
       <span class="section-number">${index + 1}</span>
       <span class="section-title">${section.label}</span>
       <span class="section-summary" data-section-summary="feedback">${SECTION_SUMMARIES.feedback}</span>
-      <span class="section-review-status" data-section-review-status="feedback"><span class="sr-only" data-feedback-nav-status data-section-review-label="feedback">Captured at final save</span></span>
+      <span class="section-review-status" data-section-review-status="feedback"><span data-section-review-check="feedback" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="feedback">Not confirmed</span></span>
       <span class="section-chevron" aria-hidden="true">›</span>
     </button>
   </div>`;
@@ -537,10 +559,77 @@ function accordionMarkup(section, index) {
     </section>`;
 }
 
-export function renderResearchUiMarkup(surface = "browser") {
-  const platformLabel = surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter";
+function ledgerPageMarkup(section, index) {
+  const expanded = index === 0;
   return `
-    <div class="research-shell" data-research-mode="setup">
+    <section class="setup-accordion ledger-page" data-setup-section="${section.id}" data-reviewed="false">
+      <div
+        class="setup-accordion-panel"
+        id="setup-panel-${section.id}"
+        role="region"
+        aria-labelledby="setup-trigger-${section.id}"
+        data-motion-state="${expanded ? "open" : "closed"}"
+        ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner"><header class="ledger-page-header"><h2>${section.label}</h2><p data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</p></header>${SECTION_CONTENT[section.id]()}${sectionConfirmationMarkup(section, index)}</div></div></div>
+    </section>`;
+}
+
+function ledgerTabMarkup(section, index) {
+  const expanded = index === 0;
+  const hue = 236 + (360 / SETUP_SECTIONS.length) * index;
+  return `<button
+    class="setup-accordion-trigger ledger-tab"
+    type="button"
+    id="setup-trigger-${section.id}"
+    aria-expanded="${expanded}"
+    aria-controls="setup-panel-${section.id}"
+    data-open-section="${section.id}"
+    title="${section.label}: ${SECTION_SUMMARIES[section.id]}"
+    style="--ledger-tab-hue:${hue}"
+  >
+    <span class="ledger-tab-mark" aria-hidden="true"><span class="section-number">${index + 1}</span></span>
+    <span class="section-title sr-only">${section.label}</span>
+    <span class="section-review-status" data-section-review-status="${section.id}"><span data-section-review-check="${section.id}" aria-hidden="true" hidden>✓</span><span class="sr-only" data-section-review-label="${section.id}">${section.id === "review" ? "Not saved" : "Not confirmed"}</span></span>
+  </button>`;
+}
+
+function classicSetupMarkup() {
+  return `<form id="research-settings-form" class="setup-layout" novalidate>
+    <div class="setup-pane" id="setup-sections">
+      <div class="setup-intro"><p>Confirm each authored section, including the preview, then save the final JSON.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 1} confirmations · ${SETUP_SECTIONS.length} Planner sections · Export locked</output></div>
+      ${SETUP_SECTIONS.map((section, index) => section.id === "feedback" ? feedbackNavigationMarkup(section, index) : accordionMarkup(section, index)).join("")}
+    </div>
+    <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"
+      aria-label="Resize sections and live preview" aria-orientation="vertical"
+      aria-controls="setup-sections" aria-valuemin="0" aria-valuemax="100" aria-valuenow="63"
+      aria-describedby="setup-resizer-help"
+      title="Drag to resize. Arrow keys adjust; double-click resets.">
+      <span class="setup-resizer-grip" aria-hidden="true"></span>
+      <span id="setup-resizer-help" class="sr-only">Drag left or right to resize. Use Left and Right arrows, Shift for larger steps, Home or End for the limits, and Enter to reset. Escape cancels a drag.</span>
+    </div>
+    ${feedbackSection({ setupSection: true })}
+  </form>`;
+}
+
+function ledgerSetupMarkup() {
+  return `<form id="research-settings-form" class="setup-layout" novalidate>
+    <div class="setup-pane" id="setup-sections" style="--ledger-page-hue:236">
+      <div class="ledger-page-stack">
+        <div class="setup-intro"><p>Work from the first ledger layer to the last. Confirm each layer before exporting.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 1} confirmations · ${SETUP_SECTIONS.length} ledger layers · Export locked</output></div>
+        ${SETUP_SECTIONS.map(ledgerPageMarkup).join("")}
+      </div>
+      <nav class="ledger-rail" aria-label="Experiment planning layers">
+        ${SETUP_SECTIONS.map(ledgerTabMarkup).join("")}
+      </nav>
+    </div>
+  </form>`;
+}
+
+export function renderResearchUiMarkup(surface = "browser", requestedInterface = "classic") {
+  const plannerInterface = requestedInterface === "ledger" ? "ledger" : "classic";
+  const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · ${plannerInterface === "ledger" ? "Ledger" : "Classic"}`;
+  return `
+    <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}">
       <header class="app-bar">
         <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
         <nav class="mode-navigation" aria-label="Application mode">
@@ -551,34 +640,7 @@ export function renderResearchUiMarkup(surface = "browser") {
       </header>
       <main>
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
-          <form id="research-settings-form" class="setup-layout" novalidate>
-            <div class="setup-pane" id="setup-sections">
-              <div class="setup-intro"><p>Confirm each authored section, then save the final JSON.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 2} confirmations · ${SETUP_SECTIONS.length} Planner sections · Live Preview captured at final save</output></div>
-              ${SETUP_SECTIONS.map((section, index) => section.id === "feedback" ? feedbackNavigationMarkup(section, index) : accordionMarkup(section, index)).join("")}
-            </div>
-            <div class="setup-resizer" data-setup-resizer role="separator" tabindex="0"
-              aria-label="Resize sections and live preview" aria-orientation="vertical"
-              aria-controls="setup-sections" aria-valuemin="0" aria-valuemax="100" aria-valuenow="63"
-              aria-describedby="setup-resizer-help"
-              title="Drag to resize. Arrow keys adjust; double-click resets.">
-              <span class="setup-resizer-grip" aria-hidden="true"></span>
-              <span id="setup-resizer-help" class="sr-only">Drag left or right to resize. Use Left and Right arrows, Shift for larger steps, Home or End for the limits, and Enter to reset. Escape cancels a drag.</span>
-            </div>
-            <aside class="preview-pane" data-setup-section="feedback" data-reviewed="false" aria-labelledby="preview-title">
-              <header class="preview-header">
-                <div><h2 id="preview-title" tabindex="-1">Live Preview</h2><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button><span class="sr-only" data-section-review-label="feedback">Not reviewed</span></div>
-                <div class="preview-header-controls">
-                  <button id="preview-flubber-release" class="preview-flubber-release" type="button" aria-label="Release Flubber into the preview" aria-pressed="false" title="Release Flubber into the preview"><span aria-hidden="true"></span></button>
-                  <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
-                    <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
-                    <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
-                    <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
-                  </div>
-                </div>
-              </header>
-              ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
-            </aside>
-          </form>
+          ${plannerInterface === "ledger" ? ledgerSetupMarkup() : classicSetupMarkup()}
         </section>
         <section class="run-mode" data-mode-panel="run" aria-label="Running the Experiment" hidden>
           <header class="run-header">

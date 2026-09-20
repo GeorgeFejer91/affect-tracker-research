@@ -37,14 +37,21 @@
         </div>
       </header>
       <main id="apps" tabindex="-1">
-        <p class="intro">Choose an app. The online Planner saves JSON; the online Runner executes master JSON in the browser and exports CSV.</p>
+        <p class="intro">Choose an app. Both Planner interfaces use the same validated JSON authoring engine; the online Runner executes master JSON and exports CSV.</p>
         <nav class="app-grid" aria-label="Affect Tracker apps">
           <a class="app-button" href="./planner/" aria-labelledby="planner-title" aria-describedby="planner-description planner-status">
             <img class="app-icon" src="./assets/app-symbol.svg" alt="" width="72" height="72">
-            <h2 id="planner-title">Experiment Planner</h2>
-            <p id="planner-description">Prepare your study, arrange stimuli and questionnaires, and save an experiment recipe.</p>
+            <h2 id="planner-title">Experiment Planner · Classic</h2>
+            <p id="planner-description">Use the established split-pane workspace to prepare and save an experiment recipe.</p>
             <span class="app-status" id="planner-status">Browser authoring available</span>
-            <span class="app-action">Open Planner <span aria-hidden="true">→</span></span>
+            <span class="app-action">Open Classic Planner <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="app-button" href="./planner-ledger/" aria-labelledby="planner-ledger-title" aria-describedby="planner-ledger-description planner-ledger-status">
+            <img class="app-icon" src="./assets/app-symbol.svg" alt="" width="72" height="72">
+            <h2 id="planner-ledger-title">Experiment Planner · Ledger</h2>
+            <p id="planner-ledger-description">Plan from top to bottom through Secret Tunnel-style layers, with a separate confirmable preview window.</p>
+            <span class="app-status" id="planner-ledger-status">Experimental browser authoring available</span>
+            <span class="app-action">Open Ledger Planner <span aria-hidden="true">→</span></span>
           </a>
           <a class="app-button" href="./runner/" aria-labelledby="runner-title" aria-describedby="runner-description runner-status">
             <img class="app-icon" src="./assets/runner-symbol.svg" alt="" width="72" height="72">

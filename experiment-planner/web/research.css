@@ -633,38 +633,10 @@ h3 {
   font-weight: 700;
 }
 
-.setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-.setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
-.preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
-  position: absolute;
-  inset: -2px;
-  border: 2px solid rgb(240 197 105 / 95%);
-  border-radius: 8px;
-  box-shadow: 0 0 7px 2px rgb(240 197 105 / 48%), 0 0 18px 5px rgb(240 197 105 / 20%);
-  filter: blur(1px);
-  opacity: 0.95;
-  pointer-events: none;
-  animation: setup-confirm-attention 2.2s ease-in-out infinite;
-  content: "";
-}
-
 .setup-section-confirm-button[data-review-state="reviewed"] {
   border-color: var(--success);
   color: var(--success);
   opacity: 0.78;
-}
-
-@keyframes setup-confirm-attention {
-  0%,
-  100% {
-    filter: blur(1px);
-    opacity: 1;
-  }
-
-  50% {
-    filter: blur(4px);
-    opacity: 0.38;
-  }
 }
 
 .section-lead,
@@ -3576,15 +3548,6 @@ dialog::backdrop {
     animation-iteration-count: 1 !important;
   }
 
-  .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
-    animation: none !important;
-    inset: -4px;
-    border-color: var(--focus);
-    filter: blur(4px);
-    opacity: 0.58;
-  }
 }
 
 @media (forced-colors: active) {
@@ -3626,15 +3589,6 @@ dialog::backdrop {
     forced-color-adjust: none;
   }
 
-  .setup-accordion-panel[data-motion-state="open"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .setup-accordion-panel[data-motion-state="opening"] .setup-section-confirm-button[data-review-state="pending"]::after,
-  .preview-controls-scroll .setup-section-confirm-button[data-review-state="pending"]::after {
-    border-color: Highlight;
-    animation: none;
-    box-shadow: none;
-    filter: none;
-    opacity: 1;
-  }
 }
 
 /* Segment 3: a plain spreadsheet with fixed event labels. */
@@ -3699,4 +3653,252 @@ dialog::backdrop {
   :where(#research-app) .survey-builder-elements li { flex-direction: column; }
   :where(#research-app) .survey-element-description { width: 100%; }
   :where(#research-app) .survey-element-controls { max-width: none; }
+}
+
+/* Secret Tunnel ledger experiment: one named owner per sheet, one sheet open. */
+#research-app[data-planner-interface="ledger"] .setup-layout {
+  display: block;
+}
+
+#research-app[data-planner-interface="ledger"] .setup-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  background: hsl(var(--ledger-page-hue) 32% 9.5%);
+  transition: background-color 320ms ease;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-stack {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+#research-app[data-planner-interface="ledger"] .setup-intro {
+  grid-column: 1;
+  grid-row: 1;
+  background: hsl(var(--ledger-page-hue) 32% 9.5%);
+  transition: background-color 320ms ease;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page .setup-accordion-panel {
+  height: 100%;
+  min-height: 0;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page .setup-accordion-panel-clip {
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #4e554b transparent;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page .setup-accordion-panel-inner {
+  min-height: 100%;
+  padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 1.5rem;
+  border: 0;
+  background: transparent;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(240 238 232 / 22%);
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-header h2,
+#research-app[data-planner-interface="ledger"] .ledger-page-header p {
+  margin: 0;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-header p {
+  color: var(--muted);
+  text-align: right;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-rail {
+  z-index: 2;
+  display: flex;
+  grid-column: 2;
+  grid-row: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab {
+  container-type: size;
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  grid-template: 1fr / 1fr;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgb(240 238 232 / 16%);
+  border-radius: 0;
+  background: hsl(var(--ledger-tab-hue) 32% 13.5%);
+  color: var(--text);
+  pointer-events: auto;
+  place-items: center;
+  transition: background-color 320ms ease, color 160ms ease;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab:last-child {
+  border-bottom: 0;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab:hover:not(:disabled) {
+  background: hsl(var(--ledger-tab-hue) 32% 17%);
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab[aria-expanded="true"] {
+  z-index: 1;
+  width: calc(100% + 1px);
+  margin-left: -1px;
+  background: hsl(var(--ledger-tab-hue) 32% 9.5%);
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab-mark {
+  display: grid;
+  width: min(34cqh, 45cqw);
+  height: min(34cqh, 45cqw);
+  min-width: 1rem;
+  min-height: 1rem;
+  border: 1px solid currentcolor;
+  place-items: center;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab .section-number {
+  color: currentcolor;
+  font-size: min(18cqh, 24cqw);
+  line-height: 1;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab .section-review-status {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-tab .section-review-status [data-section-review-check]:not([hidden]) {
+  width: 1rem;
+  height: 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.72rem;
+}
+
+#research-app[data-planner-interface="ledger"] .preview-pane {
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+#research-app[data-planner-interface="ledger"] .preview-header-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.planner-preview-window-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 1rem;
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  padding: 1rem;
+  background: #18151f;
+}
+
+.planner-preview-window-shell header,
+.planner-preview-window-shell footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.planner-preview-window-shell h1,
+.planner-preview-window-shell p {
+  margin: 0;
+}
+
+.planner-preview-window-shell header p,
+.planner-preview-window-shell footer p {
+  color: var(--muted);
+}
+
+.planner-preview-window-stage {
+  width: 100%;
+  min-width: 0;
+  min-height: 18rem;
+  border: 1px solid var(--border-strong);
+}
+
+html[data-planner-preview-window],
+body[data-planner-preview-window],
+#preview-window-app {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+body[data-planner-preview-window] {
+  overflow: hidden;
+}
+
+@media (max-width: 759px) {
+  #research-app[data-planner-interface="ledger"] .setup-layout,
+  #research-app[data-planner-interface="ledger"] .setup-pane {
+    height: calc(100dvh - 8.5rem);
+    min-height: 34rem;
+  }
+
+  #research-app[data-planner-interface="ledger"] .setup-pane {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  #research-app[data-planner-interface="ledger"] .ledger-page-header,
+  .planner-preview-window-shell header,
+  .planner-preview-window-shell footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #research-app[data-planner-interface="ledger"] .ledger-page-header p {
+    text-align: left;
+  }
+
+  #research-app[data-planner-interface="ledger"] .preview-header-controls {
+    justify-content: stretch;
+  }
 }

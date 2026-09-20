@@ -17,7 +17,7 @@ function fixture() {
   return { registry, values, flow };
 }
 
-test("preconfigured values still require explicit confirmation, advancing past live preview to final save", async () => {
+test("preconfigured values still require explicit owner confirmation, including the live preview", async () => {
   const { registry, flow } = fixture();
   assert.ok(flow.read().every(({ confirmed }) => !confirmed));
   for (const [index, id] of SETUP_CONFIRMATION_ORDER.entries()) {
@@ -25,9 +25,8 @@ test("preconfigured values still require explicit confirmation, advancing past l
       nextSectionId: SETUP_CONFIRMATION_ORDER[index + 1] ?? "review" });
   }
   assert.equal(flow.read().find(({ id }) => id === "xr").status, "excluded");
-  assert.equal(registry.readAccepted().entries.find(({ segment }) => segment === "P5").status, "missing");
-  await assert.rejects(flow.confirm("feedback"), /final save/);
-  await assert.rejects(flow.confirm("review"), /final save/);
+  assert.equal(registry.readAccepted().entries.find(({ segment }) => segment === "P5").status, "accepted");
+  await assert.rejects(flow.confirm("review"), /JSON save/);
 });
 
 test("reopening a confirmed section is read-only; real edits and dependency changes expire its check", async () => {

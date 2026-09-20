@@ -23,7 +23,11 @@ export default defineConfig({
     target: ["es2021", "chrome105"],
     emptyOutDir: true,
     rollupOptions: {
-      input: { research: resolve(desktopRoot, "index.html") },
+      input: {
+        research: resolve(desktopRoot, "index.html"),
+        "research-ledger": resolve(desktopRoot, "ledger.html"),
+        "research-preview": resolve(desktopRoot, "preview.html"),
+      },
     },
   },
 });

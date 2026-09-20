@@ -49,6 +49,7 @@ import { createPreviewResponseSimulator } from "./preview-response-simulator.js"
 import { createInlineColorPicker } from "./inline-color-picker.js";
 import { createPreviewInteraction } from "./preview-interaction.js";
 import { createPreviewLayout } from "./preview-layout.js";
+import { createPlannerPreviewWindow } from "./planner-preview-window.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import { createSetupLayout } from "./setup-layout.js";
@@ -217,8 +218,10 @@ export function bootResearchUi({ surface: requestedSurface } = {}) {
   if (!(mount instanceof HTMLElement)) return null;
   const declaredSurface = mount.dataset.researchSurface === "tauri" ? "tauri" : "browser";
   const surface = requestedSurface ?? declaredSurface;
+  const plannerInterface = mount.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
   if (surface !== declaredSurface) throw new Error("Research surface does not match its entry module.");
-  mount.innerHTML = renderResearchUiMarkup(surface);
+  mount.dataset.plannerInterface = plannerInterface;
+  mount.innerHTML = renderResearchUiMarkup(surface, plannerInterface);
   if (mount.dataset.researchProgram === "planner") preparePlannerSurface(mount);
   mount.setAttribute("aria-busy", "false");
   initializeResearchUi(mount, { surface });
@@ -250,6 +253,7 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const plannerInterface = root.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   let disconnectScreenLayout = () => {};
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
@@ -331,6 +335,7 @@ function bindResearchInteractions(root, { surface }) {
   let observedContributions = canonicalJson({ snapshots: [], issues: [] });
   let packageContributionFingerprint = null;
   let observedSuccessfulSave = null;
+  let previewWindow = null;
   let plannerFileWorkflow = null;
   const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root, {
     prepareSave: async (sourceText, options) => {
@@ -347,7 +352,6 @@ function bindResearchInteractions(root, { surface }) {
       observedSuccessfulSave = save.saved;
       if (openSection === "review") {
         query("#setup-trigger-review")?.focus();
-        openSetupSection(null);
       }
       announce("Final JSON saved. The current design is confirmed.");
     }
@@ -576,6 +580,18 @@ function bindResearchInteractions(root, { surface }) {
     return root.querySelector(selector);
   }
 
+  if (root.dataset.researchProgram === "planner") {
+    const previewUrl = new URL(surface === "tauri" ? "preview.html" : "../preview.html", window.location.href).href;
+    previewWindow = createPlannerPreviewWindow({
+      windowObject: window,
+      url: previewUrl,
+      features: surface === "tauri" ? "popup,width=640,height=720" : "",
+      readState: () => previewState({ design: true }),
+      readConfirmation: () => setupConfirmationFlow.read().find(({ id }) => id === "feedback"),
+      confirm: () => confirmSetupSection("feedback"),
+    });
+  }
+
   function value(id, fallback = "") {
     const element = query(`#${id}`);
     return element instanceof HTMLInputElement
@@ -729,20 +745,16 @@ function bindResearchInteractions(root, { surface }) {
       if (section instanceof HTMLElement) section.dataset.reviewed = String(reviewed);
       if (checkmark instanceof HTMLElement) checkmark.hidden = !reviewed;
       if (reviewLabel instanceof HTMLElement) reviewLabel.textContent = label;
-      if (id === "feedback") {
-        const navigationStatus = query("[data-feedback-nav-status]");
-        if (navigationStatus) navigationStatus.textContent = "Captured at final save";
-      }
       if (confirmation instanceof HTMLElement) {
         confirmation.textContent = state?.error ?? (id === "review"
-          ? reviewed ? "Final JSON saved." : "Current Live Preview settings are included when you save."
+          ? reviewed ? "Final JSON saved." : "Every section, including the preview, must be confirmed before export."
           : label);
         confirmation.dataset.state = state?.error ? "error" : reviewed ? "ready" : "warning";
       }
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed || confirmations.some(({ busy }) => busy);
         button.dataset.reviewState = reviewed ? "reviewed" : state?.busy ? "confirming" : "pending";
-        button.textContent = state?.busy ? "Confirming…" : reviewed ? "Confirmed" : "Confirm section";
+        button.textContent = state?.busy ? "Confirming…" : reviewed ? "Confirmed" : id === "feedback" ? "Confirm preview" : "Confirm layer";
         button.setAttribute("aria-busy", String(Boolean(state?.busy)));
       }
     }
@@ -750,19 +762,31 @@ function bindResearchInteractions(root, { surface }) {
     if (saveButton) saveButton.dataset.reviewState = save.phase === "saved" && !packageIsStale ? "reviewed" : save.busy ? "confirming" : "pending";
     const progress = query("#setup-progress");
     if (progress) {
-      progress.textContent = `${confirmations.filter(({ confirmed }) => confirmed).length} of ${SETUP_CONFIRMATION_ORDER.length} confirmations · ${SETUP_SECTIONS.length} Planner sections · ${reviewedSetupSections.has("review") ? "Final JSON saved" : "Live Preview captured at final save"}`;
+      const unit = plannerInterface === "ledger" ? "ledger layers" : "Planner sections";
+      progress.textContent = `${confirmations.filter(({ confirmed }) => confirmed).length} of ${SETUP_CONFIRMATION_ORDER.length} confirmations · ${SETUP_SECTIONS.length} ${unit} · ${reviewedSetupSections.has("review") ? "Final JSON saved" : "Export locked"}`;
     }
+    previewWindow?.update();
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
+    if (sectionId === null && plannerInterface === "ledger") return;
     setupNavigationRevision += 1;
-    openSection = sectionId === "feedback" ? "feedback"
-      : sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    const requestedSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
+    openSection = plannerInterface === "ledger" || requestedSection === "feedback"
+      ? requestedSection
+      : requestedSection === openSection ? null : requestedSection;
+    const openIndex = SETUP_SECTIONS.findIndex(({ id }) => id === openSection);
+    const pane = query("#setup-sections");
+    if (pane instanceof HTMLElement && plannerInterface === "ledger") {
+      pane.style.setProperty("--ledger-page-hue", String(236 + (360 / SETUP_SECTIONS.length) * Math.max(0, openIndex)));
+      pane.dataset.ledgerSection = openSection;
+    }
     const panelChanges = [];
     let focusTarget = null;
     root.querySelectorAll("[data-setup-section]").forEach((section) => {
-      const isOpen = section.getAttribute("data-setup-section") === openSection;
-      const trigger = section.querySelector(".setup-accordion-trigger");
+      const id = section.getAttribute("data-setup-section");
+      const isOpen = id === openSection;
+      const trigger = query(`#setup-trigger-${id}`);
       const panel = section.querySelector(".setup-accordion-panel");
       const wasOpen = trigger instanceof HTMLButtonElement
         ? trigger.getAttribute("aria-expanded") === "true"
@@ -770,7 +794,7 @@ function bindResearchInteractions(root, { surface }) {
       if (trigger instanceof HTMLButtonElement) {
         trigger.setAttribute("aria-expanded", String(isOpen));
         const chevron = trigger.querySelector(".section-chevron");
-        if (chevron) chevron.textContent = isOpen ? "−" : "+";
+        if (chevron && id !== "feedback") chevron.textContent = isOpen ? "−" : "+";
         if (isOpen && focus) focusTarget = trigger;
       }
       if (panel instanceof HTMLElement && wasOpen !== isOpen) {
@@ -1164,6 +1188,7 @@ function bindResearchInteractions(root, { surface }) {
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
+    const legacy = feedbackSettingsVersion === 1;
     const releaseButton = query("#preview-flubber-release");
     if (releaseButton instanceof HTMLButtonElement) {
       releaseButton.disabled = legacy;
@@ -1192,7 +1217,6 @@ function bindResearchInteractions(root, { surface }) {
         ? "Click the map to set a point. Focus the map or Flubber to use your configured controls or arrow keys; hold to preview travel time."
         : "Click a tile to select it. Focus the map or Flubber to use your configured controls or arrow keys, one tile at a time.";
     }
-    const legacy = feedbackSettingsVersion === 1;
     const placementHelp = query("#preview-color-placement-help");
     if (placementHelp) placementHelp.textContent = legacy
       ? "Legacy packages retain axis colors. Convert to configure saved anchor placement."
@@ -1230,6 +1254,7 @@ function bindResearchInteractions(root, { surface }) {
       if (canvas instanceof HTMLCanvasElement) drawAffectField(canvas, projected.colors, projected.colorAnchorMode);
     }
     setupPreview.update(projected);
+    previewWindow?.update();
   }
 
   function refreshDesignPreview() {
@@ -4041,8 +4066,7 @@ function bindResearchInteractions(root, { surface }) {
   function renderPackageExportReview() {
     const state = packageExport.snapshot();
     const review = plannerContributions.readAccepted();
-    // P5 is deliberately accepted by final capture, not by a separate footer.
-    const reviewIssues = review.issues.filter(issue => !(issue.segment === "P5" && issue.code === "acceptance-missing"));
+    const reviewIssues = review.issues;
     const selectedTarget = getSelectedPlannerTarget();
     const header = query('[data-section-summary="review"]');
     if (header) header.textContent = state.phase === "saved" && !packageIsStale ? "Final JSON saved"
@@ -4053,14 +4077,14 @@ function bindResearchInteractions(root, { surface }) {
       : packageIsStale ? "Changed design · ready to save" : "Ready to save final JSON";
     const targetStatus = query("#planner-target-status");
     if (targetStatus) targetStatus.textContent = selectedTarget
-      ? "The chosen presentation and all confirmed sections are included in the final JSON. Live Preview is captured when you save."
+      ? "The chosen presentation and every confirmed section are included in the final JSON."
       : "Choose the intended presentation. XR execution requires a compatible future Runner.";
     const lslDetails = query("#review-lsl");
     if (lslDetails && (checked("lsl-enabled") || lslDetails.querySelector(':invalid, [aria-invalid="true"]'))) lslDetails.open = true;
     const output = query("#package-save-status");
     const messages = {
       editing: plannerFileWorkflow?.canCopy() ? "This file is open for editing. Save an unchanged copy, or review changed sections before saving a new snapshot."
-        : packageIsStale ? "The current design has changes to save." : "Review each section, then save the final JSON with the current Live Preview settings.",
+        : packageIsStale ? "The current design has changes to save." : "Confirm every section and the preview, then save the final JSON.",
       compiling: "Validating the current design…",
       saving: "Waiting for the file writer. Finish or cancel the save dialog.",
       saved: "Recipe saved. The writer confirmed its exact bytes and hash.",
@@ -4434,7 +4458,7 @@ function bindResearchInteractions(root, { surface }) {
             : `${preparation.checkedCount} video file${preparation.checkedCount === 1 ? "" : "s"} already matched the HTML player contract.`);
         }
         const result = await plannerFileWorkflow.save();
-        if (result.status === "saved") announce("Final recipe saved. Every section and the current Live Preview were validated; the writer acknowledged the exact bytes.");
+        if (result.status === "saved") announce("Final recipe saved. Every section and the current preview were confirmed; the writer acknowledged the exact bytes.");
         else if (result.status === "cancelled") announce("Save cancelled. Your design is still available.");
         else if (result.status !== "busy") announce("The design changed during saving. Newer edits remain here and are not marked saved.");
       } catch (error) {
@@ -5455,6 +5479,11 @@ function bindResearchInteractions(root, { surface }) {
     if (target.id === "preview-recolor") {
       applyPreviewPalette(randomPreviewAnchors());
       announce("Each color anchor was assigned a random color.");
+      return;
+    }
+    if (target.id === "preview-window-open") {
+      try { previewWindow?.open(); }
+      catch (error) { announce(error instanceof Error ? error.message : String(error)); }
       return;
     }
     if (target.dataset.modeButton && target.dataset.modeButton !== mode) {
@@ -6636,6 +6665,7 @@ function bindResearchInteractions(root, { surface }) {
       unsubscribeStimulusCatalogue();
       xrLayoutAuthoring?.destroy();
       setupConfirmationFlow.destroy();
+      previewWindow?.destroy();
       feedbackContribution.destroy();
       previewLayout.destroy();
       previewInteraction?.destroy();
