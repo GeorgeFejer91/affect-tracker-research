@@ -576,7 +576,6 @@ function ledgerPageMarkup(section, index) {
 
 function ledgerTabMarkup(section, index) {
   const expanded = index === 0;
-  const hue = 236 + (360 / SETUP_SECTIONS.length) * index;
   return `<button
     class="setup-accordion-trigger ledger-tab"
     type="button"
@@ -585,7 +584,6 @@ function ledgerTabMarkup(section, index) {
     aria-controls="setup-panel-${section.id}"
     data-open-section="${section.id}"
     title="${section.label}: ${SECTION_SUMMARIES[section.id]}"
-    style="--ledger-tab-hue:${hue}"
   >
     <span class="ledger-tab-mark" aria-hidden="true"><span class="section-number">${index + 1}</span></span>
     <span class="section-title sr-only">${section.label}</span>
@@ -613,7 +611,7 @@ function classicSetupMarkup() {
 
 function ledgerSetupMarkup() {
   return `<form id="research-settings-form" class="setup-layout" novalidate>
-    <div class="setup-pane" id="setup-sections" style="--ledger-page-hue:236">
+    <div class="setup-pane" id="setup-sections">
       <div class="ledger-page-stack">
         <div class="setup-intro"><p>Work from the first ledger layer to the last. Confirm each layer before exporting.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 1} confirmations · ${SETUP_SECTIONS.length} ledger layers · Export locked</output></div>
         ${SETUP_SECTIONS.map(ledgerPageMarkup).join("")}
@@ -630,7 +628,7 @@ export function renderResearchUiMarkup(surface = "browser", requestedInterface =
   const ledgerWindow = surface === "tauri" && plannerInterface === "ledger";
   const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · ${plannerInterface === "ledger" ? "Ledger" : "Classic"}`;
   return `
-    <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}"${ledgerWindow ? ' style="--ledger-page-hue:236"' : ""}>
+    <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}">
       ${ledgerWindow ? '<div class="native-window-controls" role="group" aria-label="Window controls"><button type="button" class="native-window-control" data-native-window-minimize aria-label="Minimize" title="Minimize">−</button><button type="button" class="native-window-control native-window-close" data-native-window-close aria-label="Close" title="Close">×</button></div>' : ""}
       <header class="app-bar"${ledgerWindow ? ' data-tauri-drag-region="deep"' : ""}>
         <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>

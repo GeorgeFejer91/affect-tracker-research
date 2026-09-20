@@ -175,10 +175,13 @@ test("Classic and Ledger are separate UI implementations over the same confirmat
 
 test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative glow", async () => {
   const css = await read("experiment-planner/web/research.css");
+  const markup = renderResearchUiMarkup("tauri", "ledger");
   assert.match(css, /\.ledger-rail\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?padding:\s*0;[\s\S]*?pointer-events:\s*none;/u);
   assert.match(css, /\.ledger-tab\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?container-type:\s*size;|\.ledger-tab\s*\{[\s\S]*?container-type:\s*size;[\s\S]*?flex:\s*1 1 0;/u);
   assert.match(css, /width:\s*min\(34cqh, 45cqw\)/u);
   assert.match(css, /background:\s*hsl\(var\(--ledger-tab-hue\) 34% 13\.5%\)/u);
+  assert.equal((css.match(/\.ledger-tab:nth-child\(\d\)\s*\{\s*--ledger-tab-hue:/gu) ?? []).length, SETUP_SECTIONS.length);
+  assert.doesNotMatch(markup, /style="--ledger-(?:page|tab)-hue:/u);
   const withoutSheetShadows = css
     .replace("box-shadow: 1px 2px 3px rgb(0 0 0 / 45%);", "")
     .replace("box-shadow: 1px 2px 4px rgb(0 0 0 / 50%);", "");

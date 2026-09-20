@@ -3661,6 +3661,8 @@ dialog::backdrop {
 }
 
 #research-app[data-planner-interface="ledger"] .setup-pane {
+  --ledger-page-hue: 236;
+
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px;
   height: 100%;
@@ -3768,6 +3770,14 @@ dialog::backdrop {
   transition: width 120ms ease, color 120ms ease, background-color 320ms ease;
 }
 
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(1) { --ledger-tab-hue: 236; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(2) { --ledger-tab-hue: 287.43; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(3) { --ledger-tab-hue: 338.86; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(4) { --ledger-tab-hue: 390.29; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(5) { --ledger-tab-hue: 441.71; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(6) { --ledger-tab-hue: 493.14; }
+#research-app[data-planner-interface="ledger"] .ledger-tab:nth-child(7) { --ledger-tab-hue: 544.57; }
+
 #research-app[data-planner-interface="ledger"] .ledger-tab:hover:not(:disabled) {
   border-color: #6366f1;
   color: #a5b4fc;
@@ -3836,6 +3846,8 @@ html[data-ledger-window] #research-app {
 }
 
 html[data-ledger-window] .research-shell[data-planner-interface="ledger"] {
+  --ledger-page-hue: 236;
+
   isolation: isolate;
   position: relative;
   grid-template-columns: minmax(0, 1fr) 56px;
