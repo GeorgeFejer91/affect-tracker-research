@@ -59,10 +59,11 @@ test("Windows desktop builds do not carry the removed native player stack protoc
 });
 
 test("the local Windows package is interface-only and excludes the unreviewed native player stack closure", async () => {
-  const [packageJson, helper, bundleConfigText, cargoToml, platform, gitignore] = await Promise.all([
+  const [packageJson, helper, bundleConfigText, hooks, cargoToml, platform, gitignore] = await Promise.all([
     read("package.json"),
     read("scripts/build-unqualified-desktop-package.js"),
     read("native/tauri.bundle-windows-unqualified.conf.json"),
+    read("native/windows/installer-hooks.nsh"),
     read("native/Cargo.toml"),
     read("native/src/research_platform.rs"),
     read(".gitignore"),
@@ -75,7 +76,20 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
-  assert.deepEqual(bundleConfig.bundle.resources, []);
+  assert.deepEqual(bundleConfig.bundle.resources, {
+    "icons-ledger/icon.ico": "resources/ledger-icon.ico",
+  });
+  assert.equal(bundleConfig.bundle.windows.allowDowngrades, false);
+  assert.deepEqual(bundleConfig.bundle.windows.webviewInstallMode, {
+    type: "offlineInstaller",
+    silent: true,
+  });
+  assert.equal(bundleConfig.bundle.windows.nsis.installMode, "currentUser");
+  assert.equal(bundleConfig.bundle.windows.nsis.startMenuFolder, "Affect Research");
+  assert.equal(bundleConfig.bundle.windows.nsis.installerHooks, "windows/installer-hooks.nsh");
+  assert.match(hooks, /Experiment Planner Classic\.lnk/u);
+  assert.match(hooks, /Experiment Planner Ledger\.lnk[\s\S]*"--ledger"[\s\S]*resources\\ledger-icon\.ico/u);
+  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*Delete[\s\S]*Experiment Planner Classic\.lnk[\s\S]*Delete[\s\S]*Experiment Planner Ledger\.lnk/u);
   assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video playback/iu);
   assert.doesNotMatch(gitignore, /^native\/native-media\/runtime\/$/mu);
 });

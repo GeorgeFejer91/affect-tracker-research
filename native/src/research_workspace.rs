@@ -367,25 +367,25 @@ impl WorkspaceService {
         })
     }
 
-    pub fn with_default_workspace(app_data_dir: PathBuf) -> ResearchResult<Self> {
-        let service = Self::new(app_data_dir.clone())?;
-        let workspace_path = app_data_dir.join("workspace");
-        match fs::symlink_metadata(&workspace_path) {
-            Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
-            Ok(_) => {
-                return Err(CommandError::forbidden(
-                    "The default workspace must be an ordinary directory.",
-                ));
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                fs::create_dir(&workspace_path).map_err(CommandError::io)?;
-            }
-            Err(error) => return Err(CommandError::io(error)),
+    pub fn with_downloads_workspace(
+        app_data_dir: PathBuf,
+        downloads_dir: PathBuf,
+    ) -> ResearchResult<Self> {
+        let service = Self::new(app_data_dir)?;
+        let downloads = downloads_dir.canonicalize().map_err(|_| {
+            CommandError::forbidden("The system Downloads directory is unavailable.")
+        })?;
+        let metadata = fs::symlink_metadata(&downloads).map_err(CommandError::io)?;
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "The system Downloads location must resolve to an ordinary directory.",
+            ));
         }
-        // Packaged Windows hosts may redirect app-data descendants into the
-        // package's LocalCache. Resolve the OS-owned location after creation,
-        // then apply the normal strict workspace/library validation there.
-        let workspace = workspace_path.canonicalize().map_err(CommandError::io)?;
+        let product = ensure_exact_child_directory(
+            &ensure_exact_child_directory(&downloads, "Affect Research")?,
+            "Experiment Planner",
+        )?;
+        let workspace = ensure_exact_child_directory(&product, "workspace")?;
         service.select(workspace)?;
         Ok(service)
     }
@@ -3290,30 +3290,76 @@ mod tests {
     }
 
     #[test]
-    fn default_workspace_is_the_app_data_child_and_can_be_changed() {
-        let base = temporary_directory("default-workspace");
-        let app_data = base.join("app-data");
-        let service = WorkspaceService::with_default_workspace(app_data.clone()).unwrap();
-        let default_root = app_data.canonicalize().unwrap().join("workspace");
-        let initial_status = service.status();
+    fn downloads_workspace_is_app_owned_idempotent_and_replaceable() {
+        let base = temporary_directory("downloads-workspace");
+        let app_data = base.join("private-app-data");
+        let downloads = base.join("Döwnloads");
+        fs::create_dir(&downloads).unwrap();
 
-        assert!(initial_status.selected);
-        assert!(initial_status.libraries_ready);
-        assert_eq!(initial_status.display_name.as_deref(), Some("workspace"));
+        let service =
+            WorkspaceService::with_downloads_workspace(app_data.clone(), downloads.clone())
+                .unwrap();
+        let workspace = downloads
+            .join("Affect Research")
+            .join("Experiment Planner")
+            .join("workspace");
+        assert!(service.status().selected);
+        assert!(service.status().libraries_ready);
+        assert!(app_data.join("affect-research").join("v1").is_dir());
+        assert!(!downloads.join("affect-research").exists());
         for library in ["stimuli", "settings", "outputs", "recovery"] {
-            assert!(default_root.join(library).is_dir());
+            assert!(workspace.join(library).is_dir());
         }
-        assert!(default_root.join("assets").join("stimuli").is_dir());
-        assert!(default_root.join("assets").join("questionnaires").is_dir());
+        assert!(workspace.join("assets").join("stimuli").is_dir());
+        assert!(workspace.join("assets").join("questionnaires").is_dir());
+
+        let reopened =
+            WorkspaceService::with_downloads_workspace(app_data, downloads.clone()).unwrap();
+        assert!(reopened.status().selected);
+        assert!(reopened.status().libraries_ready);
 
         let replacement = base.join("chosen");
         fs::create_dir(&replacement).unwrap();
-        let replacement_status = service.select(replacement).unwrap();
-        assert!(replacement_status.selected);
-        assert!(replacement_status.libraries_ready);
-        assert_eq!(replacement_status.display_name.as_deref(), Some("chosen"));
-        assert_ne!(replacement_status.workspace_id, initial_status.workspace_id);
+        assert_eq!(
+            reopened
+                .select(replacement)
+                .unwrap()
+                .display_name
+                .as_deref(),
+            Some("chosen")
+        );
         fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn downloads_workspace_rejects_conflicting_parent_entries() {
+        for (label, ancestors, conflict) in [
+            ("publisher", &[][..], "Affect Research"),
+            ("product", &["Affect Research"][..], "Experiment Planner"),
+            (
+                "workspace",
+                &["Affect Research", "Experiment Planner"][..],
+                "workspace",
+            ),
+        ] {
+            let base = temporary_directory(&format!("downloads-conflict-{label}"));
+            let downloads = base.join("Downloads");
+            fs::create_dir(&downloads).unwrap();
+            let mut parent = downloads.clone();
+            for ancestor in ancestors {
+                parent = parent.join(ancestor);
+                fs::create_dir(&parent).unwrap();
+            }
+            let conflict_path = parent.join(conflict);
+            fs::write(&conflict_path, b"reserved by the user").unwrap();
+
+            let error =
+                WorkspaceService::with_downloads_workspace(base.join("app-data"), downloads)
+                    .unwrap_err();
+            assert_eq!(error.code, "forbidden_operation");
+            assert_eq!(fs::read(&conflict_path).unwrap(), b"reserved by the user");
+            fs::remove_dir_all(base).unwrap();
+        }
     }
 
     #[test]

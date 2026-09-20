@@ -96,9 +96,19 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.deepEqual(windows.bundle.targets, ["nsis"]);
   assert.deepEqual(macos.bundle.targets, ["dmg"]);
   assert.deepEqual(linux.bundle.targets, ["deb", "appimage"]);
-  assert.deepEqual(windows.bundle.resources, []);
+  assert.deepEqual(windows.bundle.resources, {
+    "icons-ledger/icon.ico": "resources/ledger-icon.ico",
+  });
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
+  assert.equal(windows.bundle.windows.allowDowngrades, false);
+  assert.deepEqual(windows.bundle.windows.webviewInstallMode, {
+    type: "offlineInstaller",
+    silent: true,
+  });
+  assert.equal(windows.bundle.windows.nsis.installMode, "currentUser");
+  assert.equal(windows.bundle.windows.nsis.startMenuFolder, "Affect Research");
+  assert.equal(windows.bundle.windows.nsis.installerHooks, "windows/installer-hooks.nsh");
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
   assert.match(windows.bundle.longDescription, /HTML-compatible video playback/u);
   assert.match(macos.bundle.longDescription, /not qualified/iu);

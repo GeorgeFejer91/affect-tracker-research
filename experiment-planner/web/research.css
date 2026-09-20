@@ -3845,13 +3845,19 @@ html[data-ledger-window] .research-shell[data-planner-interface="ledger"] {
 
 html[data-ledger-window] .research-shell[data-planner-interface="ledger"]::before {
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset: 0 56px 0 0;
   border: 1px solid #3b3f6b;
   border-radius: 12px 0 0 12px;
   background: hsl(var(--ledger-page-hue) 36% 9.5%);
   content: "";
   transition: background-color 320ms ease;
+}
+
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > .app-bar,
+html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > main {
+  position: relative;
+  z-index: 1;
 }
 
 html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > .app-bar {

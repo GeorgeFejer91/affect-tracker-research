@@ -61,9 +61,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
 
+const LEDGER_WINDOW_ICON: &[u8] = include_bytes!("../icons-ledger/128x128.png");
+
 pub fn run() {
     let mut context = tauri::generate_context!();
-    if std::env::args_os().skip(1).any(|argument| argument == "--ledger") {
+    let ledger = std::env::args_os()
+        .skip(1)
+        .any(|argument| argument == "--ledger");
+    if ledger {
         if let Some(window) = context.config_mut().app.windows.first_mut() {
             window.title = "Experiment Planner Ledger".into();
             window.url = tauri::WebviewUrl::App("ledger.html".into());
@@ -72,12 +77,17 @@ pub fn run() {
             window.shadow = false;
         }
     }
-    launch(DesktopRole::Planner, context, None);
+    launch(
+        DesktopRole::Planner,
+        context,
+        None,
+        ledger.then_some(LEDGER_WINDOW_ICON),
+    );
 }
 
 /// Independent Runner binary supplies its own embedded assets and identity.
 pub fn run_runner(context: tauri::Context<tauri::Wry>) {
-    launch(DesktopRole::Runner, context, None);
+    launch(DesktopRole::Runner, context, None, None);
 }
 
 /// Production CLI entry point. It owns one private, hidden Planner lifecycle;
@@ -111,13 +121,14 @@ pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String
         window.focus = false;
         window.data_directory = None;
     }
-    Ok(launch(DesktopRole::Planner, context, Some(profile)))
+    Ok(launch(DesktopRole::Planner, context, Some(profile), None))
 }
 
 fn launch(
     role: DesktopRole,
     context: tauri::Context<tauri::Wry>,
     cli_profile: Option<PathBuf>,
+    window_icon: Option<&'static [u8]>,
 ) -> i32 {
     let cli_enabled = cli_profile.is_some();
     if cli_enabled {
@@ -163,12 +174,13 @@ fn launch(
                 (if cli_enabled {
                     WorkspaceService::new(app_data_dir.clone())
                 } else {
-                    // Companion programs share the Planner's default project,
-                    // while their WebViews, preferences and sessions stay separate.
-                    WorkspaceService::with_default_workspace(
+                    // Companion programs share the Planner's visible project,
+                    // while their WebViews, preferences and sessions stay in app data.
+                    WorkspaceService::with_downloads_workspace(
                         app.path()
                             .data_dir()?
                             .join("io.github.georgefejer91.affecttracker"),
+                        app.path().download_dir()?,
                     )
                 })
                 .map_err(|error| std::io::Error::other(error.message))?,
@@ -180,6 +192,9 @@ fn launch(
             let parent = app
                 .get_webview_window("research")
                 .ok_or_else(|| std::io::Error::other("Native media parent window is absent."))?;
+            if let Some(icon) = window_icon {
+                parent.set_icon(tauri::image::Image::from_bytes(icon)?)?;
+            }
             // Setup remains operable when the safe hook cannot start. Capability
             // reporting and every test/Start command then fail closed.
             let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));

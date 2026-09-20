@@ -5,7 +5,21 @@
     "targets": [
       "nsis"
     ],
-    "resources": [],
+    "resources": {
+      "icons-ledger/icon.ico": "resources/ledger-icon.ico"
+    },
+    "windows": {
+      "allowDowngrades": false,
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "startMenuFolder": "Affect Research",
+        "installerHooks": "windows/installer-hooks.nsh"
+      }
+    },
     "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. HTML-compatible video playback is used for lightweight execution; LSL, native input, installed workflow, timing, and research readiness are not qualified."
   }
 }

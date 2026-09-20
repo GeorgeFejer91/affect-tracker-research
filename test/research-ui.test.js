@@ -186,12 +186,13 @@ test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative gl
 });
 
 test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouette", async () => {
-  const [css, desktopEntry, nativeEntry, nativeSource, capabilitySource] = await Promise.all([
+  const [css, desktopEntry, nativeEntry, nativeSource, capabilitySource, ledgerIcon] = await Promise.all([
     read("experiment-planner/web/research.css"),
     read("experiment-planner/desktop/ledger.html"),
     read("experiment-planner/web/src/research/native-entry.js"),
     read("native/src/lib.rs"),
     read("native/capabilities/research.json"),
+    read("experiment-planner/desktop/icons/ledger-icon.svg"),
   ]);
   const desktop = renderResearchUiMarkup("tauri", "ledger");
   const browser = renderResearchUiMarkup("browser", "ledger");
@@ -205,6 +206,8 @@ test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouet
   assert.match(css, /html\[data-ledger-window\] #research-app\[data-planner-interface="ledger"\] \.ledger-rail\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0 0 0 auto;[\s\S]*?height:\s*100dvh;/u);
   assert.match(nativeEntry, /getCurrentWindow[\s\S]*?currentWindow\.minimize\(\)[\s\S]*?currentWindow\.close\(\)/u);
   assert.match(nativeSource, /argument == "--ledger"[\s\S]*?ledger\.html[\s\S]*?window\.decorations = false;[\s\S]*?window\.transparent = true;/u);
+  assert.match(nativeSource, /LEDGER_WINDOW_ICON[\s\S]*?parent\.set_icon/u);
+  assert.match(ledgerIcon, /<title id="title">Experiment Planner Ledger<\/title>[\s\S]*?seen from the side[\s\S]*?fill="#ff5c88"[\s\S]*?stroke="#a9b3ff"/u);
   const permissions = JSON.parse(capabilitySource).permissions;
   for (const permission of ["core:window:allow-close", "core:window:allow-minimize", "core:window:allow-start-dragging"]) {
     assert.ok(permissions.includes(permission));
