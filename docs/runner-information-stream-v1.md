@@ -87,3 +87,18 @@ state are reconstructed before comparison with any external producer JSON or
 native observation log. Synthetic outlet/recording checks prove engineering
 correspondence only; they do not establish the actual full-video smoke or native
 qualification.
+
+An ignored Windows-native test provides the explicit master6 transport route:
+`actual_master6_outlets_record_reconstructable_synthetic_session`. It requires
+`AFFECT_RUNNER_MASTER6_SOURCE` to name an exact Planner-authored master6 manifest
+with its colocated questionnaire assets, and `AFFECT_RUNNER_MASTER6_XDF_FIXTURE`
+to name a new output file. The test loads the source through the production
+reader, passes the same transport bundle used by the desktop UI, starts the real
+outlets and recorder at the authored rate, and writes v2 lifecycle/reset evidence,
+native-validated SurveyJS responses, synthetic Flubber rows and a terminal
+outcome. It is opt-in so routine tests never create recordings. Apply
+`scripts/qualification/runner-information-xdf.py` and then
+`scripts/qualification/runner-information-stream.mjs` to the result. This route
+proves master6 framing, metadata and XDF-only reconstruction; its deliberately
+sparse synthetic rows do not qualify sampling cadence, physical input, displayed
+video timing or an installed participant session.

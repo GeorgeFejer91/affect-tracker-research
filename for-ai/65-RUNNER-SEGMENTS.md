@@ -995,6 +995,23 @@ are a synthetic burst, so their observed cadence is diagnostic only: installed
 master6 real-video, physical-input, full-attempt cadence, offline and saved-XDF
 qualification remain open.
 
+**True master6 synthetic XDF route — commit `3212b1d`, 2026-09-22:** the ignored
+native qualification test now loads an exact Planner-authored master6 source
+tree through the production file reader, constructs the same transport bundle
+as the desktop UI, and records actual outlets with policy v2/full-attempt
+metadata, v2 lifecycle plus neutral-reset evidence, native-validated SurveyJS
+responses and a terminal outcome. The tested source SHA-256 is
+`68f9bc828b5b69d687e2e8790ab512a5470295213a7cdffb4d356eef333b124e`.
+Independent `pyxdf 1.17.0` export and the XDF-only reader reconstructed the six
+ordered occurrences, three response records, four questionnaire assets and
+complete outcome from the 79,615-byte XDF with SHA-256
+`62f918815040ab40964afaec6d356bcb140bc119e7e705bb34d9a53f8aa3b9e0`.
+Both footers verified: six nominal-130-Hz eight-channel Affect rows and 66
+information frames. Removing 64 footer bytes rejected before export. These six
+sparse rows deliberately test transport/schema binding, not observed 130-Hz
+cadence. The installed real-video, physical-input, full-attempt cadence, offline
+and clean-profile qualification gates remain open.
+
 The production Runner SurveyJS harness also covers master6 directly. It builds
 an explicit full-attempt policy-v2 asset bundle from the frozen v4 SurveyJS
 fixture, requires the exact v6 Start/action commands, and runs both languages

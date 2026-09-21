@@ -160,3 +160,39 @@ actual playback or XDF claim. The active owner/metadata/checklist authority is
 requested separation of questionnaire presentation from video preparation are
 still open. Do not label the current native-enabled development build a final
 research-qualified release.
+
+## Opt-in master6 XDF transport qualification — 2026-09-22
+
+Commit `3212b1d` adds a bounded ignored test for a real Planner-authored master6
+source tree. Use a fresh XDF destination; the recorder does not overwrite:
+
+```powershell
+$env:AFFECT_RUNNER_MASTER6_SOURCE = '<exact-master6-manifest.json>'
+$env:AFFECT_RUNNER_MASTER6_XDF_FIXTURE = '<new-master6-output.xdf>'
+.\scripts\qualification\native-tests.ps1 `
+  -FeatureSet all-features `
+  -TestFilter 'research_runner_master::lsl::tests::actual_master6_outlets_record_reconstructable_synthetic_session' `
+  -IncludeIgnored
+python .\scripts\qualification\runner-information-xdf.py `
+  $env:AFFECT_RUNNER_MASTER6_XDF_FIXTURE '<new-independent-export.json>'
+node .\scripts\qualification\runner-information-stream.mjs `
+  '<new-independent-export.json>' '<new-reconstruction.json>'
+```
+
+The retained 2026-09-22 run used Planner source SHA-256
+`68f9bc828b5b69d687e2e8790ab512a5470295213a7cdffb4d356eef333b124e`.
+The 79,615-byte XDF SHA-256 is
+`62f918815040ab40964afaec6d356bcb140bc119e7e705bb34d9a53f8aa3b9e0`;
+its independent export and reconstruction hashes are respectively
+`db8cda4aec41d2dad0e1f706f40bd6912721bcd8899c055b5c53551bb8b8be12`
+and `fdb2f3f9d34dc866fa087e14377f3b84d448cd9ea5f5c98d154754b4f381d1de`.
+Both XDF footers verified. XDF alone reconstructed master6/policy-v2/fullAttempt,
+enabled LSL metadata, six ordered occurrences, three SurveyJS response records,
+four questionnaire assets, six exact eight-channel Affect rows and a complete
+outcome. A copy missing its final 64 bytes was rejected without producing an
+export.
+
+This is deliberately synthetic transport and reconstruction evidence. Six
+sparse rows cannot establish authored 130-Hz cadence; there was no installed
+foreground session, physical input, displayed-video observation, clean-profile
+host or offline adapter condition. Those release gates remain open.
