@@ -987,7 +987,11 @@ The production Runner SurveyJS harness also covers master6 directly. It builds
 an explicit full-attempt policy-v2 asset bundle from the frozen v4 SurveyJS
 fixture, requires the exact v6 Start/action commands, and runs both languages
 through form, native-rejection/correction flow, durable Stop and disposal
-cases. Its receipt binds the script, browser and every bundled production input.
+cases. Separate EN/DE validation-flow cases select the visible validation
+control, require the validation preflight wrapper and v6 validation Start, and
+reject any fall-through to ordinary research Start; the returned attempt must
+remain labelled `local-validation` and `researchQualified:false`. Its receipt
+binds the script, browser and every bundled production input.
 This remains frontend evidence with synthetic native replies; it does not
 replace an installed physical-input or saved-XDF run.
 

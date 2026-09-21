@@ -15,7 +15,8 @@ import { plannerRecipeTransportText } from "../../experiment-planner/web/src/res
 const [browser, destination, onlyCase, recipeVersion = "4"] = process.argv.slice(2);
 assert.ok(browser && destination);
 assert.ok(["2", "3", "4", "5", "6"].includes(recipeVersion));
-assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|stop|dispose)$/u.test(onlyCase));
+assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|stop|dispose|validation-flow)$/u.test(onlyCase));
+assert.ok(!onlyCase?.endsWith("validation-flow") || recipeVersion === "6");
 const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output);
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
@@ -39,6 +40,7 @@ import {checkSurveyData} from './experiment-planner/web/src/research/surveyjs-en
 import {validateFormAnswers} from './experiment-planner/web/src/research/form-definition.js';
 import {validateQuestionnaireAnswers} from './experiment-planner/web/src/research/questionnaires.js';
 const params=new URL(location.href).searchParams,language=params.get('language'),mode=params.get('case'),masterVersion=Number(params.get('version'));
+const validationMode=mode.startsWith('validation-'),scenario=validationMode?mode.slice('validation-'.length):mode;
 const checks=[],calls=[],errors=[],submissions=[];
 const check=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
 const tick=(ms=50)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -74,7 +76,15 @@ const invoke=async(command,args)=>{
   case 'research_runner_fullscreen':fullscreen=args.fullscreen;return;
   case 'research_runner_master_plan':return selected();
   case 'research_runner_master_rescan':return{workspaceId:'synthetic-workspace',stimuli:[]};
-  case 'research_runner_master_preflight':plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,htmlVideoStartReady:true,nativeStartReady:true,reasons:[]};
+  case 'research_runner_master_preflight':
+   check(!validationMode,'ordinary preflight is confined to research Start');
+   plan=await selected();return{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,htmlVideoStartReady:true,nativeStartReady:true,reasons:[]};
+  case 'research_runner_master_validation_preflight':{
+   check(validationMode&&masterVersion===6,'validation UI selects the validation preflight command');
+   check(Object.keys(args.request).sort().join('|')===['workspaceId','sourceText','participantId','selector'].sort().join('|'),'validation preflight retains the exact experiment selection');
+   plan=await selected();
+   return{schema:'affect-runner-validation-preflight',version:1,result:{schema:'affect-runner-master-preflight',version:masterVersion,recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256,htmlVideoStartReady:true,nativeStartReady:true,reasons:[]}};
+  }
   case 'research_runner_master_html_video_url':{
    const step=plan.steps.find(item=>item.position===args.request.protocolStepPosition);
    return{mediaUrl:'/'+step.payload.asset.packageRelativePath,sha256:step.payload.asset.sha256,byteLength:step.payload.asset.byteLength,mimeType:step.payload.asset.mimeType};
@@ -83,13 +93,17 @@ const invoke=async(command,args)=>{
   case 'research_runner_master_start_v3':
   case 'research_runner_master_start_v4':
   case 'research_runner_master_start_v5':
-  case 'research_runner_master_start_v6':{
-   check(command==='research_runner_master_start_v'+masterVersion,'exact Start version dispatch');
+  case 'research_runner_master_start_v6':
+  case 'research_runner_master_validation_start_v6':{
+   check(command===(validationMode?'research_runner_master_validation_start_v6':'research_runner_master_start_v'+masterVersion),'exact qualified or validation Start version dispatch');
    check(fullscreen,'Start2 follows fullscreen acknowledgement');
-   check(Object.keys(args.request).sort().join('|')===['version','workspaceId','sourceText','participantId','selector','rerunConfirmed','inputTestReceiptId'].sort().join('|'),'Start2 has exact participant-only fields');
-   check(args.request.version===masterVersion&&args.request.participantId==='P001','Start2 retains canonical participant ID');
-   check(args.request.sourceText===plannerRecipeTransportText(app.recipe),'Start retains exact source and declared questionnaire snapshots');
+   if(validationMode)check(Object.keys(args.request).sort().join('|')==='acknowledgeUnqualified|experiment|version'&&args.request.version===1&&args.request.acknowledgeUnqualified===true,'validation Start has the explicit unqualified acknowledgement envelope');
+   const experiment=validationMode?args.request.experiment:args.request;
+   check(Object.keys(experiment).sort().join('|')===['version','workspaceId','sourceText','participantId','selector','rerunConfirmed','inputTestReceiptId'].sort().join('|'),'Start2 has exact participant-only fields');
+   check(experiment.version===masterVersion&&experiment.participantId==='P001','Start2 retains canonical participant ID');
+   check(experiment.sourceText===plannerRecipeTransportText(app.recipe),'Start retains exact source and declared questionnaire snapshots');
    const receipt={schema:'affect-runner-master-attempt',version:masterVersion,runId:'run-00000000-0000-4000-8000-000000000001',attemptId:'attempt-synthetic',participantId:'P001',recipeSourceByteSha256:plan.recipeSourceByteSha256,planIdentitySha256:plan.planIdentitySha256};
+   if(validationMode)receipt.executionQualification={schema:'affect-runner-execution-qualification',version:1,sessionKind:'local-validation',researchQualified:false,reason:'explicit-unqualified-validation'};
    status={...receipt,schema:'affect-runner-master-status',active:true,position:1,stepCount:plan.steps.length,phase:'awaitingPresentation',answers:{},sampleCount:0,missedSlotCount:0,currentValence:0,currentArousal:0};
    if(holdStart){holdStart=false;await new Promise(resolve=>{releaseStart=resolve;});}
    return receipt;
@@ -153,6 +167,11 @@ try{
  check(!q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true})),'input-test arrows cannot scroll and cancel the native test');
  check(q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})),'input-test keyboard escape remains available through Tab');
  q('runner-variant').value='variant-1';q('runner-variant').dispatchEvent(new Event('change'));
+ if(validationMode){
+  check(masterVersion===6&&!q('runner-validation').disabled,'master6 exposes local validation mode');
+  q('runner-validation').checked=true;q('runner-validation').dispatchEvent(new Event('change',{bubbles:true}));
+  check(q('runner-validation').checked,'local validation mode remains an explicit UI choice');
+ }
  check(escape({altKey:true}),'windowed Alt+Esc is not consumed');nativeAbort();await tick();
  check(!fullscreen&&commandCount('stop')===0,'windowed DOM/native shortcuts cannot abort');
  q('runner-launch').click();await until(()=>fullscreen&&!q('runner-preparation').hidden,'fullscreen preparation');
@@ -166,9 +185,9 @@ try{
  await tick();check(fullscreen,'other modifiers, composition and repeats cannot abort');
  check(q('runner-demographics').hidden,'legacy demographics are absent for v2');
  check(q('runner-preparation-title').textContent==='Experiment language','preparation requests only experiment language');
- if(mode==='dispose')holdStart=true;
+ if(scenario==='dispose')holdStart=true;
  for(const option of ['both',language]){q('runner-language').querySelector('[data-language-option="'+option+'"]').click();await tick();}
- if(mode==='dispose'){
+ if(scenario==='dispose'){
   await until(()=>releaseStart,'native Start acknowledgement pending');nativeAbort();releaseStart();
   await until(()=>!fullscreen&&!q('runner-launch').disabled,'pending Start is aborted after acknowledgement');
   check(commandCount('stop')===1&&!status.active,'in-flight Start cannot escape the abort request');
@@ -212,7 +231,7 @@ try{
    for(const group of groups)radios.filter(r=>r.name===group).at(-1).click();
    await until(()=>Object.keys(status.answers).length===4,'all typed answers drafted');
    check(status.answers.age.integer===0,'zero remains a tagged integer');
-   if(mode==='flow'){
+   if(scenario==='flow'){
      rejectSubmit=true;nav(/^(Next|Weiter)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
      check(original.isConnected&&original.value===name,'rejection preserves editable answers');
      await until(()=>!host.inert,'correction enabled');nav(/^(Next|Weiter)$/).click();
@@ -250,7 +269,7 @@ try{
    await until(()=>status.answers.choices?.length===2,'nested answer data drafted');
  }
  check(!q('runner-error').hidden===false,'draft did not report an error');
- if(mode==='flow'){
+ if(scenario==='flow'){
    rejectSubmit=true;nav(/^(Next|Weiter)$/).click();await until(()=>!q('runner-error').hidden,'native rejection shown');
    check(q('runner-error').textContent==='Synthetic native submission rejected','native rejection remains visible');
    await until(()=>!host.inert,'correction available');nav(/^(Next|Weiter)$/).click();
@@ -259,18 +278,18 @@ try{
    check(!controls().some(c=>c.checked),'new occurrence starts with no prior answers');
  }
  }
- if(mode==='dispose'){
+ if(scenario==='dispose'){
   app.destroy();const before=calls.length;nativeAbort();escape({altKey:true});await tick();
   check(calls.length===before&&unsubscribed,'dispose removes both abort inputs');check(!host.children.length,'dispose removes SurveyJS controls');
- }else if(mode!=='form'){
+ }else if(scenario!=='form'){
   escape({});check(q('runner-session-dialog').open&&commandCount('stop')===0,'ordinary Escape still opens session controls');
-  if(mode==='stop'){
+  if(scenario==='stop'){
    rejectStop=true;nativeAbort();await until(()=>!q('runner-error').hidden,'abort failure is visible');
    check(fullscreen&&status.active,'failed stop preserves fullscreen and the active attempt');
    await tick();
   }
   const before=commandCount('stop');holdStop=true;
-  if(mode==='stop')nativeAbort();else escape({altKey:true});
+  if(scenario==='stop')nativeAbort();else escape({altKey:true});
   await until(()=>releaseStop,'native stop pending');escape({altKey:true,repeat:true});nativeAbort();
   await tick();check(fullscreen&&commandCount('stop')===before+1,'abort waits for durable native stop and ignores duplicates');
   releaseStop();await until(()=>!fullscreen,'shortcut stop acknowledged');
@@ -279,16 +298,21 @@ try{
  }
  check(q('runner-error').hidden,'no unresolved app error');
  check(!calls.some(call=>['research_runner_master_start','research_runner_master_action'].includes(call.command)),'v2 never uses legacy native ingress');
+ if(validationMode){
+  check(calls.filter(call=>call.command==='research_runner_master_validation_preflight').length===1,'validation preflight occurs exactly once');
+  check(calls.filter(call=>call.command==='research_runner_master_validation_start_v6').length===1,'validation Start occurs exactly once');
+  check(!calls.some(call=>call.command==='research_runner_master_preflight'||call.command==='research_runner_master_start_v6'),'validation path never falls through to research Start');
+ }
  check(document.documentElement.scrollWidth<=innerWidth,'no horizontal overflow');
 
- if(mode==='form'){
+ if(scenario==='form'&&!validationMode){
   // Chrome's command-line screenshot can resize the live viewport after its
   // dump-DOM receipt, correctly triggering Runner's fail-closed resize Stop.
   // Freeze the exact already-checked rendered DOM for visual inspection only.
   const snapshot=root.cloneNode(true);app.destroy();root.replaceWith(snapshot);window.scrollTo(0,0);
  }
 }catch(error){errors.push(String(error));}
-const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,masterVersion,checks,errors,questionnaireDom:q('runner-questionnaire-items').innerHTML,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:mode==='form',scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);
+const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,masterVersion,checks,errors,questionnaireDom:q('runner-questionnaire-items').innerHTML,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:scenario==='form'&&!validationMode,scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);
 `;
 const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "runner-surveyjs-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent", metafile: true });
 const productionInputSha256 = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs)
@@ -341,7 +365,8 @@ async function connectDebugger(profile) {
   return { send, close: () => socket.close() };
 }
 try {
-  for (const language of ["en", "de"]) for (const mode of ["form", "flow", "stop", "dispose"]) {
+  const modes = ["form", "flow", "stop", "dispose", ...(recipeVersion === "6" ? ["validation-flow"] : [])];
+  for (const language of ["en", "de"]) for (const mode of modes) {
     if (onlyCase !== undefined && onlyCase !== "all" && onlyCase !== `${language}-${mode}`) continue;
     const name = `${language}-${mode}`, profile = await mkdtemp(join(output, "profile-"));
     const keyboard = process.env.AFFECT_SURVEY_KEYBOARD === "1";

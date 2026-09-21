@@ -148,6 +148,10 @@ test("production SurveyJS qualification covers master6 with the real Runner styl
   assert.match(source, /\["2", "3", "4", "5", "6"\]\.includes\(recipeVersion\)/u);
   assert.match(source, /core\.policy = \{ \.\.\.core\.policy, version: 2, acquisitionWindow: "fullAttempt" \}/u);
   assert.match(source, /case 'research_runner_master_start_v6'/u);
+  assert.match(source, /case 'research_runner_master_validation_start_v6'/u);
+  assert.match(source, /researchQualified:false/u);
+  assert.match(source, /validation path never falls through to research Start/u);
+  assert.match(source, /recipeVersion === "6" \? \["validation-flow"\] : \[\]/u);
   assert.match(source, /case 'research_runner_master_action_v6'/u);
   assert.match(source, /href="\/experiment-runner\/runner\.css"/u);
   assert.doesNotMatch(source, /href="\/runner\/runner\.css"/u);
