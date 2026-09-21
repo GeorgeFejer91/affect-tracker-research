@@ -99,3 +99,19 @@ test("Research Pages, desktop, app header, and GitHub explainer expose Aurora Ax
   assert.match(pagesBuilder, /"assets", "app-symbol\.svg"/u);
   assert.match(buildVerifier, /assets\/app-logo\.svg/u);
 });
+
+test("Planner Ledger icon generation is scoped and uses the pinned Tauri renderer", async () => {
+  const [generator, packageManifest] = await Promise.all([
+    readText("scripts/generate-planner-ledger-icons.js"),
+    readText("package.json"),
+  ]);
+
+  assert.match(generator, /affect-planner-ledger-icon\.svg/u);
+  assert.match(generator, /app-icons\/planner-ledger/u);
+  assert.match(generator, /native\/icons-ledger/u);
+  assert.match(generator, /const sizes = \[32, 64, 128, 180, 192, 512\]/u);
+  assert.match(generator, /createRequire\(import\.meta\.url\)\.resolve\("@tauri-apps\/cli\/tauri\.js"\)/u);
+  assert.match(generator, /copyFile\(join\(temporary, "icon\.ico"\), join\(nativeOutput, "icon\.ico"\)\)/u);
+  assert.doesNotMatch(generator, /native\/icons(?:["'])|assets\/app-icons(?:["'])/u);
+  assert.match(packageManifest, /"desktop:ledger-icons": "node scripts\/generate-planner-ledger-icons\.js"/u);
+});

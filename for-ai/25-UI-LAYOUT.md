@@ -180,6 +180,12 @@ Ledger-specific PNG/ICO derivatives. Do not replace Classic Planner, Runner or
 suite-wide branding with it. Preserve its aspect ratio and regenerate native
 rasters from the SVG source rather than editing derivative pixels.
 
+After importing that SVG, run `pnpm desktop:ledger-icons`. The pinned Tauri
+renderer writes 32, 64, 128, 180, 192 and 512 pixel PNGs beneath
+`assets/app-icons/planner-ledger/`, plus the native Ledger 128px PNG and ICO in
+`native/icons-ledger/`. The command fails before changing outputs when the SVG
+source is absent; it never rewrites the Classic Planner or Runner icon sets.
+
 ## Readability is a boundary, not another overflow hack
 
 Do not keep shrinking below the shared readability floor or counteract browser
