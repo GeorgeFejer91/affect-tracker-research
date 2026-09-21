@@ -71,6 +71,16 @@ up to 512 MiB. These are explicit analysis-tool bounds, not additional wire
 formats. Larger recordings require incremental analysis. Both readers preserve
 raw LSL timestamps; no clock synchronization or sample dejittering is enabled.
 
+The independent XDF export schema v2 also retains each stream's nominal sample
+rate and ordered channel label/unit/type metadata. XDF-only qualification
+requires the irregular marker stream to remain string/zero-Hz and the regular
+state stream to match the recipe's authored rate and exact eight-channel Affect
+contract. It validates finite bounded Flubber rows, displayed/admitted x/y
+agreement, derived radius, Boolean flags and strictly increasing state times,
+then reports observed cadence separately. A nominal-rate declaration or a short
+synthetic burst is metadata/transport evidence, not actual-session cadence
+qualification.
+
 Verification first reads only the XDF through an independent reader. The source,
 plan, selected definitions, responses, ordered observed occurrences and terminal
 state are reconstructed before comparison with any external producer JSON or

@@ -977,16 +977,23 @@ evidence, not installed real-video/input, actual-session saved-XDF or research
 qualification;
 the exit gate above remains open until those checks pass.
 
-**Current-tree synthetic XDF refresh — commit `0e02b73`, 2026-09-21:** the
-Windows all-features outlet/recorder test wrote a new 79,121-byte XDF with
-SHA-256 `c99b857e51cf91372b5143ac709731f4dfeedd18294f35368699a437b7fc3871`.
-Independent `pyxdf 1.17.0` read both footered streams (three affect samples and
-78 information frames); the XDF-only reader reconstructed ten ordered
-occurrences, 26 committed records, two response records and the terminal
-outcome without source JSON. Removing 64 footer bytes was rejected before an
-export could be written. This refresh is synthetic transport/reconstruction
-evidence only; installed real-video, physical-input, offline and actual-session
-XDF qualification remain open.
+**Synthetic information/XDF fixture correction — commit `bcc2119`,
+2026-09-22:** this is a historical master1 transport fixture, not master6
+evidence. The earlier `0e02b73` output declared a hard-coded 130 Hz state outlet
+for a recipe authored at 137 Hz and therefore does not satisfy the strengthened
+XDF evidence contract. The fixture now takes the authored rate; independent
+export v2 retains nominal rates and channel metadata, and the XDF-only reader
+requires the exact marker plus eight-channel Affect contracts, bounded Flubber
+values, displayed/admitted x/y agreement, derived radius and increasing state
+timestamps. A fresh 79,128-byte XDF has SHA-256
+`140357836431222d709598533850111c6078b4b428cfba0ffaf48040617160d9`.
+`pyxdf 1.17.0` verified both footers (three nominal-137-Hz affect samples and 78
+information frames); reconstruction recovered ten ordered occurrences, 26
+committed records, two response records and the terminal outcome without source
+JSON. Removing 64 footer bytes was rejected before export. The three state rows
+are a synthetic burst, so their observed cadence is diagnostic only: installed
+master6 real-video, physical-input, full-attempt cadence, offline and saved-XDF
+qualification remain open.
 
 The production Runner SurveyJS harness also covers master6 directly. It builds
 an explicit full-attempt policy-v2 asset bundle from the frozen v4 SurveyJS
