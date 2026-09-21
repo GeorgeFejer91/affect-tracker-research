@@ -131,7 +131,7 @@ mod tests {
     use crate::research_runner_master::{
         forms::FormAnswers,
         information::startup_bundle,
-        markers::{MarkerEvent, MasterMarkers},
+        markers::{EvidenceEvent, MarkerEvent, MasterMarkers},
         runtime::MasterChoice,
         MasterSelector, MasterStepKind, PreparedMaster,
     };
@@ -300,6 +300,277 @@ mod tests {
         let status = recorder.stop().unwrap();
         assert_eq!(status.phase, "complete", "{:?}", status.error);
         assert_eq!(status.sample_count, count);
+        assert!(path.is_file());
+    }
+
+    #[test]
+    #[ignore = "requires an exact Planner-authored master6 source tree and explicit XDF output path"]
+    fn actual_master6_outlets_record_reconstructable_synthetic_session() {
+        let recipe_path = std::env::var_os("AFFECT_RUNNER_MASTER6_SOURCE")
+            .map(std::path::PathBuf::from)
+            .expect("AFFECT_RUNNER_MASTER6_SOURCE is required");
+        let path = std::env::var_os("AFFECT_RUNNER_MASTER6_XDF_FIXTURE")
+            .map(std::path::PathBuf::from)
+            .expect("AFFECT_RUNNER_MASTER6_XDF_FIXTURE is required");
+        let loaded =
+            crate::research_planner_recipe_file::read_supported_planner_recipe_file(&recipe_path)
+                .unwrap();
+        assert_eq!(loaded.recipe.version(), 6);
+        let transport = loaded.transport_text().unwrap();
+        let prepared = PreparedMaster::read(
+            &transport,
+            "P001",
+            MasterSelector {
+                variant_id: "variant-1".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(prepared.plan.version, 6);
+        assert!(prepared.loaded.recipe.full_attempt_acquisition());
+        assert!(prepared.loaded.recipe.policy().lsl.enabled);
+
+        let recorder = RecorderService::default();
+        recorder
+            .start_path(
+                crate::research_recorder::RecordStartRequest {
+                    experiment_package_source_text: transport,
+                    record_own: true,
+                    discovery_revision: None,
+                    stream_keys: vec![],
+                },
+                path.clone(),
+            )
+            .unwrap();
+        let mut markers =
+            MasterMarkers::new(&prepared.plan, "run-master6-xdf", "attempt-master6-xdf").unwrap();
+        let settings = crate::research_runner_session::participant_lsl(
+            &prepared.loaded.recipe.policy().lsl,
+            "P001",
+        )
+        .unwrap();
+        let startup = startup_bundle(&prepared, &markers, &settings, serde_json::Value::Null);
+        assert_eq!(startup["version"], 6);
+        assert!(startup.get("legacyCodedParticipant").is_none());
+        assert!(startup["questionnaireAssets"]
+            .as_array()
+            .is_some_and(|assets| !assets.is_empty()));
+        let mut service = MasterLslService::start(
+            &settings,
+            prepared
+                .loaded
+                .recipe
+                .policy()
+                .sampling_frequency_hz
+                .try_into()
+                .unwrap(),
+            "run-master6-xdf",
+            &prepared.plan.recipe_source_byte_sha256,
+            &recorder,
+            "attempt-master6-xdf",
+            PreparedTransfer::new(&startup).unwrap(),
+        )
+        .unwrap();
+        let mut time = 0.;
+        service
+            .observe(
+                &markers
+                    .observe_evidence(
+                        EvidenceEvent::SessionStart,
+                        "awaitingPresentation",
+                        None,
+                        None,
+                        time,
+                        time,
+                        serde_json::json!({"kind":"lifecycle"}),
+                    )
+                    .unwrap(),
+            )
+            .unwrap();
+        for step in &prepared.plan.steps {
+            let execution = format!("execution-master6-{}", step.position);
+            let (start, end, phase) = match step.kind {
+                MasterStepKind::Questionnaire => (
+                    EvidenceEvent::FormStart,
+                    EvidenceEvent::FormEnd,
+                    "questionnaire",
+                ),
+                MasterStepKind::Interval => {
+                    (EvidenceEvent::IsiStart, EvidenceEvent::IsiEnd, "interval")
+                }
+                MasterStepKind::Video => (
+                    EvidenceEvent::VideoStart,
+                    EvidenceEvent::VideoEnd,
+                    "playing",
+                ),
+            };
+            time += 1.;
+            if step.kind == MasterStepKind::Interval {
+                service
+                    .observe(
+                        &markers
+                            .observe_evidence(
+                                EvidenceEvent::NeutralReset,
+                                phase,
+                                Some(&step.entry_id),
+                                Some(&execution),
+                                time,
+                                time,
+                                serde_json::json!({"kind":"neutralReset","reason":"intervalAdmission","stateAfter":{"valence":0.0,"arousal":0.0}}),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+            }
+            service
+                .observe(
+                    &markers
+                        .observe_evidence(
+                            start,
+                            phase,
+                            Some(&step.entry_id),
+                            Some(&execution),
+                            time,
+                            time,
+                            serde_json::json!({"kind":"lifecycle"}),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            let active = step.kind == MasterStepKind::Video;
+            service
+                .state(LslState {
+                    current_valence: if active { 0.25 } else { 0. },
+                    current_arousal: if active { -0.5 } else { 0. },
+                    target_valence: if active { 0.25 } else { 0. },
+                    target_arousal: if active { -0.5 } else { 0. },
+                    radius: if active { 0.559_016_994_374_947_5 } else { 0. },
+                    angle_degrees: if active { 296.565_051_177_078 } else { 0. },
+                    animation_active: active,
+                    input_active: active,
+                })
+                .unwrap();
+            time += step.duration_ms.unwrap_or(250) as f64;
+            if step.kind == MasterStepKind::Questionnaire {
+                let definition: crate::research_surveyjs_definition::SurveyDefinitionV1 =
+                    serde_json::from_value(step.payload["definition"].clone()).unwrap();
+                let seed = (u32::from_str_radix(&prepared.plan.plan_identity_sha256[..8], 16)
+                    .unwrap()
+                    ^ step.position)
+                    .max(1);
+                let data = serde_json::json!({
+                    "details": true,
+                    "explanation": "Synthetic qualification response",
+                    "choices": ["a", "b"]
+                });
+                let checked = crate::research_surveyjs_engine::validate_survey_data_seed(
+                    &definition.survey_json,
+                    &definition.language,
+                    &data,
+                    true,
+                    seed,
+                )
+                .unwrap();
+                let record = serde_json::json!({
+                    "schema":"affect-runner-master-responses",
+                    "version":3,
+                    "runId":"run-master6-xdf",
+                    "attemptId":"attempt-master6-xdf",
+                    "participantId":"P001",
+                    "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,
+                    "planIdentitySha256":prepared.plan.plan_identity_sha256,
+                    "entryId":step.entry_id,
+                    "position":step.position,
+                    "module":step.payload["module"],
+                    "questionnaireId":definition.questionnaire_id,
+                    "questionnaireVersion":definition.questionnaire_version,
+                    "definitionSha256":definition.definition_sha256,
+                    "status":"submitted",
+                    "monotonicMs":time,
+                    "responses":{
+                        "engineVersion":definition.engine_version,
+                        "language":definition.language,
+                        "completionPolicy":definition.completion_policy,
+                        "randomSeed":seed,
+                        "evaluatedAtUnixMs":checked["evaluatedAtUnixMs"],
+                        "inputData":data,
+                        "data":checked["data"],
+                        "visibleQuestionNames":checked["visibleQuestionNames"],
+                        "pageNo":1,
+                        "elapsedMs":125.
+                    }
+                });
+                service.record(ContentKind::Responses, &record).unwrap();
+            }
+            service
+                .observe(
+                    &markers
+                        .observe_evidence(
+                            end,
+                            phase,
+                            Some(&step.entry_id),
+                            Some(&execution),
+                            time,
+                            time,
+                            serde_json::json!({"kind":"lifecycle"}),
+                        )
+                        .unwrap(),
+                )
+                .unwrap();
+            if step.kind == MasterStepKind::Video {
+                service
+                    .observe(
+                        &markers
+                            .observe_evidence(
+                                EvidenceEvent::NeutralReset,
+                                phase,
+                                Some(&step.entry_id),
+                                Some(&execution),
+                                time,
+                                time,
+                                serde_json::json!({"kind":"neutralReset","reason":"videoEnd","stateAfter":{"valence":0.0,"arousal":0.0}}),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+            }
+        }
+        service
+            .observe(
+                &markers
+                    .observe_evidence(
+                        EvidenceEvent::Complete,
+                        "finished",
+                        None,
+                        None,
+                        time + 1.,
+                        time + 1.,
+                        serde_json::json!({"kind":"lifecycle"}),
+                    )
+                    .unwrap(),
+            )
+            .unwrap();
+        service
+            .record(
+                ContentKind::Outcome,
+                &serde_json::json!({
+                    "schema":"affect-runner-outcome",
+                    "version":1,
+                    "protocolOutcome":"completed",
+                    "completedStepCount":prepared.plan.steps.len(),
+                    "failureCode":null,
+                    "monotonicMs":time+2.,
+                    "localCheckpoint":"durable",
+                    "recordingFinalization":"pending"
+                }),
+            )
+            .unwrap();
+        drop(service);
+        let status = recorder.stop().unwrap();
+        assert_eq!(status.phase, "complete", "{:?}", status.error);
+        assert!(status.sample_count > prepared.plan.steps.len() as u64);
         assert!(path.is_file());
     }
 }
