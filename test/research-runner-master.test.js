@@ -159,3 +159,22 @@ test("production SurveyJS qualification covers master6 with the real Runner styl
   assert.match(source, /productionInputSha256/u);
   assert.match(source, /qualificationScriptSha256/u);
 });
+
+test("foreground keyboard qualification is fail-closed to the current master6 evidence profile", async () => {
+  const source = await readFile(new URL("../scripts/runner_keyboard_smoke.py", import.meta.url), "utf8");
+  assert.match(source, /--preflight-only/u);
+  assert.match(source, /policy\.get\("acquisitionWindow"\) != "fullAttempt"/u);
+  assert.match(source, /policy\.get\("lsl", \{\}\)\.get\("enabled"\) is not True/u);
+  assert.match(source, /sampling != 130/u);
+  assert.match(source, /MASTER6_MEDIA_SHA256/u);
+  assert.match(source, /MASTER6_SURVEY_SHA256/u);
+  assert.match(source, /input_binding\.get\("preset"\) != "arrowKeys"/u);
+  assert.match(source, /--participant-number exceeds the participant count frozen in this recipe/u);
+  assert.match(source, /\["questionnaire", "questionnaire", "interval", "video", "interval", "questionnaire"\]/u);
+  assert.match(source, /checked_asset\(root, declaration, "packageRelativePath"/u);
+  assert.match(source, /checked_asset\(root, declaration, "relativePath"/u);
+  assert.match(source, /"validationRequested": True/u);
+  assert.match(source, /"physicalInputs": physical_inputs/u);
+  assert.match(source, /"scriptSha256": sha256_file\(Path\(__file__\)\.resolve\(\)\)/u);
+  assert.match(source, /XDF\/timing require independent verification/u);
+});

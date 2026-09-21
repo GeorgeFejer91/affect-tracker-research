@@ -147,6 +147,12 @@ the unchanged JSON and exact declared video in `assets/stimuli/`.
 
 The agent-only `scripts/runner_keyboard_smoke.py` uses real PyAutoGUI keys and
 read-only UI Automation checks; it is absent from app dependency/package inputs.
+Its non-interactive `--preflight-only` mode now accepts the exact master6
+full-attempt qualification profile and verifies every declared media and
+questionnaire file against its saved byte length and SHA-256 before any
+foreground interaction. The master6 interactive route is explicitly separate
+from the historical master3 questionnaire sequence and permanently selects
+local validation mode.
 Live attempts proved loading/observability but stopped on a test participant
 selection gap (corrected) and foreground changes. No complete questionnaire run,
 actual playback or XDF claim. The active owner/metadata/checklist authority is

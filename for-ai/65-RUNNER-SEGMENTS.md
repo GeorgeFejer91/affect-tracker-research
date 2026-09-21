@@ -768,8 +768,13 @@ do not add duplicate convenience copies of whole segment projections.
   or readiness failure must stop the sequence, not continue typing blindly.
   The utility is [scripts/runner_keyboard_smoke.py](../scripts/runner_keyboard_smoke.py). It uses
   PyAutoGUI for keys/screenshots and UI Automation only for target/focus/state
-  checks. Start with `--phase inspect`; it requires explicit PID, recipe and a
-  new output directory. `--phase all` is not proof of success unless its actual
+  checks. Start with `--preflight-only`: it validates the exact recipe profile
+  and every declared video/questionnaire byte length and SHA-256 without opening
+  or controlling the app. Interactive phases require an explicit PID, recipe
+  and new output directory. The current master6 route is fail-closed to policy
+  v2 `fullAttempt`, enabled LSL, two before-session surveys, ISI/video/ISI and
+  one after-session survey. Its `--phase all` path records guarded physical
+  input and screenshot hashes but is not proof of success unless the actual
   observations and independently inspected XDF confirm the full experiment.
   PyAutoGUI uses the foreground keyboard; it cannot run safely in the background
   while the researcher types in another application. The driver aborts on focus
