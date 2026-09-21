@@ -176,9 +176,15 @@ test("Windows artifacts carry the checkout-free installed lifecycle smoke route"
   assert.match(smoke, /runner\\webview/u);
   assert.match(smoke, /\$RequireOffline -and \$launchesWithTcp -ne 0/u);
   assert.doesNotMatch(smoke, /made no TCP connection/u);
+  assert.match(smoke, /\[switch\]\$AllowDevelopmentHost/u);
+  assert.match(smoke, /Set-Gate 'cleanProfile' 'blocked'[\s\S]*cannot qualify the clean-profile gate/u);
+  assert.match(smoke, /\$receipt\.status = if \(\$receipt\.gates\.cleanProfile\.status -eq 'blocked'\)/u);
+  assert.match(smoke, /Start-Process -FilePath \$Shortcut -PassThru/u);
+  assert.doesNotMatch(smoke, /Get-Process -Id \$candidate/u);
   assert.match(smoke, /'stimuli', 'settings', 'outputs', 'recovery', 'assets', 'assets\/stimuli', 'assets\/questionnaires'/u);
   assert.match(smoke, /\[IO\.File\]::Delete\(\$ledgerIcon\)[\s\S]*Invoke-SilentInstaller \$installer \$installRoot/u);
   assert.match(smoke, /Invoke-SilentExecutable \$uninstaller/u);
+  assert.match(smoke, /@\(Get-ProgramInventory \$installRoot\)\.Count -ne 0/u);
   assert.match(smoke, /\$receipt\.gates\[\$currentGate\]\.status -ne 'passed'[\s\S]*Set-Gate \$currentGate 'failed'/u);
   assert.doesNotMatch(smoke, /USERPROFILE[^\n]*Downloads|localhost|http:\/\//iu);
 });

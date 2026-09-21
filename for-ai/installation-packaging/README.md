@@ -202,6 +202,12 @@ are required in addition to the absence of every default-route adapter. It
 requires program files and shortcuts to disappear while the exact workspace
 and state inventories remain.
 
+For functional diagnosis on a machine that contains the repository or
+Node/pnpm, `-AllowDevelopmentHost` may continue through the later lifecycle
+gates. That switch does not waive qualification: the receipt records the
+`cleanProfile` gate and its overall status as `blocked`. Omit the switch for the
+fresh-profile acceptance run; the default remains fail-closed before install.
+
 This smoke does not replace identical-input Planner comparison, actual
 directory-page interaction, the scale/path visual matrix, cross-version
 upgrade, or scientific Runner qualification. Keep those gates `notRun` until

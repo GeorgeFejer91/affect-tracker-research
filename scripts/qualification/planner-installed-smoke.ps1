@@ -6,7 +6,8 @@ param(
   [string]$ProvenancePath,
   [Parameter(Mandatory = $true)]
   [string]$ReceiptPath,
-  [switch]$RequireOffline
+  [switch]$RequireOffline,
+  [switch]$AllowDevelopmentHost
 )
 
 $ErrorActionPreference = 'Stop'
@@ -102,21 +103,25 @@ function Get-Shortcut([string]$Path) {
   }
 }
 
-function Wait-ForDesktopProcess([string]$Executable, [int[]]$ExistingProcessIds, [string]$ExpectedTitle) {
+function Wait-ForDesktopProcess(
+  [Diagnostics.Process]$Process,
+  [string]$Executable,
+  [string]$ExpectedTitle
+) {
   $deadline = (Get-Date).AddSeconds(30)
   do {
-    $candidate = Get-CimInstance Win32_Process |
-      Where-Object { $_.ExecutablePath -eq $Executable -and $_.ProcessId -notin $ExistingProcessIds } |
-      Select-Object -First 1
-    if ($candidate) {
-      $process = Get-Process -Id $candidate.ProcessId
-      if (
-        $process.MainWindowHandle -ne 0 -and
-        $process.Responding -and
-        $process.MainWindowTitle -ceq $ExpectedTitle
-      ) {
-        return [ordered]@{ process = $process; commandLine = $candidate.CommandLine }
+    $Process.Refresh()
+    if ($Process.HasExited) { throw 'The installed suite app exited before exposing its main window.' }
+    if (
+      $Process.MainWindowHandle -ne 0 -and
+      $Process.Responding -and
+      $Process.MainWindowTitle -ceq $ExpectedTitle
+    ) {
+      $candidate = Get-CimInstance Win32_Process -Filter "ProcessId = $($Process.Id)"
+      if ($candidate.ExecutablePath -cne $Executable) {
+        throw 'The installed shortcut did not start the expected executable.'
       }
+      return [ordered]@{ process = $Process; commandLine = $candidate.CommandLine }
     }
     Start-Sleep -Milliseconds 250
   } while ((Get-Date) -lt $deadline)
@@ -136,8 +141,8 @@ function Invoke-AppShortcut(
       ForEach-Object { [int]$_.ProcessId }
   )
   if ($existing.Count -ne 0) { throw 'A suite app process was already running before the launch check.' }
-  Start-Process -FilePath $Shortcut | Out-Null
-  $launched = Wait-ForDesktopProcess $Executable $existing $ExpectedTitle
+  $started = Start-Process -FilePath $Shortcut -PassThru
+  $launched = Wait-ForDesktopProcess $started $Executable $ExpectedTitle
   $process = $launched.process
   $result = $null
   try {
@@ -204,6 +209,7 @@ $receipt = [ordered]@{
     architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
     currentAppliedDpi = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop\WindowMetrics' -Name AppliedDPI -ErrorAction SilentlyContinue).AppliedDPI
     offlineRequired = [bool]$RequireOffline
+    developmentHostAllowed = [bool]$AllowDevelopmentHost
   }
   environment = $null
   installation = $null
@@ -288,9 +294,13 @@ try {
   )
   $sourceCheckoutDetected = @($sourceCandidates | Where-Object { Test-Path -LiteralPath $_ }).Count -ne 0
   if ($developmentTools.Count -ne 0 -or $developmentListeners.Count -ne 0 -or $sourceCheckoutDetected) {
-    throw 'The clean-profile boundary found a source checkout, Node/pnpm, or a development-server listener.'
+    if (-not $AllowDevelopmentHost) {
+      throw 'The clean-profile boundary found a source checkout, Node/pnpm, or a development-server listener.'
+    }
+    Set-Gate 'cleanProfile' 'blocked' 'Development-host continuation was requested. A source checkout, Node/pnpm, or a development-server listener was present, so this receipt cannot qualify the clean-profile gate.'
+  } else {
+    Set-Gate 'cleanProfile' 'passed' 'No source checkout at the validator boundaries, Node, pnpm, or common suite development-server listener was present.'
   }
-  Set-Gate 'cleanProfile' 'passed' 'No source checkout at the validator boundaries, Node, pnpm, or common suite development-server listener was present.'
 
   if ($RequireOffline) { $currentGate = 'offline' }
   $defaultRouteAdapters = @(
@@ -436,7 +446,7 @@ try {
   ) {
     Start-Sleep -Milliseconds 250
   }
-  if ((Get-ProgramInventory $installRoot).Count -ne 0) { throw 'Uninstall retained suite program files.' }
+  if (@(Get-ProgramInventory $installRoot).Count -ne 0) { throw 'Uninstall retained suite program files.' }
   if ((Test-Path -LiteralPath $classicShortcut) -or (Test-Path -LiteralPath $ledgerShortcut) -or (Test-Path -LiteralPath $runnerShortcut)) {
     throw 'Uninstall retained a suite Start Menu shortcut.'
   }
@@ -457,7 +467,7 @@ try {
     installedInventorySha256 = $installedIdentity
     installedFiles = @($installedInventory)
   }
-  $receipt.status = 'passed'
+  $receipt.status = if ($receipt.gates.cleanProfile.status -eq 'blocked') { 'blocked' } else { 'passed' }
 } catch {
   $failure = $_
   $message = $_.Exception.Message
@@ -483,4 +493,8 @@ try {
 }
 
 if ($failure) { throw 'Installed smoke failed. Inspect the redacted receipt for the failing gate.' }
-Write-Host "Installed smoke passed: $receiptFile"
+if ($receipt.status -eq 'blocked') {
+  Write-Host "Installed functional smoke completed; clean-profile qualification remains blocked: $receiptFile"
+} else {
+  Write-Host "Installed smoke passed: $receiptFile"
+}
