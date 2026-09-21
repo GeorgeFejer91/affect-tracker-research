@@ -133,6 +133,13 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   assert.match(helper, /"windows-x64"[\s\S]*platform: "windows"[\s\S]*kind: "nsis"/u);
   assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
   assert.match(helper, /status: "unqualified-internal-alpha"/u);
+  assert.match(helper, /origin: local \? "local" : "github-actions"/u);
+  assert.match(helper, /local \? "AFFECT_RESEARCH_PACKAGE_COMMIT" : "GITHUB_SHA"/u);
+  assert.match(helper, /workflow = local \? null/u);
+  assert.match(helper, /\{ id: null, attempt: null, url: null \}/u);
+  assert.match(helper, /No GitHub Actions run exists for these bytes/u);
+  assert.match(helper, /buildCommitBinaries:[\s\S]*affect-research\.exe[\s\S]*affect-runner\.exe/u);
+  assert.match(helper, /bytes\.includes\(Buffer\.from\(commit, "ascii"\)\)/u);
   assert.match(helper, /commit,/u);
   assert.match(helper, /workflowRef,/u);
   assert.match(helper, /byteLength: details\.size/u);

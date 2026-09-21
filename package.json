@@ -24,6 +24,7 @@
     "desktop:preview": "vite preview --config experiment-planner/desktop/vite.config.js",
     "desktop:icons": "tauri icon experiment-planner/desktop/icons/app-icon.svg -o native/icons",
     "desktop:bundle": "node scripts/build-unqualified-desktop-package.js windows-x64",
+    "desktop:provenance": "node scripts/write-unqualified-package-provenance.js windows-x64 --output native/target/release/bundle/unqualified-windows-x64-provenance.json --local",
     "runner:dev": "vite --config experiment-runner/vite.config.js",
     "runner:build": "vite build --config experiment-runner/vite.config.js && node scripts/verify-runner-build.js",
     "runner:check": "cargo check --manifest-path native/Cargo.toml --locked --bin affect-runner --features runner-bin",

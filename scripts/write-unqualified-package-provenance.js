@@ -14,6 +14,10 @@ const TARGETS = Object.freeze({
     nodePlatform: "win32",
     nodeArch: "x64",
     suitePrograms: Object.freeze(["experiment-planner", "experiment-runner"]),
+    buildCommitBinaries: Object.freeze([
+      "native/target/release/affect-research.exe",
+      "native/target/release/affect-runner.exe",
+    ]),
     artifacts: Object.freeze([
       Object.freeze({ kind: "nsis", directory: "native/target/release/bundle/nsis", suffix: ".exe" }),
     ]),
@@ -80,19 +84,30 @@ function toolVersion(command, arguments_ = ["--version"]) {
 }
 
 function parseArguments() {
-  if (process.argv.length !== 5 || process.argv[3] !== "--output") {
-    fail("usage: node scripts/write-unqualified-package-provenance.js <target> --output <path>.");
+  const local = process.argv[5] === "--local";
+  if (process.argv.length !== (local ? 6 : 5) || process.argv[3] !== "--output") {
+    fail("usage: node scripts/write-unqualified-package-provenance.js <target> --output <path> [--local].");
   }
   const targetName = process.argv[2];
   const target = TARGETS[targetName];
   if (!target) fail(`unsupported target ${JSON.stringify(targetName)}.`);
-  return { targetName, target, outputPath: resolve(process.argv[4]) };
+  return { targetName, target, outputPath: resolve(process.argv[4]), local };
 }
 
 async function sha256(path) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest("hex");
+}
+
+async function verifyBuiltCommit(target, commit) {
+  for (const binary of target.buildCommitBinaries ?? []) {
+    const path = resolve(binary);
+    const bytes = await readFile(path);
+    if (!bytes.includes(Buffer.from(commit, "ascii"))) {
+      fail(`${binary} does not embed the requested package commit.`);
+    }
+  }
 }
 
 async function identifyArtifacts(target) {
@@ -119,50 +134,58 @@ async function identifyArtifacts(target) {
   return identities;
 }
 
-const { targetName, target, outputPath } = parseArguments();
+const { targetName, target, outputPath, local } = parseArguments();
 if (process.platform !== target.nodePlatform || process.arch !== target.nodeArch) {
   fail(`target ${targetName} does not match host ${process.platform}/${process.arch}.`);
 }
 
-const commit = requiredEnvironment("GITHUB_SHA");
-if (!HEX_COMMIT.test(commit)) fail("GITHUB_SHA must be an exact lowercase Git object ID.");
-if (git(["rev-parse", "--verify", "HEAD"]) !== commit) fail("GITHUB_SHA does not match HEAD.");
+const commitEnvironment = local ? "AFFECT_RESEARCH_PACKAGE_COMMIT" : "GITHUB_SHA";
+const commit = requiredEnvironment(commitEnvironment);
+if (!HEX_COMMIT.test(commit)) fail(`${commitEnvironment} must be an exact lowercase Git object ID.`);
+if (git(["rev-parse", "--verify", "HEAD"]) !== commit) fail(`${commitEnvironment} does not match HEAD.`);
 if (git(["status", "--porcelain=v1", "--untracked-files=normal"])) {
   fail("the packaged checkout is not clean.");
 }
 
-const repository = requiredEnvironment("GITHUB_REPOSITORY");
-const workflow = requiredEnvironment("GITHUB_WORKFLOW");
-const workflowRef = requiredEnvironment("GITHUB_WORKFLOW_REF");
-const runId = requiredEnvironment("GITHUB_RUN_ID");
-const runAttempt = requiredEnvironment("GITHUB_RUN_ATTEMPT");
-const serverUrl = requiredEnvironment("GITHUB_SERVER_URL");
+await verifyBuiltCommit(target, commit);
 const artifacts = await identifyArtifacts(target);
 const require = createRequire(import.meta.url);
 const tauriVersion = require("@tauri-apps/cli/package.json").version;
 const productVersion = JSON.parse(await readFile(resolve("native/tauri.conf.json"), "utf8")).version;
+const packageManifest = JSON.parse(await readFile(resolve("package.json"), "utf8"));
+const repository = local ? packageManifest.repository.url : requiredEnvironment("GITHUB_REPOSITORY");
+const workflow = local ? null : requiredEnvironment("GITHUB_WORKFLOW");
+const workflowRef = local ? null : requiredEnvironment("GITHUB_WORKFLOW_REF");
+const run = local
+  ? { id: null, attempt: null, url: null }
+  : (() => {
+      const id = requiredEnvironment("GITHUB_RUN_ID");
+      const serverUrl = requiredEnvironment("GITHUB_SERVER_URL");
+      return {
+        id,
+        attempt: requiredEnvironment("GITHUB_RUN_ATTEMPT"),
+        url: `${serverUrl}/${repository}/actions/runs/${id}`,
+      };
+    })();
 
 const receipt = {
   schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
   status: "unqualified-internal-alpha",
+  origin: local ? "local" : "github-actions",
   product: "Affect Research",
   version: productVersion,
   repository,
   commit,
   workflow,
   workflowRef,
-  run: {
-    id: runId,
-    attempt: runAttempt,
-    url: `${serverUrl}/${repository}/actions/runs/${runId}`,
-  },
+  run,
   target: {
     platform: target.platform,
     architecture: target.architecture,
-    runnerOs: requiredEnvironment("RUNNER_OS"),
-    runnerArch: requiredEnvironment("RUNNER_ARCH"),
-    runnerImage: process.env.ImageOS ?? null,
-    runnerImageVersion: process.env.ImageVersion ?? null,
+    runnerOs: local ? process.platform : requiredEnvironment("RUNNER_OS"),
+    runnerArch: local ? process.arch : requiredEnvironment("RUNNER_ARCH"),
+    runnerImage: local ? null : process.env.ImageOS ?? null,
+    runnerImageVersion: local ? null : process.env.ImageVersion ?? null,
   },
   buildBoundary: {
     dirtyStateRejected: true,
@@ -195,8 +218,9 @@ const receipt = {
     researchReady: false,
   },
   artifacts,
-  notice:
-    "Workflow artifact only. This unsigned suite candidate is not signed, published, or research-qualified until its separate installed and experiment-evidence gates pass.",
+  notice: local
+    ? "Local clean-commit artifact. No GitHub Actions run exists for these bytes. This unsigned suite candidate is not signed, published, or research-qualified until its separate installed and experiment-evidence gates pass."
+    : "Workflow artifact only. This unsigned suite candidate is not signed, published, or research-qualified until its separate installed and experiment-evidence gates pass.",
 };
 
 await mkdir(dirname(outputPath), { recursive: true });

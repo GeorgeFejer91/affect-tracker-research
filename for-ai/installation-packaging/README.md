@@ -143,6 +143,20 @@ Each qualification attempt records a path-redacted receipt containing:
 A receipt proves only its named bytes, host, actions, and checks. It is not a
 release, publication, signature, or research-qualification receipt.
 
+For a local Windows candidate, use the same exact commit for the build and its
+provenance receipt:
+
+```powershell
+$env:AFFECT_RESEARCH_PACKAGE_COMMIT = (git rev-parse --verify HEAD).Trim()
+pnpm desktop:bundle
+pnpm desktop:provenance
+Remove-Item Env:AFFECT_RESEARCH_PACKAGE_COMMIT
+```
+
+Local provenance records `origin: local` and null workflow/run fields. It must
+never synthesize a GitHub Actions run URL. The helper still rejects a dirty
+tree, a commit mismatch, a cross-host target, or an ambiguous artifact set.
+
 ## Validation gates
 
 All applicable gates run against one unchanged installer artifact:
