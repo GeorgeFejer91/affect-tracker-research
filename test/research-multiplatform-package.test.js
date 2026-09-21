@@ -178,7 +178,15 @@ test("Windows artifacts carry the checkout-free installed lifecycle smoke route"
   assert.match(smoke, /Experiment Planner Ledger\.lnk/u);
   assert.match(smoke, /Experiment Runner\.lnk/u);
   assert.match(smoke, /arguments -cne '--ledger'/u);
+  assert.match(smoke, /IAffectResearchShellLinkW/u);
+  assert.match(smoke, /GetIconLocation/u);
+  assert.match(smoke, /AffectResearchShortcutReader\]::Read/u);
+  assert.doesNotMatch(smoke, /WScript\.Shell/u);
   assert.match(smoke, /"\/D=\$Destination"/u);
+  assert.match(smoke, /\[string\]\$InstallDirectoryName = 'Affect Research Suite'/u);
+  assert.match(smoke, /GetDirectoryName\(\$installRoot\) -cne \$downloads/u);
+  assert.match(smoke, /GetFileName\(\$installRoot\) -cne \$InstallDirectoryName/u);
+  assert.match(smoke, /<Known Downloads>\/<Selected Suite Directory>/u);
   assert.match(smoke, /planner\\webview/u);
   assert.match(smoke, /runner\\webview/u);
   assert.match(smoke, /\$RequireOffline -and \$launchesWithTcp -ne 0/u);

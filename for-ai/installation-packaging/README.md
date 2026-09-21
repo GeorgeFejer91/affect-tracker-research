@@ -207,8 +207,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\planner-installed-smok
   -RequireOffline
 ```
 
-The route refuses a pre-existing `<Downloads>/Affect Research Suite`, installs
-there with NSIS `/D`, checks the exact program inventory and all shortcuts,
+`-InstallDirectoryName` may supply another single direct child of the known
+Downloads folder for long-path or non-ASCII qualification. The validator
+rejects empty values and anything that does not resolve to exactly one direct
+child with the same leaf name before starting the installer; its receipt keeps
+the selected name path-redacted.
+
+The route refuses a pre-existing selected Downloads child, installs there with
+NSIS `/D`, checks the exact program inventory and all shortcuts,
 launches Classic, Ledger, and Runner, verifies suite-local workspace/state,
 records per-launch TCP connection counts, repairs a removed Ledger icon with
 the same artifact, then uninstalls. With `-RequireOffline`, zero connections

@@ -6,6 +6,7 @@ param(
   [string]$ProvenancePath,
   [Parameter(Mandatory = $true)]
   [string]$ReceiptPath,
+  [string]$InstallDirectoryName = 'Affect Research Suite',
   [switch]$RequireOffline,
   [switch]$AllowDevelopmentHost
 )
@@ -15,7 +16,9 @@ Set-StrictMode -Version Latest
 
 Add-Type -TypeDefinition @'
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 public static class AffectResearchKnownFolders {
   [DllImport("shell32.dll")]
@@ -37,6 +40,64 @@ public static class AffectResearchKnownFolders {
     if (result != 0) Marshal.ThrowExceptionForHR(result);
     try { return Marshal.PtrToStringUni(pointer); }
     finally { Marshal.FreeCoTaskMem(pointer); }
+  }
+}
+
+[ComImport]
+[Guid("00021401-0000-0000-C000-000000000046")]
+internal class AffectResearchShellLink {}
+
+[ComImport]
+[Guid("000214F9-0000-0000-C000-000000000046")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IAffectResearchShellLinkW {
+  void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, IntPtr findData, uint flags);
+  void GetIDList(out IntPtr itemList);
+  void SetIDList(IntPtr itemList);
+  void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder description, int capacity);
+  void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string description);
+  void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder directory, int capacity);
+  void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
+  void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder arguments, int capacity);
+  void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+  void GetHotkey(out short hotkey);
+  void SetHotkey(short hotkey);
+  void GetShowCmd(out int showCommand);
+  void SetShowCmd(int showCommand);
+  void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder iconPath, int capacity, out int iconIndex);
+  void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int iconIndex);
+  void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved);
+  void Resolve(IntPtr window, uint flags);
+  void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+}
+
+public sealed class AffectResearchShortcutDetails {
+  public string Target { get; set; }
+  public string Arguments { get; set; }
+  public string Icon { get; set; }
+}
+
+public static class AffectResearchShortcutReader {
+  public static AffectResearchShortcutDetails Read(string path) {
+    object link = new AffectResearchShellLink();
+    try {
+      ((IPersistFile)link).Load(path, 0);
+      IAffectResearchShellLinkW shellLink = (IAffectResearchShellLinkW)link;
+      StringBuilder target = new StringBuilder(32768);
+      StringBuilder arguments = new StringBuilder(32768);
+      StringBuilder icon = new StringBuilder(32768);
+      int iconIndex;
+      shellLink.GetPath(target, target.Capacity, IntPtr.Zero, 4);
+      shellLink.GetArguments(arguments, arguments.Capacity);
+      shellLink.GetIconLocation(icon, icon.Capacity, out iconIndex);
+      return new AffectResearchShortcutDetails {
+        Target = target.ToString(),
+        Arguments = arguments.ToString(),
+        Icon = icon.ToString() + "," + iconIndex.ToString()
+      };
+    } finally {
+      Marshal.FinalReleaseComObject(link);
+    }
   }
 }
 '@
@@ -93,13 +154,12 @@ function Set-Gate([string]$Name, [string]$Status, [string]$Evidence) {
 
 function Get-Shortcut([string]$Path) {
   if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw 'An expected suite shortcut is absent.' }
-  $shell = New-Object -ComObject WScript.Shell
-  $shortcut = $shell.CreateShortcut($Path)
+  $shortcut = [AffectResearchShortcutReader]::Read($Path)
   return [ordered]@{
     name = [IO.Path]::GetFileNameWithoutExtension($Path)
-    target = $shortcut.TargetPath
+    target = $shortcut.Target
     arguments = $shortcut.Arguments
-    icon = $shortcut.IconLocation
+    icon = $shortcut.Icon
   }
 }
 
@@ -195,6 +255,17 @@ $downloads = [IO.Path]::GetFullPath([AffectResearchKnownFolders]::Downloads()).T
 $installer = (Resolve-Path -LiteralPath $InstallerPath).Path
 $provenanceFile = (Resolve-Path -LiteralPath $ProvenancePath).Path
 $receiptFile = [IO.Path]::GetFullPath($ReceiptPath)
+$installRoot = if ([string]::IsNullOrWhiteSpace($InstallDirectoryName)) {
+  throw 'The selected suite directory name must not be empty.'
+} else {
+  [IO.Path]::GetFullPath((Join-Path $downloads $InstallDirectoryName)).TrimEnd('\')
+}
+if (
+  [IO.Path]::GetDirectoryName($installRoot) -cne $downloads -or
+  [IO.Path]::GetFileName($installRoot) -cne $InstallDirectoryName
+) {
+  throw 'The selected suite directory must be one direct child of the current user known Downloads folder.'
+}
 $canWriteReceipt = $false
 $failure = $null
 $currentGate = 'provenance'
@@ -315,7 +386,6 @@ try {
     Set-Gate 'offline' 'passed' 'No active adapter with an IPv4 or IPv6 default gateway was present during the installed workflow.'
   }
 
-  $installRoot = Join-Path $downloads 'Affect Research Suite'
   $workspace = Join-Path $installRoot 'workspace'
   $stateRoot = Join-Path $installRoot 'state'
   $plannerWebviewRoot = Join-Path $stateRoot 'planner\webview'
@@ -384,7 +454,7 @@ try {
   }
   $workspaceIdentity = Get-InventoryIdentity $workspaceInventory
   $receipt.environment = [ordered]@{
-    suiteRoot = '<Known Downloads>/Affect Research Suite'
+    suiteRoot = '<Known Downloads>/<Selected Suite Directory>'
     workspace = '<SuiteRoot>/workspace'
     plannerWebviewProfile = '<SuiteRoot>/state/planner/webview'
     runnerWebviewProfile = '<SuiteRoot>/state/runner/webview'
@@ -459,8 +529,8 @@ try {
   Set-Gate 'uninstall' 'passed' 'Silent uninstall returned 0, removed program files and all three shortcuts, and preserved the exact workspace and suite-local state inventories.'
 
   $receipt.installation = [ordered]@{
-    mode = 'currentUserCustomDirectory'
-    installRoot = '<Known Downloads>/Affect Research Suite'
+    mode = 'currentUserSelectedDirectory'
+    installRoot = '<Known Downloads>/<Selected Suite Directory>'
     installExitCode = $installExitCode
     repairExitCode = $repairExitCode
     uninstallExitCode = $uninstallExitCode
