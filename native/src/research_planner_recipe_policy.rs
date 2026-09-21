@@ -20,6 +20,30 @@ pub struct PlannerRecipePolicyV1 {
     pub playback: CompleteVideoPlaybackPolicyV1,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum AcquisitionWindowV1 {
+    ActiveVideoOnly,
+    FullAttempt,
+}
+
+/// Master6-only successor. V1 keeps its historical active-video-only meaning.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlannerRecipePolicyV2 {
+    pub schema: String,
+    #[serde(deserialize_with = "deserialize_u32_integer")]
+    pub version: u32,
+    #[serde(deserialize_with = "deserialize_u32_integer")]
+    pub participant_count: u32,
+    #[serde(deserialize_with = "deserialize_u32_integer")]
+    pub sampling_frequency_hz: u32,
+    pub acquisition_window: AcquisitionWindowV1,
+    pub output: OutputSettingsV1,
+    pub lsl: ResearchLslSettingsV1,
+    pub playback: CompleteVideoPlaybackPolicyV1,
+}
+
 impl PlannerRecipePolicyV1 {
     pub fn validate(&self) -> ResearchResult<()> {
         if self.schema != "affect-research-planner-recipe-policy" || self.version != 1 {
@@ -50,6 +74,29 @@ impl PlannerRecipePolicyV1 {
             }
         }
         self.playback.validate()
+    }
+}
+
+impl PlannerRecipePolicyV2 {
+    pub fn validate(&self) -> ResearchResult<()> {
+        if self.schema != "affect-research-planner-recipe-policy" || self.version != 2 {
+            return Err(CommandError::invalid_contract(
+                "Unsupported Planner recipe policy version.",
+            ));
+        }
+        self.legacy().validate()
+    }
+
+    pub fn legacy(&self) -> PlannerRecipePolicyV1 {
+        PlannerRecipePolicyV1 {
+            schema: self.schema.clone(),
+            version: 1,
+            participant_count: self.participant_count,
+            sampling_frequency_hz: self.sampling_frequency_hz,
+            output: self.output.clone(),
+            lsl: self.lsl.clone(),
+            playback: self.playback.clone(),
+        }
     }
 }
 

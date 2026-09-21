@@ -49,6 +49,41 @@ const SAMPLE_COLUMNS: &[&str] = &[
     "waveSizeVariation",
     "saturation",
 ];
+const SAMPLE_COLUMNS_V2: &[&str] = &[
+    "sequence",
+    "runId",
+    "attemptId",
+    "participantId",
+    "recipeSourceByteSha256",
+    "planIdentitySha256",
+    "phase",
+    "entryId",
+    "executionId",
+    "monotonicMs",
+    "lslTimeSeconds",
+    "mediaTimeMs",
+    "sampleRateHz",
+    "scheduledElapsedMs",
+    "observedElapsedMs",
+    "schedulerLatenessMs",
+    "schedulerJitterMs",
+    "stateAnchorAgeMs",
+    "missedSlotsBefore",
+    "valence",
+    "arousal",
+    "radius",
+    "angleDegrees",
+    "inputActive",
+    "animationActive",
+    "inputKind",
+    "feedbackVisible",
+    "oscillationFrequency",
+    "edgeSmoothness",
+    "projectionAmplitude",
+    "pulseSynchrony",
+    "waveSizeVariation",
+    "saturation",
+];
 
 pub(crate) struct MasterStorage {
     directories: RunOutputDirectories,
@@ -57,12 +92,14 @@ pub(crate) struct MasterStorage {
     session_name: String,
     _lock: File,
     events: BufWriter<File>,
+    inputs: Option<BufWriter<File>>,
     samples: BufWriter<File>,
     diagnostics: BufWriter<File>,
     responses: BufWriter<File>,
     csv: Option<BufWriter<File>>,
     tsv: Option<BufWriter<File>>,
     pub receipt: Value,
+    sample_columns: &'static [&'static str],
     terminal: bool,
 }
 
@@ -111,13 +148,21 @@ impl MasterStorage {
             "buildCommit":env!("AFFECT_TRACKER_BUILD_COMMIT"),"appVersion":env!("CARGO_PKG_VERSION"),
             "outputDirectory":format!("outputs/{}/{}/{}", recipe_directory_name(&prepared.plan.recipe_source_byte_sha256)?, prepared.plan.participant_id, session_name),
             "status":"prepared","completedStepCount":0});
-        if matches!(prepared.plan.version, 2..=5) {
+        if matches!(prepared.plan.version, 2..=6) {
             receipt.as_object_mut().unwrap().remove("participant");
         }
         if validation {
             receipt["executionQualification"] = super::information::validation_qualification();
         }
         if let crate::research_planner_recipe_supported::SupportedPlannerRecipe::V5(recipe) =
+            &prepared.loaded.recipe
+        {
+            crate::research_planner_recipe_file::store_questionnaire_snapshots(
+                &session,
+                &recipe.assets,
+            )?;
+        }
+        if let crate::research_planner_recipe_supported::SupportedPlannerRecipe::V6(recipe) =
             &prepared.loaded.recipe
         {
             crate::research_planner_recipe_file::store_questionnaire_snapshots(
@@ -137,8 +182,18 @@ impl MasterStorage {
             &session.join(format!("master-attempt.v{}.json", prepared.plan.version)),
             &canonical_json(&receipt, &[])?,
         )?;
-        let events = writer(&session, "master-events.v1.jsonl")?;
-        let samples = writer(&session, "master-samples.v1.jsonl")?;
+        let evidence_version = if prepared.plan.version == 6 { 2 } else { 1 };
+        let events = writer(
+            &session,
+            &format!("master-events.v{evidence_version}.jsonl"),
+        )?;
+        let inputs = (prepared.plan.version == 6)
+            .then(|| writer(&session, "master-inputs.v2.jsonl"))
+            .transpose()?;
+        let samples = writer(
+            &session,
+            &format!("master-samples.v{evidence_version}.jsonl"),
+        )?;
         let diagnostics = writer(&session, "master-diagnostics.v1.jsonl")?;
         let responses = writer(
             &session,
@@ -146,7 +201,7 @@ impl MasterStorage {
                 "master-responses.v{}.jsonl",
                 match prepared.plan.version {
                     1 => 1,
-                    4 | 5 => 3,
+                    4..=6 => 3,
                     _ => 2,
                 }
             ),
@@ -174,15 +229,21 @@ impl MasterStorage {
             session_name,
             _lock: lock,
             events,
+            inputs,
             samples,
             diagnostics,
             responses,
             csv,
             tsv,
             receipt,
+            sample_columns: if prepared.plan.version == 6 {
+                SAMPLE_COLUMNS_V2
+            } else {
+                SAMPLE_COLUMNS
+            },
             terminal: false,
         };
-        let columns = SAMPLE_COLUMNS;
+        let columns = storage.sample_columns;
         if let Some(csv) = &mut storage.csv {
             writeln!(csv, "{}", columns.join(",")).map_err(CommandError::io)?;
         }
@@ -214,13 +275,19 @@ impl MasterStorage {
     pub(crate) fn diagnostic(&mut self, value: &Value) -> ResearchResult<()> {
         append(&mut self.diagnostics, value)
     }
+    pub(crate) fn input(&mut self, value: &Value) -> ResearchResult<()> {
+        let writer = self.inputs.as_mut().ok_or_else(|| {
+            CommandError::invalid_contract("This master version has no input evidence artifact.")
+        })?;
+        append(writer, value)
+    }
     pub(crate) fn responses(&mut self, value: &Value) -> ResearchResult<()> {
         append(&mut self.responses, value)?;
         self.checkpoint()
     }
     pub(crate) fn sample(&mut self, value: &Value) -> ResearchResult<()> {
         append(&mut self.samples, value)?;
-        let columns = SAMPLE_COLUMNS;
+        let columns = self.sample_columns;
         for (target, separator) in [(&mut self.csv, ','), (&mut self.tsv, '\t')] {
             if let Some(target) = target {
                 let row = columns
@@ -241,6 +308,9 @@ impl MasterStorage {
             &mut self.diagnostics,
             &mut self.responses,
         ] {
+            sync(writer)?;
+        }
+        if let Some(writer) = &mut self.inputs {
             sync(writer)?;
         }
         if let Some(writer) = &mut self.csv {

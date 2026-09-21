@@ -2,12 +2,13 @@
 
 ## Current questionnaire asset authority
 
-Fresh Planner saves use the master5 questionnaire-asset boundary in
+Fresh Planner saves use the master6 questionnaire-asset boundary in
 [the product authority](10-PRODUCT.md)
 and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
-manifest contract; P2 owns authored SurveyJS content and presentation seams; R1
-owns Runner intake/evidence. This catalogue keeps checklist status and does not
-duplicate the full amendment text.
+manifest and explicit acquisition-window policy; P2 owns authored SurveyJS
+content and presentation seams; R1 owns Runner intake/evidence. Master1–5 retain
+their historical active-video-only meaning. This catalogue keeps checklist
+status and does not duplicate the full amendment text.
 
 ## P2 / Runner SurveyJS extension — 2026-09-13
 
@@ -200,6 +201,11 @@ rows; they do not reopen the completed baseline authoring goal.
     belongs to Runner sessions under the direct correction adopted in `16`;
     recorder selection/destination are not missing Planner fields. Authored
     emission configuration and experiment event/marker meaning remain Planner-owned.
+14. P7 policy v2 requires one explicit affect sampling window. Fresh master6
+    authoring defaults to `fullAttempt`; opening policy v1 restores
+    `activeVideoOnly` and never changes historical bytes or semantics. The
+    Planner owns this choice, while the desktop Runner owns the native clock,
+    durable sample/input/event layers, LSL/XDF projection and failure handling.
 
 ## Segment map and single owners
 
@@ -211,8 +217,8 @@ rows; they do not reopen the completed baseline authoring goal.
 | P4 `layout` | Video fitting and centre-relative Flubber layout | `segments.P4`: complete accepted desktop profile | Implemented; largest-video default, optional envelope override, relative/mm modes |
 | P5 `feedback` | Flubber/input/Advanced editor and live preview | `segments.P5`: input, visual, mappings, presentation, response | Implemented; one editor, complete v2 settings and final Save capture |
 | P6 `xr-layout` | Optional world-fixed spatial recipe and 3D preview | `segments.P6`: included profile or explicit exclusion | Implemented authoring and master round trip; headset execution deferred |
-| P7 `package` | Recipe validation, save/reopen and export | Master envelope, target, policy and integrity | Implemented; strict JS/native readers and actual browser save/Open proof |
-| R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Deferred implementation; v1 components exist |
+| P7 `package` | Recipe validation, save/reopen and export | Master envelope, target, policy and integrity | Master6/policy-v2 candidate implemented; strict JS/native readers preserve master1–5 |
+| R1 `runner` | Execute, timestamp and record | Consumes recipe; produces measurements/events/recordings | Master6 native sample/input/event candidate implemented; installed real-media/XDF qualification remains open |
 
 Homes for retained settings: P1 study name/ID; P7 retained study/count metadata,
 sampling rate and authored stream-emission definition. Participant allocation,
@@ -637,6 +643,147 @@ An open decision blocks only its dependent capability.
 | Q13 | Accepted-design boundary implemented; optional draft persistence open / P7 | Final JSON contains a validated accepted design. Open restores editable content pending fresh media authority; edits produce newly compiled immutable bytes. | No invalid drafts, transient acceptance receipts or permissions in the master. Additional authoring-only recovery/provenance remains optional and must not alter frozen run evidence. |
 | Q15 | Implemented authoring / P6/P7 | A flat monoscopic screen with yaw/pitch/roll, local feedback and explicit XR target is saved. Master always retains complete P4 and explicitly includes/excludes P6. | No silent target fallback. Inspection rotation is transient; runtime/headset correspondence is later. |
 | Q14 | Answered / P3 | User replied “Yes, use these rules”: stable ISI names, duplicate durations allowed, deletion blocked while used, edits invalidate acceptance. User-supplied times/count remain illustrative. | Embed dictionary/references; named-only version cells. No renumbering existing definitions or silent conversion of numeric cells. |
+
+## Desktop-first Planner optimization plan — reconstructable execution
+
+This plan applies the interaction lessons in the repo-scoped
+[research realtime orchestration skill](../.agents/skills/research-realtime-orchestration/SKILL.md)
+without turning Planner into an executor or adding a game engine. It is an
+ordered plan, not evidence that the successor contract or desktop release is
+implemented. The current checked P1–P7 capabilities and historical readers
+remain intact.
+
+### P-D0 — Freeze the evidence intent before changing UI or schema
+
+Produce one owner-reviewed correspondence matrix with a row for every authored
+runtime fact. Each row identifies the Planner owner, canonical recipe field,
+Runner consumer, observed event/sample, local durable artifact, permitted LSL
+projection, XDF reconstruction assertion and failure outcome. At minimum cover:
+
+- recipe/run/attempt/participant/variant/language and repeated occurrence IDs;
+- video effect request versus observed playing, ended, pause, buffering and
+  error, including leading, consecutive, zero-duration and trailing ISIs;
+- configured input, current/target Flubber values, physical input-edge time,
+  automatic video-end reset, allowed manual reset and recovery reset;
+- questionnaire definition, presentation, durable draft, typed submission,
+  completion, interruption and recovery; and
+- timing gaps, write health, stop-early, failure, quarantine, recovery lineage
+  and terminal completion.
+
+Freeze which facts are scientific events, continuous state, private information
+records or diagnostic-only records. UI clicks, focus, animation completion and
+preview activity do not become scientific events merely because they are easy
+to log. Define one sequence/correlation model and separately named monotonic,
+LSL-compatible, wall-clock and media-observation timestamps. Do not choose
+field names independently in Planner and Runner.
+
+The next desktop contract should provide the requested full-attempt Flubber
+history: the regular state stream remains active between committed acquisition
+start and the durable terminal boundary, while semantic phase markers identify
+video, ISI, questionnaire, pause and recovery periods and inactive periods
+expose the defined neutral/current state. This supersedes active-video-only
+sampling only for a new explicit versioned acquisition-window policy. Storage,
+privacy and performance estimates must be accepted with that policy; historical
+recipes retain their original meaning.
+
+**P-D0 exit:** one versioned proposal, no unresolved owner or timestamp term,
+and trace examples that reconstruct a normal run, repeated-video run,
+questionnaire rejection/retry, pause, neutral reset, timing gap, stop-early and
+write failure without consulting UI memory.
+
+### P-D1 — Extend the authored contract through existing owners
+
+Update current authorities in place rather than adding a second runtime manifest:
+
+- P3 owns occurrence-specific planned event/marker meaning, not actual times.
+- P5 owns the configured neutral state, input mappings and Flubber behavior,
+  including which manual reset action is available. It does not record input.
+- P7 owns the explicit acquisition-window/output policy, schema dispatch,
+  integrity and the complete compiled handoff to Runner.
+- R1 owns actual transitions, clocks, persistence, LSL/XDF and recovery.
+
+If the frozen P-D0 model cannot fit a current closed schema, create one explicit
+successor with strict JS/Rust readers, compatibility fixtures and an exact
+unsupported-version error. Never smuggle new fields into an old closed
+generation, infer a default for an old recipe, or copy whole P3/P5 structures
+into a convenience logging block. Recompute the storage estimate for the
+configured rate and full attempt duration; absence of enough space blocks Run,
+not Save/Open.
+
+**P-D1 exit:** UI, CLI, compiler, native reader and Runner reader agree on the
+same canonical bytes and hashes; old fixtures reproduce byte-for-byte; malformed
+or unsupported policy values fail at the owning boundary.
+
+### P-D2 — Make Planner UI logic state-driven and evidence-aware
+
+Planner previews remain authoring simulations. They may visualize the expected
+event order, occurrence identities, neutral boundaries and which fields will be
+recorded, but must label planned values and never display preview callbacks as
+actual LSL/XDF evidence.
+
+Use the transferable game-UI patterns narrowly:
+
+- route visible controls through existing owner actions/contracts rather than
+  mutating duplicated page state;
+- derive badges, summaries, warnings and previews from accepted snapshots;
+- generation-fence media analysis, Open/Save and preview callbacks;
+- gate keyboard/controller preview input while dialogs or editable forms own
+  focus; and
+- keep animation and rendering disposable, with no sampling or marker writes in
+  `requestAnimationFrame`.
+
+As touched, split only coherent pure selectors/projectors from the large page
+controller; do not perform a speculative rewrite. Keep the current shared text-
+fit and container-relative layout rules. Add an evidence-contract review panel
+only if it helps the researcher find an actionable missing/unsupported setting;
+do not expose raw implementation logs or make users author marker JSON.
+
+**P-D2 exit:** every new control has one contract owner, survives Save/Open and
+UI/CLI round trip, invalidates affected acceptance, is keyboard accessible, and
+cannot make an execution or qualification claim.
+
+### P-D3 — Build one exact Planner-to-Runner correspondence fixture
+
+Create the fixture through production Planner UI and production CLI, not by
+hand-editing JSON. It should exercise the current supported bilingual forms,
+typed answers, a leading and trailing named ISI, repeated occurrence identity,
+real media metadata, configured Flubber/input/layout, automatic neutral reset,
+the successor acquisition-window policy, output settings and LSL identity.
+
+Verify that UI and CLI produce semantically and canonically identical accepted
+recipes for the same choices, native and JS readers derive the same execution
+dictionary, and every matrix row from P-D0 has exactly one Runner consumer.
+Keep synthetic participant answers visibly synthetic and avoid real personal
+data. Preserve the exact recipe and media hashes used by the downstream run.
+
+**P-D3 exit:** an independently launched Runner accepts the exact saved artifact
+without ambient defaults, hidden Planner state or schema repair, and can report
+the complete planned execution dictionary before Start.
+
+### P-D4 — Finish the downloadable desktop Planner before network work
+
+Qualify one current Windows candidate from a clean build and isolated app data:
+
+1. install/launch the packaged Planner and create the P-D3 recipe;
+2. close/relaunch, reopen it, reauthorize/revalidate media and reproduce exact
+   canonical output without changing semantics;
+3. exercise cancel, stale callbacks, invalid imports, disk/write errors and
+   unsupported-version diagnostics without data loss;
+4. verify keyboard and supported screen-size workflows using the UI-layout
+   contract; and
+5. bind executable/source/package hashes and limitations into the release
+   receipt consumed by the Runner qualification.
+
+An unsigned interface-evaluation package remains unqualified. Publishing or
+internet integration does not begin merely because the Planner builds.
+
+### Planner completion gate before internet integration
+
+Planner is ready for the desktop pair only when P-D0 through P-D4 are evidenced,
+the Runner consumes every runtime-affecting field, historical generations retain
+their meaning, no preview supplies execution evidence, and the exact installed
+artifact participates in an independently reconstructed XDF session. The Runner
+plan below remains the stronger release gate.
 
 ## Future-pass order and completion criteria
 

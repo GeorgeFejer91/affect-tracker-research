@@ -166,6 +166,20 @@ Prefer live HTML labels rather than outlining text into paths. When SVG text is
 necessary, place it in viewBox coordinates with `text-anchor="middle"` and a
 tested baseline; Pretext measures text, it does not center the surrounding SVG.
 
+### Planner Ledger asset roles
+
+`assets/affect-flubber-symbol.svg` is a restrained in-interface companion mark:
+use it only in a few high-signal Ledger locations such as the setup introduction
+or a genuine empty/help state. It is not an app icon, row decoration, repeated
+tab glyph or substitute for the live affect display. Keep it decorative unless
+it conveys information that has an explicit accessible label.
+
+`assets/affect-planner-ledger-icon.svg` is the scoped Experiment Planner Ledger
+identity source. Use it for the Ledger HTML icon, launcher tile and generated
+Ledger-specific PNG/ICO derivatives. Do not replace Classic Planner, Runner or
+suite-wide branding with it. Preserve its aspect ratio and regenerate native
+rasters from the SVG source rather than editing derivative pixels.
+
 ## Readability is a boundary, not another overflow hack
 
 Do not keep shrinking below the shared readability floor or counteract browser
@@ -181,6 +195,30 @@ accessible name; a hover-only `title` is insufficient. Use `Intl.Segmenter` with
 grapheme granularity, not UTF-16 slicing or `Array.from`. CSS clipping/ellipsis
 is a fallback guard, not successful fitting or permission to hide information.
 No finite box can contain unlimited text at a fixed readable minimum.
+
+## Bounded Ledger sheets: resize by repacking, not shrinking content
+
+The Ledger's open sheet has no outer scrollbar. Its header, content viewport,
+and page controls form one height-bounded grid. When the window changes width
+or height, repack complete semantic boxes into as many internal sheet pages as
+needed; when room returns, merge them again. Preserve DOM order and keep each
+box's own grid/flex geometry. Paginate complete boxes first; only an indivisible
+box that cannot fit alone may receive one measured two-axis fit scale.
+
+Mark only structural groups that may be safely flattened for packing. The
+Ledger never introduces an outer or nested scrollbar: tables, editors, lists
+and text areas expand to their intrinsic geometry before fitting. If an item
+cannot fit alone, compute one scale from its measured width and height, apply
+it to that complete box, and remove/recompute it whenever room returns. A
+visible scrollbar or clipped essential content is always a Ledger defect.
+
+Repacking uses one resize observer and one animation-frame batch for the active
+sheet. Hidden pages are removed from interaction and accessibility traversal,
+the current page is clamped after repacking, and a focused item stays on its
+page. Previous/next controls expose “Page X of Y”, preserve their allocated row
+when only one page exists, and remain usable by keyboard. Pretext fitting still
+applies only to fixed text slots such as the sheet title and summary; ordinary
+research text stays at the readability floor and moves between pages instead.
 
 ## Verification on every affected UI path
 

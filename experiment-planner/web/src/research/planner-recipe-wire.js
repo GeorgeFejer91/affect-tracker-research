@@ -1,7 +1,7 @@
 import { canonicalJson } from "./canonical.js";
 import { parseStrictJsonDocument } from "./external-experiment.js";
 import { validateLanguageSelectionTreeV1 } from "./experiment-package.js";
-import { validatePlannerRecipePolicyV1 } from "./planner-recipe-policy.js";
+import { validatePlannerRecipePolicyV1, validatePlannerRecipePolicyV2 } from "./planner-recipe-policy.js";
 import { PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
 
 export const PLANNER_RECIPE_SCHEMA = "affect-research-planner-recipe";
@@ -96,7 +96,13 @@ export function validatePlannerRecipeStructureV4(value, { integrity = true } = {
   return validateStructure(value, integrity, 4, ["planner-recipe-reproduction-v5"]);
 }
 
-function validateStructure(value, integrity, version, algorithms) {
+/** Internal accepted-owner capture for fresh master6 publication. The saved
+ * master6 document is the asset manifest validated by planner-recipe-assets. */
+export function validatePlannerRecipeCaptureStructureV6(value) {
+  return validateStructure(value, false, 6, [], validatePlannerRecipePolicyV2);
+}
+
+function validateStructure(value, integrity, version, algorithms, validatePolicy = validatePlannerRecipePolicyV1) {
   exactRecipeObject(value, integrity ? [...CORE_KEYS, "integrity"] : CORE_KEYS, "Planner recipe");
   if (value.schema !== PLANNER_RECIPE_SCHEMA || value.version !== version) {
     throw new TypeError("Unsupported Planner recipe schema or version.");
@@ -107,7 +113,7 @@ function validateStructure(value, integrity, version, algorithms) {
   if (!["desktop-screen", "webxr-immersive-vr"].includes(value.presentationTarget)) {
     throw new PlannerRecipeIssue("P7", "presentationTarget", "target-required", "Choose an explicit presentation target.");
   }
-  validatePlannerRecipePolicyV1(value.policy);
+  validatePolicy(value.policy);
   exactRecipeObject(value.segments, PLANNER_RECIPE_SEGMENTS, "Planner recipe segments");
   for (const segment of PLANNER_RECIPE_SEGMENTS) {
     const payload = value.segments[segment];

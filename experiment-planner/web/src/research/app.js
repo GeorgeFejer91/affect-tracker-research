@@ -52,6 +52,7 @@ import { createPreviewLayout } from "./preview-layout.js";
 import { createPlannerPreviewWindow } from "./planner-preview-window.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
+import { createLedgerPageLayout } from "./ledger-page-layout.js";
 import { createSetupLayout } from "./setup-layout.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
@@ -172,6 +173,7 @@ import {
 import {
   COLOR_FIELDS,
   describeInputToken,
+  feedbackWindowMarkup,
   renderResearchUiMarkup,
 } from "./ui-view.js";
 
@@ -255,6 +257,7 @@ function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
   const plannerInterface = root.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
+  const ledgerPageLayout = createLedgerPageLayout(root);
   let disconnectScreenLayout = () => {};
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
     onChange() {
@@ -550,18 +553,21 @@ function bindResearchInteractions(root, { surface }) {
   const participantRecoveryBindings = new Map();
   const touchedValidationControls = new WeakSet();
 
+  function applyDesignPreviewPosition(position) {
+    if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) return;
+    if (previewFlubberReleased && feedbackSettingsVersion === 2) {
+      previewReleasedPosition = { x: position.x, y: position.y };
+      projectDesignPreview();
+      return;
+    }
+    setInputValue("visual-position-x", position.x.toFixed(2));
+    setInputValue("visual-position-y", position.y.toFixed(2));
+    refreshProjection();
+    schedulePlanRefresh();
+  }
+
   const setupPreview = createResearchPreview(root.querySelector(".preview-pane"), {
-    onPositionChange(position) {
-      if (previewFlubberReleased && feedbackSettingsVersion === 2) {
-        previewReleasedPosition = { x: position.x, y: position.y };
-        projectDesignPreview();
-        return;
-      }
-      setInputValue("visual-position-x", position.x.toFixed(2));
-      setInputValue("visual-position-y", position.y.toFixed(2));
-      refreshProjection();
-      schedulePlanRefresh();
-    },
+    onPositionChange: applyDesignPreviewPosition,
   });
   // The Run projection owns both the adjacent feedback stage and the visible
   // coordinate receipt in the footer.
@@ -580,16 +586,87 @@ function bindResearchInteractions(root, { surface }) {
     return root.querySelector(selector);
   }
 
+  const FEEDBACK_WINDOW_CONTROL_SELECTOR = "input,select,textarea,button,details,summary,output:not([data-preview-x]):not([data-preview-y]):not([data-preview-position]),dialog";
+  const FEEDBACK_WINDOW_MIRROR_SELECTOR = [
+    "[data-response-preview-panel]", "[data-preview-grid-square]", "[data-preview-grid-custom]",
+    "[data-preview-repeat-settings]", "[data-color-anchor-label]", "[data-color-anchor-swatch]",
+    "[data-preview-mode-label]",
+    "[data-preview-tile-status]", "[data-preview-input-availability]", "#feedback-settings-version",
+  ].join(",");
+
+  function feedbackWindowRoots() {
+    return [query(".preview-pane"), query("#binding-capture-dialog"), query("#preview-color-dialog")]
+      .filter((element) => element instanceof Element);
+  }
+
+  function feedbackWindowElements(selector) {
+    return feedbackWindowRoots().flatMap((element) => [
+      ...(element.matches(selector) ? [element] : []),
+      ...element.querySelectorAll(selector),
+    ]);
+  }
+
+  function feedbackWindowControls() {
+    const controls = feedbackWindowElements(FEEDBACK_WINDOW_CONTROL_SELECTOR).map((element) => ({
+      ...(typeof element.value === "string" ? { value: element.value } : {}),
+      ...(typeof element.checked === "boolean" ? { checked: element.checked } : {}),
+      ...(typeof element.disabled === "boolean" ? { disabled: element.disabled } : {}),
+      hidden: element.hidden,
+      ...(element instanceof HTMLDetailsElement || element instanceof HTMLDialogElement ? { open: element.open } : {}),
+      ...(element instanceof HTMLOutputElement ? { text: element.textContent ?? "" } : {}),
+      attributes: Object.fromEntries(["aria-pressed", "aria-expanded", "data-state", "data-review-state", "style"]
+        .map((name) => [name, element.getAttribute(name)])),
+    }));
+    const mirrors = feedbackWindowElements(FEEDBACK_WINDOW_MIRROR_SELECTOR).map((element) => ({
+      hidden: element.hidden,
+      text: element.textContent ?? "",
+      attributes: Object.fromEntries(["data-state", "style"].map((name) => [name, element.getAttribute(name)])),
+    }));
+    return Object.freeze({ controls, mirrors });
+  }
+
+  function applyFeedbackWindowEdit(edit) {
+    const target = feedbackWindowElements(FEEDBACK_WINDOW_CONTROL_SELECTOR)[edit?.index];
+    if (!(target instanceof Element)) return;
+    if (edit.type === "click") target.click();
+    else if (["input", "change"].includes(edit.type)) {
+      if (typeof edit.value === "string" && "value" in target) target.value = edit.value;
+      if (typeof edit.checked === "boolean" && "checked" in target) target.checked = edit.checked;
+      target.dispatchEvent(new Event(edit.type, { bubbles: true }));
+    } else if (edit.type === "focusout") {
+      target.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    } else if (edit.type === "keydown") {
+      target.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: edit.key ?? "", code: edit.code ?? "" }));
+    }
+    queueMicrotask(() => previewWindow?.update());
+  }
+
   if (root.dataset.researchProgram === "planner") {
     const previewUrl = new URL(surface === "tauri" ? "preview.html" : "../preview.html", window.location.href).href;
     previewWindow = createPlannerPreviewWindow({
       windowObject: window,
       url: previewUrl,
       features: surface === "tauri" ? "popup,width=640,height=720" : "",
+      readMarkup: feedbackWindowMarkup,
       readState: () => previewState({ design: true }),
+      readControls: feedbackWindowControls,
       readConfirmation: () => setupConfirmationFlow.read().find(({ id }) => id === "feedback"),
+      applyEdit: applyFeedbackWindowEdit,
+      applyPosition: applyDesignPreviewPosition,
       confirm: () => confirmSetupSection("feedback"),
+      onConnectionChange(connected) {
+        const status = query("#ledger-feedback-window-status");
+        if (status) status.textContent = connected
+          ? "Flubber settings window connected to this experiment draft."
+          : "Flubber settings window closed. Reopen it to edit or confirm feedback.";
+      },
     });
+    if (surface === "tauri" && plannerInterface === "ledger") {
+      queueMicrotask(() => {
+        try { previewWindow?.open(); }
+        catch (error) { announce(error instanceof Error ? error.message : String(error)); }
+      });
+    }
   }
 
   function value(id, fallback = "") {
@@ -803,10 +880,12 @@ function bindResearchInteractions(root, { surface }) {
         panelChanges.push([panel, isOpen]);
       }
     });
-    if (openSection === "feedback") focusTarget = query("#preview-title");
+    if (openSection === "feedback") focusTarget = plannerInterface === "ledger"
+      ? query("#ledger-feedback-window-title") : query("#preview-title");
     focusTarget?.focus();
     if (openSection === "feedback") focusTarget?.scrollIntoView({ block: "start", behavior: "auto" });
     panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
+    ledgerPageLayout.refresh();
     if (surface === "tauri" && openSection === "feedback") {
       queueMicrotask(() => root.dispatchEvent(new CustomEvent(RESEARCH_UI_EVENTS.inputBindingChanged, {
         bubbles: true,
@@ -894,7 +973,8 @@ function bindResearchInteractions(root, { surface }) {
     setErrorReference(hex, "preview-color-error", false);
     const apply = query("#preview-color-apply");
     if (apply instanceof HTMLButtonElement) apply.disabled = false;
-    dialog.showModal();
+    if (plannerInterface === "ledger") dialog.show();
+    else dialog.showModal();
     queueMicrotask(() => hex.focus());
   }
 
@@ -1668,7 +1748,7 @@ function bindResearchInteractions(root, { surface }) {
       // Its whitespace/source-byte hash may change without any design edit;
       // retain the full definition and its semantic hash in this comparison.
       delete settings.externalProtocol.sourceByteSha256;
-      return canonicalJson({ settings, languageSelection: languageTreeFromUi(), selectedTarget: getSelectedPlannerTarget() });
+      return canonicalJson({ settings, acquisitionWindow: value("acquisition-window"), languageSelection: languageTreeFromUi(), selectedTarget: getSelectedPlannerTarget() });
     } catch {
       return null; // Invalid/pending edits cannot match an accepted compilation.
     }
@@ -2026,7 +2106,9 @@ function bindResearchInteractions(root, { surface }) {
       && Number.isInteger(numberValue("participant-count"))
       && numberValue("participant-count") >= 1;
     const sampleRate = numberValue("sampling-frequency");
-    const samplingValid = Number.isInteger(sampleRate) && sampleRate >= 1 && sampleRate <= 240;
+    const acquisitionWindow = value("acquisition-window");
+    const samplingValid = Number.isInteger(sampleRate) && sampleRate >= 1 && sampleRate <= 240
+      && ["activeVideoOnly", "fullAttempt"].includes(acquisitionWindow);
     let participantRecord = null;
     try {
       participantRecord = deriveParticipantRecord({
@@ -2103,7 +2185,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     return [
       { id: "workspace", result: workspaceReady ? "pass" : "block", label: "Workspace", message: workspaceReady ? "Owned libraries ready" : "Select and authorize one parent workspace" },
-      { id: "experiment", result: experimentValid && samplingValid ? "pass" : "block", label: "Protocol", message: experimentValid && samplingValid ? `Continuous rating at ${sampleRate} Hz` : "Complete identity, participant count, and a 1–240 Hz integer rate" },
+      { id: "experiment", result: experimentValid && samplingValid ? "pass" : "block", label: "Protocol", message: experimentValid && samplingValid ? `Continuous rating at ${sampleRate} Hz · ${acquisitionWindow === "fullAttempt" ? "full attempt" : "active video only"}` : "Complete identity, participant count, a 1–240 Hz integer rate, and an acquisition window" },
       {
         id: "package",
         result: packageReady ? "pass" : "block",
@@ -2208,7 +2290,9 @@ function bindResearchInteractions(root, { surface }) {
         result: storageReady ? "pass" : "block",
         label: "Storage",
         message: storageReady
-          ? `${(storageEstimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB required; ${(storageReadiness.availableBytes / (1024 * 1024)).toFixed(1)} MiB available${storageReadiness.persisted === false ? " (browser persistence not granted)" : ""}`
+          ? acquisitionWindow === "fullAttempt"
+            ? `${(storageEstimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB video-period lower bound passed; ${(storageReadiness.availableBytes / (1024 * 1024)).toFixed(1)} MiB available. Full-attempt size also depends on questionnaire, interval, and pause duration.`
+            : `${(storageEstimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB required; ${(storageReadiness.availableBytes / (1024 * 1024)).toFixed(1)} MiB available${storageReadiness.persisted === false ? " (browser persistence not granted)" : ""}`
           : storageEstimate
             ? "Output and recovery capacity has not passed a current write/quota probe"
             : "Resolve the assignment plan before checking storage capacity",
@@ -2941,7 +3025,9 @@ function bindResearchInteractions(root, { surface }) {
         const capacity = storageReadiness?.requiredBytes === estimate.requiredBytes
           ? ` · ${(storageReadiness.availableBytes / (1024 * 1024)).toFixed(1)} MiB available${storageReadiness.persisted === false ? " · best-effort browser persistence" : ""}`
           : " · write/quota probe pending";
-        storage.textContent = `${(estimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB estimated for ${estimate.sampleRows.toLocaleString()} rating rows${capacity}`;
+        storage.textContent = value("acquisition-window") === "fullAttempt"
+          ? `${(estimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB video-period lower bound for ${estimate.sampleRows.toLocaleString()} rating rows; total also depends on non-video phase duration${capacity}`
+          : `${(estimate.requiredBytes / (1024 * 1024)).toFixed(1)} MiB estimated for ${estimate.sampleRows.toLocaleString()} rating rows${capacity}`;
       }
     }
     const timing = query("#timing-capability");
@@ -4820,7 +4906,10 @@ function bindResearchInteractions(root, { surface }) {
   function openBindingMenu(direction = null) {
     cancelBindingCapture();
     const dialog = query("#binding-capture-dialog");
-    if (!dialog?.open) dialog?.showModal();
+    if (!dialog?.open) {
+      if (plannerInterface === "ledger") dialog?.show();
+      else dialog?.showModal();
+    }
     renderBindings();
     const receipt = query("#binding-capture-receipt");
     receipt.textContent = direction ? `Listening for ${direction}…` : "Not listening.";
@@ -6673,6 +6762,7 @@ function bindResearchInteractions(root, { surface }) {
       previewInteraction?.destroy();
       previewInteraction = null;
       inlineColorPicker.destroy();
+      ledgerPageLayout.destroy();
       setupLayout.destroy();
       packageExport.destroy();
       plannerFileWorkflow.destroy();

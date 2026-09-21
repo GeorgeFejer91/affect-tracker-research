@@ -16,6 +16,7 @@ mod owners {
     pub(crate) mod research_planner_recipe_v3;
     pub(crate) mod research_planner_recipe_v4;
     pub(crate) mod research_planner_recipe_v5;
+    pub(crate) mod research_planner_recipe_v6;
     pub(crate) mod research_protocol;
     pub(crate) mod research_questionnaire_recipe;
     pub(crate) mod research_questionnaire_recipe_v2;

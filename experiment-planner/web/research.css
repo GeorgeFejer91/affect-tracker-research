@@ -291,6 +291,10 @@ h3 {
   background: var(--page);
 }
 
+.research-shell[data-planner-interface="ledger"] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .research-shell > main {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
@@ -3704,25 +3708,27 @@ dialog::backdrop {
 #research-app[data-planner-interface="ledger"] .ledger-page .setup-accordion-panel-clip {
   min-width: 0;
   height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-color: #4e554b transparent;
+  overflow: hidden;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-page .setup-accordion-panel-inner {
-  min-height: 100%;
-  padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 1.5rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.45rem, 1.5cqh, 0.85rem);
+  height: 100%;
+  min-height: 0;
+  padding: clamp(0.65rem, 2.5cqh, 1.25rem) clamp(0.75rem, 3vw, 2.5rem);
   border: 0;
   background: transparent;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-page-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.42fr) minmax(10rem, 0.58fr);
+  align-items: center;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  min-height: clamp(2rem, 7cqh, 3rem);
+  padding-bottom: clamp(0.35rem, 1.2cqh, 0.75rem);
   border-bottom: 1px solid rgb(240 238 232 / 22%);
 }
 
@@ -3734,6 +3740,125 @@ dialog::backdrop {
 #research-app[data-planner-interface="ledger"] .ledger-page-header p {
   color: var(--muted);
   text-align: right;
+}
+
+#research-app[data-planner-interface="ledger"] [data-fit-text] {
+  overflow: hidden;
+  font-size: var(--fit-text-size, inherit);
+  line-height: 1.2;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-flow {
+  container: ledger-page-flow / size;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Ledger pages never delegate layout to a scrollbar. Expand formerly
+   scrollable regions, paginate their owning box, then measured-fit only a
+   single indivisible box when it still exceeds the available sheet. */
+#research-app[data-planner-interface="ledger"] .ledger-page-flow *,
+#research-app[data-planner-interface="ledger"] .ledger-page-flow *::before,
+#research-app[data-planner-interface="ledger"] .ledger-page-flow *::after {
+  scrollbar-width: none;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-flow *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-flow :is(
+  .table-scroll,
+  .sheet-table-scroll,
+  .stimulus-order-scroll,
+  .survey-builder-elements,
+  .participant-grid,
+  .planned-events
+) {
+  max-height: none !important;
+  overflow: visible !important;
+  overscroll-behavior: auto;
+  scrollbar-gutter: auto;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-flow textarea {
+  overflow: hidden !important;
+  resize: none;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-flow .planned-events li {
+  white-space: normal;
+}
+
+#research-app[data-planner-interface="ledger"] [data-ledger-fit-scale] {
+  transform-origin: top left;
+}
+
+#research-app[data-planner-interface="ledger"] [data-ledger-page-hidden] {
+  display: none !important;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-pagination {
+  display: grid;
+  grid-template-columns: minmax(5.75rem, 1fr) auto minmax(5.75rem, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgb(240 238 232 / 22%);
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-pagination[data-single-page="true"] {
+  visibility: hidden;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-pagination button {
+  min-height: 2.15rem;
+  padding: 0.3rem 0.65rem;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-pagination button:last-child {
+  justify-self: end;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-page-pagination output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-feedback-handoff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  min-height: 0;
+  padding: clamp(0.8rem, 3cqh, 1.5rem);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: rgb(17 19 16 / 55%);
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-feedback-handoff h3,
+#research-app[data-planner-interface="ledger"] .ledger-feedback-handoff p {
+  margin: 0 0 0.55rem;
+}
+
+#research-app[data-planner-interface="ledger"] .ledger-feedback-handoff output {
+  color: var(--muted);
+}
+
+#research-app[data-planner-interface="ledger"] [data-ledger-feedback-authority] {
+  display: none !important;
+}
+
+#research-app[data-planner-interface="ledger"] > #binding-capture-dialog,
+#research-app[data-planner-interface="ledger"] > #preview-color-dialog {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 #research-app[data-planner-interface="ledger"] .ledger-rail {
@@ -3862,6 +3987,7 @@ html[data-ledger-window] .research-shell[data-planner-interface="ledger"] {
   isolation: isolate;
   position: relative;
   grid-template-columns: minmax(0, 1fr) 56px;
+  grid-template-rows: 2.75rem minmax(0, 1fr);
   overflow: visible;
   background: transparent;
 }
@@ -3886,7 +4012,8 @@ html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > main
 html[data-ledger-window] .research-shell[data-planner-interface="ledger"] > .app-bar {
   grid-column: 1;
   grid-row: 1;
-  padding-right: 5.25rem;
+  min-height: 2.75rem;
+  padding: 0;
   background: transparent;
 }
 
@@ -3992,6 +4119,23 @@ html[data-ledger-window] #research-app[data-planner-interface="ledger"] .ledger-
   background: #18151f;
 }
 
+.planner-preview-window-content,
+.planner-preview-window-content > [data-feedback-window-content] {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.planner-preview-window-content {
+  overflow: auto;
+  scrollbar-color: #4e554b #181a17;
+}
+
+.planner-preview-window-content .preview-pane {
+  max-height: none;
+  overflow: visible;
+}
+
 .planner-preview-window-shell header,
 .planner-preview-window-shell footer {
   display: flex;
@@ -4043,18 +4187,17 @@ body[data-planner-preview-window] {
     overflow: hidden;
   }
 
-  #research-app[data-planner-interface="ledger"] .ledger-page-header,
   .planner-preview-window-shell header,
   .planner-preview-window-shell footer {
     align-items: stretch;
     flex-direction: column;
   }
 
-  #research-app[data-planner-interface="ledger"] .ledger-page-header p {
-    text-align: left;
-  }
-
   #research-app[data-planner-interface="ledger"] .preview-header-controls {
     justify-content: stretch;
+  }
+
+  #research-app[data-planner-interface="ledger"] .ledger-feedback-handoff {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

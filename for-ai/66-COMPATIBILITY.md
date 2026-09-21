@@ -7,12 +7,13 @@ needed.
 
 ## Current amendment routing
 
-Fresh Planner saves use the master5 questionnaire-asset boundary in
+Fresh Planner saves use the master6 questionnaire-asset boundary in
 [the product authority](10-PRODUCT.md)
 and [the asset contract](../docs/planner-questionnaire-assets.md). P7 owns the
-manifest contract, P2 owns authored SurveyJS content, and R1 owns Runner
-intake/evidence seams. This compatibility map records supported generations and
-consumer gaps rather than duplicating the full amendment text.
+manifest and explicit acquisition-window policy, P2 owns authored SurveyJS
+content, and R1 owns Runner intake/evidence seams. This compatibility map
+records supported generations and consumer gaps rather than duplicating the
+full amendment text.
 
 File-size policy follows the [product authority](10-PRODUCT.md):
 arbitrary whole-file ceilings are no longer requirements. Historical implemented
@@ -31,8 +32,9 @@ file. Edits invalidate affected acceptance. P7 captures accepted P1–P6, with
 P5 captured at final Save, then validates cross-references and publishes JSON.
 
 Historical master1–4 root members are exactly `schema`, `version`, `recipeId`,
-`presentationTarget`, `policy`, `segments`, `integrity`. Master5 adds
-`contentIntegrity` and references exact questionnaire assets through P2v4.
+`presentationTarget`, `policy`, `segments`, `integrity`. Master5 and master6 add
+`contentIntegrity` and reference exact questionnaire assets through P2v4.
+Master6 alone requires policy v2 and its explicit `acquisitionWindow`.
 The named segment map has P1–P6. JSON member order is never execution order.
 P7 owns assembly, target/policy, integrity, acknowledged saving and Open.
 
@@ -83,14 +85,23 @@ an open mismatch below.
 | 3 | 3: controlled geometry | 2 | v4 | Start/Action 3 |
 | 4 | 1, 2 or 3 | 3: SurveyJS + retained forms | v5 | Start/Action 4 |
 | 5 | 1, 2 or 3 | 4: external questionnaire registry | asset integrity v1 + resolved master4 | Start/Action 5 |
+| 6 | 1, 2 or 3 | 4: external questionnaire registry | asset integrity v2 + resolved master4 + policy v2 | Start/Action 6 (desktop only) |
 
 Master5 uses `planner-questionnaire-assets-v1` and freezes exact files; its
 selected semantic projection retains master4 hashes. Validation5 is explicitly
 unqualified. See [assets](../docs/planner-questionnaire-assets.md).
 
+Master6 uses `planner-questionnaire-assets-v2`. It preserves the same resolved
+master4 questionnaire content and adds only explicit policy v2 acquisition
+semantics. `activeVideoOnly` retains historical sampling scope;
+`fullAttempt` samples the continuous affect state from durable committed Start
+through the terminal boundary. The browser Runner rejects master6; the native
+desktop Runner owns its timing, input, event storage and LSL/XDF projection.
+
 Historical reproduction names use prefix `planner-recipe-reproduction-`.
 `ExperimentPackageV1` remains a separate nine-root-member schema with its own
-strict parser/compiler/runtime. Preserve its semantics and records. Fresh authored saves use master5; Open never silently upgrades historical files.
+strict parser/compiler/runtime. Preserve its semantics and records. Fresh
+authored saves use master6; Open never silently upgrades historical files.
 
 JS ingress: `experiment-planner/web/src/research/planner-recipe.js::parseSupportedPlannerRecipe`;
 Runner: `experiment-runner/src/recipe.js::readRunnerRecipe`.
@@ -104,6 +115,14 @@ XDF-based advisory defaults, recording choices and session stream names. Use
 actual saved variant IDs; V1/V2 display names index the saved order. See
 [preselection](../docs/runner-version-preselection.md) and
 [recent files](../docs/runner-recent-files.md).
+
+Master6 evidence is deliberately layered: `master-samples.v2.jsonl` is the
+primary continuous Flubber/Grid outcome; `master-inputs.v2.jsonl` records every
+admitted digital/continuous observation; `master-events.v2.jsonl` contains the
+bounded semantic events projected to LSL. Digital observations correspond
+one-for-one with `inputEdge` events, while continuous observations do not flood
+the marker stream. Missing, reordered, corrupt or identity-mismatched evidence
+is incomplete and is never inferred from planned time or render state.
 
 Approved controller behavior requires original/effective bindings, native
 validation, a fresh actual-device test, a frozen override hash and matching
@@ -122,15 +141,18 @@ The source-bound [critical audit](../docs/planner-runner-correspondence-audit.md
 commands, source references and acceptance criteria. JS probes pass exact
 round trips and 24 variant/language selections across masters 1–4, with
 missing-segment/stale-integrity rejection. The focused existing suite passes
-66 checks at its recorded base. Later master5 checks are in the asset contract.
-No actual native session is claimed.
+66 checks at its recorded base. Later master5 checks are in the asset contract;
+the current master6 candidate adds strict policy/asset round trips plus
+independent evidence/sample/input reconstruction tests. No actual native
+master6 session or saved-XDF qualification is claimed.
 
 - A valid 5,616,674-byte master passes the reader but its P2 owner snapshot
   exceeds the separate 5 MiB handoff limit.
 - SurveyJS permits remote image URLs without embedding/hash-binding resource
   bytes. Retaining the object does not ensure identical presentation.
-- Master4 has intake/normal Start dispatch, but local validation accepts only
-  master3 while normal research playback qualification remains closed.
+- Permanently unqualified local validation has versioned Start routes for
+  masters 3–6. Normal research playback and complete installed-session
+  qualification remain separately closed.
 - Controller override execution and receipts remain unimplemented.
 - Mixed historical/controlled media proofs parse but fail Runner attestation
   pending native location mapping.

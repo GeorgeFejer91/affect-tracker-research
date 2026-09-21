@@ -725,18 +725,119 @@ default. A missed slot creates one timing-gap record in the
 attempt's applicable semantic-event version. There is no catch-up row,
 retrospective timestamp, or later-state backfill.
 
-Sampling runs only during active decoded video playback. For qualified Windows
-runs, Rust-owned HTML video lifecycle is the only playback authority. Pause,
-buffering, questionnaire/interval steps, recovery, error, and terminal states
-close the active segment. After-video hooks run on their explicitly authored
-side of the occurrence's interval. Each interval keeps state neutral and
-follows its frozen `isiAfterMs`; it has no random or participant-controlled
-branch. Recovery restarts an interrupted interval from its beginning.
+Masters 1–5 sample only during active decoded video playback. Master6 policy v2
+explicitly selects `activeVideoOnly` or `fullAttempt`; full-attempt acquisition
+begins at durable committed Start, keeps sampling neutral affect state through
+questionnaires and intervals, and ends only at the terminal boundary. Rust-owned
+HTML video lifecycle remains the playback authority. Pause, buffering, recovery,
+error and terminal transitions create semantic boundaries rather than inferred
+samples. After-video hooks run on their explicitly authored side of the
+occurrence's interval. Each interval keeps state neutral and follows its frozen
+duration; it has no random or participant-controlled branch. Historical readers
+retain their exact scope, and recovery restarts an interrupted interval from its
+beginning.
 
 Every sample records wall and monotonic timestamps, LSL-compatible timestamp,
 state-anchor age, nominal rate, observable jitter/gap context, exact stimulus
 identity/position, current and target x/y, radius, angle, six mapped values,
 and input/feedback state.
+
+## Realtime orchestration and research-evidence planes
+
+Game-engine architecture is useful here only as a source of interaction
+patterns. The product does not become a game and no game engine becomes a
+runtime authority. Use the repo-scoped
+[research realtime orchestration skill](../.agents/skills/research-realtime-orchestration/SKILL.md)
+when changing this boundary.
+
+The runtime has three cooperating planes with one-way authority:
+
+| Plane | Owns | Must not own |
+| --- | --- | --- |
+| Orchestration | native protocol phase, accepted semantic actions, occurrence/generation identity, monotonic deadlines, input gates and explicit effect requests | DOM/render objects, independent evidence strings or a second sampling clock |
+| Evidence | versioned semantic events and continuous samples, sequence and clock provenance, durable journal state, bounded LSL/XDF projection and reconstruction validation | UI navigation, visual animation or inferred repairs from planned time |
+| Presentation | HTML video, Flubber/Grid/questionnaire views, dialogs, focus and status projected from authoritative snapshots | protocol advancement, research timestamps, durable answers, samples or terminal truth |
+
+The useful game-development transfers are explicit action maps, a pure
+transition/effect core, disposable render projections, generation-fenced async
+callbacks and deterministic trace playtests. Rejected transfers include an
+animation-frame research clock, a global scene event bus, lossy telemetry, a
+mutable save-game model, engine-owned persistence, RNG, physics/ECS machinery,
+or a Phaser/Three/React Three Fiber dependency without a separate visual
+requirement.
+
+### Reconstructable operation chain
+
+For a scientifically meaningful operation, represent the applicable facts
+separately: accepted command or physical input; authoritative state transition;
+effect request; observed effect or explicit failure; accepted event/sample;
+durability/flush state; permitted LSL projection; and independent XDF
+reconstruction. These may share correlation identifiers, but they are not one
+fact. In particular:
+
+- requesting Play is not observed video start; the occurrence-specific media
+  observation opens the corresponding observed segment, and observed end,
+  pause, buffering, failure or interruption closes or suspends it according to
+  the frozen contract;
+- moving Flubber is not merely a visual change; current/target state comes from
+  the owning input/sampling authority, and input-edge evidence retains the
+  original physical observation time;
+- resetting Flubber to neutral is an authoritative transition. Automatic video-
+  end reset, an allowed manual reset and recovery reset require explicit reason
+  and occurrence context, one semantic reset event, and subsequent samples that
+  expose the neutral state. Setting renderer coordinates to zero alone is a
+  defect;
+- presenting, drafting, validating, durably submitting, completing,
+  interrupting and recovering a questionnaire are distinct. Focus or visual
+  selection is not a submitted answer; and
+- a deadline, authored duration or predicted end never substitutes for an
+  observed or durable event. Missed sampling slots remain explicit gaps.
+
+Create each canonical event/sample envelope in its owning runtime once. Local
+attempt artifacts, the bounded LSL information/marker projection and XDF
+reconstruction consume that envelope under their existing privacy and payload
+contracts; UI handlers do not synthesize parallel marker strings. Preserve
+monotonic, LSL-compatible, wall-clock and media observation times as separately
+named values. The LSL projection is transport evidence, not a substitute for
+local durability or the protocol state machine.
+
+Master1–5 and policy v1 remain frozen to sampling only during active decoded
+video playback. Master6 is the explicit successor boundary: policy v2 requires
+`acquisitionWindow` to be `activeVideoOnly` or `fullAttempt`. Fresh authoring
+defaults to the explicit full-attempt choice; opening an older recipe restores
+`activeVideoOnly` without upgrading its bytes or meaning. In full-attempt mode,
+the native clock starts only after the attempt is durable and optional LSL
+startup has committed, then stays active through the terminal event. Samples
+name their protocol phase; inactive non-video phases are neutral and delimited
+by semantic events. A paused video retains the last committed rating while
+feedback remains visible, disables input activity, and is delimited by explicit
+pause/resume events; pause is not an implicit neutral reset. The browser Runner
+rejects master6 because it has no native
+timing, input, LSL/XDF or desktop durability authority.
+
+Master6 keeps three separate local evidence artifacts. `master-samples.v2.jsonl`
+is the primary high-detail Flubber/Grid outcome and retains the no-catch-up
+deadline grid. `master-inputs.v2.jsonl` records every admitted digital or
+continuous input observation, its original observation time, acceptance time
+and resulting state. `master-events.v2.jsonl` contains bounded lifecycle,
+digital-edge, neutral-reset, timing-gap, interval/questionnaire and terminal
+events; this is the semantic source projected to LSL markers. Continuous input
+observations are not marker spam. The local event append precedes outbound LSL
+projection, and incomplete/corrupt layers remain explicitly incomplete rather
+than being repaired from UI/render state or planned durations.
+
+Authoring-time storage for `fullAttempt` is necessarily a video-period lower
+bound because questionnaire, pause and some interaction durations are unknown.
+The UI must label it that way. Actual output writes and finalization fail closed;
+installed real-media/input and independent XDF reconstruction remain separate
+qualification gates.
+
+Evidence acceptance is independent of visual smoothness. Validate this layer
+with pure transition traces, controlled clocks, stale-generation cases,
+synthetic journal/LSL/XDF gaps and corruption, JS/Rust parity where both are
+readers, and finally the exact installed Windows candidate with real media and
+physical input. Parsing, screenshots or mock media callbacks cannot close the
+installed-run or XDF-only reconstruction gate.
 
 ## Independent-instance reproduction architecture
 

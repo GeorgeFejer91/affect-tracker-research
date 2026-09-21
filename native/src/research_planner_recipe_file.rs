@@ -7,10 +7,11 @@ use crate::research_planner_recipe::{
     SavedPlannerRecipeReceipt,
 };
 use crate::research_planner_recipe_supported::{
-    parse_planner_recipe_asset_bytes, parse_supported_planner_recipe_bytes,
-    LoadedSupportedPlannerRecipe, SupportedPlannerRecipe,
+    parse_planner_recipe_asset_bytes, parse_planner_recipe_asset_bytes_v6,
+    parse_supported_planner_recipe_bytes, LoadedSupportedPlannerRecipe, SupportedPlannerRecipe,
 };
 use crate::research_planner_recipe_v5::{PlannerAssetManifestV5, QuestionnaireAssetSnapshot};
+use crate::research_planner_recipe_v6::PlannerAssetManifestV6;
 use serde::Serialize;
 use std::fs::{self, Metadata, OpenOptions};
 use std::io::{Read, Write};
@@ -194,15 +195,21 @@ pub(crate) fn read_supported_planner_recipe_file(
 
 fn parse_supported_at(path: &Path, bytes: &[u8]) -> ResearchResult<LoadedSupportedPlannerRecipe> {
     let value = read_value(bytes)?;
-    if value["schema"] != "affect-research-planner-recipe" || value["version"] != 5 {
+    if value["schema"] != "affect-research-planner-recipe"
+        || !matches!(value["version"].as_u64(), Some(5 | 6))
+    {
         return parse_supported_planner_recipe_bytes(bytes);
     }
-    let manifest = PlannerAssetManifestV5::read(bytes)?;
+    let references = if value["version"] == 6 {
+        PlannerAssetManifestV6::read(bytes)?.references()?
+    } else {
+        PlannerAssetManifestV5::read(bytes)?.references()?
+    };
     let directory = path.parent().ok_or_else(|| {
         CommandError::invalid_contract("Manifest requires a containing directory.")
     })?;
     let mut snapshots = Vec::new();
-    for entry in manifest.references()? {
+    for entry in references {
         let target = directory.join(&entry.relative_path);
         let metadata = require_unlinked_path(&target)?;
         if !metadata.is_file() || metadata.len() != entry.byte_length {
@@ -217,7 +224,11 @@ fn parse_supported_at(path: &Path, bytes: &[u8]) -> ResearchResult<LoadedSupport
             source_text,
         });
     }
-    parse_planner_recipe_asset_bytes(bytes, snapshots)
+    if value["version"] == 6 {
+        parse_planner_recipe_asset_bytes_v6(bytes, snapshots)
+    } else {
+        parse_planner_recipe_asset_bytes(bytes, snapshots)
+    }
 }
 
 /// Persist verified snapshots before publishing the referencing manifest. An
@@ -293,6 +304,18 @@ pub(crate) fn verify_loaded_questionnaire_assets(
             }
         }
     }
+    if let SupportedPlannerRecipe::V6(recipe) = &loaded.recipe {
+        for snapshot in &recipe.assets {
+            let path = directory.join(&snapshot.relative_path);
+            if require_unlinked_path(&path)?.len() != snapshot.source_text.len() as u64
+                || read_recipe_bytes(&path)? != snapshot.source_text.as_bytes()
+            {
+                return Err(CommandError::invalid_contract(
+                    "A questionnaire asset changed after the experiment was loaded.",
+                ));
+            }
+        }
+    }
     Ok(())
 }
 
@@ -331,6 +354,9 @@ impl FileRecipeDocument for LoadedSupportedPlannerRecipe {
     }
     fn prepare_assets(&self, directory: &Path) -> ResearchResult<()> {
         if let SupportedPlannerRecipe::V5(recipe) = &self.recipe {
+            store_questionnaire_snapshots(directory, &recipe.assets)?;
+        }
+        if let SupportedPlannerRecipe::V6(recipe) = &self.recipe {
             store_questionnaire_snapshots(directory, &recipe.assets)?;
         }
         Ok(())

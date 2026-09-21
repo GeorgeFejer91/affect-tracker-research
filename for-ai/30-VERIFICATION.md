@@ -516,9 +516,12 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
   ```powershell
   $env:AFFECT_RESEARCH_RUN_LSL_LOOPBACK = "1"
-  & "$env:USERPROFILE\.cargo\bin\cargo.exe" test --manifest-path native/Cargo.toml --locked --all-features research_lsl::tests::windows_lsl_loopback_conformance -- --ignored --exact --nocapture
+  ./scripts/qualification/native-tests.ps1 -FeatureSet all-features -TestFilter research_lsl::tests::windows_lsl_loopback_conformance -IncludeIgnored
   Remove-Item Env:AFFECT_RESEARCH_RUN_LSL_LOOPBACK
   ```
+
+  Use the wrapper on Windows because the Rust test executables require the
+  checked-in Common Controls activation manifest before process startup.
 
   The loopback exercises `LslService`-owned outlets through real local
   discovery, wire metadata, inlets, state/marker transport, shutdown, and a
@@ -561,10 +564,9 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and optional Windows removed native player stack integration
-tree without uploading that tree. Manual workflows may produce explicitly
-unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
-packages. The internal
+CI may validate the static artifact and the Windows native suite without
+publishing either one. Manual workflows may produce the explicitly unqualified
+Windows Planner/Runner suite and macOS/Linux interface-evaluation packages. The internal
 `0.4.0-alpha.1` label remains non-stable and non-research-ready until every
 applicable automated, installed-artifact, timing, media, recovery, input, LSL,
 accessibility, and physical workflow gate above passes for one exact candidate.
@@ -588,10 +590,11 @@ what must not drift; they are not a checklist to recite in every change.
   input or editing surface.
 - Qualify only Windows Tauri and desktop Chrome/Edge unless the user explicitly
   amends the charter.
-- Treat Windows/macOS/Linux no-optional-feature packages as unsigned internal
-  Setup/interface-evaluation shells. Preserve their positive native-acquisition
-  feature gate and all-false qualification provenance; never describe them as
-  supported experiment downloads.
+- Treat the Windows Planner/Runner suite as an unsigned internal experiment
+  candidate with all research-readiness provenance flags false until its gates
+  pass. macOS/Linux packages remain interface-evaluation shells that block
+  experiment Start. Never describe an unqualified artifact as a research
+  release.
 - Treat exact canonical `experiment.package.json` (`ExperimentPackageV1`)
   bytes/self-hash, derived
   settings/assets/assignment/protocol hashes, transient-name erasure,

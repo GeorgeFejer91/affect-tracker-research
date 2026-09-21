@@ -6,7 +6,7 @@ function field(key, unit, min = null) {
 }
 
 export function screenLayoutDraftMarkup() {
-  return `<div id="screen-layout-editor" class="screen-layout-draft" data-screen-layout-draft>
+  return `<div id="screen-layout-editor" class="screen-layout-draft" data-screen-layout-draft data-ledger-page-spread>
     <p class="field-help">Define one target display and one fixed video-to-Flubber arrangement for all videos. Confirm this section to include its validated layout in the experiment recipe.</p>
     <div class="layout-miniature" data-layout-scene></div>
     <p class="field-help" data-layout-dependencies>Video display geometry and maximum animation bounds are unavailable. The feedback square shows its drawing viewport; fit is not verified.</p>

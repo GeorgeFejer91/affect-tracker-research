@@ -5,10 +5,10 @@ const numericField = (id, label, value, min, max, step) => `
     value="${value}" min="${min}" max="${max}" step="${step}" required></label>`;
 
 export function xrLayoutEditorMarkup() {
-  return `<div class="xr-layout-editor" data-xr-layout-editor>
+  return `<div class="xr-layout-editor" data-xr-layout-editor data-ledger-page-spread>
     <label class="check-field"><input type="checkbox" data-xr-enabled><span>Design a screen for WebXR</span></label>
     <p class="field-help">Set the size and position of a flat screen in virtual space. WebXR playback is planned.</p>
-    <div data-xr-content hidden>
+    <div data-xr-content data-ledger-page-spread hidden>
       <p class="field-error" id="xr-layout-error" data-xr-error role="alert" hidden></p>
       <fieldset class="xr-profile-fields"><legend>Screen position</legend>
         <div class="field-grid">

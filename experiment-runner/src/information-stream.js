@@ -80,9 +80,9 @@ export class InformationAssembler {
 }
 
 async function reconstructStartup(startup, context) {
-  require(startup?.schema === "affect-runner-startup" && [1, 2, 3, 4, 5].includes(startup.version) && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
+  require(startup?.schema === "affect-runner-startup" && [1, 2, 3, 4, 5, 6].includes(startup.version) && startup.recipeSourceByteSha256 === context.recipeSourceByteSha256, "Invalid startup identity.");
   const keys = ["schema", "version", "recipeSourceText", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "markerProfile", "effectiveLsl", "build"];
-  if (startup.version === 5) keys.push("questionnaireAssets");
+  if ([5, 6].includes(startup.version)) keys.push("questionnaireAssets");
   if (startup.version === 1) keys.push("legacyCodedParticipant");
   exact(startup, keys, "Information startup");
   const receipt = await readRunnerRecipe(encoder.encode(startup.recipeSourceText), startup.questionnaireAssets);
@@ -116,14 +116,14 @@ async function reconstructStartup(startup, context) {
 
 function validateResponses(record, plan, context, open, alreadySubmitted) {
   exact(record, ["schema", "version", "entryId", "position", "module", "questionnaireId", "questionnaireVersion", "definitionSha256", "status", "responses", "runId", "attemptId", "participantId", "recipeSourceByteSha256", "planIdentitySha256", "monotonicMs"], "Response record");
-  require(record.schema === "affect-runner-master-responses" && record.version === ({1:1,2:2,3:2,4:3,5:3}[plan.version]) && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
+  require(record.schema === "affect-runner-master-responses" && record.version === ({1:1,2:2,3:2,4:3,5:3,6:3}[plan.version]) && ["draft", "submitted"].includes(record.status), "Unsupported response schema or status.");
   const step = plan.steps[record.position - 1];
   require(step?.kind === "questionnaire" && step.entryId === record.entryId && open === record.entryId && !alreadySubmitted.has(record.entryId), "Answers do not belong to the current unsubmitted form occurrence.");
   const definition = step.payload.definition;
   for (const key of ["runId", "attemptId", "recipeSourceByteSha256"]) require(record[key] === context[key], "Responses belong to another attempt.");
   require(record.participantId === plan.participantId && record.planIdentitySha256 === plan.planIdentitySha256 && canonicalJson(record.module) === canonicalJson(step.payload.module), "Response selection or module differs.");
   for (const key of ["questionnaireId", "questionnaireVersion", "definitionSha256"]) require(record[key] === definition[key], "Response definition differs.");
-  if (definition.schema === "affect-research-surveyjs-definition" && definition.version === 1 && [4, 5].includes(plan.version)) {
+  if (definition.schema === "affect-research-surveyjs-definition" && definition.version === 1 && [4, 5, 6].includes(plan.version)) {
     const response = record.responses;
     exact(response, ["engineVersion", "language", "completionPolicy", "randomSeed", "evaluatedAtUnixMs", "inputData", "data", "visibleQuestionNames", "pageNo", "elapsedMs"], "SurveyJS responses");
     for (const key of ["engineVersion", "language", "completionPolicy"]) require(response[key] === definition[key], "SurveyJS response interpretation differs from its definition.");
@@ -134,7 +134,7 @@ function validateResponses(record, plan, context, open, alreadySubmitted) {
     if (record.status === "submitted") alreadySubmitted.add(record.entryId);
     return;
   }
-  if (definition.schema === "affect-research-form-definition" && definition.version === 1 && [2, 3, 4, 5].includes(plan.version)) {
+  if (definition.schema === "affect-research-form-definition" && definition.version === 1 && [2, 3, 4, 5, 6].includes(plan.version)) {
     validateTypedResponseRows(definition, record.responses, { submitted: record.status === "submitted", monotonicMs: record.monotonicMs });
     if (record.status === "submitted") alreadySubmitted.add(record.entryId);
     return;
@@ -171,12 +171,13 @@ export async function inspectInformationStream(samples) {
         exact(q, ["schema", "version", "sessionKind", "researchQualified", "reason"], "Execution qualification");
         require(q.schema === "affect-runner-execution-qualification" && q.version === 1 && q.sessionKind === "local-validation" && q.researchQualified === false && q.reason === "explicit-unqualified-validation", "Invalid validation qualification.");
         executionQualification = q; startup = value.startup;
-        require([3, 4, 5].includes(startup.version), "Validation startup requires master3, master4 or master5.");
+        require([3, 4, 5, 6].includes(startup.version), "Validation startup requires master3, master4, master5 or master6.");
       } else { startup = value; }
       plan = await reconstructStartup(startup, assembler.context);
       markerSamples.push({ value: canonicalJson(startup.markerProfile), timestamp: transfer.commitLslTimeSeconds });
     } else {
-      require(Number.isFinite(value.monotonicMs) && value.monotonicMs >= monotonic && value.monotonicMs >= 0 && value.monotonicMs <= Number.MAX_SAFE_INTEGER, "Native observation clock is invalid or reversed."); monotonic = value.monotonicMs;
+      const observedClock = transfer.kind === "observation" && value.version === 2 ? value.acceptedMonotonicMs : value.monotonicMs;
+      require(Number.isFinite(observedClock) && observedClock >= monotonic && observedClock >= 0 && observedClock <= Number.MAX_SAFE_INTEGER, "Native observation clock is invalid or reversed."); monotonic = observedClock;
       if (transfer.kind === "observation") {
         markerSamples.push({ value: canonicalJson(value), timestamp: transfer.firstLslTimeSeconds });
         if (value.eventType === "formStart") openForm = value.entryId;

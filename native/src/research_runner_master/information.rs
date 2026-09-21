@@ -243,6 +243,11 @@ pub(crate) fn startup_bundle(
     {
         value["questionnaireAssets"] = serde_json::json!(recipe.assets);
     }
+    if let crate::research_planner_recipe_supported::SupportedPlannerRecipe::V6(recipe) =
+        &prepared.loaded.recipe
+    {
+        value["questionnaireAssets"] = serde_json::json!(recipe.assets);
+    }
     if prepared.plan.version == 1 {
         value["legacyCodedParticipant"] = participant;
     }

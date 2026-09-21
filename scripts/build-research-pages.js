@@ -15,11 +15,21 @@ const distributableQuestionnaireFiles = Object.freeze([
   "ssq-six-item-en.csv",
   "vr-exp-en.csv",
 ]);
+const pretextRuntimeFiles = Object.freeze([
+  "analysis.js",
+  "bidi.js",
+  "layout.js",
+  "line-break.js",
+  "line-text.js",
+  "measurement.js",
+  "generated/bidi-data.js",
+]);
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(resolve(outputRoot, "src"), { recursive: true });
 await mkdir(resolve(outputRoot, "assets"), { recursive: true });
 await mkdir(resolve(outputRoot, "questionnaires"), { recursive: true });
+await mkdir(resolve(outputRoot, "dependencies", "pretext", "generated"), { recursive: true });
 await Promise.all([
   cp(resolve(sourceRoot, "index.html"), resolve(outputRoot, "index.html")),
   cp(resolve(sourceRoot, "research.html"), resolve(outputRoot, "research.html")),
@@ -38,6 +48,10 @@ await Promise.all([
   cp(resolve(sourceRoot, "assets", "app-logo.svg"), resolve(outputRoot, "assets", "app-logo.svg")),
   cp(resolve(sourceRoot, "assets", "app-symbol.svg"), resolve(outputRoot, "assets", "app-symbol.svg")),
   cp(resolve(sourceRoot, "assets", "ledger-tab-icons.svg"), resolve(outputRoot, "assets", "ledger-tab-icons.svg")),
+  ...pretextRuntimeFiles.map((name) => cp(
+    resolve(repositoryRoot, "node_modules", "@chenglou", "pretext", "dist", name),
+    resolve(outputRoot, "dependencies", "pretext", name),
+  )),
   ...["en", "de"].map(language => cp(resolve(sourceRoot, "assets", "questionnaires", "demographics", `${language}.json`),
     resolve(outputRoot, "assets", "questionnaires", "demographics", `${language}.json`))),
   cp(resolve(repositoryRoot, "experiment-runner", "assets", "runner-symbol.svg"), resolve(outputRoot, "assets", "runner-symbol.svg")),
@@ -48,6 +62,15 @@ await Promise.all([
     { recursive: true },
   ),
 ]);
+
+const textFitPath = resolve(outputRoot, "src", "research", "text-fit.js");
+const textFitSource = await readFile(textFitPath, "utf8");
+const pagesTextFitSource = textFitSource.replace(
+  "../../../../node_modules/@chenglou/pretext/dist/layout.js",
+  "../../dependencies/pretext/layout.js",
+);
+if (pagesTextFitSource === textFitSource) throw new Error("Pretext Pages import was not found.");
+await writeFile(textFitPath, pagesTextFitSource);
 
 // Browser delivery shares Research contracts and UI modules, but must not ship
 // any Tauri-only entrypoint or native adapter implementation.

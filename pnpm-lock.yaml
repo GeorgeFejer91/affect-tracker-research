@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@chenglou/pretext':
+        specifier: 0.0.9
+        version: 0.0.9
       dompurify:
         specifier: 3.4.15
         version: 3.4.15
@@ -32,6 +35,9 @@ importers:
         version: 8.2.2(esbuild@0.28.1)
 
 packages:
+
+  '@chenglou/pretext@0.0.9':
+    resolution: {integrity: sha512-vInlpC//3vjRfWTs78k2BBIq/0bUdpjIp8TIn9fXe0NvnChhTQZfjioVzERQQbkQvCVpPpw7PDOrTWMHpq27VA==}
 
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
@@ -567,6 +573,8 @@ packages:
         optional: true
 
 snapshots:
+
+  '@chenglou/pretext@0.0.9': {}
 
   '@esbuild/aix-ppc64@0.28.1':
     optional: true

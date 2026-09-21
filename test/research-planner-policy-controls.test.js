@@ -4,13 +4,14 @@ import { readFile } from "node:fs/promises";
 import { readPlannerPolicyControls, restorePlannerPolicyControls, preparePlannerPolicyControls } from "../experiment-planner/web/src/research/planner-policy-controls.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/planner-recipe-policy-v1.json", import.meta.url)));
+const legacyProjection = { ...fixture, version: 2, acquisitionWindow: "activeVideoOnly" };
 
 test("prepared policy is detached and read-only, and rejects changed control identity or values", () => {
   const h = harness(), before = h.snapshot(), input = structuredClone(fixture);
   const prepared = preparePlannerPolicyControls(h.root, input, { isCurrent: () => true });
   input.participantCount = 77;
   assert.deepEqual(h.snapshot(), before);
-  assert.deepEqual(prepared.commit(), fixture); assert.deepEqual(readPlannerPolicyControls(h.root), fixture);
+  assert.deepEqual(prepared.commit(), fixture); assert.deepEqual(readPlannerPolicyControls(h.root), legacyProjection);
   assert.throws(() => prepared.commit());
   for (const replace of [false, true]) {
     const next = preparePlannerPolicyControls(h.root, fixture, { isCurrent: () => true });
@@ -22,6 +23,7 @@ test("prepared policy is detached and read-only, and rejects changed control ide
 function harness() {
   const fields = new Map([
     ["participant-count", { value: "42" }], ["sampling-frequency", { value: "100" }],
+    ["acquisition-window", { value: "fullAttempt" }],
     ["output-csv", { checked: false }], ["output-tsv", { checked: true }],
     ["lsl-enabled", { checked: true }], ["lsl-state-stream", { value: "AuthoredState" }],
     ["lsl-stream-type", { value: "AuthoredAffect" }], ["lsl-marker-stream", { value: "AuthoredMarkers" }],
@@ -35,6 +37,7 @@ test("fresh Planner policy captures every current control without an imported ex
   const h = harness(), policy = readPlannerPolicyControls(h.root);
   assert.equal(policy.participantCount, 42);
   assert.equal(policy.samplingFrequencyHz, 100);
+  assert.equal(policy.acquisitionWindow, "fullAttempt");
   assert.deepEqual(policy.output, { csv: false, tsv: true });
   assert.deepEqual(policy.lsl, { enabled: true, stateStream: "AuthoredState", streamType: "AuthoredAffect", markerStream: "AuthoredMarkers", sourceId: "authored-source" });
   assert.deepEqual(policy.playback, fixture.playback);
@@ -54,7 +57,7 @@ test("policy restoration is exact and rejects invalid, stale or missing-control 
   const h = harness();
   const normalized = restorePlannerPolicyControls(h.root, fixture, { isCurrent: () => true });
   assert.deepEqual(normalized, fixture);
-  assert.deepEqual(readPlannerPolicyControls(h.root), fixture);
+  assert.deepEqual(readPlannerPolicyControls(h.root), legacyProjection);
   const before = h.snapshot(), changed = { ...fixture, participantCount: 57 };
   assert.equal(restorePlannerPolicyControls(h.root, changed, { isCurrent: () => false }), false);
   assert.deepEqual(h.snapshot(), before);

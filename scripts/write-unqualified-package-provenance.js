@@ -13,6 +13,7 @@ const TARGETS = Object.freeze({
     architecture: "x64",
     nodePlatform: "win32",
     nodeArch: "x64",
+    suitePrograms: Object.freeze(["experiment-planner", "experiment-runner"]),
     artifacts: Object.freeze([
       Object.freeze({ kind: "nsis", directory: "native/target/release/bundle/nsis", suffix: ".exe" }),
     ]),
@@ -170,8 +171,12 @@ const receipt = {
     unsigned: true,
     notarized: false,
     published: false,
-    cargoFeatures: "no-default-features",
+    cargoFeatures: target.suitePrograms
+      ? "planner:no-default-features;runner:default+runner-bin+tauri/custom-protocol"
+      : "no-default-features",
     bundledNativeMediaRuntime: false,
+    suitePrograms: target.suitePrograms ?? ["experiment-planner"],
+    selfContainedSuiteRoot: Boolean(target.suitePrograms),
   },
   toolchain: {
     node: process.version,
@@ -191,7 +196,7 @@ const receipt = {
   },
   artifacts,
   notice:
-    "Workflow artifact only. This unsigned package is for internal interface evaluation and is not a supported download, qualified experiment build, or research-ready release.",
+    "Workflow artifact only. This unsigned suite candidate is not signed, published, or research-qualified until its separate installed and experiment-evidence gates pass.",
 };
 
 await mkdir(dirname(outputPath), { recursive: true });

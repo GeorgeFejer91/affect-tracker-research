@@ -35,6 +35,9 @@ const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mov", "m4v", "avi", "mkv"];
 const MAX_PROTOCOL_CHUNK: u64 = 8 * 1024 * 1024;
 const MAX_QUESTIONNAIRE_SOURCE_BYTES: usize = 5 * 1024 * 1024;
 const WORKSPACE_LIBRARY_NAMES: [&str; 4] = ["stimuli", "settings", "outputs", "recovery"];
+const SUITE_ROOT_MARKER_NAME: &str = "affect-research-suite-root.json";
+const SUITE_ROOT_MARKER_BYTES: &[u8] =
+    b"{\"schema\":\"AffectResearchSuiteRootV1\",\"version\":1}\n";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -358,6 +361,77 @@ pub struct WorkspaceService {
     selected: Mutex<Option<SelectedWorkspace>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SuiteEnvironment {
+    pub app_data_dir: PathBuf,
+    pub webview_data_dir: PathBuf,
+    workspace_root: PathBuf,
+}
+
+pub(crate) fn detect_installed_suite_root(executable: &Path) -> ResearchResult<Option<PathBuf>> {
+    let Some(executable_parent) = executable.parent() else {
+        return Err(CommandError::forbidden(
+            "The desktop executable location is unavailable.",
+        ));
+    };
+    for candidate in executable_parent.ancestors().take(3) {
+        let marker = candidate.join("resources").join(SUITE_ROOT_MARKER_NAME);
+        let metadata = match fs::symlink_metadata(&marker) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(CommandError::io(error)),
+        };
+        if !metadata.is_file()
+            || metadata.file_type().is_symlink()
+            || metadata.len() != SUITE_ROOT_MARKER_BYTES.len() as u64
+            || fs::read(&marker).map_err(CommandError::io)? != SUITE_ROOT_MARKER_BYTES
+        {
+            return Err(CommandError::forbidden(
+                "The installed suite marker is invalid.",
+            ));
+        }
+        let root = candidate.canonicalize().map_err(CommandError::io)?;
+        let root_metadata = fs::symlink_metadata(&root).map_err(CommandError::io)?;
+        if !root_metadata.is_dir() || root_metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "The installed suite root is not an ordinary directory.",
+            ));
+        }
+        return Ok(Some(root));
+    }
+    Ok(None)
+}
+
+pub(crate) fn prepare_suite_environment(
+    suite_root: &Path,
+    role_directory: &str,
+) -> ResearchResult<SuiteEnvironment> {
+    if !matches!(role_directory, "planner" | "runner") {
+        return Err(CommandError::invalid_contract(
+            "The desktop suite role is unsupported.",
+        ));
+    }
+    let root = suite_root
+        .canonicalize()
+        .map_err(|_| CommandError::forbidden("The installed suite root is unavailable."))?;
+    let root_metadata = fs::symlink_metadata(&root).map_err(CommandError::io)?;
+    if !root_metadata.is_dir() || root_metadata.file_type().is_symlink() {
+        return Err(CommandError::forbidden(
+            "The installed suite root is not an ordinary directory.",
+        ));
+    }
+    let state = ensure_exact_child_directory(&root, "state")?;
+    let role_state = ensure_exact_child_directory(&state, role_directory)?;
+    let app_data_dir = ensure_exact_child_directory(&role_state, "app-data")?;
+    let webview_data_dir = ensure_exact_child_directory(&role_state, "webview")?;
+    let workspace_root = ensure_exact_child_directory(&root, "workspace")?;
+    Ok(SuiteEnvironment {
+        app_data_dir,
+        webview_data_dir,
+        workspace_root,
+    })
+}
+
 impl WorkspaceService {
     pub fn new(app_data_dir: PathBuf) -> ResearchResult<Self> {
         let namespace = app_data_dir.join("affect-research").join("v1");
@@ -387,6 +461,12 @@ impl WorkspaceService {
         )?;
         let workspace = ensure_exact_child_directory(&product, "workspace")?;
         service.select(workspace)?;
+        Ok(service)
+    }
+
+    pub(crate) fn with_suite_environment(environment: &SuiteEnvironment) -> ResearchResult<Self> {
+        let service = Self::new(environment.app_data_dir.clone())?;
+        service.select(environment.workspace_root.clone())?;
         Ok(service)
     }
 
@@ -3369,6 +3449,62 @@ mod tests {
             assert_eq!(fs::read(&conflict_path).unwrap(), b"reserved by the user");
             fs::remove_dir_all(base).unwrap();
         }
+    }
+
+    #[test]
+    fn installed_suite_marker_resolves_both_executable_locations() {
+        let root = temporary_directory("installed-suite-marker");
+        let resources = root.join("resources");
+        let runner_bin = resources.join("bin");
+        fs::create_dir_all(&runner_bin).unwrap();
+        fs::write(
+            resources.join(SUITE_ROOT_MARKER_NAME),
+            SUITE_ROOT_MARKER_BYTES,
+        )
+        .unwrap();
+
+        assert_eq!(
+            detect_installed_suite_root(&root.join("affect-research.exe")).unwrap(),
+            Some(root.canonicalize().unwrap())
+        );
+        assert_eq!(
+            detect_installed_suite_root(&runner_bin.join("affect-runner.exe")).unwrap(),
+            Some(root.canonicalize().unwrap())
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn suite_environment_keeps_program_state_and_research_workspace_separate() {
+        let root = temporary_directory("suite-environment");
+        let environment = prepare_suite_environment(&root, "runner").unwrap();
+        let workspace = root.join("workspace");
+        let canonical_workspace = workspace.canonicalize().unwrap();
+
+        let service = WorkspaceService::with_suite_environment(&environment).unwrap();
+        assert_eq!(service.selected_root().unwrap(), canonical_workspace);
+        assert!(environment
+            .app_data_dir
+            .join("affect-research")
+            .join("v1")
+            .is_dir());
+        assert!(environment.webview_data_dir.is_dir());
+        for library in ["stimuli", "settings", "outputs", "recovery"] {
+            assert!(workspace.join(library).is_dir());
+        }
+        assert!(workspace.join("assets").join("stimuli").is_dir());
+        assert!(workspace.join("assets").join("questionnaires").is_dir());
+
+        let planner = prepare_suite_environment(&root, "planner").unwrap();
+        assert_ne!(planner.app_data_dir, environment.app_data_dir);
+        assert_eq!(
+            WorkspaceService::with_suite_environment(&planner)
+                .unwrap()
+                .selected_root()
+                .unwrap(),
+            canonical_workspace
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

@@ -2,7 +2,6 @@
 #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
 use super::information::InformationWriter;
 use super::information::{ContentKind, PreparedTransfer};
-use super::markers::MasterObservation;
 use crate::research_contracts::ResearchLslSettingsV1;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_lsl::LslState;
@@ -72,7 +71,7 @@ impl MasterLslService {
     ) -> ResearchResult<f64> {
         self.send(kind, PreparedTransfer::new(value)?)
     }
-    pub(crate) fn observe(&mut self, observation: &MasterObservation) -> ResearchResult<f64> {
+    pub(crate) fn observe(&mut self, observation: &impl serde::Serialize) -> ResearchResult<f64> {
         self.record(ContentKind::Observation, observation)
     }
     pub(crate) fn state(&self, state: LslState) -> ResearchResult<f64> {
@@ -104,7 +103,7 @@ impl MasterLslService {
     ) -> ResearchResult<Self> {
         Err(unavailable())
     }
-    pub(crate) fn observe(&mut self, _: &MasterObservation) -> ResearchResult<f64> {
+    pub(crate) fn observe(&mut self, _: &impl serde::Serialize) -> ResearchResult<f64> {
         Err(unavailable())
     }
     pub(crate) fn state(&self, _: LslState) -> ResearchResult<f64> {

@@ -16,6 +16,7 @@ const MIME_TYPES = Object.freeze({
 });
 
 const siteRoot = resolve(import.meta.dirname, "../experiment-planner/web");
+const pretextRoot = resolve(import.meta.dirname, "../node_modules/@chenglou/pretext/dist");
 const port = Number.parseInt(process.env.PORT ?? "8000", 10);
 const host = process.env.HOST ?? "127.0.0.1";
 
@@ -25,6 +26,14 @@ function responseType(file) {
 
 function resolveSitePath(pathname) {
   const requested = decodeURIComponent(pathname);
+  const pretextPrefix = "/node_modules/@chenglou/pretext/dist/";
+  if (requested.startsWith(pretextPrefix)) {
+    const file = resolve(pretextRoot, requested.slice(pretextPrefix.length));
+    if (file !== pretextRoot && !file.startsWith(pretextRoot + sep)) {
+      throw new Error("Path escapes the Pretext dependency root.");
+    }
+    return file;
+  }
   const relative = requested === "/" ? "index.html" : requested.replace(/^\/+/u, "");
   const file = resolve(siteRoot, relative);
   if (file !== siteRoot && !file.startsWith(siteRoot + sep)) {

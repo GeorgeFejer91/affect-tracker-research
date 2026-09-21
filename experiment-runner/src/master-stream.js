@@ -1,6 +1,7 @@
 import { canonicalJson, canonicalSha256 } from "../../experiment-planner/web/src/research/canonical.js";
 import { inspectPlannedMarkerTrace } from "../../experiment-planner/web/src/research/planned-marker-contract.js";
 import { masterParticipantId } from "./master-recipe.js";
+import { inspectEvidenceStream } from "./evidence-stream-v2.js";
 
 const profileKeys = ["schema", "version", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "runId", "attemptId", "plannedProfile", "executionProfile", "profileSha256"];
 const sha = /^[a-f0-9]{64}$/u, code = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
@@ -16,7 +17,7 @@ function parse(text, maximum) {
  * The version is supplied by verified startup context for v2/v3; the historical
  * dictionary-only entrypoint retains v1 by default. No hash-probing fallback. */
 export async function inspectMasterStream(samples, { planVersion = 1 } = {}) {
-  if (![1, 2, 3, 4, 5].includes(planVersion)) throw new Error("Unsupported master plan version.");
+  if (![1, 2, 3, 4, 5, 6].includes(planVersion)) throw new Error("Unsupported master plan version.");
   if (!Array.isArray(samples) || samples.length > 200001) throw new Error("Master stream trace exceeds its bound.");
   if (!samples.length) return { status: "incomplete", occurrences: [], issues: [{ code: "missing-profile" }] };
   const profile = parse(samples[0].value, 4 * 1024 * 1024);
@@ -39,8 +40,12 @@ export async function inspectMasterStream(samples, { planVersion = 1 } = {}) {
     if (!Number.isFinite(sample.timestamp) || sample.timestamp < last) throw new Error("Recorded master LSL timestamps are invalid or reversed.");
     last = sample.timestamp;
   }
-  const observations = samples.slice(1).map(sample => parse(sample.value, 2048));
+  const observations = samples.slice(1).map(sample => parse(sample.value, planVersion === 6 ? 4096 : 2048));
   for (const observation of observations) if (observation.runId !== profile.runId || observation.attemptId !== profile.attemptId) throw new Error("Recorded master markers belong to another run or attempt.");
+  if (planVersion === 6) {
+    const result = inspectEvidenceStream(profile, observations, profile);
+    return { ...result, profile, lslTimestamps: samples.map(sample => sample.timestamp) };
+  }
   const result = inspectPlannedMarkerTrace(profile.executionProfile, observations);
   return { ...result, profile, observations, lslTimestamps: samples.map(sample => sample.timestamp) };
 }

@@ -44,7 +44,7 @@ test("Windows desktop builds do not carry the removed native player stack protoc
     assert.doesNotMatch(workflow, retiredRuntimeTerms);
   }
   assert.match(checksWorkflow, /scripts\/qualification\/native-tests\.ps1 -FeatureSet all-features/u);
-  assert.doesNotMatch(packageWorkflow, /--all-features/u);
+  assert.match(packageWorkflow, /scripts\/qualification\/native-tests\.ps1 -FeatureSet all-features/u);
   assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);
   assert.match(packageWorkflow, /write-unqualified-package-provenance\.js/u);
@@ -58,7 +58,7 @@ test("Windows desktop builds do not carry the removed native player stack protoc
   assert.deepEqual(JSON.parse(runnerConfig).bundle.resources ?? [], []);
 });
 
-test("the local Windows package is interface-only and excludes the unreviewed native player stack closure", async () => {
+test("the local Windows suite embeds the separate Runner and excludes the retired native player stack", async () => {
   const [packageJson, helper, bundleConfigText, hooks, cargoToml, platform, gitignore] = await Promise.all([
     read("package.json"),
     read("scripts/build-unqualified-desktop-package.js"),
@@ -73,6 +73,7 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"[\s\S]*tauri\.bundle-windows-unqualified\.conf\.json/u);
   assert.match(helper, /--no-default-features/u);
   assert.match(helper, /"--bin",\s*"affect-research"/u);
+  assert.match(helper, /scripts\/build-runner-desktop\.js", "--release"/u);
   assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_[A-Z_]+_RUNTIME|--features[\s\S]*native-[a-z-]+|lsl-streaming/iu);
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(cargoToml, /name = "affect-runner"[\s\S]*?required-features = \["runner-bin"\]/u);
@@ -80,7 +81,10 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, {
-    "icons-ledger/icon.ico": "resources/ledger-icon.ico",
+    "icons-ledger/icon.ico": "resources/icons/planner-ledger.ico",
+    "runner-icons/icon.ico": "resources/icons/experiment-runner.ico",
+    "target/release/affect-runner.exe": "resources/bin/affect-runner.exe",
+    "windows/affect-research-suite-root.json": "resources/affect-research-suite-root.json",
   });
   assert.equal(bundleConfig.bundle.windows.allowDowngrades, false);
   assert.deepEqual(bundleConfig.bundle.windows.webviewInstallMode, {
@@ -90,9 +94,14 @@ test("the local Windows package is interface-only and excludes the unreviewed na
   assert.equal(bundleConfig.bundle.windows.nsis.installMode, "currentUser");
   assert.equal(bundleConfig.bundle.windows.nsis.startMenuFolder, "Affect Research");
   assert.equal(bundleConfig.bundle.windows.nsis.installerHooks, "windows/installer-hooks.nsh");
+  assert.equal(bundleConfig.productName, "Affect Research Suite");
+  assert.match(hooks, /NSIS_HOOK_POSTINSTALL[\s\S]*\$NoShortcutMode != 1[\s\S]*\$\{EndIf\}/u);
+  assert.match(hooks, /AffectResearchCustomShortcuts" 1[\s\S]*AffectResearchCustomShortcuts" 0/u);
+  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*StrCpy \$DeleteAppDataCheckboxState 0/u);
   assert.match(hooks, /Experiment Planner Classic\.lnk/u);
-  assert.match(hooks, /Experiment Planner Ledger\.lnk[\s\S]*"--ledger"[\s\S]*resources\\ledger-icon\.ico/u);
-  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*Delete[\s\S]*Experiment Planner Classic\.lnk[\s\S]*Delete[\s\S]*Experiment Planner Ledger\.lnk/u);
-  assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video playback/iu);
+  assert.match(hooks, /Experiment Planner Ledger\.lnk[\s\S]*"--ledger"[\s\S]*resources\\icons\\planner-ledger\.ico/u);
+  assert.match(hooks, /Experiment Runner\.lnk[\s\S]*resources\\bin\\affect-runner\.exe/u);
+  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*ReadRegDWORD[\s\S]*AffectResearchCustomShortcuts[\s\S]*\$0 = 1[\s\S]*Delete[\s\S]*Experiment Planner Classic\.lnk[\s\S]*Delete[\s\S]*Experiment Planner Ledger\.lnk[\s\S]*Delete[\s\S]*Experiment Runner\.lnk/u);
+  assert.match(bundleConfig.bundle.longDescription, /self-contained Windows suite/iu);
   assert.doesNotMatch(gitignore, /^native\/native-media\/runtime\/$/mu);
 });

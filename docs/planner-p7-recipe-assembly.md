@@ -2,9 +2,9 @@
 
 P7 owns session acceptance, final composition, named save acknowledgement and
 editable recipe reopening. Domain preparation in another segment is not session
-acceptance or a file save. This Backend Verification pass implements P7-03/04/07
-components and the policy/language foundations for P7-05/06/09; it does not yet
-deliver the complete successor master recipe.
+acceptance or a file save. Historical details below describe the policy-v1
+foundation; fresh authoring now publishes the explicit master6/policy-v2
+successor described in the compatibility authority.
 
 ## Current interfaces
 
@@ -59,6 +59,14 @@ The legacy-policy projector carries only these existing fields. It does not
 convert an old explicit schedule into authored variants or alter used-run
 evidence. The frozen `ExperimentPackageV1` reader and canonical bytes remain
 unchanged.
+
+`PlannerRecipePolicyV2` is confined to master6 and adds exactly one required
+field: `acquisitionWindow`, either `activeVideoOnly` or `fullAttempt`. All other
+field meanings and bounds project through the unchanged v1 validators. Fresh
+authoring defaults explicitly to `fullAttempt`; reopening policy v1 restores
+`activeVideoOnly` without changing the source. This is research semantics, not
+a UI preference. The browser Runner rejects master6; the desktop Runner owns
+its native scheduler and separate sample/input/event evidence artifacts.
 
 ## Questionnaire and variant correspondence
 

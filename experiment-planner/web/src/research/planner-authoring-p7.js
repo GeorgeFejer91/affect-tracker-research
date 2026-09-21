@@ -1,11 +1,12 @@
 import { DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1 } from "./experiment-package.js";
-import { PLANNER_RECIPE_POLICY_SCHEMA, validatePlannerRecipePolicyV1 } from "./planner-recipe-policy.js";
+import { PLANNER_RECIPE_POLICY_SCHEMA, validatePlannerRecipePolicyV2 } from "./planner-recipe-policy.js";
 import { commandFailure, validateSettingValue } from "./planner-authoring-contract.js";
 import { PLANNER_TARGETS, parsePlannerTargetSelection } from "./planner-target.js";
 
 const FIELDS = Object.freeze([
   { id: "P7.participantCount", control: "participant-count", type: "integer", minimum: 1, maximum: 100000, label: "Participant count" },
   { id: "P7.samplingFrequencyHz", control: "sampling-frequency", type: "integer", minimum: 1, maximum: 240, label: "Sampling frequency", unit: "Hz" },
+  { id: "P7.acquisitionWindow", control: "acquisition-window", type: "string", enum: ["activeVideoOnly", "fullAttempt"], label: "Affect sampling window" },
   { id: "P7.output.csv", control: "output-csv", type: "boolean", label: "CSV output" },
   { id: "P7.output.tsv", control: "output-tsv", type: "boolean", label: "TSV output" },
   { id: "P7.lsl.enabled", control: "lsl-enabled", type: "boolean", label: "Emit LSL" },
@@ -34,8 +35,9 @@ export function createPlannerPolicyCommandOwner({ root, onCommit = () => {} }) {
   }));
   function issuesFor(values) {
     try {
-      validatePlannerRecipePolicyV1({ schema: PLANNER_RECIPE_POLICY_SCHEMA, version: 1,
+      validatePlannerRecipePolicyV2({ schema: PLANNER_RECIPE_POLICY_SCHEMA, version: 2,
         participantCount: values["P7.participantCount"], samplingFrequencyHz: values["P7.samplingFrequencyHz"],
+        acquisitionWindow: values["P7.acquisitionWindow"],
         output: { csv: values["P7.output.csv"], tsv: values["P7.output.tsv"] },
         lsl: Object.fromEntries(["enabled", "stateStream", "streamType", "markerStream", "sourceId"].map(key => [key, values[`P7.lsl.${key}`]])),
         playback: structuredClone(DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1),

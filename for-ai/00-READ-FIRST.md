@@ -79,6 +79,7 @@ Key contract locations:
 | Product/package authority, delivery surfaces | [`10-PRODUCT.md`](./10-PRODUCT.md) |
 | Standalone installer, isolated app environment and package validation | [`installation-packaging/README.md`](./installation-packaging/README.md) |
 | Module responsibilities and boundaries | [`20-ARCHITECTURE.md`](./20-ARCHITECTURE.md) |
+| Realtime orchestration, semantic events, Flubber resets and LSL/XDF reconstruction workflow | [`.agents/skills/research-realtime-orchestration/SKILL.md`](../.agents/skills/research-realtime-orchestration/SKILL.md), [`20-ARCHITECTURE.md`](./20-ARCHITECTURE.md), [`65-RUNNER-SEGMENTS.md`](./65-RUNNER-SEGMENTS.md) |
 | All UI text, responsive CSS, font-to-box fitting and SVG centering | [`25-UI-LAYOUT.md`](./25-UI-LAYOUT.md): Cheng Lou's Pretext reference, shared dynamic fitting and readability checks |
 | Feature requirements per segment (P1–P7, Runner) | [`60-SEGMENT-CATALOGUE.md`](./60-SEGMENT-CATALOGUE.md), [`65-RUNNER-SEGMENTS.md`](./65-RUNNER-SEGMENTS.md) |
 | Scientific provenance, licences, citations | [`70-RESEARCH-PROVENANCE.md`](./70-RESEARCH-PROVENANCE.md), [`references.bib`](./references.bib) |
@@ -146,12 +147,17 @@ check. Never terminate unrelated processes or delete user files.
 Source of truth for status is Git and the checks above; this section records
 what is known open, not a ledger to be duplicated.
 
-- Native playback qualification, actual geometry/ISI observations, real device
-  testing and an independent real-session XDF verification remain **open**.
-- Master4 has intake and normal Start dispatch, but local validation accepts
-  only master3.
+- Installed master6 HTML-video playback and neutral/locked ISI presentation have
+  a local validation receipt. Real device testing, a recorded installed master6
+  attempt, endurance/adversity runs and independent real-session XDF
+  verification remain **open**.
+- Permanently unqualified local validation accepts masters 3–6 through their
+  versioned native Start paths. This does not qualify normal research Start.
 - Controller override execution and its receipts are **not implemented**;
   changed controller settings are drafts that block Start.
+- Master6 policy v2 implements explicit `activeVideoOnly` or `fullAttempt`
+  acquisition. Fresh authoring defaults to the latter; historical masters 1–5
+  retain active-decoded-video sampling and are never silently upgraded.
 - SurveyJS permits remote image URLs without embedding or hash-binding the
   resource bytes; retaining the object does not guarantee identical
   presentation.
@@ -163,8 +169,9 @@ what is known open, not a ledger to be duplicated.
   its player methods return `native_media_unavailable`. Keep the viewport,
   playback-mode/qualification and decode-receipt types because saved contracts
   still contain them.
-- The downloadable Windows alpha is an unsigned, no-optional-feature,
-  interface-evaluation package. It is not a research release.
+- The downloadable Windows alpha is one unsigned native suite containing the
+  separate Planner and Runner executables. Its provenance remains explicitly
+  unqualified; it is not a research release.
 
 Determine branch and source identity from Git (`git rev-parse HEAD`), not from
 a document.

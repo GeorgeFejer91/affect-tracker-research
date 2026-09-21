@@ -1,8 +1,9 @@
 import { DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1 } from "./experiment-package.js";
-import { PLANNER_RECIPE_POLICY_SCHEMA, validatePlannerRecipePolicyV1 } from "./planner-recipe-policy.js";
+import { PLANNER_RECIPE_POLICY_SCHEMA, validatePlannerRecipePolicyV1, validatePlannerRecipePolicyV2 } from "./planner-recipe-policy.js";
 
 const CONTROL_IDS = Object.freeze([
   "participant-count", "sampling-frequency", "output-csv", "output-tsv",
+  "acquisition-window",
   "lsl-enabled", "lsl-state-stream", "lsl-stream-type", "lsl-marker-stream", "lsl-source-id",
 ]);
 
@@ -18,10 +19,11 @@ function controls(root) {
  * no imported experiment, current Runner session or last-valid cache is needed. */
 export function readPlannerPolicyControls(root) {
   const fields = controls(root);
-  return validatePlannerRecipePolicyV1({
-    schema: PLANNER_RECIPE_POLICY_SCHEMA, version: 1,
+  return validatePlannerRecipePolicyV2({
+    schema: PLANNER_RECIPE_POLICY_SCHEMA, version: 2,
     participantCount: Number(fields["participant-count"].value),
     samplingFrequencyHz: Number(fields["sampling-frequency"].value),
+    acquisitionWindow: fields["acquisition-window"].value,
     output: { csv: fields["output-csv"].checked, tsv: fields["output-tsv"].checked },
     lsl: {
       enabled: fields["lsl-enabled"].checked,
@@ -40,11 +42,12 @@ export function readPlannerPolicyControls(root) {
  * No change events or acceptance receipts are manufactured by restoration. */
 export function restorePlannerPolicyControls(root, policy, { isCurrent } = {}) {
   if (typeof isCurrent !== "function") throw new TypeError("Planner policy restore requires a current-request guard.");
-  const normalized = validatePlannerRecipePolicyV1(policy);
+  const normalized = policy?.version === 2 ? validatePlannerRecipePolicyV2(policy) : validatePlannerRecipePolicyV1(policy);
   const fields = controls(root);
   if (!isCurrent()) return false;
   fields["participant-count"].value = String(normalized.participantCount);
   fields["sampling-frequency"].value = String(normalized.samplingFrequencyHz);
+  fields["acquisition-window"].value = normalized.version === 2 ? normalized.acquisitionWindow : "activeVideoOnly";
   fields["output-csv"].checked = normalized.output.csv;
   fields["output-tsv"].checked = normalized.output.tsv;
   fields["lsl-enabled"].checked = normalized.lsl.enabled;
@@ -57,7 +60,7 @@ export function restorePlannerPolicyControls(root, policy, { isCurrent } = {}) {
 
 export function preparePlannerPolicyControls(root, policy, { isCurrent, signal } = {}) {
   if (typeof isCurrent !== "function") throw new TypeError("Policy preparation requires a current-request guard.");
-  const normalized = validatePlannerRecipePolicyV1(structuredClone(policy));
+  const normalized = policy?.version === 2 ? validatePlannerRecipePolicyV2(structuredClone(policy)) : validatePlannerRecipePolicyV1(structuredClone(policy));
   const fields = controls(root);
   const before = Object.fromEntries(Object.entries(fields).map(([id, field]) => [id, { value: field.value, checked: field.checked }]));
   let committed = false;

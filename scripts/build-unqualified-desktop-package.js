@@ -22,6 +22,7 @@ const TARGETS = Object.freeze({
     nodeArch: "x64",
     bundles: "nsis",
     config: "native/tauri.bundle-windows-unqualified.conf.json",
+    suite: true,
   }),
   "macos-arm64": Object.freeze({
     nodePlatform: "darwin",
@@ -94,6 +95,22 @@ const target = parseTarget();
 const commit = verifyBoundary(target);
 const require = createRequire(import.meta.url);
 const tauriCli = require.resolve("@tauri-apps/cli/tauri.js");
+if (target.suite) {
+  const runner = spawnSync(
+    process.execPath,
+    ["scripts/build-runner-desktop.js", "--release"],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        AFFECT_TRACKER_BUILD_COMMIT: commit,
+      },
+      stdio: "inherit",
+    },
+  );
+  if (runner.error) throw runner.error;
+  if (runner.status !== 0) process.exit(runner.status ?? 1);
+}
 const result = spawnSync(
   process.execPath,
   [

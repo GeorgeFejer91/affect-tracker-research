@@ -2,10 +2,14 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('all-features', 'no-default-features')]
   [string]$FeatureSet,
-  [string]$TestFilter
+  [string]$TestFilter,
+  [switch]$IncludeIgnored
 )
 
 $ErrorActionPreference = 'Stop'
+if ($IncludeIgnored -and -not $TestFilter) {
+  throw '-IncludeIgnored requires an exact -TestFilter.'
+}
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $cargoManifest = Join-Path $repositoryRoot 'native\Cargo.toml'
 $activationManifest = Join-Path $repositoryRoot 'native\windows-common-controls.manifest'
@@ -95,11 +99,15 @@ try {
       }
 
       Write-Host "Running $(Split-Path $executable -Leaf) ($FeatureSet)"
+      $testArguments = @()
       if ($TestFilter) {
-        & $executable $TestFilter '--test-threads=1'
-      } else {
-        & $executable '--test-threads=1'
+        $testArguments += $TestFilter
       }
+      if ($IncludeIgnored) {
+        $testArguments += @('--ignored', '--exact', '--nocapture')
+      }
+      $testArguments += '--test-threads=1'
+      & $executable @testArguments
       if ($LASTEXITCODE -ne 0) {
         throw "Native test executable failed: $executable"
       }

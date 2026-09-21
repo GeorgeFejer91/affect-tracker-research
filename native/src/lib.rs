@@ -30,6 +30,7 @@ pub mod research_planner_recipe_v2;
 pub mod research_planner_recipe_v3;
 pub mod research_planner_recipe_v4;
 pub mod research_planner_recipe_v5;
+pub mod research_planner_recipe_v6;
 mod research_platform;
 pub mod research_protocol;
 pub mod research_questionnaire_recipe;
@@ -56,18 +57,32 @@ use research_input::ResearchInputService;
 use research_native_media::NativeMediaService;
 use research_native_protocol::runtime::PackageProtocolRuntime;
 use research_platform::NATIVE_ACQUISITION_SUPPORTED;
-use research_workspace::WorkspaceService;
+use research_workspace::{SuiteEnvironment, WorkspaceService};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{Manager, WindowEvent};
 
 const LEDGER_WINDOW_ICON: &[u8] = include_bytes!("../icons-ledger/128x128.png");
+const INSTALLED_WEBVIEW_ARGUMENTS: &str = "--disable-background-networking --disable-breakpad --disable-client-side-phishing-detection --disable-component-update --disable-default-apps --disable-domain-reliability --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-sync --metrics-recording-only --no-default-browser-check --no-first-run --no-pings --autoplay-policy=no-user-gesture-required";
 
 pub fn run() {
     let mut context = tauri::generate_context!();
+    let suite_environment = installed_suite_environment(DesktopRole::Planner)
+        .unwrap_or_else(|message| fail_desktop_startup(&message));
     let ledger = std::env::args_os()
         .skip(1)
         .any(|argument| argument == "--ledger");
+    if let (Some(window), Some(environment)) = (
+        context.config_mut().app.windows.first_mut(),
+        suite_environment.as_ref(),
+    ) {
+        // WindowConfig conversion does not retain an absolute data_directory.
+        // Suppress automatic creation; setup builds the installed window with
+        // the exact suite-local profile and offline background-network policy.
+        window.create = false;
+        window.data_directory = None;
+        debug_assert!(environment.webview_data_dir.is_absolute());
+    }
     if ledger {
         if let Some(window) = context.config_mut().app.windows.first_mut() {
             window.title = "Experiment Planner Ledger".into();
@@ -84,12 +99,23 @@ pub fn run() {
         context,
         None,
         ledger.then_some(LEDGER_WINDOW_ICON),
+        suite_environment,
     );
 }
 
 /// Independent Runner binary supplies its own embedded assets and identity.
-pub fn run_runner(context: tauri::Context<tauri::Wry>) {
-    launch(DesktopRole::Runner, context, None, None);
+pub fn run_runner(mut context: tauri::Context<tauri::Wry>) {
+    let suite_environment = installed_suite_environment(DesktopRole::Runner)
+        .unwrap_or_else(|message| fail_desktop_startup(&message));
+    if let (Some(window), Some(environment)) = (
+        context.config_mut().app.windows.first_mut(),
+        suite_environment.as_ref(),
+    ) {
+        window.create = false;
+        window.data_directory = None;
+        debug_assert!(environment.webview_data_dir.is_absolute());
+    }
+    launch(DesktopRole::Runner, context, None, None, suite_environment);
 }
 
 /// Production CLI entry point. It owns one private, hidden Planner lifecycle;
@@ -123,7 +149,13 @@ pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String
         window.focus = false;
         window.data_directory = None;
     }
-    Ok(launch(DesktopRole::Planner, context, Some(profile), None))
+    Ok(launch(
+        DesktopRole::Planner,
+        context,
+        Some(profile),
+        None,
+        None,
+    ))
 }
 
 fn launch(
@@ -131,6 +163,7 @@ fn launch(
     context: tauri::Context<tauri::Wry>,
     cli_profile: Option<PathBuf>,
     window_icon: Option<&'static [u8]>,
+    suite_environment: Option<SuiteEnvironment>,
 ) -> i32 {
     let cli_enabled = cli_profile.is_some();
     if cli_enabled {
@@ -167,14 +200,27 @@ fn launch(
                     .visible(false)
                     .focused(false)
                     .build()?;
+            } else if let Some(environment) = &suite_environment {
+                let config = app.config().app.windows.first().ok_or_else(|| {
+                    std::io::Error::other("Installed suite window configuration is absent.")
+                })?;
+                tauri::WebviewWindowBuilder::from_config(app, config)?
+                    .data_directory(environment.webview_data_dir.clone())
+                    .additional_browser_args(INSTALLED_WEBVIEW_ARGUMENTS)
+                    .build()?;
             }
             let app_data_dir = match &cli_profile {
                 Some(profile) => profile.join("app-data"),
-                None => app.path().app_data_dir()?,
+                None => match &suite_environment {
+                    Some(environment) => environment.app_data_dir.clone(),
+                    None => app.path().app_data_dir()?,
+                },
             };
             let workspace = Arc::new(
                 (if cli_enabled {
                     WorkspaceService::new(app_data_dir.clone())
+                } else if let Some(environment) = &suite_environment {
+                    WorkspaceService::with_suite_environment(environment)
                 } else {
                     // Companion programs share the Planner's visible project,
                     // while their WebViews, preferences and sessions stay in app data.
@@ -210,7 +256,7 @@ fn launch(
                 // needs the UI event loop. A setup error cannot safely join it.
                 app.manage(
                     research_local_questionnaire_preset_commands::LocalPresetService::new(
-                        app.path().app_data_dir()?,
+                        app_data_dir.clone(),
                     ),
                 );
                 app.manage(Arc::clone(&setup_authoring));
@@ -334,15 +380,18 @@ fn launch(
             research_runner_master::commands::research_runner_master_start_v3,
             research_runner_master::commands::research_runner_master_validation_start,
             research_runner_master::commands::research_runner_master_validation_start_v5,
+            research_runner_master::commands::research_runner_master_validation_start_v6,
             research_runner_master::commands::research_runner_master_validation_preflight,
             research_runner_master::commands::research_runner_master_start_v4,
             research_runner_master::commands::research_runner_master_start_v5,
+            research_runner_master::commands::research_runner_master_start_v6,
             research_runner_master::commands::research_runner_master_status,
             research_runner_master::commands::research_runner_master_action,
             research_runner_master::commands::research_runner_master_action_v2,
             research_runner_master::commands::research_runner_master_action_v3,
             research_runner_master::commands::research_runner_master_action_v4,
             research_runner_master::commands::research_runner_master_action_v5,
+            research_runner_master::commands::research_runner_master_action_v6,
             research_runner_master::commands::research_runner_master_history,
             research_runner_master::commands::research_runner_variant_usage,
             research_desktop::research_runner_fullscreen,
@@ -417,6 +466,28 @@ fn launch(
         app.run(on_event);
         0
     }
+}
+
+fn installed_suite_environment(role: DesktopRole) -> Result<Option<SuiteEnvironment>, String> {
+    let executable = std::env::current_exe()
+        .map_err(|_| "The desktop executable location is unavailable.".to_owned())?;
+    let Some(root) = research_workspace::detect_installed_suite_root(&executable)
+        .map_err(|error| error.message)?
+    else {
+        return Ok(None);
+    };
+    let role_directory = match role {
+        DesktopRole::Planner => "planner",
+        DesktopRole::Runner => "runner",
+    };
+    research_workspace::prepare_suite_environment(&root, role_directory)
+        .map(Some)
+        .map_err(|error| error.message)
+}
+
+fn fail_desktop_startup(message: &str) -> ! {
+    eprintln!("Affect Research could not prepare its self-contained suite folder: {message}");
+    std::process::exit(2)
 }
 
 fn request_companion_exit(app: &tauri::AppHandle, code: i32) {

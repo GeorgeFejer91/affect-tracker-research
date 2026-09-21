@@ -56,6 +56,22 @@ pub struct MasterStartRequestV4(pub MasterStartRequestV2);
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
 pub struct MasterStartRequestV5(pub MasterStartRequestV2);
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+pub struct MasterStartRequestV6(pub MasterStartRequestV2);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterActionRequestV6 {
+    pub version: u32,
+    pub run_id: String,
+    pub action: MasterActionV4,
+}
+impl MasterActionRequestV6 {
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
+        require_wire_version(self.version, 6)
+    }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -202,6 +218,14 @@ pub struct MasterValidationStartRequestV5 {
     pub version: u32,
     pub acknowledge_unqualified: bool,
     pub experiment: MasterStartRequestV5,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterValidationStartRequestV6 {
+    pub version: u32,
+    pub acknowledge_unqualified: bool,
+    pub experiment: MasterStartRequestV6,
 }
 
 struct StartInput {
@@ -467,6 +491,14 @@ impl MasterRuntime {
         require_wire_version(request.0.version, 5)?;
         self.start_typed(request.0, window)
     }
+    pub fn start_v6(
+        &self,
+        request: MasterStartRequestV6,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.0.version, 6)?;
+        self.start_typed(request.0, window)
+    }
     fn start_typed(
         &self,
         request: MasterStartRequestV2,
@@ -499,6 +531,20 @@ impl MasterRuntime {
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         require_wire_version(request.experiment.0.version, 5)?;
+        if !request.acknowledge_unqualified {
+            return Err(CommandError::forbidden(
+                "Explicit unqualified validation acknowledgement is required.",
+            ));
+        }
+        self.start_typed_mode(request.experiment.0, window, true)
+    }
+    pub fn start_validation_v6(
+        &self,
+        request: MasterValidationStartRequestV6,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
+        require_wire_version(request.version, 1)?;
+        require_wire_version(request.experiment.0.version, 6)?;
         if !request.acknowledge_unqualified {
             return Err(CommandError::forbidden(
                 "Explicit unqualified validation acknowledgement is required.",
@@ -583,7 +629,11 @@ impl MasterRuntime {
             let run_id = format!("run-{}", uuid::Uuid::new_v4());
             // Validate stream limits before consuming the native input-test receipt.
             MasterMarkers::new(&prepared.plan, &run_id, "attempt-preflight")?;
-            let mailbox = Arc::new(ProtocolInputMailbox::new(prepared.feedback.input.kind));
+            let mailbox = Arc::new(if prepared.plan.version == 6 {
+                ProtocolInputMailbox::new_preserving_continuous(prepared.feedback.input.kind)
+            } else {
+                ProtocolInputMailbox::new(prepared.feedback.input.kind)
+            });
             let sink = Arc::clone(&mailbox);
             let authority = InputAuthority {
                 service: Arc::clone(&self.input),

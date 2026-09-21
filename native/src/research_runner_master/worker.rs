@@ -4,7 +4,7 @@ use super::{
     forms::FormAnswers,
     information::{ContentKind, PreparedTransfer},
     lsl::MasterLslService,
-    markers::{MarkerEvent, MasterMarkers},
+    markers::{EvidenceEvent, MarkerEvent, MasterMarkers},
     response::ResponseState,
     runtime::{lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message},
     storage::MasterStorage,
@@ -53,6 +53,7 @@ pub(crate) struct MasterWorker {
     interval_deadline: Option<Instant>,
     answers: FormAnswers,
     typed_answers: super::typed_forms::TypedFormAnswers,
+    input_count: u64,
     terminal: bool,
     pub cancellation: Arc<AtomicBool>,
     #[cfg(test)]
@@ -138,6 +139,17 @@ impl MasterWorker {
             result: None,
         };
         let response = ResponseState::new(prepared.feedback.response.clone(), now);
+        let clock = prepared
+            .loaded
+            .recipe
+            .full_attempt_acquisition()
+            .then(|| {
+                DeadlineClock::new(
+                    prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
+                    now,
+                )
+            })
+            .transpose()?;
         Ok(Self {
             prepared,
             workspace_id,
@@ -159,11 +171,12 @@ impl MasterWorker {
             occurrence: String::new(),
             opened: false,
             bound_file: None,
-            clock: None,
+            clock,
             interval_deadline: None,
             answers: Default::default(),
             terminal: false,
             typed_answers: Default::default(),
+            input_count: 0,
             cancellation: Arc::new(AtomicBool::new(false)),
             #[cfg(test)]
             before_observe: None,
@@ -250,6 +263,7 @@ impl MasterWorker {
                                     .ok_or_else(|| invalid("Missing interval duration."))?,
                             ),
                         );
+                        self.observe_neutral_reset("intervalAdmission", true)?;
                         self.observe(MarkerEvent::IsiStart, true)?;
                         self.opened = true;
                     }
@@ -337,8 +351,8 @@ impl MasterWorker {
         submitted: bool,
     ) -> ResearchResult<()> {
         use super::typed_forms::FormAnswerValue;
-        if !matches!(self.prepared.plan.version, 2..=5) {
-            return Err(invalid("Typed answers require master version 2, 3 or 4."));
+        if !matches!(self.prepared.plan.version, 2..=6) {
+            return Err(invalid("Typed answers require master version 2 through 6."));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
         let step = self.current()?.clone();
@@ -398,8 +412,10 @@ impl MasterWorker {
         page_no: u32,
         submitted: bool,
     ) -> ResearchResult<()> {
-        if !matches!(self.prepared.plan.version, 4 | 5) {
-            return Err(invalid("SurveyJS answers require master version 4."));
+        if !matches!(self.prepared.plan.version, 4..=6) {
+            return Err(invalid(
+                "SurveyJS answers require master version 4 through 6.",
+            ));
         }
         self.require_position(position, MasterPhase::Questionnaire)?;
         let step = self.current()?.clone();
@@ -444,7 +460,7 @@ impl MasterWorker {
         Ok(())
     }
     fn record_answers(&mut self, record: &mut Value, submitted: bool) -> ResearchResult<()> {
-        if matches!(self.prepared.plan.version, 4 | 5) {
+        if matches!(self.prepared.plan.version, 4..=6) {
             record["version"] = json!(3);
         }
         record["runId"] = json!(self.state.run_id);
@@ -509,10 +525,12 @@ impl MasterWorker {
             .set_run_accepting(&self.authority.id, true)?;
         let now = Instant::now();
         self.response.clear_holds(now);
-        self.clock = Some(DeadlineClock::new(
-            self.prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
-            now,
-        )?);
+        if !self.full_attempt_acquisition() {
+            self.clock = Some(DeadlineClock::new(
+                self.prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
+                now,
+            )?);
+        }
         self.step_started = Some(now);
         // Only a reported observation is recorded; an unavailable position
         // stays absent rather than becoming a fabricated zero.
@@ -547,6 +565,8 @@ impl MasterWorker {
             self.state.media_time_ms = Some(observed);
         }
         self.observe(MarkerEvent::VideoEnd, true)?;
+        self.reset_response();
+        self.observe_neutral_reset("videoEnd", true)?;
         self.stop_media()?;
         self.next()
     }
@@ -564,10 +584,32 @@ impl MasterWorker {
             let drained = self.mailbox.drain()?;
             let mut missed = 0;
             for input in drained.digital {
-                missed += self.response.digital(input);
+                let observed_ms = self.instant_elapsed(input.observed_at);
+                missed += self.response.digital(input.clone());
+                self.record_input(
+                    "digital",
+                    observed_ms,
+                    json!({"direction":input.direction,"detail":input.detail,"applyStep":input.apply_step,"inputActive":input.input_active,"impulse":input.impulse,"stateAfter":{"valence":self.response.x,"arousal":self.response.y}}),
+                )?;
+                self.observe_input_edge(&input, observed_ms)?;
+            }
+            for input in drained.continuous_evidence {
+                let observed_ms = self.instant_elapsed(input.observed_at);
+                missed += self.response.continuous(input.clone());
+                self.record_input(
+                    "continuous",
+                    observed_ms,
+                    json!({"detail":input.detail,"inputActive":input.input_active,"x":input.x,"y":input.y,"stateAfter":{"valence":self.response.x,"arousal":self.response.y}}),
+                )?;
             }
             if let Some(input) = drained.continuous {
-                missed += self.response.continuous(input);
+                let observed_ms = self.instant_elapsed(input.observed_at);
+                missed += self.response.continuous(input.clone());
+                self.record_input(
+                    "continuous",
+                    observed_ms,
+                    json!({"detail":input.detail,"inputActive":input.input_active,"x":input.x,"y":input.y,"coalescedBefore":drained.coalesced_count,"stateAfter":{"valence":self.response.x,"arousal":self.response.y}}),
+                )?;
             }
             missed += self.response.advance(now);
             if missed > 0 || drained.coalesced_count > 0 {
@@ -575,10 +617,16 @@ impl MasterWorker {
                     "native-input-observation-gap",
                     json!({"missedRepeats":missed,"coalescedUpdates":drained.coalesced_count}),
                 )?;
+                self.observe_timing_gap(
+                    "inputObservation",
+                    json!({"missedRepeats":missed,"coalescedUpdates":drained.coalesced_count}),
+                )?;
             }
-            self.sample(now)?;
         } else {
             self.mailbox.clear();
+        }
+        if self.full_attempt_acquisition() || self.state.phase == MasterPhase::Playing {
+            self.sample(now)?;
         }
         if self.state.phase == MasterPhase::Interval {
             let deadline = self
@@ -608,6 +656,10 @@ impl MasterWorker {
                 "native-deadline-missed",
                 json!({"missedSlots":due.missed_slots_before}),
             )?;
+            self.observe_timing_gap(
+                "sampleDeadline",
+                json!({"missedSlots":due.missed_slots_before}),
+            )?;
         }
         let x = self.response.x;
         let y = self.response.y;
@@ -617,9 +669,11 @@ impl MasterWorker {
         } else {
             y.atan2(x).to_degrees().rem_euclid(360.)
         };
-        let active = self.response.active(now);
+        let active = self.state.phase == MasterPhase::Playing && self.response.active(now);
         let feedback = &self.prepared.feedback;
-        let animation = feedback.visual.flubber_enabled;
+        let feedback_presented =
+            matches!(self.state.phase, MasterPhase::Playing | MasterPhase::Paused);
+        let animation = feedback_presented && feedback.visual.flubber_enabled;
         let lsl = self
             .lsl
             .as_ref()
@@ -638,7 +692,28 @@ impl MasterWorker {
             .transpose()?;
         self.state.sample_count += 1;
         let mappings = &feedback.mappings;
-        let sample = json!({"schema":"affect-runner-master-sample","version":1,"sequence":self.state.sample_count,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"participantId":self.state.participant_id,"recipeSourceByteSha256":self.state.recipe_source_byte_sha256,"planIdentitySha256":self.state.plan_identity_sha256,"entryId":self.current()?.entry_id,"executionId":self.occurrence,"monotonicMs":self.elapsed(),"lslTimeSeconds":lsl,"mediaTimeMs":self.state.media_time_ms,"sampleRateHz":self.prepared.loaded.recipe.policy().sampling_frequency_hz,"scheduledElapsedMs":due.scheduled_elapsed.as_secs_f64()*1000.,"observedElapsedMs":due.observed_elapsed.as_secs_f64()*1000.,"schedulerLatenessMs":due.lateness.as_secs_f64()*1000.,"schedulerJitterMs":due.jitter_ms,"stateAnchorAgeMs":now.saturating_duration_since(self.response.anchor).as_secs_f64()*1000.,"missedSlotsBefore":due.missed_slots_before,"valence":x,"arousal":y,"radius":radius,"angleDegrees":angle,"inputActive":active,"animationActive":animation,"inputKind":feedback.input.kind,"feedbackVisible":!feedback.visual.hide_feedback,"oscillationFrequency":mappings.oscillation_frequency.evaluate(x,y),"edgeSmoothness":mappings.edge_smoothness.evaluate(x,y),"projectionAmplitude":mappings.projection_amplitude.evaluate(x,y),"pulseSynchrony":mappings.pulse_synchrony.evaluate(x,y),"waveSizeVariation":mappings.wave_size_variation.evaluate(x,y),"saturation":mappings.saturation.evaluate(x,y)});
+        let (version, phase, entry_id, execution_id) = if self.evidence_v2() {
+            let context = (!self.occurrence.is_empty())
+                .then(|| self.current().map(|step| step.entry_id.clone()))
+                .transpose()?;
+            (
+                2,
+                Some(self.phase_name()),
+                context,
+                (!self.occurrence.is_empty()).then(|| self.occurrence.clone()),
+            )
+        } else {
+            (
+                1,
+                None,
+                Some(self.current()?.entry_id.clone()),
+                Some(self.occurrence.clone()),
+            )
+        };
+        let mut sample = json!({"schema":"affect-runner-master-sample","version":version,"sequence":self.state.sample_count,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"participantId":self.state.participant_id,"recipeSourceByteSha256":self.state.recipe_source_byte_sha256,"planIdentitySha256":self.state.plan_identity_sha256,"phase":phase,"entryId":entry_id,"executionId":execution_id,"monotonicMs":self.elapsed(),"lslTimeSeconds":lsl,"mediaTimeMs":self.state.media_time_ms,"sampleRateHz":self.prepared.loaded.recipe.policy().sampling_frequency_hz,"scheduledElapsedMs":due.scheduled_elapsed.as_secs_f64()*1000.,"observedElapsedMs":due.observed_elapsed.as_secs_f64()*1000.,"schedulerLatenessMs":due.lateness.as_secs_f64()*1000.,"schedulerJitterMs":due.jitter_ms,"stateAnchorAgeMs":now.saturating_duration_since(self.response.anchor).as_secs_f64()*1000.,"missedSlotsBefore":due.missed_slots_before,"valence":x,"arousal":y,"radius":radius,"angleDegrees":angle,"inputActive":active,"animationActive":animation,"inputKind":feedback.input.kind,"feedbackVisible":feedback_presented && !feedback.visual.hide_feedback,"oscillationFrequency":mappings.oscillation_frequency.evaluate(x,y),"edgeSmoothness":mappings.edge_smoothness.evaluate(x,y),"projectionAmplitude":mappings.projection_amplitude.evaluate(x,y),"pulseSynchrony":mappings.pulse_synchrony.evaluate(x,y),"waveSizeVariation":mappings.wave_size_variation.evaluate(x,y),"saturation":mappings.saturation.evaluate(x,y)});
+        if version == 1 {
+            sample.as_object_mut().unwrap().remove("phase");
+        }
         self.storage.sample(&sample)?;
         if self.state.sample_count.is_multiple_of(u64::from(
             self.prepared.loaded.recipe.policy().sampling_frequency_hz,
@@ -651,6 +726,14 @@ impl MasterWorker {
         #[cfg(test)]
         if let Some(probe) = self.before_observe {
             probe(self, event);
+        }
+        if self.evidence_v2() {
+            return self.observe_evidence(
+                event.into(),
+                json!({"kind":"lifecycle"}),
+                occurrence,
+                self.elapsed(),
+            );
         }
         let id = if occurrence {
             Some(self.current()?.entry_id.clone())
@@ -670,6 +753,113 @@ impl MasterWorker {
         self.state.event_count += 1;
         Ok(())
     }
+    fn observe_evidence(
+        &mut self,
+        event: EvidenceEvent,
+        payload: Value,
+        occurrence: bool,
+        observed_ms: f64,
+    ) -> ResearchResult<()> {
+        if !self.evidence_v2() {
+            return Ok(());
+        }
+        let id = if occurrence {
+            Some(self.current()?.entry_id.clone())
+        } else {
+            None
+        };
+        let execution = occurrence.then_some(self.occurrence.as_str());
+        let accepted_ms = self.elapsed().max(observed_ms);
+        let observation = self.markers.observe_evidence(
+            event,
+            self.phase_name(),
+            id.as_deref(),
+            execution,
+            observed_ms,
+            accepted_ms,
+            payload,
+        )?;
+        self.storage.event(
+            &serde_json::to_value(&observation)
+                .map_err(|_| invalid("Evidence event serialization failed."))?,
+        )?;
+        if let Some(lsl) = &mut self.lsl {
+            lsl.observe(&observation)?;
+        }
+        self.state.event_count += 1;
+        Ok(())
+    }
+    fn observe_input_edge(
+        &mut self,
+        input: &crate::research_input::NativeDigitalInput,
+        observed_ms: f64,
+    ) -> ResearchResult<()> {
+        self.observe_evidence(
+            EvidenceEvent::InputEdge,
+            json!({"kind":"inputEdge","direction":input.direction,"detail":input.detail,"applyStep":input.apply_step,"inputActive":input.input_active,"impulse":input.impulse,"stateAfter":{"valence":self.response.x,"arousal":self.response.y}}),
+            true,
+            observed_ms,
+        )
+    }
+    fn record_input(
+        &mut self,
+        input_kind: &str,
+        observed_ms: f64,
+        payload: Value,
+    ) -> ResearchResult<()> {
+        if !self.evidence_v2() {
+            return Ok(());
+        }
+        self.input_count = self
+            .input_count
+            .checked_add(1)
+            .filter(|value| *value <= 9_007_199_254_740_991)
+            .ok_or_else(|| invalid("Master input observation sequence exhausted."))?;
+        let entry_id = self.current()?.entry_id.clone();
+        let record = json!({"schema":"affect-runner-input-observation","version":2,"recipeSourceByteSha256":self.state.recipe_source_byte_sha256,"planIdentitySha256":self.state.plan_identity_sha256,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"participantId":self.state.participant_id,"sequence":self.input_count,"inputKind":input_kind,"phase":self.phase_name(),"entryId":entry_id,"executionId":self.occurrence,"observedMonotonicMs":observed_ms,"acceptedMonotonicMs":self.elapsed().max(observed_ms),"payload":payload});
+        self.storage.input(&record)
+    }
+    fn observe_neutral_reset(&mut self, reason: &str, occurrence: bool) -> ResearchResult<()> {
+        self.observe_evidence(
+            EvidenceEvent::NeutralReset,
+            json!({"kind":"neutralReset","reason":reason,"stateAfter":{"valence":0.0,"arousal":0.0}}),
+            occurrence,
+            self.elapsed(),
+        )
+    }
+    fn observe_timing_gap(&mut self, gap_kind: &str, detail: Value) -> ResearchResult<()> {
+        self.observe_evidence(
+            EvidenceEvent::TimingGap,
+            json!({"kind":"timingGap","gapKind":gap_kind,"detail":detail}),
+            !self.occurrence.is_empty(),
+            self.elapsed(),
+        )
+    }
+    fn full_attempt_acquisition(&self) -> bool {
+        self.prepared.loaded.recipe.full_attempt_acquisition()
+    }
+    fn evidence_v2(&self) -> bool {
+        self.prepared.plan.version == 6
+    }
+    fn phase_name(&self) -> &'static str {
+        match self.state.phase {
+            MasterPhase::AwaitingPresentation => "awaitingPresentation",
+            MasterPhase::Questionnaire => "questionnaire",
+            MasterPhase::Interval => "interval",
+            MasterPhase::Preparing => "preparing",
+            MasterPhase::Playing => "playing",
+            MasterPhase::Paused => "paused",
+            MasterPhase::Finished => "finished",
+            MasterPhase::Failed => "failed",
+        }
+    }
+    fn instant_elapsed(&self, instant: Instant) -> f64 {
+        instant
+            .checked_duration_since(self.epoch)
+            .unwrap_or_default()
+            .as_secs_f64()
+            * 1000.
+    }
     fn diagnostic(&mut self, code: &str, detail: Value) -> ResearchResult<()> {
         self.storage.diagnostic(&json!({"schema":"affect-runner-master-diagnostic","version":1,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"position":self.state.position,"monotonicMs":self.elapsed(),"code":code,"detail":detail}))
     }
@@ -677,7 +867,9 @@ impl MasterWorker {
         self.epoch.elapsed().as_secs_f64() * 1000.
     }
     fn quiesce(&mut self) -> ResearchResult<()> {
-        self.clock = None;
+        if !self.full_attempt_acquisition() {
+            self.clock = None;
+        }
         let result = self
             .authority
             .service
@@ -703,6 +895,7 @@ impl MasterWorker {
         self.typed_answers = Default::default();
         self.state.answers.clear();
         self.reset_response();
+        self.occurrence.clear();
         if self.state.completed_step_count == self.state.step_count {
             self.finish(true, None)
         } else {
@@ -718,6 +911,7 @@ impl MasterWorker {
     }
     fn finish(&mut self, complete: bool, failure: Option<&str>) -> ResearchResult<()> {
         let input_failure = self.quiesce().err();
+        self.clock = None;
         let media_failure = self.stop_media().err();
         self.authority.service.end_run(&self.authority.id);
         let failure = failure
@@ -727,6 +921,13 @@ impl MasterWorker {
         if self.opened {
             self.observe(MarkerEvent::Interruption, true)?;
             self.opened = false;
+        }
+        if self.full_attempt_acquisition() {
+            self.state.phase = if failure.is_some() {
+                MasterPhase::Failed
+            } else {
+                MasterPhase::Finished
+            };
         }
         self.observe(
             if complete {
@@ -805,9 +1006,14 @@ mod survey_tests;
 mod tests {
     use super::*;
     use crate::{
+        research_contracts::{canonical_json, canonical_sha256},
         research_input::ResearchInputService,
         research_native_media::NativeMediaService,
         research_native_protocol::runtime::PackageProtocolRuntime,
+        research_planner_recipe_supported::{
+            parse_supported_planner_recipe_bytes, SupportedPlannerRecipe,
+        },
+        research_planner_recipe_v6::PlannerRecipeV6,
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
     fn with_neutral_worker(check: impl FnOnce(&mut MasterWorker)) {
@@ -1006,6 +1212,139 @@ mod tests {
             worker.state.current_arousal = -0.5;
             present_interval(worker, 2);
         });
+    }
+    #[test]
+    fn full_attempt_pause_samples_the_frozen_rating_with_input_inactive() {
+        // Synthetic worker/input boundary only: this proves pause sampling
+        // semantics, not decoded media, physical input or saved-XDF parity.
+        let root = std::env::temp_dir().join(format!(
+            "runner-full-attempt-pause-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(root.join("outputs")).unwrap();
+        let loaded = parse_supported_planner_recipe_bytes(include_bytes!(
+            "../../../test/fixtures/planner-recipe-v5.bundle.json"
+        ))
+        .unwrap();
+        let recipe = match loaded.recipe {
+            SupportedPlannerRecipe::V5(recipe) => recipe,
+            _ => panic!("expected master5 fixture"),
+        };
+        let mut manifest = serde_json::to_value(&recipe.manifest).unwrap();
+        manifest["version"] = json!(6);
+        manifest["policy"]["version"] = json!(2);
+        manifest["policy"]["acquisitionWindow"] = json!("fullAttempt");
+        manifest["integrity"]["algorithmVersion"] = json!("planner-questionnaire-assets-v2");
+        manifest["integrity"]["definitionSha256"] =
+            json!(canonical_sha256(&manifest, &["integrity"]).unwrap());
+        let mut manifest_bytes = canonical_json(&manifest, &[]).unwrap();
+        manifest_bytes.push(b'\n');
+        let manifest_text = String::from_utf8(manifest_bytes).unwrap();
+        let source = PlannerRecipeV6::read(manifest_text.as_bytes(), recipe.assets)
+            .unwrap()
+            .bundle_text(&manifest_text)
+            .unwrap();
+        let prepared = PreparedMaster::read(
+            &source,
+            "P001",
+            MasterSelector {
+                variant_id: "variant-1".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        assert!(prepared.loaded.recipe.full_attempt_acquisition());
+        let workspace = Arc::new(WorkspaceService::new(root.join("app")).unwrap());
+        let media = Arc::new(NativeMediaService::unavailable_for_tests());
+        let input = Arc::new(ResearchInputService::for_tests());
+        let binding = prepared.feedback.input.clone();
+        let receipt = input.issue_test_receipt_for_tests(binding.clone()).unwrap();
+        let mailbox = Arc::new(ProtocolInputMailbox::new(binding.kind));
+        let sink = Arc::clone(&mailbox);
+        let authority = InputAuthority {
+            service: Arc::clone(&input),
+            id: input
+                .prepare_run_full(binding, &receipt.receipt_id, move |value| sink.push(value))
+                .unwrap(),
+        };
+        let legacy = PackageProtocolRuntime::with_services(
+            Arc::clone(&workspace),
+            Arc::clone(&media),
+            Arc::clone(&input),
+        );
+        let storage =
+            MasterStorage::create(&root, &prepared, "run-pause-test", Value::Null, false).unwrap();
+        let output = root.join(storage.receipt["outputDirectory"].as_str().unwrap());
+        let mut worker = legacy
+            .begin_companion(|lease| {
+                MasterWorker::new(
+                    prepared,
+                    "unused-workspace".into(),
+                    vec![],
+                    storage,
+                    authority,
+                    mailbox,
+                    workspace,
+                    Arc::new(RecorderService::default()),
+                    lease,
+                )
+            })
+            .unwrap();
+        let video_position = worker
+            .prepared
+            .plan
+            .steps
+            .iter()
+            .find(|step| step.kind == MasterStepKind::Video)
+            .unwrap()
+            .position;
+        worker.state.position = video_position;
+        worker.state.phase = MasterPhase::Playing;
+        worker.occurrence = "execution-pause-test".into();
+        worker.opened = true;
+        seed_stale_digital(&mut worker);
+        worker.action(MasterAction::Pause).unwrap();
+        assert_eq!(worker.state.phase, MasterPhase::Paused);
+        assert_eq!((worker.response.x, worker.response.y), (0.8, -0.4));
+        assert!(!worker.state.input_active);
+        assert!(
+            worker.clock.is_some(),
+            "full-attempt sampling must remain armed"
+        );
+
+        let rate = worker.prepared.loaded.recipe.policy().sampling_frequency_hz as u16;
+        worker.clock =
+            Some(DeadlineClock::new(rate, Instant::now() - Duration::from_millis(100)).unwrap());
+        worker.tick().unwrap();
+        worker.storage.checkpoint().unwrap();
+        let sample: Value = serde_json::from_str(
+            std::fs::read_to_string(output.join("master-samples.v2.jsonl"))
+                .unwrap()
+                .lines()
+                .last()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(sample["phase"], "paused");
+        assert_eq!(sample["valence"], 0.8);
+        assert_eq!(sample["arousal"], -0.4);
+        assert_eq!(sample["inputActive"], false);
+        assert_eq!(sample["feedbackVisible"], true);
+        let events = std::fs::read_to_string(output.join("master-events.v2.jsonl"))
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str::<Value>(line).unwrap())
+            .collect::<Vec<_>>();
+        assert!(events.iter().any(|event| event["eventType"] == "pause"));
+        assert!(events
+            .iter()
+            .all(|event| event["eventType"] != "neutralReset"));
+        drop(worker);
+        drop(legacy);
+        drop(input);
+        std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn master_v2_and_v3_require_every_typed_and_likert_answer_before_advancing() {

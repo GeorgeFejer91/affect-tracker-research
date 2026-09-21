@@ -1,4 +1,4 @@
-import { parsePlannerRecipeV5, validatePlannerAssetManifest } from "./planner-recipe-assets.js";
+import { parsePlannerRecipeV5, parsePlannerRecipeV6, validatePlannerAssetManifest, validatePlannerAssetManifestV6 } from "./planner-recipe-assets.js";
 import { readPlannerRecipeJsonBytes } from "./planner-recipe-wire.js";
 import { plannerRecipeFilename } from "./planner-recipe-filename.js";
 
@@ -17,7 +17,8 @@ async function snapshot(handle, limit) {
 }
 
 export async function readBrowserPlannerAssets(bytes, fileHandle, rootHandle, requireCurrent) {
-  const manifest = await validatePlannerAssetManifest(readPlannerRecipeJsonBytes(bytes).value); requireCurrent();
+  const value = readPlannerRecipeJsonBytes(bytes).value;
+  const manifest = await (value.version === 6 ? validatePlannerAssetManifestV6(value) : validatePlannerAssetManifest(value)); requireCurrent();
   if (!rootHandle || typeof rootHandle.resolve !== "function") throw new Error("Select this experiment's work folder before opening its manifest.");
   const path = await rootHandle.resolve(fileHandle); requireCurrent();
   if (!path?.length) throw new Error("Select the work folder containing this experiment manifest.");
@@ -28,7 +29,7 @@ export async function readBrowserPlannerAssets(bytes, fileHandle, rootHandle, re
     const handle = await childFile(directory, ref.relativePath); requireCurrent();
     assets.push({ relativePath: ref.relativePath, sourceText: await snapshot(handle, ref.byteLength) }); requireCurrent();
   }
-  return parsePlannerRecipeV5(bytes, assets);
+  return manifest.version === 6 ? parsePlannerRecipeV6(bytes, assets) : parsePlannerRecipeV5(bytes, assets);
 }
 
 /** Save5 selects a directory because a single file grant cannot write sibling

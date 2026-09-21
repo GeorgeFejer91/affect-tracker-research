@@ -162,14 +162,57 @@ function previewMarkup(label, { studio = false } = {}) {
     </div>`;
 }
 
-function feedbackSection({ setupSection = false } = {}) {
+function bindingCaptureDialogMarkup() {
+  return `<dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title" aria-describedby="binding-capture-help">
+    <div class="binding-menu-heading"><h2 id="binding-capture-title">Assign feedback controls</h2>
+      <p id="binding-capture-help">Choose a direction, then press a key or gamepad button. Click or scroll inside the capture area to assign a mouse button or wheel direction.</p>
+      <p class="field-help">Changes use your saved input settings. Gamepad sticks use analog presets in Input controls; individual axis directions cannot be assigned here.</p>
+    </div>
+    <div class="binding-direction-menu" role="group" aria-label="Feedback directions">
+      <button type="button" data-binding-capture-target="up" aria-pressed="false"><span>↑ Up</span><output data-binding-value="up"></output></button>
+      <button type="button" data-binding-capture-target="left" aria-pressed="false"><span>← Left</span><output data-binding-value="left"></output></button>
+      <button type="button" class="binding-centre-pending" disabled aria-label="Centre action not configured" title="Centre action is not configured">↺</button>
+      <button type="button" data-binding-capture-target="right" aria-pressed="false"><span>Right →</span><output data-binding-value="right"></output></button>
+      <button type="button" data-binding-capture-target="down" aria-pressed="false"><span>↓ Down</span><output data-binding-value="down"></output></button>
+    </div>
+    <div class="dialog-content binding-capture-area" tabindex="0" role="group" aria-label="Input capture area" aria-describedby="binding-capture-receipt">
+      <p id="binding-capture-instruction">Choose a direction to start listening.</p>
+      <div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Not listening.</div>
+    </div>
+    <div class="dialog-actions"><button id="binding-capture-stop" type="button" disabled>Cancel capture</button><button id="binding-capture-cancel" type="button">Done</button></div>
+  </dialog>`;
+}
+
+function previewColorDialogMarkup() {
+  return `<dialog id="preview-color-dialog" aria-labelledby="preview-color-dialog-title" aria-describedby="preview-color-status">
+    <div class="dialog-content">
+      <h2 id="preview-color-dialog-title">Choose an affect color</h2>
+      <div class="field-grid">
+        <div id="preview-color-picker" class="field">
+          <span>Color map</span>
+          <canvas data-inline-color-map width="320" height="210" tabindex="0" role="group" aria-label="Color map"></canvas>
+          <label class="field"><span>Hue</span><canvas data-inline-hue-strip width="360" height="16" aria-hidden="true"></canvas><input id="preview-color-hue" data-inline-color-hue type="range" min="0" max="360" step="1" value="0"></label>
+          <output data-inline-color-status class="field-help"></output>
+        </div>
+        <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
+        <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
+      </div>
+      <p id="preview-color-label-help" class="field-help">Applied display labels are saved for axis and corner placement. The valence/arousal coordinate identity does not change.</p>
+      <p id="preview-color-status" class="status-text" role="status" aria-live="polite">Editing the selected directional anchor.</p>
+      <p id="preview-color-error" class="field-error" role="alert" hidden>Enter a six-digit hexadecimal color.</p>
+    </div>
+    <div class="dialog-actions"><button id="preview-color-reset" type="button">Reset</button><button id="preview-color-cancel" type="button">Cancel</button><button id="preview-color-apply" type="button" class="primary-action">Apply color</button></div>
+  </dialog>`;
+}
+
+function feedbackSection({ setupSection = false, showOpenButton = true } = {}) {
   const feedback = SETUP_SECTIONS.find(({ id }) => id === "feedback");
   const feedbackIndex = SETUP_SECTIONS.findIndex(({ id }) => id === "feedback");
   return `<aside class="preview-pane" ${setupSection ? 'data-setup-section="feedback" data-reviewed="false"' : ""} aria-labelledby="preview-title">
     <header class="preview-header">
       <div><h3 id="preview-title" tabindex="-1">Live Preview</h3><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button></div>
       <div class="preview-header-controls">
-        <button id="preview-window-open" type="button">Open preview window</button>
+        ${showOpenButton ? '<button id="preview-window-open" type="button">Open Flubber window</button>' : ""}
         <button id="preview-flubber-release" class="preview-flubber-release" type="button" aria-label="Release Flubber into the preview" aria-pressed="false" title="Release Flubber into the preview"><span aria-hidden="true"></span></button>
         <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
           <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
@@ -181,6 +224,21 @@ function feedbackSection({ setupSection = false } = {}) {
     ${previewMarkup("Interactive live feedback settings preview", { studio: true })}
     ${setupSection ? sectionConfirmationMarkup(feedback, feedbackIndex) : ""}
   </aside>`;
+}
+
+export function feedbackWindowMarkup() {
+  return `<div data-feedback-window-content>${feedbackSection({ showOpenButton: false })}${bindingCaptureDialogMarkup()}${previewColorDialogMarkup()}</div>`;
+}
+
+function ledgerFeedbackMarkup() {
+  return `<section class="ledger-feedback-handoff" aria-labelledby="ledger-feedback-window-title">
+    <div>
+      <h3 id="ledger-feedback-window-title">Flubber settings use a separate window</h3>
+      <p>Appearance, affect-map, response and input controls stay outside the experiment ledger. Both windows contribute to the same final JSON.</p>
+      <output id="ledger-feedback-window-status" role="status" aria-live="polite">Connecting to the Flubber settings window…</output>
+    </div>
+    <button id="preview-window-open" type="button">Show Flubber window</button>
+  </section>`;
 }
 
 function folderIconMarkup() {
@@ -234,7 +292,7 @@ function workspaceSection() {
   const folderIcon = folderIconMarkup();
   return `
     <p class="section-lead">Choose one work directory. Videos, project JSON, outputs, and recovery stay inside it.</p>
-    <div class="workspace-location-list" aria-label="Project locations">
+    <div class="workspace-location-list" data-ledger-page-spread aria-label="Project locations">
       <section class="workspace-location-row" data-workspace-location="workspaceRoot" aria-labelledby="workspace-location-root-title">
         <div class="workspace-location-copy">
           <h3 id="workspace-location-root-title">Work directory</h3>
@@ -423,7 +481,8 @@ function reviewSection() {
     ${lslSettingsMarkup()}
     <div class="field-grid spaced-field-grid">
       <label class="field"><span>Sampling frequency</span><div class="range-field"><input id="sampling-frequency" name="samplingFrequency" type="number" min="1" max="240" step="1" value="130" required><output for="sampling-frequency">130 Hz</output></div></label>
-      <p class="field-help">Continuous rating is always enabled during video playback.</p>
+      <label class="field"><span>Affect sampling window</span><select id="acquisition-window"><option value="fullAttempt" selected>Full experiment attempt</option><option value="activeVideoOnly">Active video playback only</option></select></label>
+      <p class="field-help">Continuous rating is always enabled. Full experiment attempt records the Flubber/Grid outcome from committed Start through the terminal boundary; older recipes retain active-video-only sampling.</p>
     </div>
     <fieldset id="output-format-group" class="check-group spaced-check-group" aria-describedby="output-format-help output-format-error">
       <legend>Rating output formats</legend>
@@ -442,7 +501,7 @@ function reviewSection() {
         <div class="field-block is-wide"><span class="field-label">Output location</span><output id="review-output-path" class="field-output path-value">outputs/&lt;experiment-id&gt;/&lt;participant-id&gt;/&lt;session-stem&gt;/</output></div>
         <div class="field-block"><span class="field-label">Settings hash</span><output id="settings-hash" class="field-output hash-value">Pending validated settings</output></div>
         <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
-        <div class="field-block"><span class="field-label">Estimated storage</span><output id="storage-estimate" class="field-output">Pending verified videos</output></div>
+        <div class="field-block"><span class="field-label">Storage capacity</span><output id="storage-estimate" class="field-output">Pending verified videos</output></div>
         <div class="field-block"><span class="field-label">Sampling capability</span><output id="timing-capability" class="field-output">Dedicated scheduler not yet verified</output></div>
         <label class="field is-wide tauri-only"><span>Playback protocol</span><select id="native-playback-mode"><option value="unqualifiedWebview" selected>HTML video / WebView · lightweight runner</option></select><output id="native-media-capability" class="field-help">HTML-compatible playback is the active protocol.</output></label>
       </div>
@@ -562,6 +621,7 @@ function accordionMarkup(section, index) {
 
 function ledgerPageMarkup(section, index) {
   const expanded = index === 0;
+  const content = section.id === "feedback" ? ledgerFeedbackMarkup() : SECTION_CONTENT[section.id]();
   return `
     <section class="setup-accordion ledger-page" data-setup-section="${section.id}" data-reviewed="false">
       <div
@@ -571,7 +631,7 @@ function ledgerPageMarkup(section, index) {
         aria-labelledby="setup-trigger-${section.id}"
         data-motion-state="${expanded ? "open" : "closed"}"
         ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
-      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner"><header class="ledger-page-header"><h2>${section.label}</h2><p data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</p></header>${SECTION_CONTENT[section.id]()}${sectionConfirmationMarkup(section, index)}</div></div></div>
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner"><header class="ledger-page-header"><h2 data-fit-text data-fit-text-preferred="1.25" data-fit-text-min="0.85">${section.label}</h2><p data-fit-text data-fit-text-preferred="0.88" data-fit-text-min="0.75" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</p></header><div class="ledger-page-flow" data-ledger-page-flow>${content}${sectionConfirmationMarkup(section, index)}</div><nav class="ledger-page-pagination" data-ledger-pagination aria-label="Pages within ${escapeAttribute(section.label)}"><button type="button" data-ledger-page-previous>Previous</button><output data-ledger-page-status aria-live="polite">Page 1 of 1</output><button type="button" data-ledger-page-next>Next</button></nav></div></div></div>
     </section>`;
 }
 
@@ -639,18 +699,18 @@ function ledgerSetupMarkup() {
 export function renderResearchUiMarkup(surface = "browser", requestedInterface = "classic") {
   const plannerInterface = requestedInterface === "ledger" ? "ledger" : "classic";
   const ledgerWindow = surface === "tauri" && plannerInterface === "ledger";
-  const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · ${plannerInterface === "ledger" ? "Ledger" : "Classic"}`;
+  const platformLabel = `${surface === "tauri" ? "Tauri desktop adapter" : "Desktop Chrome / Edge adapter"} · Classic`;
   return `
     <div class="research-shell" data-research-mode="setup" data-planner-interface="${plannerInterface}">
       ${ledgerWindow ? nativeLedgerWindowChromeMarkup() : ""}
-      <header class="app-bar"${ledgerWindow ? ' data-tauri-drag-region="deep"' : ""}>
+      ${plannerInterface === "classic" ? `<header class="app-bar">
         <div class="product-block"><span class="product-mark" aria-hidden="true"></span><h1>Affect Research</h1><p class="build-label">0.4.0-alpha.1</p></div>
         <nav class="mode-navigation" aria-label="Application mode">
           <button type="button" data-mode-button="setup" aria-current="page">Setting Up the Experiment</button>
           <button type="button" data-mode-button="run" disabled>Running the Experiment</button>
         </nav>
         <p class="surface-status">${platformLabel}</p>
-      </header>
+      </header>` : ledgerWindow ? '<header class="app-bar ledger-window-bar" data-tauri-drag-region="deep" aria-label="Window drag area"></header>' : ""}
       <main>
         <section class="setup-mode" data-mode-panel="setup" aria-label="Setting Up the Experiment">
           ${plannerInterface === "ledger" ? ledgerSetupMarkup() : classicSetupMarkup()}
@@ -705,6 +765,7 @@ export function renderResearchUiMarkup(surface = "browser", requestedInterface =
         </section>
       </main>
     </div>
+    ${plannerInterface === "ledger" ? `<div data-ledger-feedback-authority hidden>${feedbackSection({ showOpenButton: false })}</div>` : ""}
     <input id="settings-file-input" type="file" accept="application/json,.json" hidden>
     <input id="experiment-file-input" type="file" accept="application/json,.json" hidden>
     <input id="video-file-input" type="file" accept="video/*" multiple hidden>
@@ -714,43 +775,8 @@ export function renderResearchUiMarkup(surface = "browser", requestedInterface =
       <div class="dialog-content"><h2 id="package-save-dialog-title">Save recipe</h2><p id="package-save-dialog-status" role="status" aria-live="polite"></p></div>
       <div class="dialog-actions"><button id="package-save-cancel" type="button">Cancel</button><button id="package-save-choose" type="button" class="primary-action">Choose file and save</button></div>
     </dialog>
-      <dialog id="binding-capture-dialog" aria-labelledby="binding-capture-title" aria-describedby="binding-capture-help">
-        <div class="binding-menu-heading"><h2 id="binding-capture-title">Assign feedback controls</h2>
-          <p id="binding-capture-help">Choose a direction, then press a key or gamepad button. Click or scroll inside the capture area to assign a mouse button or wheel direction.</p>
-          <p class="field-help">Changes use your saved input settings. Gamepad sticks use analog presets in Input controls; individual axis directions cannot be assigned here.</p>
-        </div>
-        <div class="binding-direction-menu" role="group" aria-label="Feedback directions">
-          <button type="button" data-binding-capture-target="up" aria-pressed="false"><span>↑ Up</span><output data-binding-value="up"></output></button>
-          <button type="button" data-binding-capture-target="left" aria-pressed="false"><span>← Left</span><output data-binding-value="left"></output></button>
-          <button type="button" class="binding-centre-pending" disabled aria-label="Centre action not configured" title="Centre action is not configured">↺</button>
-          <button type="button" data-binding-capture-target="right" aria-pressed="false"><span>Right →</span><output data-binding-value="right"></output></button>
-          <button type="button" data-binding-capture-target="down" aria-pressed="false"><span>↓ Down</span><output data-binding-value="down"></output></button>
-        </div>
-        <div class="dialog-content binding-capture-area" tabindex="0" role="group" aria-label="Input capture area" aria-describedby="binding-capture-receipt">
-          <p id="binding-capture-instruction">Choose a direction to start listening.</p>
-          <div id="binding-capture-receipt" class="capture-receipt" role="status" aria-live="polite">Not listening.</div>
-        </div>
-        <div class="dialog-actions"><button id="binding-capture-stop" type="button" disabled>Cancel capture</button><button id="binding-capture-cancel" type="button">Done</button></div>
-      </dialog>
-    <dialog id="preview-color-dialog" aria-labelledby="preview-color-dialog-title" aria-describedby="preview-color-status">
-      <div class="dialog-content">
-        <h2 id="preview-color-dialog-title">Choose an affect color</h2>
-        <div class="field-grid">
-          <div id="preview-color-picker" class="field">
-            <span>Color map</span>
-            <canvas data-inline-color-map width="320" height="210" tabindex="0" role="group" aria-label="Color map"></canvas>
-            <label class="field"><span>Hue</span><canvas data-inline-hue-strip width="360" height="16" aria-hidden="true"></canvas><input id="preview-color-hue" data-inline-color-hue type="range" min="0" max="360" step="1" value="0"></label>
-            <output data-inline-color-status class="field-help"></output>
-          </div>
-          <label class="field"><span>Hex code</span><input id="preview-color-hex" value="${DEFAULT_COLORS.up}" minlength="7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required spellcheck="false" aria-describedby="preview-color-status"></label>
-          <label class="field preview-color-label-field"><span>Custom axis label <span class="field-help">(optional)</span></span><input id="preview-color-label" maxlength="48" placeholder="High arousal" autocomplete="off" spellcheck="false" aria-describedby="preview-color-label-help"></label>
-        </div>
-        <p id="preview-color-label-help" class="field-help">Applied display labels are saved for axis and corner placement. The valence/arousal coordinate identity does not change.</p>
-        <p id="preview-color-status" class="status-text" role="status" aria-live="polite">Editing the selected directional anchor.</p>
-        <p id="preview-color-error" class="field-error" role="alert" hidden>Enter a six-digit hexadecimal color.</p>
-      </div>
-      <div class="dialog-actions"><button id="preview-color-reset" type="button">Reset</button><button id="preview-color-cancel" type="button">Cancel</button><button id="preview-color-apply" type="button" class="primary-action">Apply color</button></div>
-    </dialog>
+    ${bindingCaptureDialogMarkup()}
+    ${previewColorDialogMarkup()}
     <dialog id="stop-early-dialog" aria-labelledby="stop-early-title">
       <div class="dialog-content"><h2 id="stop-early-title">Stop this attempt early?</h2><p>A controlled stop finalizes an explicitly partial result and cannot be resumed. Accepted samples and events are retained. Only an interrupted, recoverable attempt restarts its current video from the beginning.</p></div>
       <div class="dialog-actions"><button id="stop-early-cancel" type="button">Keep running</button><button id="stop-early-confirm" type="button" class="danger-action">Finalize partial result</button></div>

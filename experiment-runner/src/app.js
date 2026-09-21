@@ -631,7 +631,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }
   async function startBrowserAttempt() {
     if (!recipe?.recipe) throw new Error("HTML video Runner currently supports Planner master JSON versions 3-5.");
-    if (![3, 4, 5].includes(recipe.recipe.version)) throw new Error("HTML video Runner currently supports Planner master JSON versions 3-5.");
+    if (![3, 4, 5].includes(recipe.recipe.version)) throw new Error("HTML video Runner currently supports Planner master JSON versions 3-5. Master6 full-attempt acquisition requires the desktop Runner.");
     if (!presentation.active) throw new Error("Enter participant preparation first.");
     if (!workspace?.selected && recipe.recipe.segments.P3.variants.some(variant => variant.entries.some(entry => entry.kind === "video"))) {
       throw new Error("Open Session settings and choose the experiment project folder before browser video playback.");
@@ -690,7 +690,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       current.answers = Object.fromEntries(result.answers.map(row => [row.itemId, row.value]));
       text("runner-questionnaire-progress", current.presenter.progress().text);
     } else {
-      const choices = [2, 3, 4, 5].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
+      const choices = [2, 3, 4, 5, 6].includes(current.version) ? Object.fromEntries(Object.entries(current.answers).map(([id, answer]) => {
         if (answer?.kind !== "singleChoice") throw new Error("This questionnaire requires a declared choice.");
         return [id, answer.optionId];
       })) : current.answers;
@@ -932,7 +932,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const activeBrowserRun = browserAttempt?.active === true;
     const locked = busy || protocol.active || activeBrowserRun || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
-    query("runner-validation").disabled = locked || ![3, 4, 5].includes(recipe?.recipe?.version);
+    query("runner-validation").disabled = locked || ![3, 4, 5, 6].includes(recipe?.recipe?.version);
     recentFiles.lock(locked);
     root.querySelectorAll("[data-stream-key]").forEach(element => { element.disabled = locked; });
     // An armed recorder binds the recipe, then the attempt on activation. It
@@ -947,7 +947,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     query("runner-sequence-preview").disabled = busy || protocol.active || !recipe || !participantPicker.participantId;
     query("runner-preview-language-reset").disabled = busy || protocol.active || !recipe;
     query("runner-prepare").disabled = busy || protocol.active || !recipe;
-    query("runner-prepare").hidden = [2, 3, 4, 5].includes(recipe?.recipe?.version);
+    query("runner-prepare").hidden = [2, 3, 4, 5, 6].includes(recipe?.recipe?.version);
     for (const id of ["runner-professor", "runner-controller", "runner-remote", "runner-settings", "runner-preparation-settings", "runner-back"]) query(id).disabled = busy || protocol.active;
     query("runner-controller").disabled ||= recorder?.active === true;
     query("runner-check").disabled = busy || protocol.active || !recipe || !workspace?.selected || !value("runner-participant") || !path.length;
@@ -962,7 +962,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       query("runner-discover").disabled = true;
       query("runner-record-own").disabled = true;
     }
-    query("runner-demographics").hidden = [2, 3, 4, 5].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
+    query("runner-demographics").hidden = [2, 3, 4, 5, 6].includes(recipe?.recipe?.version) || value("runner-attempt") !== "new-attempt";
     if (questionnaire) {
       const disabled = busy || (questionnaire.master && masterProtocol.status?.phase !== "questionnaire");
       questionnaire.presenter?.setDisabled(disabled);
@@ -982,7 +982,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const prompt = document.createElement("p"); prompt.textContent = step.kind === "terminal" ? step.labels.join(" → ") : step.prompt; host.append(prompt);
     if (step.kind === "choice") for (const option of step.options) {
       const button = document.createElement("button"); button.type = "button"; button.dataset.languageOption = option.optionId; button.textContent = option.label;
-      button.addEventListener("click", () => { if (busy || acquisitionActive()) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4, 5].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
+      button.addEventListener("click", () => { if (busy || acquisitionActive()) return; path = [...path, option.optionId]; invalidate(); renderLanguage(); refreshTimeline(); if (id === "runner-language" && presentation.active && [2, 3, 4, 5, 6].includes(recipe.recipe?.version) && resolveLanguageSelectionTraversalStepV1(runnerLanguageTree(recipe), path).kind === "terminal") prepareAttempt(); }); host.append(button);
     }
     }
     renderControls();
@@ -1089,12 +1089,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     root.querySelector(".stimulus-stage").hidden=false;root.querySelector(".run-feedback-stage").hidden=false;
     query("runner-questionnaire-submit").disabled=false;
     text("runner-recipe-status", master ? `${master.segments.P1.study.title} · master v${master.version}` : `${candidate.package.settings.experiment.title} · package v1`);
-    text("runner-preparation-title", [2, 3, 4, 5].includes(master?.version) ? "Experiment language" : "Participant details");
+    text("runner-preparation-title", [2, 3, 4, 5, 6].includes(master?.version) ? "Experiment language" : "Participant details");
     variantPicker.adopt(candidate);
     const details = query("runner-recipe-details"); details.replaceChildren();
     for (const [label, detail] of master ? [
       ["Recipe", master.recipeId], ["SHA-256", candidate.canonicalSourceByteSha256],
-      ["Videos", master.segments.P1.videoCatalogue.entries.length], ["Sampling", `${master.policy.samplingFrequencyHz} Hz`],
+      ["Videos", master.segments.P1.videoCatalogue.entries.length], ["Sampling", `${master.policy.samplingFrequencyHz} Hz · ${master.policy.acquisitionWindow === "fullAttempt" ? "full attempt" : "active video only"}`],
       ["Layout", `${master.presentationTarget} · ${master.segments.P4.reference.source.policy} · ${master.segments.P4.units}`],
       ["Feedback", `${master.segments.P5.presentation.renderer} · ${master.segments.P5.response.mode}`],
     ] : [
@@ -1300,7 +1300,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     await retainParticipant();
     text("runner-selected-participant", `Participant ${participantLabel(participantId())}`);
     invalidate(); await invoke("research_input_cancel_setup");
-    if ([2, 3, 4, 5].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
+    if ([2, 3, 4, 5, 6].includes(recipe.recipe?.version)) { path = []; renderLanguage(); }
     await presentation.enter();
   }));
   const participantRecord = () => deriveParticipantRecord({ firstName: value("runner-first"), lastName: value("runner-last"), age: Number(value("runner-age")), gender: value("runner-gender"), handedness: value("runner-hand") });
@@ -1310,7 +1310,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       await startBrowserAttempt();
       return;
     }
-    if (![2, 3, 4, 5].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
+    if (![2, 3, 4, 5, 6].includes(recipe.recipe?.version) && value("runner-attempt") === "new-attempt") participantRecord();
     await checkSession();
     await startAttempt();
   });
@@ -1414,12 +1414,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
     }
     if (abortPending) return;
-    const participant = ![2, 3, 4, 5].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
+    const participant = ![2, 3, 4, 5, 6].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
       const request = {workspaceId:workspace.workspaceId,sourceText:plannerRecipeTransportText(recipe),selector:selection.selector,
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
-      if ([2, 3, 4, 5].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
+      if ([2, 3, 4, 5, 6].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});
       else request.participant = {participantId:participantId(),...participant};
       await masterProtocol.start(selection, request, {validation:query("runner-validation").checked});
       inputReceipt=null; renderControls(); return;
@@ -1434,7 +1434,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   async function commitQuestionnaireDraft(target) {
     const current = questionnaire;
     if (!current || busy || (!target.dataset.answerItem && !target.dataset.formItem)) return false;
-    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4, 5].includes(current.version)
+    if (!current.presenter) current.answers[target.dataset.answerItem] = [2, 3, 4, 5, 6].includes(current.version)
       ? {kind:"singleChoice",optionId:target.value} : target.value;
     if (browserAttempt?.active) return true;
     let accepted = false;

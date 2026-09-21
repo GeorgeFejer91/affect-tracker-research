@@ -94,6 +94,23 @@ test("fresh non-SurveyJS authoring also uses files while unchanged historical so
   assert.deepEqual(seen.P2, saved.resolvedRecipe.segments.P2);
 });
 
+test("master6 makes full-attempt affect acquisition explicit without changing questionnaire content", async () => {
+  const { integrity, ...core } = structuredClone(historical.recipe);
+  core.version = 6;
+  core.policy = { ...core.policy, version: 2, acquisitionWindow: "fullAttempt" };
+  const saved = await compilePlannerAssetDocument(core);
+  assert.equal(saved.recipe.version, 6);
+  assert.equal(saved.recipe.policy.acquisitionWindow, "fullAttempt");
+  assert.equal(saved.recipe.integrity.algorithmVersion, "planner-questionnaire-assets-v2");
+  assert.deepEqual(saved.resolvedRecipe.segments.P2.questionnaires.definitions, historical.recipe.segments.P2.questionnaires.definitions);
+  const reopened = await parseSupportedPlannerRecipe(encoder.encode(plannerRecipeTransportText(saved)));
+  const plan = await resolveRunnerSelection(reopened, "P001", ["both", "en"], reopened.recipe.segments.P3.variants[0].variantId);
+  assert.equal(plan.version, 6);
+  assert.equal(plan.algorithmVersion, "master-sequence-v6");
+  assert.equal(plan.selected.policy.version, 2);
+  assert.equal(plan.selected.policy.acquisitionWindow, "fullAttempt");
+});
+
 test("two clean independent processes reconstruct every variant/language from the same read-only file tree", () => {
   const root = mkdtempSync(join(tmpdir(), "affect-manifest-"));
   try {

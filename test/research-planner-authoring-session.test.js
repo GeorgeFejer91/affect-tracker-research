@@ -8,6 +8,7 @@ import { readPlannerPolicyControls } from "../experiment-planner/web/src/researc
 function harness() {
   const fields = new Map([
     ["participant-count", { value: "24" }], ["sampling-frequency", { value: "130" }],
+    ["acquisition-window", { value: "fullAttempt" }],
     ["output-csv", { checked: true }], ["output-tsv", { checked: true }],
     ["lsl-enabled", { checked: false }], ["lsl-state-stream", { value: "AffectResearch" }],
     ["lsl-stream-type", { value: "Affect" }], ["lsl-marker-stream", { value: "AffectResearchMarkers" }],
@@ -41,8 +42,8 @@ test("a disposed UI gesture cannot publish through the shared command session", 
 test("CLI policy catalogue and get use the exact existing UI-owned controls", async () => {
   const h = harness();
   const catalogue = await h.session.execute(h.request({ kind: "catalogue" }));
-  assert.equal(catalogue.result.settings.length, 11);
-  assert.equal(catalogue.result.settings.filter(setting => setting.writable).length, 10);
+  assert.equal(catalogue.result.settings.length, 12);
+  assert.equal(catalogue.result.settings.filter(setting => setting.writable).length, 11);
   h.fields.get("participant-count").value = "91";
   h.session.edited();
   const get = await h.session.execute(h.request({ kind: "get", field: "P7.participantCount" }));
@@ -57,7 +58,7 @@ test("CLI policy catalogue and get use the exact existing UI-owned controls", as
 
 test("every writable policy setting performs typed set/get/export-reader round trip", async () => {
   const h = harness();
-  const values = [57, 200, false, true, true, "StudyState", "StudyAffect", "StudyMarkers", "study-2026", "webxr-immersive-vr"];
+  const values = [57, 200, "activeVideoOnly", false, true, true, "StudyState", "StudyAffect", "StudyMarkers", "study-2026", "webxr-immersive-vr"];
   for (const [index, setting] of h.owner.settings.filter(item => item.writable).entries()) {
     const response = await h.session.execute(h.request({ kind: "set", field: setting.id, value: values[index] }, h.session.revision));
     assert.equal(response.status, "applied", setting.id);

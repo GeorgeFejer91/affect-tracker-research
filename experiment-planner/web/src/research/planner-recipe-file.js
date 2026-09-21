@@ -47,7 +47,7 @@ export function openSupportedBrowserPlannerRecipeFile(options) {
   return openBrowserRecipeFile(options, async (bytes, handle, requireCurrent) => {
     const { value } = readPlannerRecipeJsonBytes(bytes);
     if (value.schema === PLANNER_RECIPE_SCHEMA) {
-      const document = value.version === 5 ? await readBrowserPlannerAssets(bytes, handle, options.rootHandle, requireCurrent) : await parseSupportedPlannerRecipe(bytes);
+      const document = [5, 6].includes(value.version) ? await readBrowserPlannerAssets(bytes, handle, options.rootHandle, requireCurrent) : await parseSupportedPlannerRecipe(bytes);
       return Object.freeze({ kind: `planner-recipe-v${document.recipe.version}`, document });
     }
     // The old dispatcher retains sole legacy-package validation authority.
@@ -89,7 +89,7 @@ async function prepareBrowserRecipeSave(sourceText, {
   requireCurrent();
   if (typeof sourceText !== "string" || sourceText.length < 1) throw new TypeError("Invalid Planner recipe save source.");
   const expected = await parseDocument(encoder.encode(sourceText)); requireCurrent();
-  if (expected.recipe.version === 5) return prepareBrowserPlannerAssetSave(expected, { requireCurrent, pickDirectory,
+  if ([5, 6].includes(expected.recipe.version)) return prepareBrowserPlannerAssetSave(expected, { requireCurrent, pickDirectory,
     receipt: observed => validatePlannerRecipeSaveReceipt({ schema: PLANNER_RECIPE_SAVE_RECEIPT_SCHEMA, version: 1,
       recipeId: observed.recipe.recipeId, definitionSha256: observed.recipe.integrity.definitionSha256,
       canonicalSourceByteSha256: observed.canonicalSourceByteSha256, byteLength: encoder.encode(observed.canonicalSourceText).length }, expected) });

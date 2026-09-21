@@ -1,13 +1,17 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Affect Research Suite",
   "bundle": {
     "active": true,
     "targets": [
       "nsis"
     ],
-    "resources": {
-      "icons-ledger/icon.ico": "resources/ledger-icon.ico"
-    },
+      "resources": {
+        "icons-ledger/icon.ico": "resources/icons/planner-ledger.ico",
+        "runner-icons/icon.ico": "resources/icons/experiment-runner.ico",
+        "target/release/affect-runner.exe": "resources/bin/affect-runner.exe",
+        "windows/affect-research-suite-root.json": "resources/affect-research-suite-root.json"
+      },
     "windows": {
       "allowDowngrades": false,
       "webviewInstallMode": {
@@ -20,6 +24,7 @@
         "installerHooks": "windows/installer-hooks.nsh"
       }
     },
-    "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. HTML-compatible video playback is used for lightweight execution; LSL, native input, installed workflow, timing, and research readiness are not qualified."
+    "shortDescription": "Experiment Planner and Experiment Runner desktop suite",
+    "longDescription": "One self-contained Windows suite containing the separate Experiment Planner, Experiment Planner Ledger, and Experiment Runner applications. Research qualification remains separately gated."
   }
 }

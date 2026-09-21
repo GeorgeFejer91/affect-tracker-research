@@ -154,8 +154,24 @@ test("both app surfaces end every ledger page with one confirmation or final-sav
       const action = id === "review" ? 'id="package-generate"' : `data-confirm-section="${id}"`;
       assert.ok(panel.includes(action));
     }
-    assert.match(markup, /id="preview-window-open"[^>]*>Open preview window<\/button>/u);
+    assert.match(markup, /id="preview-window-open"[^>]*>Show Flubber window<\/button>/u);
+    assert.match(markup, /data-ledger-feedback-authority hidden/u);
+    assert.match(markup, /Flubber settings use a separate window/u);
   }
+});
+
+test("the Flubber companion owns its visible dialogs and interactive color map", async () => {
+  const markup = renderResearchUiMarkup("browser", "ledger");
+  const appSource = await read("experiment-planner/web/src/research/app.js");
+  const companionSource = await read("experiment-planner/web/src/research/preview-window-entry.js");
+  const css = await read("experiment-planner/web/research.css");
+  const ledgerEnd = markup.indexOf('<nav class="ledger-rail"');
+  const authority = markup.indexOf("data-ledger-feedback-authority");
+  assert.ok(authority > ledgerEnd, "the hidden JSON authority stays outside the ledger object");
+  assert.match(appSource, /plannerInterface === "ledger"\) dialog\.show\(\);[\s\S]*else dialog\.showModal\(\);/u);
+  assert.match(companionSource, /createInlineColorPicker\(content\.querySelector\("#preview-color-picker"\)/u);
+  assert.match(companionSource, /input\.dispatchEvent\(new Event\("input", \{ bubbles: true \}\)\)/u);
+  assert.match(css, /data-planner-interface="ledger"\][\s\S]*?#binding-capture-dialog,[\s\S]*?#preview-color-dialog[\s\S]*?visibility:\s*hidden;/u);
 });
 
 test("Classic and Ledger are separate UI implementations over the same confirmation and JSON controls", () => {
@@ -172,6 +188,21 @@ test("Classic and Ledger are separate UI implementations over the same confirmat
     assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 6);
     assert.equal((markup.match(/id="package-generate"/gu) ?? []).length, 1);
     assert.equal((markup.match(/id="preview-window-open"/gu) ?? []).length, 1);
+  }
+});
+
+test("Ledger omits the Classic identity, mode, version, and adapter app bar", () => {
+  const classic = renderResearchUiMarkup("tauri", "classic");
+  const desktopLedger = renderResearchUiMarkup("tauri", "ledger");
+  const browserLedger = renderResearchUiMarkup("browser", "ledger");
+  const desktopChrome = desktopLedger.slice(0, desktopLedger.indexOf("<main>"));
+  const browserChrome = browserLedger.slice(0, browserLedger.indexOf("<main>"));
+
+  assert.match(classic, /<header class="app-bar">[\s\S]*?0\.4\.0-alpha\.1[\s\S]*?Setting Up the Experiment[\s\S]*?Tauri desktop adapter · Classic/u);
+  assert.match(desktopChrome, /<header class="app-bar ledger-window-bar" data-tauri-drag-region="deep" aria-label="Window drag area"><\/header>/u);
+  assert.doesNotMatch(browserChrome, /class="app-bar/u);
+  for (const chrome of [desktopChrome, browserChrome]) {
+    assert.doesNotMatch(chrome, /0\.4\.0-alpha\.1|Setting Up the Experiment|(?:Tauri desktop|Desktop Chrome \/ Edge) adapter|· Ledger/u);
   }
 });
 
@@ -367,6 +398,7 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /id="experiment-(?:id|title)"[^>]*readonly/u);
   assert.match(markup, /id="participant-count"[^>]*readonly/u);
   assert.match(markup, /Continuous rating is always enabled/u);
+  assert.match(markup, /id="acquisition-window"[\s\S]*?value="fullAttempt" selected/u);
   assert.doesNotMatch(markup, /id="(?:continuous-rating|single-summary-rating)"/u);
   assert.match(markup, /Stimulus Presentation Order/u);
   assert.match(markup, /Participant allocation belongs to the experiment runner/u);
@@ -724,7 +756,7 @@ test("all six Flubber mapping outputs materially control the renderer", () => {
 
 test("programmatic binding, color, and overlay changes invalidate the frozen protocol", async () => {
   const source = await read("experiment-planner/web/src/research/app.js");
-  assert.match(source, /onPositionChange\(position\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
+  assert.match(source, /function applyDesignPreviewPosition\(position\)[\s\S]*?refreshProjection\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function resetBindingsToPreset\(\)[\s\S]*?resetInputTest\(\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /inputBinding = structuredClone\(result\.binding\);\s*resetInputTest\(\{ notify: false \}\);[\s\S]*?renderBindings\(\);\s*schedulePlanRefresh\(\);/u);
   assert.match(source, /function applyNormalizedResearchSettings\(normalized, \{[\s\S]*?applyFeedbackFields\(\{ input: normalized\.input, visual: normalized\.visual, mappings: normalized\.advanced\.mappings \}\);/u);
@@ -780,19 +812,28 @@ test("the Research stylesheet passes the compact Uncodixfy guardrails", async ()
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 56px/u);
 });
 
-test("the open ledger page owns scrolling while the sheet rail stays fixed", async () => {
+test("the open ledger page fits bounded boxes without any scrollbar dependency", async () => {
   const css = await read("experiment-planner/web/research.css");
   assert.match(css, /\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/u);
   assert.match(css, /\.setup-mode\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);[\s\S]*?height:\s*100%;/u);
   assert.match(css, /\.setup-layout\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?height:\s*100%;/u);
-  assert.match(css, /\.ledger-page \.setup-accordion-panel-clip\s*\{[\s\S]*?height:\s*100%;[\s\S]*?overflow:\s*auto;/u);
+  assert.match(css, /\.ledger-page \.setup-accordion-panel-clip\s*\{[\s\S]*?height:\s*100%;[\s\S]*?overflow:\s*hidden;/u);
+  assert.match(css, /\.ledger-page-flow\s*\{[\s\S]*?container:\s*ledger-page-flow \/ size;[\s\S]*?overflow:\s*hidden;/u);
+  assert.match(css, /\[data-ledger-page-hidden\]\s*\{[\s\S]*?display:\s*none !important;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
   assert.match(css, /\.ledger-page-stack\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\);/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
   assert.match(css, /\.table-scroll\s*\{[\s\S]*?max-width:\s*100%;[\s\S]*?overflow:\s*auto;/u);
+  assert.match(css, /data-planner-interface="ledger"[\s\S]*?\.ledger-page-flow :is\([\s\S]*?\.table-scroll,[\s\S]*?\.participant-grid,[\s\S]*?\.planned-events[\s\S]*?overflow:\s*visible !important;/u);
+  assert.match(css, /data-planner-interface="ledger"[\s\S]*?\.ledger-page-flow textarea\s*\{[\s\S]*?overflow:\s*hidden !important;[\s\S]*?resize:\s*none;/u);
   assert.match(css, /\.video-location-id\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?user-select:\s*text;/u);
   const source = await read("experiment-planner/web/src/research/app.js");
+  const layoutSource = await read("experiment-planner/web/src/research/ledger-page-layout.js");
+  assert.match(source, /createLedgerPageLayout\(root\)/u);
+  assert.match(layoutSource, /fitSingleItem\(flow, current\)/u);
+  assert.match(layoutSource, /textarea\.style\.height = "0px";[\s\S]*?textarea\.scrollHeight/u);
+  assert.match(layoutSource, /section\.dataset\.ledgerPageScale = scale\.toFixed\(4\)/u);
   assert.match(source, /title\.className = "video-location-id";[\s\S]*?title\.textContent = stimulus\.title;[\s\S]*?title\.title = stimulus\.title;/u);
   assert.match(source, /source === "workspace"[\s\S]*?videoAnnotationIdFromRelativePathV1\(String\(location\)\)/u);
 });

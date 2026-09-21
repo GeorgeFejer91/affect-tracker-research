@@ -75,12 +75,20 @@ connected: a changed draft blocks execution explicitly, and never rewrites the
 loaded JSON or runs under its old input hash. No custom-key capture is added here.
 
 The current executable accepts canonical `affect-research-experiment-package`
-version 1 without changing its bytes, hashes or frozen readers. It consumes the
-explicit participant schedules and complete language-selected protocol. The new
-comprehensive Planner master has a separate P7-owned reader handoff; unsupported
-or unfinished schemas are rejected rather than run with invented defaults.
+version 1 and Planner masters 1–6 without changing historical bytes, hashes or
+frozen readers. Master6 is desktop-only and makes `activeVideoOnly` versus
+`fullAttempt` affect sampling explicit. Unsupported or unfinished schemas are
+rejected rather than run with invented defaults.
 V1 questionnaire presentation preserves one item at a time, original option
 labels/codes, required-answer checks and final validation.
+
+Master6 stores three distinct evidence layers: `master-samples.v2.jsonl` is the
+primary high-rate Flubber/Grid outcome, `master-inputs.v2.jsonl` records every
+admitted digital or continuous input observation, and
+`master-events.v2.jsonl` carries bounded semantic lifecycle, digital-edge,
+reset, gap and terminal events. Continuous input does not become marker spam.
+These software contracts do not by themselves qualify installed timing,
+physical input, or XDF reconstruction.
 
 ## Stream recording
 

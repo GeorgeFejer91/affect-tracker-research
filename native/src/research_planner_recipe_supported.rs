@@ -9,6 +9,7 @@ use crate::research_planner_recipe_v4::PlannerRecipeV4;
 use crate::research_planner_recipe_v5::{
     PlannerRecipeV5, QuestionnaireAssetSnapshot, BUNDLE_SCHEMA,
 };
+use crate::research_planner_recipe_v6::PlannerRecipeV6;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -23,6 +24,7 @@ pub enum SupportedPlannerRecipe {
     V3(PlannerRecipeV3),
     V4(PlannerRecipeV4),
     V5(PlannerRecipeV5),
+    V6(PlannerRecipeV6),
 }
 impl Serialize for SupportedPlannerRecipe {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -32,6 +34,7 @@ impl Serialize for SupportedPlannerRecipe {
             Self::V3(value) => value.serialize(serializer),
             Self::V4(value) => value.serialize(serializer),
             Self::V5(value) => value.serialize(serializer),
+            Self::V6(value) => value.serialize(serializer),
         }
     }
 }
@@ -46,6 +49,7 @@ impl LoadedSupportedPlannerRecipe {
     pub fn transport_text(&self) -> ResearchResult<String> {
         match &self.recipe {
             SupportedPlannerRecipe::V5(r) => r.bundle_text(&self.canonical_source_text),
+            SupportedPlannerRecipe::V6(r) => r.bundle_text(&self.canonical_source_text),
             _ => Ok(self.canonical_source_text.clone()),
         }
     }
@@ -53,6 +57,10 @@ impl LoadedSupportedPlannerRecipe {
         let mut value = serde_json::to_value(self)
             .map_err(|_| CommandError::invalid_contract("Invalid recipe document."))?;
         if let SupportedPlannerRecipe::V5(r) = &self.recipe {
+            value["questionnaireAssets"] = serde_json::json!(r.assets);
+            value["resolvedRecipe"] = serde_json::json!(r.content);
+        }
+        if let SupportedPlannerRecipe::V6(r) = &self.recipe {
             value["questionnaireAssets"] = serde_json::json!(r.assets);
             value["resolvedRecipe"] = serde_json::json!(r.content);
         }
@@ -67,6 +75,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => r.0.version,
             Self::V4(r) => r.0.version,
             Self::V5(_) => 5,
+            Self::V6(_) => 6,
         }
     }
     pub fn recipe_id(&self) -> &str {
@@ -76,6 +85,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => &r.0.recipe_id,
             Self::V4(r) => &r.0.recipe_id,
             Self::V5(r) => &r.manifest.recipe_id,
+            Self::V6(r) => &r.manifest.recipe_id,
         }
     }
     pub fn presentation_target(&self) -> &str {
@@ -85,6 +95,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => &r.0.presentation_target,
             Self::V4(r) => &r.0.presentation_target,
             Self::V5(r) => &r.manifest.presentation_target,
+            Self::V6(r) => &r.manifest.presentation_target,
         }
     }
     pub fn definition_sha256(&self) -> &str {
@@ -94,6 +105,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => &r.0.integrity.definition_sha256,
             Self::V4(r) => &r.0.integrity.definition_sha256,
             Self::V5(r) => &r.manifest.integrity.definition_sha256,
+            Self::V6(r) => &r.manifest.integrity.definition_sha256,
         }
     }
     pub fn policy(&self) -> &PlannerRecipePolicyV1 {
@@ -103,6 +115,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => &r.0.policy,
             Self::V4(r) => &r.0.policy,
             Self::V5(r) => &r.manifest.policy,
+            Self::V6(r) => &r.base_policy,
         }
     }
     pub fn segment(&self, id: &str) -> ResearchResult<Value> {
@@ -125,6 +138,7 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => segment!(r.0),
             Self::V4(r) => segment!(r.0),
             Self::V5(r) => segment!(r.content.0),
+            Self::V6(r) => segment!(r.content.0),
         }
         .map_err(|_| CommandError::invalid_contract("Invalid Planner owner projection."))
     }
@@ -135,7 +149,17 @@ impl SupportedPlannerRecipe {
             Self::V3(r) => r.reconstruct_selection(selector),
             Self::V4(r) => r.reconstruct_selection(selector),
             Self::V5(r) => r.content.reconstruct_selection(selector),
+            Self::V6(r) => r.reconstruct_selection(selector),
         }
+    }
+
+    pub fn full_attempt_acquisition(&self) -> bool {
+        matches!(
+            self,
+            Self::V6(r)
+                if r.manifest.policy.acquisition_window
+                    == crate::research_planner_recipe_policy::AcquisitionWindowV1::FullAttempt
+        )
     }
 }
 pub fn parse_supported_planner_recipe_bytes(
@@ -159,10 +183,17 @@ pub fn parse_supported_planner_recipe_bytes(
                 "Unsupported questionnaire asset transport.",
             ));
         }
-        return parse_planner_recipe_asset_bytes(
-            bundle.recipe_source_text.as_bytes(),
-            bundle.questionnaire_assets,
-        );
+        let source = read_value(bundle.recipe_source_text.as_bytes())?;
+        return match source["version"].as_u64() {
+            Some(6) => parse_planner_recipe_asset_bytes_v6(
+                bundle.recipe_source_text.as_bytes(),
+                bundle.questionnaire_assets,
+            ),
+            _ => parse_planner_recipe_asset_bytes(
+                bundle.recipe_source_text.as_bytes(),
+                bundle.questionnaire_assets,
+            ),
+        };
     }
     if value["schema"] != "affect-research-planner-recipe" {
         return Err(CommandError::invalid_contract(
@@ -213,6 +244,19 @@ pub fn parse_planner_recipe_asset_bytes(
     let recipe = PlannerRecipeV5::read(bytes, assets)?;
     Ok(LoadedSupportedPlannerRecipe {
         recipe: SupportedPlannerRecipe::V5(recipe),
+        canonical_source_text: String::from_utf8(bytes.to_vec())
+            .map_err(|_| CommandError::invalid_contract("Invalid UTF-8."))?,
+        canonical_source_byte_sha256: format!("{:x}", Sha256::digest(bytes)),
+    })
+}
+
+pub fn parse_planner_recipe_asset_bytes_v6(
+    bytes: &[u8],
+    assets: Vec<QuestionnaireAssetSnapshot>,
+) -> ResearchResult<LoadedSupportedPlannerRecipe> {
+    let recipe = PlannerRecipeV6::read(bytes, assets)?;
+    Ok(LoadedSupportedPlannerRecipe {
+        recipe: SupportedPlannerRecipe::V6(recipe),
         canonical_source_text: String::from_utf8(bytes.to_vec())
             .map_err(|_| CommandError::invalid_contract("Invalid UTF-8."))?,
         canonical_source_byte_sha256: format!("{:x}", Sha256::digest(bytes)),

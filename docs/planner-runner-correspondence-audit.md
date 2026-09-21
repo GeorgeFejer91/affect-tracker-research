@@ -65,28 +65,28 @@ surface missing requirements; do not silently remove content or narrow an old
 reader. Version any new resource contract. Acceptance includes offline reopen,
 missing/changed resources and a fresh machine with no source questionnaire file.
 
-### A03 — High: SurveyJS/master4 cannot use the current runnable validation path
+### A03 — Resolved: SurveyJS/master4 has a versioned local-validation path
 
-Reader, plan and normal Start/Action v4 dispatch exist. Local validation Start,
-however, explicitly accepts only master3 in both JS and Rust. Normal native
-research Start remains gated by unavailable playback qualification. Thus the
-newest producer format is interpretable but has no presently enabled execution
-path in this build. This blocks actual SurveyJS correspondence verification.
+At this audit's original base, Reader, plan and normal Start/Action v4 dispatch
+existed while local validation accepted only master3. The current adapter and
+native runtime accept permanently unqualified local validation for masters 3–6,
+using the versioned v5/v6 commands where required. This resolves the execution-
+path mismatch without making a normal research-readiness claim.
 
-Reproduction: the real master4 fixture resolves successfully, then
-`NativeMasterProtocolAdapter.start(..., {validation:true})` rejects with
-“Validation sessions require master3.” No native invocation occurs.
+Historical reproduction: at the audit base, the real master4 fixture resolved
+successfully and `NativeMasterProtocolAdapter.start(..., {validation:true})`
+rejected before native invocation. Current regression coverage requires the
+versioned validation dispatch and permanent `researchQualified:false` label.
 
 Sources: [adapter](../experiment-runner/src/master-protocol.js),
 [native preflight](../native/src/research_runner_master/commands.rs),
 [native Start](../native/src/research_runner_master/runtime.rs),
 [qualification state](../native/src/research_native_media.rs).
 
-Repair: extend the approved validation-session contract to supported master4
-with permanent unqualified attempt/information labels and matching independent
-reconstruction. Preserve all actual media/input/recording checks. Do not flip
-research qualification flags. Test producer version × reader × plan × preflight
-× Start × responses × information reconstruction as one compatibility matrix.
+Resolution: the approved validation-session contract now covers supported
+masters 3–6 with permanent unqualified attempt/information labels and matching
+independent reconstruction. Actual media/input/recording checks remain intact,
+and research qualification flags remain false.
 
 ### A04 — High requirement gap: Runner controller overrides are drafts only
 

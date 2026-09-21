@@ -3,6 +3,7 @@ import { createDefaultResearchSettings, validateResearchSettingsV1 } from "./con
 import { DEFAULT_COMPLETE_VIDEO_PLAYBACK_V1 } from "./experiment-package.js";
 
 export const PLANNER_RECIPE_POLICY_SCHEMA = "affect-research-planner-recipe-policy";
+export const ACQUISITION_WINDOWS = Object.freeze(["activeVideoOnly", "fullAttempt"]);
 
 function exact(value, fields, name) {
   if (!value || typeof value !== "object" || Array.isArray(value)
@@ -36,6 +37,32 @@ export function validatePlannerRecipePolicyV1(value) {
   };
   if (canonicalJson(value) !== canonicalJson(result)) throw new TypeError("Planner recipe policy must contain canonical values.");
   return structuredClone(result);
+}
+
+/** Successor policy used only by master6. Historical policy v1 retains its
+ * active-video-only meaning and is never interpreted through this reader. */
+export function validatePlannerRecipePolicyV2(value) {
+  exact(value, ["schema", "version", "participantCount", "samplingFrequencyHz", "acquisitionWindow", "output", "lsl", "playback"], "Planner recipe policy");
+  if (value.schema !== PLANNER_RECIPE_POLICY_SCHEMA || value.version !== 2
+    || !ACQUISITION_WINDOWS.includes(value.acquisitionWindow)) {
+    throw new TypeError("Unsupported Planner recipe policy version or acquisition window.");
+  }
+  const legacy = validatePlannerRecipePolicyV1({
+    schema: PLANNER_RECIPE_POLICY_SCHEMA, version: 1,
+    participantCount: value.participantCount,
+    samplingFrequencyHz: value.samplingFrequencyHz,
+    output: value.output, lsl: value.lsl, playback: value.playback,
+  });
+  const result = { ...legacy, version: 2, acquisitionWindow: value.acquisitionWindow };
+  if (canonicalJson(value) !== canonicalJson(result)) throw new TypeError("Planner recipe policy must contain canonical values.");
+  return structuredClone(result);
+}
+
+export function plannerRecipePolicyV1FromV2(value) {
+  const normalized = validatePlannerRecipePolicyV2(value);
+  const { acquisitionWindow: _acquisitionWindow, ...legacy } = normalized;
+  legacy.version = 1;
+  return validatePlannerRecipePolicyV1(legacy);
 }
 
 /** Explicit legacy policy projection only; no conversion of old schedules into

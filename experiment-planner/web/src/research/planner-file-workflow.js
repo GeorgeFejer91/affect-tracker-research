@@ -195,7 +195,7 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
           source = null;
           return await openLegacy(selected.document, { guard: current });
         }
-        if (selected?.kind !== "planner-recipe-v1" && !(documentAdapter && ["planner-recipe-v2", "planner-recipe-v3", "planner-recipe-v4", "planner-recipe-v5"].includes(selected?.kind))) {
+        if (selected?.kind !== "planner-recipe-v1" && !(documentAdapter && ["planner-recipe-v2", "planner-recipe-v3", "planner-recipe-v4", "planner-recipe-v5", "planner-recipe-v6"].includes(selected?.kind))) {
           throw new TypeError("Unsupported recipe file type.");
         }
         const prepared = await preparePlannerRecipeReopen(plannerRecipeTransportText(selected.document), { isCurrent: current, parseDocument: parseGuiDocument });

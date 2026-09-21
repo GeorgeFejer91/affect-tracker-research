@@ -844,3 +844,335 @@ transport tests are useful prerequisites with their own receipts. They cannot
 close the actual smoke test. Existing installed/native timing, lifecycle, source
 closure and capability gates remain in force.
 
+## Desktop-first deterministic orchestration and evidence completion plan — 2026-09-21
+
+### Decision, scope and non-scope
+
+Adopt game-engine-style **orchestration patterns**, not a game engine: explicit
+actions, a reducer-shaped protocol core, deterministic deadlines, generation-
+fenced asynchronous effects, thin render projections and trace-based playtests.
+Keep a separate, stricter research-evidence plane that owns semantic event/sample
+identity, durability, LSL/XDF projection, recovery and independent reconstruction.
+The repo-scoped
+[research realtime orchestration skill](../.agents/skills/research-realtime-orchestration/SKILL.md)
+is the implementation/review workflow for this work.
+
+This plan finishes the downloadable Windows Planner/Runner pair first. It does
+not add Phaser, Three, React Three Fiber, an ECS, a global event bus, a backend,
+accounts, cloud storage, multiplayer networking, mobile control or browser LSL.
+It also does not upgrade HTML video into a frame-accurate or physically measured
+display-onset instrument.
+
+### Existing foundations to extend
+
+Do not restart the runtime. Reuse and converge these existing authorities:
+
+| Existing component | Keep/extend for | Do not turn it into |
+| --- | --- | --- |
+| `native/src/research_native_protocol/reducer.rs` | legal phases, transitions, occurrence entry and effect decisions | a DOM/view controller or stringly global bus |
+| `experiment-planner/web/src/research/sampling-worker.js` | browser deadline/no-catch-up reference and degraded browser execution | desktop native timing evidence |
+| `experiment-runner/src/html-video-player.js` | occurrence/generation-fenced HTML media observations | the protocol clock or proof of physical onset |
+| `experiment-planner/web/src/research/input-controller.js` | normalized browser action mapping and repeat guards | native input authority |
+| `experiment-planner/web/src/research/browser-journal.js` | browser sequence, transaction and partial-recovery discipline | proof of native durability or XDF recording |
+| `experiment-runner/src/information-stream.js` | strict sequenced XDF information reconstruction | a repair layer for missing/reordered evidence |
+
+The current large Runner page controller should become thinner only through
+small, tested extractions of pure state projection, action routing or adapter
+boundaries needed by the slices below. A speculative frontend rewrite is not a
+desktop completion task.
+
+### Target authority and information flow
+
+```text
+physical/native observations + monotonic deadlines
+                    |
+                    v
+          authoritative protocol reducer
+             | next state + effects
+             v
+  media/input/form/persistence/LSL adapters
+             | observed results/failures
+             v
+       canonical evidence assembler
+          |             |             |
+          v             v             v
+   durable attempt   bounded LSL    UI projection
+      artifacts      -> saved XDF   (status only)
+                            |
+                            v
+              independent reconstruction
+```
+
+The reducer decides what may happen; adapters perform effects; observations
+return as typed actions; the evidence assembler accepts each semantic fact once
+with sequence/correlation/clock provenance; output adapters project that fact.
+The UI can show status and diagnostics, but cannot advance the experiment by
+inventing an event or marker.
+
+### Event families required for complete reconstruction
+
+Freeze exact versioned names and fields in the owning contract before code. The
+table defines required meaning, not a license for ad hoc JSON keys.
+
+| Family | Authoritative trigger | XDF-only reconstruction must answer |
+| --- | --- | --- |
+| Startup/selection | durable Start commit after exact recipe/assets/preflight | Which recipe bytes, build, participant, language, variant, attempt, settings and execution dictionary were frozen? |
+| Protocol/occurrence | reducer enters/exits a specific planned occurrence | Which authored step was active, in what order, and why did it transition? |
+| Media | occurrence-fenced HTML media observations and explicit failures | When was Play requested; when were playing, pause/buffering, ended/error/interruption observed; which asset/occurrence/generation did each belong to? |
+| Interval/pause | monotonic scheduler plus reducer transition | When did each named ISI or pause actually start/end, and were there timing gaps or recovery restarts? |
+| Input/Flubber | native input service and sampling owner | Which physical edge/absolute state was accepted, when was it observed, what current/target affect state followed, and when/why did state reset to neutral? |
+| Questionnaire | native-acknowledged form adapter actions | Which definition/items/options were shown, which typed draft/submission became durable, and was the form completed, rejected, interrupted or recovered? |
+| Persistence/health | journal/recorder/finalizer | Was each boundary durable, where did a write fail, what remained recoverable, and was any result quarantined? |
+| Terminal/recovery | reducer plus durable finalization | Did the attempt complete, stop early, fail or remain incomplete; what is its recovery lineage and immutable output identity? |
+
+Command acceptance, state transition, effect application, observed effect,
+event acceptance, durable write and LSL transport are distinct facts. Do not
+emit every internal diagnostic to LSL: bounded marker/information payloads still
+follow privacy and size contracts. Diagnostic records may explain failures but
+must never be the only source of a fact required for reconstruction.
+
+### R-D0 — Freeze the canonical evidence contract and golden traces
+
+Start from the P-D0 Planner correspondence matrix. Define one versioned envelope
+and execution dictionary with stable run/attempt/occurrence/execution/operation
+identities, monotonically increasing sequence, separately named native
+observation/monotonic/LSL/wall times, typed payload dispatch and bounded error
+codes. Bind every record to the exact recipe and build identity. Keep private
+participant/questionnaire material in the already approved information-stream
+path; irregular semantic markers remain bounded and privacy-safe.
+
+Create human-reviewable golden traces before implementation for:
+
+- normal leading ISI → video → automatic neutral reset → trailing ISI;
+- repeated video identity and zero/consecutive intervals;
+- questionnaire draft, validation rejection, corrected durable submission and
+  completion in both language routes;
+- input edge plus continuous Flubber values, pause/resume and manual reset
+  blocked during active video;
+- missed sample slots with one explicit gap and no catch-up rows;
+- media error, recorder/write failure, stop early, crash/recovery and finalizer
+  retry; and
+- stale media/form/write callback from a prior generation, which is rejected
+  without producing a current-run scientific event.
+
+**Exit gate:** independent reconstruction of every golden trace succeeds from
+the event/sample envelopes alone; deleting, duplicating, reordering or changing
+an identity/hash fails explicitly rather than being inferred or repaired.
+
+**Current master6 candidate — 2026-09-21:** policy v2 now makes the sampling
+window explicit without widening master1–5. Native storage separates
+`master-samples.v2.jsonl` (primary Flubber/Grid outcome),
+`master-inputs.v2.jsonl` (every admitted input observation) and
+`master-events.v2.jsonl` (semantic lifecycle/edge/reset/gap evidence projected
+to LSL). The full-attempt clock spans committed startup through the terminal
+boundary; inactive phases sample neutral state, and missed deadlines remain
+gaps with no catch-up. Independent JS readers exercise identity, ordering,
+deletion, neutral-state and digital-edge correspondence. This is implementation
+evidence, not installed real-video/input, saved-XDF or research qualification;
+the exit gate above remains open until those checks pass.
+
+### R-D1 — Consolidate the authoritative protocol core
+
+Extend the current Rust reducer instead of adding an engine runtime. Represent
+external causes as bounded typed actions and return next state plus named effect
+requests. Keep legal transition checks, generation/occurrence identity, input
+gates and monotonic deadlines in the core. Media elements, SurveyJS, DOM focus,
+files and LSL handles remain adapters.
+
+Cover questionnaire and persistence waits as explicit phases/substates rather
+than scattered page booleans. Route Pause, Stop, authority loss and failures
+through the same serialized dispatch barrier so they cannot overtake accepted
+input or evidence. A rejected action yields a bounded diagnostic and no state
+advance; an effect failure returns a typed action and reaches the defined
+recovery/terminal boundary.
+
+**Exit gate:** pure reducer tests cover every golden trace, illegal transition,
+generation mismatch and terminal path. Equivalent inputs produce equivalent
+state/effect traces without DOM, media, filesystem, LSL or wall-clock access.
+
+### R-D2 — Create one evidence acceptance and projection path
+
+Generate the canonical semantic event/sample once at the native owner. Append
+it to the attempt journal/artifact and project the permitted representation to
+the primary information/marker stream; never construct a second marker in a
+frontend handler. Define adapter acknowledgement and failure behavior so a
+write-unhealthy path stops safely without trying to log an infinite sequence of
+write-failure events.
+
+Attach/arm the recorder before the first startup envelope. Commit the bounded
+header/chunks only after exact reassembly identity is known, and begin the
+acquisition window only after committed startup and durable local attempt state.
+At lifecycle boundaries, advancing the reducer is gated by the contract's
+required local durability/flush result. Preserve the original event observation
+time even when persistence and LSL push occur later; also record enough adapter
+status to diagnose transport delay without rewriting that time.
+
+**Exit gate:** local artifacts and decoded XDF agree on canonical sequence,
+identities and typed values for normal and interrupted traces. Transport loss,
+duplicate/reordered chunks, full disk and close/finalize failure have explicit,
+recoverable outcomes.
+
+### R-D3 — Make media lifecycle occurrence-specific and observable
+
+Keep HTML video. Send one generation/occurrence-bound Play effect and accept
+only observations from the owned element/token. Distinguish request, `playing`,
+pause, buffering, ended, decode error, interruption and disposal. Sampling and
+protocol advancement follow the frozen observed boundary policy; neither the
+planned duration nor a resolved Play promise is an onset event.
+
+At observed video end, perform the authoritative automatic neutral transition,
+accept its reset event and ensure subsequent state samples are neutral before
+entering the following interval/form phase. Specify behavior for error and
+recovery separately; do not assume an error is semantically equivalent to a
+normal end. Stale callbacks from a disposed occurrence are diagnostics only.
+
+**Exit gate:** mock-element tests prove fencing/wiring, and an installed run
+proves real decode, visible playback, observed event ordering, automatic reset
+and leading/trailing ISI measurements for the exact media asset. The receipt
+states that these are software observations, not physical display-onset proof.
+
+### R-D4 — Implement continuous state and neutral-reset evidence
+
+Keep the native monotonic scheduler as the desktop owner. Drain accepted input
+before sampling and before lifecycle boundaries. Every regular sample carries
+the frozen identity/clock context and current/target valence/arousal plus the
+existing derived/activity channels. Missed deadlines emit one gap record and no
+catch-up or later-state backfill.
+
+The requested full-session history is the master6/policy-v2
+`fullAttempt` acquisition-window mode, not a silent change to existing
+active-video-only recipes. Run the regular state stream from committed
+acquisition start through durable terminal completion. During ISI/questionnaire
+and other feedback-hidden inactive phases, the defined neutral state and
+activity flags are explicit, while semantic markers delimit the phase. During a
+video pause, preserve the last committed rating as a frozen visible state, stop
+admitting input, set `input_active` false, and delimit the state with
+pause/resume markers; do not invent a neutral reset.
+The Planner's calculable video-period storage is labelled a lower bound because
+self-paced phase duration is unknown; the native writer must retain partial
+evidence and fail closed on actual write or finalization failure.
+
+Manual neutral remains blocked while video is actively playing under the
+current requirement. Automatic video-end reset and allowed manual/recovery
+resets become typed transitions carrying reason and context; the reset marker
+and the first subsequent neutral sample must have deterministic order. Preserve
+physical input observation time for input-edge evidence even if reducer and
+write acceptance occur later.
+
+**Exit gate:** controlled-clock tests prove sample count/gaps/order; synthetic
+and real XDF show the whole acquisition window, every reset edge and neutral
+period; keyboard and supported controller tests prove bindings, repeat guards,
+focus gates, disconnect/authority loss and the manual-reset prohibition.
+
+### R-D5 — Make questionnaire execution transactional
+
+Project the exact embedded definitions and selected language into SurveyJS, but
+keep native validation/durability authoritative. Separate focused/edited UI
+state from accepted draft, submitted typed answer and completed form. Advance
+only after native acknowledgement of the applicable durable record. Validation
+rejection leaves the form editable and creates no fabricated answer.
+
+Generation-fence form callbacks and restore only the last durable draft after
+recovery. Suspend experiment input while the questionnaire owns it, retain
+keyboard and mouse accessibility, and preserve the authored item/option IDs,
+typed values, presentation order and language route in the information stream.
+Bounded markers indicate lifecycle without copying raw participant answers.
+
+**Exit gate:** EN/DE real panels, keyboard/mouse paths, rejection/correction,
+back navigation, interruption/recovery and independent XDF reconstruction all
+agree with the exact embedded definitions and typed synthetic answers.
+
+### R-D6 — Close recovery and finalization before polishing
+
+Implement master-run recovery at safe protocol boundaries using the existing
+append-only journal and create-new output rules. A partial video restarts from
+its beginning; an active interval restarts according to its frozen contract; an
+active questionnaire restores only its durable draft. Keep interrupted evidence
+and label it incomplete. Quarantine corruption or conflicting promoted files;
+never skip, repair by inference or overwrite a prior attempt.
+
+Finish the finalize-only retry path and verify durable terminal event, manifests,
+output digests, complete information stream/footer and immutable file prefixes
+before releasing the lock or returning to Setup. Power loss/full disk/permission
+loss at each boundary needs a deterministic next-launch status and safe action.
+
+**Exit gate:** fault-injection cases at startup, media, sample, questionnaire,
+terminal and promotion boundaries either complete exactly once or retain an
+actionable incomplete/quarantined attempt. Independent inspection detects no
+silent data loss or duplicate completed attempt.
+
+### R-D7 — Optimize frontend logic around the proven core
+
+After R-D1 through R-D6 stabilize, make the UI a clearer projection of the
+authoritative state: preflight readiness, armed/recording state, active phase,
+input gate, write health, recovery/finalization status and bounded diagnostics.
+Use native controls and DOM for text/forms; gate protocol input while dialogs
+or questionnaires own focus; keep reduced-motion behavior; and follow the
+shared dynamic text-fit/layout contract.
+
+Extract from the Runner page controller only where a pure selector, view model,
+action mapper or adapter boundary can be tested against the golden traces.
+Avoid a framework migration, scene graph or decorative game HUD. Researcher and
+participant surfaces should expose actionable state without leaking raw paths,
+personal data or unbounded log payloads.
+
+**Exit gate:** keyboard/mouse and supported screen-size flows expose the same
+authoritative status, stale UI callbacks cannot advance a run, and UI failure
+does not erase or rewrite accepted evidence.
+
+### R-D8 — Qualify and package one downloadable desktop pair
+
+Use one source commit and one clean Windows build for both apps. Verify binary,
+recipe and media hashes before testing; remove stale launch targets from the
+test workflow without deleting evidence or user data. Execute in this order:
+
+1. focused unit/contract/reducer/clock and JS/Rust parity checks;
+2. complete synthetic information-stream and XDF corruption matrix;
+3. production Planner creation/reopen and independent Runner preflight of the
+   P-D3 recipe;
+4. user-approved local validation attempts, permanently marked
+   `researchQualified:false`, including interruption and recovery;
+5. installed full-clip EN and DE runs with actual LSL recording, physical input,
+   leading/trailing intervals, continuous state/reset evidence and terminal
+   finalization;
+6. independent XDF-only reconstruction followed by comparison to the frozen
+   recipe and separately observed UI/native facts; and
+7. installer/uninstaller, isolated app-data, Downloads/workspace permissions,
+   relaunch and artifact provenance checks.
+
+The downloadable desktop release gate closes only when the exact installed
+candidate passes the applicable items above, all failures are distinguished
+from pre-existing/environmental limitations, partial records remain recoverable,
+and the release receipt identifies what was and was not physically measured.
+An unsigned interface build or synthetic-only session remains unqualified.
+
+### Validation matrix for every implementation slice
+
+| Claim | Minimum evidence |
+| --- | --- |
+| legal orchestration | pure reducer traces, illegal transitions and stale-generation rejection |
+| timing/sampling | controlled monotonic clock, no catch-up, explicit gaps and bounded jitter summary |
+| persistence | append/flush/finalize success plus failure injection and next-launch recovery |
+| LSL transport | synthetic outlet/recorder capture with exact sequence/hash/type checks |
+| reconstruction | independent decoder starts from saved XDF only and rejects corruption |
+| media | mock wiring plus installed real-file decode and observed lifecycle |
+| input/reset | synthetic mapping plus actual supported device, focus, repeat, disconnect and reset cases |
+| questionnaire | real EN/DE render, typed durable answers, validation/recovery and XDF comparison |
+| release | clean installed candidate, exact source/binary hashes and isolated-environment smoke |
+
+### Internet integration begins only after the desktop gate
+
+When the desktop pair is qualified, write a separate, versioned remote-control
+charter before implementation. The native Runner remains the sole protocol,
+timing, persistence and LSL/XDF authority. A browser/phone companion may submit
+authenticated, scoped, revisioned command proposals and receive redacted state;
+it cannot claim native timing, synthesize evidence, access arbitrary files or
+turn network receipt time into physical input time.
+
+That later design must define pairing, consent, scopes, leases, replay/reorder
+protection, reconnect/resynchronization, clock provenance, revocation, offline
+behavior, privacy and audit events. Evaluate a backend only for a named need
+that local/WebRTC or same-network operation cannot meet. Do not reuse game
+multiplayer state replication, telemetry or cloud-save semantics as the research
+record, and do not let internet work delay the desktop release gate.
+

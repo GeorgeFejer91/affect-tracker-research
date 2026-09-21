@@ -171,6 +171,7 @@ export async function parseSupportedPlannerRecipe(bytes, questionnaireAssets) {
   const { value } = readPlannerRecipeJsonBytes(bytes);
   if (value?.schema === "affect-research-planner-asset-bundle") return (await import("./planner-recipe-assets.js")).parsePlannerAssetBundle(bytes);
   if (value?.schema !== PLANNER_RECIPE_SCHEMA) throw new TypeError("Expected a Planner recipe.");
+  if (value.version === 6) return (await import("./planner-recipe-assets.js")).parsePlannerRecipeV6(bytes, questionnaireAssets);
   if (value.version === 5) return (await import("./planner-recipe-assets.js")).parsePlannerRecipeV5(bytes, questionnaireAssets);
   if (value.version === 1) return parsePlannerRecipeV1(bytes);
   if (value.version === 2) return parsePlannerRecipeV2(bytes);

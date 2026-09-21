@@ -19,9 +19,20 @@ Qualify these surfaces first and only:
 | Unsigned Tauri on macOS ARM64/x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; no native input, timing, persistence, recovery, LSL, or research qualification |
 | Unsigned Tauri on Linux x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; DEB/AppImage packaging is not a supported run surface |
 
-The downloadable unsigned Windows x64 alpha currently follows the same
-interface-only boundary as macOS/Linux. The first row describes the Windows
-qualification target, not current package evidence.
+The Windows delivery target is one self-contained **Affect Research Suite**
+NSIS installer containing separate Planner and Runner executables. The user
+selects one writable suite directory; both programs share its validated
+`workspace/` while retaining separate suite-local app/WebView state. Packaging
+the programs together does not combine their command registries or scientific
+authority. The first row remains a qualification target until the exact
+installed artifact passes its independent gates.
+
+Self-contained means no application backend, hosted dependency, or network is
+required after download; the installer includes the offline Evergreen WebView2
+payload. It is not a claim that Microsoft's WebView2 runtime is network-silent
+when the host is online. Do not write global WebView2 policy or firewall state
+from this per-user suite to suppress runtime vendor traffic; qualify the suite's
+network-independent workflow with the host genuinely offline.
 
 The browser has no LSL or native/global-input authority. macOS and Linux
 experiment runs, Firefox, Safari, mobile, WebXR and native Quest are not
@@ -75,9 +86,10 @@ not add a third application mode, participant-facing Run renderer, camera or
 microphone access, tracking or inference, images, uploads, personal data, or
 research evidence.
 
-The desktop product name is **Affect Research**. It retains bundle identifier
-`io.github.georgefejer91.affecttracker` and existing application-data
-compatibility, but all new Research data uses an explicit Research namespace.
+The downloadable desktop product name is **Affect Research Suite**. It retains
+bundle identifier `io.github.georgefejer91.affecttracker`; the installed marker
+activates suite-local Planner/Runner state and the shared workspace contract.
+Unpackaged development binaries retain the existing development path behavior.
 There is no automatic import of legacy application data.
 
 ## Experiment package authority
@@ -379,9 +391,11 @@ input hardware, LSL, accessibility, or scientific validity.
 WebXR and native Quest, the mirrored-study program, remote/VDO/BRSP and
 Party/Ground Control, direct Polar, Face/Photoatlas, Touch inference, Screen
 Calibration, retro/phone/Picture-in-Picture presentation, and non-Windows
-experiment runtimes are absent from the active Research product. Minimal
-Windows/macOS/Linux no-optional-feature packaging exists only for unsigned
-internal Setup/interface evaluation and blocks experiment Start.
+experiment runtimes are absent from the active Research product. The current
+Windows package is the unsigned native Planner/Runner suite; it remains an
+unqualified experiment candidate until its installed and scientific gates
+pass. Minimal macOS/Linux packaging exists only for unsigned internal
+interface evaluation and blocks experiment Start.
 Their source, documentation, notices, evidence, and full Git graph are
 preserved in
 [`GeorgeFejer91/affect-tracker-playground`](https://github.com/GeorgeFejer91/affect-tracker-playground)

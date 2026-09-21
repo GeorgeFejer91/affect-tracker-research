@@ -14,9 +14,11 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::Instant;
 
 const DIGITAL_CAPACITY: usize = 128;
+const CONTINUOUS_EVIDENCE_CAPACITY: usize = 1024;
 
 pub(crate) struct ProtocolInputMailbox {
     expected_kind: InputKindV1,
+    preserve_continuous: bool,
     state: Mutex<MailboxState>,
 }
 
@@ -24,6 +26,7 @@ pub(crate) struct ProtocolInputMailbox {
 struct MailboxState {
     digital: VecDeque<NativeDigitalInput>,
     continuous: Option<NativeContinuousInput>,
+    continuous_evidence: VecDeque<NativeContinuousInput>,
     coalesced_count: u64,
     failure: Option<MailboxFailure>,
 }
@@ -38,13 +41,23 @@ struct MailboxFailure {
 pub(crate) struct InputDrain {
     pub(crate) digital: VecDeque<NativeDigitalInput>,
     pub(crate) continuous: Option<NativeContinuousInput>,
+    pub(crate) continuous_evidence: VecDeque<NativeContinuousInput>,
     pub(crate) coalesced_count: u64,
 }
 
 impl ProtocolInputMailbox {
     pub(crate) fn new(expected_kind: InputKindV1) -> Self {
+        Self::with_continuous_evidence(expected_kind, false)
+    }
+
+    pub(crate) fn new_preserving_continuous(expected_kind: InputKindV1) -> Self {
+        Self::with_continuous_evidence(expected_kind, true)
+    }
+
+    fn with_continuous_evidence(expected_kind: InputKindV1, preserve_continuous: bool) -> Self {
         Self {
             expected_kind,
+            preserve_continuous,
             state: Mutex::new(MailboxState::default()),
         }
     }
@@ -68,6 +81,18 @@ impl ProtocolInputMailbox {
             NativeInputUpdate::Continuous(input) => {
                 if self.expected_kind == InputKindV1::Digital {
                     latch_failure(&mut state, "native-input-kind-mismatch", input.observed_at);
+                } else if self.preserve_continuous {
+                    if state.continuous_evidence.len() == CONTINUOUS_EVIDENCE_CAPACITY {
+                        latch_failure(&mut state, "native-input-queue-overflow", input.observed_at);
+                    } else if state
+                        .continuous_evidence
+                        .back()
+                        .is_some_and(|current| current.observed_at > input.observed_at)
+                    {
+                        latch_failure(&mut state, "native-input-order-reversed", input.observed_at);
+                    } else {
+                        state.continuous_evidence.push_back(input);
+                    }
                 } else if state
                     .continuous
                     .as_ref()
@@ -88,6 +113,7 @@ impl ProtocolInputMailbox {
         if let Some(failure) = state.failure.take() {
             state.digital.clear();
             state.continuous = None;
+            state.continuous_evidence.clear();
             state.coalesced_count = 0;
             return Err(CommandError::new(
                 "native_input_failed",
@@ -100,6 +126,7 @@ impl ProtocolInputMailbox {
         Ok(InputDrain {
             digital: std::mem::take(&mut state.digital),
             continuous: state.continuous.take(),
+            continuous_evidence: std::mem::take(&mut state.continuous_evidence),
             coalesced_count: std::mem::take(&mut state.coalesced_count),
         })
     }
@@ -108,6 +135,7 @@ impl ProtocolInputMailbox {
         let mut state = lock(&self.state);
         state.digital.clear();
         state.continuous = None;
+        state.continuous_evidence.clear();
         state.coalesced_count = 0;
     }
 }
@@ -154,5 +182,25 @@ mod tests {
             mailbox.push(digital(Instant::now()));
         }
         assert_eq!(mailbox.drain().unwrap_err().code, "native_input_failed");
+    }
+
+    #[test]
+    fn evidence_mode_preserves_every_ordered_continuous_observation() {
+        let mailbox = ProtocolInputMailbox::new_preserving_continuous(InputKindV1::Absolute);
+        let epoch = Instant::now();
+        for index in 0..3 {
+            mailbox.push(NativeInputUpdate::Continuous(NativeContinuousInput {
+                x: index as f64 / 10.,
+                y: 0.,
+                detail: "test:absolute".into(),
+                input_active: true,
+                observed_at: epoch + std::time::Duration::from_millis(index),
+            }));
+        }
+        let drain = mailbox.drain().unwrap();
+        assert!(drain.continuous.is_none());
+        assert_eq!(drain.coalesced_count, 0);
+        assert_eq!(drain.continuous_evidence.len(), 3);
+        assert_eq!(drain.continuous_evidence[2].x, 0.2);
     }
 }

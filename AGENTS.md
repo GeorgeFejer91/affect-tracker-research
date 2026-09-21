@@ -13,10 +13,11 @@ you are changing. Direct session instructions take precedence.
 | Planner authoring, Open/Save, preview | [`for-ai/60-SEGMENT-CATALOGUE.md`](./for-ai/60-SEGMENT-CATALOGUE.md), the relevant `docs/planner-*.md` |
 | Planner CLI | [`docs/planner-cli.md`](./docs/planner-cli.md), [`docs/planner-cli-library.md`](./docs/planner-cli-library.md) |
 | Runner execution, recording, browser path | [`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md), [`docs/runner-*.md`](./docs) |
+| Realtime protocol orchestration, semantic events, sampling, Flubber resets, LSL/XDF or reconstruction | [`.agents/skills/research-realtime-orchestration/SKILL.md`](./.agents/skills/research-realtime-orchestration/SKILL.md), [`for-ai/20-ARCHITECTURE.md`](./for-ai/20-ARCHITECTURE.md), [`for-ai/65-RUNNER-SEGMENTS.md`](./for-ai/65-RUNNER-SEGMENTS.md) |
 | Saved-file formats and version support | [`for-ai/66-COMPATIBILITY.md`](./for-ai/66-COMPATIBILITY.md) |
 | Module boundaries, native authority | [`for-ai/20-ARCHITECTURE.md`](./for-ai/20-ARCHITECTURE.md) |
 | Product scope, delivery surfaces, package authority | [`for-ai/10-PRODUCT.md`](./for-ai/10-PRODUCT.md) |
-| Standalone installer, app environment, Downloads workspace, package validation | [`for-ai/installation-packaging/README.md`](./for-ai/installation-packaging/README.md) |
+| Standalone suite installer, selected-root workspace/state, package validation | [`for-ai/installation-packaging/README.md`](./for-ai/installation-packaging/README.md) |
 | Questionnaire content, citations, licences | [`for-ai/70-RESEARCH-PROVENANCE.md`](./for-ai/70-RESEARCH-PROVENANCE.md) |
 | Layout and geometry | [`docs/planner-p4-layout-contract.md`](./docs/planner-p4-layout-contract.md), [`docs/controlled-video-geometry-v3.md`](./docs/controlled-video-geometry-v3.md) |
 
@@ -45,10 +46,15 @@ you are changing. Direct session instructions take precedence.
    archive.
 8. **Confined native access.** Raw `invoke(` stays in the named native adapter
    modules; project-authored `unsafe` stays absent.
+9. **Engine patterns never own research evidence.** Reducers, action maps,
+   generation fences and deterministic playtests may organize interaction, but
+   render loops, scene events and engine save systems never own sampling,
+   timestamps, semantic events, LSL/XDF projection or recovery.
 
 ## Working rules
 
 - Use [Ponytail's upstream skill](https://github.com/DietrichGebert/ponytail/blob/main/skills/ponytail/SKILL.md) for every implementation, fix, refactor and code review. Load it through the normal skill mechanism, or read and apply the actual `SKILL.md`; do not invent an invocation or build skill-management infrastructure. Reuse existing code and native platform features, preserving correctness, accessibility and research semantics.
+- Use the repo-scoped [research realtime orchestration skill](./.agents/skills/research-realtime-orchestration/SKILL.md) for protocol state machines, media/questionnaire lifecycle, sampling, semantic events, Flubber neutral resets, recovery, LSL/XDF or reconstruction work. Game-development skills are optional design references in that workflow, not authorization to add a game engine, gamification, a second event bus or renderer-owned logging.
 - For all UI work, follow [`25-UI-LAYOUT.md`](./for-ai/25-UI-LAYOUT.md). CSS defines the available box; measured text sizing and container-relative SVG geometry adapt within it. Do not replace this with per-element font/offset patches or clipping essential text.
 - Make changes in small increments that build and test.
 - Run focused checks as you go and the applicable full checks before handing

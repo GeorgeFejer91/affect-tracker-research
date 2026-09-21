@@ -70,6 +70,7 @@ test("tests and no-default-feature Rust gates precede the unsigned package build
     const prerequisiteIndex = workflow.indexOf(prerequisite);
     assert.ok(prerequisiteIndex >= 0 && prerequisiteIndex < packageIndex, `${prerequisite} must precede packaging`);
   }
+  assert.ok(workflow.indexOf("scripts/qualification/native-tests.ps1 -FeatureSet all-features") < packageIndex);
 });
 
 test("package helper rejects cross-host and signing boundaries", async () => {
@@ -83,6 +84,7 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /--no-sign/u);
   assert.match(helper, /--no-default-features/u);
   assert.match(helper, /"--bin",\s*"affect-research"/u);
+  assert.match(helper, /scripts\/build-runner-desktop\.js", "--release"/u);
   assert.match(helper, /AFFECT_TRACKER_BUILD_COMMIT: commit/u);
   assert.match(helper, /status", "--porcelain=v1", "--untracked-files=normal"/u);
   assert.match(helper, /TAURI_SIGNING_PRIVATE_KEY/u);
@@ -104,7 +106,10 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.deepEqual(macos.bundle.targets, ["dmg"]);
   assert.deepEqual(linux.bundle.targets, ["deb", "appimage"]);
   assert.deepEqual(windows.bundle.resources, {
-    "icons-ledger/icon.ico": "resources/ledger-icon.ico",
+    "icons-ledger/icon.ico": "resources/icons/planner-ledger.ico",
+    "runner-icons/icon.ico": "resources/icons/experiment-runner.ico",
+    "target/release/affect-runner.exe": "resources/bin/affect-runner.exe",
+    "windows/affect-research-suite-root.json": "resources/affect-research-suite-root.json",
   });
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
@@ -117,7 +122,7 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.equal(windows.bundle.windows.nsis.startMenuFolder, "Affect Research");
   assert.equal(windows.bundle.windows.nsis.installerHooks, "windows/installer-hooks.nsh");
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
-  assert.match(windows.bundle.longDescription, /HTML-compatible video playback/u);
+  assert.match(windows.bundle.longDescription, /self-contained Windows suite/u);
   assert.match(macos.bundle.longDescription, /not qualified/iu);
   assert.match(linux.bundle.longDescription, /not qualified/iu);
 });
@@ -141,6 +146,8 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   assert.match(helper, /published: false/u);
   assert.match(helper, /dirtyStateRejected: true/u);
   assert.match(helper, /lockedDependencies: true/u);
+  assert.match(helper, /suitePrograms: target\.suitePrograms/u);
+  assert.match(helper, /selfContainedSuiteRoot: Boolean\(target\.suitePrograms\)/u);
   for (const tool of ["node", "pnpm", "rustc", "cargo", "tauri"]) {
     assert.match(helper, new RegExp(`${tool}:`, "u"));
   }
@@ -153,7 +160,7 @@ test("Windows artifacts carry the checkout-free installed lifecycle smoke route"
   ]);
 
   assert.match(workflow, /scripts\/qualification\/planner-installed-smoke\.ps1/u);
-  assert.match(smoke, /AffectResearchPlannerInstalledSmokeV1/u);
+  assert.match(smoke, /AffectResearchSuiteInstalledSmokeV2/u);
   assert.match(smoke, /374DE290-123F-4565-9164-39C4925E467B/u);
   assert.match(smoke, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
   assert.match(smoke, /dirtyStateRejected/u);
@@ -162,9 +169,15 @@ test("Windows artifacts carry the checkout-free installed lifecycle smoke route"
   assert.match(smoke, /8000, 8013, 1420, 5173/u);
   assert.match(smoke, /Experiment Planner Classic\.lnk/u);
   assert.match(smoke, /Experiment Planner Ledger\.lnk/u);
+  assert.match(smoke, /Experiment Runner\.lnk/u);
   assert.match(smoke, /arguments -cne '--ledger'/u);
+  assert.match(smoke, /"\/D=\$Destination"/u);
+  assert.match(smoke, /planner\\webview/u);
+  assert.match(smoke, /runner\\webview/u);
+  assert.match(smoke, /\$RequireOffline -and \$launchesWithTcp -ne 0/u);
+  assert.doesNotMatch(smoke, /made no TCP connection/u);
   assert.match(smoke, /'stimuli', 'settings', 'outputs', 'recovery', 'assets', 'assets\/stimuli', 'assets\/questionnaires'/u);
-  assert.match(smoke, /\[IO\.File\]::Delete\(\$ledgerIcon\)[\s\S]*Invoke-SilentExecutable \$installer/u);
+  assert.match(smoke, /\[IO\.File\]::Delete\(\$ledgerIcon\)[\s\S]*Invoke-SilentInstaller \$installer \$installRoot/u);
   assert.match(smoke, /Invoke-SilentExecutable \$uninstaller/u);
   assert.match(smoke, /\$receipt\.gates\[\$currentGate\]\.status -ne 'passed'[\s\S]*Set-Gate \$currentGate 'failed'/u);
   assert.doesNotMatch(smoke, /USERPROFILE[^\n]*Downloads|localhost|http:\/\//iu);

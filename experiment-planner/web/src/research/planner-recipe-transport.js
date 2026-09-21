@@ -5,7 +5,7 @@ export const PLANNER_ASSET_BUNDLE_SCHEMA = "affect-research-planner-asset-bundle
 /** An explicit, bounded transport snapshot, never the on-disk experiment file.
  * Legacy documents retain their exact original transport bytes. */
 export function plannerRecipeTransportText(document) {
-  if (document?.recipe?.version !== 5) return document.canonicalSourceText;
+  if (![5, 6].includes(document?.recipe?.version)) return document.canonicalSourceText;
   return `${canonicalJson({ schema: PLANNER_ASSET_BUNDLE_SCHEMA, version: 1,
     recipeSourceText: document.canonicalSourceText, questionnaireAssets: document.questionnaireAssets })}\n`;
 }

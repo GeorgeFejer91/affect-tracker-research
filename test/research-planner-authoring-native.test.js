@@ -38,11 +38,23 @@ test("native revision notices are ordered across readiness and drained before re
 
 test("CLI explicitly builds one hidden native WebView with its owned profile", async () => {
   const source = await readFile(new URL("../native/src/lib.rs", import.meta.url), "utf8");
-  assert.match(source, /context\.config\(\)\.app\.windows\.len\(\) != 1/u);
-  assert.match(source, /window\.create = false/u);
-  assert.match(source, /if tauri::is_dev\(\) \{\s*return Err\(\s*"Planner CLI requires embedded assets/u);
-  assert.doesNotMatch(source, /window\.data_directory = Some/u);
+  const cli = source.slice(source.indexOf("pub fn run_planner_cli"), source.indexOf("fn launch("));
+  assert.match(cli, /context\.config\(\)\.app\.windows\.len\(\) != 1/u);
+  assert.match(cli, /window\.create = false/u);
+  assert.match(cli, /if tauri::is_dev\(\) \{\s*return Err\(\s*"Planner CLI requires embedded assets/u);
+  assert.doesNotMatch(cli, /window\.data_directory = Some/u);
   assert.match(source, /if let Some\(profile\) = &cli_profile[\s\S]*?WebviewWindowBuilder::from_config\(app, config\)\?[\s\S]*?\.data_directory\(profile\.join\("webview"\)\)[\s\S]*?\.visible\(false\)[\s\S]*?\.focused\(false\)/u);
+});
+
+test("installed suite windows use their suite-local profile and request WebView background-network suppression", async () => {
+  const source = await readFile(new URL("../native/src/lib.rs", import.meta.url), "utf8");
+  assert.match(source, /suite_environment\.as_ref\(\)[\s\S]*?window\.create = false;[\s\S]*?window\.data_directory = None;/u);
+  assert.match(source, /else if let Some\(environment\) = &suite_environment[\s\S]*?WebviewWindowBuilder::from_config\(app, config\)\?[\s\S]*?\.data_directory\(environment\.webview_data_dir\.clone\(\)\)[\s\S]*?\.additional_browser_args\(INSTALLED_WEBVIEW_ARGUMENTS\)/u);
+  for (const flag of ["disable-background-networking", "disable-component-update", "disable-domain-reliability", "disable-sync", "no-first-run", "no-pings"]) {
+    assert.match(source, new RegExp(`--${flag}`, "u"));
+  }
+  assert.match(source, /--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection/u);
+  assert.match(source, /--autoplay-policy=no-user-gesture-required/u);
 });
 
 test("fallible setup finishes before starting the UI-dependent native actor", async () => {

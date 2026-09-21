@@ -123,6 +123,8 @@ const rules = {
       || path === "assets/app-logo.svg"
       || path === "assets/app-symbol.svg"
       || path === "assets/ledger-tab-icons.svg"
+      || /^dependencies\/pretext\/(?:analysis|bidi|layout|line-break|line-text|measurement)\.js$/u.test(path)
+      || path === "dependencies/pretext/generated/bidi-data.js"
       || path === "assets/questionnaires/demographics/en.json"
       || path === "assets/questionnaires/demographics/de.json"
       || path === "assets/runner-symbol.svg"

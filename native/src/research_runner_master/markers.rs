@@ -8,6 +8,7 @@ use serde_json::{json, Value};
 
 pub(crate) const MAX_PROFILE_BYTES: usize = 4 * 1024 * 1024;
 pub(crate) const MAX_OBSERVATION_BYTES: usize = 2048;
+pub(crate) const MAX_EVIDENCE_EVENT_BYTES: usize = 4096;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +26,47 @@ pub(crate) enum MarkerEvent {
     Restart,
     Complete,
     Partial,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum EvidenceEvent {
+    SessionStart,
+    VideoStart,
+    VideoEnd,
+    IsiStart,
+    IsiEnd,
+    FormStart,
+    FormEnd,
+    Pause,
+    Resume,
+    Interruption,
+    Restart,
+    Complete,
+    Partial,
+    InputEdge,
+    NeutralReset,
+    TimingGap,
+}
+
+impl From<MarkerEvent> for EvidenceEvent {
+    fn from(value: MarkerEvent) -> Self {
+        match value {
+            MarkerEvent::SessionStart => Self::SessionStart,
+            MarkerEvent::VideoStart => Self::VideoStart,
+            MarkerEvent::VideoEnd => Self::VideoEnd,
+            MarkerEvent::IsiStart => Self::IsiStart,
+            MarkerEvent::IsiEnd => Self::IsiEnd,
+            MarkerEvent::FormStart => Self::FormStart,
+            MarkerEvent::FormEnd => Self::FormEnd,
+            MarkerEvent::Pause => Self::Pause,
+            MarkerEvent::Resume => Self::Resume,
+            MarkerEvent::Interruption => Self::Interruption,
+            MarkerEvent::Restart => Self::Restart,
+            MarkerEvent::Complete => Self::Complete,
+            MarkerEvent::Partial => Self::Partial,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +87,30 @@ pub(crate) struct MasterObservation {
     pub monotonic_ms: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MasterEvidenceEvent {
+    pub schema: String,
+    pub version: u32,
+    pub recipe_source_byte_sha256: String,
+    pub plan_identity_sha256: String,
+    pub run_id: String,
+    pub attempt_id: String,
+    pub participant_id: String,
+    pub variant_id: String,
+    pub variant_version_sha256: String,
+    pub sequence: u64,
+    pub event_type: EvidenceEvent,
+    pub phase: String,
+    pub entry_id: Option<String>,
+    pub execution_id: Option<String>,
+    pub source_code: Option<String>,
+    pub observed_monotonic_ms: f64,
+    pub accepted_monotonic_ms: f64,
+    pub wall_unix_ms: u64,
+    pub payload: Value,
+}
+
 pub(crate) fn code(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 96
@@ -59,6 +125,9 @@ pub(crate) struct MasterMarkers {
     pub profile: Value,
     run_id: String,
     attempt_id: String,
+    participant_id: String,
+    recipe_source_byte_sha256: String,
+    plan_identity_sha256: String,
     sequence: u64,
     last_ms: f64,
 }
@@ -128,6 +197,9 @@ impl MasterMarkers {
             profile,
             run_id: run_id.into(),
             attempt_id: attempt_id.into(),
+            participant_id: plan.participant_id.clone(),
+            recipe_source_byte_sha256: plan.recipe_source_byte_sha256.clone(),
+            plan_identity_sha256: plan.plan_identity_sha256.clone(),
             sequence: 0,
             last_ms: 0.,
         })
@@ -209,6 +281,113 @@ impl MasterMarkers {
             ));
         }
         Ok(observation)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn observe_evidence(
+        &mut self,
+        event_type: EvidenceEvent,
+        phase: &str,
+        entry_id: Option<&str>,
+        execution_id: Option<&str>,
+        observed_monotonic_ms: f64,
+        accepted_monotonic_ms: f64,
+        payload: Value,
+    ) -> ResearchResult<MasterEvidenceEvent> {
+        if phase.is_empty()
+            || phase.len() > 32
+            || !observed_monotonic_ms.is_finite()
+            || observed_monotonic_ms < 0.
+            || observed_monotonic_ms > accepted_monotonic_ms
+            || !accepted_monotonic_ms.is_finite()
+            || accepted_monotonic_ms < self.last_ms
+            || accepted_monotonic_ms > 9_007_199_254_740_991.
+            || execution_id.is_some_and(|value| !code(value))
+            || payload.as_object().is_none()
+        {
+            return Err(CommandError::invalid_contract(
+                "Master evidence event time, phase, occurrence or payload is invalid.",
+            ));
+        }
+        let session = matches!(
+            event_type,
+            EvidenceEvent::SessionStart | EvidenceEvent::Complete | EvidenceEvent::Partial
+        );
+        if session && (entry_id.is_some() || execution_id.is_some()) {
+            return Err(CommandError::invalid_contract(
+                "Session evidence cannot claim occurrence context.",
+            ));
+        }
+        if entry_id.is_none() != execution_id.is_none() {
+            return Err(CommandError::invalid_contract(
+                "Master evidence occurrence context must be complete or absent.",
+            ));
+        }
+        let source_code = self.source_code(entry_id)?;
+        self.sequence = self
+            .sequence
+            .checked_add(1)
+            .filter(|value| *value <= 9_007_199_254_740_991)
+            .ok_or_else(|| CommandError::invalid_contract("Master marker sequence exhausted."))?;
+        self.last_ms = accepted_monotonic_ms;
+        let wall_unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| CommandError::invalid_contract("System wall clock precedes Unix epoch."))?
+            .as_millis()
+            .try_into()
+            .map_err(|_| {
+                CommandError::invalid_contract("System wall clock exceeds evidence bounds.")
+            })?;
+        let event = MasterEvidenceEvent {
+            schema: "affect-runner-evidence-event".into(),
+            version: 2,
+            recipe_source_byte_sha256: self.recipe_source_byte_sha256.clone(),
+            plan_identity_sha256: self.plan_identity_sha256.clone(),
+            run_id: self.run_id.clone(),
+            attempt_id: self.attempt_id.clone(),
+            participant_id: self.participant_id.clone(),
+            variant_id: self.profile["variantId"]
+                .as_str()
+                .ok_or_else(|| CommandError::invalid_contract("Missing marker variant identity."))?
+                .into(),
+            variant_version_sha256: self.profile["variantVersionSha256"]
+                .as_str()
+                .ok_or_else(|| CommandError::invalid_contract("Missing marker variant version."))?
+                .into(),
+            sequence: self.sequence,
+            event_type,
+            phase: phase.into(),
+            entry_id: entry_id.map(str::to_owned),
+            execution_id: execution_id.map(str::to_owned),
+            source_code,
+            observed_monotonic_ms,
+            accepted_monotonic_ms,
+            wall_unix_ms,
+            payload,
+        };
+        if canonical_json(&event, &[])?.len() > MAX_EVIDENCE_EVENT_BYTES {
+            return Err(CommandError::invalid_contract(
+                "Master evidence event exceeds its bound.",
+            ));
+        }
+        Ok(event)
+    }
+
+    fn source_code(&self, entry_id: Option<&str>) -> ResearchResult<Option<String>> {
+        entry_id
+            .map(|id| {
+                self.profile["entries"]
+                    .as_array()
+                    .and_then(|entries| entries.iter().find(|entry| entry["entryId"] == id))
+                    .and_then(|entry| entry["sourceCode"].as_str())
+                    .map(str::to_owned)
+                    .ok_or_else(|| {
+                        CommandError::invalid_contract(
+                            "Observation is absent from the execution profile.",
+                        )
+                    })
+            })
+            .transpose()
     }
 }
 
