@@ -193,7 +193,13 @@ mod tests {
             .div_ceil(super::super::information::CHUNK_BYTES) as u64;
         let mut service = MasterLslService::start(
             &settings,
-            130,
+            prepared
+                .loaded
+                .recipe
+                .policy()
+                .sampling_frequency_hz
+                .try_into()
+                .unwrap(),
             "run-synthetic-stream",
             &prepared.plan.recipe_source_byte_sha256,
             &recorder,

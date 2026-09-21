@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { canonicalJson } from "../experiment-planner/web/src/research/canonical.js";
 import { InformationAssembler, inspectInformationStream } from "../experiment-runner/src/information-stream.js";
 import { inspectMasterStream } from "../experiment-runner/src/master-stream.js";
+import { reconstructInformationXdf } from "../scripts/qualification/runner-information-stream.mjs";
 import { frameRecords, informationFixture } from "./fixtures/runner-information-fixture.js";
 
 const change = (samples, index, fn) => { const copy = structuredClone(samples), frame = JSON.parse(copy[index].value); fn(frame); copy[index].value = canonicalJson(frame); return copy; };
@@ -75,6 +76,43 @@ test("complete information reconstructs source, layout, definitions, mandatory a
   assert.equal(result.occurrences.length, 10); assert.equal(result.records.filter(r => r.kind === "responses").length, 2);
   assert.equal(result.recordingFinalization, "requires-xdf-footer-verification");
   assert.deepEqual(result.plan.selected.feedback, fixture.plan.selected.feedback);
+});
+
+test("independent XDF reconstruction binds the Flubber stream to authored rate and channel semantics", async () => {
+  const fixture = await informationFixture();
+  const startup = fixture.records[0].value;
+  const stream = (name, format, rate, channels, timestamps, samples) => ({
+    name, type: format === "string" ? "Markers" : "Affect", channelCount: channels.length,
+    channelFormat: format, sourceId: `test:${name}`, nominalSampleRateHz: rate, channels,
+    sampleCount: samples.length, footerVerified: true, timestamps, samples,
+  });
+  const marker = stream(startup.effectiveLsl.markerStream, "string", 0,
+    [{ label: "marker", unit: null, type: "Markers" }],
+    fixture.samples.map(sample => sample.timestamp), fixture.samples.map(sample => [sample.value]));
+  const stateChannels = [
+    ["current_valence", "normalized"], ["current_arousal", "normalized"],
+    ["target_valence", "normalized"], ["target_arousal", "normalized"],
+    ["radius", "normalized"], ["angle_degrees", "degrees"],
+    ["animation_active", "boolean"], ["input_active", "boolean"],
+  ].map(([label, unit]) => ({ label, unit, type: "Affect" }));
+  const affect = stream(startup.effectiveLsl.stateStream, "float32", fixture.plan.selected.policy.samplingFrequencyHz,
+    stateChannels, [0.01, 0.02, 0.03], [[0, 0, 0, 0, 0, 0, 0, 0], [0.25, -0.5, 0.25, -0.5, Math.hypot(0.25, -0.5), 296.565051177078, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]]);
+  const data = { schema: "affect-runner-independent-xdf-export", version: 2,
+    reader: { name: "pyxdf", version: "test", synchronizeClocks: false, dejitterTimestamps: false },
+    xdfSha256: "a".repeat(64), primaryStreamIndex: 1, streams: [affect, marker] };
+  const receipt = await reconstructInformationXdf(data);
+  assert.equal(receipt.version, 2); assert.equal(receipt.affectCadence.authoredHz, 137);
+  assert.equal(receipt.affectCadence.sampleCount, 3); assert.equal(receipt.result.status, "complete");
+  for (const mutate of [
+    copy => copy.streams[0].nominalSampleRateHz = 130,
+    copy => copy.streams[0].channels.reverse(),
+    copy => copy.streams[0].samples[1][2] = 0.1,
+    copy => copy.streams[0].samples[1][4] = 0.1,
+    copy => copy.streams[0].timestamps[2] = copy.streams[0].timestamps[1],
+  ]) {
+    const copy = structuredClone(data); mutate(copy);
+    await assert.rejects(reconstructInformationXdf(copy));
+  }
 });
 
 test("submitted optional omissions, forged codes/scores, wrong forms and native clock reversal reject", async () => {

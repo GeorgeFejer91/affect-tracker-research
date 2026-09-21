@@ -8,6 +8,37 @@ import sys
 import pyxdf
 
 
+def one(mapping, key, label):
+    value = mapping.get(key)
+    if not isinstance(value, list) or len(value) != 1:
+        raise ValueError(f"Missing or ambiguous {label}")
+    return value[0]
+
+
+def optional_one(mapping, key, label):
+    if key not in mapping:
+        return None
+    return str(one(mapping, key, label))
+
+
+def channels(info, expected):
+    desc = info.get("desc")
+    try:
+        rows = desc[0]["channels"][0]["channel"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    if not isinstance(rows, list) or len(rows) != expected:
+        raise ValueError("XDF channel metadata count differs from channel_count")
+    result = []
+    for row in rows:
+        result.append({
+            "label": str(one(row, "label", "channel label")),
+            "unit": optional_one(row, "unit", "channel unit"),
+            "type": optional_one(row, "type", "channel type"),
+        })
+    return result
+
+
 def inspect_file(path):
     if path.stat().st_size > 512 * 1024 * 1024:
         raise ValueError("This qualification reader is bounded to 512 MiB XDF files")
@@ -26,8 +57,13 @@ def inspect_file(path):
         series = stream["time_series"]
         if hasattr(series, "tolist"):
             series = series.tolist()
-        row = {"name": info["name"][0], "type": info["type"][0], "channelCount": int(info["channel_count"][0]),
-               "channelFormat": info["channel_format"][0], "sourceId": info["source_id"][0],
+        channel_count = int(one(info, "channel_count", "channel count"))
+        nominal_rate = float(one(info, "nominal_srate", "nominal sample rate"))
+        if not math.isfinite(nominal_rate) or nominal_rate < 0:
+            raise ValueError("Invalid nominal sample rate")
+        row = {"name": one(info, "name", "stream name"), "type": one(info, "type", "stream type"), "channelCount": channel_count,
+               "channelFormat": one(info, "channel_format", "channel format"), "sourceId": one(info, "source_id", "source ID"),
+               "nominalSampleRateHz": nominal_rate, "channels": channels(info, channel_count),
                "sampleCount": count, "footerVerified": True, "timestamps": times, "samples": series}
         rows.append(row)
         if count and row["channelFormat"] == "string" and row["channelCount"] == 1:
@@ -45,7 +81,7 @@ def inspect_file(path):
     with path.open("rb") as source:
         while block := source.read(1024 * 1024):
             digest.update(block)
-    return {"schema": "affect-runner-independent-xdf-export", "version": 1,
+    return {"schema": "affect-runner-independent-xdf-export", "version": 2,
             "reader": {"name": "pyxdf", "version": pyxdf.__version__, "synchronizeClocks": False, "dejitterTimestamps": False},
             "xdfSha256": digest.hexdigest(), "primaryStreamIndex": primary, "streams": rows}
 
