@@ -968,8 +968,20 @@ to LSL). The full-attempt clock spans committed startup through the terminal
 boundary; inactive phases sample neutral state, and missed deadlines remain
 gaps with no catch-up. Independent JS readers exercise identity, ordering,
 deletion, neutral-state and digital-edge correspondence. This is implementation
-evidence, not installed real-video/input, saved-XDF or research qualification;
+evidence, not installed real-video/input, actual-session saved-XDF or research
+qualification;
 the exit gate above remains open until those checks pass.
+
+**Current-tree synthetic XDF refresh — commit `0e02b73`, 2026-09-21:** the
+Windows all-features outlet/recorder test wrote a new 79,121-byte XDF with
+SHA-256 `c99b857e51cf91372b5143ac709731f4dfeedd18294f35368699a437b7fc3871`.
+Independent `pyxdf 1.17.0` read both footered streams (three affect samples and
+78 information frames); the XDF-only reader reconstructed ten ordered
+occurrences, 26 committed records, two response records and the terminal
+outcome without source JSON. Removing 64 footer bytes was rejected before an
+export could be written. This refresh is synthetic transport/reconstruction
+evidence only; installed real-video, physical-input, offline and actual-session
+XDF qualification remain open.
 
 ### R-D1 — Consolidate the authoritative protocol core
 
