@@ -1,19 +1,36 @@
 // Actual production app and controls with synthetic native replies. No native
 // acquisition, real participant, playback timing or XDF qualification evidence.
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { build } from "esbuild";
+import { parseSupportedPlannerRecipe } from "../../experiment-planner/web/src/research/planner-recipe.js";
+import { compilePlannerAssetDocument } from "../../experiment-planner/web/src/research/planner-recipe-assets.js";
+import { plannerRecipeTransportText } from "../../experiment-planner/web/src/research/planner-recipe-transport.js";
 
 const [browser, destination, onlyCase, recipeVersion = "4"] = process.argv.slice(2);
 assert.ok(browser && destination);
-assert.ok(["2", "3", "4", "5"].includes(recipeVersion));
+assert.ok(["2", "3", "4", "5", "6"].includes(recipeVersion));
 assert.ok(onlyCase === undefined || onlyCase === "all" || /^(en|de)-(form|flow|stop|dispose)$/u.test(onlyCase));
 const root = resolve(import.meta.dirname, "../.."), output = resolve(destination);
 await mkdir(output);
+const hash = bytes => createHash("sha256").update(bytes).digest("hex");
+const sourceCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+const workingTreeStatus = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=normal"], { cwd: root, encoding: "utf8" }).trim();
+const browserSha256 = hash(await readFile(browser));
+const qualificationScriptSha256 = hash(await readFile(import.meta.filename));
+let master6Bundle = null;
+if (recipeVersion === "6") {
+  const historical = await parseSupportedPlannerRecipe(await readFile(join(root, "test/fixtures/planner-recipe-v4-surveyjs.canonical.json")));
+  const { integrity: _integrity, ...core } = structuredClone(historical.recipe);
+  core.version = 6;
+  core.policy = { ...core.policy, version: 2, acquisitionWindow: "fullAttempt" };
+  master6Bundle = plannerRecipeTransportText(await compilePlannerAssetDocument(core));
+}
 const entry = String.raw`
 import {bootRunner} from './experiment-runner/src/app.js';
 import {resolveRunnerSelection} from './experiment-runner/src/recipe.js';
@@ -65,7 +82,8 @@ const invoke=async(command,args)=>{
   case 'research_runner_master_start_v2':
   case 'research_runner_master_start_v3':
   case 'research_runner_master_start_v4':
-  case 'research_runner_master_start_v5':{
+  case 'research_runner_master_start_v5':
+  case 'research_runner_master_start_v6':{
    check(command==='research_runner_master_start_v'+masterVersion,'exact Start version dispatch');
    check(fullscreen,'Start2 follows fullscreen acknowledgement');
    check(Object.keys(args.request).sort().join('|')===['version','workspaceId','sourceText','participantId','selector','rerunConfirmed','inputTestReceiptId'].sort().join('|'),'Start2 has exact participant-only fields');
@@ -84,7 +102,8 @@ const invoke=async(command,args)=>{
   case 'research_runner_master_action_v2':
   case 'research_runner_master_action_v3':
   case 'research_runner_master_action_v4':
-  case 'research_runner_master_action_v5':{
+  case 'research_runner_master_action_v5':
+  case 'research_runner_master_action_v6':{
    check(command==='research_runner_master_action_v'+masterVersion,'exact action version dispatch');
    if(masterVersion>=3)check(args.request.version===masterVersion&&args.request.runId===status.runId,'action3 exact envelope');
    const action=masterVersion>=3?args.request.action:args.action;
@@ -129,7 +148,7 @@ const invoke=async(command,args)=>{
 try{
  const win=new Proxy(window,{get(target,key){if(key==='requestAnimationFrame')return callback=>setTimeout(()=>callback(performance.now()),16);const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
  app=await bootRunner(root,{invoke,windowObject:win,pollMs:250,subscribeAbort:callback=>{nativeAbort=callback;return()=>{unsubscribed=true;};}});
- await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===5?'/test/fixtures/planner-recipe-v5.bundle.json':masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
+ await app.adoptRecipe(new Uint8Array(await(await fetch(masterVersion===6?'/test/fixtures/planner-recipe-v6.bundle.json':masterVersion===5?'/test/fixtures/planner-recipe-v5.bundle.json':masterVersion===4?'/test/fixtures/planner-recipe-v4-surveyjs.canonical.json':'/test/fixtures/runner-master-v'+masterVersion+'-owner.canonical.json')).arrayBuffer()));
  check(q('runner-recipe-status').textContent.includes('master v'+masterVersion),'launcher identifies master v2');
  check(!q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true})),'input-test arrows cannot scroll and cancel the native test');
  check(q('runner-test-region').dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})),'input-test keyboard escape remains available through Tab');
@@ -271,7 +290,11 @@ try{
 }catch(error){errors.push(String(error));}
 const result=document.createElement('pre');result.id='receipt';result.hidden=true;result.textContent=JSON.stringify({language,mode,masterVersion,checks,errors,questionnaireDom:q('runner-questionnaire-items').innerHTML,viewport:[innerWidth,innerHeight],calls,submissions,screenshotFrozenDom:mode==='form',scope:'Actual app module with synthetic native replies and fictitious answers only'});document.body.append(result);
 `;
-const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "runner-surveyjs-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent" });
+const bundle = await build({ stdin: { contents: entry, resolveDir: root, sourcefile: "runner-surveyjs-audit.js" }, bundle: true, format: "esm", write: false, platform: "browser", logLevel: "silent", metafile: true });
+const productionInputSha256 = Object.fromEntries(await Promise.all(Object.keys(bundle.metafile.inputs)
+  .filter(path => path !== "runner-surveyjs-audit.js")
+  .sort()
+  .map(async path => [path, hash(await readFile(resolve(root, path)))])));
 let debuggerReady;
 const server = createServer(async (req, res) => {
   try {
@@ -282,8 +305,9 @@ const server = createServer(async (req, res) => {
       await send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowRight", code: "ArrowRight", windowsVirtualKeyCode: 39 });
       res.end("ok"); return;
     }
-    if (url.pathname === "/") { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/runner/runner.css"><script type="module" src="/runner/src/audit.js"></script>'); return; }
+    if (url.pathname === "/") { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/experiment-runner/runner.css"><script type="module" src="/runner/src/audit.js"></script>'); return; }
     if (url.pathname === "/runner/src/audit.js") { res.setHeader("Content-Type", "text/javascript"); res.end(bundle.outputFiles[0].text); return; }
+    if (url.pathname === "/test/fixtures/planner-recipe-v6.bundle.json" && master6Bundle !== null) { res.setHeader("Content-Type", "application/json"); res.end(master6Bundle); return; }
     const path = resolve(root, "." + decodeURIComponent(url.pathname)); assert.ok(path.startsWith(root + sep));
     res.setHeader("Content-Type", ({ ".css": "text/css", ".svg": "image/svg+xml", ".json": "application/json" })[extname(path)] ?? "application/octet-stream"); res.end(await readFile(path));
   } catch { res.writeHead(404); res.end(); }
@@ -361,4 +385,18 @@ try {
     const row = JSON.parse(raw.replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">"));
     rows.push(row); console.log(JSON.stringify({ language, mode, checks: row.checks.length, errors: row.errors })); assert.deepEqual(row.errors, []);
   }
-} finally { server.close(); await writeFile(join(output, "receipt.json"), JSON.stringify({ root, scope: "Synthetic native replies; production app frontend only", rows }, null, 2)); }
+} finally {
+  server.close();
+  await writeFile(join(output, "receipt.json"), JSON.stringify({
+    schema: "AffectResearchRunnerSurveyJsUiQualificationV1",
+    sourceCommit,
+    workingTreeStatus,
+    browserSha256,
+    qualificationScriptSha256,
+    productionInputSha256,
+    requestedMasterVersion: Number(recipeVersion),
+    generatedMaster6BundleSha256: master6Bundle === null ? null : hash(Buffer.from(master6Bundle, "utf8")),
+    scope: "Synthetic native replies; production app frontend only",
+    rows,
+  }, null, 2));
+}

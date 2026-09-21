@@ -142,3 +142,16 @@ test("native correspondence checks all authored fields and tolerates only derive
   const missing = structuredClone(plan); missing.steps.pop();
   assert.throws(() => assertMasterPlanParity(plan, missing), /fields/iu);
 });
+
+test("production SurveyJS qualification covers master6 with the real Runner stylesheet", async () => {
+  const source = await readFile(new URL("../scripts/qualification/runner-surveyjs-ui.mjs", import.meta.url), "utf8");
+  assert.match(source, /\["2", "3", "4", "5", "6"\]\.includes\(recipeVersion\)/u);
+  assert.match(source, /core\.policy = \{ \.\.\.core\.policy, version: 2, acquisitionWindow: "fullAttempt" \}/u);
+  assert.match(source, /case 'research_runner_master_start_v6'/u);
+  assert.match(source, /case 'research_runner_master_action_v6'/u);
+  assert.match(source, /href="\/experiment-runner\/runner\.css"/u);
+  assert.doesNotMatch(source, /href="\/runner\/runner\.css"/u);
+  assert.match(source, /AffectResearchRunnerSurveyJsUiQualificationV1/u);
+  assert.match(source, /productionInputSha256/u);
+  assert.match(source, /qualificationScriptSha256/u);
+});

@@ -983,6 +983,14 @@ export could be written. This refresh is synthetic transport/reconstruction
 evidence only; installed real-video, physical-input, offline and actual-session
 XDF qualification remain open.
 
+The production Runner SurveyJS harness also covers master6 directly. It builds
+an explicit full-attempt policy-v2 asset bundle from the frozen v4 SurveyJS
+fixture, requires the exact v6 Start/action commands, and runs both languages
+through form, native-rejection/correction flow, durable Stop and disposal
+cases. Its receipt binds the script, browser and every bundled production input.
+This remains frontend evidence with synthetic native replies; it does not
+replace an installed physical-input or saved-XDF run.
+
 ### R-D1 — Consolidate the authoritative protocol core
 
 Extend the current Rust reducer instead of adding an engine runtime. Represent
