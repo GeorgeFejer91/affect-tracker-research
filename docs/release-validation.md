@@ -196,3 +196,45 @@ This is deliberately synthetic transport and reconstruction evidence. Six
 sparse rows cannot establish authored 130-Hz cadence; there was no installed
 foreground session, physical input, displayed-video observation, clean-profile
 host or offline adapter condition. Those release gates remain open.
+
+## Opt-in production master6 worker qualification — 2026-09-22
+
+Commit `0212d64` adds a production-worker route. The selected root must already
+exist and be empty, and the XDF must be a new direct child:
+
+```powershell
+$env:AFFECT_RUNNER_MASTER6_SOURCE = '<exact-master6-manifest.json>'
+$env:AFFECT_RUNNER_MASTER6_WORKER_ROOT = '<existing-empty-directory>'
+$env:AFFECT_RUNNER_MASTER6_WORKER_XDF = `
+  Join-Path $env:AFFECT_RUNNER_MASTER6_WORKER_ROOT 'master6-worker.xdf'
+.\scripts\qualification\native-tests.ps1 `
+  -FeatureSet all-features `
+  -TestFilter 'research_runner_master::worker::tests::actual_master6_worker_records_dense_full_attempt_evidence' `
+  -IncludeIgnored
+python .\scripts\qualification\runner-information-xdf.py `
+  $env:AFFECT_RUNNER_MASTER6_WORKER_XDF '<new-independent-export.json>'
+node .\scripts\qualification\runner-information-stream.mjs `
+  '<new-independent-export.json>' '<new-reconstruction.json>'
+```
+
+The retained clean-commit run used source SHA-256
+`68f9bc828b5b69d687e2e8790ab512a5470295213a7cdffb4d356eef333b124e`.
+The 1,994,751-byte XDF SHA-256 is
+`3bc5a81af886d1f60b7feea4bc50888abb528132d51d44d2af4d21929bc52f82`;
+the independent export and reconstruction hashes are respectively
+`461c878041a498b9036f35b60a5c593880deaff94fbe8a81dcfdbca8d5a4b3bd`
+and `907c67420d6566b07ce3a3a2b00ebd82311f59a781b970de3b53cd0d9de9d9bd`.
+Both footers verified. XDF alone reconstructed six ordered occurrences, three
+responses, 2,853 eight-channel Affect rows, 2,271 information frames and the
+completed outcome with no issues. Removing the final 64 bytes was rejected and
+created no export.
+
+The playing phase contained 1,284 rows over 9,937.267 ms: observed mean
+129.110 Hz against authored 130 Hz, median delta 7.689 ms, maximum delta
+21.151 ms and 18 explicit missed slots. Across the entire 27.889-second Affect
+span, observed mean was 102.261 Hz and 776 slots were explicitly missed; 740 of
+those occurred during CPU-heavy questionnaire or media-verification phases in
+this unoptimized test build. This is local-validation evidence with synthetic
+HTML-video callbacks and input edges. It does not establish installed foreground
+behavior, physical input, displayed-video onset/end, clean-profile startup or
+offline operation.

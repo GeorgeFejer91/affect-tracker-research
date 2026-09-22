@@ -1012,6 +1012,33 @@ sparse rows deliberately test transport/schema binding, not observed 130-Hz
 cadence. The installed real-video, physical-input, full-attempt cadence, offline
 and clean-profile qualification gates remain open.
 
+**Production-worker synthetic qualification — commit `0212d64`, 2026-09-22:**
+an additional ignored Windows test drives the actual master6 worker through
+three native-validated SurveyJS forms, two intervals, a synthetic ten-second
+HTML-video occurrence, four admitted digital edges, terminal finalization and
+the real recorder/LSL path. Long SurveyJS validation and exact media-file
+revalidation run off the sole protocol-owner thread while that owner continues
+the authored full-attempt clock. Timing-gap observations remain semantic and
+LSL-projected, but no longer force a durability barrier for every missed slot;
+the normal sample/lifecycle checkpoints still make them durable. Finalization
+now hashes the exact bounded `assets/questionnaires/<id>/<language>/<file>`
+snapshot tree and still rejects symlinks, unexpected directories and excess
+artifacts.
+
+The clean-commit run produced 2,853 valid sample rows, 752 semantic observations,
+four corresponding input rows and a completed six-occurrence attempt. During
+the primary playing phase it retained 1,284 rows over 9,937.267 ms: observed
+mean 129.110 Hz against the authored 130 Hz, median delta 7.689 ms, maximum
+delta 21.151 ms and 18 explicitly represented missed slots. Independent local
+readers reported no issues. Independent `pyxdf 1.17.0` verified both footers and
+XDF-only reconstruction recovered all occurrences, three responses, 2,853
+eight-channel Affect rows, 2,271 information frames and the outcome. This is a
+debug-build, synthetic-callback, local-validation run; whole-attempt cadence was
+102.261 Hz because CPU-heavy questionnaire/media verification phases still
+reported 740 of the total 776 missed slots. It does not qualify physical input,
+displayed-video timing, installed foreground behavior, clean-profile startup or
+offline operation, and no acceptance threshold is inferred from it.
+
 The production Runner SurveyJS harness also covers master6 directly. It builds
 an explicit full-attempt policy-v2 asset bundle from the frozen v4 SurveyJS
 fixture, requires the exact v6 Start/action commands, and runs both languages

@@ -102,3 +102,25 @@ outcome. It is opt-in so routine tests never create recordings. Apply
 proves master6 framing, metadata and XDF-only reconstruction; its deliberately
 sparse synthetic rows do not qualify sampling cadence, physical input, displayed
 video timing or an installed participant session.
+
+A second ignored Windows-native route,
+`actual_master6_worker_records_dense_full_attempt_evidence`, exercises the
+production master6 worker rather than writing sparse records directly. It
+requires `AFFECT_RUNNER_MASTER6_SOURCE`, an existing empty
+`AFFECT_RUNNER_MASTER6_WORKER_ROOT`, and a new direct-child
+`AFFECT_RUNNER_MASTER6_WORKER_XDF`. It executes forms, intervals, a bounded
+synthetic HTML-video occurrence and input edges, then finalizes the local attempt
+and XDF. SurveyJS evaluation and exact media revalidation may run on bounded
+background operations, but only the worker owns protocol state and continues
+sampling while they complete. This is specifically an engine-style scheduling
+technique; neither those operations nor the renderer owns timestamps, evidence,
+LSL projection or recovery.
+
+The retained clean-commit run at `0212d64` validated 2,853 local sample rows,
+752 semantic observations and four digital inputs with zero reader issues. The
+playing phase recorded 1,284 rows over 9.937 seconds, or 129.110 Hz observed mean
+against the authored 130 Hz, with 18 missed slots represented rather than
+backfilled. XDF-only reconstruction verified 2,853 Affect samples and 2,271
+information frames. Whole-attempt cadence remains diagnostic: debug-build
+questionnaire and media-verification work produced most of the 776 recorded
+missed slots. Physical/installed qualification is still required.
