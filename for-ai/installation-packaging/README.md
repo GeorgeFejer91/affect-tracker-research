@@ -233,9 +233,36 @@ directory-page interaction, the scale/path visual matrix, cross-version
 upgrade, or scientific Runner qualification. Keep those gates `notRun` until
 their own evidence exists.
 
+## Current local candidate evidence — 2026-09-22
+
+The clean local suite built from commit `183b1c3` is a 224,429,835-byte NSIS
+installer with SHA-256
+`72a96de2b3398e2707240bb2cd4dc19721e4189bdb3a656c8c3f186914efea80`.
+The development-host installed smoke matched its V2 provenance and passed
+install, selected-root environment, all three interfaces, restart, same-artifact
+repair and uninstall-with-data-retention. Its overall status remains `blocked`
+because the host contains the checkout/toolchain; offline was not requested.
+This is not clean-profile or offline evidence.
+
+A separate cross-build smoke replaced the preserved `db7b3a3` installer with
+the `183b1c3` installer in one selected suite root. Both prior applications and
+all three current interfaces opened responsively and closed normally. The
+replacement Planner and Runner each contained the current commit, while exact
+sentinels in `workspace/`, Planner state and Runner state remained byte-identical
+through replacement and current uninstall. The redacted receipt is
+`Affect Research Suite_db7b3a3_to_183b1c3_cross-build-smoke.json`, SHA-256
+`354b8e1e8cabe998bc61340e77dd4b38e8867332a76ecf6d3701130b15860c7a`.
+Both installers declare `0.4.0-alpha.1`, so this proves different-build
+replacement and retained-data behavior, not the still-open cross-version gate.
+
+The exact master6 source and all five declared assets also pass the foreground
+keyboard harness's static guard when staged inside the installed suite
+workspace. That receipt is preflight only: it makes no physical-input, playback,
+sampling, LSL/XDF or foreground-session claim.
+
 ## Next qualification slices
 
-1. Produce one clean Windows x64 suite artifact and run the checkout-free
+1. Run the retained clean Windows x64 suite artifact through the checkout-free
    offline smoke on a disposable profile.
 2. Run installed Classic/Ledger save/reopen equivalence and Runner load against
    one exact package.
