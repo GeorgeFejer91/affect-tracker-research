@@ -428,13 +428,7 @@ impl MasterWorker {
             .map_err(|_| invalid("Invalid plan hash."))?
             ^ position)
             .max(1);
-        let checked = crate::research_surveyjs_engine::validate_survey_data_seed(
-            &definition.survey_json,
-            &definition.language,
-            &data,
-            submitted,
-            seed,
-        )?;
+        let checked = self.validate_survey_while_sampling(&definition, &data, submitted, seed)?;
         let page_count = checked["pageCount"]
             .as_u64()
             .ok_or_else(|| invalid("SurveyJS did not return its page count."))?;
@@ -458,6 +452,72 @@ impl MasterWorker {
             self.state.answers = projection;
         }
         Ok(())
+    }
+    fn validate_survey_while_sampling(
+        &mut self,
+        definition: &crate::research_surveyjs_definition::SurveyDefinitionV1,
+        data: &Value,
+        submitted: bool,
+        seed: u32,
+    ) -> ResearchResult<Value> {
+        let survey_json = definition.survey_json.clone();
+        let language = definition.language.clone();
+        let data = data.clone();
+        self.perform_while_sampling("master-survey-validation", move || {
+            crate::research_surveyjs_engine::validate_survey_data_seed(
+                &survey_json,
+                &language,
+                &data,
+                submitted,
+                seed,
+            )
+        })
+    }
+    fn perform_while_sampling<T: Send + 'static>(
+        &mut self,
+        thread_name: &str,
+        operation: impl FnOnce() -> ResearchResult<T> + Send + 'static,
+    ) -> ResearchResult<T> {
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        let background = std::thread::Builder::new()
+            .name(thread_name.into())
+            .spawn(move || {
+                let _ = sender.send(operation());
+            })
+            .map_err(CommandError::io)?;
+        let result = loop {
+            let wait = self
+                .clock
+                .as_ref()
+                .map(|clock| {
+                    clock
+                        .next_deadline()
+                        .saturating_duration_since(Instant::now())
+                })
+                .unwrap_or(Duration::from_millis(4))
+                .min(Duration::from_millis(4));
+            match receiver.recv_timeout(wait) {
+                Ok(result) => break result,
+                Err(RecvTimeoutError::Timeout) => {
+                    if self.full_attempt_acquisition() {
+                        if let Err(error) = self.tick() {
+                            break Err(error);
+                        }
+                    }
+                }
+                Err(RecvTimeoutError::Disconnected) => {
+                    break Err(invalid("Background operation stopped unexpectedly."));
+                }
+            }
+        };
+        background
+            .join()
+            .map_err(|_| invalid("Background operation panicked."))?;
+        let value = result?;
+        if self.full_attempt_acquisition() {
+            self.tick()?;
+        }
+        Ok(value)
     }
     fn record_answers(&mut self, record: &mut Value, submitted: bool) -> ResearchResult<()> {
         if matches!(self.prepared.plan.version, 4..=6) {
@@ -496,10 +556,18 @@ impl MasterWorker {
             .find(|b| b.matches(asset))
             .ok_or_else(|| {
                 invalid("The video occurrence has no exact native asset/location binding.")
-            })?;
-        let _grant = binding.issue_grant(&self.workspace, &self.workspace_id)?;
-        self.bound_file = Some(binding.workspace_file_id().to_owned());
+            })?
+            .clone();
+        let bound_file = binding.workspace_file_id().to_owned();
+        let workspace = Arc::clone(&self.workspace);
+        let workspace_id = self.workspace_id.clone();
+        // Full-attempt sampling continues while the current file identity is
+        // revalidated. Preparing has occurrence context but never claims play.
         self.state.phase = MasterPhase::Preparing;
+        let _grant = self.perform_while_sampling("master-media-verification", move || {
+            binding.issue_grant(&workspace, &workspace_id)
+        })?;
+        self.bound_file = Some(bound_file);
         // No position has been observed yet; entering the step is not playback.
         self.state.media_time_ms = None;
         Ok(())
@@ -733,6 +801,7 @@ impl MasterWorker {
                 json!({"kind":"lifecycle"}),
                 occurrence,
                 self.elapsed(),
+                true,
             );
         }
         let id = if occurrence {
@@ -759,6 +828,7 @@ impl MasterWorker {
         payload: Value,
         occurrence: bool,
         observed_ms: f64,
+        checkpoint: bool,
     ) -> ResearchResult<()> {
         if !self.evidence_v2() {
             return Ok(());
@@ -779,10 +849,13 @@ impl MasterWorker {
             accepted_ms,
             payload,
         )?;
-        self.storage.event(
-            &serde_json::to_value(&observation)
-                .map_err(|_| invalid("Evidence event serialization failed."))?,
-        )?;
+        let record = serde_json::to_value(&observation)
+            .map_err(|_| invalid("Evidence event serialization failed."))?;
+        if checkpoint {
+            self.storage.event(&record)?;
+        } else {
+            self.storage.buffered_event(&record)?;
+        }
         if let Some(lsl) = &mut self.lsl {
             lsl.observe(&observation)?;
         }
@@ -799,6 +872,7 @@ impl MasterWorker {
             json!({"kind":"inputEdge","direction":input.direction,"detail":input.detail,"applyStep":input.apply_step,"inputActive":input.input_active,"impulse":input.impulse,"stateAfter":{"valence":self.response.x,"arousal":self.response.y}}),
             true,
             observed_ms,
+            true,
         )
     }
     fn record_input(
@@ -825,6 +899,7 @@ impl MasterWorker {
             json!({"kind":"neutralReset","reason":reason,"stateAfter":{"valence":0.0,"arousal":0.0}}),
             occurrence,
             self.elapsed(),
+            true,
         )
     }
     fn observe_timing_gap(&mut self, gap_kind: &str, detail: Value) -> ResearchResult<()> {
@@ -833,6 +908,7 @@ impl MasterWorker {
             json!({"kind":"timingGap","gapKind":gap_kind,"detail":detail}),
             !self.occurrence.is_empty(),
             self.elapsed(),
+            false,
         )
     }
     fn full_attempt_acquisition(&self) -> bool {
@@ -1345,6 +1421,277 @@ mod tests {
         drop(legacy);
         drop(input);
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(all(feature = "lsl-streaming", target_os = "windows"))]
+    #[test]
+    #[ignore = "requires an exact Planner-authored master6 workspace and explicit empty qualification root"]
+    fn actual_master6_worker_records_dense_full_attempt_evidence() {
+        let recipe_path = std::env::var_os("AFFECT_RUNNER_MASTER6_SOURCE")
+            .map(std::path::PathBuf::from)
+            .expect("AFFECT_RUNNER_MASTER6_SOURCE is required");
+        let root = std::env::var_os("AFFECT_RUNNER_MASTER6_WORKER_ROOT")
+            .map(std::path::PathBuf::from)
+            .expect("AFFECT_RUNNER_MASTER6_WORKER_ROOT is required");
+        let xdf_path = std::env::var_os("AFFECT_RUNNER_MASTER6_WORKER_XDF")
+            .map(std::path::PathBuf::from)
+            .expect("AFFECT_RUNNER_MASTER6_WORKER_XDF is required");
+        assert!(root.is_dir(), "qualification root must already exist");
+        assert!(
+            root.read_dir().unwrap().next().is_none(),
+            "qualification root must be empty"
+        );
+        assert_eq!(
+            xdf_path.parent().unwrap().canonicalize().unwrap(),
+            root.canonicalize().unwrap(),
+            "XDF must be a direct child of the qualification root"
+        );
+        assert!(!xdf_path.exists(), "qualification XDF must be new");
+
+        let loaded =
+            crate::research_planner_recipe_file::read_supported_planner_recipe_file(&recipe_path)
+                .unwrap();
+        assert_eq!(loaded.recipe.version(), 6);
+        let transport = loaded.transport_text().unwrap();
+        let prepared = PreparedMaster::read(
+            &transport,
+            "P001",
+            MasterSelector {
+                variant_id: "variant-1".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(prepared.plan.version, 6);
+        assert!(prepared.loaded.recipe.full_attempt_acquisition());
+        let rate = prepared.loaded.recipe.policy().sampling_frequency_hz;
+        assert!(prepared.loaded.recipe.policy().lsl.enabled);
+
+        let workspace = Arc::new(WorkspaceService::new(root.join("app-data")).unwrap());
+        let workspace_id = workspace
+            .select(recipe_path.parent().unwrap().to_path_buf())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        workspace
+            .with_workspace(&workspace_id, |workspace_root, _| {
+                crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(
+                    workspace_root,
+                    &prepared.loaded,
+                )
+            })
+            .unwrap();
+        let scan = workspace.rescan_planner_videos(&workspace_id).unwrap();
+        let catalogue = &prepared.loaded.recipe.segment("P1").unwrap()["videoCatalogue"];
+        let entries = catalogue["entries"].as_array().unwrap();
+        assert_eq!(entries.len(), scan.stimuli.len());
+        // This qualification drives synthetic HTML-video callbacks and therefore
+        // must not mint a decode/display proof. Bind only the exact current file
+        // identity needed by the worker's ephemeral media grant; production
+        // preflight remains stricter and requires a real WebView attestation.
+        let bindings = entries
+            .iter()
+            .map(|entry| {
+                let current = scan
+                    .stimuli
+                    .iter()
+                    .find(|stimulus| {
+                        stimulus.sha256 == entry["sha256"]
+                            && stimulus.byte_length == entry["byteLength"]
+                    })
+                    .unwrap();
+                MasterVideoBinding::V3(crate::research_workspace::RunnerVideoBindingV3 {
+                    asset_id: entry["assetId"].as_str().unwrap().into(),
+                    annotation_id: entry["annotationId"].as_str().unwrap().into(),
+                    source_relative_path: entry["sourceRelativePath"].as_str().unwrap().into(),
+                    workspace_file_id: current.workspace_file_id.clone(),
+                    sha256: current.sha256.clone(),
+                    byte_length: current.byte_length,
+                    mime_type: current.mime_type.clone(),
+                    duration_ms: entry["durationMs"].as_u64().unwrap(),
+                    display_geometry: serde_json::from_value(entry["geometry"].clone()).unwrap(),
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let recorder = Arc::new(RecorderService::default());
+        recorder
+            .start_path(
+                crate::research_recorder::RecordStartRequest {
+                    experiment_package_source_text: transport,
+                    record_own: true,
+                    discovery_revision: None,
+                    stream_keys: vec![],
+                },
+                xdf_path.clone(),
+            )
+            .unwrap();
+        let input = Arc::new(ResearchInputService::for_tests());
+        let binding = prepared.feedback.input.clone();
+        let receipt = input.issue_test_receipt_for_tests(binding.clone()).unwrap();
+        let mailbox = Arc::new(ProtocolInputMailbox::new(binding.kind));
+        let sink = Arc::clone(&mailbox);
+        let authority = InputAuthority {
+            service: Arc::clone(&input),
+            id: input
+                .prepare_run_full(binding, &receipt.receipt_id, move |value| sink.push(value))
+                .unwrap(),
+        };
+        let media = Arc::new(NativeMediaService::unavailable_for_tests());
+        let runtime = PackageProtocolRuntime::with_services(
+            Arc::clone(&workspace),
+            Arc::clone(&media),
+            Arc::clone(&input),
+        );
+        std::fs::create_dir(root.join("outputs")).unwrap();
+        let storage = MasterStorage::create_with_validation(
+            &root,
+            &prepared,
+            "run-master6-worker",
+            Value::Null,
+            false,
+            true,
+        )
+        .unwrap();
+        let output = root.join(storage.receipt["outputDirectory"].as_str().unwrap());
+        let mut worker = runtime
+            .begin_companion(|lease| {
+                MasterWorker::new(
+                    prepared,
+                    workspace_id,
+                    bindings,
+                    storage,
+                    authority,
+                    Arc::clone(&mailbox),
+                    workspace,
+                    Arc::clone(&recorder),
+                    lease,
+                )
+            })
+            .unwrap();
+        worker.observe(MarkerEvent::SessionStart, false).unwrap();
+
+        let tick = |worker: &mut MasterWorker| {
+            let wait = worker
+                .clock
+                .as_ref()
+                .unwrap()
+                .next_deadline()
+                .saturating_duration_since(Instant::now())
+                .min(Duration::from_millis(4));
+            if !wait.is_zero() {
+                std::thread::sleep(wait);
+            }
+            worker.tick().unwrap();
+        };
+        while !worker.terminal {
+            let step = worker.current().unwrap().clone();
+            worker
+                .action(MasterAction::Presented {
+                    position: step.position,
+                })
+                .unwrap();
+            match step.kind {
+                MasterStepKind::Questionnaire => worker
+                    .action(MasterAction::SurveySubmit {
+                        position: step.position,
+                        data: json!({
+                            "details": true,
+                            "explanation": "Synthetic worker qualification response",
+                            "choices": ["a", "b"]
+                        }),
+                        page_no: 1,
+                    })
+                    .unwrap(),
+                MasterStepKind::Interval => {
+                    while worker.state.phase == MasterPhase::Interval {
+                        tick(&mut worker);
+                    }
+                }
+                MasterStepKind::Video => {
+                    worker
+                        .action(MasterAction::HtmlVideoStarted {
+                            position: step.position,
+                            media_time_ms: Some(0.),
+                        })
+                        .unwrap();
+                    for (direction, detail, apply_step, input_active) in [
+                        (
+                            crate::research_contracts::DirectionV1::Right,
+                            "synthetic-right-press",
+                            true,
+                            true,
+                        ),
+                        (
+                            crate::research_contracts::DirectionV1::Right,
+                            "synthetic-right-release",
+                            false,
+                            false,
+                        ),
+                        (
+                            crate::research_contracts::DirectionV1::Up,
+                            "synthetic-up-press",
+                            true,
+                            true,
+                        ),
+                        (
+                            crate::research_contracts::DirectionV1::Up,
+                            "synthetic-up-release",
+                            false,
+                            false,
+                        ),
+                    ] {
+                        mailbox.push(crate::research_input::NativeInputUpdate::Digital(
+                            crate::research_input::NativeDigitalInput {
+                                direction,
+                                detail: detail.into(),
+                                apply_step,
+                                input_active,
+                                impulse: false,
+                                observed_at: Instant::now(),
+                            },
+                        ));
+                    }
+                    let video_end = Instant::now() + Duration::from_secs(10);
+                    while Instant::now() < video_end {
+                        tick(&mut worker);
+                    }
+                    worker
+                        .action(MasterAction::HtmlVideoEnded {
+                            position: step.position,
+                            media_time_ms: Some(10_000.),
+                        })
+                        .unwrap();
+                }
+            }
+        }
+
+        assert_eq!(worker.state.phase, MasterPhase::Finished);
+        assert_eq!(worker.state.completed_step_count, worker.state.step_count);
+        assert!(worker.state.sample_count >= u64::from(rate) * 10);
+        assert_eq!(worker.state.result.as_ref().unwrap()["status"], "completed");
+        let sample_count = worker.state.sample_count;
+        let missed_slot_count = worker.state.missed_slot_count;
+        drop(worker);
+        drop(runtime);
+        drop(input);
+
+        let line_count = |name: &str| {
+            std::fs::read_to_string(output.join(name))
+                .unwrap()
+                .lines()
+                .count()
+        };
+        assert_eq!(line_count("master-samples.v2.jsonl"), sample_count as usize);
+        assert_eq!(line_count("master-inputs.v2.jsonl"), 4);
+        assert_eq!(line_count("master-responses.v3.jsonl"), 3);
+        assert!(line_count("master-events.v2.jsonl") >= 20);
+        assert!(xdf_path.is_file());
+        eprintln!(
+            "master6 worker qualification: {sample_count} samples, {missed_slot_count} missed slots"
+        );
     }
     #[test]
     fn master_v2_and_v3_require_every_typed_and_likert_answer_before_advancing() {

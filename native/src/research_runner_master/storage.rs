@@ -10,10 +10,13 @@ use crate::research_runner_session::{recipe_directory_name, RunnerDocument};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
+    collections::VecDeque,
     fs::{self, File, OpenOptions},
     io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
+
+const MAX_ATTEMPT_FILE_COUNT: usize = 512;
 
 const SAMPLE_COLUMNS: &[&str] = &[
     "sequence",
@@ -272,6 +275,9 @@ impl MasterStorage {
         append(&mut self.events, value)?;
         self.checkpoint()
     }
+    pub(crate) fn buffered_event(&mut self, value: &Value) -> ResearchResult<()> {
+        append(&mut self.events, value)
+    }
     pub(crate) fn diagnostic(&mut self, value: &Value) -> ResearchResult<()> {
         append(&mut self.diagnostics, value)
     }
@@ -340,29 +346,7 @@ impl MasterStorage {
         receipt["status"] = json!(status);
         receipt["completedStepCount"] = json!(completed_steps);
         receipt["failureCode"] = json!(failure);
-        let mut files = Vec::new();
-        for entry in fs::read_dir(&self.session).map_err(CommandError::io)? {
-            let entry = entry.map_err(CommandError::io)?;
-            let metadata = entry.file_type().map_err(CommandError::io)?;
-            if !metadata.is_file() || metadata.is_symlink() {
-                return Err(CommandError::forbidden(
-                    "Master attempt contains a nonordinary artifact.",
-                ));
-            }
-            let mut file = File::open(entry.path()).map_err(CommandError::io)?;
-            let mut hash = Sha256::new();
-            let mut bytes = 0u64;
-            let mut buffer = [0u8; 65536];
-            loop {
-                let n = file.read(&mut buffer).map_err(CommandError::io)?;
-                if n == 0 {
-                    break;
-                }
-                hash.update(&buffer[..n]);
-                bytes += n as u64;
-            }
-            files.push(json!({"fileName":entry.file_name().to_string_lossy(),"sha256":format!("{:x}",hash.finalize()),"byteLength":bytes}));
-        }
+        let mut files = collect_attempt_files(&self.session)?;
         files.sort_by(|a, b| a["fileName"].as_str().cmp(&b["fileName"].as_str()));
         receipt["files"] = json!(files);
         self.revalidate()?;
@@ -380,6 +364,72 @@ impl MasterStorage {
         Ok(receipt)
     }
 }
+
+fn collect_attempt_files(session: &Path) -> ResearchResult<Vec<Value>> {
+    let mut directories = VecDeque::from([session.to_path_buf()]);
+    let mut files = Vec::new();
+    while let Some(directory) = directories.pop_front() {
+        for entry in fs::read_dir(&directory).map_err(CommandError::io)? {
+            let entry = entry.map_err(CommandError::io)?;
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path).map_err(CommandError::io)?;
+            if metadata.file_type().is_symlink() {
+                return Err(CommandError::forbidden(
+                    "Master attempt contains a nonordinary artifact.",
+                ));
+            }
+            let relative = path.strip_prefix(session).map_err(|_| {
+                CommandError::forbidden("Master attempt artifact escaped its session.")
+            })?;
+            let parts = relative
+                .components()
+                .map(|component| {
+                    component.as_os_str().to_str().ok_or_else(|| {
+                        CommandError::forbidden("Master attempt artifact name is not Unicode.")
+                    })
+                })
+                .collect::<ResearchResult<Vec<_>>>()?;
+            let snapshot_path =
+                parts.first() == Some(&"assets") && parts.get(1) == Some(&"questionnaires");
+            if metadata.is_dir() {
+                let permitted =
+                    parts == ["assets"] || snapshot_path && matches!(parts.len(), 2..=4);
+                if !permitted {
+                    return Err(CommandError::forbidden(
+                        "Master attempt contains an unexpected directory.",
+                    ));
+                }
+                directories.push_back(path);
+                continue;
+            }
+            if !metadata.is_file()
+                || !(parts.len() == 1 || snapshot_path && parts.len() == 5)
+                || files.len() >= MAX_ATTEMPT_FILE_COUNT
+            {
+                return Err(CommandError::forbidden(
+                    "Master attempt contains a nonordinary artifact.",
+                ));
+            }
+            let mut file = File::open(&path).map_err(CommandError::io)?;
+            let mut hash = Sha256::new();
+            let mut bytes = 0u64;
+            let mut buffer = [0u8; 65536];
+            loop {
+                let n = file.read(&mut buffer).map_err(CommandError::io)?;
+                if n == 0 {
+                    break;
+                }
+                hash.update(&buffer[..n]);
+                bytes = bytes.checked_add(n as u64).ok_or_else(|| {
+                    CommandError::forbidden("Master attempt artifact size overflowed.")
+                })?;
+            }
+            files.push(json!({"fileName":parts.join("/"),"sha256":format!("{:x}",hash.finalize()),"byteLength":bytes}));
+        }
+    }
+    Ok(files)
+}
+
 fn writer(root: &Path, name: &str) -> ResearchResult<BufWriter<File>> {
     Ok(BufWriter::new(
         OpenOptions::new()
@@ -569,6 +619,66 @@ mod tests {
         assert_eq!(fs::read(snapshot).unwrap(), original);
         drop(second);
         drop(separate);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn questionnaire_snapshot_tree_is_hashed_and_unknown_directories_reject() {
+        let source = include_str!("../../../test/fixtures/planner-recipe-v5.bundle.json");
+        let prepared = PreparedMaster::read(
+            source,
+            "P001",
+            crate::research_runner_master::MasterSelector {
+                variant_id: "variant-1".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let expected = match &prepared.loaded.recipe {
+            crate::research_planner_recipe_supported::SupportedPlannerRecipe::V5(recipe) => recipe
+                .assets
+                .iter()
+                .map(|asset| asset.relative_path.clone())
+                .collect::<Vec<_>>(),
+            _ => panic!("expected master5 fixture"),
+        };
+
+        let root = std::env::temp_dir().join(format!(
+            "affect-master-snapshot-finish-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        let mut storage =
+            MasterStorage::create(&root, &prepared, "run-snapshots", Value::Null, false).unwrap();
+        let result = storage.finish("stopped", 0, None).unwrap();
+        let names = result["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|file| file["fileName"].as_str().unwrap())
+            .collect::<Vec<_>>();
+        for path in &expected {
+            assert!(
+                names.contains(&path.as_str()),
+                "missing snapshot hash for {path}"
+            );
+        }
+        drop(storage);
+        fs::remove_dir_all(root).unwrap();
+
+        let root = std::env::temp_dir().join(format!(
+            "affect-master-snapshot-reject-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(root.join("outputs")).unwrap();
+        let mut storage =
+            MasterStorage::create(&root, &prepared, "run-unexpected", Value::Null, false).unwrap();
+        fs::create_dir(storage.session.join("unexpected")).unwrap();
+        let error = storage.finish("stopped", 0, None).unwrap_err();
+        assert_eq!(error.code, "forbidden_operation");
+        drop(storage);
         fs::remove_dir_all(root).unwrap();
     }
 }

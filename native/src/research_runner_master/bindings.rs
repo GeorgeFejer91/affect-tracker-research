@@ -7,6 +7,7 @@ use crate::{
     },
 };
 
+#[derive(Clone)]
 pub(crate) enum MasterVideoBinding {
     Historical(RunnerVideoBinding),
     V3(RunnerVideoBindingV3),
