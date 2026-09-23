@@ -154,7 +154,8 @@ test("both app surfaces end every ledger page with one confirmation or final-sav
       const action = id === "review" ? 'id="package-generate"' : `data-confirm-section="${id}"`;
       assert.ok(panel.includes(action));
     }
-    assert.match(markup, /id="preview-window-open"[^>]*>Show Flubber window<\/button>/u);
+    assert.match(markup, /id="preview-window-open"[^>]*>Show Flubber settings<\/button>/u);
+    assert.match(markup, /id="flubber-window-open"[^>]*>Show Flubber preview<\/button>/u);
     assert.match(markup, /data-ledger-feedback-authority hidden/u);
     assert.match(markup, /Flubber settings use a separate window/u);
   }
@@ -784,7 +785,7 @@ test("the prototype and desktop entrypoints load only the shared Research instru
   assert.match(browserEntry, /initializeRuntime: bootRuntimeBridge/u);
   assert.match(nativeEntry, /initializeRuntime: bootNativeBridge/u);
   assert.equal((bootstrap.match(/DOMContentLoaded/gu) ?? []).length, 1);
-  assert.match(bootstrap, /bootResearchUi\(\{ surface \}\)[\s\S]*await initializeRuntime\(root\)/u);
+  assert.match(bootstrap, /bootResearchUi\(\{ surface, showFlubber \}\)[\s\S]*await initializeRuntime\(root\)/u);
   assert.match(packageSource, /"serve": "node scripts\/serve-site\.mjs"/u);
   assert.match(serveSource, /"\.json": "application\/json; charset=utf-8"/u);
   for (const html of [siteIndex, desktopIndex]) {

@@ -1,5 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { bootNativeBridge } from "./native-bridge.js";
+import { bootNativeBridge, showNativeFlubberPreview } from "./native-bridge.js";
 import { bootstrapResearchSurface } from "./ui-bootstrap.js";
 import { reportPlannerAuthoringStartupFailure } from "./planner-authoring-native.js";
 
@@ -7,6 +7,7 @@ bootstrapResearchSurface({
   surface: "tauri",
   initializeRuntime: bootNativeBridge,
   onFailure: reportPlannerAuthoringStartupFailure,
+  showFlubber: showNativeFlubberPreview,
 });
 
 function wireNativeWindowControls() {

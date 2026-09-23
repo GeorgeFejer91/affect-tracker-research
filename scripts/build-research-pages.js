@@ -34,6 +34,7 @@ await Promise.all([
   cp(resolve(sourceRoot, "index.html"), resolve(outputRoot, "index.html")),
   cp(resolve(sourceRoot, "research.html"), resolve(outputRoot, "research.html")),
   cp(resolve(sourceRoot, "preview.html"), resolve(outputRoot, "preview.html")),
+  cp(resolve(sourceRoot, "flubber.html"), resolve(outputRoot, "flubber.html")),
   cp(resolve(sourceRoot, "launcher.css"), resolve(outputRoot, "launcher.css")),
   cp(resolve(sourceRoot, "planner"), resolve(outputRoot, "planner"), { recursive: true }),
   cp(resolve(sourceRoot, "planner-ledger"), resolve(outputRoot, "planner-ledger"), { recursive: true }),
@@ -91,7 +92,7 @@ await rename(resolve(outputRoot, "runner", "browser.html"), resolve(outputRoot, 
 // Bind the published entrypoints to the exact checkout used by Pages CI.
 const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
 if (!/^[0-9a-f]{40}$/u.test(revision)) throw new Error("Invalid Pages source revision.");
-for (const entrypoint of ["index.html", "planner/index.html", "planner-ledger/index.html", "runner/index.html", "research.html", "preview.html"]) {
+for (const entrypoint of ["index.html", "planner/index.html", "planner-ledger/index.html", "runner/index.html", "research.html", "preview.html", "flubber.html"]) {
   const path = resolve(outputRoot, entrypoint);
   const html = await readFile(path, "utf8");
   await writeFile(path, html.replace("</head>", `  <meta name="build-revision" content="${revision}">\n  </head>`));

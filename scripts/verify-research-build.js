@@ -74,7 +74,7 @@ async function verifySelectedLogo(root, files, buildTarget) {
 }
 
 async function verifyPagesEntrypoints(root, files) {
-  const entries = ["index.html", "planner/index.html", "planner-ledger/index.html", "runner/index.html", "research.html", "preview.html"];
+  const entries = ["index.html", "planner/index.html", "planner-ledger/index.html", "runner/index.html", "research.html", "preview.html", "flubber.html"];
   const build = JSON.parse(await readFile(resolve(root, "build-info.json"), "utf8"));
   if (build.schema !== "affect-tracker-pages-build-v1" || !/^[0-9a-f]{40}$/u.test(build.revision)) {
     throw new Error("Pages build identity is missing or invalid.");
@@ -104,6 +104,7 @@ const rules = {
     allowed: (path) => path === "index.html"
       || path === "research.html"
       || path === "preview.html"
+      || path === "flubber.html"
       || path === "launcher.css"
       || path === "planner/index.html"
       || path === "planner-ledger/index.html"
@@ -138,9 +139,11 @@ const rules = {
     allowed: (path) => path === "index.html"
       || path === "ledger.html"
       || path === "preview.html"
+      || path === "flubber.html"
       || path === "surveyjs-notices.txt"
       || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
       || /^assets\/native-entry-[A-Za-z0-9_-]+\.js$/u.test(path)
+      || /^assets\/(?:research-flubber|planner-flubber-window|inline-color-picker|planner-recipe-assets|preload-helper|dpi|window)-[A-Za-z0-9_-]+\.js$/u.test(path)
       || /^assets\/feedback-surface-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
       || /^assets\/(?:maia-2-(?:de|en)|ssq-six-item-en|vr-exp-en)-[A-Za-z0-9_-]+\.csv$/u.test(path)
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)

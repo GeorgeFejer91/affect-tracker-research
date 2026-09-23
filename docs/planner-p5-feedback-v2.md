@@ -42,6 +42,15 @@ in P5. P4 or P6 owns current viewport size, physical units and placement. The
 P5 inspection stage remains centered, locked and at a fixed display scale; this
 framing is not exported as experiment geometry.
 
+In the Windows Ledger workspace, the experiment ledger, Flubber settings, and
+the transparent Flubber preview are three separate windows. The preview renders
+the current draft and moves as a desktop window when dragged; moving it does
+not edit P4 placement or any saved P5 field. The settings window retains P5
+confirmation and controls. Its **Preview trial layout** dialog shows one
+verified video's authored screen footprint and feedback placement as a visual
+rehearsal. It does not decode that video or start Runner acquisition, sampling,
+or recording.
+
 ## Response interpretation
 
 The successor response describes configured behavior independently of physical

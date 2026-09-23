@@ -3,7 +3,7 @@ use crate::research_input::ResearchInputService;
 use serde::Serialize;
 use std::sync::Arc;
 use tauri::ipc::Channel;
-use tauri::{State, WebviewWindow};
+use tauri::{Manager, State, WebviewWindow};
 
 /// Chosen by the executable, never by an IPC request or a mutable UI mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -65,5 +65,30 @@ pub fn research_desktop_identity(
         version: 1,
         program: *role,
         build_commit: env!("AFFECT_TRACKER_BUILD_COMMIT"),
+    })
+}
+
+#[tauri::command]
+pub fn research_show_flubber(
+    window: WebviewWindow,
+    role: State<'_, DesktopRole>,
+) -> ResearchResult<()> {
+    if window.label() != "research" || *role != DesktopRole::Planner {
+        return Err(CommandError::forbidden("Planner window required."));
+    }
+    let preview = window
+        .app_handle()
+        .get_webview_window("flubber")
+        .ok_or_else(|| {
+            CommandError::new("flubber_unavailable", "The Flubber preview is unavailable.")
+        })?;
+    preview.show().map_err(|_| {
+        CommandError::new("flubber_unavailable", "Could not show the Flubber preview.")
+    })?;
+    preview.set_focus().map_err(|_| {
+        CommandError::new(
+            "flubber_unavailable",
+            "Could not focus the Flubber preview.",
+        )
     })
 }

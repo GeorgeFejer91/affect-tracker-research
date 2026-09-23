@@ -13,6 +13,10 @@ import { completeExperimentPackageSaveRequest } from "./package-save-request.js"
 import { completePlannerFileRequest, PLANNER_LOAD_REQUEST, PLANNER_SAVE_REQUEST } from "./planner-file-request.js";
 import { bootPlannerAuthoringNative } from "./planner-authoring-native.js";
 
+export function showNativeFlubberPreview() {
+  return tauriInvoke("research_show_flubber");
+}
+
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;

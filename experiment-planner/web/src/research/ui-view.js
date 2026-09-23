@@ -157,7 +157,7 @@ function previewMarkup(label, { studio = false } = {}) {
         <div class="preview-metric"><span>Input test</span><span id="preview-input-source">Arrow keys</span></div>
         <div class="preview-metric"><span>Sampling</span><span id="preview-sampling-rate">130 Hz</span></div>
       </footer>
-      <p class="field-help">Live Preview settings are captured with the final JSON in Section 7.</p>
+      <p class="field-help">Feedback settings are captured with the final JSON in Section 7.</p>
       </div>
     </div>`;
 }
@@ -205,12 +205,12 @@ function previewColorDialogMarkup() {
   </dialog>`;
 }
 
-function feedbackSection({ setupSection = false, showOpenButton = true } = {}) {
+function feedbackSection({ setupSection = false, showOpenButton = true, title = "Live Preview" } = {}) {
   const feedback = SETUP_SECTIONS.find(({ id }) => id === "feedback");
   const feedbackIndex = SETUP_SECTIONS.findIndex(({ id }) => id === "feedback");
   return `<aside class="preview-pane" ${setupSection ? 'data-setup-section="feedback" data-reviewed="false"' : ""} aria-labelledby="preview-title">
     <header class="preview-header">
-      <div><h3 id="preview-title" tabindex="-1">Live Preview</h3><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button></div>
+      <div><h3 id="preview-title" tabindex="-1">${title}</h3><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button></div>
       <div class="preview-header-controls">
         ${showOpenButton ? '<button id="preview-window-open" type="button">Open Flubber window</button>' : ""}
         <button id="preview-flubber-release" class="preview-flubber-release" type="button" aria-label="Release Flubber into the preview" aria-pressed="false" title="Release Flubber into the preview"><span aria-hidden="true"></span></button>
@@ -227,7 +227,7 @@ function feedbackSection({ setupSection = false, showOpenButton = true } = {}) {
 }
 
 export function feedbackWindowMarkup() {
-  return `<div data-feedback-window-content>${feedbackSection({ showOpenButton: false })}${bindingCaptureDialogMarkup()}${previewColorDialogMarkup()}</div>`;
+  return `<div data-feedback-window-content>${feedbackSection({ showOpenButton: false, title: "Appearance and response" })}${bindingCaptureDialogMarkup()}${previewColorDialogMarkup()}</div>`;
 }
 
 function ledgerFeedbackMarkup() {
@@ -237,7 +237,7 @@ function ledgerFeedbackMarkup() {
       <p>Appearance, affect-map, response and input controls stay outside the experiment ledger. Both windows contribute to the same final JSON.</p>
       <output id="ledger-feedback-window-status" role="status" aria-live="polite">Connecting to the Flubber settings window…</output>
     </div>
-    <button id="preview-window-open" type="button">Show Flubber window</button>
+    <div class="ledger-feedback-actions"><button id="flubber-window-open" type="button">Show Flubber preview</button><button id="preview-window-open" type="button">Show Flubber settings</button></div>
   </section>`;
 }
 

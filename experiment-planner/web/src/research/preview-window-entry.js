@@ -10,15 +10,25 @@ const root = document.querySelector("#preview-window-app");
 if (!(root instanceof HTMLElement)) throw new Error("Preview window root is missing.");
 
 root.innerHTML = `<main class="planner-preview-window-shell">
-  <header><div><h1>Flubber Settings</h1><p>These controls edit the Experiment Planner's current draft.</p></div><button id="preview-window-close" type="button">Close</button></header>
-  <div class="planner-preview-window-content"><div class="planner-preview-window-stage research-preview-stage" aria-hidden="true">${previewOverlayMarkup({ includeFace: true })}</div><p class="empty-state">Connecting to the Experiment Planner…</p></div>
+  <header><div><h1>Flubber Settings</h1><p>These controls edit the Experiment Planner's current draft.</p></div><div class="planner-preview-window-actions"><button id="preview-trial-open" type="button">Preview trial layout</button><button id="preview-flubber-show" type="button">Show Flubber</button><button id="preview-window-close" type="button">Close</button></div></header>
+  <div class="planner-preview-window-content"><p class="empty-state">Connecting to the Experiment Planner…</p></div>
   <footer>
     <p id="preview-window-status" role="status" aria-live="polite">Waiting for the Experiment Planner…</p>
     <button id="preview-window-confirm" type="button" disabled>Confirm Flubber settings</button>
   </footer>
-</main>`;
+</main>
+<dialog id="preview-trial-dialog" class="preview-trial-dialog" aria-labelledby="preview-trial-title">
+  <header><h2 id="preview-trial-title">Trial layout preview</h2><button id="preview-trial-close" type="button">Close</button></header>
+  <p>Visual rehearsal of one authored video and feedback placement. No video playback, input sampling or recording occurs here.</p>
+  <p id="preview-trial-message" role="status"></p>
+  <div id="preview-trial-stage" class="research-preview-stage preview-trial-stage" data-preview-variant="studio" role="img" aria-label="Trial screen layout" hidden>
+    <div class="preview-trial-video" data-preview-trial-video></div>
+    ${previewOverlayMarkup({ includeFace: true })}
+  </div>
+</dialog>`;
 
 let preview = null;
+let trialPreview = null;
 let colorPicker = null;
 const status = root.querySelector("#preview-window-status");
 const confirmButton = root.querySelector("#preview-window-confirm");
@@ -41,6 +51,7 @@ function ensureContent(markup) {
   content.innerHTML = markup;
   preview = createResearchPreview(content.querySelector(".preview-pane"), {
     initialState: { lockPosition: true },
+    animate: false,
     onPositionChange(position) { post("position", { position }); },
   });
   colorPicker = createInlineColorPicker(content.querySelector("#preview-color-picker"), {
@@ -97,6 +108,36 @@ function receiveData(data) {
   if (data?.schema !== MESSAGE_SCHEMA) return;
   if (data.type === "host-ready") post("ready");
   if (data.type === "focus") window.focus();
+  if (data.type === "trial-state") {
+    const dialog = root.querySelector("#preview-trial-dialog");
+    const stage = root.querySelector("#preview-trial-stage");
+    const message = root.querySelector("#preview-trial-message");
+    const trial = data.trial;
+    if (!(dialog instanceof HTMLDialogElement) || !(stage instanceof HTMLElement) || !(message instanceof HTMLElement)) return;
+    if (trial?.error || !trial?.geometry || !trial?.video?.bounds) {
+      stage.hidden = true;
+      message.textContent = trial?.error ?? "Trial layout is unavailable.";
+    } else {
+      const { screen, feedback } = trial.geometry;
+      const video = stage.querySelector("[data-preview-trial-video]");
+      const bounds = trial.video.bounds;
+      stage.style.aspectRatio = `${screen.width} / ${screen.height}`;
+      stage.style.setProperty("--trial-screen-ratio", String(screen.width / screen.height));
+      video.style.left = `${bounds.x / screen.width * 100}%`;
+      video.style.top = `${bounds.y / screen.height * 100}%`;
+      video.style.width = `${bounds.width / screen.width * 100}%`;
+      video.style.height = `${bounds.height / screen.height * 100}%`;
+      stage.hidden = false;
+      trialPreview ??= createResearchPreview(stage, { initialState: { lockPosition: true } });
+      trialPreview.update({ ...trial.state, lockPosition: true,
+        position: { x: feedback.cx / screen.width, y: feedback.cy / screen.height },
+        sizePercent: feedback.width / screen.width * 100 });
+      stage.setAttribute("aria-label", `Trial layout for ${trial.video.label}. Video frame and feedback are positioned as authored.`);
+      message.textContent = `${trial.video.label} · screen ${screen.width} × ${screen.height} · layout only`;
+    }
+    if (!dialog.open) dialog.showModal();
+    return;
+  }
   if (data.type !== "state") return;
   ensureContent(data.markup);
   preview?.update({ ...data.state, lockPosition: data.state?.lockPosition ?? true });
@@ -137,7 +178,7 @@ function editFor(target, type, event) {
 channel?.addEventListener("message", (event) => receiveData(event.data));
 window.addEventListener("message", receive);
 root.addEventListener("click", (event) => {
-  if (event.target instanceof Element && event.target.closest("#preview-window-close,#preview-window-confirm")) return;
+  if (event.target instanceof Element && event.target.closest("#preview-window-close,#preview-window-confirm,#preview-flubber-show,#preview-trial-open,#preview-trial-close")) return;
   const edit = editFor(event.target, "click", event);
   if (edit) { event.preventDefault(); post("edit", { edit }); }
 });
@@ -152,9 +193,14 @@ root.addEventListener("keydown", (event) => {
   if (edit) post("edit", { edit });
 });
 confirmButton?.addEventListener("click", () => post("confirm"));
+root.querySelector("#preview-flubber-show")?.addEventListener("click", () => post("show-flubber"));
+root.querySelector("#preview-trial-open")?.addEventListener("click", () => post("trial"));
+root.querySelector("#preview-trial-close")?.addEventListener("click", () => root.querySelector("#preview-trial-dialog")?.close());
+root.querySelector("#preview-trial-dialog")?.addEventListener("close", () => { trialPreview?.destroy(); trialPreview = null; });
 root.querySelector("#preview-window-close")?.addEventListener("click", () => window.close());
 window.addEventListener("beforeunload", () => {
   preview?.destroy();
+  trialPreview?.destroy();
   colorPicker?.destroy();
   post("closed");
   channel?.close();

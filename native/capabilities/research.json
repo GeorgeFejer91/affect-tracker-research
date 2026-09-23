@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "research-window",
-  "description": "Run the local Affect Research command surface in the sole Research window.",
+  "description": "Run the local Affect Research command surface in the Planner or Runner research window.",
   "windows": ["research"],
   "permissions": [
     "core:window:allow-close",

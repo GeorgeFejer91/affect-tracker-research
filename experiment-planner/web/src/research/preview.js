@@ -400,7 +400,7 @@ export function createResearchPreview(root, options = {}) {
   overlay.addEventListener("pointercancel", finishPointer);
 
   renderStatic();
-  frameId = requestAnimationFrame(renderFrame);
+  if (options.animate !== false) frameId = requestAnimationFrame(renderFrame);
 
   return Object.freeze({
     update(nextState) {

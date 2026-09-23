@@ -27,6 +27,7 @@ export default defineConfig({
         research: resolve(desktopRoot, "index.html"),
         "research-ledger": resolve(desktopRoot, "ledger.html"),
         "research-preview": resolve(desktopRoot, "preview.html"),
+        "research-flubber": resolve(desktopRoot, "flubber.html"),
       },
     },
   },

@@ -22,7 +22,7 @@ function showBootstrapFailure(error) {
  * The sole frontend bootstrap sequence. Platform entry modules provide one
  * typed runtime initializer; they do not race independent DOM side effects.
  */
-export function bootstrapResearchSurface({ surface, initializeRuntime, onFailure = () => {} }) {
+export function bootstrapResearchSurface({ surface, initializeRuntime, onFailure = () => {}, showFlubber = null }) {
   if (surface !== "browser" && surface !== "tauri") {
     throw new TypeError("Research surface must be browser or tauri.");
   }
@@ -30,7 +30,7 @@ export function bootstrapResearchSurface({ surface, initializeRuntime, onFailure
     throw new TypeError("Research runtime initializer is required.");
   }
   const start = async () => {
-    const root = bootResearchUi({ surface });
+    const root = bootResearchUi({ surface, showFlubber });
     if (!root) return;
     await initializeRuntime(root);
   };

@@ -12,6 +12,8 @@ export function createPlannerPreviewWindow({
   applyEdit,
   applyPosition,
   confirm,
+  showFlubber = () => {},
+  readTrial = () => null,
   onConnectionChange = () => {},
 }) {
   if (!windowObject || typeof windowObject.open !== "function") throw new TypeError("Preview window host is unavailable.");
@@ -65,6 +67,10 @@ export function createPlannerPreviewWindow({
     } else if (data.type === "position" && typeof applyPosition === "function") {
       applyPosition(data.position);
       update();
+    } else if (data.type === "show-flubber") {
+      await showFlubber();
+    } else if (data.type === "trial") {
+      post("trial-state", { trial: readTrial() });
     } else if (data.type === "closed") {
       popup = null;
       ready = false;

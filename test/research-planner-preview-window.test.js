@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createPlannerPreviewWindow, PLANNER_PREVIEW_WINDOW_MESSAGE_SCHEMA as schema } from "../experiment-planner/web/src/research/planner-preview-window.js";
+import { createPlannerFlubberWindow, PLANNER_FLUBBER_CHANNEL, PLANNER_FLUBBER_SCHEMA } from "../experiment-planner/web/src/research/planner-flubber-window.js";
 
 test("the separate preview window mirrors current state and delegates confirmation to the Planner owner", async () => {
   let receive;
@@ -79,5 +80,65 @@ test("the independent Flubber window edits the Planner-owned controls over one s
   assert.equal(controller.open(), true);
   assert.equal(opened, false, "a connected independent window is focused instead of duplicated");
   assert.equal(messages.at(-1).type, "focus");
+  controller.destroy();
+});
+
+test("the standalone Flubber receives appearance snapshots and can be shown without editing the draft", () => {
+  const messages = [];
+  let receiveChannel;
+  let shown = 0;
+  let state = { x: 0, colors: { idle: "#111111" } };
+  class FakeBroadcastChannel {
+    constructor(name) { assert.equal(name, PLANNER_FLUBBER_CHANNEL); }
+    addEventListener(type, listener) { if (type === "message") receiveChannel = listener; }
+    removeEventListener() {}
+    postMessage(message) { messages.push(message); }
+    close() {}
+  }
+  const controller = createPlannerFlubberWindow({
+    windowObject: {
+      location: { origin: "tauri://localhost" }, BroadcastChannel: FakeBroadcastChannel,
+      addEventListener() {}, removeEventListener() {},
+      open() { throw new Error("Native preview must not use window.open."); },
+    },
+    url: "tauri://localhost/flubber.html",
+    readState: () => structuredClone(state),
+    showNative: () => { shown += 1; },
+  });
+  assert.equal(messages[0].type, "host-ready");
+  receiveChannel({ data: { schema: PLANNER_FLUBBER_SCHEMA, type: "ready" } });
+  assert.deepEqual(messages.at(-1).state, state);
+  state = { x: 0.5, colors: { idle: "#222222" } };
+  controller.update();
+  assert.deepEqual(messages.at(-1).state, state);
+  controller.open();
+  assert.equal(shown, 1);
+  controller.destroy();
+});
+
+test("trial layout requests read the current Planner projection on demand", async () => {
+  const messages = [];
+  let receiveChannel;
+  let revision = 1;
+  class FakeBroadcastChannel {
+    addEventListener(type, listener) { if (type === "message") receiveChannel = listener; }
+    removeEventListener() {}
+    postMessage(message) { messages.push(message); }
+    close() {}
+  }
+  const controller = createPlannerPreviewWindow({
+    windowObject: {
+      location: { origin: "tauri://localhost" }, BroadcastChannel: FakeBroadcastChannel,
+      addEventListener() {}, removeEventListener() {}, open() { throw new Error("Already connected."); },
+    },
+    url: "tauri://localhost/preview.html",
+    readState: () => ({}), readConfirmation: () => ({}), confirm: async () => {},
+    readTrial: () => ({ revision }),
+  });
+  await receiveChannel({ data: { schema, type: "ready" } });
+  revision = 2;
+  await receiveChannel({ data: { schema, type: "trial" } });
+  assert.equal(messages.at(-1).type, "trial-state");
+  assert.deepEqual(messages.at(-1).trial, { revision: 2 });
   controller.destroy();
 });

@@ -50,6 +50,7 @@ import { createInlineColorPicker } from "./inline-color-picker.js";
 import { createPreviewInteraction } from "./preview-interaction.js";
 import { createPreviewLayout } from "./preview-layout.js";
 import { createPlannerPreviewWindow } from "./planner-preview-window.js";
+import { createPlannerFlubberWindow } from "./planner-flubber-window.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import { createLedgerPageLayout } from "./ledger-page-layout.js";
@@ -215,7 +216,7 @@ const PRESET_BUNDLED_ASSETS = Object.freeze({
   "phencon-short": Object.freeze([]),
 });
 const SPECIFICATION_SOURCE_SHA256 = "7402c80c6da71d4a11543676acdf0a7640cdb842d55afc10dde6ad3d4978fdbe";
-export function bootResearchUi({ surface: requestedSurface } = {}) {
+export function bootResearchUi({ surface: requestedSurface, showFlubber = null } = {}) {
   const mount = document.querySelector("#research-app");
   if (!(mount instanceof HTMLElement)) return null;
   const declaredSurface = mount.dataset.researchSurface === "tauri" ? "tauri" : "browser";
@@ -226,14 +227,14 @@ export function bootResearchUi({ surface: requestedSurface } = {}) {
   mount.innerHTML = renderResearchUiMarkup(surface, plannerInterface);
   if (mount.dataset.researchProgram === "planner") preparePlannerSurface(mount);
   mount.setAttribute("aria-busy", "false");
-  initializeResearchUi(mount, { surface });
+  initializeResearchUi(mount, { surface, showFlubber });
   return mount;
 }
 
-export function initializeResearchUi(root, { surface = "browser" } = {}) {
+export function initializeResearchUi(root, { surface = "browser", showFlubber = null } = {}) {
   const shell = root.querySelector(".research-shell");
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
-  const controller = installPlannerContributions(root, createUiController(root, { surface }));
+  const controller = installPlannerContributions(root, createUiController(root, { surface, showFlubber }));
   try {
     controller.initializeXrLayoutAuthoring();
     controller.connectScreenLayoutProducers();
@@ -244,16 +245,16 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
 
 // Interaction and projection code is kept below the declarative instrument so
 // importing this module for contract tests never requires a DOM.
-function createUiController(root, { surface }) {
-  return createInteractionController(root, { surface });
+function createUiController(root, { surface, showFlubber }) {
+  return createInteractionController(root, { surface, showFlubber });
 }
 
-function createInteractionController(root, { surface }) {
+function createInteractionController(root, { surface, showFlubber }) {
   // Implemented in the following section of this module.
-  return bindResearchInteractions(root, { surface });
+  return bindResearchInteractions(root, { surface, showFlubber });
 }
 
-function bindResearchInteractions(root, { surface }) {
+function bindResearchInteractions(root, { surface, showFlubber }) {
   const shell = root.querySelector(".research-shell");
   const plannerInterface = root.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
@@ -339,6 +340,7 @@ function bindResearchInteractions(root, { surface }) {
   let packageContributionFingerprint = null;
   let observedSuccessfulSave = null;
   let previewWindow = null;
+  let flubberWindow = null;
   let plannerFileWorkflow = null;
   const packageSaveDialog = surface === "browser" ? createPackageSaveDialog(root, {
     prepareSave: async (sourceText, options) => {
@@ -568,6 +570,7 @@ function bindResearchInteractions(root, { surface }) {
 
   const setupPreview = createResearchPreview(root.querySelector(".preview-pane"), {
     onPositionChange: applyDesignPreviewPosition,
+    animate: plannerInterface !== "ledger",
   });
   // The Run projection owns both the adjacent feedback stage and the visible
   // coordinate receipt in the footer.
@@ -643,6 +646,13 @@ function bindResearchInteractions(root, { surface }) {
 
   if (root.dataset.researchProgram === "planner") {
     const previewUrl = new URL(surface === "tauri" ? "preview.html" : "../preview.html", window.location.href).href;
+    const flubberUrl = new URL(surface === "tauri" ? "flubber.html" : "../flubber.html", window.location.href).href;
+    flubberWindow = createPlannerFlubberWindow({
+      windowObject: window,
+      url: flubberUrl,
+      readState: () => previewState({ design: true }),
+      showNative: surface === "tauri" && plannerInterface === "ledger" ? showFlubber : null,
+    });
     previewWindow = createPlannerPreviewWindow({
       windowObject: window,
       url: previewUrl,
@@ -654,6 +664,15 @@ function bindResearchInteractions(root, { surface }) {
       applyEdit: applyFeedbackWindowEdit,
       applyPosition: applyDesignPreviewPosition,
       confirm: () => confirmSetupSection("feedback"),
+      showFlubber: () => flubberWindow?.open(),
+      readTrial: () => {
+        const projection = layoutDraftEditor.projection;
+        const video = projection.videos[0];
+        return projection.geometry && video
+          ? { geometry: projection.geometry, video, state: { ...previewState({ design: true }),
+            displayMode: feedbackSettingsVersion === 2 ? feedbackPreviewMode : "legacy" } }
+          : { error: "Complete the screen layout and verify at least one video to preview a trial." };
+      },
       onConnectionChange(connected) {
         const status = query("#ledger-feedback-window-status");
         if (status) status.textContent = connected
@@ -1337,6 +1356,7 @@ function bindResearchInteractions(root, { surface }) {
     }
     setupPreview.update(projected);
     previewWindow?.update();
+    flubberWindow?.update();
   }
 
   function refreshDesignPreview() {
@@ -5577,6 +5597,10 @@ function bindResearchInteractions(root, { surface }) {
       catch (error) { announce(error instanceof Error ? error.message : String(error)); }
       return;
     }
+    if (target.id === "flubber-window-open") {
+      void flubberWindow?.open().catch(error => announce(error instanceof Error ? error.message : String(error)));
+      return;
+    }
     if (target.dataset.modeButton && target.dataset.modeButton !== mode) {
       announce(mode === "run"
         ? "Complete the attempt or use Stop Early before returning to Setup."
@@ -6757,6 +6781,7 @@ function bindResearchInteractions(root, { surface }) {
       xrLayoutAuthoring?.destroy();
       setupConfirmationFlow.destroy();
       previewWindow?.destroy();
+      flubberWindow?.destroy();
       feedbackContribution.destroy();
       previewLayout.destroy();
       previewInteraction?.destroy();

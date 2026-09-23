@@ -100,6 +100,7 @@ pub fn run() {
         None,
         ledger.then_some(LEDGER_WINDOW_ICON),
         suite_environment,
+        ledger,
     );
 }
 
@@ -115,7 +116,14 @@ pub fn run_runner(mut context: tauri::Context<tauri::Wry>) {
         window.data_directory = None;
         debug_assert!(environment.webview_data_dir.is_absolute());
     }
-    launch(DesktopRole::Runner, context, None, None, suite_environment);
+    launch(
+        DesktopRole::Runner,
+        context,
+        None,
+        None,
+        suite_environment,
+        false,
+    );
 }
 
 /// Production CLI entry point. It owns one private, hidden Planner lifecycle;
@@ -155,6 +163,7 @@ pub fn run_planner_cli(arguments: Vec<std::ffi::OsString>) -> Result<i32, String
         Some(profile),
         None,
         None,
+        false,
     ))
 }
 
@@ -164,6 +173,7 @@ fn launch(
     cli_profile: Option<PathBuf>,
     window_icon: Option<&'static [u8]>,
     suite_environment: Option<SuiteEnvironment>,
+    ledger: bool,
 ) -> i32 {
     let cli_enabled = cli_profile.is_some();
     if cli_enabled {
@@ -243,6 +253,45 @@ fn launch(
             if let Some(icon) = window_icon {
                 parent.set_icon(tauri::image::Image::from_bytes(icon)?)?;
             }
+            if role == DesktopRole::Planner && ledger {
+                let mut flubber = tauri::WebviewWindowBuilder::new(
+                    app,
+                    "flubber",
+                    tauri::WebviewUrl::App("flubber.html".into()),
+                )
+                .title("Flubber preview")
+                .inner_size(260.0, 260.0)
+                .decorations(false)
+                .transparent(true)
+                .shadow(false)
+                .resizable(false)
+                .always_on_top(true)
+                .focused(false);
+                if let Some(environment) = &suite_environment {
+                    flubber = flubber
+                        .data_directory(environment.webview_data_dir.clone())
+                        .additional_browser_args(INSTALLED_WEBVIEW_ARGUMENTS);
+                }
+                let flubber = flubber.build()?;
+                if let (Ok(origin), Ok(size), Ok(flubber_size), Ok(Some(monitor))) = (
+                    parent.outer_position(),
+                    parent.outer_size(),
+                    flubber.outer_size(),
+                    parent.current_monitor(),
+                ) {
+                    let bounds = monitor.position();
+                    let extent = monitor.size();
+                    let x = (origin.x + size.width as i32 + 12)
+                        .min(bounds.x + extent.width as i32 - flubber_size.width as i32 - 12)
+                        .max(bounds.x + 12);
+                    let y = (origin.y + 48)
+                        .min(bounds.y + extent.height as i32 - flubber_size.height as i32 - 12)
+                        .max(bounds.y + 12);
+                    flubber.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition::new(x, y),
+                    ))?;
+                }
+            }
             // Setup remains operable when the safe hook cannot start. Capability
             // reporting and every test/Start command then fail closed.
             let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));
@@ -295,6 +344,12 @@ fn launch(
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "flubber" {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
             if window.label() == "research" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     // A strong Rust clone alone does not veto OS destruction.
@@ -336,6 +391,7 @@ fn launch(
             research_planner_authoring::research_planner_authoring_revision,
             research_planner_authoring::research_planner_authoring_startup_failed,
             research_desktop::research_desktop_identity,
+            research_desktop::research_show_flubber,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
             research_commands::research_input_capability,

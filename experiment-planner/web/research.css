@@ -4136,6 +4136,36 @@ html[data-ledger-window] #research-app[data-planner-interface="ledger"] .ledger-
   overflow: visible;
 }
 
+.planner-preview-window-content .preview-primary-stage,
+.planner-preview-window-content .preview-flubber-release {
+  display: none;
+}
+.planner-preview-window-content .research-preview-studio { display: block; overflow: visible; }
+.planner-preview-window-content .preview-controls-scroll { overflow: visible; padding-top: 0.75rem; }
+
+.planner-preview-window-actions { display: flex; gap: 0.5rem; }
+.ledger-feedback-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+.preview-trial-dialog { width: min(94vw, 80rem); max-height: 94dvh; background: var(--surface); }
+.preview-trial-dialog::backdrop { background: rgb(0 0 0 / 0.72); }
+.preview-trial-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.preview-trial-dialog h2, .preview-trial-dialog p { margin: 0.5rem 0; }
+.preview-trial-stage { width: min(100%, calc(76dvh * var(--trial-screen-ratio, 1.7778))); min-height: 0; margin-inline: auto; border: 0; border-radius: 0; }
+.preview-trial-stage::after { content: none; }
+.preview-trial-video {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.5rem;
+  background: #050505;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 .planner-preview-window-shell header,
 .planner-preview-window-shell footer {
   display: flex;
@@ -4154,13 +4184,6 @@ html[data-ledger-window] #research-app[data-planner-interface="ledger"] .ledger-
   color: var(--muted);
 }
 
-.planner-preview-window-stage {
-  width: 100%;
-  min-width: 0;
-  min-height: 18rem;
-  border: 1px solid var(--border-strong);
-}
-
 html[data-planner-preview-window],
 body[data-planner-preview-window],
 #preview-window-app {
@@ -4173,6 +4196,31 @@ body[data-planner-preview-window],
 body[data-planner-preview-window] {
   overflow: hidden;
 }
+
+html[data-planner-flubber-window],
+body[data-planner-flubber-window],
+#flubber-window-app,
+.flubber-only-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  overflow: hidden;
+}
+
+.flubber-only-stage::after { content: none; }
+.flubber-only-stage .preview-overlay {
+  width: 100%;
+  max-height: none;
+  top: 50%;
+  left: 50%;
+  opacity: var(--overlay-opacity, 1);
+  cursor: grab;
+}
+.flubber-only-stage:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
 
 @media (max-width: 759px) {
   #research-app[data-planner-interface="ledger"] .setup-layout,
