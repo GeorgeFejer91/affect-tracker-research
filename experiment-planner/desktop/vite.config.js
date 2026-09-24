@@ -25,7 +25,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         research: resolve(desktopRoot, "index.html"),
-        "research-ledger": resolve(desktopRoot, "ledger.html"),
         "research-preview": resolve(desktopRoot, "preview.html"),
         "research-flubber": resolve(desktopRoot, "flubber.html"),
       },

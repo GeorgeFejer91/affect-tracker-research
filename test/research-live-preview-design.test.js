@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { createResearchPreview, normalizePreviewState } from "../experiment-planner/web/src/research/preview.js";
-import { COLOR_FIELDS, renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
+import { COLOR_FIELDS, feedbackWindowMarkup, renderResearchUiMarkup } from "../experiment-planner/web/src/research/ui-view.js";
 
 const markup = renderResearchUiMarkup("browser");
+const settingsMarkup = feedbackWindowMarkup();
 const appSource = readFileSync(new URL("../experiment-planner/web/src/research/app.js", import.meta.url), "utf8");
 const previewSource = readFileSync(new URL("../experiment-planner/web/src/research/preview.js", import.meta.url), "utf8");
 const nativeBridgeSource = readFileSync(new URL("../experiment-planner/web/src/research/native-bridge.js", import.meta.url), "utf8");
@@ -58,15 +59,15 @@ const setupMarkup = between(
 );
 const runMarkup = between(markup, '<section class="run-mode"', "</main>");
 const studioMarkup = between(
-  setupMarkup,
+  settingsMarkup,
   '<div class="research-preview-stage research-preview-studio"',
   '<div class="preview-coordinates preview-coordinate-receipt"',
 );
 
-test("Setup offers exactly three ordered feedback modes with one selected", () => {
-  assert.match(setupMarkup, /id="preview-flubber-release"[^>]*aria-label="Release Flubber into the preview"[^>]*aria-pressed="false"/u);
-  assert.doesNotMatch(setupMarkup.match(/<header class="preview-header"[\s\S]*?<\/header>/u)?.[0] ?? "", /binding-capture-dialog/u);
-  const buttons = [...setupMarkup.matchAll(
+test("Flubber settings offer exactly three ordered feedback modes with one selected", () => {
+  assert.match(settingsMarkup, /id="preview-flubber-release"[^>]*aria-label="Release Flubber into the preview"[^>]*aria-pressed="false"/u);
+  assert.doesNotMatch(settingsMarkup.match(/<header class="preview-header"[\s\S]*?<\/header>/u)?.[0] ?? "", /binding-capture-dialog/u);
+  const buttons = [...settingsMarkup.matchAll(
     /<button\b[^>]*\bdata-feedback-preview-mode="([^"]+)"[^>]*>[\s\S]*?<\/button>/gu,
   )].map((match) => ({
     mode: match[1],
@@ -83,7 +84,7 @@ test("Setup offers exactly three ordered feedback modes with one selected", () =
   assert.equal(count(runMarkup, /\bdata-feedback-preview-mode=/gu), 0);
 });
 
-test("the Setup studio nests its output stage before the affect map", () => {
+test("the settings studio nests its output stage before the affect map", () => {
   assert.doesNotMatch(studioMarkup, /class="preview-mode-label"/u);
   assert.match(studioMarkup, /<p class="sr-only">Previewing <span data-preview-mode-label>/u);
   const primaryIndex = studioMarkup.indexOf('<div class="preview-primary-stage"');
@@ -103,9 +104,9 @@ test("the Setup studio nests its output stage before the affect map", () => {
   assert.ok(flubberIndex > gridSvgIndex, "Flubber follows the grid in the absolute SVG stack");
 });
 
-test("the procedural Face is confined to the Setup studio and wired to affect coordinates", () => {
+test("the procedural Face is confined to the settings studio and wired to affect coordinates", () => {
   const faceRoot = /<svg\s+data-preview-face(?=\s)/gu;
-  assert.equal(count(setupMarkup, faceRoot), 1);
+  assert.equal(count(settingsMarkup, faceRoot), 1);
   assert.equal(count(runMarkup, faceRoot), 0);
   assert.match(previewSource, /import \{ createResponsiveFaceGeometry \} from "\.\/responsive-face\.js";/u);
   assert.match(

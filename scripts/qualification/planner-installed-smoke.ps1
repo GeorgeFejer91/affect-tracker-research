@@ -192,8 +192,7 @@ function Invoke-AppShortcut(
   [string]$Shortcut,
   [string]$Executable,
   [string]$ExpectedTitle,
-  [string]$Interface,
-  [bool]$ExpectLedger = $false
+  [string]$Interface
 ) {
   $existing = @(
     Get-CimInstance Win32_Process |
@@ -206,8 +205,7 @@ function Invoke-AppShortcut(
   $process = $launched.process
   $result = $null
   try {
-    $hasLedgerArgument = $launched.commandLine -match '(?:^|\s)--ledger(?:\s|$)'
-    if ($hasLedgerArgument -ne $ExpectLedger) { throw 'The installed app command line did not match the shortcut interface.' }
+    if ($launched.commandLine -match '(?:^|\s)--ledger(?:\s|$)') { throw 'The installed app used the retired Ledger argument.' }
     $processTable = @(Get-CimInstance Win32_Process)
     $processIds = @([int]$process.Id)
     do {
@@ -391,8 +389,7 @@ try {
   $plannerWebviewRoot = Join-Path $stateRoot 'planner\webview'
   $runnerWebviewRoot = Join-Path $stateRoot 'runner\webview'
   $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Affect Research'
-  $classicShortcut = Join-Path $startMenu 'Experiment Planner Classic.lnk'
-  $ledgerShortcut = Join-Path $startMenu 'Experiment Planner Ledger.lnk'
+  $plannerShortcut = Join-Path $startMenu 'Experiment Planner.lnk'
   $runnerShortcut = Join-Path $startMenu 'Experiment Runner.lnk'
   $currentGate = 'install'
   if (Test-Path -LiteralPath $installRoot) { throw 'The clean-install program directory already exists.' }
@@ -423,22 +420,19 @@ try {
   $installedIdentity = Get-InventoryIdentity $installedInventory
   Set-Gate 'install' 'passed' 'The per-user installer used the requested suite directory and produced the Planner, embedded Runner, scoped icons, suite marker, and uninstaller.'
 
-  $classic = Get-Shortcut $classicShortcut
-  $ledger = Get-Shortcut $ledgerShortcut
+  $planner = Get-Shortcut $plannerShortcut
   $runner = Get-Shortcut $runnerShortcut
-  if ($classic.target -cne $executable -or $classic.arguments) { throw 'The Classic shortcut target or arguments were incorrect.' }
-  if ($ledger.target -cne $executable -or $ledger.arguments -cne '--ledger') { throw 'The Ledger shortcut target or arguments were incorrect.' }
+  if ($planner.target -cne $executable -or $planner.arguments) { throw 'The Planner shortcut target or arguments were incorrect.' }
   if ($runner.target -cne $runnerExecutable -or $runner.arguments) { throw 'The Runner shortcut target or arguments were incorrect.' }
-  if ($ledger.icon.Split(',')[0] -cne $ledgerIcon) { throw 'The Ledger shortcut did not use its installed icon.' }
+  if ($planner.icon.Split(',')[0] -cne $ledgerIcon) { throw 'The Planner shortcut did not use its installed icon.' }
   if ($runner.icon.Split(',')[0] -cne $runnerIcon) { throw 'The Runner shortcut did not use its installed icon.' }
   $receipt.shortcuts = @(
-    [ordered]@{ name = $classic.name; target = '<SuiteRoot>/affect-research.exe'; arguments = ''; icon = '<installed executable>' },
-    [ordered]@{ name = $ledger.name; target = '<SuiteRoot>/affect-research.exe'; arguments = '--ledger'; icon = '<SuiteRoot>/resources/icons/planner-ledger.ico,0' },
+    [ordered]@{ name = $planner.name; target = '<SuiteRoot>/affect-research.exe'; arguments = ''; icon = '<SuiteRoot>/resources/icons/planner-ledger.ico,0' },
     [ordered]@{ name = $runner.name; target = '<SuiteRoot>/resources/bin/affect-runner.exe'; arguments = ''; icon = '<SuiteRoot>/resources/icons/experiment-runner.ico,0' }
   )
 
   $currentGate = 'environment'
-  $receipt.launches += Invoke-AppShortcut $classicShortcut $executable 'Experiment Planner' 'planner-classic' $false
+  $receipt.launches += Invoke-AppShortcut $plannerShortcut $executable 'Experiment Planner' 'planner-ledger'
   $requiredDirectories = @(
     'stimuli', 'settings', 'outputs', 'recovery', 'assets', 'assets/stimuli', 'assets/questionnaires'
   )
@@ -465,11 +459,7 @@ try {
   Set-Gate 'environment' 'passed' 'First launch created the required ordinary workspace directories and suite-local Planner state without an external app-data dependency.'
 
   $currentGate = 'interfaces'
-  $receipt.launches += Invoke-AppShortcut $ledgerShortcut $executable 'Experiment Planner Ledger' 'planner-ledger' $true
-  if ((Get-InventoryIdentity (Get-Inventory $workspace)) -cne $workspaceIdentity) {
-    throw 'The Ledger launch changed the clean workspace contract.'
-  }
-  $receipt.launches += Invoke-AppShortcut $runnerShortcut $runnerExecutable 'Experiment Runner' 'runner' $false
+  $receipt.launches += Invoke-AppShortcut $runnerShortcut $runnerExecutable 'Experiment Runner' 'runner'
   if (-not (Test-OrdinaryDirectory $runnerWebviewRoot)) { throw 'Runner launch did not create the suite-local Runner WebView profile.' }
   if ((Get-InventoryIdentity (Get-Inventory $workspace)) -cne $workspaceIdentity) {
     throw 'The Runner launch changed the clean workspace contract.'
@@ -478,14 +468,14 @@ try {
   if ($RequireOffline -and $launchesWithTcp -ne 0) {
     throw 'An installed suite process held a TCP connection during the disconnected-host workflow.'
   }
-  Set-Gate 'interfaces' 'passed' 'All three installed shortcuts launched the intended responsive window, used the exact target and arguments, and closed normally. TCP connection counts were recorded for all launches; zero was required only for the disconnected-host gate.'
+  Set-Gate 'interfaces' 'passed' 'Both installed shortcuts launched the intended responsive window, used the exact target and arguments, and closed normally. TCP connection counts were recorded for all launches; zero was required only for the disconnected-host gate.'
 
   $currentGate = 'restart'
-  $receipt.launches += Invoke-AppShortcut $classicShortcut $executable 'Experiment Planner' 'planner-classic' $false
+  $receipt.launches += Invoke-AppShortcut $plannerShortcut $executable 'Experiment Planner' 'planner-ledger'
   if ((Get-InventoryIdentity (Get-Inventory $workspace)) -cne $workspaceIdentity) {
     throw 'Restart changed the clean workspace contract.'
   }
-  Set-Gate 'restart' 'passed' 'A second Classic launch retained the same workspace inventory and closed normally.'
+  Set-Gate 'restart' 'passed' 'A second Planner launch retained the same workspace inventory and closed normally.'
 
   $currentGate = 'repair'
   $iconHash = Get-Sha256 $ledgerIcon
@@ -508,8 +498,7 @@ try {
   while (
     (
       (Test-Path -LiteralPath $uninstaller) -or
-      (Test-Path -LiteralPath $classicShortcut) -or
-      (Test-Path -LiteralPath $ledgerShortcut) -or
+      (Test-Path -LiteralPath $plannerShortcut) -or
       (Test-Path -LiteralPath $runnerShortcut)
     ) -and
     (Get-Date) -lt $uninstallDeadline
@@ -517,7 +506,7 @@ try {
     Start-Sleep -Milliseconds 250
   }
   if (@(Get-ProgramInventory $installRoot).Count -ne 0) { throw 'Uninstall retained suite program files.' }
-  if ((Test-Path -LiteralPath $classicShortcut) -or (Test-Path -LiteralPath $ledgerShortcut) -or (Test-Path -LiteralPath $runnerShortcut)) {
+  if ((Test-Path -LiteralPath $plannerShortcut) -or (Test-Path -LiteralPath $runnerShortcut)) {
     throw 'Uninstall retained a suite Start Menu shortcut.'
   }
   if ((Get-InventoryIdentity (Get-Inventory $workspace)) -cne $workspaceIdentity) {
@@ -526,7 +515,7 @@ try {
   if ((Get-InventoryIdentity (Get-Inventory $stateRoot)) -cne $stateIdentity) {
     throw 'Uninstall changed the suite-local application state.'
   }
-  Set-Gate 'uninstall' 'passed' 'Silent uninstall returned 0, removed program files and all three shortcuts, and preserved the exact workspace and suite-local state inventories.'
+  Set-Gate 'uninstall' 'passed' 'Silent uninstall returned 0, removed program files and both shortcuts, and preserved the exact workspace and suite-local state inventories.'
 
   $receipt.installation = [ordered]@{
     mode = 'currentUserSelectedDirectory'

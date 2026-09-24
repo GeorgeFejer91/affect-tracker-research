@@ -27,6 +27,11 @@ the programs together does not combine their command registries or scientific
 authority. The first row remains a qualification target until the exact
 installed artifact passes its independent gates.
 
+The Planner's canonical interface is the Ledger on desktop and browser. Its
+Flubber preview and appearance settings are separate desktop windows. The
+former Classic interface is retained in the `archive/planner-classic-ui` Git
+branch and is not an active route or installer shortcut.
+
 Self-contained means no application backend, hosted dependency, or network is
 required after download; the installer includes the offline Evergreen WebView2
 payload. It is not a claim that Microsoft's WebView2 runtime is network-silent

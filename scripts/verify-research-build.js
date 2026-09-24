@@ -48,8 +48,16 @@ async function verifySelectedLogo(root, files, buildTarget) {
 
   const index = await readFile(resolve(root, "index.html"), "utf8");
   const logoFilename = expectedLogoFiles[0].split("/").at(-1);
-  if (!index.includes(logoFilename)) {
-    throw new Error(`${buildTarget} index.html does not reference its emitted app-logo SVG.`);
+  if (buildTarget === "pages" && !index.includes(logoFilename)) {
+    throw new Error("Pages index.html does not reference its emitted app-logo SVG.");
+  }
+  if (buildTarget === "desktop") {
+    const ledgerSource = await readFile(resolve(repositoryRoot, "experiment-planner/web/assets/affect-planner-ledger-icon.svg"));
+    const ledgerFiles = files.filter((path) => /^assets\/affect-planner-ledger-icon-[A-Za-z0-9_-]+\.svg$/u.test(path));
+    if (ledgerFiles.length !== 1 || !(await readFile(resolve(root, ledgerFiles[0]))).equals(ledgerSource)
+        || !index.includes(ledgerFiles[0].split("/").at(-1))) {
+      throw new Error("Desktop index.html must use the exact scoped Planner ledger icon.");
+    }
   }
 
   const selectedSymbol = await readFile(resolve(repositoryRoot, "experiment-planner", "web", "assets", "app-symbol.svg"));
@@ -123,6 +131,7 @@ const rules = {
       || path === "questionnaires/vr-exp-en.csv"
       || path === "assets/app-logo.svg"
       || path === "assets/app-symbol.svg"
+      || path === "assets/affect-planner-ledger-icon.svg"
       || path === "assets/ledger-tab-icons.svg"
       || /^dependencies\/pretext\/(?:analysis|bidi|layout|line-break|line-text|measurement)\.js$/u.test(path)
       || path === "dependencies/pretext/generated/bidi-data.js"
@@ -131,13 +140,13 @@ const rules = {
       || path === "assets/runner-symbol.svg"
       || /^runner\/assets\/(?:browser|runner-symbol|app-symbol|professor-qr|controller-qr|professor-widget|input-widget|remote-widget)-[A-Za-z0-9_-]+\.(?:js|css|svg)$/u.test(path)
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
+      || /^assets\/app-icons\/planner-ledger\/(?:32x32|64x64|128x128|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")
       || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),
   },
   desktop: {
     root: resolve(repositoryRoot, "experiment-planner", "desktop", "dist"),
     allowed: (path) => path === "index.html"
-      || path === "ledger.html"
       || path === "preview.html"
       || path === "flubber.html"
       || path === "surveyjs-notices.txt"
@@ -149,6 +158,7 @@ const rules = {
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)
       || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path)
       || /^assets\/app-(?:logo|symbol)-[A-Za-z0-9_-]+\.svg$/u.test(path)
+      || /^assets\/affect-planner-ledger-icon-[A-Za-z0-9_-]+\.svg$/u.test(path)
       || /^assets\/ledger-tab-icons-[A-Za-z0-9_-]+\.svg$/u.test(path)
   },
 };

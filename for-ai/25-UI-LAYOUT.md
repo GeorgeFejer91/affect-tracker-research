@@ -174,17 +174,17 @@ or a genuine empty/help state. It is not an app icon, row decoration, repeated
 tab glyph or substitute for the live affect display. Keep it decorative unless
 it conveys information that has an explicit accessible label.
 
-`assets/affect-planner-ledger-icon.svg` is the scoped Experiment Planner Ledger
-identity source. Use it for the Ledger HTML icon, launcher tile and generated
-Ledger-specific PNG/ICO derivatives. Do not replace Classic Planner, Runner or
-suite-wide branding with it. Preserve its aspect ratio and regenerate native
+`assets/affect-planner-ledger-icon.svg` is the canonical Experiment Planner
+identity source. Use it for the Planner HTML icon, launcher tile and generated
+Planner PNG/ICO derivatives. Keep Runner and suite-wide branding separate.
+Preserve its aspect ratio and regenerate native
 rasters from the SVG source rather than editing derivative pixels.
 
 After importing that SVG, run `pnpm desktop:ledger-icons`. The pinned Tauri
 renderer writes 32, 64, 128, 180, 192 and 512 pixel PNGs beneath
 `assets/app-icons/planner-ledger/`, plus the native Ledger 128px PNG and ICO in
 `native/icons-ledger/`. The command fails before changing outputs when the SVG
-source is absent; it never rewrites the Classic Planner or Runner icon sets.
+source is absent; it never rewrites the Runner or suite-wide icon sets.
 
 ## Readability is a boundary, not another overflow hack
 

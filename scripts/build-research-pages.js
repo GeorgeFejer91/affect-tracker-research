@@ -48,6 +48,7 @@ await Promise.all([
   )),
   cp(resolve(sourceRoot, "assets", "app-logo.svg"), resolve(outputRoot, "assets", "app-logo.svg")),
   cp(resolve(sourceRoot, "assets", "app-symbol.svg"), resolve(outputRoot, "assets", "app-symbol.svg")),
+  cp(resolve(sourceRoot, "assets", "affect-planner-ledger-icon.svg"), resolve(outputRoot, "assets", "affect-planner-ledger-icon.svg")),
   cp(resolve(sourceRoot, "assets", "ledger-tab-icons.svg"), resolve(outputRoot, "assets", "ledger-tab-icons.svg")),
   ...pretextRuntimeFiles.map((name) => cp(
     resolve(repositoryRoot, "node_modules", "@chenglou", "pretext", "dist", name),

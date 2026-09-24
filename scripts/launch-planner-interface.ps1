@@ -1,12 +1,5 @@
-param(
-  [Parameter(Mandatory = $true)]
-  [ValidateSet("classic", "ledger")]
-  [string]$Interface
-)
-
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $siteUrl = "http://127.0.0.1:8000/"
-$plannerPath = if ($Interface -eq "ledger") { "planner-ledger/" } else { "planner/" }
 
 function Test-AffectTrackerSite {
   try {
@@ -28,7 +21,7 @@ if (-not (Test-AffectTrackerSite)) {
   throw "Affect Tracker could not start at $siteUrl. Check whether port 8000 is already in use."
 }
 
-$appUrl = "$siteUrl$plannerPath"
+$appUrl = "${siteUrl}planner/"
 $browser = @(
   "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe"
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"

@@ -174,10 +174,9 @@ test("Windows artifacts carry the checkout-free installed lifecycle smoke route"
   assert.match(smoke, /lockedDependencies/u);
   assert.match(smoke, /node\.exe[\s\S]*pnpm\.cmd/u);
   assert.match(smoke, /8000, 8013, 1420, 5173/u);
-  assert.match(smoke, /Experiment Planner Classic\.lnk/u);
-  assert.match(smoke, /Experiment Planner Ledger\.lnk/u);
+  assert.match(smoke, /Experiment Planner\.lnk/u);
   assert.match(smoke, /Experiment Runner\.lnk/u);
-  assert.match(smoke, /arguments -cne '--ledger'/u);
+  assert.doesNotMatch(smoke, /arguments -cne '--ledger'/u);
   assert.match(smoke, /IAffectResearchShellLinkW/u);
   assert.match(smoke, /GetIconLocation/u);
   assert.match(smoke, /AffectResearchShortcutReader\]::Read/u);

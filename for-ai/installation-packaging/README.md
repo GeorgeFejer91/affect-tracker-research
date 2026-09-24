@@ -9,8 +9,8 @@ or research use.
 Ship one Windows x64 NSIS installer containing two separate Rust/Tauri
 executables:
 
-- **Experiment Planner**, with Classic and Ledger shortcuts over the same
-  Planner binary and authoring backend; and
+- **Experiment Planner**, whose canonical Ledger interface opens from one
+  Planner shortcut; and
 - **Experiment Runner**, with its own executable, embedded frontend, native
   command registry, runtime state, icon, and shortcut.
 
@@ -102,7 +102,7 @@ Do not add another installer framework. A Windows candidate must:
 3. embed all runtime assets and the offline WebView2 payload;
 4. install for the current user without administrator authority by default;
 5. let the interactive user select a writable directory;
-6. create the exact Classic, Ledger, and Runner shortcuts with scoped icons;
+6. create the exact Planner and Runner shortcuts with scoped icons;
 7. contain no participant data, study media, development credentials, signing
    material, or undeclared sidecars;
 8. emit SHA-256 and provenance for the exact tested installer; and
@@ -135,8 +135,8 @@ Each qualification attempt records a path-redacted receipt containing:
   installed-program inventory hash;
 - selected-directory, install, launch, restart, repair, and uninstall results;
 - directory-contract results with no personal path;
-- three shortcut target/argument/icon checks;
-- Planner Classic/Ledger canonical-JSON comparison hash;
+- two shortcut target/argument/icon checks;
+- Planner Ledger save/reopen canonical-JSON hash;
 - installed-window screenshots at required display scales; and
 - explicit `passed`, `failed`, `blocked`, and `notRun` gates.
 
@@ -173,8 +173,8 @@ All applicable gates run against one unchanged installer artifact:
 5. **Environment:** Planner creates the shared workspace and its own state;
    Runner reuses the workspace and creates separate state. Repeated launch is
    idempotent; file/link/junction conflicts reject without mutation.
-6. **Interfaces:** all three shortcuts target the intended executable,
-   arguments, and icon; Planner surfaces reproduce identical canonical JSON;
+6. **Interfaces:** both shortcuts target the intended executable,
+   arguments, and icon; Planner save/reopen reproduces identical canonical JSON;
    Runner reads that exact saved package.
 7. **Offline:** after installation, disconnect networking and repeat launch,
    author/save/reopen, Runner load/preflight, and ordinary close.
@@ -214,8 +214,8 @@ child with the same leaf name before starting the installer; its receipt keeps
 the selected name path-redacted.
 
 The route refuses a pre-existing selected Downloads child, installs there with
-NSIS `/D`, checks the exact program inventory and all shortcuts,
-launches Classic, Ledger, and Runner, verifies suite-local workspace/state,
+NSIS `/D`, checks the exact program inventory and both shortcuts,
+launches Planner and Runner, verifies suite-local workspace/state,
 records per-launch TCP connection counts, repairs a removed Ledger icon with
 the same artifact, then uninstalls. With `-RequireOffline`, zero connections
 are required in addition to the absence of every default-route adapter. It
@@ -264,7 +264,7 @@ sampling, LSL/XDF or foreground-session claim.
 
 1. Run the retained clean Windows x64 suite artifact through the checkout-free
    offline smoke on a disposable profile.
-2. Run installed Classic/Ledger save/reopen equivalence and Runner load against
+2. Run installed Planner save/reopen equivalence and Runner load against
    one exact package.
 3. Run the installed visual/interaction matrix at 100%, 125%, and 150% with
    long and non-ASCII suite paths.

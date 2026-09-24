@@ -4,13 +4,11 @@
     Delete "$SMPROGRAMS\Affect Research\${PRODUCTNAME}.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Planner Classic.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Planner Ledger.lnk"
+    Delete "$SMPROGRAMS\Affect Research\Experiment Planner.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Runner.lnk"
 
-    CreateShortcut "$SMPROGRAMS\Affect Research\Experiment Planner Classic.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "" "$INSTDIR\${MAINBINARYNAME}.exe" 0 SW_SHOWNORMAL "" "Experiment Planner Classic"
-    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\Affect Research\Experiment Planner Classic.lnk"
-
-    CreateShortcut "$SMPROGRAMS\Affect Research\Experiment Planner Ledger.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "--ledger" "$INSTDIR\resources\icons\planner-ledger.ico" 0 SW_SHOWNORMAL "" "Experiment Planner Ledger"
-    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\Affect Research\Experiment Planner Ledger.lnk"
+    CreateShortcut "$SMPROGRAMS\Affect Research\Experiment Planner.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "" "$INSTDIR\resources\icons\planner-ledger.ico" 0 SW_SHOWNORMAL "" "Experiment Planner"
+    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\Affect Research\Experiment Planner.lnk"
 
     CreateShortcut "$SMPROGRAMS\Affect Research\Experiment Runner.lnk" "$INSTDIR\resources\bin\affect-runner.exe" "" "$INSTDIR\resources\icons\experiment-runner.ico" 0 SW_SHOWNORMAL "" "Experiment Runner"
     !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\Affect Research\Experiment Runner.lnk"
@@ -33,6 +31,7 @@
 
   ReadRegDWORD $0 SHCTX "${UNINSTKEY}" "AffectResearchCustomShortcuts"
   ${If} $0 = 1
+    Delete "$SMPROGRAMS\Affect Research\Experiment Planner.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Planner Classic.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Planner Ledger.lnk"
     Delete "$SMPROGRAMS\Affect Research\Experiment Runner.lnk"

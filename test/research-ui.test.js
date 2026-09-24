@@ -169,37 +169,30 @@ test("the Flubber companion owns its visible dialogs and interactive color map",
   const ledgerEnd = markup.indexOf('<nav class="ledger-rail"');
   const authority = markup.indexOf("data-ledger-feedback-authority");
   assert.ok(authority > ledgerEnd, "the hidden JSON authority stays outside the ledger object");
-  assert.match(appSource, /plannerInterface === "ledger"\) dialog\.show\(\);[\s\S]*else dialog\.showModal\(\);/u);
+  assert.match(appSource, /dialog\.show\(\)/u);
   assert.match(companionSource, /createInlineColorPicker\(content\.querySelector\("#preview-color-picker"\)/u);
   assert.match(companionSource, /input\.dispatchEvent\(new Event\("input", \{ bubbles: true \}\)\)/u);
   assert.match(css, /data-planner-interface="ledger"\][\s\S]*?#binding-capture-dialog,[\s\S]*?#preview-color-dialog[\s\S]*?visibility:\s*hidden;/u);
 });
 
-test("Classic and Ledger are separate UI implementations over the same confirmation and JSON controls", () => {
-  const classic = renderResearchUiMarkup("browser", "classic");
-  const ledger = renderResearchUiMarkup("browser", "ledger");
-  assert.match(classic, /data-planner-interface="classic"/u);
-  assert.match(classic, /data-setup-resizer/u);
-  assert.match(classic, /class="feedback-navigation-trigger"/u);
-  assert.doesNotMatch(classic, /class="ledger-rail"/u);
-  assert.match(ledger, /data-planner-interface="ledger"/u);
-  assert.doesNotMatch(ledger, /data-setup-resizer/u);
-  assert.match(ledger, /class="ledger-rail"/u);
-  for (const markup of [classic, ledger]) {
+test("both Planner surfaces use the canonical Ledger controls", () => {
+  for (const surface of ["browser", "tauri"]) {
+    const markup = renderResearchUiMarkup(surface);
+    assert.match(markup, /data-planner-interface="ledger"/u);
+    assert.doesNotMatch(markup, /data-setup-resizer|class="feedback-navigation-trigger"/u);
+    assert.match(markup, /class="ledger-rail"/u);
     assert.equal((markup.match(/data-confirm-section=/gu) ?? []).length, 6);
     assert.equal((markup.match(/id="package-generate"/gu) ?? []).length, 1);
     assert.equal((markup.match(/id="preview-window-open"/gu) ?? []).length, 1);
   }
 });
 
-test("Ledger omits the Classic identity, mode, version, and adapter app bar", () => {
-  const classic = renderResearchUiMarkup("tauri", "classic");
-  const desktopLedger = renderResearchUiMarkup("tauri", "ledger");
-  const browserLedger = renderResearchUiMarkup("browser", "ledger");
+test("Ledger uses its own desktop chrome and browser layout", () => {
+  const desktopLedger = renderResearchUiMarkup("tauri");
+  const browserLedger = renderResearchUiMarkup("browser");
   const desktopChrome = desktopLedger.slice(0, desktopLedger.indexOf("<main>"));
   const browserChrome = browserLedger.slice(0, browserLedger.indexOf("<main>"));
 
-  assert.match(classic, /<header class="app-bar">[\s\S]*?0\.4\.0-alpha\.1[\s\S]*?Setting Up the Experiment[\s\S]*?Tauri desktop adapter · Classic/u);
   assert.match(desktopChrome, /<header class="app-bar ledger-window-bar" data-tauri-drag-region="deep" aria-label="Window drag area"><\/header>/u);
   assert.doesNotMatch(browserChrome, /class="app-bar/u);
   for (const chrome of [desktopChrome, browserChrome]) {
@@ -231,11 +224,11 @@ test("the ledger keeps Secret Tunnel's flat sheet geometry without decorative gl
 test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouette", async () => {
   const [css, desktopEntry, nativeEntry, nativeSource, capabilitySource, ledgerIcon] = await Promise.all([
     read("experiment-planner/web/research.css"),
-    read("experiment-planner/desktop/ledger.html"),
+    read("experiment-planner/desktop/index.html"),
     read("experiment-planner/web/src/research/native-entry.js"),
     read("native/src/lib.rs"),
     read("native/capabilities/research.json"),
-    read("experiment-planner/desktop/icons/ledger-icon.svg"),
+    read("experiment-planner/web/assets/affect-planner-ledger-icon.svg"),
   ]);
   const desktop = renderResearchUiMarkup("tauri", "ledger");
   const browser = renderResearchUiMarkup("browser", "ledger");
@@ -250,7 +243,8 @@ test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouet
   assert.match(css, /\.ledger-tab\s*\{[\s\S]*?width:\s*50px;[\s\S]*?border-left:\s*0;[\s\S]*?border-radius:\s*0 9px 9px 0;/u);
   assert.match(css, /html\[data-ledger-window\] #research-app\[data-planner-interface="ledger"\] \.ledger-rail\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0 0 0 auto;[\s\S]*?height:\s*100dvh;/u);
   assert.match(nativeEntry, /getCurrentWindow[\s\S]*?currentWindow\.minimize\(\)[\s\S]*?currentWindow\.toggleMaximize\(\)[\s\S]*?currentWindow\.close\(\)[\s\S]*?currentWindow\.startResizeDragging/u);
-  assert.match(nativeSource, /argument == "--ledger"[\s\S]*?ledger\.html[\s\S]*?window\.decorations = false;[\s\S]*?window\.transparent = true;[\s\S]*?window\.min_width = Some\(640\.0\);[\s\S]*?window\.min_height = Some\(480\.0\);/u);
+  assert.match(nativeSource, /window\.decorations = false;[\s\S]*?window\.transparent = true;[\s\S]*?window\.min_width = Some\(640\.0\);[\s\S]*?window\.min_height = Some\(480\.0\);/u);
+  assert.doesNotMatch(nativeSource, /--ledger|ledger\.html/u);
   assert.match(nativeSource, /LEDGER_WINDOW_ICON[\s\S]*?parent\.set_icon/u);
   assert.match(ledgerIcon, /<title id="title">Experiment Planner Ledger<\/title>[\s\S]*?seen from the side[\s\S]*?fill="#ff5c88"[\s\S]*?stroke="#a9b3ff"/u);
   const permissions = JSON.parse(capabilitySource).permissions;

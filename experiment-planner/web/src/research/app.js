@@ -54,7 +54,6 @@ import { createPlannerFlubberWindow } from "./planner-flubber-window.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, parsePreviewSteps, parsePreviewGrid } from "./preview-tiles.js";
 import { setSetupAccordionPanelExpanded } from "./setup-accordion-motion.js";
 import { createLedgerPageLayout } from "./ledger-page-layout.js";
-import { createSetupLayout } from "./setup-layout.js";
 import {
   QUESTIONNAIRE_MODULE_SCHEMA,
   validateQuestionnaireAnswers,
@@ -221,10 +220,9 @@ export function bootResearchUi({ surface: requestedSurface, showFlubber = null }
   if (!(mount instanceof HTMLElement)) return null;
   const declaredSurface = mount.dataset.researchSurface === "tauri" ? "tauri" : "browser";
   const surface = requestedSurface ?? declaredSurface;
-  const plannerInterface = mount.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
   if (surface !== declaredSurface) throw new Error("Research surface does not match its entry module.");
-  mount.dataset.plannerInterface = plannerInterface;
-  mount.innerHTML = renderResearchUiMarkup(surface, plannerInterface);
+  mount.dataset.plannerInterface = "ledger";
+  mount.innerHTML = renderResearchUiMarkup(surface);
   if (mount.dataset.researchProgram === "planner") preparePlannerSurface(mount);
   mount.setAttribute("aria-busy", "false");
   initializeResearchUi(mount, { surface, showFlubber });
@@ -256,8 +254,6 @@ function createInteractionController(root, { surface, showFlubber }) {
 
 function bindResearchInteractions(root, { surface, showFlubber }) {
   const shell = root.querySelector(".research-shell");
-  const plannerInterface = root.dataset.plannerInterface === "ledger" ? "ledger" : "classic";
-  const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   const ledgerPageLayout = createLedgerPageLayout(root);
   let disconnectScreenLayout = () => {};
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
@@ -570,7 +566,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
 
   const setupPreview = createResearchPreview(root.querySelector(".preview-pane"), {
     onPositionChange: applyDesignPreviewPosition,
-    animate: plannerInterface !== "ledger",
+    animate: false,
   });
   // The Run projection owns both the adjacent feedback stage and the visible
   // coordinate receipt in the footer.
@@ -651,7 +647,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       windowObject: window,
       url: flubberUrl,
       readState: () => previewState({ design: true }),
-      showNative: surface === "tauri" && plannerInterface === "ledger" ? showFlubber : null,
+      showNative: surface === "tauri" ? showFlubber : null,
     });
     previewWindow = createPlannerPreviewWindow({
       windowObject: window,
@@ -680,7 +676,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
           : "Flubber settings window closed. Reopen it to edit or confirm feedback.";
       },
     });
-    if (surface === "tauri" && plannerInterface === "ledger") {
+    if (surface === "tauri") {
       queueMicrotask(() => {
         try { previewWindow?.open(); }
         catch (error) { announce(error instanceof Error ? error.message : String(error)); }
@@ -805,7 +801,6 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
   function setMode(nextMode) {
     if (root.dataset.researchProgram === "planner" && nextMode !== "setup") return;
     mode = normalizeResearchMode(nextMode);
-    setupLayout.setEnabled(mode === "setup");
     if (mode !== "setup") {
       previewInteraction?.releaseAll();
       previewResponseSimulator?.releaseAll();
@@ -858,22 +853,18 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     if (saveButton) saveButton.dataset.reviewState = save.phase === "saved" && !packageIsStale ? "reviewed" : save.busy ? "confirming" : "pending";
     const progress = query("#setup-progress");
     if (progress) {
-      const unit = plannerInterface === "ledger" ? "ledger layers" : "Planner sections";
-      progress.textContent = `${confirmations.filter(({ confirmed }) => confirmed).length} of ${SETUP_CONFIRMATION_ORDER.length} confirmations · ${SETUP_SECTIONS.length} ${unit} · ${reviewedSetupSections.has("review") ? "Final JSON saved" : "Export locked"}`;
+      progress.textContent = `${confirmations.filter(({ confirmed }) => confirmed).length} of ${SETUP_CONFIRMATION_ORDER.length} confirmations · ${SETUP_SECTIONS.length} ledger layers · ${reviewedSetupSections.has("review") ? "Final JSON saved" : "Export locked"}`;
     }
     previewWindow?.update();
   }
 
   function openSetupSection(sectionId, { focus = false } = {}) {
-    if (sectionId === null && plannerInterface === "ledger") return;
+    if (sectionId === null) return;
     setupNavigationRevision += 1;
-    const requestedSection = sectionId === null ? null : nextOpenSetupSection(openSection, sectionId);
-    openSection = plannerInterface === "ledger" || requestedSection === "feedback"
-      ? requestedSection
-      : requestedSection === openSection ? null : requestedSection;
+    openSection = nextOpenSetupSection(openSection, sectionId);
     const openIndex = SETUP_SECTIONS.findIndex(({ id }) => id === openSection);
     const pane = query("#setup-sections");
-    if (pane instanceof HTMLElement && plannerInterface === "ledger") {
+    if (pane instanceof HTMLElement) {
       const pageHue = String(236 + (360 / SETUP_SECTIONS.length) * Math.max(0, openIndex));
       pane.style.setProperty("--ledger-page-hue", pageHue);
       shell.style.setProperty("--ledger-page-hue", pageHue);
@@ -899,8 +890,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
         panelChanges.push([panel, isOpen]);
       }
     });
-    if (openSection === "feedback") focusTarget = plannerInterface === "ledger"
-      ? query("#ledger-feedback-window-title") : query("#preview-title");
+    if (openSection === "feedback") focusTarget = query("#ledger-feedback-window-title");
     focusTarget?.focus();
     if (openSection === "feedback") focusTarget?.scrollIntoView({ block: "start", behavior: "auto" });
     panelChanges.forEach(([panel, isOpen]) => setSetupAccordionPanelExpanded(panel, isOpen));
@@ -992,8 +982,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     setErrorReference(hex, "preview-color-error", false);
     const apply = query("#preview-color-apply");
     if (apply instanceof HTMLButtonElement) apply.disabled = false;
-    if (plannerInterface === "ledger") dialog.show();
-    else dialog.showModal();
+    dialog.show();
     queueMicrotask(() => hex.focus());
   }
 
@@ -4927,8 +4916,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     cancelBindingCapture();
     const dialog = query("#binding-capture-dialog");
     if (!dialog?.open) {
-      if (plannerInterface === "ledger") dialog?.show();
-      else dialog?.showModal();
+      dialog?.show();
     }
     renderBindings();
     const receipt = query("#binding-capture-receipt");
@@ -6788,7 +6776,6 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       previewInteraction = null;
       inlineColorPicker.destroy();
       ledgerPageLayout.destroy();
-      setupLayout.destroy();
       packageExport.destroy();
       plannerFileWorkflow.destroy();
       authoringIntents.abort();

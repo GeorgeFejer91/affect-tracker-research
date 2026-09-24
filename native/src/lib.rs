@@ -69,9 +69,6 @@ pub fn run() {
     let mut context = tauri::generate_context!();
     let suite_environment = installed_suite_environment(DesktopRole::Planner)
         .unwrap_or_else(|message| fail_desktop_startup(&message));
-    let ledger = std::env::args_os()
-        .skip(1)
-        .any(|argument| argument == "--ledger");
     if let (Some(window), Some(environment)) = (
         context.config_mut().app.windows.first_mut(),
         suite_environment.as_ref(),
@@ -83,24 +80,21 @@ pub fn run() {
         window.data_directory = None;
         debug_assert!(environment.webview_data_dir.is_absolute());
     }
-    if ledger {
-        if let Some(window) = context.config_mut().app.windows.first_mut() {
-            window.title = "Experiment Planner Ledger".into();
-            window.url = tauri::WebviewUrl::App("ledger.html".into());
-            window.decorations = false;
-            window.transparent = true;
-            window.shadow = false;
-            window.min_width = Some(640.0);
-            window.min_height = Some(480.0);
-        }
+    if let Some(window) = context.config_mut().app.windows.first_mut() {
+        window.title = "Experiment Planner".into();
+        window.decorations = false;
+        window.transparent = true;
+        window.shadow = false;
+        window.min_width = Some(640.0);
+        window.min_height = Some(480.0);
     }
     launch(
         DesktopRole::Planner,
         context,
         None,
-        ledger.then_some(LEDGER_WINDOW_ICON),
+        Some(LEDGER_WINDOW_ICON),
         suite_environment,
-        ledger,
+        true,
     );
 }
 

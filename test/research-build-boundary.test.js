@@ -98,10 +98,9 @@ test("the local Windows suite embeds the separate Runner and excludes the retire
   assert.match(hooks, /NSIS_HOOK_POSTINSTALL[\s\S]*\$NoShortcutMode != 1[\s\S]*\$\{EndIf\}/u);
   assert.match(hooks, /AffectResearchCustomShortcuts" 1[\s\S]*AffectResearchCustomShortcuts" 0/u);
   assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*StrCpy \$DeleteAppDataCheckboxState 0/u);
-  assert.match(hooks, /Experiment Planner Classic\.lnk/u);
-  assert.match(hooks, /Experiment Planner Ledger\.lnk[\s\S]*"--ledger"[\s\S]*resources\\icons\\planner-ledger\.ico/u);
+  assert.match(hooks, /CreateShortcut "\$SMPROGRAMS\\Affect Research\\Experiment Planner\.lnk"[\s\S]*resources\\icons\\planner-ledger\.ico/u);
   assert.match(hooks, /Experiment Runner\.lnk[\s\S]*resources\\bin\\affect-runner\.exe/u);
-  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*ReadRegDWORD[\s\S]*AffectResearchCustomShortcuts[\s\S]*\$0 = 1[\s\S]*Delete[\s\S]*Experiment Planner Classic\.lnk[\s\S]*Delete[\s\S]*Experiment Planner Ledger\.lnk[\s\S]*Delete[\s\S]*Experiment Runner\.lnk/u);
+  assert.match(hooks, /NSIS_HOOK_PREUNINSTALL[\s\S]*ReadRegDWORD[\s\S]*AffectResearchCustomShortcuts[\s\S]*\$0 = 1[\s\S]*Delete[\s\S]*Experiment Planner\.lnk[\s\S]*Delete[\s\S]*Experiment Runner\.lnk/u);
   assert.match(bundleConfig.bundle.longDescription, /self-contained Windows suite/iu);
   assert.doesNotMatch(gitignore, /^native\/native-media\/runtime\/$/mu);
 });

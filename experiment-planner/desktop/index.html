@@ -1,24 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ledger-window>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#121311">
-    <meta name="application-name" content="Affect Research">
-    <meta name="description" content="Author experiment recipes and preview feedback.">
+    <meta name="application-name" content="Experiment Planner">
+    <meta name="description" content="Author experiment recipes in the Planner ledger.">
     <title>Experiment Planner</title>
-    <link rel="icon" type="image/svg+xml" href="../web/assets/app-logo.svg">
+    <link rel="icon" type="image/svg+xml" href="../web/assets/affect-planner-ledger-icon.svg">
     <link rel="stylesheet" href="../web/research.css?v=0.4.0-alpha.1">
   </head>
-  <body>
-    <div id="research-app" data-research-surface="tauri" data-research-program="planner" data-planner-interface="classic" aria-busy="true">
+  <body data-ledger-window>
+    <div id="research-app" data-research-surface="tauri" data-research-program="planner" data-planner-interface="ledger" aria-busy="true">
       <main class="research-loading">
-        <h1>Experiment Planner · Classic</h1>
-        <p>Loading Experiment Planner…</p>
+        <h1>Experiment Planner</h1>
+        <p>Loading the layered experiment authoring workspace…</p>
       </main>
     </div>
-    <noscript>Affect Research requires JavaScript to validate settings, prepare assignments, and run an experiment.</noscript>
+    <noscript>Experiment Planner requires JavaScript to validate settings, prepare assignments, and save experiment JSON.</noscript>
     <script type="module" src="../web/src/research/native-entry.js"></script>
   </body>
 </html>
