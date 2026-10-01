@@ -2,9 +2,10 @@ import { createDOMPurify, SurveyThemes } from "./vendor/surveyjs-ui.js";
 import { createSurveyModel } from "./surveyjs-engine.js";
 import { legacySurveyPresentation } from "./surveyjs-legacy-presentation.js";
 import { SURVEYJS_DEFINITION_SCHEMA } from "./surveyjs-definition.js";
+import { createMinimalUiSounds, questionnaireSoundCueForType } from "./ui-sounds.js";
 
 /** Rendering only. Completion callbacks must await the experiment's authority. */
-export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo = 0, randomSeed = 1, presentation, onChange, onComplete, preview = false, smartScroll = false } = {}) {
+export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo = 0, randomSeed = 1, presentation, onChange, onComplete, onSound, preview = false, smartScroll = false } = {}) {
   const legacy = definition.schema === SURVEYJS_DEFINITION_SCHEMA ? null : legacySurveyPresentation(definition, presentation);
   const json = legacy?.json ?? definition.surveyJson;
   const model = createSurveyModel(json, { language: definition.language, data: legacy ? legacy.toData(data) : data, randomSeed });
@@ -20,6 +21,14 @@ export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo 
   // Experiment advancement and durable writes belong to the host.
   model.showCompletePage = preview;
   let scrollFrame = 0;
+  const ownedSounds = typeof onSound === "function" ? null : createMinimalUiSounds({ windowObject: host.ownerDocument.defaultView, volume: preview ? 0.035 : 0.045 });
+  const soundPlayer = typeof onSound === "function" ? { play: onSound } : ownedSounds;
+  let soundActive = false;
+  let lastPageNo = model.currentPageNo;
+  function playSound(cue) {
+    if (!soundActive || !cue) return;
+    try { soundPlayer?.play(cue); } catch { /* sound must never affect questionnaire flow */ }
+  }
   function questionElement(question) {
     if (!question?.name) return null;
     const escape = host.ownerDocument.defaultView.CSS?.escape ?? (value => String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"'));
@@ -56,26 +65,37 @@ export function renderSurveyQuestionnaire(host, definition, { data = {}, pageNo 
     const element = questionElement(question);
     element?.querySelector("input, textarea, select, button")?.focus?.();
   }
-  model.onValueChanged.add((_, options) => { onChange?.({ data: readData(), pageNo: model.currentPageNo }); scheduleSmartScroll(options.question); });
-  model.onCurrentPageChanged.add(() => onChange?.({ data: readData(), pageNo: model.currentPageNo }));
+  model.onValueChanged.add((_, options) => {
+    playSound(questionnaireSoundCueForType(options.question?.getType?.()));
+    onChange?.({ data: readData(), pageNo: model.currentPageNo });
+    scheduleSmartScroll(options.question);
+  });
+  model.onCurrentPageChanged.add(() => {
+    const cue = model.currentPageNo < lastPageNo ? "back" : "forward";
+    lastPageNo = model.currentPageNo;
+    playSound(cue);
+    onChange?.({ data: readData(), pageNo: model.currentPageNo });
+  });
   let completing = false;
   model.onCompleting.add(async (_, options) => {
-    if (preview) return;
+    if (preview) { playSound("confirm"); return; }
     options.allowComplete = false;
     if (!completing && model.validate(false, true)) {
       completing = true;
+      playSound("confirm");
       try { await onComplete?.({ data: readData(), pageNo: model.currentPageNo }); }
       finally { completing = false; }
-    }
+    } else if (!completing) playSound("invalid");
   });
   if (Number.isSafeInteger(pageNo) && pageNo >= 0 && pageNo < model.visiblePages.length) model.currentPageNo = pageNo;
+  lastPageNo = model.currentPageNo;
   host.replaceChildren(); host.classList.add("affect-surveyjs");
   const surface = host.ownerDocument.createElement("div");
   if (preview) { const notice = host.ownerDocument.createElement("p"); notice.className = "field-help"; notice.textContent = "Preview only. Answers are not recorded."; host.append(notice); }
-  host.append(surface); model.render(surface);
+  host.append(surface); model.render(surface); soundActive = true;
   return { model, read() { return { data: readData(), pageNo: model.currentPageNo }; },
     validate() { return model.validate(false, true); },
     setDisabled(disabled) { host.inert = disabled; host.setAttribute("aria-busy", String(disabled)); },
     focusFirstUnanswered: focusFirstUnansweredQuestion,
-    destroy() { host.ownerDocument.defaultView.cancelAnimationFrame(scrollFrame); model.dispose(); host.replaceChildren(); host.classList.remove("affect-surveyjs"); } };
+    destroy() { host.ownerDocument.defaultView.cancelAnimationFrame(scrollFrame); ownedSounds?.destroy(); model.dispose(); host.replaceChildren(); host.classList.remove("affect-surveyjs"); } };
 }

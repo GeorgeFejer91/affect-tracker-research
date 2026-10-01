@@ -19,6 +19,7 @@ import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLay
 import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
+import { createMinimalUiSounds, installMinimalButtonSounds } from "../../site/src/research/ui-sounds.js";
 
 const messageOf = (error) => error?.message ?? String(error);
 
@@ -34,6 +35,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const animationFrame = () => new Promise(resolve => windowObject.requestAnimationFrame(resolve));
   const listeners = [];
   const listen = (element, event, fn, options) => { element.addEventListener(event, fn, options); listeners.push(() => element.removeEventListener(event, fn, options)); };
+  const uiSounds = createMinimalUiSounds({ windowObject, volume: 0.045 });
+  listeners.push(installMinimalButtonSounds(root, uiSounds));
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
   let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
@@ -266,6 +269,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
       version: questionnairePreview.plan.version,
       randomSeed: surveyRandomSeed(questionnairePreview.plan.planIdentitySha256, step.position),
+      onSound: cue => uiSounds.play(cue),
       onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
       onComplete: () => action(() => showQuestionnairePreview(nextIndex + 1)),
     });
@@ -326,6 +330,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"), questionnaire.definition, step.payload.presentation, questionnaire.answers, {
         version: validationPreview.plan.version,
         randomSeed: surveyRandomSeed(validationPreview.plan.planIdentitySha256, step.position),
+        onSound: cue => uiSounds.play(cue),
         onChange: () => { if (questionnaire === current && current.presenter) text("runner-questionnaire-progress", current.presenter.progress().text); },
         onComplete: () => action(() => showValidationPreview(nextIndex + 1)),
       });
@@ -385,7 +390,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
     clearQuestionnaire();
     questionnaireKeyboard.destroy();
-    listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); recentFiles.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
+    listeners.forEach((remove) => remove()); uiSounds.destroy(); participantPicker.destroy(); variantPicker.destroy(); recentFiles.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
   function renderControls() {
     const locked = busy || protocol.active || recorder?.active === true;
@@ -665,6 +670,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         questionnaire.presenter = renderMasterQuestionnaire(query("runner-questionnaire-items"),questionnaire.definition,step.payload.presentation,questionnaire.answers, {
           version: plan.version,
           randomSeed: surveyRandomSeed(plan.planIdentitySha256, status.position),
+          onSound: cue => uiSounds.play(cue),
           onChange: () => { if (questionnaire === current && current.presenter) { text("runner-questionnaire-progress", current.presenter.progress().text); current.draftPending = true; void flushSurveyDraft(current).catch(fail); } },
           onComplete: () => action(async () => {
             if (questionnaire !== current) return;
@@ -894,18 +900,20 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     event.preventDefault(); const current = questionnaire;
     if (!current || busy) return;
     if (current.presenter?.usesSurveyJS) return; // SurveyJS owns Enter, page navigation and completion.
+    uiSounds.play("confirm");
     action(async () => {
       if (questionnaire !== current) return;
       await protocol.questionnaireSubmit(questionnaireDetail(current, false));
     });
   });
   listen(query("runner-questionnaire-previous"), "click", () => {
-    if (questionnaire && !busy) { questionnaire.itemIndex = Math.max(0, questionnaire.itemIndex - 1); renderQuestionnaireItem(); }
+    if (questionnaire && !busy) { uiSounds.play("back"); questionnaire.itemIndex = Math.max(0, questionnaire.itemIndex - 1); renderQuestionnaireItem(); }
   });
   listen(query("runner-questionnaire-next"), "click", () => {
     if (!questionnaire || busy) return;
     const item = questionnaire.definition.items[questionnaire.itemIndex];
-    if (!Object.hasOwn(questionnaire.answers, item.itemId) || questionnaire.answers[item.itemId] === null) { fail(new Error("Choose a response before continuing.")); return; }
+    if (!Object.hasOwn(questionnaire.answers, item.itemId) || questionnaire.answers[item.itemId] === null) { uiSounds.play("invalid"); fail(new Error("Choose a response before continuing.")); return; }
+    uiSounds.play("forward");
     questionnaire.itemIndex = Math.min(questionnaire.definition.items.length - 1, questionnaire.itemIndex + 1); renderQuestionnaireItem();
   });
   listen(query("runner-discover"), "click", () => action(async () => {

@@ -1,5 +1,24 @@
 # Agent message board
 
+## 20260913 minimal UI sound layer
+
+Direct user follow-up: add a minimalist, pleasant button/questionnaire sound
+layer for engagement, with free/reusable licensing concerns avoided by using
+project-authored Web Audio synthesis rather than vendored sound assets.
+Owner: P2 questionnaire presentation plus R1/RR-06 participant questionnaire UI
+seam. Stage: UI Finalization. Branch/worktree:
+`codex/segment-p2-r1-minimal-sounds`,
+`D:/GitHub/affect-tracker-research-ui-sounds`, base `780d8ff`.
+
+Scope: tiny local interaction sounds for selected buttons, questionnaire
+choices, questionnaire page movement, successful completion and invalid
+questionnaire advance in Planner previews and Runner forms. No recipe JSON,
+questionnaire definitions, response records, native commands, LSL/XDF fields,
+external audio assets, dependency changes, playback policy or research
+qualification changes. Evidence planned: `pnpm surveyjs:check`, focused
+JavaScript unit tests for the sound module and SurveyJS/Runner hooks, then
+Planner and Runner frontend build closures.
+
 ## 20260913 root cap-removal app integration
 
 Direct user override: newest implemented feature behavior is authoritative when
