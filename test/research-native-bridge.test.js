@@ -1373,7 +1373,7 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   ]);
   assert.match(html, /src="\.\.\/web\/src\/research\/native-entry\.js"/u);
   assert.doesNotMatch(html, /runtime-bridge\.js|app\.js/u);
-  assert.match(entrySource, /import \{ bootNativeBridge, showNativeFlubberPreview \} from "\.\/native-bridge\.js"/u);
+  assert.match(entrySource, /import \{ bootNativeBridge, showNativeFlubberPreview, showNativeFlubberSettings \} from "\.\/native-bridge\.js"/u);
   assert.match(entrySource, /bootstrapResearchSurface\(\{[\s\S]*surface: "tauri",[\s\S]*initializeRuntime: bootNativeBridge/u);
   for (const command of [
     "research_choose_workspace",

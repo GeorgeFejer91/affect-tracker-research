@@ -350,6 +350,10 @@ test("animated studio halo stays on the boundary at every width; legacy renderin
       assert.equal(halo.getAttribute("hidden"), "");
       preview.update({ flubber: { showHalo: true } });
       assert.equal(halo.getAttribute("hidden"), null);
+      preview.update({ displayMode: "flubber", hideFeedback: true });
+      assert.equal(root.querySelector("[data-preview-overlay]").hidden, true);
+      preview.update({ hideFeedback: false });
+      assert.equal(root.querySelector("[data-preview-overlay]").hidden, false);
       if (studio) {
         for (const haloGradient of [false, true]) {
           for (const haloSteepness of [0.1, 1, 10]) {
@@ -439,7 +443,7 @@ test("the application projects successor settings to Setup and invalidates saved
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? \(releasedFlubber \? "flubber" : feedbackPreviewMode\) : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? \(releasedFlubber \? "flubber" : feedbackPreviewMode\) : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*fullSpanDurationMs:[^\n]+\s*holdRule:[^\n]+\s*repeatDelayMs:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
   );
   assert.match(previewStateSource, /const releasedFlubber = design && feedbackSettingsVersion === 2 && previewFlubberReleased/u);
   assert.match(previewStateSource, /position:\s*design && feedbackSettingsVersion === 2 \? \(releasedFlubber \? previewReleasedPosition : \{ x: 0\.5, y: 0\.5 \}\)/u);
@@ -476,6 +480,10 @@ test("the application projects successor settings to Setup and invalidates saved
     appSource,
     /if \(isFeedbackBehaviorControl\(target\)\) \{\s*refreshProjection\(\);\s*schedulePlanRefresh\(\);\s*return;\s*\}/gu,
   ), 2);
+  assert.equal(count(
+    appSource,
+    /target\.closest\("#research-settings-form, \[data-ledger-feedback-authority\]"\)\) \{\s*refreshProjection\(\);\s*schedulePlanRefresh\(\);\s*\}/gu,
+  ), 2, "input and change from the detached Settings controls must refresh the live Flubber");
   assert.match(appSource, /createPreviewResponseSimulator\(\{[\s\S]*?previewDesignPoint = \{ x: point\.x, y: point\.y \};[\s\S]*?projectDesignPreview\(\)/u);
   assert.match(appSource, /if \(previewFlubberReleased && feedbackSettingsVersion === 2\) \{\s*previewReleasedPosition = \{ x: position\.x, y: position\.y \};\s*projectDesignPreview\(\);\s*return;\s*\}/u);
   assert.match(appSource, /if \(target\.id === "preview-flubber-release"\) \{[\s\S]*?feedbackPreviewMode = "flubber";[\s\S]*?previewFlubberReleased = true;[\s\S]*?announce\("Flubber released in the preview\. Drag it inside the preview field\."\)/u);

@@ -32,6 +32,34 @@ Flubber preview and appearance settings are separate desktop windows. The
 former Classic interface is retained in the `archive/planner-classic-ui` Git
 branch and is not an active route or installer shortcut.
 
+### Planner desktop window division
+
+The **one Experiment Planner app** presents three cooperating desktop windows:
+
+1. **Flubber display:** a small, draggable, visually transparent window showing
+   the current draft's live Flubber appearance. It is a design preview, not a
+   participant display or measurement source. Its window position is temporary;
+   authored participant-screen placement stays in Screen & Layout.
+2. **Flubber settings:** one compact window containing the feedback type,
+   appearance, color, input, response and advanced animation controls. Tabs and
+   group selectors divide the controls without creating separate authoring state.
+   This window edits the same current draft and confirms the feedback layer.
+   This is the real-time Flubber editor: each valid change to renderer,
+   visibility, transparency, color, outline, halo or affect mapping, and each
+   design-map movement, updates the transparent display without Apply, Confirm
+   or reopening either window. Color-dialog drafts are visible there while
+   editing; Cancel restores the previous draft color. The Ledger remains the owner.
+3. **Experiment Ledger:** the main window with ordered planning-phase tabs.
+   Researchers progress through the phases and confirm each contribution before
+   saving the final recipe. The Ledger links to the two Flubber windows but does
+   not duplicate their controls.
+
+All three are Planner windows, not separate programs or saved-file authorities.
+The Ledger owns the draft, validation and final JSON. Window closure, reopening
+and movement must not silently change experiment semantics or discard edits.
+The browser Planner may open the two companion views as browser windows; native
+transparency and desktop dragging are desktop capabilities only.
+
 Self-contained means no application backend, hosted dependency, or network is
 required after download; the installer includes the offline Evergreen WebView2
 payload. It is not a claim that Microsoft's WebView2 runtime is network-silent

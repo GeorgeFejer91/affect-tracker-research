@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "flubber-settings-window",
+  "description": "Move and minimize the Flubber settings window.",
+  "windows": ["preview"],
+  "permissions": ["core:window:allow-minimize", "core:window:allow-start-dragging"]
+}

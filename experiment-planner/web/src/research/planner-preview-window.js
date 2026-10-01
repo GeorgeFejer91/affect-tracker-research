@@ -5,12 +5,14 @@ export function createPlannerPreviewWindow({
   windowObject,
   url,
   features = "",
+  showNative = null,
   readMarkup,
   readState,
   readControls,
   readConfirmation,
   applyEdit,
   applyPosition,
+  applyPoint,
   confirm,
   showFlubber = () => {},
   readTrial = () => null,
@@ -67,6 +69,9 @@ export function createPlannerPreviewWindow({
     } else if (data.type === "position" && typeof applyPosition === "function") {
       applyPosition(data.position);
       update();
+    } else if (data.type === "point" && typeof applyPoint === "function") {
+      applyPoint(data.point);
+      update();
     } else if (data.type === "show-flubber") {
       await showFlubber();
     } else if (data.type === "trial") {
@@ -90,6 +95,7 @@ export function createPlannerPreviewWindow({
 
   return Object.freeze({
     open() {
+      if (showNative) return Promise.resolve(showNative()).then(() => true);
       if (ready) {
         post("focus");
         return true;

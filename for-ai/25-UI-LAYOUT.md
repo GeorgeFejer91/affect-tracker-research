@@ -226,6 +226,35 @@ when only one page exists, and remain usable by keyboard. Pretext fitting still
 applies only to fixed text slots such as the sheet title and summary; ordinary
 research text stays at the readability floor and moves between pages instead.
 
+## Planner companion windows
+
+The desktop Planner has a transparent, draggable Flubber display, one Flubber
+settings window, and the ordered Ledger. The Flubber display contains no
+settings controls. The settings window uses compact tabs for appearance,
+colors, input, response and advanced controls; advanced subsections expose one
+control group at a time. Keep header actions, tab navigation, the active group
+and confirmation visible while the window resizes. Distribute surplus space
+between related controls, not inside a label/input pair. Use the shared Pretext
+fitter for bounded tab and action labels. Preserve full research-setting labels
+and help text; if a group cannot fit at the supported minimum, increase the
+minimum window size or divide that group into another complete page.
+
+Style the Flubber settings window with the same compact restraint as Vernier
+Stream Mini: a tight header, icon-led actions with accessible names, short tab
+labels, aligned fields, and clear on/off switches. Keep technical help in the
+markup and available to assistive technology while the default view stays terse.
+The design map uses the settings window's active presentation clock and sends
+its point to the Ledger owner, so the transparent Flubber keeps responding when
+the Ledger window is minimized; this remains outside Runner acquisition.
+Valid Settings edits update the transparent display on input or change, including
+switches, sliders, color drafts and mapping values. The Settings window's own
+preview and the transparent display show the same current draft. Confirmation
+controls phase progress, not the timing of the visual update.
+
+The Ledger keeps its existing sheet pagination and phase confirmation contract.
+Opening, closing or moving either companion window is transient UI state and
+does not itself accept a phase or alter the final JSON.
+
 ## Verification on every affected UI path
 
 Check short/long English and German labels, paths/unbroken IDs, accents/emoji;

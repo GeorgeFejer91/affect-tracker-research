@@ -92,3 +92,28 @@ pub fn research_show_flubber(
         )
     })
 }
+
+#[tauri::command]
+pub fn research_show_preview(
+    window: WebviewWindow,
+    role: State<'_, DesktopRole>,
+) -> ResearchResult<()> {
+    if window.label() != "research" || *role != DesktopRole::Planner {
+        return Err(CommandError::forbidden("Planner window required."));
+    }
+    let settings = window
+        .app_handle()
+        .get_webview_window("preview")
+        .ok_or_else(|| {
+            CommandError::new("preview_unavailable", "Flubber settings are unavailable.")
+        })?;
+    settings.show().map_err(|_| {
+        CommandError::new("preview_unavailable", "Could not show Flubber settings.")
+    })?;
+    settings.unminimize().map_err(|_| {
+        CommandError::new("preview_unavailable", "Could not restore Flubber settings.")
+    })?;
+    settings
+        .set_focus()
+        .map_err(|_| CommandError::new("preview_unavailable", "Could not focus Flubber settings."))
+}

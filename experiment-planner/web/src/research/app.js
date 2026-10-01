@@ -215,7 +215,7 @@ const PRESET_BUNDLED_ASSETS = Object.freeze({
   "phencon-short": Object.freeze([]),
 });
 const SPECIFICATION_SOURCE_SHA256 = "7402c80c6da71d4a11543676acdf0a7640cdb842d55afc10dde6ad3d4978fdbe";
-export function bootResearchUi({ surface: requestedSurface, showFlubber = null } = {}) {
+export function bootResearchUi({ surface: requestedSurface, showFlubber = null, showPreview = null } = {}) {
   const mount = document.querySelector("#research-app");
   if (!(mount instanceof HTMLElement)) return null;
   const declaredSurface = mount.dataset.researchSurface === "tauri" ? "tauri" : "browser";
@@ -225,14 +225,14 @@ export function bootResearchUi({ surface: requestedSurface, showFlubber = null }
   mount.innerHTML = renderResearchUiMarkup(surface);
   if (mount.dataset.researchProgram === "planner") preparePlannerSurface(mount);
   mount.setAttribute("aria-busy", "false");
-  initializeResearchUi(mount, { surface, showFlubber });
+  initializeResearchUi(mount, { surface, showFlubber, showPreview });
   return mount;
 }
 
-export function initializeResearchUi(root, { surface = "browser", showFlubber = null } = {}) {
+export function initializeResearchUi(root, { surface = "browser", showFlubber = null, showPreview = null } = {}) {
   const shell = root.querySelector(".research-shell");
   if (!(shell instanceof HTMLElement)) throw new Error("Research shell is missing");
-  const controller = installPlannerContributions(root, createUiController(root, { surface, showFlubber }));
+  const controller = installPlannerContributions(root, createUiController(root, { surface, showFlubber, showPreview }));
   try {
     controller.initializeXrLayoutAuthoring();
     controller.connectScreenLayoutProducers();
@@ -243,16 +243,16 @@ export function initializeResearchUi(root, { surface = "browser", showFlubber = 
 
 // Interaction and projection code is kept below the declarative instrument so
 // importing this module for contract tests never requires a DOM.
-function createUiController(root, { surface, showFlubber }) {
-  return createInteractionController(root, { surface, showFlubber });
+function createUiController(root, { surface, showFlubber, showPreview }) {
+  return createInteractionController(root, { surface, showFlubber, showPreview });
 }
 
-function createInteractionController(root, { surface, showFlubber }) {
+function createInteractionController(root, { surface, showFlubber, showPreview }) {
   // Implemented in the following section of this module.
-  return bindResearchInteractions(root, { surface, showFlubber });
+  return bindResearchInteractions(root, { surface, showFlubber, showPreview });
 }
 
-function bindResearchInteractions(root, { surface, showFlubber }) {
+function bindResearchInteractions(root, { surface, showFlubber, showPreview }) {
   const shell = root.querySelector(".research-shell");
   const ledgerPageLayout = createLedgerPageLayout(root);
   let disconnectScreenLayout = () => {};
@@ -653,12 +653,14 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       windowObject: window,
       url: previewUrl,
       features: surface === "tauri" ? "popup,width=640,height=720" : "",
+      showNative: surface === "tauri" ? showPreview : null,
       readMarkup: feedbackWindowMarkup,
       readState: () => previewState({ design: true }),
       readControls: feedbackWindowControls,
       readConfirmation: () => setupConfirmationFlow.read().find(({ id }) => id === "feedback"),
       applyEdit: applyFeedbackWindowEdit,
       applyPosition: applyDesignPreviewPosition,
+      applyPoint: point => previewResponseSimulator?.setPoint(point),
       confirm: () => confirmSetupSection("feedback"),
       showFlubber: () => flubberWindow?.open(),
       readTrial: () => {
@@ -671,17 +673,14 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       },
       onConnectionChange(connected) {
         const status = query("#ledger-feedback-window-status");
-        if (status) status.textContent = connected
-          ? "Flubber settings window connected to this experiment draft."
-          : "Flubber settings window closed. Reopen it to edit or confirm feedback.";
+        if (status) {
+          status.textContent = connected
+            ? "Flubber settings window connected to this experiment draft."
+            : "Flubber settings window closed. Reopen it to edit or confirm feedback.";
+          status.classList.toggle("sr-only", connected);
+        }
       },
     });
-    if (surface === "tauri") {
-      queueMicrotask(() => {
-        try { previewWindow?.open(); }
-        catch (error) { announce(error instanceof Error ? error.message : String(error)); }
-      });
-    }
   }
 
   function value(id, fallback = "") {
@@ -840,7 +839,8 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
         confirmation.textContent = state?.error ?? (id === "review"
           ? reviewed ? "Final JSON saved." : "Every section, including the preview, must be confirmed before export."
           : label);
-        confirmation.dataset.state = state?.error ? "error" : reviewed ? "ready" : "warning";
+        confirmation.dataset.state = state?.error ? "error" : state?.status === "stale" ? "stale" : reviewed ? "ready" : "warning";
+        confirmation.classList.toggle("sr-only", !state?.error && state?.status !== "stale");
       }
       if (button instanceof HTMLButtonElement) {
         button.disabled = reviewed || confirmations.some(({ busy }) => busy);
@@ -1058,6 +1058,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     }
     if (apply instanceof HTMLButtonElement) apply.disabled = !valid;
     schedulePreviewColorPaint();
+    flubberWindow?.update();
   }
 
   function dismissPreviewColorDialog({ apply = false } = {}) {
@@ -1180,6 +1181,9 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
         tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
+        fullSpanDurationMs: numberValue("preview-full-span-duration", 2_000),
+        holdRule: query('input[name="previewHoldRule"]:checked')?.value ?? "separatePresses",
+        repeatDelayMs: numberValue("preview-repeat-delay", 500),
         colorAnchorMode: previewColorMode(),
       } : {}),
       colors,
@@ -4127,10 +4131,10 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     const status = query("#package-file-status");
     const reproduction = query("#package-reproduction-status");
     if (experimentPackageDocument?.recipe) {
-      const recipe = experimentPackageDocument.recipe;
       if (status) {
         status.dataset.state = packageIsStale ? "warning" : "ready";
-        status.textContent = `${recipe.recipeId} · ${packageIsStale ? "edited; save the current design" : recipe.integrity.definitionSha256}`;
+        status.textContent = packageIsStale ? "Unsaved changes" : "Recipe loaded";
+        status.classList.remove("sr-only");
       }
       if (reproduction) {
         reproduction.dataset.state = "ready";
@@ -4142,11 +4146,12 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     if (status) {
       if (experimentPackageDocument && packageReproductionReceipt && !packageIsStale) {
         status.dataset.state = "ready";
-        status.textContent = `${experimentPackageDocument.package.packageId} · ${experimentPackageDocument.package.integrity.packageDefinitionSha256}`;
+        status.textContent = "Project JSON loaded";
       } else {
         status.dataset.state = "warning";
-        status.textContent = packageIsStale ? "Recipe changed · save the current design" : "No project JSON loaded";
+        status.textContent = packageIsStale ? "Unsaved changes" : "No project JSON loaded";
       }
+      status.classList.toggle("sr-only", !experimentPackageDocument && !packageIsStale);
     }
     if (reproduction) {
       if (packageReproductionReceipt) {
@@ -5581,7 +5586,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       return;
     }
     if (target.id === "preview-window-open") {
-      try { previewWindow?.open(); }
+      try { void Promise.resolve(previewWindow?.open()).catch(error => announce(error instanceof Error ? error.message : String(error))); }
       catch (error) { announce(error instanceof Error ? error.message : String(error)); }
       return;
     }
@@ -5821,7 +5826,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
     if (isValidationControl(target) && touchedValidationControls.has(target)) {
       syncControlValidation(target);
     }
-    if (target instanceof Element && target.closest("#research-settings-form")) {
+    if (target instanceof Element && target.closest("#research-settings-form, [data-ledger-feedback-authority]")) {
       refreshProjection();
       schedulePlanRefresh();
     }
@@ -5851,7 +5856,7 @@ function bindResearchInteractions(root, { surface, showFlubber }) {
       clearParticipantLanguageSelection();
     }
     if (isValidationControl(target)) syncControlValidation(target);
-    if (target instanceof Element && target.closest("#research-settings-form")) {
+    if (target instanceof Element && target.closest("#research-settings-form, [data-ledger-feedback-authority]")) {
       refreshProjection();
       schedulePlanRefresh();
     }

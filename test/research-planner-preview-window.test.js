@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createPlannerPreviewWindow, PLANNER_PREVIEW_WINDOW_MESSAGE_SCHEMA as schema } from "../experiment-planner/web/src/research/planner-preview-window.js";
 import { createPlannerFlubberWindow, PLANNER_FLUBBER_CHANNEL, PLANNER_FLUBBER_SCHEMA } from "../experiment-planner/web/src/research/planner-flubber-window.js";
 
@@ -81,6 +82,52 @@ test("the independent Flubber window edits the Planner-owned controls over one s
   assert.equal(opened, false, "a connected independent window is focused instead of duplicated");
   assert.equal(messages.at(-1).type, "focus");
   controller.destroy();
+});
+
+test("the native settings window is shown and reopened without a browser popup", async () => {
+  let shown = 0;
+  const controller = createPlannerPreviewWindow({
+    windowObject: {
+      location: { origin: "tauri://localhost" },
+      open() { throw new Error("Native settings must not use window.open."); },
+      addEventListener() {}, removeEventListener() {},
+    },
+    url: "tauri://localhost/preview.html",
+    readState: () => ({}), readConfirmation: () => ({}), confirm: async () => {},
+    showNative: async () => { shown += 1; },
+  });
+  assert.equal(await controller.open(), true);
+  assert.equal(await controller.open(), true);
+  assert.equal(shown, 2);
+  controller.destroy();
+});
+
+test("settings map input updates the Planner-owned Flubber design point", async () => {
+  let receiveChannel;
+  const points = [];
+  class FakeBroadcastChannel {
+    addEventListener(type, listener) { if (type === "message") receiveChannel = listener; }
+    removeEventListener() {}
+    postMessage() {}
+    close() {}
+  }
+  const controller = createPlannerPreviewWindow({
+    windowObject: {
+      location: { origin: "tauri://localhost" }, BroadcastChannel: FakeBroadcastChannel,
+      addEventListener() {}, removeEventListener() {}, open() {},
+    },
+    url: "tauri://localhost/preview.html",
+    readState: () => ({}), readConfirmation: () => ({}), confirm: async () => {},
+    applyPoint: point => points.push(point),
+  });
+  await receiveChannel({ data: { schema, type: "ready" } });
+  await receiveChannel({ data: { schema, type: "point", point: { x: 0.5, y: -0.25 } } });
+  assert.deepEqual(points, [{ x: 0.5, y: -0.25 }]);
+  controller.destroy();
+  const displaySource = readFileSync(new URL("../experiment-planner/web/src/research/flubber-window-entry.js", import.meta.url), "utf8");
+  assert.doesNotMatch(displaySource, /hideFeedback:\s*false/u, "the transparent Flubber display honors the appearance visibility switch");
+  assert.doesNotMatch(displaySource.slice(displaySource.indexOf('if (data.type === "state"')), /displayMode:\s*["']flubber["']/u, "the detached preview honors the selected Flubber, grid or face mode");
+  assert.doesNotMatch(displaySource.slice(displaySource.indexOf('if (data.type === "state"')), /responseMode:\s*["']continuous["']/u, "the detached grid honors the selected response mode");
 });
 
 test("the standalone Flubber receives appearance snapshots and can be shown without editing the draft", () => {

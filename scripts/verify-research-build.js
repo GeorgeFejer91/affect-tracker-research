@@ -153,6 +153,7 @@ const rules = {
       || /^assets\/research-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
       || /^assets\/native-entry-[A-Za-z0-9_-]+\.js$/u.test(path)
       || /^assets\/(?:research-flubber|planner-flubber-window|inline-color-picker|planner-recipe-assets|preload-helper|dpi|window)-[A-Za-z0-9_-]+\.js$/u.test(path)
+      || /^assets\/text-fit-[A-Za-z0-9_-]+\.js$/u.test(path)
       || /^assets\/feedback-surface-[A-Za-z0-9_-]+\.(?:css|js)$/u.test(path)
       || /^assets\/(?:maia-2-(?:de|en)|ssq-six-item-en|vr-exp-en)-[A-Za-z0-9_-]+\.csv$/u.test(path)
       || /^assets\/questionnaire-template-[A-Za-z0-9_-]+\.(?:csv|txt|json)$/u.test(path)

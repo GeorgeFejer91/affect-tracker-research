@@ -248,6 +248,43 @@ fn launch(
                 parent.set_icon(tauri::image::Image::from_bytes(icon)?)?;
             }
             if role == DesktopRole::Planner && ledger {
+                let mut settings = tauri::WebviewWindowBuilder::new(
+                    app,
+                    "preview",
+                    tauri::WebviewUrl::App("preview.html".into()),
+                )
+                .title("Flubber settings")
+                .inner_size(540.0, 520.0)
+                .decorations(false)
+                .transparent(true)
+                .shadow(false)
+                .resizable(false)
+                .visible(true)
+                .focused(false);
+                if let Some(environment) = &suite_environment {
+                    settings = settings
+                        .data_directory(environment.webview_data_dir.clone())
+                        .additional_browser_args(INSTALLED_WEBVIEW_ARGUMENTS);
+                }
+                let settings = settings.build()?;
+                if let (Ok(origin), Ok(size), Ok(settings_size), Ok(Some(monitor))) = (
+                    parent.outer_position(),
+                    parent.outer_size(),
+                    settings.outer_size(),
+                    parent.current_monitor(),
+                ) {
+                    let bounds = monitor.position();
+                    let extent = monitor.size();
+                    let x = (origin.x + size.width as i32 - 320)
+                        .min(bounds.x + extent.width as i32 - settings_size.width as i32 - 12)
+                        .max(bounds.x + 12);
+                    let y = (origin.y + 40)
+                        .min(bounds.y + extent.height as i32 - settings_size.height as i32 - 12)
+                        .max(bounds.y + 12);
+                    settings.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition::new(x, y),
+                    ))?;
+                }
                 let mut flubber = tauri::WebviewWindowBuilder::new(
                     app,
                     "flubber",
@@ -338,7 +375,7 @@ fn launch(
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "flubber" {
+            if window.label() == "flubber" || window.label() == "preview" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
@@ -386,6 +423,7 @@ fn launch(
             research_planner_authoring::research_planner_authoring_startup_failed,
             research_desktop::research_desktop_identity,
             research_desktop::research_show_flubber,
+            research_desktop::research_show_preview,
             research_commands::research_source_capabilities,
             research_commands::research_native_media_capability,
             research_commands::research_input_capability,

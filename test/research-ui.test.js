@@ -157,7 +157,7 @@ test("both app surfaces end every ledger page with one confirmation or final-sav
     assert.match(markup, /id="preview-window-open"[^>]*>Show Flubber settings<\/button>/u);
     assert.match(markup, /id="flubber-window-open"[^>]*>Show Flubber preview<\/button>/u);
     assert.match(markup, /data-ledger-feedback-authority hidden/u);
-    assert.match(markup, /Flubber settings use a separate window/u);
+    assert.match(markup, /id="ledger-feedback-window-title">Flubber</u);
   }
 });
 
@@ -246,7 +246,12 @@ test("the desktop Ledger uses Secret Tunnel's transparent custom window silhouet
   assert.match(nativeSource, /window\.decorations = false;[\s\S]*?window\.transparent = true;[\s\S]*?window\.min_width = Some\(640\.0\);[\s\S]*?window\.min_height = Some\(480\.0\);/u);
   assert.doesNotMatch(nativeSource, /--ledger|ledger\.html/u);
   assert.match(nativeSource, /LEDGER_WINDOW_ICON[\s\S]*?parent\.set_icon/u);
-  assert.match(ledgerIcon, /<title id="title">Experiment Planner Ledger<\/title>[\s\S]*?seen from the side[\s\S]*?fill="#ff5c88"[\s\S]*?stroke="#a9b3ff"/u);
+  assert.match(ledgerIcon, /<title id="title">Experiment Planner Ledger<\/title>[\s\S]*?single angled ledger panel seen from the side[\s\S]*?four-color Flubber affect mark/u);
+  assert.match(ledgerIcon, /fill="#65708a"[\s\S]*?fill="#f7f4eb"/u);
+  assert.match(ledgerIcon, /<path id="flubber-shape" d="M512 184[^"]+"\/>/u);
+  assert.match(ledgerIcon, /<g transform="matrix\([^"]+\)">\s*<g clip-path="url\(#flubber-clip\)">/u);
+  for (const color of ["#f1c562", "#69d8ac", "#8096ef", "#ef7d88"]) assert.ok(ledgerIcon.includes(color));
+  assert.doesNotMatch(ledgerIcon, /<(?:linearGradient|radialGradient|filter)\b/u);
   const permissions = JSON.parse(capabilitySource).permissions;
   for (const permission of [
     "core:window:allow-close",
@@ -293,7 +298,7 @@ test("Section 2 uses multilingual questionnaire tables and hides backend documen
   assert.equal((markup.match(/data-mode-panel=/gu) ?? []).length, 2);
 });
 
-test("Workspace exposes one selected root and three fixed project locations", async () => {
+test("Workspace keeps primary actions visible and secondary tools behind one disclosure", async () => {
   const source = await read("experiment-planner/web/src/research/app.js");
   const markup = renderResearchUiMarkup();
   const workspacePanelStart = markup.indexOf('id="setup-panel-workspace"');
@@ -303,24 +308,15 @@ test("Workspace exposes one selected root and three fixed project locations", as
 
   assert.deepEqual(
     [...workspacePanel.matchAll(/data-workspace-location="([^"]+)"/gu)].map((match) => match[1]),
-    ["workspaceRoot", "videoLibrary", "experimentPackage"],
-    "the three project locations must retain their task order",
+    ["workspaceRoot"],
+    "the Ledger only needs to display the selected root",
   );
   assert.equal((workspacePanel.match(/id="workspace-choose"/gu) ?? []).length, 1);
   assert.match(workspacePanel, /<button id="workspace-choose"[^>]*>Set work directory<\/button>/u);
 
-  const openLocationButtons = [...workspacePanel.matchAll(/<button\b[^>]*data-open-workspace-location="([^"]+)"[^>]*>/gu)];
-  assert.equal(openLocationButtons.length, 3);
-  assert.deepEqual(openLocationButtons.map((match) => match[1]), ["workspaceRoot", "videoLibrary", "experimentPackage"]);
-  for (const [button] of openLocationButtons) {
-    assert.match(button, /\btype="button"/u);
-    assert.match(button, /\baria-label="[^"]+"/u);
-    assert.match(button, /\sdisabled(?:\s|>)/u, "location buttons remain unavailable until the root is ready");
-  }
-
-  assert.match(workspacePanel, /<code>assets\/stimuli\/<\/code>/u);
-  assert.match(workspacePanel, /<code>experiment\.package\.json<\/code>/u);
-  assert.match(workspacePanel, /Videos, project JSON, outputs, and recovery stay inside it/u);
+  assert.doesNotMatch(workspacePanel, /data-open-workspace-location=/u);
+  assert.match(workspacePanel, /id="package-load"[^>]*>Load JSON<\/button>/u);
+  assert.match(workspacePanel, /<details class="workspace-extra-actions"><summary>More actions<\/summary>/u);
   assert.match(workspacePanel, /id="workspace-status"[^>]*><\/p>/u);
   for (const id of ["experiment-id", "experiment-title"]) {
     assert.equal((workspacePanel.match(new RegExp(`id="${id}"`, "gu")) ?? []).length, 1);
@@ -403,12 +399,11 @@ test("Workspace exposes one selected root and three fixed project locations", as
   assert.doesNotMatch(markup, /Williams counterbalancing|Cyclic rotation|balanced-v1|name="transitionMode"/u);
 });
 
-test("Workspace offers an accessible local stimulus inspiration catalogue before video import", async () => {
+test("Workspace retains the accessible local stimulus inspiration catalogue in secondary actions", async () => {
   const source = await read("experiment-planner/web/src/research/app.js");
   const markup = renderResearchUiMarkup();
-  assert.ok(markup.indexOf('id="stimulus-inspiration-open"') < markup.indexOf('id="video-import"'));
-  assert.match(markup, /id="stimulus-inspiration-open"[^>]*class="inspiration-action pictographic-action"[^>]*aria-label="Stimulus inspiration"[^>]*title="Stimulus inspiration"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stimulus-inspiration-dialog"/u);
-  assert.match(markup, /<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">[\s\S]*class="inspiration-spark"/u);
+  assert.ok(markup.indexOf('id="stimulus-inspiration-open"') > markup.indexOf('id="video-import"'));
+  assert.match(markup, /id="stimulus-inspiration-open"[^>]*aria-haspopup="dialog"[^>]*aria-controls="stimulus-inspiration-dialog"[^>]*>Stimulus inspiration<\/button>/u);
   assert.match(markup, /<dialog id="stimulus-inspiration-dialog"[^>]*aria-labelledby="stimulus-inspiration-title"[^>]*aria-describedby=/u);
   for (const category of ["Video", "Audio", "Vignette"]) {
     assert.match(markup, new RegExp(`>${category}<\\/h3>`, "u"));
@@ -779,7 +774,7 @@ test("the prototype and desktop entrypoints load only the shared Research instru
   assert.match(browserEntry, /initializeRuntime: bootRuntimeBridge/u);
   assert.match(nativeEntry, /initializeRuntime: bootNativeBridge/u);
   assert.equal((bootstrap.match(/DOMContentLoaded/gu) ?? []).length, 1);
-  assert.match(bootstrap, /bootResearchUi\(\{ surface, showFlubber \}\)[\s\S]*await initializeRuntime\(root\)/u);
+  assert.match(bootstrap, /bootResearchUi\(\{ surface, showFlubber, showPreview \}\)[\s\S]*await initializeRuntime\(root\)/u);
   assert.match(packageSource, /"serve": "node scripts\/serve-site\.mjs"/u);
   assert.match(serveSource, /"\.json": "application\/json; charset=utf-8"/u);
   for (const html of [siteIndex, desktopIndex]) {
@@ -817,7 +812,8 @@ test("the open ledger page fits bounded boxes without any scrollbar dependency",
   assert.match(css, /\[data-ledger-page-hidden\]\s*\{[\s\S]*?display:\s*none !important;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?min-height:\s*100dvh;/u);
   assert.match(css, /@media \(max-width: 759px\)[\s\S]*?\.research-shell\s*>\s*main\s*\{[\s\S]*?display:\s*block;[\s\S]*?overflow:\s*visible;/u);
-  assert.match(css, /\.ledger-page-stack\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\);/u);
+  assert.match(css, /\.ledger-page-stack\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);/u);
+  assert.match(css, /\.ledger-page\s*\{[\s\S]*?pointer-events:\s*none;[\s\S]*?\.ledger-page \.setup-accordion-panel:not\(\[inert\]\)\s*\{\s*pointer-events:\s*auto;/u);
   assert.match(css, /@media \(max-width: 479px\)[\s\S]*?\.workspace-location-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.workspace-location-actions\s*\{[\s\S]*?justify-content:\s*flex-start;/u);
   assert.match(css, /\.table-scroll\s*\{[\s\S]*?max-width:\s*100%;[\s\S]*?overflow:\s*auto;/u);
   assert.match(css, /data-planner-interface="ledger"[\s\S]*?\.ledger-page-flow :is\([\s\S]*?\.table-scroll,[\s\S]*?\.participant-grid,[\s\S]*?\.planned-events[\s\S]*?overflow:\s*visible !important;/u);

@@ -55,9 +55,12 @@ function receiveData(data) {
   if (data?.schema !== PLANNER_FLUBBER_SCHEMA) return;
   if (data.type === "host-ready") post("ready");
   if (data.type === "state" && data.state) {
-    preview.update({ ...data.state, displayMode: "flubber", flubberVisible: true,
-      hideFeedback: false, lockPosition: true, position: { x: 0.5, y: 0.5 }, sizePercent: 100 });
-    stage.setAttribute("aria-label", "Flubber preview. Drag with the pointer or move with arrow keys.");
+    stage.dataset.displayMode = data.state.displayMode;
+    preview.update({ ...data.state,
+      lockPosition: true, position: { x: 0.5, y: 0.5 }, sizePercent: 100 });
+    const mode = data.state.displayMode === "grid" ? "2D Grid"
+      : data.state.displayMode === "face" ? "Face" : "Flubber";
+    stage.setAttribute("aria-label", `${mode} preview. Drag with the pointer or move with arrow keys.`);
   }
 }
 channel?.addEventListener("message", event => receiveData(event.data));

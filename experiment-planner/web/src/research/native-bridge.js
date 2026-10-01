@@ -17,6 +17,10 @@ export function showNativeFlubberPreview() {
   return tauriInvoke("research_show_flubber");
 }
 
+export function showNativeFlubberSettings() {
+  return tauriInvoke("research_show_preview");
+}
+
 const STATUS_POLL_MS = 100;
 const DECODE_PROBE_MS = 80;
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;

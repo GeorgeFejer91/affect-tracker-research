@@ -211,7 +211,7 @@ function feedbackSection() {
       <div><h3 id="preview-title" tabindex="-1">Appearance and response</h3><p id="feedback-settings-version">Feedback type, appearance and response controls are saved in the final recipe.</p><button id="feedback-upgrade-v2" type="button" hidden>Use current feedback settings</button></div>
       <div class="preview-header-controls">
         <button id="preview-flubber-release" class="preview-flubber-release" type="button" aria-label="Release Flubber into the preview" aria-pressed="false" title="Release Flubber into the preview"><span aria-hidden="true"></span></button>
-        <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Saved feedback type">
+        <div class="preview-segmented-control preview-feedback-modes" role="group" aria-label="Feedback display mode, saved with experiment">
           <button type="button" data-feedback-preview-mode="flubber" aria-pressed="true">Flubber</button>
           <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
           <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
@@ -229,20 +229,11 @@ export function feedbackWindowMarkup() {
 function ledgerFeedbackMarkup() {
   return `<section class="ledger-feedback-handoff" aria-labelledby="ledger-feedback-window-title">
     <div>
-      <h3 id="ledger-feedback-window-title">Flubber settings use a separate window</h3>
-      <p>Appearance, affect-map, response and input controls stay outside the experiment ledger. Both windows contribute to the same final JSON.</p>
+      <h3 id="ledger-feedback-window-title">Flubber</h3>
       <output id="ledger-feedback-window-status" role="status" aria-live="polite">Connecting to the Flubber settings window…</output>
     </div>
     <div class="ledger-feedback-actions"><button id="flubber-window-open" type="button">Show Flubber preview</button><button id="preview-window-open" type="button">Show Flubber settings</button></div>
   </section>`;
-}
-
-function folderIconMarkup() {
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M3.75 6.75h6l1.5 2.25h9v8.25a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75Z"></path>
-      <path d="M3.75 9h16.5"></path>
-    </svg>`;
 }
 
 function stimulusInspirationMarkup() {
@@ -285,47 +276,27 @@ function stimulusInspirationMarkup() {
 }
 
 function workspaceSection() {
-  const folderIcon = folderIconMarkup();
   return `
-    <p class="section-lead">Choose one work directory. Videos, project JSON, outputs, and recovery stay inside it.</p>
-    <div class="workspace-location-list" data-ledger-page-spread aria-label="Project locations">
+    <div class="workspace-location-list" aria-label="Project locations">
       <section class="workspace-location-row" data-workspace-location="workspaceRoot" aria-labelledby="workspace-location-root-title">
         <div class="workspace-location-copy">
           <h3 id="workspace-location-root-title">Work directory</h3>
           <output id="workspace-root" data-state="warning">No work directory set</output>
+          <output id="package-file-status" class="sr-only" data-state="warning">No project JSON loaded</output>
         </div>
         <div class="workspace-location-actions">
           <button id="workspace-choose" type="button" class="primary-action">Set work directory</button>
-          <button type="button" class="folder-icon-button" data-open-workspace-location="workspaceRoot" aria-label="Open work directory in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
-          <button id="workspace-renew" type="button" hidden>Restore access</button>
-        </div>
-      </section>
-      <section class="workspace-location-row" data-workspace-location="videoLibrary" aria-labelledby="workspace-location-video-title">
-        <div class="workspace-location-copy">
-          <h3 id="workspace-location-video-title">Video library</h3>
-          <p><code>assets/stimuli/</code></p>
-        </div>
-        <div class="workspace-location-actions">
-          <button type="button" class="folder-icon-button" data-open-workspace-location="videoLibrary" aria-label="Open video library in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
-        </div>
-      </section>
-      <section class="workspace-location-row" data-workspace-location="experimentPackage" aria-labelledby="workspace-location-json-title">
-        <div class="workspace-location-copy">
-          <h3 id="workspace-location-json-title">Project JSON</h3>
-          <p><code>experiment.package.json</code></p>
-          <output id="package-file-status" data-state="warning">No project JSON loaded</output>
-        </div>
-        <div class="workspace-location-actions">
           <button id="package-load" type="button">Load JSON</button>
-          <button type="button" class="folder-icon-button" data-open-workspace-location="experimentPackage" aria-label="Show project JSON in File Explorer" title="Set the work directory before opening it" disabled>${folderIcon}</button>
+          <button id="workspace-renew" type="button" hidden>Restore access</button>
         </div>
       </section>
     </div>
     <div id="video-drop-zone" class="drop-zone" role="group" aria-describedby="video-drop-help" aria-label="Complete video import and drop area">
       <p>Drop complete video files or a folder here</p>
-      <div class="button-row"><button id="stimulus-inspiration-open" type="button" class="inspiration-action pictographic-action" aria-label="Stimulus inspiration" title="Stimulus inspiration" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8.5" cy="9" r="3"></circle><path d="M3.5 20c.5-3.7 2.2-5.5 5-5.5s4.5 1.8 5 5.5"></path><path class="inspiration-spark" d="M17.5 3v3M22 7.5h-3M20.7 4.3l-2.1 2.1M16.3 7.2l-1.8-1.8"></path></svg><span class="sr-only">Stimulus inspiration</span></button><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button><button id="workspace-rescan" type="button" disabled>Rescan library</button></div>
+      <div class="button-row"><button id="video-import" type="button" disabled>Add video files</button><button id="video-folder-import" type="button" disabled>Add video folder</button></div>
       <p id="video-drop-help" class="field-help">Folders are scanned recursively. Affect Research does not create clips or change start and end times.</p>
     </div>
+    <details class="workspace-extra-actions"><summary>More actions</summary><div class="button-row"><button id="workspace-rescan" type="button" disabled>Rescan library</button><button id="stimulus-inspiration-open" type="button" class="inspiration-action" aria-haspopup="dialog" aria-controls="stimulus-inspiration-dialog">Stimulus inspiration</button></div></details>
     <div class="table-scroll stimulus-library" aria-label="Stimulus library">
       <table>
         <thead><tr><th>Video</th><th>Source</th><th>Verification</th><th>Protocol use</th><th><span class="sr-only">Actions</span></th></tr></thead>
@@ -561,7 +532,7 @@ function sectionConfirmationMarkup(section, index) {
   const isLast = index === SETUP_SECTIONS.length - 1;
   return `
     <div class="setup-section-confirmation">
-      <p id="setup-confirmation-status-${section.id}" data-section-confirmation-status="${section.id}" role="status">${isLast ? "Every section, including the preview, must be confirmed before export." : "Not confirmed"}</p>
+      <p id="setup-confirmation-status-${section.id}" class="sr-only" data-section-confirmation-status="${section.id}" role="status">${isLast ? "Every section, including the preview, must be confirmed before export." : "Not confirmed"}</p>
       <button
         class="setup-section-confirm-button"
         type="button"
@@ -584,7 +555,7 @@ function ledgerPageMarkup(section, index) {
         aria-labelledby="setup-trigger-${section.id}"
         data-motion-state="${expanded ? "open" : "closed"}"
         ${expanded ? "" : "aria-hidden=\"true\" hidden inert"}
-      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner"><header class="ledger-page-header"><h2 data-fit-text data-fit-text-preferred="1.25" data-fit-text-min="0.85">${section.label}</h2><p data-fit-text data-fit-text-preferred="0.88" data-fit-text-min="0.75" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</p></header><div class="ledger-page-flow" data-ledger-page-flow>${content}${sectionConfirmationMarkup(section, index)}</div><nav class="ledger-page-pagination" data-ledger-pagination aria-label="Pages within ${escapeAttribute(section.label)}"><button type="button" data-ledger-page-previous>Previous</button><output data-ledger-page-status aria-live="polite">Page 1 of 1</output><button type="button" data-ledger-page-next>Next</button></nav></div></div></div>
+      ><div class="setup-accordion-panel-clip"><div class="setup-accordion-panel-inner"><header class="ledger-page-header"><h2 data-fit-text data-fit-text-preferred="1.25" data-fit-text-min="0.85">${section.label}</h2><p class="sr-only" data-section-summary="${section.id}">${SECTION_SUMMARIES[section.id]}</p></header><div class="ledger-page-flow" data-ledger-page-flow>${content}${sectionConfirmationMarkup(section, index)}</div><nav class="ledger-page-pagination" data-ledger-pagination aria-label="Pages within ${escapeAttribute(section.label)}"><button type="button" data-ledger-page-previous>Previous</button><output data-ledger-page-status aria-live="polite">Page 1 of 1</output><button type="button" data-ledger-page-next>Next</button></nav></div></div></div>
     </section>`;
 }
 
@@ -621,7 +592,7 @@ function ledgerSetupMarkup() {
   return `<form id="research-settings-form" class="setup-layout" novalidate>
     <div class="setup-pane" id="setup-sections">
       <div class="ledger-page-stack">
-        <div class="setup-intro"><p>Work from the first ledger layer to the last. Confirm each layer before exporting.</p><output id="setup-progress" class="setup-progress">0 of ${SETUP_SECTIONS.length - 1} confirmations · ${SETUP_SECTIONS.length} ledger layers · Export locked</output></div>
+        <output id="setup-progress" class="sr-only" role="status">0 of ${SETUP_SECTIONS.length - 1} confirmations · ${SETUP_SECTIONS.length} ledger layers · Export locked</output>
         ${SETUP_SECTIONS.map(ledgerPageMarkup).join("")}
       </div>
       <nav class="ledger-rail" aria-label="Experiment planning layers">

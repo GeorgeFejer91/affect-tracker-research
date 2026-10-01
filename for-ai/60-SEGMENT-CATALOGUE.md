@@ -168,9 +168,13 @@ rows; they do not reopen the completed baseline authoring goal.
    reconstruct stimulus/ISI boundaries. **Runner owns actual timestamps and
    recording.** Recording implementation is outside current Planner scope.
 7. Remove the standalone old Experiment, Visual and Advanced UI sections.
-   Consolidate input/controller, Flubber appearance and advanced animation
-   controls beside the live preview. Necessary retained values still have one
-   owner; their current homes are implemented under the all-settings goal.
+   The desktop Planner now divides into the transparent draggable Flubber
+   display, one compact Flubber settings window, and the ordered Ledger. Keep
+   input/controller, appearance and advanced animation controls in the settings
+   window, with one owner for each retained value. Both Settings and Ledger use
+   bounded accordion stretch layouts; the Ledger owns sequential phase
+   confirmation and the final recipe. The complete window contract is in
+   [10-PRODUCT.md](10-PRODUCT.md).
 8. Add Screen & Layout with whole-screen/video/Flubber miniature preview,
    physical or relative sizing, reference-video analysis, and placement defined
    by **Flubber centre relative to each displayed video's centre**. Percentage
@@ -476,8 +480,9 @@ Planner authoring completion.
 
 ## P5 — Flubber & Controls
 
-**Purpose:** one persistent editor for configured Flubber/Grid/procedural-Face
-feedback and input/response behavior, with Advanced animation settings at the bottom.
+**Purpose:** one compact, tabbed Flubber Settings window for configured
+Flubber/Grid/procedural-Face feedback and input/response behavior, with
+advanced animation controls in the same window.
 **User input:** device/bindings, response behavior, colors/style/visibility and
 explicit animation/mapping edits. The current saved inventory is resolved by
 the all-settings goal and the versioned P5 contract; temporary test motion stays transient.
@@ -491,8 +496,8 @@ renderer/labels/halo presentation and response grid/timing/hold behavior.
 
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
-- [x] **P5-03 — Implemented component:** live preview and input-test surfaces; configured response is saved in V2 while test movement, transient holds and capture state stay transient.
-- [x] **P5-04 — Implemented Planner:** Old Input/Visual/Advanced sections are removed; one persistent Flubber & Controls editor owns their retained values, with Advanced at the bottom.
+- [x] **P5-03 — Implemented component:** live preview and input-test surfaces; valid appearance edits and design-map movement update the transparent Flubber display immediately, including temporary color drafts. Configured response is saved in V2 while test movement, transient holds and capture state stay transient.
+- [x] **P5-04 — Implemented Planner:** Old Input/Visual/Advanced sections are removed; one compact Flubber Settings window owns their retained values in Look, Colors, Input, Response and More tabs, with advanced group selectors.
 - [x] **P5-05 — Implemented Planner:** Complete saved/temporary inventory and explicit units are documented in planner-p5-feedback-v2.md. Saved configuration includes all currently active Flubber/Grid/procedural Face settings; test motion is transient.
 - [x] **P5-06 — Implemented Planner:** Version2 serializes input, visual, mappings, presentation and response, including renderer/labels, halo width/gradient/steepness, grid dimensions, full-span timing and hold/repeat behavior.
 - [x] **P5-07 — Implemented Planner:** P4/P6 consume complete P5 bounds; accepted contributions invalidate on edits, including color Reset. V2 atomic restoration and explicit historical conversion preserve configured values.
@@ -500,7 +505,11 @@ renderer/labels/halo presentation and response grid/timing/hold behavior.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is
-distinct from the acquisition sample rate in recording policy.
+distinct from the acquisition sample rate in recording policy. With Settings and
+the transparent display both open, a valid renderer, visibility, transparency,
+color, outline, halo or affect-mapping edit changes the display before phase
+confirmation. A color-dialog Cancel restores its prior appearance. Moving or
+reopening a companion window does not edit the recipe or accept a phase.
 **Source:** [input](../experiment-planner/web/src/research/input-controller.js),
 [contracts](../experiment-planner/web/src/research/contracts.js),
 [preview](../experiment-planner/web/src/research/preview.js), [mappings](../experiment-planner/web/src/research/mappings.js).

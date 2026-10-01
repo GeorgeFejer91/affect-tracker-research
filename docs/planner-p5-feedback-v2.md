@@ -51,6 +51,13 @@ verified video's authored screen footprint and feedback placement as a visual
 rehearsal. It does not decode that video or start Runner acquisition, sampling,
 or recording.
 
+The Settings window is the live editor for the transparent preview. Valid
+changes to renderer, visibility, transparency, colors, outline, halo and affect
+mappings repaint that preview immediately, as does movement on its design map.
+The temporary color-dialog draft repaints until Apply commits or Cancel restores
+the prior color. Phase confirmation and recipe export remain separate actions;
+neither is required to see the edited appearance.
+
 ## Response interpretation
 
 The successor response describes configured behavior independently of physical
