@@ -52,6 +52,29 @@ impl LocationLibrary {
                 .collect(),
         )
     }
+    pub fn from_catalogue_v4(
+        catalogue: &crate::research_workspace_contribution::v3::VideoCatalogueContributionV4,
+    ) -> ResearchResult<Self> {
+        let source =
+            crate::research_workspace_contribution::v3::validate_video_catalogue_contribution_v4(
+                &serde_json::to_value(catalogue)
+                    .map_err(|_| invalid("Cannot encode catalogue v4."))?,
+            )?;
+        Self::from_videos(
+            source
+                .entries
+                .into_iter()
+                .map(|entry| LocationVideo {
+                    annotation_id: entry.annotation_id,
+                    asset_id: entry.asset_id,
+                    relative_path: entry.package_relative_path,
+                    sha256: entry.sha256,
+                    byte_length: entry.byte_length,
+                    duration_ms: entry.duration_ms,
+                })
+                .collect(),
+        )
+    }
     pub fn from_catalogue(catalogue: &VideoCatalogueContribution) -> ResearchResult<Self> {
         let value = serde_json::to_value(catalogue)
             .map_err(|_| invalid("Cannot encode video catalogue."))?;
@@ -240,6 +263,12 @@ impl VariantDesignV2 {
         catalogue: &crate::research_workspace_contribution::v3::VideoCatalogueContributionV3,
     ) -> ResearchResult<()> {
         self.validate_with_library(LocationLibrary::from_catalogue_v3(catalogue)?)
+    }
+    pub fn validate_v4(
+        &self,
+        catalogue: &crate::research_workspace_contribution::v3::VideoCatalogueContributionV4,
+    ) -> ResearchResult<()> {
+        self.validate_with_library(LocationLibrary::from_catalogue_v4(catalogue)?)
     }
     fn validate_with_library(&self, library: LocationLibrary) -> ResearchResult<()> {
         if self.variants.is_empty()

@@ -93,6 +93,9 @@ fn scan(root: &Path) -> ResearchResult<VideoLibrary> {
             };
             let metadata = fs::symlink_metadata(&path).map_err(CommandError::io)?;
             if metadata.is_dir() {
+                if relative == ".prepared" || relative.starts_with(".prepared/") {
+                    continue;
+                }
                 pending.push_back((path, relative, depth + 1));
             } else if metadata.is_file() && authoring_video(&path) {
                 let (sha256, byte_length) = hash_file(&path)?;

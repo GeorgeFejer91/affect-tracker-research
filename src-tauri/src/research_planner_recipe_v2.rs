@@ -7,7 +7,8 @@ use crate::research_planner_recipe::{owners, RecipeIntegrityV1, XrSelectionV1, M
 use crate::research_planner_recipe_policy::PlannerRecipePolicyV1;
 use crate::research_questionnaire_recipe_v2::QuestionnaireRecipeContributionV2;
 use crate::research_workspace_contribution::v3::{
-    validate_workspace_contribution_v3, WorkspaceContributionV3,
+    validate_workspace_contribution_v3, validate_workspace_contribution_v4,
+    WorkspaceContributionV3, WorkspaceContributionV4,
 };
 use crate::research_workspace_contribution::{
     validate_workspace_contribution, WorkspaceContribution,
@@ -58,33 +59,57 @@ struct Prepared {
 enum PreparedWorkspace {
     Legacy(WorkspaceContribution),
     Controlled(WorkspaceContributionV3),
+    Prepared(WorkspaceContributionV4),
 }
 impl PreparedWorkspace {
     fn media(&self) -> Vec<crate::research_desktop_layout::MediaGeometry> {
         match self {
             Self::Legacy(value) => owners::media(value),
-            Self::Controlled(value) => {
-                let mut seen = std::collections::BTreeSet::new();
-                value
-                    .video_catalogue
-                    .entries
-                    .iter()
-                    .filter(|entry| seen.insert(&entry.asset_id))
-                    .map(|entry| crate::research_desktop_layout::MediaGeometry {
-                        asset_id: entry.asset_id.clone(),
-                        display_width: entry.geometry.display_width_px() as f64,
-                        display_height: entry.geometry.display_height_px() as f64,
-                    })
-                    .collect()
-            }
+            Self::Controlled(value) => media_from_v3(value),
+            Self::Prepared(value) => media_from_v4(value),
         }
     }
     fn variants(&self, contribution: &Value, definition_hash: &str) -> ResearchResult<Value> {
         match self {
             Self::Legacy(value) => crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants(value, contribution, definition_hash),
             Self::Controlled(value) => crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants_v3(value, contribution, definition_hash),
+            Self::Prepared(value) => crate::research_stimulus_order::reproduction::validate_and_reproduce_saved_variants_v4(value, contribution, definition_hash),
         }
     }
+}
+
+fn media_from_v3(
+    value: &WorkspaceContributionV3,
+) -> Vec<crate::research_desktop_layout::MediaGeometry> {
+    let mut seen = std::collections::BTreeSet::new();
+    value
+        .video_catalogue
+        .entries
+        .iter()
+        .filter(|entry| seen.insert(&entry.asset_id))
+        .map(|entry| crate::research_desktop_layout::MediaGeometry {
+            asset_id: entry.asset_id.clone(),
+            display_width: entry.geometry.display_width_px() as f64,
+            display_height: entry.geometry.display_height_px() as f64,
+        })
+        .collect()
+}
+
+fn media_from_v4(
+    value: &WorkspaceContributionV4,
+) -> Vec<crate::research_desktop_layout::MediaGeometry> {
+    let mut seen = std::collections::BTreeSet::new();
+    value
+        .video_catalogue
+        .entries
+        .iter()
+        .filter(|entry| seen.insert(&entry.asset_id))
+        .map(|entry| crate::research_desktop_layout::MediaGeometry {
+            asset_id: entry.asset_id.clone(),
+            display_width: entry.geometry.display_width_px() as f64,
+            display_height: entry.geometry.display_height_px() as f64,
+        })
+        .collect()
 }
 
 impl PlannerRecipeV2 {
@@ -135,8 +160,10 @@ impl PlannerRecipeV2 {
         if version == 2 && !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
             return Err(invalid("Planner recipe v2 requires workspace v1/v2."));
         }
-        let workspace = if version == 3 || (version == 4 && self.segments.p1["version"] == 3) {
+        let workspace = if [3, 4].contains(&version) && self.segments.p1["version"] == 3 {
             PreparedWorkspace::Controlled(validate_workspace_contribution_v3(&self.segments.p1)?)
+        } else if [3, 4].contains(&version) && self.segments.p1["version"] == 4 {
+            PreparedWorkspace::Prepared(validate_workspace_contribution_v4(&self.segments.p1)?)
         } else {
             PreparedWorkspace::Legacy(validate_workspace_contribution(&self.segments.p1)?)
         };

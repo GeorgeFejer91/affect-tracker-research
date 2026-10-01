@@ -1041,9 +1041,9 @@ test("native input regions remain bounded to visible client coordinates", () => 
   });
 });
 
-test("desktop playback defaults qualified and requires an explicit unqualified fallback", () => {
+test("desktop playback defaults to prepared WebView playback while retaining legacy qualified mode", () => {
   const unavailable = nativeMediaCapability();
-  assert.throws(() => authorizeDesktopPlaybackMode(undefined, unavailable), /Qualified native playback is unavailable/u);
+  assert.equal(authorizeDesktopPlaybackMode(undefined, unavailable), "unqualifiedWebview");
   assert.equal(authorizeDesktopPlaybackMode("unqualifiedWebview", unavailable), "unqualifiedWebview");
   const ready = nativeMediaCapability({
     runtimeBundleState: "verified",
@@ -1418,6 +1418,26 @@ async function preparedBridgeFixture() {
         runtimeIntegrityVerified: true, runtimeFileCount: 827, runtimeByteLength: 340362958, playerActorReady: true });
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (command === "research_rescan_stimuli") return structuredClone(scan);
+      if (command === "research_prepare_planner_media") return {
+        workspaceId: payload.request.workspaceId,
+        entries: payload.request.entries.map(entry => ({
+          sourceRelativePath: entry.sourceRelativePath,
+          sha256: entry.sha256,
+          byteLength: entry.byteLength,
+          preparedPlayback: {
+            strategy: "ffmpeg-browser-safe-mp4-v1",
+            packageRelativePath: `assets/stimuli/.prepared/${entry.sha256}.mp4`,
+            sha256: "b".repeat(64),
+            byteLength: entry.byteLength + 1,
+            durationMs: entry.durationMs,
+            container: "mp4",
+            videoCodec: "h264",
+            audioCodec: "aac",
+            pixelFormat: "yuv420p",
+            fastStart: true,
+          },
+        })),
+      };
       return {};
     } });
   await bridge.initialize();
@@ -1438,7 +1458,7 @@ async function preparedBridgeFixture() {
 
 test("Planner connector prepares detached workspace data and commits without events or rescans", async () => {
   const f = await preparedBridgeFixture();
-  assert.deepEqual(Object.keys(f.connector).sort(), ["getWorkspaceId", "prepareCatalogue", "prepareWorkspace"]);
+  assert.deepEqual(Object.keys(f.connector).sort(), ["getWorkspaceId", "prepareCatalogue", "prepareMediaNormalization", "prepareWorkspace"]);
   assert.equal(f.connector.getWorkspaceId(), null);
   const receipt = preparedWorkspaceReceipt(), count = f.calls.length;
   const prepared = f.connector.prepareWorkspace(receipt);
@@ -1454,6 +1474,45 @@ test("Planner connector prepares detached workspace data and commits without eve
   assert.throws(() => f.connector.prepareWorkspace({ ...receipt, librariesReady: false }), /libraries/u);
   assert.throws(() => f.connector.prepareWorkspace({ ...receipt, workspaceId: "not-a-uuid" }), /libraries/u);
   f.bridge.destroy(); assert.equal(f.connector.getWorkspaceId(), null);
+});
+
+test("Planner connector prepares browser-safe media through the native workspace boundary", async () => {
+  const f = await preparedBridgeFixture();
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  const catalogue = { entries: [{ sourceRelativePath: "stimuli/one.mp4", sha256: "a".repeat(64), byteLength: 10, durationMs: 1000 }] };
+  const receipt = await f.connector.prepareMediaNormalization({ catalogue }, { isCurrent: () => true });
+  assert.equal(receipt.workspaceId, preparedWorkspaceId);
+  assert.equal(receipt.entries[0].preparedPlayback.strategy, "ffmpeg-browser-safe-mp4-v1");
+  assert.equal(f.calls.at(-1).command, "research_prepare_planner_media");
+  assert.deepEqual(f.calls.at(-1).payload.request.entries, catalogue.entries);
+  f.bridge.destroy();
+});
+
+test("prepared media normalization is fenced by caller and workspace publication", async () => {
+  const f = await preparedBridgeFixture();
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  let current = true;
+  const catalogue = { entries: [{ sourceRelativePath: "stimuli/one.mp4", sha256: "a".repeat(64), byteLength: 10, durationMs: 1000 }] };
+  const canceled = f.connector.prepareMediaNormalization({ catalogue }, { isCurrent: () => current });
+  current = false;
+  await assert.rejects(canceled, /stale|malformed/u);
+  let entered, resume;
+  const started = new Promise(resolve => { entered = resolve; });
+  const pending = new Promise(resolve => { resume = resolve; });
+  const invoke = f.bridge.invoke;
+  f.bridge.invoke = async (command, payload) => {
+    if (command === "research_prepare_planner_media") {
+      entered();
+      await pending;
+    }
+    return invoke(command, payload);
+  };
+  const stale = f.connector.prepareMediaNormalization({ catalogue });
+  await started;
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
+  resume();
+  await assert.rejects(stale, /stale/u);
+  f.bridge.destroy();
 });
 
 test("prepared catalogue uses existing sequential authority without early state/events/progress", async () => {

@@ -292,6 +292,7 @@ fn launch(
             research_commands::research_rescan_stimuli,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
+            research_commands::research_prepare_planner_media,
             research_commands::research_workspace_media_url,
             research_commands::research_attest_workspace_decode,
             research_commands::research_save_settings,
@@ -307,6 +308,7 @@ fn launch(
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
             research_runner_master::commands::research_runner_master_plan,
             research_runner_master::commands::research_runner_master_rescan,
+            research_runner_master::commands::research_runner_prepared_media_url,
             research_runner_master::commands::research_runner_master_preflight,
             research_runner_master::commands::research_runner_master_start,
             research_runner_master::commands::research_runner_master_start_v2,

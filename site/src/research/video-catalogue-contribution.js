@@ -6,6 +6,7 @@ export const VIDEO_CATALOGUE_CONTRIBUTION_VERSION = 1;
 export const VIDEO_CATALOGUE_CONTRIBUTION_CURRENT_VERSION = 2;
 export const VIDEO_LOCATION_ID_POLICY_V1 = "relative-path-reversible-v1";
 export const VIDEO_LOCATION_ID_MAX_BYTES = 6_144;
+export const VIDEO_PREPARED_PLAYBACK_STRATEGY_V1 = "ffmpeg-browser-safe-mp4-v1";
 
 const SHA256 = /^[a-f0-9]{64}$/u;
 const ASSET_ID = /^asset-[a-f0-9]{64}$/u;
@@ -122,6 +123,40 @@ function normalizeGeometry(value, label, { allowNative = false } = {}) {
   };
 }
 
+function normalizePreparedPlayback(value, label) {
+  exactObject(value, [
+    "strategy", "packageRelativePath", "sha256", "byteLength", "durationMs",
+    "container", "videoCodec", "audioCodec", "pixelFormat", "fastStart",
+  ], label);
+  if (value.strategy !== VIDEO_PREPARED_PLAYBACK_STRATEGY_V1
+    || value.container !== "mp4"
+    || value.videoCodec !== "h264"
+    || !["aac", "none"].includes(value.audioCodec)
+    || value.pixelFormat !== "yuv420p"
+    || value.fastStart !== true) {
+    throw new TypeError(`${label} must describe one browser-safe FFmpeg MP4 playback asset.`);
+  }
+  const packageRelativePath = portablePath(value.packageRelativePath, `${label}.packageRelativePath`, "assets/stimuli/", { trimmedComponents: true });
+  if (!packageRelativePath.toLowerCase().endsWith(".mp4")) {
+    throw new TypeError(`${label}.packageRelativePath must name an MP4 file.`);
+  }
+  if (typeof value.sha256 !== "string" || !SHA256.test(value.sha256)) {
+    throw new TypeError(`${label}.sha256 must be a complete lowercase SHA-256 value.`);
+  }
+  return {
+    strategy: VIDEO_PREPARED_PLAYBACK_STRATEGY_V1,
+    packageRelativePath,
+    sha256: value.sha256,
+    byteLength: positiveInteger(value.byteLength, `${label}.byteLength`),
+    durationMs: positiveInteger(value.durationMs, `${label}.durationMs`),
+    container: "mp4",
+    videoCodec: "h264",
+    audioCodec: value.audioCodec,
+    pixelFormat: "yuv420p",
+    fastStart: true,
+  };
+}
+
 export function validateVideoDisplayGeometryV1(value) {
   return deepFreeze(normalizeGeometry(value, "Video display geometry"));
 }
@@ -177,10 +212,12 @@ export function videoRelativePathFromAnnotationIdV1(value) {
 
 function normalizeEntry(value, index, { version = 1 } = {}) {
   const label = `Video catalogue entry ${index + 1}`;
-  exactObject(value, [
+  const fields = [
     "assetId", "annotationId", "sourceRelativePath", "packageRelativePath",
     "sha256", "byteLength", "durationMs", "geometry",
-  ], label);
+  ];
+  if (version >= 4) fields.push("preparedPlayback");
+  exactObject(value, fields, label);
   if (typeof value.assetId !== "string" || !ASSET_ID.test(value.assetId)) {
     throw new TypeError(`${label}.assetId is not an immutable content identity.`);
   }
@@ -194,7 +231,7 @@ function normalizeEntry(value, index, { version = 1 } = {}) {
   if (packageRelativePath !== `assets/${sourceRelativePath}`) {
     throw new TypeError(`${label} package and logical paths do not describe the same portable asset.`);
   }
-  return {
+  const entry = {
     assetId: value.assetId,
     // A readable/editable name is deliberately separate from immutable identity.
     // Q04 still owns collision policy, so this producer does not silently suffix it.
@@ -206,10 +243,12 @@ function normalizeEntry(value, index, { version = 1 } = {}) {
     sha256: value.sha256,
     byteLength: positiveInteger(value.byteLength, `${label}.byteLength`),
     durationMs: positiveInteger(value.durationMs, `${label}.durationMs`),
-    geometry: version === 3 && value.geometry?.source === CONTROLLED_GEOMETRY_SOURCE
+    geometry: version >= 3 && value.geometry?.source === CONTROLLED_GEOMETRY_SOURCE
       ? validateControlledVideoDisplayGeometry(value.geometry)
       : normalizeGeometry(value.geometry, `${label}.geometry`, { allowNative: version >= 2 }),
   };
+  if (version >= 4) entry.preparedPlayback = normalizePreparedPlayback(value.preparedPlayback, `${label}.preparedPlayback`);
+  return entry;
 }
 
 function normalizeEntryV2(value, index, version = 2) {
@@ -398,6 +437,11 @@ export async function createVideoCatalogueContributionV3({ revision, entries }) 
     revision, annotationPolicy: VIDEO_LOCATION_ID_POLICY_V1, entries }, 3);
   return deepFreeze({ ...structuredClone(core), integritySha256: await canonicalSha256(core) });
 }
+export async function createVideoCatalogueContributionV4({ revision, entries }) {
+  const core = normalizeCoreV2({ schema: VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA, version: 4,
+    revision, annotationPolicy: VIDEO_LOCATION_ID_POLICY_V1, entries }, 4);
+  return deepFreeze({ ...structuredClone(core), integritySha256: await canonicalSha256(core) });
+}
 export async function validateVideoCatalogueContributionV3(value) {
   exactObject(value, ["schema", "version", "revision", "annotationPolicy", "entries", "integritySha256"], "Video catalogue v3");
   if (value.schema !== VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA || value.version !== 3
@@ -406,7 +450,16 @@ export async function validateVideoCatalogueContributionV3(value) {
   if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Video catalogue v3 integrity or canonical content mismatch.");
   return expected;
 }
+export async function validateVideoCatalogueContributionV4(value) {
+  exactObject(value, ["schema", "version", "revision", "annotationPolicy", "entries", "integritySha256"], "Video catalogue v4");
+  if (value.schema !== VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA || value.version !== 4
+    || value.annotationPolicy !== VIDEO_LOCATION_ID_POLICY_V1) throw new TypeError("Unsupported video catalogue v4 contract.");
+  const expected = await createVideoCatalogueContributionV4(value);
+  if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Video catalogue v4 integrity or canonical content mismatch.");
+  return expected;
+}
 export function validateSupportedVideoCatalogueContribution(value) {
+  if (value?.version === 4) return validateVideoCatalogueContributionV4(value);
   return value?.version === 3 ? validateVideoCatalogueContributionV3(value) : validateVideoCatalogueContribution(value);
 }
 export function validateSupportedVideoDisplayGeometry(value) {
@@ -414,6 +467,11 @@ export function validateSupportedVideoDisplayGeometry(value) {
 }
 export async function reviseSupportedVideoCatalogueContribution(previous, entries) {
   const prior = previous === null ? null : await validateSupportedVideoCatalogueContribution(previous);
+  const version4 = prior?.version === 4 || entries.some(entry => entry.preparedPlayback);
+  if (version4) {
+    const candidate = await createVideoCatalogueContributionV4({ revision: prior ? prior.revision + 1 : 1, entries });
+    return prior?.version === 4 && canonicalJson(prior.entries) === canonicalJson(candidate.entries) ? previous : candidate;
+  }
   const version3 = prior?.version === 3 || entries.some(entry => entry.geometry?.source === CONTROLLED_GEOMETRY_SOURCE);
   if (!version3) return reviseVideoCatalogueContribution(previous, entries);
   const candidate = await createVideoCatalogueContributionV3({ revision: prior ? prior.revision + 1 : 1, entries });

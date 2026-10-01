@@ -15,11 +15,20 @@ test("master3 chooses explicit controlled attestation and retains historical mas
   }
 });
 test("mixed master3 proofs and unknown versions fail before native side effects",async()=>{
-  for(const source of [recipe([{},controlled]),{version:4}]) {
+  for(const source of [recipe([{},controlled]),{version:6}]) {
     const {calls,options}=setup();await assert.rejects(attestMasterMedia({...options,recipe:source}));assert.deepEqual(calls,[]);
   }
 });
 test("controlled attestation failures stop the actor and never fall back to historical proof",async()=>{
   const {calls,options}=setup();options.controller.attestDecodeV2=async()=>{calls.push(2);throw Error("missing controlled proof");};
   const result=await attestMasterMedia({...options,recipe:recipe([controlled])});assert.equal(result.failures.length,1);assert.deepEqual(calls,["prepare",2,"stop"]);
+});
+test("prepared playback catalogues use browser-safe assets without native GstPlay side effects",async()=>{
+  const prepared={version:5,segments:{P1:{version:4,videoCatalogue:{version:4,entries:[{preparedPlayback:{
+    strategy:"ffmpeg-browser-safe-mp4-v1",packageRelativePath:"assets/stimuli/.prepared/clip.mp4",
+    container:"mp4",videoCodec:"h264",audioCodec:"aac",pixelFormat:"yuv420p",fastStart:true,
+  }}]}}}};
+  const {calls,options}=setup();
+  const result=await attestMasterMedia({...options,recipe:prepared});
+  assert.equal(result.failures.length,0);assert.equal(result.qualified.length,1);assert.deepEqual(calls,[]);
 });

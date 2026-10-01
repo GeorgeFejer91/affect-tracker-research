@@ -8,7 +8,9 @@ import {
   validateVideoCatalogueContribution,
   validateVideoCatalogueContributionV1,
   validateVideoCatalogueContributionV3,
+  validateVideoCatalogueContributionV4,
   createVideoCatalogueContributionV3,
+  createVideoCatalogueContributionV4,
   projectSupportedVideoDisplayGeometry,
 } from "./video-catalogue-contribution.js";
 
@@ -123,7 +125,21 @@ export async function validateWorkspaceContributionV3(value) {
   if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Noncanonical workspace v3 content.");
   return expected;
 }
+export function createWorkspaceContributionV4({ study, videoCatalogue } = {}) {
+  if (videoCatalogue?.schema !== "affect-research-video-catalogue-contribution" || videoCatalogue.version !== 4) throw new TypeError("Workspace v4 requires catalogue v4.");
+  return deepFreeze({ schema: WORKSPACE_CONTRIBUTION_SCHEMA, version: 4, study: validateStudyIdentityV1(study),
+    workspaceLayout: { ...WORKSPACE_RELATIVE_LAYOUT_V1 }, videoCatalogue: structuredClone(videoCatalogue) });
+}
+export async function validateWorkspaceContributionV4(value) {
+  exactObject(value, ["schema", "version", "study", "workspaceLayout", "videoCatalogue"], "Workspace v4");
+  if (value.schema !== WORKSPACE_CONTRIBUTION_SCHEMA || value.version !== 4) throw new TypeError("Unsupported workspace v4 contract.");
+  const videoCatalogue = await validateVideoCatalogueContributionV4(value.videoCatalogue);
+  const expected = createWorkspaceContributionV4({ study: value.study, videoCatalogue });
+  if (canonicalJson(expected) !== canonicalJson(value)) throw new TypeError("Noncanonical workspace v4 content.");
+  return expected;
+}
 export function validateSupportedWorkspaceContribution(value) {
+  if (value?.version === 4) return validateWorkspaceContributionV4(value);
   return value?.version === 3 ? validateWorkspaceContributionV3(value) : validateWorkspaceContribution(value);
 }
 
@@ -209,6 +225,12 @@ export async function verifyWorkspaceRestoredVideoEntries(value, entries) {
   return contribution.videoCatalogue;
 }
 export async function verifySupportedWorkspaceRestoredVideoEntries(value, entries) {
+  if (value?.version === 4) {
+    const contribution = await validateWorkspaceContributionV4(value);
+    const observed = await createVideoCatalogueContributionV4({ revision: contribution.videoCatalogue.revision, entries });
+    if (canonicalJson(observed) !== canonicalJson(contribution.videoCatalogue)) throw new TypeError("Selected videos do not match the complete saved catalogue v4 declarations.");
+    return contribution.videoCatalogue;
+  }
   if (value?.version !== 3) return verifyWorkspaceRestoredVideoEntries(value, entries);
   const contribution = await validateWorkspaceContributionV3(value);
   const observed = await createVideoCatalogueContributionV3({ revision: contribution.videoCatalogue.revision, entries });
@@ -432,6 +454,6 @@ export function createWorkspaceContributionProducer({
 }
 
 export function createSupportedWorkspaceContributionProducer(options = {}) {
-  return createWorkspaceContributionProducer({ ...options, createCurrentContribution: value => value.videoCatalogue.version === 3
-    ? createWorkspaceContributionV3(value) : createWorkspaceContribution(value) });
+  return createWorkspaceContributionProducer({ ...options, createCurrentContribution: value => value.videoCatalogue.version === 4
+    ? createWorkspaceContributionV4(value) : value.videoCatalogue.version === 3 ? createWorkspaceContributionV3(value) : createWorkspaceContribution(value) });
 }

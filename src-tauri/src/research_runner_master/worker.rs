@@ -32,6 +32,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[derive(Debug, Clone, Copy)]
+struct HtmlMediaAnchor {
+    position: u32,
+    anchor: Instant,
+    media_time_ms: f64,
+}
+
 pub(crate) struct MasterWorker {
     prepared: PreparedMaster,
     workspace_id: String,
@@ -56,6 +63,8 @@ pub(crate) struct MasterWorker {
     opened: bool,
     fence: Option<NativeMediaCommandFenceV1>,
     bound_file: Option<String>,
+    html_media_position: Option<u32>,
+    html_media_anchor: Option<HtmlMediaAnchor>,
     media_sequence: u64,
     clock: Option<DeadlineClock>,
     interval_deadline: Option<Instant>,
@@ -104,7 +113,9 @@ impl MasterWorker {
         let startup = if let Some(qualification) = storage.receipt.get("executionQualification") {
             json!({"schema":"affect-runner-validation-startup","version":1,
                 "executionQualification":qualification,"startup":startup})
-        } else { startup };
+        } else {
+            startup
+        };
         let startup = PreparedTransfer::new(&startup)?;
         let lsl = if settings.enabled {
             Some(MasterLslService::start(
@@ -170,6 +181,8 @@ impl MasterWorker {
             opened: false,
             fence: None,
             bound_file: None,
+            html_media_position: None,
+            html_media_anchor: None,
             media_sequence: 0,
             clock: None,
             interval_deadline: None,
@@ -291,9 +304,32 @@ impl MasterWorker {
                 data,
                 page_no,
             } => self.survey_answers_action(position, data, page_no, true),
+            MasterAction::HtmlVideoStarted {
+                position,
+                media_time_ms,
+            } => self.html_video_started(position, media_time_ms),
+            MasterAction::HtmlVideoProgress {
+                position,
+                media_time_ms,
+            } => self.html_video_progress(position, media_time_ms),
+            MasterAction::HtmlVideoEnded {
+                position,
+                media_time_ms,
+            } => self.html_video_ended(position, media_time_ms),
+            MasterAction::HtmlVideoError { position, code } => {
+                self.html_video_error(position, &code)
+            }
             MasterAction::Pause => {
                 if self.state.phase != MasterPhase::Playing {
                     return Err(invalid("Pause requires native Playing."));
+                }
+                if self.html_media_position.is_some() {
+                    self.refresh_html_media_time(Instant::now());
+                    self.quiesce()?;
+                    self.state.phase = MasterPhase::Paused;
+                    self.transition_started = Instant::now();
+                    self.observe(MarkerEvent::Pause, true)?;
+                    return Ok(());
                 }
                 self.quiesce()?;
                 self.state.phase = MasterPhase::Pausing;
@@ -308,6 +344,11 @@ impl MasterWorker {
             MasterAction::Resume => {
                 if self.state.phase != MasterPhase::Paused {
                     return Err(invalid("Resume requires native Paused."));
+                }
+                if self.html_media_position.is_some() {
+                    self.state.phase = MasterPhase::Resuming;
+                    self.transition_started = Instant::now();
+                    return Ok(());
                 }
                 self.state.phase = MasterPhase::Resuming;
                 self.transition_started = Instant::now();
@@ -490,6 +531,17 @@ impl MasterWorker {
         }
     }
     fn prepare_video(&mut self, step: &MasterStep) -> ResearchResult<()> {
+        if has_prepared_playback(step) {
+            self.stop_media()?;
+            self.html_media_position = Some(step.position);
+            self.html_media_anchor = None;
+            self.bound_file = None;
+            self.fence = None;
+            self.media_sequence = 0;
+            self.state.media_time_ms = Some(0.);
+            self.state.phase = MasterPhase::Preparing;
+            return Ok(());
+        }
         let asset = &step.payload["asset"];
         let binding = self
             .bindings
@@ -514,11 +566,130 @@ impl MasterWorker {
         )?;
         self.reconcile(status)
     }
+    fn html_video_started(&mut self, position: u32, media_time_ms: f64) -> ResearchResult<()> {
+        if !matches!(
+            self.state.phase,
+            MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Paused
+        ) {
+            return Err(invalid(
+                "HTML video start requires a prepared or resuming occurrence.",
+            ));
+        }
+        self.require_html_video(position)?;
+        let media_time_ms = self.checked_media_time_ms(media_time_ms)?;
+        let first = !self.opened;
+        self.authority
+            .service
+            .set_run_accepting(&self.authority.id, true)?;
+        let now = Instant::now();
+        self.response.clear_holds(now);
+        self.clock = Some(DeadlineClock::new(
+            self.prepared.loaded.recipe.policy().sampling_frequency_hz as u16,
+            now,
+        )?);
+        self.html_media_anchor = Some(HtmlMediaAnchor {
+            position,
+            anchor: now,
+            media_time_ms,
+        });
+        self.state.media_time_ms = Some(media_time_ms);
+        self.state.phase = MasterPhase::Playing;
+        self.observe(
+            if first {
+                MarkerEvent::VideoStart
+            } else {
+                MarkerEvent::Resume
+            },
+            true,
+        )?;
+        self.opened = true;
+        Ok(())
+    }
+    fn html_video_progress(&mut self, position: u32, media_time_ms: f64) -> ResearchResult<()> {
+        self.require_html_video(position)?;
+        if self.state.phase != MasterPhase::Playing {
+            return Ok(());
+        }
+        let media_time_ms = self.checked_media_time_ms(media_time_ms)?;
+        self.html_media_anchor = Some(HtmlMediaAnchor {
+            position,
+            anchor: Instant::now(),
+            media_time_ms,
+        });
+        self.state.media_time_ms = Some(media_time_ms);
+        Ok(())
+    }
+    fn html_video_ended(&mut self, position: u32, media_time_ms: f64) -> ResearchResult<()> {
+        self.require_html_video(position)?;
+        self.state.media_time_ms = Some(self.checked_media_time_ms(media_time_ms)?);
+        self.quiesce()?;
+        if !self.opened {
+            return Err(CommandError::new(
+                "master-video-ended-before-playing",
+                "Video ended without an observed start.",
+            ));
+        }
+        self.observe(MarkerEvent::VideoEnd, true)?;
+        self.stop_media()?;
+        self.next()
+    }
+    fn html_video_error(&mut self, position: u32, code: &str) -> ResearchResult<()> {
+        self.require_html_video(position)?;
+        Err(CommandError::new(
+            "master-html-video-failed",
+            format!("Prepared HTML video playback failed: {code}"),
+        ))
+    }
+    fn require_html_video(&self, position: u32) -> ResearchResult<()> {
+        if self.state.position != position || self.html_media_position != Some(position) {
+            return Err(invalid(
+                "This HTML video command targets a stale or unavailable occurrence.",
+            ));
+        }
+        let step = self.current()?;
+        if step.kind != MasterStepKind::Video || !has_prepared_playback(step) {
+            return Err(invalid(
+                "HTML video commands require a prepared browser playback occurrence.",
+            ));
+        }
+        Ok(())
+    }
+    fn checked_media_time_ms(&self, media_time_ms: f64) -> ResearchResult<f64> {
+        let duration =
+            self.current()?
+                .duration_ms
+                .ok_or_else(|| invalid("Missing prepared video duration."))? as f64;
+        if !media_time_ms.is_finite() || media_time_ms < 0. || media_time_ms > duration + 1_000. {
+            return Err(invalid(
+                "Prepared video media time is outside the occurrence.",
+            ));
+        }
+        Ok(media_time_ms.clamp(0., duration))
+    }
+    fn refresh_html_media_time(&mut self, now: Instant) {
+        let Some(anchor) = self.html_media_anchor else {
+            return;
+        };
+        if self.state.phase != MasterPhase::Playing
+            || self.html_media_position != Some(anchor.position)
+            || self.state.position != anchor.position
+        {
+            return;
+        }
+        let duration = self.current().ok().and_then(|step| step.duration_ms);
+        let value = anchor.media_time_ms + now.duration_since(anchor.anchor).as_secs_f64() * 1000.;
+        self.state.media_time_ms = Some(
+            duration
+                .map(|duration| value.clamp(0., duration as f64))
+                .unwrap_or(value.max(0.)),
+        );
+    }
     fn tick(&mut self) -> ResearchResult<()> {
         if self.fence.is_some() {
             self.reconcile(self.media.status_snapshot()?)?;
         }
         let now = Instant::now();
+        self.refresh_html_media_time(now);
         if matches!(
             self.state.phase,
             MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Pausing
@@ -526,7 +697,7 @@ impl MasterWorker {
         {
             return Err(CommandError::new(
                 "master-media-transition-timeout",
-                "Native media transition did not complete.",
+                "Media transition did not complete.",
             ));
         }
         if self.state.phase == MasterPhase::Playing {
@@ -741,6 +912,8 @@ impl MasterWorker {
             self.media.stop(fence)?;
         }
         self.bound_file = None;
+        self.html_media_position = None;
+        self.html_media_anchor = None;
         Ok(())
     }
     fn next(&mut self) -> ResearchResult<()> {
@@ -845,6 +1018,9 @@ impl Drop for MasterWorker {
 }
 fn invalid(message: &str) -> CommandError {
     CommandError::invalid_contract(message)
+}
+fn has_prepared_playback(step: &MasterStep) -> bool {
+    step.kind == MasterStepKind::Video && step.payload["asset"]["preparedPlayback"].is_object()
 }
 #[cfg(test)]
 #[path = "worker_survey_tests.rs"]
@@ -1025,6 +1201,76 @@ mod tests {
             );
             worker.publish();
             assert_eq!(lock(&worker.public).current_valence, 0.);
+            present_interval(worker, video_position + 1);
+        });
+    }
+    #[test]
+    fn prepared_html_video_first_frame_controls_start_and_next_isi() {
+        with_neutral_worker(|worker| {
+            worker.observe(MarkerEvent::SessionStart, false).unwrap();
+            let pair = worker
+                .prepared
+                .plan
+                .steps
+                .windows(2)
+                .find(|pair| {
+                    pair[0].kind == MasterStepKind::Video
+                        && pair[1].kind == MasterStepKind::Interval
+                })
+                .unwrap();
+            let video_position = pair[0].position;
+            let video_duration = pair[0].duration_ms.unwrap();
+            let step = worker
+                .prepared
+                .plan
+                .steps
+                .iter_mut()
+                .find(|step| step.position == video_position)
+                .unwrap();
+            step.payload["asset"]["preparedPlayback"] = json!({
+                "strategy":"ffmpeg-browser-safe-mp4-v1",
+                "packageRelativePath":"assets/stimuli/.prepared/source.mp4",
+                "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "byteLength":4096,
+                "durationMs":video_duration,
+                "container":"mp4",
+                "videoCodec":"h264",
+                "audioCodec":"aac",
+                "pixelFormat":"yuv420p",
+                "fastStart":true
+            });
+            worker.state.position = video_position;
+            worker.state.phase = MasterPhase::AwaitingPresentation;
+            worker
+                .action(MasterAction::Presented {
+                    position: video_position,
+                })
+                .unwrap();
+            assert_eq!(worker.state.phase, MasterPhase::Preparing);
+            assert!(worker.fence.is_none());
+            assert_eq!(worker.html_media_position, Some(video_position));
+            assert!(!worker.opened);
+            worker
+                .action(MasterAction::HtmlVideoStarted {
+                    position: video_position,
+                    media_time_ms: 12.,
+                })
+                .unwrap();
+            assert_eq!(worker.state.phase, MasterPhase::Playing);
+            assert!(worker.opened);
+            assert!(worker.clock.is_some());
+            assert_eq!(worker.state.media_time_ms, Some(12.));
+            seed_stale_digital(worker);
+            worker
+                .action(MasterAction::HtmlVideoEnded {
+                    position: video_position,
+                    media_time_ms: video_duration as f64,
+                })
+                .unwrap();
+            assert_eq!(worker.state.position, video_position + 1);
+            assert_eq!(worker.state.phase, MasterPhase::AwaitingPresentation);
+            assert_eq!((worker.response.x, worker.response.y), (0., 0.));
+            assert!(worker.html_media_position.is_none());
             present_interval(worker, video_position + 1);
         });
     }

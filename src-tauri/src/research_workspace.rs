@@ -21,9 +21,14 @@ use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 mod controlled_geometry;
-mod video_location;
+mod media_normalization;
 mod stimulus_authoring;
+mod video_location;
 pub(crate) use controlled_geometry::RunnerVideoBindingV3;
+pub use media_normalization::{
+    PlannerMediaNormalizationReceipt, PlannerMediaNormalizationRequest, PreparedMediaUrlReceipt,
+    PreparedMediaUrlRequest,
+};
 
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
@@ -1814,6 +1819,13 @@ fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<Scanned
                     return Err(CommandError::forbidden(
                         "A Planner video folder escaped assets/stimuli/.",
                     ));
+                }
+                if canonical
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name == ".prepared")
+                {
+                    continue;
                 }
                 queue.push_back((canonical, depth + 1));
                 continue;

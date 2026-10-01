@@ -1,15 +1,17 @@
-use super::runtime::{MasterStartRequestV5, MasterActionRequestV5};
 use super::runtime::{
     MasterAction, MasterActionRequestV3, MasterActionRequestV4, MasterActionV2, MasterActionV4,
     MasterRuntime, MasterStartRequest, MasterStartRequestV2, MasterStartRequestV3,
     MasterStartRequestV4, MasterStatus,
 };
+use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
 use super::{MasterPlan, MasterSelector, PreparedMaster};
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_native_media::NativeMediaService;
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
-use crate::research_workspace::{RescanResult, WorkspaceService};
+use crate::research_workspace::{
+    PreparedMediaUrlReceipt, PreparedMediaUrlRequest, RescanResult, WorkspaceService,
+};
 use serde::Deserialize;
 use std::sync::Arc;
 use tauri::{Manager, State, WebviewWindow};
@@ -73,6 +75,23 @@ pub async fn research_runner_master_rescan(
 }
 
 #[tauri::command]
+pub async fn research_runner_prepared_media_url(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    runtime: State<'_, Arc<PackageProtocolRuntime>>,
+    request: PreparedMediaUrlRequest,
+) -> ResearchResult<PreparedMediaUrlReceipt> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.while_idle(|| workspace.issue_prepared_media_url(request))
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("Prepared media URL worker did not finish."))?
+}
+
+#[tauri::command]
 pub async fn research_runner_master_preflight(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
@@ -109,6 +128,7 @@ async fn master_preflight(
     tauri::async_runtime::spawn_blocking(move || runtime.while_idle(|| {
         let prepared = PreparedMaster::read(&request.source_text, &request.participant_id, request.selector)?;
         workspace.with_workspace(&request.workspace_id, |root, _| crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(root, &prepared.loaded))?;
+        let prepared_browser_playback = super::bindings::uses_prepared_browser_playback(&prepared)?;
         let bindings = super::bindings::bind_master_media(&workspace, &request.workspace_id, &prepared)?;
         let viewport = &prepared.layout.viewport;
         let viewport_matches = f64::from(physical.width) / scale == viewport.width_css_px && f64::from(physical.height) / scale == viewport.height_css_px;
@@ -117,13 +137,13 @@ async fn master_preflight(
         if !viewport_matches { reasons.push("master-exact-fullscreen-viewport-required".to_owned()); }
         if validation {
             if !matches!(prepared.plan.version, 3 | 4 | 5) { reasons.push("validation-requires-master3-4-or-5".into()); }
-            if super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
-        } else if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
+            if !prepared_browser_playback && super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
+        } else if !prepared_browser_playback && !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
         if !crate::research_platform::NATIVE_ACQUISITION_SUPPORTED { reasons.push("native-acquisition-platform-unsupported".into()); }
         super::markers::MasterMarkers::new(&prepared.plan,"run-preflight","attempt-preflight")?;
         let result = serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,
             "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,
-            "mediaBindingCount":bindings.len(),"viewportMatches":viewport_matches,"nativeStartReady":reasons.is_empty(),"reasons":reasons});
+            "mediaBindingCount":bindings.len(),"preparedBrowserPlayback":prepared_browser_playback,"viewportMatches":viewport_matches,"nativeStartReady":reasons.is_empty(),"reasons":reasons});
         if validation { Ok(serde_json::json!({"schema":"affect-runner-validation-preflight","version":1,"result":result})) } else { Ok(result) }
     })).await.map_err(|_| CommandError::forbidden("Master preflight did not finish."))?
 }
@@ -192,7 +212,7 @@ pub async fn research_runner_master_validation_start(
     window: WebviewWindow,
     runtime: State<'_, Arc<MasterRuntime>>,
     request: super::runtime::MasterValidationStartRequest,
- ) -> ResearchResult<serde_json::Value> {
+) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
     if !window.is_fullscreen().map_err(CommandError::io)? {
         return Err(CommandError::forbidden("Enter fullscreen before starting."));
@@ -211,7 +231,7 @@ pub async fn research_runner_master_validation_start_v5(
     window: WebviewWindow,
     runtime: State<'_, Arc<MasterRuntime>>,
     request: super::runtime::MasterValidationStartRequestV5,
- ) -> ResearchResult<serde_json::Value> {
+) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
     if !window.is_fullscreen().map_err(CommandError::io)? {
         return Err(CommandError::forbidden("Enter fullscreen before starting."));

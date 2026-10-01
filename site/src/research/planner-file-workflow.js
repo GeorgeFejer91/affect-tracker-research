@@ -8,7 +8,8 @@ import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
  * this coordinator stores operation/edit identities, never a second recipe.
  * Readiness notifications are not researcher edits or saved media permissions. */
 export function createPlannerFileWorkflow({ registry, exporter, getDocument, adoptDocument,
-  getRecipeOptions, restoreOwners, write, canOperate, onChange = () => {}, documentAdapter = null }) {
+  getRecipeOptions, restoreOwners, write, canOperate, onChange = () => {}, documentAdapter = null,
+  prepareBeforeCapture = null }) {
   const { parseDocument: parseGuiDocument, compileDocument: compileGuiDocument, captureInput: captureGuiInput } = documentAdapter ?? {
     parseDocument: parsePlannerRecipeV1,
     async compileDocument(input) {
@@ -19,6 +20,9 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
   };
   if ([parseGuiDocument, compileGuiDocument, captureGuiInput].some(hook => typeof hook !== "function")) {
     throw new TypeError("GUI recipe adapters require explicit capture, compiler and reader hooks.");
+  }
+  if (prepareBeforeCapture !== null && typeof prepareBeforeCapture !== "function") {
+    throw new TypeError("Recipe save preparation hook must be a function.");
   }
   let edit = 0, operation = 0, openToken = 0, disposed = false, source = null, opening = false;
   const canCopy = () => !disposed && source !== null && source.edit === edit
@@ -111,6 +115,10 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
       const current = guard(() => !signal.aborted && isCurrent());
       const check = () => { if (!current()) throw new Error("The design changed while preparing its saved recipe."); };
       check();
+      if (prepareBeforeCapture) {
+        await prepareBeforeCapture({ isCurrent: current, signal });
+        check();
+      }
       const copy = canCopy() ? getDocument() : null;
       let feedback = null, capture = null, document;
       if (copy) {
@@ -212,6 +220,10 @@ export function createPlannerFileWorkflow({ registry, exporter, getDocument, ado
     async save() {
       if (disposed || opening || exporter.snapshot().busy || !canOperate()) return { status: "busy" };
       const current = guard();
+      if (prepareBeforeCapture) {
+        await prepareBeforeCapture({ isCurrent: current, signal: new AbortController().signal });
+        if (!current()) throw new Error("The design changed before final capture.");
+      }
       const copy = canCopy() ? getDocument() : null;
       let capture = null;
       // Accept the current preview before the export controller captures its

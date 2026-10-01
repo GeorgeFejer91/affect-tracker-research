@@ -44,7 +44,8 @@ use crate::research_runtime::{
 };
 use crate::research_workspace::{
     source_capabilities, AssignmentPlanExportReceipt, DecodeAttestationRequest,
-    ImportSelectionKind, MediaUrlReceipt, QuestionnaireAssetReceipt, RescanResult,
+    ImportSelectionKind, MediaUrlReceipt, PlannerMediaNormalizationReceipt,
+    PlannerMediaNormalizationRequest, QuestionnaireAssetReceipt, RescanResult,
     SavedSettingsReceipt, ScannedStimulusSummary, SourceCapabilities, StorageReadiness,
     WorkspaceLocation, WorkspaceService, WorkspaceStatus,
 };
@@ -753,7 +754,9 @@ pub fn research_input_begin_test(
     let focused = window.is_focused().map_err(CommandError::io)?;
     input.set_window_focused(focused);
     if !focused {
-        return Err(CommandError::forbidden("Focus the experiment window before testing input."));
+        return Err(CommandError::forbidden(
+            "Focus the experiment window before testing input.",
+        ));
     }
     input.begin_test(binding)
 }
@@ -1037,15 +1040,27 @@ pub async fn research_runner_recent_experiments(
     entry_id: Option<String>,
 ) -> ResearchResult<serde_json::Value> {
     authorize(&window)?;
-    if *role != crate::research_desktop::DesktopRole::Runner { return Err(CommandError::forbidden("Recent experiment loading belongs to Runner.")); }
+    if *role != crate::research_desktop::DesktopRole::Runner {
+        return Err(CommandError::forbidden(
+            "Recent experiment loading belongs to Runner.",
+        ));
+    }
     tauri::async_runtime::spawn_blocking(move || {
         let recent = app.state::<crate::research_runner_recent::RunnerRecentExperiment>();
         match (action.as_str(), entry_id.as_deref()) {
             ("list", None) => recent.list(),
-            ("load", Some(id)) => { let mut document = recent.load_id(id)?; attach_runner_project(&app, &mut document)?; Ok(document) },
-            _ => Err(CommandError::invalid_contract("Unknown recent experiment action.")),
+            ("load", Some(id)) => {
+                let mut document = recent.load_id(id)?;
+                attach_runner_project(&app, &mut document)?;
+                Ok(document)
+            }
+            _ => Err(CommandError::invalid_contract(
+                "Unknown recent experiment action.",
+            )),
         }
-    }).await.map_err(CommandError::io)?
+    })
+    .await
+    .map_err(CommandError::io)?
 }
 
 fn attach_runner_project(app: &AppHandle, document: &mut serde_json::Value) -> ResearchResult<()> {
@@ -1319,6 +1334,19 @@ pub async fn research_import_stimuli(
         })
         .collect::<ResearchResult<Vec<_>>>()?;
     Ok(Some(workspace.import_paths(&workspace_id, paths)?))
+}
+
+#[tauri::command]
+pub async fn research_prepare_planner_media(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    request: PlannerMediaNormalizationRequest,
+) -> ResearchResult<PlannerMediaNormalizationReceipt> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || workspace.prepare_planner_media(request))
+        .await
+        .map_err(CommandError::io)?
 }
 
 #[tauri::command]

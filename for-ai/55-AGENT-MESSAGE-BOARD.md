@@ -1,5 +1,26 @@
 # Agent message board
 
+## 20260913 Planner FFmpeg media normalization
+
+Direct user amendment: simplify study video playback by accepting broad input
+formats in Planner, probing/converting them with native ffprobe/ffmpeg before
+final confirmation, and publishing only browser-safe MP4/H.264/AAC/yuv420p
+fast-start playback assets for Runner HTML video use. Segment: media/P1 plus
+P7 export seam, with Runner media-intake verification as a consumer check.
+Stage: Backend Verification. Branch `codex/segment-media-ffmpeg-normalization`,
+isolated worktree `D:/GitHub/affect-tracker-research-ffmpeg-normalization`, base
+`origin/codex/research-unified`. The current dirty Planner/Runner checkout is
+untouched.
+
+Owned seams: native Planner FFmpeg/ffprobe command/service, media catalogue
+playback asset metadata, final Planner preparation/export gating, Runner master
+media intake and HTML-video path selection. Preserve the Planner/Runner boundary:
+Planner prepares and declares files; Runner still executes timing, playback,
+LSL/XDF/session behavior. Defer installed FFmpeg bundling, online/server-side
+conversion, final runtime correspondence, and installed research qualification
+unless this pass explicitly gathers that evidence. Historical GStreamer notes
+remain receipts, not the intended new playback strategy for this branch.
+
 ## 20260913 root cap-removal app integration
 
 Direct user override: newest implemented feature behavior is authoritative when
@@ -5873,3 +5894,36 @@ board. Do not restore superseded branch snapshots over the unified tree.
 Software checks and exact evidence are in docs/planner-questionnaire-assets.md.
 Installed distribution remains governed by73/current-build.json and is not
 claimed updated merely because source was merged.
+
+## Planner FFmpeg media normalization — 2026-09-13
+
+Direct user allocation P1/P3/P7 with Runner correspondence touchpoints: simplify
+active playback strategy by preparing browser-safe MP4 assets before final
+Planner save instead of making GstPlay the normal authoring path. Isolated branch
+`codex/segment-media-ffmpeg-normalization`, worktree
+`D:/GitHub/affect-tracker-research-ffmpeg-normalization`.
+
+Implementation adds P1 video catalogue/workspace v4 with
+`ffmpeg-browser-safe-mp4-v1` preparedPlayback metadata, native Planner command
+`research_prepare_planner_media`, and a Rust workspace converter using
+ffprobe/ffmpeg (`AFFECT_FFPROBE_PATH`/`AFFECT_FFMPEG_PATH` supported). Final
+Planner save invokes conversion before capture, publishes v4 P1, refreshes P3/P4
+/P6 dependent owners, and defaults the desktop UI to HTML video prepared MP4
+while retaining legacy GstPlay as historical/opt-in plumbing. `.prepared/`
+outputs are skipped by authoring scans. Runner master projection now points
+timeline video paths at prepared assets and accepts prepared catalogues without
+GstPlay media attestation. Runner execution also has a prepared HTML `<video>`
+bridge: Runner requests a hash-checked URL for `assets/stimuli/.prepared/*.mp4`,
+starts sampling/markers only after the first video frame callback, advances on
+the HTML ended event, preserves pause/resume, and keeps legacy GstPlay only for
+older catalogue contracts.
+
+Evidence collected: full Node suite `node --test test/*.test.js` passed
+1221/1221; `pnpm surveyjs:check` passed; focused native/planner/runner suites
+passed; JS parse checks passed; `cargo check` passed after rustfmt with the
+crate edition. Local ffmpeg/ffprobe are on PATH. Added Rust worker coverage for
+prepared first-frame start -> video end -> next ISI state, and
+`cargo test --lib prepared_html_video_first_frame_controls_start_and_next_isi`
+compiled the test binary, but this host failed to launch it with Windows
+`STATUS_ENTRYPOINT_NOT_FOUND`, so Rust unit-test execution remains an
+environment-blocked item rather than a compile failure.

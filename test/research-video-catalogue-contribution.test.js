@@ -6,6 +6,7 @@ import {
   browserDisplayGeometry,
   createVideoCatalogueContribution,
   createVideoCatalogueContributionV1,
+  createVideoCatalogueContributionV4,
   createVideoCatalogueProducer,
   createVideoCatalogueProducerV1,
   projectVideoDisplayGeometry,
@@ -15,6 +16,7 @@ import {
   reviseVideoCatalogueContributionV1,
   validateVideoCatalogueContribution,
   validateVideoCatalogueContributionV1,
+  validateSupportedVideoCatalogueContribution,
   validateVideoDisplayGeometry,
   validateVideoDisplayGeometryV1,
   videoAnnotationIdFromRelativePathV1,
@@ -71,6 +73,22 @@ function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annot
     byteLength: 1_024,
     durationMs: 12_345,
     geometry: browserDisplayGeometry({ videoWidth: 1_920, videoHeight: 1_080 }),
+  };
+}
+
+function preparedPlayback(overrides = {}) {
+  return {
+    strategy: "ffmpeg-browser-safe-mp4-v1",
+    packageRelativePath: "assets/stimuli/.prepared/folder_video-audio.mp4",
+    sha256: "f".repeat(64),
+    byteLength: 2_048,
+    durationMs: 12_345,
+    container: "mp4",
+    videoCodec: "h264",
+    audioCodec: "aac",
+    pixelFormat: "yuv420p",
+    fastStart: true,
+    ...overrides,
   };
 }
 
@@ -195,6 +213,23 @@ test("v2 keeps byte-identical videos at distinct locations while sharing content
   ]);
   assert.deepEqual(await validateVideoCatalogueContribution(catalogue), catalogue);
   await assert.rejects(createVideoCatalogueContribution({ revision: 1, entries: [] }), /non-empty/u);
+});
+
+test("v4 catalogue binds FFmpeg-prepared browser playback without changing authored source identity", async () => {
+  const original = entry({ path: "stimuli/raw/session.mov", annotationId: "raw_session.mov" });
+  const prepared = { ...original, preparedPlayback: preparedPlayback() };
+  const catalogue = await createVideoCatalogueContributionV4({ revision: 4, entries: [prepared] });
+  assert.equal(catalogue.version, 4);
+  assert.equal(catalogue.entries[0].assetId, original.assetId);
+  assert.equal(catalogue.entries[0].packageRelativePath, "assets/stimuli/raw/session.mov");
+  assert.equal(catalogue.entries[0].preparedPlayback.packageRelativePath, "assets/stimuli/.prepared/folder_video-audio.mp4");
+  assert.deepEqual(await validateSupportedVideoCatalogueContribution(catalogue), catalogue);
+  await assert.rejects(createVideoCatalogueContributionV4({ revision: 1, entries: [
+    { ...prepared, preparedPlayback: preparedPlayback({ videoCodec: "hevc" }) },
+  ] }), /browser-safe FFmpeg MP4/u);
+  await assert.rejects(createVideoCatalogueContributionV4({ revision: 1, entries: [
+    { ...prepared, preparedPlayback: preparedPlayback({ packageRelativePath: "assets/stimuli/.prepared/clip.webm" }) },
+  ] }), /MP4/u);
 });
 
 test("current workspace projection ignores editable display text and derives location identity", () => {

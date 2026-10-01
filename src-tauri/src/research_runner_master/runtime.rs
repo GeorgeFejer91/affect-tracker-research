@@ -68,7 +68,9 @@ pub struct MasterActionRequestV5 {
     pub action: MasterActionV4,
 }
 impl MasterActionRequestV5 {
-    pub(crate) fn validate(&self) -> ResearchResult<()> { require_wire_version(self.version, 5) }
+    pub(crate) fn validate(&self) -> ResearchResult<()> {
+        require_wire_version(self.version, 5)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -109,6 +111,22 @@ pub enum MasterActionV4 {
         data: Value,
         page_no: u32,
     },
+    HtmlVideoStarted {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoProgress {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoEnded {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoError {
+        position: u32,
+        code: String,
+    },
     Pause,
     Resume,
     Stop,
@@ -137,6 +155,30 @@ impl From<MasterActionV4> for MasterAction {
                 data,
                 page_no,
             },
+            MasterActionV4::HtmlVideoStarted {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoStarted {
+                position,
+                media_time_ms,
+            },
+            MasterActionV4::HtmlVideoProgress {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoProgress {
+                position,
+                media_time_ms,
+            },
+            MasterActionV4::HtmlVideoEnded {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoEnded {
+                position,
+                media_time_ms,
+            },
+            MasterActionV4::HtmlVideoError { position, code } => {
+                Self::HtmlVideoError { position, code }
+            }
             MasterActionV4::Pause => Self::Pause,
             MasterActionV4::Resume => Self::Resume,
             MasterActionV4::Stop => Self::Stop,
@@ -279,6 +321,26 @@ pub enum MasterAction {
         data: Value,
         page_no: u32,
     },
+    #[serde(skip)]
+    HtmlVideoStarted {
+        position: u32,
+        media_time_ms: f64,
+    },
+    #[serde(skip)]
+    HtmlVideoProgress {
+        position: u32,
+        media_time_ms: f64,
+    },
+    #[serde(skip)]
+    HtmlVideoEnded {
+        position: u32,
+        media_time_ms: f64,
+    },
+    #[serde(skip)]
+    HtmlVideoError {
+        position: u32,
+        code: String,
+    },
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
@@ -294,6 +356,22 @@ pub enum MasterActionV2 {
         position: u32,
         answers: Vec<super::typed_forms::TypedChoice>,
     },
+    HtmlVideoStarted {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoProgress {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoEnded {
+        position: u32,
+        media_time_ms: f64,
+    },
+    HtmlVideoError {
+        position: u32,
+        code: String,
+    },
     Pause,
     Resume,
     Stop,
@@ -304,6 +382,30 @@ impl From<MasterActionV2> for MasterAction {
             MasterActionV2::Presented { position } => Self::Presented { position },
             MasterActionV2::Draft { position, answers } => Self::DraftV2 { position, answers },
             MasterActionV2::Submit { position, answers } => Self::SubmitV2 { position, answers },
+            MasterActionV2::HtmlVideoStarted {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoStarted {
+                position,
+                media_time_ms,
+            },
+            MasterActionV2::HtmlVideoProgress {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoProgress {
+                position,
+                media_time_ms,
+            },
+            MasterActionV2::HtmlVideoEnded {
+                position,
+                media_time_ms,
+            } => Self::HtmlVideoEnded {
+                position,
+                media_time_ms,
+            },
+            MasterActionV2::HtmlVideoError { position, code } => {
+                Self::HtmlVideoError { position, code }
+            }
             MasterActionV2::Pause => Self::Pause,
             MasterActionV2::Resume => Self::Resume,
             MasterActionV2::Stop => Self::Stop,
@@ -407,7 +509,11 @@ impl MasterRuntime {
         require_wire_version(request.0.version, 4)?;
         self.start_typed(request.0, window)
     }
-    pub fn start_v5(&self, request: MasterStartRequestV5, window: (u32, u32, f64)) -> ResearchResult<Value> {
+    pub fn start_v5(
+        &self,
+        request: MasterStartRequestV5,
+        window: (u32, u32, f64),
+    ) -> ResearchResult<Value> {
         require_wire_version(request.0.version, 5)?;
         self.start_typed(request.0, window)
     }
@@ -419,29 +525,42 @@ impl MasterRuntime {
         self.start_typed_mode(request, window, false)
     }
     pub fn start_validation(
-        &self, request: MasterValidationStartRequest, window: (u32, u32, f64),
+        &self,
+        request: MasterValidationStartRequest,
+        window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         if ![3, 4].contains(&request.experiment.version) {
-            return Err(CommandError::invalid_contract("Validation sessions require master3 or master4."));
+            return Err(CommandError::invalid_contract(
+                "Validation sessions require master3 or master4.",
+            ));
         }
         if !request.acknowledge_unqualified {
-            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+            return Err(CommandError::forbidden(
+                "Explicit unqualified validation acknowledgement is required.",
+            ));
         }
         self.start_typed_mode(request.experiment, window, true)
     }
     pub fn start_validation_v5(
-        &self, request: MasterValidationStartRequestV5, window: (u32, u32, f64),
+        &self,
+        request: MasterValidationStartRequestV5,
+        window: (u32, u32, f64),
     ) -> ResearchResult<Value> {
         require_wire_version(request.version, 1)?;
         require_wire_version(request.experiment.0.version, 5)?;
         if !request.acknowledge_unqualified {
-            return Err(CommandError::forbidden("Explicit unqualified validation acknowledgement is required."));
+            return Err(CommandError::forbidden(
+                "Explicit unqualified validation acknowledgement is required.",
+            ));
         }
         self.start_typed_mode(request.experiment.0, window, true)
     }
     fn start_typed_mode(
-        &self, request: MasterStartRequestV2, window: (u32, u32, f64), validation: bool,
+        &self,
+        request: MasterStartRequestV2,
+        window: (u32, u32, f64),
+        validation: bool,
     ) -> ResearchResult<Value> {
         super::validate_master_participant(&request.participant_id)?;
         self.start_input(
@@ -471,15 +590,6 @@ impl MasterRuntime {
             crate::research_platform::require_native_acquisition(
                 crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
             )?;
-            if request.validation {
-                require_validation_media(&self.media.capability())?;
-            } else if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
-                != PlaybackQualification::QualifiedNative
-            {
-                return Err(CommandError::native_media_unavailable(
-                    "native-gstplay-qualification-required",
-                ));
-            }
             let prepared = PreparedMaster::read(
                 &request.source_text,
                 &request.participant_id,
@@ -490,10 +600,28 @@ impl MasterRuntime {
                     "Start version must match the exact master version.",
                 ));
             }
+            let prepared_browser_playback =
+                super::bindings::uses_prepared_browser_playback(&prepared)?;
+            if request.validation {
+                if !prepared_browser_playback {
+                    require_validation_media(&self.media.capability())?;
+                }
+            } else if !prepared_browser_playback
+                && self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
+                    != PlaybackQualification::QualifiedNative
+            {
+                return Err(CommandError::native_media_unavailable(
+                    "native-gstplay-qualification-required",
+                ));
+            }
             let viewport = native_viewport(&prepared, window)?;
-            self.workspace.with_workspace(&request.workspace_id, |root, _| {
-                crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(root, &prepared.loaded)
-            })?;
+            self.workspace
+                .with_workspace(&request.workspace_id, |root, _| {
+                    crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(
+                        root,
+                        &prepared.loaded,
+                    )
+                })?;
             let bindings = super::bindings::bind_master_media(
                 &self.workspace,
                 &request.workspace_id,
@@ -751,9 +879,13 @@ mod v3_ingress_tests {
 }
 
 /// Validation admits a functioning verified player, never a qualified claim.
-pub(crate) fn require_validation_media(capability: &crate::research_native_media::NativeMediaCapability) -> ResearchResult<()> {
+pub(crate) fn require_validation_media(
+    capability: &crate::research_native_media::NativeMediaCapability,
+) -> ResearchResult<()> {
     if !capability.runtime_integrity_verified || !capability.player_actor_ready {
-        return Err(CommandError::native_media_unavailable(&capability.reason_code));
+        return Err(CommandError::native_media_unavailable(
+            &capability.reason_code,
+        ));
     }
     Ok(())
 }

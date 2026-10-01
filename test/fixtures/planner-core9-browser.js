@@ -25,6 +25,25 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   ui.connectPlannerNativeWorkspace({ getWorkspaceId: () => selected,
     prepareWorkspace(_receipt, { isCurrent }) { return { isCurrent, projection: { workspaceId, directoryPermission: true, label: "Synthetic workspace", surface: "tauri" }, commit() { selected = workspaceId; } }; },
     async prepareCatalogue(_receipt, { isCurrent }) { return { isCurrent, projection: { items, replace: true }, commit() {} }; },
+    async prepareMediaNormalization({ catalogue }) {
+      return { workspaceId, entries: catalogue.entries.map(entry => ({
+        sourceRelativePath: entry.sourceRelativePath,
+        sha256: entry.sha256,
+        byteLength: entry.byteLength,
+        preparedPlayback: {
+          strategy: "ffmpeg-browser-safe-mp4-v1",
+          packageRelativePath: `assets/stimuli/.prepared/${entry.sha256}.mp4`,
+          sha256: "b".repeat(64),
+          byteLength: Math.max(1, entry.byteLength),
+          durationMs: entry.durationMs,
+          container: "mp4",
+          videoCodec: "h264",
+          audioCodec: "aac",
+          pixelFormat: "yuv420p",
+          fastStart: true,
+        },
+      })) };
+    },
   });
   ui.connectPlannerNativeEffects({ async execute(context, action, publication) {
     check("native dispatch sees current command", publication.isCurrent());
@@ -89,7 +108,7 @@ addEventListener("unhandledrejection", event => errors.push(String(event.reason)
   }
   const typedSave = await perform("saveRecipe", { directory: crypto.randomUUID() });
   check(`typed final save: ${JSON.stringify(typedSave)} ${JSON.stringify(globalThis.__core9Failure)}`, typedSave.status === "applied");
-  check("actual app compiler produces master v2", JSON.parse(written.at(-1)).version === 2);
+  check("actual app compiler produces prepared-media master v3", JSON.parse(written.at(-1)).version === 3);
   for (const [operation, args] of [["importVideos", { paths: [crypto.randomUUID()] }], ["importVideoFolder", { directory: crypto.randomUUID() }]]) {
     const imported = await perform(operation, args);
     check(`${operation}: ${JSON.stringify(imported)}`, imported.status === "applied");

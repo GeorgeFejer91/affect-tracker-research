@@ -1,6 +1,6 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { validateVideoLibrary } from "./stimulus-order.js";
-import { validateVideoCatalogueContribution, validateVideoCatalogueContributionV3 } from "./video-catalogue-contribution.js";
+import { validateSupportedVideoCatalogueContribution, validateVideoCatalogueContribution, validateVideoCatalogueContributionV3, validateVideoCatalogueContributionV4 } from "./video-catalogue-contribution.js";
 
 /** Explicit P1 v2 -> P3 view. The catalogue remains P1-owned; this derived
  * library is internal editor data, never a second persisted media authority. */
@@ -12,6 +12,10 @@ export async function createLocationVariantLibrary(catalogue) {
 export async function createLocationVariantLibraryV3(catalogue) {
   const source = await validateVideoCatalogueContributionV3(catalogue);
   return { ...await projectLocationLibrary(source), catalogueContextVersion: 3 };
+}
+export async function createLocationVariantLibraryV4(catalogue) {
+  const source = await validateVideoCatalogueContributionV4(catalogue);
+  return { ...await projectLocationLibrary(source), catalogueContextVersion: 4 };
 }
 async function projectLocationLibrary(source) {
   const videos = source.entries.map(entry => ({
@@ -25,8 +29,18 @@ async function projectLocationLibrary(source) {
 
 export async function validateVariantLibrary(library) {
   if (library?.version === 1) return validateVideoLibrary(library);
-  const expected = library?.catalogueContextVersion === 3
-    ? await createLocationVariantLibraryV3(library.catalogue) : await createLocationVariantLibrary(library?.catalogue);
+  const expected = library?.catalogueContextVersion === 4
+    ? await createLocationVariantLibraryV4(library.catalogue)
+    : library?.catalogueContextVersion === 3
+      ? await createLocationVariantLibraryV3(library.catalogue)
+      : await createLocationVariantLibrary(library?.catalogue);
   if (canonicalJson(library) !== canonicalJson(expected)) throw new TypeError("Video location identities or library integrity do not match Segment 1.");
   return expected;
+}
+
+export async function createSupportedLocationVariantLibrary(catalogue) {
+  const source = await validateSupportedVideoCatalogueContribution(catalogue);
+  if (source.version === 4) return createLocationVariantLibraryV4(source);
+  if (source.version === 3) return createLocationVariantLibraryV3(source);
+  return createLocationVariantLibrary(source);
 }

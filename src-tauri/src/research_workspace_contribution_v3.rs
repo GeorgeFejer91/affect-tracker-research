@@ -1,8 +1,8 @@
 //! Explicit P1 successor; historical readers and types remain closed.
 use super::{
-    invalid, validate_entry_identity, validate_geometry, validate_study, StudyIdentity,
-    VideoCatalogueEntry, VideoDisplayGeometry, WorkspaceRelativeLayout, VIDEO_CATALOGUE_SCHEMA,
-    VIDEO_LOCATION_ID_POLICY_V1, WORKSPACE_CONTRIBUTION_SCHEMA,
+    invalid, portable_path, validate_entry_identity, validate_geometry, validate_study,
+    StudyIdentity, VideoCatalogueEntry, VideoDisplayGeometry, WorkspaceRelativeLayout,
+    VIDEO_CATALOGUE_SCHEMA, VIDEO_LOCATION_ID_POLICY_V1, WORKSPACE_CONTRIBUTION_SCHEMA,
 };
 use crate::research_contracts::{canonical_sha256, MAX_SAFE_INTEGER, MAX_STIMULI};
 use crate::research_error::ResearchResult;
@@ -10,6 +10,8 @@ use crate::research_video_geometry::{derive_native_display_geometry_v2, NativeDi
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+
+pub const VIDEO_PREPARED_PLAYBACK_STRATEGY_V1: &str = "ffmpeg-browser-safe-mp4-v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VideoDisplayGeometryV3 {
@@ -85,6 +87,103 @@ pub struct WorkspaceContributionV3 {
     pub workspace_layout: WorkspaceRelativeLayout,
     pub video_catalogue: VideoCatalogueContributionV3,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PreparedPlaybackV1 {
+    pub strategy: String,
+    pub package_relative_path: String,
+    pub sha256: String,
+    pub byte_length: u64,
+    pub duration_ms: u64,
+    pub container: String,
+    pub video_codec: String,
+    pub audio_codec: String,
+    pub pixel_format: String,
+    pub fast_start: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VideoCatalogueEntryV4 {
+    pub asset_id: String,
+    pub annotation_id: String,
+    pub source_relative_path: String,
+    pub package_relative_path: String,
+    pub sha256: String,
+    pub byte_length: u64,
+    pub duration_ms: u64,
+    pub geometry: VideoDisplayGeometryV3,
+    pub prepared_playback: PreparedPlaybackV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VideoCatalogueContributionV4 {
+    pub schema: String,
+    pub version: u32,
+    pub revision: u64,
+    pub annotation_policy: String,
+    pub entries: Vec<VideoCatalogueEntryV4>,
+    pub integrity_sha256: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WorkspaceContributionV4 {
+    pub schema: String,
+    pub version: u32,
+    pub study: StudyIdentity,
+    pub workspace_layout: WorkspaceRelativeLayout,
+    pub video_catalogue: VideoCatalogueContributionV4,
+}
+
+fn is_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn validate_prepared_playback(value: &PreparedPlaybackV1) -> ResearchResult<()> {
+    if value.strategy != VIDEO_PREPARED_PLAYBACK_STRATEGY_V1
+        || value.container != "mp4"
+        || value.video_codec != "h264"
+        || !matches!(value.audio_codec.as_str(), "aac" | "none")
+        || value.pixel_format != "yuv420p"
+        || !value.fast_start
+        || !is_sha256(&value.sha256)
+        || value.byte_length == 0
+        || value.duration_ms == 0
+        || value.byte_length > MAX_SAFE_INTEGER
+        || value.duration_ms > MAX_SAFE_INTEGER
+        || !value
+            .package_relative_path
+            .to_ascii_lowercase()
+            .ends_with(".mp4")
+    {
+        return Err(invalid("Prepared playback metadata is invalid."));
+    }
+    portable_path(
+        &value.package_relative_path,
+        "assets/stimuli/",
+        "preparedPlayback.packageRelativePath",
+        true,
+    )
+}
+
+fn entry_v4_identity(entry: &VideoCatalogueEntryV4) -> VideoCatalogueEntry<VideoDisplayGeometryV3> {
+    VideoCatalogueEntry {
+        asset_id: entry.asset_id.clone(),
+        annotation_id: entry.annotation_id.clone(),
+        source_relative_path: entry.source_relative_path.clone(),
+        package_relative_path: entry.package_relative_path.clone(),
+        sha256: entry.sha256.clone(),
+        byte_length: entry.byte_length,
+        duration_ms: entry.duration_ms,
+        geometry: entry.geometry.clone(),
+    }
+}
 pub fn validate_video_catalogue_contribution_v3(
     value: &Value,
 ) -> ResearchResult<VideoCatalogueContributionV3> {
@@ -157,6 +256,113 @@ pub fn validate_workspace_contribution_v3(
     validate_study(&document.study)?;
     validate_video_catalogue_contribution_v3(&value["videoCatalogue"])?;
     Ok(document)
+}
+
+pub fn validate_video_catalogue_contribution_v4(
+    value: &Value,
+) -> ResearchResult<VideoCatalogueContributionV4> {
+    let document: VideoCatalogueContributionV4 = serde_json::from_value(value.clone())
+        .map_err(|_| invalid("Invalid catalogue v4 shape."))?;
+    if document.schema != VIDEO_CATALOGUE_SCHEMA
+        || document.version != 4
+        || document.revision == 0
+        || document.revision > MAX_SAFE_INTEGER
+        || document.annotation_policy != VIDEO_LOCATION_ID_POLICY_V1
+        || document.entries.is_empty()
+        || document.entries.len() > MAX_STIMULI
+    {
+        return Err(invalid("Invalid catalogue v4 header."));
+    }
+    let mut locations = BTreeSet::new();
+    let mut paths = BTreeSet::new();
+    let mut content = BTreeMap::new();
+    for (i, entry) in document.entries.iter().enumerate() {
+        let identity = entry_v4_identity(entry);
+        validate_entry_identity(&identity, 4)?;
+        entry.geometry.validate()?;
+        validate_prepared_playback(&entry.prepared_playback)?;
+        if !locations.insert(&entry.annotation_id) || !paths.insert(&entry.package_relative_path) {
+            return Err(invalid("Duplicate catalogue v4 location."));
+        }
+        if i > 0 {
+            let previous = &document.entries[i - 1];
+            if previous
+                .annotation_id
+                .encode_utf16()
+                .cmp(entry.annotation_id.encode_utf16())
+                .then_with(|| previous.asset_id.cmp(&entry.asset_id))
+                .is_gt()
+            {
+                return Err(invalid("Noncanonical catalogue v4 ordering."));
+            }
+        }
+        let metadata = (
+            &entry.sha256,
+            entry.byte_length,
+            entry.duration_ms,
+            &entry.geometry,
+            &entry.prepared_playback,
+        );
+        if content
+            .insert(&entry.asset_id, metadata)
+            .is_some_and(|before| before != metadata)
+        {
+            return Err(invalid(
+                "Shared content has conflicting prepared playback metadata.",
+            ));
+        }
+    }
+    if canonical_sha256(&document, &["integritySha256"])? != document.integrity_sha256 {
+        return Err(invalid("Catalogue v4 integrity mismatch."));
+    }
+    Ok(document)
+}
+
+pub fn validate_workspace_contribution_v4(
+    value: &Value,
+) -> ResearchResult<WorkspaceContributionV4> {
+    let document: WorkspaceContributionV4 = serde_json::from_value(value.clone())
+        .map_err(|_| invalid("Invalid workspace v4 shape."))?;
+    if document.schema != WORKSPACE_CONTRIBUTION_SCHEMA
+        || document.version != 4
+        || document.workspace_layout.asset_root != "assets"
+        || document.workspace_layout.video_library != "assets/stimuli"
+        || document.workspace_layout.project_file != "experiment.package.json"
+    {
+        return Err(invalid("Invalid workspace v4 header/layout."));
+    }
+    validate_study(&document.study)?;
+    let observed = validate_video_catalogue_contribution_v4(&value["videoCatalogue"])?;
+    if observed != document.video_catalogue {
+        return Err(invalid("Workspace v4 catalogue is noncanonical."));
+    }
+    Ok(document)
+}
+
+impl WorkspaceContributionV4 {
+    pub fn as_v3(&self) -> ResearchResult<WorkspaceContributionV3> {
+        let mut catalogue = VideoCatalogueContributionV3 {
+            schema: VIDEO_CATALOGUE_SCHEMA.to_owned(),
+            version: 3,
+            revision: self.video_catalogue.revision,
+            annotation_policy: VIDEO_LOCATION_ID_POLICY_V1.to_owned(),
+            entries: self
+                .video_catalogue
+                .entries
+                .iter()
+                .map(entry_v4_identity)
+                .collect(),
+            integrity_sha256: String::new(),
+        };
+        catalogue.integrity_sha256 = canonical_sha256(&catalogue, &["integritySha256"])?;
+        Ok(WorkspaceContributionV3 {
+            schema: WORKSPACE_CONTRIBUTION_SCHEMA.to_owned(),
+            version: 3,
+            study: self.study.clone(),
+            workspace_layout: self.workspace_layout.clone(),
+            video_catalogue: catalogue,
+        })
+    }
 }
 
 #[cfg(test)]

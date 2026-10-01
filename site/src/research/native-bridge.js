@@ -717,7 +717,7 @@ export function nativeRunStatusMatchesFence(status, run, fence) {
 }
 
 export function authorizeDesktopPlaybackMode(requestedMode, capability) {
-  const playbackMode = requestedMode ?? "nativeGstPlay";
+  const playbackMode = requestedMode ?? "unqualifiedWebview";
   if (!PLAYBACK_MODES.has(playbackMode)) throw new TypeError("Unknown native playback mode.");
   const validated = validateNativeMediaCapabilityV2(capability);
   if (validated.reasonCode === INTERFACE_ONLY_PLATFORM_REASON) {
@@ -1223,6 +1223,7 @@ export class NativeResearchRuntimeBridge {
       getWorkspaceId: () => this.destroyed ? null : this.workspace?.workspaceId ?? null,
       prepareWorkspace: (receipt, options) => this.prepareWorkspace(receipt, options),
       prepareCatalogue: (receipt, options) => this.prepareCatalogue(receipt, options),
+      prepareMediaNormalization: (detail, options) => this.prepareMediaNormalization(detail, options),
     }));
     return this;
   }
@@ -1585,7 +1586,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   #selectedPlaybackMode() {
-    return this.root.querySelector?.("#native-playback-mode")?.value ?? "nativeGstPlay";
+    return this.root.querySelector?.("#native-playback-mode")?.value ?? "unqualifiedWebview";
   }
 
   #listen(target, type, listener, options) {
@@ -1939,6 +1940,50 @@ export class NativeResearchRuntimeBridge {
         committed = true;
       },
     });
+  }
+
+  async prepareMediaNormalization(detail, { isCurrent = () => true, signal } = {}) {
+    if (typeof isCurrent !== "function") {
+      throw new TypeError("Prepared media normalization requires an operation guard.");
+    }
+    this.#requireWorkspace();
+    const catalogue = detail?.catalogue;
+    if (!catalogue || typeof catalogue !== "object" || !Array.isArray(catalogue.entries) || catalogue.entries.length === 0) {
+      throw new TypeError("Prepared media normalization requires a nonempty video catalogue.");
+    }
+    const workspace = this.workspace;
+    const publication = this.workspacePublication;
+    const current = () => !this.destroyed
+      && !signal?.aborted
+      && isCurrent()
+      && this.workspace === workspace
+      && this.workspacePublication === publication;
+    if (!current()) throw new Error("Prepared media normalization is stale.");
+    const entries = catalogue.entries.map((entry) => {
+      if (typeof entry?.sourceRelativePath !== "string"
+        || !entry.sourceRelativePath.startsWith("stimuli/")
+        || typeof entry.sha256 !== "string"
+        || !SHA256_PATTERN.test(entry.sha256)
+        || !Number.isSafeInteger(entry.byteLength)
+        || entry.byteLength < 1
+        || !Number.isSafeInteger(entry.durationMs)
+        || entry.durationMs < 1) {
+        throw new TypeError("Prepared media normalization received malformed catalogue identity metadata.");
+      }
+      return {
+        sourceRelativePath: entry.sourceRelativePath,
+        sha256: entry.sha256,
+        byteLength: entry.byteLength,
+        durationMs: entry.durationMs,
+      };
+    });
+    const receipt = await this.invoke("research_prepare_planner_media", {
+      request: { workspaceId: workspace.workspaceId, entries },
+    });
+    if (!current() || receipt?.workspaceId !== workspace.workspaceId || !Array.isArray(receipt.entries)) {
+      throw new Error("Prepared media normalization returned a stale or malformed receipt.");
+    }
+    return structuredClone(receipt);
   }
 
   async #loadSettings() {

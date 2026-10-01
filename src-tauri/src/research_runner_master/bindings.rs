@@ -17,6 +17,9 @@ pub(crate) fn bind_master_media(
     workspace_id: &str,
     prepared: &PreparedMaster,
 ) -> ResearchResult<Vec<MasterVideoBinding>> {
+    if uses_prepared_browser_playback(prepared)? {
+        return Ok(Vec::new());
+    }
     let catalogue = &prepared.loaded.recipe.segment("P1")?["videoCatalogue"];
     match if matches!(prepared.plan.version, 4 | 5) {
         if prepared.loaded.recipe.segment("P1")?["version"] == 3 {
@@ -42,6 +45,26 @@ pub(crate) fn bind_master_media(
             "Unsupported master media binding version.",
         )),
     }
+}
+
+pub(crate) fn uses_prepared_browser_playback(prepared: &PreparedMaster) -> ResearchResult<bool> {
+    let catalogue = &prepared.loaded.recipe.segment("P1")?["videoCatalogue"];
+    if catalogue["version"] != 4 {
+        return Ok(false);
+    }
+    let entries = catalogue["entries"].as_array().ok_or_else(|| {
+        CommandError::invalid_contract("Prepared browser playback requires a video catalogue.")
+    })?;
+    if entries.is_empty()
+        || entries
+            .iter()
+            .any(|entry| !entry["preparedPlayback"].is_object())
+    {
+        return Err(CommandError::invalid_contract(
+            "Prepared browser playback requires every video to carry preparedPlayback.",
+        ));
+    }
+    Ok(true)
 }
 
 impl MasterVideoBinding {

@@ -114,8 +114,8 @@ export function capturePlannerRecipeInputPreparedFeedback(registry, {
 
 /** New capture follows explicit accepted contracts, never upgrades loaded bytes. */
 export function plannerRecipeVersionForContributions(workspace, questionnaires) {
-  if ([1, 2, 3].includes(workspace?.version) && questionnaires?.version === 3) return 4;
-  if (workspace?.version === 3 && questionnaires?.version === 2) return 3;
+  if ([1, 2, 3, 4].includes(workspace?.version) && questionnaires?.version === 3) return 4;
+  if ([3, 4].includes(workspace?.version) && questionnaires?.version === 2) return 3;
   if ([1, 2].includes(workspace?.version) && [1, 2].includes(questionnaires?.version)) return questionnaires.version;
   throw new TypeError("Unsupported workspace/questionnaire combination for final capture.");
 }

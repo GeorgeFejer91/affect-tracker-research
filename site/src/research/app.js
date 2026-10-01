@@ -128,6 +128,7 @@ import { createStudyIdentityV1, validateStudyIdentityV1 } from "./study-identity
 import {
   browserDisplayGeometry,
   createSupportedVideoCatalogueProducer as createVideoCatalogueProducer,
+  VIDEO_PREPARED_PLAYBACK_STRATEGY_V1,
   validateSupportedVideoCatalogueContribution as validateVideoCatalogueContribution,
   videoAnnotationIdFromRelativePathV1,
   workspaceStimuliToSupportedVideoCatalogueEntries as workspaceStimuliToVideoCatalogueEntries,
@@ -437,6 +438,7 @@ function bindResearchInteractions(root, { surface }) {
       ? requestPlannerFile(root, PLANNER_SAVE_REQUEST, { sourceText: plannerRecipeTransportText(document) })
       : packageSaveDialog.request(plannerRecipeTransportText(document), options),
     onChange: () => renderPackageReceipt(),
+    prepareBeforeCapture: preparePlannerMediaBeforeCapture,
   });
   let browserPackageRoot = null;
   let packageAssetClosureSha256 = null;
@@ -1316,7 +1318,7 @@ function bindResearchInteractions(root, { surface }) {
       || selectedAttemptDisposition() !== "resume-compatible"
       || participantFinalizationPending.get(selectedParticipant) !== true) return null;
     const binding = participantFinalizationBindings.get(selectedParticipant);
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
+    const playbackMode = value("native-playback-mode", "unqualifiedWebview");
     const protocolContract = experimentPackageDocument?.package
       ? "manifestV4"
       : protocolSettingsSnapshot?.version === 3
@@ -2047,7 +2049,7 @@ function bindResearchInteractions(root, { surface }) {
       && selectedPackageRoute()
       && selectedLanguageContextKey === participantLanguageContextKey(),
     );
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
+    const playbackMode = value("native-playback-mode", "unqualifiedWebview");
     const playbackReady = surface !== "tauri"
       || playbackMode === "unqualifiedWebview"
       || capabilities.nativePlaybackReady;
@@ -3745,6 +3747,79 @@ function bindResearchInteractions(root, { surface }) {
     return workspaceContributionProducer.changed();
   }
 
+  function preparedPlaybackReady(entry) {
+    return entry?.preparedPlayback?.strategy === VIDEO_PREPARED_PLAYBACK_STRATEGY_V1
+      && entry.preparedPlayback.container === "mp4"
+      && entry.preparedPlayback.videoCodec === "h264"
+      && ["aac", "none"].includes(entry.preparedPlayback.audioCodec)
+      && entry.preparedPlayback.pixelFormat === "yuv420p"
+      && entry.preparedPlayback.fastStart === true
+      && typeof entry.preparedPlayback.packageRelativePath === "string"
+      && entry.preparedPlayback.packageRelativePath.startsWith("assets/stimuli/")
+      && entry.preparedPlayback.packageRelativePath.toLowerCase().endsWith(".mp4");
+  }
+
+  function mediaPreparationNeeded(catalogue) {
+    return catalogue?.entries?.length > 0 && (catalogue.version !== 4 || catalogue.entries.some(entry => !preparedPlaybackReady(entry)));
+  }
+
+  async function preparePlannerMediaBeforeCapture({ isCurrent = () => true, signal } = {}) {
+    const snapshot = getVideoCatalogueContributionSnapshot();
+    const catalogue = snapshot.contribution;
+    if (!snapshot.enabled || snapshot.pending || !catalogue || !mediaPreparationNeeded(catalogue)) return false;
+    if (surface !== "tauri" || typeof plannerNativeWorkspace?.prepareMediaNormalization !== "function") {
+      throw new Error("Desktop FFmpeg preparation is required before saving this recipe. Open it in Experiment Planner with a selected project folder.");
+    }
+    const generation = workspaceRestoreGeneration;
+    const beforeCommitCurrent = () => !signal?.aborted && isCurrent()
+      && generation === workspaceRestoreGeneration
+      && getVideoCatalogueContributionSnapshot() === snapshot;
+    const afterCommitCurrent = () => !signal?.aborted && isCurrent()
+      && generation + 1 === workspaceRestoreGeneration;
+    if (!beforeCommitCurrent()) throw new Error("The video catalogue changed before media preparation.");
+    const status = query("#workspace-status");
+    if (status) status.textContent = "Preparing browser-safe MP4 playback files with FFmpeg...";
+    const receipt = await plannerNativeWorkspace.prepareMediaNormalization({ catalogue }, { isCurrent: beforeCommitCurrent, signal });
+    if (!beforeCommitCurrent()) throw new Error("The video catalogue changed during media preparation.");
+    const preparedBySource = new Map((receipt?.entries ?? []).map(entry => [
+      `${entry.sourceRelativePath}\u0000${entry.sha256}\u0000${entry.byteLength}`,
+      entry.preparedPlayback,
+    ]));
+    const entries = catalogue.entries.map(entry => {
+      const preparedPlayback = preparedBySource.get(`${entry.sourceRelativePath}\u0000${entry.sha256}\u0000${entry.byteLength}`);
+      if (!preparedPlayback) throw new Error(`FFmpeg did not return prepared playback for ${entry.annotationId}.`);
+      return { ...structuredClone(entry), preparedPlayback };
+    });
+    const prepared = await videoCatalogueProducer.preparePublication({ entries }, { isCurrent: beforeCommitCurrent });
+    prepared.commit();
+    prepared.afterCommit();
+    notifyWorkspaceContributionChanged();
+    const p1 = getWorkspaceContributionSnapshot();
+    await stimulusOrderEditor.setCatalogueSource(p1);
+    await layoutDraftEditor.refreshCatalogue?.();
+    await xrLayoutAuthoring?.refresh?.();
+    if (!afterCommitCurrent()) throw new Error("The design changed after media preparation.");
+    const selectedTarget = getSelectedPlannerTarget();
+    await plannerContributions.accept("P1", { selectedTarget });
+    const review = plannerContributions.read({ format: "contributions" });
+    const enabled = segment => review.snapshots.find(item => item.segment === segment)?.enabled === true;
+    if (enabled("P3")) {
+      await stimulusOrderEditor.prepareContribution({ isCurrent: afterCommitCurrent });
+      await plannerContributions.accept("P3", { selectedTarget });
+    }
+    if (enabled("P4")) {
+      await layoutDraftEditor.prepareContribution({ isCurrent: afterCommitCurrent });
+      await plannerContributions.accept("P4", { selectedTarget });
+    }
+    if (enabled("P6") && xrLayoutAuthoring) {
+      await xrLayoutAuthoring.prepare({ isCurrent: afterCommitCurrent });
+      await plannerContributions.accept("P6", { selectedTarget });
+    }
+    if (status) status.textContent = `${entries.length} prepared MP4 playback file${entries.length === 1 ? "" : "s"} ready for Runner.`;
+    renderPools(); refreshProjection(); schedulePlanRefresh();
+    return true;
+  }
+
   function getVideoCatalogueContributionSnapshot() {
     return workspaceContributionProducer.getVideoCatalogueSnapshot();
   }
@@ -5142,7 +5217,7 @@ function bindResearchInteractions(root, { surface }) {
             ? Object.freeze([...selectedLanguageSelectionPath])
             : null,
           packageAssignmentSha256: compiledPackageSelection?.assignmentSha256 ?? null,
-          playbackMode: value("native-playback-mode", "nativeGstPlay"),
+          playbackMode: value("native-playback-mode", "unqualifiedWebview"),
         }),
       });
       root.dispatchEvent(event);
@@ -5242,7 +5317,7 @@ function bindResearchInteractions(root, { surface }) {
       outputFormats: { csv: checked("output-csv"), tsv: checked("output-tsv") },
       preview: Object.freeze(previewState({ locked: true })),
       ...(surface === "tauri" ? {
-        playbackMode: value("native-playback-mode", "nativeGstPlay"),
+        playbackMode: value("native-playback-mode", "unqualifiedWebview"),
         inputTestReceiptId: nativeInputReceiptId,
       } : {}),
     };
@@ -6340,7 +6415,7 @@ function bindResearchInteractions(root, { surface }) {
   return Object.freeze({
     plannerAuthoringSession,
     connectPlannerNativeWorkspace(connection) {
-      if (surface !== "tauri" || plannerNativeWorkspace || ["getWorkspaceId", "prepareWorkspace", "prepareCatalogue"].some(key => typeof connection?.[key] !== "function")) throw new TypeError("One native workspace owner is required.");
+      if (surface !== "tauri" || plannerNativeWorkspace || ["getWorkspaceId", "prepareWorkspace", "prepareCatalogue", "prepareMediaNormalization"].some(key => typeof connection?.[key] !== "function")) throw new TypeError("One native workspace owner is required.");
       plannerNativeWorkspace = connection;
     },
     connectPlannerNativeEffects(connection) {

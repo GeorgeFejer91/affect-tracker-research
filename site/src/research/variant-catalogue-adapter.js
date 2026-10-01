@@ -2,7 +2,7 @@ import { canonicalJson, canonicalSha256 } from "./canonical.js";
 import { createVideoLibrary } from "./stimulus-order.js";
 import { validateVideoCatalogueContributionV1 } from "./video-catalogue-contribution.js";
 import { projectWorkspaceVideoCatalogueSnapshot, validateWorkspaceContribution, validateSupportedWorkspaceContribution } from "./workspace-contribution.js";
-import { createLocationVariantLibrary, createLocationVariantLibraryV3 } from "./variant-library.js";
+import { createLocationVariantLibrary, createLocationVariantLibraryV3, createLocationVariantLibraryV4 } from "./variant-library.js";
 import { compileVariantTimeline, validateVariantDesign } from "./variant-design.js";
 
 const SNAPSHOT_KEYS = ["revision", "enabled", "pending", "contribution", "dependencyRevisions"];
@@ -31,6 +31,10 @@ export async function projectLegacyVariantCatalogue(snapshot) {
 }
 
 async function projectCatalogueContent(catalogue) {
+  if (catalogue.version === 4) {
+    const library = await createLocationVariantLibraryV4(catalogue);
+    return { library, videos: structuredClone(library.videos) };
+  }
   if (catalogue.version === 3) {
     const library = await createLocationVariantLibraryV3(catalogue);
     return { library, videos: structuredClone(library.videos) };

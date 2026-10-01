@@ -1,6 +1,6 @@
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { parseExperimentPackageV1, EXPERIMENT_PACKAGE_SCHEMA } from "./experiment-package.js";
-import { validateWorkspaceContribution, validateWorkspaceContributionV3 } from "./workspace-contribution.js";
+import { validateSupportedWorkspaceContribution, validateWorkspaceContribution } from "./workspace-contribution.js";
 import { validateQuestionnaireRecipeContributionV1, validateQuestionnaireRecipeContribution } from "./questionnaire-recipe.js";
 import { validateQuestionnaireRecipeContributionV2, compilePlannerQuestionnaireRoutesV2, validateQuestionnaireRecipeContributionV3, compilePlannerQuestionnaireRoutesV3 } from "./questionnaire-recipe-v2.js";
 import { reconstructPreparedPlannerRecipeSelectionV4 } from "./planner-recipe-reproduction.js";
@@ -43,7 +43,7 @@ async function prepareCore(input, version = 1) {
   if (version < 3 && ![1, 2].includes(source.P1.version)) {
     throw new PlannerRecipeIssue("P1", "segments.P1.version", "unsupported-version", "Planner recipe v1/v2 requires workspace v1/v2.");
   }
-  const workspace = await owned("P1", () => (version === 3 || (version === 4 && source.P1.version === 3) ? validateWorkspaceContributionV3 : validateWorkspaceContribution)(source.P1));
+  const workspace = await owned("P1", () => (version >= 3 ? validateSupportedWorkspaceContribution : validateWorkspaceContribution)(source.P1));
   const questionnaires = await owned("P2", async () => {
     if (version === 4) return validateQuestionnaireRecipeContributionV3(source.P2);
     if (version >= 2) return validateQuestionnaireRecipeContributionV2(source.P2);

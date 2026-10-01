@@ -4,7 +4,7 @@ import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTrave
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
 import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
 import { attestNativeGstCatalogue } from "../../site/src/research/native-media-catalogue.js";
-import { attestMasterMedia } from "./master-media.js";
+import { attestMasterMedia, masterUsesPreparedPlayback } from "./master-media.js";
 import { nativeInputRegionRequest } from "../../site/src/research/input-region.js";
 import { createResearchPreview } from "../../site/src/research/preview.js";
 import { deriveParticipantRecord } from "../../site/src/research/identity.js";
@@ -45,6 +45,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const media = new NativeMediaController({ invoke });
+  let preparedVideo = null;
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
   const legacyProtocol = new NativePackageProtocolAdapter(root, {
     invoke, dispatch: project,
@@ -67,7 +68,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let protocol = legacyProtocol;
   const masterProtocol = new NativeMasterProtocolAdapter({ invoke, windowObject, render: renderMaster, fail, terminal: async status => {
     if (destroyed) return;
-    preflight = null; inputReceipt = null; clearQuestionnaire();
+    preflight = null; inputReceipt = null; clearQuestionnaire(); clearPreparedVideo();
     text("runner-receipt", status.result ? `Participant ${participantLabel(status.participantId)} · ${status.result.status}\n${status.result.outputDirectory}` : `Participant ${participantLabel(status.participantId)} · incomplete attempt\n${status.failureCode ?? "Native finalization unavailable"}`);
     query("runner-receipt").hidden = false;
     preview.update({hideFeedback:true}); clearMasterDesktopLayout(root);
@@ -140,7 +141,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         if (!protocol.active) {
           if (recorder?.active) { recorder = await invoke("research_recorder_stop"); renderRecorder(); }
           await invoke("research_input_cancel_setup");
-          clearQuestionnaire(); questionnairePreview = null; validationPreview = null;
+          clearQuestionnaire(); clearPreparedVideo(); questionnairePreview = null; validationPreview = null;
           selection = null;
           query("runner-test-region").hidden = true;
           query("runner-first").value = ""; query("runner-last").value = "";
@@ -159,6 +160,117 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     questionnaireKeyboard.reset();
     questionnaire?.presenter?.destroy();
     questionnaire = null;
+  }
+  function clearPreparedVideo() {
+    const video = query("run-html-video");
+    if (preparedVideo?.progressTimer) windowObject.clearInterval(preparedVideo.progressTimer);
+    preparedVideo = null;
+    if (video) {
+      video.onended = null;
+      video.onerror = null;
+      try { video.pause(); } catch { /* Test DOMs may stub media elements. */ }
+      video.removeAttribute("src");
+      try { video.load(); } catch { /* Test DOMs may stub media elements. */ }
+      video.hidden = true;
+    }
+  }
+  const mediaTimeMs = (video) => Math.max(0, (Number(video.currentTime) || 0) * 1000);
+  const waitForVideoFrame = (video) => new Promise((resolve, reject) => {
+    const timeout = windowObject.setTimeout(() => reject(new Error("Prepared video did not present a decoded frame.")), 10_000);
+    const done = (detail = null) => {
+      windowObject.clearTimeout(timeout);
+      resolve(detail);
+    };
+    if (typeof video.requestVideoFrameCallback === "function") {
+      video.requestVideoFrameCallback((_, metadata) => done(metadata));
+    } else if (video.readyState >= 2) {
+      done(null);
+    } else {
+      video.addEventListener("playing", () => done(null), { once: true });
+    }
+  });
+  function startPreparedVideoProgress(position, video) {
+    if (preparedVideo?.progressTimer) windowObject.clearInterval(preparedVideo.progressTimer);
+    preparedVideo.progressTimer = windowObject.setInterval(() => {
+      if (!protocol.active || masterProtocol.status?.position !== position || masterProtocol.status?.phase !== "playing") return;
+      protocol.command({ type: "htmlVideoProgress", position, mediaTimeMs: mediaTimeMs(video) }).catch(fail);
+    }, 500);
+  }
+  async function signalPreparedVideoStart(position, video) {
+    if (preparedVideo?.starting) return preparedVideo.starting;
+    preparedVideo.starting = (async () => {
+      try {
+        await video.play();
+        const frame = await waitForVideoFrame(video);
+        if (!preparedVideo || preparedVideo.position !== position || !protocol.active) return;
+        await protocol.command({
+          type: "htmlVideoStarted",
+          position,
+          mediaTimeMs: Number.isFinite(frame?.mediaTime) ? frame.mediaTime * 1000 : mediaTimeMs(video),
+        });
+        if (preparedVideo?.position === position) startPreparedVideoProgress(position, video);
+      } catch (error) {
+        try { await protocol.command({ type: "htmlVideoError", position, code: "html-video-start-failed" }); }
+        catch { /* Native failure status will be observed by the next poll. */ }
+        throw error;
+      } finally {
+        if (preparedVideo?.position === position) preparedVideo.starting = null;
+      }
+    })();
+    return preparedVideo.starting;
+  }
+  async function syncPreparedVideo(status, step) {
+    const playback = step.payload.asset.preparedPlayback;
+    if (!playback) {
+      clearPreparedVideo();
+      return;
+    }
+    const video = query("run-html-video");
+    const key = `${status.position}\u0000${playback.packageRelativePath}\u0000${playback.sha256}`;
+    query("run-native-video-host").hidden = true;
+    query("run-stimulus-placeholder").hidden = true;
+    video.hidden = false;
+    if (!preparedVideo || preparedVideo.key !== key) {
+      clearPreparedVideo();
+      preparedVideo = { key, position: status.position, progressTimer: null, starting: null };
+      const receipt = await invoke("research_runner_prepared_media_url", { request: {
+        workspaceId: workspace.workspaceId,
+        packageRelativePath: playback.packageRelativePath,
+        sha256: playback.sha256,
+        byteLength: playback.byteLength,
+        durationMs: playback.durationMs,
+      } });
+      if (receipt?.packageRelativePath !== playback.packageRelativePath
+        || receipt.sha256 !== playback.sha256
+        || receipt.byteLength !== playback.byteLength
+        || receipt.durationMs !== playback.durationMs
+        || receipt.mimeType !== "video/mp4") {
+        throw new Error("Prepared media URL does not match the frozen video occurrence.");
+      }
+      if (!preparedVideo || preparedVideo.key !== key) return;
+      video.onended = () => {
+        if (preparedVideo?.position !== status.position) return;
+        if (preparedVideo.progressTimer) windowObject.clearInterval(preparedVideo.progressTimer);
+        protocol.command({ type: "htmlVideoEnded", position: status.position, mediaTimeMs: mediaTimeMs(video) }).catch(fail);
+      };
+      video.onerror = () => {
+        protocol.command({ type: "htmlVideoError", position: status.position, code: `html-video-error-${video.error?.code ?? "unknown"}` }).catch(fail);
+      };
+      video.src = receipt.mediaUrl;
+      video.load();
+    }
+    if (status.phase === "preparing" || status.phase === "resuming") {
+      await signalPreparedVideoStart(status.position, video);
+    } else if (status.phase === "paused" || status.phase === "pausing") {
+      if (preparedVideo?.progressTimer) {
+        windowObject.clearInterval(preparedVideo.progressTimer);
+        preparedVideo.progressTimer = null;
+      }
+      if (!video.paused) video.pause();
+    } else if (status.phase === "playing" && !video.ended) {
+      if (video.paused) await video.play();
+      if (!preparedVideo.progressTimer) startPreparedVideoProgress(status.position, video);
+    }
   }
   async function prepareInputTestRegion() {
     const region = query("runner-test-region");
@@ -338,6 +450,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       presentation.showPage("run");
       const stage = root.querySelector(".stimulus-stage"), feedback = root.querySelector(".run-feedback-stage");
       query("run-native-video-host").hidden = true;
+      clearPreparedVideo();
       clearMasterDesktopLayout(root);
       let layoutStatus = "";
       try { applyMasterDesktopLayout(root, validationPreview.plan, windowObject); }
@@ -383,11 +496,18 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   }
   function destroy() {
     destroyed = true; revision += 1; windowObject.clearInterval(timer);
-    clearQuestionnaire();
+    clearQuestionnaire(); clearPreparedVideo();
     questionnaireKeyboard.destroy();
     listeners.forEach((remove) => remove()); participantPicker.destroy(); variantPicker.destroy(); recentFiles.destroy(); controllerSettings.destroy(); legacyProtocol.destroy(); masterProtocol.destroy(); preview.destroy(); delete root.researchUi;
   }
+  function renderCapabilityStatus() {
+    if (!capability) return;
+    const preparedPlayback = recipe?.recipe && masterUsesPreparedPlayback(recipe.recipe);
+    text("runner-capability", preparedPlayback ? "Prepared MP4 playback available" : capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
+    text("runner-launch-status", preparedPlayback || capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
+  }
   function renderControls() {
+    renderCapabilityStatus();
     const locked = busy || protocol.active || recorder?.active === true;
     for (const id of ["runner-open", "runner-folder", "runner-variant", "runner-attempt", "runner-record-own", "runner-discover"]) query(id).disabled = locked;
     query("runner-validation").disabled = locked || ![3, 4, 5].includes(recipe?.recipe?.version);
@@ -589,7 +709,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const scan = await invoke("research_runner_master_rescan", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe) });
       if (destroyed || generation !== revision) return;
       if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Master media scan belongs to another workspace.");
-      if (!await requireNativeMediaReady(generation)) return;
+      const preparedPlayback = masterUsesPreparedPlayback(currentRecipe.recipe);
+      if (!preparedPlayback && !await requireNativeMediaReady(generation)) return;
       const attested = await attestMasterMedia({ recipe: currentRecipe.recipe, controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
         viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
       if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
@@ -601,7 +722,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const checked = validation ? preflightResponse.result : preflightResponse;
       if (checked?.schema !== "affect-runner-master-preflight" || checked.version !== candidate.version || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
       preflight = checked;
-      text("runner-preflight", checked.nativeStartReady ? "Master and media verified. Test the configured input before Start." : `Master and media verified. ${checked.reasons.join(" · ")}`);
+      text("runner-preflight", checked.nativeStartReady ? `${preparedPlayback ? "Master and prepared MP4 media verified" : "Master and media verified"}. Test the configured input before Start.` : `Master and media verified. ${checked.reasons.join(" · ")}`);
       return;
     }
     const listing = await protocol.refreshRecoveries(currentWorkspace.workspaceId, currentRecipe.canonicalSourceText);
@@ -654,6 +775,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-timing", `${status.sampleCount} samples · ${status.missedSlotCount} missed slots`);
     query("runner-pause").disabled = !["playing", "paused"].includes(status.phase); query("runner-pause").textContent = status.phase === "paused" ? "Resume" : "Pause";
     if (step.kind === "questionnaire") {
+      clearPreparedVideo();
       presentation.showPage("questionnaire"); preview.update({hideFeedback:true});
       if (questionnaire?.position !== status.position) {
         clearQuestionnaire();
@@ -683,6 +805,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       root.querySelector(".stimulus-stage").hidden=step.kind!=="video";
       root.querySelector(".run-feedback-stage").hidden=step.kind!=="video";
       preview.update(step.kind === "video" ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {...runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal),hideFeedback:true});
+      if (step.kind !== "video" || !step.payload.asset.preparedPlayback) {
+        clearPreparedVideo();
+        query("run-stimulus-placeholder").hidden = false;
+      }
+      if (step.kind === "video" && step.payload.asset.preparedPlayback) {
+        await syncPreparedVideo(status, step);
+      }
       if (step.kind === "video" && status.phase === "awaitingPresentation") {
         const ready=await setRegion(root.querySelector(".run-feedback-stage"),"runFeedback");
         if (!ready.runReady) throw new Error("Native participant input is not ready for this video.");
@@ -754,6 +883,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-back"), "click", () => action(async () => {
     await presentation.leave(); invalidate(); query("runner-test-region").hidden = true;
     query("runner-first").value = ""; query("runner-last").value = "";
+    clearPreparedVideo();
     await invoke("research_input_cancel_setup");
   }));
   listen(windowObject, "keydown", event => {
@@ -838,7 +968,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const disposition = value("runner-attempt");
     if (recipe.recipe && disposition !== "new-attempt") throw new Error("Master recovery is not implemented. Start an explicitly confirmed new attempt; prior partial files remain retained.");
     if (disposition !== "finalize") {
-      if ((!query("runner-validation").checked && !capability?.nativeStartReady) || !preflight.nativeStartReady) throw new Error("Native experiment playback is not qualified in this build.");
+      const preparedPlayback = recipe.recipe && masterUsesPreparedPlayback(recipe.recipe);
+      if ((!preparedPlayback && !query("runner-validation").checked && !capability?.nativeStartReady) || !preflight.nativeStartReady) throw new Error("Experiment playback is not qualified in this build.");
       const status = await invoke("research_input_status");
       inputReceipt = status.receipt;
       if (!inputReceipt) throw new Error("The configured input needs a fresh test. Open Session settings, test all four directions, then continue.");
@@ -943,8 +1074,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   try {
     [capability, mediaCapability, workspace] = await Promise.all([legacyProtocol.initialize(), invoke("research_native_media_capability"), invoke("research_workspace_status")]);
   } catch (error) { destroy(); throw error; }
-  text("runner-capability", capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
-  text("runner-launch-status", capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
+  renderCapabilityStatus();
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { await refreshRecentFiles(); } catch (error) { fail(error); }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
