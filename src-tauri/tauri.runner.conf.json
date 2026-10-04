@@ -41,10 +41,7 @@
       "runner-icons/icon.icns",
       "runner-icons/icon.ico"
     ],
-    "resources": [
-      "native-media/gstreamer-runtime-v1.json",
-      "native-media/GSTREAMER-RUNTIME-NOTICE.txt"
-    ]
+    "resources": []
   },
   "mainBinaryName": "affect-runner"
 }

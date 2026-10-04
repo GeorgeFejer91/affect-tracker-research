@@ -9,6 +9,8 @@ import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
 import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { withPlannerCore9 } from "./planner-authoring-core9.js";
 import { createPlannerCore9Composition } from "./planner-core9-composition.js";
+import { preparePlannerMediaForHtml } from "./planner-media-preparation.js";
+import { sendPlannerMedia } from "./planner-media-native.js";
 import { QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION, verifySupportedQuestionnaireRecipeContribution } from "./questionnaire-recipe-v2.js";
 import { capturePlannerRecipeInputPreparedFeedback, capturePlannerRecipeInputVersion, plannerRecipeVersionForContributions } from "./planner-recipe-capture.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
@@ -371,6 +373,19 @@ function bindResearchInteractions(root, { surface }) {
   const setupConfirmationFlow = createSetupConfirmationFlow({
     acceptContribution: async (segment, { isCurrent }) => {
       const current = () => isCurrent() && mode === "setup";
+      if (segment === "P1" && surface === "tauri") {
+        const workspaceId = plannerNativeWorkspace?.getWorkspaceId();
+        const projection = await preparePlannerMediaForHtml({ send: sendPlannerMedia, workspaceId,
+          isCurrent: current, existingStimuli: stimuli });
+        if (!current()) throw new Error("P1 confirmation changed during media preparation.");
+        const next = catalogueRecords(projection);
+        stimuli.splice(0, stimuli.length, ...next);
+        renderPools();
+        refreshProjection();
+        schedulePlanRefresh();
+        const snapshot = await refreshVideoCatalogueContribution();
+        if (!current() || snapshot.pending) throw new Error("The prepared video catalogue is incomplete.");
+      }
       if (segment === "P3") await stimulusOrderEditor.prepareContribution({ isCurrent: current });
       if (segment === "P4") await layoutDraftEditor.prepareContribution({ isCurrent: current });
       if (segment === "P6") await xrLayoutAuthoring.prepare({ isCurrent: current });
@@ -467,7 +482,6 @@ function bindResearchInteractions(root, { surface }) {
   let gradientFingerprint = "";
   let youtubePreflightAdapter = null;
   let storageReadiness = null;
-  let nativeMediaCapability = null;
   const capabilities = {
     directoryPermission: false,
     indexedDbReady: false,
@@ -476,7 +490,6 @@ function bindResearchInteractions(root, { surface }) {
     manifestReady: false,
     storageReady: false,
     repositoryAssetsReady: surface === "browser",
-    nativePlaybackReady: surface === "browser",
     nativeInputReady: surface === "browser",
     nativeInputPresetReady: surface === "browser",
   };
@@ -1322,7 +1335,7 @@ function bindResearchInteractions(root, { surface }) {
       || selectedAttemptDisposition() !== "resume-compatible"
       || participantFinalizationPending.get(selectedParticipant) !== true) return null;
     const binding = participantFinalizationBindings.get(selectedParticipant);
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
+    const playbackMode = "unqualifiedWebview";
     const protocolContract = experimentPackageDocument?.package
       ? "manifestV4"
       : protocolSettingsSnapshot?.version === 3
@@ -2040,9 +2053,6 @@ function bindResearchInteractions(root, { surface }) {
     const hasUnqualifiedDesktopDecode = surface === "tauri" && stimuli
       .filter(({ source }) => source === "workspace")
       .some(({ decodeQualification }) => decodeQualification === "attestedUnqualified");
-    const hasQualifiedNativeDecode = surface === "tauri" && stimuli
-      .filter(({ source }) => source === "workspace")
-      .every(({ decodeQualification }) => decodeQualification === "attestedQualified");
     const packageAssetsReady = packageAssetsVerified();
     const packageReady = Boolean(
       experimentPackageDocument
@@ -2059,10 +2069,6 @@ function bindResearchInteractions(root, { surface }) {
       && selectedPackageRoute()
       && selectedLanguageContextKey === participantLanguageContextKey(),
     );
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
-    const playbackReady = surface !== "tauri"
-      || playbackMode === "unqualifiedWebview"
-      || capabilities.nativePlaybackReady;
     const poolCapacity = analyzeLocalCapacity();
     let bindingValid = false;
     try {
@@ -2100,11 +2106,9 @@ function bindResearchInteractions(root, { surface }) {
         result: stimuliReady && poolCapacity.valid ? "pass" : "block",
         label: "Stimuli",
         message: stimuliReady && poolCapacity.valid
-          ? hasQualifiedNativeDecode
-            ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered, byte-bound, and decoded by native GstPlay`
-            : hasUnqualifiedDesktopDecode
-              ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-bound; representative WebView frames attested (unqualified playback)`
-              : `${referencedStimuli.length} referenced complete video${referencedStimuli.length === 1 ? "" : "s"} resolved and byte-verified`
+          ? hasUnqualifiedDesktopDecode
+            ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-bound; representative HTML video frames verified`
+            : `${referencedStimuli.length} referenced complete video${referencedStimuli.length === 1 ? "" : "s"} resolved and byte-verified`
           : poolCapacity.message,
       },
       {
@@ -2184,16 +2188,6 @@ function bindResearchInteractions(root, { surface }) {
             : "Resolve the assignment plan before checking storage capacity",
       },
       { id: "timing", result: capabilities.timingWorkerReady ? "pass" : "block", label: "Timing", message: capabilities.timingWorkerReady ? `${surface === "tauri" ? "Native scheduler available; installed-hardware qualification pending" : "Worker scheduler available; browser timing qualification pending"}` : "Timing authority has not reported ready" },
-      ...(surface === "tauri" ? [{
-        id: "playback",
-        result: playbackReady ? (playbackMode === "unqualifiedWebview" ? "warning" : "pass") : "block",
-        label: "Playback",
-        message: playbackMode === "unqualifiedWebview"
-          ? "Explicit unqualified WebView fallback selected; this attempt cannot qualify the Windows media path"
-          : capabilities.nativePlaybackReady
-            ? `Pinned native player ${nativeMediaCapability?.pinnedRuntimeVersion ?? "runtime"} is ready`
-            : `Qualified native player unavailable (${nativeMediaCapability?.reasonCode ?? "capability not reported"})`,
-      }] : []),
       { id: "lsl", result: lslValid ? "pass" : "block", label: "LSL", message: lslValid ? (checked("lsl-enabled") ? "Windows outbound streams ready" : "Disabled") : surface === "browser" ? "Browser builds cannot start with LSL enabled" : "Windows LSL outlet readiness has not passed" },
     ];
   }
@@ -3015,9 +3009,7 @@ function bindResearchInteractions(root, { surface }) {
             ? `Player operational · ${stimulus.contractSource.observedTitle} · ${(stimulus.contractSource.observedDurationMs / 1_000).toFixed(1)} s · unverified / noncanonical`
             : "Fresh visible-player preflight required · unverified / noncanonical"
         : stimulus.verification === "verified"
-          ? stimulus.decodeQualification === "attestedQualified"
-            ? "Hash + native GstPlay snapshots attested · qualified decode"
-            : stimulus.decodeQualification === "attestedUnqualified"
+          ? stimulus.decodeQualification === "attestedUnqualified"
             ? "Hash + representative WebView frames attested · unqualified playback"
             : "Hash, duration, decode verified"
           : stimulus.verification === "failed" ? `Failed: ${stimulus.error}` : "Verification pending";
@@ -5154,7 +5146,7 @@ function bindResearchInteractions(root, { surface }) {
             ? Object.freeze([...selectedLanguageSelectionPath])
             : null,
           packageAssignmentSha256: compiledPackageSelection?.assignmentSha256 ?? null,
-          playbackMode: value("native-playback-mode", "nativeGstPlay"),
+          playbackMode: "unqualifiedWebview",
         }),
       });
       root.dispatchEvent(event);
@@ -5254,7 +5246,7 @@ function bindResearchInteractions(root, { surface }) {
       outputFormats: { csv: checked("output-csv"), tsv: checked("output-tsv") },
       preview: Object.freeze(previewState({ locked: true })),
       ...(surface === "tauri" ? {
-        playbackMode: value("native-playback-mode", "nativeGstPlay"),
+        playbackMode: "unqualifiedWebview",
         inputTestReceiptId: nativeInputReceiptId,
       } : {}),
     };
@@ -5806,15 +5798,6 @@ function bindResearchInteractions(root, { surface }) {
     if (event.detail?.storageReadiness && typeof event.detail.storageReadiness === "object") {
       storageReadiness = Object.freeze({ ...event.detail.storageReadiness });
     }
-    if (event.detail?.nativeMediaCapability && typeof event.detail.nativeMediaCapability === "object") {
-      nativeMediaCapability = Object.freeze({ ...event.detail.nativeMediaCapability });
-      const output = query("#native-media-capability");
-      if (output) {
-        output.textContent = nativeMediaCapability.qualifiedStartAvailable
-          ? `Pinned ${nativeMediaCapability.backend} ${nativeMediaCapability.pinnedRuntimeVersion} ready for qualified playback.`
-          : `Unavailable: ${nativeMediaCapability.reasonCode}. The fallback is explicitly unqualified.`;
-      }
-    }
     if (typeof event.detail?.manifestReason === "string" && event.detail.manifestReason.trim()) {
       manifestReadinessMessage = event.detail.manifestReason.trim();
     } else if (typeof event.detail?.manifestError === "string" && event.detail.manifestError.trim()) {
@@ -6009,7 +5992,7 @@ function bindResearchInteractions(root, { surface }) {
       if (binding && typeof binding === "object"
         && /^[0-9a-f]{64}$/u.test(binding.settingsSha256 ?? "")
         && /^[0-9a-f]{64}$/u.test(binding.assignmentPlanSha256 ?? "")
-        && ["nativeGstPlay", "nativeLibvlc", "unqualifiedWebview"].includes(binding.playbackMode)
+        && binding.playbackMode === "unqualifiedWebview"
         && ["manifestV2", "manifestV3", "manifestV4"].includes(binding.protocolContract)
         && ["completed", "partial"].includes(binding.completionStatus)
         && Number.isSafeInteger(binding.attemptNumber) && binding.attemptNumber > 0) {

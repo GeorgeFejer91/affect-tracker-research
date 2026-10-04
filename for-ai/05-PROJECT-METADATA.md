@@ -119,12 +119,10 @@ Run, record, LSL, or qualification authority.
   `affect-research/v1` browser namespace.
 - New Research data is never populated by automatic import from legacy
   application data.
-- Windows qualified declared package media targets a pinned
-  bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. Runtime
-  verification, actor, and renderer implementation are present. The two
-  contained Windows FFI adapters were approved on 2026-09-10; focused audit,
-  redistribution, and installed qualification remain open. Qualified Start
-  remains fail-closed; consult `40-ROADMAP.md` for current evidence.
+- Current Windows media targets exact prepared HTML-playable files. P1's
+  FFprobe/FFmpeg preparation after Segment 1 confirmation is implemented in
+  source; incompatible originals stay in `source-videos`. Qualified
+  Start remains fail-closed pending installed evidence; consult `40-ROADMAP.md`.
 - Tauri keyboard, mouse-button/wheel, absolute pointer/trackpad, and XInput
   gamepad input is owned by one safe Rust service with focus/region fencing,
   one-use binding/device receipts, and a bounded fail-closed Run mailbox.
@@ -161,8 +159,8 @@ Run, record, LSL, or qualification authority.
 - `desktop/index.html` and `desktop/vite.config.js`: isolated Tauri WebView
   entrypoint and production frontend build.
 - `src-tauri/src/research_*.rs`: Rust-owned Research contracts and services.
-- `src-tauri/native-media/`: GStreamer pin, deterministic staging/tree
-  verification, and current safe integration boundary.
+- `src-tauri/src/research_native_media*`: current media capability and
+  exact-file binding boundary; obsolete staging infrastructure is being removed.
 - `src-tauri/capabilities/research.json` and `src-tauri/tauri.conf.json`:
   narrow desktop exposure and package identity.
 - `scripts/build-research-pages.js` and `scripts/verify-research-build.js`:

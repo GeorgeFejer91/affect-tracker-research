@@ -393,8 +393,8 @@ export function validateResearchRunManifestV3(value) {
     attemptNumber: integer(value.attemptNumber, "ResearchRunManifestV3.attemptNumber", 1, 999_999),
     sessionStem: text(value.sessionStem, "ResearchRunManifestV3.sessionStem", { maximum: 240 }),
     completionStatus: enumeration(value.completionStatus, "ResearchRunManifestV3.completionStatus", ["completed", "partial"]),
-    playbackMode: enumeration(value.playbackMode, "ResearchRunManifestV3.playbackMode", ["nativeGstPlay", "unqualifiedWebview", "browserMediaAdapters"]),
-    playbackQualification: enumeration(value.playbackQualification, "ResearchRunManifestV3.playbackQualification", ["qualifiedNative", "unqualified", "browser"]),
+    playbackMode: enumeration(value.playbackMode, "ResearchRunManifestV3.playbackMode", ["unqualifiedWebview", "browserMediaAdapters"]),
+    playbackQualification: enumeration(value.playbackQualification, "ResearchRunManifestV3.playbackQualification", ["unqualified", "browser"]),
     settingsSha256: sha256(value.settingsSha256, "ResearchRunManifestV3.settingsSha256"),
     assignmentPlanSha256: sha256(value.assignmentPlanSha256, "ResearchRunManifestV3.assignmentPlanSha256"),
     protocolPlanSha256: sha256(value.protocolPlanSha256, "ResearchRunManifestV3.protocolPlanSha256"),
@@ -442,7 +442,7 @@ export function validateResearchRunManifestV3(value) {
   }
   const playbackPair = `${output.playbackMode}:${output.playbackQualification}`;
   const validPlayback = output.build.platform === "tauri-windows"
-    ? ["nativeGstPlay:qualifiedNative", "unqualifiedWebview:unqualified"].includes(playbackPair)
+    ? playbackPair === "unqualifiedWebview:unqualified"
     : playbackPair === "browserMediaAdapters:browser";
   if (!validPlayback) throw new TypeError("ResearchRunManifestV3 playback mode and qualification do not match its platform.");
   if (output.recovery.sourceRunId !== null && !CANONICAL_UUID.test(output.recovery.sourceRunId)) {

@@ -6,6 +6,6 @@
       "nsis"
     ],
     "resources": [],
-    "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. The unreviewed GStreamer runtime is not bundled; native GstPlay, LSL, native input, installed workflow, timing, and research readiness are not qualified."
+    "longDescription": "Unsigned internal Windows alpha for interface evaluation only. HTML video playback, FFprobe/FFmpeg media preparation, LSL, native input, installed workflow, timing, and research readiness are not qualified."
   }
 }

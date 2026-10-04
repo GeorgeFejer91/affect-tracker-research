@@ -23,7 +23,7 @@ test("current P4 preparation validates workspace3 without broadening the histori
   assert.deepEqual(await validateSupportedDesktopLayoutContribution(profile, dependencies), profile);
   await assert.rejects(resolveDesktopLayoutContribution(profile, dependencies), /unsupported/);
   const invalid = structuredClone(dependencies);
-  invalid.workspace.videoCatalogue.entries[0].geometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90;
+  invalid.workspace.videoCatalogue.entries[0].geometry.source = "native-renderer";
   await assert.rejects(validateSupportedDesktopLayoutContribution(profile, invalid));
 });
 

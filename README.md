@@ -124,18 +124,21 @@ resolution only, not playback, timing, recovery, hardware, LSL, accessibility,
 or research qualification.
 
 The supported qualification targets for v1 are Windows Tauri and visible
-desktop Chrome/Edge. Qualified Windows package-asset playback targets the
-bundled, repository-pinned GStreamer 1.28.6 MSVC x64 runtime through a
-Rust-owned GstPlay actor; the app never downloads native media code or discovers
-ambient system plugins. LSL is a Tauri-only capability.
+desktop Chrome/Edge. Current playback uses HTML video from exact declared,
+playable assets. The target Windows Planner workflow inspects selected source
+videos with FFprobe after Segment 1 confirmation and uses FFmpeg to prepare
+incompatible inputs. Originals remain in a separate project source folder;
+only verified playable files enter `assets/stimuli/` and saved recipes. This
+preparation workflow still needs implementation evidence. LSL is a Tauri-only
+capability.
 The package contract accepts only its declared complete videos beneath
 `assets/stimuli/`. Repository/network and Experimental YouTube sources are not
 accepted by new package runs.
 
 Unsigned host-native Windows x64 NSIS, macOS ARM64/x64 DMG, and Linux x64
 DEB/AppImage candidates are available only for internal Setup/interface
-evaluation. They build without optional features or the unreviewed GStreamer
-runtime, and Experiment Start fails closed before mutation. They are not
+evaluation. They build without optional features, and Experiment Start fails
+closed before mutation. They are not
 research, timing, media, input, recovery, or LSL qualification claims.
 
 The durable product contract is
@@ -172,9 +175,9 @@ undeclared files. This contract-resolver benchmark does not decode those
 fixture bytes or launch two installed graphical application profiles. Rust now
 reconstructs and verifies the external plan and complete participant/language
 protocol matrix. A package-only native compiler, reducer, recovery journal,
-atomic run writer, sampling/input/LSL coordinator, and GstPlay media actor are
-implemented as separate backend modules. Public native package Start remains
-fail-closed until the installed runtime and physical qualification gates pass.
+atomic run writer and sampling/input/LSL coordinator are implemented as
+separate backend modules. Public native package Start remains fail-closed until
+the prepared-media and physical qualification gates pass.
 These are implementation slices, not playback or research qualification.
 Existing standalone experiment/settings/questionnaire files are transitional
 authoring/import scaffolding.
@@ -185,24 +188,12 @@ physical workflow qualification.
 
 The candidate remains under development. The exact open software and qualification gates are tracked in [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) and [`for-ai/30-TESTING-AND-RELEASE.md`](./for-ai/30-TESTING-AND-RELEASE.md). The Pages deployment target is <https://GeorgeFejer91.github.io/affect-tracker-research/>.
 
-### Windows native-player status
+### Video preparation and playback status
 
-The native-media source implementation is present: an exact GStreamer installer
-and runtime-tree pin, deterministic local/ephemeral-CI staging and verification,
-optional Rust bindings, a build-time runtime-integrity gate, path-free
-capability response, serialized GstPlay actor, isolated GLib/GStreamer runtime,
-and application-owned child-window renderer. Project-authored `unsafe` is
-restricted to the two contained Windows FFI adapters approved by the researcher
-on 2026-09-10: private DLL-search activation/removal and raw child-window/GstPlay
-overlay operations.
-
-The runtime is deliberately not included in current downloadable packages.
-Until installed Windows qualification, corresponding-source evidence, and
-redistribution review pass, `nativeGstPlay` and qualified Start fail closed.
-Researchers may deliberately choose the WebView player for development, but the
-attempt remains labelled `unqualifiedWebview` in status, events, recovery, and
-its final receipt. Staging
-the native runtime or completing a desktop build is not playback qualification.
+The current Runner presents video through an HTML video surface. P1 preparation
+of incompatible files, exact prepared-file publication and installed playback
+qualification are open work. A successful file probe, conversion or desktop
+build does not establish participant playback, timing or research readiness.
 
 ### Questionnaire authoring status
 
@@ -272,14 +263,9 @@ pnpm desktop:bundle
 Remove-Item Env:AFFECT_RESEARCH_PACKAGE_COMMIT
 ```
 
-Native-media staging instructions and the exact runtime pin are in
-[`src-tauri/native-media/README.md`](./src-tauri/native-media/README.md). A
-candidate intended for native playback must be built with the required runtime
-gate only after the redistribution closure, corresponding-source evidence,
-pre-main DLL loader design, and unsafe renderer are approved. Today,
-`pnpm desktop:bundle` deliberately uses `--no-default-features`, excludes the
-GStreamer runtime, and produces an interface-only Windows package whose Start
-commands fail closed.
+Today `pnpm desktop:bundle` uses `--no-default-features` and produces an
+interface-only Windows package whose Start commands fail closed. Media
+preparation and installed playback require separate implementation and evidence.
 
 The displayed product version is `0.4.0-alpha.1`; it must not be described as stable or research-ready until the automated, timing, recovery, LSL, accessibility, and physical workflow gates in the charter pass.
 
@@ -287,10 +273,10 @@ The displayed product version is `0.4.0-alpha.1`; it must not be described as st
 
 - Pull requests and pushes to `research/video-protocol-v1` validate the isolated Pages artifact and Windows Tauri candidate. They do not deploy a public site.
 - A passing push to `main` deploys only the verified Research Pages artifact to the Research project URL.
-- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates. Its ephemeral GStreamer tree exists only to compile and test the optional integration boundary; CI neither packages nor uploads it.
+- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates. These checks do not qualify prepared media or installed playback.
 - One manual-only matrix builds an unsigned, interface-only Windows x64 NSIS,
   host-native macOS ARM64/x64 DMGs, and a Linux x64 DEB/AppImage pair. Every
-  package excludes GStreamer and optional Cargo features; exact artifact
+  package excludes optional Cargo features; exact artifact
   provenance marks every qualification claim false, and Start fails closed.
 
 Signing, auto-updates, store submission, stable installers, and any research-ready claim remain out of scope until separately authorized and qualified.

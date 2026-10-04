@@ -49,6 +49,29 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   let generation = 0;
   let video = null;
   let ended = null;
+  let activeGrant = null;
+
+  const releaseGrant = (grant) => {
+    if (!grant?.receipt?.mediaGrantId) return;
+    const { receipt, workspaceId } = grant;
+    invoke("research_attest_workspace_decode", {
+      attestation: {
+        attestationKind: "revokeGrant",
+        decodeBackend: "webviewVideoFrameCallback",
+        workspaceId,
+        mediaGrantId: receipt.mediaGrantId,
+        workspaceFileId: receipt.workspaceFileId,
+        sha256: receipt.sha256,
+        byteLength: receipt.byteLength,
+        mimeType: receipt.mimeType,
+        observedDurationMs: null,
+        videoWidth: null,
+        videoHeight: null,
+        mutedPlaybackMs: null,
+        decodedPositionsMs: [],
+      },
+    }).catch(() => {});
+  };
 
   const ensureVideo = () => {
     if (video) return video;
@@ -74,6 +97,8 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       video.load();
       video.hidden = true;
     }
+    releaseGrant(activeGrant);
+    activeGrant = null;
     host.hidden = true;
     host.dataset.playbackState = "idle";
   };
@@ -86,6 +111,8 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     }
     const token = generation + 1;
     generation = token;
+    releaseGrant(activeGrant);
+    activeGrant = null;
     const element = ensureVideo();
     element.hidden = false;
     host.hidden = false;
@@ -99,13 +126,27 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
         protocolStepPosition: step.position,
       },
     });
-    if (token !== generation) return null;
-    assertReceipt(receipt, asset);
+    if (token !== generation) {
+      releaseGrant({ receipt, workspaceId });
+      return null;
+    }
+    try {
+      assertReceipt(receipt, asset);
+    } catch (error) {
+      releaseGrant({ receipt, workspaceId });
+      throw error;
+    }
+    activeGrant = { receipt, workspaceId };
     host.dataset.playbackState = "loading";
     element.src = receipt.mediaUrl;
     element.currentTime = 0;
     element.load();
-    await waitForReady(element, windowObject);
+    try {
+      await waitForReady(element, windowObject);
+    } catch (error) {
+      if (token === generation) stop();
+      throw error;
+    }
     if (token !== generation) return null;
     host.dataset.playbackState = "playing";
     try {

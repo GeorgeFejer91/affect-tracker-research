@@ -4,11 +4,11 @@ import { withPlannerCore9 } from "../site/src/research/planner-authoring-core9.j
 import { createPlannerAuthoringSession } from "../site/src/research/planner-authoring-session.js";
 import { PLANNER_COMMAND_SCHEMA } from "../site/src/research/planner-authoring-contract.js";
 import { createPlannerCore9Composition } from "../site/src/research/planner-core9-composition.js";
-import { NativeCatalogueFailure } from "../site/src/research/native-media-catalogue.js";
+import { NativeCatalogueFailure } from "../site/src/research/media-catalogue-error.js";
 
 test("post-effect catalogue diagnosis retains acknowledgement without publication or private text", async () => {
-  for (const error of [new Error("C:/private/source.csv secret"), new NativeCatalogueFailure("prepare", {
-    code: "native_media_unavailable", message: "Unavailable (native-gstplay-command-timeout)." })]) {
+  for (const error of [new Error("C:/private/source.csv secret"), new NativeCatalogueFailure("bridgePreparation", {
+    code: "native_media_unavailable", message: "Unavailable." })]) {
     let effects = 0;
     const acknowledgement = { operation: "rescanVideoLibrary", stage: "completed", outcome: "acknowledged", receipt: { stimuliCount: 1 } };
     const prepare = createPlannerCore9Composition({
@@ -42,6 +42,13 @@ test("core9 catalogue has exact closed public arguments and only Open uses seque
   const rejected = await session.execute(request({ kind: "perform", operation: "confirmSegment", arguments: { segment: "P5" } }));
   assert.equal(rejected.status, "rejected"); assert.equal(rejected.issues[0].code, "final_capture");
   assert.equal(session.revision, 0);
+});
+
+test("headless P1 confirmation cannot claim HTML frame evidence", async () => {
+  const prepare = createPlannerCore9Composition({ nativeEffects: () => ({}),
+    prepareConfirmation() { throw new Error("must not accept without HTML proof"); } });
+  await assert.rejects(prepare("confirmSegment", { segment: "P1" }, {}), error =>
+    error.code === "html_decode_required" && /HTML representative-frame probe/u.test(error.message));
 });
 
 test("metadata wrapper preserves existing owner state and delegates detached arguments", async () => {

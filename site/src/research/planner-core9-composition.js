@@ -28,6 +28,8 @@ export function createPlannerCore9Composition(host) {
       } };
     }
     if (operation === "confirmSegment") {
+      if (args.segment === "P1") commandFailure("html_decode_required",
+        "P1 confirmation requires the Planner's HTML representative-frame probe. Open the Planner and confirm the video section there.", "P1.media");
       const prepared = await host.prepareConfirmation(args.segment, context);
       return { isCurrent: prepared.isCurrent, async dispatch({ publish }) {
         publish(prepared.commit, prepared.afterCommit);

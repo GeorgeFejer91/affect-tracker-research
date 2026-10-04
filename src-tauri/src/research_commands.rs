@@ -16,10 +16,6 @@ use crate::research_input::{
 use crate::research_lsl::{probe_readiness, LslReadiness};
 #[cfg(test)]
 use crate::research_native_media::PlaybackMode;
-use crate::research_native_media::{
-    NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaPrepareReceiptV1,
-    NativeMediaService, NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
-};
 #[cfg(test)]
 use crate::research_participant::TransientParticipant;
 use crate::research_planner_recipe::SavedPlannerRecipeReceipt;
@@ -28,6 +24,7 @@ use crate::research_planner_recipe_file::{
     write_selected_supported_planner_recipe,
 };
 use crate::research_planner_recipe_supported::parse_supported_planner_recipe_bytes;
+#[cfg(test)]
 use crate::research_platform::{require_native_acquisition, NATIVE_ACQUISITION_SUPPORTED};
 #[cfg(test)]
 use crate::research_protocol::{
@@ -251,10 +248,6 @@ mod catalogue_export_tests {
         export::{catalogue_bytes, LibraryFormat},
         location_variants::LocationLibrary,
     };
-    use crate::research_video_geometry::{
-        NativeDisplayMetadataReceiptV1, NativeVideoOrientationV1, VideoRatioV1,
-        NATIVE_DISPLAY_METADATA_SCHEMA,
-    };
     use std::cell::Cell;
     use std::path::PathBuf;
 
@@ -282,53 +275,18 @@ mod catalogue_export_tests {
             fs::write(&video, b"synthetic catalogue export media").unwrap();
             let scan = service.rescan_planner_videos(&id).unwrap();
             let item = &scan.stimuli[0];
-            // This is a test-only software attestation, not decoded-media or
-            // installed GStreamer evidence. Production receipts stay P1-owned.
-            let summary = service
-                .attest_native_decode(
-                    &id,
-                    &item.sha256,
-                    item.byte_length,
-                    &item.mime_type,
-                    &crate::research_native_media::NativeMediaDecodeReceiptV1 {
-                        schema: "affect-research-native-media-decode-receipt",
-                        version: 1,
-                        session_id: Uuid::new_v4().to_string(),
-                        generation: 1,
-                        media_grant_id: Uuid::new_v4().to_string(),
-                        workspace_file_id: item.workspace_file_id.clone(),
-                        duration_ms: 1000.0,
-                        video_width: 1920,
-                        video_height: 1080,
-                        audio_stream_count: 1,
-                        decoded_positions_ms: vec![100.0, 500.0, 900.0],
-                        decoded_snapshot_count: 3,
-                        display_metadata: NativeDisplayMetadataReceiptV1 {
-                            schema: NATIVE_DISPLAY_METADATA_SCHEMA,
-                            version: 1,
-                            encoded_width_px: 1920,
-                            encoded_height_px: 1080,
-                            pixel_aspect_ratio: VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                            orientation: NativeVideoOrientationV1::Identity,
-                            snapshot_width_px: 1920,
-                            snapshot_height_px: 1080,
-                            snapshot_pixel_aspect_ratio: VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                        },
-                    },
-                )
-                .unwrap();
-            let source = summary.source.as_ref().unwrap();
             let mut catalogue = serde_json::json!({"schema":"affect-research-video-catalogue-contribution","version":2,"revision":1,
             "annotationPolicy":"relative-path-reversible-v1","entries":[{
                 "assetId":format!("asset-{}",item.sha256),"annotationId":"session%5Fa_clip.mp4",
-                "sourceRelativePath":source.relative_path,"packageRelativePath":format!("assets/{}",source.relative_path),
-                "sha256":item.sha256,"byteLength":item.byte_length,"durationMs":1000,"geometry":summary.display_geometry
+                "sourceRelativePath":"stimuli/session_a/clip.mp4","packageRelativePath":"assets/stimuli/session_a/clip.mp4",
+                "sha256":item.sha256,"byteLength":item.byte_length,"durationMs":1000,
+                "geometry":{
+                    "status":"verified","source":"browser-decoder",
+                    "displayWidthPx":1920,"displayHeightPx":1080,
+                    "displayAspect":{"numerator":16,"denominator":9},
+                    "rotationDegrees":null,"pixelAspectRatio":null,
+                    "metadataInterpretation":"decoder-oriented-display"
+                }
             }]});
             catalogue["integritySha256"] = serde_json::json!(
                 crate::research_contracts::canonical_sha256(&catalogue, &[]).unwrap()
@@ -498,185 +456,6 @@ fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
 pub fn research_source_capabilities(window: WebviewWindow) -> ResearchResult<SourceCapabilities> {
     authorize(&window)?;
     Ok(source_capabilities())
-}
-
-#[tauri::command]
-pub fn research_native_media_capability(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-) -> ResearchResult<NativeMediaCapability> {
-    authorize(&window)?;
-    Ok(native_media.capability())
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaPrepareRequestV1 {
-    pub workspace_id: String,
-    pub workspace_file_id: String,
-    pub sha256: String,
-    pub byte_length: u64,
-    pub mime_type: String,
-    pub viewport: NativeMediaViewportCssV1,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaViewportRequestV1 {
-    pub fence: NativeMediaCommandFenceV1,
-    pub viewport: NativeMediaViewportCssV1,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct NativeMediaDecodeAttestationRequestV1 {
-    pub workspace_id: String,
-    pub workspace_file_id: String,
-    pub sha256: String,
-    pub byte_length: u64,
-    pub mime_type: String,
-    pub fence: NativeMediaCommandFenceV1,
-}
-
-#[tauri::command]
-pub fn research_native_media_status(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.status()
-}
-
-#[tauri::command]
-pub fn research_native_media_prepare(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaPrepareRequestV1,
-) -> ResearchResult<NativeMediaPrepareReceiptV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let viewport = physical_media_viewport(&window, request.viewport)?;
-    let grant = workspace.issue_native_media_grant(
-        &request.workspace_id,
-        &request.workspace_file_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-    )?;
-    native_media.prepare(grant, viewport)
-}
-
-#[tauri::command]
-pub fn research_native_media_set_viewport(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaViewportRequestV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let viewport = physical_media_viewport(&window, request.viewport)?;
-    native_media.set_viewport(request.fence, viewport)
-}
-
-#[tauri::command]
-#[cfg(test)]
-#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
-pub fn research_native_media_play(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.play(fence)
-}
-
-#[tauri::command]
-pub fn research_native_media_attest_decode_v2(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaDecodeAttestationRequestV1,
-) -> ResearchResult<ScannedStimulusSummary<crate::research_video_geometry::NativeDisplayGeometryV2>>
-{
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let expected_fence = request.fence.clone();
-    let receipt = native_media.attest_decode_v2(request.fence)?;
-    if receipt.workspace_file_id != request.workspace_file_id
-        || receipt.session_id != expected_fence.session_id
-        || receipt.generation != expected_fence.generation
-    {
-        return Err(CommandError::forbidden(
-            "Native controlled decode evidence returned a different workspace or generation identity.",
-        ));
-    }
-    workspace.attest_native_decode_v2(
-        &request.workspace_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-        &receipt,
-    )
-}
-
-#[tauri::command]
-pub fn research_native_media_attest_decode(
-    window: WebviewWindow,
-    workspace: State<'_, Arc<WorkspaceService>>,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    request: NativeMediaDecodeAttestationRequestV1,
-) -> ResearchResult<ScannedStimulusSummary> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    let receipt = native_media.attest_decode(request.fence)?;
-    if receipt.workspace_file_id != request.workspace_file_id {
-        return Err(CommandError::forbidden(
-            "Native decode evidence returned a different workspace identity.",
-        ));
-    }
-    workspace.attest_native_decode(
-        &request.workspace_id,
-        &request.sha256,
-        request.byte_length,
-        &request.mime_type,
-        &receipt,
-    )
-}
-
-#[tauri::command]
-#[cfg(test)]
-#[allow(dead_code)] // Frozen compatibility surface; neither companion registers it.
-pub fn research_native_media_pause(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.pause(fence)
-}
-
-#[tauri::command]
-pub fn research_native_media_stop(
-    window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
-    fence: NativeMediaCommandFenceV1,
-) -> ResearchResult<NativeMediaStatusV1> {
-    authorize(&window)?;
-    require_native_acquisition(NATIVE_ACQUISITION_SUPPORTED)?;
-    native_media.stop(fence)
-}
-
-fn physical_media_viewport(
-    window: &WebviewWindow,
-    viewport: NativeMediaViewportCssV1,
-) -> ResearchResult<NativeMediaViewportPxV1> {
-    let scale_factor = window.scale_factor().map_err(CommandError::io)?;
-    let size = window.inner_size().map_err(CommandError::io)?;
-    viewport.to_physical(scale_factor, size.width, size.height)
 }
 
 #[tauri::command]
@@ -1298,6 +1077,19 @@ pub async fn research_rescan_stimuli(
 }
 
 #[tauri::command]
+pub async fn research_prepare_planner_media(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+) -> ResearchResult<RescanResult> {
+    authorize(&window)?;
+    let workspace = workspace.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || workspace.prepare_planner_media(&workspace_id))
+        .await
+        .map_err(CommandError::io)?
+}
+
+#[tauri::command]
 pub async fn research_import_stimuli(
     window: WebviewWindow,
     app: AppHandle,
@@ -1332,7 +1124,12 @@ pub async fn research_import_stimuli(
             })
         })
         .collect::<ResearchResult<Vec<_>>>()?;
-    Ok(Some(workspace.import_paths(&workspace_id, paths)?))
+    let workspace = workspace.inner().clone();
+    let result =
+        tauri::async_runtime::spawn_blocking(move || workspace.import_paths(&workspace_id, paths))
+            .await
+            .map_err(CommandError::io)??;
+    Ok(Some(result))
 }
 
 #[tauri::command]
@@ -1791,14 +1588,6 @@ mod tests {
             "research_choose_workspace",
             "research_open_workspace_location",
             "research_source_capabilities",
-            "research_native_media_capability",
-            "research_native_media_status",
-            "research_native_media_prepare",
-            "research_native_media_set_viewport",
-            "research_native_media_play",
-            "research_native_media_attest_decode",
-            "research_native_media_pause",
-            "research_native_media_stop",
             "research_native_protocol_capability",
             "research_protocol_preflight",
             "research_input_capability",
@@ -1815,6 +1604,7 @@ mod tests {
             "research_load_planner_recipe",
             "research_save_planner_recipe",
             "research_rescan_stimuli",
+            "research_prepare_planner_media",
             "research_import_stimuli",
             "research_workspace_media_url",
             "research_attest_workspace_decode",

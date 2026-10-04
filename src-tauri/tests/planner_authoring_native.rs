@@ -32,7 +32,6 @@ mod owners {
     pub(crate) mod research_stimulus_order;
     pub(crate) mod research_surveyjs_definition;
     pub(crate) mod research_surveyjs_engine;
-    pub(crate) mod research_video_geometry;
     pub(crate) mod research_workspace;
     pub(crate) mod research_workspace_contribution;
     pub(crate) mod research_xr_layout;

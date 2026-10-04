@@ -492,7 +492,6 @@ pub struct ResearchRunManifestV3 {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum RunPlaybackModeV3 {
-    NativeGstPlay,
     UnqualifiedWebview,
     BrowserMediaAdapters,
 }
@@ -2518,11 +2517,6 @@ impl ResearchRunManifestV3 {
             self.playback_qualification,
         ) {
             (
-                ResearchPlatformV1::TauriWindows,
-                RunPlaybackModeV3::NativeGstPlay,
-                RunPlaybackQualificationV3::QualifiedNative,
-            )
-            | (
                 ResearchPlatformV1::TauriWindows,
                 RunPlaybackModeV3::UnqualifiedWebview,
                 RunPlaybackQualificationV3::Unqualified,

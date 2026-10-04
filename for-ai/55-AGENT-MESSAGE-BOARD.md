@@ -1,96 +1,43 @@
 # Agent message board
 
-## 20261004 Compartment catalog current-status pass
+Older entries below are dated coordination receipts. Any media-prototype build
+flags, commands or qualification targets they describe are superseded by the
+2026-10-04 prepared HTML video direction and remain recoverable in Git history.
 
-Owner: current task; `codex/segment-contracts-current-status` from `9b45d2e`,
-`contracts` segment, Backend Verification. Dependencies: P5-09, R1-03–07,
-RR-02/05/07/08/10 and the P7 suite handoff. The existing catalog correctly
-maps the six JSON contributions and external master5 assets, but its central
-P5 header still describes version 2/procedural Face as current and R1 still
-says implementation is deferred. This documentation-only pass aligns those
-status labels with current strict v3 source and active Runner components, and
-records mode-specific control visibility plus the saved-renderer sample use.
-It does not change schema, application behavior, checklist completion, native
-qualification, or the pending exact installer CI result. Evidence: source and
-contract comparison, focused link/status review and diff check.
+## 20261004 HTML video preparation and retired media cleanup
 
-## 20261004 R1 saved feedback visibility in browser intervals
+Direct researcher amendment. Integration owner: this task, branch
+`codex/segment-media-ffmpeg-cleanup`, isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-media-cleanup`, base
+`058694c`; stage: Backend Verification. Primary concern: media, with P1-03/04/05/06/07,
+P7-05/06/09 and R1/RR-04/RR-10 named seams. P1 receives selected original videos,
+probes them on confirmation and publishes only verified playable files; P3/P4/P6/P7
+and Runner consume the resulting exact P1 path, hash, length, duration and geometry.
+The original remains in a separate project source folder. HTML video is the
+current playback surface. This pass removes obsolete native playback authority
+and guidance, then checks real preparation and selected-video URL behavior.
+Source snapshot: commit `fa8552e` removed the former actor/dependency but current
+P1 and Runner binders still require it; no production FFprobe/FFmpeg path exists.
+Docs, P1 preparation, and build cleanup are delegated to isolated branches;
+this branch owns Runner's narrow exact-selected-media URL command and integration.
+CLI HTML decode proof, installed playback, LSL/XDF, timing and research
+qualification remain open until separate evidence closes them. Historical
+saved-file compatibility is awaiting the researcher's explicit answer.
+## 20261004 Media retirement documentation and P1 preparation contract
 
-Owner: current task; `codex/segment-r1-feedback-visibility` from `9b45d2e`,
-R1/RR-05 with the named P5-09 consumer seam, Backend Verification. P5 saves
-`visual.hideFeedback` to suppress all selected paint. Native master intervals
-already hide feedback, but `runner/src/app.js` forces `hideFeedback:false` for
-browser CSV intervals and validation traversal, including a video whose saved
-setting requests hidden feedback. This pass gives the three Runner step paths
-one projection rule: video honors the saved visibility; interval hides paint
-while preserving the received coordinates and mapping state. It changes no
-recipe, input, sample, LSL or XDF contract. Baseline: 12 focused Node tests
-passed. Evidence target: all three strict v3 renderer choices under saved
-visible/hidden settings, interval state, focused/full JS tests and Runner build.
-Physical paint, native playback, recording and installed qualification remain
-open, as does the P7 reinstall CI run in its separate branch.
-
-Implemented in the shared master-step projector and all three Runner callers.
-The browser CSV path now resets its own x/y before hiding interval paint;
-the native path retains observed status coordinates and mapping values before
-hiding. The validation video preview respects saved visibility. Focused 13/13,
-full JavaScript 1,235/1,235 and Runner production build/boundary passed locally.
-These checks do not observe an installed window or qualify timing/recording.
-The R1 commit `aaa5c4f` was integrated as `6d61a52` after the current-status
-catalog merge. The exact combined installer and installed behavior still need
-their own artifact-bound CI and local verification.
-
-## 20261004 P7 suite duplicate executable correction
-
-Owner: current task; `codex/p7-windows-suite`, P7 packaging continuation,
-Repository/Web Synchronization. The exact `3082044` suite installed locally and
-passed its original receipt/launcher audit, but inspection found an additional
-`affect-runner.exe` beside the named launcher and engine. That executable is a
-second route into Runner without the launcher's hash check. This bounded pass
-removes it in the NSIS postinstall hook and requires the installed-file audit
-to reject any remaining copy. It changes no P1–P6 JSON, Runner protocol or
-GStreamer distribution policy. Focused audit tests, exact-source CI install
-and the local replacement install are the evidence targets. Visible operation,
-native playback, LSL/XDF and research qualification remain open.
-
-The `0a614b9` installer passed all three CI jobs and the new duplicate-file
-audit after fresh installation. Local replacement at the same destination also
-passed with no `affect-runner.exe`, but updating over the prior version left
-Tauri's default `Affect Research Suite.lnk` beside the already existing
-`Experiment Planner.lnk`. This follow-up replaces the old Planner link before
-renaming the newly created default and checks a second silent install plus
-exact Planner/Runner shortcut targets in CI. No UI is launched.
-
-The exact `9b45d2e` run `37189915633` passed source, packaging, fresh install,
-second install, both file/hash audits and the two named shortcut target checks;
-the default duplicate shortcut was absent. The local `9b45d2e` artifact download
-failed at about 51 MB of free C: space. Automatic approval review rejected even
-single-file removal of superseded downloaded setup copies, so local update and
-uninstall/reinstall verification remain pending. A separate user-directed media
-migration is in progress; this run is regression evidence for the package hook,
-not the final application source or a release candidate.
-
-## 20261004 P5-09 photoreal 21 × 21 Face successor
-
-Owner: current task, worktree `affect-tracker-research-photo-face`, branch
-`codex/p5-photo-face`, base `058694c`; stage: Backend Verification. Scope is
-P5-09 plus named P5→Runner renderer/intake seams. New P5v3 writes the chosen
-renderer and one of nine local Face pack IDs/SHA-256s; v2 procedural Face remains
-strictly historical. The shared participant surface now uses the selected
-master renderer, and Runner checks Face bytes before Start. Complete Planner
-save → independent Runner selection passed for one pack; all nine pass strict
-selection/hash tests and a browser rendering/picker check. Live Chrome showed
-Flubber, Grid and the chosen synthetic Face as separate participant surfaces.
-Planner visibly listed all nine and accepted the ninth. Fresh Planner, Runner
-and Pages builds verified all nine bundled atlases; `cargo check --locked --bins`
-passed after C: space recovered. Installed paint, a linked release build, full
-session and minimum/expanded accordion-stretch qualification remain open.
-
-Cross-owner dependency: P7/R1 packaging must bundle all nine pinned WebPs and
-publish one suite only after installed native video, input, LSL and XDF gates.
-No gender/ethnicity claim is inferred from synthetic appearance; the user
-requested demographic choice, but the catalogue explicitly disallows treating
-creator prompts as demographic facts. Preserve individual pack selection.
+Owner: documentation agent; branch `codex/segment-docs-media-retirement`;
+worktree `C:/Users/gfeje/Documents/GitHub/affect-tracker-research-media-docs`;
+base `058694cab918ed9b2e7a65cf1421182124a7f632`; stage: Backend
+Verification; bounded `contracts` segment with P1-02/03/04/05/06/07,
+P3-03/08, P7-05/06/09 and RR-03/04/10 seams. This pass removes stale active
+media guidance and states the requested target: P1 probes after Segment 1
+confirmation, preserves an incompatible original in a separate project source
+folder, creates a playable file beneath `assets/stimuli`, and publishes only
+that verified file to all current recipe and Runner references. Static browsers
+consume prepared files without local process execution. The strict active-media
+closure remains exact-hash bound. Documentation changes do not implement
+the converter or qualify playback. Root integration owns source correspondence
+and collection of this isolated documentation commit.
 
 ## 20261004 Compartment and JSON handoff catalog
 
@@ -101,8 +48,9 @@ Dependencies: P1–P7, R1/RR-01–10 and the packaging integration seam. This pa
 maps existing controls, inputs, saved `segments.P1`–`P6`/policy and Runner
 consumers in `docs/compartment-catalog.md`; it changes no wire reader or app.
 Current-source mismatches for owner follow-up: master5 references separate
-SurveyJS assets, so one JSON is not self-contained; `fa8552e` removed the native
-GstPlay path while the charter and installed qualification gate still target it.
+SurveyJS assets, so one JSON is not self-contained; the media prototype removed
+at `fa8552e` still appears in dated charter and qualification text, now
+superseded by the 2026-10-04 prepared HTML media direction.
 The saved P5 renderer already reaches Runner's master projection, but the full
 installed three-mode paint matrix is unverified. Packaging and UI layout passes
 must use their own isolated scopes and evidence; this catalog grants neither
@@ -176,7 +124,7 @@ CDP-based live Pages harness that launches the deployed `/runner/` route in a
 named browser, injects test-only file/media/download shims before the live bundle
 starts, captures the downloaded CSV files, fetches live `build-info.json`, and
 reconstructs each CSV through the production Runner reader. It does not alter
-product runtime behavior, Planner JSON, native LSL/XDF, GStreamer playback, or
+product runtime behavior, Planner JSON, native LSL/XDF, retired media stack playback, or
 qualified desktop Start.
 
 Evidence against live revision
@@ -587,7 +535,7 @@ owns full source-bound combined builds and actual native/application execution.
   workspace3 readers, Main master3/consumer composition. Root schema freeze02
   requires nine-key controlled geometry with complete nativeDisplayMetadata2.
 - Preserve absent versus explicit tags, reject malformed/conflicting/reflection,
-  configure pinned d3d11videosink through safe property APIs before Play creation,
+  configure the now-retired sink through safe property APIs before Play creation,
   set/readback quarter-turns and fence generation/metadata. Pre-sink snapshots
   must match raw source/PAR before applying controlled rotation once. No new
   unsafe, qualification flags, auto fallback or silent later reconfiguration.
@@ -595,7 +543,7 @@ owns full source-bound combined builds and actual native/application execution.
   geometry and error tests). Tagged absence is an empty struct variant so extra
   keys reject. No actor wiring/native build or actual playback claim yet.
   Cancellation and lifecycle handoffs remain unchanged.
-- Actor continuation: safe explicit d3d11 sink installed before Play creation;
+- Actor continuation: the retired sink was installed before Play creation;
   per-generation policy freezes selected stream ID, metadata revision and typed
   rotation readback. Later drift fails closed and hides/pauses the child, never
   reconfigures a frozen policy. Raw tag cardinality is checked before parsing;
@@ -607,8 +555,8 @@ owns full source-bound combined builds and actual native/application execution.
   additive service and retained legacy types. Evidence: D:/GitHub/.affect-checks/
   native-controlled-orientation-build-04.log and native-controlled-orientation-tests-01/.
   Shared Cargo hold released; no production build or foreground launch performed.
-- GStreamer 1.28.6 source basis: gstd3d11videosink.cpp rotate-method getter reads
-  configured method; GstPlay video_snapshot uses playsink convert-sample from
+- Historical player source inspection: the renderer's rotate-method getter read
+  the configured method; snapshot conversion used a sample from
   pre-sink buffers. This proves configuration, not independently observed pixels.
   RR11 snapshots remain pre-sink and are not claimed to match rotated display.
   S1 owns workspace attest/cache/binding, commands and JS bridge; Main registers
@@ -624,12 +572,12 @@ owns full source-bound combined builds and actual native/application execution.
 
 ### 20260912-main-bounded-sink-diagnostic
 
-- Root allocated one external GST_DEBUG observation using frozen1ccd756,
-  exact categories autodetect:5,playsink:5,GST_ELEMENT_FACTORY:4, no color,
+- Root allocated one external former media debug logging observation using frozen1ccd756,
+  exact categories autodetect:5,playsink:5,former element factory:4, no color,
   a new D: log and fresh workspace clone. No production mutation or retry.
 - main-sink-1ccd756-evidence-01 under D:/GitHub/.affect-checks records2/4
   steps; rescan rejected owner_failed, revision1. Owned42144 exits0 after EOF,
-  without forced termination. The requested GStreamer log exists but is empty;
+  without forced termination. The requested retired media stack log exists but is empty;
   actual selected sink is NOT observed. Do not infer selection from other runs.
 - Runtime verification completes35840ms, actor retained35840ms; EOF61352ms,
   cleanup61701ms. Timing does not independently prove the rejection cause.
@@ -668,7 +616,7 @@ owns full source-bound combined builds and actual native/application execution.
   and parent retention preserved. No timeout/unsafe/qualification changes.
 - Ten direct-rustc verifier tests pass; capability regression awaits assembled
   Main test. No Cargo build/processlaunch; original10s failure intact. Details:
-  src-tauri/native-media/VERIFICATION-CANCELLATION-20260912.md. Main owns combined
+  the historical verification receipt in Git history. Main owns combined
   build and root exact hiddenEOF repro; orientation remains separately gated.
 
 ### 20260912-main-attestation-reason-refinement
@@ -700,7 +648,7 @@ owns full source-bound combined builds and actual native/application execution.
   launch. Main's attestDecode diagnosis has priority; Main owns assembled build
   and root's improved external driver owns exact hidden repro. Original10s
   receipt and immutable binaries remain untouched. Details:
-  src-tauri/native-media/LIFECYCLE-OBSERVATIONS-20260912.md.
+  the historical lifecycle receipt in Git history.
 
 ### 20260912-main-first-native-mock-and-catalogue-diagnosis
 
@@ -837,7 +785,7 @@ owns full source-bound combined builds and actual native/application execution.
   current contract/geometry and strict terminal/partial-metadata corrections.
   Own named lib native setup/close seams and one off-UI close coordinator.
   Main retains Runner collection, including its Master shutdown/join hook.
-- Deliver clean production native-Gst CLI build and local verified827-file
+- Deliver clean production retired native media CLI build and local verified827-file
   resource staging. Existing native lifecycle retains parent/event loop through
   actual initializer/actor exit and successful join; errors/panics keep exit
   vetoed. No new command/JSON semantics or unsafe boundary.
@@ -1396,7 +1344,7 @@ owns full source-bound combined builds and actual native/application execution.
   typed demographic form still need their own evidence. Main separately assigned
   S5 local-preset picker verification, preserving its completed P5 source.
 - Preview localized the actual diagnostic stall before actor start inside
-  GStreamer initialization. Async service/actor lifetime code passes focused
+  retired media stack initialization. Async service/actor lifetime code passes focused
   software checks; real initialized playback/parent-close evidence remains open.
   A fake-worker test is not a successful native clip run.
 
@@ -1455,7 +1403,7 @@ owns full source-bound combined builds and actual native/application execution.
   hooks and consequential commands remain in progress. S4 and S5 have bounded
   actual rendered-control parity follow-ups in their own qualification files;
   main retains shared app ownership and will bind final candidate reruns.
-- Root independently inspected the actual Gst clip diagnostic. Test exit0 and
+- Root independently inspected the actual retired player clip diagnostic. Test exit0 and
   decoded frames coexist with stale failure reasons in every active snapshot.
   Do not call it clean playback. Initial S1 terminal latch `9a68e7c` is held for
   a corrective partial-metadata follow-up and actual combined diagnostic rerun.
@@ -2059,7 +2007,7 @@ owns full source-bound combined builds and actual native/application execution.
   S7 owns Planner file extraction. Runner may add its module declarations and
   Runner-only handlers/state. Workspace/command shared symbols require agreement.
 - Baseline inspection: Runner still dispatches v1 only. Native master reader and
-  complete owner projections exist. Gst capability deliberately reports Start,
+  complete owner projections exist. retired player capability deliberately reports Start,
   format qualification and redistribution review false even when actor is ready.
   Linked builds, previews and parser tests cannot establish actual execution.
 - Evidence now: strict source/hash/selection and per-field projection tests;
@@ -2627,7 +2575,7 @@ file; follow the integration-owner collection procedure in the workflow.
   independently verify the exact pinned 827 files / 340362958 bytes. Real SDK
   paths are process-scoped; `DOCS_RS` is absent and the required gate stays on.
 - Canonical native Planner build succeeded from exact clean `1218c9e` using
-  locked `native-gstreamer,tauri/custom-protocol` and the normal SDK. Artifact:
+  locked historical media-enabled build and the normal SDK. Artifact:
   `D:/GitHub/affect-tracker-research/src-tauri/target/debug/affect-research.exe`,
   28512256 bytes, SHA-256
   `71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca`.
@@ -2785,7 +2733,7 @@ file; follow the integration-owner collection procedure in the workflow.
   1280/800. G11 review found teardown and silent-workspace-error regressions in
   `a0283d9`; owner fix `17b2d24` resolves both by independent source review.
   Final rendered error layout and integrated lifecycle checks remain required.
-- Native prerequisite audit found the old temporary GStreamer devel SDK gone,
+- Native prerequisite audit found the old temporary retired media stack devel SDK gone,
   while Rust/MSVC and the pinned canonical runtime remain intact. S1 received
   the bounded existing-script prerequisite/normal-native-check followup. No
   global PATH edit, new unsafe adapter or runtime redistribution is allocated.
@@ -3426,7 +3374,7 @@ file; follow the integration-owner collection procedure in the workflow.
   `test/fixtures/research-video-catalogue-contribution-v1.json`. Focused module,
   UI and modularity checks pass 43/43; `node --check` and `git diff --check` pass.
   Browser probes now preserve decoder-oriented display geometry. Native
-  GstPlay currently exposes stream dimensions without proving the oriented
+  the former player exposed stream dimensions without proving the oriented
   display interpretation, so native geometry remains explicitly pending and
   this checkpoint does not claim all-platform P1-06 closure. P1-04/Q04 and
   P1-05/Q05 also remain open; validated catalogue content is not filesystem
@@ -3449,9 +3397,9 @@ file; follow the integration-owner collection procedure in the workflow.
   the catalogue only after every file is freshly hashed and decoder-probed and
   the resulting complete catalogue exactly matches the saved contribution.
 - Native P1-06 assessment: both native decode paths already observe width and
-  height, but `ScannedStimulusSummary` discards them, and the GstPlay actor's
+  height, but `ScannedStimulusSummary` discarded them, and the former player actor's
   `PlayVideoInfo` values are stream dimensions without an orientation/PAR
-  receipt. GstPlay snapshot conversion can normalize pixel aspect, but its API
+  receipt. retired player snapshot conversion can normalize pixel aspect, but its API
   does not by itself attest image-orientation handling. The remaining owner
   work is a safe, versioned oriented-display receipt derived from explicit
   orientation metadata or a proven rendered-snapshot pipeline, followed by
@@ -3460,7 +3408,7 @@ file; follow the integration-owner collection procedure in the workflow.
 - Native P1-06 follow-up is active on branch
   `codex/p1-native-display-geometry` at base `e4562d950ae2a378b49c714370e042220989ed3a`.
   This bounded Backend Verification pass will accept only a safe, versioned
-  GstPlay receipt with explicit orientation metadata, verified pixel aspect,
+  retired player receipt with explicit orientation metadata, verified pixel aspect,
   and stable square-pixel snapshot caps. Missing, reflective, custom, or
   otherwise ambiguous orientation remains pending. Installed-runtime and
   foreground/device qualification remain deferred.
@@ -3479,7 +3427,7 @@ file; follow the integration-owner collection procedure in the workflow.
   replacement remains session-local. P1 JSON contains only logical roots and
   relative declarations, with fresh explicit rebind plus exact rehash/reprobe;
   it stores no absolute path or permission authority.
-- Safe GstPlay source metadata plus stable RawBgrx snapshot caps now derives a
+- At that time, safe media-source metadata plus stable RawBgrx snapshot caps derived a
   versioned oriented display geometry receipt. Explicit identity/90/180/270
   orientation and canonical PAR can qualify; missing, conflicting, reflected,
   custom or inconsistent metadata fails pending. No new unsafe/FFI was added.
@@ -3487,7 +3435,7 @@ file; follow the integration-owner collection procedure in the workflow.
   Pages build closures, formatting and diff checks pass. A source-only native
   feature typecheck also passes with dependency build scripts deliberately in
   docs mode; ordinary runtime detection remains unavailable because this shell
-  lacks `pkg-config`/GStreamer development metadata. Installed native
+  lacks `pkg-config`/retired media stack development metadata. Installed native
   media/runtime and foreground qualification remain deferred.
 
 ### 20260911-integration-authoring-cleanup-receipt
@@ -4591,7 +4539,7 @@ file; follow the integration-owner collection procedure in the workflow.
   An independent openpyxl reader verifies both sheets, IDs, frozen header, no
   formulas, and ZIP CRC. Artifacts: own `src-tauri/target/segment3-verification/`.
   No desktop pointer/keyboard/clipboard or existing browser was controlled.
-- All-feature check fails at `glib-sys` because `pkg-config`/the GStreamer
+- All-feature check fails at `glib-sys` because `pkg-config`/the retired media stack
   development SDK are unavailable. All-feature tests/clippy, installed dialogs,
   physical clipboard/keyboard, full accessibility, native media/timing/LSL,
   acquisition/output version binding, CI and deployment remain open. The
@@ -5221,7 +5169,7 @@ The initial baseline's stale Section 2 UI assertions were corrected by its
   no-default check and 186/186 tests. No-default clippy, format and dependency
   audit passed before the merge (native source/dependencies unchanged by merge).
 - Open gates: all-feature check fails because this shell has no `pkg-config`
-  or usable GStreamer development SDK; all-feature tests/clippy are consequently
+  or usable retired media stack development SDK; all-feature tests/clippy are consequently
   unavailable. Full installed/browser accessibility, physical input/media/LSL,
   timing, acquisition, CI and deployment qualification were not performed.
   The desktop bundle has a non-failing >500 kB JavaScript chunk warning.
@@ -5326,7 +5274,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   complete package-v1 contract. Successor option/layout correspondence is RR-10,
   the final development stage; it does not block Planner authoring completion.
 - All-feature native-media compilation is unavailable here because pkg-config/
-  the GStreamer SDK are absent. Installed player/input, device, long-run XDF,
+  the retired media stack SDK are absent. Installed player/input, device, long-run XDF,
   accessibility and full correspondence qualification remain open. No publication
   or foreground native application interaction was performed.
 
@@ -5355,7 +5303,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
 - First real hidden native smoke passed at `0138516-dirty`: nine commands,
   current-session P7 read/set/readback, retry, stale/invalid rejection and EOF.
   Receipt: `D:/GitHub/.affect-preview-checks/planner-cli-unselected-workspace-smoke/receipt.json`.
-  This deliberately no-GStreamer slice proves neither media nor Runner behavior.
+  This deliberately media-free slice proves neither playback nor Runner behavior.
 - Follow-up checkpoint hardens returned exit codes, bounded output/retained
   issues, one-time concurrent completion, EOF drain and safe P7 afterCommit.
   Eight native broker/wire tests and 18 JS session/bridge tests passed, including
@@ -5373,7 +5321,7 @@ non-failing existing bin/lib PDB output-name collision warning during the build.
   Executable `affect-tracker-research-integration-preview/src-tauri/target/debug/affect-planner-cli.exe`
   SHA-256 `0150d36d0c5bbdc91439e15ad29c78c0553bfbb1fd9be3564d3cc5b336672e8c`.
   Its readiness frame binds the exact clean commit. Root is cleared for its
-  independent production-driver check. This no-GStreamer policy-only build is
+  independent production-driver check. This media-free policy-only build is
   not final owner integration, media verification or Runner evidence.
 - Next in the same confirmed shared-integration allocation: collect frozen
   P1–P7 owner adapters and file service, then install existing editor hooks and
@@ -5560,10 +5508,8 @@ revision barrier and rechecks cancellation afterward. App composition must
 connect that barrier; this does not claim that core9 is already installed.
 Final qualification additionally requires the same saved master in actual
 Runner/XDF and viewport-recorded screenshot correspondence for video/Flubber.
-Both final executables require explicit pinned native-gstreamer build support;
-the current builder defaults alone do not establish that capability.
-Planner builder now accepts explicit --native-gstreamer, combining it with
-mandatory tauri/custom-protocol and not forwarding the custom flag to Cargo.
+At that time both executables used a separately enabled media feature. Its
+builder flag and distribution requirement are now retired.
 This does not alter capability flags: qualified_start_available,
 qualified_format_matrix_ready and redistribution_review_ready remain false.
 Runner Start is blocked pending the separately owned claim-specific review.
@@ -5685,8 +5631,8 @@ by this build-option change.
   only two startup-pending reasons poll. Strict local 60s budget does not replace
   or extend native broker120s; guards and revision ordering remain enforced.
 - 60 focused JS checks, desktop build and 11-file boundary pass. No Rust rebuild
-  or actual-app follow-up claim; immutable70ca artifact untouched. Details in
-  `src-tauri/native-media/STARTUP-READINESS-20260912.md`. Main collects and validates
+  or actual-app follow-up claim; immutable70ca artifact untouched. Historical
+  details remain in Git history. Main collects and validates
   assembled lifecycle/Runner seams. Playback qualification remains open.
 
 ### 20260912-p2-import-cli-default-slot-fix
@@ -5999,7 +5945,7 @@ validation. Five driver comparison tests pass. The next cold run failed before
 any import effect: runtime verification took 43028 ms, the command ended at
 62393 ms, and owned cleanup required forced termination after its unchanged
 10-second grace. This is consistent with the 60-second startup sub-budget being
-exhausted; the exact GStreamer-internal delay is unmeasured. The startup allowance
+exhausted; the exact old-player delay was unmeasured. The startup allowance
 is now 90 seconds within the unchanged 120-second broker deadline, with absolute
 deadline/cancellation checks retained. Fourteen focused startup/transport checks
 pass. This allowance change does not resolve or qualify the stalled native
@@ -6025,17 +5971,10 @@ qualification remain the next gate, not a claim of this pass.
 
 ## Native-enabled Runner build correction — 2026-09-13
 
-The previously opened developer executable lacked native-gstreamer, causing
-"Native video inspection is unavailable in this build". The Runner desktop
-build script now accepts `--native-gstreamer`, matching the Planner CLI option.
-Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
-default features also include LSL and Windows acquisition.
-
-Built and opened the native-enabled dev executable with its pinned runtime at
-`D:/GitHub/.affect-checks/runner-current-native-2026-09-13/`. Its build receipt
-records SHA256 and scope; use **Launch Experiment Runner.cmd**, which scopes the
-bundled DLL path to the launched process. Direct EXE loader/installed packaging
-qualification remains open. This does not lift the qualified Start gate.
+The previously opened developer executable lacked its then-current media
+feature, causing a video-inspection error. That builder path and developer
+launcher are retired. The build and launch receipt remains in Git history and
+does not lift the current qualified Start gate.
 
 Nine focused Runner reader/master tests passed. All eight English/German
 production-app questionnaire cases passed (350 assertions), using synthetic
@@ -6234,231 +6173,116 @@ and a screenshot was inspected. Reproduction command, screenshot, and claim limi
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
 
-## P5 photoreal face matrix — 2026-10-04
+## Retired media build and packaging cleanup — 2026-10-04
 
-Direct researcher correction: Face means the Playground's continuously blended
-21 × 21 photoreal atlas, with selectable synthetic portrait packs and controls
-specific to the selected Flubber/Grid/Face display. Root owns P5-09 in isolated
-`codex/p5-photo-face`, with named P7 and RR-05/RR-10 contract seams. Source is
-Playground `2023af03a4ca3231fe2968f4f3ddd523d25c5c98`; its atlas v3 SHA-256
-is `02cca9d9cf9b4d5e3107147b4ed273404700ede445d05da66698e537ceb2ef62`.
-The frozen pack catalogue has nine 21 × 21 synthetic packs, but explicitly calls
-its style and regional labels creator-selected inspirations, not gender or
-ethnicity. An async labeling clarification is pending. Historical P5 v2
-`procedural-face` must not change meaning; a new saved version and matching
-strict JS/Rust/Runner readers are required before declaring the new option
-runnable. Baseline focused tests: 11/11 passed. Windows package work is isolated
-in `codex/p7-windows-suite`; linker installed, release compile currently stopped
-at low C: space, with no new installer claim.
+User-directed Repository/Web Synchronization pass on isolated branch
+`codex/segment-media-build-retirement` from `058694c`. This owner is removing
+the obsolete native player staging tree and build/packaging references, while
+retaining unsigned, host-native, no-default-feature interface packages.
+Qualification fixtures now describe the HTML video backend and stay synthetic;
+their Runner readiness flags only drive interface traversal. P1 owns video
+probing and conversion after Segment One confirmation; R1 owns playback and
+media use at runtime, including replacement of the remaining actor-readiness
+assumption in Runner UI fixtures. The source baseline passed
+`pnpm surveyjs:check`; the ten focused build/package boundary tests passed
+before and after this cleanup, and eleven changed scripts passed syntax checks.
+No package was built or installed. Final source, package, and installed
+qualification remain separate gates.
 
-## Unified Windows suite packaging — 2026-10-04
+## 20261004-P1-FFmpeg-preparation
 
-Direct user allocation: one downloadable Windows installer containing separate
-Experiment Planner and Experiment Runner programs. P7 packaging pass on isolated
-`codex/p7-windows-suite` at `6ba2939`, Backend Verification. Inputs are one clean
-source commit, Runner frontend/native executable, and the hash-bound Runner
-launcher. Output is one NSIS package with adjacent Planner, Runner launcher,
-Runner engine, and portable hash receipts. P7 contributes no experiment JSON;
-the existing P1–P6 manifest remains the Planner-to-Runner contract. The package
-must fail closed on missing/mismatched binaries. This pass will check staging,
-receipt validation and installer layout rules. Full native participant playback,
-installed execution/XDF qualification, and public release remain open gates.
-Current C: free space is about 2 GB, below the release-build headroom.
+- Owner/worktree: P1 `workspace`, `codex/segment-p1-ffmpeg-preparation` in `affect-tracker-research-p1-media-prep`, based on `058694c`.
+- Stage/deliverable: Backend Verification of P1-03/04/05/06/07 media preparation on Windows Planner. Input is the selected project and its imported video sources; P1 contributes only the accepted playable asset path, identity, duration and oriented geometry. P3/P4/P6/P7 consume the P1 revision; R1 consumes the declared playable path.
+- Verified baseline: existing native import/rescan writes and scans `assets/stimuli`; GUI P1 confirmation and CLI `confirmSegment` only accept the current P1 snapshot. Native scan/proof still depends on the retired player, while browser P1 uses HTML media probing. Focused Node baseline: 26/26 passed.
+- This slice: use fixed FFprobe/FFmpeg commands in a narrow native workspace service, keep imported originals in `source-videos/` outside the closed playable asset tree, create/reuse exact playable assets without overwrite, and require a real HTML representative-frame proof before GUI P1 acceptance. Existing historical saved-file readers remain intact.
+- Shared seams: `app.js` P1 confirmation, a closed Planner media IPC adapter, and the native workspace service. The existing bridge keeps HTML import/rescan catalogue publication; code audit owns removing its retired actor branches. Root owns Runner (`runner/src`, `research_runner_master`) integration and related tests. Static browser transcoding and headless CLI HTML proof remain open. FFprobe and FFmpeg prefer a verified side-by-side pair at `ffmpeg/bin/` next to the Planner executable, then PATH; a clean-machine bundle and qualification gate belongs to the installer owner. No installed qualification, new unsafe, broad process IPC, or native playback qualification is claimed.
 
-## Runner published-plan immutability — 2026-10-04
+## Planner desktop bridge retirement — 2026-10-04
 
-Root R1/RR-10 Backend Verification continuation in isolated
-`codex/r1-plan-immutability` from suite candidate `432359c`. The Planner owns
-P1–P6 and P7 policy in canonical master1–5 JSON. Runner's plan constructor
-currently freezes only its root, leaving the selected selector, steps and
-payload mutable after a hash has been computed. This pass freezes the full
-derived projection with the existing JSON freeze helper, then checks selection
-and hash behavior on real fixture versions. No saved-file version, native Start,
-recording, player authority or research qualification changes. Native playback
-reinstatement remains a separate R1 pass and requires space for a real compile.
+Follow-up P1/P7 interface pass on `codex/segment-media-build-retirement` after
+`ea13d7a`. The active desktop page still loads the monolithic native bridge,
+which also imports obsolete Runner media code. This owner is extracting only
+the Planner workspace, file, questionnaire asset, input setup, and HTML video
+catalogue adapter while retaining the current Planner entrypoint contract.
+The P1 media owner confirms imports prepare playable outputs before the bridge
+catalogues them; Segment One confirmation performs a fresh FFprobe/HTML proof.
+Runner execution and canonical record readers remain with their owners. The
+bridge now keeps only Planner identity, workspace/file/asset/input services
+and HTML frame-attested catalogue publication. The retired run media adapter
+and its dedicated tests are deleted. Existing Planner entrypoint and Core9
+connector signatures remain intact. All 83 focused bridge, storage, preview,
+architecture, UI, and build-boundary tests pass after the source-only change;
+`git diff --check` passes. No package was built or installed, so this makes no
+installed qualification claim. The older capability schema was removed from
+the bridge and matching Rust contract during integration.
 
-20261004 R1 handoff: `runner/src/master-recipe.js` now uses the existing
-recursive recipe freeze on the published plan. `test/research-runner-master.test.js`
-checks nested selector/P5/step immutability across master1–4, then exact
-reconstruction identity. Focused 12/12 and full JavaScript 1,233/1,233 pass.
-The read-only historical correspondence probe now observes all queried plan
-objects frozen. No native or installed execution was attempted. See
-`docs/runner-plan-immutability.md` for the precise claim.
+## Retired JavaScript player adapters — 2026-10-04
 
-20261004 P7 packaging continuation: `desktop.yml` gains a manual Windows suite
-job after the existing Node/Rust checks. It runs the exact clean-source suite
-build and uploads only a short-lived unqualified NSIS candidate for later
-installed verification. No workflow publishes a release. Local C: build space
-is about 1.2 GB; installed use, native GstPlay and research qualification are
-still open. The prior R1 deep-freeze commit is integrated as `b699b14` on the
-single suite candidate branch.
+Follow-up P1/R1 interface cleanup on `codex/segment-media-js-retirement` from
+the committed integration baseline. The standalone actor controller and
+catalogue modules, their dedicated tests, and Pages exclusions are removed.
+Planner Core9 diagnostics now depend directly on the shared catalogue error
+type, limited to current HTML catalogue phases. Runner still imports the old
+package adapter for historical package metadata; it can read capability,
+recovery listings and preflight receipts, but reports execution unavailable
+and rejects Start before any IPC. No old media prepare/play commands remain in
+that adapter. The Runner HTML path and canonical record readers are unchanged.
+Rust command/capability cleanup belongs to its owner; no package or installed
+qualification is claimed by this source-only pass. Nineteen focused adapter,
+Planner, architecture and build-boundary tests plus eleven Runner HTML and
+recipe tests pass; changed JavaScript parses and `git diff --check` is clean.
 
-20261004 P7 CI correction: initial manual run `37169940986` passed the
-SurveyJS check but failed one source-boundary test because that test treated the
-new manual installer job as part of the non-packaging Rust-check job. The test
-now scopes its negative assertion to the original checks job and explicitly
-checks that the separate suite job is manual and contains no GStreamer staging.
-Focused 3/3 and full JavaScript 1,233/1,233 pass locally; remote rerun and
-actual NSIS build were pending at that checkpoint. The corrected Windows check
-job passed in run `37170274675`; its suite package job is still running.
+## Historical package Rust Start removal — 2026-10-04
 
-## R1 native player restoration — 2026-10-04
+R1 interface follow-up on `codex/segment-package-v1-rust-retirement` from
+integrated `d5d433b`. The old package Start/Resume commands and player action
+commands are unregistered and removed. The package runtime now retains only
+the companion lease and Recorder idle gate, strict historical preflight and
+recovery reads, pending finalization, and an idle status. Its worker, input
+sampling, media lifecycle and new/resumed attempt storage are removed.
+The current Runner master and HTML playback path keep their existing runtime
+constructor and companion lease signatures. `cargo fmt --all --check`, source
+reference scans and `git diff --check` pass. Full Rust compilation is deferred
+to CI because local disk space is limited; no installed qualification is
+claimed.
+## 20261004-Media-documentation-audit
 
-Root R1/RR-04 Backend Verification pass in the isolated
-`codex/r1-native-gst-restore` worktree, based on suite candidate `8b85146`.
-Target: restore the previously approved Rust GstPlay actor and private-runtime
-capability path removed by `fa8552e`, preserving current master5/P5 and separate
-Planner/Runner contracts. Evidence now: source diff, focused software tests and
-remote Windows Rust compilation; local disk cannot hold a fresh native build.
-Native installation, DLL bootstrap, codec redistribution, physical playback,
-LSL/XDF and research qualification remain separate open gates. Do not lift
-normal research Start or change unqualified WebView evidence into native proof.
+- Owner/scope: P1 documentation handoff in the isolated P1 worktree; `for-ai/20`, `61`, `67`, `69`, `72`, `docs/release-validation.md` and `docs/compartment-catalog.md` only. Root owns the current control-plane, segment and compatibility documents.
+- Current route: native P1 preserves originals in `source-videos/`, probes with FFprobe, converts incompatible sources with FFmpeg into `assets/stimuli/`, and requires HTML representative-frame proof before GUI confirmation. Runner consumes the exact prepared file through HTML video. Static browser and CLI limitations, installed qualification gaps and dated September evidence are stated in the edited documents.
 
-20261004 R1 source handoff: the optional GstPlay actor,
-runtime manifest and native service commands are restored from the pre-removal
-source. The two approved FFI adapter blob hashes match that source exactly.
-Conflicts retained the separate-suite desktop identity and manual CI packaging
-job; the suite launcher continues to build without a private runtime and cannot
-claim native playback. A source-boundary test now checks only the Rust-check
-job's no-package invariant. Local full JavaScript 1,233/1,233, SurveyJS checks,
-Rust formatting and suite structural checks pass. See
-`docs/runner-native-actor-restoration.md`. The Windows source-check job
-passed in run `37170372323`, including pinned GStreamer setup, all-feature
-Rust check/test compile and lint. Integration commit `78af687` passed focused
-15/15 and full JavaScript 1,233/1,233; both package jobs were still running at
-this checkpoint.
+## Runner master retired player worker — 2026-10-04
 
-20261004 P7 installer build correction: manual run `37170274675` passed the
-Windows source checks and compiled the release Runner engine, then failed in
-launcher preparation because `powershell.exe` on that runner did not expose
-`Get-FileHash`. The same CI run's `pwsh` steps used that cmdlet successfully.
-The suite builder now invokes PowerShell 7 explicitly for the existing launcher
-preparation script. No installer artifact was created by that failed run;
-rebuild and installed audit remain open.
+R1-07 follow-up on isolated branch `codex/segment-master-player-retirement`
+from integrated `3bacd85`. The unreachable native player worker, its media
+grant binding adapter, and worker-only survey tests are removed. All versioned
+master Start entrypoints, including validation Start, now fail closed before
+creating an attempt or acquiring input. Status and actions report no active
+run. Master preflight still reads the saved plan and questionnaire assets, but
+always reports Start unavailable; it distinguishes saved video count from zero
+active media bindings. The now-orphaned native media service playback methods
+and command/status/viewport contracts are removed; its historical capability
+response was left for integration. The exact saved-step HTML video URL, recipe parsing,
+history, and companion recorder registration remain. R1-03/04/05/06 and
+installed execution qualification remain open. Formatting and source scans
+are this pass's evidence; no Cargo build is attempted under the local disk
+constraint.
 
-20261004 P7 ephemeral install audit pass: after one exact NSIS candidate builds,
-run it silently only on the Windows CI runner into a fresh temporary directory.
-Require installer exit 0, then run the existing read-only installed-file audit
-against the exact workflow commit and launcher `--verify-only`. This covers
-package extraction and file identity without using the researcher's desktop or
-claiming GUI operation, media playback, LSL/XDF or research qualification.
+## Integrated media retirement verification — 2026-10-04
 
-20261004 P7 install failure follow-up: run `37172544737` built NSIS but its
-silent install returned 2 before the file audit. The hook now writes a bounded
-reason code to the CI runner's temp directory on failure; the workflow prints
-that code and the temporary installed-file paths. This is diagnostic evidence,
-not an installer fix or a successful installed claim.
+Integration branch `codex/segment-media-ffmpeg-cleanup` combines the P1, R1,
+build and documentation slices. A final cross-folder audit also removed the
+Planner startup's obsolete media capability RPC, its Rust capability shape,
+readiness polling module, and synthetic qualification replies. The desktop
+Planner now starts using its registered workspace, source and input commands;
+HTML video is the playback and representative-frame path. The source scan finds
+the former engine name only in the five intentional deletion alerts in the
+root and four core AI files. No matching path names or build dependencies remain.
 
-20261004 P7 installed-file handoff: diagnostic run `37174530590` identified
-`build-receipt-missing` and listed both receipt JSON files at the installation
-root, rather than under `resources`. Commit `1fd9cea` checks their actual
-paths and removes redundant copying. Windows run `37176003853` then passed
-source checks, fresh silent NSIS installation, and the installed-file audit
-with zero issues and `launcherVerified: true` for exact commit
-`1fd9ceafa0949b2023ddf423c715a2acc75dea7a`. Artifact ID `11293408018`
-is an unsigned, unqualified short-lived candidate; its ZIP SHA-256 is
-`786c5ca9275210b2a9e911de6ea4b701f5b74b398c232b2ac72ff5481675d924`.
-No PC install, GUI, participant workflow, native playback or XDF is claimed.
-
-20261004 R1/RR-07/RR-10 browser feedback correspondence: isolated branch
-`codex/segment-r1-browser-feedback` starts at integrated `9201a85`. P5's
-saved `presentation.renderer` and `visual.hideFeedback` determine whether the
-browser CSV reports active Flubber animation during video sampling; retained
-`visual.flubberEnabled` is inactive v2/v3 compatibility data. The participant
-screen already consumes the selected renderer through `runnerMasterFeedbackState`.
-The prior browser attempt initialized `animationActive` from the legacy flag
-and carried it across non-video steps. It now starts false, turns on only after
-video playback starts for visible Flubber, and resets at sampling boundaries.
-Focused browser CSV/Face tests pass 10/10, full JavaScript passes 1234/1234,
-and the Runner production build/boundary check passes. No master JSON fields,
-native LSL, XDF or research qualification change; installed/live visual
-verification remains with root and is paused under the researcher's UI-control
-instruction.
-Root integrated this code as `efd9869`; the integration merge tree equals the
-tested segment tree. The current installed-file artifact predates this fix, so
-an exact-source suite rebuild is still required before installed claims.
-
-20261004 R1/RR-04 source-provenance pass: isolated branch
-`codex/segment-r1-gst-sources` starts at integration `097bd08`. The native
-runtime pin now names the six direct GStreamer 1.28.6 component archives, exact
-upstream URLs, byte lengths, and existing SHA-256 values. Upstream checksum
-files match all six pinned hashes; HEAD lengths match the recorded bytes.
-`verify-gstreamer-sources.ps1` validates the pin without downloads locally and
-the manual Windows `component-sources` job downloads, hashes, checks published
-sums, and emits a
-commit-bound source receipt with the archives for 14-day review. The CI archive
-run is pending at this checkpoint. No runtime enters the suite, no new JSON
-experiment field or unsafe native boundary is introduced, and redistribution
-approval remains false. External DLL/plugin/codec source and license review,
-durable release-source retention, installed playback and XDF remain open.
-The `component-sources` job in run `37178652561` passed for exact source
-`21b96bbc2f1264fdf5fbc3bbaa8668ca9b843203`: it verified six downloaded
-archive bytes and published checksums, emitted pin SHA-256
-`6fc25187f738bbf5691bf40730956c82f9af4cae42f9673c582d0bc6338afb2a`,
-and uploaded temporary review artifact `11293334379` (ZIP SHA-256
-`b110857cc5c2ab13167a9c7a7acc6a3ae570f99abf9396c6d5c4f5e75119dcb7`).
-The job explicitly records `redistributionApproved:false`; suite/runtime
-distribution and full Windows checks remain separate.
-Root integrated the exact tested source tree as `0f153ff`. The superseded
-feature-branch run was cancelled after its source job and artifact succeeded;
-the merged commit still needs its own Windows check and suite installation.
-
-20261004 R1/RR-04/RR-07 native animation correspondence pass: isolated branch
-`codex/segment-r1-native-animation` at integration `3ae5fb3` in the Runner
-qualification worktree. The saved P5 renderer and hide flag determine whether
-Flubber animation is active during a sampled video. `worker.rs` instead reads
-retained `visual.flubber_enabled`, which P5 v2/v3 marks inactive; Grid or Face can
-therefore be recorded as animated despite the chosen display. Browser CSV already
-uses the saved renderer. This pass touches the R1 worker, its typed feedback
-predicate/test seam, one focused Windows CI test step, and this handoff. The
-workflow step runs the Rust case after its existing test compilation. It will
-test contradictory legacy flags and format/source checks, then use exact-commit
-Windows CI. No recipe field, physical
-input, LSL channel shape, native playback authority, or qualification flag changes.
-Installed video/LSL/XDF and visible mode paint remain separate gates. Baseline:
-Rust formatting passed and 10 focused Face/browser correspondence checks passed;
-local Rust compilation is deferred because C: has under 1 GiB free.
-The first CI attempt `37182857285` compiled the native test but Windows exited
-before the test harness with `STATUS_ENTRYPOINT_NOT_FOUND`; the assertion did
-not run. The focused step now runs after the existing pinned GStreamer setup,
-with its private runtime bin first on `PATH` and `--lib` to avoid unrelated test
-targets. This is a CI loader correction, not evidence that the application or
-installer has passed playback qualification.
-The retry `37183372361` stopped earlier in its workflow boundary test: that
-test still expected three private-runtime `PATH` assignments, while the newly
-added focused execution step makes four. The R1 pass also updates this one
-named CI-boundary assertion and verifies the step's ordering; it changes no
-runtime or package policy.
-The next retry `37183532167` reached the focused native test after pinned
-runtime preparation but exited before the harness with the same Windows
-`STATUS_ENTRYPOINT_NOT_FOUND`. The repository's prior native actor diagnostic
-documents this test-executable startup seam and provides a copy-only Common
-Controls 6 manifest helper. CI now selects Cargo's exact library test executable
-from JSON build messages, applies that existing helper to a temporary copy,
-records its tool/executable hashes, and runs only the named assertion. The
-product engine and installed suite are unchanged. If this still cannot start,
-the Rust test remains unexecuted and the pass cannot claim native verification.
-Run `37184195193` compiled and applied the test manifest, then stopped while
-parsing helper stdout: `mt.exe` prints a status line before the JSON. The
-helper's own `artifact-receipt.json` is the authoritative machine-readable
-output; CI now reads that file. No test assertion or app behavior failed in
-this attempt.
-Run `37184918675` then passed its `windows` and `component-sources` jobs at
-`5b8d69a`: the prepared native test log records 1 passed, 0 failed and the
-copy-only Common Controls 6 test manifest receipt records `qualified:false`.
-The redundant feature-branch suite build was cancelled after those jobs passed.
-Root merged the exact tested tree into `codex/p7-windows-suite` as `6a0e992`;
-both commits have Git tree `401ad4bd6a9370e9530f6acba4d8978e86a1aa79`.
-The merged source still needs its own exact-commit suite build and installed
-audit. No installed participant run, video playback, input, LSL or XDF claim
-follows from this focused test.
-
-The preceding integrated suite run `37182385963` passed all three jobs for
-`3ae5fb3`: Windows checks, six direct source archives, and fresh silent NSIS
-installation with `issues:[]` and `launcherVerified:true`. Its unsigned,
-unqualified installer ZIP artifact is `11296121762` (153,636,833 bytes,
-SHA-256 `b098a19a0e9fac2fb14228cc708f94fa6442622900494b2bf1178c0fd933c3a1`);
-the temporary component-source ZIP is `11295622049` (19,317,679 bytes,
-SHA-256 `f4d84e4329bc1cc87c080442a1ad5931ba595ba3b119c6168ee50537a45ae1fe`).
-These do not include an approved native runtime package or physical workflow
-qualification.
+Evidence on the integrated source: the complete `test/research-*.test.js`
+suite, `cargo check --tests --locked --no-default-features`, desktop and Runner
+Vite builds plus their boundary verifiers, Rust formatting, and the real
+FFmpeg incompatible-import test pass. The focused import test verifies the
+original survives, the prepared sibling is reused, and an altered output is
+rejected. P1-08 and R1 execution/LSL/XDF remain open until save/Open,
+installed playback, and run evidence close their separate gates. The static
+browser still consumes prepared assets rather than launching local tools.

@@ -14,7 +14,7 @@ Use `scripts/qualification/surveyjs-rendered.mjs` for rendered Planner/preset
 checks, `runner-surveyjs-ui.mjs <Chrome> <new evidence dir> all <2|3|4>` for
 the actual Runner app, and `planner-surveyjs-cli.mjs <clean-build CLI> <new dir>`
 for real native import/save/Open. Browser native replies are synthetic; they do
-not qualify live native playback, XDF or hardware. Final consolidation retains
+not qualify live installed playback, XDF or hardware. Final consolidation retains
 those checks. See [the integration documentation](../docs/surveyjs-questionnaires.md).
 
 ## Companion-program amendment — 2026-09-12
@@ -124,12 +124,11 @@ consistent with the charter.
   never `app.js`; the contract module must contain no DOM or IPC access.
 - Verify the Rust package runtime keeps commands, compiler/contracts, reducer,
   responses, input mailbox, media actor, storage, recovery, and coordinator in
-  separate source modules. Command handlers may contain no filesystem, GstPlay,
+  separate source modules. Command handlers may contain no filesystem, media,
   platform-window, or protocol-policy implementation; storage and media modules
   may not import each other's domain.
-- Recursively reject project-authored `unsafe` outside the two approved
-  `research_native_media/gst_actor/{runtime_environment,windows_renderer}.rs`
-  FFI adapters, and deny undocumented unsafe blocks crate-wide.
+- Recursively reject undocumented project-authored `unsafe`; new FFI boundaries
+  require explicit approval and focused lifecycle review.
 - Each native product boundary requires focused Rust tests, focused frontend
   presentation/adapter tests, and at least one shared fixture or IPC-contract
   test across the boundary.
@@ -155,11 +154,10 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-f
 cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
 ```
 
-Build an unsigned native-playback NSIS candidate only after staging and
-verifying an approved required native-media closure. The current interface-only
-NSIS candidate deliberately contains no such runtime and disables native
-acquisition. Inspect any resulting installer and installed application rather
-than treating the bundler exit code as runtime evidence.
+Build an unsigned Windows playback candidate only after the prepared-media
+workflow and exact active assets are verified. The current interface-only NSIS
+candidate disables acquisition. Inspect any resulting installer and installed
+application rather than treating the bundler exit code as playback evidence.
 
 The manual `desktop-release.yml` workflow may build unsigned Windows x64
 NSIS, macOS ARM64/x64 DMG, and Linux x64 DEB/AppImage interface-evaluation
@@ -340,12 +338,12 @@ qualification evidence.
   path is called for a package attempt.
 - Prove asset resolution verifies only the exact declared hash/size/duration
   closure, records decode readiness separately, never enrolls a scanned file,
-  substitutes a source, or changes block/video/ISI order.
+  substitutes a source after recipe freeze, or changes block/video/ISI order.
+  P1 conversion and prepared-file acceptance occur before recipe publication.
 - Exercise the exact serialized `complete-video-v1` policy on each surface.
-  Missing or unavailable `nativeGstPlay` must block qualified Windows Start;
-  `unqualifiedWebview` must be selected explicitly and permanently labelled;
-  Chromium must require `browserMediaAdapters`; no mode may automatically fall
-  back.
+  Current master playback must use an exact declared HTML-playable file with
+  attempt-bound lifecycle events. Historical package backend identifiers keep
+  their frozen meaning; unsupported paths fail closed without automatic fallback.
 - Test virtualized preview, resolved schedule CSV, concurrent starts,
   lock/journal/manifest reconstruction, reruns, and create-new attempt numbers.
 - Cover Unicode extended-grapheme participant codes and uppercase expansion.
@@ -371,7 +369,7 @@ qualification evidence.
   of ambient dependency is positive evidence rather than an assumption.
 - Retain this as a permanent gate after implementation. A passing reproduction
   receipt proves deterministic package resolution only; it never substitutes
-  for native playback, timing, persistence, physical input, LSL,
+  for installed playback, timing, persistence, physical input, LSL,
   accessibility, or scientific qualification.
 
 ### Segment 3 variant authoring
@@ -503,81 +501,36 @@ qualification evidence.
   separately reviewed safe handle/file-ID design exists; passing junction and
   replacement tests is not evidence of a race-free sandbox.
 
-## Native Windows media gate
+## Prepared HTML video gate
 
-Qualified declared package-asset playback uses only the pinned bundled
-GStreamer 1.28.6 MSVC x86_64 runtime and private plugin closure.
+- At Segment 1 confirmation, inspect every selected video with FFprobe. Verify
+  an already playable input or use FFmpeg to create a separate playable file
+  beneath `assets/stimuli`. Retain incompatible originals in a separate project
+  source folder. Conversion must never overwrite a source or publish a partial
+  output. Failure keeps P1 unaccepted and reports a bounded cause.
+- Exercise supported containers, video/audio codecs and dimensions, absent
+  audio, rotation and pixel aspect, corrupt/truncated/zero-length inputs,
+  misleading extensions, failed conversion, interrupted writes, same-name
+  collisions and repeated confirmation. Confirm only completed output files
+  enter the strict active-media closure.
+- Hash, length, duration and geometry for each published file must agree across
+  P1, P3/P4/P6, P7 JSON and Runner rebind. Change the original or prepared file
+  and prove stale acceptance and Start fail closed. A retained source must not
+  become an extra file beneath the strict `assets/stimuli` tree.
+- Static Chrome and Edge must consume already prepared files through their
+  authorized workspace handle; they cannot launch a local process. Incompatible
+  inputs remain pending with an actionable preparation message.
+- Bind HTML media grants and lifecycle events to the exact run, participant,
+  attempt, recipe hash and element generation. Only observed playing may open
+  sampling. Pause, buffering, end, error, window close, grant loss and teardown
+  must fence sampling before UI projection and retain a recovery boundary.
+- Test Play/Pause/Resume/Stop/End/Error, consecutive video/ISI/form transitions,
+  rerun, recovery restart from zero, rapid command races, stale events,
+  shutdown, audio devices, mute/volume, seek prohibition, multi-monitor resize,
+  minimize/restore and 100/125/150/200% display scaling on the installed build.
 
-### Supply-chain and package evidence
-
-- Verify the official combined installer is 528,572,178 bytes with SHA-256
-  `059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5`
-  and verify all component source hashes against
-  `src-tauri/native-media/gstreamer-runtime-v1.json`.
-- Stage only the required DLLs, plugin tree, and upstream notices. Verify the
-  complete generated file-hash manifest and reject links, Windows directory
-  junctions/reparse points, traversal, extra, missing, modified, or
-  wrong-architecture files. A real-junction regression must prove the verifier
-  rejects before traversal and never changes the external target.
-- Package with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the
-  `native-gstreamer` feature; prove the build fails closed when the tree is
-  absent or altered. The running app must clear ambient plugin paths and use
-  only its private registry and scanner without runtime downloads.
-- Retain applicable source/license obligations and approve the exact shipped
-  plugin/codec redistribution closure.
-- Every distributed Windows alpha artifact must include the exact pinned
-  GStreamer source materials, the machine-readable runtime pin, and provenance
-  record binding repository, workflow/run, Git commit, runtime-pin identity,
-  and installer/source SHA-256 plus byte lengths. Every external build action
-  is pinned to an exact commit and the materialized checkout must remain clean.
-  Any future wrapper that distributes native GStreamer must activate the same
-  required-runtime gate. Until this complete evidence and redistribution review
-  exist, `pnpm desktop:bundle` must instead build with no optional features,
-  exclude the runtime, positively disable native acquisition, and label the
-  artifact interface-only. The artifact name also includes the full commit SHA;
-  a mutable filename or unbound aggregate pass count is not release evidence.
-
-### Player-actor security and lifecycle evidence
-
-The researcher approved the two contained Windows `unsafe` FFI adapters on
-2026-09-10 and the isolated runtime-environment/actor/renderer source has
-landed. Acceptance still requires a commit-bound focused audit of DLL-search
-cookie lifetime, validated HWND and strong-window lifetimes, GLib/GstPlay one-
-thread affinity, bounded callbacks, stale-generation fencing, panic
-containment, child-window ownership, and callbacks-after-teardown prevention.
-Compilation and unit tests do not satisfy this gate.
-
-- Revalidate opaque media identity, root generation, hash, byte length,
-  duration, and decode evidence immediately before Prepare. No WebView path or
-  arbitrary native handle may cross IPC.
-- Prove only native decoded Playing opens sampling. Pause, buffering, end,
-  error, actor loss, window close, and teardown must fence sampling before UI
-  projection and retain an authoritative recovery boundary.
-- Test Prepare/Play/Pause/Resume/Stop/End/Error, stimulus-to-interval and
-  interval-to-next-step transitions, rerun, recovery restart from zero, rapid
-  command races, stale callbacks, and clean repeated shutdown.
-- Test supported containers/codecs, corrupt/truncated/zero-length/renamed files,
-  missing plugins, audio present/absent, output device changes, mute/volume
-  policy, seek prohibition, multi-monitor movement, resize, minimize/restore,
-  and 100/125/150/200% display scaling.
-- Exercise native-library load and symbol failure without process crash. Run
-  leak/handle-growth and forced-termination checks on the packaged candidate.
-- Prove `unqualifiedWebview` is an explicit opt-in, never an automatic fallback,
-  and that status, first event, journal, receipt, and manifest all retain the
-  unqualified label. Its media errors must still stop native sampling.
-- For the unqualified desktop probe, require decoded-frame callbacks at the
-  deterministic near-start, midpoint, and near-end positions; reject metadata,
-  seek, or short-play evidence without those frames. Assert the
-  `representativeFramesV1` / `webviewVideoFrameCallback` /
-  `attestedUnqualified` labels and one-use grant consumption on success,
-  rejection, and explicit revocation.
-- Race delayed events from a detached prior video against the current source,
-  lifecycle IPC against status polls, and an older status response against a
-  newer response. Require run/participant/attempt/hash/playback receipt binding,
-  per-source element generations, and fail-closed unknown-outcome reconciliation.
-
-Runtime staging, a verified capability response, or successful unit tests alone
-do not satisfy this gate.
+Successful probing, conversion, compilation or unit tests alone do not qualify
+participant playback.
 
 ## Persistence and adversity gates
 
@@ -699,8 +652,8 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and optional Windows GStreamer integration
-tree without uploading that tree. Manual workflows may produce explicitly
+CI may validate the static artifact and prepared-media workflow. Manual
+workflows may produce explicitly
 unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
 packages. The internal
 `0.4.0-alpha.1` label remains non-stable and non-research-ready until every

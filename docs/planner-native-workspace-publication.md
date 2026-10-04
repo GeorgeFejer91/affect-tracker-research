@@ -26,9 +26,10 @@ emit an event or touch the UI. The returned candidate has:
   `{surface:"tauri", label, directoryPermission:true, workspaceId}`.
 
 `await prepareCatalogue(scan, {isCurrent})` returns the same candidate shape.
-It uses the existing sequential native GstPlay attestation or explicitly
-selected unqualified WebView probe. It does not introduce another decoder or
-upgrade qualification claims. It prepares all entries before returning and
+This dated component used the then-current media attestation or an explicitly
+selected WebView probe. P1-08 must extend preparation after Segment 1
+confirmation without claiming that the old probe performs FFprobe/FFmpeg work.
+It prepares all entries before returning and
 rejects failures and duplicate native identities without publishing a partial
 catalogue. CLI preparation does not emit UI events or update progress text.
 Its projection is the existing `{items, replace:true}` data, including source,

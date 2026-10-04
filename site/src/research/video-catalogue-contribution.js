@@ -1,5 +1,4 @@
 import { canonicalJson, canonicalSha256 } from "./canonical.js";
-import { CONTROLLED_GEOMETRY_SOURCE, validateControlledVideoDisplayGeometry } from "./video-display-controlled.js";
 
 export const VIDEO_CATALOGUE_CONTRIBUTION_SCHEMA = "affect-research-video-catalogue-contribution";
 export const VIDEO_CATALOGUE_CONTRIBUTION_VERSION = 1;
@@ -63,7 +62,7 @@ function deepFreeze(value) {
   return Object.freeze(value);
 }
 
-function normalizeGeometry(value, label, { allowNative = false } = {}) {
+function normalizeGeometry(value, label) {
   exactObject(value, [
     "status", "source", "displayWidthPx", "displayHeightPx", "displayAspect",
     "rotationDegrees", "pixelAspectRatio", "metadataInterpretation",
@@ -97,29 +96,7 @@ function normalizeGeometry(value, label, { allowNative = false } = {}) {
       metadataInterpretation: "decoder-oriented-display",
     };
   }
-  if (!allowNative || value.source !== "native-gstplay-metadata"
-    || value.metadataInterpretation !== "explicit-orientation-and-square-pixel-snapshot"
-    || ![0, 90, 180, 270].includes(value.rotationDegrees)) {
-    throw new TypeError(`${label} must use a supported verified geometry source.`);
-  }
-  exactObject(value.pixelAspectRatio, ["numerator", "denominator"], `${label}.pixelAspectRatio`);
-  const pixelAspectRatio = {
-    numerator: positiveInteger(value.pixelAspectRatio.numerator, `${label}.pixelAspectRatio.numerator`),
-    denominator: positiveInteger(value.pixelAspectRatio.denominator, `${label}.pixelAspectRatio.denominator`),
-  };
-  if (greatestCommonDivisor(pixelAspectRatio.numerator, pixelAspectRatio.denominator) !== 1) {
-    throw new TypeError(`${label}.pixelAspectRatio must be reduced.`);
-  }
-  return {
-    status: "verified",
-    source: "native-gstplay-metadata",
-    displayWidthPx,
-    displayHeightPx,
-    displayAspect,
-    rotationDegrees: value.rotationDegrees,
-    pixelAspectRatio,
-    metadataInterpretation: "explicit-orientation-and-square-pixel-snapshot",
-  };
+  throw new TypeError(`${label} must use the HTML video decoder geometry source.`);
 }
 
 export function validateVideoDisplayGeometryV1(value) {
@@ -127,7 +104,7 @@ export function validateVideoDisplayGeometryV1(value) {
 }
 
 export function validateVideoDisplayGeometry(value) {
-  return deepFreeze(normalizeGeometry(value, "Video display geometry", { allowNative: true }));
+  return validateVideoDisplayGeometryV1(value);
 }
 
 /**
@@ -206,9 +183,7 @@ function normalizeEntry(value, index, { version = 1 } = {}) {
     sha256: value.sha256,
     byteLength: positiveInteger(value.byteLength, `${label}.byteLength`),
     durationMs: positiveInteger(value.durationMs, `${label}.durationMs`),
-    geometry: version === 3 && value.geometry?.source === CONTROLLED_GEOMETRY_SOURCE
-      ? validateControlledVideoDisplayGeometry(value.geometry)
-      : normalizeGeometry(value.geometry, `${label}.geometry`, { allowNative: version >= 2 }),
+    geometry: normalizeGeometry(value.geometry, `${label}.geometry`),
   };
 }
 
@@ -410,11 +385,11 @@ export function validateSupportedVideoCatalogueContribution(value) {
   return value?.version === 3 ? validateVideoCatalogueContributionV3(value) : validateVideoCatalogueContribution(value);
 }
 export function validateSupportedVideoDisplayGeometry(value) {
-  return value?.source === CONTROLLED_GEOMETRY_SOURCE ? deepFreeze(validateControlledVideoDisplayGeometry(value)) : validateVideoDisplayGeometry(value);
+  return validateVideoDisplayGeometry(value);
 }
 export async function reviseSupportedVideoCatalogueContribution(previous, entries) {
   const prior = previous === null ? null : await validateSupportedVideoCatalogueContribution(previous);
-  const version3 = prior?.version === 3 || entries.some(entry => entry.geometry?.source === CONTROLLED_GEOMETRY_SOURCE);
+  const version3 = prior?.version === 3;
   if (!version3) return reviseVideoCatalogueContribution(previous, entries);
   const candidate = await createVideoCatalogueContributionV3({ revision: prior ? prior.revision + 1 : 1, entries });
   return prior?.version === 3 && canonicalJson(prior.entries) === canonicalJson(candidate.entries) ? previous : candidate;

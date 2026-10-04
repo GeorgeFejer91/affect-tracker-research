@@ -29,6 +29,14 @@ It owns actual timing, acquisition, playback, LSL transport, run records,
 recovery and stream recording. Desktop Windows is the present implementation
 target. XR and phone/browser controllers are separate future allocations.
 
+The 2026-10-04 media amendment makes P1 responsible for background FFprobe
+inspection after Segment 1 confirmation and FFmpeg preparation when the source
+is not HTML-playable. Incompatible originals stay in a separate project source
+folder; only verified playable files beneath `assets/stimuli` enter Planner JSON
+and Runner file binding. Static browser builds consume prepared files and have
+no local process authority. Current Runner video presentation uses HTML video;
+prepared-file creation and installed qualification remain open evidence work.
+
 The user clarified: **“the stream recording policy is owned by the runner!”**
 The requested recorder captures **own and selected external LSL streams to XDF**.
 Stream discovery, selection, recording destination, start/stop and connection

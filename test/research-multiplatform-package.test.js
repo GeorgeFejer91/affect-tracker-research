@@ -77,7 +77,6 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /process\.platform !== target\.nodePlatform \|\| process\.arch !== target\.nodeArch/u);
   assert.match(helper, /--no-sign/u);
   assert.match(helper, /--no-default-features/u);
-  assert.match(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"/u);
   assert.match(helper, /AFFECT_TRACKER_BUILD_COMMIT: commit/u);
   assert.match(helper, /status", "--porcelain=v1", "--untracked-files=normal"/u);
   assert.match(helper, /TAURI_SIGNING_PRIVATE_KEY/u);
@@ -85,10 +84,10 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /require\.resolve\("@tauri-apps\/cli\/tauri\.js"\)/u);
   assert.match(helper, /spawnSync\(\s*process\.execPath,\s*\[\s*tauriCli,/u);
   assert.doesNotMatch(helper, /pnpm\.cmd|shell:\s*true/iu);
-  assert.doesNotMatch(helper, /native-gstreamer|lsl-streaming/u);
+  assert.doesNotMatch(helper, /--features|lsl-streaming/u);
 });
 
-test("platform overrides exclude the Windows runtime and select only requested bundles", async () => {
+test("platform overrides contain no retired media resources and select only requested bundles", async () => {
   const windows = JSON.parse(await source("src-tauri/tauri.bundle-windows-unqualified.conf.json"));
   const macos = JSON.parse(await source("src-tauri/tauri.bundle-macos-unqualified.conf.json"));
   const linux = JSON.parse(await source("src-tauri/tauri.bundle-linux-unqualified.conf.json"));
@@ -100,7 +99,8 @@ test("platform overrides exclude the Windows runtime and select only requested b
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
-  assert.match(windows.bundle.longDescription, /not bundled/iu);
+  assert.match(windows.bundle.longDescription, /HTML video playback.*not qualified/iu);
+  assert.match(windows.bundle.longDescription, /FFprobe\/FFmpeg media preparation/iu);
   assert.match(macos.bundle.longDescription, /not qualified/iu);
   assert.match(linux.bundle.longDescription, /not qualified/iu);
 });
@@ -109,13 +109,13 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   const helper = await source(PROVENANCE_HELPER_PATH);
 
   assert.match(helper, /"windows-x64"[\s\S]*platform: "windows"[\s\S]*kind: "nsis"/u);
-  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV1/u);
+  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
   assert.match(helper, /status: "unqualified-internal-alpha"/u);
   assert.match(helper, /commit,/u);
   assert.match(helper, /workflowRef,/u);
   assert.match(helper, /byteLength: details\.size/u);
   assert.match(helper, /sha256: await sha256\(path\)/u);
-  for (const claim of ["nativeGstPlay", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
+  for (const claim of ["htmlVideoPlayback", "ffprobeFfmpegPreparation", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
     assert.match(helper, new RegExp(`${claim}: false`, "u"));
   }
   assert.match(helper, /unsigned: true/u);

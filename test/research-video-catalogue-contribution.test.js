@@ -74,20 +74,6 @@ function entry({ hash = "a".repeat(64), path = "stimuli/folder/video.mp4", annot
   };
 }
 
-function nativeGeometry(overrides = {}) {
-  return {
-    status: "verified",
-    source: "native-gstplay-metadata",
-    displayWidthPx: 1_080,
-    displayHeightPx: 1_920,
-    displayAspect: { numerator: 9, denominator: 16 },
-    rotationDegrees: 90,
-    pixelAspectRatio: { numerator: 1, denominator: 1 },
-    metadataInterpretation: "explicit-orientation-and-square-pixel-snapshot",
-    ...overrides,
-  };
-}
-
 test("P1 catalogue identity, duration and oriented display geometry are canonical and order independent", async () => {
   const first = entry();
   const second = entry({ hash: "b".repeat(64), path: "stimuli/other/portrait.mp4", annotationId: "other_portrait" });
@@ -133,24 +119,12 @@ test("v2 catalogue ordering follows JavaScript UTF-16 code units across runtimes
   ]);
 });
 
-test("native GstPlay geometry retains explicit orientation and source pixel aspect metadata", async () => {
-  assert.deepEqual(validateVideoDisplayGeometry(nativeGeometry()), nativeGeometry());
-  const anamorphic = nativeGeometry({
-    displayWidthPx: 1_024,
-    displayHeightPx: 576,
-    displayAspect: { numerator: 16, denominator: 9 },
-    rotationDegrees: 0,
-    pixelAspectRatio: { numerator: 64, denominator: 45 },
-  });
-  assert.deepEqual(validateVideoDisplayGeometry(anamorphic), anamorphic);
-  for (const invalid of [
-    nativeGeometry({ rotationDegrees: null }),
-    nativeGeometry({ rotationDegrees: 45 }),
-    nativeGeometry({ pixelAspectRatio: null }),
-    nativeGeometry({ pixelAspectRatio: { numerator: 2, denominator: 2 } }),
-    nativeGeometry({ metadataInterpretation: "raw-stream-dimensions" }),
-  ]) assert.throws(() => validateVideoDisplayGeometry(invalid));
-  assert.throws(() => validateVideoDisplayGeometryV1(nativeGeometry()), /supported verified geometry source/u);
+test("video geometry accepts decoder dimensions and rejects renderer-specific metadata", () => {
+  const geometry = browserDisplayGeometry({ videoWidth: 1080, videoHeight: 1920 });
+  assert.deepEqual(validateVideoDisplayGeometry(geometry), geometry);
+  assert.deepEqual(validateVideoDisplayGeometryV1(geometry), geometry);
+  assert.throws(() => validateVideoDisplayGeometry({ ...geometry, rotationDegrees: 90 }));
+  assert.throws(() => validateVideoDisplayGeometry({ ...geometry, source: "native-renderer" }));
 });
 
 test("v2 path identities are NFC, reversible and distinguish delimiter-like path components", () => {

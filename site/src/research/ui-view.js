@@ -423,7 +423,7 @@ function reviewSection() {
         <div class="field-block"><span class="field-label">Assignment plan hash</span><output id="review-plan-hash" class="field-output hash-value">Pending valid allocation</output></div>
         <div class="field-block"><span class="field-label">Estimated storage</span><output id="storage-estimate" class="field-output">Pending verified videos</output></div>
         <div class="field-block"><span class="field-label">Sampling capability</span><output id="timing-capability" class="field-output">Dedicated scheduler not yet verified</output></div>
-        <label class="field is-wide tauri-only"><span>Native playback qualification</span><select id="native-playback-mode"><option value="nativeGstPlay" selected>GStreamer / GstPlay · qualification required</option><option value="unqualifiedWebview">WebView video · unqualified testing only</option></select><output id="native-media-capability" class="field-help">Native runtime capability has not been checked.</output></label>
+        <div class="field-block is-wide"><span class="field-label">Playback</span><output class="field-output">Prepared HTML video · desktop and browser</output></div>
       </div>
     </details>
     <details id="review-participant-chooser" class="inner-disclosure">
@@ -608,7 +608,6 @@ export function renderResearchUiMarkup(surface = "browser") {
           </section>
           <div class="run-stage">
             <section class="stimulus-stage" aria-label="Current complete stimulus">
-              <div id="run-native-video-host" class="native-video-host" aria-label="Protocol-controlled native GstPlay stimulus surface" hidden></div>
               <video id="run-video" preload="metadata" playsinline aria-label="Protocol-controlled current stimulus video"></video>
               <p id="run-stimulus-placeholder" class="stimulus-placeholder">The preflighted complete video appears here after the run authority starts the attempt.</p>
               <div id="run-youtube-player" class="youtube-player-host run-youtube-player" aria-label="Experimental YouTube stimulus player" hidden></div>

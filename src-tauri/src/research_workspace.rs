@@ -5,9 +5,8 @@ use crate::research_contracts::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_experiment_package::{ExperimentPackageV1, EXPERIMENT_PACKAGE_FILE_NAME};
 use crate::research_protocol::ResearchSettingsDocument;
-use crate::research_video_geometry::{derive_native_display_geometry_v1, NativeDisplayGeometryV1};
 use crate::research_workspace_contribution::{
-    validate_video_catalogue_contribution, VideoCatalogueContribution,
+    validate_video_catalogue_contribution, VideoCatalogueContribution, VideoDisplayGeometry,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,10 +19,10 @@ use tauri::http::{header, Method, Request, Response, StatusCode};
 use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
-mod controlled_geometry;
+mod media_preparation;
+mod runner_video_binding_v3;
 mod stimulus_authoring;
 mod video_location;
-pub(crate) use controlled_geometry::RunnerVideoBindingV3;
 
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
@@ -53,7 +52,7 @@ pub enum WorkspaceLocation {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ScannedStimulusSummary<G = NativeDisplayGeometryV1> {
+pub struct ScannedStimulusSummary {
     pub workspace_file_id: String,
     pub display_name: String,
     pub sha256: String,
@@ -64,7 +63,7 @@ pub struct ScannedStimulusSummary<G = NativeDisplayGeometryV1> {
     pub decode_backend: Option<DecodeBackend>,
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
-    pub display_geometry: Option<G>,
+    pub display_geometry: Option<VideoDisplayGeometry>,
     pub source: Option<WorkspaceSourceContract>,
 }
 
@@ -84,23 +83,18 @@ pub struct WorkspaceSourceContract {
 pub enum DecodeStatus {
     Unverified,
     AttestedUnqualified,
-    AttestedQualified,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum DecodeBackend {
     WebviewVideoFrameCallback,
-    NativeGstPlay,
-    NativeLibvlc,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum DecodeEvidence {
     RepresentativeFramesV1,
-    NativeDecodedSnapshotsV1,
-    NativeDecodedSnapshotsV2,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -230,8 +224,6 @@ pub(crate) struct ScannedStimulus {
     pub decode_backend: Option<DecodeBackend>,
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
-    pub display_geometry: Option<NativeDisplayGeometryV1>,
-    pub native_decode_receipt_v2: Option<crate::research_native_media::NativeMediaDecodeReceiptV2>,
 }
 
 #[derive(Debug, Clone)]
@@ -243,25 +235,7 @@ struct MediaGrant {
     byte_length: u64,
 }
 
-/// Exact, locked workspace media authority passed only between Rust modules.
-/// Neither the path nor the file handle is serializable, so the WebView can
-/// receive only the opaque identifiers exposed by the native-media actor.
-#[derive(Debug)]
-#[cfg_attr(
-    not(all(target_os = "windows", feature = "native-gstreamer")),
-    allow(dead_code)
-)]
-pub(crate) struct NativeMediaGrant {
-    pub(crate) media_grant_id: String,
-    pub(crate) workspace_file_id: String,
-    pub(crate) path: PathBuf,
-    pub(crate) file: File,
-    pub(crate) sha256: String,
-    pub(crate) mime_type: String,
-    pub(crate) byte_length: u64,
-}
-
-/// Exact native binding for one already-authored portable catalogue location.
+/// Exact file binding for one already-authored portable catalogue location.
 /// This remains Rust-internal: the path and file handle never enter the recipe
 /// or WebView, while Runner can address the currently verified opaque file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -274,7 +248,7 @@ pub(crate) struct RunnerVideoBinding {
     pub(crate) byte_length: u64,
     pub(crate) mime_type: String,
     pub(crate) duration_ms: u64,
-    pub(crate) display_geometry: NativeDisplayGeometryV1,
+    pub(crate) display_geometry: VideoDisplayGeometry,
 }
 
 #[derive(Debug)]
@@ -285,6 +259,8 @@ struct SelectedWorkspace {
     libraries: WorkspaceLibraries,
     display_name: String,
     scanned: Vec<ScannedStimulus>,
+    unprepared_source_import: bool,
+    source_revision: u64,
     media_grants: HashMap<String, MediaGrant>,
 }
 
@@ -406,6 +382,8 @@ impl WorkspaceService {
             libraries,
             display_name,
             scanned: Vec::new(),
+            unprepared_source_import: false,
+            source_revision: 0,
             media_grants: HashMap::new(),
         };
         *self.lock_selected() = Some(selected);
@@ -474,7 +452,12 @@ impl WorkspaceService {
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
         let libraries = validate_selected_workspace(workspace)?;
-        workspace.scanned = scan_planner_videos(&libraries.package_assets)?;
+        let scanned = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &scanned,
+        )?;
+        workspace.scanned = scanned;
         workspace.media_grants.clear();
         Ok(RescanResult {
             workspace_id: workspace.id.clone(),
@@ -482,9 +465,8 @@ impl WorkspaceService {
         })
     }
 
-    /// Validates one P1 v2 catalogue against the exact currently selected,
-    /// freshly readable and natively qualified Planner media closure. This is
-    /// the safe Rust seam for P3 export and P7 persistence; it grants no path.
+    /// Validates a P1 v2 browser-video catalogue against the complete,
+    /// prepared workspace closure before export.
     pub fn validate_planner_video_catalogue(
         &self,
         workspace_id: &str,
@@ -496,82 +478,12 @@ impl WorkspaceService {
                 "Current Planner catalogue authority requires video catalogue v2.",
             ));
         }
-        let guard = self.lock_selected();
-        let workspace = selected_ref(&guard, workspace_id)?;
-        let libraries = validate_selected_workspace(workspace)?;
-        let current = scan_planner_videos(&libraries.package_assets)?;
-        if catalogue.entries.len() != workspace.scanned.len()
-            || catalogue.entries.len() != current.len()
-        {
-            return Err(CommandError::forbidden(
-                "The current Planner video library does not match the accepted catalogue.",
-            ));
-        }
-        for entry in &catalogue.entries {
-            let matches = workspace
-                .scanned
-                .iter()
-                .filter(|candidate| candidate.logical_relative_path == entry.source_relative_path)
-                .collect::<Vec<_>>();
-            let [candidate] = matches.as_slice() else {
-                return Err(CommandError::forbidden(
-                    "A catalogue location does not resolve to one current Planner video.",
-                ));
-            };
-            let current_matches = current
-                .iter()
-                .filter(|observed| observed.logical_relative_path == entry.source_relative_path)
-                .collect::<Vec<_>>();
-            let [observed] = current_matches.as_slice() else {
-                return Err(CommandError::forbidden(
-                    "A catalogue location does not resolve to one current ordinary Planner video.",
-                ));
-            };
-            let observed_duration_ms = candidate.duration_ms.filter(|value| {
-                value.is_finite()
-                    && *value >= 1.0
-                    && value.fract() == 0.0
-                    && *value <= crate::research_contracts::MAX_SAFE_INTEGER as f64
-            });
-            let observed_geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
-                CommandError::forbidden(
-                    "A current Planner video has no verified oriented display geometry.",
-                )
-            })?;
-            if candidate.decode_status != DecodeStatus::AttestedQualified
-                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
-                || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
-                || observed.path != candidate.path
-                || observed.sha256 != entry.sha256
-                || observed.sha256 != candidate.sha256
-                || observed.byte_length != entry.byte_length
-                || observed.byte_length != candidate.byte_length
-                || entry.asset_id != format!("asset-{}", observed.sha256)
-                || entry.package_relative_path != format!("assets/{}", entry.source_relative_path)
-                || observed_duration_ms.map(|value| value as u64) != Some(entry.duration_ms)
-                || serde_json::to_value(observed_geometry).map_err(|_| {
-                    CommandError::invalid_contract(
-                        "Planner display geometry could not be validated.",
-                    )
-                })? != serde_json::to_value(&entry.geometry).map_err(|_| {
-                    CommandError::invalid_contract(
-                        "Catalogue display geometry could not be validated.",
-                    )
-                })?
-            {
-                return Err(CommandError::forbidden(
-                    "A current Planner video no longer matches the accepted catalogue.",
-                ));
-            }
-        }
+        self.validate_runner_video_catalogue(workspace_id, value)?;
         Ok(catalogue)
     }
 
-    /// Rebinds one saved, strictly validated video catalogue to the exact
-    /// currently selected and natively qualified Planner media closure.
-    /// Portable browser/native provenance may differ, so only the reproducible
-    /// oriented dimensions and reduced display aspect are compared. The actual
-    /// native evidence and opaque file identifier are returned to Runner.
+    /// Rebinds every saved browser-video location to its current file identity.
+    /// The catalogue validator owns geometry; this seam owns file closure.
     pub(crate) fn validate_runner_video_catalogue(
         &self,
         workspace_id: &str,
@@ -580,8 +492,17 @@ impl WorkspaceService {
         let catalogue = validate_video_catalogue_contribution(value)?;
         let guard = self.lock_selected();
         let workspace = selected_ref(&guard, workspace_id)?;
+        if workspace.unprepared_source_import {
+            return Err(CommandError::forbidden(
+                "An imported source video still needs successful preparation and HTML confirmation.",
+            ));
+        }
         let libraries = validate_selected_workspace(workspace)?;
         let current = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &current,
+        )?;
         if catalogue.entries.len() != workspace.scanned.len()
             || catalogue.entries.len() != current.len()
         {
@@ -592,52 +513,21 @@ impl WorkspaceService {
 
         let mut bindings = Vec::with_capacity(catalogue.entries.len());
         for entry in catalogue.entries {
-            let stored_matches = workspace
+            let stored = workspace
                 .scanned
                 .iter()
-                .filter(|candidate| candidate.logical_relative_path == entry.source_relative_path)
+                .filter(|video| video.logical_relative_path == entry.source_relative_path)
                 .collect::<Vec<_>>();
-            let [candidate] = stored_matches.as_slice() else {
-                return Err(CommandError::forbidden(
-                    "A saved catalogue location does not resolve to one natively qualified video.",
-                ));
-            };
-            let current_matches = current
+            let observed = current
                 .iter()
-                .filter(|observed| observed.logical_relative_path == entry.source_relative_path)
+                .filter(|video| video.logical_relative_path == entry.source_relative_path)
                 .collect::<Vec<_>>();
-            let [observed] = current_matches.as_slice() else {
+            let ([candidate], [observed]) = (stored.as_slice(), observed.as_slice()) else {
                 return Err(CommandError::forbidden(
-                    "A saved catalogue location does not resolve to one current ordinary video.",
+                    "A saved catalogue location is not uniquely bound to a current video.",
                 ));
             };
-            let duration_ms = candidate.duration_ms.filter(|duration| {
-                duration.is_finite()
-                    && *duration >= 1.0
-                    && duration.fract() == 0.0
-                    && *duration <= crate::research_contracts::MAX_SAFE_INTEGER as f64
-            });
-            let Some(duration_ms) = duration_ms.map(|duration| duration as u64) else {
-                return Err(CommandError::forbidden(
-                    "A saved catalogue video has no exact native duration.",
-                ));
-            };
-            let geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
-                CommandError::forbidden(
-                    "A saved catalogue video has no verified native oriented geometry.",
-                )
-            })?;
-            let geometry_matches = entry.geometry.display_width_px
-                == u64::from(geometry.display_width_px)
-                && entry.geometry.display_height_px == u64::from(geometry.display_height_px)
-                && entry.geometry.display_aspect.numerator
-                    == u64::from(geometry.display_aspect.numerator)
-                && entry.geometry.display_aspect.denominator
-                    == u64::from(geometry.display_aspect.denominator);
-            if candidate.decode_status != DecodeStatus::AttestedQualified
-                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
-                || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
-                || observed.id != candidate.id
+            if observed.id != candidate.id
                 || observed.path != candidate.path
                 || observed.sha256 != candidate.sha256
                 || observed.byte_length != candidate.byte_length
@@ -645,11 +535,9 @@ impl WorkspaceService {
                 || entry.asset_id != format!("asset-{}", observed.sha256)
                 || entry.sha256 != observed.sha256
                 || entry.byte_length != observed.byte_length
-                || entry.duration_ms != duration_ms
-                || !geometry_matches
             {
                 return Err(CommandError::forbidden(
-                    "A current native Runner video no longer matches the saved catalogue.",
+                    "The current video file no longer matches the saved catalogue.",
                 ));
             }
             bindings.push(RunnerVideoBinding {
@@ -660,8 +548,8 @@ impl WorkspaceService {
                 sha256: candidate.sha256.clone(),
                 byte_length: candidate.byte_length,
                 mime_type: candidate.mime_type.clone(),
-                duration_ms,
-                display_geometry: geometry.clone(),
+                duration_ms: entry.duration_ms,
+                display_geometry: entry.geometry,
             });
         }
         Ok(bindings)
@@ -835,20 +723,73 @@ impl WorkspaceService {
         selections: Vec<PathBuf>,
     ) -> ResearchResult<RescanResult> {
         let destination = self.with_workspace(workspace_id, |root, _| {
-            let libraries = validate_workspace_libraries(root)?;
-            Ok(libraries.package_assets)
+            ensure_exact_child_directory(root, "source-videos")
         })?;
         let mut sources = collect_import_videos(selections)?;
+        if sources.is_empty() {
+            return Err(CommandError::forbidden(
+                "The native selection contained no supported video files.",
+            ));
+        }
         sources.sort_by(|left, right| {
             left.relative_path
                 .cmp(&right.relative_path)
                 .then_with(|| left.source.cmp(&right.source))
         });
         sources.dedup();
+        {
+            let mut guard = self.lock_selected();
+            let workspace = selected_mut(&mut guard, workspace_id)?;
+            validate_selected_workspace(workspace)?;
+            workspace.unprepared_source_import = true;
+            workspace.source_revision =
+                workspace.source_revision.checked_add(1).ok_or_else(|| {
+                    CommandError::forbidden("The source import revision is exhausted.")
+                })?;
+            workspace.scanned.clear();
+            workspace.media_grants.clear();
+        }
         for source in sources {
             import_planner_video(&source, &destination)?;
         }
-        self.rescan_planner_videos(workspace_id)
+        self.prepare_planner_media(workspace_id)
+    }
+
+    /// Prepare selected sources for HTML playback. A source stays outside the
+    /// closed package tree; only its checked playable copy enters P1.
+    pub fn prepare_planner_media(&self, workspace_id: &str) -> ResearchResult<RescanResult> {
+        let (source_root, package_assets, recovery, source_revision) = {
+            let guard = self.lock_selected();
+            let workspace = selected_ref(&guard, workspace_id)?;
+            let libraries = validate_selected_workspace(workspace)?;
+            (
+                ensure_exact_child_directory(&workspace.root, "source-videos")?,
+                libraries.package_assets,
+                libraries.recovery,
+                workspace.source_revision,
+            )
+        };
+        media_preparation::prepare_sources(&source_root, &package_assets, &recovery)?;
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        if workspace.source_revision != source_revision {
+            return Err(CommandError::forbidden(
+                "The source import changed during video preparation.",
+            ));
+        }
+        let scanned = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &scanned,
+        )?;
+        workspace.scanned = scanned;
+        workspace.media_grants.clear();
+        workspace.unprepared_source_import = false;
+        Ok(RescanResult {
+            workspace_id: workspace.id.clone(),
+            stimuli: workspace.scanned.iter().map(scanned_summary).collect(),
+        })
     }
 
     pub fn issue_media_url(
@@ -907,102 +848,62 @@ impl WorkspaceService {
         })
     }
 
-    pub(crate) fn issue_native_media_grant(
+    /// Resolve only an exact declared Planner location through a fresh ordinary-file scan.
+    /// Runner receives the existing opaque media grant, never a caller-supplied path.
+    pub(crate) fn issue_planner_declared_media_url(
         &self,
         workspace_id: &str,
-        workspace_file_id: &str,
-        expected_sha256: &str,
-        expected_byte_length: u64,
-        expected_mime_type: &str,
-    ) -> ResearchResult<NativeMediaGrant> {
-        let mut guard = self.lock_selected();
-        let workspace = selected_mut(&mut guard, workspace_id)?;
-        validate_selected_workspace(workspace)?;
-        let candidate = scanned_candidate(
-            &workspace.scanned,
-            workspace_file_id,
-            expected_sha256,
-            expected_byte_length,
-            expected_mime_type,
-        )?
-        .clone();
-        let mut locked_file = open_read_locked(&candidate.path)?;
-        let (observed_hash, observed_bytes) = hash_open_file(&mut locked_file)?;
-        if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
-            return Err(CommandError::forbidden(
-                "The workspace stimulus changed after its latest verified scan.",
-            ));
-        }
-        Ok(NativeMediaGrant {
-            media_grant_id: Uuid::new_v4().to_string(),
-            workspace_file_id: candidate.id,
-            path: candidate.path,
-            file: locked_file,
-            sha256: candidate.sha256,
-            mime_type: candidate.mime_type,
-            byte_length: candidate.byte_length,
-        })
+        logical_relative_path: &str,
+        sha256: &str,
+        byte_length: u64,
+        mime_type: &str,
+    ) -> ResearchResult<MediaUrlReceipt> {
+        let workspace_file_id = {
+            let guard = self.lock_selected();
+            let workspace = selected_ref(&guard, workspace_id)?;
+            let libraries = validate_selected_workspace(workspace)?;
+            let fresh = scan_planner_videos(&libraries.package_assets)?;
+            media_preparation::validate_active_closure(
+                &workspace.root.join("source-videos"),
+                &fresh,
+            )?;
+            let matches = fresh
+                .iter()
+                .filter(|entry| {
+                    entry.logical_relative_path == logical_relative_path
+                        && entry.sha256 == sha256
+                        && entry.byte_length == byte_length
+                        && entry.mime_type == mime_type
+                })
+                .collect::<Vec<_>>();
+            let [entry] = matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "The declared Planner video does not match one fresh ordinary file.",
+                ));
+            };
+            if !workspace.scanned.iter().any(|candidate| {
+                candidate.id == entry.id
+                    && candidate.logical_relative_path == logical_relative_path
+                    && candidate.sha256 == sha256
+                    && candidate.byte_length == byte_length
+                    && candidate.mime_type == mime_type
+            }) {
+                return Err(CommandError::forbidden(
+                    "The declared Planner video is absent from the active scan.",
+                ));
+            }
+            entry.id.clone()
+        };
+        self.issue_media_url(
+            workspace_id,
+            &workspace_file_id,
+            sha256,
+            byte_length,
+            mime_type,
+        )
     }
 
-    pub(crate) fn attest_native_decode(
-        &self,
-        workspace_id: &str,
-        expected_sha256: &str,
-        expected_byte_length: u64,
-        expected_mime_type: &str,
-        receipt: &crate::research_native_media::NativeMediaDecodeReceiptV1,
-    ) -> ResearchResult<ScannedStimulusSummary> {
-        if receipt.decoded_snapshot_count != 3
-            || receipt.decoded_positions_ms.len() != 3
-            || receipt.video_width == 0
-            || receipt.video_height == 0
-            || receipt.video_width > 32_768
-            || receipt.video_height > 32_768
-            || receipt.display_metadata.encoded_width_px != receipt.video_width
-            || receipt.display_metadata.encoded_height_px != receipt.video_height
-        {
-            return Err(CommandError::invalid_contract(
-                "Native GstPlay decode evidence is incomplete.",
-            ));
-        }
-        let display_geometry = derive_native_display_geometry_v1(&receipt.display_metadata)?;
-        validate_native_positions(receipt.duration_ms, &receipt.decoded_positions_ms)?;
-        let mut guard = self.lock_selected();
-        let workspace = selected_mut(&mut guard, workspace_id)?;
-        validate_selected_workspace(workspace)?;
-        let candidate_index = workspace
-            .scanned
-            .iter()
-            .position(|entry| {
-                entry.id == receipt.workspace_file_id
-                    && entry.sha256 == expected_sha256
-                    && entry.byte_length == expected_byte_length
-                    && entry.mime_type == expected_mime_type
-            })
-            .ok_or_else(|| {
-                CommandError::forbidden(
-                    "Native decode evidence does not match the latest workspace scan.",
-                )
-            })?;
-        let candidate = &mut workspace.scanned[candidate_index];
-        let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
-        if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
-            return Err(CommandError::forbidden(
-                "The workspace stimulus changed during native decode preflight.",
-            ));
-        }
-        candidate.duration_ms = Some(receipt.duration_ms.round());
-        candidate.decode_status = DecodeStatus::AttestedQualified;
-        candidate.decode_backend = Some(DecodeBackend::NativeGstPlay);
-        candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
-        candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
-        candidate.display_geometry = Some(display_geometry);
-        candidate.native_decode_receipt_v2 = None;
-        Ok(scanned_summary(candidate))
-    }
-
-    /// Consumes one exact locked-file grant. WebView frame evidence remains
-    /// explicitly unqualified and cannot satisfy a future GstPlay verifier.
+    /// Consumes one exact locked-file grant and records HTML video evidence.
     pub fn attest_workspace_decode(
         &self,
         request: DecodeAttestationRequest,
@@ -1020,7 +921,7 @@ impl WorkspaceService {
             || grant.mime_type != request.mime_type
         {
             return Err(CommandError::forbidden(
-                "Decode evidence does not match the exact native media grant.",
+                "Decode evidence does not match the exact workspace media grant.",
             ));
         }
         let candidate_index = workspace
@@ -1034,7 +935,7 @@ impl WorkspaceService {
             })
             .ok_or_else(|| {
                 CommandError::forbidden(
-                    "The opaque workspace file and metadata do not match the latest native scan.",
+                    "The opaque workspace file and metadata do not match the latest workspace scan.",
                 )
             })?;
 
@@ -1105,8 +1006,6 @@ impl WorkspaceService {
         candidate.decode_backend = Some(DecodeBackend::WebviewVideoFrameCallback);
         candidate.decode_attestation = Some(DecodeEvidence::RepresentativeFramesV1);
         candidate.decoded_positions_ms = request.decoded_positions_ms;
-        candidate.display_geometry = None;
-        candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
@@ -1256,73 +1155,18 @@ impl WorkspaceService {
     }
 
     #[allow(clippy::too_many_arguments)]
-    #[cfg(test)] // Legacy acquisition adapter; active package protocol has its own path.
-    pub(crate) fn verify_native_workspace_file(
-        &self,
-        workspace_id: &str,
-        workspace_file_id: &str,
-        expected_sha256: &str,
-        expected_byte_length: u64,
-        expected_relative_path: &str,
-        expected_mime_type: &str,
-        expected_duration_ms: f64,
-    ) -> ResearchResult<()> {
-        self.with_workspace(workspace_id, |_, scanned| {
-            let candidate = native_attested_candidate(
-                scanned,
-                workspace_file_id,
-                expected_sha256,
-                expected_byte_length,
-                expected_relative_path,
-                expected_mime_type,
-                expected_duration_ms,
-            )?;
-            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
-            if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
-                return Err(CommandError::forbidden(
-                    "A natively qualified workspace stimulus changed after attestation.",
-                ));
-            }
-            Ok(())
-        })
-    }
-
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn resolve_native_package_file(
         &self,
-        workspace_id: &str,
-        expected_sha256: &str,
-        expected_byte_length: u64,
-        expected_logical_path: &str,
-        expected_mime_type: &str,
-        expected_duration_ms: f64,
+        _workspace_id: &str,
+        _expected_sha256: &str,
+        _expected_byte_length: u64,
+        _expected_logical_path: &str,
+        _expected_mime_type: &str,
+        _expected_duration_ms: f64,
     ) -> ResearchResult<String> {
-        self.with_workspace(workspace_id, |_, scanned| {
-            let candidate = scanned
-                .iter()
-                .find(|entry| entry.logical_relative_path == expected_logical_path)
-                .ok_or_else(|| {
-                    CommandError::forbidden(
-                        "The fixed package asset is absent from the latest native scan.",
-                    )
-                })?;
-            native_attested_candidate(
-                scanned,
-                &candidate.id,
-                expected_sha256,
-                expected_byte_length,
-                expected_logical_path,
-                expected_mime_type,
-                expected_duration_ms,
-            )?;
-            let (observed_hash, observed_bytes) = hash_file(&candidate.path)?;
-            if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
-                return Err(CommandError::forbidden(
-                    "A fixed package asset changed after native decode qualification.",
-                ));
-            }
-            Ok(candidate.id.clone())
-        })
+        Err(CommandError::native_media_unavailable(
+            "legacy-package-playback-unavailable",
+        ))
     }
 
     fn lock_selected(&self) -> MutexGuard<'_, Option<SelectedWorkspace>> {
@@ -1695,8 +1539,6 @@ fn scan_package_videos(
                 decode_backend: None,
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
-                display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1781,8 +1623,6 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
                 decode_backend: None,
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
-                display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1851,8 +1691,6 @@ fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<Scanned
                 decode_backend: None,
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
-                display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1870,7 +1708,7 @@ fn is_video(path: &Path) -> bool {
         })
 }
 
-fn video_mime_type(path: &Path) -> &'static str {
+pub(crate) fn video_mime_type(path: &Path) -> &'static str {
     match path
         .extension()
         .and_then(|extension| extension.to_str())
@@ -1892,15 +1730,11 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
         .duration_ms
         .filter(|_| {
             let duration_ms = entry.duration_ms.unwrap_or_default();
-            (entry.decode_status == DecodeStatus::AttestedUnqualified
+            entry.decode_status == DecodeStatus::AttestedUnqualified
                 && entry.decode_backend == Some(DecodeBackend::WebviewVideoFrameCallback)
                 && entry.decode_attestation == Some(DecodeEvidence::RepresentativeFramesV1)
                 && validate_representative_positions(duration_ms, &entry.decoded_positions_ms)
-                    .is_ok())
-                || (entry.decode_status == DecodeStatus::AttestedQualified
-                    && entry.decode_backend == Some(DecodeBackend::NativeGstPlay)
-                    && entry.decode_attestation == Some(DecodeEvidence::NativeDecodedSnapshotsV1)
-                    && validate_native_positions(duration_ms, &entry.decoded_positions_ms).is_ok())
+                    .is_ok()
         })
         .map(|duration_ms| WorkspaceSourceContract {
             kind: "workspaceFile",
@@ -1926,7 +1760,7 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
         decode_backend: entry.decode_backend,
         decode_attestation: entry.decode_attestation,
         decoded_positions_ms: entry.decoded_positions_ms.clone(),
-        display_geometry: entry.display_geometry.clone(),
+        display_geometry: None,
         source,
     }
 }
@@ -1948,7 +1782,7 @@ fn scanned_candidate<'a>(
         })
         .ok_or_else(|| {
             CommandError::forbidden(
-                "The opaque workspace file and metadata do not match the latest native scan.",
+                "The opaque workspace file and metadata do not match the latest workspace scan.",
             )
         })
 }
@@ -2005,58 +1839,6 @@ fn webview_attested_candidate<'a>(
         })
 }
 
-#[allow(clippy::too_many_arguments)]
-fn native_attested_candidate<'a>(
-    scanned: &'a [ScannedStimulus],
-    workspace_file_id: &str,
-    expected_sha256: &str,
-    expected_byte_length: u64,
-    expected_relative_path: &str,
-    expected_mime_type: &str,
-    expected_duration_ms: f64,
-) -> ResearchResult<&'a ScannedStimulus> {
-    if !expected_duration_ms.is_finite() || expected_duration_ms < 10.0 {
-        return Err(CommandError::invalid_contract(
-            "A GstPlay-qualified workspace stimulus requires a complete-video duration.",
-        ));
-    }
-    if expected_relative_path
-        != scanned
-            .iter()
-            .find(|entry| entry.id == workspace_file_id)
-            .map(|entry| entry.logical_relative_path.as_str())
-            .unwrap_or_default()
-    {
-        return Err(CommandError::invalid_contract(
-            "Workspace settings must use the opaque logical source locator from Rescan.",
-        ));
-    }
-    scanned
-        .iter()
-        .find(|entry| {
-            entry.id == workspace_file_id
-                && entry.sha256 == expected_sha256
-                && entry.byte_length == expected_byte_length
-                && entry.mime_type == expected_mime_type
-                && entry.decode_status == DecodeStatus::AttestedQualified
-                && entry.decode_backend == Some(DecodeBackend::NativeGstPlay)
-                && entry.decode_attestation == Some(DecodeEvidence::NativeDecodedSnapshotsV1)
-                && entry
-                    .duration_ms
-                    .is_some_and(|duration| (duration - expected_duration_ms).abs() <= 0.5)
-                && validate_native_positions(
-                    entry.duration_ms.unwrap_or_default(),
-                    &entry.decoded_positions_ms,
-                )
-                .is_ok()
-        })
-        .ok_or_else(|| {
-            CommandError::forbidden(
-                "The opaque workspace file and its native GstPlay attestation do not match the latest scan.",
-            )
-        })
-}
-
 fn representative_positions_ms(duration_ms: f64) -> [f64; 3] {
     let offset = (duration_ms * 0.1).min(250.0);
     [offset, duration_ms * 0.5, (duration_ms - offset).max(0.0)]
@@ -2080,29 +1862,6 @@ fn validate_representative_positions(duration_ms: f64, positions_ms: &[f64]) -> 
     {
         return Err(CommandError::invalid_contract(
             "Decoded-frame positions must bind the expected near-start, midpoint, and near-end probes.",
-        ));
-    }
-    Ok(())
-}
-
-fn validate_native_positions(duration_ms: f64, positions_ms: &[f64]) -> ResearchResult<()> {
-    if !duration_ms.is_finite() || duration_ms < 10.0 || positions_ms.len() != 3 {
-        return Err(CommandError::invalid_contract(
-            "Native decode attestation requires three complete-video snapshots.",
-        ));
-    }
-    let expected = representative_positions_ms(duration_ms);
-    if positions_ms.iter().any(|position| !position.is_finite())
-        || positions_ms
-            .windows(2)
-            .any(|positions| positions[1] - positions[0] < 1.0)
-        || positions_ms
-            .iter()
-            .zip(expected)
-            .any(|(observed, expected)| (observed - expected).abs() > 250.0)
-    {
-        return Err(CommandError::invalid_contract(
-            "Native decoded snapshots must cover the expected start, midpoint, and end probes.",
         ));
     }
     Ok(())
@@ -2182,11 +1941,6 @@ fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<Importe
             }
         }
     }
-    if videos.is_empty() {
-        return Err(CommandError::forbidden(
-            "The native selection contained no supported video files.",
-        ));
-    }
     Ok(videos)
 }
 
@@ -2204,7 +1958,13 @@ fn import_planner_video(source: &ImportedVideo, destination: &Path) -> ResearchR
     if source.source == target {
         return Ok(());
     }
-    if target.exists() {
+    if fs::symlink_metadata(&target).is_ok() {
+        let metadata = fs::symlink_metadata(&target).map_err(CommandError::io)?;
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "An imported video conflicts with a link or non-file.",
+            ));
+        }
         let (existing_digest, _) = hash_file(&target)?;
         if existing_digest == digest {
             return Ok(());
@@ -2219,7 +1979,17 @@ fn import_planner_video(source: &ImportedVideo, destination: &Path) -> ResearchR
     std::io::copy(&mut input, &mut output).map_err(CommandError::io)?;
     output.sync_all().map_err(CommandError::io)?;
     drop(output);
-    fs::rename(staging, target).map_err(CommandError::io)
+    let copied = hash_file(&staging)?;
+    let source_after = hash_file(&source.source)?;
+    if copied != source_after || copied.0 != digest {
+        fs::remove_file(&staging).map_err(CommandError::io)?;
+        return Err(CommandError::forbidden(
+            "The source video changed during import.",
+        ));
+    }
+    let published = fs::hard_link(&staging, &target).map_err(CommandError::io);
+    fs::remove_file(&staging).map_err(CommandError::io)?;
+    published
 }
 
 // Frozen legacy authoring import used by the historical video-library v1
@@ -2813,6 +2583,27 @@ mod tests {
 
     #[test]
     fn planner_import_preserves_nested_locations_and_does_not_collapse_equal_content() {
+        let ffmpeg = if cfg!(target_os = "windows") {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        };
+        let ffprobe = if cfg!(target_os = "windows") {
+            "ffprobe.exe"
+        } else {
+            "ffprobe"
+        };
+        if std::process::Command::new(ffmpeg)
+            .arg("-version")
+            .output()
+            .is_err()
+            || std::process::Command::new(ffprobe)
+                .arg("-version")
+                .output()
+                .is_err()
+        {
+            return;
+        }
         let base = temporary_directory("planner-location-import");
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
         let workspace = base.join("chosen");
@@ -2822,12 +2613,32 @@ mod tests {
         fs::create_dir_all(&workspace).unwrap();
         fs::create_dir_all(&session_dash).unwrap();
         fs::create_dir_all(&session_underscore).unwrap();
-        fs::write(session_dash.join("clip.mp4"), b"identical-video-bytes").unwrap();
-        fs::write(
-            session_underscore.join("clip.mp4"),
-            b"identical-video-bytes",
-        )
-        .unwrap();
+        let sample = session_dash.join("clip.mp4");
+        let status = std::process::Command::new(ffmpeg)
+            .args([
+                "-nostdin",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc2=size=32x32:rate=5",
+                "-t",
+                "1",
+                "-an",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-y",
+            ])
+            .arg(&sample)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let sample_bytes = fs::read(&sample).unwrap();
+        fs::write(session_underscore.join("clip.mp4"), &sample_bytes).unwrap();
         let workspace_id = service
             .select(workspace.clone())
             .unwrap()
@@ -2855,7 +2666,7 @@ mod tests {
                     .join("clip.mp4")
             )
             .unwrap(),
-            b"identical-video-bytes"
+            sample_bytes
         );
         assert_eq!(
             fs::read(
@@ -2866,7 +2677,17 @@ mod tests {
                     .join("clip.mp4")
             )
             .unwrap(),
-            b"identical-video-bytes"
+            sample_bytes
+        );
+        assert_eq!(
+            fs::read(
+                workspace
+                    .join("source-videos")
+                    .join("session-a")
+                    .join("clip.mp4")
+            )
+            .unwrap(),
+            sample_bytes
         );
         let guard = service.lock_selected();
         let paths = guard
@@ -2885,7 +2706,86 @@ mod tests {
     }
 
     #[test]
-    fn planner_catalogue_validation_rechecks_current_file_duration_and_geometry() {
+    fn incompatible_import_keeps_original_and_rejects_changed_prepared_sibling() {
+        let ffmpeg = if cfg!(target_os = "windows") {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        };
+        let ffprobe = if cfg!(target_os = "windows") {
+            "ffprobe.exe"
+        } else {
+            "ffprobe"
+        };
+        if std::process::Command::new(ffmpeg)
+            .arg("-version")
+            .output()
+            .is_err()
+            || std::process::Command::new(ffprobe)
+                .arg("-version")
+                .output()
+                .is_err()
+        {
+            return;
+        }
+        let base = temporary_directory("planner-media-sibling");
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let original = base.join("clip.avi");
+        let status = std::process::Command::new(ffmpeg)
+            .args([
+                "-nostdin",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc2=size=32x32:rate=5",
+                "-t",
+                "1",
+                "-an",
+                "-c:v",
+                "mpeg4",
+                "-y",
+            ])
+            .arg(&original)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let original_bytes = fs::read(&original).unwrap();
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let first = service.import_paths(&id, vec![original]).unwrap();
+        assert_eq!(first.stimuli.len(), 1);
+        assert!(first.stimuli[0].display_name.ends_with(".mp4"));
+        assert!(first.stimuli[0].display_name.contains(".ready-"));
+        assert_eq!(
+            fs::read(workspace.join("source-videos").join("clip.avi")).unwrap(),
+            original_bytes
+        );
+        let prepared = workspace
+            .join("assets")
+            .join("stimuli")
+            .join(&first.stimuli[0].display_name);
+        assert!(prepared.is_file());
+        let again = service.prepare_planner_media(&id).unwrap();
+        assert_eq!(again.stimuli[0].sha256, first.stimuli[0].sha256);
+        fs::write(&prepared, b"conflict").unwrap();
+        assert!(service.prepare_planner_media(&id).is_err());
+        assert_eq!(
+            fs::read(workspace.join("source-videos").join("clip.avi")).unwrap(),
+            original_bytes
+        );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn planner_catalogue_validation_rechecks_exact_browser_video_file() {
         let base = temporary_directory("planner-catalogue-authority");
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
         let workspace = base.join("chosen");
@@ -2904,50 +2804,6 @@ mod tests {
         fs::write(&video, b"planner-video-bytes").unwrap();
         let scan = service.rescan_planner_videos(&workspace_id).unwrap();
         let item = &scan.stimuli[0];
-        let summary = service
-            .attest_native_decode(
-                &workspace_id,
-                &item.sha256,
-                item.byte_length,
-                &item.mime_type,
-                &crate::research_native_media::NativeMediaDecodeReceiptV1 {
-                    schema: "affect-research-native-media-decode-receipt",
-                    version: 1,
-                    session_id: Uuid::new_v4().to_string(),
-                    generation: 1,
-                    media_grant_id: Uuid::new_v4().to_string(),
-                    workspace_file_id: item.workspace_file_id.clone(),
-                    duration_ms: 1_000.25,
-                    video_width: 1_920,
-                    video_height: 1_080,
-                    audio_stream_count: 1,
-                    decoded_positions_ms: vec![100.0, 500.0, 900.0],
-                    decoded_snapshot_count: 3,
-                    display_metadata:
-                        crate::research_video_geometry::NativeDisplayMetadataReceiptV1 {
-                            schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
-                            version: 1,
-                            encoded_width_px: 1_920,
-                            encoded_height_px: 1_080,
-                            pixel_aspect_ratio: crate::research_video_geometry::VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                            orientation:
-                                crate::research_video_geometry::NativeVideoOrientationV1::Identity,
-                            snapshot_width_px: 1_920,
-                            snapshot_height_px: 1_080,
-                            snapshot_pixel_aspect_ratio:
-                                crate::research_video_geometry::VideoRatioV1 {
-                                    numerator: 1,
-                                    denominator: 1,
-                                },
-                        },
-                },
-            )
-            .unwrap();
-        assert_eq!(summary.duration_ms, Some(1_000.0));
-        let source = summary.source.as_ref().unwrap();
         let core = serde_json::json!({
             "schema": "affect-research-video-catalogue-contribution",
             "version": 2,
@@ -2956,12 +2812,21 @@ mod tests {
             "entries": [{
                 "assetId": format!("asset-{}", item.sha256),
                 "annotationId": "session%5Fa_clip.mp4",
-                "sourceRelativePath": source.relative_path,
-                "packageRelativePath": format!("assets/{}", source.relative_path),
+                "sourceRelativePath": "stimuli/session_a/clip.mp4",
+                "packageRelativePath": "assets/stimuli/session_a/clip.mp4",
                 "sha256": item.sha256,
                 "byteLength": item.byte_length,
                 "durationMs": 1_000,
-                "geometry": summary.display_geometry
+                "geometry": {
+                    "status": "verified",
+                    "source": "browser-decoder",
+                    "displayWidthPx": 1_920,
+                    "displayHeightPx": 1_080,
+                    "displayAspect": {"numerator": 16, "denominator": 9},
+                    "rotationDegrees": null,
+                    "pixelAspectRatio": null,
+                    "metadataInterpretation": "decoder-oriented-display"
+                }
             }]
         });
         let mut catalogue = core.clone();
@@ -2977,77 +2842,31 @@ mod tests {
                 .annotation_id,
             "session%5Fa_clip.mp4"
         );
-
         let runner = service
             .validate_runner_video_catalogue(&workspace_id, &catalogue)
             .unwrap();
         assert_eq!(runner.len(), 1);
         assert_eq!(runner[0].workspace_file_id, item.workspace_file_id);
-        assert_eq!(runner[0].asset_id, format!("asset-{}", item.sha256));
-        assert_eq!(runner[0].annotation_id, "session%5Fa_clip.mp4");
-        assert_eq!(runner[0].source_relative_path, source.relative_path);
         assert_eq!(runner[0].sha256, item.sha256);
         assert_eq!(runner[0].byte_length, item.byte_length);
         assert_eq!(runner[0].mime_type, item.mime_type);
-        assert_eq!(runner[0].duration_ms, 1_000);
-        assert_eq!(
-            (
-                runner[0].display_geometry.display_width_px,
-                runner[0].display_geometry.display_height_px,
-            ),
-            (1_920, 1_080)
-        );
+        assert_eq!(runner[0].display_geometry.source, "browser-decoder");
 
-        let mut browser_core = core.clone();
-        browser_core["entries"][0]["geometry"]["source"] = serde_json::json!("browser-decoder");
-        browser_core["entries"][0]["geometry"]["rotationDegrees"] = serde_json::Value::Null;
-        browser_core["entries"][0]["geometry"]["pixelAspectRatio"] = serde_json::Value::Null;
-        browser_core["entries"][0]["geometry"]["metadataInterpretation"] =
-            serde_json::json!("decoder-oriented-display");
-        let mut browser_catalogue = browser_core.clone();
-        browser_catalogue.as_object_mut().unwrap().insert(
-            "integritySha256".to_owned(),
-            serde_json::json!(
-                crate::research_contracts::canonical_sha256(&browser_core, &[]).unwrap()
-            ),
-        );
-        let browser_runner = service
-            .validate_runner_video_catalogue(&workspace_id, &browser_catalogue)
-            .unwrap();
-        assert_eq!(
-            browser_runner[0].display_geometry.source,
-            "native-gstplay-metadata"
-        );
-
-        let mut wrong_geometry_core = browser_core.clone();
-        wrong_geometry_core["entries"][0]["geometry"]["displayWidthPx"] = serde_json::json!(1_280);
-        wrong_geometry_core["entries"][0]["geometry"]["displayHeightPx"] = serde_json::json!(720);
-        let mut wrong_geometry = wrong_geometry_core.clone();
-        wrong_geometry.as_object_mut().unwrap().insert(
-            "integritySha256".to_owned(),
-            serde_json::json!(crate::research_contracts::canonical_sha256(
-                &wrong_geometry_core,
-                &[]
-            )
-            .unwrap()),
-        );
+        let mut unknown_geometry = core.clone();
+        unknown_geometry["entries"][0]["geometry"]["source"] = serde_json::json!("unknown-decoder");
+        let unknown_hash =
+            crate::research_contracts::canonical_sha256(&unknown_geometry, &[]).unwrap();
+        unknown_geometry["integritySha256"] = serde_json::json!(unknown_hash);
         assert!(service
-            .validate_runner_video_catalogue(&workspace_id, &wrong_geometry)
+            .validate_planner_video_catalogue(&workspace_id, &unknown_geometry)
             .is_err());
 
-        let extra = workspace
-            .join("assets")
-            .join("stimuli")
-            .join("new-after-attestation.mp4");
-        fs::write(&extra, b"new-video-outside-the-accepted-catalogue").unwrap();
+        let extra = workspace.join("assets/stimuli/unlisted.mp4");
+        fs::write(&extra, b"unlisted-video").unwrap();
         assert!(service
             .validate_planner_video_catalogue(&workspace_id, &catalogue)
             .is_err());
         fs::remove_file(&extra).unwrap();
-        assert!(service
-            .validate_planner_video_catalogue(&workspace_id, &catalogue)
-            .is_ok());
-
         fs::write(&video, b"changed-planner-video").unwrap();
         assert!(service
             .validate_planner_video_catalogue(&workspace_id, &catalogue)
@@ -3453,88 +3272,6 @@ mod tests {
         let json = serde_json::to_string(&result).unwrap();
         assert!(!json.contains("chosen"));
         assert!(!json.contains("clip.mp4/") && !json.contains("stimuli\\"));
-        fs::remove_dir_all(base).unwrap();
-    }
-
-    #[test]
-    fn native_decode_attestation_is_distinct_from_webview_evidence_at_start_revalidation() {
-        let base = temporary_directory("native-decode-attestation");
-        let service = WorkspaceService::new(base.join("app-data")).unwrap();
-        let workspace = base.join("chosen");
-        fs::create_dir(&workspace).unwrap();
-        let workspace_id = service
-            .select(workspace.clone())
-            .unwrap()
-            .workspace_id
-            .unwrap();
-        fs::write(workspace.join("stimuli").join("clip.mp4"), b"video-bytes").unwrap();
-        let scan = service.rescan(&workspace_id).unwrap();
-        let item = &scan.stimuli[0];
-        let summary = service
-            .attest_native_decode(
-                &workspace_id,
-                &item.sha256,
-                item.byte_length,
-                &item.mime_type,
-                &crate::research_native_media::NativeMediaDecodeReceiptV1 {
-                    schema: "affect-research-native-media-decode-receipt",
-                    version: 1,
-                    session_id: Uuid::new_v4().to_string(),
-                    generation: 1,
-                    media_grant_id: Uuid::new_v4().to_string(),
-                    workspace_file_id: item.workspace_file_id.clone(),
-                    duration_ms: 1_000.0,
-                    video_width: 1_920,
-                    video_height: 1_080,
-                    audio_stream_count: 1,
-                    decoded_positions_ms: vec![100.0, 500.0, 900.0],
-                    decoded_snapshot_count: 3,
-                    display_metadata:
-                        crate::research_video_geometry::NativeDisplayMetadataReceiptV1 {
-                            schema: crate::research_video_geometry::NATIVE_DISPLAY_METADATA_SCHEMA,
-                            version: 1,
-                            encoded_width_px: 1_920,
-                            encoded_height_px: 1_080,
-                            pixel_aspect_ratio: crate::research_video_geometry::VideoRatioV1 {
-                                numerator: 1,
-                                denominator: 1,
-                            },
-                            orientation:
-                                crate::research_video_geometry::NativeVideoOrientationV1::Identity,
-                            snapshot_width_px: 1_920,
-                            snapshot_height_px: 1_080,
-                            snapshot_pixel_aspect_ratio:
-                                crate::research_video_geometry::VideoRatioV1 {
-                                    numerator: 1,
-                                    denominator: 1,
-                                },
-                        },
-                },
-            )
-            .unwrap();
-        let source = summary.source.unwrap();
-        service
-            .verify_native_workspace_file(
-                &workspace_id,
-                &item.workspace_file_id,
-                &item.sha256,
-                item.byte_length,
-                &source.relative_path,
-                &item.mime_type,
-                source.duration_ms,
-            )
-            .unwrap();
-        assert!(service
-            .verify_workspace_file(
-                &workspace_id,
-                &item.workspace_file_id,
-                &item.sha256,
-                item.byte_length,
-                &source.relative_path,
-                &item.mime_type,
-                source.duration_ms,
-            )
-            .is_err());
         fs::remove_dir_all(base).unwrap();
     }
 

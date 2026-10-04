@@ -1,5 +1,13 @@
 # Central segment roadmap and capability checklist
 
+> **MEDIA RETIREMENT ALERT — 2026-10-04.** GStreamer is retired. Delete
+> GStreamer/GstPlay references or infrastructure still in the current project
+> root and do not restore the old path. P1 owns FFprobe inspection on Segment 1
+> confirmation and FFmpeg conversion when needed. Retain incompatible originals
+> in a separate project source folder; downstream segments use only verified
+> HTML-playable files beneath `assets/stimuli`. This item is open until source and
+> correspondence evidence close it.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and
@@ -267,6 +275,9 @@ Location-derived annotations are automatic; no manual collision-repair step.
 **Receives:** user-selected files/directory through the owning platform adapter.
 **Produces:** catalogue locations with an automatic reversible path ID, immutable
 content identity, file reference, hash, length, duration and display geometry.
+The current target first uses FFprobe at Segment 1 confirmation and prepares an
+HTML-playable file with FFmpeg when necessary. Incompatible originals remain in
+a separate project source folder outside the strict active-media tree.
 **Consumers:** P2 source storage; P3 video IDs; P4/P6 geometry; P7 assets.
 **JSON:** `segments.P1` embeds the complete workspace/catalogue contribution,
 logical root and exact relative declarations, content/location pairs, hashes,
@@ -285,15 +296,16 @@ Decoding and canonical re-encoding must reproduce the exact path; collision is
 a hard error, never enumeration-based suffixing. Moves change annotation identity
 and acceptance, not equal content identity. Geometry consumers may deduplicate
 content; reference consumers retain each pair. Ambiguous, missing or reflected
-native geometry remains pending; installed GStreamer qualification stays separate.
+native geometry remains pending; installed HTML playback qualification stays separate.
 
 - [x] **P1-01 — Implemented component:** browser/native workspace selection and authorization (`workspace.js`, `research_workspace.rs`).
 - [x] **P1-02 — Implemented component:** declared-asset verification binds safe paths, hashes, byte lengths and duration. Decode qualification remains separate.
 - [x] **P1-03 — Implemented Planner:** Correct assets/stimuli import/rescan on browser and native; current-directory enumeration rejects new/missing files and link replacement before accepting cached metadata.
 - [x] **P1-04 — Implemented Planner:** Reversible full-relative-location v2 IDs retain filename/extension, punctuation and nesting distinctions; asset SHA identity stays separate. Moves invalidate dependent acceptance.
 - [x] **P1-05 — Implemented Planner:** Logical root and exact relative declarations are embedded; Open restores content pending fresh authorization and exact rehash/reprobe/rebind. Absolute-root provenance is optional Q05.
-- [x] **P1-06 — Implemented Planner:** Complete oriented/display dimensions, aspect and duration travel through P1 into P4/P6 and the master; native and browser validators preserve v1/v2 semantics.
+- [x] **P1-06 — Implemented Planner:** HTML decoder display dimensions, aspect and duration travel through P1 into P4/P6 and the master; saved catalogue readers retain strict version and content checks.
 - [x] **P1-07 — Implemented Planner:** Content restore, exact media rebind, revision publication and dependent invalidation are wired and regression tested, including reads before change publication. Final owner aee980d.
+- [ ] **P1-08 — Source path implemented; installed gate open:** After Segment 1 confirmation, the Windows Planner probes imported source videos with FFprobe, converts incompatible sources with FFmpeg, and verifies representative HTML video frames before P1 acceptance. Originals remain in `source-videos`; the strict `assets/stimuli` tree and saved JSON contain only the prepared active path/hash/length/duration/geometry. Runner's HTML URL binds that exact file. Failure or source change keeps P1 pending and invalidates dependent acceptance. Static browsers consume prepared assets and cannot launch local conversion tools. Close this item only after exact source, save/Open, Runner rebind and installed playback evidence has been collected on the integrated build.
 
 **Acceptance:** collisions, rescans and moves have explicit outcomes; each ID
 resolves to declared bytes after export/reload. No second catalogue or directory-

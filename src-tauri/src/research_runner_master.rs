@@ -1,6 +1,5 @@
 //! Complete master consumption. The frozen package runtime/records stay separate.
 //! A plan is content interpretation, never a playback or acquisition attestation.
-pub(crate) mod bindings;
 pub(crate) mod commands;
 pub(crate) mod forms;
 pub(crate) mod information;
@@ -11,7 +10,6 @@ pub mod runtime;
 pub(crate) mod storage;
 pub(crate) mod typed_forms;
 pub(crate) mod variant_usage;
-pub(crate) mod worker;
 use crate::research_contracts::canonical_sha256;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_planner_recipe_supported::{

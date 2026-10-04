@@ -73,7 +73,7 @@ See [master](../docs/planner-master-recipe-v1.md),
 
 | Owner | Complete JSON authority | Consumer / boundary |
 | --- | --- | --- |
-| P1 Workspace/videos | Study, logical roots, locations/content IDs, hashes, lengths, durations and versioned geometry | P3 references; P4/P6 fit; native media binding. Video bytes remain external, hash-bound assets |
+| P1 Workspace/videos | Study, logical roots, playable locations/content IDs, hashes, lengths, durations and versioned geometry | P3 references; P4/P6 fit; Runner exact media binding. Windows Planner source now runs FFprobe/FFmpeg preparation at Segment 1 confirmation; incompatible originals stay in `source-videos`, and only verified playable files enter `assets/stimuli` and JSON. Installed playback/XDF qualification remains open |
 | P2 Questionnaires/languages | Definitions/SurveyJS assets, exact reference metadata, provenance, modules, language tree and presentation | Form sequence, pinned renderer, native answer validation, durable responses/information stream |
 | P3 Versions/ISIs | Named ISIs, variants, ordered occurrences, library identity and marker meaning | Exact selected chronology. `allocation:{kind:"runnerAssigned"}` declares ownership, not a repeating/cyclic algorithm |
 | P4 Desktop layout | Target viewport/calibration, units, sizes, video centre, Flubber centre and fit | Shared geometry, Planner warnings, Runner smart viewport fallback and participant rendering |
@@ -146,10 +146,11 @@ No actual native session is claimed.
 - Master4 has intake/normal Start dispatch, but local validation accepts only
   master3 while normal research playback qualification remains closed.
 - Controller override execution and receipts remain unimplemented.
-- Mixed historical/controlled media proofs parse but fail Runner attestation
-  pending native location mapping.
+- Saved catalogue v3 now uses HTML decoder geometry and an exact prepared-file
+  path/hash binding. Installed Runner playback and XDF correspondence remain
+  unverified.
 
-Native playback qualification, actual geometry/ISI observations, device testing
+Installed HTML video qualification, actual geometry/ISI observations, device testing
 and independent actual-session XDF remain open under
 [30](30-TESTING-AND-RELEASE.md) and [72](72-RUNNER-FINAL-VALIDATION.md).
 Do not close capability checkboxes from parser or synthetic evidence.

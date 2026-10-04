@@ -48,7 +48,6 @@ mod research_stimulus_order;
 pub mod research_surveyjs_definition;
 mod research_surveyjs_engine;
 mod research_timing;
-mod research_video_geometry;
 mod research_workspace;
 pub mod research_workspace_contribution;
 pub mod research_xr_layout;
@@ -169,12 +168,6 @@ fn launch(
             app.manage(research_runner_recent::RunnerRecentExperiment::new(
                 app_data_dir.clone(),
             ));
-            let resource_dir = app.path().resource_dir()?;
-            let parent = app
-                .get_webview_window("research")
-                .ok_or_else(|| std::io::Error::other("Native media parent window is absent."))?;
-            // Setup remains operable when the safe hook cannot start. Capability
-            // reporting and every test/Start command then fail closed.
             let input = Arc::new(input_service_for_platform(NATIVE_ACQUISITION_SUPPORTED));
             let focused = app
                 .get_webview_window("research")
@@ -182,8 +175,6 @@ fn launch(
                 .unwrap_or(false);
             input.set_window_focused(focused);
             if role == DesktopRole::Planner {
-                // Finish fallible setup before starting an actor whose teardown
-                // needs the UI event loop. A setup error cannot safely join it.
                 app.manage(
                     research_local_questionnaire_preset_commands::LocalPresetService::new(
                         app.path().app_data_dir()?,
@@ -194,11 +185,12 @@ fn launch(
                     .start(app.handle().clone())
                     .map_err(|error| std::io::Error::other(error.message))?;
             }
-            // No fallible setup remains after native startup. Normal close/exit
-            // uses the off-UI shutdown coordinator while the event loop pumps.
-            let native_media =
-                NativeMediaService::start_async(resource_dir, app_data_dir.clone(), parent);
             if role == DesktopRole::Runner {
+                // Saved native-playback contracts remain fail closed until the
+                // Runner HTML lifecycle owns timing and marker observations.
+                let native_media = Arc::new(NativeMediaService::unavailable(
+                    NATIVE_ACQUISITION_SUPPORTED,
+                ));
                 let recorder = Arc::new(research_recorder::RecorderService::default());
                 let package_runtime = Arc::new(
                     PackageProtocolRuntime::with_services(
@@ -209,27 +201,20 @@ fn launch(
                     .with_recorder(Arc::clone(&recorder)),
                 );
                 app.manage(Arc::new(
-                    research_runner_master::runtime::MasterRuntime::new(
-                        Arc::clone(&workspace),
-                        Arc::clone(&native_media),
-                        Arc::clone(&input),
-                        Arc::clone(&recorder),
-                        Arc::clone(&package_runtime),
-                    ),
+                    research_runner_master::runtime::MasterRuntime::new(),
                 ));
                 app.manage(package_runtime);
                 app.manage(recorder);
+                app.manage(native_media);
             }
             app.manage(workspace);
-            app.manage(native_media);
             app.manage(input);
             Ok(())
         })
         .on_window_event(|window, event| {
             if window.label() == "research" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
-                    // A strong Rust clone alone does not veto OS destruction.
-                    // Keep the parent/event loop alive through actual native join.
+                    // Keep the event loop alive until Runner and input cleanup finish.
                     api.prevent_close();
                     request_companion_exit(window.app_handle(), 0);
                 }
@@ -268,13 +253,6 @@ fn launch(
             research_planner_authoring::research_planner_authoring_startup_failed,
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
-            research_commands::research_native_media_capability,
-            research_commands::research_native_media_status,
-            research_commands::research_native_media_prepare,
-            research_commands::research_native_media_set_viewport,
-            research_commands::research_native_media_attest_decode,
-            research_commands::research_native_media_attest_decode_v2,
-            research_commands::research_native_media_stop,
             research_commands::research_input_capability,
             research_commands::research_input_set_region,
             research_commands::research_input_begin_test,
@@ -292,6 +270,7 @@ fn launch(
             research_commands::research_save_planner_recipe,
             research_commands::research_open_surveyjs_builder,
             research_commands::research_rescan_stimuli,
+            research_commands::research_prepare_planner_media,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
             research_commands::research_workspace_media_url,
@@ -309,6 +288,7 @@ fn launch(
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
             research_runner_master::commands::research_runner_master_plan,
             research_runner_master::commands::research_runner_master_rescan,
+            research_runner_master::commands::research_runner_master_html_video_url,
             research_runner_master::commands::research_runner_master_preflight,
             research_runner_master::commands::research_runner_master_start,
             research_runner_master::commands::research_runner_master_start_v2,
@@ -336,27 +316,11 @@ fn launch(
             research_recorder::commands::research_recorder_stop,
             research_desktop::research_desktop_identity,
             research_commands::research_source_capabilities,
-            research_commands::research_native_media_capability,
-            research_commands::research_native_media_status,
-            research_commands::research_native_media_prepare,
-            research_commands::research_native_media_set_viewport,
-            research_commands::research_native_media_attest_decode,
-            research_commands::research_native_media_attest_decode_v2,
-            research_commands::research_native_media_stop,
             research_native_protocol::commands::research_package_protocol_capability,
             research_native_protocol::commands::research_package_preflight,
-            research_native_protocol::commands::research_start_package_run,
-            research_native_protocol::commands::research_resume_package_run,
             research_native_protocol::commands::research_package_recoveries,
             research_native_protocol::commands::research_finalize_package_recovery,
             research_native_protocol::commands::research_package_run_status,
-            research_native_protocol::commands::research_package_prepare_media,
-            research_native_protocol::commands::research_package_set_media_viewport,
-            research_native_protocol::commands::research_package_play,
-            research_native_protocol::commands::research_package_pause,
-            research_native_protocol::commands::research_package_questionnaire_draft,
-            research_native_protocol::commands::research_package_questionnaire_submit,
-            research_native_protocol::commands::research_finish_package_run,
             research_commands::research_input_capability,
             research_commands::research_input_set_region,
             research_commands::research_input_begin_test,
@@ -371,6 +335,7 @@ fn launch(
             research_commands::research_runner_previous_experiment,
             research_commands::research_runner_recent_experiments,
             research_commands::research_workspace_media_url,
+            research_commands::research_attest_workspace_decode,
             research_commands::research_storage_readiness,
             research_commands::research_lsl_readiness,
         ]),
@@ -417,21 +382,6 @@ fn request_companion_exit(app: &tauri::AppHandle, code: i32) {
         code,
         move || {
             shutdown_before_native(&work_app)?;
-            if let Some(media) = work_app.try_state::<Arc<NativeMediaService>>() {
-                media.request_shutdown();
-                research_shutdown::observe(research_shutdown::Phase::NativeShutdownRequested);
-                while !media.is_stopped() {
-                    if media.shutdown_status()
-                        == research_native_media::NativeMediaShutdownStatus::Stalled
-                    {
-                        research_shutdown::observe(research_shutdown::Phase::NativeStalled);
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(20));
-                }
-                media
-                    .finish_shutdown()
-                    .map_err(|_| "native-media-shutdown-failed")?;
-            }
             Ok(())
         },
         move |code| exit_app.exit(code),
@@ -440,7 +390,6 @@ fn request_companion_exit(app: &tauri::AppHandle, code: i32) {
 
 /// Main's named Runner collection seam. Runs only on the coordinator worker:
 /// authoring -> Master cancellation -> Package -> Master join -> recorder/input.
-/// The parent/native actor remain alive throughout.
 fn shutdown_before_native(app: &tauri::AppHandle) -> Result<(), &'static str> {
     if let Some(authoring) =
         app.try_state::<Arc<research_planner_authoring::PlannerAuthoringBroker>>()

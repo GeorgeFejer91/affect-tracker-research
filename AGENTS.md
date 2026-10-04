@@ -1,5 +1,15 @@
 # Affect Research agent entrypoint
 
+> **MEDIA RETIREMENT ALERT — 2026-10-04.** GStreamer is retired. Always delete
+> GStreamer/GstPlay references and infrastructure found in the current project
+> root; do not restore them as a playback solution. Route cross-owner removals
+> through the message board. Current video playback uses HTML video. P1 must
+> prepare incompatible user videos with FFprobe/FFmpeg after Segment 1
+> confirmation, retaining incompatible originals in a separate project source
+> folder and publishing only verified playable files beneath `assets/stimuli`
+> to the recipe. Static browsers consume prepared files and do not run a
+> local converter. This is the target contract, not an implementation claim.
+
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
 Planner authors JSON and retains Flubber previews. Runner alone executes, plays
@@ -52,15 +62,11 @@ requirements. Their complete Git history is preserved in
 and in this repository's immutable checkpoint/history refs. Do not restore or
 reactivate them without an explicit charter change.
 
-Windows qualified local/repository playback targets the repository-pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through a Rust-owned GstPlay actor.
-Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any
-implementation claim: runtime verification and a fail-closed capability are not
-evidence that the native player actor or playback qualification exists.
-The two contained Windows FFI adapters were approved on 2026-09-10; their
-focused audit and installed qualification remain open. Adding another unsafe
-boundary requires explicit user approval and audited window/thread/lifecycle
-invariants.
+Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making an
+implementation claim. Browser-compatible video preparation, actual playback and
+installed qualification each require their own evidence. An old fail-closed
+native capability is not evidence that the new workflow works. Adding an unsafe
+boundary requires explicit user approval and audited lifecycle invariants.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.

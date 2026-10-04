@@ -47,16 +47,17 @@ in [`40-ROADMAP.md`](./40-ROADMAP.md).
   current desktop Google Chrome and Microsoft Edge.
 - Manual CI may create unsigned Windows x64 NSIS, macOS ARM64/x64 DMG, and
   Linux x64 DEB/AppImage packages for internal Setup/interface evaluation.
-  They use no optional Cargo features, exclude GStreamer, native-input, and LSL
+  They use no optional Cargo features, exclude native-input and LSL
   authority, must block experiment Start, and are neither supported research
   runtimes nor release-ready downloads.
 - Tauri retains bundle ID `io.github.georgefejer91.affecttracker` and legacy
   app-data compatibility, but new Research data uses a separate namespace and
   is never populated by automatic legacy import.
-- Qualified Windows playback of declared package assets uses the
-  bundled, repository-pinned GStreamer 1.28.6 MSVC x86_64 runtime through
-  GstPlay. Affect Research never downloads native media code at runtime or
-  discovers ambient GStreamer installations or plugin paths.
+- Current Windows playback uses HTML video from exact prepared package assets.
+  P1's target inspects selected videos with FFprobe on Segment 1 confirmation,
+  converts incompatible originals with FFmpeg, retains those originals in a
+  separate project source folder and publishes only verified playable files
+  beneath `assets/stimuli`. Browser authoring consumes prepared files.
 - WebXR, native Quest, remote control, Ground Control, Party/Universe, Remote
   Flubber, direct Polar, Face/Photoatlas, Touch inference, and the other former
   Playground surfaces are absent from the active source, navigation, and
@@ -214,10 +215,10 @@ record issues there in
 - The package explicitly stores the exact `complete-video-v1` policy: start at
   0 ms, decoded end, rate 1, no loop/seeking, Pause allowed, unmuted volume 1,
   adjacent feedback, and restart-from-beginning recovery. The execution backend
-  is a separate frozen platform receipt. Chromium uses
-  `browserMediaAdapters`; qualified Windows requires `nativeGstPlay`; explicit
-  `unqualifiedWebview` stays permanently labelled unqualified. No unavailable
-  mode silently falls back.
+  is a separate platform receipt. Current master playback uses HTML video in
+  Chromium/WebView2 and binds observed media events to the selected attempt.
+  Frozen historical package backend values retain their original reader
+  meanings; unsupported modes fail closed without a silent fallback.
 - Array order is authority. The Designer target lets a researcher define the
   video library and manual plan through UI; it does not shuffle, balance, seed,
   rotate, select from pools, or otherwise randomize the plan. The researcher
@@ -359,8 +360,8 @@ lifecycle/safe-boundary evidence still exists without waiting. Package bytes,
 settings, bindings, demographics, assignment/protocol plans, terminal language,
 playback/output policies, and geometry cannot change; position is locked.
 
-For Windows qualified runs, Rust-owned GstPlay lifecycle state—not WebView media
-events or animation frames—opens and closes sampling segments. Player pause,
+For Windows runs, bounded run-bound HTML media lifecycle state opens and closes
+sampling segments. Player pause,
 buffering, end, error, teardown, or loss of the exact media grant fences the
 scheduler and produces bounded semantic evidence.
 
@@ -442,14 +443,10 @@ byte length, duration, and decode preflight to match. The verified asset closure
 and assignment bind each exact identity before Start; scanning never adds or
 substitutes a source.
 
-A future qualified Windows native runtime must be packaged from an approved
-minimal closure derived from the exact checked-in pin and verified file
-manifest, with complete corresponding-source evidence and upstream notices.
-Current interface packages exclude it. Runtime integrity, compilation, or
-staging alone does not qualify playback. The in-process raw-window GstPlay
-renderer requires its separately approved and audited `unsafe` boundary, a
-safe pre-`main` DLL-loading design, and installed-artifact media/lifecycle
-tests.
+Current interface packages do not qualify participant playback. FFprobe/FFmpeg
+preparation, exact file rebind, compilation and installed HTML media lifecycle
+each require separate evidence. Successful conversion alone does not qualify
+playback or a study.
 
 ## Independent-instance reproduction invariant
 

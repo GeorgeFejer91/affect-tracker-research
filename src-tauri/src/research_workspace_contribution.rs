@@ -252,7 +252,7 @@ fn greatest_common_divisor(mut left: u64, mut right: u64) -> u64 {
     left
 }
 
-fn validate_geometry(value: &VideoDisplayGeometry, allow_native: bool) -> ResearchResult<()> {
+fn validate_geometry(value: &VideoDisplayGeometry) -> ResearchResult<()> {
     if value.status != "verified"
         || value.display_width_px == 0
         || value.display_height_px == 0
@@ -276,18 +276,6 @@ fn validate_geometry(value: &VideoDisplayGeometry, allow_native: bool) -> Resear
             if value.metadata_interpretation == "decoder-oriented-display"
                 && value.rotation_degrees.is_none()
                 && value.pixel_aspect_ratio.is_none() => {}
-        "native-gstplay-metadata"
-            if allow_native
-                && value.metadata_interpretation
-                    == "explicit-orientation-and-square-pixel-snapshot"
-                && matches!(value.rotation_degrees, Some(0 | 90 | 180 | 270))
-                && value.pixel_aspect_ratio.as_ref().is_some_and(|ratio| {
-                    ratio.numerator > 0
-                        && ratio.denominator > 0
-                        && ratio.numerator <= MAX_SAFE_INTEGER
-                        && ratio.denominator <= MAX_SAFE_INTEGER
-                        && greatest_common_divisor(ratio.numerator, ratio.denominator) == 1
-                }) => {}
         _ => return Err(invalid("Video display geometry source is unsupported.")),
     }
     Ok(())
@@ -295,7 +283,7 @@ fn validate_geometry(value: &VideoDisplayGeometry, allow_native: bool) -> Resear
 
 fn validate_entry(value: &VideoCatalogueEntry, version: u32) -> ResearchResult<()> {
     validate_entry_identity(value, version)?;
-    validate_geometry(&value.geometry, version == 2)
+    validate_geometry(&value.geometry)
 }
 
 fn validate_entry_identity<G>(value: &VideoCatalogueEntry<G>, version: u32) -> ResearchResult<()> {

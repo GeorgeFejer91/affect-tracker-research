@@ -1,6 +1,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { createPlannerNativeEffects } from "./planner-authoring-native-effects.js";
-import { NATIVE_MEDIA_STARTUP_BUDGET_MS } from "./native-media-readiness.js";
+
+const PLANNER_AUTHORING_REQUEST_BUDGET_MS = 90_000;
 
 export function reportPlannerAuthoringStartupFailure() {
   // Fixed startup code only, never an exception, stack or document payload.
@@ -10,7 +11,7 @@ export function reportPlannerAuthoringStartupFailure() {
 /** Explicit production stdin adapter. No selectors, evaluation, simulated
  * events or native file paths enter this fixed command gateway. */
 export async function bootPlannerAuthoringNative(root, invoke = tauriInvoke, ensureMediaReady = async () => {
-  throw new Error("Native media readiness owner is unavailable.");
+  throw new Error("Planner media preparation owner is unavailable.");
 }) {
   const status = await invoke("research_planner_authoring_status");
   if (status?.enabled !== true) return Object.freeze({ destroy() {} });
@@ -57,7 +58,7 @@ export async function bootPlannerAuthoringNative(root, invoke = tauriInvoke, ens
       if (request === null || disposed) break;
       // A local startup sub-budget, never an extension of the native broker's
       // authoritative command deadline. Include revision/session queue time.
-      startupDeadlines.set(request.requestId, performance.now() + NATIVE_MEDIA_STARTUP_BUDGET_MS);
+      startupDeadlines.set(request.requestId, performance.now() + PLANNER_AUTHORING_REQUEST_BUDGET_MS);
       const task = flushRevision().then(() => session.execute(request)).then(async response => {
         await flushRevision();
         if (!disposed) await invoke("research_planner_authoring_complete", { response });

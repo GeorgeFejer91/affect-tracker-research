@@ -1,6 +1,15 @@
-# Final release validation — 2026-09-13
+# Historical release validation — 2026-09-13
 
-Root is the sole release owner. Delegation has stopped. Work continues on
+This ledger preserves the exact September mock and artifact receipts. Its old
+native-player build and qualification instructions are superseded. Current P1
+keeps imported originals in `source-videos/`, uses FFprobe/FFmpeg to create a
+playable sibling under `assets/stimuli/` when needed, and accepts media only
+after HTML representative-frame decoding. Runner uses HTML video for the exact
+declared prepared asset. Installed playback, full protocol and independent XDF
+reconstruction remain open; use the [current Runner ledger](../for-ai/72-RUNNER-FINAL-VALIDATION.md)
+and [release gates](../for-ai/30-TESTING-AND-RELEASE.md).
+
+At the time, root was the sole release owner. Work continued on
 `codex/final-release-validation` in the transferred `affect-tracker-research-master-v3`
 worktree; canonical and the former integration worktree have not been promoted.
 
@@ -11,7 +20,7 @@ worktree; canonical and the former integration worktree have not been promoted.
 | JSON content and compact serialization | Pass: 77,746 bytes, P1–P6, six unique questionnaire definitions, one video declaration |
 | Runner native/browser interpretation of that exact JSON | Pass: both English and German selections agree |
 | Reconstructed screen geometry and maximum Flubber fit | Pass in software; actual combined native screenshot remains open |
-| Actual full Runner execution and XDF-only reconstruction | Not completed; qualified native Start remains disabled |
+| Actual full Runner execution and XDF-only reconstruction | Not completed in this September receipt |
 | Installed/research release | Not ready |
 
 ## Saved experiment
@@ -41,8 +50,8 @@ serialized Runner selection/layout projections or embedded video data.
 
 Production source: `a1d91106311060fdd371c0df31b1cc7e72aab82a`.
 Frozen CLI SHA256 `881f4e680851a0760c134df52367ffb88ae059c5a79fdcd23e49299d9604ad21`.
-It used its pinned bundled runtime bin on process PATH; that is not installed
-loader qualification. The successful process completed native cleanup in 21 ms
+It used its then-pinned runtime bin on process PATH; that was not installed
+loader qualification. The successful process completed cleanup in 21 ms
 after requesting shutdown. Earlier failures remain retained.
 
 Under `D:/GitHub/.affect-checks/`:
@@ -55,26 +64,17 @@ Under `D:/GitHub/.affect-checks/`:
 - `root-release-json-content-review.json` checks exact source bytes, compactness,
   asset location/size, six-step route and reconstructed layout.
 
-## Next gate: native Runner execution
+## Historical next gate — 2026-09-13
 
 Do not repeat the passed Planner scenario or broad suites without a relevant
 change. Use this primary JSON for subsequent Runner work.
 
-1. Resolve and verify pre-main DLL loading for an installed application. The
-   executable currently fails to start without a prepared runtime search path.
-2. Resolve the observed cold-start/shutdown failure, then complete native playback
-   qualification. Increasing the startup sub-budget from 60 to 90 seconds within
-   the unchanged 120-second command limit is not proof of lifecycle closure.
-   `root-release-fullmock-evidence-05` preserves the timed-out, force-terminated case.
-3. Execute the exact saved experiment, capture actual native video + Flubber,
-   record real LSL/XDF and apply the independent XDF reader. Establish observed
-   event timing and neutral-before-ISI evidence. Existing flags stay false until
-   their stated gates are satisfied; no alternative production Start was added.
-
-Source: `research_native_media/capability.rs` retains false qualification flags;
-`research_runner_master/runtime.rs` requires qualified native playback before
-starting. Redistribution/source closure and physical timing remain release gates.
-FFmpeg sequence synthesis is still an assessed option, not an implemented feature.
+The old executable needed a prepared runtime search path and the observed
+cold-start/shutdown failure remained unresolved. The timed-out case is retained
+in `root-release-fullmock-evidence-05`. The historical plan was to run this
+saved experiment, capture actual video plus Flubber, record LSL/XDF and apply
+an independent XDF reader. None of that is proved by this receipt. The current
+media preparation and HTML playback gates are stated above.
 
 ## Runner previous-file shortcut — 2026-09-13
 
@@ -98,19 +98,17 @@ This is component and frontend evidence. The installed desktop executable has
 not been rebuilt/qualified for this shortcut; all preceding native execution,
 packaging, physical timing and real XDF gates remain open.
 
-## Native-enabled Runner build correction — 2026-09-13
+## Historical Runner build correction — 2026-09-13
 
-The previously opened developer executable lacked native-gstreamer, causing
-"Native video inspection is unavailable in this build". The Runner desktop
-build script now accepts `--native-gstreamer`, matching the Planner CLI option.
-Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
-default features also include LSL and Windows acquisition.
+The previously opened developer executable lacked the then-required media
+feature, causing a video-inspection error. A corrected development executable
+was built with that retired feature; its build flags are not current Runner
+instructions. Default features at that date also included LSL and Windows
+acquisition.
 
-Built and opened the native-enabled dev executable with its pinned runtime at
-`D:/GitHub/.affect-checks/runner-current-native-2026-09-13/`. Its build receipt
-records SHA256 and scope; use **Launch Experiment Runner.cmd**, which scopes the
-bundled DLL path to the launched process. Direct EXE loader/installed packaging
-qualification remains open. This does not lift the qualified Start gate.
+The developer executable and launcher from this dated receipt are superseded.
+Their hashes and launch behavior remain in Git history; they do not qualify the
+current prepared-media candidate or lift the qualified Start gate.
 
 Nine focused Runner reader/master tests passed. All eight English/German
 production-app questionnaire cases passed (350 assertions), using synthetic
@@ -120,7 +118,7 @@ answer validation/drafts/submission, transitions and disposal; does not prove
 actual video or real XDF execution. Current build includes the previous-file
 button and questionnaire module.
 
-## Runner readiness refresh — 2026-09-13
+## Historical Runner readiness refresh — 2026-09-13
 
 R1/RR-01/RR-02: Continue previously reused the launch-time native media
 capability. Because native initialization is asynchronous, a pending snapshot
@@ -135,13 +133,13 @@ Evidence: `D:/GitHub/.affect-checks/runner-readiness-refresh-ui-01/receipt.json`
 This fixes stale frontend state; actual native startup success remains a separate
 claim and is not inferred from the synthetic transport test.
 
-## Keyboard, recipe-root loading and current roadmap — 2026-09-13
+## Historical keyboard and recipe-root loading — 2026-09-13
 
 Added production questionnaire keyboard handling: choices use arrows/Home/End,
 Enter commits and advances after native acknowledgement, typed fields retain
 normal typing and Shift+Enter newlines, and final Submit remains explicit.
 EN/DE production-frontend scenarios each pass 85 assertions with synthetic native
-transport; a retained mouse-flow regression also passes. Native-enabled Windows
+transport; a retained mouse-flow regression also passes. The historical Windows
 build succeeds, as do three native bookmark/root tests. These are separate from
 full installed keyboard and XDF qualification.
 
@@ -158,5 +156,5 @@ selection gap (corrected) and foreground changes. No complete questionnaire run,
 actual playback or XDF claim. The active owner/metadata/checklist authority is
 `for-ai/72-RUNNER-FINAL-VALIDATION.md`. Production Start qualification and the
 requested separation of questionnaire presentation from video preparation are
-still open. Do not label the current native-enabled development build a final
+still open. Do not label the historical development build a final
 research-qualified release.

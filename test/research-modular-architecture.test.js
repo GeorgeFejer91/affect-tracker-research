@@ -57,7 +57,7 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
     "Participant and attempt",
     "Input",
     "Visual feedback",
-    "Native media",
+    "Media preparation and playback",
     "Timing and LSL",
     "Output and recovery",
     "Platform bridge",
@@ -78,7 +78,6 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
 test("raw Tauri invocation remains confined to explicit native adapter modules", async () => {
   const allowed = new Set([
     "site/src/research/native-bridge.js",
-    "site/src/research/native-media-controller.js",
     "site/src/research/native-package-protocol.js",
     "site/src/research/planner-authoring-native.js",
     "site/src/research/planner-authoring-native-effects.js",
@@ -141,7 +140,7 @@ test("Tauri has one composition root and media internals stay out of commands", 
     readFile(new URL("src-tauri/src/research_commands.rs", root), "utf8"),
   ]);
   assert.ok((lib.match(/\.manage\(/gu) ?? []).length > 0);
-  assert.doesNotMatch(commands, /gst::|gst_play::|windows::Win32/u);
+  assert.doesNotMatch(commands, /windows::Win32/u);
   assert.doesNotMatch(commands, /unsafe\s*\{/u);
 });
 
@@ -162,23 +161,20 @@ test("the authoritative Rust package runtime is split by authority and failure d
   const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
   for (const name of required) assert.ok(files.includes(name), `missing native package module ${name}`);
 
-  const [commands, runtime, storage, media] = await Promise.all([
+  const [commands, runtime, storage, mediaService] = await Promise.all([
     readFile(new URL("src-tauri/src/research_native_protocol/commands.rs", root), "utf8"),
     readFile(new URL("src-tauri/src/research_native_protocol/runtime.rs", root), "utf8"),
     readFile(new URL("src-tauri/src/research_native_protocol/storage.rs", root), "utf8"),
-    readFile(new URL("src-tauri/src/research_native_media/gst_actor.rs", root), "utf8"),
+    readFile(new URL("src-tauri/src/research_native_media.rs", root), "utf8"),
   ]);
-  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|gst::|gst_play::|unsafe\s*\{/u);
-  assert.doesNotMatch(storage, /gst::|gst_play::|windows::Win32|tauri::command/u);
-  assert.doesNotMatch(media, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv/u);
+  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|unsafe\s*\{/u);
+  assert.doesNotMatch(storage, /windows::Win32|tauri::command/u);
+  assert.doesNotMatch(mediaService, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv/u);
   assert.doesNotMatch(runtime, /tauri::command/u);
 });
 
-test("project-authored unsafe is confined to the two approved documented Windows FFI adapters", async () => {
-  const allowed = new Set([
-    "src-tauri/src/research_native_media/gst_actor/runtime_environment.rs",
-    "src-tauri/src/research_native_media/gst_actor/windows_renderer.rs",
-  ]);
+test("project-authored unsafe is absent after removing native media FFI adapters", async () => {
+  const allowed = new Set();
   const found = [];
   for (const path of await filesRecursively("src-tauri/src/", ".rs")) {
     const source = await readFile(new URL(path, root), "utf8");
