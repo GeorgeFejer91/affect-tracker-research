@@ -21,6 +21,7 @@ use uuid::Uuid;
 
 mod media_preparation;
 mod runner_video_binding_v3;
+pub(crate) use runner_video_binding_v3::RunnerVideoBindingV3;
 mod stimulus_authoring;
 mod video_location;
 

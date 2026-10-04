@@ -8,7 +8,7 @@ use super::{MasterPlan, MasterSelector, MasterStepKind, PreparedMaster};
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
-use crate::research_workspace::{RescanResult, WorkspaceService};
+use crate::research_workspace::{RescanResult, RunnerVideoBindingV3, WorkspaceService};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State, WebviewWindow};
@@ -53,6 +53,31 @@ fn declared_video_asset(plan: &MasterPlan, position: u32) -> ResearchResult<&ser
         .ok_or_else(|| {
             CommandError::invalid_contract("Select an exact video step in the saved plan.")
         })
+}
+
+fn bound_video_asset<'a>(
+    asset: &serde_json::Value,
+    bindings: &'a [RunnerVideoBindingV3],
+) -> ResearchResult<&'a RunnerVideoBindingV3> {
+    let matches = bindings
+        .iter()
+        .filter(|binding| {
+            asset["assetId"] == binding.asset_id
+                && asset["annotationId"] == binding.annotation_id
+                && asset["sourceRelativePath"] == binding.source_relative_path
+                && asset["sha256"] == binding.sha256
+                && asset["byteLength"] == binding.byte_length
+                && asset["durationMs"] == binding.duration_ms
+                && serde_json::to_value(&binding.display_geometry)
+                    .is_ok_and(|geometry| asset["geometry"] == geometry)
+        })
+        .collect::<Vec<_>>();
+    let [binding] = matches.as_slice() else {
+        return Err(CommandError::forbidden(
+            "The selected video step does not match one verified catalogue entry.",
+        ));
+    };
+    Ok(binding)
 }
 
 fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
@@ -121,6 +146,12 @@ pub async fn research_runner_master_html_video_url(
             request.selector,
         )?;
         let asset = declared_video_asset(&prepared.plan, request.protocol_step_position)?;
+        if matches!(prepared.plan.version, 3..=5) {
+            let catalogue = prepared.loaded.recipe.segment("P1")?["videoCatalogue"].clone();
+            let bindings =
+                workspace.validate_runner_video_catalogue_v3(&request.workspace_id, &catalogue)?;
+            bound_video_asset(asset, &bindings)?;
+        }
         let path = asset["sourceRelativePath"].as_str().ok_or_else(|| {
             CommandError::invalid_contract("The selected video has no saved path.")
         })?;
@@ -204,12 +235,22 @@ async fn master_preflight(
                 .ok_or_else(|| CommandError::invalid_contract("Saved video catalogue is missing."))?
                 .len();
             let media_binding_count = if matches!(prepared.plan.version, 3..=5) {
-                workspace
-                    .validate_runner_video_catalogue_v3(
-                        &request.workspace_id,
-                        &p1["videoCatalogue"],
-                    )?
-                    .len()
+                let bindings = workspace.validate_runner_video_catalogue_v3(
+                    &request.workspace_id,
+                    &p1["videoCatalogue"],
+                )?;
+                for step in prepared
+                    .plan
+                    .steps
+                    .iter()
+                    .filter(|s| s.kind == MasterStepKind::Video)
+                {
+                    bound_video_asset(
+                        declared_video_asset(&prepared.plan, step.position)?,
+                        &bindings,
+                    )?;
+                }
+                bindings.len()
             } else {
                 0
             };
@@ -600,6 +641,27 @@ mod html_video_tests {
             .unwrap();
         let asset = declared_video_asset(&prepared.plan, video.position).unwrap();
         assert_eq!(asset["sourceRelativePath"], "stimuli/session_a/clip.mp4");
+        let binding = RunnerVideoBindingV3 {
+            asset_id: asset["assetId"].as_str().unwrap().into(),
+            annotation_id: asset["annotationId"].as_str().unwrap().into(),
+            source_relative_path: asset["sourceRelativePath"].as_str().unwrap().into(),
+            workspace_file_id: "workspace-video-1".into(),
+            sha256: asset["sha256"].as_str().unwrap().into(),
+            byte_length: asset["byteLength"].as_u64().unwrap(),
+            mime_type: "video/mp4".into(),
+            duration_ms: asset["durationMs"].as_u64().unwrap(),
+            display_geometry: serde_json::from_value(asset["geometry"].clone()).unwrap(),
+        };
+        assert_eq!(
+            bound_video_asset(asset, std::slice::from_ref(&binding))
+                .unwrap()
+                .workspace_file_id,
+            "workspace-video-1"
+        );
+        assert!(bound_video_asset(asset, &[binding.clone(), binding.clone()]).is_err());
+        let mut changed = binding;
+        changed.duration_ms += 1;
+        assert!(bound_video_asset(asset, &[changed]).is_err());
         let form = prepared
             .plan
             .steps
