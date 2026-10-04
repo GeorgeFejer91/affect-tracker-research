@@ -6113,3 +6113,14 @@ board. Do not restore superseded branch snapshots over the unified tree.
 Software checks and exact evidence are in docs/planner-questionnaire-assets.md.
 Installed distribution remains governed by73/current-build.json and is not
 claimed updated merely because source was merged.
+
+## Uncodixfy Pretext project guidance — 2026-10-04
+
+Direct user allocation for Planner P1–P7 and Runner R1 UI passes. Root copied
+the upstream Uncodixfy Pretext skill at `da07da17d931bdecb1212f165d77c5ce07e72ff6`
+into `for-ai/skills/uncodixfy-pretext/` and routed UI work through it. The
+upstream accordion stretch reference defines a definite-height bounded panel,
+top/bottom anchors, flexible spacing between ordered groups, width/height-aware
+type, and no internal panel scrollbar at supported dimensions. This pass changes
+guidance only: each segment owner must implement and visually measure its own
+text-bearing UI, with Pretext and rendered checks, before claiming that layout.

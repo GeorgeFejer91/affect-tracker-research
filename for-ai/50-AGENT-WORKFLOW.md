@@ -339,6 +339,12 @@ acting.
   control planes, recovery, observability, and qualification design.
 - Use **`uncodixfy`** for any generated or changed HTML/CSS/frontend UI while
   preserving this product's accessibility and restrained instrument identity.
+- Use **`uncodixfy-pretext`** for text-bearing Planner or Runner HTML layouts.
+  The pinned [project copy](skills/uncodixfy-pretext/SKILL.md) supplies its
+  [accordion stretch contract](skills/uncodixfy-pretext/references/accordion-stretch.md)
+  for the user's requested segment and app-window panels. Follow its measured
+  text and rendered no-scrollbar checks per touched UI surface; copying the
+  guidance alone is not layout verification.
 - Use the available browser-control skill only for a specifically user-approved
   real-browser visual/behavioral check. Static inspection or a background
   receipt is not interactive runtime evidence, but is the required default when
