@@ -21,7 +21,7 @@ import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
 import { faceAtlasPack, loadFaceAtlas } from "../../site/src/research/face-atlas.js";
-import { browserAffectState, browserRunCsv } from "./browser-csv.js";
+import { browserAffectState, browserFeedbackAnimationActive, browserRunCsv } from "./browser-csv.js";
 
 const messageOf = (error) => error?.message ?? String(error);
 const downloadText = (windowObject, fileName, text, type = "text/csv;charset=utf-8") => {
@@ -294,6 +294,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   function browserStopSampling() {
     const attempt = browserAttempt;
     if (!attempt) return;
+    attempt.animationActive = false;
     if (attempt.sampleTimer !== null) windowObject.clearInterval(attempt.sampleTimer);
     if (attempt.stepTimer !== null) windowObject.clearTimeout(attempt.stepTimer);
     attempt.sampleTimer = null;
@@ -309,6 +310,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const attempt = browserAttempt;
     if (!attempt?.active) return;
     browserStopSampling();
+    attempt.animationActive = browserFeedbackAnimationActive(attempt.plan.selected.feedback);
     const feedbackStage = root.querySelector(".run-feedback-stage");
     const setFromPoint = (event) => {
       const bounds = feedbackStage.getBoundingClientRect();
@@ -516,7 +518,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       y: 0,
       sampleTimer: null,
       stepTimer: null,
-      animationActive: Boolean(plan.selected.feedback?.visual?.flubberEnabled),
+      animationActive: false,
       inputActive: false,
       pointerMove: null,
       pointerDown: null,
