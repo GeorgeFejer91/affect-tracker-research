@@ -17,22 +17,21 @@
     "developmentInstallType": "devel"
   },
   "sources": [
-    { "component": "gstreamer", "sha256": "62b6b9f0ad3147a6dd6420ac64a91180b14e990695bddd353b96041611d052ca" },
-    { "component": "gst-plugins-base", "sha256": "0ba699c7c6c66f4ba640be78cb38a24715add9683f3e3a199f5369dc5a4f04ac" },
-    { "component": "gst-plugins-good", "sha256": "b0c620a4b18b6ee931b4c43bbf1760d308666dc37f730a7e7f1ad327e59ce2df" },
-    { "component": "gst-plugins-bad", "sha256": "6636f2c2289ceda52c4aba971338c81e2b5780d3381bd3673c1c116ec87587c3" },
-    { "component": "gst-plugins-ugly", "sha256": "ee279da13a740fd7f060d631a673223fa3bcc8c33d350c8d0264bd332a24ecd8" },
-    { "component": "gst-libav", "sha256": "71e6eafb4fff2a66d1bb0ba8d078224dfe7e3397307d8c0bba3dc23606e08f51" }
+    { "component": "gstreamer", "fileName": "gstreamer-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.28.6.tar.xz", "byteLength": 1955504, "sha256": "62b6b9f0ad3147a6dd6420ac64a91180b14e990695bddd353b96041611d052ca" },
+    { "component": "gst-plugins-base", "fileName": "gst-plugins-base-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.28.6.tar.xz", "byteLength": 2553864, "sha256": "0ba699c7c6c66f4ba640be78cb38a24715add9683f3e3a199f5369dc5a4f04ac" },
+    { "component": "gst-plugins-good", "fileName": "gst-plugins-good-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-1.28.6.tar.xz", "byteLength": 5999116, "sha256": "b0c620a4b18b6ee931b4c43bbf1760d308666dc37f730a7e7f1ad327e59ce2df" },
+    { "component": "gst-plugins-bad", "fileName": "gst-plugins-bad-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad-1.28.6.tar.xz", "byteLength": 8343524, "sha256": "6636f2c2289ceda52c4aba971338c81e2b5780d3381bd3673c1c116ec87587c3" },
+    { "component": "gst-plugins-ugly", "fileName": "gst-plugins-ugly-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.28.6.tar.xz", "byteLength": 243628, "sha256": "ee279da13a740fd7f060d631a673223fa3bcc8c33d350c8d0264bd332a24ecd8" },
+    { "component": "gst-libav", "fileName": "gst-libav-1.28.6.tar.xz", "url": "https://gstreamer.freedesktop.org/src/gst-libav/gst-libav-1.28.6.tar.xz", "byteLength": 218708, "sha256": "71e6eafb4fff2a66d1bb0ba8d078224dfe7e3397307d8c0bba3dc23606e08f51" }
   ],
   "sourceEvidence": {
     "status": "incomplete-not-for-distribution",
     "automatedFetchAndVerification": false,
     "distributionApproved": false,
     "missing": [
-      "archive file names",
-      "canonical archive URLs",
-      "archive byte lengths",
-      "artifact-retained source copies"
+      "verified and retained exact source archives for a distributed installer",
+      "additional runtime dependency source and license closure",
+      "approved plugin and codec redistribution review"
     ]
   },
   "runtimeTree": {
