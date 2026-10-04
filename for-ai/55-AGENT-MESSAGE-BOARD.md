@@ -6124,3 +6124,20 @@ top/bottom anchors, flexible spacing between ordered groups, width/height-aware
 type, and no internal panel scrollbar at supported dimensions. This pass changes
 guidance only: each segment owner must implement and visually measure its own
 text-bearing UI, with Pretext and rendered checks, before claiming that layout.
+
+## Runner display qualification — 2026-10-04
+
+Direct user allocation R1/RR-05/RR-10, Backend Verification, on isolated
+`codex/segment-runner-display-qualification` from `7088860`. Bound this pass to
+the existing three-mode participant display consumer and its Chrome screenshot
+driver. Inputs are a canonical master5 P5 renderer and participant/variant
+selection; the Runner projects the selected Flubber, grid, or face, and owns
+session execution and XDF output. No recipe field or runtime authority changes
+are allocated. Collect focused DOM, screenshot, and synthetic IPC receipts for
+all three renderer choices. Installed playback, physical input, LSL, XDF,
+timing, and unified installer qualification remain separate release gates.
+
+The focused headless Chrome check passed 13 synthetic master5 renderer assertions
+and a screenshot was inspected. Reproduction command, screenshot, and claim limit
+are in `docs/runner-master5-display-modes-qualification.md`. There was no
+participant execution or native recording in this pass.
