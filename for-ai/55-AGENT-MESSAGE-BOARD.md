@@ -6222,3 +6222,11 @@ installed verification. No workflow publishes a release. Local C: build space
 is about 1.2 GB; installed use, native GstPlay and research qualification are
 still open. The prior R1 deep-freeze commit is integrated as `b699b14` on the
 single suite candidate branch.
+
+20261004 P7 CI correction: initial manual run `37169940986` passed the
+SurveyJS check but failed one source-boundary test because that test treated the
+new manual installer job as part of the non-packaging Rust-check job. The test
+now scopes its negative assertion to the original checks job and explicitly
+checks that the separate suite job is manual and contains no GStreamer staging.
+Focused 3/3 and full JavaScript 1,233/1,233 pass locally; remote rerun and
+actual NSIS build are still pending.

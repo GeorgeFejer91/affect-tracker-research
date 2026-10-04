@@ -45,9 +45,13 @@ test("Windows CI validates the HTML-video desktop boundary without native media 
   ]) {
     assert.match(checksWorkflow, new RegExp(`- name: ${step}\\n\\s+run: cargo`, "u"));
   }
-  assert.doesNotMatch(checksWorkflow, /prepare-gstreamer|GSTREAMER|native-gstreamer|gstreamer-runtime|native-media\/runtime|PATH =/iu);
+  const [nativeChecks, suiteJob] = checksWorkflow.split("\n  suite-installer:");
+  assert.ok(suiteJob, "manual suite verification must have its own job");
+  assert.doesNotMatch(nativeChecks, /prepare-gstreamer|GSTREAMER|native-gstreamer|gstreamer-runtime|native-media\/runtime|PATH =/iu);
   assert.doesNotMatch(packageWorkflow, /prepare-gstreamer|--all-features|GSTREAMER|native-gstreamer|native-media\/runtime/iu);
-  assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle|write-gstreamer-artifact-provenance/iu);
+  assert.doesNotMatch(nativeChecks, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle|write-gstreamer-artifact-provenance/iu);
+  assert.match(suiteJob, /if: github\.event_name == 'workflow_dispatch'/u);
+  assert.doesNotMatch(suiteJob, /prepare-gstreamer|native-gstreamer|AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);
   assert.match(packageWorkflow, /write-unqualified-package-provenance\.js/u);
   assert.match(packageWorkflow, /unqualified-internal-\$\{\{ matrix\.target \}\}-\$\{\{ github\.sha \}\}/u);
