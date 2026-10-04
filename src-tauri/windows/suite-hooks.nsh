@@ -1,5 +1,5 @@
 ; Tauri owns the main executable, sidecars, WebView2 bootstrap and uninstaller.
-; Only the two portable receipts need moving from resources to the suite root.
+; Tauri installs the resource-mapped receipts at the suite root.
 Var SuiteInstallFailure
 !macro NSIS_HOOK_PREINSTALL
   !insertmacro CheckIfAppIsRunning "affect-runner-engine.exe" "Experiment Runner"
@@ -9,9 +9,9 @@ Var SuiteInstallFailure
   StrCpy $SuiteInstallFailure "planner-missing"
   IfFileExists "$INSTDIR\Experiment Planner.exe" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "build-receipt-missing"
-  IfFileExists "$INSTDIR\resources\current-build.json" 0 suite_install_failed
+  IfFileExists "$INSTDIR\current-build.json" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "launcher-receipt-missing"
-  IfFileExists "$INSTDIR\resources\launcher-receipt.json" 0 suite_install_failed
+  IfFileExists "$INSTDIR\launcher-receipt.json" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "launcher-missing"
   IfFileExists "$INSTDIR\Experiment Runner.exe" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "runner-engine-missing"
@@ -19,15 +19,6 @@ Var SuiteInstallFailure
   StrCpy $SuiteInstallFailure "launcher-verification-failed"
   ExecWait '"$INSTDIR\Experiment Runner.exe" --verify-only' $0
   IntCmp $0 0 0 suite_install_failed suite_install_failed
-  ClearErrors
-  StrCpy $SuiteInstallFailure "build-receipt-copy-failed"
-  CopyFiles /SILENT "$INSTDIR\resources\current-build.json" "$INSTDIR\current-build.json"
-  IfErrors suite_install_failed
-  StrCpy $SuiteInstallFailure "launcher-receipt-copy-failed"
-  CopyFiles /SILENT "$INSTDIR\resources\launcher-receipt.json" "$INSTDIR\launcher-receipt.json"
-  IfErrors suite_install_failed
-  Delete "$INSTDIR\resources\current-build.json"
-  Delete "$INSTDIR\resources\launcher-receipt.json"
   IfFileExists "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" 0 suite_shortcuts_done
   Rename "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk"
   CreateShortcut "$SMPROGRAMS\$AppStartMenuFolder\Experiment Runner.lnk" "$INSTDIR\Experiment Runner.exe"
