@@ -498,8 +498,9 @@ Planner authoring completion.
 
 ## P5 — Flubber & Controls
 
-**Purpose:** one persistent editor for configured Flubber/Grid/procedural-Face
-feedback and input/response behavior, with Advanced animation settings at the bottom.
+**Purpose:** one persistent editor for configured Flubber, 2D Grid or photoreal
+21 × 21 Face feedback and input/response behavior, with Advanced animation
+settings at the bottom. Procedural Face remains a version 2 historical reader.
 **User input:** device/bindings, response behavior, colors/style/visibility and
 explicit animation/mapping edits. The current saved inventory is resolved by
 the all-settings goal and the versioned P5 contract; temporary test motion stays transient.
@@ -507,9 +508,11 @@ the all-settings goal and the versioned P5 contract; temporary test motion stays
 **Produces:** one complete configuration for input, visual style, affect mappings,
 renderer/labels/halo presentation and response grid/timing/hold behavior.
 **Consumers:** P4/P6 composition, P7 recipe and R1 adapters.
-**JSON:** `segments.P5` is `affect-research-feedback` v2 with exact
+**JSON:** fresh `segments.P5` is `affect-research-feedback` v3 with exact
 `input`, `visual`, `mappings`, `presentation`, `response` groups.
-[P5 contract](../docs/planner-p5-feedback-v2.md) owns the field inventory and units.
+[P5 v3 contract](../docs/planner-p5-feedback-v3.md) defines renderer and pack
+identity; [v2](../docs/planner-p5-feedback-v2.md) retains the shared field
+inventory and historical reader meanings.
 
 - [x] **P5-01 — Implemented component:** strict bindings/presets and saved digital step semantics; physical device qualification remains separate.
 - [x] **P5-02 — Implemented component:** saved Grid/Flubber appearance, colors and six affect mappings.
@@ -532,6 +535,9 @@ distinct from the acquisition sample rate in recording policy.
 **Current evidence:** complete P5 `5c0ad7a` / `495ee13` and Preview badge repair
 `6d9cc35` are collected in `875efae`. P4/P6 own placement; P5 supplies complete
 animated/painted bounds. The historical v1 reader and explicit conversion remain.
+P5 v3 source selects one of nine pinned Face packs and projects the saved
+renderer into Runner; installed three-mode paint, accordion stretch and
+demographic labeling evidence remain open under P5-09.
 
 ## P6 — Optional XR Spatial Layout
 
@@ -593,25 +599,27 @@ bytes/hash are confirmed. An old reader cannot silently discard target fields.
 Historical experiment-package-v1 readers remain a separate compatibility path.
 **Boundary:** P7 compiles/saves; it does not acquire responses or implement recording.
 
-## R1 — Runner downstream contract, implementation deferred
+## R1 — Runner downstream contract and open qualification
 
-The researcher explicitly prioritizes Planner. This section defines what the
-recipe must support, not permission to implement Runner now.
+Runner implementation is active. [65](65-RUNNER-SEGMENTS.md) tracks component
+ownership, [66](66-PLANNER-RUNNER-COMPATIBILITY.md) maps supported versions and
+[72](72-RUNNER-FINAL-VALIDATION.md) owns the still-open installed workflow.
+The unchecked rows below require actual correspondence or qualification; they
+are not a claim that no Runner source exists.
 **Runtime input:** recipe, authorized media, participant ordinal/ID, language,
 attempt/retry selection and screen/XR setup.
 **Behavior:** select an explicit variant using Runner-owned policy, execute events/forms, apply
 saved feedback/layout, timestamp actual transitions and record.
 **Output:** responses, ratings, events, identity/timing evidence and recorded LSL
-data. Runner owns recording; exact format/mechanism, start gates and failure
-handling are later decisions.
+data. Runner owns recording and its own session policy.
 
 - [x] **R1-01 — Implemented predecessor:** v1 package selection, explicit protocol resolution and local event/response/output contracts.
-- [x] **R1-02 — Implemented component:** native LSL outlets and local evidence/recovery components; marker identity and push-time timestamps do not meet the new reconstruction target.
-- [ ] **R1-03 — Deferred:** future recipe execution, Runner-owned participant allocation and screen/feedback/XR profiles with target validation; exact allocation policy remains downstream work.
-- [ ] **R1-04 — Deferred:** occurrence-specific markers at defined observed boundaries, preserving pauses/restarts/incomplete evidence.
-- [ ] **R1-05 — Deferred:** Runner-owned recording and recovery; explicitly outside Planner implementation scope.
-- [ ] **R1-06 — Deferred:** recorded-stream-only reconstruction proof, including missing events and retries.
-- [ ] **R1-07 — Deferred:** native package Start remains capability-blocked; playback/input/timing/LSL/accessibility and XR qualification need separate evidence.
+- [x] **R1-02 — Implemented component:** native LSL outlets, identity-bound marker and local evidence/recovery components exist; actual recorded-only reconstruction remains R1-06.
+- [ ] **R1-03 — Open installed correspondence:** master1–5 plan/selection and desktop feedback/layout consumers exist; an actual complete installed run applying every saved option is unverified. Desktop Runner still rejects XR.
+- [ ] **R1-04 — Open observed-boundary proof:** occurrence-specific marker source exists; complete-run pauses, restarts and incomplete evidence need independent recorded verification.
+- [ ] **R1-05 — Open installed recording:** Runner-owned XDF, stream choice and recovery components exist; full actual session recording and recovery remain unqualified.
+- [ ] **R1-06 — Open recorded-only reconstruction:** synthetic receipts exist; actual full-session XDF-only reconstruction, including missing events and retries, remains unverified.
+- [ ] **R1-07 — Open installed qualification:** normal native Start remains capability-blocked; playback, physical input, timing, LSL, accessibility and XR need separate evidence.
 
 ## Information handoffs and master recipe composition
 
