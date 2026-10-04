@@ -52,6 +52,8 @@ The installed candidate passed a real clip Start/early-Stop session with XDF,
 CSV and exact `dictator-3-study.mp4_Start`/`_Stop` markers; a separate custom
 JSON run still recorded 300 affect samples. Edge and Chrome rendered the
 default-loaded desktop and narrow layouts without page errors or overflow.
+A full natural completion of the 254-second bundled clip subsequently passed
+with 15,264 matching CSV and XDF affect samples plus both exact XDF markers.
 This candidate has **not been publicly released**: redistribution rights for
 the film clip must be confirmed first.
 

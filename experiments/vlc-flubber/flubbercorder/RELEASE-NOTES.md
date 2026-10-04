@@ -23,12 +23,12 @@ The current remote transport is HTTP, so it should not be exposed to an
 untrusted network. See `licenses/THIRD-PARTY.md` in the installation for
 bundled component licenses and source locations.
 
-Validation covers an installed run of the bundled study clip through its
-first video section and an early Stop, including exact filename markers in
-XDF and VLC's independent CSV. A separate installed run with a five second
+Validation covers a full naturally completed installed run of the bundled
+254-second study clip: 15,264 affect samples in both XDF and VLC's independent
+CSV, with the exact filename Start/Stop markers in XDF. An installed early-Stop
+run of that clip also passed. A separate installed run with a five second
 source recorded 300 continuous affect samples, two exact named markers in
 XDF, working affect commands, and a matching independent VLC CSV. Additional
 installed checks cover a missing required stream, recording a selected external
 stream, pause/resume, and an early stop with a closed XDF. Other hardware,
-codecs, longer sessions, full natural completion of the bundled study clip,
-and research timing accuracy remain to be qualified.
+codecs, longer sessions, and research timing accuracy remain to be qualified.

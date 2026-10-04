@@ -8,7 +8,9 @@ side-project worktree; stage: Repository/Web Synchronization. Follow-up to the
 an exact-hash Great Dictator study clip and a simple default JSON, preloads that
 JSON at installed startup, and retains explicit custom-recipe loading. A local
 installed candidate passed default clip Start/Stop with XDF/CSV and exact
-filename markers, plus the existing synthetic custom-recipe run. Public clip
+filename markers, plus the existing synthetic custom-recipe run. Full natural
+completion of the 254-second study clip produced 15,264 matching CSV/XDF
+affect samples and both exact XDF markers. Public clip
 redistribution remains unconfirmed; no 0.2 release is claimed. Main Planner
 and Runner contracts/source are untouched.
 

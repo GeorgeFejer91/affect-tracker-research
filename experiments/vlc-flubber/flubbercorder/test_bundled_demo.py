@@ -1,4 +1,5 @@
 """Installed demo smoke test: default recipe, real study clip, VLC, CSV and XDF."""
+import argparse
 import csv
 import json
 import os
@@ -19,7 +20,7 @@ START = "dictator-3-study.mp4_Start"
 STOP = "dictator-3-study.mp4_Stop"
 
 
-def main():
+def main(full=False):
     assert DEMO.is_file() and VIDEO.is_file(), "The installed demo is incomplete"
     assert json.loads(DEMO.read_text(encoding="utf-8"))["video"] == VIDEO.name
     with tempfile.TemporaryDirectory() as temp:
@@ -61,14 +62,20 @@ def main():
             assert state["phase"] == "running", state
             assert any(marker["label"] == START for marker in state["lsl"]["markers"]), state
             api("/command", "right")
-            time.sleep(1)
-            api("/command", "stop")
-            deadline = time.monotonic() + 30
+            if not full:
+                time.sleep(1)
+                api("/command", "stop")
+            deadline = time.monotonic() + (300 if full else 30)
+            last_report = 0
             while time.monotonic() < deadline:
                 state = api("/state")
                 if state["phase"] in ("complete", "error"):
                     break
-                time.sleep(.2)
+                elapsed = int(time.monotonic() - (deadline - (300 if full else 30)))
+                if full and elapsed - last_report >= 30:
+                    print(f"Playing bundled study clip: {elapsed}s", flush=True)
+                    last_report = elapsed
+                time.sleep(1 if full else .2)
             assert state["phase"] == "complete", state
             assert Path(state["xdfPath"]).is_file() and Path(state["csvPath"]).is_file()
             markers = next(s["labels"] for s in state["summary"]
@@ -77,8 +84,12 @@ def main():
             with Path(state["csvPath"]).open(newline="") as handle:
                 events = [row["event"] for row in csv.DictReader(handle)]
             assert "video_start" in events and "right" in events and events[-1] == "video_end"
+            affect = next(s for s in state["summary"] if s["name"] == "VLC_Flubber_Affect")
+            if full:
+                assert affect["samples"] >= 15000, affect
+                assert events.count("sample") == affect["samples"]
             print("Bundled demo passed:", VIDEO.name, len(events), "CSV rows;",
-                  markers, "in XDF", flush=True)
+                  markers, "in XDF", "full=" + str(full), flush=True)
         finally:
             process.terminate()
             try:
@@ -91,4 +102,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--full", action="store_true")
+    main(parser.parse_args().full)

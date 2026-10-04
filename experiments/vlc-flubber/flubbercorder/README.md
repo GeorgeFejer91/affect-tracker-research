@@ -93,8 +93,10 @@ source clip and requires 300 affect samples, matching VLC CSV and XDF counts,
 right/up affect changes, and exact `<filename>_Start`/`_Stop` labels in XDF.
 The GitHub workflow performs the same installed check before releasing.
 
-Current qualification is limited to the pinned Windows runtime and the
-tested synthetic clip. Long sessions, varied source codecs, physical keyboard
-timing, external device timing, and research-grade onset latency need separate
-measurement. The converted video is re-encoded, although its content and
-geometry are retained.
+Current qualification covers the pinned Windows runtime, a five-second
+synthetic clip, and one full naturally completed installed run of the bundled
+254-second study clip. The latter produced 15,264 matching VLC CSV and XDF
+affect samples with both exact filename markers in XDF. Varied source codecs,
+physical keyboard timing, external device timing, and research-grade onset
+latency need separate measurement. The converted video is re-encoded, although
+its content and geometry are retained.
