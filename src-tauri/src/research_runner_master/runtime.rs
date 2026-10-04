@@ -496,7 +496,7 @@ impl MasterRuntime {
                 != PlaybackQualification::QualifiedNative
             {
                 return Err(CommandError::native_media_unavailable(
-                    "native-gstplay-qualification-required",
+                    "master-playback-lifecycle-unavailable",
                 ));
             }
             let prepared = PreparedMaster::read(

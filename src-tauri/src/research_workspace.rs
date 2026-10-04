@@ -20,11 +20,11 @@ use tauri::http::{header, Method, Request, Response, StatusCode};
 use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
-mod controlled_geometry;
 mod media_preparation;
+mod runner_video_binding_v3;
 mod stimulus_authoring;
 mod video_location;
-pub(crate) use controlled_geometry::RunnerVideoBindingV3;
+pub(crate) use runner_video_binding_v3::RunnerVideoBindingV3;
 
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
@@ -101,7 +101,6 @@ pub enum DecodeBackend {
 pub enum DecodeEvidence {
     RepresentativeFramesV1,
     NativeDecodedSnapshotsV1,
-    NativeDecodedSnapshotsV2,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -232,7 +231,6 @@ pub(crate) struct ScannedStimulus {
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
     pub display_geometry: Option<NativeDisplayGeometryV1>,
-    pub native_decode_receipt_v2: Option<crate::research_native_media::NativeMediaDecodeReceiptV2>,
 }
 
 #[derive(Debug, Clone)]
@@ -1085,7 +1083,7 @@ impl WorkspaceService {
             || receipt.display_metadata.encoded_height_px != receipt.video_height
         {
             return Err(CommandError::invalid_contract(
-                "Native GstPlay decode evidence is incomplete.",
+                "Native decode evidence is incomplete.",
             ));
         }
         let display_geometry = derive_native_display_geometry_v1(&receipt.display_metadata)?;
@@ -1120,12 +1118,11 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
         candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
         candidate.display_geometry = Some(display_geometry);
-        candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
     /// Consumes one exact locked-file grant. WebView frame evidence remains
-    /// explicitly unqualified and cannot satisfy a future GstPlay verifier.
+    /// unqualified for the legacy native playback contracts.
     pub fn attest_workspace_decode(
         &self,
         request: DecodeAttestationRequest,
@@ -1229,7 +1226,6 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::RepresentativeFramesV1);
         candidate.decoded_positions_ms = request.decoded_positions_ms;
         candidate.display_geometry = None;
-        candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
@@ -1819,7 +1815,6 @@ fn scan_package_videos(
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1905,7 +1900,6 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -1975,7 +1969,6 @@ fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<Scanned
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
-                native_decode_receipt_v2: None,
             });
         }
     }
@@ -2140,7 +2133,7 @@ fn native_attested_candidate<'a>(
 ) -> ResearchResult<&'a ScannedStimulus> {
     if !expected_duration_ms.is_finite() || expected_duration_ms < 10.0 {
         return Err(CommandError::invalid_contract(
-            "A GstPlay-qualified workspace stimulus requires a complete-video duration.",
+            "A qualified workspace stimulus requires a complete-video duration.",
         ));
     }
     if expected_relative_path
@@ -2175,7 +2168,7 @@ fn native_attested_candidate<'a>(
         })
         .ok_or_else(|| {
             CommandError::forbidden(
-                "The opaque workspace file and its native GstPlay attestation do not match the latest scan.",
+                "The opaque workspace file and its native decode attestation do not match the latest scan.",
             )
         })
 }

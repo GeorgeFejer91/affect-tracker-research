@@ -1,6 +1,6 @@
 //! Rust-owned experiment-package protocol runtime.
 //!
-//! One worker owns protocol transitions, GstPlay lifecycle observations,
+//! One worker owns legacy package protocol transitions and playback observations,
 //! native input, the no-catch-up scheduler, LSL, persistence, and recovery.
 //! The WebView can request user actions and render typed projections; it never
 //! authors a stimulus-complete edge or a sample timestamp.
@@ -378,7 +378,7 @@ impl PackageProtocolRuntime {
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {
             return Err(CommandError::invalid_contract(
-                "The Rust-owned package protocol requires native GstPlay playback.",
+                "The requested legacy package playback mode is unavailable.",
             ));
         }
         let playback_qualification = self
@@ -386,7 +386,7 @@ impl PackageProtocolRuntime {
             .authorize_playback(request.playback_mode)?;
         if playback_qualification != PlaybackQualification::QualifiedNative {
             return Err(CommandError::native_media_unavailable(
-                "native-gstplay-qualification-required",
+                "package-playback-unavailable",
             ));
         }
         let loaded =
@@ -689,7 +689,7 @@ impl PackageProtocolRuntime {
         }
         if request.playback_mode != PlaybackMode::NativeGstPlay {
             return Err(CommandError::invalid_contract(
-                "The Rust-owned package protocol requires native GstPlay playback.",
+                "The requested legacy package playback mode is unavailable.",
             ));
         }
         let playback_qualification = self
@@ -697,7 +697,7 @@ impl PackageProtocolRuntime {
             .authorize_playback(request.playback_mode)?;
         if playback_qualification != PlaybackQualification::QualifiedNative {
             return Err(CommandError::native_media_unavailable(
-                "native-gstplay-qualification-required",
+                "package-playback-unavailable",
             ));
         }
         let loaded =
@@ -1376,7 +1376,7 @@ impl Worker {
         } else {
             self.write_event(EventContext::session(
                 ResearchEventTypeV2::SessionPrepared,
-                Some("native-gstplay-package-v1".to_owned()),
+                Some("legacy-package-playback-v1".to_owned()),
             ))?;
             self.write_event(EventContext::session(
                 ResearchEventTypeV2::SessionStarted,
@@ -2499,7 +2499,7 @@ impl Worker {
             || status.workspace_file_id.as_deref() != Some(workspace_file_id)
         {
             return Err(CommandError::forbidden(
-                "Native GstPlay status crossed the frozen run or asset generation.",
+                "Playback status crossed the frozen run or asset generation.",
             ));
         }
         Ok(())

@@ -79,7 +79,7 @@ pub fn research_package_protocol_capability(
     Ok(NativePackageProtocolCapabilityV1 {
         schema: "affect-research-native-package-protocol-capability",
         version: 1,
-        backend: "rust-gstplay",
+        backend: "unavailable",
         rust_owned_protocol: true,
         package_v1_compilation_ready: true,
         protocol_plan_v2_ready: true,

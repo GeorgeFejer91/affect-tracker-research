@@ -17,18 +17,8 @@ pub(crate) enum Phase {
     AuthoringCompleted,
     InputStarted,
     InputCompleted,
-    VerificationCompleted,
-    InitializerCompleted,
-    NativeShutdownRequested,
-    InitializerStopped,
-    ActorStopped,
-    InitializerJoined,
-    ActorJoined,
-    NativeJoined,
-    NativeStalled,
     CleanupCompleted,
     CleanupFailed,
-    ActorRetained,
 }
 
 #[derive(Default)]
@@ -103,8 +93,7 @@ impl ShutdownCoordinator {
                 *coordinator.result.lock().unwrap_or_else(|p| p.into_inner()) = Some(result);
                 if result.is_ok() {
                     observe(Phase::CleanupCompleted);
-                    // Native actor and initializer have actually joined before this
-                    // notification. The worker's remaining tail owns no native HWND.
+                    // The Runner and input services have completed cleanup.
                     notify(coordinator.exit_code.load(Ordering::Acquire));
                 } else {
                     observe(Phase::CleanupFailed);
@@ -150,7 +139,7 @@ mod tests {
 
     #[test]
     fn observations_are_disabled_by_default_and_once_per_closed_phase() {
-        assert!((Phase::ActorRetained as u8) < 64);
+        assert!((Phase::CleanupFailed as u8) < 64);
         let observations = LifecycleObservations::default();
         assert!(observations.record(Phase::EofObserved).is_none());
         observations.started.set(Instant::now()).unwrap();
@@ -160,8 +149,8 @@ mod tests {
         for _ in 0..1000 {
             assert!(observations.record(Phase::EofObserved).is_none());
         }
-        assert!(observations.record(Phase::NativeStalled).is_some());
-        assert!(observations.record(Phase::NativeStalled).is_none());
+        assert!(observations.record(Phase::CleanupCompleted).is_some());
+        assert!(observations.record(Phase::CleanupCompleted).is_none());
     }
 
     #[test]

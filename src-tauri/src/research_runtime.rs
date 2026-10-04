@@ -863,8 +863,7 @@ impl ResearchRuntime {
     }
 
     /// Accept renderer media failure evidence only for the explicit WebView
-    /// fallback.  Native actor failures will enter through a non-IPC adapter
-    /// once the separately approved GstPlay renderer boundary exists.
+    /// playback path.
     pub fn report_webview_media_failure(
         &self,
         report: MediaPlaybackFailureReport,
@@ -2616,7 +2615,7 @@ fn playback_provenance_detail(
     match (mode, qualification) {
         (PlaybackMode::NativeGstPlay, PlaybackQualification::QualifiedNative) => {
             Err(CommandError::invalid_contract(
-                "GstPlay runs require ResearchRunManifestV3 playback provenance.",
+                "Legacy native runs require ResearchRunManifestV3 playback provenance.",
             ))
         }
         (PlaybackMode::NativeLibvlc, PlaybackQualification::QualifiedNative) => {
@@ -4900,7 +4899,7 @@ fn sync_verified_output(path: &Path, expected: &RunOutputV1) -> ResearchResult<(
 fn manifest_playback_mode(mode: PlaybackMode) -> ResearchResult<RunPlaybackModeV1> {
     match mode {
         PlaybackMode::NativeGstPlay => Err(CommandError::invalid_contract(
-            "GstPlay runs require ResearchRunManifestV3 playback provenance.",
+            "Legacy native runs require ResearchRunManifestV3 playback provenance.",
         )),
         PlaybackMode::NativeLibvlc => Ok(RunPlaybackModeV1::NativeLibvlc),
         PlaybackMode::UnqualifiedWebview => Ok(RunPlaybackModeV1::UnqualifiedWebview),

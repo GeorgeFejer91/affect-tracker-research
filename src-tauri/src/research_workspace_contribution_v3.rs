@@ -6,66 +6,11 @@ use super::{
 };
 use crate::research_contracts::{canonical_sha256, MAX_SAFE_INTEGER, MAX_STIMULI};
 use crate::research_error::ResearchResult;
-use crate::research_video_geometry::{derive_native_display_geometry_v2, NativeDisplayGeometryV2};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum VideoDisplayGeometryV3 {
-    Historical(VideoDisplayGeometry),
-    Controlled(NativeDisplayGeometryV2),
-}
-impl Serialize for VideoDisplayGeometryV3 {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Historical(v) => v.serialize(serializer),
-            Self::Controlled(v) => v.serialize(serializer),
-        }
-    }
-}
-impl<'de> Deserialize<'de> for VideoDisplayGeometryV3 {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = Value::deserialize(deserializer)?;
-        match value.get("source").and_then(Value::as_str) {
-            Some("native-gstplay-controlled-renderer") => {
-                serde_json::from_value(value).map(Self::Controlled)
-            }
-            Some("browser-decoder" | "native-gstplay-metadata") => {
-                serde_json::from_value(value).map(Self::Historical)
-            }
-            _ => return Err(serde::de::Error::custom("Unsupported geometry source.")),
-        }
-        .map_err(serde::de::Error::custom)
-    }
-}
-impl VideoDisplayGeometryV3 {
-    pub fn display_width_px(&self) -> u64 {
-        match self {
-            Self::Historical(v) => v.display_width_px,
-            Self::Controlled(v) => v.display_width_px.into(),
-        }
-    }
-    pub fn display_height_px(&self) -> u64 {
-        match self {
-            Self::Historical(v) => v.display_height_px,
-            Self::Controlled(v) => v.display_height_px.into(),
-        }
-    }
-    fn validate(&self) -> ResearchResult<()> {
-        match self {
-            Self::Historical(v) => validate_geometry(v, true),
-            Self::Controlled(v) => {
-                if derive_native_display_geometry_v2(&v.native_display_metadata)? != *v {
-                    return Err(invalid(
-                        "Controlled geometry disagrees with its native proof.",
-                    ));
-                }
-                Ok(())
-            }
-        }
-    }
-}
+pub type VideoDisplayGeometryV3 = VideoDisplayGeometry;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VideoCatalogueContributionV3 {
@@ -105,7 +50,7 @@ pub fn validate_video_catalogue_contribution_v3(
     let mut content = BTreeMap::new();
     for (i, entry) in document.entries.iter().enumerate() {
         validate_entry_identity(entry, 3)?;
-        entry.geometry.validate()?;
+        validate_geometry(&entry.geometry, false)?;
         if !locations.insert(&entry.annotation_id) || !paths.insert(&entry.package_relative_path) {
             return Err(invalid("Duplicate catalogue v3 location."));
         }
@@ -170,13 +115,8 @@ mod tests {
         .unwrap()
     }
     #[test]
-    fn shared_js_vectors_reproduce_exact_geometry_workspace_and_sequence() {
+    fn shared_js_workspace_and_sequence_remain_canonical() {
         let f = fixture();
-        for vector in f["vectors"].as_array().unwrap() {
-            let proof = serde_json::from_value(vector["metadata"].clone()).unwrap();
-            let derived = derive_native_display_geometry_v2(&proof).unwrap();
-            assert_eq!(serde_json::to_value(derived).unwrap(), vector["geometry"]);
-        }
         let workspace = validate_workspace_contribution_v3(&f["workspace"]).unwrap();
         assert_eq!(
             canonical_json(&workspace, &[]).unwrap(),
@@ -197,28 +137,19 @@ mod tests {
         assert_eq!(reproduced, f["reproduction"]);
     }
     #[test]
-    fn invalid_nested_proof_or_redundant_geometry_never_passes_with_rehashed_catalogue() {
-        for mode in 0..9 {
+    fn invalid_browser_geometry_never_passes_with_rehashed_catalogue() {
+        for mode in 0..6 {
             let mut value = fixture()["workspace"]["videoCatalogue"].clone();
             let geometry = &mut value["entries"][0]["geometry"];
             match mode {
-                0 => geometry["rotationDegrees"] = 90.into(),
-                1 => {
-                    geometry["nativeDisplayMetadata"]["sourceOrientation"]["stream"] =
-                        serde_json::json!({"status":"absent","rotationDegrees":0})
-                }
+                0 => geometry["source"] = "unknown".into(),
+                1 => geometry["rotationDegrees"] = 90.into(),
                 2 => {
-                    geometry["nativeDisplayMetadata"]["sourceOrientation"]["stream"] =
-                        serde_json::json!({"status":"malformed"})
+                    geometry["pixelAspectRatio"] =
+                        serde_json::json!({"numerator":1,"denominator":1})
                 }
-                3 => {
-                    geometry["nativeDisplayMetadata"]["renderer"]["readbackRotationDegrees"] =
-                        90.into()
-                }
-                4 => geometry["nativeDisplayMetadata"]["snapshotWidthPx"] = 1.into(),
-                5 => geometry["extra"] = true.into(),
-                6 => geometry["nativeDisplayMetadata"]["extra"] = true.into(),
-                7 => value["version"] = 2.into(),
+                3 => geometry["displayWidthPx"] = 0.into(),
+                4 => value["version"] = 2.into(),
                 _ => value["entries"][0]["annotationId"] = "wrong".into(),
             }
             value["integritySha256"] = canonical_sha256(&value, &["integritySha256"])

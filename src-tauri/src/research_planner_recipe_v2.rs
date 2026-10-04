@@ -72,8 +72,8 @@ impl PreparedWorkspace {
                     .filter(|entry| seen.insert(&entry.asset_id))
                     .map(|entry| crate::research_desktop_layout::MediaGeometry {
                         asset_id: entry.asset_id.clone(),
-                        display_width: entry.geometry.display_width_px() as f64,
-                        display_height: entry.geometry.display_height_px() as f64,
+                        display_width: entry.geometry.display_width_px as f64,
+                        display_height: entry.geometry.display_height_px as f64,
                     })
                     .collect()
             }
