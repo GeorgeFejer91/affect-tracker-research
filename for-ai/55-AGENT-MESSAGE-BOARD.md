@@ -36,6 +36,9 @@ the native path retains observed status coordinates and mapping values before
 hiding. The validation video preview respects saved visibility. Focused 13/13,
 full JavaScript 1,235/1,235 and Runner production build/boundary passed locally.
 These checks do not observe an installed window or qualify timing/recording.
+The R1 commit `aaa5c4f` was integrated as `6d61a52` after the current-status
+catalog merge. The exact combined installer and installed behavior still need
+their own artifact-bound CI and local verification.
 
 ## 20261004 P7 suite duplicate executable correction
 
