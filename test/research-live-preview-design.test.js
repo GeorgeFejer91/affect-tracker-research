@@ -436,7 +436,11 @@ test("the application projects successor settings to Setup and invalidates saved
   const previewStateSource = between(appSource, "function previewState(", "function refreshRangeOutputs(");
   assert.match(
     previewStateSource,
-    /\.\.\.\(design \? \{\s*displayMode:\s*feedbackSettingsVersion === 2 \? feedbackPreviewMode : "legacy",\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
+    /\.\.\.\(design \? \{\s*displayMode:[^\n]+\s*facePackId: value\("preview-face-pack"\),\s*responseMode:\s*responsePreviewMode,\s*tileCount:[^\n]+\s*tileRows:[^\n]+\s*colorAnchorMode: previewColorMode\(\),\s*\} : \{\}\)/u,
+  );
+  assert.match(
+    previewStateSource,
+    /displayMode: feedbackSettingsVersion >= 2 \? feedbackPreviewMode === "face" && feedbackSettingsVersion === 3 \? "photo-face" : feedbackPreviewMode : "legacy"/u,
   );
   assert.match(
     previewStateSource,
