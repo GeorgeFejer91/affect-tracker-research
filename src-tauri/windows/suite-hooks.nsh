@@ -26,8 +26,14 @@ Var SuiteInstallFailure
   ExecWait '"$INSTDIR\Experiment Runner.exe" --verify-only' $0
   IntCmp $0 0 0 suite_install_failed suite_install_failed
   IfFileExists "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" 0 suite_shortcuts_done
+  Delete "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk"
+  StrCpy $SuiteInstallFailure "planner-shortcut-replacement-failed"
+  IfFileExists "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk" suite_install_failed 0
   Rename "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk"
+  IfFileExists "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk" 0 suite_install_failed
   CreateShortcut "$SMPROGRAMS\$AppStartMenuFolder\Experiment Runner.lnk" "$INSTDIR\Experiment Runner.exe"
+  StrCpy $SuiteInstallFailure "runner-shortcut-missing"
+  IfFileExists "$SMPROGRAMS\$AppStartMenuFolder\Experiment Runner.lnk" 0 suite_install_failed
   suite_shortcuts_done:
   Goto suite_install_done
   suite_install_failed:

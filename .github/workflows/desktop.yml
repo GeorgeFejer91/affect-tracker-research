@@ -149,6 +149,19 @@ jobs:
           }
           node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
           if ($LASTEXITCODE -ne 0) { throw 'Installed suite file audit failed.' }
+          $reinstall = Start-Process -FilePath $installers[0].FullName -ArgumentList @('/S', "/D=$destination") -WindowStyle Hidden -PassThru -Wait
+          if ($reinstall.ExitCode -ne 0) { throw "Suite reinstall failed: $($reinstall.ExitCode)" }
+          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
+          if ($LASTEXITCODE -ne 0) { throw 'Reinstalled suite file audit failed.' }
+          $shortcuts = Join-Path $env:APPDATA 'Microsoft/Windows/Start Menu/Programs/Affect Research Suite'
+          if (Test-Path -LiteralPath (Join-Path $shortcuts 'Affect Research Suite.lnk')) { throw 'Reinstall left a duplicate Planner shortcut.' }
+          $shell = New-Object -ComObject WScript.Shell
+          foreach ($entry in @(@('Experiment Planner.lnk', 'Experiment Planner.exe'), @('Experiment Runner.lnk', 'Experiment Runner.exe'))) {
+            $path = Join-Path $shortcuts $entry[0]
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Suite shortcut missing: $($entry[0])" }
+            $target = $shell.CreateShortcut($path).TargetPath
+            if ($target -ne (Join-Path $destination $entry[1])) { throw "Suite shortcut target mismatch: $($entry[0])" }
+          }
       - name: Upload suite candidate for installed verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

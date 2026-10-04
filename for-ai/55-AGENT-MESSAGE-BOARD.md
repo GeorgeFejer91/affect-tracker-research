@@ -13,6 +13,14 @@ GStreamer distribution policy. Focused audit tests, exact-source CI install
 and the local replacement install are the evidence targets. Visible operation,
 native playback, LSL/XDF and research qualification remain open.
 
+The `0a614b9` installer passed all three CI jobs and the new duplicate-file
+audit after fresh installation. Local replacement at the same destination also
+passed with no `affect-runner.exe`, but updating over the prior version left
+Tauri's default `Affect Research Suite.lnk` beside the already existing
+`Experiment Planner.lnk`. This follow-up replaces the old Planner link before
+renaming the newly created default and checks a second silent install plus
+exact Planner/Runner shortcut targets in CI. No UI is launched.
+
 ## 20261004 P5-09 photoreal 21 × 21 Face successor
 
 Owner: current task, worktree `affect-tracker-research-photo-face`, branch

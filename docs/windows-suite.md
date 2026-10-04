@@ -37,8 +37,9 @@ directory without opening either GUI:
 node scripts/qualification/windows-suite-installed-audit.mjs --app-dir <installed-directory> --expected-commit <40-character-commit> --verify-launcher
 ```
 
-The audit checks the four companion files, portable receipt paths, source
-identity, Runner hashes and the launcher's verification mode. A valid receipt
+The audit checks the three companion executables and two portable receipts,
+rejects a duplicate raw Runner executable, and verifies source identity,
+Runner hashes and the launcher's verification mode. A valid receipt
 binds `Experiment Runner.exe` and `affect-runner-engine.exe` by SHA-256 and marks
 `researchQualified: false`. The installer itself runs the launcher's
 `--verify-only` check before it reports installation success. Uninstall removes
@@ -78,14 +79,28 @@ PC and passed the original installed-file audit with matching source, receipts
 and launcher verification. A subsequent inventory found an unintended
 `affect-runner.exe` alongside the named launcher and engine. The strengthened
 audit correctly rejects that installed candidate with
-`duplicate-runner-executable`. A corrected exact-source installer and local
-replacement check are pending.
+`duplicate-runner-executable`.
+
+[Windows run 37188108109](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37188108109)
+passed all three jobs at `0a614b905b6de9781c01122aa6dc918711071139`.
+Its [installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37188108109/artifacts/11297414207)
+is a 153,635,415-byte ZIP with SHA-256
+`cbfd07b34a121b5b53f3336a4968ac85822838fc359856571c39cdc545aa916a`.
+The setup executable inside has SHA-256
+`4c4c55b8c2a83f5333930444197a88d46b51bca56fbbb8a59bd35f1249328e41`.
+It silently installed on the CI host and replaced the local candidate; both
+installed-file audits passed with no issues, matching source and verified
+launcher. The local install has the two named shortcuts, but an update over
+the previous candidate also left a duplicate default Planner shortcut. The
+next installer pass checks both a fresh install and reinstall to close that
+update-layout issue.
 
 ## Claim boundary
 
-The `3082044` candidate has been silently installed and file-audited on the
-researcher's PC. It remains an unqualified candidate, and the duplicate Runner
-file finding prevents treating that installation as the corrected suite.
+The `0a614b9` candidate has been silently installed and file-audited on the
+researcher's PC. It remains an unqualified candidate, and the duplicate
+shortcut on update prevents treating that installation as the final suite
+package.
 Native playback, physical input, actual video-pool execution, LSL/XDF, timing,
 accessibility, uninstallation, and the full Planner-to-Runner installed
 workflow still require independent exact-artifact checks. Do not present this
