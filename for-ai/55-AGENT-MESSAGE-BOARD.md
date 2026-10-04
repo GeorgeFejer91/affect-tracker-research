@@ -6329,3 +6329,6 @@ and uploaded temporary review artifact `11293334379` (ZIP SHA-256
 `b110857cc5c2ab13167a9c7a7acc6a3ae570f99abf9396c6d5c4f5e75119dcb7`).
 The job explicitly records `redistributionApproved:false`; suite/runtime
 distribution and full Windows checks remain separate.
+Root integrated the exact tested source tree as `0f153ff`. The superseded
+feature-branch run was cancelled after its source job and artifact succeeded;
+the merged commit still needs its own Windows check and suite installation.
