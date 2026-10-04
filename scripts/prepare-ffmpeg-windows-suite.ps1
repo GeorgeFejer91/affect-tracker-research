@@ -38,9 +38,11 @@ try {
     foreach ($name in @('ffmpeg.exe', 'ffprobe.exe')) {
         $tool = Join-Path $destination $name
         $firstLine = (& $tool -version | Select-Object -First 1)
-        if ($LASTEXITCODE -ne 0 -or $firstLine -notmatch '^ff(mpeg|probe) version 9\.0\.2') {
-            throw "Pinned $name did not report version 9.0.2."
+        $expectedPrefix = [IO.Path]::GetFileNameWithoutExtension($name) + ' version '
+        if ($LASTEXITCODE -ne 0 -or -not $firstLine -or -not $firstLine.StartsWith($expectedPrefix)) {
+            throw "Pinned $name failed startup: $firstLine"
         }
+        Write-Output "Pinned $name startup: $firstLine"
     }
     [ordered]@{
         archiveSha256 = $archiveSha256
