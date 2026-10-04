@@ -27,14 +27,21 @@ samples and `<source filename>_Start`/`_Stop` markers, and writes a fallback
 CSV independently. Flubbercorder checks exact marker labels in the recorded
 XDF, with selected external streams also recorded by the native recorder.
 
-On 2026-10-04, a locally installed offline Windows candidate completed a
-five-second H.264 source session with 300 affect rows in VLC CSV, 300 affect
-samples plus both exact filename markers in XDF, and right/up affect commands
-without video seeking. Desktop and 390-pixel browser layouts rendered in
-current Edge and Chrome without page errors or horizontal overflow. This
-is installed software evidence for the specific synthetic clip, not broad
-codec, timing, device, or research qualification. The public GitHub release
-remains gated on the clean Windows workflow for this exact source commit.
+On 2026-10-04, the [public experimental Windows prerelease](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-experimentrunner-v0.1.0)
+was built from source commit `40e8493f1443c484afbd85c881451c9f6b8ea512`.
+The installed offline package completed a five-second H.264 source session
+with 300 affect rows in VLC CSV, 300 affect samples plus both exact filename
+markers in XDF, and right/up affect commands without video seeking. Installed
+checks also passed for a missing required stream, selected external stream,
+pause/resume, and early stop with a valid closed XDF. Desktop and 390-pixel
+browser layouts rendered in current Edge and Chrome without page errors or
+horizontal overflow. The installer SHA-256 is
+`3732CBD718DF1BD17301B96437B902A992C152C1EEC6FBB72697317AB618572A`;
+GitHub reports the same asset digest, and its unauthenticated download returned
+HTTP 200. The new GitHub workflow was not dispatched because it is only on the
+side-project branch; the installed checks were run locally. This is installed
+software evidence for the specific synthetic clip, not broad codec, timing,
+device, or research qualification.
 
 The earlier standalone probe and its receipts follow below.
 

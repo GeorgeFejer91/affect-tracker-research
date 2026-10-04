@@ -11,9 +11,12 @@ The existing Planner and Runner implementation, JSON contracts, and release
 claims remain under their segment owners. The side project tests a local HTML
 experimenter window, VLC process control, LSL/CSV/XDF recording, and a paired
 phone control surface. It does not promote VLC into the main suite.
-The release candidate is an offline Windows installer; its clean installed
-LSL/XDF/CSV session and public prerelease are gated by
-`.github/workflows/vlc-experimentrunner-release.yml`.
+The offline Windows installer passed five installed LSL/XDF/CSV scenarios and
+was published as a [public experimental prerelease](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-experimentrunner-v0.1.0)
+from source commit `40e8493f1443c484afbd85c881451c9f6b8ea512`.
+The branch-only GitHub workflow could not be dispatched, so these are local
+installed checks, not clean CI evidence. See [74](74-VLC-FLUBBER-SIDE-QUEST.md)
+for the asset digest and claim boundary.
 
 ## 20261004 Native VLC Flubber side quest
 
