@@ -52,6 +52,10 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::commands::html_video_tests::html_video_url_can_select_only_a_saved_video_step -- --exact
       - name: Exercise observed HTML video session boundary
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::html_session::tests::observed_video_events_require_the_current_position_and_grant -- --exact
+      - name: Reject frontend-issued HTML media grants
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::runtime::html_ingress_tests::master5_accepts_observed_video_edges_but_never_a_caller_grant -- --exact
+      - name: Keep qualified Start closed while validation is separate
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::runtime::fail_closed_tests::all_typed_start_entrypoints_fail_closed_without_creating_a_run -- --exact
       - name: Compare saved master plans in independent JS and Rust readers
         shell: pwsh
         run: |

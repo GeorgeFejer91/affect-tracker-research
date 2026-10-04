@@ -1,7 +1,7 @@
 /** Renderer projection of the native master worker. No JS sampling or ISI clocks. */
 export class NativeMasterProtocolAdapter {
-  constructor({ invoke, render, terminal, fail, windowObject }) {
-    Object.assign(this, { invoke, render, terminal, fail, windowObject });
+  constructor({ invoke, render, terminal, fail, windowObject, videoPlayer = null }) {
+    Object.assign(this, { invoke, render, terminal, fail, windowObject, videoPlayer });
     this.active = false; this.status = null; this.plan = null; this.pending = false; this.destroyed = false;
   }
   async start(plan, request, {validation = false} = {}) {
@@ -55,8 +55,20 @@ export class NativeMasterProtocolAdapter {
     const status = await this.invoke(({1:"research_runner_master_action",2:"research_runner_master_action_v2",3:"research_runner_master_action_v3",4:"research_runner_master_action_v4",5:"research_runner_master_action_v5"}[this.plan.version]), this.plan.version >= 3 ? {request:{version:this.plan.version,...args}} : args);
     this.assertStatus(status); this.status = status; return status;
   }
-  async togglePause() { await this.command({ type: this.status?.phase === "paused" ? "resume" : "pause" }); }
-  async finish() { await this.command({ type: "stop" }); await this.poll(); }
+  async togglePause() {
+    if (this.plan?.version !== 5 || !this.videoPlayer?.video) {
+      await this.command({ type: this.status?.phase === "paused" ? "resume" : "pause" });
+      return;
+    }
+    if (this.status?.phase === "playing") {
+      await this.command({ type: "pause" });
+      this.videoPlayer.video.pause();
+    } else if (this.status?.phase === "paused") {
+      await this.command({ type: "resume" });
+      await this.videoPlayer.video.play();
+    }
+  }
+  async finish() { this.videoPlayer?.stop(); await this.command({ type: "stop" }); await this.poll(); }
   questionnaireAnswers(detail) {
     return [2, 3, 4, 5].includes(this.plan.version)
       ? Object.entries(detail.answers).map(([itemId, value]) => ({ itemId, value: structuredClone(value) }))

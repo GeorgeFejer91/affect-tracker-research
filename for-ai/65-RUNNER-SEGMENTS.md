@@ -10,6 +10,22 @@ closure. Runner does not transcode or fall back to that original. Current HTML
 video presentation and installed playback/XDF correspondence need separate
 evidence. This supersedes older media-engine instructions in dated entries below.
 
+## Master5 HTML validation source checkpoint — 2026-10-04
+
+R1/RR-03/04/06/07/08/09: one versioned, permanently unqualified validation
+entrypoint composes the existing Rust form/ISI/input/sampling/marker/LSL/XDF
+worker with an HTML video element. Inputs are the exact saved JSON bytes,
+workspace, participant, language/variant selector, tested input receipt,
+fullscreen viewport, optional active recorder and an explicit validation
+acknowledgement. Outputs are the immutable attempt identity, occurrence-bound
+status, durable events/samples/answers and a completed or partial receipt.
+The active video URL is selected only from a verified P1 catalogue entry and
+bound to the current run, plan, workspace and step; browser-observed edges must
+carry its opaque grant and current position. Existing master1–4 action wires
+and research Start remain closed. This is source/backend progress; installed
+video, physical input, real LSL/XDF and independent recorded-only reconstruction
+remain open R1-03/04/05/06/07 qualification items.
+
 
 ## Hidden fullscreen abort — 2026-09-13
 

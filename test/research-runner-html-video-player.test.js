@@ -74,25 +74,35 @@ test("a saved video step advances once on observed end and ignores stale end eve
   try {
     const host = new Element();
     const ends = [];
+    const playing = [], paused = [];
     const errors = [];
     const invoke = async command => command === "research_runner_master_html_video_url" ? {
       mediaUrl: "http://research-media.localhost/token", mediaGrantId: "token", workspaceFileId: "wf-test",
       sha256: "a".repeat(64), byteLength: 123, mimeType: "video/mp4",
     } : null;
     const player = createRunnerHtmlVideoPlayer(host, {
-      invoke, windowObject: globalThis, onEnded: () => ends.push("ended"), onError: error => errors.push(error.message),
+      invoke, windowObject: globalThis,
+      onPlaying: step => playing.push(step), onPaused: step => paused.push(step),
+      onEnded: step => ends.push(step), onError: error => errors.push(error.message),
     });
     const request = { workspaceId: "workspace", sourceText: "recipe", participantId: "P001", selector: {},
       step: { kind: "video", position: 3, payload: { asset: savedAsset() } } };
     await player.playStep(request);
     const video = player.video;
+    assert.deepEqual(playing, [{ position: 3, mediaGrantId: "token" }]);
+    video.events.get("pause")();
+    await Promise.resolve();
+    assert.deepEqual(paused, [{ position: 3, mediaGrantId: "token" }]);
+    video.events.get("playing")();
+    await Promise.resolve();
+    assert.equal(playing.length, 2);
     video.events.get("ended")();
     assert.deepEqual(ends, [], "planned time alone does not end the video");
     video.ended = true;
     video.currentTime = 4.2;
     video.events.get("ended")();
     video.events.get("ended")();
-    assert.deepEqual(ends, ["ended"], "duplicate ended events cannot skip another step");
+    assert.deepEqual(ends, [{ position: 3, mediaGrantId: "token" }], "duplicate ended events cannot skip another step");
     player.stop();
     video.ended = false;
     await player.playStep(request);
@@ -103,7 +113,7 @@ test("a saved video step advances once on observed end and ignores stale end eve
     player.stop();
     video.events.get("ended")();
     video.events.get("error")();
-    assert.deepEqual(ends, ["ended"]);
+    assert.deepEqual(ends, [{ position: 3, mediaGrantId: "token" }]);
     assert.equal(errors.length, 1);
   } finally {
     globalThis.HTMLElement = previousElement;

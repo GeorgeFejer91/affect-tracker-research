@@ -56,7 +56,9 @@ const assertDecodedMetadata = (video, asset) => {
   }
 };
 
-export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = window, onEnded = () => {}, onError = () => {} } = {}) {
+export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = window,
+  onGranted = () => {}, onPlaying = () => {}, onPaused = () => {},
+  onEnded = () => {}, onError = () => {} } = {}) {
   if (!(host instanceof HTMLElement) || typeof invoke !== "function") {
     throw new TypeError("Runner HTML video playback needs a host and native adapter.");
   }
@@ -65,6 +67,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   let ended = null;
   let playbackError = null;
   let activeGrant = null;
+  let activeStep = null;
   let endedGeneration = -1;
 
   const releaseGrant = (grant) => {
@@ -107,15 +110,30 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       if (host.dataset.playbackState === "playing" && video.ended && endedGeneration !== generation) {
         endedGeneration = generation;
         host.dataset.playbackState = "ended";
-        onEnded();
+        onEnded(activeStep);
       }
     };
     playbackError = () => {
-      if (host.dataset.playbackState === "playing") {
+      if (["starting", "playing", "paused"].includes(host.dataset.playbackState)) {
         host.dataset.playbackState = "failed";
-        onError(new Error(mediaErrorMessage(video)));
+        onError(new Error(mediaErrorMessage(video)), activeStep);
       }
     };
+    video.addEventListener("playing", () => {
+      if (!activeStep || !["starting", "paused"].includes(host.dataset.playbackState)) return;
+      host.dataset.playbackState = "playing";
+      Promise.resolve(onPlaying(activeStep)).catch(error => onError(error, activeStep));
+    });
+    video.addEventListener("pause", () => {
+      if (!activeStep || host.dataset.playbackState !== "playing" || video.ended) return;
+      host.dataset.playbackState = "paused";
+      Promise.resolve(onPaused(activeStep)).catch(error => onError(error, activeStep));
+    });
+    video.addEventListener("waiting", () => {
+      if (!activeStep || host.dataset.playbackState !== "playing") return;
+      host.dataset.playbackState = "paused";
+      Promise.resolve(onPaused(activeStep)).catch(error => onError(error, activeStep));
+    });
     video.addEventListener("ended", ended);
     video.addEventListener("error", playbackError);
     host.replaceChildren(video);
@@ -125,6 +143,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   const stop = () => {
     generation += 1;
     host.dataset.playbackState = "idle";
+    activeStep = null;
     if (video) {
       video.pause();
       video.removeAttribute("src");
@@ -136,7 +155,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     host.hidden = true;
   };
 
-  const playStep = async ({ workspaceId, sourceText, participantId, selector, step }) => {
+  const playStep = async ({ runId = null, workspaceId, sourceText, participantId, selector, step }) => {
     if (step?.kind !== "video") throw new Error("HTML playback requires a video step.");
     const asset = step.payload?.asset;
     if (!asset?.sha256 || !asset?.byteLength || !asset?.durationMs || !asset?.geometry) {
@@ -152,6 +171,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     host.dataset.playbackState = "resolving";
     const receipt = await invoke("research_runner_master_html_video_url", {
       request: {
+        ...(runId ? { runId } : {}),
         workspaceId,
         sourceText,
         participantId,
@@ -170,6 +190,10 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       throw error;
     }
     activeGrant = { receipt, workspaceId };
+    activeStep = { position: step.position, mediaGrantId: receipt.mediaGrantId ?? null };
+    try { await onGranted(activeStep); }
+    catch (error) { stop(); throw error; }
+    if (token !== generation) return null;
     host.dataset.playbackState = "loading";
     element.src = receipt.mediaUrl;
     element.currentTime = 0;
@@ -196,7 +220,10 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       throw error;
     }
     if (token !== generation) return null;
-    host.dataset.playbackState = "playing";
+    if (host.dataset.playbackState === "starting") {
+      host.dataset.playbackState = "playing";
+      await onPlaying(activeStep);
+    }
     if (element.ended) windowObject.setTimeout(ended, 0);
     return { receipt, video: element };
   };
@@ -216,5 +243,6 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     stop,
     destroy,
     get video() { return video; },
+    get step() { return activeStep; },
   });
 }

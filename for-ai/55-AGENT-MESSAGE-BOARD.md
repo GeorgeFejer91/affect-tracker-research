@@ -6468,3 +6468,25 @@ The module is registered for compile checks but not started by `MasterRuntime`.
 Local Windows `cargo check --tests --no-default-features` and formatting pass;
 the focused test still needs execution in CI because the local disk falls below
 1 GB after compilation. This is a source checkpoint, not an executable session.
+
+Second source slice: master5's explicitly unqualified validation entrypoint now
+creates the Rust worker after exact recipe, P1 catalogue, P2 asset, layout,
+recording identity and tested-input checks. Status, actions, cancellation and
+teardown are wired. A separate master5 action union accepts only position/grant
+bound observed HTML play/pause/end/failure edges; no frontend grant command
+exists and master4 ingress stays unchanged. The HTML media URL command validates
+active run/workspace/source/plan/participant/position before issuing a grant,
+registers the issued opaque ID in Rust, and revokes it if registration fails.
+The Runner video element relays actual play/pause/end/error observations and
+reads the saved video step; forms, native ISI and Rust input/LSL/storage remain
+in the worker. The readiness button now checks independent JS/Rust full plan
+parity and complete P1 binding. Normal research Start remains closed with
+`runner-research-qualification-pending`.
+
+Local evidence: 1,191/1,191 Node tests pass using the main checkout's tracked
+stimulus tree, including focused grant/transition checks; the Runner production
+build and boundary check pass; Rust formatting passes. Rust compile and new
+ingress test are pending final CI for this source. No installed participant
+session, visible face/video paint, physical input, actual LSL/XDF, or independent
+full-run reconstruction is claimed. The earlier worker-only Windows source job
+passed but its superseded installer job was cancelled before bundling.

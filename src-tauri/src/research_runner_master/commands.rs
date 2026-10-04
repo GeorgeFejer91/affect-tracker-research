@@ -1,6 +1,6 @@
 use super::runtime::{
     MasterAction, MasterActionRequestV3, MasterActionRequestV4, MasterActionV2, MasterActionV4,
-    MasterRuntime, MasterStartRequest, MasterStartRequestV2, MasterStartRequestV3,
+    MasterActionV5, MasterRuntime, MasterStartRequest, MasterStartRequestV2, MasterStartRequestV3,
     MasterStartRequestV4, MasterStatus,
 };
 use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
@@ -25,6 +25,8 @@ pub struct MasterPreflightRequest {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MasterHtmlVideoRequest {
+    #[serde(default)]
+    pub run_id: Option<String>,
     pub workspace_id: String,
     pub source_text: String,
     pub participant_id: String,
@@ -80,7 +82,7 @@ fn bound_video_asset<'a>(
     Ok(binding)
 }
 
-fn verified_video_bindings(
+pub(super) fn verified_video_bindings(
     workspace: &WorkspaceService,
     workspace_id: &str,
     prepared: &PreparedMaster,
@@ -165,10 +167,12 @@ pub async fn research_runner_master_rescan(
 pub async fn research_runner_master_html_video_url(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
+    runtime: State<'_, Arc<MasterRuntime>>,
     request: MasterHtmlVideoRequest,
 ) -> ResearchResult<MasterHtmlVideoUrl> {
     authorize(&window)?;
     let workspace = Arc::clone(&workspace);
+    let runtime = Arc::clone(&runtime);
     tauri::async_runtime::spawn_blocking(move || {
         let prepared = PreparedMaster::read(
             &request.source_text,
@@ -176,6 +180,12 @@ pub async fn research_runner_master_html_video_url(
             request.selector,
         )?;
         let asset = declared_video_asset(&prepared.plan, request.protocol_step_position)?;
+        runtime.validate_media_request(
+            request.run_id.as_deref(),
+            &request.workspace_id,
+            &prepared,
+            request.protocol_step_position,
+        )?;
         verified_video_bindings(&workspace, &request.workspace_id, &prepared)?;
         let path = asset["sourceRelativePath"].as_str().ok_or_else(|| {
             CommandError::invalid_contract("The selected video has no saved path.")
@@ -194,6 +204,44 @@ pub async fn research_runner_master_html_video_url(
             byte_length,
             mime_type,
         )?;
+        if let Some(run_id) = request.run_id.as_deref() {
+            let registration = runtime
+                .validate_media_request(
+                    Some(run_id),
+                    &request.workspace_id,
+                    &prepared,
+                    request.protocol_step_position,
+                )
+                .and_then(|_| {
+                    runtime.register_media_grant(
+                        run_id,
+                        request.protocol_step_position,
+                        receipt.media_grant_id.clone(),
+                    )
+                });
+            if let Err(error) = registration {
+                let _ = workspace.attest_workspace_decode(
+                    crate::research_workspace::DecodeAttestationRequest {
+                        attestation_kind:
+                            crate::research_workspace::DecodeAttestationKind::RevokeGrant,
+                        decode_backend:
+                            crate::research_workspace::DecodeBackend::WebviewVideoFrameCallback,
+                        workspace_id: request.workspace_id.clone(),
+                        media_grant_id: receipt.media_grant_id.clone(),
+                        workspace_file_id: receipt.workspace_file_id.clone(),
+                        sha256: sha256.to_owned(),
+                        byte_length: receipt.byte_length,
+                        mime_type: receipt.mime_type.clone(),
+                        observed_duration_ms: None,
+                        video_width: None,
+                        video_height: None,
+                        muted_playback_ms: None,
+                        decoded_positions_ms: vec![],
+                    },
+                );
+                return Err(error);
+            }
+        }
         Ok(MasterHtmlVideoUrl {
             schema: "affect-runner-html-media-url",
             version: 1,
@@ -563,7 +611,7 @@ pub async fn research_runner_master_action_v5(
     request.validate()?;
     let MasterActionRequestV5 { run_id, action, .. } = request;
     runtime.require_version(&run_id, 5)?;
-    if !matches!(action, MasterActionV4::Stop | MasterActionV4::Pause) {
+    if !matches!(action, MasterActionV5::Stop | MasterActionV5::Pause) {
         let physical = window.inner_size().map_err(CommandError::io)?;
         runtime.validate_window(
             &run_id,
