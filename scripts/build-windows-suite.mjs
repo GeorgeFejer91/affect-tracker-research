@@ -40,6 +40,9 @@ assert.equal(config.mainBinaryName, "Experiment Planner");
 assert.deepEqual(config.bundle.externalBin, ["suite/Experiment Runner", "suite/affect-runner-engine"]);
 assert.equal(config.bundle.resources["suite/current-build.json"], "current-build.json");
 assert.equal(config.bundle.resources["suite/launcher-receipt.json"], "launcher-receipt.json");
+for (const path of ["bin/ffmpeg.exe", "bin/ffprobe.exe", "LICENSE", "README.txt", "SOURCE.txt", "receipt.json"]) {
+  assert.equal(config.bundle.resources[`suite/ffmpeg/${path}`], `ffmpeg/${path}`);
+}
 assert.equal(config.bundle.windows.nsis.installerHooks, "./windows/suite-hooks.nsh");
 assert.ok(existsSync(join(root, "src-tauri/windows/suite-hooks.nsh")));
 if (checkOnly) {
@@ -85,6 +88,18 @@ assert.equal(receipt.launcherSha256, sha256(launcherFile));
 assert.equal(receipt.engineSha256, sha256(engineFile));
 assert.equal(receipt.runtimeVerified, true);
 assert.equal(receipt.researchQualified, false);
+run("pwsh.exe", [
+  "-NoProfile", "-NonInteractive", "-File", "scripts/prepare-ffmpeg-windows-suite.ps1",
+  "-StageDirectory", stage,
+], buildEnv);
+const ffmpegReceipt = JSON.parse(readFileSync(join(stage, "ffmpeg/receipt.json"), "utf8").replace(/^\uFEFF/u, ""));
+for (const [key, path] of [
+  ["ffmpegSha256", "ffmpeg/bin/ffmpeg.exe"],
+  ["ffprobeSha256", "ffmpeg/bin/ffprobe.exe"],
+  ["licenseSha256", "ffmpeg/LICENSE"],
+  ["readmeSha256", "ffmpeg/README.txt"],
+  ["sourceNoticeSha256", "ffmpeg/SOURCE.txt"],
+]) assert.equal(ffmpegReceipt[key], sha256(join(stage, path)));
 writeFileSync(join(stage, "current-build.json"), `${JSON.stringify({
   schema: "affect-runner-current-build-receipt",
   sourceCommit,
@@ -95,6 +110,12 @@ writeFileSync(join(stage, "current-build.json"), `${JSON.stringify({
   enginePath: "affect-runner-engine.exe",
   launcherSha256: receipt.launcherSha256,
   engineSha256: receipt.engineSha256,
+  ffmpegArchiveSha256: ffmpegReceipt.archiveSha256,
+  ffmpegSha256: ffmpegReceipt.ffmpegSha256,
+  ffprobeSha256: ffmpegReceipt.ffprobeSha256,
+  ffmpegLicenseSha256: ffmpegReceipt.licenseSha256,
+  ffmpegReadmeSha256: ffmpegReceipt.readmeSha256,
+  ffmpegSourceNoticeSha256: ffmpegReceipt.sourceNoticeSha256,
   researchQualified: false,
 }, null, 2)}\n`);
 renameSync(launcherFile, join(stage, `Experiment Runner-${target}.exe`));

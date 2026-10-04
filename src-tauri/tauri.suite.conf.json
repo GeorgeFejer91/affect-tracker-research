@@ -11,7 +11,13 @@
     ],
     "resources": {
       "suite/current-build.json": "current-build.json",
-      "suite/launcher-receipt.json": "launcher-receipt.json"
+      "suite/launcher-receipt.json": "launcher-receipt.json",
+      "suite/ffmpeg/bin/ffmpeg.exe": "ffmpeg/bin/ffmpeg.exe",
+      "suite/ffmpeg/bin/ffprobe.exe": "ffmpeg/bin/ffprobe.exe",
+      "suite/ffmpeg/LICENSE": "ffmpeg/LICENSE",
+      "suite/ffmpeg/README.txt": "ffmpeg/README.txt",
+      "suite/ffmpeg/SOURCE.txt": "ffmpeg/SOURCE.txt",
+      "suite/ffmpeg/receipt.json": "ffmpeg/receipt.json"
     },
     "windows": {
       "nsis": {

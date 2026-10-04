@@ -1,0 +1,11 @@
+FFmpeg 9.0.2 Windows essentials build
+Binary package: https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip
+Binary package SHA-256: 60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba
+Build information: https://www.gyan.dev/ffmpeg/builds/
+FFmpeg source: https://github.com/FFmpeg/FFmpeg/commit/946fcce07b
+FFmpeg license and redistribution guidance: https://ffmpeg.org/legal.html
+
+The installed ffmpeg.exe and ffprobe.exe are separate GPLv3 command-line tools.
+The accompanying LICENSE file is copied unchanged from the pinned binary package.
+The Affect Research applications invoke these tools to prepare playable video
+siblings in the researcher-selected workspace. Original videos are preserved.

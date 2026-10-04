@@ -16,6 +16,13 @@ Var SuiteInstallFailure
   IfFileExists "$INSTDIR\Experiment Runner.exe" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "runner-engine-missing"
   IfFileExists "$INSTDIR\affect-runner-engine.exe" 0 suite_install_failed
+  StrCpy $SuiteInstallFailure "video-preparation-tools-missing"
+  IfFileExists "$INSTDIR\ffmpeg\bin\ffmpeg.exe" 0 suite_install_failed
+  IfFileExists "$INSTDIR\ffmpeg\bin\ffprobe.exe" 0 suite_install_failed
+  IfFileExists "$INSTDIR\ffmpeg\LICENSE" 0 suite_install_failed
+  IfFileExists "$INSTDIR\ffmpeg\README.txt" 0 suite_install_failed
+  IfFileExists "$INSTDIR\ffmpeg\SOURCE.txt" 0 suite_install_failed
+  IfFileExists "$INSTDIR\ffmpeg\receipt.json" 0 suite_install_failed
   ; Cargo's additional Runner bin can be collected by Tauri alongside the
   ; staged engine. Only the hash-bound launcher and its named engine belong in
   ; the installed suite.
@@ -53,6 +60,14 @@ Var SuiteInstallFailure
   Delete "$INSTDIR\affect-runner-engine.exe"
   Delete "$INSTDIR\current-build.json"
   Delete "$INSTDIR\launcher-receipt.json"
+  Delete "$INSTDIR\ffmpeg\bin\ffmpeg.exe"
+  Delete "$INSTDIR\ffmpeg\bin\ffprobe.exe"
+  Delete "$INSTDIR\ffmpeg\LICENSE"
+  Delete "$INSTDIR\ffmpeg\README.txt"
+  Delete "$INSTDIR\ffmpeg\SOURCE.txt"
+  Delete "$INSTDIR\ffmpeg\receipt.json"
+  RMDir "$INSTDIR\ffmpeg\bin"
+  RMDir "$INSTDIR\ffmpeg"
   ${If} $UpdateMode <> 1
     !insertmacro MUI_STARTMENU_GETFOLDER Application $AppStartMenuFolder
     Delete "$SMPROGRAMS\$AppStartMenuFolder\Experiment Planner.lnk"

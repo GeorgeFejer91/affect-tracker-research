@@ -147,11 +147,11 @@ jobs:
             }
             throw "Suite installation failed: $($process.ExitCode)"
           }
-          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
+          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher --verify-media-tools
           if ($LASTEXITCODE -ne 0) { throw 'Installed suite file audit failed.' }
           $reinstall = Start-Process -FilePath $installers[0].FullName -ArgumentList @('/S', "/D=$destination") -WindowStyle Hidden -PassThru -Wait
           if ($reinstall.ExitCode -ne 0) { throw "Suite reinstall failed: $($reinstall.ExitCode)" }
-          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
+          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher --verify-media-tools
           if ($LASTEXITCODE -ne 0) { throw 'Reinstalled suite file audit failed.' }
           $shortcuts = Join-Path $env:APPDATA 'Microsoft/Windows/Start Menu/Programs/Affect Research Suite'
           if (Test-Path -LiteralPath (Join-Path $shortcuts 'Affect Research Suite.lnk')) { throw 'Reinstall left a duplicate Planner shortcut.' }

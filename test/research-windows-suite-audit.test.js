@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import test from "node:test";
@@ -16,10 +16,21 @@ test("installed suite audit accepts relocated receipts and rejects changed Runne
   try {
     const launcher = Buffer.from("launcher-fixture");
     const engine = Buffer.from("engine-fixture");
+    const ffmpeg = Buffer.from("ffmpeg-fixture");
+    const ffprobe = Buffer.from("ffprobe-fixture");
+    const license = Buffer.from("GPL fixture");
+    const readme = Buffer.from("build notes fixture");
+    const sourceNotice = Buffer.from("source fixture");
+    await mkdir(join(root, "ffmpeg/bin"), { recursive: true });
     await Promise.all([
       writeFile(join(root, "Experiment Planner.exe"), "planner-fixture"),
       writeFile(join(root, "Experiment Runner.exe"), launcher),
       writeFile(join(root, "affect-runner-engine.exe"), engine),
+      writeFile(join(root, "ffmpeg/bin/ffmpeg.exe"), ffmpeg),
+      writeFile(join(root, "ffmpeg/bin/ffprobe.exe"), ffprobe),
+      writeFile(join(root, "ffmpeg/LICENSE"), license),
+      writeFile(join(root, "ffmpeg/README.txt"), readme),
+      writeFile(join(root, "ffmpeg/SOURCE.txt"), sourceNotice),
     ]);
     await writeFile(join(root, "launcher-receipt.json"), JSON.stringify({
       schema: "affect-runner-bootstrap-receipt-v1",
@@ -27,11 +38,19 @@ test("installed suite audit accepts relocated receipts and rejects changed Runne
       runtimeVerified: true, researchQualified: false,
     }));
     const buildPath = join(root, "current-build.json");
+    const archiveSha256 = "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba";
+    await writeFile(join(root, "ffmpeg/receipt.json"), JSON.stringify({
+      archiveSha256, ffmpegSha256: hash(ffmpeg), ffprobeSha256: hash(ffprobe),
+      licenseSha256: hash(license), readmeSha256: hash(readme), sourceNoticeSha256: hash(sourceNotice),
+    }));
     const build = {
       schema: "affect-runner-current-build-receipt", sourceCommit: commit,
       sourceDirty: false, researchQualified: false,
       authoritativeLaunchPath: "Experiment Runner.exe", enginePath: "affect-runner-engine.exe",
       launcherSha256: hash(launcher), engineSha256: hash(engine),
+      ffmpegArchiveSha256: archiveSha256, ffmpegSha256: hash(ffmpeg), ffprobeSha256: hash(ffprobe),
+      ffmpegLicenseSha256: hash(license), ffmpegReadmeSha256: hash(readme),
+      ffmpegSourceNoticeSha256: hash(sourceNotice),
     };
     await writeFile(buildPath, JSON.stringify(build));
     const run = () => {
@@ -47,6 +66,10 @@ test("installed suite audit accepts relocated receipts and rejects changed Runne
     assert.ok(run().report.issues.includes("engine-hash"));
     assert.notEqual(run().code, 0);
     await writeFile(join(root, "affect-runner-engine.exe"), engine);
+    await writeFile(join(root, "ffmpeg/bin/ffprobe.exe"), "changed");
+    assert.ok(run().report.issues.includes("ffprobe-hash"));
+    assert.notEqual(run().code, 0);
+    await writeFile(join(root, "ffmpeg/bin/ffprobe.exe"), ffprobe);
     build.enginePath = "../affect-runner-engine.exe";
     await writeFile(buildPath, JSON.stringify(build));
     assert.ok(run().report.issues.includes("engine-path"));

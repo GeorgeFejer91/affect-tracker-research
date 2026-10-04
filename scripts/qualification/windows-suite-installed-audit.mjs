@@ -15,7 +15,8 @@ assert.ok(appDir && !appDir.startsWith("--"), "Pass --app-dir <installed suite d
 const expectedCommit = option("--expected-commit");
 assert.ok(!expectedCommit || /^[0-9a-f]{40}$/u.test(expectedCommit), "Expected commit must be a full lowercase Git SHA-1.");
 const verifyLauncher = process.argv.includes("--verify-launcher");
-const used = new Set(["--app-dir", appDir, "--expected-commit", expectedCommit, "--verify-launcher"]);
+const verifyMediaTools = process.argv.includes("--verify-media-tools");
+const used = new Set(["--app-dir", appDir, "--expected-commit", expectedCommit, "--verify-launcher", "--verify-media-tools"]);
 assert.ok(process.argv.slice(2).every(value => used.has(value)), "Unknown argument.");
 const root = resolve(appDir);
 const files = {
@@ -24,9 +25,23 @@ const files = {
   engine: "affect-runner-engine.exe",
   build: "current-build.json",
   bootstrap: "launcher-receipt.json",
+  ffmpeg: "ffmpeg/bin/ffmpeg.exe",
+  ffprobe: "ffmpeg/bin/ffprobe.exe",
+  ffmpegLicense: "ffmpeg/LICENSE",
+  ffmpegReadme: "ffmpeg/README.txt",
+  ffmpegSourceNotice: "ffmpeg/SOURCE.txt",
+  ffmpegReceipt: "ffmpeg/receipt.json",
 };
 const issues = [];
 const paths = Object.fromEntries(Object.entries(files).map(([key, name]) => [key, join(root, name)]));
+for (const [key, path] of [["ffmpeg-directory", join(root, "ffmpeg")], ["ffmpeg-bin-directory", join(root, "ffmpeg/bin")]]) {
+  try {
+    const info = await lstat(path);
+    if (!info.isDirectory() || info.isSymbolicLink()) issues.push(`${key}-not-ordinary`);
+  } catch {
+    issues.push(`${key}-missing`);
+  }
+}
 
 async function sha256(path) {
   const digest = createHash("sha256");
@@ -52,11 +67,19 @@ try {
 }
 let build;
 let bootstrap;
+let ffmpegReceipt;
 if (!issues.includes("build-missing") && !issues.includes("bootstrap-missing")) {
   try {
     [build, bootstrap] = await Promise.all([json(paths.build), json(paths.bootstrap)]);
   } catch {
     issues.push("receipt-invalid-json");
+  }
+}
+if (!issues.includes("ffmpegReceipt-missing")) {
+  try {
+    ffmpegReceipt = await json(paths.ffmpegReceipt);
+  } catch {
+    issues.push("ffmpeg-receipt-invalid-json");
   }
 }
 if (build && bootstrap) {
@@ -77,9 +100,34 @@ if (build && bootstrap) {
     }
   }
 }
+if (build && ffmpegReceipt) {
+  if (build.ffmpegArchiveSha256 !== "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba" ||
+      ffmpegReceipt.archiveSha256 !== build.ffmpegArchiveSha256) issues.push("ffmpeg-archive-pin");
+  for (const [key, buildField, receiptField] of [
+    ["ffmpeg", "ffmpegSha256", "ffmpegSha256"],
+    ["ffprobe", "ffprobeSha256", "ffprobeSha256"],
+    ["ffmpegLicense", "ffmpegLicenseSha256", "licenseSha256"],
+    ["ffmpegReadme", "ffmpegReadmeSha256", "readmeSha256"],
+    ["ffmpegSourceNotice", "ffmpegSourceNoticeSha256", "sourceNoticeSha256"],
+  ]) {
+    if (issues.some(issue => issue.startsWith(`${key}-`))) continue;
+    const actual = await sha256(paths[key]);
+    if (build[buildField] !== actual || ffmpegReceipt[receiptField] !== actual) issues.push(`${key}-hash`);
+  }
+}
 if (verifyLauncher && !issues.length) {
   const result = spawnSync(paths.launcher, ["--verify-only"], { cwd: root, windowsHide: true, timeout: 15000 });
   if (result.error || result.status !== 0) issues.push("launcher-verification");
+}
+if (verifyMediaTools && !issues.length) {
+  for (const key of ["ffmpeg", "ffprobe"]) {
+    const result = spawnSync(paths[key], ["-version"], {
+      cwd: root, windowsHide: true, timeout: 15000, encoding: "utf8",
+      env: { ...process.env, PATH: "" },
+    });
+    if (result.error || result.status !== 0 ||
+        !result.stdout?.startsWith(`${key} version 9.0.2`)) issues.push(`${key}-version`);
+  }
 }
 const report = {
   schema: "affect-windows-suite-installed-audit-v1",
@@ -88,7 +136,8 @@ const report = {
   directory: root,
   sourceCommit: build?.sourceCommit ?? null,
   launcherVerified: verifyLauncher && !issues.length,
-  claim: "Installed file layout, portable receipts, Runner hashes, and optional launcher verification only; no Planner GUI, participant execution, video, LSL, timing, or XDF claim.",
+  mediaToolsVerified: verifyMediaTools && !issues.length,
+  claim: "Installed file layout, portable receipts, Runner/tool hashes, and optional launcher/tool verification only; no Planner GUI, participant execution, video playback, LSL, timing, or XDF claim.",
 };
 console.log(JSON.stringify(report, null, 2));
 if (issues.length) process.exitCode = 2;
