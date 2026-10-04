@@ -150,5 +150,5 @@ test("browser Runner CSV events carry startup and outcome identities", async () 
   assert.match(app, /completedStepCount:\s*status === "complete" \? attempt\.steps\.length/u);
   assert.match(app, /recordingFinalization:\s*"browser-csv-downloaded"/u);
   assert.match(app, /payload_json:\s*browserStartupPayload\(browserAttempt\)/u);
-  assert.match(app, /payload_json:\s*browserOutcomePayload\(attempt,\s*status\)/u);
+  assert.match(app, /payload_json:\s*browserOutcomePayload\(attempt,\s*status,\s*failureCode\)/u);
 });

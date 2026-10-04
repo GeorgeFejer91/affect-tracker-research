@@ -42,14 +42,16 @@ const assertReceipt = (receipt, asset) => {
   }
 };
 
-export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = window, onEnded = () => {} } = {}) {
+export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = window, onEnded = () => {}, onError = () => {} } = {}) {
   if (!(host instanceof HTMLElement) || typeof invoke !== "function") {
     throw new TypeError("Runner HTML video playback needs a host and native adapter.");
   }
   let generation = 0;
   let video = null;
   let ended = null;
+  let playbackError = null;
   let activeGrant = null;
+  let endedGeneration = -1;
 
   const releaseGrant = (grant) => {
     if (!grant?.receipt?.mediaGrantId) return;
@@ -83,14 +85,28 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     video.controls = false;
     video.disablePictureInPicture = true;
     video.setAttribute("controlslist", "nodownload noplaybackrate noremoteplayback");
-    ended = () => onEnded();
+    ended = () => {
+      if (host.dataset.playbackState === "playing" && video.ended && endedGeneration !== generation) {
+        endedGeneration = generation;
+        host.dataset.playbackState = "ended";
+        onEnded();
+      }
+    };
+    playbackError = () => {
+      if (host.dataset.playbackState === "playing") {
+        host.dataset.playbackState = "failed";
+        onError(new Error(mediaErrorMessage(video)));
+      }
+    };
     video.addEventListener("ended", ended);
+    video.addEventListener("error", playbackError);
     host.replaceChildren(video);
     return video;
   };
 
   const stop = () => {
     generation += 1;
+    host.dataset.playbackState = "idle";
     if (video) {
       video.pause();
       video.removeAttribute("src");
@@ -100,7 +116,6 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     releaseGrant(activeGrant);
     activeGrant = null;
     host.hidden = true;
-    host.dataset.playbackState = "idle";
   };
 
   const playStep = async ({ workspaceId, sourceText, participantId, selector, step }) => {
@@ -148,7 +163,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       throw error;
     }
     if (token !== generation) return null;
-    host.dataset.playbackState = "playing";
+    host.dataset.playbackState = "starting";
     try {
       await element.play();
     } catch (error) {
@@ -156,15 +171,20 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       element.controls = true;
       throw error;
     }
+    if (token !== generation) return null;
+    host.dataset.playbackState = "playing";
+    if (element.ended) windowObject.setTimeout(ended, 0);
     return { receipt, video: element };
   };
 
   const destroy = () => {
     stop();
     if (video && ended) video.removeEventListener("ended", ended);
+    if (video && playbackError) video.removeEventListener("error", playbackError);
     host.replaceChildren();
     video = null;
     ended = null;
+    playbackError = null;
   };
 
   return Object.freeze({

@@ -6303,3 +6303,39 @@ This closes the P7 package-layout and tool-bundling evidence only. P1-08
 installed save/Open/playback, P5-09 visual verification, and R1-03/05/06/07
 complete participant execution/LSL/XDF remain open. The local installed app
 still predates this source; the CI silent install did not exercise its GUI.
+
+## 20261004-R1-HTML-observed-video-boundary
+
+Owner: root, R1/RR-04 and R1-04 with RR-10 correspondence seam, Backend
+Verification. Isolated branch `codex/segment-r1-html-session` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-html`, based on
+P7 integration `8db1b0f`. Runner consumes the exact P1 prepared-media identity,
+P3 ordered steps, P4 layout and P5 feedback from the saved master JSON; it
+creates observed step events, response rows and browser CSV or native LSL/XDF
+session evidence. No R1 field is added to the Planner JSON.
+
+Verified source snapshot: current browser Runner resolves the saved master3–5
+selection and obtains an identity-bound HTML media URL. Both browser execution
+and hidden validation traversal also schedule successful video-step advancement
+at the planned duration, even if the video has not ended. Native master Start
+remains explicitly unavailable; its media, native timing and recorder lifecycle
+is not connected. This pass changes only `runner/src/app.js`, the HTML video
+player and focused R1 tests to make observed HTML `ended` the advancement
+boundary and keep incomplete/error behavior explicit. P1 media validation and
+P7 schema stay owned by their segments. Evidence: focused player/controller
+tests and source-to-saved-plan checks, followed by applicable integration gates
+on the exact commit. Installed GUI, physical timing and independent full-session
+XDF proof remain open and cannot be inferred from this source fix.
+
+Source result: HTML video advancement now requires the player's observed
+`ended` event. Duplicate/stale end and post-end decode error callbacks cannot
+advance or fail another step. Browser CSV separates video preparation, play
+acceptance, observed end, and decode failure; load/play errors produce a partial
+receipt. Interval completion remains timer driven. Hidden validation traversal
+likewise waits for an actual video end. Focused player/CSV tests pass (7/7),
+SurveyJS generated assets check passes, and the full Node suite passes
+(1189/1189) after mounting the unchanged tracked research-stimuli tree from
+the P7 checkout into the sparse R1 worktree. The first full run failed only
+because that sparse directory was absent. JS syntax and `git diff --check`
+pass. No native compile, installed UI, physical timing, LSL or XDF claim is made
+by this slice; the local disk has under 40 MB free.

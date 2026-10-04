@@ -68,12 +68,21 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     onEnded: () => {
       const attempt = browserAttempt;
       if (!destroyed && attempt?.active && attempt.steps[attempt.index]?.kind === "video") {
+        browserRecord({ row_type: "event", event_type: "videoEnded", media_time_ms: Math.round(validationVideo.video.currentTime * 1000) });
         action(() => showBrowserRunStep(attempt.index + 1));
         return;
       }
       const current = validationPreview;
       if (!destroyed && current?.steps[current.index]?.kind === "video") action(() => showValidationPreview(current.index + 1));
     },
+    onError: error => action(async () => {
+      const attempt = browserAttempt;
+      if (!destroyed && attempt?.active && attempt.steps[attempt.index]?.kind === "video") {
+        browserRecord({ row_type: "event", event_type: "videoPlaybackFailed", payload_json: { message: messageOf(error) } });
+        await finishBrowserAttempt("partial", "browser-video-error");
+      }
+      throw error;
+    }),
   });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
   const legacyProtocol = new NativePackageProtocolAdapter(root, {
@@ -270,12 +279,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       lslUnavailable: true,
     };
   }
-  function browserOutcomePayload(attempt, status) {
+  function browserOutcomePayload(attempt, status, failureCode) {
     return {
       schema: "affect-runner-browser-outcome",
       version: 1,
       protocolOutcome: status === "complete" ? "completed" : "partial",
-      failureCode: status === "complete" ? null : "browser-stop-early",
+      failureCode: status === "complete" ? null : failureCode,
       recipeSourceByteSha256: attempt.recipeSha256,
       planIdentitySha256: attempt.planSha256,
       participantId: attempt.participantId,
@@ -352,12 +361,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     sample();
     attempt.sampleTimer = windowObject.setInterval(sample, sampleMs);
   }
-  async function finishBrowserAttempt(status = "complete") {
+  async function finishBrowserAttempt(status = "complete", failureCode = "browser-stop-early") {
     const attempt = browserAttempt;
     if (!attempt) return;
     browserStopSampling();
     validationVideo.stop();
-    browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: browserOutcomePayload(attempt, status) });
+    browserRecord({ row_type: "event", event_type: status === "complete" ? "runComplete" : "runPartial", payload_json: browserOutcomePayload(attempt, status, failureCode) });
     attempt.active = false;
     const csv = browserRunCsv(attempt.rows);
     const fileName = `${safeName(recipe?.recipe?.segments?.P1?.study?.title)}_${attempt.participantId}_${safeName(attempt.selector.variantId)}_${status}.csv`;
@@ -425,7 +434,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     text("runner-write", "Browser CSV journal active");
     text("runner-lsl", "Browser run records CSV rows instead of emitting LSL/XDF");
     query("runner-pause").disabled = true;
-    browserRecord({ row_type: "event", event_type: `${step.kind}Started`, protocol_step_position: step.position, step_kind: step.kind, step_label: title });
+    browserRecord({ row_type: "event", event_type: step.kind === "video" ? "videoPreparing" : `${step.kind}Started`, protocol_step_position: step.position, step_kind: step.kind, step_label: title });
     if (step.kind === "questionnaire") {
       validationVideo.stop();
       presentation.showPage("questionnaire");
@@ -462,22 +471,32 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (step.kind === "interval") {
         validationVideo.stop();
         attempt.stepTimer = windowObject.setTimeout(() => {
-          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
+          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) {
+            browserRecord({ row_type: "event", event_type: "intervalEnded" });
+            action(() => showBrowserRunStep(index + 1));
+          }
         }, step.durationMs);
       } else if (step.kind === "video") {
-        const result = await validationVideo.playStep({
-          workspaceId: workspace.workspaceId,
-          sourceText: plannerRecipeTransportText(recipe),
-          participantId: attempt.participantId,
-          selector: attempt.selector,
-          step,
-        });
+        let result;
+        try {
+          result = await validationVideo.playStep({
+            workspaceId: workspace.workspaceId,
+            sourceText: plannerRecipeTransportText(recipe),
+            participantId: attempt.participantId,
+            selector: attempt.selector,
+            step,
+          });
+        } catch (error) {
+          if (browserAttempt === attempt && attempt.active && attempt.index === index) {
+            browserRecord({ row_type: "event", event_type: "videoPlaybackFailed", payload_json: { message: messageOf(error) } });
+            await finishBrowserAttempt("partial", "browser-video-error");
+          }
+          throw error;
+        }
         if (destroyed || playbackEpoch !== validationPlaybackEpoch || browserAttempt !== attempt || attempt.index !== index || !result) return;
+        browserRecord({ row_type: "event", event_type: "videoStarted", media_time_ms: Math.round(result.video.currentTime * 1000) });
         text("runner-timing", `Browser CSV run · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
         browserStartSampling(step);
-        attempt.stepTimer = windowObject.setTimeout(() => {
-          if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
-        }, step.durationMs);
       }
     }
     renderControls();
@@ -728,7 +747,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         if (destroyed || playbackEpoch !== validationPlaybackEpoch || validationPreview?.index !== nextIndex || !result) return;
         query("run-stimulus-placeholder").textContent = "";
         text("runner-timing", `Hidden validation traversal · playing ${Number((step.durationMs / 1000).toFixed(3))} s video`);
-        scheduleValidationStepAdvance(nextIndex, step.durationMs);
       }
     }
     renderControls();
