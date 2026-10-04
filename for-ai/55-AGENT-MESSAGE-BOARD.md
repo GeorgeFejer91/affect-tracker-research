@@ -1,5 +1,19 @@
 # Agent message board
 
+## 20261004 Compartment catalog current-status pass
+
+Owner: current task; `codex/segment-contracts-current-status` from `9b45d2e`,
+`contracts` segment, Backend Verification. Dependencies: P5-09, R1-03–07,
+RR-02/05/07/08/10 and the P7 suite handoff. The existing catalog correctly
+maps the six JSON contributions and external master5 assets, but its central
+P5 header still describes version 2/procedural Face as current and R1 still
+says implementation is deferred. This documentation-only pass aligns those
+status labels with current strict v3 source and active Runner components, and
+records mode-specific control visibility plus the saved-renderer sample use.
+It does not change schema, application behavior, checklist completion, native
+qualification, or the pending exact installer CI result. Evidence: source and
+contract comparison, focused link/status review and diff check.
+
 ## 20261004 P7 suite duplicate executable correction
 
 Owner: current task; `codex/p7-windows-suite`, P7 packaging continuation,
