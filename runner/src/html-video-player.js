@@ -141,7 +141,12 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     element.src = receipt.mediaUrl;
     element.currentTime = 0;
     element.load();
-    await waitForReady(element, windowObject);
+    try {
+      await waitForReady(element, windowObject);
+    } catch (error) {
+      if (token === generation) stop();
+      throw error;
+    }
     if (token !== generation) return null;
     host.dataset.playbackState = "playing";
     try {
