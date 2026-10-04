@@ -1,5 +1,10 @@
 # Native VLC Flubber feasibility probe
 
+The separate [Flubbercorder experiment runner](flubbercorder/README.md)
+extends this filter with an experimenter window, native XDF recorder, remote
+affect channel, filename-based markers, and a Windows installer. The probe
+instructions and receipts below document the earlier standalone filter check.
+
 This is an experimental VLC 3.0.20 video-filter plugin for Windows x64. It is
 separate from Experiment Planner and Experiment Runner and is not an approved
 replacement for either program.

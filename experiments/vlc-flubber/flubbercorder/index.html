@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flubbercorder</title>
+  <link rel="stylesheet" href="/app.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Flubbercorder</h1>
+    <span id="role"></span>
+  </header>
+  <main>
+    <section id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title">Experiment</h2>
+      <label for="recipe-path">Experiment JSON path</label>
+      <div class="path-row">
+        <input id="recipe-path" type="text" autocomplete="off" spellcheck="false">
+        <button type="button" data-action="load" class="fit">Load</button>
+      </div>
+      <button type="button" data-action="prepare" class="fit">Prepare video and recorder</button>
+    </section>
+
+    <section aria-labelledby="session-title">
+      <h2 id="session-title">Session</h2>
+      <dl class="facts">
+        <div><dt>Status</dt><dd id="phase">Connecting</dd></div>
+        <div><dt>Video</dt><dd id="video">—</dd></div>
+        <div><dt>Panel ratio</dt><dd id="ratio">—</dd></div>
+        <div><dt>LSL affect</dt><dd id="affect">Waiting for samples</dd></div>
+        <div><dt>Recorder</dt><dd id="recorder">Not started</dd></div>
+      </dl>
+      <p id="error" role="alert"></p>
+      <div class="controls">
+        <button type="button" data-action="start" class="primary fit">Start</button>
+        <button type="button" data-action="pause" class="fit">Pause</button>
+        <button type="button" data-action="resume" class="fit">Resume</button>
+        <button type="button" data-action="stop" class="fit">Stop</button>
+      </div>
+      <div class="pad" role="group" aria-label="Affect controls">
+        <button type="button" data-action="up" class="fit up">Arousal +</button>
+        <button type="button" data-action="left" class="fit left">Valence −</button>
+        <button type="button" data-action="right" class="fit right">Valence +</button>
+        <button type="button" data-action="down" class="fit down">Arousal −</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="signals-title">
+      <h2 id="signals-title">Signals and files</h2>
+      <dl class="facts">
+        <div><dt>LSL streams</dt><dd id="streams">—</dd></div>
+        <div><dt>Recorder subscriptions</dt><dd id="subscriptions">—</dd></div>
+        <div><dt>First data</dt><dd id="first-data">—</dd></div>
+        <div><dt>Video markers</dt><dd id="markers">—</dd></div>
+        <div class="local"><dt>XDF</dt><dd id="xdf">—</dd></div>
+        <div class="local"><dt>VLC fallback CSV</dt><dd id="csv">—</dd></div>
+      </dl>
+    </section>
+
+    <section id="phone-section" aria-labelledby="phone-title">
+      <h2 id="phone-title">Phone control</h2>
+      <p>Opt in on a trusted local network. Open the pairing link on the phone.</p>
+      <div class="controls">
+        <button type="button" data-action="give_phone" class="fit">Give phone control</button>
+        <button type="button" data-action="revoke_phone" class="fit">Revoke phone control</button>
+      </div>
+      <p id="phone-status"></p>
+      <a id="phone-link" href="#" hidden>Open pairing link</a>
+      <button id="copy-phone" type="button" class="fit" hidden>Copy pairing link</button>
+    </section>
+  </main>
+</body>
+</html>

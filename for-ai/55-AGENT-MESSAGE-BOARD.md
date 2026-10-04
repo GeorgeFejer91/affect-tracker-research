@@ -1,5 +1,20 @@
 # Agent message board
 
+## 20261004 Flubbercorder VLC runner experiment
+
+Owner: current task; branch `codex/segment-flubbercorder-runner`, isolated
+worktree; stage: Repository/Web Synchronization after installed Backend
+Verification. Bounded side-project concern:
+`experiments/vlc-flubber/flubbercorder/`, the native plugin's remote affect
+command bridge, and [74](74-VLC-FLUBBER-SIDE-QUEST.md). This is outside P1–P7/R1.
+The existing Planner and Runner implementation, JSON contracts, and release
+claims remain under their segment owners. The side project tests a local HTML
+experimenter window, VLC process control, LSL/CSV/XDF recording, and a paired
+phone control surface. It does not promote VLC into the main suite.
+The release candidate is an offline Windows installer; its clean installed
+LSL/XDF/CSV session and public prerelease are gated by
+`.github/workflows/vlc-experimentrunner-release.yml`.
+
 ## 20261004 Native VLC Flubber side quest
 
 Owner: current task; branch `codex/segment-vlc-flubber-sidequest`, isolated

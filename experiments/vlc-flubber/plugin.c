@@ -6,6 +6,7 @@ typedef SSIZE_T ssize_t;
 #include <vlc_common.h>
 #include <vlc_plugin.h>
 #include <vlc_filter.h>
+#include <vlc_interface.h>
 #include <vlc_picture.h>
 #include <vlc_variables.h>
 #include <vlc_actions.h>
@@ -39,29 +40,42 @@ typedef struct {
 } lsl_api_t;
 
 typedef struct { double stamp; float x, y; } lsl_pending_t;
+typedef struct { volatile LONG sequence, action, applied; } control_t;
+
+static lsl_api_t outlet_lsl;
+static SRWLOCK outlet_lock = SRWLOCK_INIT;
+static bool outlet_ready;
+static LONG outlet_users;
 
 typedef struct {
     CRITICAL_SECTION lock;
     FILE *csv;
     char *csv_path;
+    char *start_marker, *stop_marker;
+    HANDLE control_handle;
+    control_t *control;
     int panel_percent, step_percent, render_fps, width, video_height, total_height;
     double x, y, phase, pointy[N], rounded[N], phase_offset[WAVES], size_offset[WAVES];
     uint64_t frame_count;
+    uint64_t blank_run;
     int64_t video_ms;
-    bool started;
+    bool started, ended, sentinel;
     bool replay_start_marker;
     double lsl_start_stamp;
     lsl_pending_t pending[LSL_BUFFER];
     size_t pending_count;
     size_t pending_dropped;
     lsl_api_t lsl;
+    bool shared_lsl;
 } flubber_t;
 
 static int Open(vlc_object_t *);
 static void Close(vlc_object_t *);
 static picture_t *Render(filter_t *, picture_t *);
 static int KeyEvent(vlc_object_t *, const char *, vlc_value_t, vlc_value_t, void *);
-static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "csv", "lsl", NULL };
+static int OutletOpen(vlc_object_t *);
+static void OutletClose(vlc_object_t *);
+static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "csv", "marker-base", "control-name", "lsl", "sentinel", NULL };
 
 vlc_module_begin()
     set_shortname("Flubber")
@@ -78,8 +92,17 @@ vlc_module_begin()
     add_integer_with_range(PREFIX "render-fps", 60, 1, 240,
         "Converted frame rate", "Constant frame rate of the padded video", false)
     add_savefile(PREFIX "csv", "", "Affect CSV path", "CSV output path", false)
+    add_string(PREFIX "marker-base", "video", "Marker video name", "Original video filename for LSL Start/Stop markers", false)
+    add_string(PREFIX "control-name", "", "Affect control channel", "Private Windows mapping name for Flubber commands", false)
     add_bool(PREFIX "lsl", false, "LSL output", "Send affect and start/end markers", false)
+    add_bool(PREFIX "sentinel", false, "Prepared-media boundary signal", "Start data when the reserved panel indicates original video", false)
     set_callbacks(Open, Close)
+    add_submodule()
+    set_shortname("Flubber outlets")
+    set_description("Persistent VLC Flubber LSL outlets")
+    set_capability("interface", 0)
+    add_shortcut("flubberoutlet")
+    set_callbacks(OutletOpen, OutletClose)
 vlc_module_end()
 
 static double clip(double x, double lo, double hi)
@@ -147,10 +170,13 @@ static void row(flubber_t *s, const char *event)
         } else if (strcmp(event, "video_start") == 0) {
             s->lsl_start_stamp = s->lsl.local_clock();
             s->replay_start_marker = !s->lsl.have_consumers(s->lsl.marker_outlet);
-            if (!s->replay_start_marker)
-                s->lsl.push_string_at(s->lsl.marker_outlet, &event, s->lsl_start_stamp);
+            if (!s->replay_start_marker) {
+                const char *label = s->start_marker;
+                s->lsl.push_string_at(s->lsl.marker_outlet, &label, s->lsl_start_stamp);
+            }
         } else if (strcmp(event, "video_end") == 0) {
-            s->lsl.push_string(s->lsl.marker_outlet, &event);
+            const char *label = s->stop_marker;
+            s->lsl.push_string(s->lsl.marker_outlet, &label);
         }
     }
 }
@@ -188,17 +214,47 @@ static bool open_lsl(lsl_api_t *a)
     LOAD(have_consumers, "lsl_have_consumers")
     LOAD(local_clock, "lsl_local_clock")
 #undef LOAD
-    char source[80];
-    snprintf(source, sizeof(source), "vlc-flubber-%lu", (unsigned long)GetCurrentProcessId());
+    char affect_source[80], marker_source[80];
+    snprintf(affect_source, sizeof(affect_source), "vlc-flubber-%lu-affect",
+             (unsigned long)GetCurrentProcessId());
+    snprintf(marker_source, sizeof(marker_source), "vlc-flubber-%lu-markers",
+             (unsigned long)GetCurrentProcessId());
     a->affect_info = a->create_info("VLC_Flubber_Affect", "Affect", 2, 0.0,
-                                   cft_float32, source);
+                                   cft_float32, affect_source);
     a->marker_info = a->create_info("VLC_Flubber_Markers", "Markers", 1, 0.0,
-                                   cft_string, source);
+                                   cft_string, marker_source);
     if (!a->affect_info || !a->marker_info) { close_lsl(a); return false; }
     a->affect_outlet = a->create_outlet(a->affect_info, 0, 360);
     a->marker_outlet = a->create_outlet(a->marker_info, 0, 360);
     if (!a->affect_outlet || !a->marker_outlet) { close_lsl(a); return false; }
     return true;
+}
+
+static int OutletOpen(vlc_object_t *object)
+{
+    (void)object;
+    AcquireSRWLockExclusive(&outlet_lock);
+    if (!outlet_ready && !open_lsl(&outlet_lsl)) {
+        ReleaseSRWLockExclusive(&outlet_lock);
+        return VLC_EGENERIC;
+    }
+    outlet_ready = true;
+    ReleaseSRWLockExclusive(&outlet_lock);
+    return VLC_SUCCESS;
+}
+
+static void OutletClose(vlc_object_t *object)
+{
+    (void)object;
+    AcquireSRWLockExclusive(&outlet_lock);
+    outlet_ready = false;
+    ReleaseSRWLockExclusive(&outlet_lock);
+    for (int i = 0; i < 300 && InterlockedCompareExchange(&outlet_users, 0, 0); ++i)
+        Sleep(10);
+    AcquireSRWLockExclusive(&outlet_lock);
+    if (!InterlockedCompareExchange(&outlet_users, 0, 0))
+        close_lsl(&outlet_lsl);
+    ReleaseSRWLockExclusive(&outlet_lock);
 }
 
 /* VLC's official Windows build allocates returned strings with msvcrt.dll;
@@ -243,14 +299,66 @@ static int Open(vlc_object_t *object)
     s->panel_percent = percent;
     s->step_percent = step;
     s->render_fps = render_fps;
+    s->sentinel = var_CreateGetBool(f, PREFIX "sentinel");
     s->width = width;
     s->video_height = height;
     s->total_height = total_height;
     s->csv_path = var_CreateGetString(f, PREFIX "csv");
+    char *marker_base = var_CreateGetString(f, PREFIX "marker-base");
+    if (!marker_base || !marker_base[0] || strlen(marker_base) > 900) {
+        free_vlc_string(marker_base);
+        free_vlc_string(s->csv_path);
+        DeleteCriticalSection(&s->lock);
+        free(s);
+        return VLC_EGENERIC;
+    }
+    size_t marker_size = strlen(marker_base) + sizeof("_Start");
+    s->start_marker = malloc(marker_size);
+    s->stop_marker = malloc(marker_size);
+    if (!s->start_marker || !s->stop_marker) {
+        free(s->start_marker);
+        free(s->stop_marker);
+        free_vlc_string(marker_base);
+        free_vlc_string(s->csv_path);
+        DeleteCriticalSection(&s->lock);
+        free(s);
+        return VLC_ENOMEM;
+    }
+    snprintf(s->start_marker, marker_size, "%s_Start", marker_base);
+    snprintf(s->stop_marker, marker_size, "%s_Stop", marker_base);
+    free_vlc_string(marker_base);
+    char *control_name = var_CreateGetString(f, PREFIX "control-name");
+    if (control_name && control_name[0]) {
+        s->control_handle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL,
+                                               PAGE_READWRITE, 0,
+                                               sizeof(control_t), control_name);
+        if (s->control_handle && GetLastError() == ERROR_ALREADY_EXISTS) {
+            CloseHandle(s->control_handle);
+            s->control_handle = NULL;
+        }
+        if (s->control_handle)
+            s->control = MapViewOfFile(s->control_handle, FILE_MAP_ALL_ACCESS,
+                                       0, 0, sizeof(control_t));
+        if (!s->control) {
+            if (s->control_handle) CloseHandle(s->control_handle);
+            free_vlc_string(control_name);
+            free(s->start_marker);
+            free(s->stop_marker);
+            free_vlc_string(s->csv_path);
+            DeleteCriticalSection(&s->lock);
+            free(s);
+            return VLC_EGENERIC;
+        }
+    }
+    free_vlc_string(control_name);
     if (s->csv_path && s->csv_path[0]) {
         if (fopen_s(&s->csv, s->csv_path, "w") != 0) {
             msg_Err(f, "Cannot open CSV: %s", s->csv_path);
             free_vlc_string(s->csv_path);
+            if (s->control) UnmapViewOfFile(s->control);
+            if (s->control_handle) CloseHandle(s->control_handle);
+            free(s->start_marker);
+            free(s->stop_marker);
             DeleteCriticalSection(&s->lock);
             free(s);
             return VLC_EGENERIC;
@@ -258,13 +366,26 @@ static int Open(vlc_object_t *object)
         fputs("event,video_ms,valence,arousal,phase_rad\n", s->csv);
         fflush(s->csv);
     }
-    if (var_CreateGetBool(f, PREFIX "lsl") && !open_lsl(&s->lsl)) {
-        msg_Err(f, "LSL requested but the pinned FLUBBER_LSL_DLL could not start");
-        if (s->csv) fclose(s->csv);
-        free_vlc_string(s->csv_path);
-        DeleteCriticalSection(&s->lock);
-        free(s);
-        return VLC_EGENERIC;
+    if (var_CreateGetBool(f, PREFIX "lsl")) {
+        AcquireSRWLockExclusive(&outlet_lock);
+        if (outlet_ready) {
+            InterlockedIncrement(&outlet_users);
+            s->lsl = outlet_lsl;
+            s->shared_lsl = true;
+        }
+        ReleaseSRWLockExclusive(&outlet_lock);
+        if (!s->shared_lsl && !open_lsl(&s->lsl)) {
+            msg_Err(f, "LSL requested but the pinned FLUBBER_LSL_DLL could not start");
+            if (s->csv) fclose(s->csv);
+            free_vlc_string(s->csv_path);
+            if (s->control) UnmapViewOfFile(s->control);
+            if (s->control_handle) CloseHandle(s->control_handle);
+            free(s->start_marker);
+            free(s->stop_marker);
+            DeleteCriticalSection(&s->lock);
+            free(s);
+            return VLC_EGENERIC;
+        }
     }
     init_profiles(s);
     f->p_sys = (filter_sys_t *)s;
@@ -280,25 +401,31 @@ static void Close(vlc_object_t *object)
     flubber_t *s = (flubber_t *)f->p_sys;
     var_DelCallback(f->obj.libvlc, "key-pressed", KeyEvent, f);
     EnterCriticalSection(&s->lock);
-    if (s->started) row(s, "video_end");
+    if (s->started && !s->ended) row(s, "video_end");
     if (s->pending_dropped)
         msg_Warn(f, "%llu early LSL samples exceeded the receiver buffer",
                  (unsigned long long)s->pending_dropped);
     if (s->csv) fclose(s->csv);
-    close_lsl(&s->lsl);
+    if (s->shared_lsl) InterlockedDecrement(&outlet_users);
+    else close_lsl(&s->lsl);
     LeaveCriticalSection(&s->lock);
     DeleteCriticalSection(&s->lock);
     free_vlc_string(s->csv_path);
+    if (s->control) UnmapViewOfFile(s->control);
+    if (s->control_handle) CloseHandle(s->control_handle);
+    free(s->start_marker);
+    free(s->stop_marker);
     free(s);
 }
 
 static int KeyEvent(vlc_object_t *object, const char *name,
                     vlc_value_t previous, vlc_value_t current, void *opaque)
 {
-    (void)object; (void)name; (void)previous;
+    (void)object; (void)previous;
     flubber_t *s = (flubber_t *)((filter_t *)opaque)->p_sys;
     double step = s->step_percent / 100.0;
     const char *event = NULL;
+    (void)name;
     EnterCriticalSection(&s->lock);
     switch (current.i_int) {
         case KEY_LEFT:  s->x = clip(s->x - step, -1, 1); event = "left"; break;
@@ -424,6 +551,39 @@ static picture_t *Render(filter_t *f, picture_t *source)
                    plane==0?16:128,out->p[plane].i_visible_pitch);
     }
     EnterCriticalSection(&s->lock);
+    if (s->control) {
+        LONG next = InterlockedCompareExchange(&s->control->sequence, 0, 0);
+        if (next != InterlockedCompareExchange(&s->control->applied, 0, 0)) {
+            LONG action = InterlockedCompareExchange(&s->control->action, 0, 0);
+            double step = s->step_percent / 100.0;
+            const char *event = NULL;
+            switch (action) {
+                case 1: s->x = clip(s->x - step, -1, 1); event = "left"; break;
+                case 2: s->x = clip(s->x + step, -1, 1); event = "right"; break;
+                case 3: s->y = clip(s->y + step, -1, 1); event = "up"; break;
+                case 4: s->y = clip(s->y - step, -1, 1); event = "down"; break;
+            }
+            if (event && s->started && !s->ended) row(s, event);
+            InterlockedExchange(&s->control->applied, next);
+        }
+    }
+    bool content = !s->sentinel ||
+        source->p[0].p_pixels[s->video_height * source->p[0].i_pitch] > 180;
+    if (s->sentinel && !content && s->started && !s->ended)
+        s->blank_run++;
+    if (s->sentinel && content && s->blank_run && !s->ended) {
+        s->blank_run = 0;
+    }
+    if (s->sentinel && s->blank_run >= 8 && s->started && !s->ended) {
+        row(s, "video_end");
+        s->ended = true;
+    }
+    if (s->ended || (s->sentinel && !content)) {
+        LeaveCriticalSection(&s->lock);
+        picture_CopyProperties(out,source);
+        picture_Release(source);
+        return out;
+    }
     if (!s->started) {
         s->started=true;
         s->frame_count=0;
@@ -435,7 +595,7 @@ static picture_t *Render(filter_t *f, picture_t *source)
     s->video_ms=(int64_t)((s->frame_count*1000 + s->render_fps/2)/s->render_fps);
     if (s->lsl.library && s->replay_start_marker &&
         s->lsl.have_consumers(s->lsl.marker_outlet)) {
-        const char *label = "video_start";
+        const char *label = s->start_marker;
         s->lsl.push_string_at(s->lsl.marker_outlet, &label, s->lsl_start_stamp);
         s->replay_start_marker = false;
     }

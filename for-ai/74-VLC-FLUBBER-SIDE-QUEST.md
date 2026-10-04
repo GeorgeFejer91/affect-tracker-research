@@ -1,6 +1,7 @@
 # Native VLC Flubber side quest
 
-Status 2026-10-04: **experimental feasibility probe**, separate from the
+Status 2026-10-04: **experimental feasibility probe plus separate Flubbercorder
+Windows release candidate**, separate from the
 approved Experiment Planner and Experiment Runner. The user explicitly asked
 for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
@@ -13,6 +14,29 @@ reserve a bottom panel, then lets a **native VLC 3.0.20 filter** draw the moving
 Flubber there. It is not a replacement for the main direction.
 
 ## Goal and result
+
+The additional [Flubbercorder side project](../experiments/vlc-flubber/flubbercorder/README.md)
+puts the experimenter console, LSL/XDF recorder, VLC process control, and
+optional phone controller around the native plugin. It uses a distinct
+`flubbercorder-experiment/v1` JSON, independent of Planner master recipes.
+VLC creates both LSL outlets as soon as it starts, before the original video
+begins. The recorder must subscribe to each outlet during a prepared black
+lead. The native filter draws a dynamic Flubber beneath the video, uses a
+private affect command channel to avoid VLC seek hotkeys, publishes affect
+samples and `<source filename>_Start`/`_Stop` markers, and writes a fallback
+CSV independently. Flubbercorder checks exact marker labels in the recorded
+XDF, with selected external streams also recorded by the native recorder.
+
+On 2026-10-04, a locally installed offline Windows candidate completed a
+five-second H.264 source session with 300 affect rows in VLC CSV, 300 affect
+samples plus both exact filename markers in XDF, and right/up affect commands
+without video seeking. Desktop and 390-pixel browser layouts rendered in
+current Edge and Chrome without page errors or horizontal overflow. This
+is installed software evidence for the specific synthetic clip, not broad
+codec, timing, device, or research qualification. The public GitHub release
+remains gated on the clean Windows workflow for this exact source commit.
+
+The earlier standalone probe and its receipts follow below.
 
 The bounded goal was to load a clip with a defined video-to-Flubber height
 ratio; show video and a dynamic Flubber together inside VLC; map arrow keys to
