@@ -87,7 +87,9 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
   }
   const animationStepIndex = checksWorkflow.indexOf("- name: Verify native saved-renderer animation correspondence\n");
   assert.ok(animationStepIndex > prepareStepIndex, "native animation test needs the pinned private runtime");
-  assert.match(checksWorkflow, /--no-default-features --lib sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree/u);
+  assert.match(checksWorkflow, /--no-default-features --lib --no-run --message-format=json/u);
+  assert.match(checksWorkflow, /prepare-actor-diagnostic\.ps1/u);
+  assert.match(checksWorkflow, /& \$receipt\.executable sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree/u);
   assert.equal(
     [
       ...checksWorkflow.matchAll(

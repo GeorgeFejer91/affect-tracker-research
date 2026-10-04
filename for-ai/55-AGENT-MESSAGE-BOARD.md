@@ -6359,3 +6359,12 @@ test still expected three private-runtime `PATH` assignments, while the newly
 added focused execution step makes four. The R1 pass also updates this one
 named CI-boundary assertion and verifies the step's ordering; it changes no
 runtime or package policy.
+The next retry `37183532167` reached the focused native test after pinned
+runtime preparation but exited before the harness with the same Windows
+`STATUS_ENTRYPOINT_NOT_FOUND`. The repository's prior native actor diagnostic
+documents this test-executable startup seam and provides a copy-only Common
+Controls 6 manifest helper. CI now selects Cargo's exact library test executable
+from JSON build messages, applies that existing helper to a temporary copy,
+records its tool/executable hashes, and runs only the named assertion. The
+product engine and installed suite are unchanged. If this still cannot start,
+the Rust test remains unexecuted and the pass cannot claim native verification.
