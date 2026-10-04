@@ -23,7 +23,6 @@ mod media_preparation;
 mod runner_video_binding_v3;
 mod stimulus_authoring;
 mod video_location;
-pub(crate) use runner_video_binding_v3::RunnerVideoBindingV3;
 
 const MAX_SCAN_DEPTH: usize = 16;
 const MAX_SCAN_FILES: usize = 10_000;
@@ -234,20 +233,6 @@ struct MediaGrant {
     sha256: String,
     mime_type: String,
     byte_length: u64,
-}
-
-/// Exact, locked workspace media authority passed only between Rust modules.
-/// Neither the path nor the file handle is serializable, so the WebView receives
-/// only opaque identifiers.
-#[derive(Debug)]
-pub(crate) struct NativeMediaGrant {
-    pub(crate) media_grant_id: String,
-    pub(crate) workspace_file_id: String,
-    pub(crate) path: PathBuf,
-    pub(crate) file: File,
-    pub(crate) sha256: String,
-    pub(crate) mime_type: String,
-    pub(crate) byte_length: u64,
 }
 
 /// Exact file binding for one already-authored portable catalogue location.
@@ -918,43 +903,6 @@ impl WorkspaceService {
         )
     }
 
-    pub(crate) fn issue_native_media_grant(
-        &self,
-        workspace_id: &str,
-        workspace_file_id: &str,
-        expected_sha256: &str,
-        expected_byte_length: u64,
-        expected_mime_type: &str,
-    ) -> ResearchResult<NativeMediaGrant> {
-        let mut guard = self.lock_selected();
-        let workspace = selected_mut(&mut guard, workspace_id)?;
-        validate_selected_workspace(workspace)?;
-        let candidate = scanned_candidate(
-            &workspace.scanned,
-            workspace_file_id,
-            expected_sha256,
-            expected_byte_length,
-            expected_mime_type,
-        )?
-        .clone();
-        let mut locked_file = open_read_locked(&candidate.path)?;
-        let (observed_hash, observed_bytes) = hash_open_file(&mut locked_file)?;
-        if observed_hash != expected_sha256 || observed_bytes != expected_byte_length {
-            return Err(CommandError::forbidden(
-                "The workspace stimulus changed after its latest verified scan.",
-            ));
-        }
-        Ok(NativeMediaGrant {
-            media_grant_id: Uuid::new_v4().to_string(),
-            workspace_file_id: candidate.id,
-            path: candidate.path,
-            file: locked_file,
-            sha256: candidate.sha256,
-            mime_type: candidate.mime_type,
-            byte_length: candidate.byte_length,
-        })
-    }
-
     /// Consumes one exact locked-file grant and records HTML video evidence.
     pub fn attest_workspace_decode(
         &self,
@@ -973,7 +921,7 @@ impl WorkspaceService {
             || grant.mime_type != request.mime_type
         {
             return Err(CommandError::forbidden(
-                "Decode evidence does not match the exact native media grant.",
+                "Decode evidence does not match the exact workspace media grant.",
             ));
         }
         let candidate_index = workspace
@@ -987,7 +935,7 @@ impl WorkspaceService {
             })
             .ok_or_else(|| {
                 CommandError::forbidden(
-                    "The opaque workspace file and metadata do not match the latest native scan.",
+                    "The opaque workspace file and metadata do not match the latest workspace scan.",
                 )
             })?;
 
@@ -1782,11 +1730,11 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
         .duration_ms
         .filter(|_| {
             let duration_ms = entry.duration_ms.unwrap_or_default();
-            (entry.decode_status == DecodeStatus::AttestedUnqualified
+            entry.decode_status == DecodeStatus::AttestedUnqualified
                 && entry.decode_backend == Some(DecodeBackend::WebviewVideoFrameCallback)
                 && entry.decode_attestation == Some(DecodeEvidence::RepresentativeFramesV1)
                 && validate_representative_positions(duration_ms, &entry.decoded_positions_ms)
-                    .is_ok())
+                    .is_ok()
         })
         .map(|duration_ms| WorkspaceSourceContract {
             kind: "workspaceFile",
@@ -1834,7 +1782,7 @@ fn scanned_candidate<'a>(
         })
         .ok_or_else(|| {
             CommandError::forbidden(
-                "The opaque workspace file and metadata do not match the latest native scan.",
+                "The opaque workspace file and metadata do not match the latest workspace scan.",
             )
         })
 }
