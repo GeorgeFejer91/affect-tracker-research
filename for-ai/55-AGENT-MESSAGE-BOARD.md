@@ -6348,3 +6348,9 @@ input, LSL channel shape, native playback authority, or qualification flag chang
 Installed video/LSL/XDF and visible mode paint remain separate gates. Baseline:
 Rust formatting passed and 10 focused Face/browser correspondence checks passed;
 local Rust compilation is deferred because C: has under 1 GiB free.
+The first CI attempt `37182857285` compiled the native test but Windows exited
+before the test harness with `STATUS_ENTRYPOINT_NOT_FOUND`; the assertion did
+not run. The focused step now runs after the existing pinned GStreamer setup,
+with its private runtime bin first on `PATH` and `--lib` to avoid unrelated test
+targets. This is a CI loader correction, not evidence that the application or
+installer has passed playback qualification.

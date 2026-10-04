@@ -48,8 +48,6 @@ jobs:
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Compile native Research tests without optional features
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
-      - name: Verify native saved-renderer animation correspondence
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree
       - name: Lint native Research backend without optional features
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       # The full upstream tree is prepared only on this ephemeral validation
@@ -63,6 +61,11 @@ jobs:
             -DevelopmentDestinationPath (Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.6-devel') `
             -GithubEnvironmentPath $env:GITHUB_ENV `
             -GithubPathPath $env:GITHUB_PATH
+      - name: Verify native saved-renderer animation correspondence
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
+          cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree
       - name: Check native Research backend
         env:
           AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
