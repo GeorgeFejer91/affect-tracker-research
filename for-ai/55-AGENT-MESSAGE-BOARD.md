@@ -6508,3 +6508,19 @@ acquisition was enabled in the no-default-features build. The production
 platform gate runs first there. The regression now asserts the exact error for
 each feature configuration, and CI executes it in both configurations. This
 candidate also stopped before installer assembly.
+
+## 20261004-P7-suite-2258716-installed-receipt
+
+Root fast-forwarded the R1 HTML validation authority to P7 at exact source
+`2258716e6893c2f4c343a03f1aa624a85827ab8b`. Windows run 37212669321
+passed both jobs, including 1,191 Node tests, saved-plan parity, complete
+synthetic master traversal, grant ingress, native feature gates and the single
+installer's fresh/repeat installed audits. Artifact 11307674043 contains one
+210,038,687-byte EXE, SHA-256
+`1f39a276a90ba473e8beae5946e132566504571ec4b0f10c701824b55d9ef6af`.
+The exact EXE silently installed locally (exit 0); installed-file audit passed
+the source commit, launcher and media tools. Both local Start Menu shortcuts
+target the two installed programs. The build receipt still says
+`researchQualified: false`. No app window was opened or controlled; actual
+participant video/face paint, physical input, LSL/XDF and recorded-only
+reconstruction are not verified by these receipts.

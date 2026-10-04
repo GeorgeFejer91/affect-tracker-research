@@ -84,6 +84,21 @@ Start Menu shortcuts target the installed programs. Its build receipt still
 reports `researchQualified: false`. The P7 integration merge `e52362a` adds
 documentation only beyond this tested source.
 
+The current unqualified candidate is exact source commit
+`2258716e6893c2f4c343a03f1aa624a85827ab8b` in
+[Windows CI run 37212669321](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37212669321).
+The [single-installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37212669321/artifacts/11307674043)
+contains one 210,038,687-byte setup EXE, SHA-256
+`1f39a276a90ba473e8beae5946e132566504571ec4b0f10c701824b55d9ef6af`.
+Both CI jobs passed: 1,191 frontend tests, independent JS/Rust plan parity,
+focused HTML grant/complete-master tests, native no-feature/all-feature gates,
+one suite build, fresh/repeat silent installs, shortcut targets and installed
+media-tool smoke. The same EXE silently replaced the local installation with
+exit code 0. A local installed-file audit passed the exact source commit,
+launcher and media tools; both local shortcuts target the installed programs.
+The receipt remains `researchQualified: false`. No app window was opened for
+participant or visual qualification in this pass.
+
 A passing file audit establishes layout, hashes, and tool startup only. It does
 not establish Planner video preparation, participant playback, questionnaire
 flow, physical input, LSL/XDF, timing, accessibility, or research readiness.
