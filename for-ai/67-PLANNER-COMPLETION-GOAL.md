@@ -196,12 +196,11 @@ fixture keeps `session_a/clip.mp4` and `session-a/clip.mp4` distinct while allow
 shared content identity. This verifies those saved samples; it does not establish
 fresh UI authoring or final native/browser parity.
 
-The independent Windows prerequisite audit found the pinned runtime intact but
-the former temporary development SDK removed. Rust/MSVC are installed. Use the
-existing verified 1.28.6 preparation script and process-scoped build paths; never
-count dependency-discovery bypasses as a linked artifact. Existing safe pre-main
-DLL loading and runtime redistribution/resource packaging gates remain distinct
-release limits. This goal does not approve a new unsafe adapter or runtime bundle.
+The independent Windows prerequisite audit documented the former native playback
+prerequisites at this historical checkpoint. Those instructions and runtime
+packaging gates were superseded by the 2026-10-04 prepared HTML video path above.
+The current Windows package needs the FFprobe/FFmpeg pair and installed playback
+evidence; this older receipt does not establish either.
 
 ## Historical integrated workflow proof — `63fe416`, 2026-09-12
 

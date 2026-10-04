@@ -140,7 +140,7 @@ test("Tauri has one composition root and media internals stay out of commands", 
     readFile(new URL("src-tauri/src/research_commands.rs", root), "utf8"),
   ]);
   assert.ok((lib.match(/\.manage\(/gu) ?? []).length > 0);
-  assert.doesNotMatch(commands, /gst::|gst_play::|windows::Win32/u);
+  assert.doesNotMatch(commands, /windows::Win32/u);
   assert.doesNotMatch(commands, /unsafe\s*\{/u);
 });
 
@@ -167,9 +167,9 @@ test("the authoritative Rust package runtime is split by authority and failure d
     readFile(new URL("src-tauri/src/research_native_protocol/storage.rs", root), "utf8"),
     readFile(new URL("src-tauri/src/research_native_media.rs", root), "utf8"),
   ]);
-  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|gst::|gst_play::|unsafe\s*\{/u);
-  assert.doesNotMatch(storage, /gst::|gst_play::|windows::Win32|tauri::command/u);
-  assert.doesNotMatch(mediaService, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv|mod gst_actor/u);
+  assert.doesNotMatch(commands, /std::fs|File::|OpenOptions|unsafe\s*\{/u);
+  assert.doesNotMatch(storage, /windows::Win32|tauri::command/u);
+  assert.doesNotMatch(mediaService, /ResearchRunManifest|QuestionnaireResponse|ratings\.csv/u);
   assert.doesNotMatch(runtime, /tauri::command/u);
 });
 

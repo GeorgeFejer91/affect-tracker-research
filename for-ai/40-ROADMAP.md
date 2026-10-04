@@ -1330,13 +1330,14 @@ binding that reproduces this embedded V3 settings/plan/protocol tuple.
 Tauri's no-argument `research_load_experiment` owns its native picker and
 returns a path-free receipt. This historical implementation imposed a 5 MiB
 file ceiling; that ceiling is not a product requirement under the
-[2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13). Separate
-  native package load/save commands and the package-only native runtime now
-  exist. Transitional-V3 native Start remains retired; package Start reaches
-  the Rust preflight but remains fail-closed before mutation until media
-  qualification. Native player/scheduler routing, language/after-video
-  execution, explicit interval recovery, and final package output integration
-  are implemented and test-covered but not installed or physically qualified. Historical
+[2026-09-13 charter amendment](15-RESEARCH-V1-CHARTER.md#file-size-guidance-amendment--2026-09-13).
+Separate native package load/save commands and the package-only native runtime
+were added. At this historical checkpoint, package Start reached Rust preflight
+but could not mutate an attempt. On 2026-10-04 the obsolete package Start was
+unregistered, and current Runner Start remains fail-closed before mutation.
+The former player/scheduler routing, language/after-video execution, explicit
+interval recovery, and final package output integration were historical source
+claims. The HTML video amendment supersedes their playback claim. Historical
 settings, experiment, assignment, module, and protocol readers retain their
 original meanings.
 
