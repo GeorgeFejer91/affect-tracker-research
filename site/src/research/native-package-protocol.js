@@ -1,5 +1,3 @@
-import { nativeMediaViewportCssV1 } from "./native-media-controller.js";
-
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const PARTICIPANT_PATTERN = /^P\d{3,6}$/u;
@@ -7,7 +5,7 @@ const PACKAGE_PHASES = new Set([
   "questionnaire", "stimulusReady", "playing", "paused", "interval",
   "completeReady", "finalizing", "finished", "failed",
 ]);
-const CAPABILITY_BACKENDS = new Set(["html-video", "rust-gstplay"]);
+const BACKEND_LABEL = /^[a-z][a-z0-9-]{1,63}$/u;
 const CAPABILITY_KEYS = Object.freeze([
   "backend", "manifestV4Ready", "nativeStartReady", "packageV1CompilationReady",
   "protocolPlanV2Ready", "questionnaireDraftsReady", "reasonCode",
@@ -87,7 +85,7 @@ export function validateNativePackageProtocolCapabilityV1(value) {
   if (!exactKeys(value, CAPABILITY_KEYS)
     || value.schema !== "affect-research-native-package-protocol-capability"
     || value.version !== 1
-    || !CAPABILITY_BACKENDS.has(value.backend)
+    || !BACKEND_LABEL.test(value.backend ?? "")
     || value.rustOwnedProtocol !== true
     || typeof value.packageV1CompilationReady !== "boolean"
     || typeof value.protocolPlanV2Ready !== "boolean"
@@ -195,8 +193,8 @@ export function validateNativePackageStartReceiptV1(value) {
     || !UUID_PATTERN.test(value.outputReceiptId ?? "")
     || typeof value.resumed !== "boolean"
     || !nullable(value.resumeAtProtocolStepPosition, positiveInteger)
-    || value.playbackMode !== "nativeGstPlay"
-    || value.playbackQualification !== "qualifiedNative") {
+    || typeof value.playbackMode !== "string" || value.playbackMode.length === 0
+    || typeof value.playbackQualification !== "string" || value.playbackQualification.length === 0) {
     throw new TypeError("Native package Start receipt v1 is malformed.");
   }
   return Object.freeze({ ...value });
@@ -314,139 +312,27 @@ export function validateNativePackagePreflightV1(value, expected) {
   return Object.freeze({ ...value });
 }
 
-function questionnaireChoices(answers) {
-  if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
-    throw new TypeError("Questionnaire answers must be an item-to-option object.");
-  }
-  return Object.freeze(Object.entries(answers)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([itemId, optionId]) => {
-      if (!itemId || typeof optionId !== "string" || !optionId) {
-        throw new TypeError("Questionnaire answers contain an invalid item or option ID.");
-      }
-      return Object.freeze({ itemId, optionId });
-    }));
+function unsupportedPackageStart() {
+  throw new Error("This older experiment package cannot start in this version. Open a current Planner JSON recipe for HTML video playback.");
 }
 
-function startRequest(detail, workspaceId) {
-  if (typeof workspaceId !== "string" || !UUID_PATTERN.test(workspaceId)
-    || typeof detail?.experimentPackageSourceText !== "string"
-    || detail.experimentPackageSourceText.length === 0
-    || !PARTICIPANT_PATTERN.test(detail?.participantId ?? "")
-    || !detail.participant || typeof detail.participant !== "object" || Array.isArray(detail.participant)
-    || typeof detail.selectedLanguageId !== "string" || detail.selectedLanguageId.length === 0
-    || !Array.isArray(detail.languageSelectionPath) || detail.languageSelectionPath.length === 0
-    || typeof detail.inputTestReceiptId !== "string" || detail.inputTestReceiptId.length < 8) {
-    throw new TypeError("A package run requires the exact workspace, package, participant, language path, and input-test receipt.");
-  }
-  return Object.freeze({
-    workspaceId,
-    experimentPackageSourceText: detail.experimentPackageSourceText,
-    participant: Object.freeze({ participantId: detail.participantId, ...detail.participant }),
-    selectedLanguageId: detail.selectedLanguageId,
-    languageSelectionPath: Object.freeze([...detail.languageSelectionPath]),
-    rerunConfirmed: detail.rerunConfirmed === true,
-    inputTestReceiptId: detail.inputTestReceiptId,
-    playbackMode: "nativeGstPlay",
-  });
-}
-
-function packageSourceRequest(detail, workspaceId) {
-  if (typeof workspaceId !== "string" || !UUID_PATTERN.test(workspaceId)
-    || typeof detail?.experimentPackageSourceText !== "string"
-    || detail.experimentPackageSourceText.length === 0
-    || !SHA256_PATTERN.test(detail.experimentPackageSourceByteSha256 ?? "")
-    || !PARTICIPANT_PATTERN.test(detail.participantId ?? "")) {
-    throw new TypeError("A package operation requires the exact workspace, package bytes, and participant.");
-  }
-  return Object.freeze({
-    workspaceId,
-    experimentPackageSourceText: detail.experimentPackageSourceText,
-  });
-}
-
-function validateFinalizeReceipt(receipt, { recovery, completionStatus }) {
-  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)
-    || receipt.runId !== recovery.runId
-    || receipt.participantId !== recovery.participantId
-    || receipt.attemptNumber !== recovery.attemptNumber
-    || receipt.completionStatus !== completionStatus
-    || !UUID_PATTERN.test(receipt.outputReceiptId ?? "")
-    || !Array.isArray(receipt.files) || receipt.files.length < 9) {
-    throw new Error("Rust package finalization returned a malformed or crossed receipt.");
-  }
-  const names = new Set();
-  for (const file of receipt.files) {
-    if (!file || typeof file !== "object" || Array.isArray(file)
-      || typeof file.fileName !== "string" || file.fileName.length === 0
-      || /[\\/]/u.test(file.fileName) || names.has(file.fileName)
-      || !SHA256_PATTERN.test(file.sha256 ?? "")
-      || !positiveInteger(file.byteLength)) {
-      throw new Error("Rust package finalization returned an invalid file receipt.");
-    }
-    names.add(file.fileName);
-  }
-  for (const name of [
-    "settings.snapshot.json", "experiment.json", "experiment-plan.snapshot.json",
-    "experiment.package.json", "protocol-plan.snapshot.json", "events.jsonl", "manifest.json",
-  ]) {
-    if (!names.has(name)) throw new Error(`Rust package finalization omitted ${name}.`);
-  }
-  if (!names.has("ratings.csv") && !names.has("ratings.tsv")) {
-    throw new Error("Rust package finalization omitted the selected ratings table.");
-  }
-  if (!names.has("questionnaire.csv") && !names.has("questionnaire.tsv")) {
-    throw new Error("Rust package finalization omitted the selected questionnaire table.");
-  }
-  return Object.freeze({ ...receipt, files: Object.freeze(receipt.files.map((file) => Object.freeze({ ...file }))) });
-}
-
+/** Read old package metadata without reviving its retired playback path. */
 export class NativePackageProtocolAdapter {
-  constructor(root, {
-    invoke,
-    dispatch,
-    resolveMediaHost = () => root.querySelector?.("#run-native-video-host"),
-    resolveFallbackVideo = () => root.querySelector?.("#run-video"),
-    resolvePlaceholder = () => root.querySelector?.("#run-stimulus-placeholder"),
-    prepareRunInput = async () => {},
-    onRunActivated = () => {},
-    onRunReleased = () => {},
-    onRunTerminal = async () => {},
-    setIntervalObject = globalThis.setInterval?.bind(globalThis),
-    clearIntervalObject = globalThis.clearInterval?.bind(globalThis),
-    pollIntervalMs = 100,
-  } = {}) {
-    if (!(root instanceof EventTarget) || typeof invoke !== "function" || typeof dispatch !== "function"
-      || typeof prepareRunInput !== "function" || typeof onRunActivated !== "function"
-      || typeof onRunReleased !== "function" || typeof onRunTerminal !== "function"
-      || !positiveInteger(pollIntervalMs)) {
+  constructor(root, { invoke, dispatch, onRunReleased = () => {}, onRunTerminal = async () => {} } = {}) {
+    if (!(root instanceof EventTarget) || typeof invoke !== "function" || typeof dispatch !== "function") {
       throw new TypeError("NativePackageProtocolAdapter dependencies are malformed.");
     }
     this.root = root;
     this.invoke = invoke;
     this.dispatch = dispatch;
-    this.resolveMediaHost = resolveMediaHost;
-    this.resolveFallbackVideo = resolveFallbackVideo;
-    this.resolvePlaceholder = resolvePlaceholder;
-    this.prepareRunInput = prepareRunInput;
-    this.onRunActivated = onRunActivated;
     this.onRunReleased = onRunReleased;
     this.onRunTerminal = onRunTerminal;
-    this.setInterval = setIntervalObject;
-    this.clearInterval = clearIntervalObject;
-    this.pollIntervalMs = pollIntervalMs;
     this.capability = null;
     this.recoveryListing = null;
-    this.recoveryWorkspaceId = null;
-    this.recoverySourceText = null;
     this.run = null;
-    this.pollTimer = null;
-    this.operation = Promise.resolve();
   }
 
-  get active() {
-    return this.run !== null;
-  }
+  get active() { return false; }
 
   owns(detail) {
     return typeof detail?.experimentPackageSourceText === "string"
@@ -454,9 +340,15 @@ export class NativePackageProtocolAdapter {
   }
 
   async initialize() {
-    this.capability = validateNativePackageProtocolCapabilityV1(
+    const reported = validateNativePackageProtocolCapabilityV1(
       await this.invoke("research_package_protocol_capability"),
     );
+    this.capability = Object.freeze({
+      ...reported,
+      backend: "html-video",
+      nativeStartReady: false,
+      reasonCode: "legacy-package-execution-retired",
+    });
     return this.capability;
   }
 
@@ -470,47 +362,16 @@ export class NativePackageProtocolAdapter {
       { request: { workspaceId, experimentPackageSourceText } },
     ));
     this.recoveryListing = listing;
-    this.recoveryWorkspaceId = workspaceId;
-    this.recoverySourceText = experimentPackageSourceText;
-    const recoveryById = new Map(listing.recoveries.map((recovery) => [recovery.recoveryId, recovery]));
-    const detail = Object.fromEntries(listing.participants.map(({ participantId, state }) => [
-      participantId, state,
-    ]));
-    detail.__recoverable = Object.freeze(Object.fromEntries(listing.participants.map((participant) => {
-      const recovery = participant.recoveryId ? recoveryById.get(participant.recoveryId) : null;
-      return [participant.participantId, Boolean(recovery?.resumable || recovery?.finalizationPending)];
-    })));
-    detail.__finalizationPending = Object.freeze(Object.fromEntries(listing.participants.map((participant) => [
-      participant.participantId, participant.finalizationPending,
-    ])));
-    detail.__finalizationBinding = Object.freeze(Object.fromEntries(listing.participants.flatMap((participant) => {
-      const recovery = participant.recoveryId ? recoveryById.get(participant.recoveryId) : null;
-      return recovery?.finalizationPending ? [[participant.participantId, Object.freeze({
-        settingsSha256: recovery.settingsSha256,
-        assignmentPlanSha256: recovery.assignmentPlanSha256,
-        protocolContract: "manifestV4",
-        playbackMode: "nativeGstPlay",
-        completionStatus: recovery.completionStatus,
-        attemptNumber: recovery.attemptNumber,
-      })]] : [];
-    })));
-    detail.__recoveryBinding = Object.freeze(Object.fromEntries(listing.participants.flatMap((participant) => {
-      const recovery = participant.recoveryId ? recoveryById.get(participant.recoveryId) : null;
-      return recovery ? [[participant.participantId, Object.freeze({
-        schema: "affect-research-experiment-package-recovery-binding",
-        version: 1,
-        participantId: recovery.participantId,
-        attemptNumber: recovery.attemptNumber,
-        disposition: "resume-compatible",
-        packageId: recovery.packageId,
-        canonicalSourceByteSha256: listing.packageSourceByteSha256,
-        packageDefinitionSha256: recovery.packageDefinitionSha256,
-        languageId: recovery.languageId,
-        languageSelectionPath: recovery.languageSelectionPath,
-        assignmentSha256: recovery.assignmentSha256,
-      })]] : [];
-    })));
-    this.dispatch("affect-research:participant-states", Object.freeze(detail));
+    const states = Object.fromEntries(listing.participants.map(({ participantId, state }) => [participantId, state]));
+    states.__recoverable = Object.freeze(Object.fromEntries(listing.participants.map(
+      ({ participantId }) => [participantId, false],
+    )));
+    states.__finalizationPending = Object.freeze(Object.fromEntries(listing.participants.map(
+      ({ participantId }) => [participantId, false],
+    )));
+    states.__finalizationBinding = Object.freeze({});
+    states.__recoveryBinding = Object.freeze({});
+    this.dispatch("affect-research:participant-states", Object.freeze(states));
     return listing;
   }
 
@@ -532,370 +393,20 @@ export class NativePackageProtocolAdapter {
         languageSelectionPath: [...selection.languageSelectionPath],
       },
     }), selection);
-    this.preflightReceipt = receipt;
-    return receipt;
+    return Object.freeze({ ...receipt, nativeStartReady: false });
   }
 
-  async start(detail, workspaceId) {
-    if (this.run) throw new Error("A Rust package protocol attempt is already active.");
-    const packageRequest = packageSourceRequest(detail, workspaceId);
-    await this.#ensureRecoveries(workspaceId, detail.experimentPackageSourceText);
-    if (detail.recoveryFinalizationOnly === true) {
-      const recovery = this.#selectedRecovery(detail, { finalizationPending: true });
-      const receipt = validateFinalizeReceipt(await this.invoke("research_finalize_package_recovery", {
-        request: { ...packageRequest, recoveryId: recovery.recoveryId },
-      }), { recovery, completionStatus: recovery.completionStatus });
-      this.#dispatchCompletion(receipt);
-      await this.onRunTerminal();
-      return receipt;
-    }
-    if (this.capability?.nativeStartReady !== true) {
-      throw new Error(`Rust package protocol unavailable (${this.capability?.reasonCode ?? "capability-not-loaded"}).`);
-    }
-    const recovery = detail.attemptDisposition === "resume-compatible"
-      ? this.#selectedRecovery(detail, { resumable: true })
-      : null;
-    const command = recovery ? "research_resume_package_run" : "research_start_package_run";
-    const request = recovery ? Object.freeze({
-      ...packageRequest,
-      recoveryId: recovery.recoveryId,
-      inputTestReceiptId: detail.inputTestReceiptId,
-      playbackMode: "nativeGstPlay",
-    }) : startRequest(detail, workspaceId);
-    let receipt;
-    try {
-      receipt = validateNativePackageStartReceiptV1(await this.invoke(command, { request }));
-    } catch (error) {
-      await this.#reconcileRejectedActivation(detail).catch(() => {});
-      throw error;
-    }
-    if (receipt.participantId !== detail.participantId
-      || receipt.packageSourceByteSha256 !== detail.experimentPackageSourceByteSha256
-      || receipt.settingsSha256 !== detail.researchSettingsSha256
-      || receipt.assignmentPlanSha256 !== detail.resolvedPlan?.planHashSha256
-      || receipt.protocolPlanSha256 !== detail.resolvedProtocolPlan?.protocolPlanHashSha256
-      || receipt.resumed !== Boolean(recovery)
-      || receipt.resumeAtProtocolStepPosition !== (recovery ? recovery.safeProtocolStepPosition + 1 : 1)
-      || (recovery && (receipt.runId !== recovery.runId
-        || receipt.attemptNumber !== recovery.attemptNumber))) {
-      const cleanupError = await this.#finishRejectedReceipt(receipt).catch((error) => error);
-      throw new Error(cleanupError instanceof Error
-        ? `Rust package Start receipt crossed the frozen UI projection and cleanup was not confirmed: ${messageOf(cleanupError)}`
-        : "Rust package Start receipt does not match the frozen UI package projection; the attempt was finalized partial.");
-    }
-    this.run = {
-      receipt,
-      preparedPosition: null,
-      projectedQuestionnaire: null,
-      finalizing: false,
-      lastStatus: null,
-    };
-    this.onRunActivated();
-    this.dispatch("affect-research:run-started", receipt);
-    try {
-      await this.prepareRunInput();
-      await this.refresh();
-      this.#startPolling();
-    } catch (error) {
-      await this.finish("stopEarly").catch(() => {});
-      throw error;
-    }
-    return receipt;
-  }
-
-  async refresh() {
-    if (!this.run) return null;
-    const status = validateNativePackageRunStatusV1(
-      await this.invoke("research_package_run_status"),
-    );
-    if (!status.active || status.runId !== this.run.receipt.runId
-      || status.participantId !== this.run.receipt.participantId
-      || status.attemptNumber !== this.run.receipt.attemptNumber) {
-      const error = new Error(`Rust package status crossed or lost the active run identity${status.failureCode ? ` (${status.failureCode})` : ""}.`);
-      error.nativeTerminal = status.active === false;
-      throw error;
-    }
-    this.run.lastStatus = status;
-    await this.#project(status);
-    return status;
-  }
-
-  async questionnaireDraft(detail) {
-    return this.#questionnaireCommand("research_package_questionnaire_draft", detail);
-  }
-
-  async questionnaireSubmit(detail) {
-    await this.#questionnaireCommand("research_package_questionnaire_submit", detail);
-    await this.refresh();
-  }
-
-  async togglePause() {
-    const run = this.#requiredRun();
-    const phase = run.lastStatus?.phase;
-    const command = phase === "playing"
-      ? "research_package_pause"
-      : phase === "paused"
-        ? "research_package_play"
-        : null;
-    if (!command) return;
-    await this.invoke(command, { request: { runId: run.receipt.runId } });
-    await this.refresh();
-  }
-
-  async continue() {
-    const run = this.#requiredRun();
-    if (run.lastStatus?.phase !== "stimulusReady") return;
-    await this.#prepareAndPlay(run.lastStatus);
-  }
-
-  async resize() {
-    const run = this.run;
-    if (!run || run.preparedPosition === null || !run.lastStatus?.stimulus) return;
-    const viewport = this.#viewport();
-    await this.invoke("research_package_set_media_viewport", {
-      request: { runId: run.receipt.runId, viewport },
-    });
-  }
-
-  async finish(outcome) {
-    const run = this.#requiredRun();
-    if (run.finalizing) return null;
-    if (!["completed", "stopEarly"].includes(outcome)) throw new TypeError("Unknown package run outcome.");
-    run.finalizing = true;
-    this.#stopPolling();
-    try {
-      const receipt = validateFinalizeReceipt(await this.invoke("research_finish_package_run", {
-        request: { runId: run.receipt.runId, outcome },
-      }), {
-        recovery: {
-          runId: run.receipt.runId,
-          participantId: run.receipt.participantId,
-          attemptNumber: run.receipt.attemptNumber,
-        },
-        completionStatus: outcome === "completed" ? "completed" : "partial",
-      });
-      this.#releaseRun();
-      this.#dispatchCompletion(receipt);
-      await this.onRunTerminal();
-      return receipt;
-    } catch (error) {
-      run.finalizing = false;
-      this.#startPolling();
-      throw error;
-    }
-  }
+  async start() { unsupportedPackageStart(); }
+  async refresh() { return null; }
+  async questionnaireDraft() { unsupportedPackageStart(); }
+  async questionnaireSubmit() { unsupportedPackageStart(); }
+  async togglePause() { unsupportedPackageStart(); }
+  async continue() { unsupportedPackageStart(); }
+  async resize() {}
+  async finish() { unsupportedPackageStart(); }
 
   destroy() {
-    this.#stopPolling();
-    this.#showNativeMedia(false);
     this.run = null;
-  }
-
-  #queue(operation) {
-    this.operation = this.operation.then(operation, operation).catch((error) => {
-      if (this.run) {
-        this.dispatch("affect-research:run-status", {
-          stimulus: "Native package run needs attention",
-          timing: "Rust protocol projection stopped.",
-          write: messageOf(error),
-          paused: true,
-          pauseAvailable: false,
-          ratingInputActive: false,
-          transitionActive: false,
-        });
-        if (error?.nativeTerminal === true) {
-          this.#releaseRun();
-          this.root.researchUi?.setMode?.("setup");
-          void Promise.resolve(this.onRunTerminal()).catch(() => {});
-        }
-      }
-    });
-    return this.operation;
-  }
-
-  #startPolling() {
-    this.#stopPolling();
-    this.pollTimer = this.setInterval?.(() => this.#queue(() => this.refresh()), this.pollIntervalMs) ?? null;
-  }
-
-  #stopPolling() {
-    if (this.pollTimer !== null) this.clearInterval?.(this.pollTimer);
-    this.pollTimer = null;
-  }
-
-  async #questionnaireCommand(command, detail) {
-    const run = this.#requiredRun();
-    const position = detail?.protocolStepPosition;
-    if (!positiveInteger(position) || position !== run.lastStatus?.questionnaire?.protocolStepPosition) {
-      throw new Error("Questionnaire answers target a stale Rust protocol step.");
-    }
-    await this.invoke(command, {
-      request: {
-        runId: run.receipt.runId,
-        protocolStepPosition: position,
-        answers: questionnaireChoices(detail.answers),
-      },
-    });
-  }
-
-  async #project(status) {
-    const run = this.#requiredRun();
-    if (status.phase === "questionnaire") {
-      this.#showNativeMedia(false);
-      const signature = JSON.stringify(status.questionnaire);
-      if (run.projectedQuestionnaire !== signature) {
-        run.projectedQuestionnaire = signature;
-        this.dispatch("affect-research:questionnaire-status", {
-          active: true,
-          moduleId: status.questionnaire.moduleId,
-          questionnaireId: status.questionnaire.questionnaireId,
-          protocolStepPosition: status.questionnaire.protocolStepPosition,
-          answers: status.questionnaire.answers,
-        });
-      }
-    } else if (run.projectedQuestionnaire !== null) {
-      run.projectedQuestionnaire = null;
-      this.dispatch("affect-research:questionnaire-status", { active: false });
-    }
-
-    const stimulusLabel = status.stimulus
-      ? `${status.stimulus.stimulusPosition}/${status.stimulus.stimulusCount} · ${status.stimulus.title}`
-      : status.phase === "questionnaire"
-        ? "Questionnaire"
-        : status.phase === "interval"
-          ? "Between videos"
-          : status.phase === "completeReady" ? "Protocol complete" : "Preparing protocol";
-    const intervalMessage = status.intervalRemainingMs === null
-      ? null
-      : `Sampling is stopped and rating is neutral. Next video in ${(status.intervalRemainingMs / 1_000).toFixed(1)} seconds.`;
-    this.dispatch("affect-research:run-status", {
-      stimulus: stimulusLabel,
-      timing: `${status.sampleCount} rows · ${status.gapEventCount} gap events · ${status.missedSlotCount} missed slots · ${status.coalescedInputUpdateCount} coalesced inputs`,
-      write: status.writeHealthy ? `${status.eventCount} durable events · ${status.submittedResponseCount} submitted questionnaire rows` : "Native output writer failed closed.",
-      lsl: status.lslEnabled ? "LSL enabled and Rust-owned" : "LSL disabled",
-      x: status.currentValence,
-      y: status.currentArousal,
-      paused: status.phase === "paused",
-      pauseAvailable: ["playing", "paused"].includes(status.phase),
-      ratingInputActive: status.phase === "playing",
-      transitionActive: status.phase === "interval",
-      transitionMode: "fixed",
-      transitionMessage: intervalMessage,
-    });
-
-    if (status.phase === "stimulusReady") {
-      this.#showNativeMedia(true);
-      await this.#prepareAndPlay(status);
-    } else if (["playing", "paused"].includes(status.phase)) {
-      this.#showNativeMedia(true);
-    } else if (!["stimulusReady"].includes(status.phase)) {
-      this.#showNativeMedia(false);
-    }
-    if (status.phase === "completeReady" && !run.finalizing) await this.finish("completed");
-    if (status.phase === "failed") {
-      throw new Error(`Rust package runtime failed closed (${status.failureCode ?? "unknown"}).`);
-    }
-  }
-
-  async #prepareAndPlay(status) {
-    const run = this.#requiredRun();
-    const position = status.stimulus?.protocolStepPosition;
-    if (!positiveInteger(position) || run.preparedPosition === position) return;
-    run.preparedPosition = position;
-    try {
-      // The participant may have resized while a questionnaire hid feedback.
-      // Re-establish the visible region before native playback accepts input.
-      await this.prepareRunInput();
-      await this.invoke("research_package_prepare_media", {
-        request: { runId: run.receipt.runId, viewport: this.#viewport() },
-      });
-      await this.invoke("research_package_play", { request: { runId: run.receipt.runId } });
-    } catch (error) {
-      run.preparedPosition = null;
-      throw error;
-    }
-  }
-
-  #viewport() {
-    const host = this.resolveMediaHost();
-    const revision = (this.run?.viewportRevision ?? 0) + 1;
-    this.run.viewportRevision = revision;
-    return nativeMediaViewportCssV1(host, revision);
-  }
-
-  #showNativeMedia(visible) {
-    const host = this.resolveMediaHost();
-    const fallback = this.resolveFallbackVideo();
-    const placeholder = this.resolvePlaceholder();
-    if (host) host.hidden = !visible;
-    if (fallback) fallback.hidden = true;
-    if (placeholder) placeholder.hidden = visible;
-  }
-
-  #requiredRun() {
-    if (!this.run) throw new Error("No Rust package protocol attempt is active.");
-    return this.run;
-  }
-
-  #releaseRun() {
-    this.#stopPolling();
-    this.#showNativeMedia(false);
-    this.run = null;
-    this.onRunReleased();
-  }
-
-  async #ensureRecoveries(workspaceId, sourceText) {
-    if (this.recoveryWorkspaceId !== workspaceId || this.recoverySourceText !== sourceText) {
-      await this.refreshRecoveries(workspaceId, sourceText);
-    }
-  }
-
-  #selectedRecovery(detail, requirement) {
-    const participant = this.recoveryListing?.participants
-      .find((candidate) => candidate.participantId === detail.participantId);
-    const recovery = participant?.recoveryId
-      ? this.recoveryListing.recoveries.find((candidate) => candidate.recoveryId === participant.recoveryId)
-      : null;
-    if (!recovery
-      || (requirement.resumable === true && recovery.resumable !== true)
-      || (requirement.finalizationPending === true && recovery.finalizationPending !== true)
-      || recovery.settingsSha256 !== detail.researchSettingsSha256
-      || recovery.assignmentPlanSha256 !== detail.resolvedPlan?.planHashSha256
-      || recovery.protocolPlanSha256 !== detail.resolvedProtocolPlan?.protocolPlanHashSha256
-      || recovery.languageId !== detail.selectedLanguageId
-      || JSON.stringify(recovery.languageSelectionPath) !== JSON.stringify(detail.languageSelectionPath)
-      || recovery.assignmentSha256 !== detail.packageAssignmentSha256
-      || (detail.pendingFinalizationAttemptNumber !== undefined
-        && recovery.attemptNumber !== detail.pendingFinalizationAttemptNumber)
-      || (detail.pendingFinalizationCompletionStatus !== undefined
-        && recovery.completionStatus !== detail.pendingFinalizationCompletionStatus)) {
-      throw new Error("No exact package-bound recovery matches this participant, language route, settings, assignment, protocol, and attempt.");
-    }
-    return recovery;
-  }
-
-  async #finishRejectedReceipt(receipt) {
-    await this.invoke("research_finish_package_run", {
-      request: { runId: receipt.runId, outcome: "stopEarly" },
-    });
-  }
-
-  async #reconcileRejectedActivation(detail) {
-    const status = validateNativePackageRunStatusV1(await this.invoke("research_package_run_status"));
-    if (status.active && status.participantId === detail.participantId && status.runId) {
-      await this.invoke("research_finish_package_run", {
-        request: { runId: status.runId, outcome: "stopEarly" },
-      });
-    }
-  }
-
-  #dispatchCompletion(receipt) {
-    this.dispatch("affect-research:run-complete", {
-      status: receipt.completionStatus,
-      participant: receipt.participantId,
-      attempt: receipt.attemptNumber,
-      receipt: receipt.outputReceiptId,
-      files: receipt.files.map(({ fileName }) => fileName).join(", "),
-    });
+    this.recoveryListing = null;
   }
 }

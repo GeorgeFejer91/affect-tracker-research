@@ -6215,3 +6215,19 @@ architecture, UI, and build-boundary tests pass after the source-only change;
 `git diff --check` passes. No package was built or installed, so this makes no
 installed qualification claim. The older capability schema remains in the
 bridge until the matching Rust contract is migrated in integration.
+
+## Retired JavaScript player adapters — 2026-10-04
+
+Follow-up P1/R1 interface cleanup on `codex/segment-media-js-retirement` from
+the committed integration baseline. The standalone actor controller and
+catalogue modules, their dedicated tests, and Pages exclusions are removed.
+Planner Core9 diagnostics now depend directly on the shared catalogue error
+type, limited to current HTML catalogue phases. Runner still imports the old
+package adapter for historical package metadata; it can read capability,
+recovery listings and preflight receipts, but reports execution unavailable
+and rejects Start before any IPC. No old media prepare/play commands remain in
+that adapter. The Runner HTML path and canonical record readers are unchanged.
+Rust command/capability cleanup belongs to its owner; no package or installed
+qualification is claimed by this source-only pass. Nineteen focused adapter,
+Planner, architecture and build-boundary tests plus eleven Runner HTML and
+recipe tests pass; changed JavaScript parses and `git diff --check` is clean.

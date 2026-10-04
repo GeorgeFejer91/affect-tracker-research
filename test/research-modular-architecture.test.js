@@ -57,7 +57,7 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
     "Participant and attempt",
     "Input",
     "Visual feedback",
-    "Native media",
+    "Media preparation and playback",
     "Timing and LSL",
     "Output and recovery",
     "Platform bridge",
@@ -78,7 +78,6 @@ test("for-ai makes mirrored frontend and Rust modularity a permanent release gat
 test("raw Tauri invocation remains confined to explicit native adapter modules", async () => {
   const allowed = new Set([
     "site/src/research/native-bridge.js",
-    "site/src/research/native-media-controller.js",
     "site/src/research/native-package-protocol.js",
     "site/src/research/planner-authoring-native.js",
     "site/src/research/planner-authoring-native-effects.js",

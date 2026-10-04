@@ -51,8 +51,6 @@ await Promise.all([
 await Promise.all([
   "native-bridge.js",
   "native-entry.js",
-  "native-media-catalogue.js",
-  "native-media-controller.js",
   "native-package-protocol.js",
 ].map((name) => rm(resolve(outputRoot, "src", "research", name), { force: true })));
 
