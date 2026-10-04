@@ -75,9 +75,11 @@ jobs:
           $manifestTools = @(Get-ChildItem -LiteralPath $kitBin -Recurse -Filter mt.exe -File |
             Where-Object { $_.DirectoryName -match '[\\/]x64$' } | Sort-Object FullName -Descending)
           if ($manifestTools.Count -eq 0) { throw 'Windows SDK manifest tool is unavailable.' }
-          $receipt = ./src-tauri/native-media/prepare-actor-diagnostic.ps1 `
+          $prepared = Join-Path $env:RUNNER_TEMP 'feedback-animation-test'
+          ./src-tauri/native-media/prepare-actor-diagnostic.ps1 `
             -TestExecutable $tests[0] -ManifestTool $manifestTools[0].FullName `
-            -OutputDirectory (Join-Path $env:RUNNER_TEMP 'feedback-animation-test') | ConvertFrom-Json
+            -OutputDirectory $prepared | Out-Null
+          $receipt = Get-Content -Raw -LiteralPath (Join-Path $prepared 'artifact-receipt.json') | ConvertFrom-Json
           $receipt | ConvertTo-Json
           & $receipt.executable sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree
           if ($LASTEXITCODE -ne 0) { throw 'Native saved-renderer animation correspondence failed.' }

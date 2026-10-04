@@ -6368,3 +6368,8 @@ from JSON build messages, applies that existing helper to a temporary copy,
 records its tool/executable hashes, and runs only the named assertion. The
 product engine and installed suite are unchanged. If this still cannot start,
 the Rust test remains unexecuted and the pass cannot claim native verification.
+Run `37184195193` compiled and applied the test manifest, then stopped while
+parsing helper stdout: `mt.exe` prints a status line before the JSON. The
+helper's own `artifact-receipt.json` is the authoritative machine-readable
+output; CI now reads that file. No test assertion or app behavior failed in
+this attempt.
