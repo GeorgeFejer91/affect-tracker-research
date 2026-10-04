@@ -6272,3 +6272,9 @@ Require installer exit 0, then run the existing read-only installed-file audit
 against the exact workflow commit and launcher `--verify-only`. This covers
 package extraction and file identity without using the researcher's desktop or
 claiming GUI operation, media playback, LSL/XDF or research qualification.
+
+20261004 P7 install failure follow-up: run `37172544737` built NSIS but its
+silent install returned 2 before the file audit. The hook now writes a bounded
+reason code to the CI runner's temp directory on failure; the workflow prints
+that code and the temporary installed-file paths. This is diagnostic evidence,
+not an installer fix or a successful installed claim.

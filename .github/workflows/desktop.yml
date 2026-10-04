@@ -117,7 +117,14 @@ jobs:
           $destination = Join-Path $env:RUNNER_TEMP 'affect-research-suite-installed'
           if (Test-Path -LiteralPath $destination) { throw 'Install destination must be fresh.' }
           $process = Start-Process -FilePath $installers[0].FullName -ArgumentList @('/S', "/D=$destination") -WindowStyle Hidden -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "Suite installation failed: $($process.ExitCode)" }
+          if ($process.ExitCode -ne 0) {
+            $failure = Join-Path $env:TEMP 'affect-suite-install-failure.txt'
+            if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure }
+            if (Test-Path -LiteralPath $destination) {
+              Get-ChildItem -LiteralPath $destination -Recurse -File | Select-Object -ExpandProperty FullName
+            }
+            throw "Suite installation failed: $($process.ExitCode)"
+          }
           node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
           if ($LASTEXITCODE -ne 0) { throw 'Installed suite file audit failed.' }
       - name: Upload suite candidate for installed verification
