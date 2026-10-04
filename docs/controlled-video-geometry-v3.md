@@ -46,7 +46,7 @@ remain. Duplicate locations sharing content must agree on complete geometry.
 Only v3 additionally admits this exact nine-key geometry branch:
 
 ```text
-{status:"verified", source:"native-gstplay-controlled-renderer",
+{status:"verified", source:"verified-controlled-renderer",
  displayWidthPx, displayHeightPx, displayAspect, rotationDegrees,
  pixelAspectRatio,
  metadataInterpretation:"controlled-renderer-and-pre-sink-square-pixel-snapshot",

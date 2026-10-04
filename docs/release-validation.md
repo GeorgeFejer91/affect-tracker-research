@@ -62,7 +62,7 @@ change. Use this primary JSON for subsequent Runner work.
 
 1. Resolve and verify pre-main DLL loading for an installed application. The
    executable currently fails to start without a prepared runtime search path.
-2. Resolve the observed cold-start/shutdown failure, then complete native playback
+2. Resolve the observed cold-start/shutdown failure, then complete installed HTML playback
    qualification. Increasing the startup sub-budget from 60 to 90 seconds within
    the unchanged 120-second command limit is not proof of lifecycle closure.
    `root-release-fullmock-evidence-05` preserves the timed-out, force-terminated case.
@@ -72,7 +72,7 @@ change. Use this primary JSON for subsequent Runner work.
    their stated gates are satisfied; no alternative production Start was added.
 
 Source: `research_native_media/capability.rs` retains false qualification flags;
-`research_runner_master/runtime.rs` requires qualified native playback before
+`research_runner_master/runtime.rs` requires qualified playback before
 starting. Redistribution/source closure and physical timing remain release gates.
 FFmpeg sequence synthesis is still an assessed option, not an implemented feature.
 
@@ -98,19 +98,16 @@ This is component and frontend evidence. The installed desktop executable has
 not been rebuilt/qualified for this shortcut; all preceding native execution,
 packaging, physical timing and real XDF gates remain open.
 
-## Native-enabled Runner build correction — 2026-09-13
+## Historical Runner build correction — 2026-09-13
 
-The previously opened developer executable lacked native-gstreamer, causing
-"Native video inspection is unavailable in this build". The Runner desktop
-build script now accepts `--native-gstreamer`, matching the Planner CLI option.
-Build with `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1` and the pinned SDK;
-default features also include LSL and Windows acquisition.
+The previously opened developer executable lacked its then-current media
+feature, causing a video-inspection error. That build path is superseded.
+Current candidates must follow the prepared HTML media gate in `for-ai/30`;
+default features still include LSL and Windows acquisition where supported.
 
-Built and opened the native-enabled dev executable with its pinned runtime at
-`D:/GitHub/.affect-checks/runner-current-native-2026-09-13/`. Its build receipt
-records SHA256 and scope; use **Launch Experiment Runner.cmd**, which scopes the
-bundled DLL path to the launched process. Direct EXE loader/installed packaging
-qualification remains open. This does not lift the qualified Start gate.
+The developer executable and launcher from this dated receipt are superseded.
+Their hashes and launch behavior remain in Git history; they do not qualify the
+current prepared-media candidate or lift the qualified Start gate.
 
 Nine focused Runner reader/master tests passed. All eight English/German
 production-app questionnaire cases passed (350 assertions), using synthetic
@@ -141,7 +138,7 @@ Added production questionnaire keyboard handling: choices use arrows/Home/End,
 Enter commits and advances after native acknowledgement, typed fields retain
 normal typing and Shift+Enter newlines, and final Submit remains explicit.
 EN/DE production-frontend scenarios each pass 85 assertions with synthetic native
-transport; a retained mouse-flow regression also passes. Native-enabled Windows
+transport; a retained mouse-flow regression also passes. The historical Windows
 build succeeds, as do three native bookmark/root tests. These are separate from
 full installed keyboard and XDF qualification.
 
@@ -158,5 +155,5 @@ selection gap (corrected) and foreground changes. No complete questionnaire run,
 actual playback or XDF claim. The active owner/metadata/checklist authority is
 `for-ai/72-RUNNER-FINAL-VALIDATION.md`. Production Start qualification and the
 requested separation of questionnaire presentation from video preparation are
-still open. Do not label the current native-enabled development build a final
+still open. Do not label the historical development build a final
 research-qualified release.

@@ -336,7 +336,7 @@ the preliminary ffprobe description; the final recipe must use its actual P1
 import receipt, not a hard-coded preliminary duration.
 
 Although the test process exited successfully, all five inspected Paused/Playing
-snapshots retained `gstreamer-media-info-incomplete`. Root classified this as a
+snapshots retained an incomplete media-info error. Root classified this as a
 defect-reproducing engineering diagnostic, not clean playback or qualification;
 see its `root-review.json`. Incomplete initial MediaInfo had become Failed,
 then subsequent backend states overwrote that failure. S1's initial terminal

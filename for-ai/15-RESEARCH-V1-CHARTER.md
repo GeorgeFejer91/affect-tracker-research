@@ -1,5 +1,42 @@
 # Affect Tracker Research v1 charter
 
+> **MEDIA RETIREMENT ALERT — 2026-10-04.** GStreamer is retired. Delete any
+> GStreamer/GstPlay reference or infrastructure encountered in the current
+> repository root; never restore it as the playback plan. The current target is
+> HTML video backed by P1 FFprobe inspection and FFmpeg conversion at Segment 1
+> confirmation. The original remains intact in a project source folder; the
+> prepared video beneath `assets/stimuli` is the only downstream media authority.
+> Implementation and qualification remain
+> separately evidenced.
+
+## Video preparation amendment — 2026-10-04
+
+The researcher replaced the former native-player direction. When a researcher
+adds a video to the selected workspace and confirms Segment 1, P1 automatically
+inspects that video with FFprobe in the background. If its actual container,
+tracks or codecs are incompatible with the supported HTML video profile, P1
+uses FFmpeg to create a distinct playable file beneath `assets/stimuli` and
+retains the incompatible original in a separate project source folder. It
+never overwrites or deletes the original. A compatible input needs no conversion
+but still must be verified as an active file beneath `assets/stimuli`. P1
+verifies the finished file before
+acceptance and publishes only that playable file's safe relative path, content
+hash, length, duration and display geometry. P3, P4, P6, P7 and Runner use the
+published identity; no later step substitutes the original or a different file.
+Conversion failure leaves P1 unaccepted with a useful error. Reconfirmation
+after source or output changes repeats the necessary verification and expires
+dependent acceptance. The separate source folder is outside the strict
+`assets/stimuli` closure, which contains only playable active files.
+Historical saved schemas and their readers retain their original meanings.
+
+The static Chrome and Edge applications consume already prepared HTML-playable
+files. They have no authority to launch a local FFprobe/FFmpeg process. Their
+authoring path must keep incompatible media pending until a prepared file is
+available through an authorized workspace. The native Planner may own local
+conversion; neither an HTML preview nor a successful probe alone qualifies an
+experiment run. All later conflicting playback prescriptions in this file are
+superseded by this amendment.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and
@@ -190,15 +227,15 @@ Qualify these surfaces first and only:
 
 | Surface | Active role | Capability boundary |
 | --- | --- | --- |
-| Tauri on Windows | Setup and Run, workspace ownership, native input, bundled native media, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2/GStreamer evidence required |
+| Tauri on Windows | Setup and Run, workspace ownership, native input, prepared HTML video, durable records, sampling clock, and outbound LSL | Rust authority behind narrow typed commands; packaged Windows/WebView2 playback evidence required |
 | Static web in desktop Google Chrome | Setup and Run using a user-authorized workspace root and browser-local journal | Current stable desktop Chrome against the exact static/deployed build |
 | Static web in desktop Microsoft Edge | Same browser contract, qualified separately | Current stable desktop Edge against the exact static/deployed build |
 | Unsigned Tauri on macOS ARM64/x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; no native media, input, timing, persistence, recovery, LSL, or research qualification |
 | Unsigned Tauri on Linux x64 | Internal Setup/interface evaluation only | Experiment Start fails closed; DEB/AppImage packaging is not a supported run surface or qualification |
 
 The downloadable unsigned Windows x64 alpha currently follows the same
-interface-only boundary as macOS/Linux: it builds with no optional features,
-contains no GStreamer runtime, and blocks Start before mutation. The first row
+interface-only boundary as macOS/Linux: it builds with no optional features
+and blocks Start before mutation. The first row
 describes the Windows qualification target, not current package evidence.
 
 The browser has no LSL or native/global-input authority. macOS and Linux
@@ -236,14 +273,11 @@ filesystem/path commands, arbitrary JSON maps where a stable contract exists,
 and cross-module mutation are prohibited. Cross-runtime mirrors require shared
 golden fixtures and differential tests.
 
-Qualified Windows playback for declared package assets uses the pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through GstPlay. The application
-never downloads native media at runtime, searches ambient plugin/installation
-paths, or treats a system GStreamer install as an acceptable dependency.
-Missing, modified, extra, symlinked,
-wrong-architecture, or unavailable native media fails closed. The WebView video
-element is available only as an explicitly selected `unqualifiedWebview`
-development mode whose attempt evidence remains permanently unqualified.
+Current playback targets HTML video from P1-prepared, exact-hash-bound assets.
+The Windows Planner may inspect with FFprobe and convert with FFmpeg after
+Segment 1 confirmation; Runner never substitutes a different source at Start.
+Missing, modified, extra or linked active assets fail closed. Playback,
+sampling, recovery and installed-platform qualification remain separate gates.
 
 ## Experiment package authority
 
@@ -306,12 +340,12 @@ receipt and cannot mutate the package or its hashes.
 The package playback policy is exactly `complete-video-v1`: start at 0 ms, end
 on decoded end, rate 1, no loop or seeking, Pause allowed, unmuted volume 1,
 feedback adjacent, and recovery restart from the beginning. These values are
-serialized rather than inferred. Execution backend is a separate frozen
-platform receipt: Chromium uses `browserMediaAdapters`; a qualified Windows
-attempt requires `nativeGstPlay`; `unqualifiedWebview` is an explicit
-development selection. There is no automatic fallback. The unavailable native
-actor blocks qualified Start, and every WebView attempt remains permanently
-labelled unqualified.
+serialized rather than inferred. Current master playback uses HTML video in
+desktop Chromium/WebView2, with observed media events fenced to the selected
+attempt and declared file identity. Frozen historical package backend identifiers
+retain their old reader meaning; new master behavior does not silently
+reinterpret or promote those records. No successful probe or conversion alone
+qualifies a run.
 
 Canonical projections derive distinct package-bound hashes for settings, the
 asset manifest, the complete experiment plan, and the participant/language
@@ -411,29 +445,13 @@ acknowledged P7 operation. Explicit legacy authoring storage remains compatible.
   permission requires it, and keep journal/lock metadata in the isolated
   `affect-research/v1` IndexedDB/storage namespace.
 
-For Windows qualified playback, Rust revalidates a declared package asset
-against its opaque identity before issuing a bounded native media grant.
-One Rust-owned actor owns the GLib context/loop, GstPlay instance, renderer,
-sink, callbacks, and teardown on its required thread. It renders into an
-application-owned child
-window attached to the Run stage. The WebView may send only a validated viewport
-rectangle and receives an opaque media-session ID plus bounded state; it never
-receives or supplies a native filesystem path.
-
-Native player state is authoritative for sampling segments. Decoded Playing
-opens a segment; pause, buffering, end, error, teardown, media-grant failure, or
-loss of the actor fences sampling before status is projected to the WebView.
-Rendering cadence and WebView media events never authorize native samples.
-
-The native runtime is built from the exact repository pin and deterministic
-file-hash manifest, with upstream license notices retained and ambient plugin
-paths disabled. Unavoidable Windows FFI is confined to exactly two small
-adapters: private DLL-search activation/removal and raw-window GstPlay renderer/
-child-window operations. Both document handle lifetime, thread affinity,
-callback, panic, and teardown invariants; the crate denies undocumented unsafe
-blocks and source guards reject unsafe code anywhere else. The researcher
-approved these contained native boundaries on 2026-09-10. Their presence is not
-runtime redistribution or installed playback qualification.
+For current master runs, Runner revalidates the prepared declared asset's path,
+hash, length and media facts before issuing a bounded media grant to the HTML
+video element. The grant and element generation bind lifecycle events to the
+selected attempt and file. Observed playing opens a sampling segment; pause,
+buffering, end, error, teardown or grant failure fences sampling before status
+is projected. Rendering cadence is never the sample clock. Desktop native input,
+scheduling, storage and LSL retain their existing Rust authority.
 
 ### 2. Languages & Study Assets
 
@@ -846,8 +864,9 @@ No rating samples or regular LSL state samples are emitted during a
 questionnaire; only bounded lifecycle markers without prompt or answer content
 are permitted.
 
-Sampling runs only while a video is actively playing. On Windows qualified
-runs, only Rust-owned GstPlay lifecycle state may establish that fact. After
+Sampling runs only while a video is actively playing. On Windows runs, the
+bounded HTML media lifecycle must establish that fact for the exact prepared
+asset and active attempt. After
 each video, sampling stops and the affect state resets to neutral. Ordered
 `afterStimulus` questionnaire hooks for that `stimulusId` whose
 `relativeToIsi` is `before` run next, followed by an explicit interval step for
@@ -1120,12 +1139,10 @@ including:
 - adverse visibility, permission, IndexedDB, tab, forced-termination, full-disk,
   LSL, invalid/missing video, and interval tests plus accessibility review.
 
-Windows acceptance additionally requires an integrity-verified packaged
-GStreamer runtime, the separately approved and audited native GstPlay actor,
-exact
-player-to-scheduler lifecycle fencing, and installed-artifact playback, error,
-resize/DPI, audio, shutdown, and recovery tests. A staged runtime or successful
-build alone is not playback evidence.
+Windows acceptance additionally requires verified P1 preparation and exact
+prepared-asset binding, media-to-scheduler lifecycle fencing, and installed
+playback, error, resize/DPI, audio, shutdown and recovery tests. A successful
+conversion or build alone is not playback evidence.
 
 Landing this documentation changes no runtime and satisfies none of those
 implementation or qualification gates.

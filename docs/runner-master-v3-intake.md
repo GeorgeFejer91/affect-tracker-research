@@ -29,7 +29,7 @@ forms, not legacy coded participant preparation. No new timing/reset marker data
 ## Native media seam
 
 For wholly controlled master3 catalogues, Runner freshly rescans and uses the
-native owner's attestNativeGstCatalogueV2 / NativeMediaController.attestDecodeV2 /
+native owner's exact-catalogue attestation / NativeMediaController.attestDecodeV2 /
 research_native_media_attest_decode_v2. Wholly historical catalogues retain
 attest1; mixed historical/controlled catalogues fail before media side effects.
 Each bounded attestation loop stops its generation. S1's

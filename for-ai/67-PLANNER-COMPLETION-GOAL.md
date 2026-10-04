@@ -29,8 +29,8 @@ canonical HEAD without changing this tested product or binary.
 28,512,256 bytes, SHA-256
 `71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca`.
 Root independently verified this hash and the successful canonical native build
-log. The locked normal build enables `native-gstreamer,tauri/custom-protocol`,
-uses the real pinned SDK and required runtime, and has DOCS_RS absent. Three
+log. The historical locked build enabled its then-current media feature and
+used its pinned SDK; it has DOCS_RS absent. Three
 existing workspace dead-code warnings and the Cargo PDB-name warning remain.
 This is a local development build, not an installer or installed qualification.
 

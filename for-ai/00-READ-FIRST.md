@@ -1,5 +1,12 @@
 # Current project entrypoint
 
+> **MEDIA RETIREMENT ALERT — 2026-10-04.** GStreamer is retired. Delete
+> GStreamer/GstPlay references or infrastructure still found in this repository
+> root; do not reinstate them. P1's target is FFprobe inspection and, where
+> needed, FFmpeg conversion after Segment 1 confirmation. Preserve incompatible
+> originals in a project source folder; publish only verified HTML-playable
+> files beneath `assets/stimuli` to downstream owners.
+
 Updated 2026-09-13; audit base `32c7c2d`. This is the current instruction
 router. Historical receipts retain their original source and date.
 
@@ -76,5 +83,4 @@ validation availability and controller override execution.
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
 | Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
 
-The [old entrypoint](../docs/history/00-READ-FIRST-2026-09-13.md) is preserved
-as historical evidence, not a competing current router.
+The former entrypoint remains in Git history, not as a competing current router.

@@ -68,7 +68,7 @@ version binding and remaining section work are in `45-FUTURE-AGENT-CHECKLIST.md`
 | --- | --- | --- |
 | Experiment package | Exact canonical bytes plus verified self-hashed `ExperimentPackageV1` | Package load/author/re-export and explicit legacy importers |
 | Settings | Canonical settings projection derived only from the package | Setup authoring form and immutable run projection; never ambient defaults |
-| Playback policy | Package-owned exact `complete-video-v1` behavior | Browser/GstPlay/WebView execution backend is a separately frozen capability receipt |
+| Playback policy | Package-owned exact `complete-video-v1` behavior | HTML video execution and observed lifecycle are separately evidenced |
 | Input bindings | Explicit package-owned `InputBindingV1` projection | Windows input adapter; Chrome/Edge event and Gamepad adapters |
 | Stimulus library | Closed package asset manifest beneath fixed `assets/stimuli/` | Tauri file commands; browser File System Access; no scan-based enrollment |
 | Video-order authoring | Canonical hash-bound library and variant design records beside the video folder | Segment 3 editor, CSV/XLSX export, browser workspace and Rust `research_stimulus_order`; never package/Run authority |
@@ -81,7 +81,7 @@ version binding and remaining section work are in `45-FUTURE-AGENT-CHECKLIST.md`
 | Questionnaire label repetition draft | Ephemeral Section 2 presentation state | Every-item/5/10 design preview only; no current package, Runner, recovery, hash, or output authority |
 | Participant/attempt state | Locks, journals, and immutable schema-compatible manifests | Four-state chooser projection; never editable flags |
 | Run lifecycle | One run authority per attempt | Setup Start, Run Pause/Stop Early, recovery |
-| Native media | One Windows Rust actor over a pinned bundled GStreamer/GstPlay runtime | Opaque media grants/session IDs and child-window viewport projection |
+| Media preparation and playback | P1 verifies a playable declared file; Runner binds it to an HTML video element | FFprobe/FFmpeg preparation on Windows; bounded media grants and run-bound lifecycle projection |
 | Affect state | One bounded current/target x/y engine | Inputs, Grid/Flubber renderer, recorder, Windows LSL |
 | Sampling | Run-owned monotonic scheduler | Canonical rows and Windows regular LSL outlet |
 | Recording | Canonical typed sample/event/questionnaire-response model plus package-derived hashes | Package output policy, CSV, TSV, `events.jsonl`, manifest, recovery journal |
@@ -89,7 +89,7 @@ version binding and remaining section work are in `45-FUTURE-AGENT-CHECKLIST.md`
 | Setup feedback-design preview | Transient, presentation-only projection over the same preview x/y | Classic Flubber, 2D Grid, and procedural responsive Face comparison; no package, Start, Run, record, or evidence authority |
 | LSL | Windows Rust outbound adapter | Regular eight-channel state plus irregular semantic markers |
 
-No UI handler, legacy importer, renderer, WebView, browser video fallback,
+No UI handler, legacy importer, renderer, HTML video element,
 ambient storage, OS locale, or LSL adapter creates a second package, experiment
 order, settings, language, affect, lifecycle, timestamp, playback, output, or
 record authority.
@@ -151,7 +151,7 @@ not be merged into a catch-all controller or runtime module:
 | Input | Binding editor and live-test presentation | Device capture, conflict/edge policy, authoritative state and sampling feed |
 | Visual feedback | Preview and Run rendering only | Frozen contract validation and evidence binding; no DOM or renderer ownership |
 | Desktop layout authoring (P4 successor) | `screen-layout-*` editor/lifecycle; `desktop-layout*` strict profile and full P1/P5 geometry composition | `research_desktop_layout` canonical typed reader and matching geometry; P7 owns full master composition, no Runner authority added |
-| Native media | Geometry/status projection through one adapter | GstPlay actor, private file grant, lifecycle, timestamps and child-window adapter |
+| Media preparation and playback | HTML video layout/status projection through one adapter | P1 local probe/conversion, exact file verification, grant fencing and run lifecycle |
 | Timing and LSL | Read-only health/status projection | Scheduler, monotonic clock, explicit gaps, state outlet and marker lifecycle |
 | Output and recovery | Receipts and recovery choices | Journal, tables, snapshots, manifest, atomic promotion and audit |
 | Platform bridge | One selected browser/native adapter; the explicitly selected Planner JSONL adapter routes typed commands to the same registered owners | Narrow authorized commands/events; bounded owned-process CLI broker/wire validation; no product policy in handlers |
@@ -234,9 +234,9 @@ The landed package-run slice realizes that map through these explicit seams:
   owns pure package-run domain logic; `{input_mailbox,storage,recovery}.rs`
   owns isolated service/failure domains; `runtime.rs` coordinates those
   services; and `commands.rs` is the path-free serialization boundary.
-- `research_native_media/{contracts,state,gst_actor}.rs` owns playback outside
-  protocol and persistence. Its Windows renderer and private runtime
-  environment remain nested platform adapters with no protocol authority.
+- The workspace/media boundary verifies declared playable assets and issues
+  bounded grants outside protocol and persistence. The HTML video element owns
+  presentation while the native coordinator owns run state and sampling time.
 
 The legacy `ResearchRuntime` and browser journal remain isolated compatibility
 readers/finalizers for historical manifests. They are not permitted to become
@@ -255,8 +255,8 @@ Files are split by cohesive authority and failure domain rather than by line
 count alone. In particular, the native run implementation is factored into
 package preparation, protocol reducer, scheduler/input/media coordination,
 durable journal/writer, recovery/finalization, and read-only status projection.
-The GstPlay actor and its raw-window adapter remain isolated from the protocol
-and writer modules. Each unit has focused success, rejection, stale-generation,
+The media-grant and lifecycle adapters remain isolated from protocol and writer
+modules. Each unit has focused success, rejection, stale-generation,
 failure, and shutdown tests before it is composed end to end.
 
 ## Contract family
@@ -409,76 +409,25 @@ creation time; canonicalization rejects ordinary symlink/junction redirection,
 but this is not a claim of race-free defense against adversarial reparse-point
 replacement between validation and a later path operation.
 
-### Windows native-media boundary
+### Prepared HTML video boundary
 
-Qualified declared package-asset playback uses only the packaged GStreamer 1.28.6
-MSVC x86_64 tree described by
-`src-tauri/native-media/gstreamer-runtime-v1.json`. The app does not search
-ambient plugin/install paths or the network.
-The build/runtime verifier rejects an absent, unexpected, modified, symlinked,
-Windows reparse-point/junction, or wrong-architecture tree before descending
-through it. Staging preserves the applicable upstream notices and generates a
-complete file-hash manifest. Safe metadata checks reject ordinary reparse
-trees; they do not claim hostile swap-race elimination without handle-relative
-Windows APIs.
+At Segment 1 confirmation, P1's Windows owner probes researcher-selected source
+videos with FFprobe. An incompatible original remains intact in a separate
+project source folder while FFmpeg creates an HTML-playable file beneath the
+strict `assets/stimuli` tree. Only completed files pass the active-media scan;
+P1 hashes and probes the result before acceptance. Conversion failure leaves
+the segment pending. The static browser cannot launch local tools and consumes
+already prepared files through its authorized workspace handle.
 
-The native media service is one serialized Rust actor. Before Prepare, the
-workspace service revalidates the opaque stimulus identity, hash, byte length,
-duration/decode evidence, and root generation; only then may it resolve a path
-inside Rust. The actor owns one GLib context/loop, GstPlay instance, explicit
-video sink, signal adapter, application child window, and deterministic
-teardown.
-The WebView receives no path or native handle. It exchanges a bounded media
-session ID, playback commands, status, and a validated stage rectangle used to
-position the child window.
-
-The actor translates native Playing, Paused, Buffering, Ended, Error, and
-teardown events into the run lifecycle before projecting UI status. Playing may
-open a sampling segment only after the exact grant is prepared. Every other
-non-playing state fences the sampler first; actor loss is a run failure with a
-durable recovery boundary. Callback messages are bounded and generation-
-fenced so stale media/player callbacks cannot affect a later attempt.
-
-Project-authored `unsafe` is restricted to two Windows FFI adapters under
-`research_native_media/gst_actor/`: `runtime_environment.rs` owns private DLL-
-search activation/removal, and `windows_renderer.rs` owns raw child-window and
-GstPlay overlay calls. The researcher approved these contained boundaries on
-2026-09-10. Both document validated-handle lifetime, exact-once teardown,
-actor-thread affinity, callback-after-teardown prevention, and
-no-panic-across-FFI invariants. Crate lints and a recursive source allowlist
-reject undocumented blocks or unsafe code in every other module. Landing these
-adapters is software evidence only:
-the capability service may report an actor ready after exact runtime
-verification, while `qualifiedStartAvailable` and package Start remain false
-until the installed runtime, redistribution, codec/decode, lifecycle, physical
-input, timing, recovery, and workflow gates produce commit-bound receipts.
-
-`unqualifiedWebview` is a separately chosen development path, never an
-automatic fallback. Its receipt, journal, events, and manifest remain labelled
-unqualified. A WebView media failure is still reported to Rust and fences the
-native sampling/run authority.
-
-The unqualified desktop preflight uses the shared complete-video probe and
-requires `requestVideoFrameCallback` evidence at the deterministic near-start,
-midpoint, and near-end positions. Rust records the evidence separately as
-`representativeFramesV1`, backend `webviewVideoFrameCallback`, and status
-`attestedUnqualified`; no generic “verified” decode state can be mistaken for
-future qualified GstPlay evidence. Rust consumes the opaque probe grant before
-accepting or rejecting each terminal attestation request, while the renderer
-requests explicit revocation when probing fails before attestation. Final
-identity is rehashed from the same Rust-held locked file handle. This remains
-a lower-trust WebView attestation and is not native playback qualification.
-
-During an explicit unqualified desktop run, every renderer lifecycle command
-is bound to the native UUID run ID, participant/attempt receipt, frozen hashes,
-and a fresh per-stimulus video-element generation. Replacing the video element
-for each source prevents delayed events from a detached prior source from being
-relabeled. Native status projection is suppressed while a lifecycle IPC is in
-flight and is ordered by local revision/request sequence. Rust independently
-requires a Completed timestamp within one second of the exact preflighted end.
-If neither a recovery interruption nor terminal receipt can be confirmed, the
-renderer labels the outcome unknown, disables further run controls, and
-requires restart; it never presents an unconfirmed stop as complete or partial.
+Before Runner preparation, the workspace service revalidates the selected
+recipe's exact relative path, hash, byte length, duration, geometry and root
+generation. A bounded grant binds that file to the HTML video element and one
+attempt. The renderer reports media lifecycle transitions with run, source and
+element generations. Only observed playing may open a sampling segment; pause,
+buffering, end, error, teardown and grant loss fence it. Stale events cannot
+advance a later file or attempt. The native coordinator retains scheduling,
+input, storage and LSL authority. These are target invariants until verified
+against the current source and installed application.
 
 Chrome and Edge obtain one File System Access directory handle in a secure
 context from an immediate user activation. They retain the handle only through
@@ -761,8 +710,8 @@ default. A missed slot creates one timing-gap record in the
 attempt's applicable semantic-event version. There is no catch-up row,
 retrospective timestamp, or later-state backfill.
 
-Sampling runs only during active decoded video playback. For qualified Windows
-runs, Rust-owned GstPlay lifecycle is the only playback authority. Pause,
+Sampling runs only during active decoded video playback. For Windows runs,
+the run-bound HTML media lifecycle establishes active playback. Pause,
 buffering, questionnaire/interval steps, recovery, error, and terminal states
 close the active segment. After-video hooks run on their explicitly authored
 side of the occurrence's interval. Each interval keeps state neutral and
@@ -796,12 +745,11 @@ missing pair, divergent order/hash/byte, undeclared file/default/storage read,
 or platform-specific normalization. It never writes a passing receipt by
 copying one instance's results into the other.
 
-This harness proves deterministic package resolution only. Native media/input/
+This harness proves deterministic package resolution only. Media/input/
 persistence/LSL availability remains an independently observed preflight and
-qualification boundary. The Rust package protocol, actor, and approved renderer
-are implemented, but current Windows `nativeGstPlay` Start continues to fail
-closed until the installed-runtime, redistribution, format/decode, physical,
-timing, recovery, and complete-workflow gates pass.
+qualification boundary. Current Windows Start remains gated pending verified
+prepared-media binding, format/decode, physical timing, recovery and complete
+installed-workflow evidence.
 
 ## Recording, output, and recovery
 
@@ -897,8 +845,8 @@ Face/Photoatlas assets, routes, permissions, dependencies, and runtime code.
 ## Platform expectations
 
 - Package and qualify Tauri on Windows first. Retain the bundle ID while using
-  the new product/data namespace. A qualified package contains the exact pinned
-  GStreamer runtime and approved native actor; package integrity alone does not
+  the new product/data namespace. A qualified package proves prepared HTML
+  video playback and exact media identity; package integrity alone does not
   prove playback behavior.
 - Qualify desktop Chrome and Edge independently, including File System Access,
   permission renewal, worker timing, IndexedDB recovery, video playback, and
@@ -907,7 +855,7 @@ Face/Photoatlas assets, routes, permissions, dependencies, and runtime code.
   physiology support.
 - Host-native Windows/macOS/Linux packages are manual, unsigned, internal
   Setup/interface-evaluation artifacts only. They build with no optional
-  features, exclude the GStreamer runtime, expose unavailable run capabilities,
+  features, expose unavailable run capabilities,
   block experiment Start, and bind their exact artifact hash to provenance with
   every qualification field false.
 - Signing, public installer/release publication, and production credentials

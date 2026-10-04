@@ -145,12 +145,11 @@ attach concrete receipts in `40-ROADMAP.md` when resolving an item.
   receiver. Preserve the existing prohibition on questionnaire prompts/answers
   in marker payloads. CSV/TSV response/rating tables and local event/manifest
   evidence remain separate outputs.
-- **Finish the existing native-media and installed-workflow gates.** The
-  GstPlay actor and two approved FFI adapters are present, but safe installed
-  pre-main DLL loading, redistribution/corresponding-source closure, supported
-  codec/container evidence, DPI/audio/lifecycle/recovery tests, and visible
-  long-run qualification remain open. Keep native Start fail-closed and
-  interface-only artifacts unqualified until roadmap gates pass.
+- **Finish prepared-media and installed-workflow gates.** P1 FFprobe/FFmpeg
+  preparation, exact playable-file binding, supported codec/container evidence,
+  DPI/audio/lifecycle/recovery tests and visible long-run qualification remain
+  open. Keep qualified Start fail-closed and interface-only artifacts
+  unqualified until roadmap gates pass.
 - **Finish acquisition qualification on each active target.** Use exact
   Windows Tauri, current desktop Chrome, and current desktop Edge candidates
   for full workflow, independent-instance decoding/reproduction, physical

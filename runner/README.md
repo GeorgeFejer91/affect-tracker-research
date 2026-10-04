@@ -18,12 +18,11 @@ launches it. `pnpm runner:dev` serves the frontend on port 1421 for development;
 the native application is required for file dialogs, execution and recording.
 Planner retains its own desktop build entry and application-data identity.
 
-The default build includes LSL and Windows acquisition. Qualified video Start
-remains disabled by the existing native GStreamer qualification gate. A successful
-build or synthetic test does not qualify native video playback or an installed
-experiment. The pinned GStreamer runtime/SDK, redistribution review, installed
-player/input/timing tests and complete Planner–Runner option correspondence have
-their own outstanding gates in `for-ai/30` and `for-ai/40`.
+The default build includes LSL and Windows acquisition. The current participant
+surface uses HTML video. Qualified Start remains gated while prepared-file
+binding, installed playback, input/timing tests and complete Planner–Runner
+correspondence lack evidence. A successful build or synthetic test does not
+qualify an installed experiment. See `for-ai/30` and `for-ai/40`.
 
 ## Launcher and participant flow
 

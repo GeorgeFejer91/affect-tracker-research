@@ -1,5 +1,13 @@
 # Mandatory agent workflow and skill routing
 
+> **MEDIA RETIREMENT ALERT — 2026-10-04.** GStreamer is retired. Delete
+> GStreamer/GstPlay references and infrastructure encountered in this project
+> root; coordinate other owners' files rather than leaving a stale solution.
+> Use HTML video with P1 FFprobe inspection and FFmpeg preparation. Preserve
+> incompatible originals in a separate project source folder and publish only
+> verified playable files beneath `assets/stimuli`. Treat the new
+> workflow as unimplemented until source and tests prove each layer.
+
 ## Planner CLI amendment — 2026-09-12
 
 The direct request for Planner setting CLI access, saved-JSON load/edit and
@@ -310,10 +318,10 @@ successor Planner capabilities. Do not reinterpret v1 to implement those changes
   and tests. If a proposed edit adds a second unrelated responsibility to
   `app.js`, `native-bridge.js`, `research_commands.rs`, or
   `research_runtime.rs`, extract a bounded module first or in the same change.
-- Keep qualified Windows media behind the opaque, Rust-owned native-media
-  boundary. Never pass arbitrary filesystem paths or native handles to/from the
-  WebView; never discover a system GStreamer installation/plugin path or
-  download native runtime code in-app.
+- Keep P1 local media preparation behind the workspace authority. Verify the
+  playable file before publishing its identity and preserve the original in a
+  separate project source folder. Runner receives only bounded grants for
+  declared media; never pass arbitrary filesystem paths to the WebView.
 - Do not restore deleted Playground features into the active tree. Historical
   WebXR/Quest, remote, Party/Ground Control, direct Polar, face, touch,
   calibration, retro, phone, and legacy study work belongs in
@@ -326,7 +334,7 @@ Use the smallest applicable set and read each selected skill completely before
 acting.
 
 - Use **`tauri-rust-developer`** for Tauri/Rust, Cargo, IPC, capabilities, CSP,
-  native windows, input, filesystem/persistence, GStreamer/native libraries,
+  native windows, input, filesystem/persistence, local media preparation,
   packaging, or release work. Read its security, networking/FFI, persistence,
   latency, and verification references as the task requires.
 - Use **`tauri-remote-app-builder`** as the general end-to-end skill for Tauri
@@ -369,13 +377,9 @@ Stop and request explicit user direction before:
 - signing, publishing installers/releases, store submission, or using
   production credentials.
 
-The current GstPlay design has two approved contained Windows `unsafe` FFI
-adapters: private DLL-search activation/removal and application-owned child-
-window/GstPlay overlay operations. The researcher approved both boundaries on
-2026-09-10. Do not add a third unsafe source file without a new explicit pause
-and approval. Keep the two existing adapters private, document every handle,
-thread, teardown, and panic invariant, exercise malformed/missing native state,
-and never unwind a panic across FFI.
+The retired native-player FFI approval does not authorize a new unsafe boundary.
+Prefer safe process and filesystem APIs for FFprobe/FFmpeg preparation. Any new
+unsafe code requires the explicit pause and focused invariant review above.
 
 ## Change workflow
 

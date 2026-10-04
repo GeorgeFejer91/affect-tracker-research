@@ -1,7 +1,7 @@
 # Current primary goal and JSON authority — 2026-09-13
 
-The latest user amendments govern this pass. Root is the sole implementation
-and release owner: no delegation. Finish the installed Windows Runner, not just
+The latest user amendments govern this pass. Root owns integration and release;
+user-requested agents may deliver isolated bounded work. Finish the installed Windows Runner, not just
 its parsers or a simulated browser. Keep the full end-to-end goal active until
 real execution and independently read XDF prove it.
 
@@ -30,8 +30,11 @@ do not add duplicate convenience copies of whole segment projections.
 - A common default project folder is a convenience only, never a prerequisite
   for interpreting a recipe. The latest user explicitly rejects dependence on
   an unrelated default directory.
-- `packageRelativePath` identifies runtime media beneath the experiment project
-  root. `sourceRelativePath` is catalogue provenance, not an automatic fallback.
+- `packageRelativePath` identifies the verified playable runtime file beneath
+  the experiment project root. `sourceRelativePath` is catalogue provenance,
+  not an automatic fallback. P1's new preparation target retains an incompatible
+  original in a separate project source folder outside `assets/stimuli` and
+  publishes only its prepared runtime file.
 - Current implementation work makes successful Runner file loading establish
   the loaded JSON's parent directory as that project root, for both picker and
   previous-file loading. Native authority retains the absolute root; frontend
@@ -78,8 +81,8 @@ do not add duplicate convenience copies of whole segment projections.
 
 - [x] Exact mock JSON contains EN/DE demographics, MAIA-2, TAS-20 and six ordered
   steps: forms, 1750 ms named ISI, declared Dictator video, 3213 ms named ISI.
-- [x] Installed pinned runtime reverified: 827 files / 340362958 bytes. Receipt:
-  `D:/GitHub/.affect-checks/runner-installed-runtime-verification-01.log`.
+- [ ] Verify P1's FFprobe/FFmpeg preparation, retained source, strict playable
+  asset closure and exact Runner rebind against the current installed build.
 - [x] Native control recovered after Codex restart; actual Runner launcher and
   loaded master observed. Physical Escape then stopped control; no full run.
 - [x] Missing current-workspace video diagnosed; exact 86870779-byte asset copied
@@ -87,9 +90,8 @@ do not add duplicate convenience copies of whole segment projections.
 - [x] Initial keyboard handler checks pass in EN and DE with production frontend
   and synthetic native responses (85 assertions each). This is not native-key
   or experiment execution evidence.
-- [x] Native-enabled keyboard/recipe-root build compiled and replaced the current
-  local executable. Three native bookmark/root tests passed. Actual loading of
-  the portable Downloads copy updated the persisted previous-file bookmark.
+- [x] A historical keyboard/recipe-root build compiled and was opened. Three
+  native bookmark/root tests passed; this does not verify the current candidate.
 - [ ] Verify all installed keyboard behaviours through the complete experiment.
 - [ ] Complete PyAutoGUI sequence through the actual app and all questionnaires.
   Initial live attempts exposed a missing participant selection in the test
@@ -101,9 +103,9 @@ do not add duplicate convenience copies of whole segment projections.
 - [ ] Separate questionnaire presentation from video preparation where the
   versioned run/recording contract permits; currently global Start/preflight
   checks block the first form. Definitions are present; this is execution gating.
-- [ ] Close native playback qualification. Existing production Start expressly
-  requires qualified native media; false qualification flags cannot be flipped
-  merely to make the test proceed.
+- [ ] Close installed prepared HTML video playback qualification. Existing
+  production Start requires qualified media; false qualification flags cannot
+  be flipped merely to make the test proceed.
 - [ ] Run the full video and exact ordered ISIs with neutral Flubber, real LSL
   recording and independent XDF reconstruction; capture actual layout screenshots.
 - [ ] Leave a current locally runnable companion build and retained evidence;
@@ -125,21 +127,24 @@ Verified production frontend with synthetic native replies: centered German keyb
 
 Installed UI candidate: `3e69d1e`, `affect-runner-centered.exe`, SHA-256 `1a569f96c67780aedc24c66c037c5a9dc0f42544c080b9941332d96ec7016db2`. The accompanying launcher uses its private runtime. The older executable may still be open: verify the process path before testing. `centered-build-receipt.json` binds the current executable and scope.
 
-The test-only real GstPlay lifecycle diagnostic passed on the exact Dictator asset and pinned runtime (50.25 seconds, one test): three decode snapshots, paused/playing bounded frame captures, play/pause/resume/stop, stale-generation rejection and joined shutdown. Evidence: `D:/GitHub/.affect-checks/runner-final-actor-01/{artifact-receipt.json,diagnostic.log}`. It reported 1920x1080, one audio stream, duration 254406 ms. It was hidden and muted; it proves neither visible placement/audio nor full experiment execution.
+The retired test-only player lifecycle diagnostic passed on the exact Dictator asset and its former runtime (50.25 seconds, one test): three decode snapshots, paused/playing bounded frame captures, play/pause/resume/stop, stale-generation rejection and joined shutdown. Historical evidence remains in Git history. It reported 1920x1080, one audio stream, duration 254406 ms. It was hidden and muted; it proves neither current visible placement/audio nor full experiment execution.
 
 Confirmed remaining start condition: `research_native_media::capability()` marks actor readiness but never sets `qualified_start_available`; master preflight and `MasterRuntime::start_input` reject the unqualified native player before questionnaire acquisition. This is an explicit gate, not a missing questionnaire definition. Do not flip the qualification flags based on this short diagnostic. A full-length diagnostic is being added under `cfg(test)` to observe unmodified playback through EOS; it does not enter product code.
 
 Latest actual GUI test targeted PID 32748 and exact source SHA `37039a708e17d7ad87c04e8c8be72d06116b6ebfd6ecf45a329b53d679ae316b`. It stopped on foreground loss before any observations. Computer Use subsequently read the real launcher, then the window was minimized again. No form submission, video presentation or XDF run is claimed. Evidence: `runner-centered-native-setup-01/receipt.json`.
 
-Full-clip diagnostic reproduction: build the Cargo library test with `native-gstreamer`, use `src-tauri/native-media/prepare-actor-diagnostic.ps1` to embed the test-only Common Controls manifest into a separate copy, and invoke `offscreen_native_actor_lifecycle --ignored --nocapture`. Set `AFFECT_NATIVE_DIAGNOSTIC_OPT_IN=1`, `AFFECT_NATIVE_DIAGNOSTIC_FULL_CLIP=1`, exact absolute `AFFECT_NATIVE_DIAGNOSTIC_RUNTIME` and `AFFECT_NATIVE_DIAGNOSTIC_CLIP`, and a new absolute `AFFECT_NATIVE_DIAGNOSTIC_STATE`; scope process PATH to the private runtime bin. The full clip phase has a 285-second deadline, checks identity, rejects position regression and premature EOS, and preserves the ordinary lifecycle checks after EOS. Never mistake this hidden/muted Cargo test for a participant run or include it in the product executable.
+The former full-clip diagnostic instructions are superseded and remain in Git history. Its hidden/muted Cargo test was never a participant run and is not an active product qualification command.
 
 Full-length diagnostic PASS: `runner-final-fullclip-01/fullclip-receipt.json` and `diagnostic.log` bind the test artifact and source delta. EOS observed after 254451 ms of continuous playback, last sampled position 254180 ms, 1002 observations; identity/monotonic-position checks and subsequent reprepare/stale-command/shutdown checks all passed. Total test 305.95 s. The observation includes a 250 ms polling interval and is not a physical onset/offset precision measurement. Product binary remains the centered 3e69d1e candidate: only cfg(test) code and documentation changed in this pass. Full installed participant/LSL/XDF and viewport checks remain open.
 
 ## Native executable bootstrap — 2026-09-13
 
-R1 startup deliverable: `src-tauri/native-launcher` is an independent SHA-256-only Rust executable with `forbid(unsafe_code)`. It checks the engine's build-pinned hash, rejects adjacent application DLLs, verifies the existing pinned runtime tree, and spawns only `affect-runner-engine.exe` with private-bin-only PATH and cwd. No shell, forwarded arguments, new IPC, experiment settings, native qualification flags or downloads. Failure opens a bounded local text report. `prepare.ps1` builds a launcher for one exact engine into a fresh staged application folder; prior candidates are not overwritten.
+The prior launcher receipt covered a historical media-enabled executable. Its
+private runtime checks and staging command are superseded; see Git history for
+the exact old candidate. A current launcher needs fresh source/artifact identity
+and cannot borrow the old playback qualification claim.
 
-Current local `D:/GitHub/.affect-checks/runner-current-native-2026-09-13/Experiment Runner.exe` passed `--verify-only` from D:/Downloads with a system-only inherited PATH. Normal invocation started actual engine PID 13008 and Computer Use read its live launcher. `launcher-receipt.json` binds the two executable hashes. PE import inspection found no GStreamer imports. Eleven launcher/runtime-verifier tests and focused Clippy with warnings denied pass. This closes the command-file requirement for local startup; same-user filesystem races, signing/distribution, physical media qualification and complete session/XDF remain open.
+The historical local Runner candidate passed `--verify-only` from D:/Downloads with a system-only inherited PATH. Normal invocation started engine PID 13008 and Computer Use read its live launcher. Its historical launcher receipt binds the two executable hashes. Eleven launcher/runtime-verifier tests and focused Clippy with warnings denied passed. This was startup evidence for that old candidate; signing/distribution, current physical media qualification and complete session/XDF remain open.
 
 Bootstrap negative executable checks also pass: missing engine and an adjacent synthetic foreign.DLL each return exit 1 with the expected bounded reason before spawning Runner (`runner-launcher-negative-01/receipt.json`). The subsequent keyboard setup captured the real initial launcher, then stopped on foreground loss. PID 13008 was no longer running afterward; no matching Application crash event was found. Cause of that exit is unproven, so this is not successful recipe-load or session evidence.
 
@@ -155,7 +160,7 @@ The user also prioritizes functional pipeline validation first and installer ver
 
 Root collected the completed SurveyJS branch as `762f063` / `4ad9249`, retaining
 recent-history and participant/version selection. `f6d9b25` passed the native
-GStreamer build (`runner-survey-consolidated-build-01.log`) and 27 focused Node
+historical media-enabled build (`runner-survey-consolidated-build-01.log`) and 27 focused Node
 tests. Its initial screenshots exposed duplicate titles and oversized question
 frames; the integration follow-up preserves the centered 210 mm reading column,
 uses one heading and Next/Weiter, removes redundant frames, and keeps authored

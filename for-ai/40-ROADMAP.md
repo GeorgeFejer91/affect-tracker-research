@@ -1,5 +1,15 @@
 # Research v1 roadmap
 
+## Current media direction — 2026-10-04
+
+The former native-player prototype is retired. Current presentation uses HTML
+video; P1's FFprobe/FFmpeg preparation after Segment 1 confirmation is a new
+open target, not an implemented capability. Retain incompatible originals in a
+separate project source folder and publish only verified playable files beneath
+the strict `assets/stimuli` closure. The dated media receipts below describe
+older builds and cannot be used as current implementation or qualification
+evidence. Installed playback and full Runner/XDF validation remain open.
+
 ## Web infrastructure — 2026-09-12
 
 The public root provides two icon links to separate permanent `planner/` and
@@ -988,9 +998,9 @@ and projects saved variants. Full candidate Node/Rust counts and build closures
 are recorded in message `20260911-stimuli-order-table`. No desktop input or
 clipboard was synthesized; installed dialogs, physical keyboard/paste, full
 accessibility, Runner recording, and native media/timing/LSL remain unverified.
-The all-feature Rust check is unavailable because `pkg-config` and a usable
-GStreamer development SDK are absent in this shell; no-default software checks
-are separate evidence.
+The all-feature Rust check was unavailable in that historical shell because
+required development metadata was absent; no-default software checks are
+separate evidence.
 
 ## Repository transition — verified
 
@@ -1195,7 +1205,7 @@ no-default-feature matrix passed 118/118 tests. Format, both-matrix check and
 clippy, dependency audit, Pages/desktop builds, Research-only artifact closure,
 the required-runtime NSIS bundle gate, and a separately invoked real local LSL
 loopback also passed. These automated results do not qualify physical workflow,
-independent LSL reception, long-run timing, or native GstPlay playback.
+independent LSL reception, long-run timing, or installed video playback.
 
 ## Native input status — safe pointer and gamepad authority implemented
 
@@ -1280,7 +1290,7 @@ is never upgraded in place.
 The Rust-owned package path now independently parses and compiles the selected
 participant/language projection, verifies the closed asset bindings, reserves a
 create-new attempt, executes questionnaire/video/explicit-ISI steps through a
-pure reducer, coordinates native input/GstPlay/sampling/LSL, persists typed
+pure reducer, coordinates native input/media/sampling/LSL, persists typed
 samples/events/questionnaire responses and a recovery journal, resumes only at
 a safe boundary, and finalizes a package-bound ManifestV4 plus canonical CSV/
 TSV and immutable package snapshot. Thin Tauri commands expose that runtime
@@ -1391,69 +1401,20 @@ other-section improvements are explicitly outside this pass and recorded in
 label-layout persistence, optional-response output, demographics localization,
 LSL stream-versus-file ownership, and remaining native qualification.
 
-## Native GStreamer/GstPlay status — actor and package integration landed; distribution/qualification open
+## Prepared HTML media status — target and evidence gap, 2026-10-04
 
-Implemented safe groundwork:
+The former native-player prototype and its dated receipts are superseded; Git
+history retains them. Current Runner presentation uses HTML video. P1 does not
+yet implement the requested background FFprobe inspection and FFmpeg conversion
+on Segment 1 confirmation. Incompatible originals will remain in a separate
+project source folder; only verified playable files will enter the strict
+`assets/stimuli` tree and P1/P3/P4/P6/P7/Runner references. Static browsers
+consume prepared assets and cannot launch local conversion tools.
 
-- exact GStreamer 1.28.6 Windows MSVC x86_64 combined-installer identity and a
-  canonical 827-file / 340,362,958-byte integration-tree manifest. Component
-  checksum notes exist, but source archive names, URLs, byte lengths, retained
-  artifacts, and automated source verification are explicitly incomplete;
-- a deterministic staging/verifying script that rejects traversal, links,
-  missing/extra/modified files, coordinated DLL-plus-manifest tampering, and
-  wrong-architecture engine DLLs while preserving upstream notices;
-- a build-time package gate controlled by
-  `AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME=1`;
-- ephemeral Windows CI compilation/testing of the optional bindings and runtime
-  verifier. The current manual Windows/macOS/Linux package wrappers use no
-  optional features, exclude the GStreamer tree, positively disable native
-  acquisition, and write all-false, exact-commit artifact provenance;
-- a path-free native-media capability contract;
-- an isolated Rust-owned runtime environment and serialized GLib/GstPlay actor
-  with bounded control messages, generation/run/asset fencing, native status
-  snapshots, deterministic teardown, and decode-attestation receipts;
-- the user-approved contained Windows FFI adapters in
-  `gst_actor/runtime_environment.rs` and `gst_actor/windows_renderer.rs`, which
-  own private DLL-search state and one child HWND beneath the Tauri window while
-  keeping native handles and paths out of IPC;
-- typed Prepare/viewport/Play/Pause/Stop commands integrated with the package
-  reducer, native scheduler, input mailbox, recovery journal, and status
-  projection;
-- run/receipt/recovery labelling for `nativeGstPlay`, retired parse-only
-`nativeLibvlc`, versus explicit
-  `unqualifiedWebview`, including fail-closed media-error handling;
-- an IPC authority fence that accepts renderer playback lifecycle/failure
-  events only for the exact active run in the explicit unqualified WebView
-  fallback. A future qualified GstPlay run cannot treat WebView media events as
-  native playback authority;
-- per-source detached video generations, ordered status/lifecycle fencing,
-  strict receipt binding, duration-end validation, and explicit restart-required
-  handling when native terminal state cannot be reconciled; and
-- explicit lower-trust WebView decode evidence requiring representative frame
-  callbacks near the start, midpoint, and end. One-use media grants are
-  consumed and this evidence remains labelled `attestedUnqualified`; it cannot
-  satisfy the future native GstPlay qualification gate.
-
-Not implemented or qualified:
-
-- a reviewed minimal distributable plugin/codec closure, complete
-  corresponding-source artifacts/provenance, and redistribution approval;
-- a safe installed Windows pre-`main` DLL-resolution/bootstrap design that
-  cannot be masked by CI `PATH` or load an ambient GStreamer runtime;
-- installed native decode/duration evidence across a declared representative
-  container/codec matrix; or
-- packaged playback, DPI/resize, audio, recovery, shutdown, and soak
-  receipts.
-
-With the exact private runtime staged, the capability can report
-`playerActorReady: true`; it continues to report
-`qualifiedStartAvailable: false` and reason
-`native-qualification-evidence-incomplete`. `ExperimentPackageV1` carries the
-explicit `nativeGstPlay` policy and qualified Start therefore remains closed.
-The researcher approved the two contained `unsafe` Windows FFI adapters on
-2026-09-10. Focused source audit, installed-artifact qualification, and
-redistribution closure remain incomplete; compilation or staging is not
-playback qualification.
+Current native capability still reports qualified Start unavailable. This is
+truthful until exact prepared-file rebind, media lifecycle and installed
+playback, input, timing, recovery, questionnaire, LSL and XDF gates pass.
+Conversion or an HTML preview alone does not qualify an experiment run.
 
 ## Open software work before candidate acceptance
 
@@ -1468,11 +1429,10 @@ playback qualification.
    normalization checks. Retain the existing hostile ambient guards, closed
    asset tree, exact per-case five-hash tuple, sequence equality, and
    byte-identical re-export comparisons.
-3. Approve a minimal GStreamer redistribution/source closure and safe Windows
-   DLL-loader bootstrap; keep every downloadable package runtime-free until it
-   passes review.
-4. Audit and physically qualify the landed actor/child-window/package lifecycle
-   against the security, format, resize, audio, shutdown, and soak gates in
+3. Implement and verify P1 media preparation, preserving incompatible originals
+   outside the strict active-media closure and binding only playable files.
+4. Audit and physically qualify HTML media/grant/package lifecycle against the
+   security, format, resize, audio, shutdown, and soak gates in
    [`30-TESTING-AND-RELEASE.md`](./30-TESTING-AND-RELEASE.md).
 5. Exercise real full-disk/power-loss and directory-entry durability, real
    browser quota/permission loss, and packaged Setup-to-Run/recovery workflows;
@@ -1498,7 +1458,7 @@ run path, or native loader. They are automated baseline evidence only and
 establish no physical, timing, media, LSL, accessibility, recovery, or
 research-readiness claim.
 
-An earlier committed pre-GStreamer baseline
+An earlier committed media-prototype baseline
 `85e64f53bf61204a4a6b6c68ecb57f196df3b684` passed
 [Pages CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412486)
 and [Desktop CI](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/33929412484).
@@ -1524,7 +1484,7 @@ historical exact 368-file / 142,167,916-byte runtime tree, launched responsively
 as **Affect Research**, accepted a normal close, exited with code zero, and
 uninstalled without a lingering process. These records are CI and installer-
 integrity evidence for their historical libVLC-based commits, not evidence for
-the subsequent GStreamer/questionnaire work, Setup-to-Run, native playback,
+the subsequent media/questionnaire work, Setup-to-Run, playback,
 hardware, or installed-workflow qualification.
 
 A ten-second current-Chrome Worker diagnostic at 130 Hz recorded 1300/1300
@@ -1549,7 +1509,7 @@ passed 325/325 JavaScript tests and the allowlisted Pages and desktop
 frontend builds. The pnpm moderate-severity dependency audit found no known
 vulnerabilities. Rust format and both clippy matrices passed with warnings
 denied. The no-default Rust matrix passed 175/175 tests. With the exact pinned
-GStreamer 1.28.6 Windows development SDK and required-runtime gate enabled,
+then-required Windows media development SDK and build gate enabled,
 all-feature check, test, and clippy passed; the matrix reported 178 passed and
 one explicitly environment-gated LSL loopback ignored. That loopback then
 passed in its separate opt-in invocation.
@@ -1596,7 +1556,7 @@ Before a stable or research-ready claim, record:
 5. Real keyboard, mouse, wheel, pointer/trackpad, and supported gamepad checks;
    keyboard-only Setup/Run; visible focus; labels/status; non-color meaning;
    reflow/contrast; announcements; and reduced motion.
-6. Installed native GstPlay evidence for exact runtime integrity and a declared
+6. Installed HTML video evidence for exact prepared-asset integrity and a declared
    supported container/codec matrix,
    player/scheduler lifecycle, errors, DPI/resize, audio, recovery, shutdown,
    forced termination, and a 30-minute run.

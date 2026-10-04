@@ -1,5 +1,15 @@
 # Experiment Runner agent ledger
 
+## Prepared media handoff — 2026-10-04
+
+Runner consumes only P1's exact verified HTML-playable asset beneath
+`assets/stimuli`, as referenced by the saved recipe. P1's planned FFprobe
+inspection and FFmpeg conversion follow Segment 1 confirmation; incompatible
+originals remain in a separate project source folder outside the active media
+closure. Runner does not transcode or fall back to that original. Current HTML
+video presentation and installed playback/XDF correspondence need separate
+evidence. This supersedes older media-engine instructions in dated entries below.
+
 
 ## Hidden fullscreen abort — 2026-09-13
 
@@ -409,8 +419,8 @@ the new selected-external fixture was separately exercised). Default and
 no-default all-target Clippy pass with `-D warnings`. Planner/Runner frontend
 builds and Pages closure pass. A standalone Windows Runner executable built with
 its own embedded resources/product identity. All-feature compilation is blocked
-in this environment by missing pkg-config/GStreamer SDK; this is not a recorder
-test failure or permission to weaken native player qualification. Integration
+in that environment by missing retired media development metadata; this was not
+a recorder test failure or permission to weaken playback qualification. Integration
 owns merging these checkpoints into its newer P1–P7 master candidate.
 
 

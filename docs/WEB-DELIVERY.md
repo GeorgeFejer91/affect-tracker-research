@@ -69,7 +69,7 @@ shims before the deployed bundle starts, fetches the live `build-info.json`, and
 saves the intercepted CSV downloads for reconstruction through the production
 Runner recipe reader. Its receipts prove the deployed static Runner route for
 the exact reported Pages revision; they still do not qualify native LSL, XDF,
-GStreamer, installed desktop playback, physical input, or full-duration timing.
+installed desktop playback, physical input, or full-duration timing.
 
 CSV/XDF parity qualification uses
 `scripts/qualification/runner-csv-xdf-parity-report.mjs` with one or more
@@ -83,6 +83,6 @@ parity report, not a visible installed-playback, physical-timing or
 LabRecorder qualification.
 
 Preserve strict recipe compatibility and platform capability checks; native LSL,
-XDF recording, GStreamer playback, and other desktop services do not become
+XDF recording, prepared HTML video playback, and other desktop services do not become
 browser features through a static deployment. Their implementation belongs to
 the desktop app. The launcher is navigation only and owns no experiment data.
