@@ -2379,11 +2379,9 @@ impl RunWorker {
 fn authorize_webview_media_mode(playback_mode: Option<PlaybackMode>) -> ResearchResult<()> {
     match playback_mode {
         Some(PlaybackMode::UnqualifiedWebview) => Ok(()),
-        Some(PlaybackMode::NativeGstPlay | PlaybackMode::NativeLibvlc) => {
-            Err(CommandError::forbidden(
-                "WebView media events cannot control a qualified native playback run.",
-            ))
-        }
+        Some(PlaybackMode::NativeLibvlc) => Err(CommandError::forbidden(
+            "WebView media events cannot control a qualified native playback run.",
+        )),
         None => Err(CommandError::no_active_run()),
     }
 }
@@ -2550,15 +2548,6 @@ fn verify_stimuli(
                         )
                     })?;
                 match playback_mode {
-                    PlaybackMode::NativeGstPlay => workspace.verify_native_workspace_file(
-                        workspace_id,
-                        &binding.workspace_file_id,
-                        sha256,
-                        *byte_length,
-                        relative_path,
-                        mime_type,
-                        *duration_ms,
-                    )?,
                     PlaybackMode::UnqualifiedWebview => workspace.verify_workspace_file(
                         workspace_id,
                         &binding.workspace_file_id,
@@ -2613,11 +2602,6 @@ fn playback_provenance_detail(
     qualification: PlaybackQualification,
 ) -> ResearchResult<&'static str> {
     match (mode, qualification) {
-        (PlaybackMode::NativeGstPlay, PlaybackQualification::QualifiedNative) => {
-            Err(CommandError::invalid_contract(
-                "Legacy native runs require ResearchRunManifestV3 playback provenance.",
-            ))
-        }
         (PlaybackMode::NativeLibvlc, PlaybackQualification::QualifiedNative) => {
             Ok("playback-native-libvlc-qualified")
         }
@@ -4898,9 +4882,6 @@ fn sync_verified_output(path: &Path, expected: &RunOutputV1) -> ResearchResult<(
 
 fn manifest_playback_mode(mode: PlaybackMode) -> ResearchResult<RunPlaybackModeV1> {
     match mode {
-        PlaybackMode::NativeGstPlay => Err(CommandError::invalid_contract(
-            "Legacy native runs require ResearchRunManifestV3 playback provenance.",
-        )),
         PlaybackMode::NativeLibvlc => Ok(RunPlaybackModeV1::NativeLibvlc),
         PlaybackMode::UnqualifiedWebview => Ok(RunPlaybackModeV1::UnqualifiedWebview),
     }

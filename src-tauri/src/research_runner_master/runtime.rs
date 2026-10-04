@@ -6,8 +6,7 @@ use super::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_input::ResearchInputService;
 use crate::research_native_media::{
-    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
-    PlaybackQualification,
+    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
 };
 use crate::research_native_protocol::{
     input_mailbox::ProtocolInputMailbox, runtime::PackageProtocolRuntime,
@@ -492,11 +491,9 @@ impl MasterRuntime {
             )?;
             if request.validation {
                 require_validation_media(&self.media.capability())?;
-            } else if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
-                != PlaybackQualification::QualifiedNative
-            {
+            } else {
                 return Err(CommandError::native_media_unavailable(
-                    "master-playback-lifecycle-unavailable",
+                    "runner-html-playback-lifecycle-not-yet-wired",
                 ));
             }
             let prepared = PreparedMaster::read(

@@ -10,7 +10,6 @@ pub const NATIVE_MEDIA_DECODE_SCHEMA: &str = "affect-research-native-media-decod
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum PlaybackMode {
-    NativeGstPlay,
     NativeLibvlc,
     #[default]
     UnqualifiedWebview,

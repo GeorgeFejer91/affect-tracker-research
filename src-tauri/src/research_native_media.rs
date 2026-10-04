@@ -133,7 +133,7 @@ mod tests {
         assert!(!capability.runtime_integrity_verified);
         assert!(service.status().is_err());
         assert!(service
-            .authorize_playback(PlaybackMode::NativeGstPlay)
+            .authorize_playback(PlaybackMode::NativeLibvlc)
             .is_err());
         assert_eq!(
             service
