@@ -6347,3 +6347,11 @@ passes. The later local disk recovery allowed a Runner frontend build and
 Windows native `cargo check --bin affect-runner`; both passed. The revised full
 Node suite passes 1190/1190 and the revised Runner frontend build passes. The
 installed and physical gates remain separate.
+
+R1/RR-10 cross-reader follow-up: the current parity harness omits master5
+because its questionnaire snapshots travel in a bundle. This pass may touch
+`scripts/qualification/runner-master-parity.mjs` and the matching Windows CI
+step as named shared verification seams. It will compare independent JS and
+Rust plans across the bundled master5 variants/language routes and write an
+exact-commit receipt. It will not claim that plan interpretation executes a
+session or records XDF.

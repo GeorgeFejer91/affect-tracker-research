@@ -12,7 +12,10 @@ assert.ok(executableArg && outputArg, "Supply the native runner_master_plan exec
 const executable = resolve(executableArg), output = resolve(outputArg), root = resolve(import.meta.dirname, "../..");
 await mkdir(output); // Existing evidence is never overwritten.
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
-const sources = artifactArg ? [resolve(artifactArg)] : ["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-deep-language-v1"].map(name => join(root, `test/fixtures/${name}.canonical.json`));
+const sources = artifactArg ? [resolve(artifactArg)] : [
+  ...["planner-recipe-current-v1", "planner-recipe-locations-current-v1", "planner-recipe-deep-language-v1"].map(name => join(root, `test/fixtures/${name}.canonical.json`)),
+  join(root, "test/fixtures/planner-recipe-v5.bundle.json"),
+];
 const results = [];
 for (const path of sources) {
   const bytes = await readFile(path), receipt = await readRunnerRecipe(bytes);
@@ -25,7 +28,8 @@ for (const path of sources) {
     const stem = `selection-${results.length + 1}`;
     await writeFile(join(output, `${stem}.native.json`), child.stdout, { flag: "wx" });
     await writeFile(join(output, `${stem}.browser.json`), JSON.stringify(expected), { flag: "wx" });
-    results.push({ path, sourceSha256: hash(bytes), selector: expected.selector, participantId: "P001", planIdentitySha256: actual.planIdentitySha256, stepCount: actual.steps.length,
+    results.push({ path, sourceSha256: hash(bytes), recipeSourceByteSha256: receipt.canonicalSourceByteSha256,
+      selector: expected.selector, participantId: "P001", planIdentitySha256: actual.planIdentitySha256, stepCount: actual.steps.length,
       nativeProjectionSha256: hash(child.stdout), browserProjectionSha256: hash(JSON.stringify(expected)) });
   }
 }

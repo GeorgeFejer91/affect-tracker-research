@@ -48,6 +48,13 @@ jobs:
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Compile native Research tests without optional features
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
+      - name: Compare saved master plans in independent JS and Rust readers
+        shell: pwsh
+        run: |
+          cargo build --locked --manifest-path src-tauri/Cargo.toml --no-default-features --example runner_master_plan
+          if ($LASTEXITCODE -ne 0) { throw 'Native plan probe build failed.' }
+          node scripts/qualification/runner-master-parity.mjs src-tauri/target/debug/examples/runner_master_plan.exe (Join-Path $env:RUNNER_TEMP 'runner-plan-parity')
+          if ($LASTEXITCODE -ne 0) { throw 'Saved plan reader correspondence failed.' }
       - name: Lint native Research backend without optional features
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Check native Research backend
