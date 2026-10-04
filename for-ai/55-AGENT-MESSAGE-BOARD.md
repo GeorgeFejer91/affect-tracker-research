@@ -6368,3 +6368,62 @@ Menu targets point to the two installed programs. The build receipt remains
 `researchQualified: false`. This is package and source correspondence evidence;
 native Start, participant execution, LSL/XDF and visual verification remain open.
 The exact artifact and limitations are in `docs/windows-suite.md`.
+
+## 20261004-R1-native-HTML-session-authority
+
+Owner: root, R1/RR-04, RR-06, RR-07, RR-08/09 and R1-03/04/05/07, Backend
+Verification. Isolated branch `codex/segment-r1-native-html-session` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-native`, based
+on `7356286`. The frozen master1–5 JSON plus selected participant, language,
+variant, exact P1 video identity, P2 forms, P3 sequence, P4 layout, P5 input
+and sampling policy are inputs. Runner-only output is a versioned attempt,
+observed event and answer journal, outbound LSL and selected-stream XDF. It
+does not write settings back into the Planner manifest.
+
+Verified source: native master Start is fail-closed, status is always absent,
+and existing marker, information, storage, input and recorder components remain
+without an active worker. HTML media URLs independently reparse exact saved
+steps. Browser CSV execution cannot satisfy native input or XDF. The intended
+deliverable is a Rust-owned session lifecycle accepting position-bound HTML
+video observations, executing form and native ISI boundaries, sampling native
+input, emitting exact markers and finalizing Runner recording; the frontend
+will render the saved selection and relay only observed media/form actions.
+Allowed symbols are `src-tauri/src/research_runner_master/{runtime,commands,
+html_session}.rs`, its module registration, the matching Runner adapter/player
+and focused R1 tests. Shared seams are workspace media grants, native input,
+recorder selection and Tauri command registration; preserve their existing
+contracts unless a narrow versioned extension is necessary. No new unsafe
+boundary or XR runtime. Evidence: pure state/contract tests, JS/Rust plan
+parity, complete native compile/lint, exact installed GUI and independent XDF
+read. Normal Start remains unavailable until those end-to-end gates are met.
+
+First source slice: master3–5 preflight now calls the existing P1 exact-catalogue
+binding validator and reports the count of verified current media files. Missing,
+changed or ambiguous prepared files reject preflight before it can imply media
+readiness; this is a read-only check and grants no playback. The following
+slice extends the check to supported older P1 catalogues. Start remains closed. This call
+reuses the workspace owner seam without changing its contract.
+
+Second source slice: preflight chooses the verifier by saved P1 catalogue v1–3
+across supported master versions and checks every planned video occurrence
+against the complete verified P1 binding, including asset/annotation/path/hash,
+byte length, duration and display geometry. HTML media URL issuance repeats
+the complete catalogue validation and the selected-step check immediately
+before granting the file. P1 v3 now applies the same unprepared-source and
+receipt-closure check as earlier P1 versions. The workspace binding and grant
+contracts remain unchanged.
+Focused stale/duplicate binding tests were added. `cargo check` for the Runner
+binary and tests plus Rust formatting passed locally. Local test execution is
+deferred to Windows CI because this checkout has under 500 MB free after
+compilation. Windows CI now runs the focused binding test after compiling the
+native tests. Native Start remains closed and no installed execution is claimed.
+
+Third RR-04 source slice: the HTML player now compares its decoded duration
+(the existing 250 ms / 0.5% tolerance) and oriented video dimensions with the
+saved P1 asset before calling `play`. Mismatch releases the media grant and
+fails the step. The focused lifecycle test passes 4/4, including changed
+duration/dimensions; the full Node suite passes 1191/1191 and the Runner
+production build/boundary check passes. The first full test
+attempt lacked the tracked research-stimuli tree in this sparse worktree; a
+read-only junction to the P7 checkout restored that fixture. No physical paint,
+audio, timing or XDF claim follows from these source tests.
