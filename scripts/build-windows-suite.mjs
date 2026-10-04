@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, statfsSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -48,6 +48,8 @@ if (checkOnly) {
 }
 
 assert.ok(!existsSync(stage), "Remove the prior generated src-tauri/suite stage before a new build.");
+const disk = statfsSync(root);
+assert.ok(disk.bavail * disk.bsize >= 6 * 1024 ** 3, "At least 6 GiB free on the build volume is required before compiling the suite.");
 assert.ok(existsSync(cargo), `Cargo unavailable at ${cargo}.`);
 for (const key of ["TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"]) {
   assert.ok(!process.env[key], `${key} must be absent for the unsigned suite.`);
