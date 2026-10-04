@@ -7,7 +7,6 @@ use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
 use super::{MasterPlan, MasterSelector, MasterStepKind, PreparedMaster};
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
-use crate::research_native_media::NativeMediaService;
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
 use crate::research_workspace::{RescanResult, WorkspaceService};
 use serde::{Deserialize, Serialize};
@@ -159,26 +158,25 @@ pub async fn research_runner_master_preflight(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
     runtime: State<'_, Arc<PackageProtocolRuntime>>,
-    media: State<'_, Arc<NativeMediaService>>,
     request: MasterPreflightRequest,
 ) -> ResearchResult<serde_json::Value> {
-    master_preflight(window, workspace, runtime, media, request, false).await
+    master_preflight(window, workspace, runtime, request, false).await
 }
+
 #[tauri::command]
 pub async fn research_runner_master_validation_preflight(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
     runtime: State<'_, Arc<PackageProtocolRuntime>>,
-    media: State<'_, Arc<NativeMediaService>>,
     request: MasterPreflightRequest,
 ) -> ResearchResult<serde_json::Value> {
-    master_preflight(window, workspace, runtime, media, request, true).await
+    master_preflight(window, workspace, runtime, request, true).await
 }
+
 async fn master_preflight(
     window: WebviewWindow,
     workspace: State<'_, Arc<WorkspaceService>>,
     runtime: State<'_, Arc<PackageProtocolRuntime>>,
-    media: State<'_, Arc<NativeMediaService>>,
     request: MasterPreflightRequest,
     validation: bool,
 ) -> ResearchResult<serde_json::Value> {
@@ -187,27 +185,65 @@ async fn master_preflight(
     let scale = window.scale_factor().map_err(CommandError::io)?;
     let workspace = Arc::clone(&workspace);
     let runtime = Arc::clone(&runtime);
-    let media = Arc::clone(&media);
-    tauri::async_runtime::spawn_blocking(move || runtime.while_idle(|| {
-        let prepared = PreparedMaster::read(&request.source_text, &request.participant_id, request.selector)?;
-        workspace.with_workspace(&request.workspace_id, |root, _| crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(root, &prepared.loaded))?;
-        let bindings = super::bindings::bind_master_media(&workspace, &request.workspace_id, &prepared)?;
-        let viewport = &prepared.layout.viewport;
-        let viewport_matches = f64::from(physical.width) / scale == viewport.width_css_px && f64::from(physical.height) / scale == viewport.height_css_px;
-        let capability = media.capability();
-        let mut reasons = Vec::new();
-        if !viewport_matches { reasons.push("master-exact-fullscreen-viewport-required".to_owned()); }
-        if validation {
-            if !matches!(prepared.plan.version, 3 | 4 | 5) { reasons.push("validation-requires-master3-4-or-5".into()); }
-            if super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
-        } else if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
-        if !crate::research_platform::NATIVE_ACQUISITION_SUPPORTED { reasons.push("native-acquisition-platform-unsupported".into()); }
-        super::markers::MasterMarkers::new(&prepared.plan,"run-preflight","attempt-preflight")?;
-        let result = serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,
-            "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,"planIdentitySha256":prepared.plan.plan_identity_sha256,
-            "mediaBindingCount":bindings.len(),"viewportMatches":viewport_matches,"nativeStartReady":reasons.is_empty(),"reasons":reasons});
-        if validation { Ok(serde_json::json!({"schema":"affect-runner-validation-preflight","version":1,"result":result})) } else { Ok(result) }
-    })).await.map_err(|_| CommandError::forbidden("Master preflight did not finish."))?
+    tauri::async_runtime::spawn_blocking(move || {
+        runtime.while_idle(|| {
+            let prepared = PreparedMaster::read(
+                &request.source_text,
+                &request.participant_id,
+                request.selector,
+            )?;
+            workspace.with_workspace(&request.workspace_id, |root, _| {
+                crate::research_planner_recipe_file::verify_loaded_questionnaire_assets(
+                    root,
+                    &prepared.loaded,
+                )
+            })?;
+            let p1 = prepared.loaded.recipe.segment("P1")?;
+            let saved_video_count = p1["videoCatalogue"]["entries"]
+                .as_array()
+                .ok_or_else(|| CommandError::invalid_contract("Saved video catalogue is missing."))?
+                .len();
+            let viewport = &prepared.layout.viewport;
+            let viewport_matches = scale.is_finite()
+                && scale > 0.0
+                && f64::from(physical.width) / scale == viewport.width_css_px
+                && f64::from(physical.height) / scale == viewport.height_css_px;
+            let mut reasons = vec![super::runtime::RUNNER_START_UNAVAILABLE_REASON.to_owned()];
+            if !viewport_matches {
+                reasons.push("master-exact-fullscreen-viewport-required".to_owned());
+            }
+            if validation && !matches!(prepared.plan.version, 3 | 4 | 5) {
+                reasons.push("validation-requires-master3-4-or-5".to_owned());
+            }
+            super::markers::MasterMarkers::new(
+                &prepared.plan,
+                "run-preflight",
+                "attempt-preflight",
+            )?;
+            let result = serde_json::json!({
+                "schema": "affect-runner-master-preflight",
+                "version": prepared.plan.version,
+                "recipeSourceByteSha256": prepared.plan.recipe_source_byte_sha256,
+                "planIdentitySha256": prepared.plan.plan_identity_sha256,
+                "mediaBindingCount": 0,
+                "savedVideoCount": saved_video_count,
+                "viewportMatches": viewport_matches,
+                "nativeStartReady": false,
+                "reasons": reasons
+            });
+            if validation {
+                Ok(serde_json::json!({
+                    "schema": "affect-runner-validation-preflight",
+                    "version": 1,
+                    "result": result
+                }))
+            } else {
+                Ok(result)
+            }
+        })
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("Master preflight did not finish."))?
 }
 
 #[tauri::command]

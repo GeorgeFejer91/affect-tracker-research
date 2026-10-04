@@ -201,13 +201,7 @@ fn launch(
                     .with_recorder(Arc::clone(&recorder)),
                 );
                 app.manage(Arc::new(
-                    research_runner_master::runtime::MasterRuntime::new(
-                        Arc::clone(&workspace),
-                        Arc::clone(&native_media),
-                        Arc::clone(&input),
-                        Arc::clone(&recorder),
-                        Arc::clone(&package_runtime),
-                    ),
+                    research_runner_master::runtime::MasterRuntime::new(),
                 ));
                 app.manage(package_runtime);
                 app.manage(recorder);

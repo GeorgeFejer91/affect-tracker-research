@@ -6249,3 +6249,20 @@ claimed.
 
 - Owner/scope: P1 documentation handoff in the isolated P1 worktree; `for-ai/20`, `61`, `67`, `69`, `72`, `docs/release-validation.md` and `docs/compartment-catalog.md` only. Root owns the current control-plane, segment and compatibility documents.
 - Current route: native P1 preserves originals in `source-videos/`, probes with FFprobe, converts incompatible sources with FFmpeg into `assets/stimuli/`, and requires HTML representative-frame proof before GUI confirmation. Runner consumes the exact prepared file through HTML video. Static browser and CLI limitations, installed qualification gaps and dated September evidence are stated in the edited documents.
+
+## Runner master retired player worker — 2026-10-04
+
+R1-07 follow-up on isolated branch `codex/segment-master-player-retirement`
+from integrated `3bacd85`. The unreachable native player worker, its media
+grant binding adapter, and worker-only survey tests are removed. All versioned
+master Start entrypoints, including validation Start, now fail closed before
+creating an attempt or acquiring input. Status and actions report no active
+run. Master preflight still reads the saved plan and questionnaire assets, but
+always reports Start unavailable; it distinguishes saved video count from zero
+active media bindings. The now-orphaned native media service playback methods
+and command/status/viewport contracts are removed; its historical capability
+response remains. The exact saved-step HTML video URL, recipe parsing,
+history, and companion recorder registration remain. R1-03/04/05/06 and
+installed execution qualification remain open. Formatting and source scans
+are this pass's evidence; no Cargo build is attempted under the local disk
+constraint.

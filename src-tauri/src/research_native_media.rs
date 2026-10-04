@@ -1,19 +1,13 @@
 #[path = "research_native_media/contracts.rs"]
 mod contracts;
 
-pub use contracts::{
-    NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaPrepareReceiptV1,
-    NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
-    PlaybackMode, PlaybackQualification,
-};
+pub use contracts::{NativeMediaCapability, PlaybackMode, PlaybackQualification};
 
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_platform::NATIVE_ACQUISITION_UNSUPPORTED_REASON;
-use crate::research_workspace::NativeMediaGrant;
 use contracts::{RuntimeBundleState, NATIVE_MEDIA_CAPABILITY_SCHEMA};
 
-/// Fail-closed compatibility for saved native-playback contracts. No player,
-/// runtime verifier, window parent, or startup thread is created.
+/// Compatibility capability for historical recipe readers. HTML video owns playback.
 pub struct NativeMediaService {
     native_acquisition_supported: bool,
 }
@@ -76,42 +70,6 @@ impl NativeMediaService {
         }
     }
 
-    pub fn status(&self) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
-    pub(crate) fn status_snapshot(&self) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
-    pub(crate) fn prepare(
-        &self,
-        _grant: NativeMediaGrant,
-        _viewport: NativeMediaViewportPxV1,
-    ) -> ResearchResult<NativeMediaPrepareReceiptV1> {
-        self.unavailable_result()
-    }
-
-    pub fn set_viewport(
-        &self,
-        _fence: NativeMediaCommandFenceV1,
-        _viewport: NativeMediaViewportPxV1,
-    ) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
-    pub fn play(&self, _fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
-    pub fn pause(&self, _fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
-    pub fn stop(&self, _fence: NativeMediaCommandFenceV1) -> ResearchResult<NativeMediaStatusV1> {
-        self.unavailable_result()
-    }
-
     fn unavailable_result<T>(&self) -> ResearchResult<T> {
         Err(CommandError::native_media_unavailable(
             &self.capability().reason_code,
@@ -131,7 +89,6 @@ mod tests {
         assert!(!capability.player_actor_ready);
         assert!(!capability.qualified_start_available);
         assert!(!capability.runtime_integrity_verified);
-        assert!(service.status().is_err());
         assert!(service
             .authorize_playback(PlaybackMode::NativeLibvlc)
             .is_err());
