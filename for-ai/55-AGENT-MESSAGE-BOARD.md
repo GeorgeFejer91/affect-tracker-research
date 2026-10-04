@@ -6339,3 +6339,11 @@ the P7 checkout into the sparse R1 worktree. The first full run failed only
 because that sparse directory was absent. JS syntax and `git diff --check`
 pass. No native compile, installed UI, physical timing, LSL or XDF claim is made
 by this slice; the local disk has under 40 MB free.
+
+Follow-up in the same RR-04 media lifecycle: browser media URLs now revoke the
+full-file Blob when playback stops or switches. This prevents retained video
+bytes from accumulating across the selected pool. A focused revocation test
+passes. The later local disk recovery allowed a Runner frontend build and
+Windows native `cargo check --bin affect-runner`; both passed. The revised full
+Node suite passes 1190/1190 and the revised Runner frontend build passes. The
+installed and physical gates remain separate.

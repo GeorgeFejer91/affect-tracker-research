@@ -107,3 +107,42 @@ test("a saved video step advances once on observed end and ignores stale end eve
     globalThis.document = previousDocument;
   }
 });
+
+test("browser video releases its full-file blob URL after playback", async () => {
+  const previousElement = globalThis.HTMLElement;
+  const previousDocument = globalThis.document;
+  class Element {
+    constructor() { this.dataset = {}; this.hidden = false; }
+    replaceChildren() {}
+  }
+  class Video extends Element {
+    constructor() { super(); this.readyState = 2; }
+    addEventListener() {}
+    removeEventListener() {}
+    setAttribute() {}
+    removeAttribute() {}
+    pause() {}
+    load() {}
+    async play() {}
+  }
+  globalThis.HTMLElement = Element;
+  globalThis.document = { createElement: () => new Video() };
+  try {
+    const revoked = [];
+    const player = createRunnerHtmlVideoPlayer(new Element(), {
+      invoke: async () => ({
+        schema: "affect-runner-browser-media-url", mediaUrl: "blob:https://example.test/video-1",
+        sha256: "a".repeat(64), byteLength: 123, mimeType: "video/mp4",
+      }),
+      windowObject: { URL: { revokeObjectURL: url => revoked.push(url) }, setTimeout },
+    });
+    await player.playStep({ workspaceId: "browser", sourceText: "recipe", participantId: "P001", selector: {},
+      step: { kind: "video", position: 3, payload: { asset: { sha256: "a".repeat(64), byteLength: 123 } } } });
+    player.stop();
+    player.stop();
+    assert.deepEqual(revoked, ["blob:https://example.test/video-1"]);
+  } finally {
+    globalThis.HTMLElement = previousElement;
+    globalThis.document = previousDocument;
+  }
+});

@@ -54,6 +54,10 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   let endedGeneration = -1;
 
   const releaseGrant = (grant) => {
+    if (grant?.receipt?.schema === "affect-runner-browser-media-url" && grant.receipt.mediaUrl?.startsWith("blob:")) {
+      windowObject.URL.revokeObjectURL(grant.receipt.mediaUrl);
+      return;
+    }
     if (!grant?.receipt?.mediaGrantId) return;
     const { receipt, workspaceId } = grant;
     invoke("research_attest_workspace_decode", {

@@ -95,7 +95,6 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
   let workspaceName = "";
   let currentDocument = null;
   const recent = storageRead(windowObject, RECENT_KEY, []);
-  const objectUrls = new Set();
 
   const workspaceStatus = () => Object.freeze({
     schema: "affect-runner-browser-workspace",
@@ -161,7 +160,6 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
     const sha256 = await sha256Hex(bytes);
     if (sha256 !== asset.sha256) throw new Error("The selected video file hash differs from the JSON media identity.");
     const url = URL.createObjectURL(new Blob([bytes], { type: asset.mimeType || file.type || "video/mp4" }));
-    objectUrls.add(url);
     return Object.freeze({
       schema: "affect-runner-browser-media-url",
       version: 1,
