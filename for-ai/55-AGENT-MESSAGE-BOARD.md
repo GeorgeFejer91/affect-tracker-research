@@ -6304,3 +6304,6 @@ and the Runner production build/boundary check passes. No master JSON fields,
 native LSL, XDF or research qualification change; installed/live visual
 verification remains with root and is paused under the researcher's UI-control
 instruction.
+Root integrated this code as `efd9869`; the integration merge tree equals the
+tested segment tree. The current installed-file artifact predates this fix, so
+an exact-source suite rebuild is still required before installed claims.
