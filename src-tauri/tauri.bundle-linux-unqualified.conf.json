@@ -7,7 +7,7 @@
       "appimage"
     ],
     "resources": [],
-    "longDescription": "Unsigned internal Linux alpha for interface evaluation only. Native GstPlay, LSL, native input, installed workflow, timing, and research readiness are not qualified.",
+    "longDescription": "Unsigned internal Linux alpha for interface evaluation only. HTML video playback, FFprobe/FFmpeg media preparation, LSL, native input, installed workflow, timing, and research readiness are not qualified.",
     "linux": {
       "appimage": {
         "bundleMediaFramework": false

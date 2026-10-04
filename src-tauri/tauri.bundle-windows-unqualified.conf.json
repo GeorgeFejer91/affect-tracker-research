@@ -6,6 +6,6 @@
       "nsis"
     ],
     "resources": [],
-    "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. Playback uses the HTML-compatible video path; LSL, native input, installed workflow, timing, and research readiness require separate qualification."
+    "longDescription": "Unsigned internal Windows alpha for interface evaluation only. HTML video playback, FFprobe/FFmpeg media preparation, LSL, native input, installed workflow, timing, and research readiness are not qualified."
   }
 }

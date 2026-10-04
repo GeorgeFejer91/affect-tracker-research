@@ -8,9 +8,10 @@ on:
 permissions:
   contents: read
 
-# The packages use the HTML-compatible video path and build without optional
-# Cargo features. This workflow has no publishing, release, updater, signing,
-# notarization, or research-readiness authority.
+# These interface packages build without default Cargo features. HTML video
+# playback and FFprobe/FFmpeg preparation still require qualification. This
+# workflow has no publishing, release, updater, signing, notarization, or
+# research-readiness authority.
 jobs:
   package-unqualified-internal-alpha:
     name: ${{ matrix.target }} (unqualified internal alpha)

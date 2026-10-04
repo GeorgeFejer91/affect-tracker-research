@@ -42,7 +42,7 @@ const invoke = async (command, args = {}) => {
   calls.push({ command, args: structuredClone(args) });
   switch (command) {
     case 'research_desktop_identity': return { schema: 'affect-research-desktop-identity', version: 1, program: 'runner' };
-    case 'research_package_protocol_capability': return { schema: 'affect-research-native-package-protocol-capability', version: 1, backend: 'rust-gstplay', rustOwnedProtocol: true, packageV1CompilationReady: true, protocolPlanV2Ready: true, questionnaireDraftsReady: true, recoveryJournalReady: true, manifestV4Ready: true, nativeStartReady: true, reasonCode: 'ready' };
+    case 'research_package_protocol_capability': return { schema: 'affect-research-native-package-protocol-capability', version: 1, backend: 'html-video', rustOwnedProtocol: true, packageV1CompilationReady: true, protocolPlanV2Ready: true, questionnaireDraftsReady: true, recoveryJournalReady: true, manifestV4Ready: true, nativeStartReady: true, reasonCode: 'ready' };
     case 'research_native_media_capability': return { playerActorReady: true, reasonCode: 'ready' };
     case 'research_workspace_status': return { selected: true, workspaceId: 'synthetic-workspace', displayName: 'Synthetic hotkey verification' };
     case 'research_recorder_status': return { available: false, active: false, phase: 'idle' };
@@ -116,5 +116,4 @@ try {
   console.log(JSON.stringify({ checks: receipt.checks.length, errors: receipt.errors }));
   assert.deepEqual(receipt.errors, []);
 } finally { server.close(); }
-
 

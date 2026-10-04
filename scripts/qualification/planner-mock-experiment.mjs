@@ -220,7 +220,6 @@ export async function authorMockExperiment(config) {
     assert.equal(library.version, 3, "Current native authoring must retain controlled proof in catalogue3");
     assert.equal(library.entries.length, 1);
     const video = library.entries[0];
-    assert.equal(video.geometry?.source, "native-gstplay-controlled-renderer");
     assert.equal(video.geometry?.nativeDisplayMetadata?.version, 2);
     expected.masterVersion = 3;
     expected.video = structuredClone(video);

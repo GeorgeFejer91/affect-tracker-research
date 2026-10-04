@@ -37,7 +37,7 @@ try {
    case 'research_input_status':case 'research_input_cancel_setup':return {available:false,receipt:null,remainingDirections:[],capture:null};
    case 'research_native_media_stop':return {};
    case 'research_choose_workspace':throw new Error('Synthetic workspace rejection');
-   case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'gstreamer-gstplay',api:'gstplay',pinnedRuntimeVersion:'1.28.6',bindingsVersion:'0.25',target:'msvc-x86_64',runtimeInstallerSha256:'059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5',runtimeTreeManifestSha256:'51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566',defaultPlaybackMode:'nativeGstPlay',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:true,rendererReceivesFilesystemPaths:false,reasonCode:'runtime-not-staged'};
+   case 'research_native_media_capability':return {schema:'affect-research-native-media-capability',version:2,backend:'html-video',api:'webview-video',pinnedRuntimeVersion:'',bindingsVersion:'',target:'browser-webview',runtimeInstallerSha256:'',runtimeTreeManifestSha256:'',defaultPlaybackMode:'unqualifiedWebview',unqualifiedFallbackMode:'unqualifiedWebview',runtimeBundleState:'notStaged',runtimeIntegrityVerified:false,runtimeFileCount:null,runtimeByteLength:null,playerActorReady:false,qualifiedStartAvailable:false,qualifiedFormatMatrixReady:false,redistributionReviewReady:false,ambientRuntimeAllowed:false,requiredForQualifiedRun:false,rendererReceivesFilesystemPaths:false,reasonCode:'html-video-playback-selected'};
    default:throw new Error('Planner requested a runtime command: '+command);
   }};
   if(surface==='tauri') {
@@ -55,7 +55,7 @@ try {
   document.body.innerHTML='<div id="experiment-runner"></div>'; root=document.querySelector('#experiment-runner');
   const invoke=async command=>{calls.push(command);switch(command){
    case 'research_desktop_identity':return {schema:'affect-research-desktop-identity',version:1,program:'runner'};
-   case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'rust-gstplay',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'fixture-unqualified'};
+   case 'research_package_protocol_capability':return {schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'fixture-unqualified'};
    case 'research_native_media_capability':return {playerActorReady:false,qualifiedStartAvailable:false};
    case 'research_workspace_status':return {selected:false};
    case 'research_recorder_status':return {available:false,active:false,phase:'idle'};

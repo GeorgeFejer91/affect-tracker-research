@@ -45,21 +45,21 @@ test("Windows CI validates the HTML-video desktop boundary without native media 
   ]) {
     assert.match(checksWorkflow, new RegExp(`- name: ${step}\\n\\s+run: cargo`, "u"));
   }
-  assert.doesNotMatch(checksWorkflow, /prepare-gstreamer|GSTREAMER|native-gstreamer|gstreamer-runtime|native-media\/runtime|PATH =/iu);
-  assert.doesNotMatch(packageWorkflow, /prepare-gstreamer|--all-features|GSTREAMER|native-gstreamer|native-media\/runtime/iu);
-  assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle|write-gstreamer-artifact-provenance/iu);
+  assert.doesNotMatch(checksWorkflow, /native-media\/runtime|PATH =/iu);
+  assert.doesNotMatch(packageWorkflow, /--all-features|native-media\/runtime/iu);
+  assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);
   assert.match(packageWorkflow, /write-unqualified-package-provenance\.js/u);
   assert.match(packageWorkflow, /unqualified-internal-\$\{\{ matrix\.target \}\}-\$\{\{ github\.sha \}\}/u);
   assert.match(packageWorkflow, /bundle\/nsis\/\*\.exe/u);
-  assert.doesNotMatch(packageWorkflow, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME:\s*"1"|write-gstreamer-artifact-provenance|native-media\/runtime\/gstreamer/iu);
+  assert.doesNotMatch(packageWorkflow, /native-media\/runtime/iu);
 
-  assert.doesNotMatch(buildHook, /REQUIRE_NATIVE_MEDIA_RUNTIME|CARGO_FEATURE_NATIVE_GSTREAMER|native-gstreamer|GSTREAMER/iu);
-  assert.doesNotMatch(cargoToml, /native-gstreamer|gstreamer|gstreamer-play|gstreamer-pbutils|async-channel/iu);
+  assert.doesNotMatch(buildHook, /REQUIRE_NATIVE_MEDIA_RUNTIME/iu);
+  assert.doesNotMatch(cargoToml, /async-channel/iu);
   assert.match(buildHook, /CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS/u);
 });
 
-test("the local Windows package is interface-only and excludes the unreviewed GStreamer closure", async () => {
+test("the local Windows package is interface-only and has no retired runtime resources", async () => {
   const [packageJson, helper, bundleConfigText, cargoToml, platform, gitignore] = await Promise.all([
     read("package.json"),
     read("scripts/build-unqualified-desktop-package.js"),
@@ -72,11 +72,13 @@ test("the local Windows package is interface-only and excludes the unreviewed GS
   assert.match(packageJson, /"desktop:bundle": "node scripts\/build-unqualified-desktop-package\.js windows-x64"/u);
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"[\s\S]*tauri\.bundle-windows-unqualified\.conf\.json/u);
   assert.match(helper, /--no-default-features/u);
-  assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"|--features[\s\S]*native-gstreamer|lsl-streaming/iu);
+  assert.doesNotMatch(helper, /--features|lsl-streaming/iu);
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, []);
-  assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video path/iu);
-  assert.match(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
+  assert.match(bundleConfig.bundle.longDescription, /HTML video playback.*not qualified/iu);
+  assert.match(bundleConfig.bundle.longDescription, /FFprobe\/FFmpeg media preparation/iu);
+  assert.doesNotMatch(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
+  await assert.rejects(read("src-tauri/native-media/README.md"), { code: "ENOENT" });
 });

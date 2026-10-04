@@ -6161,3 +6161,19 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## Retired media build and packaging cleanup — 2026-10-04
+
+User-directed Repository/Web Synchronization pass on isolated branch
+`codex/segment-media-build-retirement` from `058694c`. This owner is removing
+the obsolete native player staging tree and build/packaging references, while
+retaining unsigned, host-native, no-default-feature interface packages.
+Qualification fixtures now describe the HTML video backend and stay synthetic;
+their Runner readiness flags only drive interface traversal. P1 owns video
+probing and conversion after Segment One confirmation; R1 owns playback and
+media use at runtime, including replacement of the remaining actor-readiness
+assumption in Runner UI fixtures. The source baseline passed
+`pnpm surveyjs:check`; the ten focused build/package boundary tests passed
+before and after this cleanup, and eleven changed scripts passed syntax checks.
+No package was built or installed. Final source, package, and installed
+qualification remain separate gates.
