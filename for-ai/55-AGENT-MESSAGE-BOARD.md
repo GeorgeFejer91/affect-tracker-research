@@ -6194,3 +6194,23 @@ must fail closed on missing/mismatched binaries. This pass will check staging,
 receipt validation and installer layout rules. Full native participant playback,
 installed execution/XDF qualification, and public release remain open gates.
 Current C: free space is about 2 GB, below the release-build headroom.
+
+## Runner published-plan immutability — 2026-10-04
+
+Root R1/RR-10 Backend Verification continuation in isolated
+`codex/r1-plan-immutability` from suite candidate `432359c`. The Planner owns
+P1–P6 and P7 policy in canonical master1–5 JSON. Runner's plan constructor
+currently freezes only its root, leaving the selected selector, steps and
+payload mutable after a hash has been computed. This pass freezes the full
+derived projection with the existing JSON freeze helper, then checks selection
+and hash behavior on real fixture versions. No saved-file version, native Start,
+recording, player authority or research qualification changes. Native playback
+reinstatement remains a separate R1 pass and requires space for a real compile.
+
+20261004 R1 handoff: `runner/src/master-recipe.js` now uses the existing
+recursive recipe freeze on the published plan. `test/research-runner-master.test.js`
+checks nested selector/P5/step immutability across master1–4, then exact
+reconstruction identity. Focused 12/12 and full JavaScript 1,233/1,233 pass.
+The read-only historical correspondence probe now observes all queried plan
+objects frozen. No native or installed execution was attempted. See
+`docs/runner-plan-immutability.md` for the precise claim.

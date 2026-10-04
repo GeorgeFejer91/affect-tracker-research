@@ -1,6 +1,6 @@
 # Planner, display and Runner compartment catalog
 
-Source snapshot: `7088860` on 2026-10-04. This is a function and handoff index for the current Windows source, not a second schema or a qualification receipt. Update the affected row whenever a control, native consumer, or saved setting changes. Capability status remains in [`for-ai/60-SEGMENT-CATALOGUE.md`](../for-ai/60-SEGMENT-CATALOGUE.md) and [`for-ai/65-RUNNER-SEGMENTS.md`](../for-ai/65-RUNNER-SEGMENTS.md); exact fields are defined by the linked wire contracts and strict readers.
+Base source snapshot: `7088860` on 2026-10-04; the P5 Face and R1 plan updates below are later source revisions. This is a function and handoff index for the current Windows source, not a second schema or a qualification receipt. Update the affected row whenever a control, native consumer, or saved setting changes. Capability status remains in [`for-ai/60-SEGMENT-CATALOGUE.md`](../for-ai/60-SEGMENT-CATALOGUE.md) and [`for-ai/65-RUNNER-SEGMENTS.md`](../for-ai/65-RUNNER-SEGMENTS.md); exact fields are defined by the linked wire contracts and strict readers.
 
 ## Program and file boundary
 
@@ -46,14 +46,14 @@ For a master recipe, [Runner's projection](../runner/src/recipe.js) maps `presen
 | RR function | Inputs from JSON and session | Runtime output / authority |
 | --- | --- | --- |
 | RR-01/02 Launch and intake | User-selected exact master JSON plus hash-bound questionnaire assets; native/browser capability | Independent Runner program, strict schema/version rejection, immutable parsed recipe and source hash |
-| RR-03 Selection | Explicit participant, language-tree path, saved variant and new-attempt decision | Frozen selected plan and output identity; defaults from XDF history are advisory and manually overridable |
+| RR-03 Selection | Explicit participant, language-tree path, saved variant and new-attempt decision | Deep-frozen selected plan, selector and step payloads after identity hashing; defaults from XDF history are advisory and manually overridable |
 | RR-04 Protocol/media | P1 verified video files, P3 ordered occurrences/ISIs, P2 modules and saved playback policy | Video/form/ISI transitions and observed events; HTML/WebView is the current playback path, while qualified native Start remains closed |
 | RR-05 Feedback/layout | P4 viewport profile; P5 renderer, colors, mapping and response rules | Adjacent participant feedback from acquired x/y; actual video/layout/paint correspondence still needs installed evidence |
 | RR-06 Questionnaires | Exact selected language definitions and ordered form steps | Drafts, mandatory answer validation and durable submitted responses; names in demographics follow the versioned form contract |
 | RR-07 Input, sampling, outbound LSL | Saved binding, frequency and stream metadata; Runner session override if validated | Native input state, timestamped affect samples and semantic markers; changed controller drafts cannot silently execute |
 | RR-08 XDF recording | Runner-selected own/external streams and destination | One create-new XDF plus stream identity, clock and incomplete/final receipts; stream selection is absent from Planner JSON |
 | RR-09 Storage and recovery | Frozen recipe/selection/attempt and accepted records | No-overwrite output folder, source copy, journal, CSV/TSV, result/partial receipt; master resume remains unavailable |
-| RR-10 Correspondence | Exact saved recipe and each actual observed protocol step | Independent reconstruction and qualification evidence; parser tests, synthetic runs and opened windows cannot establish a complete research run |
+| RR-10 Correspondence | Exact saved recipe and each actual observed protocol step | Immutable JS plan plus independent reconstruction and qualification evidence; parser tests, synthetic runs and opened windows cannot establish a complete research run |
 
 Current code removes the repository-pinned GstPlay actor/runtime path at `fa8552e`; [native capability](../src-tauri/src/research_native_media/capability.rs) reports `qualified_start_available:false`. The existing [release gates](../for-ai/30-TESTING-AND-RELEASE.md) and [Runner validation ledger](../for-ai/72-RUNNER-FINAL-VALIDATION.md) still require an installed, actual video/questionnaire/input/LSL/XDF workflow before a research-ready claim. That source-versus-charter mismatch must be resolved explicitly as part of packaging; a two-app installer by itself cannot close it.
 

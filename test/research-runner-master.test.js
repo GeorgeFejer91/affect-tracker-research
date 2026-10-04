@@ -42,6 +42,25 @@ test("Runner does not infer allocation and distinguishes every repeated occurren
   assert.notEqual(a.events[3].entryId, a.events[4].entryId);
   assert.equal(participantCatalogue(receipt).resolve("p100000"), "P100000");
 });
+test("published master plans cannot drift after identity and selection are fixed", async () => {
+  for (const fixture of ["planner-recipe-current-v1", "planner-recipe-v2-mixed", "runner-master-v3-owner", "planner-recipe-v4-surveyjs"]) {
+    const receipt = await load(fixture);
+    const route = enumerateLanguageRoutesV1(receipt.recipe.segments.P2.languageSelection)[0];
+    const variantId = receipt.recipe.segments.P3.variants[0].variantId;
+    const plan = await resolveRunnerSelection(receipt, "P001", route.optionIds, variantId);
+    assert.ok(Object.isFrozen(plan));
+    assert.ok(Object.isFrozen(plan.selector.languageSelectionPath));
+    assert.ok(Object.isFrozen(plan.selected.feedback));
+    assert.ok(Object.isFrozen(plan.steps));
+    assert.ok(Object.isFrozen(plan.steps[0].payload));
+    assert.throws(() => { plan.steps[0].entryId = "changed"; }, TypeError);
+    assert.throws(() => { plan.selector.languageSelectionPath.push("changed"); }, TypeError);
+    assert.throws(() => { plan.selected.feedback.visual.transparency = 0.123; }, TypeError);
+    const rebuilt = await resolveRunnerSelection(receipt, "P001", route.optionIds, variantId);
+    assert.equal(plan.planIdentitySha256, rebuilt.planIdentitySha256);
+    assert.deepEqual(plan.steps, rebuilt.steps);
+  }
+});
 test("Runner preview resolves the selected master version's participant-facing sequence", async () => {
   const receipt = await load("runner-master-v3-owner");
   const variantId = receipt.recipe.segments.P3.variants[1].variantId;

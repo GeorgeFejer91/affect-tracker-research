@@ -3,6 +3,7 @@ import { reconstructPlannerRecipeSelectionV1, reconstructPlannerRecipeSelectionV
 import { resolveLanguageSelectionTraversalStepV1 } from "../../site/src/research/experiment-package.js";
 import { projectSavedVariantCatalogue, projectSupportedSavedVariantCatalogue } from "../../site/src/research/variant-catalogue-adapter.js";
 import { reconstructPlannerRecipeSelectionV5 } from "../../site/src/research/planner-recipe-assets.js";
+import { freezeRecipeValue } from "../../site/src/research/planner-recipe-wire.js";
 
 export function masterParticipantId(value) {
   if (!/^P[0-9]{3,6}$/u.test(value)) throw new Error("Select a participant number.");
@@ -48,7 +49,7 @@ export async function resolveMasterPlan(receipt, participantId, path, variantId)
   forms("afterSession");
   const identity = { schema: "affect-runner-master-plan", version: recipe.version, algorithmVersion: `master-sequence-v${recipe.version}`,
     recipeSourceByteSha256: receipt.canonicalSourceByteSha256, participantId, selector };
-  return Object.freeze({ ...identity, planIdentitySha256: await canonicalSha256(identity), selected, steps });
+  return freezeRecipeValue({ ...identity, planIdentitySha256: await canonicalSha256(identity), selected, steps });
 }
 
 export function masterTimeline(plan) {
