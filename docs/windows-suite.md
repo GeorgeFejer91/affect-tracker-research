@@ -92,15 +92,30 @@ It silently installed on the CI host and replaced the local candidate; both
 installed-file audits passed with no issues, matching source and verified
 launcher. The local install has the two named shortcuts, but an update over
 the previous candidate also left a duplicate default Planner shortcut. The
-next installer pass checks both a fresh install and reinstall to close that
+following pass checks both a fresh install and reinstall to close that
 update-layout issue.
+
+[Windows run 37189915633](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633)
+passed all three jobs at `9b45d2ec8cdece8723c7d59e566067788c826702`.
+Its [internal installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633/artifacts/11299386414)
+is a 153,641,244-byte ZIP with SHA-256
+`bcdac128df30faf548e85d629819255ef9c21838f77c34afa6bb02a0880180f1`.
+The Windows runner installed it into a fresh directory, installed it again,
+and passed the exact-source file/hash audit after each install. It also found
+only the two named Planner/Runner Start Menu shortcuts, each targeting its
+expected executable. A local download for the same artifact failed because C:
+had about 51 MB free; automatic approval review blocked removal of superseded
+setup downloads. The local `0a614b9` installation therefore remains the last
+locally audited candidate. This `9b45d2e` artifact is internal packaging
+regression evidence; the next application candidate must include the separate
+user-directed media changes.
 
 ## Claim boundary
 
 The `0a614b9` candidate has been silently installed and file-audited on the
-researcher's PC. It remains an unqualified candidate, and the duplicate
-shortcut on update prevents treating that installation as the final suite
-package.
+researcher's PC. It remains an unqualified candidate with a duplicate Planner
+shortcut on update. The exact `9b45d2e` update behavior passed on CI, while
+local update and uninstall/reinstall remain unverified.
 Native playback, physical input, actual video-pool execution, LSL/XDF, timing,
 accessibility, uninstallation, and the full Planner-to-Runner installed
 workflow still require independent exact-artifact checks. Do not present this

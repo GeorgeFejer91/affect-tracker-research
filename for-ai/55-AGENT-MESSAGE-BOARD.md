@@ -61,6 +61,15 @@ Tauri's default `Affect Research Suite.lnk` beside the already existing
 renaming the newly created default and checks a second silent install plus
 exact Planner/Runner shortcut targets in CI. No UI is launched.
 
+The exact `9b45d2e` run `37189915633` passed source, packaging, fresh install,
+second install, both file/hash audits and the two named shortcut target checks;
+the default duplicate shortcut was absent. The local `9b45d2e` artifact download
+failed at about 51 MB of free C: space. Automatic approval review rejected even
+single-file removal of superseded downloaded setup copies, so local update and
+uninstall/reinstall verification remain pending. A separate user-directed media
+migration is in progress; this run is regression evidence for the package hook,
+not the final application source or a release candidate.
+
 ## 20261004 P5-09 photoreal 21 × 21 Face successor
 
 Owner: current task, worktree `affect-tracker-research-photo-face`, branch
