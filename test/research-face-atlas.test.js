@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { faceAtlasBlend } from "../site/src/research/face-atlas.js";
 import { faceAtlasCatalogue, faceAtlasPickerLabel } from "../site/src/research/face-atlas.js";
 import { validateFeedbackContributionV3 } from "../site/src/research/feedback-settings.js";
-import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState } from "../runner/src/recipe.js";
+import { readRunnerRecipe, resolveRunnerSelection, runnerMasterFeedbackState, runnerMasterStepFeedbackState } from "../runner/src/recipe.js";
 import { compilePlannerAssetDocument } from "../site/src/research/planner-recipe-assets.js";
 import { compilePlannerRecipeV3 } from "../site/src/research/planner-recipe.js";
 import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
@@ -52,6 +52,29 @@ test("all nine face selections survive strict P5 validation and Runner projectio
   }
   assert.throws(() => validateFeedbackContributionV3({ ...old, version: 3,
     presentation: { ...old.presentation, renderer: "procedural-face" } }));
+});
+
+test("Runner step visibility honors saved feedback on video and hides intervals for every renderer", async () => {
+  const base = JSON.parse(await readFile(new URL("./fixtures/research-feedback-settings-v2.json", import.meta.url)));
+  const pack = faceAtlasCatalogue().packs[0];
+  for (const [renderer, displayMode] of [["flubber", "flubber"], ["grid", "grid"], ["photo-face-matrix21", "photo-face"]]) {
+    for (const hidden of [false, true]) {
+      const saved = validateFeedbackContributionV3({ ...base, version: 3,
+        visual: { ...base.visual, hideFeedback: hidden },
+        presentation: { ...base.presentation, renderer, facePackId: pack.id, facePackSha256: pack.atlasSha256 } });
+      const video = runnerMasterStepFeedbackState(saved, "video", 0.4, -0.6);
+      const interval = runnerMasterStepFeedbackState(saved, "interval", 0, 0);
+      assert.equal(video.displayMode, displayMode);
+      assert.equal(video.hideFeedback, hidden);
+      assert.equal(interval.displayMode, displayMode);
+      assert.equal(interval.hideFeedback, true);
+      assert.deepEqual([interval.x, interval.y], [0, 0]);
+      assert.equal(interval.facePackId, pack.id);
+      const received = runnerMasterStepFeedbackState(saved, "interval", 0.4, -0.6);
+      assert.deepEqual([received.x, received.y, received.frequency], [video.x, video.y, video.frequency]);
+    }
+  }
+  assert.throws(() => runnerMasterStepFeedbackState(base, "questionnaire"), /Unsupported feedback step/u);
 });
 
 test("one complete Planner save passes exact Runner intake with its chosen face pack", async () => {
