@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261004 Compartment and JSON handoff catalog
+
+Owner: current task; branch `codex/segment-contracts-compartment-catalog`,
+worktree `C:/Users/gfeje/Documents/GitHub/affect-tracker-research-compartment-catalog`,
+base `7088860`; stage: Backend Verification; bounded `contracts` segment.
+Dependencies: P1–P7, R1/RR-01–10 and the packaging integration seam. This pass
+maps existing controls, inputs, saved `segments.P1`–`P6`/policy and Runner
+consumers in `docs/compartment-catalog.md`; it changes no wire reader or app.
+Current-source mismatches for owner follow-up: master5 references separate
+SurveyJS assets, so one JSON is not self-contained; `fa8552e` removed the native
+GstPlay path while the charter and installed qualification gate still target it.
+The saved P5 renderer already reaches Runner's master projection, but the full
+installed three-mode paint matrix is unverified. Packaging and UI layout passes
+must use their own isolated scopes and evidence; this catalog grants neither
+runtime qualification nor installer publication.
+
 ## 20260914 Current App Build Audit
 
 Direct user request continues full Planner/Runner parity and research-ready

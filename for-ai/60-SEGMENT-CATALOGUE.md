@@ -206,6 +206,11 @@ rows; they do not reopen the completed baseline authoring goal.
 
 ## Segment map and single owners
 
+The maintained [compartment and JSON handoff catalog](../docs/compartment-catalog.md)
+lists each current window's functions, researcher inputs, saved segment fields,
+backend owner and Runner consumer. The checklist below remains the capability
+status authority.
+
 | ID / owner | Final responsibility | Main JSON contribution | Verified combined state at 875efae |
 | --- | --- | --- | --- |
 | P1 `workspace` | Workspace, study identity, video catalogue | `segments.P1`: workspace, catalogue and oriented geometry | Implemented; exact current-directory verification and rebind |
