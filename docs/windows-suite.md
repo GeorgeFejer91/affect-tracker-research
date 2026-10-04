@@ -65,16 +65,28 @@ is a 19,317,679-byte ZIP with SHA-256
 Both artifacts have 14-day retention. The installer contains no GStreamer
 runtime; these source archives do not establish redistribution approval.
 
-The later R1 native-animation correspondence fix is merged after this artifact.
-An exact-source installer rebuild is required before treating that fix as
-present in the candidate.
+The later [Windows run 37185887919](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37185887919)
+passed all three jobs at source commit
+`308204455eb17b433edb2e2d1bbf9a593e5c7a61`, including the focused native
+saved-renderer animation test. Its [installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37185887919/artifacts/11297477320)
+is a 153,634,544-byte ZIP with SHA-256
+`508fdc31097b5d8412c6ddae6089091e6bf55e4f87c1edd5c68ff1fad9408bc9`.
+The setup executable inside has SHA-256
+`a8b6df00f7fec5645905d9891e6b09e83758cdc1d2a959b5caf226332792d986`.
+It silently installed to a fresh per-user location on the researcher's current
+PC and passed the original installed-file audit with matching source, receipts
+and launcher verification. A subsequent inventory found an unintended
+`affect-runner.exe` alongside the named launcher and engine. The strengthened
+audit correctly rejects that installed candidate with
+`duplicate-runner-executable`. A corrected exact-source installer and local
+replacement check are pending.
 
 ## Claim boundary
 
-The exact NSIS candidate has passed an ephemeral silent install and installed
-file/hash audit. It has not been installed or opened on the researcher's PC.
+The `3082044` candidate has been silently installed and file-audited on the
+researcher's PC. It remains an unqualified candidate, and the duplicate Runner
+file finding prevents treating that installation as the corrected suite.
 Native playback, physical input, actual video-pool execution, LSL/XDF, timing,
 accessibility, uninstallation, and the full Planner-to-Runner installed
-workflow still require independent exact-artifact checks. The local C: drive
-remains below the 6 GiB suite build headroom. Do not present this candidate as
-a research-ready release.
+workflow still require independent exact-artifact checks. Do not present this
+candidate as a research-ready release.

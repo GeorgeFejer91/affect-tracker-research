@@ -16,6 +16,12 @@ Var SuiteInstallFailure
   IfFileExists "$INSTDIR\Experiment Runner.exe" 0 suite_install_failed
   StrCpy $SuiteInstallFailure "runner-engine-missing"
   IfFileExists "$INSTDIR\affect-runner-engine.exe" 0 suite_install_failed
+  ; Cargo's additional Runner bin can be collected by Tauri alongside the
+  ; staged engine. Only the hash-bound launcher and its named engine belong in
+  ; the installed suite.
+  Delete "$INSTDIR\affect-runner.exe"
+  StrCpy $SuiteInstallFailure "duplicate-runner-executable"
+  IfFileExists "$INSTDIR\affect-runner.exe" suite_install_failed 0
   StrCpy $SuiteInstallFailure "launcher-verification-failed"
   ExecWait '"$INSTDIR\Experiment Runner.exe" --verify-only' $0
   IntCmp $0 0 0 suite_install_failed suite_install_failed

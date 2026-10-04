@@ -1,5 +1,18 @@
 # Agent message board
 
+## 20261004 P7 suite duplicate executable correction
+
+Owner: current task; `codex/p7-windows-suite`, P7 packaging continuation,
+Repository/Web Synchronization. The exact `3082044` suite installed locally and
+passed its original receipt/launcher audit, but inspection found an additional
+`affect-runner.exe` beside the named launcher and engine. That executable is a
+second route into Runner without the launcher's hash check. This bounded pass
+removes it in the NSIS postinstall hook and requires the installed-file audit
+to reject any remaining copy. It changes no P1–P6 JSON, Runner protocol or
+GStreamer distribution policy. Focused audit tests, exact-source CI install
+and the local replacement install are the evidence targets. Visible operation,
+native playback, LSL/XDF and research qualification remain open.
+
 ## 20261004 P5-09 photoreal 21 × 21 Face successor
 
 Owner: current task, worktree `affect-tracker-research-photo-face`, branch

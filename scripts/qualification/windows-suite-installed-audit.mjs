@@ -44,6 +44,12 @@ for (const [key, path] of Object.entries(paths)) {
     issues.push(`${key}-missing`);
   }
 }
+try {
+  await lstat(join(root, "affect-runner.exe"));
+  issues.push("duplicate-runner-executable");
+} catch (error) {
+  if (error?.code !== "ENOENT") issues.push("duplicate-runner-executable-unreadable");
+}
 let build;
 let bootstrap;
 if (!issues.includes("build-missing") && !issues.includes("bootstrap-missing")) {

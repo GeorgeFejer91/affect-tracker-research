@@ -39,6 +39,10 @@ test("installed suite audit accepts relocated receipts and rejects changed Runne
       return { code: result.status, report: JSON.parse(result.stdout) };
     };
     assert.deepEqual(run().report.issues, []);
+    await writeFile(join(root, "affect-runner.exe"), "unverified-direct-runner");
+    assert.ok(run().report.issues.includes("duplicate-runner-executable"));
+    assert.notEqual(run().code, 0);
+    await rm(join(root, "affect-runner.exe"));
     await writeFile(join(root, "affect-runner-engine.exe"), "changed");
     assert.ok(run().report.issues.includes("engine-hash"));
     assert.notEqual(run().code, 0);
