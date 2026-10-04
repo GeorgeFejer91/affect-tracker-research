@@ -6,6 +6,7 @@ import {
   BROWSER_LSL_STATE_COLUMNS,
   BROWSER_RUN_CSV_COLUMNS,
   browserAffectState,
+  browserFeedbackAnimationActive,
   browserRunCsv,
 } from "../runner/src/browser-csv.js";
 
@@ -85,6 +86,15 @@ test("browser affect samples project the same eight values as LSL state samples"
     animation_active: false,
     input_active: false,
   });
+});
+
+test("browser sampling follows the saved renderer, not retained legacy visibility", () => {
+  const feedback = { presentation: { renderer: "flubber" }, visual: { flubberEnabled: false, hideFeedback: false } };
+  assert.equal(browserFeedbackAnimationActive(feedback), true);
+  for (const renderer of ["grid", "photo-face-matrix21"]) {
+    assert.equal(browserFeedbackAnimationActive({ ...feedback, presentation: { renderer }, visual: { ...feedback.visual, flubberEnabled: true } }), false);
+  }
+  assert.equal(browserFeedbackAnimationActive({ ...feedback, visual: { ...feedback.visual, hideFeedback: true } }), false);
 });
 
 test("browser CSV serializes event, questionnaire and LSL-equivalent sample fields", () => {

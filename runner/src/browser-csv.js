@@ -23,6 +23,9 @@ export const csvCell = (value) => {
   return /[",\r\n]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
+export const browserFeedbackAnimationActive = feedback =>
+  feedback.presentation.renderer === "flubber" && !feedback.visual.hideFeedback;
+
 export function browserAffectState({
   currentValence = 0,
   currentArousal = 0,

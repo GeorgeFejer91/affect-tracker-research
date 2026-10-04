@@ -6289,3 +6289,18 @@ with zero issues and `launcherVerified: true` for exact commit
 is an unsigned, unqualified short-lived candidate; its ZIP SHA-256 is
 `786c5ca9275210b2a9e911de6ea4b701f5b74b398c232b2ac72ff5481675d924`.
 No PC install, GUI, participant workflow, native playback or XDF is claimed.
+
+20261004 R1/RR-07/RR-10 browser feedback correspondence: isolated branch
+`codex/segment-r1-browser-feedback` starts at integrated `9201a85`. P5's
+saved `presentation.renderer` and `visual.hideFeedback` determine whether the
+browser CSV reports active Flubber animation during video sampling; retained
+`visual.flubberEnabled` is inactive v2/v3 compatibility data. The participant
+screen already consumes the selected renderer through `runnerMasterFeedbackState`.
+The prior browser attempt initialized `animationActive` from the legacy flag
+and carried it across non-video steps. It now starts false, turns on only after
+video playback starts for visible Flubber, and resets at sampling boundaries.
+Focused browser CSV/Face tests pass 10/10, full JavaScript passes 1234/1234,
+and the Runner production build/boundary check passes. No master JSON fields,
+native LSL, XDF or research qualification change; installed/live visual
+verification remains with root and is paused under the researcher's UI-control
+instruction.
