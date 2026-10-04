@@ -898,19 +898,23 @@ mod fail_closed_tests {
         ] {
             assert_eq!(result.unwrap_err().code, "runner_session_unavailable");
         }
+        let validation_error = runtime
+            .start_validation_v5(
+                MasterValidationStartRequestV5 {
+                    version: 1,
+                    acknowledge_unqualified: true,
+                    experiment: MasterStartRequestV5(request(5)),
+                },
+                window,
+            )
+            .unwrap_err();
         assert_eq!(
-            runtime
-                .start_validation_v5(
-                    MasterValidationStartRequestV5 {
-                        version: 1,
-                        acknowledge_unqualified: true,
-                        experiment: MasterStartRequestV5(request(5))
-                    },
-                    window,
-                )
-                .unwrap_err()
-                .code,
-            "invalid_research_contract"
+            validation_error.code,
+            if crate::research_platform::NATIVE_ACQUISITION_SUPPORTED {
+                "invalid_research_contract"
+            } else {
+                "native_acquisition_platform_unsupported"
+            }
         );
         assert!(runtime.status().is_none());
         assert_eq!(

@@ -6501,3 +6501,10 @@ Windows run 37211710131 caught a master5 action-wire field mismatch before
 installer assembly: `mediaGrantId` was rejected as `media_grant_id`. The four
 HTML observation variants now explicitly deserialize camel-case fields, as
 the focused ingress test requires. The failed candidate was not installed.
+
+Run 37212167030 passed the HTML grant ingress and a complete saved-master
+form/ISI/video traversal, then caught a test expectation that assumed native
+acquisition was enabled in the no-default-features build. The production
+platform gate runs first there. The regression now asserts the exact error for
+each feature configuration, and CI executes it in both configurations. This
+candidate also stopped before installer assembly.

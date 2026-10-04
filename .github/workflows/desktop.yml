@@ -71,6 +71,8 @@ jobs:
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --all-features
       - name: Compile native Research tests with all features
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --no-run
+      - name: Check validation ingress with the native acquisition feature
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --lib research_runner_master::runtime::fail_closed_tests::all_typed_start_entrypoints_fail_closed_without_creating_a_run -- --exact
       - name: Lint native Research backend
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-features
 
