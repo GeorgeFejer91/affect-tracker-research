@@ -10,8 +10,12 @@ Planner/Runner identity and master5/Face behavior remain in place. No new unsafe
 boundary was added.
 
 Current source checks: all 1,233 JavaScript tests, SurveyJS asset checks,
-Rust formatting and suite structural checks pass. A Windows native feature
-compile and test still needs the remote CI result; local C: space is below the
-build guard. The suite build omits the native feature and the private runtime.
+Rust formatting and suite structural checks pass. Windows checks in
+[run 37170372323](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37170372323)
+passed the pinned GStreamer preparation, all-feature Rust check, test compile
+and lint on the isolated source branch. The source was then integrated into the
+suite candidate, where focused 15/15 and full JavaScript 1,233/1,233 pass.
+Local C: space is below the build guard. The suite build omits the native
+feature and the private runtime.
 Normal research Start stays gated. No installed playback, decoder matrix,
 physical input, LSL/XDF, timing or research qualification is established here.

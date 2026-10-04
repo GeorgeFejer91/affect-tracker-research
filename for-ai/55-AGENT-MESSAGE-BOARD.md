@@ -6252,7 +6252,8 @@ job; the suite launcher continues to build without a private runtime and cannot
 claim native playback. A source-boundary test now checks only the Rust-check
 job's no-package invariant. Local full JavaScript 1,233/1,233, SurveyJS checks,
 Rust formatting and suite structural checks pass. See
-`docs/runner-native-actor-restoration.md`; remote native compile is required
-before integration into the suite candidate. The Windows source-check job
+`docs/runner-native-actor-restoration.md`. The Windows source-check job
 passed in run `37170372323`, including pinned GStreamer setup, all-feature
-Rust check/test compile and lint. Its suite package job is still running.
+Rust check/test compile and lint. Integration commit `78af687` passed focused
+15/15 and full JavaScript 1,233/1,233; both package jobs were still running at
+this checkpoint.
