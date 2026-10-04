@@ -36,6 +36,8 @@ function sha256(path) {
 }
 
 const config = JSON.parse(readFileSync(join(root, "src-tauri/tauri.suite.conf.json"), "utf8"));
+const baseConfig = JSON.parse(readFileSync(join(root, "src-tauri/tauri.conf.json"), "utf8"));
+assert.deepEqual(baseConfig.bundle.resources, []);
 assert.equal(config.mainBinaryName, "Experiment Planner");
 assert.deepEqual(config.bundle.externalBin, ["suite/Experiment Runner", "suite/affect-runner-engine"]);
 assert.equal(config.bundle.resources["suite/current-build.json"], "current-build.json");
@@ -43,6 +45,7 @@ assert.equal(config.bundle.resources["suite/launcher-receipt.json"], "launcher-r
 for (const path of ["bin/ffmpeg.exe", "bin/ffprobe.exe", "LICENSE", "README.txt", "SOURCE.txt", "receipt.json"]) {
   assert.equal(config.bundle.resources[`suite/ffmpeg/${path}`], `ffmpeg/${path}`);
 }
+assert.equal(Object.keys(config.bundle.resources).length, 8);
 assert.equal(config.bundle.windows.nsis.installerHooks, "./windows/suite-hooks.nsh");
 assert.ok(existsSync(join(root, "src-tauri/windows/suite-hooks.nsh")));
 if (checkOnly) {
