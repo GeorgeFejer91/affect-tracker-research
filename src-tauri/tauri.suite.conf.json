@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Affect Research Suite",
+  "mainBinaryName": "Experiment Planner",
+  "bundle": {
+    "targets": ["nsis"],
+    "longDescription": "Installs Experiment Planner and Experiment Runner together. Research execution, recording, timing, and playback qualification require separate installed checks.",
+    "externalBin": [
+      "suite/Experiment Runner",
+      "suite/affect-runner-engine"
+    ],
+    "resources": {
+      "suite/current-build.json": "current-build.json",
+      "suite/launcher-receipt.json": "launcher-receipt.json"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/suite-hooks.nsh",
+        "startMenuFolder": "Affect Research Suite"
+      }
+    }
+  }
+}

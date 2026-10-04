@@ -68,6 +68,16 @@ codes, without inferred reverse scoring, subscales, totals or thresholds.
 
 ## Project-authored boundaries
 
+2026-10-04 Windows suite packaging uses the official [Tauri v2 NSIS installer
+hooks](https://v2.tauri.app/distribute/windows-installer/),
+[external binaries](https://v2.tauri.app/develop/sidecar/), and
+[resource mapping](https://v2.tauri.app/develop/resources/). Two project-authored
+Runner binaries and portable receipts are packaged with the Planner; Tauri
+continues to own the base installer, WebView2 bootstrap, and uninstall flow.
+The hook and receipt audit are independently written; no NSIS template or
+dependency source is copied. An installed-file audit does not establish
+playback, timing, LSL/XDF, or study qualification.
+
 2026-09-13 Runner control addition: the existing `NATIVE-INPUT-RUST` listen-only
 hook recognizes the user-designated Alt+Esc fullscreen abort, with no new native
 dependency or unsafe boundary. Windows' [documented system shortcut](https://support.microsoft.com/en-us/accessibility/windows/keyboard-shortcuts-in-windows)

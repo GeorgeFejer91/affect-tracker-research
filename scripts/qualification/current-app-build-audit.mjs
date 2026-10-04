@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 
 const DEFAULT_APP_DIR = "D:/GitHub/.affect-checks/current-apps";
 
@@ -42,6 +42,12 @@ function git(args) {
   return result.stdout.trimEnd();
 }
 
+function receiptPathMatches(value, expected) {
+  if (typeof value !== "string") return false;
+  if (isAbsolute(value)) return resolve(value) === expected;
+  return value === basename(expected);
+}
+
 const appDir = resolve(optionValue("--app-dir", DEFAULT_APP_DIR));
 const outPath = optionValue("--out", null);
 const requireCurrent = optionFlag("--require-current");
@@ -76,8 +82,8 @@ function check(ok, code, detail) {
 }
 
 check(build.schema === "affect-runner-current-build-receipt", "invalid-current-build-schema", build.schema);
-check(build.authoritativeLaunchPath && resolve(build.authoritativeLaunchPath) === launcherPath, "launcher-path-differs", build.authoritativeLaunchPath);
-check(build.enginePath && resolve(build.enginePath) === enginePath, "engine-path-differs", build.enginePath);
+check(receiptPathMatches(build.authoritativeLaunchPath, launcherPath), "launcher-path-differs", build.authoritativeLaunchPath);
+check(receiptPathMatches(build.enginePath, enginePath), "engine-path-differs", build.enginePath);
 check(build.launcherSha256 === launcherSha256, "launcher-hash-differs", { receipt: build.launcherSha256, actual: launcherSha256 });
 check(build.engineSha256 === engineSha256, "engine-hash-differs", { receipt: build.engineSha256, actual: engineSha256 });
 check(launcherReceipt.launcherSha256 === launcherSha256, "launcher-receipt-launcher-hash-differs", { receipt: launcherReceipt.launcherSha256, actual: launcherSha256 });

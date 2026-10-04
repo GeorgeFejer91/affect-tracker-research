@@ -6180,3 +6180,17 @@ strict JS/Rust/Runner readers are required before declaring the new option
 runnable. Baseline focused tests: 11/11 passed. Windows package work is isolated
 in `codex/p7-windows-suite`; linker installed, release compile currently stopped
 at low C: space, with no new installer claim.
+
+## Unified Windows suite packaging — 2026-10-04
+
+Direct user allocation: one downloadable Windows installer containing separate
+Experiment Planner and Experiment Runner programs. P7 packaging pass on isolated
+`codex/p7-windows-suite` at `6ba2939`, Backend Verification. Inputs are one clean
+source commit, Runner frontend/native executable, and the hash-bound Runner
+launcher. Output is one NSIS package with adjacent Planner, Runner launcher,
+Runner engine, and portable hash receipts. P7 contributes no experiment JSON;
+the existing P1–P6 manifest remains the Planner-to-Runner contract. The package
+must fail closed on missing/mismatched binaries. This pass will check staging,
+receipt validation and installer layout rules. Full native participant playback,
+installed execution/XDF qualification, and public release remain open gates.
+Current C: free space is about 2 GB, below the release-build headroom.
