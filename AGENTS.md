@@ -1,5 +1,11 @@
 # Affect Research agent entrypoint
 
+The 2026-10-04 user direction makes FFmpeg conversion the active main
+playback approach. Previous player-stack text in this file and older project
+documents is superseded where it conflicts. The separate
+[`for-ai/74-VLC-FLUBBER-SIDE-QUEST.md`](./for-ai/74-VLC-FLUBBER-SIDE-QUEST.md)
+records a native VLC feasibility probe; it is not approved for the main suite.
+
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
 Planner authors JSON and retains Flubber previews. Runner alone executes, plays
@@ -52,15 +58,13 @@ requirements. Their complete Git history is preserved in
 and in this repository's immutable checkpoint/history refs. Do not restore or
 reactivate them without an explicit charter change.
 
-Windows qualified local/repository playback targets the repository-pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through a Rust-owned GstPlay actor.
-Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any
-implementation claim: runtime verification and a fail-closed capability are not
-evidence that the native player actor or playback qualification exists.
-The two contained Windows FFI adapters were approved on 2026-09-10; their
-focused audit and installed qualification remain open. Adding another unsafe
-boundary requires explicit user approval and audited window/thread/lifecycle
-invariants.
+The active main playback direction is FFmpeg conversion to a format that the
+player reliably supports while retaining the video content. Consult
+[`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before any implementation
+claim; older runtime receipts do not establish current playback qualification.
+Adding a main-suite unsafe boundary requires explicit user approval and
+audited window/thread/lifecycle invariants. The isolated VLC prototype has
+its own experimental boundary and grants no main-suite approval.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.

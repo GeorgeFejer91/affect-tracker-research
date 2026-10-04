@@ -1,5 +1,19 @@
 # Agent message board
 
+## 20261004 Native VLC Flubber side quest
+
+Owner: current task; branch `codex/segment-vlc-flubber-sidequest`, isolated
+worktree; stage: Backend Verification. Bounded experimental concern:
+`experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md), outside
+P1–P7/R1. No Planner or Runner source, JSON contract, or qualification status
+changed. Dependencies are VLC 3.0.20 x64, FFmpeg, and optional liblsl.
+The plugin, launcher, CSV, arrow controls, and independent LSL loopback passed
+the focused checks in 74. The concurrent
+`codex/segment-media-ffmpeg-cleanup` worktree owns main-source playback cleanup;
+this side quest does not migrate the main application. Reconcile the small
+entrypoint/board edits when integrating those branches. Any VLC integration
+into Runner requires an explicit product decision and separate R1 gates.
+
 ## 20261004 Compartment and JSON handoff catalog
 
 Owner: current task; branch `codex/segment-contracts-compartment-catalog`,

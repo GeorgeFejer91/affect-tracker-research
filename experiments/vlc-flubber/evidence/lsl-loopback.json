@@ -1,0 +1,29 @@
+{
+  "vlc_exit_code": 0,
+  "affect_samples": 477,
+  "affect_first": [
+    910863.5164883,
+    0.0,
+    0.0
+  ],
+  "affect_last": [
+    910871.4682336,
+    0.0,
+    0.0
+  ],
+  "affect_timestamps_monotonic": true,
+  "markers": [
+    [
+      910863.516334,
+      "video_start"
+    ],
+    [
+      910871.539858,
+      "video_end"
+    ]
+  ],
+  "marker_span_seconds": 8.023523999960162,
+  "csv_rows": 479,
+  "csv_samples": 477,
+  "csv_end_video_ms": 7933
+}
