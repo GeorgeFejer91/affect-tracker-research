@@ -6490,3 +6490,9 @@ ingress test are pending final CI for this source. No installed participant
 session, visible face/video paint, physical input, actual LSL/XDF, or independent
 full-run reconstruction is claimed. The earlier worker-only Windows source job
 passed but its superseded installer job was cancelled before bundling.
+
+A second focused Rust test now traverses every occurrence in a saved master,
+supplying complete form answers, expiring saved intervals and sending matching
+grant/play/end observations; it requires a durable completed receipt and exact
+completed-step count. Local Rust test compilation passes; execution is queued
+in Windows CI because this sparse checkout has limited linker disk headroom.

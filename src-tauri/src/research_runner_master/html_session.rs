@@ -924,4 +924,72 @@ mod tests {
             assert_eq!(worker.state.event_count, 3);
         });
     }
+
+    #[test]
+    fn saved_master_occurrences_finish_with_durable_answers_and_video_edges() {
+        with_worker(|worker| {
+            worker.observe(MarkerEvent::SessionStart, false).unwrap();
+            for _ in 0..worker.state.step_count {
+                if worker.terminal {
+                    break;
+                }
+                let step = worker.current().unwrap().clone();
+                worker
+                    .action(MasterAction::Presented {
+                        position: step.position,
+                    })
+                    .unwrap();
+                match step.kind {
+                    MasterStepKind::Questionnaire => {
+                        let choices = step.payload["definition"]["items"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|item| super::super::runtime::MasterChoice {
+                                item_id: item["itemId"].as_str().unwrap().into(),
+                                option_id: item["options"][0]["optionId"].as_str().unwrap().into(),
+                            })
+                            .collect();
+                        worker
+                            .action(MasterAction::Submit {
+                                position: step.position,
+                                answers: choices,
+                            })
+                            .unwrap();
+                    }
+                    MasterStepKind::Interval => {
+                        worker.interval_deadline = Some(Instant::now());
+                        worker.tick().unwrap();
+                    }
+                    MasterStepKind::Video => {
+                        let grant = format!("{:032x}", step.position);
+                        worker
+                            .action(MasterAction::VideoGrant {
+                                position: step.position,
+                                media_grant_id: grant.clone(),
+                            })
+                            .unwrap();
+                        worker
+                            .action(MasterAction::VideoPlaying {
+                                position: step.position,
+                                media_grant_id: grant.clone(),
+                            })
+                            .unwrap();
+                        worker.tick().unwrap();
+                        worker
+                            .action(MasterAction::VideoEnded {
+                                position: step.position,
+                                media_grant_id: grant,
+                            })
+                            .unwrap();
+                    }
+                }
+            }
+            assert!(worker.terminal);
+            assert_eq!(worker.state.phase, MasterPhase::Finished);
+            assert_eq!(worker.state.completed_step_count, worker.state.step_count);
+            assert_eq!(worker.state.result.as_ref().unwrap()["status"], "completed");
+            assert!(worker.state.event_count > worker.state.step_count as u64);
+        });
+    }
 }
