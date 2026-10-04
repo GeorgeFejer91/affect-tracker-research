@@ -70,6 +70,20 @@ The local installed-file audit passed with the exact source commit, launcher
 and media-tool checks; both local Start Menu shortcuts target the two installed
 programs. The installed build receipt reports `researchQualified: false`.
 
+That candidate was superseded by exact source commit
+`94d63f01c8146cfce1c4f3c9406cfd7b87b69c13` in
+[Windows CI run 37206813793](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37206813793).
+The [suite artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37206813793/artifacts/11305193039)
+contains one 209,899,037-byte setup EXE, SHA-256
+`de68d5de0dc87a57fa9534228e9c8b8e43de4ad218638ded39f166aa44846583`.
+Both CI jobs passed, including the focused native media-binding test, 21
+independent native/JS plan selections and fresh/repeat installed-file audits.
+The exact EXE silently replaced the previous local installation with exit code
+0. The local audit passed source, launcher and media-tool verification; both
+Start Menu shortcuts target the installed programs. Its build receipt still
+reports `researchQualified: false`. The P7 integration merge `e52362a` adds
+documentation only beyond this tested source.
+
 A passing file audit establishes layout, hashes, and tool startup only. It does
 not establish Planner video preparation, participant playback, questionnaire
 flow, physical input, LSL/XDF, timing, accessibility, or research readiness.

@@ -6427,3 +6427,17 @@ production build/boundary check passes. The first full test
 attempt lacked the tracked research-stimuli tree in this sparse worktree; a
 read-only junction to the P7 checkout restored that fixture. No physical paint,
 audio, timing or XDF claim follows from these source tests.
+
+## 20261004-P7-suite-94d63f0-installed-receipt
+
+Root merged R1's verified source into P7 at `e52362a`; the merge adds only
+documentation beyond exact R1 source `94d63f0`. Windows CI run 37206813793
+passed the source/plan/native gates, built one suite installer and passed fresh
+and repeat silent installed-file audits. The exact setup EXE SHA-256 is
+`de68d5de0dc87a57fa9534228e9c8b8e43de4ad218638ded39f166aa44846583`.
+It silently replaced the local Windows candidate (exit 0). The local audit
+passed exact commit, launcher and media-tool checks, and both Start Menu links
+target the installed programs. A local source-to-Runner-build hash comparison
+also found all nine registered Face atlases (nine source, nine built, none
+missing or unexpected). Native Start is still closed; no installed participant
+playback, visual Face selection, physical input, LSL or XDF is qualified.
