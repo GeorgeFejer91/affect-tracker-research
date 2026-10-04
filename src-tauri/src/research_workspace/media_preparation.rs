@@ -345,7 +345,7 @@ fn probe_media(path: &Path) -> ResearchResult<MediaProbe> {
             "-v",
             "error",
             "-show_entries",
-            "format=duration:stream=codec_type,codec_name,pix_fmt,width,height",
+            "format=format_name,duration:format_tags=major_brand:stream=codec_type,codec_name,pix_fmt,width,height",
             "-of",
             "json",
             "-i",
@@ -361,6 +361,10 @@ fn probe_media(path: &Path) -> ResearchResult<MediaProbe> {
     }
     let value: serde_json::Value = serde_json::from_slice(&output.stdout)
         .map_err(|_| CommandError::forbidden("FFprobe returned invalid video metadata."))?;
+    parse_media_probe(path, &value)
+}
+
+fn parse_media_probe(path: &Path, value: &serde_json::Value) -> ResearchResult<MediaProbe> {
     let duration_seconds = value
         .pointer("/format/duration")
         .and_then(|value| value.as_str())
@@ -397,6 +401,19 @@ fn probe_media(path: &Path) -> ResearchResult<MediaProbe> {
         .extension()
         .and_then(|part| part.to_str())
         .is_some_and(|part| part.eq_ignore_ascii_case("mp4"))
+        && value
+            .pointer("/format/format_name")
+            .and_then(|item| item.as_str())
+            .is_some_and(|names| names.split(',').any(|name| name == "mp4"))
+        // FFprobe's MOV demuxer reports the same format_name list for MOV and
+        // MP4. Require an ISO MP4 brand as well; a renamed QuickTime file is
+        // then normalized instead of being sent straight to the HTML decoder.
+        && value
+            .pointer("/format/tags/major_brand")
+            .and_then(|item| item.as_str())
+            .is_some_and(|brand| {
+                matches!(brand, "isom" | "iso2" | "iso4" | "iso5" | "iso6" | "mp41" | "mp42" | "avc1")
+            })
         && video[0]["codec_name"] == "h264"
         && video[0]["pix_fmt"] == "yuv420p"
         && audio.len() <= 1
@@ -405,6 +422,40 @@ fn probe_media(path: &Path) -> ResearchResult<MediaProbe> {
         duration_seconds,
         compatible,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn mp4_name_without_mp4_container_is_normalized() {
+        let mut probe = json!({
+            "format": { "duration": "1.000000", "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                "tags": { "major_brand": "isom" } },
+            "streams": [{ "codec_type": "video", "codec_name": "h264",
+                "pix_fmt": "yuv420p", "width": 32, "height": 32 }]
+        });
+        assert!(
+            parse_media_probe(Path::new("clip.mp4"), &probe)
+                .unwrap()
+                .compatible
+        );
+        probe["format"]["format_name"] = json!("matroska,webm");
+        assert!(
+            !parse_media_probe(Path::new("clip.mp4"), &probe)
+                .unwrap()
+                .compatible
+        );
+        probe["format"]["format_name"] = json!("mov,mp4,m4a,3gp,3g2,mj2");
+        probe["format"]["tags"]["major_brand"] = json!("qt  ");
+        assert!(
+            !parse_media_probe(Path::new("clip.mp4"), &probe)
+                .unwrap()
+                .compatible
+        );
+    }
 }
 
 #[cfg(target_os = "windows")]
