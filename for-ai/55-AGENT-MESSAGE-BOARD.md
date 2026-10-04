@@ -6278,3 +6278,14 @@ silent install returned 2 before the file audit. The hook now writes a bounded
 reason code to the CI runner's temp directory on failure; the workflow prints
 that code and the temporary installed-file paths. This is diagnostic evidence,
 not an installer fix or a successful installed claim.
+
+20261004 P7 installed-file handoff: diagnostic run `37174530590` identified
+`build-receipt-missing` and listed both receipt JSON files at the installation
+root, rather than under `resources`. Commit `1fd9cea` checks their actual
+paths and removes redundant copying. Windows run `37176003853` then passed
+source checks, fresh silent NSIS installation, and the installed-file audit
+with zero issues and `launcherVerified: true` for exact commit
+`1fd9ceafa0949b2023ddf423c715a2acc75dea7a`. Artifact ID `11293408018`
+is an unsigned, unqualified short-lived candidate; its ZIP SHA-256 is
+`786c5ca9275210b2a9e911de6ea4b701f5b74b398c232b2ac72ff5481675d924`.
+No PC install, GUI, participant workflow, native playback or XDF is claimed.

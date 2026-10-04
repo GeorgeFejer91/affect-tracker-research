@@ -45,12 +45,29 @@ binds `Experiment Runner.exe` and `affect-runner-engine.exe` by SHA-256 and mark
 the installed program files and suite shortcuts; Tauri's normal app-data choice
 controls any app-data removal.
 
+## Exact installed-file evidence
+
+[Windows run 37176003853](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37176003853)
+passed source checks, built the unsigned NSIS setup from commit
+`1fd9ceafa0949b2023ddf423c715a2acc75dea7a`, installed it silently into a
+fresh directory on the ephemeral Windows runner, and passed
+`affect-windows-suite-installed-audit-v1` with no issues and
+`launcherVerified: true`. The preceding diagnostic run `37174530590` proved
+that Tauri places the two resource-mapped receipts at the installation root;
+the NSIS hook now checks those actual paths.
+
+The uploaded [unqualified candidate artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37176003853/artifacts/11293408018)
+is a 153,635,460-byte ZIP with SHA-256
+`786c5ca9275210b2a9e911de6ea4b701f5b74b398c232b2ac72ff5481675d924`.
+This digest identifies the uploaded artifact ZIP, not the executable inside.
+The workflow retains it for 14 days; it is not a signed release.
+
 ## Claim boundary
 
-The configuration and static audit have been checked, but no suite installer
-has yet been built or installed from this branch. Native playback, physical
-input, actual video-pool execution, LSL/XDF, timing, accessibility, and full
-Planner-to-Runner installed workflow still require independent exact-artifact
-checks. The current C: free space is about 1.2 GB, below the release build
-headroom. Do not present a source check or unqualified NSIS build as a tested
-download or a research-ready release.
+The exact NSIS candidate has passed an ephemeral silent install and installed
+file/hash audit. It has not been installed or opened on the researcher's PC.
+Native playback, physical input, actual video-pool execution, LSL/XDF, timing,
+accessibility, uninstallation, and the full Planner-to-Runner installed
+workflow still require independent exact-artifact checks. The local C: drive
+remains below the 6 GiB suite build headroom. Do not present this candidate as
+a research-ready release.
