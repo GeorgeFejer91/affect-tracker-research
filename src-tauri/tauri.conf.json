@@ -41,9 +41,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "native-media/gstreamer-runtime-v1.json",
-      "native-media/GSTREAMER-RUNTIME-NOTICE.txt"
-    ]
+    "resources": []
   }
 }
