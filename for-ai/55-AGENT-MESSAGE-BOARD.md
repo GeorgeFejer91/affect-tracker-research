@@ -6286,3 +6286,20 @@ original survives, the prepared sibling is reused, and an altered output is
 rejected. P1-08 and R1 execution/LSL/XDF remain open until save/Open,
 installed playback, and run evidence close their separate gates. The static
 browser still consumes prepared assets rather than launching local tools.
+
+## 20261004-P7-Windows-suite-installed-layout
+
+P7 `package` integration on `codex/p7-windows-suite` merged the exact prepared
+media source into the two-program Windows suite. The validated source is
+`55f5a61b9267e1d81d421d76bfaf01d708fa47d4`; [CI run 37199689479](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37199689479)
+passed frontend tests/builds and native checks, built one unsigned NSIS setup,
+then passed fresh and same-path repeat silent installed-file audits. The
+installed launcher and pinned FFprobe/FFmpeg hashes/startup, Start Menu targets,
+and an AVI-to-H.264 MP4 tool smoke passed. Artifact
+[11302133782](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37199689479/artifacts/11302133782)
+is retained for 14 days; exact receipt is in `docs/windows-suite.md`.
+
+This closes the P7 package-layout and tool-bundling evidence only. P1-08
+installed save/Open/playback, P5-09 visual verification, and R1-03/05/06/07
+complete participant execution/LSL/XDF remain open. The local installed app
+still predates this source; the CI silent install did not exercise its GUI.

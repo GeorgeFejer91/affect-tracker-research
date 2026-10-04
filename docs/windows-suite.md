@@ -42,12 +42,19 @@ shortcut targets.
 
 ## Current evidence and limits
 
-Source-level package checks and the focused installed-audit fixture pass at
-`1461f85`. The package with the new media source and bundled tools has **not**
-yet been built or installed. The last local install is an earlier internal
-candidate; it does not contain the current media workflow or bundled tools.
-Its prior [Windows CI run](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633)
-qualified only fresh and repeat installation layout for that older source.
+An unsigned candidate was built from exact source commit
+`55f5a61b9267e1d81d421d76bfaf01d708fa47d4` in
+[Windows CI run 37199689479](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37199689479).
+The [single-installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37199689479/artifacts/11302133782)
+is 209,901,535 bytes and is retained by GitHub Actions for 14 days. Its
+uploaded ZIP SHA-256 is
+`f12a7b3e5253785c366f14fa2ef0cf66959185ea70bb23a9ea2ff933f0fcfa3b`.
+CI passed the source tests, frontend builds and native checks, then performed
+fresh and same-path repeat silent installs. Both installed audits reported
+`result: pass` with the exact source commit, launcher and tool hashes, and
+successful launcher/tool startup. Start Menu targets and an installed
+AVI-to-H.264 MP4 preparation smoke also passed. The last local install is
+still an earlier internal candidate and is not evidence for this source.
 
 A passing file audit establishes layout, hashes, and tool startup only. It does
 not establish Planner video preparation, participant playback, questionnaire
