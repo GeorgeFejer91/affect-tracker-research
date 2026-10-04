@@ -137,6 +137,12 @@ fn label(value: &str) -> ResearchResult<()> {
 }
 
 impl FeedbackContributionV2 {
+    /// The selected renderer owns this sample/LSL indicator; legacy visibility
+    /// booleans remain in the recipe only for strict historical round trips.
+    pub fn flubber_animation_active(&self) -> bool {
+        self.presentation.renderer == FeedbackRendererV2::Flubber && !self.visual.hide_feedback
+    }
+
     /// Normalizes only the unchanged legacy components just as their v1 readers do.
     /// Every successor field is explicit: never initialize or clamp while reading.
     pub fn normalize_and_validate(&mut self) -> ResearchResult<()> {
@@ -378,6 +384,38 @@ mod tests {
             value["presentation"]["renderer"] = json!(renderer);
             assert!(accepts(value));
         }
+    }
+
+    #[test]
+    fn sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree() {
+        for (renderer, legacy_flubber, hidden, expected) in [
+            ("flubber", false, false, true),
+            ("grid", true, false, false),
+            ("procedural-face", true, false, false),
+            ("flubber", true, true, false),
+        ] {
+            let mut value = fixture();
+            value["presentation"]["renderer"] = json!(renderer);
+            value["visual"]["flubberEnabled"] = json!(legacy_flubber);
+            value["visual"]["hideFeedback"] = json!(hidden);
+            let mut feedback: FeedbackContributionV2 = serde_json::from_value(value).unwrap();
+            feedback.normalize_and_validate().unwrap();
+            assert_eq!(feedback.flubber_animation_active(), expected, "{renderer}");
+        }
+
+        let mut face = fixture();
+        let catalogue: Value = serde_json::from_str(include_str!(
+            "../../site/assets/affect-face/photo-atlas-packs-v1.json"
+        ))
+        .unwrap();
+        face["version"] = json!(3);
+        face["presentation"]["renderer"] = json!("photo-face-matrix21");
+        face["presentation"]["facePackId"] = catalogue["packs"][0]["id"].clone();
+        face["presentation"]["facePackSha256"] = catalogue["packs"][0]["atlasSha256"].clone();
+        face["visual"]["flubberEnabled"] = json!(true);
+        let mut feedback: FeedbackContributionV2 = serde_json::from_value(face).unwrap();
+        feedback.normalize_and_validate().unwrap();
+        assert!(!feedback.flubber_animation_active());
     }
 
     #[test]

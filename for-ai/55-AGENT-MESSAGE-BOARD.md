@@ -6332,3 +6332,44 @@ distribution and full Windows checks remain separate.
 Root integrated the exact tested source tree as `0f153ff`. The superseded
 feature-branch run was cancelled after its source job and artifact succeeded;
 the merged commit still needs its own Windows check and suite installation.
+
+20261004 R1/RR-04/RR-07 native animation correspondence pass: isolated branch
+`codex/segment-r1-native-animation` at integration `3ae5fb3` in the Runner
+qualification worktree. The saved P5 renderer and hide flag determine whether
+Flubber animation is active during a sampled video. `worker.rs` instead reads
+retained `visual.flubber_enabled`, which P5 v2/v3 marks inactive; Grid or Face can
+therefore be recorded as animated despite the chosen display. Browser CSV already
+uses the saved renderer. This pass touches the R1 worker, its typed feedback
+predicate/test seam, one focused Windows CI test step, and this handoff. The
+workflow step runs the Rust case after its existing test compilation. It will
+test contradictory legacy flags and format/source checks, then use exact-commit
+Windows CI. No recipe field, physical
+input, LSL channel shape, native playback authority, or qualification flag changes.
+Installed video/LSL/XDF and visible mode paint remain separate gates. Baseline:
+Rust formatting passed and 10 focused Face/browser correspondence checks passed;
+local Rust compilation is deferred because C: has under 1 GiB free.
+The first CI attempt `37182857285` compiled the native test but Windows exited
+before the test harness with `STATUS_ENTRYPOINT_NOT_FOUND`; the assertion did
+not run. The focused step now runs after the existing pinned GStreamer setup,
+with its private runtime bin first on `PATH` and `--lib` to avoid unrelated test
+targets. This is a CI loader correction, not evidence that the application or
+installer has passed playback qualification.
+The retry `37183372361` stopped earlier in its workflow boundary test: that
+test still expected three private-runtime `PATH` assignments, while the newly
+added focused execution step makes four. The R1 pass also updates this one
+named CI-boundary assertion and verifies the step's ordering; it changes no
+runtime or package policy.
+The next retry `37183532167` reached the focused native test after pinned
+runtime preparation but exited before the harness with the same Windows
+`STATUS_ENTRYPOINT_NOT_FOUND`. The repository's prior native actor diagnostic
+documents this test-executable startup seam and provides a copy-only Common
+Controls 6 manifest helper. CI now selects Cargo's exact library test executable
+from JSON build messages, applies that existing helper to a temporary copy,
+records its tool/executable hashes, and runs only the named assertion. The
+product engine and installed suite are unchanged. If this still cannot start,
+the Rust test remains unexecuted and the pass cannot claim native verification.
+Run `37184195193` compiled and applied the test manifest, then stopped while
+parsing helper stdout: `mt.exe` prints a status line before the JSON. The
+helper's own `artifact-receipt.json` is the authoritative machine-readable
+output; CI now reads that file. No test assertion or app behavior failed in
+this attempt.

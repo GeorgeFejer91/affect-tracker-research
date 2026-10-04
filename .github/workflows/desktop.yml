@@ -61,6 +61,28 @@ jobs:
             -DevelopmentDestinationPath (Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.6-devel') `
             -GithubEnvironmentPath $env:GITHUB_ENV `
             -GithubPathPath $env:GITHUB_PATH
+      - name: Verify native saved-renderer animation correspondence
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\bin;$env:PATH"
+          $messages = @(cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib --no-run --message-format=json)
+          if ($LASTEXITCODE -ne 0) { throw 'Native feedback test compilation failed.' }
+          $tests = @($messages | ForEach-Object { $_ | ConvertFrom-Json } |
+            Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'affect_research' -and $_.profile.test -and $_.executable } |
+            Select-Object -ExpandProperty executable -Unique)
+          if ($tests.Count -ne 1) { throw 'Expected exactly one Cargo library test executable.' }
+          $kitBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+          $manifestTools = @(Get-ChildItem -LiteralPath $kitBin -Recurse -Filter mt.exe -File |
+            Where-Object { $_.DirectoryName -match '[\\/]x64$' } | Sort-Object FullName -Descending)
+          if ($manifestTools.Count -eq 0) { throw 'Windows SDK manifest tool is unavailable.' }
+          $prepared = Join-Path $env:RUNNER_TEMP 'feedback-animation-test'
+          ./src-tauri/native-media/prepare-actor-diagnostic.ps1 `
+            -TestExecutable $tests[0] -ManifestTool $manifestTools[0].FullName `
+            -OutputDirectory $prepared | Out-Null
+          $receipt = Get-Content -Raw -LiteralPath (Join-Path $prepared 'artifact-receipt.json') | ConvertFrom-Json
+          $receipt | ConvertTo-Json
+          & $receipt.executable sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree
+          if ($LASTEXITCODE -ne 0) { throw 'Native saved-renderer animation correspondence failed.' }
       - name: Check native Research backend
         env:
           AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"
