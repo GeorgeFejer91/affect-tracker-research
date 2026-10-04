@@ -126,7 +126,7 @@ if (verifyMediaTools && !issues.length) {
       env: { ...process.env, PATH: "" },
     });
     if (result.error || result.status !== 0 ||
-        !result.stdout?.startsWith(`${key} version `)) issues.push(`${key}-version`);
+        !result.stdout?.startsWith(`${key} version 9.0.2`)) issues.push(`${key}-version`);
   }
 }
 const report = {

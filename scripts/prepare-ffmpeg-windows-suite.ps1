@@ -37,12 +37,12 @@ try {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../src-tauri/ffmpeg/SOURCE.txt') -Destination (Join-Path $stage 'ffmpeg/SOURCE.txt')
     foreach ($name in @('ffmpeg.exe', 'ffprobe.exe')) {
         $tool = Join-Path $destination $name
-        $firstLine = (& $tool -version | Select-Object -First 1)
-        $expectedPrefix = [IO.Path]::GetFileNameWithoutExtension($name) + ' version '
-        if ($LASTEXITCODE -ne 0 -or -not $firstLine -or -not $firstLine.StartsWith($expectedPrefix)) {
-            throw "Pinned $name failed startup: $firstLine"
+        $versionLines = @(& $tool -version)
+        $toolExitCode = $LASTEXITCODE
+        $firstLine = $versionLines[0]
+        if ($toolExitCode -ne 0 -or $firstLine -notmatch '^ff(mpeg|probe) version 9\.0\.2') {
+            throw "Pinned $name failed version check: $firstLine"
         }
-        Write-Output "Pinned $name startup: $firstLine"
     }
     [ordered]@{
         archiveSha256 = $archiveSha256
