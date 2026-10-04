@@ -42,6 +42,20 @@ const assertReceipt = (receipt, asset) => {
   }
 };
 
+const assertDecodedMetadata = (video, asset) => {
+  const durationMs = Math.round(Number(video.duration) * 1000);
+  const expected = asset.durationMs;
+  const geometry = asset.geometry;
+  if (!Number.isFinite(expected) || expected <= 0 || !geometry
+    || !Number.isFinite(durationMs) || durationMs <= 0
+    || Math.abs(durationMs - expected) > Math.max(250, expected * 0.005)) {
+    throw new Error("The selected video duration does not match the saved experiment.");
+  }
+  if (video.videoWidth !== geometry.displayWidthPx || video.videoHeight !== geometry.displayHeightPx) {
+    throw new Error("The selected video display dimensions do not match the saved experiment.");
+  }
+};
+
 export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = window, onEnded = () => {}, onError = () => {} } = {}) {
   if (!(host instanceof HTMLElement) || typeof invoke !== "function") {
     throw new TypeError("Runner HTML video playback needs a host and native adapter.");
@@ -125,7 +139,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   const playStep = async ({ workspaceId, sourceText, participantId, selector, step }) => {
     if (step?.kind !== "video") throw new Error("HTML playback requires a video step.");
     const asset = step.payload?.asset;
-    if (!asset?.sha256 || !asset?.byteLength) {
+    if (!asset?.sha256 || !asset?.byteLength || !asset?.durationMs || !asset?.geometry) {
       throw new Error("The selected video step is missing JSON media metadata.");
     }
     const token = generation + 1;
@@ -167,6 +181,12 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       throw error;
     }
     if (token !== generation) return null;
+    try {
+      assertDecodedMetadata(element, asset);
+    } catch (error) {
+      stop();
+      throw error;
+    }
     host.dataset.playbackState = "starting";
     try {
       await element.play();

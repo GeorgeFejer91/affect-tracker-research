@@ -6404,3 +6404,13 @@ binary and tests plus Rust formatting passed locally. Local test execution is
 deferred to Windows CI because this checkout has under 500 MB free after
 compilation. Windows CI now runs the focused binding test after compiling the
 native tests. Native Start remains closed and no installed execution is claimed.
+
+Third RR-04 source slice: the HTML player now compares its decoded duration
+(the existing 250 ms / 0.5% tolerance) and oriented video dimensions with the
+saved P1 asset before calling `play`. Mismatch releases the media grant and
+fails the step. The focused lifecycle test passes 4/4, including changed
+duration/dimensions; the full Node suite passes 1191/1191 and the Runner
+production build/boundary check passes. The first full test
+attempt lacked the tracked research-stimuli tree in this sparse worktree; a
+read-only junction to the P7 checkout restored that fixture. No physical paint,
+audio, timing or XDF claim follows from these source tests.
